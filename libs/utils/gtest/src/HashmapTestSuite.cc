@@ -26,23 +26,31 @@ class HashMapTestSuite : public ::testing::Test {
 public:
     celix_string_hash_map_t* createStringHashMap(int nrEntries) {
         auto* map = celix_stringHashMap_create();
+        fillStringHashMap(map, nrEntries);
+        return map;
+    }
+
+    void fillStringHashMap(celix_string_hash_map_t* map, int nrEntries) {
         for (int i = 0; i < nrEntries; ++i) {
             std::string key = "key" + std::to_string(i);
             celix_stringHashMap_putLong(map, key.c_str(), i);
             EXPECT_EQ(i, celix_stringHashMap_getLong(map, key.c_str(), 0));
             EXPECT_EQ(celix_stringHashMap_size(map), i+1);
         }
-        return map;
     }
 
     celix_long_hash_map_t * createLongHashMap(int nrEntries) {
         auto* map = celix_longHashMap_create();
+        fillLongHashMap(map, nrEntries);
+        return map;
+    }
+
+    void fillLongHashMap(celix_long_hash_map_t* map, int nrEntries) {
         for (int i = 0; i < nrEntries; ++i) {
             celix_longHashMap_putLong(map, i, i);
             EXPECT_EQ(i, celix_longHashMap_getLong(map, i, 0));
             EXPECT_EQ(celix_longHashMap_size(map), i+1);
         }
-        return map;
     }
 };
 
@@ -422,6 +430,49 @@ TEST_F(HashMapTestSuite, IterateStressTest) {
     }
     EXPECT_EQ(testCount, count);
     celix_longHashMap_destroy(lMap);
+}
+
+TEST_F(HashMapTestSuite, IterateStressCapacityAndLoadFactorTest) {
+    celix_string_hash_map_create_options sOpts{};
+    sOpts.loadFactor = 10; //high load factor to ensure buckets have multiple entries for testing
+    sOpts.initialCapacity = 5;
+    auto* sMap = celix_stringHashMap_createWithOptions(&sOpts);
+    fillStringHashMap(sMap, 100);
+    long value = celix_stringHashMap_getLong(sMap, "key50", 0);
+    EXPECT_EQ(50, value);
+    //remove last 50 entries
+    for (long i = 50; i < 99; ++i) {
+        auto key = std::string{"key"} + std::to_string(i);
+        celix_stringHashMap_remove(sMap, key.c_str());
+    }
+    value = celix_stringHashMap_getLong(sMap, "key30", 0);
+    EXPECT_EQ(30, value);
+    value = celix_stringHashMap_getLong(sMap, "key31", 0);
+    EXPECT_EQ(31, value);
+    value = celix_stringHashMap_getLong(sMap, "key32", 0);
+    EXPECT_EQ(32, value);
+    celix_stringHashMap_destroy(sMap);
+
+
+    celix_long_hash_map_create_options lOpts{};
+    lOpts.loadFactor = 10; //high load factor to ensure buckets have multiple entries for testing
+    lOpts.initialCapacity = 5;
+    auto* lMap = celix_longHashMap_createWithOptions(&lOpts);
+    fillLongHashMap(lMap, 100);
+    value = celix_longHashMap_getLong(lMap, 50, 0);
+    EXPECT_EQ(50, value);
+    //remove last 50 entries
+    for (long i = 50; i < 99; ++i) {
+        celix_longHashMap_remove(lMap, i);
+    }
+    value = celix_longHashMap_getLong(lMap, 31, 0);
+    EXPECT_EQ(31, value);
+    value = celix_longHashMap_getLong(lMap, 32, 0);
+    EXPECT_EQ(32, value);
+    value = celix_longHashMap_getLong(lMap, 33, 0);
+    EXPECT_EQ(33, value);
+    celix_longHashMap_destroy(lMap);
+
 }
 
 TEST_F(HashMapTestSuite, IterateWithRemoveTest) {

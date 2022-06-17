@@ -40,25 +40,30 @@ extern "C" {
 //TODO split up in celix_string_hash_map.h and celix_long_hash_map.h
 
 /**
- * @brief A hashmap with uses string (const char*) as key.
+ * @brief A hash map with uses string (const char*) as key.
  *
- * Entries in a hash map should use the same type.
- * i.e. there should all be strings (char*), long, double, bool or pointers (void*)
+ * Entries in the hash map can be a pointer, long, double or bool value.
+ * All entries should be of the same type.
  *
  * @note Not thread safe.
  */
 typedef struct celix_string_hash_map celix_string_hash_map_t;
 
 /**
- * @brief A hashmap with uses long as key.
+ * @brief A hash map with uses long as key.
  *
- * Entries in a hash map should use the same type.
- * i.e. there should all be strings (char*), long, double, bool or pointers (void*)
+ * Entries in the hash map can be a pointer, long, double or bool value.
+ * All entries should be of the same type.
  *
  * @note Not thread safe.
  */
 typedef struct celix_long_hash_map celix_long_hash_map_t;
 
+/**
+ * Represents a value in the hash map.
+ *
+ * Because the value of hash map entry can be a pointer, long, double or boolean, the value is represented as an union.
+ */
 typedef union celix_hash_map_value {
     void* ptrValue;
     long longValue;
@@ -117,12 +122,36 @@ typedef struct celix_string_hash_map_create_options {
     void (*removedCallback)(void* data, const char* removedKey, celix_hash_map_value_t removedValue) CELIX_OPTS_INIT;
 
     /**
-     * @brief If set to true, the string hash map will not take ownership of the keys and assume
+     * @brief If set to true, the string hash map will not make of copy of the keys and assumes
      * that the keys are in scope/memory for the complete lifecycle of the string hash map.
      *
      * Note that this changes the default behaviour of the celix_stringHashMap_put* functions.
      */
     bool storeKeysWeakly CELIX_OPTS_INIT;
+
+    /**
+     * @brief The initial hash map capacity.
+     *
+     * The number of bucket to allocate when creating the hash map.
+     * If 0 is provided, the hash map initial capacity will be 16 (default value).
+     */
+     unsigned int initialCapacity;
+
+     /**
+      * @brief The hash map load factor, which controls the max ratio between nr of entries in the hash map and the
+      * hash map capacity.
+      *
+      * The load factor controls how large the hash map capacity (nr of buckets) is compared to the nr of entries
+      * in the hash map. The load factor is an important property of the hash map which influences how close the
+      * hash map performs to O(1) for its get, has and put operations.
+      *
+      * If the nr of entries increases above the loadFactor * capacity, the hash capacity will be doubled.
+      * For example a hash map with capacity 16 and load factor 0.75 will double its capacity when the 13th entry
+      * is added to the hash map.
+      *
+      * If 0 is provided, the hash map load factor will be 0.75 (default value).
+      */
+     double loadFactor;
 } celix_string_hash_map_create_options_t;
 
 /**
@@ -165,6 +194,30 @@ typedef struct celix_long_hash_map_create_options {
      * only the simpledRemoveCallback will be used.
      */
     void (*removedCallback)(void* data, long removedKey, celix_hash_map_value_t removedValue) CELIX_OPTS_INIT;
+
+    /**
+     * @brief The initial hash map capacity.
+     *
+     * The number of bucket to allocate when creating the hash map.
+     * If 0 is provided, the hash map initial capacity will be 16 (default value).
+     */
+    unsigned int initialCapacity;
+
+    /**
+     * @brief The hash map load factor, which controls the max ratio between nr of entries in the hash map and the
+     * hash map capacity.
+     *
+     * The load factor controls how large the hash map capacity (nr of buckets) is compared to the nr of entries
+     * in the hash map. The load factor is an important property of the hash map which influences how close the
+     * hash map performs to O(1) for its get, has and put operations.
+     *
+     * If the nr of entries increases above the loadFactor * capacity, the hash capacity will be doubled.
+     * For example a hash map with capacity 16 and load factor 0.75 will double its capacity when the 13th entry
+     * is added to the hash map.
+     *
+     * If 0 is provided, the hash map load factor will be 0.75 (default value).
+     */
+    double loadFactor;
 } celix_long_hash_map_create_options_t;
 
 /**

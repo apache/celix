@@ -21,15 +21,13 @@
 #include "celix_utils.h"
 
 #include <stdlib.h>
-#include <assert.h>
 #include <memory.h>
 #include <math.h>
-
-//TODO rename src to celix_hash_map.c
+#include <assert.h>
 
 static unsigned int DEFAULT_INITIAL_CAPACITY = 16;
 static double DEFAULT_LOAD_FACTOR = 0.75;
-static unsigned int MAXIMUM_CAPACITY = 1 << 30;
+static unsigned int MAXIMUM_CAPACITY = UINT32_MAX/10;
 
 typedef enum celix_hash_map_key_type {
     CELIX_HASH_MAP_STRING_KEY,
@@ -51,10 +49,9 @@ struct celix_hash_map_entry {
 
 typedef struct celix_hash_map {
     celix_hash_map_entry_t** buckets;
-    size_t bucketsSize; //nr of buckets
-    size_t size; //nr of total entries
-    size_t threshold;
-    size_t modificationCount;
+    unsigned int bucketsSize; //nr of buckets
+    unsigned int size; //nr of total entries
+    double loadFactor;
     celix_hash_map_key_type_e keyType;
     celix_hash_map_value_t emptyValue;
     unsigned int (*hashKeyFunction)(const celix_hash_map_key_t* key);
@@ -90,6 +87,10 @@ static bool celix_longHashMap_equals(const celix_hash_map_key_t* key1, const cel
     return key1->longKey == key2->longKey;
 }
 
+static unsigned int celix_hashMap_threshold(celix_hash_map_t* map) {
+    return (unsigned int)floor((double)map->bucketsSize * map->loadFactor);
+}
+
 static unsigned int celix_hashMap_indexFor(unsigned int h, unsigned int length) {
     return h & (length - 1);
 }
@@ -110,7 +111,6 @@ static celix_hash_map_entry_t* celix_hashMap_getEntry(const celix_hash_map_t* ma
     }
     return NULL;
 }
-
 
 static void* celix_hashMap_get(const celix_hash_map_t* map, const char* strKey, long longKey) {
     celix_hash_map_entry_t* entry = celix_hashMap_getEntry(map, strKey, longKey);
@@ -148,33 +148,65 @@ bool celix_hashMap_hasKey(const celix_hash_map_t* map, const char* strKey, long 
     return celix_hashMap_getEntry(map, strKey, longKey) != NULL;
 }
 
-static void hashMap_resize(celix_hash_map_t* map, int newCapacity) {
-    celix_hash_map_entry_t** newTable;
-    unsigned int j;
+static void celix_hashMap_resize(celix_hash_map_t* map, size_t newCapacity) {
     if (map->bucketsSize == MAXIMUM_CAPACITY) {
         return;
     }
 
-    newTable = calloc(newCapacity, sizeof(celix_hash_map_entry_t*));
+    assert(newCapacity > map->bucketsSize); //hash map can only grow
+    map->buckets = realloc(map->buckets, newCapacity * sizeof(celix_hash_map_entry_t*));
 
-    for (j = 0; j < map->bucketsSize; j++) {
-        celix_hash_map_entry_t* entry = map->buckets[j];
+    //clear newly added mem
+    for (unsigned int i = map->bucketsSize; i < newCapacity; ++i) {
+        map->buckets[i]= NULL;
+    }
+
+    //reinsert old entries
+    for (unsigned i = 0; i < map->bucketsSize; i++) {
+        celix_hash_map_entry_t* entry = map->buckets[i];
         if (entry != NULL) {
-            map->buckets[j] = NULL;
+            map->buckets[i] = NULL;
             do {
                 celix_hash_map_entry_t* next = entry->next;
-                unsigned int i = celix_hashMap_indexFor(entry->hash, newCapacity);
-                entry->next = newTable[i];
-                newTable[i] = entry;
+                unsigned int bucketIndex = celix_hashMap_indexFor(entry->hash, newCapacity);
+                entry->next = map->buckets[bucketIndex];
+                map->buckets[bucketIndex] = entry;
                 entry = next;
             } while (entry != NULL);
         }
     }
-    free(map->buckets);
-    map->buckets = newTable;
+
+    //update bucketSize to new capacity
     map->bucketsSize = newCapacity;
-    map->threshold = (unsigned int) ceil(newCapacity * DEFAULT_LOAD_FACTOR);
 }
+
+//static void celix_hashMap_resize(celix_hash_map_t* map, size_t newCapacity, double loadFactor) {
+//    map->loadFactor = loadFactor;
+//    celix_hash_map_entry_t** newTable;
+//    unsigned int j;
+//    if (map->bucketsSize == MAXIMUM_CAPACITY) {
+//        return;
+//    }
+//
+//    newTable = calloc(newCapacity, sizeof(celix_hash_map_entry_t*));
+//
+//    for (j = 0; j < map->bucketsSize; j++) {
+//        celix_hash_map_entry_t* entry = map->buckets[j];
+//        if (entry != NULL) {
+//            map->buckets[j] = NULL;
+//            do {
+//                celix_hash_map_entry_t* next = entry->next;
+//                unsigned int i = celix_hashMap_indexFor(entry->hash, newCapacity);
+//                entry->next = newTable[i];
+//                newTable[i] = entry;
+//                entry = next;
+//            } while (entry != NULL);
+//        }
+//    }
+//    free(map->buckets);
+//    map->buckets = newTable;
+//    map->bucketsSize = newCapacity;
+//}
 
 static void celix_hashMap_addEntry(celix_hash_map_t* map, unsigned int hash, const celix_hash_map_key_t* key, const celix_hash_map_value_t* value, unsigned int bucketIndex) {
     celix_hash_map_entry_t* entry = map->buckets[bucketIndex];
@@ -188,8 +220,8 @@ static void celix_hashMap_addEntry(celix_hash_map_t* map, unsigned int hash, con
     memcpy(&newEntry->value, value, sizeof(*value));
     newEntry->next = entry;
     map->buckets[bucketIndex] = newEntry;
-    if (map->size++ >= map->threshold) {
-        hashMap_resize(map, 2 * map->bucketsSize);
+    if (map->size++ >= celix_hashMap_threshold(map)) {
+        celix_hashMap_resize(map, 2 * map->bucketsSize);
     }
 }
 
@@ -212,7 +244,6 @@ static bool celix_hashMap_putValue(celix_hash_map_t* map, const char* strKey, lo
             return true;
         }
     }
-    map->modificationCount++;
     celix_hashMap_addEntry(map, hash, &key, value, index);
     if (replacedValueOut != NULL) {
         memset(replacedValueOut, 0, sizeof(*replacedValueOut));
@@ -277,7 +308,6 @@ static bool celix_hashMap_remove(celix_hash_map_t* map, const char* strKey, long
     while (visit != NULL) {
         if (visit->hash == hash && map->equalsKeyFunction(&key, &visit->key)) {
             //hash & equals -> found entry
-            map->modificationCount++;
             map->size--;
             if (map->buckets[index] == visit) {
                 //current entry is first entry in bucket, set next to first entry in bucket
@@ -308,13 +338,14 @@ static bool celix_hashMap_remove(celix_hash_map_t* map, const char* strKey, long
 static void celix_hashMap_init(
         celix_hash_map_t* map,
         celix_hash_map_key_type_e keyType,
+        unsigned int initialCapacity,
+        double loadFactor,
         unsigned int (*hashKeyFn)(const celix_hash_map_key_t*),
         bool (*equalsKeyFn)(const celix_hash_map_key_t*, const celix_hash_map_key_t*)) {
-    map->threshold = (size_t)((float)DEFAULT_INITIAL_CAPACITY * DEFAULT_LOAD_FACTOR);
-    map->buckets = calloc(DEFAULT_INITIAL_CAPACITY, sizeof(celix_hash_map_entry_t*));
+    map->loadFactor = loadFactor;
+    map->buckets = calloc(initialCapacity, sizeof(celix_hash_map_entry_t*));
     map->size = 0;
-    map->modificationCount = 0;
-    map->bucketsSize = DEFAULT_INITIAL_CAPACITY;
+    map->bucketsSize = initialCapacity;
     map->keyType = keyType;
     memset(&map->emptyValue, 0, sizeof(map->emptyValue));
     map->hashKeyFunction = hashKeyFn;
@@ -327,7 +358,6 @@ static void celix_hashMap_init(
 }
 
 static void celix_hashMap_clear(celix_hash_map_t* map) {
-    map->modificationCount++;
     for (unsigned int i = 0; i < map->bucketsSize; i++) {
         celix_hash_map_entry_t* entry = map->buckets[i];
         while (entry != NULL) {
@@ -372,7 +402,9 @@ static celix_hash_map_entry_t* celix_hashMap_nextEntry(const celix_hash_map_t* m
 
 celix_string_hash_map_t* celix_stringHashMap_createWithOptions(const celix_string_hash_map_create_options_t* opts) {
     celix_string_hash_map_t* map = calloc(1, sizeof(*map));
-    celix_hashMap_init(&map->genericMap, CELIX_HASH_MAP_STRING_KEY, celix_stringHashMap_hash, celix_stringHashMap_equals);
+    unsigned int cap = opts->initialCapacity > 0 ? opts->initialCapacity : DEFAULT_INITIAL_CAPACITY;
+    double fac = opts->loadFactor > 0 ? opts->loadFactor : DEFAULT_LOAD_FACTOR;
+    celix_hashMap_init(&map->genericMap, CELIX_HASH_MAP_STRING_KEY, cap, fac, celix_stringHashMap_hash, celix_stringHashMap_equals);
     map->genericMap.simpleRemovedCallback = opts->simpleRemovedCallback;
     map->genericMap.removedCallbackData = opts->removedCallbackData;
     map->genericMap.removedStringKeyCallback = opts->removedCallback;
@@ -387,7 +419,9 @@ celix_string_hash_map_t* celix_stringHashMap_create() {
 
 celix_long_hash_map_t* celix_longHashMap_createWithOptions(const celix_long_hash_map_create_options_t* opts) {
     celix_long_hash_map_t* map = calloc(1, sizeof(*map));
-    celix_hashMap_init(&map->genericMap, CELIX_HASH_MAP_LONG_KEY, celix_longHashMap_hash, celix_longHashMap_equals);
+    unsigned int cap = opts->initialCapacity > 0 ? opts->initialCapacity : DEFAULT_INITIAL_CAPACITY;
+    double fac = opts->loadFactor > 0 ? opts->loadFactor : DEFAULT_LOAD_FACTOR;
+    celix_hashMap_init(&map->genericMap, CELIX_HASH_MAP_LONG_KEY, cap, fac, celix_longHashMap_hash, celix_longHashMap_equals);
     map->genericMap.simpleRemovedCallback = opts->simpledRemoveCallback;
     map->genericMap.removedCallbackData = opts->removedCallbackData;
     map->genericMap.removedLongKeyCallback = opts->removedCallback;
@@ -570,7 +604,7 @@ void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter) {
         iter->value = entry->value;
     } else {
         memset(iter, 0, sizeof(*iter));
-        iter->_internal[0] = (void*)map;;
+        iter->_internal[0] = (void*)map;
     }
 }
 
@@ -585,7 +619,7 @@ void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter) {
         iter->value = entry->value;
     } else {
         memset(iter, 0, sizeof(*iter));
-        iter->_internal[0] = (void*)map;;
+        iter->_internal[0] = (void*)map;
     }
 }
 
