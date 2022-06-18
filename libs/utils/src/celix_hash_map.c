@@ -25,6 +25,19 @@
 #include <math.h>
 #include <assert.h>
 
+/**
+ * Whether to use realloc - instead of calloc - to resize a hash map.
+ *
+ * With realloc the memory is increased and the
+ * map entries are corrected.
+ *
+ * With alloc a new buckets array is allocated and
+ * entries are moved into the new bucket array.
+ * And the old buckets array is freed.
+ *
+ */
+#define CELIX_HASH_MAP_RESIZE_WITH_REALLOC
+
 static unsigned int DEFAULT_INITIAL_CAPACITY = 16;
 static double DEFAULT_LOAD_FACTOR = 0.75;
 static unsigned int MAXIMUM_CAPACITY = UINT32_MAX/10;
@@ -148,6 +161,7 @@ bool celix_hashMap_hasKey(const celix_hash_map_t* map, const char* strKey, long 
     return celix_hashMap_getEntry(map, strKey, longKey) != NULL;
 }
 
+#ifdef CELIX_HASH_MAP_RESIZE_WITH_REALLOC
 static void celix_hashMap_resize(celix_hash_map_t* map, size_t newCapacity) {
     if (map->bucketsSize == MAXIMUM_CAPACITY) {
         return;
@@ -179,41 +193,41 @@ static void celix_hashMap_resize(celix_hash_map_t* map, size_t newCapacity) {
     //update bucketSize to new capacity
     map->bucketsSize = newCapacity;
 }
+#else
+static void celix_hashMap_resize(celix_hash_map_t* map, size_t newCapacity) {
+    celix_hash_map_entry_t** newTable;
+    unsigned int j;
+    if (map->bucketsSize == MAXIMUM_CAPACITY) {
+        return;
+    }
 
-//static void celix_hashMap_resize(celix_hash_map_t* map, size_t newCapacity, double loadFactor) {
-//    map->loadFactor = loadFactor;
-//    celix_hash_map_entry_t** newTable;
-//    unsigned int j;
-//    if (map->bucketsSize == MAXIMUM_CAPACITY) {
-//        return;
-//    }
-//
-//    newTable = calloc(newCapacity, sizeof(celix_hash_map_entry_t*));
-//
-//    for (j = 0; j < map->bucketsSize; j++) {
-//        celix_hash_map_entry_t* entry = map->buckets[j];
-//        if (entry != NULL) {
-//            map->buckets[j] = NULL;
-//            do {
-//                celix_hash_map_entry_t* next = entry->next;
-//                unsigned int i = celix_hashMap_indexFor(entry->hash, newCapacity);
-//                entry->next = newTable[i];
-//                newTable[i] = entry;
-//                entry = next;
-//            } while (entry != NULL);
-//        }
-//    }
-//    free(map->buckets);
-//    map->buckets = newTable;
-//    map->bucketsSize = newCapacity;
-//}
+    newTable = calloc(newCapacity, sizeof(celix_hash_map_entry_t*));
+
+    for (j = 0; j < map->bucketsSize; j++) {
+        celix_hash_map_entry_t* entry = map->buckets[j];
+        if (entry != NULL) {
+            map->buckets[j] = NULL;
+            do {
+                celix_hash_map_entry_t* next = entry->next;
+                unsigned int i = celix_hashMap_indexFor(entry->hash, newCapacity);
+                entry->next = newTable[i];
+                newTable[i] = entry;
+                entry = next;
+            } while (entry != NULL);
+        }
+    }
+    free(map->buckets);
+    map->buckets = newTable;
+    map->bucketsSize = newCapacity;
+}
+#endif
 
 static void celix_hashMap_addEntry(celix_hash_map_t* map, unsigned int hash, const celix_hash_map_key_t* key, const celix_hash_map_value_t* value, unsigned int bucketIndex) {
     celix_hash_map_entry_t* entry = map->buckets[bucketIndex];
     celix_hash_map_entry_t* newEntry = malloc(sizeof(*newEntry));
     newEntry->hash = hash;
     if (map->keyType == CELIX_HASH_MAP_STRING_KEY) {
-        newEntry->key.strKey = celix_utils_strdup(key->strKey);
+        newEntry->key.strKey = map->storeKeysWeakly ? key->strKey : celix_utils_strdup(key->strKey);
     } else {
         newEntry->key.longKey = key->longKey;
     }

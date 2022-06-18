@@ -21,15 +21,24 @@
 
 #include "celix_utils.h"
 #include "celix_hash_map.h"
+#include <random>
 
 class HashMapTestSuite : public ::testing::Test {
 public:
+    /**
+     * Create and fill string hash map with nrEntries entries.
+     */
     celix_string_hash_map_t* createStringHashMap(int nrEntries) {
         auto* map = celix_stringHashMap_create();
         fillStringHashMap(map, nrEntries);
         return map;
     }
 
+    /**
+     * Fill string hash map with nrOfEntries long value entries where the key and value are based on the
+     * i index value of the for loop.
+     * This way the expected hash map entry value can be deducted from the key.
+     */
     void fillStringHashMap(celix_string_hash_map_t* map, int nrEntries) {
         for (int i = 0; i < nrEntries; ++i) {
             std::string key = "key" + std::to_string(i);
@@ -39,12 +48,33 @@ public:
         }
     }
 
+    /**
+     * Randomly test nrOfEntriesToTest entries in a string hash map.
+     * This assumes that the map is filled using fillStringHashMap.
+     */
+    void testGetEntriesFromStringMap(celix_string_hash_map_t* map, int nrOfEntriesToTest) {
+        std::uniform_int_distribution<long> keyDistribution{0, (long)celix_stringHashMap_size(map)-1};
+        for (int i = 0; i< nrOfEntriesToTest; ++i) {
+            long rand = keyDistribution(generator);
+            auto key = std::string{"key"} + std::to_string(rand);
+            EXPECT_EQ(celix_stringHashMap_getLong(map, key.c_str(), 0), rand);
+        }
+    }
+
+    /**
+     * Create and fill long hash map with nrEntries entries.
+     */
     celix_long_hash_map_t * createLongHashMap(int nrEntries) {
         auto* map = celix_longHashMap_create();
         fillLongHashMap(map, nrEntries);
         return map;
     }
 
+    /**
+     * Fill long hash map with nrOfEntries long value entries where the key and value are based on the
+     * i index value of the for loop.
+     * This way the expected hash map entry value can be deducted from the key.
+     */
     void fillLongHashMap(celix_long_hash_map_t* map, int nrEntries) {
         for (int i = 0; i < nrEntries; ++i) {
             celix_longHashMap_putLong(map, i, i);
@@ -52,6 +82,20 @@ public:
             EXPECT_EQ(celix_longHashMap_size(map), i+1);
         }
     }
+
+    /**
+     * Randomly test nrOfEntriesToTest entries in a long hash map.
+     * This assumes that the map is filled using fillLongHashMap.
+     */
+    void testGetEntriesFromLongMap(celix_long_hash_map_t* map, int nrOfEntriesToTest) {
+        std::uniform_int_distribution<long> keyDistribution{0, (long)celix_longHashMap_size(map)-1};
+        for (int i = 0; i< nrOfEntriesToTest; ++i) {
+            long rand = keyDistribution(generator);
+            EXPECT_EQ(celix_longHashMap_getLong(map, rand, 0), rand);
+        }
+    }
+private:
+    std::default_random_engine generator{};
 };
 
 TEST_F(HashMapTestSuite, CreateDestroyHashMap) {
@@ -412,7 +456,7 @@ TEST_F(HashMapTestSuite, IterateTest) {
 }
 
 TEST_F(HashMapTestSuite, IterateStressTest) {
-    int testCount = 100;
+    int testCount = 1000;
     auto* sMap = createStringHashMap(testCount);
     EXPECT_EQ(testCount, celix_stringHashMap_size(sMap));
     int count = 0;
@@ -420,6 +464,7 @@ TEST_F(HashMapTestSuite, IterateStressTest) {
         EXPECT_EQ(iter.index, count++);
     }
     EXPECT_EQ(testCount, count);
+    testGetEntriesFromStringMap(sMap, 100);
     celix_stringHashMap_destroy(sMap);
 
     auto *lMap = createLongHashMap(testCount);
@@ -429,6 +474,7 @@ TEST_F(HashMapTestSuite, IterateStressTest) {
         EXPECT_EQ(iter.index, count++);
     }
     EXPECT_EQ(testCount, count);
+    testGetEntriesFromLongMap(lMap, 100);
     celix_longHashMap_destroy(lMap);
 }
 
@@ -445,12 +491,7 @@ TEST_F(HashMapTestSuite, IterateStressCapacityAndLoadFactorTest) {
         auto key = std::string{"key"} + std::to_string(i);
         celix_stringHashMap_remove(sMap, key.c_str());
     }
-    value = celix_stringHashMap_getLong(sMap, "key30", 0);
-    EXPECT_EQ(30, value);
-    value = celix_stringHashMap_getLong(sMap, "key31", 0);
-    EXPECT_EQ(31, value);
-    value = celix_stringHashMap_getLong(sMap, "key32", 0);
-    EXPECT_EQ(32, value);
+    testGetEntriesFromStringMap(sMap, 50);
     celix_stringHashMap_destroy(sMap);
 
 
@@ -465,12 +506,7 @@ TEST_F(HashMapTestSuite, IterateStressCapacityAndLoadFactorTest) {
     for (long i = 50; i < 99; ++i) {
         celix_longHashMap_remove(lMap, i);
     }
-    value = celix_longHashMap_getLong(lMap, 31, 0);
-    EXPECT_EQ(31, value);
-    value = celix_longHashMap_getLong(lMap, 32, 0);
-    EXPECT_EQ(32, value);
-    value = celix_longHashMap_getLong(lMap, 33, 0);
-    EXPECT_EQ(33, value);
+    testGetEntriesFromLongMap(lMap, 50);
     celix_longHashMap_destroy(lMap);
 
 }
