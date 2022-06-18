@@ -573,7 +573,7 @@ void celix_longHashMap_clear(celix_long_hash_map_t* map) {
     celix_hashMap_clear(&map->genericMap);
 }
 
-celix_string_hash_map_iterator_t celix_stringHashMap_iterate(const celix_string_hash_map_t* map) {
+celix_string_hash_map_iterator_t celix_stringHashMap_begin(const celix_string_hash_map_t* map) {
     celix_string_hash_map_iterator_t iter;
     memset(&iter, 0, sizeof(iter));
     iter._internal[0] = (void*)&map->genericMap;
@@ -586,7 +586,7 @@ celix_string_hash_map_iterator_t celix_stringHashMap_iterate(const celix_string_
     return iter;
 }
 
-celix_long_hash_map_iterator_t celix_longHashMap_iterate(const celix_long_hash_map_t* map) {
+celix_long_hash_map_iterator_t celix_longHashMap_begin(const celix_long_hash_map_t* map) {
     celix_long_hash_map_iterator_t iter;
     memset(&iter, 0, sizeof(iter));
     iter._internal[0] = (void*)&map->genericMap;

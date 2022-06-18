@@ -250,7 +250,7 @@ typedef struct celix_long_hash_map_create_options {
 #define CELIX_EMPTY_LONG_HASH_MAP_CREATE_OPTIONS {      \
     .simpledRemoveCallback = NULL,                      \
     .removedCallbackData = NULL,                        \
-    .removedCallback = NULL                             \
+    .removedCallback = NULL,                            \
     .initialCapacity = 0,                               \
     .loadFactor = 0                                     \
 }

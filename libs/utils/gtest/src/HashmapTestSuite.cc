@@ -513,7 +513,7 @@ TEST_F(HashMapTestSuite, IterateStressCapacityAndLoadFactorTest) {
 
 TEST_F(HashMapTestSuite, IterateWithRemoveTest) {
     auto* sMap = createStringHashMap(6);
-    auto iter1 = celix_stringHashMap_iterate(sMap);
+    auto iter1 = celix_stringHashMap_begin(sMap);
     while (!celix_stringHashMapIterator_isEnd(&iter1)) {
         if (iter1.index % 2 == 0) {
             //note only removing entries where the iter index is even
@@ -526,7 +526,7 @@ TEST_F(HashMapTestSuite, IterateWithRemoveTest) {
     celix_stringHashMap_destroy(sMap);
 
     auto* lMap = createLongHashMap(6);
-    auto iter2 = celix_longHashMap_iterate(lMap);
+    auto iter2 = celix_longHashMap_begin(lMap);
     while (!celix_longHashMapIterator_isEnd(&iter2)) {
         if (iter2.index % 2 == 0) {
             //note only removing entries where the iter index is even
