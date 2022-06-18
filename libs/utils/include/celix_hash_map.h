@@ -24,7 +24,7 @@
 #include <stdbool.h>
 
 /**
- * Init macro so that the opts are correctly initialized for C++ compilers
+ * @brief Init macro so that the opts are correctly initialized for C++ compilers
  */
 #ifdef __cplusplus
 #define CELIX_OPTS_INIT {}
@@ -60,7 +60,7 @@ typedef struct celix_string_hash_map celix_string_hash_map_t;
 typedef struct celix_long_hash_map celix_long_hash_map_t;
 
 /**
- * Represents a value in the hash map.
+ * @brief Represents a value in the hash map.
  *
  * Because the value of hash map entry can be a pointer, long, double or boolean, the value is represented as an union.
  */
@@ -72,10 +72,9 @@ typedef union celix_hash_map_value {
 } celix_hash_map_value_t;
 
 /**
- * TODO
+ * @Brief long hash map iterator, which contains a hash map entry's keu and value.
  */
 typedef struct celix_long_hash_map_iterator {
-    //public fields
     size_t index; //iterator index, starting at 0
     long key;
     celix_hash_map_value_t value;
@@ -83,8 +82,10 @@ typedef struct celix_long_hash_map_iterator {
     void* _internal[2]; //internal opaque struct
 } celix_long_hash_map_iterator_t;
 
+/**
+ * @Brief long hash map iterator, which contains a hash map entry's keu and value.
+ */
 typedef struct celix_string_hash_map_iterator {
-    //public fields
     size_t index; //iterator index, starting at 0
     const char* key;
     celix_hash_map_value_t value;
@@ -93,7 +94,7 @@ typedef struct celix_string_hash_map_iterator {
 } celix_string_hash_map_iterator_t;
 
 /**
- * Additional create options when creating a string hash map.
+ * @brief Optional create options when creating a string hash map.
  */
 typedef struct celix_string_hash_map_create_options {
     /**
@@ -102,11 +103,15 @@ typedef struct celix_string_hash_map_create_options {
      *
      * @note only simpleRemovedCallback or removedCallback should be configured, if both as configured,
      * only the simpledRemoveCallback will be used.
+     *
+     * Default is NULL.
      */
     void (*simpleRemovedCallback)(void* value) CELIX_OPTS_INIT;
 
     /**
      * Optional callback data, which will be provided to the removedCallback callback.
+     *
+     * Default is NULL.
      */
     void* removedCallbackData CELIX_OPTS_INIT;
 
@@ -118,6 +123,8 @@ typedef struct celix_string_hash_map_create_options {
      *
      * @note only simpleRemovedCallback or removedCallback should be configured, if both as configured,
      * only the simpledRemoveCallback will be used.
+     *
+     * Default is NULL.
      */
     void (*removedCallback)(void* data, const char* removedKey, celix_hash_map_value_t removedValue) CELIX_OPTS_INIT;
 
@@ -126,6 +133,8 @@ typedef struct celix_string_hash_map_create_options {
      * that the keys are in scope/memory for the complete lifecycle of the string hash map.
      *
      * Note that this changes the default behaviour of the celix_stringHashMap_put* functions.
+     *
+     * Default is false.
      */
     bool storeKeysWeakly CELIX_OPTS_INIT;
 
@@ -133,9 +142,11 @@ typedef struct celix_string_hash_map_create_options {
      * @brief The initial hash map capacity.
      *
      * The number of bucket to allocate when creating the hash map.
-     * If 0 is provided, the hash map initial capacity will be 16 (default value).
+     *
+     * If 0 is provided, the hash map initial capacity will be 16 (default hash map capacity).
+     * Default is 0.
      */
-     unsigned int initialCapacity;
+     unsigned int initialCapacity CELIX_OPTS_INIT;
 
      /**
       * @brief The hash map load factor, which controls the max ratio between nr of entries in the hash map and the
@@ -149,9 +160,10 @@ typedef struct celix_string_hash_map_create_options {
       * For example a hash map with capacity 16 and load factor 0.75 will double its capacity when the 13th entry
       * is added to the hash map.
       *
-      * If 0 is provided, the hash map load factor will be 0.75 (default value).
+      * If 0 is provided, the hash map load factor will be 0.75 (default hash map load factor).
+      * Default is 0.
       */
-     double loadFactor;
+     double loadFactor CELIX_OPTS_INIT;
 } celix_string_hash_map_create_options_t;
 
 /**
@@ -162,12 +174,14 @@ typedef struct celix_string_hash_map_create_options {
     .simpleRemovedCallback = NULL,                      \
     .removedCallbackData = NULL,                        \
     .removedCallback = NULL,                            \
-    .storeKeysWeakly = false                            \
+    .storeKeysWeakly = false,                           \
+    .initialCapacity = 0,                               \
+    .loadFactor = 0                                     \
 }
 #endif
 
 /**
- * Additional create options when creating a long hash map.
+ * @brief Optional create options when creating a long hash map.
  */
 typedef struct celix_long_hash_map_create_options {
     /**
@@ -176,11 +190,15 @@ typedef struct celix_long_hash_map_create_options {
      *
      * @note only simpleRemovedCallback or removedCallback should be configured, if both as configured,
      * only the simpledRemoveCallback will be used.
+     *
+     * Default is NULL.
      */
     void (*simpledRemoveCallback)(void* value) CELIX_OPTS_INIT;
 
     /**
      * Optional callback data, which will be provided to the removeCallback callback.
+     *
+     * Default is NULL.
      */
     void* removedCallbackData CELIX_OPTS_INIT;
 
@@ -192,6 +210,8 @@ typedef struct celix_long_hash_map_create_options {
      *
      * @note only simpleRemovedCallback or removedCallback should be configured, if both as configured,
      * only the simpledRemoveCallback will be used.
+     *
+     * Default is NULL.
      */
     void (*removedCallback)(void* data, long removedKey, celix_hash_map_value_t removedValue) CELIX_OPTS_INIT;
 
@@ -199,9 +219,11 @@ typedef struct celix_long_hash_map_create_options {
      * @brief The initial hash map capacity.
      *
      * The number of bucket to allocate when creating the hash map.
-     * If 0 is provided, the hash map initial capacity will be 16 (default value).
+     *
+     * If 0 is provided, the hash map initial capacity will be 16 (default hash map capacity).
+     * Default is 0.
      */
-    unsigned int initialCapacity;
+    unsigned int initialCapacity CELIX_OPTS_INIT;
 
     /**
      * @brief The hash map load factor, which controls the max ratio between nr of entries in the hash map and the
@@ -215,9 +237,10 @@ typedef struct celix_long_hash_map_create_options {
      * For example a hash map with capacity 16 and load factor 0.75 will double its capacity when the 13th entry
      * is added to the hash map.
      *
-     * If 0 is provided, the hash map load factor will be 0.75 (default value).
+     * If 0 is provided, the hash map load factor will be 0.75 (default hash map load factor).
+     * Default is 0.
      */
-    double loadFactor;
+    double loadFactor CELIX_OPTS_INIT;
 } celix_long_hash_map_create_options_t;
 
 /**
@@ -228,42 +251,46 @@ typedef struct celix_long_hash_map_create_options {
     .simpledRemoveCallback = NULL,                      \
     .removedCallbackData = NULL,                        \
     .removedCallback = NULL                             \
+    .initialCapacity = 0,                               \
+    .loadFactor = 0                                     \
 }
 #endif
 
 /**
- * @brief Creates a new empty hashmap with a 'const char*' as key.
+ * @brief Creates a new empty hash map with a 'const char*' as key.
  */
 celix_string_hash_map_t* celix_stringHashMap_create();
 
 /**
- * @brief Creates a new empty hashmap with a long as key.
+ * @brief Creates a new empty hash map with a long as key.
  */
 celix_long_hash_map_t* celix_longHashMap_create();
 
 /**
- * TODO
- * @param opts
- * @return
+ * @brief Creates a new empty string hash map using using the provided hash map create options.
+ * @param opts The create options, only used during the creation of the hash map.
  */
 celix_string_hash_map_t* celix_stringHashMap_createWithOptions(const celix_string_hash_map_create_options_t* opts);
 
 /**
- * TODO
- * @param opts
- * @return
+ * @brief Creates a new empty long hash map using using the provided hash map create options.
+ * @param opts The create options, only used during the creation of the hash map.
  */
 celix_long_hash_map_t* celix_longHashMap_createWithOptions(const celix_long_hash_map_create_options_t* opts);
 
 /**
- * @brief frees the hashmap.
+ * @brief Clears and then deallocated the hash map.
+ *
+ * @note If a (simple) removed callback is configured, the callback will be called for every hash map entry.
  *
  * @param map The hashmap
  */
 void celix_stringHashMap_destroy(celix_string_hash_map_t* map);
 
 /**
- * @brief frees the hashmap.
+ * @brief Clears and then deallocated the hash map.
+ *
+ * @note If a (simple) removed callback is configured, the callback will be called for every hash map entry.
  *
  * @param map The hashmap
  */
@@ -449,7 +476,8 @@ bool celix_longHashMap_hasKey(const celix_long_hash_map_t* map, long key);
 /**
  * @brief Remove a entry from the hashmap and return the removed value.
  *
- * @note if the hashmap is created with a destroy value callback, the returned ptr value will already be freed.
+ * @note If the hash map was created with a (simple) remove callback, the callback will have been called if a entry
+ * for the provided key was present when this function returns.
  *
  * @param map The hashmap.
  * @param key The key te remove.
@@ -460,7 +488,8 @@ void* celix_stringHashMap_removeAndReturn(celix_string_hash_map_t* map, const ch
 /**
  * @brief Remove a entry from the hashmap and return the removed value.
  *
- * @note if the hashmap is created with a destroy value callback, the returned ptr value will already be freed.
+ * @note If the hash map was created with a (simple) remove callback, the callback will have been called if a entry
+ * for the provided key was present when this function returns.
  *
  * @param map The hashmap.
  * @param key The key te remove.
@@ -471,6 +500,10 @@ void* celix_longHashMap_removeAndReturn(celix_long_hash_map_t* map, long key);
 /**
  * @brief Remove a entry from the hashmap and silently ignore if the hash map does not have a entry with the provided
  * key.
+ *
+ * @note If the hash map was created with a (simple) remove callback, the callback will have been called if a entry
+ * for the provided key was present when this function returns.
+ *
  * @return True is the value is found and removed.
  */
 bool celix_stringHashMap_remove(celix_string_hash_map_t* map, const char* key);
@@ -478,87 +511,94 @@ bool celix_stringHashMap_remove(celix_string_hash_map_t* map, const char* key);
 /**
  * @brief Remove a entry from the hashmap and silently ignore if the hash map does not have a entry with the provided
  * key.
+ *
+ * @note If the hash map was created with a (simple) remove callback, the callback will have been called if a entry
+ * for the provided key was present when this function returns.
+ *
  * @return True is the value is found and removed.
  */
 bool celix_longHashMap_remove(celix_long_hash_map_t* map, long key);
 
 /**
- * TODO
- * @param map
+ * @brief Clear all entries in the hash map.
+ *
+ * @note If a (simple) removed callback is configured, the callback will be called for every hash map entry.
  */
 void celix_stringHashMap_clear(celix_string_hash_map_t* map);
 
 /**
- * TODO
- * @param map
+ * @brief Clear all entries in the hash map.
+ *
+ * @note If a (simple) removed callback is configured, the callback will be called for every hash map entry.
  */
 void celix_longHashMap_clear(celix_long_hash_map_t* map);
 
 
 /**
- * TODO
- * @param map
- * @return
+ * @brief Create and return a hash map iterator for the beginning of the hash map.
+ *
+ * TODO code example of a read and modify loop with begin, next, isEnd and remove
  */
-celix_string_hash_map_iterator_t celix_stringHashMap_iterate(const celix_string_hash_map_t* map);
+celix_string_hash_map_iterator_t celix_stringHashMap_begin(const celix_string_hash_map_t* map);
 
 /**
- * TODO
- * @param iter
- * @return
+ * @brief Check if the iterator is the end of the hash map.
+ *
+ * @note the end iterator should not be used to retrieve a key of value.
+ *
+ * @return true if the iterator is the end.
  */
 bool celix_stringHashMapIterator_isEnd(const celix_string_hash_map_iterator_t* iter);
 
 /**
- * TODO
- * @param iter
- * @return
+ * @brief Moves the provided iterator to the next entry in the hash map.
  */
 void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter);
 
 /**
- * TODO
+ * @brief Marco to loop over all the entries of a string hash map.
+ *
+ * TODO code example.
  */
 #define CELIX_STRING_HASH_MAP_ITERATE(map, iterName) \
-    for (celix_string_hash_map_iterator_t iterName = celix_stringHashMap_iterate(map); !celix_stringHashMapIterator_isEnd(&iterName); celix_stringHashMapIterator_next(&iterName))
+    for (celix_string_hash_map_iterator_t iterName = celix_stringHashMap_begin(map); !celix_stringHashMapIterator_isEnd(&(iterName)); celix_stringHashMapIterator_next(&(iterName)))
 
 /**
- * TODO move iter to next entry and removes hash map entry of provided entry key.
- * @param iter
- * @return
+ * @brief Remove the hash map entry for the provided iterator and updates the iterator to the next hash map entry
  */
 void celix_stringHashMapIterator_remove(celix_string_hash_map_iterator_t* iter);
 
 /**
- * TODO
- * @param map
- * @return
+ * @brief Create and return a hash map iterator for the beginning of the hash map.
+ *
+ * TODO code example of a read and modify loop with begin, next, isEnd and remove
  */
-celix_long_hash_map_iterator_t celix_longHashMap_iterate(const celix_long_hash_map_t* map);
+celix_long_hash_map_iterator_t celix_longHashMap_begin(const celix_long_hash_map_t* map);
 
 /**
- * TODO
- * @param iter
- * @return
+ * @brief Check if the iterator is the end of the hash map.
+ *
+ * @note the end iterator should not be used to retrieve a key of value.
+ *
+ * @return true if the iterator is the end.
  */
 bool celix_longHashMapIterator_isEnd(const celix_long_hash_map_iterator_t* iter);
 
 /**
- * TODO
- * @param iter
- * @return
+ * @brief Moves the provided iterator to the next entry in the hash map.
  */
 void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter);
 
 /**
- * TODO
+ * @brief Marco to loop over all the entries of a long hash map.
+ *
+ * TODO code example.
  */
 #define CELIX_LONG_HASH_MAP_ITERATE(map, iterName) \
-    for (celix_long_hash_map_iterator_t iterName = celix_longHashMap_iterate(map); !celix_longHashMapIterator_isEnd(&iterName); celix_longHashMapIterator_next(&iterName))
+    for (celix_long_hash_map_iterator_t iterName = celix_longHashMap_begin(map); !celix_longHashMapIterator_isEnd(&(iterName)); celix_longHashMapIterator_next(&(iterName)))
 
 /**
- * TODO move iter to next entry and removes hash map entry of provided entry key.
- * @param iter
+ * @brief Remove the hash map entry for the provided iterator and updates the iterator to the next hash map entry
  */
 void celix_longHashMapIterator_remove(celix_long_hash_map_iterator_t* iter);
 

@@ -610,6 +610,7 @@ bool celix_longHashMapIterator_isEnd(const celix_long_hash_map_iterator_t* iter)
 void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter) {
     const celix_hash_map_t* map = iter->_internal[0];
     celix_hash_map_entry_t *entry = iter->_internal[1];
+    assert(entry != NULL); //calling next on the end iter is not supported
     entry = celix_hashMap_nextEntry(map, entry);
     if (entry != NULL) {
         iter->_internal[1] = entry;
@@ -625,6 +626,7 @@ void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter) {
 void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter) {
     const celix_hash_map_t* map = iter->_internal[0];
     celix_hash_map_entry_t *entry = iter->_internal[1];
+    assert(entry != NULL); //calling next on the end iter is not supported
     entry = celix_hashMap_nextEntry(map, entry);
     if (entry != NULL) {
         iter->_internal[1] = entry;
