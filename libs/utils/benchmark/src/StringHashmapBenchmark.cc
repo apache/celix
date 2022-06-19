@@ -27,7 +27,7 @@
 
 #include "hash_map.h"
 #include "celix_properties.h"
-#include "celix_hash_map.h"
+#include "celix_string_hash_map.h"
 
 
 class StringHashmapBenchmark {

@@ -17,7 +17,8 @@
  *under the License.
  */
 
-#include "celix_hash_map.h"
+#include "celix_string_hash_map.h"
+#include "celix_long_hash_map.h"
 #include "celix_utils.h"
 
 #include <stdlib.h>
@@ -305,7 +306,7 @@ static void celix_hashMap_destroyRemovedEntry(celix_hash_map_t* map, celix_hash_
     free(removedEntry);
 }
 
-static bool celix_hashMap_remove(celix_hash_map_t* map, const char* strKey, long longKey, celix_hash_map_value_t* removedValueOut) {
+static bool celix_hashMap_remove(celix_hash_map_t* map, const char* strKey, long longKey) {
     celix_hash_map_key_t key;
     if (map->keyType == CELIX_HASH_MAP_STRING_KEY) {
         key.strKey = strKey;
@@ -337,14 +338,8 @@ static bool celix_hashMap_remove(celix_hash_map_t* map, const char* strKey, long
         visit = visit->next;
     }
     if (removedEntry != NULL) {
-        if (removedValueOut) {
-            *removedValueOut = removedEntry->value;
-        }
         celix_hashMap_destroyRemovedEntry(map, removedEntry);
         return true;
-    }
-    if (removedValueOut) {
-        memset(removedValueOut, 0, sizeof(*removedValueOut));
     }
     return false;
 }
@@ -396,6 +391,11 @@ static celix_hash_map_entry_t* celix_hashMap_firstEntry(const celix_hash_map_t* 
 }
 
 static celix_hash_map_entry_t* celix_hashMap_nextEntry(const celix_hash_map_t* map, celix_hash_map_entry_t* entry) {
+    if (entry == NULL) {
+        //end entry, just return NULL
+        return NULL;
+    }
+
     celix_hash_map_entry_t* next = NULL;
     if (entry != NULL) {
         if (entry->next != NULL) {
@@ -545,24 +545,12 @@ bool celix_longHashMap_hasKey(const celix_long_hash_map_t* map, long key) {
     return celix_hashMap_hasKey(&map->genericMap, NULL, key);
 }
 
-void* celix_stringHashMap_removeAndReturn(celix_string_hash_map_t* map, const char* key) {
-    celix_hash_map_value_t removedEntry;
-    celix_hashMap_remove(&map->genericMap, key, 0, &removedEntry);
-    return removedEntry.ptrValue;
-}
-
-void* celix_longHashMap_removeAndReturn(celix_long_hash_map_t* map, long key) {
-    celix_hash_map_value_t removedEntry;
-    celix_hashMap_remove(&map->genericMap, NULL, key, &removedEntry);
-    return removedEntry.ptrValue;
-}
-
 bool celix_stringHashMap_remove(celix_string_hash_map_t* map, const char* key) {
-    return celix_hashMap_remove(&map->genericMap, key, 0, NULL);
+    return celix_hashMap_remove(&map->genericMap, key, 0);
 }
 
 bool celix_longHashMap_remove(celix_long_hash_map_t* map, long key) {
-    return celix_hashMap_remove(&map->genericMap, NULL, key, NULL);
+    return celix_hashMap_remove(&map->genericMap, NULL, key);
 }
 
 void celix_stringHashMap_clear(celix_string_hash_map_t* map) {
@@ -610,7 +598,6 @@ bool celix_longHashMapIterator_isEnd(const celix_long_hash_map_iterator_t* iter)
 void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter) {
     const celix_hash_map_t* map = iter->_internal[0];
     celix_hash_map_entry_t *entry = iter->_internal[1];
-    assert(entry != NULL); //calling next on the end iter is not supported
     entry = celix_hashMap_nextEntry(map, entry);
     if (entry != NULL) {
         iter->_internal[1] = entry;
@@ -626,7 +613,6 @@ void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter) {
 void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter) {
     const celix_hash_map_t* map = iter->_internal[0];
     celix_hash_map_entry_t *entry = iter->_internal[1];
-    assert(entry != NULL); //calling next on the end iter is not supported
     entry = celix_hashMap_nextEntry(map, entry);
     if (entry != NULL) {
         iter->_internal[1] = entry;
@@ -644,7 +630,7 @@ void celix_stringHashMapIterator_remove(celix_string_hash_map_iterator_t* iter) 
     celix_hash_map_entry_t *entry = iter->_internal[1];
     const char* key = entry->key.strKey;
     celix_stringHashMapIterator_next(iter);
-    celix_hashMap_remove(map, key, 0, NULL);
+    celix_hashMap_remove(map, key, 0);
 }
 
 void celix_longHashMapIterator_remove(celix_long_hash_map_iterator_t* iter) {
@@ -652,5 +638,5 @@ void celix_longHashMapIterator_remove(celix_long_hash_map_iterator_t* iter) {
     celix_hash_map_entry_t *entry = iter->_internal[1];
     long key = entry->key.longKey;
     celix_longHashMapIterator_next(iter);
-    celix_hashMap_remove(map, NULL, key, NULL);
+    celix_hashMap_remove(map, NULL, key);
 }

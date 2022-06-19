@@ -25,9 +25,7 @@
 #include <climits>
 
 #include "hash_map.h"
-#include "celix_hash_map.h"
-#include "celix_properties.h"
-
+#include "celix_long_hash_map.h"
 
 class LongHashmapBenchmark {
 public:

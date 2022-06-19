@@ -20,7 +20,8 @@
 #include <gtest/gtest.h>
 
 #include "celix_utils.h"
-#include "celix_hash_map.h"
+#include "celix_string_hash_map.h"
+#include "celix_long_hash_map.h"
 #include <random>
 
 class HashMapTestSuite : public ::testing::Test {
@@ -186,15 +187,15 @@ TEST_F(HashMapTestSuite, DestroyHashMapWithSimpleRemovedCallback) {
     EXPECT_EQ(celix_stringHashMap_size(sMap), 5);
     EXPECT_STREQ((char*)celix_stringHashMap_get(sMap, nullptr), "null");
 
-    void* ptr = celix_stringHashMap_removeAndReturn(sMap, "key3");
-    EXPECT_NE(ptr, nullptr);
-    ptr = celix_stringHashMap_removeAndReturn(sMap, "key3"); //double remove
-    EXPECT_EQ(ptr, nullptr);
+    bool removed = celix_stringHashMap_remove(sMap, "key3");
+    EXPECT_TRUE(removed);
+    removed = celix_stringHashMap_remove(sMap, "key3"); //double remove
+    EXPECT_FALSE(removed);
 
-    ptr = celix_stringHashMap_removeAndReturn(sMap, nullptr);
-    EXPECT_NE(ptr, nullptr);
-    ptr = celix_stringHashMap_removeAndReturn(sMap, nullptr); //double remove
-    EXPECT_EQ(ptr, nullptr);
+    removed = celix_stringHashMap_remove(sMap, nullptr);
+    EXPECT_TRUE(removed);
+    removed = celix_stringHashMap_remove(sMap, nullptr); //double remove
+    EXPECT_FALSE(removed);
 
     EXPECT_EQ(celix_stringHashMap_size(sMap), 3);
     celix_stringHashMap_destroy(sMap);
@@ -213,8 +214,8 @@ TEST_F(HashMapTestSuite, DestroyHashMapWithSimpleRemovedCallback) {
     EXPECT_EQ(celix_longHashMap_size(lMap), 5);
     EXPECT_STREQ((char*)celix_longHashMap_get(lMap, 0), "null");
 
-    celix_longHashMap_removeAndReturn(lMap, 3);
-    celix_longHashMap_removeAndReturn(lMap, 0);
+    celix_longHashMap_remove(lMap, 3);
+    celix_longHashMap_remove(lMap, 0);
     EXPECT_EQ(celix_longHashMap_size(lMap), 3);
     celix_longHashMap_destroy(lMap);
 }
@@ -523,6 +524,9 @@ TEST_F(HashMapTestSuite, IterateWithRemoveTest) {
         }
     }
     EXPECT_EQ(3, celix_stringHashMap_size(sMap));
+    EXPECT_TRUE(celix_stringHashMapIterator_isEnd(&iter1));
+    celix_stringHashMapIterator_next(&iter1);
+    EXPECT_TRUE(celix_stringHashMapIterator_isEnd(&iter1));
     celix_stringHashMap_destroy(sMap);
 
     auto* lMap = createLongHashMap(6);
@@ -536,5 +540,8 @@ TEST_F(HashMapTestSuite, IterateWithRemoveTest) {
         }
     }
     EXPECT_EQ(3, celix_longHashMap_size(lMap));
+    EXPECT_TRUE(celix_longHashMapIterator_isEnd(&iter2));
+    celix_longHashMapIterator_next(&iter2); //calling next on end iter, does nothing
+    EXPECT_TRUE(celix_longHashMapIterator_isEnd(&iter2));
     celix_longHashMap_destroy(lMap);
 }
