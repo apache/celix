@@ -368,6 +368,9 @@ celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_cre
         list->capacity = 10;
         list->elementData = malloc(sizeof(celix_array_list_entry_t) * list->capacity);
         list->equals = opts->equalsCallback == NULL ? celix_arrayList_defaultEquals : opts->equalsCallback;
+        list->simpleRemovedCallback = opts->simpleRemovedCallback;
+        list->removedCallbackData = opts->removedCallbackData;
+        list->removedCallback = opts->removedCallback;
     }
     return list;
 }

@@ -188,9 +188,10 @@ TEST_F(ArrayListTestSuite, TestRemovedCallbacksForArrayList) {
     celix_array_list_create_options_t opts{};
     opts.removedCallbackData = &count;
     opts.removedCallback = [](void *data, celix_array_list_entry_t entry) {
+        printf("bingo\n");
         int* c = (int*)data;
         if (entry.intVal == 1 || entry.intVal == 2 || entry.intVal == 3 || entry.intVal == 4) {
-            (*c) += 1;
+            (*c)++;
         }
     };
     auto* list = celix_arrayList_createWithOptions(&opts);
@@ -201,7 +202,7 @@ TEST_F(ArrayListTestSuite, TestRemovedCallbacksForArrayList) {
     EXPECT_EQ(celix_arrayList_size(list), 4);
     celix_arrayList_clear(list); //will call removed callback for every entry
     EXPECT_EQ(count, 4);
-    EXPECT_EQ(celix_arrayList_size(list), 4);
+    EXPECT_EQ(celix_arrayList_size(list), 0);
 
     celix_arrayList_destroy(list);
 
