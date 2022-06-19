@@ -129,10 +129,10 @@ typedef struct celix_string_hash_map_create_options {
      double loadFactor CELIX_OPTS_INIT;
 } celix_string_hash_map_create_options_t;
 
+#ifndef __cplusplus
 /**
  * @brief C Macro to create a empty string_hash_map_create_options_t type.
  */
-#ifndef __cplusplus
 #define CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS {    \
     .simpleRemovedCallback = NULL,                      \
     .removedCallbackData = NULL,                        \
@@ -164,16 +164,16 @@ celix_string_hash_map_t* celix_stringHashMap_createWithOptions(const celix_strin
 void celix_stringHashMap_destroy(celix_string_hash_map_t* map);
 
 /**
- * @brief Returns the size of the hashmap
+ * @brief Returns the size of the hashmap.
  */
 size_t celix_stringHashMap_size(const celix_string_hash_map_t* map);
 
 /**
  * @brief add pointer entry the string hash map.
  *
- * @param map The hashmap
+ * @param map The hashmap.
  * @param key  The key to use. The hashmap will create a copy if needed.
- * @param value The value to store with the key
+ * @param value The value to store with the key.
  * @return The previous key or NULL of no key was set. Note also returns NULL if the previous value for the key was NULL.
  */
 void* celix_stringHashMap_put(celix_string_hash_map_t* map, const char* key, void* value);
@@ -181,7 +181,7 @@ void* celix_stringHashMap_put(celix_string_hash_map_t* map, const char* key, voi
 /**
  * @brief add long entry the string hash map.
  *
- * @param map The hashmap
+ * @param map The hashmap.
  * @param key  The key to use. The hashmap will create a copy if needed.
  * @param value The value to store with the key.
  * @return True if a previous value with the provided has been replaced.
@@ -191,7 +191,7 @@ bool celix_stringHashMap_putLong(celix_string_hash_map_t* map, const char* key, 
 /**
  * @brief add double entry the string hash map.
  *
- * @param map The hashmap
+ * @param map The hashmap.
  * @param key  The key to use. The hashmap will create a copy if needed.
  * @return True if a previous value with the provided has been replaced.
  */
@@ -200,7 +200,7 @@ bool celix_stringHashMap_putDouble(celix_string_hash_map_t* map, const char* key
 /**
  * @brief add bool entry the string hash map.
  *
- * @param map The hashmap
+ * @param map The hashmap.
  * @param key  The key to use. The hashmap will create a copy if needed.
  * @param value The value to store with the key.
  * @return True if a previous value with the provided has been replaced.
@@ -210,7 +210,7 @@ bool celix_stringHashMap_putBool(celix_string_hash_map_t* map, const char* key, 
 /**
  * @brief Returns the value for the provided key.
  *
- * @param map The hashmap.
+ * @param map The hashmap..
  * @param key The key to lookup.
  * @return Return the pointer value for the key or NULL. Note will also return NULL if the pointer value for the provided key is NULL.
  */

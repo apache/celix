@@ -41,7 +41,7 @@
 
 static unsigned int DEFAULT_INITIAL_CAPACITY = 16;
 static double DEFAULT_LOAD_FACTOR = 0.75;
-static unsigned int MAXIMUM_CAPACITY = UINT32_MAX/10;
+static unsigned int MAXIMUM_CAPACITY = INT32_MAX/10;
 
 typedef enum celix_hash_map_key_type {
     CELIX_HASH_MAP_STRING_KEY,

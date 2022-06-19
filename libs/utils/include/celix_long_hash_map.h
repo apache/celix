@@ -120,10 +120,10 @@ typedef struct celix_long_hash_map_create_options {
     double loadFactor CELIX_OPTS_INIT;
 } celix_long_hash_map_create_options_t;
 
+#ifndef __cplusplus
 /**
  * @brief C Macro to create a empty string_hash_map_create_options_t type.
  */
-#ifndef __cplusplus
 #define CELIX_EMPTY_LONG_HASH_MAP_CREATE_OPTIONS {      \
     .simpledRemoveCallback = NULL,                      \
     .removedCallbackData = NULL,                        \

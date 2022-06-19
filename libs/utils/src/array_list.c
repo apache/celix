@@ -33,10 +33,35 @@
 #include "array_list_private.h"
 #include "celix_build_assert.h"
 
-static celix_status_t arrayList_elementEquals(const void *a, const void *b, bool *equals);
-static bool celix_arrayList_defaultEquals(const celix_array_list_entry_t a, const celix_array_list_entry_t b);
-static bool celix_arrayList_equalsForElement(celix_array_list_t *list, celix_array_list_entry_t a, celix_array_list_entry_t b);
+static celix_status_t arrayList_elementEquals(const void *a, const void *b, bool *equals) {
+    *equals = (a == b);
+    return CELIX_SUCCESS;
+}
 
+static bool celix_arrayList_defaultEquals(celix_array_list_entry_t a, celix_array_list_entry_t b) {
+    return memcmp(&a, &b, sizeof(a)) == 0;
+}
+
+static bool celix_arrayList_equalsForElement(celix_array_list_t *list, celix_array_list_entry_t a, celix_array_list_entry_t b) {
+    bool equals = false;
+    if (list != NULL) {
+        if (list->equalsDeprecated != NULL) {
+            list->equalsDeprecated(a.voidPtrVal, b.voidPtrVal, &equals);
+        } else if (list->equals != NULL) {
+            equals = list->equals(a, b);
+        }
+    }
+    return equals;
+}
+
+static void celix_arrayList_callRemovedCallback(celix_array_list_t *list, int index) {
+    celix_array_list_entry_t entry = list->elementData[index];
+    if (list->simpleRemovedCallback != NULL) {
+        list->simpleRemovedCallback(entry.voidPtrVal);
+    } else if (list->removedCallback != NULL) {
+        list->removedCallback(list->removedCallbackData, entry);
+    }
+}
 
 celix_status_t arrayList_create(array_list_pt *list) {
     return arrayList_createWithEquals(arrayList_elementEquals, list);
@@ -53,28 +78,6 @@ celix_status_t arrayList_createWithEquals(array_list_element_equals_pt equals, a
 
 void arrayList_destroy(array_list_pt list) {
     celix_arrayList_destroy(list);
-}
-
-static celix_status_t arrayList_elementEquals(const void *a, const void *b, bool *equals) {
-    *equals = (a == b);
-    return CELIX_SUCCESS;
-}
-
-static bool celix_arrayList_defaultEquals(celix_array_list_entry_t a, celix_array_list_entry_t b) {
-    CELIX_BUILD_ASSERT(sizeof(a.voidPtrVal) == sizeof(a) || sizeof(a.doubleVal) == sizeof(a));
-    return __builtin_choose_expr(sizeof(a.voidPtrVal) >= sizeof(a.doubleVal), a.voidPtrVal== b.voidPtrVal, a.doubleVal == a.doubleVal);
-}
-
-static bool celix_arrayList_equalsForElement(celix_array_list_t *list, celix_array_list_entry_t a, celix_array_list_entry_t b) {
-    bool equals = false;
-    if (list != NULL) {
-        if (list->equalsDeprecated != NULL) {
-            list->equalsDeprecated(a.voidPtrVal, b.voidPtrVal, &equals);
-        } else if (list->equals != NULL) {
-            equals = list->equals(a, b);
-        }
-    }
-    return equals;
 }
 
 void arrayList_trimToSize(array_list_pt list) {
@@ -359,18 +362,25 @@ void arrayListIterator_remove(array_list_iterator_pt iterator) {
  **********************************************************************************************************************
  **********************************************************************************************************************/
 
-celix_array_list_t* celix_arrayList_create() {
-    return celix_arrayList_createWithEquals(celix_arrayList_defaultEquals);
-}
-
-celix_array_list_t* celix_arrayList_createWithEquals(celix_arrayList_equals_fp equals) {
+celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_create_options_t* opts) {
     array_list_t *list = calloc(1, sizeof(*list));
     if (list != NULL) {
         list->capacity = 10;
         list->elementData = malloc(sizeof(celix_array_list_entry_t) * list->capacity);
-        list->equals = equals;
+        list->equals = opts->equalsCallback == NULL ? celix_arrayList_defaultEquals : opts->equalsCallback;
     }
     return list;
+}
+
+celix_array_list_t* celix_arrayList_create() {
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    return celix_arrayList_createWithOptions(&opts);
+}
+
+celix_array_list_t* celix_arrayList_createWithEquals(celix_arrayList_equals_fp equals) {
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    opts.equalsCallback = equals;
+    return celix_arrayList_createWithOptions(&opts);
 }
 
 void celix_arrayList_destroy(celix_array_list_t *list) {
@@ -483,6 +493,7 @@ int celix_arrayList_indexOf(celix_array_list_t *list, celix_array_list_entry_t e
 }
 void celix_arrayList_removeAt(celix_array_list_t *list, int index) {
     if (index >= 0 && index < list->size) {
+        celix_arrayList_callRemovedCallback(list, index);
         list->modCount++;
         size_t numMoved = list->size - index - 1;
         memmove(list->elementData+index, list->elementData+index+1, sizeof(celix_array_list_entry_t) * numMoved);
@@ -561,11 +572,30 @@ void celix_arrayList_removeSize(celix_array_list_t *list, size_t val) {
 
 void celix_arrayList_clear(celix_array_list_t *list) {
     list->modCount++;
-
-    if(list->size > 0) {
-        memset(&list->elementData[0], 0, sizeof(celix_array_list_entry_t)*list->size);
+    for (int i = 0; i < list->size; ++i) {
+        celix_arrayList_callRemovedCallback(list, i);
+        memset(&list->elementData[i], 0, sizeof(celix_array_list_entry_t));
     }
     list->size = 0;
+}
+
+#if defined(__APPLE__)
+static int celix_arrayList_compareEntries(void *arg, const void * voidA, const void *voidB) {
+#else
+static int celix_arrayList_compareEntries(const void* voidA, const void* voidB, void *arg) {
+#endif
+    celix_array_list_sort_entries_fp sort = arg;
+    const celix_array_list_entry_t* a = voidA;
+    const celix_array_list_entry_t* b = voidB;
+    return sort(*a, *b);
+}
+
+void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_sort_entries_fp sortFp) {
+#if defined(__APPLE__)
+    qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), sortFp, celix_arrayList_compareEntries);
+#else
+    qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), celix_arrayList_compareEntries, sortFp);
+#endif
 }
 
 #if defined(__APPLE__)
