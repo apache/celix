@@ -36,7 +36,6 @@ struct celix_bundle {
 	void * handle;
 	bundle_archive_pt archive;
 	array_list_pt modules;
-	manifest_pt manifest;
 
 	celix_framework_t *framework;
 };

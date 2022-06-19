@@ -28,9 +28,6 @@
 #include "hash_map_private.h"
 #include <errno.h>
 
-//TODO use celix_stringHashMap try string value/key cache system
-
-
 #define MALLOC_BLOCK_SIZE        5
 
 static void parseLine(const char* line, celix_properties_t *props);

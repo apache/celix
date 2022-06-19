@@ -25,6 +25,7 @@
 #include <memory.h>
 #include <math.h>
 #include <assert.h>
+#include <stdint.h>
 
 /**
  * Whether to use realloc - instead of calloc - to resize a hash map.
