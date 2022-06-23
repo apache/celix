@@ -30,4 +30,5 @@ public:
     virtual int getData() = 0;
 };
 
+
 #endif //CELIX_PHASE1_H
