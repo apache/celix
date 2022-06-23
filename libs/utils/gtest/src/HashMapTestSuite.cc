@@ -55,10 +55,10 @@ public:
      */
     void testGetEntriesFromStringMap(celix_string_hash_map_t* map, int nrOfEntriesToTest) {
         std::uniform_int_distribution<long> keyDistribution{0, (long)celix_stringHashMap_size(map)-1};
-        for (int i = 0; i< nrOfEntriesToTest; ++i) {
+        for (int i = 0; i < nrOfEntriesToTest; ++i) {
             long rand = keyDistribution(generator);
             auto key = std::string{"key"} + std::to_string(rand);
-            EXPECT_EQ(celix_stringHashMap_getLong(map, key.c_str(), 0), rand);
+            EXPECT_EQ(celix_stringHashMap_getLong(map, key.c_str(), 0), rand) << "got wrong result for key " << key;
         }
     }
 
@@ -488,11 +488,11 @@ TEST_F(HashMapTestSuite, IterateStressCapacityAndLoadFactorTest) {
     long value = celix_stringHashMap_getLong(sMap, "key50", 0);
     EXPECT_EQ(50, value);
     //remove last 50 entries
-    for (long i = 50; i < 99; ++i) {
+    for (long i = 50; i < 100; ++i) {
         auto key = std::string{"key"} + std::to_string(i);
         celix_stringHashMap_remove(sMap, key.c_str());
     }
-    testGetEntriesFromStringMap(sMap, 50);
+    testGetEntriesFromStringMap(sMap, 50); //test entry 0-49
     celix_stringHashMap_destroy(sMap);
 
 
@@ -504,7 +504,7 @@ TEST_F(HashMapTestSuite, IterateStressCapacityAndLoadFactorTest) {
     value = celix_longHashMap_getLong(lMap, 50, 0);
     EXPECT_EQ(50, value);
     //remove last 50 entries
-    for (long i = 50; i < 99; ++i) {
+    for (long i = 50; i < 100; ++i) {
         celix_longHashMap_remove(lMap, i);
     }
     testGetEntriesFromLongMap(lMap, 50);
