@@ -154,7 +154,7 @@ void exportRegistration_waitTillNotUsed(export_registration_t *export) {
     celixThreadMutex_unlock(&export->mutex);
 }
 
-celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, celix_properties_t *metadata, char **responseOut, int *responseLength) {
+celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, celix_properties_t **metadata, char **responseOut, int *responseLength) {
     int status = CELIX_SUCCESS;
 
     char* response = NULL;
@@ -164,11 +164,12 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
     const char *sig;
     if (js_request) {
         if (json_unpack(js_request, "{s:s}", "m", &sig) == 0) {
-            bool cont = remoteInterceptorHandler_invokePreExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, &metadata);
+            bool cont = remoteInterceptorHandler_invokePreExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, metadata);
             if (cont) {
                 celixThreadMutex_lock(&export->mutex);
                 if (export->active && export->service != NULL) {
-                    status = jsonRpc_call(export->intf, export->service, data, &response);
+                    int rc = jsonRpc_call(export->intf, export->service, data, &response);
+                    status = (rc != 0) ? CELIX_BUNDLE_EXCEPTION : CELIX_SUCCESS;
                 } else if (!export->active) {
                     status = CELIX_ILLEGAL_STATE;
                     celix_logHelper_warning(export->helper, "Cannot call an inactive service export");
@@ -178,7 +179,7 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
                 }
                 celixThreadMutex_unlock(&export->mutex);
 
-                remoteInterceptorHandler_invokePostExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, metadata);
+                remoteInterceptorHandler_invokePostExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, *metadata);
             }
             *responseOut = response;
 

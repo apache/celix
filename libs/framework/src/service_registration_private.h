@@ -33,24 +33,23 @@ enum celix_service_type {
 
 struct serviceRegistration {
     struct celix_ref refCount;
-    registry_callback_t callback;
+    registry_callback_t callback; // read-only
 
-	char * className;
-	bundle_pt bundle;
-	properties_pt properties;
-	unsigned long serviceId;
+	char * className; // read-only
+	bundle_pt bundle; // read-only
+	properties_pt properties; // read-only
+	unsigned long serviceId; // read-only
 
-	bool isUnregistering;
+    bool isUnregistering;
 
-	enum celix_service_type svcType;
+    enum celix_service_type svcType; // read-only
     union {
         const void * svcObj;
         service_factory_pt deprecatedFactory;
         celix_service_factory_t *factory;
     };
 
-
-	celix_thread_rwlock_t lock;
+    celix_thread_rwlock_t lock; // protects the service object
 };
 
 service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void * serviceObject, properties_pt dictionary);

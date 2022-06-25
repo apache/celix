@@ -67,7 +67,7 @@ long celix_bundleContext_registerServiceAsync(celix_bundle_context_t *ctx, void 
  * @param properties The meta properties associated with the service. The service registration will take ownership of the properties (i.e. no destroy needed)
  * @return The serviceId (>=0) or -1 if the registration was unsuccessful.
  */
-long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties); //__attribute__((deprecated("Use celix_bundleContext_registerServiceAsync instead!")));
+long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties);
 
 /**
  * @brief Register a service factory in the framework.
@@ -111,7 +111,7 @@ long celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *ctx
  * @param properties The optional service factory properties. For a service consumer this will be seen as the service properties.
  * @return The serviceId (>= 0) or < 0 if the registration was unsuccessful.
  */
-long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props); //__attribute__((deprecated("Use celix_bundleContext_registerServiceFactoryAsync instead!")));
+long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props);
 
 /**
  * @brief Service Registration Options when registering services to the Celix framework.
@@ -236,7 +236,7 @@ long celix_bundleContext_registerServiceWithOptionsAsync(celix_bundle_context_t 
  * @param opts The pointer to the registration options. The options are only in the during registration call.
  * @return The serviceId (>= 0) or -1 if the registration was unsuccessful and -2 if the registration was cancelled (@see celix_bundleContext_reserveSvcId).
  */
-long celix_bundleContext_registerServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts); //__attribute__((deprecated("Use celix_bundleContext_registerServiceAsyncWithOptions instead!")));
+long celix_bundleContext_registerServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts);
 
 /**
  * @brief Waits til the async service registration for the provided serviceId is done.
@@ -267,7 +267,7 @@ bool celix_bundleContext_isServiceRegistered(celix_bundle_context_t* ctx, long s
  * @param ctx The bundle context
  * @param serviceId The service id
  */
-void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long serviceId); //__attribute__((deprecated("Use celix_bundleContext_unregisterService instead!")));
+void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long serviceId);
 
 
 /**
@@ -469,7 +469,7 @@ long celix_bundleContext_trackServices(
         void* callbackHandle,
         void (*add)(void* handle, void* svc),
         void (*remove)(void* handle, void* svc)
-); //__attribute__((deprecated("Use celix_bundleContext_trackServicesAsync instead!")));;
+);
 
 /**
  * @brief Service Tracker Options used to fine tune which services to track and the callback to be used for the tracked services.
@@ -653,7 +653,7 @@ void celix_bundleContext_waitForAsyncStopTracker(celix_bundle_context_t* ctx, lo
  *
  * Will log a error if the provided tracker id is unknown. Will silently ignore trackerId < 0.
  */
-void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId); //__attribute__((deprecated("Use celix_bundleContext_stopTrackerAsync instead!")));
+void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId);
 
 
 
@@ -662,7 +662,7 @@ void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId
  * the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found, the callback will not be invoked and this function will return false immediately.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -688,7 +688,7 @@ bool celix_bundleContext_useServiceWithId(
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found, the callback will not be invoked and this function will return false immediately.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -712,7 +712,7 @@ bool celix_bundleContext_useService(
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found, the callback will not be invoked and this function will return 0 immediately.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -771,6 +771,17 @@ typedef struct celix_service_use_options {
      * and the bundle owning the service will also be provided to the callback.
      */
     void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) OPTS_INIT;
+    /**
+     * @brief Call the provided callbacks from the caller thread directly if set, otherwise the callbacks will be called from the Celix event loop (most likely indirectly).
+     * Note that using blocking service in the Celix event loop is generally a bad idea, which should be avoided if possible.
+     */
+#define CELIX_SERVICE_USE_DIRECT              (1)
+    /**
+     * @brief Whether "service on demand" pattern is supported when CELIX_SERVICE_USE_DIRECT is set.
+     * Note that it has no effect in indirect mode, in which case "service on demand" is supported.
+     */
+#define CELIX_SERVICE_USE_SOD                 (2)
+    int flags OPTS_INIT;
 } celix_service_use_options_t;
 
 /**
@@ -785,16 +796,18 @@ typedef struct celix_service_use_options {
     .callbackHandle = NULL, \
     .use = NULL, \
     .useWithProperties = NULL, \
-    .useWithOwner = NULL}
+    .useWithOwner = NULL, \
+    .flags=0}
 #endif
 
 /**
- * @brief Use the services with the provided service filter options using the provided callback.
+ * @brief Use the highest ranking service satisfying the provided service filter options using the provided callback.
  *
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found the callback will not be invoked. In such cases, if a non-zero waitTimeoutInSeconds is specified in opts,
+ * this function will block until the timeout is expired or when at least one service is found, otherwise it will return false immediately.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -814,7 +827,8 @@ bool celix_bundleContext_useServiceWithOptions(
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
  * The svc is should only be considered valid during the callback.
- * If no service is found the callback will not be invoked.
+ * If no service is found, the callback will not be invoked and this function will return 0 immediately.
+ * Note that waitTimeoutInSeconds in opts has no effect.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -826,8 +840,6 @@ bool celix_bundleContext_useServiceWithOptions(
 size_t celix_bundleContext_useServicesWithOptions(
         celix_bundle_context_t *ctx,
         const celix_service_use_options_t *opts);
-
-
 
 
 /**
@@ -1082,7 +1094,7 @@ long celix_bundleContext_trackBundlesWithOptionsAsync(
 long celix_bundleContext_trackBundlesWithOptions(
         celix_bundle_context_t* ctx,
         const celix_bundle_tracking_options_t *opts
-); //__attribute__((deprecated("Use celix_bundleContext_trackBundlesWithOptionsAsync instead!")));
+);
 
 /**
  * @brief Use the bundle with the provided bundle id if it is in the active (started) state.

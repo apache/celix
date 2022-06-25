@@ -1046,8 +1046,9 @@ function(install_celix_bundle_targets)
 
     get_target_property(EXPORT_BUNDLES celix-bundles EXPORT_${EXPORT_NAME}_BUNDLES)
 
-    if (NOT DEFINED EXPORT_BUNDLES)
-        message(FATAL_ERROR "Export ${EXPORT_NAME} not defined. Did you forgot to use a install_celix_bundle with the 'EXPORT ${EXPORT_NAME}' option?")
+    if (NOT DEFINED EXPORT_BUNDLES OR NOT EXPORT_BUNDLES)
+        message("Export ${EXPORT_NAME} not defined. Did you forgot to use a install_celix_bundle with the 'EXPORT ${EXPORT_NAME}' option?")
+        set(EXPORT_BUNDLES "")
     endif ()
     if (NOT DEFINED EXPORT_NAMESPACE)
         message(FATAL_ERROR "Please provide a namespace used for the generated cmake targets.")

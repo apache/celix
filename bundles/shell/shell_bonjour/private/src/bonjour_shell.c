@@ -345,7 +345,7 @@ static void bonjourShell_parseCommand(bonjour_shell_pt shell, struct connection_
                         FILE *out = open_memstream(&outbuf, &outsize);
                         FILE *err = open_memstream(&errbuf, &errsize);
 
-                        shell->service->executeCommand(shell->service->shell, (char *) command, out, err);
+                        shell->service->executeCommand(shell->service->handle, (char *) command, out, err);
 
                         fclose(out);
                         fclose(err);

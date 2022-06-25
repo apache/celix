@@ -45,7 +45,7 @@ CELIX_GEN_BUNDLE_ACTIVATOR(activator_data_t, activator_start, activator_stop)
 
 ## C++ Bundle Activator
 ```
-#include "celix/BundleActivator.h"
+#include <celix/BundleActivator.h>
 
 class MyBundleActivator {
 public:

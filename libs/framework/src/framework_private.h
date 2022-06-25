@@ -162,6 +162,13 @@ struct celix_framework {
         int eventQueueSize;
         int eventQueueFirstEntry;
         celix_array_list_t *dynamicEventQueue; //entry = celix_framework_event_t*. Used when the eventQueue is full
+        struct {
+            int nbFramework; // number of pending framework events
+            int nbBundle; // number of pending bundle events
+            int nbRegister; // number of pending registration
+            int nbUnregister; // number of pending async de-registration
+            int nbEvent; // number of pending generic events
+        } stats;
     } dispatcher;
 
     celix_framework_logger_t* logger;
@@ -187,9 +194,6 @@ FRAMEWORK_EXPORT celix_status_t fw_registerServiceFactory(framework_pt framework
 FRAMEWORK_EXPORT void fw_unregisterService(service_registration_pt registration);
 
 FRAMEWORK_EXPORT celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *references, bundle_pt bundle, const char* serviceName, const char* filter);
-FRAMEWORK_EXPORT celix_status_t framework_ungetServiceReference(framework_pt framework, bundle_pt bundle, service_reference_pt reference);
-FRAMEWORK_EXPORT celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, const void** service);
-FRAMEWORK_EXPORT celix_status_t framework_ungetService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, bool *result);
 FRAMEWORK_EXPORT celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, array_list_pt *services);
 FRAMEWORK_EXPORT celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundle, array_list_pt *services);
 

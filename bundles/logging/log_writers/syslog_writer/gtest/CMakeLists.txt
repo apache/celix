@@ -20,8 +20,7 @@ add_executable(test_syslog_writer
         src/SyslogWriterTestSuite.cc
 )
 target_link_libraries(test_syslog_writer PRIVATE Celix::log_helper GTest::gtest GTest::gtest_main)
-
-add_dependencies(test_syslog_writer log_admin_bundle syslog_writer_bundle)
+add_celix_bundle_dependencies(test_syslog_writer Celix::log_admin Celix::syslog_writer)
 target_compile_definitions(test_syslog_writer PRIVATE -DLOG_ADMIN_BUNDLE=\"$<TARGET_PROPERTY:log_admin,BUNDLE_FILE>\")
 target_compile_definitions(test_syslog_writer PRIVATE -DSYSLOG_WRITER_BUNDLE=\"$<TARGET_PROPERTY:syslog_writer,BUNDLE_FILE>\")
 

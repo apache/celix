@@ -264,6 +264,8 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     celix_status_t status = bundle_create(framework, &framework->bundle);
     status = CELIX_DO_IF(status, bundle_getBundleId(framework->bundle, &framework->bundleId));
     status = CELIX_DO_IF(status, serviceRegistry_create(framework, &framework->registry));
+    status = CELIX_DO_IF(status, bundle_setFramework(framework->bundle, framework));
+    status = CELIX_DO_IF(status, bundleCache_create(uuid, framework->configurationMap, &framework->cache));
     bundle_context_t *context = NULL;
     status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, framework->bundle, &context));
     status = CELIX_DO_IF(status, bundle_setContext(framework->bundle, context));
@@ -315,7 +317,7 @@ celix_status_t framework_destroy(framework_pt framework) {
     }
 
 
-    serviceRegistry_destroy(framework->registry);
+    celix_serviceRegistry_destroy(framework->registry);
 
     celixThreadMutex_lock(&framework->installedBundles.mutex);
     for (int i = 0; i < celix_arrayList_size(framework->installedBundles.entries); ++i) {
@@ -961,7 +963,7 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
             if (status == CELIX_SUCCESS) {
                 serviceNameObjectClass = properties_get(props, OSGI_FRAMEWORK_OBJECTCLASS);
                 if (!serviceReference_isAssignableTo(ref, bundle, serviceNameObjectClass)) {
-                    //FIXME: unget service reference
+                    serviceReference_release(ref, NULL);
                     arrayList_remove(*references, refIdx);
                     refIdx--;
                 }
@@ -974,14 +976,6 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
 	return status;
 }
 
-celix_status_t framework_ungetServiceReference(framework_pt framework, bundle_pt bundle, service_reference_pt reference) {
-    return serviceRegistry_ungetServiceReference(framework->registry, bundle, reference);
-}
-
-celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, const void **service) {
-	return serviceRegistry_getService(framework->registry, bundle, reference, service);
-}
-
 celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, array_list_pt *services) {
 	return serviceRegistry_getRegisteredServices(framework->registry, bundle, services);
 }
@@ -990,10 +984,6 @@ celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundl
 	celix_status_t status = CELIX_SUCCESS;
 	status = serviceRegistry_getServicesInUse(framework->registry, bundle, services);
 	return status;
-}
-
-celix_status_t framework_ungetService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, bool *result) {
-	return serviceRegistry_ungetService(framework->registry, bundle, reference, result);
 }
 
 void fw_addServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener, const char* sfilter) {
@@ -1435,6 +1425,7 @@ void fw_fireBundleEvent(framework_pt framework, bundle_event_type_e eventType, c
     event.type = CELIX_BUNDLE_EVENT_TYPE;
     event.bndEntry = entry;
     event.bundleEvent = eventType;
+    __atomic_add_fetch(&framework->dispatcher.stats.nbBundle, 1, __ATOMIC_RELAXED);
     celix_framework_addToEventQueue(framework, &event);
 }
 
@@ -1449,6 +1440,7 @@ void fw_fireFrameworkEvent(framework_pt framework, framework_event_type_e eventT
         event.error = celix_strerror(errorCode);
     }
 
+    __atomic_add_fetch(&framework->dispatcher.stats.nbFramework, 1, __ATOMIC_RELAXED);
     celix_framework_addToEventQueue(framework, &event);
 }
 
@@ -1501,6 +1493,7 @@ static void fw_handleEventRequest(celix_framework_t *framework, celix_framework_
             fw_bundleListener_decreaseUseCount(listener);
         }
         celix_arrayList_destroy(localListeners);
+        __atomic_sub_fetch(&framework->dispatcher.stats.nbBundle, 1, __ATOMIC_RELAXED);
     } else if (event->type == CELIX_FRAMEWORK_EVENT_TYPE) {
         celixThreadMutex_lock(&framework->frameworkListenersLock);
         for (int i = 0; i < celix_arrayList_size(framework->frameworkListeners); ++i) {
@@ -1514,6 +1507,7 @@ static void fw_handleEventRequest(celix_framework_t *framework, celix_framework_
             fw_invokeFrameworkListener(framework, listener->listener, &fEvent, listener->bundle);
         }
         celixThreadMutex_unlock(&framework->frameworkListenersLock);
+        __atomic_sub_fetch(&framework->dispatcher.stats.nbFramework, 1, __ATOMIC_RELAXED);
     } else if (event->type == CELIX_REGISTER_SERVICE_EVENT) {
         service_registration_t* reg = NULL;
         celix_status_t status = CELIX_SUCCESS;
@@ -1530,12 +1524,15 @@ static void fw_handleEventRequest(celix_framework_t *framework, celix_framework_
         } else if (!event->cancelled && event->registerCallback != NULL) {
             event->registerCallback(event->registerData, serviceRegistration_getServiceId(reg));
         }
+        __atomic_sub_fetch(&framework->dispatcher.stats.nbRegister, 1, __ATOMIC_RELAXED);
     } else if (event->type == CELIX_UNREGISTER_SERVICE_EVENT) {
         celix_serviceRegistry_unregisterService(framework->registry, event->bndEntry->bnd, event->unregisterServiceId);
+        __atomic_sub_fetch(&framework->dispatcher.stats.nbUnregister, 1, __ATOMIC_RELAXED);
     } else if (event->type == CELIX_GENERIC_EVENT) {
         if (event->genericProcess != NULL) {
             event->genericProcess(event->genericProcessData);
         }
+        __atomic_sub_fetch(&framework->dispatcher.stats.nbEvent, 1, __ATOMIC_RELAXED);
     }
 
     if (event->doneCallback != NULL && !event->cancelled) {
@@ -1573,7 +1570,7 @@ static inline bool fw_removeTopEventFromQueue(celix_framework_t* fw) {
 static inline void fw_handleEvents(celix_framework_t* framework) {
     celixThreadMutex_lock(&framework->dispatcher.mutex);
     int size = framework->dispatcher.eventQueueSize + celix_arrayList_size(framework->dispatcher.dynamicEventQueue);
-    if (size == 0) {
+    if (size == 0 && framework->dispatcher.active) {
         celixThreadCondition_timedwaitRelative(&framework->dispatcher.cond, &framework->dispatcher.mutex, 1, 0);
     }
     size = framework->dispatcher.eventQueueSize + celix_arrayList_size(framework->dispatcher.dynamicEventQueue);
@@ -1947,6 +1944,7 @@ long celix_framework_registerServiceAsync(
     event.registerCallback = registerDoneCallback;
     event.doneData = eventDoneData;
     event.doneCallback = eventDoneCallback;
+    __atomic_add_fetch(&fw->dispatcher.stats.nbRegister, 1, __ATOMIC_RELAXED);
     celix_framework_addToEventQueue(fw, &event);
 
     return svcId;
@@ -1964,6 +1962,7 @@ void celix_framework_unregisterAsync(celix_framework_t* fw, celix_bundle_t* bnd,
     event.doneData = doneData;
     event.doneCallback = doneCallback;
 
+    __atomic_add_fetch(&fw->dispatcher.stats.nbUnregister, 1, __ATOMIC_RELAXED);
     celix_framework_addToEventQueue(fw, &event);
 }
 
@@ -2654,6 +2653,15 @@ void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId) 
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 }
 
+void celix_framework_waitUntilNoPendingRegistration(celix_framework_t* fw)
+{
+    assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    while (__atomic_load_n(&fw->dispatcher.stats.nbRegister, __ATOMIC_RELAXED) > 0) {
+        celixThreadCondition_wait(&fw->dispatcher.cond, &fw->dispatcher.mutex);
+    }
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
+}
 
 void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs)) {
     celix_frameworkLogger_setLogCallback(fw->logger, logHandle, logFunction);
@@ -2683,6 +2691,7 @@ long celix_framework_fireGenericEvent(framework_t* fw, long eventId, long bndId,
     event.genericProcess = processCallback;
     event.doneData = doneData;
     event.doneCallback = doneCallback;
+    __atomic_add_fetch(&fw->dispatcher.stats.nbEvent, 1, __ATOMIC_RELAXED);
     celix_framework_addToEventQueue(fw, &event);
 
     return eventId;

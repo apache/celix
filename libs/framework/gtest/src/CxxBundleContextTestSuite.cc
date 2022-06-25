@@ -623,9 +623,7 @@ TEST_F(CxxBundleContextTestSuite, setServicesWithTrackerWhenMultipleRegistration
     tracker->close();
     tracker->wait();
 
-    //TODO improve this. For now closing a tracker will inject other service before getting to nullptr.
-    //Also look into why this is not happening in the C service tracker test.
-    EXPECT_EQ(6, count.load());
+    EXPECT_EQ(2, count.load());
 }
 
 TEST_F(CxxBundleContextTestSuite, WaitForAllEvents) {
@@ -768,12 +766,16 @@ TEST_F(CxxBundleContextTestSuite, TestOldCStyleTrackerWithCxxMetaTracker) {
 
     service_tracker_customizer_t *customizer = nullptr;
     auto status = serviceTrackerCustomizer_create(this, nullptr, nullptr, nullptr, nullptr, &customizer);
-    ASSERT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
     celix_service_tracker_t* tracker = nullptr;
     status = serviceTracker_createWithFilter(ctx->getCBundleContext(), "(service.exported.interfaces=*)", customizer, &tracker);
-    ASSERT_EQ(status, CELIX_SUCCESS);
-    status = serviceTracker_open(tracker);
-    ASSERT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    if (status == CELIX_SUCCESS) {
+        status = serviceTracker_open(tracker);
+        EXPECT_EQ(status, CELIX_SUCCESS);
+    }
 
     auto metaTracker = ctx->trackAnyServiceTrackers().build();
     ctx->waitForEvents();

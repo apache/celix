@@ -301,9 +301,9 @@ Optional arguments:
 - RESOURCES: A list of resources to install for the bundle.
 
 ## install_celix_targets
-Generate and install a Celix Targets cmake file which contains CMake commands to create imported targets for the bundles
-install using the provided <export_name>. These imported CMake targets can be used in in CMake project using the installed
-bundles.
+Generate and install a Celix Targets cmake file which contains CMake commands to create imported targets for the bundles 
+install using the provided <export_name>. These imported CMake targets can be used in CMake projects using the installed
+bundles. 
 
 ```CMake
 install_celix_targets(<export_name>

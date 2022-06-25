@@ -86,7 +86,7 @@ static void createAndDestroyComponentTest(benchmark::State& state, bool cTest) {
 
             celix_dependencyManager_addAsync(cMan, cmp);
             celix_dependencyManager_wait(cMan);
-            assert(celix_dmComponent_currentState(cmp) == DM_CMP_STATE_TRACKING_OPTIONAL);
+            assert(celix_dmComponent_currentState(cmp) == CELIX_DM_CMP_STATE_TRACKING_OPTIONAL);
             celix_dependencyManager_removeAllComponents(cMan);
         }
     } else {

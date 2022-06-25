@@ -227,6 +227,11 @@ void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void
 void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId);
 
 /**
+ * @brief wait until all pending service registration  are processed.
+ */
+void celix_framework_waitUntilNoPendingRegistration(celix_framework_t* fw);
+
+/**
  * @brief Returns whether the current thread is the Celix framework event loop thread.
  */
 bool celix_framework_isCurrentThreadTheEventLoop(celix_framework_t* fw);

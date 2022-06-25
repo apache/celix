@@ -183,6 +183,8 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
 	celix_logHelper_log(activator->celix_logHelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: endpoint listener scope is %s", scope);
 
 	celix_properties_t *props = celix_properties_create();
+	// topology manager should ingore itself endpoint listener service
+	celix_properties_set(props, "TOPOLOGY_MANAGER", "true");
 	celix_properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
 
 	// We can release the scope, as celix_properties_set makes a copy of the key & value...
@@ -234,12 +236,13 @@ celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *con
 	serviceRegistration_unregister(activator->hook);
 	free(activator->hookService);
 
+
+	topologyManager_closeImports(activator->manager);
 	serviceRegistration_unregister(activator->endpointListenerService);
 	free(activator->endpointListener);
 
 	serviceRegistration_unregister(activator->scopeReg);
 
-	topologyManager_closeImports(activator->manager);
 
 	return status;
 }
