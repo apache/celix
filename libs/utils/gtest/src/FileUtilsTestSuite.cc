@@ -158,8 +158,8 @@ TEST_F(FileUtilsTestSuite, ExtractZipDataTest) {
 }
 #else
 //Given a zip files linked against the execute-able, can this be handled as a zip data entry.
-extern const uint8_t test_data_start[]  asm("_binary_test_zip_start");
-extern const uint8_t test_data_end[]    asm("_binary_test_zip_end");
+extern const uint8_t test_data_start[]  asm("binary_test_zip_start");
+extern const uint8_t test_data_end[]    asm("binary_test_zip_end");
 
 TEST_F(FileUtilsTestSuite, ExtractZipDataTest) {
     const char* extractLocation = "extract_location";
