@@ -388,7 +388,7 @@ celix_array_list_t* celix_arrayList_createWithEquals(celix_arrayList_equals_fp e
 
 void celix_arrayList_destroy(celix_array_list_t *list) {
     if (list != NULL) {
-        list->size = 0;
+        celix_arrayList_clear(list);
         free(list->elementData);
         free(list);
     }
