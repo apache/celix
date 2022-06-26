@@ -52,8 +52,10 @@ typedef struct celix_dm_service_dependency_info_struct dm_service_dependency_inf
 typedef struct celix_dm_service_dependency_info_struct celix_dm_service_dependency_info_t;
 
 struct celix_dm_component_info_struct {
-    char id[64];
-    char name[128];
+    long bundleId;
+    char* bundleSymbolicName;
+    char* id;
+    char* name;
     bool active;
     char* state;
     size_t nrOfTimesStarted;

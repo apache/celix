@@ -29,6 +29,11 @@
 #include "dm_component_impl.h"
 #include "celix_framework.h"
 
+static const char * const CELIX_DM_PRINT_OK_COLOR = "\033[92m";
+static const char * const CELIX_DM_PRINT_WARNING_COLOR = "\033[93m";
+static const char * const CELIX_DM_PRINT_NOK_COLOR = "\033[91m";
+static const char * const CELIX_DM_PRINT_END_COLOR = "\033[m";
+
 struct celix_dm_component_struct {
     char uuid[DM_COMPONENT_MAX_ID_LENGTH];
     char name[DM_COMPONENT_MAX_NAME_LENGTH];
@@ -982,19 +987,21 @@ celix_bundle_context_t* celix_dmComponent_getBundleContext(celix_dm_component_t 
     return result;
 }
 
-celix_status_t component_getComponentInfo(celix_dm_component_t *component, dm_component_info_pt *out) {
+celix_status_t component_getComponentInfo(celix_dm_component_t *component, celix_dm_component_info_t** out) {
     return celix_dmComponent_getComponentInfo(component, out);
 }
 
-celix_status_t celix_dmComponent_getComponentInfo(celix_dm_component_t *component, dm_component_info_pt *out) {
-    dm_component_info_pt info = calloc(1, sizeof(*info));
+celix_status_t celix_dmComponent_getComponentInfo(celix_dm_component_t *component, celix_dm_component_info_t** out) {
+    celix_dm_component_info_t* info = calloc(1, sizeof(*info));
     info->dependency_list = celix_arrayList_create();
     celix_dmComponent_getInterfaces(component, &info->interfaces);
 
     celixThreadMutex_lock(&component->mutex);
+    info->bundleId = celix_bundleContext_getBundleId(component->context);
+    info->bundleSymbolicName = celix_bundleContext_getBundleSymbolicName(component->context, info->bundleId);
     info->active = false;
-    memcpy(info->id, component->uuid, DM_COMPONENT_MAX_ID_LENGTH);
-    memcpy(info->name, component->name, DM_COMPONENT_MAX_NAME_LENGTH);
+    info->id = celix_utils_strdup(component->uuid);
+    info->name = celix_utils_strdup(component->name);
     info->nrOfTimesStarted = component->nrOfTimesStarted;
     info->nrOfTimesResumed = component->nrOfTimesResumed;
     celix_dm_component_state_t state = celix_dmComponent_currentState(component);
@@ -1012,14 +1019,88 @@ celix_status_t celix_dmComponent_getComponentInfo(celix_dm_component_t *componen
     *out = info;
     return CELIX_SUCCESS;
 }
-void component_destroyComponentInfo(dm_component_info_pt info) {
+
+
+static void celix_dmComponent_printFullInfo(FILE *out, bool colors, celix_dm_component_info_t* compInfo) {
+    const char *startColors = "";
+    const char *endColors = "";
+    if (colors) {
+        startColors = compInfo->active ? CELIX_DM_PRINT_OK_COLOR : CELIX_DM_PRINT_NOK_COLOR;
+        endColors = CELIX_DM_PRINT_END_COLOR;
+    }
+    fprintf(out, "%sComponent: Name=%s%s\n", startColors, compInfo->name, endColors);
+    fprintf(out, "|- UUID   = %s\n", compInfo->id);
+    fprintf(out, "|- Active = %s\n", compInfo->active ? "true" : "false");
+    fprintf(out, "|- State  = %s\n", compInfo->state);
+    fprintf(out, "|- Bundle = %li (%s)\n", compInfo->bundleId, compInfo->bundleSymbolicName);
+    fprintf(out, "|- Nr of times started = %i\n", (int)compInfo->nrOfTimesStarted);
+    fprintf(out, "|- Nr of times resumed = %i\n", (int)compInfo->nrOfTimesResumed);
+
+    fprintf(out, "|- Interfaces (%d):\n", celix_arrayList_size(compInfo->interfaces));
+    for (int interfCnt = 0; interfCnt < celix_arrayList_size(compInfo->interfaces); interfCnt++) {
+        dm_interface_info_pt intfInfo = celix_arrayList_get(compInfo->interfaces, interfCnt);
+        fprintf(out, "   |- %sInterface %i: %s%s\n", startColors, (interfCnt+1), intfInfo->name, endColors);
+
+        hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt) intfInfo->properties);
+        char *key = NULL;
+        while ((key = hashMapIterator_nextKey(&iter)) != NULL) {
+            fprintf(out, "      | %15s = %s\n", key, celix_properties_get(intfInfo->properties, key, "!ERROR!"));
+        }
+    }
+
+    fprintf(out, "|- Dependencies (%d):\n", celix_arrayList_size(compInfo->dependency_list));
+    for (int depCnt = 0; depCnt < celix_arrayList_size(compInfo->dependency_list); ++depCnt) {
+        dm_service_dependency_info_pt dependency;
+        dependency = celix_arrayList_get(compInfo->dependency_list, depCnt);
+        const char *depStartColors = "";
+        if (colors) {
+            if (dependency->required) {
+                depStartColors = dependency->available ? CELIX_DM_PRINT_OK_COLOR : CELIX_DM_PRINT_NOK_COLOR;
+            } else {
+                depStartColors = dependency->available ? CELIX_DM_PRINT_OK_COLOR : CELIX_DM_PRINT_WARNING_COLOR;
+            }
+        }
+        fprintf(out, "   |- %sDependency %i: %s%s\n", depStartColors, (depCnt+1), dependency->serviceName == NULL ? "(any)" : dependency->serviceName, endColors);
+        fprintf(out, "      | %15s = %s\n", "Available", dependency->available ? "true " : "false");
+        fprintf(out, "      | %15s = %s\n", "Required", dependency->required ? "true " : "false");
+        fprintf(out, "      | %15s = %s\n", "Version Range", dependency->versionRange == NULL ? "N/A" : dependency->versionRange);
+        fprintf(out, "      | %15s = %s\n", "Filter", dependency->filter == NULL ? "N/A" : dependency->filter);
+    }
+    fprintf(out, "\n");
+}
+
+static void celix_dmComponent_printBasicInfo(FILE *out, bool colors, celix_dm_component_info_t* compInfo) {
+    const char *startColors = "";
+    const char *endColors = "";
+    if (colors) {
+        startColors = compInfo->active ? CELIX_DM_PRINT_OK_COLOR : CELIX_DM_PRINT_NOK_COLOR;
+        endColors = CELIX_DM_PRINT_END_COLOR;
+    }
+    fprintf(out, "Component: Name=%s, ID=%s, %sActive=%s%s, State=%s, Bundle=%li (%s)\n",
+            compInfo->name, compInfo->id, startColors, compInfo->active ? "true " : "false", endColors,
+            compInfo->state, compInfo->bundleId, compInfo->bundleSymbolicName);
+}
+
+
+void celix_dmComponent_printComponentInfo(celix_dm_component_info_t* info, bool printFullInfo, bool useAnsiColors, FILE* stream) {
+    if (printFullInfo) {
+        celix_dmComponent_printFullInfo(stream, useAnsiColors, info);
+    } else {
+        celix_dmComponent_printBasicInfo(stream, useAnsiColors, info);
+    }
+}
+
+void component_destroyComponentInfo(celix_dm_component_info_t* info) {
     return celix_dmComponent_destroyComponentInfo(info);
 }
 
-void celix_dmComponent_destroyComponentInfo(dm_component_info_pt info) {
+void celix_dmComponent_destroyComponentInfo(celix_dm_component_info_t* info) {
     int i;
     int size;
     if (info != NULL) {
+        free(info->bundleSymbolicName);
+        free(info->id);
+        free(info->name);
         free(info->state);
 
         if (info->interfaces != NULL) {

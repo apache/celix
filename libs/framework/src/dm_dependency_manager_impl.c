@@ -373,7 +373,30 @@ celix_status_t dependencyManager_getInfo(celix_dependency_manager_t *manager, dm
 	return status;
 }
 
-
 void dependencyManager_destroyInfo(celix_dependency_manager_t *manager, celix_dependency_manager_info_t *info) {
     celix_dependencyManager_destroyInfo(manager, info);
+}
+
+static void celix_dependencyManager_printInfoForEntry(bool fullInfo, bool useAnsiColors, FILE* stream, celix_dependency_manager_info_t* mngInfo) {
+	for (int i = 0; i < celix_arrayList_size(mngInfo->components); ++i) {
+		celix_dm_component_info_t *cmpInfo = celix_arrayList_get(mngInfo->components, i);
+        celix_dmComponent_printComponentInfo(cmpInfo, fullInfo, useAnsiColors, stream);
+	}
+}
+
+void celix_dependencyManager_printInfo(celix_dependency_manager_t* manager, bool fullInfo, bool useAnsiColors, FILE* stream) {
+	celix_array_list_t *infos = celix_dependencyManager_createInfos(manager);
+	for (int i = 0; i< celix_arrayList_size(infos); ++i) {
+		celix_dependency_manager_info_t* mngInfo = celix_arrayList_get(infos, i);
+		celix_dependencyManager_printInfoForEntry(fullInfo, useAnsiColors, stream, mngInfo);
+	}
+	celix_dependencyManager_destroyInfos(manager, infos);
+}
+
+void celix_dependencyManager_printInfoForBundle(celix_dependency_manager_t* manager, bool fullInfo, bool useAnsiColors, long bundleId, FILE* stream) {
+	celix_dependency_manager_info_t* mngInfo = celix_dependencyManager_createInfo(manager, bundleId);
+    if (mngInfo != NULL) {
+        celix_dependencyManager_printInfoForEntry(fullInfo, useAnsiColors, stream, mngInfo);
+        celix_dependencyManager_destroyInfo(manager, mngInfo);
+    }
 }

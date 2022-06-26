@@ -28,7 +28,7 @@
 #include <iostream>
 #include <type_traits>
 #include <algorithm>
-
+#include <cstdio>
 
 #include "dm_component.h"
 #include "celix/dm/types.h"
@@ -137,6 +137,8 @@ namespace celix { namespace dm {
          * The underlining service registration and service tracker will be registered/created async.
          */
         void runBuild();
+
+        friend std::ostream& operator<<(std::ostream& out, const BaseComponent& cmp);
     protected:
         celix_bundle_context_t* context;
         celix_dependency_manager_t* cDepMan;
@@ -152,6 +154,10 @@ namespace celix { namespace dm {
         std::vector<std::shared_ptr<void>> componentContexts{};
     };
 
+    /**
+     * Stream outputs the full component info.
+     */
+    inline std::ostream& operator<<(std::ostream& out, const BaseComponent& cmp);
 
     template<class T>
     class Component : public BaseComponent {

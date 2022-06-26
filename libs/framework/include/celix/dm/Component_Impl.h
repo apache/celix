@@ -51,6 +51,20 @@ inline void BaseComponent::wait() const {
     celix_dependencyManager_wait(cDepMan);
 }
 
+std::ostream& celix::dm::operator<<(std::ostream &out, const BaseComponent &cmp) {
+    char* buf = nullptr;
+    size_t bufSize = 0;
+    FILE* stream = open_memstream(&buf, &bufSize);
+    celix_dm_component_info_t* cmpInfo = nullptr;
+    celix_dmComponent_getComponentInfo(cmp.cComponent(), &cmpInfo);
+    celix_dmComponent_printComponentInfo(cmpInfo, true, true, stream);
+    fclose(stream);
+    celix_dmComponent_destroyComponentInfo(cmpInfo);
+    out << buf;
+    free(buf);
+    return out;
+}
+
 template<class T>
 Component<T>::Component(
         celix_bundle_context_t *context,
@@ -59,7 +73,7 @@ Component<T>::Component(
         std::string uuid) : BaseComponent(
                 context,
                 cDepMan,
-                celix::typeName<T>(name),
+                celix::cmpTypeName<T>(name),
                 std::move(uuid)) {}
 
 template<class T>
@@ -167,7 +181,7 @@ Component<T>& Component<T>::remove(CServiceDependency<T,I>& dep) {
 
 template<class T>
 std::shared_ptr<Component<T>> Component<T>::create(celix_bundle_context_t *context, celix_dependency_manager_t* cDepMan, std::string name, std::string uuid) {
-    std::string cmpName = celix::typeName<T>(name);
+    std::string cmpName = celix::cmpTypeName<T>(name);
     return std::shared_ptr<Component<T>>{new Component<T>(context, cDepMan, std::move(cmpName), std::move(uuid)), [](Component<T>* cmp){
         //Using a callback of async destroy to ensure that the cmp instance is still exist while the
         //dm component is async disabled and destroyed.
