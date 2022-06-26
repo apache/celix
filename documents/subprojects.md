@@ -28,11 +28,7 @@ Apache Celix is organized into several subprojects. The following subproject are
 * [Examples](../examples) - A Selection of examples showing how the framework can be used.
 * [Log Service](../bundles/logging) - A Log Service logging abstraction for Apache Celix.
 * [Syslog Writer](../bundles/logging/log_writers/syslog_writer) - A syslog writer for use in combination with the Log Service.
-* [Shell](../bundles/shell/shell/README.md) - A OSGi C and C++11 shell implementation.
-* [Shell TUI](../bundles/shell/shell_tui) - A textual UI for the Celix Shell.
-* [Shell WUI](../bundles/shell/shell_wui) - A web UI for the Celix Shell (uses the Celix HTTP Admin)
-* [Remote Shell](../bundles/shell/remote_shell) - A remote (telnet) frontend for the Celix shell.
-* [Bonjour Shell](../bundles/shell/shell_bonjour) - A remote (Bonjour / mDNS) frontend for the Celix shell.
+* [Shell](../bundles/shell/README.md) - A OSGi C and C++11 shell implementation.
 * [Pubsub](../bundles/pubsub) - An implementation for a publish-subscribe remote message communication system. 
 * [HTTP Admin](../bundles/http_admin) - An implementation for the OSGi HTTP whiteboard adapted to C and based on civetweb.
 * [Remote Services](../bundles/cxx_remote_services) - A C++17 adaption and implementation of the OSGi Remote Service Admin specification.

@@ -14,11 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 @startuml
-component ServiceOnDemandRequester as "Service On Demand Requester"
-component ServiceOnDemandAdmin as "Service On Demand Admin"
-() ServiceOnDemand
+component UserA as "Log User A"
+component UserB as "Log User B"
+component UserC as "Log User C"
+component LogAdmin as "Celix::log_admin\n<<bundle>>"
 
-ServiceOnDemandRequester .up.( ServiceOnDemand
-ServiceOnDemandAdmin .[dotted].> ServiceOnDemand : <<monitors>>
-ServiceOnDemandAdmin -- " * "ServiceOnDemand
+() LogServiceA as "celix_log_service_t"
+() LogServiceB as "celix_log_service_t"
+() LogServiceC as "celix_log_service_t"
+
+LogAdmin -down- LogServiceA
+LogAdmin -down- LogServiceB
+LogAdmin -down- LogServiceC
+
+UserA -up-( LogServiceA
+note on link: filter="(name=UserA)"
+UserB -up-( LogServiceB
+note on link: filter="(name=UserB)"
+UserC -up-( LogServiceC
+note on link: filter="(name=UserC)"
 @enduml
+

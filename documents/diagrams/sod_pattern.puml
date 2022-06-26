@@ -14,16 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 @startuml
-component WhiteboardParticipantA as "Whiteboard Participant A"
-component WhiteboardParticipantB as "Whiteboard Participant B"
-component WhiteboardParticipantC as "Whiteboard Participant C"
-component Whiteboard
-() WhiteboardService
+component ServiceOnDemandRequester as "Service On Demand Requester"
+component ServiceOnDemandAdmin as "Service On Demand Admin"
+() ServiceOnDemand
 
-Whiteboard  -down-( WhiteboardService
-WhiteboardParticipantA -up- WhiteboardService
-WhiteboardParticipantB -up- WhiteboardService
-WhiteboardParticipantC -up- WhiteboardService
-
+ServiceOnDemandRequester -up-( ServiceOnDemand
+ServiceOnDemandAdmin .[dotted].> ServiceOnDemand : <<monitors>>
+ServiceOnDemandAdmin -- " * "ServiceOnDemand
 @enduml
-

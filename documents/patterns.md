@@ -33,11 +33,21 @@ still resolve and startup even if the bundle or bundles that pick up the whitebo
 Many Apache Celix services are whiteboard services. For example:
  - `celix_shell_command_t` and `celix::IShellCommand` services. These services can be 
    picked up by the `Celix::shell` bundle, but applications should still work if there is no `Celix::shell` installed 
-   and started.
- - Services marked as remote service (`service.exported.interface=*`). These services will work fine - but only as 
-   local services - if there are no remote service bundles installed and started.
+   and started. <br/>
+   ![Celix Shell](diagrams/whiteboard_pattern_shell.png)
+ - `celix_http_service_t` and `celix_websocket_service_t` services. These services can be picked up by the
+   `Celix::http_admin` bundle to provide http url endpoints or websocket url endpoints. <br/>
+   ![Celix HTTP Admin](diagrams/whiteboard_pattern_http_admin.png)
  - `celix_log_sink_t` services. If there is no `Celix::log_admin` bundle installed and started, the log sinks 
-   services will never be called, but the application should still work.
+   services will never be called, but the application should still work. Note that the `Celix::log_admin` bundle
+   also uses a service on demand pattern (see below). <br/>
+   ![Celix Log Admin](diagrams/whiteboard_pattern_log_sink.png)
+ - Services marked as remote service (`service.exported.interface=*`). These services will work fine
+   but only as local services - if there are no remote service bundles installed and started.
+
+
+
+
 
 For modularity, the whiteboard pattern is a nice fit, because a whiteboard service admin does not need to know how 
 many - if any - whiteboard services are going to be provided and how the implementation details work (as long as 
@@ -119,15 +129,19 @@ pattern can be used to use to provide more functional cohesive services to users
 For the SOD pattern, the service filter to request services can be used to extract information about if and how
 a service on demand needs to be created.
 
-![Service On Demand Pattern](diagrams/service_on_demand_pattern.png)
+![Service On Demand Pattern](diagrams/sod_pattern.png)
 
 Some Apache Celix bundles use the SOD pattern. For example:
  - The `Celix::log_admin` bundle creates and registers `celix_log_service_t` services already preconfigured for 
-   a requested logger name.
- - The Apache Celix / OSGi remote services uses SOD, by ad hoc imported services only when they are discovered and 
-   requested.
+   a requested logger name. <br/>
+   ![Celix Log Admin](diagrams/sod_pattern_log_service.png)
  - The Celix PubSub bundles uses SOD to create and register `pubsub_publisher_t` services when these are requested 
-   with a valid "topic.name" and "topic.scope" filter attribute.
+   with a valid "topic.name" and "topic.scope" filter attribute. For PubSub, the Celix PubSub Topology Manager monitors
+   the `pubsub_publisher_t` requests and instructs the available Celix PubSub Admins to create 
+   `pubsub_publisher_t`. <br/>
+   ![Celix PubSub](diagrams/sod_pattern_publisher_service.png)
+ - The Apache Celix / OSGi remote services uses SOD, by ad hoc imported services only when they are discovered and
+   requested.
 
 SOD services are always [provider types](https://docs.osgi.org/javadoc/osgi.annotation/8.0.0/org/osgi/annotation/versioning/ProviderType.html), although for Apache Celix interfaces cannot be annotated as
 consumer or provider type.
