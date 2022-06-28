@@ -35,6 +35,7 @@ struct celix_dm_component_struct {
 
     celix_bundle_context_t* context;
     void* implementation;
+    celix_dm_cmp_impl_destroy_fpt implementationDestroyFn;
 
     celix_dm_cmp_lifecycle_fpt callbackInit;
     celix_dm_cmp_lifecycle_fpt callbackStart;
@@ -130,6 +131,10 @@ celix_dm_component_t* celix_dmComponent_createWithUUID(bundle_context_t *context
     component->callbackStart = NULL;
     component->callbackStop = NULL;
     component->callbackDeinit = NULL;
+
+    component->implementation= NULL;
+    component->implementationDestroyFn = NULL;
+
     component->state = CELIX_DM_CMP_STATE_INACTIVE;
 
     component->providedInterfaces = celix_arrayList_create();
@@ -178,8 +183,21 @@ struct celix_dm_component_destroy_data {
 static void celix_dmComponent_destroyCallback(void *voidData) {
     struct celix_dm_component_destroy_data *data = voidData;
     celix_dm_component_t *component = data->cmp;
-    celix_dmComponent_disable(component); //all service deregistered // all svc tracker stopped
+    celix_dmComponent_disable(component); //all service unregistered // all svc tracker stopped
     if (celix_dmComponent_isDisabled(component)) {
+        if (component->implementationDestroyFn) {
+            if (component->implementation == NULL) {
+                celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_ERROR,
+                                        "Component `%s` [uuid=%s] has a configured destroy component "
+                                        "implementation callback, but the implementation pointer is NULL. "
+                                        "Destroy callback will not be called!",
+                                        component->name,
+                                        component->uuid);
+            } else {
+                component->implementationDestroyFn(component->implementation);
+            }
+        }
+
         for (int i = 0; i < celix_arrayList_size(component->providedInterfaces); ++i) {
             dm_interface_t *interface = celix_arrayList_get(component->providedInterfaces, i);
 
@@ -967,6 +985,10 @@ celix_status_t component_setImplementation(celix_dm_component_t *component, void
 celix_status_t celix_dmComponent_setImplementation(celix_dm_component_t *component, void *implementation) {
     component->implementation = implementation;
     return CELIX_SUCCESS;
+}
+
+void celix_dmComponent_setImplementationDestroyFunction(celix_dm_component_t* component, celix_dm_cmp_impl_destroy_fpt destroyFn) {
+    component->implementationDestroyFn = destroyFn;
 }
 
 celix_status_t component_getBundleContext(celix_dm_component_t *component, bundle_context_pt *context) {

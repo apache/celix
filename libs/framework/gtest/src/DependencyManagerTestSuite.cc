@@ -86,6 +86,43 @@ TEST_F(DependencyManagerTestSuite, DmComponentAddRemove) {
     ASSERT_EQ(0, celix_dependencyManager_nrOfComponents(mng));
 }
 
+TEST_F(DependencyManagerTestSuite, DmComponentsWithConfiguredDestroyFunction) {
+    //Given a simple component implementation (only a name field)
+    struct CmpImpl {
+        std::string name;
+    };
+
+    void(*destroyFn)(CmpImpl*) = [](CmpImpl* impl) {
+        std::cout << "Destroying " << impl->name << std::endl;
+        delete impl;
+    };
+
+    //When 10 of these components impls are created and configured (include destroy impl function)
+    //as component in the DM.
+    auto* dm = celix_bundleContext_getDependencyManager(ctx);
+    for (int i = 0; i < 10; ++i) {
+        auto* impl = new CmpImpl{std::string{"Component"} + std::to_string(i+1)};
+        auto* dmCmp = celix_dmComponent_create(ctx, impl->name.c_str());
+        celix_dmComponent_setImplementation(dmCmp, impl);
+        CELIX_DM_COMPONENT_SET_IMPLEMENTATION_DESTROY_FUNCTION(dmCmp, CmpImpl, destroyFn);
+        celix_dependencyManager_addAsync(dm, dmCmp);
+    }
+
+    //Then all component should become activate (note components with no svc dependencies)
+    celix_dependencyManager_wait(dm);
+    celix_dependencyManager_allComponentsActive(dm);
+    EXPECT_EQ(celix_dependencyManager_nrOfComponents(dm), 10);
+
+    //When all 10 components are removed
+    celix_dependencyManager_removeAllComponents(dm);
+
+    //Then all components should be removed
+    EXPECT_EQ(celix_dependencyManager_nrOfComponents(dm), 0);
+
+    //And when the test goes out of scope, no memory should be leaked
+    //nop
+}
+
 
 TEST_F(DependencyManagerTestSuite, DmComponentAddRemoveAsync) {
     auto *mng = celix_bundleContext_getDependencyManager(ctx);
@@ -203,6 +240,10 @@ public:
     explicit Cmp2(const std::string& name) {
         std::cout << "usage arg: " << name << std::endl;
     }
+};
+
+class Cmp3 /*note no inherit*/ {
+
 };
 
 
@@ -371,6 +412,39 @@ TEST_F(DependencyManagerTestSuite, BuildSvcProvide) {
     svcId = celix_bundleContext_findService(ctx, "CTestService");
     EXPECT_EQ(svcId, -1); //cleared -> not found
 }
+
+TEST_F(DependencyManagerTestSuite, BuildUnassociatedProvidedService) {
+    celix::dm::DependencyManager dm{ctx};
+
+    //Given a component which does not inherit any interfaces
+    auto& cmp = dm.createComponent<Cmp1>(std::make_shared<Cmp1>());
+
+    //Then I can create a provided service using a shared_ptr which is not associated with the component type
+    // (TestService is not a base of Cmp3)
+    cmp.createUnassociatedProvidedService(std::make_shared<TestService>())
+        .addProperty("test1", "value1");
+
+    //And I can create a provided service using a shared_ptr and a custom name
+    cmp.createUnassociatedProvidedService(std::make_shared<TestService>(), "CustomName");
+
+    //When I build the component
+    cmp.build();
+
+    //Then the nr of component is 1
+    ASSERT_EQ(1, dm.getNrOfComponents()); //cmp "build", so active
+
+    //And the nr of provided interfaces of that component is 2
+    auto info = dm.getInfo();
+    ASSERT_EQ(info.components[0].interfacesInfo.size(), 2);
+
+    //And the first (index 0) provided service has a name TestService and a property test1 with value value1
+    EXPECT_STREQ(info.components[0].interfacesInfo[0].serviceName.c_str(), "TestService");
+    EXPECT_STREQ(info.components[0].interfacesInfo[0].properties["test1"].c_str(), "value1");
+
+    //And the second (index 1) provide service has a name "CustomName".
+    EXPECT_STREQ(info.components[0].interfacesInfo[1].serviceName.c_str(), "CustomName");
+}
+
 
 TEST_F(DependencyManagerTestSuite, AddSvcDepAfterBuild) {
     celix::dm::DependencyManager dm{ctx};

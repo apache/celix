@@ -365,7 +365,7 @@ The Celix framework provides service usage through callbacks - instead of direct
 to ensure that services are prevented from removal while the services are still in use without forwarding 
 this responsibility to the user; i.e. by adding an api to "lock" and "unlock" services for usage.
 
-###Example: Using a service in C
+### Example: Using a service in C
 ```C
 #include <stdio.h>
 #include <celix_api.h>
@@ -400,7 +400,7 @@ static celix_status_t use_command_service_example_stop(use_command_service_examp
 CELIX_GEN_BUNDLE_ACTIVATOR(use_command_service_example_data_t, use_command_service_example_start, use_command_service_example_stop)
 ```
 
-###Example: Using a service in C++
+### Example: Using a service in C++
 ```C++
 //src/UsingCommandServicesExample.cc
 #include <celix/IShellCommand.h>
@@ -474,7 +474,7 @@ C++ service trackers are created and opened asynchronized, but closed synchroniz
 The closing is done synchronized so that users can be sure that after a `celix::ServiceTracker::close()` call the 
 added callbacks will not be invoked anymore.  
 
-###Example: Tracking services in C
+### Example: Tracking services in C
 ```C
 //src/track_command_services_example.c
 #include <stdio.h>
@@ -535,7 +535,7 @@ static celix_status_t track_command_services_example_stop(track_command_services
 CELIX_GEN_BUNDLE_ACTIVATOR(track_command_services_example_data_t, track_command_services_example_start, track_command_services_example_stop)
 ```
 
-###Example: Tracking services in C++
+### Example: Tracking services in C++
 ```C++
 //src/TrackingCommandServicesExample.cc
 #include <unordered_map>
@@ -625,3 +625,17 @@ Service tracker callback with a synchronized service registration
 ![Register Service Async](diagrams/services_tracker_services_rem_seq.png)
 Service tracker callback with a synchronized service un-registration
 ---
+
+# The `celix::query` shell command
+To interactively see the which service and service trackers are available the `celix::query` shell command 
+can be used.
+
+Examples of supported `query` command lines are:
+- `celix::query` - Show an overview of registered services and active service trackers per bundle.
+- `query` - Same as `celix::query` (as long as there is no colliding other `query` commands).
+- `query -v` - Show a detailed overview of registered services and active service trackers per bundle.
+  For registered services the services properties are also printed and for active service trackers the number
+  of tracked services is also printed.
+- `query foo` - Show an overview of registered services and active service tracker where "foo" is
+  (case-insensitive) part of the provided/tracked service name.   
+- `query (service.id>=10)` - Shown an overview of registered services which match the provided LDAP filter. 

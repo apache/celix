@@ -45,8 +45,11 @@ extern "C" {
 /**
  * Adds a DM component to the dependency manager
  *
- * After this call the components will be created and if the components can be started, they
+ * After this call the components will be build and if the components can be started, they
  * will be started and the services will be registered.
+ *
+ * After this call the dependency manager has ownership of the component and the dependency manager will also
+ * de-active and destroy the component when the dependency manager is destroyed.
  *
  * Should not be called from the Celix event thread.
  */
@@ -62,16 +65,15 @@ celix_status_t celix_dependencyManager_addAsync(celix_dependency_manager_t *mana
 /**
  * Removes a DM component from the dependency manager and destroys it
  *
- * After this call the components will be destroyed and if the components was started, the service registrations
- * and service tracked of this component will be unregistered and closed.
+ * After this call - and if the component was found - the component will be destroyed and if the component was started,
+ * the component will have been stopped and de-initialized.
  *
  * Should not be called from the Celix event thread.
  */
 celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manager, celix_dm_component_t *component);
 
 /**
- * Same as celix_dependencyManager_remove, but this call will not wait until all service registrations and
- * tracker are unregistered/closed on the Celix event thread.
+ * Same as celix_dependencyManager_remove, but this call will not wait until component is deactivated.
  * Can be called on the Celix event thread.
  *
  * The doneCallback will be called (if not NULL) with doneData as argument when the component is removed
