@@ -198,6 +198,14 @@ celix_status_t celix_dmComponent_setCallbacks(celix_dm_component_t *component, c
         celix_dmComponent_setCallbacks((dmCmp), (celix_dm_cmp_lifecycle_fpt)_tmp_init, (celix_dm_cmp_lifecycle_fpt)_tmp_start, (celix_dm_cmp_lifecycle_fpt)_tmp_stop, (celix_dm_cmp_lifecycle_fpt)_tmp_deinit); \
     } while(0)
 
+
+bool celix_dmComponent_isActive(celix_dm_component_t *component);
+
+/**
+ * Returns the string value of a provided state
+ */
+const char* celix_dmComponent_stateToString(celix_dm_component_state_t state);
+
 /**
  * Deprecated, use CELIX_DM_COMPONENT_SET_CALLBACKS instead.
  */
@@ -209,19 +217,22 @@ celix_status_t celix_dmComponent_setCallbacks(celix_dm_component_t *component, c
  * Create a DM Component info struct. Containing information about the component.
  * Caller has ownership.
  */
-celix_status_t celix_dmComponent_getComponentInfo(celix_dm_component_t *component, dm_component_info_pt *info);
+celix_status_t celix_dmComponent_getComponentInfo(celix_dm_component_t *component, celix_dm_component_info_t** infoOut);
 
-bool celix_dmComponent_isActive(celix_dm_component_t *component);
+/**
+ * Print the component info to the provided stream.
+ * @param info The component info to print.
+ * @param printFullInfo Whether to print the full info or summary.
+ * @param useAnsiColors Whether to use ansi colors when printing the component info.
+ * @param stream The stream to print to (e..g stdout).
+ */
+void celix_dmComponent_printComponentInfo(celix_dm_component_info_t* info, bool printFullInfo, bool useAnsiColors, FILE* stream);
 
 /**
  * Destroys a DM Component info struct.
  */
 void celix_dmComponent_destroyComponentInfo(dm_component_info_pt info);
 
-/**
- * Returns the string value of a provided state
- */
-const char* celix_dmComponent_stateToString(celix_dm_component_state_t state);
 
 #ifdef __cplusplus
 }

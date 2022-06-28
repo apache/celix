@@ -105,42 +105,6 @@ celix_status_t celix_dependencyManager_removeAllComponents(celix_dependency_mana
 celix_status_t celix_dependencyManager_removeAllComponentsAsync(celix_dependency_manager_t *manager, void *doneData, void (*doneCallback)(void *data));
 
 /**
- * Create and returns a dependency manager info struct for the specified bundle.
- * The dependency manager info contains information about the state of the dependency manager components
- *
- * Caller has ownership of the return value (use celix_dependencyManager_destroyInfo to free the memory).
- *
- * @param manager The dependency manager
- * @param bndId The bundle id to get the info from.
- * @returns The dependency manager info for the provided bundle id or NULL if the bundle id is invalid.
- */
-celix_dependency_manager_info_t* celix_dependencyManager_createInfo(celix_dependency_manager_t *manager, long bndId);
-
-/**
- * Create and returns a dependency manager info struct for all started bundles.
- * The dependency manager info contains information about the state of the dependency manager components
- *
- * Caller has ownership of the return values (use celix_arrayList_destroy to free the memory).
- *
- * @param manager The dependency manager
- * @returns A Celix array of dependency manager infos (celix_dependency_manager_info_t*)
- * for the provided bundle id or NULL if the bundle id is invalid.
- */
-celix_array_list_t * /*celix_dependency_manager_info_t* entries*/ celix_dependencyManager_createInfos(celix_dependency_manager_t *manager);
-
-/**
- * Destroys a DM info struct.
- */
-void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager, celix_dependency_manager_info_t *info);
-
-/**
- * Destroys a celix array list of  DM info structs.
- * @deprecated use celix_arrayList_destroy instead.
- */
-void celix_dependencyManager_destroyInfos(celix_dependency_manager_t *manager, celix_array_list_t * infos /*entries celix_dependency_manager_info_t*/);
-
-
-/**
  * Check if all components for the bundle of the dependency manager are active (all required dependencies resolved).
  */
 bool celix_dependencyManager_areComponentsActive(celix_dependency_manager_t *manager);
@@ -163,6 +127,59 @@ size_t celix_dependencyManager_nrOfComponents(celix_dependency_manager_t *manage
  * and/or service trackers are created).
  */
 void celix_dependencyManager_wait(celix_dependency_manager_t* manager);
+
+/**
+ * Create and returns a dependency manager info struct for the specified bundle.
+ * The dependency manager info contains information about the state of the dependency manager components
+ *
+ * Caller has ownership of the return value (use celix_dependencyManager_destroyInfo to free the memory).
+ *
+ * @param manager The dependency manager
+ * @param bndId The bundle id to get the info from.
+ * @returns The dependency manager info for the provided bundle id or NULL if the bundle id is invalid.
+ */
+celix_dependency_manager_info_t* celix_dependencyManager_createInfo(celix_dependency_manager_t *manager, long bndId);
+
+/**
+ * Create and returns a dependency manager info struct for all started bundles.
+ * The dependency manager info contains information about the state of the dependency manager components
+ *
+ * Caller has ownership of the return values (use celix_arrayList_destroy to free the memory).
+ *
+ * @param manager The dependency manager
+ * @returns A Celix array of dependency manager infos (celix_dependency_manager_info_t*)
+ */
+celix_array_list_t * /*celix_dependency_manager_info_t* entries*/ celix_dependencyManager_createInfos(celix_dependency_manager_t *manager);
+
+/**
+ * Destroys a DM info struct.
+ */
+void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager, celix_dependency_manager_info_t *info);
+
+/**
+ * Destroys a celix array list of  DM info structs.
+ * @deprecated use celix_arrayList_destroy instead.
+ */
+void celix_dependencyManager_destroyInfos(celix_dependency_manager_t *manager, celix_array_list_t * infos /*entries celix_dependency_manager_info_t*/);
+
+/**
+ * Print the dependency manager info for all bundles to the provided output stream.
+ * @param manager The dependency manager.
+ * @param fullInfo Whether to print the full info or summary.
+ * @param useAnsiColors Whether to use ansi colors when printing info.
+ * @param stream The output stream (e.g. stdout)
+ */
+void celix_dependencyManager_printInfo(celix_dependency_manager_t* manager, bool fullInfo, bool useAnsiColors, FILE* stream);
+
+/**
+ * Print the dependency manager info for the provided bundle id to the provided output stream.
+ * @param manager The dependency manager.
+ * @param fullInfo whether to print the full info or summary.
+ * @param useAnsiColors Whether to use ansi colors when printing info.
+ * @param bundleId The bundle id for which the dependency manager info should be printed.
+ * @param stream The output stream (e.g. stdout)
+ */
+void celix_dependencyManager_printInfoForBundle(celix_dependency_manager_t* manager, bool fullInfo, bool useAnsiColors, long bundleId, FILE* stream);
 
 #ifdef __cplusplus
 }

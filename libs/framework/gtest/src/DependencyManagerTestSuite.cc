@@ -1191,4 +1191,68 @@ TEST_F(DependencyManagerTestSuite, CreateInterfaceWithStaticInfo) {
     EXPECT_EQ(it->second, "1.2.3");
 }
 
+TEST_F(DependencyManagerTestSuite, TestPrintInfo) {
+    celix::dm::DependencyManager dm{ctx};
+    auto& cmp = dm.createComponent<Cmp1>();
+    cmp.addInterface<TestService>();
+    cmp.createServiceDependency<TestInterfaceWithStaticInfo>();
+    cmp.build();
+
+    char* buf = nullptr;
+    size_t bufLen = 0;
+    FILE* testStream = open_memstream(&buf, &bufLen);
+    celix_dependencyManager_printInfo(celix_bundleContext_getDependencyManager(ctx), true, true, testStream);
+    fclose(testStream);
+    std::cout << buf << std::endl;
+    EXPECT_TRUE(strstr(buf, "Cmp1")); //cmp name
+    EXPECT_TRUE(strstr(buf, "TestService")); //provided service name
+    EXPECT_TRUE(strstr(buf, "TestName")); //service dependency name
+    free(buf);
+
+    buf = nullptr;
+    bufLen = 0;
+    testStream = open_memstream(&buf, &bufLen);
+    celix_dependencyManager_printInfo(celix_bundleContext_getDependencyManager(ctx), true, false, testStream);
+    fclose(testStream);
+    EXPECT_TRUE(strstr(buf, "Cmp1")); //cmp name
+    EXPECT_TRUE(strstr(buf, "TestService")); //provided service name
+    EXPECT_TRUE(strstr(buf, "TestName")); //service dependency name
+    free(buf);
+
+    buf = nullptr;
+    bufLen = 0;
+    testStream = open_memstream(&buf, &bufLen);
+    celix_dependencyManager_printInfo(celix_bundleContext_getDependencyManager(ctx), false, true, testStream);
+    fclose(testStream);
+    EXPECT_TRUE(strstr(buf, "Cmp1")); //cmp name
+    free(buf);
+
+    buf = nullptr;
+    bufLen = 0;
+    testStream = open_memstream(&buf, &bufLen);
+    celix_dependencyManager_printInfo(celix_bundleContext_getDependencyManager(ctx), false, false, testStream);
+    fclose(testStream);
+    EXPECT_TRUE(strstr(buf, "Cmp1")); //cmp name
+    free(buf);
+
+    buf = nullptr;
+    bufLen = 0;
+    testStream = open_memstream(&buf, &bufLen);
+    celix_dependencyManager_printInfoForBundle(celix_bundleContext_getDependencyManager(ctx), true, true, 0, testStream);
+    fclose(testStream);
+    EXPECT_TRUE(strstr(buf, "Cmp1")); //cmp name
+    free(buf);
+
+    //bundle does not exist -> empty print
+    celix_dependencyManager_printInfoForBundle(celix_bundleContext_getDependencyManager(ctx), true, true, 1 /*non existing*/, stdout);
+
+    std::stringstream ss{};
+    ss << dm;
+    EXPECT_TRUE(strstr(ss.str().c_str(), "Cmp1"));
+
+    ss = std::stringstream{};
+    ss << cmp;
+    EXPECT_TRUE(strstr(ss.str().c_str(), "Cmp1"));
+}
+
 #endif
