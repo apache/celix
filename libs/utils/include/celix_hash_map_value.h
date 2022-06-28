@@ -17,27 +17,31 @@
  * under the License.
  */
 
-#ifndef BUNDLE_PRIVATE_H_
-#define BUNDLE_PRIVATE_H_
+#ifndef CELIX_HASH_MAP_VALUE_H_
+#define CELIX_HASH_MAP_VALUE_H_
 
-#include "bundle.h"
-#include "celix_bundle.h"
+#include <stdbool.h>
+#include <stddef.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * @brief Represents a value in the hash map.
+ *
+ * Because the value of hash map entry can be a pointer, long, double or boolean, the value is represented as an union.
+ */
+typedef union celix_hash_map_value {
+    void* ptrValue;
+    long longValue;
+    double doubleValue;
+    bool boolValue;
+} celix_hash_map_value_t;
 
 
+#ifdef __cplusplus
+}
+#endif
 
-struct celix_bundle {
-	bundle_context_pt context;
-    char *symbolicName;
-	char *name;
-	char *group;
-	char *description;
-	struct celix_bundle_activator *activator;
-	bundle_state_e state;
-	void * handle;
-	bundle_archive_pt archive;
-	array_list_pt modules;
-
-	celix_framework_t *framework;
-};
-
-#endif /* BUNDLE_PRIVATE_H_ */
+#endif //CELIX_HASH_MAP_VALUE_H_

@@ -41,6 +41,7 @@ add_library(utils SHARED
     src/ip_utils.c
     src/filter.c
     src/celix_log_utils.c
+    src/celix_hash_map.c
     src/celix_file_utils.c
     ${MEMSTREAM_SOURCES}
 )

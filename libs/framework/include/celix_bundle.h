@@ -59,6 +59,15 @@ celix_bundle_state_e celix_bundle_getState(const celix_bundle_t *bnd);
 char* celix_bundle_getEntry(const celix_bundle_t* bnd, const char *path);
 
 /**
+ * @brief Get a manifest attribute value from the bundle manifest.
+ * @param bnd The bundle.
+ * @param attribute The attribute to get the value from.
+ * @return The attribute value or NULL if the attribute is not present in the bundle manifest.
+ *         The returned value is valid as long as the bundle is not uninstalled.
+ */
+const char* celix_bundle_getManifestValue(const celix_bundle_t* bnd, const char* attribute);
+
+/**
  * @brief Returns the group of the bundle. Groups are used to order bundles.
  * Note the return value is valid as long as the bundle is installed.
  */

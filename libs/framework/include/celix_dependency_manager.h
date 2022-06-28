@@ -120,7 +120,7 @@ celix_dependency_manager_info_t* celix_dependencyManager_createInfo(celix_depend
  * Create and returns a dependency manager info struct for all started bundles.
  * The dependency manager info contains information about the state of the dependency manager components
  *
- * Caller has ownership of the return values (use celix_dependencyManager_destroyInfos to free the memory).
+ * Caller has ownership of the return values (use celix_arrayList_destroy to free the memory).
  *
  * @param manager The dependency manager
  * @returns A Celix array of dependency manager infos (celix_dependency_manager_info_t*)
@@ -135,6 +135,7 @@ void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager, ce
 
 /**
  * Destroys a celix array list of  DM info structs.
+ * @deprecated use celix_arrayList_destroy instead.
  */
 void celix_dependencyManager_destroyInfos(celix_dependency_manager_t *manager, celix_array_list_t * infos /*entries celix_dependency_manager_info_t*/);
 

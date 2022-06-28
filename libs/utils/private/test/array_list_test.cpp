@@ -582,32 +582,3 @@ TEST(array_list_iterator, remove){
     arrayListIterator_destroy(it_list);
 }
 
-
-template<typename I>
-void testCelixArrayForType(void(*add)(celix_array_list_t *, I val), void(*rem)(celix_array_list_t *list, I val), I val1, I val2, I val3) {
-    celix_array_list_t *array = celix_arrayList_create();
-    add(array, val1);
-    add(array, val2);
-    add(array, val3);
-
-    CHECK_EQUAL(3, celix_arrayList_size(array));
-
-    rem(array, val2);
-    CHECK_EQUAL(2, celix_arrayList_size(array));
-    rem(array, val3);
-    CHECK_EQUAL(1, celix_arrayList_size(array));
-
-    celix_arrayList_destroy(array);
-}
-
-TEST(array_list_iterator, addAndRemovesTypes) {
-    testCelixArrayForType(celix_arrayList_add, celix_arrayList_remove, (void*)0x41, (void*)0x42, (void*)0x43);
-    testCelixArrayForType(celix_arrayList_addInt, celix_arrayList_removeInt, 41, -42, 43);
-    testCelixArrayForType(celix_arrayList_addLong, celix_arrayList_removeLong, 41L, -42L, 43L);
-    testCelixArrayForType(celix_arrayList_addUInt, celix_arrayList_removeUInt, 41U, 42U, 43U);
-    testCelixArrayForType(celix_arrayList_addULong, celix_arrayList_removeULong, 41UL, 42UL, 43UL);
-    testCelixArrayForType(celix_arrayList_addFloat, celix_arrayList_removeFloat, 41.2f, 42.2f, 43.2f);
-    testCelixArrayForType(celix_arrayList_addDouble, celix_arrayList_removeDouble, 41.2, 42.2, 43.2);
-    //testCelixArrayForType(celix_arrayList_addBool, celix_arrayList_removeBool, true, false, true);
-    testCelixArrayForType(celix_arrayList_addSize, celix_arrayList_removeSize, (size_t)41, (size_t)42, (size_t)43);
-}

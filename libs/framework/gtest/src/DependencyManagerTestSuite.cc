@@ -206,7 +206,7 @@ TEST_F(DependencyManagerTestSuite, DmGetInfo) {
     auto *intInf = (dm_interface_info_t*)celix_arrayList_get(info->interfaces, 0);
     EXPECT_EQ(2, celix_properties_size(intInf->properties)); //key and component.uuid
     EXPECT_EQ(1, celix_arrayList_size(info->dependency_list));
-    celix_dependencyManager_destroyInfos(mng, infos);
+    celix_arrayList_destroy(infos);
 }
 
 TEST_F(DependencyManagerTestSuite, TestCheckActive) {

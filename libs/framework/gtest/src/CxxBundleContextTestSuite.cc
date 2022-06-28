@@ -701,6 +701,10 @@ TEST_F(CxxBundleContextTestSuite, GetBundleInformation) {
             EXPECT_EQ(bnd.getName(), std::string{"Simple Test Bundle"});
             EXPECT_EQ(bnd.getGroup(), std::string{"test/group"});
             EXPECT_EQ(bnd.getDescription(), std::string{"Test Description"});
+            EXPECT_TRUE(!bnd.getEntry("META-INF/MANIFEST.MF").empty());
+            EXPECT_EQ(bnd.getEntry("does-not-exist"), std::string{});
+            EXPECT_EQ(bnd.getManifestValue("Bundle-SymbolicName"), std::string{"simple_test_bundle1"});
+            EXPECT_EQ(bnd.getManifestValue("non-existing"), std::string{});
             startCalled = true;
         })
         .build();

@@ -38,6 +38,10 @@ struct celix_array_list {
 
     array_list_element_equals_pt equalsDeprecated;
     celix_arrayList_equals_fp  equals;
+
+    void (*simpleRemovedCallback)(void* value);
+    void* removedCallbackData;
+    void (*removedCallback)(void* data, celix_array_list_entry_t entry);
 };
 
 struct celix_array_list_iterator {
