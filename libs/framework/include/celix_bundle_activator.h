@@ -149,12 +149,12 @@ celix_status_t celix_bundleActivator_start(void *userData, celix_bundle_context_
                                                                                                                        \
 celix_status_t celix_bundleActivator_stop(void *userData, celix_bundle_context_t *ctx) {                               \
     celix_status_t status = CELIX_SUCCESS;                                                                             \
+    celix_dependency_manager_t* mng = celix_bundleContext_getDependencyManager(ctx);                                   \
+    celix_dependencyManager_removeAllComponents(mng);                                                                  \
     celix_status_t (*fn)(actType*, celix_bundle_context_t*) = (actStop);                                               \
     if (fn != NULL) {                                                                                                  \
         status = fn((actType*)userData, ctx);                                                                          \
     }                                                                                                                  \
-    celix_dependency_manager_t* mng = celix_bundleContext_getDependencyManager(ctx);                                   \
-    celix_dependencyManager_removeAllComponents(mng);                                                                  \
     return status;                                                                                                     \
 }                                                                                                                      \
                                                                                                                        \
