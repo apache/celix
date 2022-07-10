@@ -16,7 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 #include <stdio.h>
 #include <celix_api.h>
 #include <celix_shell_command.h>
