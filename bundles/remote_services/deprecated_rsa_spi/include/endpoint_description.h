@@ -29,6 +29,7 @@
 
 #include "properties.h"
 #include "array_list.h"
+#include <stdbool.h>
 
 struct endpoint_description {
     char *frameworkUUID;
@@ -45,5 +46,6 @@ typedef struct endpoint_description endpoint_description_t;
 celix_status_t endpointDescription_create(celix_properties_t *properties, endpoint_description_t **endpointDescription);
 celix_status_t endpointDescription_destroy(endpoint_description_t *description);
 
+bool endpointDescription_isInvalid(const endpoint_description_t *description);
 
 #endif /* ENDPOINT_DESCRIPTION_H_ */

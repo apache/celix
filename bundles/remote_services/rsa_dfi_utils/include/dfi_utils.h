@@ -20,13 +20,27 @@
 #ifndef DFI_UTILS_H_
 #define DFI_UTILS_H_
 
-#include "bundle.h"
-#include "bundle_context.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <celix_log_helper.h>
+#include <dyn_interface.h>
+#include <bundle.h>
+#include <bundle_context.h>
+#include <celix_errno.h>
 #include <stdio.h>
-#include "celix_errno.h"
 
 
-celix_status_t dfi_findDescriptor(celix_bundle_context_t *context, celix_bundle_t *bundle, const char *name, FILE **out);
-celix_status_t dfi_findAvprDescriptor(celix_bundle_context_t *context, celix_bundle_t *bundle, const char *name, FILE **out);
+celix_status_t dfi_findDescriptor(celix_bundle_context_t *context, const celix_bundle_t *bundle, const char *name, FILE **out);
+celix_status_t dfi_findAvprDescriptor(celix_bundle_context_t *context, const celix_bundle_t *bundle, const char *name, FILE **out);
+
+celix_status_t dfi_findAndParseInterfaceDescriptor(celix_log_helper_t *logHelper,
+        celix_bundle_context_t *ctx, const celix_bundle_t *svcOwner, const char *name,
+        dyn_interface_type **intfOut);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

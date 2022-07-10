@@ -19,8 +19,10 @@ celix_subproject(REMOTE_SERVICE_ADMIN "Option to enable building the Remote Serv
 if (REMOTE_SERVICE_ADMIN)
 
     add_subdirectory(remote_services_api)
+    add_subdirectory(rsa_spi)
     add_subdirectory(deprecated_rsa_spi)
     add_subdirectory(rsa_common)
+    add_subdirectory(rsa_dfi_utils)
     add_subdirectory(civetweb)
     add_subdirectory(discovery_common)
     add_subdirectory(discovery_configured)
@@ -28,6 +30,8 @@ if (REMOTE_SERVICE_ADMIN)
     add_subdirectory(examples)
     add_subdirectory(topology_manager)
     add_subdirectory(remote_service_admin_dfi)
+    add_subdirectory(rsa_rpc_json)
+    add_subdirectory(remote_service_admin_shm_v2)
 
     celix_subproject(RSA_SHM "Option to enable building the Discovery (SHM) bundle" OFF)
     if (RSA_SHM)
@@ -60,7 +64,8 @@ if (REMOTE_SERVICE_ADMIN)
                 GROUP "remote-services/remote-services-dfi"
                 BUNDLES
                 Celix::rsa_topology_manager
-                Celix::rsa_dfi Celix::shell
+                Celix::rsa_dfi
+                Celix::shell
                 Celix::shell_tui
                 Celix::log_admin
                 Celix::rsa_discovery_etcd

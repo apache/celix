@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "celix_errno.h"
 #include "celix_log.h"
@@ -87,4 +88,13 @@ static celix_status_t endpointDescription_verifyLongProperty(celix_properties_t 
     }
 
     return status;
+}
+
+bool endpointDescription_isInvalid(const endpoint_description_t *description) {
+    if (description == NULL || description->properties == NULL || description->serviceId < 0
+            || description->service == NULL || strlen(description->service) > NAME_MAX
+            || description->frameworkUUID == NULL || description->id == NULL) {
+        return true;
+    }
+    return false;
 }

@@ -21,7 +21,7 @@
 #define CALCULATOR_SERVICE_H_
 
 #define CALCULATOR_SERVICE              "org.apache.celix.calc.api.Calculator"
-#define CALCULATOR_CONFIGURATION_TYPE   "org.amdatu.remote.admin.http"
+#define CALCULATOR_CONFIGURATION_TYPE   "org.amdatu.remote.admin.http, celix.remote.admin.shm"
 
 typedef struct calculator_service calculator_service_t;
 
