@@ -33,7 +33,7 @@ struct rsa_json_rpc_proxy {
     FILE *callsLogFile;
     const endpoint_description_t *endpointDesc;
     remote_interceptors_handler_t *interceptorsHandler;
-    dyn_interface_type *dynIntfType;
+    dyn_interface_type *intfType;
     void *service;
     rsa_rpc_request_sender_t *requestSender;
 };
@@ -87,7 +87,7 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
         remoteInterceptorHandler_invokePostProxyCall(proxy->interceptorsHandler,
                 proxy->endpointDesc->properties, entry->name, metadata);
     } else {
-        celix_logHelper_error(proxy->logHelper,"%s has been intercepted.", proxy->endpointDesc->service);
+        celix_logHelper_error(proxy->logHelper, "%s has been intercepted.", proxy->endpointDesc->service);
         status = CELIX_INTERCEPTOR_EXCEPTION;
     }
 
@@ -138,7 +138,7 @@ celix_status_t rsaJsonRpcProxy_create(const struct rsa_json_rpc_proxy_init_param
     }
 
     celix_status_t status = CELIX_SUCCESS;
-    dyn_interface_type *dynIntfType = NULL;
+    dyn_interface_type *intfType = NULL;
     rsa_json_rpc_proxy_t *proxy = calloc(1, sizeof(*proxy));
     assert(proxy != NULL);
     proxy->ctx = initParam->ctx;
@@ -148,20 +148,45 @@ celix_status_t rsaJsonRpcProxy_create(const struct rsa_json_rpc_proxy_init_param
     proxy->interceptorsHandler = initParam->interceptorsHandler;
     proxy->requestSender = initParam->requestSender;
     status = dfi_findAndParseInterfaceDescriptor(proxy->logHelper,
-            proxy->ctx, initParam->requestingBundle, proxy->endpointDesc->service, &dynIntfType);
+            proxy->ctx, initParam->requestingBundle, proxy->endpointDesc->service, &intfType);
     if (status != CELIX_SUCCESS) {
         goto intf_descriptor_err;
     }
-    proxy->dynIntfType = dynIntfType;
-    // TODO check version
+    proxy->intfType = intfType;
 
-    size_t intfMethodNb = dynInterface_nrOfMethods(dynIntfType);
+    //Check service version
+    const char *providerVerStr = celix_properties_get(proxy->endpointDesc->properties,CELIX_FRAMEWORK_SERVICE_VERSION, NULL);
+    if (providerVerStr == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+        celix_logHelper_error(proxy->logHelper, "Proxy: Error getting provider service version.");
+        goto err_getting_svc_ver;
+    }
+    version_pt providerVersion;
+    status =version_createVersionFromString(providerVerStr,&providerVersion);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(proxy->logHelper, "Proxy: Error converting service version type. %d.", status);
+        goto err_creating_provider_ver;
+    }
+    version_pt consumerVersion = NULL;
+    bool isCompatible = false;
+    dynInterface_getVersion(intfType,&consumerVersion);
+    version_isCompatible(consumerVersion, providerVersion,&isCompatible);
+    if(!isCompatible){
+        char* consumerVerStr = NULL;
+        version_toString(consumerVersion,&consumerVerStr);
+        celix_logHelper_error(proxy->logHelper, "Proxy: Service version mismatch, consumer has %s, provider has %s.", consumerVerStr, providerVerStr);
+        free(consumerVerStr);
+        status = CELIX_SERVICE_EXCEPTION;
+        goto svc_ver_mismatch;
+    }
+
+    size_t intfMethodNb = dynInterface_nrOfMethods(intfType);
     proxy->service = calloc(1 + intfMethodNb, sizeof(void *));//The interface includes 'void *handle' and its methods
     assert(proxy->service != NULL);
     void **service = (void **)proxy->service;
     service[0] = proxy;
     struct methods_head *list = NULL;
-    dynInterface_methods(dynIntfType, &list);
+    dynInterface_methods(intfType, &list);
     struct method_entry *entry = NULL;
     void (*fn)(void) = NULL;
     int index = 0;
@@ -176,11 +201,17 @@ celix_status_t rsaJsonRpcProxy_create(const struct rsa_json_rpc_proxy_init_param
 
     *proxyOut = proxy;
 
+    version_destroy(providerVersion);
+
     return CELIX_SUCCESS;
 
 fn_closure_err:
     free(proxy->service);
-    dynInterface_destroy(dynIntfType);
+svc_ver_mismatch:
+    version_destroy(providerVersion);
+err_creating_provider_ver:
+err_getting_svc_ver:
+    dynInterface_destroy(intfType);
 intf_descriptor_err:
     free(proxy);
     return status;
@@ -189,7 +220,7 @@ intf_descriptor_err:
 void rsaJsonRpcProxy_destroy(rsa_json_rpc_proxy_t *proxy) {
     if (proxy != NULL) {
         free(proxy->service);
-        dynInterface_destroy(proxy->dynIntfType);
+        dynInterface_destroy(proxy->intfType);
         free(proxy);
     }
     return;

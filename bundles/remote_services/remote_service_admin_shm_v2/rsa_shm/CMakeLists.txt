@@ -36,11 +36,11 @@ target_include_directories(rsa_shm PRIVATE src)
 
 if (ENABLE_TESTING)
     celix_bundle_private_libs(rsa_shm Celix::shm_pool)
-    celix_bundle_private_libs(rsa_shm Celix::rsa_spi)
+    celix_bundle_private_libs(rsa_shm Celix::c_rsa_spi)
 endif()
 
 target_link_libraries(rsa_shm PRIVATE
-    Celix::rsa_spi
+    Celix::c_rsa_spi
     Celix::rsa_common
     Celix::deprecated_rsa_spi
     Celix::shm_pool

@@ -133,18 +133,36 @@ static void rsaJsonRpcEndpoint_addSvcWithOwner(void *handle, void *service,
     status = dfi_findAndParseInterfaceDescriptor(endpoint->logHelper,endpoint->ctx,
             svcOwner, endpoint->endpointDesc->service, &endpoint->intfType);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error(endpoint->logHelper, "Parse service descriptor failed.");
+        celix_logHelper_error(endpoint->logHelper, "Endpoint: Parse service descriptor failed.");
         goto intf_type_err;
     }
 
-// TODO check version
+    // Check version
+    char *intfVersion = NULL;
+    int ret = dynInterface_getVersionString(endpoint->intfType, &intfVersion);
+    if (ret != 0) {
+        celix_logHelper_error(endpoint->logHelper, "Endpoint: Error getting interface version from the descriptor.");
+        goto err_getting_intf_ver;
+    }
+    const char *serviceVersion = celix_properties_get(endpoint->endpointDesc->properties,CELIX_FRAMEWORK_SERVICE_VERSION, NULL);
+    if (serviceVersion == NULL) {
+        celix_logHelper_error(endpoint->logHelper, "Endpoint: Error getting service version.");
+        goto err_getting_service_ver;
+    }
+    if(strcmp(serviceVersion, intfVersion)!=0){
+        celix_logHelper_error(endpoint->logHelper, "Endpoint: Service version (%s) and interface version from the descriptor (%s) are not the same!",serviceVersion,intfVersion);
+        goto version_mismatch;
+    }
 
     endpoint->service = service;
 
     celixThreadMutex_unlock(&endpoint->mutex);
 
     return;
-
+version_mismatch:
+err_getting_service_ver:
+err_getting_intf_ver:
+    dynInterface_destroy(endpoint->intfType);
 intf_type_err:
     celixThreadMutex_unlock(&endpoint->mutex);
     return;

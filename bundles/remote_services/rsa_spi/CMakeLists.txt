@@ -15,20 +15,20 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(rsa_spi SHARED
+add_library(c_rsa_spi SHARED
         src/rsa_rpc_request_sender.c)
         
-set_target_properties(rsa_spi PROPERTIES OUTPUT_NAME "celix_rsa_spi")
-target_include_directories(rsa_spi PUBLIC
+set_target_properties(c_rsa_spi PROPERTIES OUTPUT_NAME "celix_c_rsa_spi")
+target_include_directories(c_rsa_spi PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
     )
-target_link_libraries(rsa_spi PUBLIC Celix::framework Celix::deprecated_rsa_spi)
+target_link_libraries(c_rsa_spi PUBLIC Celix::framework Celix::deprecated_rsa_spi)
 
-set_target_properties(rsa_spi PROPERTIES "SOVERSION" 1)
+set_target_properties(c_rsa_spi PROPERTIES "SOVERSION" 1)
 
-install(TARGETS rsa_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa
+install(TARGETS c_rsa_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/rsa)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/rsa COMPONENT rsa)
 
 #Setup target aliases to match external usage
-add_library(Celix::rsa_spi ALIAS rsa_spi)
+add_library(Celix::c_rsa_spi ALIAS c_rsa_spi)

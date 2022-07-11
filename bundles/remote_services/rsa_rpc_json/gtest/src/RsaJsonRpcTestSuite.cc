@@ -61,6 +61,7 @@ public:
         uuid = celix_bundleContext_getProperty(ctx.get(), OSGI_FRAMEWORK_FRAMEWORK_UUID, nullptr);
         celix_properties_set(endpointDesc->properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
         celix_properties_set(endpointDesc->properties, OSGI_FRAMEWORK_OBJECTCLASS, CALCULATOR_SERVICE);
+        celix_properties_set(endpointDesc->properties, CELIX_FRAMEWORK_SERVICE_VERSION, "1.3.0");
         celix_properties_set(endpointDesc->properties, OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
         celix_properties_set(endpointDesc->properties, OSGI_RSA_SERVICE_IMPORTED, "true");
         endpointDesc->frameworkUUID = (char*)celix_properties_get(endpointDesc->properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
