@@ -20,6 +20,7 @@
 #include <rsa_shm_export_registration.h>
 #include <rsa_shm_import_registration.h>
 #include <remote_service_admin.h>
+#include <rsa_request_sender_service.h>
 #include <celix_log_helper.h>
 #include <celix_api.h>
 #include <assert.h>
@@ -27,7 +28,9 @@
 typedef struct rsa_shm_activator {
     rsa_shm_t *admin;
     remote_service_admin_service_t adminService;
-    long svcId;
+    long adminSvcId;
+    rsa_request_sender_service_t reqSenderService;
+    long reqSenderSvcId;
     celix_log_helper_t *logHelper;
 }rsa_shm_activator_t;
 
@@ -40,10 +43,25 @@ celix_status_t rsaShmActivator_start(rsa_shm_activator_t *activator, celix_bundl
     activator->logHelper = celix_logHelper_create(context, "celix_rsa_shm");
     assert(activator->logHelper != NULL);
 
+
     status = rsaShm_create(context, activator->logHelper, &activator->admin);
     if (status != CELIX_SUCCESS) {
         goto rsa_shm_err;
     }
+
+    activator->reqSenderService.handle = (void*)activator->admin;
+    activator->reqSenderService.sendRequest = (void*)rsaShm_send;
+    celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
+    opts.serviceName = RSA_REQUEST_SENDER_SERVICE_NAME;
+    opts.serviceVersion = RSA_REQUEST_SENDER_SERVICE_VERSION;
+    opts.svc = &activator->reqSenderService;
+    activator->reqSenderSvcId = celix_bundleContext_registerServiceWithOptionsAsync(context, &opts);
+    if (activator->reqSenderSvcId < 0) {
+        status = CELIX_BUNDLE_EXCEPTION;
+        goto err_registering_req_sender_svc;
+    }
+
+    rsaShm_setRequestSenderSvcId(activator->admin, activator->reqSenderSvcId);
 
     activator->adminService.admin = (void*)activator->admin;
     activator->adminService.exportService = (void*)rsaShm_exportService;
@@ -66,9 +84,9 @@ celix_status_t rsaShmActivator_start(rsa_shm_activator_t *activator, celix_bundl
     activator->adminService.importRegistration_getException = importRegistration_getException;
     activator->adminService.importRegistration_getImportReference = importRegistration_getImportReference;
 
-    activator->svcId = celix_bundleContext_registerServiceAsync(context, &activator->adminService,
+    activator->adminSvcId = celix_bundleContext_registerServiceAsync(context, &activator->adminService,
             OSGI_RSA_REMOTE_SERVICE_ADMIN, NULL);
-    if (activator->svcId < 0) {
+    if (activator->adminSvcId < 0) {
         status = CELIX_SERVICE_EXCEPTION;
         goto err_registering_svc;
     }
@@ -76,6 +94,9 @@ celix_status_t rsaShmActivator_start(rsa_shm_activator_t *activator, celix_bundl
     return CELIX_SUCCESS;
 
 err_registering_svc:
+    celix_bundleContext_unregisterServiceAsync(context, activator->reqSenderSvcId, NULL, NULL);
+    celix_bundleContext_waitForAsyncUnregistration(context, activator->reqSenderSvcId);
+err_registering_req_sender_svc:
     rsaShm_destroy(activator->admin);
 rsa_shm_err:
     celix_logHelper_destroy(activator->logHelper);
@@ -86,7 +107,8 @@ celix_status_t rsaShmActivator_stop(rsa_shm_activator_t *activator, celix_bundle
     assert(activator != NULL);
     assert(context != NULL);
 
-    celix_bundleContext_unregisterServiceAsync(context, activator->svcId, NULL, NULL);
+    celix_bundleContext_unregisterServiceAsync(context, activator->adminSvcId, NULL, NULL);
+    celix_bundleContext_unregisterServiceAsync(context, activator->reqSenderSvcId, NULL, NULL);
     celix_bundleContext_waitForEvents(context);//Ensure that no events use admin
     rsaShm_destroy(activator->admin);
     celix_bundleContext_waitForEvents(context);//Ensure that no events use logHelper

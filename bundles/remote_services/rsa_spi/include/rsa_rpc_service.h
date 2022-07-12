@@ -23,7 +23,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <rsa_rpc_request_sender.h>
 #include <endpoint_description.h>
 #include <celix_properties.h>
 #include <celix_errno.h>
@@ -38,7 +37,7 @@ extern "C" {
 
 typedef struct rsa_rpc_service {
     void *handle;
-    celix_status_t (*installProxy)(void *handle, const endpoint_description_t *endpointDesc, rsa_rpc_request_sender_t *requestSender, long *proxySvcId);
+    celix_status_t (*installProxy)(void *handle, const endpoint_description_t *endpointDesc, long requestSenderSvcId, long *proxySvcId);
     void (*uninstallProxy)(void *handle, long proxySvcId);
     celix_status_t (*installEndpoint)(void *handle, const endpoint_description_t *endpointDesc, long *endpointSvcId);
     void (*uninstallEndpoint)(void *handle, long endpointSvcId);

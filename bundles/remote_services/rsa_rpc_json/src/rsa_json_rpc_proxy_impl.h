@@ -23,32 +23,22 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <rsa_rpc_request_sender.h>
 #include <remote_interceptors_handler.h>
 #include <endpoint_description.h>
 #include <celix_log_helper.h>
 #include <celix_api.h>
 #include <stdio.h>
 
-typedef struct rsa_json_rpc_proxy rsa_json_rpc_proxy_t;
+typedef struct rsa_json_rpc_proxy_factory rsa_json_rpc_proxy_factory_t;
 
-struct rsa_json_rpc_proxy_init_param {
-    celix_bundle_context_t* ctx;
-    celix_log_helper_t *logHelper;
-    FILE *logFile;
-    remote_interceptors_handler_t *interceptorsHandler;
-    const celix_bundle_t *requestingBundle;
-    const endpoint_description_t *endpointDesc;
-    rsa_rpc_request_sender_t *requestSender;
-};
+celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
+        FILE *logFile, remote_interceptors_handler_t *interceptorsHandler,
+        const endpoint_description_t *endpointDesc, long requestSenderSvcId,
+        rsa_json_rpc_proxy_factory_t **proxyFactoryOut);
 
-celix_status_t rsaJsonRpcProxy_create(const struct rsa_json_rpc_proxy_init_param *initParam,
-        rsa_json_rpc_proxy_t **proxyOut);
+void rsaJsonRpcProxy_factoryDestroy(rsa_json_rpc_proxy_factory_t *proxyFactory);
 
-void rsaJsonRpcProxy_destroy(rsa_json_rpc_proxy_t *proxy);
-
-void *rsaJsonRpcProxy_getService(rsa_json_rpc_proxy_t *proxy);
-
+long rsaJsonRpcProxy_factorySvcId(rsa_json_rpc_proxy_factory_t *proxyFactory);
 
 #ifdef __cplusplus
 }

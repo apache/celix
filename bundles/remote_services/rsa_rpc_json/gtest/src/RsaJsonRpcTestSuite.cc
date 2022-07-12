@@ -18,7 +18,7 @@
  */
 
 #include <rsa_rpc_service.h>
-#include <rsa_rpc_request_sender.h>
+#include <rsa_request_sender_service.h>
 #include <rsa_rpc_endpoint_service.h>
 #include <calculator_service.h>
 #include <endpoint_description.h>
@@ -31,6 +31,9 @@
 #include <uuid/uuid.h>
 #include <jansson.h>
 #include <sys/uio.h>
+
+static celix_status_t rsaJsonRpcTst_sendRequest(void *sendFnHandle, const endpoint_description_t *endpointDesciption,
+        celix_properties_t *metadata, const struct iovec *request, struct iovec *response);
 
 class RsaJsonRpcTestSuite : public ::testing::Test {
 public:
@@ -71,32 +74,48 @@ public:
         return endpointDesc;
     }
 
+    void registerRequestSenderSvc() {
+        reqSenderService.handle = this;
+        reqSenderService.sendRequest = rsaJsonRpcTst_sendRequest;
+        celix_service_registration_options_t opts{};
+        opts.serviceName = RSA_REQUEST_SENDER_SERVICE_NAME;
+        opts.serviceVersion = RSA_REQUEST_SENDER_SERVICE_VERSION;
+        opts.svc = &reqSenderService;
+        reqSenderSvcId = celix_bundleContext_registerServiceWithOptions(ctx.get(), &opts);
+        EXPECT_TRUE(reqSenderSvcId >= 0);
+    }
+
+    void unregisterRequestSenderSvc() {
+        celix_bundleContext_unregisterService(ctx.get(), reqSenderSvcId);
+    }
+
     long proxySvcId{-1};
     long endpointSvcId{-1};
     std::shared_ptr<celix_framework_t> fw{};
     std::shared_ptr<celix_bundle_context_t> ctx{};
     std::shared_ptr<endpoint_description_t> endpointDescription{};
+    rsa_request_sender_service_t reqSenderService{};
+    long reqSenderSvcId{-1};
 };
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-celix_status_t rsaJsonRpcTst_sendRequest(void *sendFnHandle, const endpoint_description_t *endpointDesciption,
+static celix_status_t rsaJsonRpcTst_sendRequest(void *sendFnHandle, const endpoint_description_t *endpointDesciption,
         celix_properties_t *metadata, const struct iovec *request, struct iovec *response) {
      char *reply = strdup("{\n\"r\":3.0\n}");
      response->iov_base = reply;
     response->iov_len = strlen(reply) + 1;
     return CELIX_SUCCESS;
 }
+
 #pragma GCC diagnostic pop
 
-static rsa_rpc_request_sender_t *requestSender{};
 static void rsaJsonRpcTst_InstallProxy(void *handle __attribute__((__unused__)), void *svc __attribute__((__unused__))) {
     auto *testSuite = static_cast<RsaJsonRpcTestSuite *>(handle);
     auto *rpcSvc = static_cast<rsa_rpc_service_t *>(svc);
 
-    auto status = rsaRpcRequestSender_create(rsaJsonRpcTst_sendRequest, nullptr, &requestSender);
-    EXPECT_EQ(CELIX_SUCCESS, status);
-    status = rpcSvc->installProxy(rpcSvc->handle, testSuite->endpointDescription.get(),
-            requestSender, &testSuite->proxySvcId);
+    testSuite->registerRequestSenderSvc();
+    auto status = rpcSvc->installProxy(rpcSvc->handle, testSuite->endpointDescription.get(),
+            testSuite->reqSenderSvcId, &testSuite->proxySvcId);
     EXPECT_EQ(CELIX_SUCCESS, status);
 }
 
@@ -104,8 +123,7 @@ static void rsaJsonRpcTst_UninstallProxy(void *handle __attribute__((__unused__)
     auto *testSuite = static_cast<RsaJsonRpcTestSuite *>(handle);
     auto *rpcSvc = static_cast<rsa_rpc_service_t *>(svc);
     rpcSvc->uninstallProxy(rpcSvc->handle, testSuite->proxySvcId);
-    rsaRpcRequestSender_close(requestSender);
-    (void)rsaRpcRequestSender_release(requestSender);
+    testSuite->unregisterRequestSenderSvc();
 }
 
 TEST_F(RsaJsonRpcTestSuite, InstallUninstallProxy) {

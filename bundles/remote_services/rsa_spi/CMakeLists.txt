@@ -15,16 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(c_rsa_spi SHARED
-        src/rsa_rpc_request_sender.c)
-        
-set_target_properties(c_rsa_spi PROPERTIES OUTPUT_NAME "celix_c_rsa_spi")
-target_include_directories(c_rsa_spi PUBLIC
+add_library(c_rsa_spi INTERFACE)
+target_include_directories(c_rsa_spi INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
     )
-target_link_libraries(c_rsa_spi PUBLIC Celix::framework Celix::deprecated_rsa_spi)
-
-set_target_properties(c_rsa_spi PROPERTIES "SOVERSION" 1)
+target_link_libraries(c_rsa_spi INTERFACE Celix::framework Celix::deprecated_rsa_spi)
 
 install(TARGETS c_rsa_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/rsa)

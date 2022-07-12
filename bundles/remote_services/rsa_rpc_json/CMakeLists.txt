@@ -33,10 +33,6 @@ if (RSA_JSON_RPC)
     )
     
     target_include_directories(rsa_json_rpc PRIVATE src)
-    
-    if (ENABLE_TESTING)
-        celix_bundle_private_libs(rsa_json_rpc Celix::c_rsa_spi)
-    endif()
 
     target_link_libraries(rsa_json_rpc PRIVATE
         Celix::deprecated_rsa_spi

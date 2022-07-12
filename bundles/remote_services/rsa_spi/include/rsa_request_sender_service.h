@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef _RSA_RPC_REQUEST_SENDER_H_
-#define _RSA_RPC_REQUEST_SENDER_H_
+#ifndef _RSA_REQUEST_SENDER_SERVICE_H_
+#define _RSA_REQUEST_SENDER_SERVICE_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,28 +28,18 @@ extern "C" {
 #include <celix_errno.h>
 #include <sys/uio.h>
 
-typedef celix_status_t (*send_request_fn)(void *sendFnHandle, const endpoint_description_t *endpointDesciption,
-        celix_properties_t *metadata, const struct iovec *request, struct iovec *response);
+#define RSA_REQUEST_SENDER_SERVICE_NAME "rsa_request_sender_service"
+#define RSA_REQUEST_SENDER_SERVICE_VERSION "1.0.0"
+#define RSA_REQUEST_SENDER_SERVICE_USE_RANGE "[1.0.0,2)"
 
-typedef struct rsa_rpc_request_sender rsa_rpc_request_sender_t;
-
-celix_status_t rsaRpcRequestSender_create(send_request_fn sendFn, void *sendFnHandle,
-        rsa_rpc_request_sender_t **requestSenderOut);
-
-void rsaRpcRequestSender_close(rsa_rpc_request_sender_t *requestSender);
-
-void rsaRpcRequestSender_addRef(rsa_rpc_request_sender_t *requestSender);
-
-bool rsaRpcRequestSender_release(rsa_rpc_request_sender_t *requestSender);
-
-celix_status_t rsaRpcRequestSender_send(rsa_rpc_request_sender_t *requestSender,
-        const endpoint_description_t *endpointDesciption, celix_properties_t *metadata,
-        const struct iovec *request, struct iovec *response);
-
+typedef struct rsa_request_sender_service {
+    void *handle;
+    celix_status_t (*sendRequest)(void *handle, const endpoint_description_t *endpointDesciption, celix_properties_t *metadata, const struct iovec *request, struct iovec *response);
+}rsa_request_sender_service_t;
 
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _RSA_RPC_REQUEST_SENDER_H_ */
+#endif /* _RSA_REQUEST_SENDER_SERVICE_H_ */

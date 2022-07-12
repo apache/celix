@@ -18,7 +18,8 @@
  */
 
 #include <rsa_json_rpc_proxy_impl.h>
-#include <rsa_rpc_request_sender.h>
+#include <rsa_request_sender_service.h>
+#include <remote_constants.h>
 #include <json_rpc.h>
 #include <dfi_utils.h>
 #include <celix_api.h>
@@ -26,17 +27,231 @@
 #include <stdbool.h>
 #include <assert.h>
 
-
-struct rsa_json_rpc_proxy {
+struct rsa_json_rpc_proxy_factory {
     celix_bundle_context_t* ctx;
     celix_log_helper_t *logHelper;
     FILE *callsLogFile;
-    const endpoint_description_t *endpointDesc;
+    celix_service_factory_t factory;
+    long factorySvcId;
+    endpoint_description_t *endpointDesc;
+    hash_map_t *proxies;//key is requestingBundle, value is rsa_json_rpc_proxy_t *.
     remote_interceptors_handler_t *interceptorsHandler;
+    long reqSenderTrkId;
+    celix_thread_mutex_t mutex;//it protects reqSenderSvc
+    rsa_request_sender_service_t *reqSenderSvc;
+};
+
+typedef struct rsa_json_rpc_proxy {
+    rsa_json_rpc_proxy_factory_t *proxyFactory;
     dyn_interface_type *intfType;
     void *service;
-    rsa_rpc_request_sender_t *requestSender;
-};
+    unsigned int useCnt;
+}rsa_json_rpc_proxy_t;
+
+static void rsaJsonRpcProxy_addRequestSenderSvc(void *handle, void *svc);
+static void rsaJsonRpcProxy_removeRequestSenderSvc(void *handle, void *svc);
+static void* rsaJsonRpcProxy_getService(void *handle, const celix_bundle_t *requestingBundle,
+        const celix_properties_t *svcProperties);
+static void rsaJsonRpcProxy_ungetService(void *handle, const celix_bundle_t *requestingBundle,
+        const celix_properties_t *svcProperties);
+static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxyFactory,
+        const celix_bundle_t *requestingBundle, rsa_json_rpc_proxy_t **proxyOut);
+static void rsaJsonRpcProxy_destroy(rsa_json_rpc_proxy_t *proxy);
+static void rsaJsonRpcProxy_stopReqSenderTrkDone(void *data);
+static void rsaJsonRpcProxy_unregisterFacSvcDone(void *data);
+
+celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
+        FILE *logFile, remote_interceptors_handler_t *interceptorsHandler,
+        const endpoint_description_t *endpointDesc, long requestSenderSvcId,
+        rsa_json_rpc_proxy_factory_t **proxyFactoryOut) {
+    assert(ctx != NULL);
+    assert(logHelper != NULL);
+    assert(interceptorsHandler != NULL);
+    assert(endpointDesc != NULL);
+    assert(requestSenderSvcId > 0);
+    celix_status_t status = CELIX_SUCCESS;
+    rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)calloc(1, sizeof(*proxyFactory));
+    assert(proxyFactory != NULL);
+    proxyFactory->ctx = ctx;
+    proxyFactory->logHelper = logHelper;
+    proxyFactory->callsLogFile = logFile;
+    proxyFactory->interceptorsHandler = interceptorsHandler;
+
+    proxyFactory->proxies = hashMap_create(NULL, NULL, NULL, NULL);
+    assert(proxyFactory->proxies != NULL);
+
+    //copy endpoint description
+    proxyFactory->endpointDesc = (endpoint_description_t*)calloc(1, sizeof(endpoint_description_t));
+    assert(proxyFactory->endpointDesc != NULL);
+    proxyFactory->endpointDesc->properties = celix_properties_copy(endpointDesc->properties);
+    assert(proxyFactory->endpointDesc->properties != NULL);
+    proxyFactory->endpointDesc->frameworkUUID = (char*)celix_properties_get(proxyFactory->endpointDesc->properties,
+            OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
+    proxyFactory->endpointDesc->serviceId = endpointDesc->serviceId;
+    proxyFactory->endpointDesc->id = (char*)celix_properties_get(proxyFactory->endpointDesc->properties,
+            OSGI_RSA_ENDPOINT_ID, NULL);
+    proxyFactory->endpointDesc->service = strdup(endpointDesc->service);
+    assert(proxyFactory->endpointDesc->service != NULL);
+
+    proxyFactory->reqSenderSvc = NULL;
+    status = celixThreadMutex_create(&proxyFactory->mutex, NULL);
+    if (status != CELIX_SUCCESS) {
+        goto mutex_err;
+    }
+    char filter[32] = {0};// It is longer than the size of "service.id" + serviceId
+    (void)snprintf(filter, sizeof(filter), "(service.id=%ld)", requestSenderSvcId);
+    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+    opts.filter.filter = filter;
+    opts.filter.serviceName = RSA_REQUEST_SENDER_SERVICE_NAME;
+    opts.filter.ignoreServiceLanguage = true;
+    opts.callbackHandle = proxyFactory;
+    opts.add = rsaJsonRpcProxy_addRequestSenderSvc;
+    opts.remove = rsaJsonRpcProxy_removeRequestSenderSvc;
+    proxyFactory->reqSenderTrkId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
+    if (proxyFactory->reqSenderTrkId < 0) {
+        celix_logHelper_error(logHelper, "Proxy: Error tracking request sender service.");
+        status = CELIX_SERVICE_EXCEPTION;
+        goto sender_tracker_err;
+    }
+
+    proxyFactory->factory.handle = proxyFactory;
+    proxyFactory->factory.getService = rsaJsonRpcProxy_getService;
+    proxyFactory->factory.ungetService = rsaJsonRpcProxy_ungetService;
+    celix_properties_t *props =  celix_properties_copy(endpointDesc->properties);
+    assert(props != NULL);
+    proxyFactory->factorySvcId = celix_bundleContext_registerServiceFactoryAsync(
+            ctx, &proxyFactory->factory, endpointDesc->service, props);
+    if (proxyFactory->factorySvcId  < 0) {
+        celix_logHelper_error(logHelper, "Proxy: Error Registering proxy service.");
+        status = CELIX_SERVICE_EXCEPTION;
+        goto proxy_svc_fac_err;
+    }
+
+    *proxyFactoryOut = proxyFactory;
+    return CELIX_SUCCESS;
+proxy_svc_fac_err:
+    // props has been freed by framework
+    celix_bundleContext_stopTrackerAsync(ctx, proxyFactory->reqSenderTrkId,
+            proxyFactory, rsaJsonRpcProxy_stopReqSenderTrkDone);
+    return status;
+sender_tracker_err:
+    (void)celixThreadMutex_destroy(&proxyFactory->mutex);
+mutex_err:
+    endpointDescription_destroy(proxyFactory->endpointDesc);
+    hashMap_destroy(proxyFactory->proxies, false, false);
+    free(proxyFactory);
+    return status;
+}
+
+void rsaJsonRpcProxy_factoryDestroy(rsa_json_rpc_proxy_factory_t *proxyFactory) {
+    assert(proxyFactory != NULL);
+    celix_bundleContext_unregisterServiceAsync(proxyFactory->ctx, proxyFactory->factorySvcId,
+            proxyFactory, rsaJsonRpcProxy_unregisterFacSvcDone);
+}
+
+long rsaJsonRpcProxy_factorySvcId(rsa_json_rpc_proxy_factory_t *proxyFactory) {
+    return proxyFactory->factorySvcId;
+}
+
+static void rsaJsonRpcProxy_stopReqSenderTrkDone(void *data) {
+    assert(data);
+    rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)data;
+    (void)celixThreadMutex_destroy(&proxyFactory->mutex);
+    endpointDescription_destroy(proxyFactory->endpointDesc);
+    assert(hashMap_isEmpty(proxyFactory->proxies));
+    hashMap_destroy(proxyFactory->proxies, false, false);
+    free(proxyFactory);
+    return;
+}
+
+static void rsaJsonRpcProxy_unregisterFacSvcDone(void *data) {
+    assert(data);
+    rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)data;
+    celix_bundleContext_stopTrackerAsync(proxyFactory->ctx, proxyFactory->reqSenderTrkId,
+            proxyFactory, rsaJsonRpcProxy_stopReqSenderTrkDone);
+}
+
+static void rsaJsonRpcProxy_addRequestSenderSvc(void *handle, void *svc) {
+    assert(handle != NULL);
+    assert(svc != NULL);
+    rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)handle;
+    celixThreadMutex_lock(&proxyFactory->mutex);
+    proxyFactory->reqSenderSvc = (rsa_request_sender_service_t *)svc;
+    celixThreadMutex_unlock(&proxyFactory->mutex);
+    return;
+}
+
+static void rsaJsonRpcProxy_removeRequestSenderSvc(void *handle, void *svc) {
+    assert(handle != NULL);
+    assert(svc != NULL);
+    rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)handle;
+    celixThreadMutex_lock(&proxyFactory->mutex);
+    if (svc == proxyFactory->reqSenderSvc) {
+        proxyFactory->reqSenderSvc = NULL;
+    }
+    celixThreadMutex_unlock(&proxyFactory->mutex);
+    return;
+}
+
+static void* rsaJsonRpcProxy_getService(void *handle, const celix_bundle_t *requestingBundle,
+        const celix_properties_t *svcProperties) {
+    assert(handle != NULL);
+    assert(requestingBundle != NULL);
+    assert(svcProperties != NULL);
+    celix_status_t status = CELIX_SUCCESS;
+    rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)handle;
+
+    rsa_json_rpc_proxy_t *proxy = hashMap_get(proxyFactory->proxies, requestingBundle);
+    if (proxy == NULL) {
+        status = rsaJsonRpcProxy_create(proxyFactory, requestingBundle, &proxy);
+        if (status != CELIX_SUCCESS) {
+            celix_logHelper_error(proxyFactory->logHelper,"Error Creating service proxy for %s. %d",
+                    proxyFactory->endpointDesc->service, status);
+            goto service_proxy_err;
+        }
+        hashMap_put(proxyFactory->proxies, (void*)requestingBundle, proxy);
+    }
+    proxy->useCnt += 1;
+
+    return proxy->service;
+
+service_proxy_err:
+    return NULL;
+}
+
+static void rsaJsonRpcProxy_ungetService(void *handle, const celix_bundle_t *requestingBundle,
+        const celix_properties_t *svcProperties) {
+    assert(handle != NULL);
+    assert(requestingBundle != NULL);
+    assert(svcProperties != NULL);
+    rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)handle;
+    rsa_json_rpc_proxy_t *proxy = hashMap_get(proxyFactory->proxies, requestingBundle);
+    if (proxy != NULL) {
+        proxy->useCnt -= 1;
+        if (proxy->useCnt == 0) {
+            (void)hashMap_remove(proxyFactory->proxies, requestingBundle);
+            rsaJsonRpcProxy_destroy(proxy);
+        }
+    }
+    return;
+}
+
+static celix_status_t rsaJsonRpcProxy_sendRequest(rsa_json_rpc_proxy_t * proxy,
+        celix_properties_t *metadata, const struct iovec *request, struct iovec *response) {
+    celix_status_t status = CELIX_SUCCESS;
+    rsa_json_rpc_proxy_factory_t *proxyFactory = proxy->proxyFactory;
+    celixThreadMutex_lock(&proxyFactory->mutex);
+    rsa_request_sender_service_t *reqSenderSvc = proxyFactory->reqSenderSvc;
+    if (reqSenderSvc != NULL) {
+        status = reqSenderSvc->sendRequest(reqSenderSvc->handle, proxyFactory->endpointDesc,
+                metadata, request, response);
+    } else {
+        celix_logHelper_error(proxyFactory->logHelper,"Proxy: Error sending request. Request sender service is not exist.");
+        status = CELIX_ILLEGAL_STATE;
+    }
+    celixThreadMutex_unlock(&proxyFactory->mutex);
+    return status;
+}
 
 static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *returnVal) {
     celix_status_t  status = CELIX_SUCCESS;
@@ -50,8 +265,10 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
     assert(userData != NULL);
     struct method_entry *entry = userData;
     rsa_json_rpc_proxy_t *proxy = *((void **)args[0]);
-    char *invokeRequest = NULL;
+    rsa_json_rpc_proxy_factory_t *proxyFactory = proxy->proxyFactory;
+    assert(proxyFactory != NULL);
 
+    char *invokeRequest = NULL;
     int rc = jsonRpc_prepareInvokeRequest(entry->dynFunc, entry->id, args, &invokeRequest);
     if (rc != 0) {
         *(celix_status_t *)returnVal = CELIX_SERVICE_EXCEPTION;
@@ -60,12 +277,11 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
 
     struct iovec replyIovec = {NULL,0};
     celix_properties_t *metadata = NULL;
-    bool cont = remoteInterceptorHandler_invokePreProxyCall(proxy->interceptorsHandler,
-            proxy->endpointDesc->properties, entry->name, &metadata);
+    bool cont = remoteInterceptorHandler_invokePreProxyCall(proxyFactory->interceptorsHandler,
+            proxyFactory->endpointDesc->properties, entry->name, &metadata);
     if (cont) {
         struct iovec requestIovec = {invokeRequest,strlen(invokeRequest) + 1};
-        status = rsaRpcRequestSender_send(proxy->requestSender, proxy->endpointDesc,
-                metadata, &requestIovec, &replyIovec);
+        status = rsaJsonRpcProxy_sendRequest(proxy, metadata, &requestIovec, &replyIovec);
         if (status == CELIX_SUCCESS && dynFunction_hasReturn(entry->dynFunc)) {
             if (replyIovec.iov_base != NULL) {
                 int rsErrno = CELIX_SUCCESS;
@@ -78,16 +294,16 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
                     status = rsErrno;
                 }
             } else {
-                celix_logHelper_error(proxy->logHelper,"Expect service proxy has return, but reply is empty.");
+                celix_logHelper_error(proxyFactory->logHelper,"Expect service proxy has return, but reply is empty.");
                 status = CELIX_ILLEGAL_ARGUMENT;
             }
         } else if (status != CELIX_SUCCESS) {
-            celix_logHelper_error(proxy->logHelper,"Service proxy send request failed. %d", status);
+            celix_logHelper_error(proxyFactory->logHelper,"Service proxy send request failed. %d", status);
         }
-        remoteInterceptorHandler_invokePostProxyCall(proxy->interceptorsHandler,
-                proxy->endpointDesc->properties, entry->name, metadata);
+        remoteInterceptorHandler_invokePostProxyCall(proxyFactory->interceptorsHandler,
+                proxyFactory->endpointDesc->properties, entry->name, metadata);
     } else {
-        celix_logHelper_error(proxy->logHelper, "%s has been intercepted.", proxy->endpointDesc->service);
+        celix_logHelper_error(proxyFactory->logHelper, "%s has been intercepted.", proxyFactory->endpointDesc->service);
         status = CELIX_INTERCEPTOR_EXCEPTION;
     }
 
@@ -96,10 +312,10 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
         celix_properties_destroy(metadata);
     }
 
-    if (proxy->callsLogFile != NULL) {
-        fprintf(proxy->callsLogFile, "PROXY REMOTE CALL:\n\tservice=%s\n\tservice_id=%lu\n\trequest_payload=%s\n\trequest_response=%s\n\tstatus=%i\n",
-                proxy->endpointDesc->service, proxy->endpointDesc->serviceId, invokeRequest, (char *)replyIovec.iov_base, status);
-        fflush(proxy->callsLogFile);
+    if (proxyFactory->callsLogFile != NULL) {
+        fprintf(proxyFactory->callsLogFile, "PROXY REMOTE CALL:\n\tservice=%s\n\tservice_id=%lu\n\trequest_payload=%s\n\trequest_response=%s\n\tstatus=%i\n",
+                proxyFactory->endpointDesc->service, proxyFactory->endpointDesc->serviceId, invokeRequest, (char *)replyIovec.iov_base, status);
+        fflush(proxyFactory->callsLogFile);
     }
 
 
@@ -113,58 +329,32 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
     return;
 }
 
-bool rsaJsonRpcProxy_isInitParamInvalid(const struct rsa_json_rpc_proxy_init_param *initParam) {
-    if (initParam == NULL) {
-        return true;
-    }
-    if (initParam->ctx == NULL || initParam->logHelper == NULL
-            || initParam->interceptorsHandler == NULL || initParam->requestingBundle == NULL
-            || initParam->requestSender == NULL) {
-        return true;
-    }
-    const endpoint_description_t *endpointDesc = initParam->endpointDesc;
-    if (endpointDesc == NULL || endpointDesc->frameworkUUID == NULL
-            || endpointDesc->id == NULL || endpointDesc->service == NULL
-            || endpointDesc->properties == NULL || (long)endpointDesc->serviceId < 0) {
-        return true;
-    }
-    return false;
-}
-
-celix_status_t rsaJsonRpcProxy_create(const struct rsa_json_rpc_proxy_init_param *initParam,
-        rsa_json_rpc_proxy_t **proxyOut) {
-    if (rsaJsonRpcProxy_isInitParamInvalid(initParam)) {
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
-
+static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxyFactory,
+        const celix_bundle_t *requestingBundle, rsa_json_rpc_proxy_t **proxyOut) {
     celix_status_t status = CELIX_SUCCESS;
     dyn_interface_type *intfType = NULL;
     rsa_json_rpc_proxy_t *proxy = calloc(1, sizeof(*proxy));
     assert(proxy != NULL);
-    proxy->ctx = initParam->ctx;
-    proxy->logHelper = initParam->logHelper;
-    proxy->callsLogFile = initParam->logFile;
-    proxy->endpointDesc = initParam->endpointDesc;
-    proxy->interceptorsHandler = initParam->interceptorsHandler;
-    proxy->requestSender = initParam->requestSender;
-    status = dfi_findAndParseInterfaceDescriptor(proxy->logHelper,
-            proxy->ctx, initParam->requestingBundle, proxy->endpointDesc->service, &intfType);
+    proxy->proxyFactory = proxyFactory;
+    proxy->useCnt = 0;
+    status = dfi_findAndParseInterfaceDescriptor(proxyFactory->logHelper,
+            proxyFactory->ctx, requestingBundle, proxyFactory->endpointDesc->service, &intfType);
     if (status != CELIX_SUCCESS) {
         goto intf_descriptor_err;
     }
     proxy->intfType = intfType;
 
     //Check service version
-    const char *providerVerStr = celix_properties_get(proxy->endpointDesc->properties,CELIX_FRAMEWORK_SERVICE_VERSION, NULL);
+    const char *providerVerStr = celix_properties_get(proxyFactory->endpointDesc->properties,CELIX_FRAMEWORK_SERVICE_VERSION, NULL);
     if (providerVerStr == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
-        celix_logHelper_error(proxy->logHelper, "Proxy: Error getting provider service version.");
+        celix_logHelper_error(proxyFactory->logHelper, "Proxy: Error getting provider service version.");
         goto err_getting_svc_ver;
     }
     version_pt providerVersion;
     status =version_createVersionFromString(providerVerStr,&providerVersion);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error(proxy->logHelper, "Proxy: Error converting service version type. %d.", status);
+        celix_logHelper_error(proxyFactory->logHelper, "Proxy: Error converting service version type. %d.", status);
         goto err_creating_provider_ver;
     }
     version_pt consumerVersion = NULL;
@@ -174,7 +364,7 @@ celix_status_t rsaJsonRpcProxy_create(const struct rsa_json_rpc_proxy_init_param
     if(!isCompatible){
         char* consumerVerStr = NULL;
         version_toString(consumerVersion,&consumerVerStr);
-        celix_logHelper_error(proxy->logHelper, "Proxy: Service version mismatch, consumer has %s, provider has %s.", consumerVerStr, providerVerStr);
+        celix_logHelper_error(proxyFactory->logHelper, "Proxy: Service version mismatch, consumer has %s, provider has %s.", consumerVerStr, providerVerStr);
         free(consumerVerStr);
         status = CELIX_SERVICE_EXCEPTION;
         goto svc_ver_mismatch;
@@ -217,19 +407,11 @@ intf_descriptor_err:
     return status;
 };
 
-void rsaJsonRpcProxy_destroy(rsa_json_rpc_proxy_t *proxy) {
-    if (proxy != NULL) {
-        free(proxy->service);
-        dynInterface_destroy(proxy->intfType);
-        free(proxy);
-    }
+static void rsaJsonRpcProxy_destroy(rsa_json_rpc_proxy_t *proxy) {
+    free(proxy->service);
+    dynInterface_destroy(proxy->intfType);
+    free(proxy);
     return;
 }
 
-void *rsaJsonRpcProxy_getService(rsa_json_rpc_proxy_t *proxy) {
-    if (proxy == NULL) {
-        return NULL;
-    }
-    return proxy->service;
-}
 

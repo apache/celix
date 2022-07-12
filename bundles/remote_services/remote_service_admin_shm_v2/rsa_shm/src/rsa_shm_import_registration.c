@@ -19,7 +19,6 @@
 
 #include <rsa_shm_import_registration.h>
 #include <rsa_rpc_service.h>
-#include <rsa_rpc_request_sender.h>
 #include <rsa_shm_constants.h>
 #include <remote_constants.h>
 #include <celix_log_helper.h>
@@ -31,7 +30,7 @@ struct import_registration {
     celix_bundle_context_t *context;
     celix_log_helper_t *logHelper;
     endpoint_description_t *endpointDesc;
-    rsa_rpc_request_sender_t *requestSender;
+    long reqSenderSvcId;
     long rpcSvcTrkId;
     rsa_rpc_service_t *rpcSvc;
     long proxySvcId;
@@ -42,10 +41,10 @@ static void importRegistration_removeRpcSvc(void *handle, void *svc);
 
 celix_status_t importRegistration_create(celix_bundle_context_t *context,
         celix_log_helper_t *logHelper, endpoint_description_t *endpointDesc,
-        rsa_rpc_request_sender_t *requestSender, import_registration_t **importOut) {
+        long reqSenderSvcId, import_registration_t **importOut) {
     celix_status_t status = CELIX_SUCCESS;
     if (context == NULL || logHelper == NULL || endpointDescription_isInvalid(endpointDesc)
-            || requestSender == NULL || importOut == NULL) {
+            || reqSenderSvcId < 0 || importOut == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
     import_registration_t *import = (import_registration_t *)calloc(1, sizeof(*import));
@@ -66,8 +65,7 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
     import->endpointDesc->service = strdup(endpointDesc->service);
     assert(import->endpointDesc->service != NULL);
 
-    import->requestSender = requestSender;
-    rsaRpcRequestSender_addRef(import->requestSender);
+    import->reqSenderSvcId = reqSenderSvcId;
     import->rpcSvc = NULL;
 
     /* If the properties of imported service include 'RSA_RPC_TYPE_KEY',
@@ -102,7 +100,6 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
     return CELIX_SUCCESS;
 tracker_err:
 rpc_type_filter_err:
-    (void)rsaRpcRequestSender_release(import->requestSender);
     endpointDescription_destroy(import->endpointDesc);
     free(import);
     return status;
@@ -111,7 +108,6 @@ rpc_type_filter_err:
 static void importRegistration_stopRpcSvcTrkDone(void *data) {
     assert(data != NULL);
     import_registration_t *import = (import_registration_t *)data;
-    (void)rsaRpcRequestSender_release(import->requestSender);
     endpointDescription_destroy(import->endpointDesc);
     free(import);
 }
@@ -138,7 +134,7 @@ static void importRegistration_addRpcSvc(void *handle, void *svc) {
     rsa_rpc_service_t *rpcSvc = (rsa_rpc_service_t *)svc;
     long proxySvcId = -1;
     status = rpcSvc->installProxy(rpcSvc->handle, import->endpointDesc,
-            import->requestSender, &proxySvcId);
+            import->reqSenderSvcId, &proxySvcId);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(import->logHelper,"RSA import reg: Error Installing %s proxy. %d.",
                 import->endpointDesc->service, status);

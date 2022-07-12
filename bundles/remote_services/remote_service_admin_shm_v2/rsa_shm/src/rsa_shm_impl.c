@@ -22,7 +22,6 @@
 #include <rsa_shm_constants.h>
 #include <rsa_shm_export_registration.h>
 #include <rsa_shm_import_registration.h>
-#include <rsa_rpc_request_sender.h>
 #include <endpoint_description.h>
 #include <remote_constants.h>
 #include <celix_api.h>
@@ -38,7 +37,6 @@
 struct rsa_shm {
     celix_bundle_context_t *context;
     celix_log_helper_t *logHelper;
-    rsa_rpc_request_sender_t *requestSender;
     celix_thread_mutex_t exportedServicesLock;//It protects exportedServices
     celix_long_hash_map_t *exportedServices;// Key is service id, value is the list of exported registration.
     celix_thread_mutex_t importedServicesLock;// It protects importedServices
@@ -46,6 +44,7 @@ struct rsa_shm {
     rsa_shm_client_manager_t *shmClientManager;
     rsa_shm_server_t *shmServer;
     char *shmServerName;
+    long reqSenderSvcId;
 };
 
 
@@ -54,9 +53,6 @@ static celix_status_t rsaShm_receiveMsgCB(void *handle, rsa_shm_server_t *shmSer
 
 static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
         celix_properties_t *exportedProperties, char *interface, endpoint_description_t **description);
-
-static celix_status_t rsaShm_send(rsa_shm_t *admin, endpoint_description_t *endpoint,
-        celix_properties_t *metadata, const struct iovec *request, struct iovec *response);
 
 celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t *logHelper,
         rsa_shm_t **admin) {
@@ -70,7 +66,7 @@ celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t
 
     (*admin)->context = context;
     (*admin)->logHelper = logHelper;
-
+    (*admin)->reqSenderSvcId = -1;
     status = celixThreadMutex_create(&(*admin)->exportedServicesLock, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error((*admin)->logHelper, "Error creating mutex for exported service. %d", status);
@@ -115,15 +111,7 @@ celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t
         goto shm_server_err;
     }
 
-    status = rsaRpcRequestSender_create((send_request_fn)rsaShm_send, *admin, &(*admin)->requestSender);
-    if (status != CELIX_SUCCESS) {
-        celix_logHelper_error((*admin)->logHelper, "Error creating rsa shm request sender. %d", status);
-        goto request_sender_err;
-    }
-
     return CELIX_SUCCESS;
-request_sender_err:
-    rsaShmServer_destroy((*admin)->shmServer);
 shm_server_err:
     free((*admin)->shmServerName);
 bundle_id_err:
@@ -140,14 +128,12 @@ exported_svc_lock_err:
     return status;
 }
 
+void rsaShm_setRequestSenderSvcId(rsa_shm_t *admin, long reqSenderSvcId) {
+    admin->reqSenderSvcId = reqSenderSvcId;
+    return;
+}
+
 void rsaShm_destroy(rsa_shm_t *admin) {
-    if (admin == NULL) {
-        return;
-    }
-
-    rsaRpcRequestSender_close(admin->requestSender);
-    (void)rsaRpcRequestSender_release(admin->requestSender);
-
     rsaShmServer_destroy(admin->shmServer);
     free(admin->shmServerName);
 
@@ -216,7 +202,7 @@ err_getting_service_id:
     return status;
 }
 
-static celix_status_t rsaShm_send(rsa_shm_t *admin, endpoint_description_t *endpoint,
+celix_status_t rsaShm_send(rsa_shm_t *admin, endpoint_description_t *endpoint,
         celix_properties_t *metadata, const struct iovec *request, struct iovec *response) {
     celix_status_t status = CELIX_SUCCESS;
     if (admin == NULL || endpoint == NULL || request == NULL || response == NULL) {
@@ -565,7 +551,7 @@ celix_status_t rsaShm_importService(rsa_shm_t *admin, endpoint_description_t *en
         }
 
         status = importRegistration_create(admin->context, admin->logHelper,
-                endpointDesc, admin->requestSender, &import);
+                endpointDesc, admin->reqSenderSvcId, &import);
         if (status != CELIX_SUCCESS) {
             celix_logHelper_error(admin->logHelper, "Error Creating import registration for service %s. %d", endpointDesc->service, status);
             goto registration_create_failed;

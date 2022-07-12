@@ -36,6 +36,11 @@ celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t
 
 void rsaShm_destroy(rsa_shm_t *admin);
 
+void rsaShm_setRequestSenderSvcId(rsa_shm_t *admin, long reqSenderSvcId);
+
+celix_status_t rsaShm_send(rsa_shm_t *admin, endpoint_description_t *endpoint,
+        celix_properties_t *metadata, const struct iovec *request, struct iovec *response);
+
 celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
         celix_properties_t *properties, celix_array_list_t **registrations);
 

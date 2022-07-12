@@ -34,7 +34,7 @@ typedef struct import_reference import_reference_t;
 
 celix_status_t importRegistration_create(celix_bundle_context_t *context,
         celix_log_helper_t *logHelper, endpoint_description_t *endpointDesc,
-        rsa_rpc_request_sender_t *requestSender, import_registration_t **importRegOut);
+        long reqSenderSvcId, import_registration_t **importRegOut);
 
 void importRegistration_destroy(import_registration_t *import);
 

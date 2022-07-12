@@ -23,7 +23,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <rsa_rpc_request_sender.h>
 #include <endpoint_description.h>
 #include <celix_log_helper.h>
 #include <celix_api.h>
@@ -35,7 +34,7 @@ celix_status_t rsaJsonRpc_create(celix_bundle_context_t* ctx, celix_log_helper_t
 void rsaJsonRpc_destroy(rsa_json_rpc_t *jsonRpc);
 
 celix_status_t rsaJsonRpc_installProxy(void *handle, const endpoint_description_t *endpointDesc,
-        rsa_rpc_request_sender_t *requestSender, long *proxySvcId);
+        long requestSenderSvcId, long *proxySvcId);
 
 void rsaJsonRpc_uninstallProxy(void *handle, long proxySvcId);
 
