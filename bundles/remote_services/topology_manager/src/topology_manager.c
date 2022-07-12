@@ -236,12 +236,7 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt unus
 
         if (status == CELIX_SUCCESS) {
             hash_map_pt exports = hashMapEntry_getValue(entry);
-
-            if (exports == NULL) {
-                exports = hashMap_create(NULL, NULL, NULL, NULL);
-                hashMap_put(manager->exportedServices,reference,exports);
-            }
-
+            assert(exports != NULL);// It must not be NULL, It has been created in function topologyManager_addExportedService_nolock
             hashMap_put(exports, rsa, endpoints);
             topologyManager_notifyListenersEndpointAdded(manager, rsa, endpoints);
         }
@@ -273,7 +268,6 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 	while (hashMapIterator_hasNext(exportedSvcIter)) {
 
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(exportedSvcIter);
-		service_reference_pt key = hashMapEntry_getKey(entry);
 		hash_map_pt exports = hashMapEntry_getValue(entry);
 
 		/*
@@ -296,14 +290,6 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 		/*if(exports_list!=NULL){
 			arrayList_destroy(exports_list);
 		}*/
-
-		if (hashMap_size(exports) == 0) {
-			hashMap_remove(manager->exportedServices, key);
-			hashMap_destroy(exports, false, false);
-
-			hashMapIterator_destroy(exportedSvcIter);
-			exportedSvcIter = hashMapIterator_create(manager->exportedServices);
-		}
 	}
 	hashMapIterator_destroy(exportedSvcIter);
 
@@ -570,6 +556,7 @@ static celix_status_t topologyManager_addExportedService_nolock(void * handle, s
 
 	scope_getExportProperties(manager->scope, reference, &serviceProperties);
 	hash_map_pt exports = hashMap_create(NULL, NULL, NULL, NULL);
+	assert(exports != NULL);
 	hashMap_put(manager->exportedServices, reference, exports);
 
 	int size = celix_arrayList_size(manager->rsaList);
