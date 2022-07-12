@@ -19,7 +19,7 @@
 
 #include <rsa_shm_export_registration.h>
 #include <rsa_rpc_service.h>
-#include <rsa_rpc_endpoint_service.h>
+#include <rsa_request_handler_service.h>
 #include <rsa_shm_constants.h>
 #include <endpoint_description.h>
 #include <remote_constants.h>
@@ -35,11 +35,11 @@ struct export_reference {
     service_reference_pt reference;
 };
 
-typedef struct export_endpoint_service_entry {
+typedef struct export_request_handler_service_entry {
     struct celix_ref ref;
     celix_thread_mutex_t mutex; //projects below
-    rsa_rpc_endpoint_service_t *endpointSvc;
-}export_endpoint_service_entry_t;
+    rsa_request_handler_service_t *reqHandlerSvc;
+}export_request_handler_service_entry_t;
 
 struct export_registration {
     struct celix_ref ref;
@@ -49,19 +49,19 @@ struct export_registration {
     service_reference_pt reference;
     long rpcSvcTrkId;
     rsa_rpc_service_t *rpcSvc;
-    long endpointSvcTrkId;
-    long endpointSvcId;
-    struct export_endpoint_service_entry *endpointSvcEntry;
+    long reqHandlerSvcTrkId;
+    long reqHandlerSvcId;
+    export_request_handler_service_entry_t *reqHandlerSvcEntry;
 };
 
 static void exportRegistration_addRpcSvc(void *handle, void *svc);
 static void exportRegistration_removeRpcSvc(void *handle, void *svc);
-static void exportRegistration_addEndpointSvc(void *handle, void *svc);
-static void exportRegistration_removeEndpointSvc(void *handle, void *svc);
+static void exportRegistration_addRequestHandlerSvc(void *handle, void *svc);
+static void exportRegistration_removeRequestHandlerSvc(void *handle, void *svc);
 static void exportRegistration_destroy(export_registration_t *export);
-static export_endpoint_service_entry_t *exportRegistration_createEpSvcEntry(void);
-static void exportRegistration_retainEpSvcEntry(export_endpoint_service_entry_t *epSvcEntry);
-static void exportRegistration_releaseEpSvcEntry(export_endpoint_service_entry_t *epSvcEntry);
+static export_request_handler_service_entry_t *exportRegistration_createReqHandlerSvcEntry(void);
+static void exportRegistration_retainReqHandlerSvcEntry(export_request_handler_service_entry_t *reqHandlerSvcEntry);
+static void exportRegistration_releaseReqHandlerSvcEntry(export_request_handler_service_entry_t *reqHandlerSvcEntry);
 
 celix_status_t exportRegistration_create(celix_bundle_context_t *context,
         celix_log_helper_t *logHelper, service_reference_pt reference,
@@ -91,9 +91,9 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
     assert(export->endpointDesc->service != NULL);
 
     export->rpcSvc = NULL;
-    export->endpointSvcTrkId = -1;
-    export->endpointSvcId = -1;
-    export->endpointSvcEntry = NULL;
+    export->reqHandlerSvcTrkId = -1;
+    export->reqHandlerSvcId = -1;
+    export->reqHandlerSvcEntry = NULL;
     export->reference = reference;
     status = bundleContext_retainServiceReference(context, reference);
     if (status != CELIX_SUCCESS) {
@@ -101,8 +101,8 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
         goto err_retaining_service_ref;
     }
 
-    export->endpointSvcEntry = exportRegistration_createEpSvcEntry();
-    if (export->endpointSvcEntry == NULL) {
+    export->reqHandlerSvcEntry = exportRegistration_createReqHandlerSvcEntry();
+    if (export->reqHandlerSvcEntry == NULL) {
         celix_logHelper_error(export->logHelper,"RSA export reg: Error creating endpoint svc entry.");
         status = CELIX_SERVICE_EXCEPTION;
         goto ep_svc_entry_err;
@@ -141,7 +141,7 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
 
 tracker_err:
 rpc_type_filter_err:
-    exportRegistration_releaseEpSvcEntry(export->endpointSvcEntry);
+    exportRegistration_releaseReqHandlerSvcEntry(export->reqHandlerSvcEntry);
 ep_svc_entry_err:
     bundleContext_ungetServiceReference(context, reference);
 err_retaining_service_ref:
@@ -165,7 +165,7 @@ void exportRegistration_release(export_registration_t *export) {
 static void exportRegistration_destroyCallback(void* data) {
     assert(data != NULL);
     export_registration_t *export = (export_registration_t *)data;
-    exportRegistration_releaseEpSvcEntry(export->endpointSvcEntry);
+    exportRegistration_releaseReqHandlerSvcEntry(export->reqHandlerSvcEntry);
     bundleContext_ungetServiceReference(export->context, export->reference);
     endpointDescription_destroy(export->endpointDesc);
     free(export);
@@ -178,36 +178,36 @@ static void exportRegistration_destroy(export_registration_t *export) {
     return ;
 }
 
-static export_endpoint_service_entry_t *exportRegistration_createEpSvcEntry(void) {
+static export_request_handler_service_entry_t *exportRegistration_createReqHandlerSvcEntry(void) {
     celix_status_t status = CELIX_SUCCESS;
-    export_endpoint_service_entry_t *endpointSvcEntry =
-            (export_endpoint_service_entry_t *)calloc(1, sizeof(*endpointSvcEntry));
-    assert(endpointSvcEntry != NULL);
-    celix_ref_init(&endpointSvcEntry->ref);
-    status = celixThreadMutex_create(&endpointSvcEntry->mutex, NULL);
+    export_request_handler_service_entry_t *reqHandlerSvcEntry =
+            (export_request_handler_service_entry_t *)calloc(1, sizeof(*reqHandlerSvcEntry));
+    assert(reqHandlerSvcEntry != NULL);
+    celix_ref_init(&reqHandlerSvcEntry->ref);
+    status = celixThreadMutex_create(&reqHandlerSvcEntry->mutex, NULL);
     if (status != CELIX_SUCCESS) {
         goto mutex_err;
     }
-    endpointSvcEntry->endpointSvc = NULL;
-    return endpointSvcEntry;
+    reqHandlerSvcEntry->reqHandlerSvc = NULL;
+    return reqHandlerSvcEntry;
 mutex_err:
-    free(endpointSvcEntry);
+    free(reqHandlerSvcEntry);
     return NULL;
 }
 
-static void exportRegistration_retainEpSvcEntry(export_endpoint_service_entry_t *epSvcEntry) {
-    celix_ref_get(&epSvcEntry->ref);
+static void exportRegistration_retainReqHandlerSvcEntry(export_request_handler_service_entry_t *reqHandlerSvcEntry) {
+    celix_ref_get(&reqHandlerSvcEntry->ref);
 }
 
-static bool exportRegistration_destroyEpSvcEntry(struct celix_ref *ref) {
-    export_endpoint_service_entry_t *epSvcEntry = (export_endpoint_service_entry_t *)ref;
-    celixThreadMutex_destroy(&epSvcEntry->mutex);
-    free(epSvcEntry);
+static bool exportRegistration_destroyReqHandlerSvcEntry(struct celix_ref *ref) {
+    export_request_handler_service_entry_t *reqHandlerSvcEntry = (export_request_handler_service_entry_t *)ref;
+    celixThreadMutex_destroy(&reqHandlerSvcEntry->mutex);
+    free(reqHandlerSvcEntry);
     return true;
 }
 
-static void exportRegistration_releaseEpSvcEntry(export_endpoint_service_entry_t *epSvcEntry) {
-    (void)celix_ref_put(&epSvcEntry->ref, exportRegistration_destroyEpSvcEntry);
+static void exportRegistration_releaseReqHandlerSvcEntry(export_request_handler_service_entry_t *reqHandlerSvcEntry) {
+    (void)celix_ref_put(&reqHandlerSvcEntry->ref, exportRegistration_destroyReqHandlerSvcEntry);
 }
 
 static void exportRegistration_addRpcSvc(void *handle, void *svc) {
@@ -221,9 +221,9 @@ static void exportRegistration_addRpcSvc(void *handle, void *svc) {
     }
     celix_logHelper_info(export->logHelper,"RSA export reg: RSA rpc service add.");
     rsa_rpc_service_t *rpcSvc = (rsa_rpc_service_t *)svc;
-    long endpointSvcId = -1;
+    long reqHandlerSvcId = -1;
     status = rpcSvc->installEndpoint(rpcSvc->handle, export->endpointDesc,
-            &endpointSvcId);
+            &reqHandlerSvcId);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(export->logHelper,"RSA export reg: Error Installing %s endpoint. %d.",
                 export->endpointDesc->service, status);
@@ -232,28 +232,28 @@ static void exportRegistration_addRpcSvc(void *handle, void *svc) {
 
     char filter[32] = {0};// It is longer than the size of "service.id" + endpointSvcId
     (void)snprintf(filter, sizeof(filter), "(%s=%ld)", OSGI_FRAMEWORK_SERVICE_ID,
-            endpointSvcId);
+            reqHandlerSvcId);
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.filter = filter;
-    opts.filter.serviceName = RSA_RPC_ENDPOINT_SERVICE_NAME;
-    opts.filter.versionRange = RSA_RPC_ENDPOINT_SERVICE_USE_RANGE;
+    opts.filter.serviceName = RSA_REQUEST_HANDLER_SERVICE_NAME;
+    opts.filter.versionRange = RSA_REQUEST_HANDLER_SERVICE_USE_RANGE;
     opts.filter.ignoreServiceLanguage = true;
-    opts.callbackHandle = export->endpointSvcEntry;
-    exportRegistration_retainEpSvcEntry(export->endpointSvcEntry);
-    opts.add = exportRegistration_addEndpointSvc;
-    opts.remove = exportRegistration_removeEndpointSvc;
-    export->endpointSvcTrkId = celix_bundleContext_trackServicesWithOptionsAsync(export->context, &opts);
-    if (export->endpointSvcTrkId < 0) {
-        celix_logHelper_error(export->logHelper,"RSA export reg: Error Tracking service for %s(%d)", RSA_RPC_ENDPOINT_SERVICE_NAME, export->endpointSvcId);
+    opts.callbackHandle = export->reqHandlerSvcEntry;
+    exportRegistration_retainReqHandlerSvcEntry(export->reqHandlerSvcEntry);
+    opts.add = exportRegistration_addRequestHandlerSvc;
+    opts.remove = exportRegistration_removeRequestHandlerSvc;
+    export->reqHandlerSvcTrkId = celix_bundleContext_trackServicesWithOptionsAsync(export->context, &opts);
+    if (export->reqHandlerSvcTrkId < 0) {
+        celix_logHelper_error(export->logHelper,"RSA export reg: Error Tracking service for %s(%d)", RSA_REQUEST_HANDLER_SERVICE_NAME, export->reqHandlerSvcId);
         goto err_tracking_endpoint_svc;
     }
-    export->endpointSvcId = endpointSvcId;
+    export->reqHandlerSvcId = reqHandlerSvcId;
     export->rpcSvc = (rsa_rpc_service_t *)svc;
 
     return;
 err_tracking_endpoint_svc:
-    exportRegistration_releaseEpSvcEntry(export->endpointSvcEntry);
-    rpcSvc->uninstallEndpoint(rpcSvc->handle, endpointSvcId);
+    exportRegistration_releaseReqHandlerSvcEntry(export->reqHandlerSvcEntry);
+    rpcSvc->uninstallEndpoint(rpcSvc->handle, reqHandlerSvcId);
 err_installing_endpoint:
     return;
 }
@@ -270,39 +270,39 @@ static void exportRegistration_removeRpcSvc(void *handle, void *svc) {
     celix_logHelper_info(export->logHelper,"RSA import reg: RSA rpc service remove.");
 
     rsa_rpc_service_t *rpcSvc = (rsa_rpc_service_t *)svc;
-    if (rpcSvc != NULL && export->endpointSvcId >= 0) {
-        celix_bundleContext_stopTrackerAsync(export->context, export->endpointSvcTrkId,
-                export->endpointSvcEntry, (void*)exportRegistration_releaseEpSvcEntry);
-        rpcSvc->uninstallEndpoint(rpcSvc->handle, export->endpointSvcId);
-        export->endpointSvcId = -1;
+    if (rpcSvc != NULL && export->reqHandlerSvcId >= 0) {
+        celix_bundleContext_stopTrackerAsync(export->context, export->reqHandlerSvcTrkId,
+                export->reqHandlerSvcEntry, (void*)exportRegistration_releaseReqHandlerSvcEntry);
+        rpcSvc->uninstallEndpoint(rpcSvc->handle, export->reqHandlerSvcId);
+        export->reqHandlerSvcId = -1;
         export->rpcSvc = NULL;
     }
     return;
 }
 
 
-static void exportRegistration_addEndpointSvc(void *handle, void *svc) {
+static void exportRegistration_addRequestHandlerSvc(void *handle, void *svc) {
     assert(handle != NULL);
     assert(svc != NULL);
-    struct export_endpoint_service_entry *endpointSvcEntry =
-            (struct export_endpoint_service_entry *)handle;
-    celixThreadMutex_lock(&endpointSvcEntry->mutex);
-    endpointSvcEntry->endpointSvc = (rsa_rpc_endpoint_service_t *)svc;
-    celixThreadMutex_unlock(&endpointSvcEntry->mutex);
+    struct export_request_handler_service_entry *reqHandlerSvcEntry =
+            (struct export_request_handler_service_entry *)handle;
+    celixThreadMutex_lock(&reqHandlerSvcEntry->mutex);
+    reqHandlerSvcEntry->reqHandlerSvc = (rsa_request_handler_service_t *)svc;
+    celixThreadMutex_unlock(&reqHandlerSvcEntry->mutex);
 
     return;
 }
 
-static void exportRegistration_removeEndpointSvc(void *handle, void *svc) {
+static void exportRegistration_removeRequestHandlerSvc(void *handle, void *svc) {
     assert(handle != NULL);
     assert(svc != NULL);
-    struct export_endpoint_service_entry *endpointSvcEntry =
-            (struct export_endpoint_service_entry *)handle;
-    celixThreadMutex_lock(&endpointSvcEntry->mutex);
-    if (svc == endpointSvcEntry->endpointSvc) {
-        endpointSvcEntry->endpointSvc = NULL;
+    struct export_request_handler_service_entry *reqHandlerSvcEntry =
+            (struct export_request_handler_service_entry *)handle;
+    celixThreadMutex_lock(&reqHandlerSvcEntry->mutex);
+    if (svc == reqHandlerSvcEntry->reqHandlerSvc) {
+        reqHandlerSvcEntry->reqHandlerSvc = NULL;
     }
-    celixThreadMutex_unlock(&endpointSvcEntry->mutex);
+    celixThreadMutex_unlock(&reqHandlerSvcEntry->mutex);
     return;
 }
 
@@ -312,17 +312,17 @@ celix_status_t exportRegistration_call(export_registration_t *export, celix_prop
     if (export == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    struct export_endpoint_service_entry *endpointSvcEntry = export->endpointSvcEntry;
-    assert(endpointSvcEntry != NULL);
-    celixThreadMutex_lock(&endpointSvcEntry->mutex);
-    if (endpointSvcEntry->endpointSvc != NULL) {
-        // XXX The handleRequest function is blocked, how can we move it to outside of critical section.
-        status =  endpointSvcEntry->endpointSvc->handleRequest(endpointSvcEntry->endpointSvc->handle, metadata, request, response);
+    struct export_request_handler_service_entry *reqHandlerSvcEntry = export->reqHandlerSvcEntry;
+    assert(reqHandlerSvcEntry != NULL);
+    celixThreadMutex_lock(&reqHandlerSvcEntry->mutex);
+    if (reqHandlerSvcEntry->reqHandlerSvc != NULL) {
+        // XXX The handleRequest function may be blocked, how can we move it to outside of critical section.
+        status =  reqHandlerSvcEntry->reqHandlerSvc->handleRequest(reqHandlerSvcEntry->reqHandlerSvc->handle, metadata, request, response);
     } else {
         status = CELIX_ILLEGAL_STATE;
         celix_logHelper_error(export->logHelper, "RSA export reg: Error Handling request. Please ensure rsa rpc servie is active.");
     }
-    celixThreadMutex_unlock(&endpointSvcEntry->mutex);
+    celixThreadMutex_unlock(&reqHandlerSvcEntry->mutex);
 
     return status;
 }

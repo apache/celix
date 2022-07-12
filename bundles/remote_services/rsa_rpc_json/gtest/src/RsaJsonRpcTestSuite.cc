@@ -19,7 +19,7 @@
 
 #include <rsa_rpc_service.h>
 #include <rsa_request_sender_service.h>
-#include <rsa_rpc_endpoint_service.h>
+#include <rsa_request_handler_service.h>
 #include <calculator_service.h>
 #include <endpoint_description.h>
 #include <remote_constants.h>
@@ -90,7 +90,7 @@ public:
     }
 
     long proxySvcId{-1};
-    long endpointSvcId{-1};
+    long requestHandlerSvcId{-1};
     std::shared_ptr<celix_framework_t> fw{};
     std::shared_ptr<celix_bundle_context_t> ctx{};
     std::shared_ptr<endpoint_description_t> endpointDescription{};
@@ -183,14 +183,14 @@ static void rsaJsonRpcTst_InstallEndpoint(void *handle __attribute__((__unused__
     auto *testSuite = static_cast<RsaJsonRpcTestSuite *>(handle);
     auto *rpcSvc = static_cast<rsa_rpc_service_t *>(svc);
     auto status = rpcSvc->installEndpoint(rpcSvc->handle, testSuite->endpointDescription.get(),
-            &testSuite->endpointSvcId);
+            &testSuite->requestHandlerSvcId);
     EXPECT_EQ(CELIX_SUCCESS, status);
 }
 
 static void rsaJsonRpcTst_unstallEndpoint(void *handle __attribute__((__unused__)), void *svc __attribute__((__unused__))) {
     auto *testSuite = static_cast<RsaJsonRpcTestSuite *>(handle);
     auto *rpcSvc = static_cast<rsa_rpc_service_t *>(svc);
-    rpcSvc->uninstallEndpoint(rpcSvc->handle, testSuite->endpointSvcId);
+    rpcSvc->uninstallEndpoint(rpcSvc->handle, testSuite->requestHandlerSvcId);
 }
 
 TEST_F(RsaJsonRpcTestSuite, InstallUninstallEndpoint) {
@@ -212,7 +212,7 @@ TEST_F(RsaJsonRpcTestSuite, InstallUninstallEndpoint) {
 
 void rsaJsonRpcTestSuite_useEndpointService(void *handle, void *svc) {
     (void)handle;
-    auto *epSvc = static_cast<rsa_rpc_endpoint_service_t *>(svc);
+    auto *epSvc = static_cast<rsa_request_handler_service_t *>(svc);
     celix_properties_t *metadata{nullptr};
     struct iovec request{};
     struct iovec response{};
@@ -263,9 +263,9 @@ TEST_F(RsaJsonRpcTestSuite, UseEndpoint) {
 
     char filter[32];
     (void)snprintf(filter, sizeof(filter), "(%s=%ld)", OSGI_FRAMEWORK_SERVICE_ID,
-            endpointSvcId);
+            requestHandlerSvcId);
     celix_service_use_options_t epsOpts{};
-    epsOpts.filter.serviceName = RSA_RPC_ENDPOINT_SERVICE_NAME;
+    epsOpts.filter.serviceName = RSA_REQUEST_HANDLER_SERVICE_NAME;
     epsOpts.filter.filter = filter;
     epsOpts.callbackHandle = this;
     epsOpts.use = rsaJsonRpcTestSuite_useEndpointService;

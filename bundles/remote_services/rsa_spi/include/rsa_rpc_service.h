@@ -39,8 +39,8 @@ typedef struct rsa_rpc_service {
     void *handle;
     celix_status_t (*installProxy)(void *handle, const endpoint_description_t *endpointDesc, long requestSenderSvcId, long *proxySvcId);
     void (*uninstallProxy)(void *handle, long proxySvcId);
-    celix_status_t (*installEndpoint)(void *handle, const endpoint_description_t *endpointDesc, long *endpointSvcId);
-    void (*uninstallEndpoint)(void *handle, long endpointSvcId);
+    celix_status_t (*installEndpoint)(void *handle, const endpoint_description_t *endpointDesc, long *requestHandlerSvcId);
+    void (*uninstallEndpoint)(void *handle, long requestHandlerSvcId);
 }rsa_rpc_service_t;
 
 

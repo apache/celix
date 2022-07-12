@@ -39,9 +39,9 @@ celix_status_t rsaJsonRpc_installProxy(void *handle, const endpoint_description_
 void rsaJsonRpc_uninstallProxy(void *handle, long proxySvcId);
 
 celix_status_t rsaJsonRpc_installEndpoint(void *handle, const endpoint_description_t *endpointDesc,
-        long *endpointSvcId);
+        long *requestHandlerSvcId);
 
-void rsaJsonRpc_uninstallEndpoint(void *handle, long endpointSvcId);
+void rsaJsonRpc_uninstallEndpoint(void *handle, long requestHandlerSvcId);
 
 #ifdef __cplusplus
 }

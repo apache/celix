@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef _RSA_RPC_ENDPOINT_SERVICE_H_
-#define _RSA_RPC_ENDPOINT_SERVICE_H_
+#ifndef _RSA_REQUEST_HANDLER_SERVICE_H_
+#define _RSA_REQUEST_HANDLER_SERVICE_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,18 +27,18 @@ extern "C" {
 #include <celix_errno.h>
 #include <sys/uio.h>
 
-#define RSA_RPC_ENDPOINT_SERVICE_NAME "rsa_rpc_endpoint_service"
-#define RSA_RPC_ENDPOINT_SERVICE_VERSION "1.0.0"
-#define RSA_RPC_ENDPOINT_SERVICE_USE_RANGE "[1.0.0,2)"
+#define RSA_REQUEST_HANDLER_SERVICE_NAME "rsa_request_handler_service"
+#define RSA_REQUEST_HANDLER_SERVICE_VERSION "1.0.0"
+#define RSA_REQUEST_HANDLER_SERVICE_USE_RANGE "[1.0.0,2)"
 
-typedef struct rsa_rpc_endpoint_service {
+typedef struct rsa_request_handler_service {
     void *handle;
     celix_status_t (*handleRequest)(void *handle, celix_properties_t **metadata, const struct iovec *request, struct iovec *response);
-}rsa_rpc_endpoint_service_t;
+}rsa_request_handler_service_t;
 
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _RSA_RPC_ENDPOINT_SERVICE_H_ */
+#endif /* _RSA_REQUEST_HANDLER_SERVICE_H_ */
