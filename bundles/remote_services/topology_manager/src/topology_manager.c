@@ -70,7 +70,7 @@ struct topology_manager {
 
 celix_status_t topologyManager_exportScopeChanged(void *handle, char *service_name);
 celix_status_t topologyManager_importScopeChanged(void *handle, char *service_name);
-static celix_status_t topologyManager_notifyListenersEndpointAdded(topology_manager_pt manager, remote_service_admin_service_t *rsa, array_list_pt registrations);
+static celix_status_t topologyManager_notifyListenersEndpointAdded(topology_manager_pt manager, remote_service_admin_service_t *rsa, celix_array_list_t *registrations);
 static celix_status_t topologyManager_notifyListenersEndpointRemoved(topology_manager_pt manager, remote_service_admin_service_t *rsa, export_registration_t *export);
 
 static celix_status_t topologyManager_addImportedService_nolock(void *handle, endpoint_description_t *endpoint, char *matchedFilter);
@@ -231,7 +231,7 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt unus
 
         scope_getExportProperties(manager->scope, reference, &serviceProperties);
 
-        array_list_pt endpoints = NULL;
+        celix_array_list_t *endpoints = NULL;
         celix_status_t status = rsa->exportService(rsa->admin, (char*)serviceId, serviceProperties, &endpoints);
 
         if (status == CELIX_SUCCESS) {
@@ -270,26 +270,17 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(exportedSvcIter);
 		hash_map_pt exports = hashMapEntry_getValue(entry);
 
-		/*
-		 * the problem here is that also the rsa has a a list of
-		 * endpoints which is destroyed when closing the exportRegistration
-		 */
-		array_list_pt exports_list = hashMap_get(exports, rsa);
-
+		celix_array_list_t *exports_list = (celix_array_list_t *)hashMap_remove(exports, rsa);
 		if (exports_list != NULL) {
 			int exportsIter = 0;
-			int exportListSize = arrayList_size(exports_list);
+			int exportListSize = celix_arrayList_size(exports_list);
 			for (exportsIter = 0; exports_list != NULL && exportsIter < exportListSize; exportsIter++) {
-				export_registration_t *export = arrayList_get(exports_list, exportsIter);
+				export_registration_t *export = celix_arrayList_get(exports_list, exportsIter);
 				topologyManager_notifyListenersEndpointRemoved(manager, rsa, export);
 				rsa->exportRegistration_close(rsa->admin, export);
 			}
+			celix_arrayList_destroy(exports_list);
 		}
-
-		hashMap_remove(exports, rsa);
-		/*if(exports_list!=NULL){
-			arrayList_destroy(exports_list);
-		}*/
 	}
 	hashMapIterator_destroy(exportedSvcIter);
 
@@ -568,7 +559,7 @@ static celix_status_t topologyManager_addExportedService_nolock(void * handle, s
 	for (int iter = 0; iter < size; iter++) {
 		remote_service_admin_service_t *rsa = celix_arrayList_get(manager->rsaList, iter);
 
-		array_list_pt endpoints = NULL;
+		celix_array_list_t *endpoints = NULL;
 		celix_status_t substatus = rsa->exportService(rsa->admin, serviceIdStr, serviceProperties, &endpoints);
 
 		if (substatus == CELIX_SUCCESS) {
@@ -610,18 +601,17 @@ static celix_status_t topologyManager_removeExportedService_nolock(void * handle
 		while (hashMapIterator_hasNext(iter)) {
 			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 			remote_service_admin_service_t *rsa = hashMapEntry_getKey(entry);
-			array_list_pt exportRegistrations = hashMapEntry_getValue(entry);
-
-			int size = arrayList_size(exportRegistrations);
-
-			for (int exportsIter = 0; exportsIter < size; exportsIter++) {
-				export_registration_t *export = arrayList_get(exportRegistrations, exportsIter);
-				topologyManager_notifyListenersEndpointRemoved(manager, rsa, export);
-				rsa->exportRegistration_close(rsa->admin, export);
+			celix_array_list_t *exportRegistrations = hashMap_remove(exports, rsa);
+			if (exportRegistrations != NULL) {
+				int size = celix_arrayList_size(exportRegistrations);
+				for (int exportsIter = 0; exportsIter < size; exportsIter++) {
+					export_registration_t *export = celix_arrayList_get(exportRegistrations, exportsIter);
+					topologyManager_notifyListenersEndpointRemoved(manager, rsa, export);
+					rsa->exportRegistration_close(rsa->admin, export);
+				}
+				celix_arrayList_destroy(exportRegistrations);
 			}
 
-			hashMap_remove(exports, rsa);
-			//arrayList_destroy(exportRegistrations);
 			hashMapIterator_destroy(iter);
 			iter = hashMapIterator_create(exports);
 
@@ -707,13 +697,13 @@ celix_status_t topologyManager_endpointListenerAdded(void* handle, service_refer
 		while (hashMapIterator_hasNext(rsaIter)) {
 			hash_map_entry_pt entry = hashMapIterator_nextEntry(rsaIter);
 			remote_service_admin_service_t *rsa = hashMapEntry_getKey(entry);
-			array_list_pt registrations = hashMapEntry_getValue(entry);
+			celix_array_list_t *registrations = hashMapEntry_getValue(entry);
 
-			int arrayListSize = arrayList_size(registrations);
+			int arrayListSize = celix_arrayList_size(registrations);
 			int cnt = 0;
 
 			for (; cnt < arrayListSize; cnt++) {
-				export_registration_t *export = arrayList_get(registrations, cnt);
+				export_registration_t *export = celix_arrayList_get(registrations, cnt);
 				endpoint_description_t *endpoint = NULL;
 
 				status = topologyManager_getEndpointDescriptionForExportRegistration(rsa, export, &endpoint);
@@ -765,7 +755,7 @@ celix_status_t topologyManager_endpointListenerRemoved(void * handle, service_re
 	return status;
 }
 
-static celix_status_t topologyManager_notifyListenersEndpointAdded(topology_manager_pt manager, remote_service_admin_service_t *rsa, array_list_pt registrations) {
+static celix_status_t topologyManager_notifyListenersEndpointAdded(topology_manager_pt manager, remote_service_admin_service_t *rsa, celix_array_list_t *registrations) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	hash_map_iterator_pt iter = hashMapIterator_create(manager->listenerList);
@@ -780,9 +770,9 @@ static celix_status_t topologyManager_notifyListenersEndpointAdded(topology_mana
 		if (status == CELIX_SUCCESS) {
 			filter_pt filter = filter_create(scope);
 
-			int regSize = arrayList_size(registrations);
+			int regSize = celix_arrayList_size(registrations);
 			for (int regIt = 0; regIt < regSize; regIt++) {
-				export_registration_t *export = arrayList_get(registrations, regIt);
+				export_registration_t *export = celix_arrayList_get(registrations, regIt);
 				endpoint_description_t *endpoint = NULL;
 				celix_status_t substatus = topologyManager_getEndpointDescriptionForExportRegistration(rsa, export, &endpoint);
 				if (substatus == CELIX_SUCCESS) {
