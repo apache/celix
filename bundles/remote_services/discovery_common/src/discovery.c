@@ -42,7 +42,7 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_t *end
 	celix_status_t status;
 	discovery_t *discovery = handle;
 	celixThreadMutex_lock(&discovery->mutex);
-	if (discovery->stoped) {
+	if (discovery->stoped) {// we should not try use discovery->server when discovery is stoped
 		celixThreadMutex_unlock(&discovery->mutex);
 		return CELIX_SUCCESS;
 	}
@@ -58,6 +58,13 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_t *end
 celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_t *endpoint, char *matchedFilter) {
 	celix_status_t status;
 	discovery_t *discovery = handle;
+
+	celixThreadMutex_lock(&discovery->mutex);
+	if (discovery->stoped) {// we should not try use discovery->server when discovery is stoped
+		celixThreadMutex_unlock(&discovery->mutex);
+		return CELIX_SUCCESS;
+	}
+	celixThreadMutex_unlock(&discovery->mutex);
 
     celix_logHelper_info(discovery->loghelper, "Endpoint for %s, with filter \"%s\" removed...", endpoint->service, matchedFilter);
 
