@@ -60,7 +60,6 @@ celix_status_t rsaShmActivator_start(rsa_shm_activator_t *activator, celix_bundl
         status = CELIX_BUNDLE_EXCEPTION;
         goto err_registering_req_sender_svc;
     }
-
     rsaShm_setRequestSenderSvcId(activator->admin, activator->reqSenderSvcId);
 
     activator->adminService.admin = (void*)activator->admin;

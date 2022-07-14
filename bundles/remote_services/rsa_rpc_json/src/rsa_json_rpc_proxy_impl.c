@@ -37,7 +37,7 @@ struct rsa_json_rpc_proxy_factory {
     hash_map_t *proxies;//key is requestingBundle, value is rsa_json_rpc_proxy_t *.
     remote_interceptors_handler_t *interceptorsHandler;
     long reqSenderTrkId;
-    celix_thread_mutex_t mutex;//it protects reqSenderSvc
+    celix_thread_rwlock_t lock;//projects below
     rsa_request_sender_service_t *reqSenderSvc;
 };
 
@@ -94,9 +94,9 @@ celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_
     assert(proxyFactory->endpointDesc->service != NULL);
 
     proxyFactory->reqSenderSvc = NULL;
-    status = celixThreadMutex_create(&proxyFactory->mutex, NULL);
+    status = celixThreadRwlock_create(&proxyFactory->lock, NULL);
     if (status != CELIX_SUCCESS) {
-        goto mutex_err;
+        goto rwlock_err;
     }
     char filter[32] = {0};// It is longer than the size of "service.id" + serviceId
     (void)snprintf(filter, sizeof(filter), "(service.id=%ld)", requestSenderSvcId);
@@ -135,8 +135,8 @@ proxy_svc_fac_err:
             proxyFactory, rsaJsonRpcProxy_stopReqSenderTrkDone);
     return status;
 sender_tracker_err:
-    (void)celixThreadMutex_destroy(&proxyFactory->mutex);
-mutex_err:
+    (void)celixThreadRwlock_destroy(&proxyFactory->lock);
+rwlock_err:
     endpointDescription_destroy(proxyFactory->endpointDesc);
     hashMap_destroy(proxyFactory->proxies, false, false);
     free(proxyFactory);
@@ -156,7 +156,7 @@ long rsaJsonRpcProxy_factorySvcId(rsa_json_rpc_proxy_factory_t *proxyFactory) {
 static void rsaJsonRpcProxy_stopReqSenderTrkDone(void *data) {
     assert(data);
     rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)data;
-    (void)celixThreadMutex_destroy(&proxyFactory->mutex);
+    (void)celixThreadRwlock_destroy(&proxyFactory->lock);
     endpointDescription_destroy(proxyFactory->endpointDesc);
     assert(hashMap_isEmpty(proxyFactory->proxies));
     hashMap_destroy(proxyFactory->proxies, false, false);
@@ -175,9 +175,9 @@ static void rsaJsonRpcProxy_addRequestSenderSvc(void *handle, void *svc) {
     assert(handle != NULL);
     assert(svc != NULL);
     rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)handle;
-    celixThreadMutex_lock(&proxyFactory->mutex);
+    celixThreadRwlock_writeLock(&proxyFactory->lock);
     proxyFactory->reqSenderSvc = (rsa_request_sender_service_t *)svc;
-    celixThreadMutex_unlock(&proxyFactory->mutex);
+    celixThreadRwlock_unlock(&proxyFactory->lock);
     return;
 }
 
@@ -185,11 +185,11 @@ static void rsaJsonRpcProxy_removeRequestSenderSvc(void *handle, void *svc) {
     assert(handle != NULL);
     assert(svc != NULL);
     rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)handle;
-    celixThreadMutex_lock(&proxyFactory->mutex);
+    celixThreadRwlock_writeLock(&proxyFactory->lock);
     if (svc == proxyFactory->reqSenderSvc) {
         proxyFactory->reqSenderSvc = NULL;
     }
-    celixThreadMutex_unlock(&proxyFactory->mutex);
+    celixThreadRwlock_unlock(&proxyFactory->lock);
     return;
 }
 
@@ -240,7 +240,7 @@ static celix_status_t rsaJsonRpcProxy_sendRequest(rsa_json_rpc_proxy_t * proxy,
         celix_properties_t *metadata, const struct iovec *request, struct iovec *response) {
     celix_status_t status = CELIX_SUCCESS;
     rsa_json_rpc_proxy_factory_t *proxyFactory = proxy->proxyFactory;
-    celixThreadMutex_lock(&proxyFactory->mutex);
+    celixThreadRwlock_readLock(&proxyFactory->lock);
     rsa_request_sender_service_t *reqSenderSvc = proxyFactory->reqSenderSvc;
     if (reqSenderSvc != NULL) {
         status = reqSenderSvc->sendRequest(reqSenderSvc->handle, proxyFactory->endpointDesc,
@@ -249,7 +249,7 @@ static celix_status_t rsaJsonRpcProxy_sendRequest(rsa_json_rpc_proxy_t * proxy,
         celix_logHelper_error(proxyFactory->logHelper,"Proxy: Error sending request. Request sender service is not exist.");
         status = CELIX_ILLEGAL_STATE;
     }
-    celixThreadMutex_unlock(&proxyFactory->mutex);
+    celixThreadRwlock_unlock(&proxyFactory->lock);
     return status;
 }
 

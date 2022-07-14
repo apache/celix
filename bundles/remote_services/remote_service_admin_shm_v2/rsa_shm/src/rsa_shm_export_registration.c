@@ -37,7 +37,7 @@ struct export_reference {
 
 typedef struct export_request_handler_service_entry {
     struct celix_ref ref;
-    celix_thread_mutex_t mutex; //projects below
+    celix_thread_rwlock_t lock; //projects below
     rsa_request_handler_service_t *reqHandlerSvc;
 }export_request_handler_service_entry_t;
 
@@ -184,7 +184,7 @@ static export_request_handler_service_entry_t *exportRegistration_createReqHandl
             (export_request_handler_service_entry_t *)calloc(1, sizeof(*reqHandlerSvcEntry));
     assert(reqHandlerSvcEntry != NULL);
     celix_ref_init(&reqHandlerSvcEntry->ref);
-    status = celixThreadMutex_create(&reqHandlerSvcEntry->mutex, NULL);
+    status = celixThreadRwlock_create(&reqHandlerSvcEntry->lock, NULL);
     if (status != CELIX_SUCCESS) {
         goto mutex_err;
     }
@@ -201,7 +201,7 @@ static void exportRegistration_retainReqHandlerSvcEntry(export_request_handler_s
 
 static bool exportRegistration_destroyReqHandlerSvcEntry(struct celix_ref *ref) {
     export_request_handler_service_entry_t *reqHandlerSvcEntry = (export_request_handler_service_entry_t *)ref;
-    celixThreadMutex_destroy(&reqHandlerSvcEntry->mutex);
+    celixThreadRwlock_destroy(&reqHandlerSvcEntry->lock);
     free(reqHandlerSvcEntry);
     return true;
 }
@@ -286,9 +286,9 @@ static void exportRegistration_addRequestHandlerSvc(void *handle, void *svc) {
     assert(svc != NULL);
     struct export_request_handler_service_entry *reqHandlerSvcEntry =
             (struct export_request_handler_service_entry *)handle;
-    celixThreadMutex_lock(&reqHandlerSvcEntry->mutex);
+    celixThreadRwlock_writeLock(&reqHandlerSvcEntry->lock);
     reqHandlerSvcEntry->reqHandlerSvc = (rsa_request_handler_service_t *)svc;
-    celixThreadMutex_unlock(&reqHandlerSvcEntry->mutex);
+    celixThreadRwlock_unlock(&reqHandlerSvcEntry->lock);
 
     return;
 }
@@ -298,11 +298,11 @@ static void exportRegistration_removeRequestHandlerSvc(void *handle, void *svc) 
     assert(svc != NULL);
     struct export_request_handler_service_entry *reqHandlerSvcEntry =
             (struct export_request_handler_service_entry *)handle;
-    celixThreadMutex_lock(&reqHandlerSvcEntry->mutex);
+    celixThreadRwlock_writeLock(&reqHandlerSvcEntry->lock);
     if (svc == reqHandlerSvcEntry->reqHandlerSvc) {
         reqHandlerSvcEntry->reqHandlerSvc = NULL;
     }
-    celixThreadMutex_unlock(&reqHandlerSvcEntry->mutex);
+    celixThreadRwlock_unlock(&reqHandlerSvcEntry->lock);
     return;
 }
 
@@ -314,15 +314,14 @@ celix_status_t exportRegistration_call(export_registration_t *export, celix_prop
     }
     struct export_request_handler_service_entry *reqHandlerSvcEntry = export->reqHandlerSvcEntry;
     assert(reqHandlerSvcEntry != NULL);
-    celixThreadMutex_lock(&reqHandlerSvcEntry->mutex);
+    celixThreadRwlock_readLock(&reqHandlerSvcEntry->lock);
     if (reqHandlerSvcEntry->reqHandlerSvc != NULL) {
-        // XXX The handleRequest function may be blocked, how can we move it to outside of critical section.
         status =  reqHandlerSvcEntry->reqHandlerSvc->handleRequest(reqHandlerSvcEntry->reqHandlerSvc->handle, metadata, request, response);
     } else {
         status = CELIX_ILLEGAL_STATE;
         celix_logHelper_error(export->logHelper, "RSA export reg: Error Handling request. Please ensure rsa rpc servie is active.");
     }
-    celixThreadMutex_unlock(&reqHandlerSvcEntry->mutex);
+    celixThreadRwlock_unlock(&reqHandlerSvcEntry->lock);
 
     return status;
 }
