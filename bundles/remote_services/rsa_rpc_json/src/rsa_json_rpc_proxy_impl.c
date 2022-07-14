@@ -21,6 +21,7 @@
 #include <rsa_request_sender_tracker.h>
 #include <remote_constants.h>
 #include <json_rpc.h>
+#include <endpoint_description.h>
 #include <celix_log_helper.h>
 #include <dfi_utils.h>
 #include <celix_api.h>
@@ -88,18 +89,8 @@ celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_
     proxyFactory->proxies = hashMap_create(NULL, NULL, NULL, NULL);
     assert(proxyFactory->proxies != NULL);
 
-    //copy endpoint description
-    proxyFactory->endpointDesc = (endpoint_description_t*)calloc(1, sizeof(endpoint_description_t));
+    proxyFactory->endpointDesc = endpointDescription_clone(endpointDesc);
     assert(proxyFactory->endpointDesc != NULL);
-    proxyFactory->endpointDesc->properties = celix_properties_copy(endpointDesc->properties);
-    assert(proxyFactory->endpointDesc->properties != NULL);
-    proxyFactory->endpointDesc->frameworkUUID = (char*)celix_properties_get(proxyFactory->endpointDesc->properties,
-            OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
-    proxyFactory->endpointDesc->serviceId = endpointDesc->serviceId;
-    proxyFactory->endpointDesc->id = (char*)celix_properties_get(proxyFactory->endpointDesc->properties,
-            OSGI_RSA_ENDPOINT_ID, NULL);
-    proxyFactory->endpointDesc->service = strdup(endpointDesc->service);
-    assert(proxyFactory->endpointDesc->service != NULL);
 
     proxyFactory->factory.handle = proxyFactory;
     proxyFactory->factory.getService = rsaJsonRpcProxy_getService;

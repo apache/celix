@@ -48,4 +48,6 @@ celix_status_t endpointDescription_destroy(endpoint_description_t *description);
 
 bool endpointDescription_isInvalid(const endpoint_description_t *description);
 
+endpoint_description_t *endpointDescription_clone(const endpoint_description_t *description);
+
 #endif /* ENDPOINT_DESCRIPTION_H_ */

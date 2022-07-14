@@ -77,18 +77,8 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
     export->context = context;
     export->logHelper = logHelper;
 
-    //copy endpoint description
-    export->endpointDesc = (endpoint_description_t*)calloc(1, sizeof(endpoint_description_t));
+    export->endpointDesc = endpointDescription_clone(endpointDesc);
     assert(export->endpointDesc != NULL);
-    export->endpointDesc->properties = celix_properties_copy(endpointDesc->properties);
-    assert(export->endpointDesc->properties != NULL);
-    export->endpointDesc->frameworkUUID = (char*)celix_properties_get(export->endpointDesc->properties,
-            OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
-    export->endpointDesc->serviceId = endpointDesc->serviceId;
-    export->endpointDesc->id = (char*)celix_properties_get(export->endpointDesc->properties,
-            OSGI_RSA_ENDPOINT_ID, NULL);
-    export->endpointDesc->service = strdup(endpointDesc->service);
-    assert(export->endpointDesc->service != NULL);
 
     export->rpcSvc = NULL;
     export->reqHandlerSvcTrkId = -1;

@@ -53,18 +53,9 @@ celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_
     endpoint->ctx = ctx;
     endpoint->logHelper = logHelper;
     endpoint->callsLogFile = logFile;
-    //copy endpoint description
-    endpoint->endpointDesc = (endpoint_description_t*)calloc(1, sizeof(endpoint_description_t));
+
+    endpoint->endpointDesc = endpointDescription_clone(endpointDesc);
     assert(endpoint->endpointDesc != NULL);
-    endpoint->endpointDesc->properties = celix_properties_copy(endpointDesc->properties);
-    assert(endpoint->endpointDesc->properties != NULL);
-    endpoint->endpointDesc->frameworkUUID = (char*)celix_properties_get(endpoint->endpointDesc->properties,
-            OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
-    endpoint->endpointDesc->serviceId = endpointDesc->serviceId;
-    endpoint->endpointDesc->id = (char*)celix_properties_get(endpoint->endpointDesc->properties,
-            OSGI_RSA_ENDPOINT_ID, NULL);
-    endpoint->endpointDesc->service = strdup(endpointDesc->service);
-    assert(endpoint->endpointDesc->service != NULL);
 
     endpoint->interceptorsHandler = interceptorsHandler;
     endpoint->service = NULL;
