@@ -77,10 +77,9 @@ celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_
     }
 
     char filter[32] = {0};// It is longer than the size of "service.id" + serviceId
-    (void)snprintf(filter, sizeof(filter), "(service.id=%ld)", endpointDesc->serviceId);
+    (void)snprintf(filter, sizeof(filter), "(%s=%ld)", CELIX_FRAMEWORK_SERVICE_ID, endpointDesc->serviceId);
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.filter = filter;
-    opts.filter.ignoreServiceLanguage = true;
     opts.callbackHandle = endpoint;
     opts.addWithOwner = rsaJsonRpcEndpoint_addSvcWithOwner;
     opts.removeWithOwner = rsaJsonRpcEndpoint_removeSvcWithOwner;
@@ -124,16 +123,19 @@ static void rsaJsonRpcEndpoint_addSvcWithOwner(void *handle, void *service,
         const celix_properties_t *props, const celix_bundle_t *svcOwner) {
     assert(handle != NULL);
     assert(service != NULL);
+    assert(props != NULL);
     assert(svcOwner != NULL);
     celix_status_t status = CELIX_SUCCESS;
     rsa_json_rpc_endpoint_t *endpoint = (rsa_json_rpc_endpoint_t *)handle;
     dyn_interface_type *intfType = NULL;
+    const char *serviceName = celix_properties_get(endpoint->endpointDesc->properties, CELIX_FRAMEWORK_SERVICE_NAME, "unknow-service");
+
     celixThreadRwlock_writeLock(&endpoint->lock);
 
     status = dfi_findAndParseInterfaceDescriptor(endpoint->logHelper,endpoint->ctx,
             svcOwner, endpoint->endpointDesc->service, &intfType);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error(endpoint->logHelper, "Endpoint: Parse service descriptor failed.");
+        celix_logHelper_error(endpoint->logHelper, "Endpoint: Error Parsing service descriptor for %s.", serviceName);
         goto intf_type_err;
     }
 
@@ -141,16 +143,16 @@ static void rsaJsonRpcEndpoint_addSvcWithOwner(void *handle, void *service,
     char *intfVersion = NULL;
     int ret = dynInterface_getVersionString(intfType, &intfVersion);
     if (ret != 0) {
-        celix_logHelper_error(endpoint->logHelper, "Endpoint: Error getting interface version from the descriptor.");
+        celix_logHelper_error(endpoint->logHelper, "Endpoint: Error getting interface version from the descriptor for %s.", serviceName);
         goto err_getting_intf_ver;
     }
     const char *serviceVersion = celix_properties_get(endpoint->endpointDesc->properties,CELIX_FRAMEWORK_SERVICE_VERSION, NULL);
     if (serviceVersion == NULL) {
-        celix_logHelper_error(endpoint->logHelper, "Endpoint: Error getting service version.");
+        celix_logHelper_error(endpoint->logHelper, "Endpoint: Error getting service version for %s.", serviceName);
         goto err_getting_service_ver;
     }
     if(strcmp(serviceVersion, intfVersion)!=0){
-        celix_logHelper_error(endpoint->logHelper, "Endpoint: Service version (%s) and interface version from the descriptor (%s) are not the same!",serviceVersion,intfVersion);
+        celix_logHelper_error(endpoint->logHelper, "Endpoint: %s version (%s) and interface version from the descriptor (%s) are not the same!", serviceName, serviceVersion,intfVersion);
         goto version_mismatch;
     }
 
@@ -172,6 +174,8 @@ intf_type_err:
 static void rsaJsonRpcEndpoint_removeSvcWithOwner(void *handle, void *service,
         const celix_properties_t *props, const celix_bundle_t *svcOwner) {
     assert(handle != NULL);
+    (void)props;
+    (void)svcOwner;
     rsa_json_rpc_endpoint_t *endpoint = (rsa_json_rpc_endpoint_t *)handle;
     celixThreadRwlock_writeLock(&endpoint->lock);
     if (endpoint->service == service) {
@@ -205,7 +209,7 @@ celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t
     int rc = json_unpack(jsRequest, "{s:s}", "m", &sig);
     if (rc != 0) {
         status = CELIX_ILLEGAL_ARGUMENT;
-        celix_logHelper_error(endpoint->logHelper, "Request method error for %s.", (char *)request->iov_base);
+        celix_logHelper_error(endpoint->logHelper, "Error requesting method for %s.", (char *)request->iov_base);
         goto request_method_err;
     }
 
@@ -219,7 +223,7 @@ celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t
             status = (rc != 0) ? CELIX_SERVICE_EXCEPTION : CELIX_SUCCESS;
         } else {
             status = CELIX_ILLEGAL_STATE;
-            celix_logHelper_error(endpoint->logHelper, "service is null, please try again.");
+            celix_logHelper_error(endpoint->logHelper, "%s is null, please try again.", endpoint->endpointDesc->service);
         }
         celixThreadRwlock_unlock(&endpoint->lock);
 

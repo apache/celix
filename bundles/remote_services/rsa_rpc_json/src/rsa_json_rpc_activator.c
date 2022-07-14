@@ -44,6 +44,7 @@ static celix_status_t rsaJsonRpc_start(rsa_json_rpc_activator_t* activator, celi
 
     status = rsaJsonRpc_create(ctx, activator->logHelper, &activator->jsonRpc);
     if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(activator->logHelper, "Error creating json rpc. %d.", status);
         goto rpc_err;
     }
     celix_properties_t *props = celix_properties_create();

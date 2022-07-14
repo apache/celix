@@ -30,6 +30,7 @@ if (RSA_JSON_RPC)
         src/rsa_json_rpc_endpoint_impl.c
         src/rsa_json_rpc_impl.c
         src/rsa_json_rpc_proxy_impl.c
+        src/rsa_request_sender_tracker.c
     )
     
     target_include_directories(rsa_json_rpc PRIVATE src)
