@@ -22,8 +22,9 @@
 #include <celix_log_helper.h>
 #include <celix_long_hash_map.h>
 #include <celix_api.h>
-#include <string.h>
+#include <stdlib.h>
 #include <limits.h>
+#include <string.h>
 #include <assert.h>
 
 struct rsa_request_sender_tracker {
@@ -31,7 +32,7 @@ struct rsa_request_sender_tracker {
     celix_log_helper_t *logHelper;
     long reqSenderTrkId;
     celix_thread_rwlock_t lock;//projects below
-    celix_long_hash_map_t *requestSenderSvcs;
+    celix_long_hash_map_t *requestSenderSvcs;//Key:service id, Value:service
 };
 
 static void rsaRequestSenderTracker_addServiceWithProperties(void *handle, void *svc,
@@ -42,8 +43,7 @@ static void rsaRequestSenderTracker_removeServiceWithProperties(void *handle, vo
 celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, const char *trackerName,
         rsa_request_sender_tracker_t **trackerOut) {
     celix_status_t status = CELIX_SUCCESS;
-#define RSA_REQ_SENDER_TRACKER_NAME_LIMIT 255
-    if (ctx == NULL || trackerName == NULL || strlen(trackerName) > RSA_REQ_SENDER_TRACKER_NAME_LIMIT
+    if (ctx == NULL || trackerName == NULL || strlen(trackerName) > NAME_MAX
             || trackerOut == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
@@ -87,9 +87,10 @@ static void rsaRequestSenderTracker_addServiceWithProperties(void *handle, void 
     assert(svc != NULL);
     assert(props != NULL);
     rsa_request_sender_tracker_t *tracker = (rsa_request_sender_tracker_t *)handle;
+    const char *serviceName = celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME, "unknow-service");
     long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (svcId < 0) {
-        celix_logHelper_error(tracker->logHelper, "Error getting rsa request sender service id.");
+        celix_logHelper_error(tracker->logHelper, "Error getting rsa request sender service id for %s.", serviceName);
         return;
     }
     celixThreadRwlock_writeLock(&tracker->lock);
@@ -104,9 +105,10 @@ static void rsaRequestSenderTracker_removeServiceWithProperties(void *handle, vo
     assert(svc != NULL);
     assert(props != NULL);
     rsa_request_sender_tracker_t *tracker = (rsa_request_sender_tracker_t *)handle;
+    const char *serviceName = celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME, "unknow-service");
     long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (svcId < 0) {
-        celix_logHelper_error(tracker->logHelper, "Error getting rsa request sender service id.");
+        celix_logHelper_error(tracker->logHelper, "Error getting rsa request sender service id for %s.", serviceName);
         return;
     }
     celixThreadRwlock_writeLock(&tracker->lock);
@@ -118,6 +120,7 @@ static void rsaRequestSenderTracker_removeServiceWithProperties(void *handle, vo
 static void rsaRequestSenderTracker_stopDone(void *data) {
     assert(data != NULL);
     rsa_request_sender_tracker_t *tracker = (rsa_request_sender_tracker_t *)data;
+    assert(celix_longHashMap_size(tracker->requestSenderSvcs) == 0);
     celix_longHashMap_destroy(tracker->requestSenderSvcs);
     (void)celixThreadRwlock_destroy(&tracker->lock);
     celix_logHelper_destroy(tracker->logHelper);
