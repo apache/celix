@@ -33,7 +33,16 @@ extern "C" {
 
 typedef struct rsa_request_handler_service {
     void *handle;
-    celix_status_t (*handleRequest)(void *handle, celix_properties_t **metadata, const struct iovec *request, struct iovec *response);
+    /**
+     * @brief
+     *
+     * @param handle
+     * @param[in, out] metadata If metadata is not required，it can be set NULL
+     * @param request
+     * @param response
+     * @return
+     */
+    celix_status_t (*handleRequest)(void *handle, celix_properties_t *metadata, const struct iovec *request, struct iovec *response);
 }rsa_request_handler_service_t;
 
 

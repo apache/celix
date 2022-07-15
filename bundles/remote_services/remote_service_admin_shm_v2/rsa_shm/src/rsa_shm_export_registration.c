@@ -306,7 +306,7 @@ celix_status_t exportRegistration_call(export_registration_t *export, celix_prop
     assert(reqHandlerSvcEntry != NULL);
     celixThreadRwlock_readLock(&reqHandlerSvcEntry->lock);
     if (reqHandlerSvcEntry->reqHandlerSvc != NULL) {
-        status =  reqHandlerSvcEntry->reqHandlerSvc->handleRequest(reqHandlerSvcEntry->reqHandlerSvc->handle, metadata, request, response);
+        status =  reqHandlerSvcEntry->reqHandlerSvc->handleRequest(reqHandlerSvcEntry->reqHandlerSvc->handle, *metadata, request, response);
     } else {
         status = CELIX_ILLEGAL_STATE;
         celix_logHelper_error(export->logHelper, "RSA export reg: Error Handling request. Please ensure rsa rpc servie is active.");

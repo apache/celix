@@ -38,7 +38,7 @@ celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_
 
 void rsaJsonRpcEndpoint_destroy(rsa_json_rpc_endpoint_t *endpoint);
 
-celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t **metadata,
+celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t *metadata,
         const struct iovec *request, struct iovec *responseOut);
 
 #ifdef __cplusplus

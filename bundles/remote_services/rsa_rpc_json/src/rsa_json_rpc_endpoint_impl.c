@@ -178,16 +178,17 @@ static void rsaJsonRpcEndpoint_removeSvcWithOwner(void *handle, void *service,
     return;
 }
 
-celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t **metadata,
+celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t *metadata,
         const struct iovec *request, struct iovec *responseOut) {
     celix_status_t status = CELIX_SUCCESS;
-    if (handle == NULL || metadata == NULL || request == NULL || request->iov_base == NULL
+    if (handle == NULL || request == NULL || request->iov_base == NULL
             || request->iov_len == 0 || responseOut == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
     responseOut->iov_base = NULL;
     responseOut->iov_len = 0;
     rsa_json_rpc_endpoint_t *endpoint = (rsa_json_rpc_endpoint_t *)handle;
+    bool freeMetadata = (metadata == NULL) ? true : false;
 
     json_error_t error;
     json_t *jsRequest = json_loads((char *)request->iov_base, 0, &error);
@@ -206,7 +207,7 @@ celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t
 
     char *szResponse = NULL;
     bool cont = remoteInterceptorHandler_invokePreExportCall(endpoint->interceptorsHandler,
-            endpoint->endpointDesc->properties, sig, metadata);
+            endpoint->endpointDesc->properties, sig, &metadata);
     if (cont) {
     	celixThreadRwlock_readLock(&endpoint->lock);
         if (endpoint->service != NULL) {
@@ -219,7 +220,7 @@ celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t
         celixThreadRwlock_unlock(&endpoint->lock);
 
         remoteInterceptorHandler_invokePostExportCall(endpoint->interceptorsHandler,
-                endpoint->endpointDesc->properties, sig, *metadata);
+                endpoint->endpointDesc->properties, sig, metadata);
     }
     if (szResponse != NULL) {
         responseOut->iov_base = szResponse;
@@ -230,6 +231,13 @@ celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t
         fprintf(endpoint->callsLogFile, "ENDPOINT REMOTE CALL:\n\tservice=%s\n\tservice_id=%lu\n\trequest_payload=%s\n\trequest_response=%s\n\tstatus=%i\n",
                 endpoint->endpointDesc->service, endpoint->endpointDesc->serviceId, (char *)request->iov_base, szResponse, status);
         fflush(endpoint->callsLogFile);
+    }
+
+    if (freeMetadata && metadata != NULL) {
+        /* The metadata created by remoteinterceptorhandler should be released here,
+         * the metadata created by invoker should be released by itself.
+         */
+        celix_properties_destroy(metadata);
     }
 
     json_decref(jsRequest);

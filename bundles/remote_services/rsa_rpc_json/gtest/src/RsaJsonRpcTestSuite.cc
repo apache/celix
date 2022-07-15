@@ -230,7 +230,7 @@ void rsaJsonRpcTestSuite_useEndpointService(void *handle, void *svc) {
     request.iov_base = json_dumps(invoke, JSON_DECODE_ANY);
     EXPECT_TRUE(request.iov_base != nullptr);
     request.iov_len = strlen((char *)request.iov_base) + 1;
-    epSvc->handleRequest(epSvc->handle, &metadata, &request, &response);
+    epSvc->handleRequest(epSvc->handle, metadata, &request, &response);
 
     //unpack response
     json_error_t error;
