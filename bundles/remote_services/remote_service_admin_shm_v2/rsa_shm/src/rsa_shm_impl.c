@@ -159,8 +159,8 @@ static celix_status_t rsaShm_receiveMsgCB(void *handle, rsa_shm_server_t *shmSer
     }
     rsa_shm_t *admin = handle;
 
-    const char *szServiceId = celix_properties_get(metadata, OSGI_RSA_ENDPOINT_SERVICE_ID, NULL);
-    if (szServiceId == NULL) {
+    long serviceId = celix_properties_getAsLong(metadata, OSGI_RSA_ENDPOINT_SERVICE_ID, -1);
+    if (serviceId < 0) {
         celix_logHelper_error(admin->logHelper, "Service id is invalid.");
         status = CELIX_ILLEGAL_ARGUMENT;
         goto err_getting_service_id;
@@ -169,15 +169,15 @@ static celix_status_t rsaShm_receiveMsgCB(void *handle, rsa_shm_server_t *shmSer
     celixThreadMutex_lock(&admin->exportedServicesLock);
 
     //find exported registration
-    array_list_pt exports = celix_longHashMap_get(admin->exportedServices, atol(szServiceId));
+    array_list_pt exports = celix_longHashMap_get(admin->exportedServices, serviceId);
     if (exports == NULL || arrayList_size(exports) <= 0) {
         status = CELIX_ILLEGAL_STATE;
-        celix_logHelper_error(admin->logHelper, "No export registration found for service id %s", szServiceId);
+        celix_logHelper_error(admin->logHelper, "No export registration found for service id %ld", serviceId);
         goto err_getting_exports;
     }
     export_registration_t *export = arrayList_get(exports, 0);
     if (export == NULL) {
-        celix_logHelper_error(admin->logHelper, "Error getting registration for service id %s", szServiceId);
+        celix_logHelper_error(admin->logHelper, "Error getting registration for service id %ld", serviceId);
         status = CELIX_ILLEGAL_STATE;
         goto not_found_export;
     }

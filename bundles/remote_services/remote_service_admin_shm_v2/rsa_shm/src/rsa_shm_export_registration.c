@@ -227,8 +227,8 @@ static void exportRegistration_addRpcSvc(void *handle, void *svc) {
     opts.filter.filter = filter;
     opts.filter.serviceName = RSA_REQUEST_HANDLER_SERVICE_NAME;
     opts.filter.versionRange = RSA_REQUEST_HANDLER_SERVICE_USE_RANGE;
-    opts.filter.ignoreServiceLanguage = true;
     opts.callbackHandle = export->reqHandlerSvcEntry;
+    // exportRegistration_removeRequestHandlerSvc maybe occur after exportRegistration_destroyCallback. Therefore,Using refrence count here.
     exportRegistration_retainReqHandlerSvcEntry(export->reqHandlerSvcEntry);
     opts.add = exportRegistration_addRequestHandlerSvc;
     opts.remove = exportRegistration_removeRequestHandlerSvc;

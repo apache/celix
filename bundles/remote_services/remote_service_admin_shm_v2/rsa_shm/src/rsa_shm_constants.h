@@ -38,15 +38,23 @@ extern "C" {
 
 #define RSA_SHM_MSG_TIMEOUT_DEFAULT_IN_S 30
 
+/**
+ * @brief A property of RsaShm bundle which indicate the maximum concurrent invocations of the same service
+ *
+ */
 #define RSA_SHM_MAX_CONCURRENT_INVOCATIONS_KEY "rsaShmCctIvNum"
 
+/**
+ * @brief The default value of the maximum concurrent invocations, If property RSA_SHM_MAX_CONCURRENT_INVOCATIONS_KEY does not exist, the default value is used
+ *
+ */
 #define RSA_SHM_MAX_CONCURRENT_INVOCATIONS_DEFAULT 32
 
 #define RSA_SHM_MAX_INVOKED_SVC_FAILURES 15
 
 #define RSA_SHM_MAX_SVC_BREAKED_TIME_IN_S 60
 
-#define EXPECT_MSG_RESPONSE_SIZE_DEFAULT 512
+#define ESTIMATED_MSG_RESPONSE_SIZE_DEFAULT 512
 
 #define RSA_SHM_RPC_TYPE_DEFAULT "rsa_json_rpc"
 

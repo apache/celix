@@ -138,7 +138,7 @@ void rsaShmServer_destroy(rsa_shm_server_t *server) {
     if (server == NULL) {
         return;
     }
-    __atomic_store_n(&server->revMsgThreadActive, false, __ATOMIC_RELEASE);
+    server->revMsgThreadActive = false;
     shutdown(server->sfd,SHUT_RD);
     celixThread_join(server->revMsgThread, NULL);
     thpool_destroy(server->threadPool);
@@ -199,6 +199,7 @@ static void rsaShmServer_msgHandlingWork(void *data) {
         char *dest = msgBuffer;
         size_t bytes = MIN(srcSize, destSize);
         memcpy(dest, src, bytes);
+        src += bytes;
         srcSize -= bytes;
         if (srcSize == 0) {
             pthread_mutex_lock(&msgCtrl->lock);
@@ -272,7 +273,7 @@ static void *rsaShmServer_receiveMsgThread(void *data) {
     ssize_t revBytes = 0;
     rsa_shm_msg_t msgInfo;
 
-    while (__atomic_load_n(&server->revMsgThreadActive, __ATOMIC_RELAXED)) {
+    while (server->revMsgThreadActive) {
         revBytes = recvfrom(server->sfd, &msgInfo, sizeof(msgInfo), 0, NULL, NULL);
         if (revBytes != sizeof(msgInfo)) {
             celix_logHelper_error(server->loghelper, "RsaShmServer: recv msg err(%d).", errno);
