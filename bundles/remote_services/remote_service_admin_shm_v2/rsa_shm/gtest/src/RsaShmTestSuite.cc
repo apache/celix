@@ -79,7 +79,7 @@ static void rsaShmTestSuite_addProviderSvc(void *handle, void*svc, const celix_p
             const_cast<celix_properties_t *>(props), &exportRegs);
     EXPECT_EQ(CELIX_SUCCESS, status);
     tstSuite->exportRegs = std::shared_ptr<celix_array_list_t>{exportRegs, [](auto*){/*nop*/}};
-//    tstSuite->exportRegs = std::shared_ptr<celix_array_list_t>{exportRegs, [](auto *r){celix_arrayList_destroy(r);}};
+    tstSuite->exportRegs = std::shared_ptr<celix_array_list_t>{exportRegs, [](auto *r){celix_arrayList_destroy(r);}};
     return;
 }
 

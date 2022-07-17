@@ -282,15 +282,12 @@ static bool rsaShm_isConfigTypeMatched(celix_properties_t *properties) {
 }
 
 celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
-        celix_properties_t *properties, celix_array_list_t **registrations) {
+        celix_properties_t *properties, celix_array_list_t **registrationsOut) {
     celix_status_t status = CELIX_SUCCESS;
 
-    if (admin == NULL || serviceId == NULL || registrations == NULL) {
+    if (admin == NULL || serviceId == NULL || registrationsOut == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    *registrations = celix_arrayList_create();
-    assert(*registrations != NULL);
 
     array_list_pt references = NULL;
     service_reference_pt reference = NULL;
@@ -329,6 +326,7 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
         rsaShm_overlayProperties(properties,exportedProperties);
     }
 
+    celix_array_list_t *registrations = NULL;
     if (rsaShm_isConfigTypeMatched(exportedProperties)) {
         const char *exportsProp = celix_properties_get(exportedProperties, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, NULL);
         const char *providedProp = celix_properties_get(exportedProperties, (char *) OSGI_FRAMEWORK_OBJECTCLASS, NULL);
@@ -339,6 +337,8 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
             celix_logHelper_info(admin->logHelper, "Export services (%s)", exports);
             celix_array_list_t *interfaces = celix_arrayList_create();
             assert(interfaces != NULL);
+            registrations = celix_arrayList_create();
+            assert(registrations != NULL);
 
             // Parse export interfaces for export service.
             if (strcmp(utils_stringTrim(exports), "*") == 0) {
@@ -380,10 +380,19 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
                 ret = exportRegistration_create(admin->context, admin->logHelper,
                         reference, endpointDescription, &registration);
                 if (ret == CELIX_SUCCESS) {
-                    celix_arrayList_add(*registrations, registration);
+                    celix_arrayList_add(registrations, registration);
                 }
                 //We have did copy assignment for endpointDescription in exportRegistration_create
                 endpointDescription_destroy(endpointDescription);
+            }
+
+            if (celix_arrayList_size(registrations) > 0) {
+                celixThreadMutex_lock(&admin->exportedServicesLock);
+                celix_longHashMap_put(admin->exportedServices, atol(serviceId), registrations);
+                celixThreadMutex_unlock(&admin->exportedServicesLock);
+            } else {
+                celix_arrayList_destroy(registrations);
+                registrations = NULL;
             }
 
             celix_arrayList_destroy(interfaces);
@@ -394,10 +403,16 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
         }
     }
 
-    celixThreadMutex_lock(&admin->exportedServicesLock);
-    // If there is no matching interface, it should return an empty registration list.
-    celix_longHashMap_put(admin->exportedServices, atol(serviceId), *registrations);// XXX If registrations is empty,we can't put it to hashmap.Otherwise,we can't destroy it.
-    celixThreadMutex_unlock(&admin->exportedServicesLock);
+    //We return a empty list of registrations if Remote Service Admin does not recognize any of the configuration types.
+    celix_array_list_t *newRegistrations = celix_arrayList_create();
+    if (registrations != NULL) {
+        //clone registrations
+        int regSize = celix_arrayList_size(registrations);
+        for (int i = 0; i < regSize; ++i) {
+            celix_arrayList_add(newRegistrations, celix_arrayList_get(registrations, i));
+        }
+    }
+    *registrationsOut = newRegistrations;
 
     celix_properties_destroy(exportedProperties);
 
@@ -408,8 +423,6 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
 
 get_reference_failed:
 references_err:
-    celix_arrayList_destroy(*registrations);
-    *registrations = NULL;
     return status;
 }
 
@@ -430,11 +443,14 @@ celix_status_t rsaShm_removeExportedService(rsa_shm_t *admin, export_registratio
         celix_logHelper_info(admin->logHelper, "Remove exported service %s", endpoint->service);
         celix_array_list_t *registrations = (celix_array_list_t *)celix_longHashMap_get(admin->exportedServices,
                 (long)endpoint->serviceId);
-        //if (celix_arrayList_size(registrations) == 0) {
-            (void)celix_longHashMap_remove(admin->exportedServices, endpoint->serviceId);
-            // TODO The caller should destroy exported registration list
-            celix_arrayList_destroy(registrations);
-        //}
+        if (registrations != NULL) {
+            celix_arrayList_remove(registrations, registration);
+            if (celix_arrayList_size(registrations) == 0) {
+                (void)celix_longHashMap_remove(admin->exportedServices, endpoint->serviceId);
+                celix_arrayList_destroy(registrations);
+            }
+        }
+
         exportRegistration_release(registration);
         celixThreadMutex_unlock(&admin->exportedServicesLock);
     } else {
