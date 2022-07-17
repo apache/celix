@@ -57,6 +57,7 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
 
     import->reqSenderSvcId = reqSenderSvcId;
     import->rpcSvc = NULL;
+    import->proxySvcId = -1;
 
     /* If the properties of imported service include 'RSA_RPC_TYPE_KEY',
       * then use the specified 'rsa_rpc_service' install the proxy of imported service.
@@ -74,7 +75,6 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
      opts.filter.filter = filter;
      opts.filter.serviceName = RSA_RPC_SERVICE_NAME;
      opts.filter.versionRange = RSA_RPC_SERVICE_USE_RANGE;
-     opts.filter.ignoreServiceLanguage = true;
      opts.callbackHandle = import;
      opts.add = importRegistration_addRpcSvc;
      opts.remove = importRegistration_removeRpcSvc;

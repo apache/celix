@@ -159,6 +159,7 @@ static void exportRegistration_destroyCallback(void* data) {
     bundleContext_ungetServiceReference(export->context, export->reference);
     endpointDescription_destroy(export->endpointDesc);
     free(export);
+    return;
 }
 
 static void exportRegistration_destroy(export_registration_t *export) {
