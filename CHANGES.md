@@ -19,20 +19,60 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Changes for 2.2.1
+# Noteworthy changes for 2.3.0 (TBD)
+
+# New Features
+
+ - Support for Conan package manager
+ - Async api to (un0)register services, track services, track bundles and create/remove components.
+ - C++17 API.
+ - Celix Promises (experimental)
+ - Celix PushStreams (experimental)
+ - C++ Remote Service Admin (experimental)
+ - Refactored LogAdmin
+
+# Improvements
+
+ - Build
+   - multi build type support 
+ - Added celix_ api for
+   - long and string hash map
+   - shell command
+   - logging
+ - Added C++17 api for
+   - BundleContext (service registration, service trackers, use services, bundle trackers)
+   - BundleActivator
+   - Framework
+   - LogHelper
+   - IShellCommand
+   - Filter
+   - Properties
+   - Utils
+ - Remote Services 
+   - Interceptors support
+ - PubSub
+   - Interceptors
+   - Wire protocol service support
+   - Refactored message serialization
+
+# Fixes
+
+ - Too many to mention
+
+# Changes for 2.2.1 (2020-05-10)
 
 # Fixes
 
 - Fixes etcdlib CMake setup to that etcdlib can be build as a separate project
 
-# Changes for 2.2.0
+# Noteworthy changes for 2.2.0 (2020-01-06)
 
 ## New features:
 - PubSub TCP (donation)
 - PubSub Avro bin serializer
 - PubSub Websocket (donation)
 - HTTP Admin (donation)
-- Shell Web UI (using HTTP Admin) d
+- Shell Web UI (using HTTP Admin)
  
 ## Improvements
 - CELIX-438: Refactored celix api so that include files and symbols have a _celix "namespace"
@@ -46,7 +86,7 @@ limitations under the License.
 - CELIX-460: Fixed issue with msg not found in pub/sub serializer map due to signed/unsigned difference
 - CELIX-466: Fixed race condition Race condition in adding/removing service listener hooks
 
-# Changes for 2.1.0
+# Noteworthy changes for 2.1.0 (2018-01-24)
 
 ## New Features:
 -  CELIX-408: Adds support for generating runtime shell scripts so that multiple Celix containers and other executable can be run with a single command.
@@ -81,7 +121,7 @@ limitations under the License.
 -  CELIX-387: Fixes an issue with the travis build and OSX
 -  CELIX-386: Fixes an issue with the C++ dependency manager and register multiple C++ services.
 
-# Changes for 2.0.0
+# Changes for 2.0.0 (2016-10-26)
 
 ## New Features
 - CELIX-77 Configuration Admin Implementation

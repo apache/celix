@@ -390,13 +390,13 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
 
     hash_map_iterator_pt iter = hashMapIterator_create(admin->exportedServices);
     while (hashMapIterator_hasNext(iter)) {
-        array_list_pt exports = hashMapIterator_nextValue(iter);
+        celix_array_list_t *exports = hashMapIterator_nextValue(iter);
         int i;
-        for (i = 0; i < arrayList_size(exports); i++) {
-            export_registration_t *export = arrayList_get(exports, i);
+        for (i = 0; i < celix_arrayList_size(exports); i++) {
+            export_registration_t *export = celix_arrayList_get(exports, i);
             remoteServiceAdmin_stopExport(admin, export);
         }
-        arrayList_destroy(exports);
+        celix_arrayList_destroy(exports);
     }
     hashMapIterator_destroy(iter);
     celixThreadRwlock_unlock(&admin->exportedServicesLock);
@@ -475,10 +475,10 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
             hash_map_iterator_pt iter = hashMapIterator_create(rsa->exportedServices);
             while (hashMapIterator_hasNext(iter)) {
                 hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-                array_list_pt exports = hashMapEntry_getValue(entry);
+                celix_array_list_t *exports = hashMapEntry_getValue(entry);
                 int expIt = 0;
-                for (expIt = 0; expIt < arrayList_size(exports); expIt++) {
-                    export_registration_t *check = arrayList_get(exports, expIt);
+                for (expIt = 0; expIt < celix_arrayList_size(exports); expIt++) {
+                    export_registration_t *check = celix_arrayList_get(exports, expIt);
                     export_reference_t * ref = NULL;
                     exportRegistration_getExportReference(check, &ref);
                     endpoint_description_t * checkEndpoint = NULL;
@@ -555,7 +555,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
     return result;
 }
 
-celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrations) {
+celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrationsOut) {
     celix_status_t status = CELIX_SUCCESS;
 
     bool export = false;
@@ -582,8 +582,9 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
         export = true;
     }
 
+    celix_array_list_t *registrations = NULL;
     if (export) {
-        arrayList_create(registrations);
+        registrations = celix_arrayList_create();
         array_list_pt references = NULL;
         service_reference_pt reference = NULL;
         char filter[256];
@@ -636,20 +637,32 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
             if (status == CELIX_SUCCESS) {
                 status = exportRegistration_start(registration);
                 if (status == CELIX_SUCCESS) {
-                    arrayList_add(*registrations, registration);
+                    celix_arrayList_add(registrations, registration);
                 }
             }
         }
 
 
-        if (status == CELIX_SUCCESS) {
+        if (status == CELIX_SUCCESS && celix_arrayList_size(registrations) > 0) {
             celixThreadRwlock_writeLock(&admin->exportedServicesLock);
-            hashMap_put(admin->exportedServices, reference, *registrations);
+            hashMap_put(admin->exportedServices, reference, registrations);
             celixThreadRwlock_unlock(&admin->exportedServicesLock);
         } else {
-            arrayList_destroy(*registrations);
-            *registrations = NULL;
+            celix_arrayList_destroy(registrations);
+            registrations = NULL;
         }
+    }
+
+    if (status == CELIX_SUCCESS) {
+        //We return a empty list of registrations if Remote Service Admin does not recognize any of the configuration types.
+    	celix_array_list_t *newRegistrations = celix_arrayList_create();
+        if (registrations != NULL) {
+            int regSize = celix_arrayList_size(registrations);
+            for (int i = 0; i < regSize; ++i) {
+                celix_arrayList_add(newRegistrations, celix_arrayList_get(registrations, i));
+            }
+        }
+        *registrationsOut = newRegistrations;
     }
 
     return status;
@@ -668,9 +681,13 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_t *
         celixThreadRwlock_writeLock(&admin->exportedServicesLock);
         exportReference_getExportedService(ref, &servRef);
 
-        array_list_pt exports = (array_list_pt)hashMap_remove(admin->exportedServices, servRef);
-        if(exports!=NULL){
-            arrayList_destroy(exports);
+        celix_array_list_t *exports = (celix_array_list_t *)hashMap_get(admin->exportedServices, servRef);
+        if (exports != NULL) {
+            celix_arrayList_remove(exports, registration);
+            if (celix_arrayList_size(exports) == 0) {
+                hashMap_remove(admin->exportedServices, servRef);
+                celix_arrayList_destroy(exports);
+            }
         }
 
         remoteServiceAdmin_stopExport(admin, registration);

@@ -91,7 +91,7 @@ static unsigned int celix_stringHashMap_hash(const celix_hash_map_key_t* key) {
 }
 
 static unsigned int celix_longHashMap_hash(const celix_hash_map_key_t* key) {
-    return key->longKey ^ (key->longKey >> 32);
+    return key->longKey ^ (key->longKey >> (sizeof(key->longKey)*8/2));
 }
 
 static bool celix_stringHashMap_equals(const celix_hash_map_key_t* key1, const celix_hash_map_key_t* key2) {

@@ -37,8 +37,6 @@ class CelixConan(ConanFile):
                   "It is a framework to develop (dynamic) modular software applications " \
                   "using component and/or service-oriented programming."
 
-    tool_requires = "cmake/3.17.5"
-
     options = {
         "enable_testing": [True, False],
         "enable_code_coverage": [True, False],
