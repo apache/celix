@@ -24,17 +24,18 @@ limitations under the License.
 Apache Celix is organized into several subprojects. The following subproject are available:
 
 * [Framework](../libs/framework) - The Apache Celix framework, an implementation of OSGi adapted to C and C++11.
-* [Utils](../libs/utils) - The Celix utils library, containing a wide range of utils functions (string, file, C hashmap, C arraylist, etc)
+* [Utils](../libs/utils/README.md) - The Celix utils library, containing a wide range of utils functions (string, file, C hashmap, C arraylist, etc)
 * [Examples](../examples) - A Selection of examples showing how the framework can be used.
-* [Log Service](../bundles/logging) - A Log Service logging abstraction for Apache Celix.
-* [Syslog Writer](../bundles/logging/log_writers/syslog_writer) - A syslog writer for use in combination with the Log Service.
+* [Log Service](../bundles/logging/README.md) - A Log Service logging abstraction for Apache Celix.
+  * [Syslog Writer](../bundles/logging/log_writers/syslog_writer) - A syslog writer for use in combination with the Log Service.
 * [Shell](../bundles/shell/README.md) - A OSGi C and C++11 shell implementation.
-* [Pubsub](../bundles/pubsub) - An implementation for a publish-subscribe remote message communication system. 
-* [HTTP Admin](../bundles/http_admin) - An implementation for the OSGi HTTP whiteboard adapted to C and based on civetweb.
+* [Pubsub](../bundles/pubsub/README.md) - An implementation for a publish-subscribe remote message communication system. 
+* [HTTP Admin](../bundles/http_admin/README.md) - An implementation for the OSGi HTTP whiteboard adapted to C and based on civetweb.
 * [Remote Services](../bundles/cxx_remote_services) - A C++17 adaption and implementation of the OSGi Remote Service Admin specification.
 
 Standalone libraries:
 
-* [Etcd library](../libs/etcdlib) - A C library that interfaces with ETCD.
-* [Promises library](../libs/promises) - A C++17 header only adaption and implementation of the OSGi Promise specification.
-* [Push Streams Library](../libs/pushstreams) - A C++17 header adaption and only implementation of the OSGi Push Stream specification. 
+* [Etcd library](../libs/etcdlib/README.md) - A C library that interfaces with ETCD.
+* [Promises library](../libs/promises/README.md) - A C++17 header only adaption and implementation of the OSGi Promise specification.
+* [Push Streams Library](../libs/pushstreams/README.md) - A C++17 header adaption and only implementation of the OSGi Push Stream specification. 
+
