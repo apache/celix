@@ -66,7 +66,7 @@ struct discovery {
     celix_bundle_context_t *context;
 
     celix_thread_mutex_t mutex;// projects: closed, listenerReferences, discoveredServices
-    bool stoped;//is discovery stoped
+    bool stopped;//is discovery stopped
     hash_map_t *listenerReferences; //key=serviceReference, value=nop
     hash_map_t *discoveredServices; //key=endpointId (string), value=endpoint_description_t *
 

@@ -52,7 +52,7 @@ celix_status_t discovery_create(celix_bundle_context_t *context, discovery_t** o
         discovery->context = context;
         discovery->poller = NULL;
         discovery->server = NULL;
-        discovery->stoped = false;
+        discovery->stopped = false;
 
         discovery->listenerReferences = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2,
                                                           NULL);
@@ -139,7 +139,7 @@ celix_status_t discovery_stop(discovery_t *discovery) {
     celix_status_t status;
 
     celixThreadMutex_lock(&discovery->mutex);
-    discovery->stoped = true;
+    discovery->stopped = true;
     celixThreadMutex_unlock(&discovery->mutex);
 
     status = etcdWatcher_destroy(discovery->pImpl->watcher);
