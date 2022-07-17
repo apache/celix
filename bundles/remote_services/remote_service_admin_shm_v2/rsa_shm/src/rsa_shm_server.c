@@ -50,7 +50,7 @@ struct rsa_shm_server {
     long msgTimeOutInSec;
 };
 
-struct rsa_shm_server_msg_entry {
+struct rsa_shm_server_thpool_work_data {
     rsa_shm_server_t *server;
     rsa_shm_msg_control_t *msgCtrl;
     void *msgBuffer;
@@ -163,17 +163,17 @@ static void rsaShmServer_terminateMsgHandling(rsa_shm_msg_control_t *ctrl) {
 static void rsaShmServer_msgHandlingWork(void *data) {
     assert(data != NULL);
     int status =  CELIX_SUCCESS;
-    struct rsa_shm_server_msg_entry *msgEntry = data;
-    rsa_shm_server_t *server = msgEntry->server;
+    struct rsa_shm_server_thpool_work_data *workData = data;
+    rsa_shm_server_t *server = workData->server;
     assert(server != NULL);
 
-    rsa_shm_msg_control_t *msgCtrl = (rsa_shm_msg_control_t *)msgEntry->msgCtrl;
-    char *msgBuffer = (char*)msgEntry->msgBuffer;
+    rsa_shm_msg_control_t *msgCtrl = (rsa_shm_msg_control_t *)workData->msgCtrl;
+    char *msgBuffer = (char*)workData->msgBuffer;
     const char *metaDataString = msgBuffer;
-    char *requestData = msgBuffer + msgEntry->metadataSize;
+    char *requestData = msgBuffer + workData->metadataSize;
 
     celix_properties_t *metadataProps = NULL;
-    if (msgEntry->metadataSize != 0) {
+    if (workData->metadataSize != 0) {
         metadataProps = celix_properties_loadFromString(metaDataString);
         if (metadataProps == NULL) {
             celix_logHelper_warning(server->loghelper, "RsaShmServer: Parse metadata failed.");
@@ -181,7 +181,7 @@ static void rsaShmServer_msgHandlingWork(void *data) {
     }
 
     struct iovec reply = {NULL, 0};
-    struct iovec request = {requestData, msgEntry->requestSize};
+    struct iovec request = {requestData, workData->requestSize};
     status = server->revCB(server->revCBHandle, server, metadataProps, &request, &reply);
     if (status != CELIX_SUCCESS || reply.iov_base == NULL || reply.iov_len == 0) {
         celix_logHelper_error(server->loghelper, "RsaShmServer: Call receive msg callback failed. Error data:%d, %p, %zu.",
@@ -192,7 +192,7 @@ static void rsaShmServer_msgHandlingWork(void *data) {
     char *src = reply.iov_base;
     size_t srcSize = reply.iov_len;
     while (true) {
-        ssize_t destSize = msgEntry->maxBufferSize;
+        ssize_t destSize = workData->maxBufferSize;
         char *dest = msgBuffer;
         size_t bytes = MIN(srcSize, destSize);
         memcpy(dest, src, bytes);
@@ -218,7 +218,7 @@ static void rsaShmServer_msgHandlingWork(void *data) {
             struct timespec timeout = celix_gettime(CLOCK_MONOTONIC);
             timeout.tv_sec += server->msgTimeOutInSec;
             while (msgCtrl->msgState == REPLYING && waitRet == 0) {
-                //pthread_cond_timedwait shall not return an error code of [EINTR].
+                //pthread_cond_timedwait shall not return an error code of [EINTR]. @ref https://linux.die.net/man/3/pthread_cond_timedwait
                 waitRet = pthread_cond_timedwait(&msgCtrl->signal, &msgCtrl->lock, &timeout);
             }
             pthread_mutex_unlock(&msgCtrl->lock);
@@ -277,6 +277,7 @@ static void *rsaShmServer_receiveMsgThread(void *data) {
             continue;
         }
         if (rsaShmServer_msgInvalid(server, &msgInfo)) {
+            celix_logHelper_error(server->loghelper,"RsaShmServer: Shm message info is invalid. It maybe cause memory leak!");
             continue;
         }
         rsa_shm_msg_control_t *msgCtrl = shmCache_getMemoryPtr(server->shmCache,
@@ -293,15 +294,15 @@ static void *rsaShmServer_receiveMsgThread(void *data) {
             shmCache_putMemoryPtr(server->shmCache, msgCtrl);
             continue;
         }
-        struct rsa_shm_server_msg_entry *msgEntry = ( struct rsa_shm_server_msg_entry *)malloc(sizeof(*msgEntry));
-        assert(msgEntry != NULL);
-        msgEntry->server = server;
-        msgEntry->msgCtrl = msgCtrl;
-        msgEntry->msgBuffer = msgBuffer;
-        msgEntry->maxBufferSize = msgInfo.maxBufferSize;
-        msgEntry->metadataSize = msgInfo.metadataSize;
-        msgEntry->requestSize = msgInfo.requestSize;
-        int retVal = thpool_add_work(server->threadPool, (void *)rsaShmServer_msgHandlingWork, (void*)msgEntry);
+        struct rsa_shm_server_thpool_work_data *workData = ( struct rsa_shm_server_thpool_work_data *)malloc(sizeof(*workData));
+        assert(workData != NULL);
+        workData->server = server;
+        workData->msgCtrl = msgCtrl;
+        workData->msgBuffer = msgBuffer;
+        workData->maxBufferSize = msgInfo.maxBufferSize;
+        workData->metadataSize = msgInfo.metadataSize;
+        workData->requestSize = msgInfo.requestSize;
+        int retVal = thpool_add_work(server->threadPool, (void *)rsaShmServer_msgHandlingWork, (void*)workData);
         if (retVal != 0) {
             celix_logHelper_error(server->loghelper, "RsaShmServer: maybe pool thread is full, error code is %d.", retVal);
             rsaShmServer_terminateMsgHandling(msgCtrl);
