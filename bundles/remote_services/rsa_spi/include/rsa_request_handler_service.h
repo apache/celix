@@ -31,16 +31,21 @@ extern "C" {
 #define RSA_REQUEST_HANDLER_SERVICE_VERSION "1.0.0"
 #define RSA_REQUEST_HANDLER_SERVICE_USE_RANGE "[1.0.0,2)"
 
+/**
+ * @brief The service handle RPC request
+ * @note It can be implemented by RPC bundles, and called by RSA bundles.
+ *
+ */
 typedef struct rsa_request_handler_service {
-    void *handle;
+    void *handle;/// The Service handle
     /**
-     * @brief
+     * @brief Handle the request that from remote service proxy.
      *
-     * @param handle
-     * @param[in, out] metadata If metadata is not required，it can be set NULL
-     * @param request
-     * @param response
-     * @return
+     * @param[in] handle Service handle
+     * @param[in, out] metadata The metadata, can be NULL.
+     * @param[in] request The request that from remote service proxy
+     * @param[out] response The response that from remote service
+     * @return @see celix_errno.h
      */
     celix_status_t (*handleRequest)(void *handle, celix_properties_t *metadata, const struct iovec *request, struct iovec *response);
 }rsa_request_handler_service_t;

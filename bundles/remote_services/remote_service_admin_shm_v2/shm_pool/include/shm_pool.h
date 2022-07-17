@@ -33,20 +33,50 @@ typedef struct shm_pool shm_pool_t;
 /**
  * @brief Create a shared memory pool
  * @param[in] size Shared memory size, it should be greater than or equal to 8192
- * @param[out] pool The shared memory instance
- * @return TODO
+ * @param[out] pool The shared memory pool instance
+ * @return @see celix_errno.h
  */
 celix_status_t shmPool_create(size_t size, shm_pool_t **pool);
 
+/**
+ * @brief Get the shared memory id of shared memory pool
+ *
+ * @param[in] pool The shared memory pool instance
+ * @return Shared memory id/-1
+ */
 int shmPool_getShmId(shm_pool_t *pool);
 
-// TODO add comment
+/**
+ * @brief Destroy shared memory pool
+ *
+ * @param[in] pool The shared memory pool instance
+ */
 void shmPool_destroy(shm_pool_t *pool);
 
+/**
+ * @brief Allocate memory from shared memory pool
+ *
+ * @param[in] pool The shared memory pool instance
+ * @param[in] size Allocating memory size
+ * @return Shared memory address/NULL
+ */
 void *shmPool_malloc(shm_pool_t *pool, size_t size);
 
+/**
+ * @brief Free shared memory
+ *
+ * @param[in] pool The shared memory pool instance
+ * @param[in] ptr Shared memory address
+ */
 void shmPool_free(shm_pool_t *pool, void *ptr);
 
+/**
+ * @brief Get the memory offset in shared memory
+ *
+ * @param[in] pool The shared memory pool instance
+ * @param[in] ptr Shared memory address
+ * @return Shared memory offset
+ */
 ssize_t shmPool_getMemoryOffset(shm_pool_t *pool, void *ptr);
 
 

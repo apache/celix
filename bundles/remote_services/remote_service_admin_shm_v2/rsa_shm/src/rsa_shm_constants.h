@@ -29,17 +29,32 @@ extern "C" {
 
 #define RSA_SHM_SERVER_NAME_KEY "rsaShmServerName"
 
-//The memory pool size should be greater than 6536
+/**
+ * @brief A property of RsaShm bundle that indicates the shared memory pool size.
+ *  Its value should be greater than 8192
+ *
+ */
 #define RSA_SHM_MEMORY_POOL_SIZE_KEY "rsaShmPoolSize"
-
+/**
+ * @brief Shared memory pool default size
+ *
+ */
 #define RSA_SHM_MEMORY_POOL_SIZE_DEFAULT (1024*256)
 
+/**
+ * @brief A property of RsaShm bundle that indicates the timeout of remote service invocation.
+ *
+ */
 #define RSA_SHM_MSG_TIMEOUT_KEY "rsaShmMsgTimeout"
-
+/**
+ * @brief The default timeout of remote service invocation.
+ *
+ */
 #define RSA_SHM_MSG_TIMEOUT_DEFAULT_IN_S 30
 
 /**
- * @brief A property of RsaShm bundle which indicate the maximum concurrent invocations of the same service
+ * @brief A property of RsaShm bundle that indicates the maximum concurrent invocations of the same service.
+ * If there are more concurrent invocations than its value,  service invocation will fail.
  *
  */
 #define RSA_SHM_MAX_CONCURRENT_INVOCATIONS_KEY "rsaShmCctIvNum"
@@ -50,12 +65,28 @@ extern "C" {
  */
 #define RSA_SHM_MAX_CONCURRENT_INVOCATIONS_DEFAULT 32
 
+/**
+ * @brief The maximum failures of service invocation.
+ * If there are more invocation failures than this value, the service invocation will fail for the next 'RSA_SHM_MAX_SVC_BREAKED_TIME_IN_S' seconds
+ *
+ */
 #define RSA_SHM_MAX_INVOKED_SVC_FAILURES 15
-
+/**
+ * @brief The breaked time of service invocation. After this time, the service invocation will return to normal.
+ *
+ */
 #define RSA_SHM_MAX_SVC_BREAKED_TIME_IN_S 60
 
+/**
+ * @brief Estimated remote service response default size
+ *
+ */
 #define ESTIMATED_MSG_RESPONSE_SIZE_DEFAULT 512
 
+/**
+ * @brief Default RPC type used by shared memory RSA
+ *
+ */
 #define RSA_SHM_RPC_TYPE_DEFAULT "rsa_json_rpc"
 
 /**

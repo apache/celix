@@ -30,17 +30,56 @@ extern "C" {
 
 typedef struct shm_cache shm_cache_t;
 
-// TODO add comment
+/**
+ * @brief Create shared memory cache
+ *
+ * @param[in] shmRdOnly Only read shared memory
+ * @param[out] shmCache The shared memory cache instance
+ * @return @see celix_errno.h
+ */
 celix_status_t shmCache_create(bool shmRdOnly, shm_cache_t **shmCache);
 
+/**
+ * @brief Destroy shared memory cache
+ *
+ * @param[in] shmCache The shared memory cache instance
+ */
 void shmCache_destroy(shm_cache_t *shmCache);
 
+/**
+ * @brief It will be called when shared memory is closed
+ *
+ * @param[in] handle Callback handle
+ * @param[in] shmCache The shared memory cache instance
+ * @param[in] shmId Closed shared memory id
+ */
 typedef void (*shmCache_shmPeerClosedCB)(void *handle, shm_cache_t *shmCache, int shmId);
 
+/**
+ * @brief Set the shared memory closed callback
+ *
+ * @param shmCache The shared memory cache instance
+ * @param shmPeerClosedCB The shared memory closed callback,it will be called when shared memory is closed
+ * @param closedCBHandle Callback handle
+ */
 void shmCache_setShmPeerClosedCB(shm_cache_t *shmCache, shmCache_shmPeerClosedCB shmPeerClosedCB, void *closedCBHandle);
 
+/**
+ * @brief Get shared memory address from shared memory cache.
+ *
+ * @param shmCache The shared memory cache instance
+ * @param shmId Shared memory id
+ * @param memoryOffset shared memory offset
+ * @return Shared memory address/NULL
+ */
 void * shmCache_getMemoryPtr(shm_cache_t *shmCache, int shmId, ssize_t memoryOffset);
 
+/**
+ * @brief Give back shared memory to shared memory cache
+ *
+ * @param shmCache The shared memory cache instance
+ * @param ptr Shared memory address
+ */
 void shmCache_putMemoryPtr(shm_cache_t *shmCache, void *ptr);
 
 #ifdef __cplusplus
