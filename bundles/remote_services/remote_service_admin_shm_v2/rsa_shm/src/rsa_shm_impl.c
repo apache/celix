@@ -254,7 +254,11 @@ static void rsaShm_overlayProperties(celix_properties_t *additionalProperties, c
 
 static bool rsaShm_isConfigTypeMatched(celix_properties_t *properties) {
     bool matched = false;
-    const char *exportConfigs = celix_properties_get(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, RSA_SHM_CONFIGURATION_TYPE);
+    /* If OSGI_RSA_SERVICE_EXPORTED_CONFIGS property is not set, then the Remote Service
+     * Admin implementation must choose a convenient configuration type.
+     */
+    const char *exportConfigs = celix_properties_get(properties,
+            OSGI_RSA_SERVICE_EXPORTED_CONFIGS, RSA_SHM_CONFIGURATION_TYPE);
     if (exportConfigs != NULL) {
         // See if the EXPORT_CONFIGS matches this RSA. If so, try to export.
 
@@ -328,10 +332,10 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
     if (rsaShm_isConfigTypeMatched(exportedProperties)) {
         const char *exportsProp = celix_properties_get(exportedProperties, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, NULL);
         const char *providedProp = celix_properties_get(exportedProperties, (char *) OSGI_FRAMEWORK_OBJECTCLASS, NULL);
-        char *exports = strndup(exportsProp, 1024 * 10);
-        char *provided = strndup(providedProp, 1024 * 10);
 
-        if (exports != NULL && provided != NULL) {
+        if (exportsProp != NULL && providedProp != NULL) {
+            char *exports = strndup(exportsProp, 1024 * 10);
+            char *provided = strndup(providedProp, 1024 * 10);
             celix_logHelper_info(admin->logHelper, "Export services (%s)", exports);
             celix_array_list_t *interfaces = celix_arrayList_create();
             assert(interfaces != NULL);
@@ -383,12 +387,11 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
             }
 
             celix_arrayList_destroy(interfaces);
+            free(exports);
+            free(provided);
         } else {
             celix_logHelper_warning(admin->logHelper, "No Services to export.");
         }
-
-        free(exports);
-        free(provided);
     }
 
     celixThreadMutex_lock(&admin->exportedServicesLock);
