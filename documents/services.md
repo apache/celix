@@ -329,21 +329,24 @@ CELIX_GEN_CXX_BUNDLE_ACTIVATOR(MyCShellCommandProviderBundleActivator)
 ```
 
 ### Sequence diagrams for service registration
+
 ![Register Service Async](diagrams/services_register_service_async_seq.png)
-A asynchronized service registration
+*An asynchronized service registration*
+
 ---
 
 ![Register Service Async](diagrams/services_register_service_seq.png)
-A synchronized service registration
+*A synchronized service registration*
+
 ---
 
 ![Unregister Service Async](diagrams/services_unregister_service_async_seq.png)
-A asynchronized service un-registration
+*An asynchronized service un-registration*
+
 ---
 
 ![Unregister Service Async](diagrams/services_unregister_service_seq.png)
-A synchronized service un-registration
----
+*A synchronized service un-registration*
 
 ## Using services
 Services can be used directly using the bundle context C functions or C++ methods:
@@ -611,20 +614,22 @@ CELIX_GEN_CXX_BUNDLE_ACTIVATOR(TrackingCommandServicesExample)
 ### Sequence diagrams for service tracker and service registration
 
 ![Register Service Async](diagrams/services_tracker_services_add_async_seq.png)
-Service tracker callback with an asynchronized service registration
+*Service tracker callback with an asynchronized service registration*
+
 ---
 
 ![Register Service Async](diagrams/services_tracker_services_rem_async_seq.png)
-Service tracker callback with an asynchronized service un-registration
+*Service tracker callback with an asynchronized service un-registration*
+
 ---
 
 ![Register Service Async](diagrams/services_tracker_services_add_seq.png)
-Service tracker callback with a synchronized service registration
+*Service tracker callback with a synchronized service registration*
+
 ---
 
 ![Register Service Async](diagrams/services_tracker_services_rem_seq.png)
-Service tracker callback with a synchronized service un-registration
----
+*Service tracker callback with a synchronized service un-registration*
 
 # The `celix::query` shell command
 To interactively see the which service and service trackers are available the `celix::query` shell command 
