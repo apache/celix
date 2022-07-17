@@ -34,9 +34,6 @@
 #include <stdbool.h>
 #include <errno.h>
 
-// The corresponding client name will be "{serverName}_cl.%ld",and we will use it to create an abstract socket. Therefore, we should set the maximum size of the server name to 104.
-#define MAX_RSA_SHM_SERVER_NAME_SIZE 104
-
 #define MAX_RSA_SHM_SERVER_HANDLE_MSG_THREADS_NUM 5
 
 struct rsa_shm_server {
@@ -90,7 +87,7 @@ celix_status_t rsaShmServer_create(celix_bundle_context_t *ctx, const char *name
     struct sockaddr_un svaddr;
     memset(&svaddr, 0, sizeof(svaddr));
     svaddr.sun_family = AF_UNIX;
-    strncpy(&svaddr.sun_path[1], name, sizeof(svaddr.sun_path) - 2);
+    strncpy(&svaddr.sun_path[1], name, sizeof(svaddr.sun_path) - 1);
     if (bind(sfd, (struct sockaddr *) &svaddr, sizeof(struct sockaddr_un)) == -1) {
         celix_logHelper_error(loghelper, "RsaShmServer: bind socket fd err, errno is %d.", errno);
         status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);

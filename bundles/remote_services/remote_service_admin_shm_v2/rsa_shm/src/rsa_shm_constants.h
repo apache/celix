@@ -58,6 +58,13 @@ extern "C" {
 
 #define RSA_SHM_RPC_TYPE_DEFAULT "rsa_json_rpc"
 
+/**
+ * @brief The maximum len of shm server name.
+ * @note The corresponding client name will be "{serverName}_cl.%ld",
+ * and we will use it to create an abstract socket. Therefore, we should set the maximum len of the server name to (sizeof(((struct sockaddr_un*)0)->sun_path)-1-4-19).
+ */
+#define MAX_RSA_SHM_SERVER_NAME_SIZE 84
+
 #ifdef __cplusplus
 }
 #endif

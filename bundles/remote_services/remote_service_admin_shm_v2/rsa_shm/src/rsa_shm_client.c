@@ -35,7 +35,6 @@
 #include <stdbool.h>
 #include <errno.h>
 
-#define MAX_SOCKSERVER_NAME_SIZE (sizeof(((struct sockaddr_un*)0)->sun_path)-1)
 
 struct rsa_shm_client_manager {
     celix_bundle_context_t *ctx;
@@ -249,7 +248,7 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
         const char *peerServerName, long serviceId, celix_properties_t *metadata,
         const struct iovec *request, struct iovec *response) {
     celix_status_t status = CELIX_SUCCESS;
-    if (clientManager == NULL || peerServerName == NULL || strlen(peerServerName) >= MAX_SOCKSERVER_NAME_SIZE
+    if (clientManager == NULL || peerServerName == NULL || strlen(peerServerName) >= MAX_RSA_SHM_SERVER_NAME_SIZE
             || request == NULL || request->iov_base == NULL || request->iov_len == 0
             || response == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
@@ -375,7 +374,7 @@ static celix_status_t rsaShmClientManager_createClient(rsa_shm_client_manager_t 
         const char *peerServerName, rsa_shm_client_t **clientOut) {
     celix_status_t status = CELIX_SUCCESS;
     rsa_shm_client_t *client = NULL;
-    if (strlen(peerServerName) >= MAX_SOCKSERVER_NAME_SIZE) {
+    if (strlen(peerServerName) >= MAX_RSA_SHM_SERVER_NAME_SIZE) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
