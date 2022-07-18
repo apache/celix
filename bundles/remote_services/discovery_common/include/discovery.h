@@ -38,6 +38,7 @@
 #include "endpoint_discovery_poller.h"
 
 #include "celix_log_helper.h"
+#include <stdbool.h>
 
 #define DISCOVERY_SERVER_INTERFACE  "DISCOVERY_CFG_SERVER_INTERFACE"
 #define DISCOVERY_SERVER_IP         "DISCOVERY_CFG_SERVER_IP"
@@ -64,9 +65,8 @@
 struct discovery {
     celix_bundle_context_t *context;
 
-    celix_thread_mutex_t listenerReferencesMutex;
-    celix_thread_mutex_t discoveredServicesMutex;
-
+    celix_thread_mutex_t mutex;// projects: closed, listenerReferences, discoveredServices
+    bool stopped;//is discovery stopped
     hash_map_t *listenerReferences; //key=serviceReference, value=nop
     hash_map_t *discoveredServices; //key=endpointId (string), value=endpoint_description_t *
 
