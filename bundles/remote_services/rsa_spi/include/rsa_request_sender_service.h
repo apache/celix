@@ -46,7 +46,7 @@ typedef struct rsa_request_sender_service {
      * @param[in] endpointDesciption The endpoint desciption of remote service
      * @param[in,out] metadata The metadata, can be NULL.
      * @param[in] request The request that from remote service proxy
-     * @param[out] response The response that from remote service
+     * @param[out] response The response that from remote service. The caller should use free function to free response memory
      * @return @see celix_errno.h
      */
     celix_status_t (*sendRequest)(void *handle, const endpoint_description_t *endpointDesciption, celix_properties_t *metadata, const struct iovec *request, struct iovec *response);

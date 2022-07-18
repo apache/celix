@@ -44,7 +44,7 @@ typedef struct rsa_request_handler_service {
      * @param[in] handle Service handle
      * @param[in, out] metadata The metadata, can be NULL.
      * @param[in] request The request that from remote service proxy
-     * @param[out] response The response that from remote service
+     * @param[out] response The response that from remote service. The caller should use free function to free response memory
      * @return @see celix_errno.h
      */
     celix_status_t (*handleRequest)(void *handle, celix_properties_t *metadata, const struct iovec *request, struct iovec *response);

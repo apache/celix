@@ -21,8 +21,6 @@
 #include <rsa_json_rpc_constants.h>
 #include <rsa_json_rpc_endpoint_impl.h>
 #include <rsa_json_rpc_proxy_impl.h>
-#include <rsa_request_sender_tracker.h>
-#include <rsa_request_handler_service.h>
 #include <remote_interceptors_handler.h>
 #include <endpoint_description.h>
 #include <celix_long_hash_map.h>
@@ -39,16 +37,11 @@ struct rsa_json_rpc {
     celix_bundle_context_t *ctx;
     celix_log_helper_t *logHelper;
     celix_thread_mutex_t mutex; //It protects svcProxyFactories and svcEndpoints
-    celix_long_hash_map_t *svcProxyFactories;// Key: proxy factory service id, Value: rsa_json_rpc_proxy_fac_entry
-    celix_long_hash_map_t *svcEndpoints;// Key:request handler service id, Value: rsa_json_rpc_endpoint_entry
+    celix_long_hash_map_t *svcProxyFactories;// Key: proxy factory service id, Value: rsa_json_rpc_proxy_factory_t
+    celix_long_hash_map_t *svcEndpoints;// Key:request handler service id, Value: rsa_json_rpc_endpoint_t
     remote_interceptors_handler_t *interceptorsHandler;
     rsa_request_sender_tracker_t *reqSenderTracker;
     FILE *callsLogFile;
-};
-
-struct rsa_json_rpc_endpoint_entry {
-    rsa_json_rpc_endpoint_t *endpoint;
-    rsa_request_handler_service_t reqHandlerSvc;
 };
 
 celix_status_t rsaJsonRpc_create(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
@@ -180,46 +173,24 @@ celix_status_t rsaJsonRpc_installEndpoint(void *handle, const endpoint_descripti
 
     rsa_json_rpc_t *jsonRpc = (rsa_json_rpc_t *)handle;
 
-    struct rsa_json_rpc_endpoint_entry *endpointEntry = calloc(1, sizeof(*endpointEntry));
-    assert(endpointEntry != NULL);
-
+    rsa_json_rpc_endpoint_t *endpoint = NULL;
     status = rsaJsonRpcEndpoint_create(jsonRpc->ctx, jsonRpc->logHelper, jsonRpc->callsLogFile,
-            jsonRpc->interceptorsHandler, endpointDesc, &endpointEntry->endpoint);
+            jsonRpc->interceptorsHandler, endpointDesc, &endpoint);
     if (status != CELIX_SUCCESS) {
         goto endpoint_err;
     }
-    endpointEntry->reqHandlerSvc.handle = endpointEntry->endpoint;
-    endpointEntry->reqHandlerSvc.handleRequest = rsaJsonRpcEndpoint_handleRequest;
-    celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
-    opts.serviceName = RSA_REQUEST_HANDLER_SERVICE_NAME;
-    opts.serviceVersion = RSA_REQUEST_HANDLER_SERVICE_VERSION;
-    opts.svc = &endpointEntry->reqHandlerSvc;
-    long reqHandlerSvcId = celix_bundleContext_registerServiceWithOptionsAsync(jsonRpc->ctx, &opts);
-    if (reqHandlerSvcId< 0) {
-        celix_logHelper_error(jsonRpc->logHelper, "Error Registering endpoint service.");
-        goto endpoint_svc_err;
-    }
+    long reqHandlerSvcId = rsaJsonRpcEndpoint_getRequestHandlerSvcId(endpoint);
+    assert(reqHandlerSvcId >= 0);
 
     celixThreadMutex_lock(&jsonRpc->mutex);
-    celix_longHashMap_put(jsonRpc->svcEndpoints, reqHandlerSvcId, endpointEntry);
+    celix_longHashMap_put(jsonRpc->svcEndpoints, reqHandlerSvcId, endpoint);
     celixThreadMutex_unlock(&jsonRpc->mutex);
     *requestHandlerSvcId = reqHandlerSvcId;
 
     return CELIX_SUCCESS;
 
-endpoint_svc_err:
-    rsaJsonRpcEndpoint_destroy(endpointEntry->endpoint);
 endpoint_err:
-    free(endpointEntry);
     return status;
-}
-
-static void rsaJsonRpc_unregistereEndpointSvcDone(void *data) {
-    assert(data != NULL);
-    struct rsa_json_rpc_endpoint_entry *endpointEntry = (struct rsa_json_rpc_endpoint_entry *)data;
-    rsaJsonRpcEndpoint_destroy(endpointEntry->endpoint);
-    free(endpointEntry);
-    return;
 }
 
 void rsaJsonRpc_uninstallEndpoint(void *handle, long requestHandlerSvcId) {
@@ -229,12 +200,11 @@ void rsaJsonRpc_uninstallEndpoint(void *handle, long requestHandlerSvcId) {
     rsa_json_rpc_t *jsonRpc = (rsa_json_rpc_t *)handle;
     celixThreadMutex_lock(&jsonRpc->mutex);
 
-    struct rsa_json_rpc_endpoint_entry *endpointEntry =
+    rsa_json_rpc_endpoint_t *endpoint =
             celix_longHashMap_get(jsonRpc->svcEndpoints, requestHandlerSvcId);
-    if (endpointEntry != NULL) {
-        celix_longHashMap_remove(jsonRpc->svcEndpoints, requestHandlerSvcId);
-        celix_bundleContext_unregisterServiceAsync(jsonRpc->ctx, requestHandlerSvcId,
-                endpointEntry, rsaJsonRpc_unregistereEndpointSvcDone);
+    if (endpoint != NULL) {
+        (void)celix_longHashMap_remove(jsonRpc->svcEndpoints, requestHandlerSvcId);
+        rsaJsonRpcEndpoint_destroy(endpoint);
     }
     celixThreadMutex_unlock(&jsonRpc->mutex);
     return;

@@ -18,6 +18,7 @@
  */
 
 #include <rsa_json_rpc_endpoint_impl.h>
+#include <rsa_request_handler_service.h>
 #include <remote_interceptors_handler.h>
 #include <endpoint_description.h>
 #include <remote_constants.h>
@@ -33,16 +34,21 @@ struct rsa_json_rpc_endpoint {
     FILE *callsLogFile;
     endpoint_description_t *endpointDesc;
     remote_interceptors_handler_t *interceptorsHandler;
+    rsa_request_handler_service_t reqHandlerSvc;
+    long reqHandlerSvcId;
     long svcTrackerId;
     celix_thread_rwlock_t lock; //projects below
     void *service;
     dyn_interface_type *intfType;
 };
 
+static void rsaJsonRpcEndpoint_stopSvcTrackerDone(void *data);
 static void rsaJsonRpcEndpoint_addSvcWithOwner(void *handle, void *service,
         const celix_properties_t *props, const celix_bundle_t *svcOwner);
 static void rsaJsonRpcEndpoint_removeSvcWithOwner(void *handle, void *service,
         const celix_properties_t *props, const celix_bundle_t *svcOwner);
+static celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t *metadata,
+        const struct iovec *request, struct iovec *responseOut);
 
 celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
         FILE *logFile, remote_interceptors_handler_t *interceptorsHandler,
@@ -81,10 +87,26 @@ celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_
         goto service_tracker_err;
     }
 
+    endpoint->reqHandlerSvc.handle = endpoint;
+    endpoint->reqHandlerSvc.handleRequest = rsaJsonRpcEndpoint_handleRequest;
+    celix_service_registration_options_t opts1 = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
+    opts1.serviceName = RSA_REQUEST_HANDLER_SERVICE_NAME;
+    opts1.serviceVersion = RSA_REQUEST_HANDLER_SERVICE_VERSION;
+    opts1.svc = &endpoint->reqHandlerSvc;
+    endpoint->reqHandlerSvcId = celix_bundleContext_registerServiceWithOptionsAsync(endpoint->ctx, &opts1);
+    if (endpoint->reqHandlerSvcId< 0) {
+        celix_logHelper_error(logHelper, "Error Registering endpoint request handler service for %s.", endpointDesc->service);
+        goto req_handler_svc_err;
+    }
+
     *endpointOut = endpoint;
 
     return CELIX_SUCCESS;
 
+req_handler_svc_err:
+    celix_bundleContext_stopTrackerAsync(endpoint->ctx, endpoint->svcTrackerId,
+            endpoint, rsaJsonRpcEndpoint_stopSvcTrackerDone);
+    return status;
 service_tracker_err:
     (void)celixThreadRwlock_destroy(&endpoint->lock);
 mutex_err:
@@ -93,7 +115,7 @@ mutex_err:
     return status;
 }
 
-static void rsaJsonRpcEndpoint_destroyCallback(void *data) {
+static void rsaJsonRpcEndpoint_stopSvcTrackerDone(void *data) {
     assert(data != NULL);
     rsa_json_rpc_endpoint_t *endpoint = (rsa_json_rpc_endpoint_t *)data;
     (void)celixThreadRwlock_destroy(&endpoint->lock);
@@ -102,12 +124,24 @@ static void rsaJsonRpcEndpoint_destroyCallback(void *data) {
     return;
 }
 
+static void rsaJsonRpcEndpoint_unregisterReqHandleSvcDone(void *data) {
+    assert(data != NULL);
+    rsa_json_rpc_endpoint_t *endpoint = (rsa_json_rpc_endpoint_t *)data;
+    celix_bundleContext_stopTrackerAsync(endpoint->ctx, endpoint->svcTrackerId,
+            endpoint, rsaJsonRpcEndpoint_stopSvcTrackerDone);
+    return;
+}
+
 void rsaJsonRpcEndpoint_destroy(rsa_json_rpc_endpoint_t *endpoint) {
     if (endpoint != NULL) {
-        celix_bundleContext_stopTrackerAsync(endpoint->ctx, endpoint->svcTrackerId,
-                endpoint, rsaJsonRpcEndpoint_destroyCallback);
+        celix_bundleContext_unregisterServiceAsync(endpoint->ctx, endpoint->reqHandlerSvcId,
+                endpoint, rsaJsonRpcEndpoint_unregisterReqHandleSvcDone);
     }
     return;
+}
+
+long rsaJsonRpcEndpoint_getRequestHandlerSvcId(rsa_json_rpc_endpoint_t *endpoint) {
+    return endpoint->reqHandlerSvcId;
 }
 
 static void rsaJsonRpcEndpoint_addSvcWithOwner(void *handle, void *service,
@@ -178,7 +212,7 @@ static void rsaJsonRpcEndpoint_removeSvcWithOwner(void *handle, void *service,
     return;
 }
 
-celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t *metadata,
+static celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_properties_t *metadata,
         const struct iovec *request, struct iovec *responseOut) {
     celix_status_t status = CELIX_SUCCESS;
     if (handle == NULL || request == NULL || request->iov_base == NULL
