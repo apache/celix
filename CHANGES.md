@@ -19,9 +19,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Noteworthy changes for 2.3.0 (TBD)
+# Noteworthy changes for 2.3.0 (2022-07-10)
 
-# New Features
+## New Features
 
  - Support for Conan package manager
  - Async api to (un0)register services, track services, track bundles and create/remove components.
@@ -31,7 +31,7 @@ limitations under the License.
  - C++ Remote Service Admin (experimental)
  - Refactored LogAdmin
 
-# Improvements
+## Improvements
 
  - Build
    - multi build type support 
@@ -55,13 +55,13 @@ limitations under the License.
    - Wire protocol service support
    - Refactored message serialization
 
-# Fixes
+## Fixes
 
  - Too many to mention
 
 # Changes for 2.2.1 (2020-05-10)
 
-# Fixes
+## Fixes
 
 - Fixes etcdlib CMake setup to that etcdlib can be build as a separate project
 
