@@ -29,10 +29,10 @@ add_celix_bundle(rsa_shm
     src/rsa_shm_client.c
     src/rsa_shm_export_registration.c
     src/rsa_shm_import_registration.c
-    src/thpool.c
+    src/thpool/thpool.c
 )
 
-target_include_directories(rsa_shm PRIVATE src)
+target_include_directories(rsa_shm PRIVATE src src/thpool)
 
 if (ENABLE_TESTING)
     celix_bundle_private_libs(rsa_shm Celix::shm_pool)

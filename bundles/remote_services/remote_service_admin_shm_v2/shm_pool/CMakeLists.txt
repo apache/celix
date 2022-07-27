@@ -18,7 +18,7 @@
 add_library(shm_pool SHARED
         src/shm_pool.c
         src/shm_cache.c
-        src/tlsf.c
+        src/tlsf/tlsf.c
         )
 
 set_target_properties(shm_pool PROPERTIES OUTPUT_NAME "celix_shm_pool")
@@ -26,7 +26,7 @@ target_include_directories(shm_pool PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         )
 
-target_include_directories(shm_pool PRIVATE src)
+target_include_directories(shm_pool PRIVATE src src/tlsf)
 
 target_link_libraries(shm_pool
         PUBLIC
