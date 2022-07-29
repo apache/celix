@@ -23,6 +23,7 @@
 #include "celix_string_hash_map.h"
 #include "celix_long_hash_map.h"
 #include <random>
+#include <atomic>
 
 class HashMapTestSuite : public ::testing::Test {
 public:
