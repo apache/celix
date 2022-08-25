@@ -29,7 +29,7 @@ extern "C" {
 
 struct shm_pool_shared_info {
     size_t size;//The size of ‘struct shm_pool_shared_info‘.It is used to extend 'struct shm_pool_shared_info' in the future.
-    uint64_t heartbeatCnt;
+    uint64_t heartbeatCnt;//Keep alive for shared memory
 };
 
 #ifdef __cplusplus

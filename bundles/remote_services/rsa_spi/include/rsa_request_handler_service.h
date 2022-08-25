@@ -34,8 +34,8 @@ extern "C" {
 /**
  * @brief The service handle RPC request
  * @note It can be implemented by RPC bundles, and called by RSA bundles.
- * In this interface, the request data should pass through the reuqest data of rsa_request_sender_service interface, it is serialized by remote service proxy.
- * So, the interface caller does not need to focus on (de)serialization. Detailed interface invocation refrence rsa_shm_v2.adoc(Figure 1.remote service call)
+ * In this interface, the request data should pass through the reuqest data of rsa_request_sender_service interface. and the request data has been serialized by remote service proxy.
+ * Therefore, the interface caller does not need to focus on (de)serialization. Refer to rsa_shm_v2.adoc(remote service call) for interface invocation details.
  */
 typedef struct rsa_request_handler_service {
     void *handle;/// The Service handle
