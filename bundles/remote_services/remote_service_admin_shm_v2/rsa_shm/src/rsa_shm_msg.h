@@ -31,22 +31,24 @@ typedef enum {
     REQUESTING = 0,
     REPLYING = 1,
     REPLIED = 2,
-    ABEND = 3,
-}MSG_STATE;
+    ABEND = 3,//abnormal end
+}rsa_shm_msg_state;
 
 typedef struct rsa_shm_msg_control {
-    MSG_STATE msgState;
+    size_t size;//The size of ‘struct rsa_shm_msg_control‘.It is used to extend 'struct rsa_shm_msg_control' in the future.
+    rsa_shm_msg_state msgState;
     pthread_mutex_t lock;
     pthread_cond_t signal;
     size_t actualReplyedSize;
 }rsa_shm_msg_control_t;
 
 typedef struct rsa_shm_msg {
+    size_t size;//The size of ‘struct rsa_shm_msg‘.It is used to extend 'struct rsa_shm_msg' in the future.
     int shmId;
     ssize_t ctrlDataOffset;
     size_t ctrlDataSize;
-    ssize_t msgBufferOffset;//Message body includes metadata, request and reserve space
-    size_t maxBufferSize;
+    ssize_t msgBodyOffset;//Message body includes metadata, request and reserve space
+    size_t msgBodyTotalSize;//equal metadataSize + requestSize + reserve space size
     size_t metadataSize;
     size_t requestSize;
 }rsa_shm_msg_t;

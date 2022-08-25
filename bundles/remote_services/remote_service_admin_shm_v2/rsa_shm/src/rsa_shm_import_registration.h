@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 #include <endpoint_description.h>
-#include <rsa_rpc_service.h>
+#include <rsa_rpc_factory.h>
 #include <celix_log_helper.h>
 #include <celix_api.h>
 

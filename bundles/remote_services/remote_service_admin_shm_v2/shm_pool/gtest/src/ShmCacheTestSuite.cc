@@ -92,11 +92,11 @@ TEST_F(ShmCacheTestSuite, GetMemoryPtr) {
     void *addr1 = shmCache_getMemoryPtr(shmCache, shmId, memOffset1);
     EXPECT_TRUE(addr1 != nullptr);
     EXPECT_STREQ((const char*)"hello", (const char*)addr1);
-    shmCache_putMemoryPtr(shmCache, addr1);
+    shmCache_releaseMemoryPtr(shmCache, addr1);
     void *addr2 = shmCache_getMemoryPtr(shmCache, shmId, memOffset2);
     EXPECT_TRUE(addr2 != nullptr);
     EXPECT_STREQ((const char*)"shm cache", (const char*)addr2);
-    shmCache_putMemoryPtr(shmCache, addr2);
+    shmCache_releaseMemoryPtr(shmCache, addr2);
 
     shmPool_free(shmPool, mem2);
     shmPool_free(shmPool, mem1);
@@ -148,7 +148,7 @@ TEST_F(ShmCacheTestSuite, EvictInactiveShmCacheBlock) {
 
     void *addr = shmCache_getMemoryPtr(shmCache, shmId, memOffset);
     EXPECT_TRUE(addr != nullptr);
-    shmCache_putMemoryPtr(shmCache, addr);
+    shmCache_releaseMemoryPtr(shmCache, addr);
 
     shmPool_free(shmPool, mem);
     shmPool_destroy(shmPool);

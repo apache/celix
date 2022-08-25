@@ -142,7 +142,9 @@ TEST_F(RsaShmTestSuite, ImportService) {
     celix_properties_set(endpointDesc.properties, OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
     celix_properties_set(endpointDesc.properties, OSGI_RSA_SERVICE_IMPORTED, "true");
     celix_properties_set(endpointDesc.properties, RSA_SHM_SERVER_NAME_KEY, "shm-server-tst");
-    celix_properties_set(endpointDesc.properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, RSA_SHM_CONFIGURATION_TYPE);
+    char importedConfigs[1024];
+    snprintf(importedConfigs, 1024, "%s,%s", RSA_SHM_CONFIGURATION_TYPE, RSA_SHM_RPC_TYPE_DEFAULT);
+    celix_properties_set(endpointDesc.properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, importedConfigs);
     endpointDesc.frameworkUUID = (char*)celix_properties_get(endpointDesc.properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
     endpointDesc.serviceId = 0;
     endpointDesc.id = (char*)celix_properties_get(endpointDesc.properties, OSGI_RSA_ENDPOINT_ID, NULL);

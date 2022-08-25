@@ -92,12 +92,9 @@ static celix_status_t endpointDescription_verifyLongProperty(celix_properties_t 
 }
 
 bool endpointDescription_isInvalid(const endpoint_description_t *description) {
-    if (description == NULL || description->properties == NULL || description->serviceId < 0
+    return description == NULL || description->properties == NULL || description->serviceId < 0
             || description->service == NULL || strlen(description->service) > NAME_MAX
-            || description->frameworkUUID == NULL || description->id == NULL) {
-        return true;
-    }
-    return false;
+            || description->frameworkUUID == NULL || description->id == NULL;
 }
 
 endpoint_description_t *endpointDescription_clone(const endpoint_description_t *description) {

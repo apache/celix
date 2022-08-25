@@ -35,7 +35,7 @@ typedef struct rsa_json_rpc_proxy_factory rsa_json_rpc_proxy_factory_t;
 celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
         FILE *logFile, remote_interceptors_handler_t *interceptorsHandler,
         const endpoint_description_t *endpointDesc, rsa_request_sender_tracker_t *reqSenderTracker,
-        long requestSenderSvcId, rsa_json_rpc_proxy_factory_t **proxyFactoryOut);
+        long requestSenderSvcId, unsigned int serialProtoId, rsa_json_rpc_proxy_factory_t **proxyFactoryOut);
 
 void rsaJsonRpcProxy_factoryDestroy(rsa_json_rpc_proxy_factory_t *proxyFactory);
 

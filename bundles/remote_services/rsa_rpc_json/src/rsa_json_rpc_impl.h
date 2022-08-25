@@ -33,15 +33,15 @@ celix_status_t rsaJsonRpc_create(celix_bundle_context_t* ctx, celix_log_helper_t
 
 void rsaJsonRpc_destroy(rsa_json_rpc_t *jsonRpc);
 
-celix_status_t rsaJsonRpc_installProxy(void *handle, const endpoint_description_t *endpointDesc,
+celix_status_t rsaJsonRpc_createProxy(void *handle, const endpoint_description_t *endpointDesc,
         long requestSenderSvcId, long *proxySvcId);
 
-void rsaJsonRpc_uninstallProxy(void *handle, long proxySvcId);
+void rsaJsonRpc_destroyProxy(void *handle, long proxySvcId);
 
-celix_status_t rsaJsonRpc_installEndpoint(void *handle, const endpoint_description_t *endpointDesc,
+celix_status_t rsaJsonRpc_createEndpoint(void *handle, const endpoint_description_t *endpointDesc,
         long *requestHandlerSvcId);
 
-void rsaJsonRpc_uninstallEndpoint(void *handle, long requestHandlerSvcId);
+void rsaJsonRpc_destroyEndpoint(void *handle, long requestHandlerSvcId);
 
 #ifdef __cplusplus
 }

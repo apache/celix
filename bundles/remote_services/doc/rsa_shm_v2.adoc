@@ -1,0 +1,38 @@
+.remote service call
+[plantuml,]
+----
+@startuml
+box "consumer process"
+participant service_consumer
+participant c_framework as "consumer framework"
+participant c_rsa as "consumer rsa"
+participant c_rpc as "consumer rpc"
+end box
+
+box "provider process"
+participant p_rsa as "provider rsa"
+participant p_rpc as "provider rpc"
+participant remote_service
+end box
+
+service_consumer->c_framework:use/track target service
+c_framework->c_rpc:getService
+c_rpc --> c_framework:return proxy service
+c_framework --> service_consumer:return proxy service
+service_consumer -> c_rpc: call proxy service function
+c_rpc -> c_rpc: serialize reuqest data
+c_rpc -> c_rsa: call request sender service
+c_rsa  -> p_rsa: IPC(shared memory), send request data
+
+p_rsa->p_rpc:call request handler service
+p_rpc->p_rpc:deserialize reuqest data
+p_rpc->remote_service: call remote service
+return response
+p_rpc-->p_rpc:serialize response
+p_rpc-->p_rsa: response
+p_rsa-->c_rsa: IPC(shared memory), return response
+c_rsa --> c_rpc: response
+c_rpc --> c_rpc: deserialize response
+c_rpc --> service_consumer:return result
+@enduml
+----

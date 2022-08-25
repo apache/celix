@@ -29,22 +29,19 @@ add_celix_bundle(rsa_shm
     src/rsa_shm_client.c
     src/rsa_shm_export_registration.c
     src/rsa_shm_import_registration.c
-    src/thpool/thpool.c
 )
 
-target_include_directories(rsa_shm PRIVATE src src/thpool)
+target_include_directories(rsa_shm PRIVATE src)
 
-if (ENABLE_TESTING)
-    celix_bundle_private_libs(rsa_shm Celix::shm_pool)
-endif()
 
 target_link_libraries(rsa_shm PRIVATE
     Celix::c_rsa_spi
     Celix::rsa_common
     Celix::deprecated_rsa_spi
-    Celix::shm_pool
     Celix::log_helper
     Celix::framework
+    Celix::thpool
+    Celix::shm_pool
     libuuid::libuuid
 )
 

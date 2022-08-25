@@ -26,6 +26,7 @@
 #include <celix_long_hash_map.h>
 #include <celix_log_helper.h>
 #include <dyn_interface.h>
+#include <version.h>
 #include <celix_api.h>
 #include <limits.h>
 #include <stdio.h>
@@ -41,8 +42,26 @@ struct rsa_json_rpc {
     celix_long_hash_map_t *svcEndpoints;// Key:request handler service id, Value: rsa_json_rpc_endpoint_t
     remote_interceptors_handler_t *interceptorsHandler;
     rsa_request_sender_tracker_t *reqSenderTracker;
+    unsigned int serialProtoId; //Serialization protocol ID
     FILE *callsLogFile;
 };
+
+static unsigned int rsaJsonRpc_generateSerialProtoId(celix_bundle_t *bnd) {
+    const char *bundleSymName = celix_bundle_getSymbolicName(bnd);
+    const char *bundleVer = celix_bundle_getManifestValue(bnd, OSGI_FRAMEWORK_BUNDLE_VERSION);
+    if (bundleSymName == NULL || bundleVer == NULL) {
+        return 0;
+    }
+    version_pt version = NULL;
+    celix_status_t status = version_createVersionFromString(bundleVer, &version);
+    if (status != CELIX_SUCCESS) {
+        return 0;
+    }
+    int major = 0;
+    (void)version_getMajor(version, &major);
+    celix_version_destroy(version);
+    return celix_utils_stringHash(bundleSymName) + major;
+}
 
 celix_status_t rsaJsonRpc_create(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
         rsa_json_rpc_t **jsonRpcOut) {
@@ -50,10 +69,16 @@ celix_status_t rsaJsonRpc_create(celix_bundle_context_t* ctx, celix_log_helper_t
     if (ctx == NULL || logHelper == NULL || jsonRpcOut == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
+
     rsa_json_rpc_t *rpc = calloc(1, sizeof(rsa_json_rpc_t));
     assert(rpc != NULL);
     rpc->ctx = ctx;
     rpc->logHelper = logHelper;
+    rpc->serialProtoId = rsaJsonRpc_generateSerialProtoId(celix_bundleContext_getBundle(ctx));
+    if (rpc->serialProtoId == 0) {
+        celix_logHelper_error(logHelper, "Error generating serialization protocol id.");
+        goto protocol_id_err;
+    }
     status = celixThreadMutex_create(&rpc->mutex, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(logHelper, "Error creating endpoint mutex. %d.", status);
@@ -95,6 +120,7 @@ interceptors_err:
     celix_longHashMap_destroy(rpc->svcProxyFactories);
     (void)celixThreadMutex_destroy(&rpc->mutex);
 mutex_err:
+protocol_id_err:
     free(rpc);
     return status;
 }
@@ -116,7 +142,7 @@ void rsaJsonRpc_destroy(rsa_json_rpc_t *jsonRpc) {
     return;
 }
 
-celix_status_t rsaJsonRpc_installProxy(void *handle, const endpoint_description_t *endpointDesc,
+celix_status_t rsaJsonRpc_createProxy(void *handle, const endpoint_description_t *endpointDesc,
         long requestSenderSvcId, long *proxySvcId) {
     celix_status_t status= CELIX_SUCCESS;
 
@@ -130,7 +156,7 @@ celix_status_t rsaJsonRpc_installProxy(void *handle, const endpoint_description_
     rsa_json_rpc_proxy_factory_t *proxyFactory = NULL;
     status = rsaJsonRpcProxy_factoryCreate(jsonRpc->ctx, jsonRpc->logHelper,
             jsonRpc->callsLogFile, jsonRpc->interceptorsHandler, endpointDesc,
-            jsonRpc->reqSenderTracker, requestSenderSvcId, &proxyFactory);
+            jsonRpc->reqSenderTracker, requestSenderSvcId, jsonRpc->serialProtoId, &proxyFactory);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(jsonRpc->logHelper, "Error creating proxy factory for %s.", endpointDesc->service);
         goto err_creating_proxy_fac;
@@ -148,7 +174,7 @@ err_creating_proxy_fac:
     return status;
 }
 
-void rsaJsonRpc_uninstallProxy(void *handle, long proxySvcId) {
+void rsaJsonRpc_destroyProxy(void *handle, long proxySvcId) {
     if (handle == NULL  || proxySvcId < 0) {
         return;
     }
@@ -164,7 +190,7 @@ void rsaJsonRpc_uninstallProxy(void *handle, long proxySvcId) {
     return;
 }
 
-celix_status_t rsaJsonRpc_installEndpoint(void *handle, const endpoint_description_t *endpointDesc,
+celix_status_t rsaJsonRpc_createEndpoint(void *handle, const endpoint_description_t *endpointDesc,
         long *requestHandlerSvcId) {
     celix_status_t status= CELIX_SUCCESS;
     if (handle == NULL || endpointDescription_isInvalid(endpointDesc) || requestHandlerSvcId == NULL) {
@@ -175,7 +201,7 @@ celix_status_t rsaJsonRpc_installEndpoint(void *handle, const endpoint_descripti
 
     rsa_json_rpc_endpoint_t *endpoint = NULL;
     status = rsaJsonRpcEndpoint_create(jsonRpc->ctx, jsonRpc->logHelper, jsonRpc->callsLogFile,
-            jsonRpc->interceptorsHandler, endpointDesc, &endpoint);
+            jsonRpc->interceptorsHandler, endpointDesc, jsonRpc->serialProtoId, &endpoint);
     if (status != CELIX_SUCCESS) {
         goto endpoint_err;
     }
@@ -193,7 +219,7 @@ endpoint_err:
     return status;
 }
 
-void rsaJsonRpc_uninstallEndpoint(void *handle, long requestHandlerSvcId) {
+void rsaJsonRpc_destroyEndpoint(void *handle, long requestHandlerSvcId) {
     if (handle == NULL  || requestHandlerSvcId < 0) {
         return;
     }

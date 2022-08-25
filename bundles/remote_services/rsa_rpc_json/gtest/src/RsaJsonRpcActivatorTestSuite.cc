@@ -16,9 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include <rsa_rpc_service.h>
 #include <celix_api.h>
 #include <gtest/gtest.h>
+#include <rsa_rpc_factory.h>
 
 class RsaJsonRpcActivatorTestSuite : public ::testing::Test {
 public:
@@ -42,12 +42,12 @@ public:
 
 static void useRsaJsonRpcServiceCallback(void *handle __attribute__((__unused__)), void *svc __attribute__((__unused__)), const celix_properties_t *props) {
     const char *rpcType = celix_properties_get(props, RSA_RPC_TYPE_KEY, NULL);
-    EXPECT_STREQ("rsa_json_rpc", rpcType);
+    EXPECT_STREQ("celix.remote.admin.rpc_type.json", rpcType);
 }
 
 TEST_F(RsaJsonRpcActivatorTestSuite, UseService) {
     celix_service_use_options_t opts{};
-    opts.filter.serviceName = RSA_RPC_SERVICE_NAME;
+    opts.filter.serviceName = RSA_RPC_FACTORY_NAME;
     opts.callbackHandle = this;
     opts.useWithProperties = useRsaJsonRpcServiceCallback;
     opts.waitTimeoutInSeconds = 30;

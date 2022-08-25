@@ -34,7 +34,8 @@ extern "C" {
 /**
  * @brief The service handle RPC request
  * @note It can be implemented by RPC bundles, and called by RSA bundles.
- *
+ * In this interface, the request data should pass through the reuqest data of rsa_request_sender_service interface, it is serialized by remote service proxy.
+ * So, the interface caller does not need to focus on (de)serialization. Detailed interface invocation refrence rsa_shm_v2.adoc(Figure 1.remote service call)
  */
 typedef struct rsa_request_handler_service {
     void *handle;/// The Service handle
@@ -43,8 +44,8 @@ typedef struct rsa_request_handler_service {
      *
      * @param[in] handle Service handle
      * @param[in, out] metadata The metadata, can be NULL.
-     * @param[in] request The request that from remote service proxy
-     * @param[out] response The response that from remote service. The caller should use free function to free response memory
+     * @param[in] request The request from remote service proxy
+     * @param[out] response The response from remote service endpoint. The caller should use free function to free response memory
      * @return @see celix_errno.h
      */
     celix_status_t (*handleRequest)(void *handle, celix_properties_t *metadata, const struct iovec *request, struct iovec *response);

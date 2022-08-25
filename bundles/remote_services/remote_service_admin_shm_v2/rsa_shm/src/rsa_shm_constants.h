@@ -87,7 +87,7 @@ extern "C" {
  * @brief Default RPC type used by shared memory RSA
  *
  */
-#define RSA_SHM_RPC_TYPE_DEFAULT "rsa_json_rpc"
+#define RSA_SHM_RPC_TYPE_DEFAULT "celix.remote.admin.rpc_type.json"
 
 /**
  * @brief The maximum len of shm server name.

@@ -80,7 +80,7 @@ void * shmCache_getMemoryPtr(shm_cache_t *shmCache, int shmId, ssize_t memoryOff
  * @param shmCache The shared memory cache instance
  * @param ptr Shared memory address
  */
-void shmCache_putMemoryPtr(shm_cache_t *shmCache, void *ptr);
+void shmCache_releaseMemoryPtr(shm_cache_t *shmCache, void *ptr);
 
 #ifdef __cplusplus
 }

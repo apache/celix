@@ -21,6 +21,7 @@
 #include <shm_pool_private.h>
 #include <celix_errno.h>
 #include <celix_array_list.h>
+#include <celix_long_hash_map.h>
 #include <celix_threads.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +41,7 @@ typedef struct shm_cache_block {
 struct shm_cache{
     bool shmRdOnly;
     celix_thread_mutex_t mutex;// projects below
-    celix_array_list_t *shmCacheBlocks;
+    celix_long_hash_map_t *shmCacheBlocks;
     celix_thread_t shmWatcherThread;
     bool watcherActive;
     celix_thread_cond_t watcherStoped;
@@ -67,7 +68,7 @@ celix_status_t shmCache_create(bool shmRdOnly, shm_cache_t **shmCache) {
         fprintf(stderr,"Shm cache: Error creating cache mutux. %d.\n", status);
         goto mutex_err;
     }
-    cache->shmCacheBlocks = celix_arrayList_create();
+    cache->shmCacheBlocks = celix_longHashMap_create();
     assert(cache->shmCacheBlocks != NULL);
 
     status = celixThreadCondition_init(&cache->watcherStoped, NULL);
@@ -89,7 +90,7 @@ celix_status_t shmCache_create(bool shmRdOnly, shm_cache_t **shmCache) {
 watcher_thread_err:
     (void)celixThreadCondition_destroy(&cache->watcherStoped);
 wacher_stoped_cond_err:
-    celix_arrayList_destroy(cache->shmCacheBlocks);
+    celix_longHashMap_destroy(cache->shmCacheBlocks);
     (void)celixThreadMutex_destroy(&cache->mutex);
 mutex_err:
     free(cache);
@@ -138,22 +139,14 @@ static void shmCache_destroyBlock(shm_cache_t *shmCache, shm_cache_block_t *shmB
 void * shmCache_getMemoryPtr(shm_cache_t *shmCache, int shmId, ssize_t memoryOffset) {
     void *ptr = NULL;
     if (shmCache != NULL && shmId > 0 && memoryOffset > 0) {
-        shm_cache_block_t *shmBlock = NULL;
-        bool existed = false;
         celixThreadMutex_lock(&shmCache->mutex);
-        size_t size = celix_arrayList_size(shmCache->shmCacheBlocks);
-        for (int i = 0; i < size; ++i) {
-            shmBlock = celix_arrayList_get(shmCache->shmCacheBlocks, i);
-            if (shmBlock->shmId == shmId) {
-                shmBlock->refCnt++;
-                existed = true;
-            }
-        }
-
-        if (!existed) {
+        shm_cache_block_t *shmBlock = celix_longHashMap_get(shmCache->shmCacheBlocks, shmId);
+        if (shmBlock != NULL) {
+            shmBlock->refCnt++;
+        } else {
             shmBlock = shmCache_createBlock(shmCache, shmId);
             if (shmBlock != NULL) {
-                celix_arrayList_add(shmCache->shmCacheBlocks, shmBlock);
+                celix_longHashMap_put(shmCache->shmCacheBlocks, shmId, shmBlock);
             }
         }
 
@@ -168,12 +161,11 @@ void * shmCache_getMemoryPtr(shm_cache_t *shmCache, int shmId, ssize_t memoryOff
     return ptr;
 }
 
-void shmCache_putMemoryPtr(shm_cache_t *shmCache, void *ptr) {
+void shmCache_releaseMemoryPtr(shm_cache_t *shmCache, void *ptr) {
     if (shmCache != NULL && ptr != NULL) {
         celixThreadMutex_lock(&shmCache->mutex);
-        size_t size = celix_arrayList_size(shmCache->shmCacheBlocks);
-        for (int i = 0; i < size; ++i) {
-            shm_cache_block_t *shmBlock = celix_arrayList_get(shmCache->shmCacheBlocks, i);
+        CELIX_LONG_HASH_MAP_ITERATE(shmCache->shmCacheBlocks, iter) {
+            shm_cache_block_t *shmBlock = (shm_cache_block_t *)iter.value.ptrValue;
             if (shmBlock->shmStartAddr <= ptr && ptr <= shmBlock->shmStartAddr + shmBlock->maxOffset ) {
                 if (shmBlock->refCnt != 0) {
                     shmBlock->refCnt--;
@@ -196,15 +188,14 @@ void shmCache_destroy(shm_cache_t *shmCache) {
         celixThreadCondition_signal(&shmCache->watcherStoped);
         celixThread_join(shmCache->shmWatcherThread, NULL);
         celixThreadCondition_destroy(&shmCache->watcherStoped);
-        size_t size = celix_arrayList_size(shmCache->shmCacheBlocks);
-        for (int i = 0; i < size; ++i) {
-            shm_cache_block_t *shmBlock = celix_arrayList_get(shmCache->shmCacheBlocks, i);
+        CELIX_LONG_HASH_MAP_ITERATE(shmCache->shmCacheBlocks, iter) {
+            shm_cache_block_t *shmBlock = (shm_cache_block_t *)iter.value.ptrValue;
             if (shmBlock->refCnt != 0) {
                 fprintf(stderr, "Shm cache: Shm cache is destroyed when its refrence count is not zero. It maybe cause memory used after free.\n");
             }
             shmCache_destroyBlock(shmCache, shmBlock);
         }
-        celix_arrayList_destroy(shmCache->shmCacheBlocks);
+        celix_longHashMap_destroy(shmCache->shmCacheBlocks);
         celixThreadMutex_destroy(&shmCache->mutex);
         free(shmCache);
     }
@@ -231,9 +222,8 @@ static void * shmCache_WatcherThread(void *data) {
             continue;
         }
 
-        size_t size = celix_arrayList_size(shmCache->shmCacheBlocks);
-        for (int i = 0; i < size; ++i) {
-            shm_cache_block_t *shmBlock = celix_arrayList_get(shmCache->shmCacheBlocks, i);
+        CELIX_LONG_HASH_MAP_ITERATE(shmCache->shmCacheBlocks, iter) {
+            shm_cache_block_t *shmBlock = (shm_cache_block_t *)iter.value.ptrValue;
             if (shmBlock->sharedInfo->heartbeatCnt == shmBlock->lastHeartbeatCnt) {
                 if (shmBlock->refCnt == 0) {
                     celix_arrayList_add(evictedBlocks, shmBlock);
@@ -246,10 +236,10 @@ static void * shmCache_WatcherThread(void *data) {
         }
 
         // Close shared memory cache blocks that them are inactive.
-        size = celix_arrayList_size(evictedBlocks);
+        size_t size = celix_arrayList_size(evictedBlocks);
         for (int i = 0; i < size; ++i) {
             shm_cache_block_t *shmBlock = celix_arrayList_get(evictedBlocks, i);
-            celix_arrayList_remove(shmCache->shmCacheBlocks, shmBlock);
+            celix_longHashMap_remove(shmCache->shmCacheBlocks, shmBlock->shmId);
             fprintf(stdout, "Shm cache: Shm(%d) has been closed, colse its cache.\n", shmBlock->shmId);
             shmCache_destroyBlock(shmCache, shmBlock);
         }

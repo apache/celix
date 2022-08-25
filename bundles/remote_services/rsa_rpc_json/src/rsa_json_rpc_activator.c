@@ -18,16 +18,16 @@
  */
 
 #include <rsa_json_rpc_impl.h>
-#include <rsa_rpc_service.h>
 #include <celix_log_helper.h>
 #include <celix_api.h>
 #include <assert.h>
+#include <rsa_rpc_factory.h>
 
 
 typedef struct rsa_json_rpc_activator {
     celix_bundle_context_t *ctx;
     rsa_json_rpc_t *jsonRpc;
-    rsa_rpc_service_t rpcSvc;
+    rsa_rpc_factory_t rpcFac;
     long rpcSvcId;
     celix_log_helper_t *logHelper;
 }rsa_json_rpc_activator_t;
@@ -49,17 +49,17 @@ static celix_status_t rsaJsonRpc_start(rsa_json_rpc_activator_t* activator, celi
     }
     celix_properties_t *props = celix_properties_create();
     assert(props != NULL);
-    celix_properties_set(props, RSA_RPC_TYPE_KEY, "rsa_json_rpc");
-    activator->rpcSvc.handle = activator->jsonRpc;
-    activator->rpcSvc.installProxy = rsaJsonRpc_installProxy;
-    activator->rpcSvc.uninstallProxy = rsaJsonRpc_uninstallProxy;
-    activator->rpcSvc.installEndpoint = rsaJsonRpc_installEndpoint;
-    activator->rpcSvc.uninstallEndpoint = rsaJsonRpc_uninstallEndpoint;
+    celix_properties_set(props, RSA_RPC_TYPE_KEY, "celix.remote.admin.rpc_type.json");
+    activator->rpcFac.handle = activator->jsonRpc;
+    activator->rpcFac.createProxy = rsaJsonRpc_createProxy;
+    activator->rpcFac.destroyProxy = rsaJsonRpc_destroyProxy;
+    activator->rpcFac.createEndpoint = rsaJsonRpc_createEndpoint;
+    activator->rpcFac.destroyEndpoint = rsaJsonRpc_destroyEndpoint;
     celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
-    opts.serviceName = RSA_RPC_SERVICE_NAME;
-    opts.serviceVersion = RSA_RPC_SERVICE_VERSION;
+    opts.serviceName = RSA_RPC_FACTORY_NAME;
+    opts.serviceVersion = RSA_RPC_FACTORY_VERSION;
     opts.properties = props;
-    opts.svc = &activator->rpcSvc;
+    opts.svc = &activator->rpcFac;
     activator->rpcSvcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx, &opts);
     if (activator->rpcSvcId < 0) {
         celix_logHelper_error(activator->logHelper, "Error registering json rpc service.");

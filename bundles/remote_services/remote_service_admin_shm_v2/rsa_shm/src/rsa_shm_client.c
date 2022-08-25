@@ -284,34 +284,35 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
     fclose(fp);
     // make the metadata include the terminating null byte ('\0')
     size_t metadataSize = (metadataStringSize == 0) ? 0 : metadataStringSize +1;
-    size_t maxBufferSize = MAX((metadataSize + request->iov_len), ESTIMATED_MSG_RESPONSE_SIZE_DEFAULT);
+    size_t msgBodySize = MAX((metadataSize + request->iov_len), ESTIMATED_MSG_RESPONSE_SIZE_DEFAULT);
 
     status = rsaShmClientManager_createMsgControl(clientManager, &msgCtrl);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(clientManager->logHelper, "RsaShmClient: Error creating msg control. %d.", status);
         goto err_creating_msgctrl;
     }
-    char *msgBuffer = (char *)shmPool_malloc(clientManager->shmPool, maxBufferSize);
-    if (msgBuffer == NULL) {
+    char *msgBody = (char *)shmPool_malloc(clientManager->shmPool, msgBodySize);
+    if (msgBody == NULL) {
         status = CELIX_ENOMEM;
         celix_logHelper_error(clientManager->logHelper, "RsaShmClient: Error allocing msg buffer.");
         goto err_allocing_msg_buf;
     }
     if (metadataSize != 0) {
-        memcpy(msgBuffer, metadataString, metadataSize);
+        memcpy(msgBody, metadataString, metadataSize);
     }
-    memcpy(msgBuffer + metadataSize, request->iov_base,request->iov_len);
+    memcpy(msgBody + metadataSize, request->iov_base,request->iov_len);
 
     rsa_shm_msg_t msgInfo = {
+            .size = sizeof(rsa_shm_msg_t),
             .shmId = shmPool_getShmId(clientManager->shmPool),
             .ctrlDataOffset = shmPool_getMemoryOffset(clientManager->shmPool, msgCtrl),
             .ctrlDataSize = sizeof(rsa_shm_msg_control_t),
-            .msgBufferOffset = shmPool_getMemoryOffset(clientManager->shmPool, msgBuffer),
-            .maxBufferSize = maxBufferSize,
+            .msgBodyOffset = shmPool_getMemoryOffset(clientManager->shmPool, msgBody),
+            .msgBodyTotalSize = msgBodySize,
             .metadataSize = metadataSize,
             .requestSize = request->iov_len,
     };
-    if (msgInfo.shmId < 0 || msgInfo.ctrlDataOffset < 0 || msgInfo.msgBufferOffset < 0) {
+    if (msgInfo.shmId < 0 || msgInfo.ctrlDataOffset < 0 || msgInfo.msgBodyOffset < 0) {
         status = CELIX_ILLEGAL_ARGUMENT;
         celix_logHelper_error(clientManager->logHelper, "RsaShmClient: Illegal message info.");
         goto illegal_msg;
@@ -324,8 +325,8 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
         goto err_sending_msg;
     }
     bool replyed = false;
-    status = rsaShmClientManager_receiveResponse(clientManager, msgCtrl, msgBuffer,
-            maxBufferSize, response, &replyed);
+    status = rsaShmClientManager_receiveResponse(clientManager, msgCtrl, msgBody,
+            msgBodySize, response, &replyed);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(clientManager->logHelper, "RsaShmClient: Error receiving response. %d.", status);
         rsaShmClientManager_markSvcCallFailed(clientManager, peerServerName, serviceId);
@@ -333,13 +334,13 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
 
     if (replyed) {
         rsaShmClientManager_markSvcCallFinished(clientManager, peerServerName, serviceId);
-        shmPool_free(clientManager->shmPool, msgBuffer);
+        shmPool_free(clientManager->shmPool, msgBody);
         rsaShmClientManager_destroyMsgControl(clientManager, msgCtrl);
     } else {
         rsa_shm_exception_msg_t *exceptionMsg = (rsa_shm_exception_msg_t *)malloc(sizeof(*exceptionMsg));
         assert(exceptionMsg != NULL);
         exceptionMsg->msgCtrl = msgCtrl;
-        exceptionMsg->msgBuffer = msgBuffer;
+        exceptionMsg->msgBuffer = msgBody;
         exceptionMsg->serviceId = serviceId;
         exceptionMsg->peerServerName = strdup(peerServerName);
         // Let rsaShmClientManager_exceptionMsgHandlerThread free exception message
@@ -356,7 +357,7 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
     return status;
 err_sending_msg:
 illegal_msg:
-    shmPool_free(clientManager->shmPool, msgBuffer);
+    shmPool_free(clientManager->shmPool, msgBody);
 err_allocing_msg_buf:
     rsaShmClientManager_destroyMsgControl(clientManager, msgCtrl);
 err_creating_msgctrl:
@@ -515,6 +516,7 @@ static celix_status_t rsaShmClientManager_createMsgControl(rsa_shm_client_manage
         retVal = ENOMEM;
         goto alloc_shm_ctrl_failed;
     }
+    msgCtrl->size = sizeof(rsa_shm_msg_control_t);
     msgCtrl->msgState = REQUESTING;
     msgCtrl->actualReplyedSize = 0;
     pthread_mutexattr_t mattr;

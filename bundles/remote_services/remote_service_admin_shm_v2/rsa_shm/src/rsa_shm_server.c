@@ -21,6 +21,7 @@
 #include <rsa_shm_constants.h>
 #include <shm_cache.h>
 #include <celix_log_helper.h>
+#include <celix_build_assert.h>
 #include <celix_api.h>
 #include <thpool.h>
 #include <sys/un.h>
@@ -32,6 +33,7 @@
 #include <sys/param.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <errno.h>
 
 #define MAX_RSA_SHM_SERVER_HANDLE_MSG_THREADS_NUM 5
@@ -53,8 +55,8 @@ struct rsa_shm_server {
 struct rsa_shm_server_thpool_work_data {
     rsa_shm_server_t *server;
     rsa_shm_msg_control_t *msgCtrl;
-    void *msgBuffer;
-    size_t maxBufferSize;
+    void *msgBody;
+    size_t msgBodyTotalSize;
     size_t metadataSize;
     size_t requestSize;
 };
@@ -168,7 +170,7 @@ static void rsaShmServer_msgHandlingWork(void *data) {
     assert(server != NULL);
 
     rsa_shm_msg_control_t *msgCtrl = (rsa_shm_msg_control_t *)workData->msgCtrl;
-    char *msgBuffer = (char*)workData->msgBuffer;
+    char *msgBuffer = (char*)workData->msgBody;
     const char *metaDataString = msgBuffer;
     char *requestData = msgBuffer + workData->metadataSize;
 
@@ -192,7 +194,7 @@ static void rsaShmServer_msgHandlingWork(void *data) {
     char *src = reply.iov_base;
     size_t srcSize = reply.iov_len;
     while (true) {
-        ssize_t destSize = workData->maxBufferSize;
+        ssize_t destSize = workData->msgBodyTotalSize;
         char *dest = msgBuffer;
         size_t bytes = MIN(srcSize, destSize);
         memcpy(dest, src, bytes);
@@ -233,8 +235,8 @@ static void rsaShmServer_msgHandlingWork(void *data) {
     if (metadataProps != NULL) {
         celix_properties_destroy(metadataProps);
     }
-    shmCache_putMemoryPtr(server->shmCache, msgBuffer);
-    shmCache_putMemoryPtr(server->shmCache, msgCtrl);
+    shmCache_releaseMemoryPtr(server->shmCache, msgBuffer);
+    shmCache_releaseMemoryPtr(server->shmCache, msgCtrl);
 
     free(data);
     return;
@@ -246,8 +248,8 @@ call_receive_cb_failed:
         celix_properties_destroy(metadataProps);
     }
     rsaShmServer_terminateMsgHandling(msgCtrl);
-    shmCache_putMemoryPtr(server->shmCache, msgBuffer);
-    shmCache_putMemoryPtr(server->shmCache, msgCtrl);
+    shmCache_releaseMemoryPtr(server->shmCache, msgBuffer);
+    shmCache_releaseMemoryPtr(server->shmCache, msgCtrl);
     free(data);
     return;
 }
@@ -255,10 +257,26 @@ call_receive_cb_failed:
 static bool rsaShmServer_msgInvalid(rsa_shm_server_t *server, const rsa_shm_msg_t *msgInfo) {
     assert(msgInfo != NULL);
     assert(server != NULL);
-    if (msgInfo->shmId < 0 || msgInfo->ctrlDataOffset < 0 || msgInfo->msgBufferOffset < 0
+    CELIX_BUILD_ASSERT(offsetof(rsa_shm_msg_t, size) == 0);
+    if (msgInfo->size < (offsetof(rsa_shm_msg_t, requestSize) + sizeof(msgInfo->requestSize))
+            || msgInfo->shmId < 0 || msgInfo->ctrlDataOffset < 0 || msgInfo->msgBodyOffset < 0
             || msgInfo->ctrlDataSize != sizeof(rsa_shm_msg_control_t)) {
         celix_logHelper_error(server->loghelper, "RsaShmServer: Shm msg info invalid. Msg info:%d, %zd, %zd, %zu.",
-                msgInfo->shmId, msgInfo->ctrlDataOffset, msgInfo->msgBufferOffset, msgInfo->ctrlDataSize);
+                msgInfo->shmId, msgInfo->ctrlDataOffset, msgInfo->msgBodyOffset, msgInfo->ctrlDataSize);
+        return true;
+    }
+    return false;
+}
+
+static bool rsaShmServer_msgCtrlInvalid(rsa_shm_server_t *server, const rsa_shm_msg_control_t *msgCtrl) {
+    assert(server != NULL);
+    CELIX_BUILD_ASSERT(offsetof(rsa_shm_msg_control_t, size) == 0);
+    if (msgCtrl == NULL ) {
+        celix_logHelper_error(server->loghelper, "RsaShmServer: Shm msg ctrl is null.");
+        return true;
+    }
+    if (msgCtrl->size < offsetof(rsa_shm_msg_control_t, actualReplyedSize) + sizeof(msgCtrl->actualReplyedSize)) {
+        celix_logHelper_error(server->loghelper, "RsaShmServer: Shm msg ctrl err. %zu.", msgCtrl->size);
         return true;
     }
     return false;
@@ -272,42 +290,42 @@ static void *rsaShmServer_receiveMsgThread(void *data) {
 
     while (server->revMsgThreadActive) {
         revBytes = recvfrom(server->sfd, &msgInfo, sizeof(msgInfo), 0, NULL, NULL);
-        if (revBytes != sizeof(msgInfo)) {
-            celix_logHelper_error(server->loghelper, "RsaShmServer: recv msg err(%d).", errno);
+        if (revBytes <= 0) {
+            celix_logHelper_error(server->loghelper, "RsaShmServer: recv msg err(%d) or recv zero-length datagrams.", errno);
             continue;
         }
-        if (rsaShmServer_msgInvalid(server, &msgInfo)) {
+        if (revBytes <= sizeof(msgInfo.size) || rsaShmServer_msgInvalid(server, &msgInfo)) {
             celix_logHelper_error(server->loghelper,"RsaShmServer: Shm message info is invalid. It maybe cause memory leak!");
             continue;
         }
         rsa_shm_msg_control_t *msgCtrl = shmCache_getMemoryPtr(server->shmCache,
                 msgInfo.shmId, msgInfo.ctrlDataOffset);
-        if (msgCtrl == NULL) {
+        if (rsaShmServer_msgCtrlInvalid(server, msgCtrl)) {
             celix_logHelper_error(server->loghelper,"RsaShmServer: Get msg ctrl cache failed. It maybe cause memory leak!");
             continue;
         }
-        char *msgBuffer = shmCache_getMemoryPtr(server->shmCache, msgInfo.shmId,
-                msgInfo.msgBufferOffset);
-        if (msgBuffer == NULL) {
+        char *msgBody = shmCache_getMemoryPtr(server->shmCache, msgInfo.shmId,
+                msgInfo.msgBodyOffset);
+        if (msgBody == NULL) {
             celix_logHelper_error(server->loghelper,"RsaShmServer: Get msg data buffer cache failed.");
             rsaShmServer_terminateMsgHandling(msgCtrl);
-            shmCache_putMemoryPtr(server->shmCache, msgCtrl);
+            shmCache_releaseMemoryPtr(server->shmCache, msgCtrl);
             continue;
         }
         struct rsa_shm_server_thpool_work_data *workData = ( struct rsa_shm_server_thpool_work_data *)malloc(sizeof(*workData));
         assert(workData != NULL);
         workData->server = server;
         workData->msgCtrl = msgCtrl;
-        workData->msgBuffer = msgBuffer;
-        workData->maxBufferSize = msgInfo.maxBufferSize;
+        workData->msgBody = msgBody;
+        workData->msgBodyTotalSize = msgInfo.msgBodyTotalSize;
         workData->metadataSize = msgInfo.metadataSize;
         workData->requestSize = msgInfo.requestSize;
         int retVal = thpool_add_work(server->threadPool, (void *)rsaShmServer_msgHandlingWork, (void*)workData);
         if (retVal != 0) {
             celix_logHelper_error(server->loghelper, "RsaShmServer: maybe pool thread is full, error code is %d.", retVal);
             rsaShmServer_terminateMsgHandling(msgCtrl);
-            shmCache_putMemoryPtr(server->shmCache, msgBuffer);
-            shmCache_putMemoryPtr(server->shmCache, msgCtrl);
+            shmCache_releaseMemoryPtr(server->shmCache, msgBody);
+            shmCache_releaseMemoryPtr(server->shmCache, msgCtrl);
             continue;
         }
     }

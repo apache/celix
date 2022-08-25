@@ -60,7 +60,10 @@ celix_status_t shmPool_create(size_t size, shm_pool_t **pool) {
     if(status != CELIX_SUCCESS) {
         goto shm_pool_mutex_err;
     }
-
+    /* Specify the IPC_PRIVATE constant as the key value to the `shmget` when creating the
+     * IPC object, which always results in the creation of a new IPC object that is guaranteed to have a unique key.
+     * And other process can use 'shmat' to attach relevant shared memory.
+     */
     shmPool->shmId = shmget(IPC_PRIVATE, size, SHM_R | SHM_W);
     if (shmPool->shmId  == -1) {
         fprintf(stderr,"Shm pool: Error getting shm. %d.\n",errno);
@@ -76,6 +79,7 @@ celix_status_t shmPool_create(size_t size, shm_pool_t **pool) {
 
     shmPool->sharedInfo = (struct shm_pool_shared_info *)shmPool->shmStartAddr;
     shmPool->sharedInfo->heartbeatCnt = 1;
+    shmPool->sharedInfo->size = sizeof(struct shm_pool_shared_info);
 
     void *poolMem = shmPool->shmStartAddr + normalizedSharedInfoSize;
     shmPool->allocator = tlsf_create_with_pool(poolMem, size - normalizedSharedInfoSize);

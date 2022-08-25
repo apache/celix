@@ -17,7 +17,6 @@
  * under the License.
  */
 
-#include <rsa_rpc_service.h>
 #include <rsa_request_sender_service.h>
 #include <rsa_request_handler_service.h>
 #include <calculator_service.h>
@@ -31,6 +30,7 @@
 #include <uuid/uuid.h>
 #include <jansson.h>
 #include <sys/uio.h>
+#include <rsa_rpc_factory.h>
 
 static celix_status_t rsaJsonRpcTst_sendRequest(void *sendFnHandle, const endpoint_description_t *endpointDesciption,
         celix_properties_t *metadata, const struct iovec *request, struct iovec *response);
@@ -111,25 +111,25 @@ static celix_status_t rsaJsonRpcTst_sendRequest(void *sendFnHandle, const endpoi
 
 static void rsaJsonRpcTst_InstallProxy(void *handle __attribute__((__unused__)), void *svc __attribute__((__unused__))) {
     auto *testSuite = static_cast<RsaJsonRpcTestSuite *>(handle);
-    auto *rpcSvc = static_cast<rsa_rpc_service_t *>(svc);
+    auto *rpcFac = static_cast<rsa_rpc_factory_t *>(svc);
 
     testSuite->registerRequestSenderSvc();
-    auto status = rpcSvc->installProxy(rpcSvc->handle, testSuite->endpointDescription.get(),
+    auto status = rpcFac->createProxy(rpcFac->handle, testSuite->endpointDescription.get(),
             testSuite->reqSenderSvcId, &testSuite->proxySvcId);
     EXPECT_EQ(CELIX_SUCCESS, status);
 }
 
 static void rsaJsonRpcTst_UninstallProxy(void *handle __attribute__((__unused__)), void *svc __attribute__((__unused__))) {
     auto *testSuite = static_cast<RsaJsonRpcTestSuite *>(handle);
-    auto *rpcSvc = static_cast<rsa_rpc_service_t *>(svc);
-    rpcSvc->uninstallProxy(rpcSvc->handle, testSuite->proxySvcId);
+    auto *rpcFac = static_cast<rsa_rpc_factory_t *>(svc);
+    rpcFac->destroyProxy(rpcFac->handle, testSuite->proxySvcId);
     testSuite->unregisterRequestSenderSvc();
 }
 
 TEST_F(RsaJsonRpcTestSuite, InstallUninstallProxy) {
     //install proxy
     celix_service_use_options_t opts{};
-    opts.filter.serviceName = RSA_RPC_SERVICE_NAME;
+    opts.filter.serviceName = RSA_RPC_FACTORY_NAME;
     opts.callbackHandle = this;
     opts.use = rsaJsonRpcTst_InstallProxy;
     opts.flags = CELIX_SERVICE_USE_DIRECT | CELIX_SERVICE_USE_SOD;
@@ -153,7 +153,7 @@ void rsaJsonRpcTestSuite_useCmd(void *handle, void *svc) {
 TEST_F(RsaJsonRpcTestSuite, UseProxy) {
     //install proxy
     celix_service_use_options_t opts{};
-    opts.filter.serviceName = RSA_RPC_SERVICE_NAME;
+    opts.filter.serviceName = RSA_RPC_FACTORY_NAME;
     opts.callbackHandle = this;
     opts.use = rsaJsonRpcTst_InstallProxy;
     opts.flags = CELIX_SERVICE_USE_DIRECT | CELIX_SERVICE_USE_SOD;
@@ -181,22 +181,22 @@ TEST_F(RsaJsonRpcTestSuite, UseProxy) {
 
 static void rsaJsonRpcTst_InstallEndpoint(void *handle __attribute__((__unused__)), void *svc __attribute__((__unused__))) {
     auto *testSuite = static_cast<RsaJsonRpcTestSuite *>(handle);
-    auto *rpcSvc = static_cast<rsa_rpc_service_t *>(svc);
-    auto status = rpcSvc->installEndpoint(rpcSvc->handle, testSuite->endpointDescription.get(),
+    auto *rpcFac = static_cast<rsa_rpc_factory_t *>(svc);
+    auto status = rpcFac->createEndpoint(rpcFac->handle, testSuite->endpointDescription.get(),
             &testSuite->requestHandlerSvcId);
     EXPECT_EQ(CELIX_SUCCESS, status);
 }
 
 static void rsaJsonRpcTst_unstallEndpoint(void *handle __attribute__((__unused__)), void *svc __attribute__((__unused__))) {
     auto *testSuite = static_cast<RsaJsonRpcTestSuite *>(handle);
-    auto *rpcSvc = static_cast<rsa_rpc_service_t *>(svc);
-    rpcSvc->uninstallEndpoint(rpcSvc->handle, testSuite->requestHandlerSvcId);
+    auto *rpcFac = static_cast<rsa_rpc_factory_t *>(svc);
+    rpcFac->destroyEndpoint(rpcFac->handle, testSuite->requestHandlerSvcId);
 }
 
 TEST_F(RsaJsonRpcTestSuite, InstallUninstallEndpoint) {
     //install endpoint
     celix_service_use_options_t opts{};
-    opts.filter.serviceName = RSA_RPC_SERVICE_NAME;
+    opts.filter.serviceName = RSA_RPC_FACTORY_NAME;
     opts.callbackHandle = this;
     opts.use = rsaJsonRpcTst_InstallEndpoint;
     opts.flags = CELIX_SERVICE_USE_DIRECT | CELIX_SERVICE_USE_SOD;
@@ -210,10 +210,23 @@ TEST_F(RsaJsonRpcTestSuite, InstallUninstallEndpoint) {
     EXPECT_TRUE(found);
 }
 
-void rsaJsonRpcTestSuite_useEndpointService(void *handle, void *svc) {
+void rsaJsonRpcTestSuite_useEndpointService(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner) {
     (void)handle;
+    (void)props;
     auto *epSvc = static_cast<rsa_request_handler_service_t *>(svc);
-    celix_properties_t *metadata{nullptr};
+
+    const char *bundleSymName = celix_bundle_getSymbolicName(svcOwner);
+    const char *bundleVer = celix_bundle_getManifestValue(svcOwner, OSGI_FRAMEWORK_BUNDLE_VERSION);
+    version_pt version = NULL;
+    celix_status_t status = version_createVersionFromString(bundleVer, &version);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    int major = 0;
+    (void)version_getMajor(version, &major);
+    celix_version_destroy(version);
+    unsigned int serialProtoId =  celix_utils_stringHash(bundleSymName) + major;
+    celix_properties_t *metadata = celix_properties_create();
+    celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
+
     struct iovec request{};
     struct iovec response{};
 
@@ -242,6 +255,7 @@ void rsaJsonRpcTestSuite_useEndpointService(void *handle, void *svc) {
     free(response.iov_base);
     free(request.iov_base);
     json_decref(invoke);
+    celix_properties_destroy(metadata);
 }
 
 TEST_F(RsaJsonRpcTestSuite, UseEndpoint) {
@@ -254,7 +268,7 @@ TEST_F(RsaJsonRpcTestSuite, UseEndpoint) {
 
     //install endpoint
     celix_service_use_options_t opts{};
-    opts.filter.serviceName = RSA_RPC_SERVICE_NAME;
+    opts.filter.serviceName = RSA_RPC_FACTORY_NAME;
     opts.callbackHandle = this;
     opts.use = rsaJsonRpcTst_InstallEndpoint;
     opts.flags = CELIX_SERVICE_USE_DIRECT | CELIX_SERVICE_USE_SOD;
@@ -268,7 +282,7 @@ TEST_F(RsaJsonRpcTestSuite, UseEndpoint) {
     epsOpts.filter.serviceName = RSA_REQUEST_HANDLER_SERVICE_NAME;
     epsOpts.filter.filter = filter;
     epsOpts.callbackHandle = this;
-    epsOpts.use = rsaJsonRpcTestSuite_useEndpointService;
+    epsOpts.useWithOwner = rsaJsonRpcTestSuite_useEndpointService;
     epsOpts.flags = CELIX_SERVICE_USE_DIRECT | CELIX_SERVICE_USE_SOD;
     found = celix_bundleContext_useServiceWithOptions(ctx.get(), &epsOpts);
     EXPECT_TRUE(found);

@@ -34,7 +34,8 @@ typedef struct rsa_json_rpc_endpoint rsa_json_rpc_endpoint_t;
 
 celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
         FILE *logFile, remote_interceptors_handler_t *interceptorsHandler,
-        const endpoint_description_t *endpointDesc, rsa_json_rpc_endpoint_t **endpointOut);
+        const endpoint_description_t *endpointDesc, unsigned int serialProtoId,
+        rsa_json_rpc_endpoint_t **endpointOut);
 
 void rsaJsonRpcEndpoint_destroy(rsa_json_rpc_endpoint_t *endpoint);
 

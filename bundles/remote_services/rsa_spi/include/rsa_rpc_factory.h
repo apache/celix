@@ -28,20 +28,29 @@ extern "C" {
 #include <celix_errno.h>
 #include <sys/uio.h>
 
-#define RSA_RPC_TYPE_KEY "remote_service.rpc_type"
-
-#define RSA_RPC_SERVICE_NAME "rsa_rpc_service"
-#define RSA_RPC_SERVICE_VERSION "1.0.0"
-#define RSA_RPC_SERVICE_USE_RANGE "[1.0.0,2)"
+/**
+ * @brief The RPC type indicates which protocol is used to (de)serialize the raw data.
+ */
+#define RSA_RPC_TYPE_KEY "celix.remote.admin.rpc_type"
 
 /**
- * @brief The service use to install endpoint and endpoint proxy
+ * @brief The prefix for RPC type value, and the RPC type value belongs to `service.exported.configs`.
+ * An whole RPC type value as follows: celix.remote.admin.rpc_type.json,celix.remote.admin.rpc_type.avpr.
+ */
+#define RSA_RPC_TYPE_PREFIX "celix.remote.admin.rpc_type."
+
+#define RSA_RPC_FACTORY_NAME "rsa_rpc_factory"
+#define RSA_RPC_FACTORY_VERSION "1.0.0"
+#define RSA_RPC_FACTORY_USE_RANGE "[1.0.0,2.0.0)"
+
+/**
+ * @brief The service use to create remote service endpoint and remote service proxy
  * @note It can be implemented by RPC bundles.
  */
-typedef struct rsa_rpc_service {
+typedef struct rsa_rpc_factory {
     void *handle;/// The Service handle
      /**
-      * @brief Install remote service endpoint proxy
+      * @brief Create remote service endpoint proxy
       *
       * @param[in] handle Service handle
       * @param[in] endpointDesc The endpoint desciption of remote service
@@ -49,16 +58,16 @@ typedef struct rsa_rpc_service {
       * @param[out] proxySvcId The service id of remote service proxy
       * @return @see celix_errno.h
       */
-    celix_status_t (*installProxy)(void *handle, const endpoint_description_t *endpointDesc, long requestSenderSvcId, long *proxySvcId);
+    celix_status_t (*createProxy)(void *handle, const endpoint_description_t *endpointDesc, long requestSenderSvcId, long *proxySvcId);
     /**
-     * @brief Uninstall remote service endpoint proxy
+     * @brief Destroy remote service endpoint proxy
      *
      * @param[in] handle Service handle
      * @param[in] proxySvcId The service id of remote service proxy
      */
-    void (*uninstallProxy)(void *handle, long proxySvcId);
+    void (*destroyProxy)(void *handle, long proxySvcId);
     /**
-     * @brief Install remote service endpoint
+     * @brief Create remote service endpoint
      *
      * @param[in] handle Service handle
      * @param[in] endpointDesc The endpoint desciption of remote service
@@ -66,15 +75,15 @@ typedef struct rsa_rpc_service {
      * It specifies the service that handle the endpoint proxy request. And it is registered by remote service endpoint.
      * @return @see celix_errno.h
      */
-    celix_status_t (*installEndpoint)(void *handle, const endpoint_description_t *endpointDesc, long *requestHandlerSvcId);
+    celix_status_t (*createEndpoint)(void *handle, const endpoint_description_t *endpointDesc, long *requestHandlerSvcId);
     /**
-     * @brief Uninstall remote service endpoint
+     * @brief Destroy remote service endpoint
      *
      * @param[in] handle Service handle
      * @param[in] requestHandlerSvcId The service id of request handler service registered by the remote service endpoint.
      */
-    void (*uninstallEndpoint)(void *handle, long requestHandlerSvcId);
-}rsa_rpc_service_t;
+    void (*destroyEndpoint)(void *handle, long requestHandlerSvcId);
+}rsa_rpc_factory_t;
 
 
 #ifdef __cplusplus

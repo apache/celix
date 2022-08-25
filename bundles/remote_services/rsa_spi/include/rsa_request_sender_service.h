@@ -41,12 +41,12 @@ typedef struct rsa_request_sender_service {
     void *handle;/// The Service handle
     /**
      * @brief Send the request that from remote service proxy.
-     *
+     * @note  It will be a remote, synchronized and blocking call.
      * @param[in] handle Service handle
      * @param[in] endpointDesciption The endpoint desciption of remote service
      * @param[in,out] metadata The metadata, can be NULL.
-     * @param[in] request The request that from remote service proxy
-     * @param[out] response The response that from remote service. The caller should use free function to free response memory
+     * @param[in] request The request for the remote service endpoint
+     * @param[out] response The response received from remote service endpoint. The caller should use free function to free response memory
      * @return @see celix_errno.h
      */
     celix_status_t (*sendRequest)(void *handle, const endpoint_description_t *endpointDesciption, celix_properties_t *metadata, const struct iovec *request, struct iovec *response);

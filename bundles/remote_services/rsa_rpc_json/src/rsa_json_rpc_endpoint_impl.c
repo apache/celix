@@ -33,6 +33,7 @@ struct rsa_json_rpc_endpoint {
     celix_log_helper_t *logHelper;
     FILE *callsLogFile;
     endpoint_description_t *endpointDesc;
+    unsigned int serialProtoId;
     remote_interceptors_handler_t *interceptorsHandler;
     rsa_request_handler_service_t reqHandlerSvc;
     long reqHandlerSvcId;
@@ -52,14 +53,15 @@ static celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_prope
 
 celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
         FILE *logFile, remote_interceptors_handler_t *interceptorsHandler,
-        const endpoint_description_t *endpointDesc, rsa_json_rpc_endpoint_t **endpointOut) {
+        const endpoint_description_t *endpointDesc, unsigned int serialProtoId,
+        rsa_json_rpc_endpoint_t **endpointOut) {
     celix_status_t status = CELIX_SUCCESS;
     rsa_json_rpc_endpoint_t *endpoint = calloc(1, sizeof(*endpoint));
     assert(endpoint != NULL);
     endpoint->ctx = ctx;
     endpoint->logHelper = logHelper;
     endpoint->callsLogFile = logFile;
-
+    endpoint->serialProtoId = serialProtoId;
     endpoint->endpointDesc = endpointDescription_clone(endpointDesc);
     assert(endpoint->endpointDesc != NULL);
 
@@ -216,13 +218,18 @@ static celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_prope
         const struct iovec *request, struct iovec *responseOut) {
     celix_status_t status = CELIX_SUCCESS;
     if (handle == NULL || request == NULL || request->iov_base == NULL
-            || request->iov_len == 0 || responseOut == NULL) {
+            || request->iov_len == 0 || responseOut == NULL || metadata == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
     responseOut->iov_base = NULL;
     responseOut->iov_len = 0;
     rsa_json_rpc_endpoint_t *endpoint = (rsa_json_rpc_endpoint_t *)handle;
-    bool freeMetadata = (metadata == NULL) ? true : false;
+
+    long serialProtoId  = celix_properties_getAsLong(metadata, "SerialProtocolId", 0);
+    if (serialProtoId != endpoint->serialProtoId) {
+        celix_logHelper_error(endpoint->logHelper, "Serialization protocol ID mismatch. expect:%ld actual:%ld.", serialProtoId, endpoint->serialProtoId);
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
 
     json_error_t error;
     json_t *jsRequest = json_loads((char *)request->iov_base, 0, &error);
@@ -265,13 +272,6 @@ static celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_prope
         fprintf(endpoint->callsLogFile, "ENDPOINT REMOTE CALL:\n\tservice=%s\n\tservice_id=%lu\n\trequest_payload=%s\n\trequest_response=%s\n\tstatus=%i\n",
                 endpoint->endpointDesc->service, endpoint->endpointDesc->serviceId, (char *)request->iov_base, szResponse, status);
         fflush(endpoint->callsLogFile);
-    }
-
-    if (freeMetadata && metadata != NULL) {
-        /* The metadata created by remoteinterceptorhandler should be released here,
-         * the metadata created by invoker should be released by itself.
-         */
-        celix_properties_destroy(metadata);
     }
 
     json_decref(jsRequest);

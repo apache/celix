@@ -33,6 +33,7 @@ struct rsa_json_rpc_proxy_factory {
     celix_bundle_context_t* ctx;
     celix_log_helper_t *logHelper;
     FILE *callsLogFile;
+    unsigned int serialProtoId;
     celix_service_factory_t factory;
     long factorySvcId;
     endpoint_description_t *endpointDesc;
@@ -68,7 +69,7 @@ static void rsaJsonRpcProxy_unregisterFacSvcDone(void *data);
 celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
         FILE *logFile, remote_interceptors_handler_t *interceptorsHandler,
         const endpoint_description_t *endpointDesc, rsa_request_sender_tracker_t *reqSenderTracker,
-        long requestSenderSvcId, rsa_json_rpc_proxy_factory_t **proxyFactoryOut) {
+        long requestSenderSvcId, unsigned int serialProtoId, rsa_json_rpc_proxy_factory_t **proxyFactoryOut) {
     assert(ctx != NULL);
     assert(logHelper != NULL);
     assert(interceptorsHandler != NULL);
@@ -85,6 +86,7 @@ celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_
     proxyFactory->interceptorsHandler = interceptorsHandler;
     proxyFactory->reqSenderTracker = reqSenderTracker;
     proxyFactory->reqSenderSvcId = requestSenderSvcId;
+    proxyFactory->serialProtoId = serialProtoId;
 
     proxyFactory->proxies = hashMap_create(NULL, NULL, NULL, NULL);
     assert(proxyFactory->proxies != NULL);
@@ -209,7 +211,8 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
     }
 
     struct iovec replyIovec = {NULL,0};
-    celix_properties_t *metadata = NULL;
+    celix_properties_t *metadata = celix_properties_create();
+    celix_properties_setLong(metadata, "SerialProtocolId", proxyFactory->serialProtoId);
     bool cont = remoteInterceptorHandler_invokePreProxyCall(proxyFactory->interceptorsHandler,
             proxyFactory->endpointDesc->properties, entry->name, &metadata);
     if (cont) {

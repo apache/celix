@@ -22,6 +22,7 @@
 #include <rsa_shm_constants.h>
 #include <rsa_shm_export_registration.h>
 #include <rsa_shm_import_registration.h>
+#include <rsa_rpc_factory.h>
 #include <endpoint_description.h>
 #include <remote_constants.h>
 #include <celix_api.h>
@@ -169,13 +170,13 @@ static celix_status_t rsaShm_receiveMsgCB(void *handle, rsa_shm_server_t *shmSer
     celixThreadMutex_lock(&admin->exportedServicesLock);
 
     //find exported registration
-    array_list_pt exports = celix_longHashMap_get(admin->exportedServices, serviceId);
-    if (exports == NULL || arrayList_size(exports) <= 0) {
+    celix_array_list_t *exports = celix_longHashMap_get(admin->exportedServices, serviceId);
+    if (exports == NULL || celix_arrayList_size(exports) <= 0) {
         status = CELIX_ILLEGAL_STATE;
         celix_logHelper_error(admin->logHelper, "No export registration found for service id %ld", serviceId);
         goto err_getting_exports;
     }
-    export_registration_t *export = arrayList_get(exports, 0);
+    export_registration_t *export = celix_arrayList_get(exports, 0);
     if (export == NULL) {
         celix_logHelper_error(admin->logHelper, "Error getting registration for service id %ld", serviceId);
         status = CELIX_ILLEGAL_STATE;
@@ -464,6 +465,33 @@ celix_status_t rsaShm_removeExportedService(rsa_shm_t *admin, export_registratio
     return status;
 }
 
+static char *rsaShm_getRpcTypeWithDefault(rsa_shm_t *admin, const char *serviceExportedConfigs, const char *defaultVal) {
+    char *rpcType = NULL;
+    if (serviceExportedConfigs != NULL) {
+        char *ecCopy = strdup(serviceExportedConfigs);
+        const char delimiter[2] = ",";
+        char *token, *savePtr;
+
+        token = strtok_r(ecCopy, delimiter, &savePtr);
+        while (token != NULL) {
+            if (strncmp(utils_stringTrim(token), RSA_RPC_TYPE_PREFIX, sizeof(RSA_RPC_TYPE_PREFIX) - 1) == 0) {
+                rpcType = strdup(token);
+                assert(rpcType != NULL);
+                break;//TODO Multiple RPC type values may be supported in the future.
+            }
+            token = strtok_r(NULL, delimiter, &savePtr);
+        }
+        free(ecCopy);
+    }
+    //if rpc type is not exist, then set a default value.
+    if (rpcType == NULL && defaultVal != NULL) {
+        rpcType = strdup(defaultVal);
+        assert(rpcType != NULL);
+    }
+
+    return rpcType;
+}
+
 static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
         celix_properties_t *exportedProperties, char *interface, endpoint_description_t **description) {
     assert(admin != NULL);
@@ -492,7 +520,14 @@ static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
     celix_properties_setLong(endpointProperties, (char*) OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
     celix_properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
     celix_properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) RSA_SHM_CONFIGURATION_TYPE);
+
+    char *rpcType = rsaShm_getRpcTypeWithDefault(admin, celix_properties_get(exportedProperties,OSGI_RSA_SERVICE_EXPORTED_CONFIGS, NULL),
+            RSA_SHM_RPC_TYPE_DEFAULT);
+    assert(rpcType != NULL);
+    char *importedConfigs = NULL;
+    (void)asprintf(&importedConfigs, "%s,%s",RSA_SHM_CONFIGURATION_TYPE, rpcType);
+    free(rpcType);
+    celix_properties_setWithoutCopy(endpointProperties, strdup(OSGI_RSA_SERVICE_IMPORTED_CONFIGS), importedConfigs);
     celix_properties_set(endpointProperties, (char *) RSA_SHM_SERVER_NAME_KEY, admin->shmServerName);
 
     *description = calloc(1, sizeof(**description));

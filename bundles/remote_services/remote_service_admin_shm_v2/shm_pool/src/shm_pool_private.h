@@ -23,10 +23,12 @@
 extern "C" {
 #endif
 #include <stdint.h>
+#include <stddef.h>
 
 #define SHM_HEART_BEAT_UPDATE_INTERVAL_IN_S 1
 
 struct shm_pool_shared_info {
+    size_t size;//The size of ‘struct shm_pool_shared_info‘.It is used to extend 'struct shm_pool_shared_info' in the future.
     uint64_t heartbeatCnt;
 };
 

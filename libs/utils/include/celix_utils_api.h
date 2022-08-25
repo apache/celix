@@ -30,7 +30,6 @@
 #include "celix_utils.h"
 #include "version.h"
 #include "version_range.h"
-#include "thpool.h"
 
 #if defined(NO_MEMSTREAM_AVAILABLE)
 #include "memstream/open_memstream.h"
