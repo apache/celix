@@ -26,7 +26,6 @@ add_executable(test_rsa_json_rpc
 
 target_link_libraries(test_rsa_json_rpc PRIVATE
     Celix::c_rsa_spi
-    Celix::deprecated_rsa_spi
     calculator_api
     Celix::rsa_common
     libuuid::libuuid

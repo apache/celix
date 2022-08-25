@@ -36,7 +36,6 @@ if (RSA_JSON_RPC)
     target_include_directories(rsa_json_rpc PRIVATE src)
 
     target_link_libraries(rsa_json_rpc PRIVATE
-        Celix::deprecated_rsa_spi
         Celix::rsa_common
         Celix::rsa_dfi_utils
         Celix::c_rsa_spi

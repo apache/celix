@@ -37,7 +37,6 @@ target_include_directories(rsa_shm PRIVATE src)
 target_link_libraries(rsa_shm PRIVATE
     Celix::c_rsa_spi
     Celix::rsa_common
-    Celix::deprecated_rsa_spi
     Celix::log_helper
     Celix::framework
     Celix::thpool
