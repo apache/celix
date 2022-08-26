@@ -129,7 +129,7 @@ return result
 == IPC for shared memory
 
 In order to dynamically allocate shared memory only on the client. 
-The client will transmits the shared memory id and shared memory offset to the server 
+The client will transmit the shared memory id and shared memory offset to the server 
 using a domain datagram socket. And response will reuse the shared memory of request.
 
 [plantuml]
@@ -147,6 +147,7 @@ send_request_thread->shared_memory:copy request to shared memory
 send_request_thread->domain_socket:sendto(rsa_shm_msg_t)
 loop pthread_cond_timedwait,\nUntil the response is readed completly
     send_request_thread->shared_memory:read response from shared memory
+    note over shared_memory: If the response is complete,\n'msgState' will be set to 'REPLIED' or 'ABEND'\nby the 'handle_request_thread'
 end
 
 domain_socket->handle_request_thread:recvfrom(rsa_shm_msg_t)
