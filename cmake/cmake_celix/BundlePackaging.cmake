@@ -18,8 +18,15 @@
 
 
 set(CELIX_NO_POSTFIX_BUILD_TYPES RelWithDebInfo Release CACHE STRING "The build type used for creating bundle without a build type postfix.")
-set(CELIX_JAR_COMMAND_ARGUMENTS -cfm0 CACHE STRING "Default no compression is applied")
-set(CELIX_ZIP_COMMAND_ARGUMENTS -rq0 CACHE STRING "Default no compression is applied")
+option(CELIX_USE_COMPRESSION_FOR_BUNDLE_ZIPS "Enables bundle compression" TRUE)
+
+if (CELIX_USE_COMPRESSION_FOR_BUNDLE_ZIPS)
+    set(CELIX_JAR_COMMAND_ARGUMENTS -cfm)
+    set(CELIX_ZIP_COMMAND_ARGUMENTS -rq)
+else()
+    set(CELIX_JAR_COMMAND_ARGUMENTS -cfm0)
+    set(CELIX_ZIP_COMMAND_ARGUMENTS -rq0)
+endif ()
 
 
 find_program(JAR_COMMAND jar NO_CMAKE_FIND_ROOT_PATH)

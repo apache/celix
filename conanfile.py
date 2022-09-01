@@ -78,8 +78,7 @@ class CelixConan(ConanFile):
         "celix_cxx": [True, False],
         "celix_install_deprecated_api": [True, False],
         "celix_add_deprecated_attributes": [True, False],
-        "celix_jar_command_arguments": ["ANY"],
-        "celix_zip_command_arguments": ["ANY"],
+        "celix_use_compression_for_bundle_zips": [True, False],
     }
     default_options = { 
         "enable_testing": False,
@@ -122,8 +121,7 @@ class CelixConan(ConanFile):
         "celix_cxx": False,
         "celix_install_deprecated_api": False,
         "celix_add_deprecated_attributes": True,
-        "celix_jar_command_arguments": "-cfm",
-        "celix_zip_command_arguments": "-rq",
+        "celix_use_compression_for_bundle_zips": True,
     }
     _cmake = None
 
