@@ -31,6 +31,7 @@
 #define BUNDLE_REVISION_H_
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "celix_types.h"
 
@@ -56,11 +57,11 @@ extern "C" {
  * The location parameter is used to identify the bundle, in case of an update or download, the inputFile
  *  parameter can be used to point to the actual data. In the OSGi specification this is the inputstream.
  *
- * @param pool The pool on which this revision has to be allocated.
  * @param root The root for this revision in which the bundle is extracted and state is stored.
  * @param location The location associated with the revision
  * @param revisionNr The number of the revision
  * @param inputFile The (optional) location of the file to use as input for this revision
+ * @param cache Whether this revision represents a cache entry, in which case bundle extraction is skipped.
  * @param[out] bundle_revision The output parameter for the created revision.
  *
  * @return Status code indication failure or success:
@@ -68,7 +69,7 @@ extern "C" {
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_revision</code> failed.
  */
 celix_status_t bundleRevision_create(const char *root, const char *location, long revisionNr, const char *inputFile,
-                                     bundle_revision_pt *bundle_revision);
+                                     bool cache, bundle_revision_pt *bundle_revision);
 
 celix_status_t bundleRevision_destroy(bundle_revision_pt revision);
 

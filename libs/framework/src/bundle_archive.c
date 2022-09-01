@@ -51,7 +51,7 @@ static celix_status_t bundleArchive_initialize(bundle_archive_pt archive);
 
 static celix_status_t bundleArchive_deleteTree(bundle_archive_pt archive, const char * directory);
 
-static celix_status_t bundleArchive_createRevisionFromLocation(bundle_archive_pt archive, const char *location, const char *inputFile, long revNr, bundle_revision_pt *bundle_revision);
+static celix_status_t bundleArchive_createRevisionFromLocation(bundle_archive_pt archive, const char *location, const char *inputFile, long revNr, bundle_revision_pt *bundle_revision, bool isReload);
 static celix_status_t bundleArchive_reviseInternal(bundle_archive_pt archive, bool isReload, long revNr, const char * location, const char *inputFile);
 
 static celix_status_t bundleArchive_readLastModified(bundle_archive_pt archive, time_t *time);
@@ -567,7 +567,7 @@ static celix_status_t bundleArchive_reviseInternal(bundle_archive_pt archive, bo
 		location = "inputstream:";
 	}
 
-	status = bundleArchive_createRevisionFromLocation(archive, location, inputFile, revNr, &revision);
+	status = bundleArchive_createRevisionFromLocation(archive, location, inputFile, revNr, &revision, isReload);
 
 	if (status == CELIX_SUCCESS) {
 		if (!isReload) {
@@ -587,7 +587,7 @@ celix_status_t bundleArchive_rollbackRevise(bundle_archive_pt archive, bool *rol
 	return CELIX_SUCCESS;
 }
 
-static celix_status_t bundleArchive_createRevisionFromLocation(bundle_archive_pt archive, const char *location, const char *inputFile, long revNr, bundle_revision_pt *bundle_revision) {
+static celix_status_t bundleArchive_createRevisionFromLocation(bundle_archive_pt archive, const char *location, const char *inputFile, long revNr, bundle_revision_pt *bundle_revision, bool isReload) {
 	celix_status_t status = CELIX_SUCCESS;
 	char root[256];
 	long refreshCount;
@@ -597,7 +597,7 @@ static celix_status_t bundleArchive_createRevisionFromLocation(bundle_archive_pt
 		bundle_revision_pt revision = NULL;
 
 		sprintf(root, "%s/version%ld.%ld", archive->archiveRoot, refreshCount, revNr);
-		status = bundleRevision_create(root, location, revNr, inputFile, &revision);
+		status = bundleRevision_create(root, location, revNr, inputFile, isReload, &revision);
 
 		if (status == CELIX_SUCCESS) {
 			*bundle_revision = revision;

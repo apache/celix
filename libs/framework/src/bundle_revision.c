@@ -27,7 +27,7 @@
 
 #include "bundle_revision_private.h"
 
-celix_status_t bundleRevision_create(const char *root, const char *location, long revisionNr, const char *inputFile, bundle_revision_pt *bundle_revision) {
+celix_status_t bundleRevision_create(const char *root, const char *location, long revisionNr, const char *inputFile, bool cache, bundle_revision_pt *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
 	bundle_revision_pt revision = NULL;
 
@@ -40,13 +40,14 @@ celix_status_t bundleRevision_create(const char *root, const char *location, lon
             free(revision);
             status = CELIX_FILE_IO_EXCEPTION;
         } else {
-            if (inputFile != NULL) {
-                status = extractBundle(inputFile, root);
-            } else if (strcmp(location, "inputstream:") != 0) {
-            	// If location != inputstream, extract it, else ignore it and assume this is a cache entry.
-                status = extractBundle(location, root);
+            if (!cache) {
+                if (inputFile != NULL) {
+                    status = extractBundle(inputFile, root);
+                } else if (strcmp(location, "inputstream:") != 0) {
+                    // If location != inputstream, extract it, else ignore it and assume this is a cache entry.
+                    status = extractBundle(location, root);
+                }
             }
-
             status = CELIX_DO_IF(status, arrayList_create(&(revision->libraryHandles)));
             if (status == CELIX_SUCCESS) {
                 revision->revisionNr = revisionNr;
