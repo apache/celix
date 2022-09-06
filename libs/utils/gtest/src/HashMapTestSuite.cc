@@ -202,7 +202,7 @@ TEST_F(HashMapTestSuite, DestroyHashMapWithSimpleRemovedCallback) {
     celix_stringHashMap_destroy(sMap);
 
     celix_long_hash_map_create_options_t lOpts{};
-    lOpts.simpledRemoveCallback = free;
+    lOpts.simpleRemovedCallback = free;
     auto* lMap = celix_longHashMap_createWithOptions(&lOpts);
     EXPECT_TRUE(lMap != nullptr);
     EXPECT_EQ(0, celix_longHashMap_size(lMap));
