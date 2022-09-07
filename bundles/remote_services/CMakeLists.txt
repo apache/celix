@@ -75,6 +75,42 @@ if (REMOTE_SERVICE_ADMIN)
                 RSA_PORT=28888
                 )
     endif()
+    
+    if (BUILD_RSA_DISCOVERY_CONFIGURED AND BUILD_RSA_REMOTE_SERVICE_ADMIN_SHM_V2 AND BUILD_RSA_JSON_RPC AND BUILD_SHELL AND BUILD_SHELL_TUI AND BUILD_LOG_SERVICE)
+        add_celix_container(remote-services-shm-server
+                NAME "server"
+                GROUP "remote-services/remote-services-shm"
+                BUNDLES
+                Celix::rsa_discovery
+                Celix::rsa_topology_manager
+                Celix::rsa_shm
+                Celix::rsa_json_rpc
+                Celix::shell
+                Celix::shell_tui
+                Celix::log_admin
+
+                celix_remote_interceptors_example
+                calculator
+                PROPERTIES
+                )
+
+        add_celix_container(remote-services-shm-client
+                NAME "client"
+                GROUP "remote-services/remote-services-shm"
+                BUNDLES
+                Celix::rsa_discovery
+                Celix::rsa_topology_manager
+                Celix::rsa_shm
+                Celix::rsa_json_rpc
+                Celix::shell
+                Celix::shell_tui
+                Celix::log_admin
+                celix_remote_interceptors_example
+                calculator_shell
+                PROPERTIES
+                )
+    endif()
+    
 endif (REMOTE_SERVICE_ADMIN)
 
 
