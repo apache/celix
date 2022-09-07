@@ -610,6 +610,7 @@ static void *rsaShmClientManager_exceptionMsgHandlerThread(void *data) {
         celixThreadMutex_lock(&clientManager->exceptionMsgListMutex);
         while (0 == (listSize = celix_arrayList_size(clientManager->exceptionMsgList)) && clientManager->threadActive == true) {
             waitRet = celixThreadCondition_timedwaitRelative(&clientManager->exceptionMsgListNotEmpty, &clientManager->exceptionMsgListMutex, 0, 200*1000*1000);
+            (void)waitRet;//resolve unused-but-set-variable
             assert(waitRet == 0 || waitRet == ETIMEDOUT);// this function shall not return an error code of [EINTR], @ref https://linux.die.net/man/3/pthread_cond_timedwait
         }
         for (int i = 0; i < listSize; ++i) {

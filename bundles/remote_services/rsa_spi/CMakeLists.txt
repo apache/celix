@@ -21,12 +21,16 @@ target_include_directories(c_rsa_spi INTERFACE
     )
 target_link_libraries(c_rsa_spi INTERFACE Celix::framework)
 
-install(TARGETS c_rsa_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa
+install(TARGETS c_rsa_spi EXPORT celix COMPONENT rsa
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/rsa)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/rsa COMPONENT rsa)
 
 #Setup target aliases to match external usage
 add_library(Celix::c_rsa_spi ALIAS c_rsa_spi)
 
-#In order to compatible with existing code, keep the name 'Celix::deprecated_rsa_spi'
-add_library(Celix::deprecated_rsa_spi ALIAS c_rsa_spi)
+
+#To be compatible with existing code, keep export target name 'Celix::deprecated_rsa_spi'
+add_library(deprecated_rsa_spi INTERFACE)
+target_link_libraries(deprecated_rsa_spi INTERFACE Celix::framework)
+install(TARGETS deprecated_rsa_spi EXPORT celix COMPONENT rsa
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/rsa)
