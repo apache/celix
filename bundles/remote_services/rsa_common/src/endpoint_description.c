@@ -26,6 +26,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
+#include <assert.h>
 
 #include "celix_errno.h"
 #include "celix_log.h"
@@ -87,4 +89,29 @@ static celix_status_t endpointDescription_verifyLongProperty(celix_properties_t 
     }
 
     return status;
+}
+
+bool endpointDescription_isInvalid(const endpoint_description_t *description) {
+    return description == NULL || description->properties == NULL || description->serviceId < 0
+            || description->service == NULL || strlen(description->service) > NAME_MAX
+            || description->frameworkUUID == NULL || description->id == NULL;
+}
+
+endpoint_description_t *endpointDescription_clone(const endpoint_description_t *description) {
+    if (endpointDescription_isInvalid(description)) {
+        return NULL;
+    }
+    endpoint_description_t *newDesc = (endpoint_description_t*)calloc(1, sizeof(endpoint_description_t));
+    assert(newDesc != NULL);
+    newDesc->properties = celix_properties_copy(description->properties);
+    assert(newDesc->properties != NULL);
+    newDesc->frameworkUUID = (char*)celix_properties_get(newDesc->properties,
+            OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
+    newDesc->serviceId = description->serviceId;
+    newDesc->id = (char*)celix_properties_get(newDesc->properties,
+            OSGI_RSA_ENDPOINT_ID, NULL);
+    newDesc->service = strdup(description->service);
+    assert(newDesc->service != NULL);
+
+    return newDesc;
 }

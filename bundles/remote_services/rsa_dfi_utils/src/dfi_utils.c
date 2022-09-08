@@ -48,7 +48,7 @@ static celix_status_t dfi_findFileForFramework(celix_bundle_context_t *context, 
     return status;
 }
 
-static celix_status_t dfi_findFileForBundle(celix_bundle_t *bundle, const char *fileName, FILE **out) {
+static celix_status_t dfi_findFileForBundle(const celix_bundle_t *bundle, const char *fileName, FILE **out) {
     celix_status_t  status;
 
     //Checking if descriptor is in root dir of bundle
@@ -85,7 +85,7 @@ static celix_status_t dfi_findFileForBundle(celix_bundle_t *bundle, const char *
     return status;
 }
 
-static celix_status_t dfi_findAvprFileForBundle(celix_bundle_t *bundle, const char* fileName, FILE **out) {
+static celix_status_t dfi_findAvprFileForBundle(const celix_bundle_t *bundle, const char* fileName, FILE **out) {
     celix_status_t status;
     char *path = NULL;
     status = bundle_getEntry(bundle, fileName, &path);
@@ -112,7 +112,7 @@ static celix_status_t dfi_findAvprFileForBundle(celix_bundle_t *bundle, const ch
     return status;
 }
 
-celix_status_t dfi_findDescriptor(celix_bundle_context_t *context, celix_bundle_t *bundle, const char *name, FILE **out) {
+celix_status_t dfi_findDescriptor(celix_bundle_context_t *context, const celix_bundle_t *bundle, const char *name, FILE **out) {
     celix_status_t  status;
     char fileName[128];
 
@@ -134,7 +134,7 @@ celix_status_t dfi_findDescriptor(celix_bundle_context_t *context, celix_bundle_
     return status;
 }
 
-celix_status_t dfi_findAvprDescriptor(celix_bundle_context_t *context, celix_bundle_t *bundle, const char *name, FILE **out) {
+celix_status_t dfi_findAvprDescriptor(celix_bundle_context_t *context, const celix_bundle_t *bundle, const char *name, FILE **out) {
     celix_status_t  status;
     char fileName[128];
 
@@ -154,5 +154,40 @@ celix_status_t dfi_findAvprDescriptor(celix_bundle_context_t *context, celix_bun
     }
 
     return status;
+}
+
+celix_status_t dfi_findAndParseInterfaceDescriptor(celix_log_helper_t *logHelper,
+        celix_bundle_context_t *ctx, const celix_bundle_t *svcOwner, const char *name,
+        dyn_interface_type **intfOut) {
+    if (logHelper == NULL || ctx == NULL || svcOwner == NULL || name == NULL || intfOut == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    celix_status_t status = CELIX_SUCCESS;
+    FILE* descriptor = NULL;
+    status = dfi_findDescriptor(ctx, svcOwner, name, &descriptor);
+    if (status == CELIX_SUCCESS && descriptor != NULL) {
+        int rc = dynInterface_parse(descriptor, intfOut);
+        fclose(descriptor);
+        if (rc != 0) {
+            celix_logHelper_error(logHelper, "Cannot parse dfi descriptor for '%s'", name);
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
+        return status;
+    }
+
+    status = dfi_findAvprDescriptor(ctx, svcOwner, name, &descriptor);
+    if (status == CELIX_SUCCESS && descriptor != NULL) {
+        *intfOut = dynInterface_parseAvpr(descriptor);
+        fclose(descriptor);
+        if (*intfOut == NULL) {
+            celix_logHelper_error(logHelper, "Cannot parse avpr descriptor for '%s'", name);
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
+        return status;
+    }
+
+    celix_logHelper_error(logHelper, "Cannot find/open any valid (avpr) descriptor files for '%s'", name);
+    return CELIX_BUNDLE_EXCEPTION;
 }
 

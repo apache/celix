@@ -17,16 +17,20 @@
  * under the License.
  */
 
-#ifndef DFI_UTILS_H_
-#define DFI_UTILS_H_
+#ifndef _RSA_JSON_RPC_CONSTANTS_H_
+#define _RSA_JSON_RPC_CONSTANTS_H_
 
-#include "bundle.h"
-#include "bundle_context.h"
-#include <stdio.h>
-#include "celix_errno.h"
-
-
-celix_status_t dfi_findDescriptor(celix_bundle_context_t *context, celix_bundle_t *bundle, const char *name, FILE **out);
-celix_status_t dfi_findAvprDescriptor(celix_bundle_context_t *context, celix_bundle_t *bundle, const char *name, FILE **out);
-
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+#define RSA_JSON_RPC_LOG_CALLS_KEY               "RSA_JSON_RPC_LOG_CALLS"
+#define RSA_JSON_RPC_LOG_CALLS_DEFAULT           false
+#define RSA_JSON_RPC_LOG_CALLS_FILE_KEY          "RSA_JSON_RPC_LOG_CALLS_FILE"
+#define RSA_JSON_RPC_LOG_CALLS_FILE_DEFAULT      "stdout"
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _RSA_JSON_RPC_CONSTANTS_H_ */
