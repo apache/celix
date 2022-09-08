@@ -240,7 +240,6 @@ static void * shmCache_WatcherThread(void *data) {
         for (int i = 0; i < size; ++i) {
             shm_cache_block_t *shmBlock = celix_arrayList_get(evictedBlocks, i);
             celix_longHashMap_remove(shmCache->shmCacheBlocks, shmBlock->shmId);
-            fprintf(stdout, "Shm cache: Shm(%d) has been closed, close its cache.\n", shmBlock->shmId);
             shmCache_destroyBlock(shmCache, shmBlock);
         }
         celix_arrayList_clear(evictedBlocks);

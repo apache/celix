@@ -605,13 +605,10 @@ static void *rsaShmClientManager_exceptionMsgHandlerThread(void *data) {
     size_t listSize = 0;
     bool removed = false;
     celix_array_list_t *evictedMsgs = celix_arrayList_create();
-    int waitRet = 0;
     while (active) {
         celixThreadMutex_lock(&clientManager->exceptionMsgListMutex);
         while (0 == (listSize = celix_arrayList_size(clientManager->exceptionMsgList)) && clientManager->threadActive == true) {
-            waitRet = celixThreadCondition_timedwaitRelative(&clientManager->exceptionMsgListNotEmpty, &clientManager->exceptionMsgListMutex, 0, 200*1000*1000);
-            (void)waitRet;//resolve unused-but-set-variable
-            assert(waitRet == 0 || waitRet == ETIMEDOUT);// this function shall not return an error code of [EINTR], @ref https://linux.die.net/man/3/pthread_cond_timedwait
+            (void)celixThreadCondition_timedwaitRelative(&clientManager->exceptionMsgListNotEmpty, &clientManager->exceptionMsgListMutex, 0, 200*1000*1000);
         }
         for (int i = 0; i < listSize; ++i) {
             struct rsa_shm_exception_msg *exceptionMsg = celix_arrayList_get(clientManager->exceptionMsgList, i);
