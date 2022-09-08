@@ -66,11 +66,11 @@ typedef struct celix_long_hash_map_create_options {
      * from the hash map. The removed value is provided as pointer.
      *
      * @note only simpleRemovedCallback or removedCallback should be configured, if both are configured,
-     * only the simpledRemoveCallback will be used.
+     * only the simpleRemovedCallback will be used.
      *
      * Default is NULL.
      */
-    void (*simpledRemoveCallback)(void* value) CELIX_OPTS_INIT;
+    void (*simpleRemovedCallback)(void* value) CELIX_OPTS_INIT;
 
     /**
      * Optional callback data, which will be provided to the removeCallback callback.
@@ -86,7 +86,7 @@ typedef struct celix_long_hash_map_create_options {
      * The callback data pointer will be provided as first argument to the destroy callback.
      *
      * @note only simpleRemovedCallback or removedCallback should be configured, if both are configured,
-     * only the simpledRemoveCallback will be used.
+     * only the simpleRemovedCallback will be used.
      *
      * Default is NULL.
      */
@@ -125,7 +125,7 @@ typedef struct celix_long_hash_map_create_options {
  * @brief C Macro to create a empty string_hash_map_create_options_t type.
  */
 #define CELIX_EMPTY_LONG_HASH_MAP_CREATE_OPTIONS {      \
-    .simpledRemoveCallback = NULL,                      \
+    .simpleRemovedCallback = NULL,                      \
     .removedCallbackData = NULL,                        \
     .removedCallback = NULL,                            \
     .initialCapacity = 0,                               \

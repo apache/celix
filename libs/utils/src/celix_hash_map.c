@@ -437,7 +437,7 @@ celix_long_hash_map_t* celix_longHashMap_createWithOptions(const celix_long_hash
     unsigned int cap = opts->initialCapacity > 0 ? opts->initialCapacity : DEFAULT_INITIAL_CAPACITY;
     double fac = opts->loadFactor > 0 ? opts->loadFactor : DEFAULT_LOAD_FACTOR;
     celix_hashMap_init(&map->genericMap, CELIX_HASH_MAP_LONG_KEY, cap, fac, celix_longHashMap_hash, celix_longHashMap_equals);
-    map->genericMap.simpleRemovedCallback = opts->simpledRemoveCallback;
+    map->genericMap.simpleRemovedCallback = opts->simpleRemovedCallback;
     map->genericMap.removedCallbackData = opts->removedCallbackData;
     map->genericMap.removedLongKeyCallback = opts->removedCallback;
     map->genericMap.storeKeysWeakly = false;
