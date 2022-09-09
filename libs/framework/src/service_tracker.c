@@ -593,7 +593,7 @@ static celix_status_t serviceTracker_invokeRemovingService(service_tracker_t *tr
     if (tracker->remove != NULL) {
         tracker->remove(handle, tracked->service);
     }
-    if (tracker->addWithProperties != NULL) {
+    if (tracker->removeWithProperties != NULL) {
         tracker->removeWithProperties(handle, tracked->service, tracked->properties);
     }
     if (tracker->removeWithOwner != NULL) {

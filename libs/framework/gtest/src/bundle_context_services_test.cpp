@@ -762,6 +762,7 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithAlreadyRegistered
 
 TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithProperties) {
     int count = 0;
+    int count2 = 0;
     auto add = [](void *handle, void *svc, const properties_t *props) {
         ASSERT_TRUE(svc != nullptr);
         ASSERT_TRUE(props != nullptr);
@@ -786,14 +787,26 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithProperties) {
     ASSERT_TRUE(trackerId >= 0);
     ASSERT_EQ(1, count);
 
+    celix_service_tracking_options_t opts2{};
+    opts2.filter.serviceName = "calc";
+    opts2.callbackHandle = &count2;
+    opts2.addWithProperties = nullptr;
+    opts2.removeWithProperties = remove;
+    long trackerId2 = celix_bundleContext_trackServicesWithOptions(ctx, &opts2);
+    ASSERT_TRUE(trackerId2 >= 0);
+    ASSERT_EQ(0, count2);
+
     long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x200, "calc", nullptr);
     ASSERT_TRUE(svcId1 >= 0);
     ASSERT_EQ(2, count);
+    ASSERT_EQ(0, count2);
 
     celix_bundleContext_unregisterService(ctx, svcId1);
     celix_bundleContext_unregisterService(ctx, svcId2);
     ASSERT_EQ(0, count);
+    ASSERT_EQ(-2, count2);
 
+    celix_bundleContext_stopTracker(ctx, trackerId2);
     celix_bundleContext_stopTracker(ctx, trackerId);
 }
 
