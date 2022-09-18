@@ -42,9 +42,9 @@ inline const celix::dm::Properties &BaseProvidedService::getProperties() const {
 inline void BaseProvidedService::runBuild() {
     if (!provideAddedToCmp) {
         //setup c properties
-        celix_properties_t *cProperties = properties_create();
+        celix_properties_t *cProperties = celix_properties_create();
         for (const auto &pair : properties) {
-            properties_set(cProperties, pair.first.c_str(), pair.second.c_str());
+            celix_properties_set(cProperties, pair.first.c_str(), pair.second.c_str());
         }
 
         const char *cVersion = svcVersion.empty() ? nullptr : svcVersion.c_str();

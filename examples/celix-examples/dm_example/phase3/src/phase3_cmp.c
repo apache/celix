@@ -29,7 +29,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include "array_list.h"
+#include "celix_array_list.h"
 #include "celix_threads.h"
 #include "phase3_cmp.h"
 
@@ -49,7 +49,7 @@ phase3_cmp_t *phase3_create() {
     if (cmp != NULL) {
         cmp->currentValue = 0.0;
         cmp->running = false;
-        arrayList_create(&cmp->phase2Services);
+        cmp->phase2Services = celix_arrayList_create();
     }
     return cmp;
 }
@@ -80,18 +80,18 @@ int phase3_deinit(phase3_cmp_t *cmp) {
 }
 
 void phase3_destroy(phase3_cmp_t *cmp) {
-    arrayList_destroy(cmp->phase2Services);
+    celix_arrayList_destroy(cmp->phase2Services);
     free(cmp);
     printf("destroy phase3\n");
 }
 
 int phase3_addPhase2(phase3_cmp_t *cmp, const phase2_t* phase2) {
-    arrayList_add(cmp->phase2Services, (void*)phase2);
+    celix_arrayList_add(cmp->phase2Services, (void*)phase2);
     return 0;
 }
 
 int phase3_removePhase2(phase3_cmp_t *cmp, const phase2_t *phase2) {
-    arrayList_removeElement(cmp->phase2Services, (void*)phase2);
+    celix_arrayList_remove(cmp->phase2Services, (void*)phase2);
     return 0;
 }
 
@@ -103,9 +103,9 @@ static void *phase3_thread(void *data) {
     double value;
 
     while (cmp->running) {
-        size = arrayList_size(cmp->phase2Services);
+        size = celix_arrayList_size(cmp->phase2Services);
         for (i = 0; i < size; i += 1) {
-            const phase2_t* serv = arrayList_get(cmp->phase2Services, i);
+            const phase2_t* serv = celix_arrayList_get(cmp->phase2Services, i);
             serv->getData(serv->handle, &value);
             printf("PHASE3: Data from %p is %f\n", serv, value);
         }

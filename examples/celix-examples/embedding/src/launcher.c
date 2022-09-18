@@ -17,7 +17,7 @@
  * under the License.
  */
 
-#include <celix_api.h>
+#include <celix_launcher.h>
 int main(int argc, char** argv) {
     return celixLauncher_launchAndWaitForShutdown(argc, argv, NULL);
 }

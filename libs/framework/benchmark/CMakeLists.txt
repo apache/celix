@@ -32,4 +32,5 @@ if (FRAMEWORK_BENCHMARK)
             src/DependencyManagerBenchmark.cc
     )
     target_link_libraries(celix_framework_benchmark PRIVATE Celix::framework benchmark::benchmark)
+    celix_deprecated_utils_headers(celix_framework_benchmark)
 endif ()

@@ -20,7 +20,10 @@
 
 #include "celix_bundle_context.h"
 #include "celix_constants.h"
-#include "utils.h"
+#include "celix_array_list.h"
+#include "celix_threads.h"
+#include "celix_utils.h"
+#include "array_list.h"
 
 #include "remote_interceptors_handler.h"
 

@@ -18,9 +18,8 @@
  */
 
 #include <string.h>
-#include <stdio.h>
 
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 #include <civetweb.h>
 
 #include "http_admin/api.h"

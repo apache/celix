@@ -18,10 +18,8 @@
  */
 
 #include <stdio.h>
-
-#include "hash_map.h"
-#include "exports.h"
 #include "celix_errno.h"
+#include "celixbool.h"
 
 #ifndef CELIX_PROPERTIES_H_
 #define CELIX_PROPERTIES_H_
@@ -30,8 +28,16 @@
 extern "C" {
 #endif
 
-typedef hash_map_t celix_properties_t;
-typedef hash_map_iterator_t celix_properties_iterator_t;
+typedef struct hashMap celix_properties_t; //opaque struct, TODO try to make this a celix_properties struct
+
+typedef struct celix_properties_iterator {
+    //private data
+    void* _data1;
+    void* _data2;
+    void* _data3;
+    int _data4;
+    int _data5;
+} celix_properties_iterator_t;
 
 
 /**********************************************************************************************************************
@@ -77,9 +83,10 @@ int celix_properties_size(const celix_properties_t *properties);
 celix_properties_iterator_t celix_propertiesIterator_construct(const celix_properties_t *properties);
 bool celix_propertiesIterator_hasNext(celix_properties_iterator_t *iter);
 const char* celix_propertiesIterator_nextKey(celix_properties_iterator_t *iter);
+celix_properties_t* celix_propertiesIterator_properties(celix_properties_iterator_t *iter);
 
 #define CELIX_PROPERTIES_FOR_EACH(props, key) \
-    for(hash_map_iterator_t iter = celix_propertiesIterator_construct(props); \
+    for(celix_properties_iterator_t iter = celix_propertiesIterator_construct(props); \
         celix_propertiesIterator_hasNext(&iter), (key) = celix_propertiesIterator_nextKey(&iter);)
 
 

@@ -83,5 +83,31 @@ MACRO(celix_subproject)
     ENDIF (${NAME})
 ENDMACRO(celix_subproject)
 
+
+#[[
+Add include path for the Celix utils deprecated headers to the provided target (as PRIVATE)
+
+```CMake
+celix_v2_utils_headers(<target_name>))
+```
+]]
+function(celix_deprecated_utils_headers)
+    list(GET ARGN 0 TARGET_NAME)
+    target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/libs/utils/include_deprecated)
+    get_target_property(TARGETS celix-deprecated "UTIL_TARGETS")
+    list(APPEND TARGETS ${TARGET_NAME})
+    set_target_properties(celix-deprecated PROPERTIES "UTIL_TARGETS" "${TARGETS}")
+endfunction()
+
+#[[
+Custom target which list the Celix CMake target still using the deprecated utils headers
+]]
+if (NOT TARGET celix-deprecated)
+    add_custom_target(celix-deprecated
+        COMMAND ${CMAKE_COMMAND} -E echo "Utils targets: $<TARGET_PROPERTY:celix-deprecated,TARGETS_PROVIDED>"
+    )
+    set_target_properties(celix-deprecated PROPERTIES "UTIL_TARGETS" "")
+endif ()
+
 include(${CMAKE_CURRENT_LIST_DIR}/ApacheRat.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CodeCoverage.cmake)

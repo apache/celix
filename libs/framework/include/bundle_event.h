@@ -16,47 +16,33 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * bundle_event.h
- *
- *  \date       Jun 28, 2012
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #ifndef BUNDLE_EVENT_H_
 #define BUNDLE_EVENT_H_
+
+#include "celix_bundle_event.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-enum bundle_event_type {
-	OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED = 0x00000001,
-	OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED = 0x00000002,
-	OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPED = 0x00000004,
-	OSGI_FRAMEWORK_BUNDLE_EVENT_UPDATED = 0x00000008,
-	OSGI_FRAMEWORK_BUNDLE_EVENT_UNINSTALLED = 0x00000010,
-	OSGI_FRAMEWORK_BUNDLE_EVENT_RESOLVED = 0x00000020,
-	OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED = 0x00000040,
-	OSGI_FRAMEWORK_BUNDLE_EVENT_STARTING = 0x00000080,
-	OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPING = 0x00000100,
-	OSGI_FRAMEWORK_BUNDLE_EVENT_LAZY_ACTIVATION = 0x00000200,
-};
+#define OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED CELIX_BUNDLE_EVENT_INSTALLED
+#define	OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED CELIX_BUNDLE_EVENT_STARTED
+#define OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPED CELIX_BUNDLE_EVENT_STOPPED
+#define OSGI_FRAMEWORK_BUNDLE_EVENT_UPDATED CELIX_BUNDLE_EVENT_UPDATED
+#define OSGI_FRAMEWORK_BUNDLE_EVENT_UNINSTALLED CELIX_BUNDLE_EVENT_UNINSTALLED
+#define OSGI_FRAMEWORK_BUNDLE_EVENT_RESOLVED CELIX_BUNDLE_EVENT_RESOLVED
+#define OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED CELIX_BUNDLE_EVENT_UNRESOLVED
+#define OSGI_FRAMEWORK_BUNDLE_EVENT_STARTING CELIX_BUNDLE_EVENT_STARTING
+#define OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPING CELIX_BUNDLE_EVENT_STOPPING
 
-typedef enum bundle_event_type bundle_event_type_e;
-typedef struct bundle_event *bundle_event_pt;
-typedef struct bundle_event bundle_event_t;
-typedef struct bundle_event celix_bundle_event_t;
 
-#include "service_reference.h"
-#include "bundle.h"
+typedef celix_bundle_event_type_e bundle_event_type_e;
+typedef struct celix_bundle_event *bundle_event_pt;
+typedef struct celix_bundle_event bundle_event_t;
+typedef struct celix_bundle_event celix_bundle_event_t;
 
-struct bundle_event {
-	celix_bundle_t* bnd;
-	char *bundleSymbolicName;
-	bundle_event_type_e type;
-};
 
 #ifdef __cplusplus
 }

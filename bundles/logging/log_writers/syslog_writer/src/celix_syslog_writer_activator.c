@@ -19,7 +19,7 @@
 
 #include <syslog.h>
 
-#include "celix_api.h"
+#include "celix_bundle_activator.h"
 #include "celix_log_sink.h"
 
 typedef struct celix_syslog_writer_activator {

@@ -39,6 +39,7 @@ if (PUBSUB_PSA_WS)
     target_link_libraries(celix_pubsub_admin_websocket PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
     target_link_libraries(celix_pubsub_admin_websocket PRIVATE Celix::shell_api)
     target_include_directories(celix_pubsub_admin_websocket PRIVATE src)
+    celix_deprecated_utils_headers(celix_pubsub_admin_websocket)
 
     install_celix_bundle(celix_pubsub_admin_websocket EXPORT celix COMPONENT pubsub)
     add_library(Celix::celix_pubsub_admin_websocket ALIAS celix_pubsub_admin_websocket)

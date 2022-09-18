@@ -16,17 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * phase1_cmp.h
- *
- *  \date       Oct 29, 2015
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 
 #ifndef PHASE1_CMP_H
 #define PHASE1_CMP_H
-#include "dm_component.h"
+#include "celix_dm_component.h"
 
 typedef struct phase1_cmp_struct phase1_cmp_t;
 

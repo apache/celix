@@ -28,7 +28,6 @@
 #include "celix/dm/ServiceDependency.h"
 #include "celix/dm/DependencyManagerInfo.h"
 
-#include "bundle_context.h"
 #include "celix_bundle_context.h"
 #include "celix_dependency_manager.h"
 

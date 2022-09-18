@@ -40,8 +40,6 @@
 #include <stddef.h>
 #include <errno.h>
 
-#include "exports.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

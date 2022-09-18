@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 
 #include "phase2.h"
 #include "phase3_cmp.h"

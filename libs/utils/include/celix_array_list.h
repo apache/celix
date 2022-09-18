@@ -18,7 +18,6 @@
  */
 
 #include "celixbool.h"
-#include "exports.h"
 #include "celix_errno.h"
 #include "stdbool.h"
 

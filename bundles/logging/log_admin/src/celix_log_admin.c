@@ -26,7 +26,6 @@
 #include <celix_constants.h>
 #include <celix_log_control.h>
 #include <assert.h>
-#include <celix_api.h>
 
 #include "celix_log_service.h"
 #include "celix_log_sink.h"
@@ -34,6 +33,9 @@
 #include "celix_log_utils.h"
 #include "celix_log_constants.h"
 #include "celix_shell_command.h"
+#include "celix_threads.h"
+#include "hash_map.h"
+#include "celix_framework.h"
 
 #define CELIX_LOG_ADMIN_DEFAULT_LOG_NAME "default"
 #define CELIX_LOG_ADMIN_FRAMEWORK_LOG_NAME "celix_framework"

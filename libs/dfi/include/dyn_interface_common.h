@@ -37,7 +37,7 @@ struct _dyn_interface_type {
     struct namvals_head annotations;
     struct types_head types;
     struct methods_head methods;
-    version_pt version;
+    celix_version_t* version;
 };
 
 #ifdef __cplusplus

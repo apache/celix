@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 #include <test.h>
 
 

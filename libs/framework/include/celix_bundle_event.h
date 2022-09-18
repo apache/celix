@@ -17,28 +17,38 @@
  * under the License.
  */
 
-#include "celix_properties.h"
-#include "celix_bundle.h"
 
-#ifndef CELIX_SERVICE_FACTORY_H_
-#define CELIX_SERVICE_FACTORY_H_
+#ifndef CELIX_BUNDLE_EVENT_H_
+#define CELIX_BUNDLE_EVENT_H_
+
+#include "celix_bundle.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct celix_service_factory celix_service_factory_t;
-
-struct celix_service_factory {
-    void *handle;
-
-    void* (*getService)(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
-
-    void (*ungetService)(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
+enum celix_bundle_event_type {
+	CELIX_BUNDLE_EVENT_INSTALLED =          1,
+    CELIX_BUNDLE_EVENT_STARTED =            2,
+    CELIX_BUNDLE_EVENT_STOPPED =            3,
+    CELIX_BUNDLE_EVENT_UPDATED =            4,
+    CELIX_BUNDLE_EVENT_UNINSTALLED =        5,
+    CELIX_BUNDLE_EVENT_RESOLVED =           6,
+    CELIX_BUNDLE_EVENT_UNRESOLVED =         7,
+    CELIX_BUNDLE_EVENT_STARTING =           8,
+    CELIX_BUNDLE_EVENT_STOPPING =           9
 };
+typedef enum celix_bundle_event_type celix_bundle_event_type_e;
+
+typedef struct celix_bundle_event {
+    celix_bundle_t* bnd;
+    char *bundleSymbolicName;
+    celix_bundle_event_type_e type;
+} celix_bundle_event_t;
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CELIX_SERVICE_FACTORY_H_ */
+#endif /* CELIX_BUNDLE_EVENT_H_ */

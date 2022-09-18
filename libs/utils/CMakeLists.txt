@@ -64,7 +64,7 @@ target_include_directories(utils PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
 )
-target_include_directories(utils PRIVATE src)
+target_include_directories(utils PRIVATE src include_deprecated)
 set_target_properties(utils PROPERTIES "SOVERSION" 2)
 
 IF(UNIX AND NOT ANDROID)
@@ -77,6 +77,9 @@ install(TARGETS utils EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework
         PATTERN memstream* EXCLUDE)
+
+#TODO check cmake option
+install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework)
 
 #Alias setup to match external usage
 add_library(Celix::utils ALIAS utils)

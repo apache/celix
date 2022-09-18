@@ -47,6 +47,8 @@ target_link_libraries(framework PUBLIC Celix::utils Celix::dfi ${CELIX_OPTIONAL_
 target_link_libraries(framework PUBLIC libuuid::libuuid CURL::libcurl ZLIB::ZLIB)
 target_link_libraries(framework PRIVATE ${CMAKE_DL_LIBS})
 
+celix_deprecated_utils_headers(framework)
+
 install(TARGETS framework EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework)

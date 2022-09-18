@@ -30,7 +30,7 @@
 
 #include "dyn_type.h"
 #include "dyn_type_common.h"
-#include "version.h"
+#include "celix_version.h"
 
 DFI_SETUP_LOG(dynAvprType)
 
@@ -1003,11 +1003,10 @@ static inline void dynAvprType_createVersionMetaEntry(dyn_type * type, json_t co
     if (json_is_string(json_type_version)) {
         const char* version_str = json_string_value(json_type_version);
         // Check if a valid version was given
-        version_pt v = NULL;
-        celix_status_t status = version_createVersionFromString(version_str, &v);
-        if (CELIX_SUCCESS == status) {
+        celix_version_t* v = celix_version_createVersionFromString(version_str);
+        if (v != NULL) {
             m_entry->value = strndup(version_str, STR_LENGTH);
-            version_destroy(v);
+            celix_version_destroy(v);
         }
         else {
             m_entry->value = strndup("0.0.0", STR_LENGTH);
