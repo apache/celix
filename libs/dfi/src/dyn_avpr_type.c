@@ -348,7 +348,7 @@ static dyn_type * dynAvprType_parseRecord(dyn_type * root, dyn_type * parent, js
     // Create namespace + name for storage in type->name (to preserve namespacing)
     char fqn_buffer[FQN_SIZE];
     snprintf(fqn_buffer, FQN_SIZE, "%s.%s", record_ns, json_string_value(json_object_get(record_obj, "name")));
-    type->name = strndup(fqn_buffer, STR_LENGTH);
+    type->name = strndup(fqn_buffer, FQN_SIZE);
     if (!type->name) {
         LOG_ERROR("Record: failed to allocate memory for type->name");
         dynType_destroy(type);
@@ -1010,13 +1010,13 @@ static inline void dynAvprType_createVersionMetaEntry(dyn_type * type, json_t co
             version_destroy(v);
         }
         else {
-            m_entry->value = strndup("0.0.0", STR_LENGTH);
+            m_entry->value = strdup("0.0.0");
             LOG_WARNING("parseAvpr: Did not find valid version, set version to 0.0.0");
         }
     }
     else {
         // If no version or an invalid version is available, default to 0.0.0
-        m_entry->value = strndup("0.0.0", STR_LENGTH);
+        m_entry->value = strdup("0.0.0");
         LOG_WARNING("parseAvpr: Did not find version entry, set version to 0.0.0");
     }
 
