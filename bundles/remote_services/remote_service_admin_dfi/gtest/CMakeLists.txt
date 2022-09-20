@@ -20,6 +20,7 @@ add_celix_bundle(rsa_dfi_tst_bundle
     SOURCES
         src/tst_activator.c
 )
+celix_deprecated_utils_headers(rsa_dfi_tst_bundle)
 
 #add calculator avpr
 get_target_property(DESCR calculator_api INTERFACE_DESCRIPTOR)
@@ -38,6 +39,7 @@ add_executable(test_rsa_dfi
     src/rsa_client_server_tests.cc
 )
 target_include_directories(test_rsa_dfi PRIVATE src)
+celix_deprecated_utils_headers(test_rsa_dfi)
 target_link_libraries(test_rsa_dfi PRIVATE
         CURL::libcurl
         Celix::framework

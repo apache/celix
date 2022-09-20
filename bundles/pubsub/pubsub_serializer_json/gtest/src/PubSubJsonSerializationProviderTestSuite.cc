@@ -21,7 +21,9 @@
 
 #include <memory>
 
-#include <celix_api.h>
+#include "celix_framework_factory.h"
+#include "celix_constants.h"
+#include "celix_bundle_context.h"
 #include "pubsub_message_serialization_service.h"
 
 class PubSubJsonSerializationProviderTestSuite : public ::testing::Test {

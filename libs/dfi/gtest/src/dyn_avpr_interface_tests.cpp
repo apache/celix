@@ -17,7 +17,8 @@
  * under the License.
  */
 
-#include "gtest/gtest.h" 
+#include "gtest/gtest.h"
+#include "version.h"
 
 extern "C" {
     #include <stdio.h>

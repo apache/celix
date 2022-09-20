@@ -24,6 +24,7 @@ celix_bundle_files(pubsub_json_serialization_descriptor
 add_executable(test_pubsub_serializer_json
 		src/PubSubJsonSerializationProviderTestSuite.cc
 )
+celix_deprecated_utils_headers(test_pubsub_serializer_json)
 target_link_libraries(test_pubsub_serializer_json PRIVATE Celix::framework Celix::dfi Celix::pubsub_utils GTest::gtest GTest::gtest_main Celix::pubsub_spi)
 
 add_celix_bundle_dependencies(test_pubsub_serializer_json celix_pubsub_serializer_json pubsub_json_serialization_descriptor)

@@ -24,7 +24,7 @@
 #include <sys/uio.h>
 
 #include "celix_log_helper.h"
-#include "celix_api.h"
+#include "celix_bundle_context.h"
 
 #ifdef __cplusplus
 extern "C" {

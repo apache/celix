@@ -23,6 +23,7 @@
 
 #include "celix/dm/DependencyManager.h"
 #include "celix_framework_factory.h"
+#include "framework.h"
 
 class DependencyManagerTestSuite : public ::testing::Test {
 public:
@@ -31,11 +32,11 @@ public:
     celix_properties_t *properties = nullptr;
 
     DependencyManagerTestSuite() {
-        properties = properties_create();
-        properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
-        properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
-        properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
-        properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
+        properties = celix_properties_create();
+        celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
+        celix_properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
+        celix_properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
+        celix_properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
 
 
         fw = celix_frameworkFactory_createFramework(properties);

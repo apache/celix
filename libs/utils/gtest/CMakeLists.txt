@@ -30,6 +30,7 @@ add_executable(test_utils
 
 target_link_libraries(test_utils PRIVATE Celix::utils GTest::gtest GTest::gtest_main)
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
+celix_deprecated_utils_headers(test_utils)
 
 ####### generating zip file used for testing ##########################################################################
 file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties" CONTENT "level=1\n")

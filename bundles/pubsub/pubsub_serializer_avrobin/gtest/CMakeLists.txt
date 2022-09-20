@@ -24,6 +24,7 @@ celix_bundle_files(pubsub_avrobin_serialization_descriptor
 add_executable(test_pubsub_serializer_avrobin
         src/PubSubAvrobinSerializationProviderTestSuite.cc
 )
+celix_deprecated_utils_headers(test_pubsub_serializer_avrobin)
 target_link_libraries(test_pubsub_serializer_avrobin PRIVATE Celix::framework Celix::dfi Celix::pubsub_utils GTest::gtest GTest::gtest_main Celix::pubsub_spi)
 
 add_celix_bundle_dependencies(test_pubsub_serializer_avrobin celix_pubsub_serializer_avrobin pubsub_avrobin_serialization_descriptor)

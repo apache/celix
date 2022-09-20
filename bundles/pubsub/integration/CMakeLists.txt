@@ -27,6 +27,7 @@ if (PUBSUB_INTEGRATION)
             )
     target_include_directories(pubsub_endpoint_sut PRIVATE gtest)
     target_link_libraries(pubsub_endpoint_sut PRIVATE Celix::pubsub_api)
+    celix_deprecated_utils_headers(pubsub_endpoint_sut)
     celix_bundle_files(pubsub_endpoint_sut
             meta_data/msg.descriptor
             DESTINATION "META-INF/descriptors"
@@ -43,6 +44,7 @@ if (PUBSUB_INTEGRATION)
             VERSION 1.0.0
             )
     target_link_libraries(pubsub_endpoint_tst PRIVATE Celix::framework Celix::pubsub_api)
+    celix_deprecated_utils_headers(pubsub_endpoint_tst)
     celix_bundle_files(pubsub_endpoint_tst
             meta_data/msg.descriptor
             DESTINATION "META-INF/descriptors"
@@ -59,6 +61,7 @@ if (PUBSUB_INTEGRATION)
             gtest/loopback_activator.c
             VERSION 1.0.0
             )
+    celix_deprecated_utils_headers(pubsub_loopback)
     target_include_directories(pubsub_loopback PRIVATE gtest)
     target_link_libraries(pubsub_loopback PRIVATE Celix::pubsub_api)
     celix_bundle_files(pubsub_loopback
@@ -80,6 +83,7 @@ if (PUBSUB_INTEGRATION)
             gtest/sut_activator.c
             VERSION 1.0.0
             )
+    celix_deprecated_utils_headers(pubsub_sut)
     target_include_directories(pubsub_sut PRIVATE gtest)
     target_link_libraries(pubsub_sut PRIVATE Celix::pubsub_api)
     celix_bundle_files(pubsub_sut
@@ -97,6 +101,7 @@ if (PUBSUB_INTEGRATION)
             gtest/tst_activator.c
             VERSION 1.0.0
             )
+    celix_deprecated_utils_headers(pubsub_tst)
     target_link_libraries(pubsub_tst PRIVATE Celix::framework Celix::pubsub_api)
     celix_bundle_files(pubsub_tst
             meta_data/msg.descriptor
@@ -113,6 +118,7 @@ if (PUBSUB_INTEGRATION)
             gtest/sut_activator.c
             VERSION 1.0.0
             )
+    celix_deprecated_utils_headers(pubsub_deadlock_sut)
     celix_bundle_files(pubsub_deadlock_sut
             meta_data/msg.descriptor
             DESTINATION "META-INF/descriptors"
@@ -135,6 +141,7 @@ if (PUBSUB_INTEGRATION)
             gtest/serializer_activator.cc
             VERSION 1.0.0
             )
+    celix_deprecated_utils_headers(pubsub_serializer)
     target_include_directories(pubsub_serializer PRIVATE gtest)
     target_link_libraries(pubsub_serializer PRIVATE Celix::pubsub_api Celix::pubsub_spi)
 

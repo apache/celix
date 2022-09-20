@@ -33,6 +33,7 @@ extern "C" {
 
 #include "dyn_common.h"
 #include "dyn_interface.h"
+#include "version.h"
 
 #if NO_MEMSTREAM_AVAILABLE
 #include "open_memstream.h"
