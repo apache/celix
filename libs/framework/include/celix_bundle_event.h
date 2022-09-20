@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 enum celix_bundle_event_type {
-	CELIX_BUNDLE_EVENT_INSTALLED =          1,
+    CELIX_BUNDLE_EVENT_INSTALLED =          1,
     CELIX_BUNDLE_EVENT_STARTED =            2,
     CELIX_BUNDLE_EVENT_STOPPED =            3,
     CELIX_BUNDLE_EVENT_UPDATED =            4,

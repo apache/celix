@@ -41,7 +41,6 @@ extern "C" {
 typedef celix_bundle_event_type_e bundle_event_type_e;
 typedef struct celix_bundle_event *bundle_event_pt;
 typedef struct celix_bundle_event bundle_event_t;
-typedef struct celix_bundle_event celix_bundle_event_t;
 
 
 #ifdef __cplusplus
