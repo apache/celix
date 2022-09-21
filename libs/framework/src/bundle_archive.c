@@ -73,7 +73,7 @@ celix_status_t bundleArchive_createSystemBundleArchive(bundle_archive_pt *bundle
 			status = linkedList_create(&archive->revisions);
 			if (status == CELIX_SUCCESS) {
 				archive->id = CELIX_FRAMEWORK_BUNDLE_ID;
-				archive->location = strndup("System Bundle", 1024);
+				archive->location = strdup("System Bundle");
 				archive->archiveRoot = NULL;
 				archive->archiveRootDir = NULL;
 				archive->refreshCount = -1;
