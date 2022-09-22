@@ -29,8 +29,8 @@
 extern "C" {
 #endif
 
-typedef struct celix_filter_struct filter_t; //deprecated
-typedef struct celix_filter_struct *filter_pt; //deprecated
+typedef struct celix_filter_struct filter_t __attribute__((deprecated("filter is deprecated use celix_filter instead")));
+typedef struct celix_filter_struct *filter_pt __attribute__((deprecated("filter is deprecated use celix_filter instead")));
 
 
 celix_filter_t* filter_create(const char *filterString);

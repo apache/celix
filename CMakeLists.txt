@@ -80,12 +80,12 @@ endif ()
 
 # Set C specific flags
 set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
-set(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "-Wall -Werror -Wno-error=deprecated-declarations ${CMAKE_C_FLAGS}")
 
 # Set C++ specific flags
 set(CMAKE_CXX_STANDARD 17) #Celix header only C++ supported is based on C++17.
 set(CMAKE_CXX_FLAGS "-fno-rtti ${CMAKE_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ -Werror -Wno-error=deprecated-declarations ${CMAKE_CXX_FLAGS}")
 
 if(APPLE)
     set(CMAKE_MACOSX_RPATH 1)
@@ -170,23 +170,14 @@ if (ENABLE_TESTING)
 endif()
 
 option(CELIX_INSTALL_DEPRECATED_API "whether to install (and use) deprecated apis (i.e. header without a celix_ prefix." ON)
-
-option(CELIX_ADD_DEPRECATED_ATTRIBUTES "If enabled add deprecated attributes to deprecated services/functions." ON)
-if (CELIX_ADD_DEPRECATED_ATTRIBUTES)
-    set(CMAKE_C_FLAGS "-DCELIX_ADD_DEPRECATED_ATTRIBUTES ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-DCELIX_ADD_DEPRECATED_ATTRIBUTES ${CMAKE_CXX_FLAGS}")
-endif ()
-
-option(CELIX_ADD_OPENSSL_DEP "Enabled building Celix framework & etcdlib with OpenSSL library dependency. This can help in some libcurl resolving issues" OFF)
-set(CELIX_OPTIONAL_EXTRA_LIBS "")
-if (CELIX_ADD_OPENSSL_DEP)
-    find_package(OpenSSL REQUIRED)
-    set(CELIX_OPTIONAL_EXTRA_LIBS "OpenSSL::SSL")
-endif ()
-
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
-
 option(CELIX_CXX "Build C++ libraries and bundles. Note for tests C++ is always used." ON)
+
+if (CELIX_INSTALL_DEPRECATED_API)
+    #ignore deprecated warnings
+    set(CMAKE_C_FLAGS "-Wno-deprecated-declarations ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-Wno-deprecated-declarations ${CMAKE_CXX_FLAGS}")
+endif ()
 
 #Libraries and Launcher
 add_subdirectory(libs)

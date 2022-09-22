@@ -4,7 +4,7 @@
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
  * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
+ * "License") DEPRECATED_ATTR; you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
  *   http://www.apache.org/licenses/LICENSE-2.0
@@ -32,22 +32,24 @@
 extern "C" {
 #endif
 
-UTILS_EXPORT unsigned int utils_stringHash(const void *string);
+#define DEPRECATED_ATTR __attribute__((deprecated("functions in utils.h are deprecated use functions in celix_utils.h instead")))
 
-UTILS_EXPORT int utils_stringEquals(const void *string, const void *toCompare);
+UTILS_EXPORT unsigned int utils_stringHash(const void *string) DEPRECATED_ATTR;
 
-UTILS_EXPORT char *string_ndup(const char *s, size_t n);
+UTILS_EXPORT int utils_stringEquals(const void *string, const void *toCompare) DEPRECATED_ATTR;
 
-UTILS_EXPORT char *utils_stringTrim(char *string);
+UTILS_EXPORT char *string_ndup(const char *s, size_t n) DEPRECATED_ATTR;
 
-UTILS_EXPORT bool utils_isStringEmptyOrNull(const char *const str);
+UTILS_EXPORT char *utils_stringTrim(char *string) DEPRECATED_ATTR;
+
+UTILS_EXPORT bool utils_isStringEmptyOrNull(const char *const str) DEPRECATED_ATTR;
 
 UTILS_EXPORT int
-utils_compareServiceIdsAndRanking(long servId, long servRank, long otherServId, long otherServRank);
+utils_compareServiceIdsAndRanking(long servId, long servRank, long otherServId, long otherServRank) DEPRECATED_ATTR;
 
-UTILS_EXPORT celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals);
+UTILS_EXPORT celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals) DEPRECATED_ATTR;
 
-UTILS_EXPORT celix_status_t utils_isNumeric(const char *number, bool *ret);
+UTILS_EXPORT celix_status_t utils_isNumeric(const char *number, bool *ret) DEPRECATED_ATTR;
 
 #ifdef __cplusplus
 }

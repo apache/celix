@@ -78,8 +78,9 @@ install(TARGETS utils EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework
         PATTERN memstream* EXCLUDE)
 
-#TODO check cmake option
-install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework)
+if (CELIX_INSTALL_DEPRECATED_API)
+    install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework)
+endif ()
 
 #Alias setup to match external usage
 add_library(Celix::utils ALIAS utils)

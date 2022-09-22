@@ -37,8 +37,8 @@ extern "C" {
 typedef struct hashMapEntry* hash_map_entry_pt;
 typedef struct hashMapEntry hash_map_entry_t;
 
-typedef struct hashMap* hash_map_pt;
-typedef struct hashMap hash_map_t;
+typedef struct hashMap* hash_map_pt __attribute__((deprecated("hash_map is deprecated use celix_long_hash_map or celix_string_hash_map instead")));
+typedef struct hashMap hash_map_t __attribute__((deprecated("hash_map is deprecated use celix_long_hash_map or celix_string_hash_map instead")));
 
 struct hashMapIterator {
     hash_map_pt map;
