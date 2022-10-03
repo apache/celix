@@ -98,7 +98,7 @@ endif ()
 Add include path for the Celix utils deprecated headers to the provided target (as PRIVATE)
 
 ```CMake
-celix_v2_utils_headers(<target_name>))
+celix_deprecated_utils_headers(<target_name>))
 ```
 ]]
 function(celix_deprecated_utils_headers)

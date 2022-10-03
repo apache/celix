@@ -35,7 +35,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef struct linked_list_entry *linked_list_entry_pt;
+typedef struct linked_list_entry *linked_list_entry_pt __attribute__((deprecated("linked_list is deprecated use celix_long_hash_map or celix_array_list instead")));
 typedef struct linked_list *linked_list_pt __attribute__((deprecated("linked_list is deprecated use celix_long_hash_map or celix_array_list instead")));
 
 UTILS_EXPORT celix_status_t linkedList_create(linked_list_pt *list);
