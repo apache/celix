@@ -36,9 +36,6 @@ if (REMOTE_SERVICE_ADMIN)
     celix_subproject(RSA_SHM "Option to enable building the Discovery (SHM) bundle" OFF)
     if (RSA_SHM)
         add_subdirectory(discovery_shm)
-        # TODO refactor shm rsa to use dfi
-        # TODO make it work on Apple
-        #add_subdirectory(remote_service_admin_shm)
     endif ()
 
     if (BUILD_RSA_DISCOVERY_ETCD AND BUILD_RSA_REMOTE_SERVICE_ADMIN_DFI AND BUILD_SHELL AND BUILD_SHELL_TUI AND BUILD_LOG_SERVICE)
