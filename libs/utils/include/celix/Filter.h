@@ -59,16 +59,21 @@ namespace celix {
     class Filter {
     public:
         Filter() : cFilter{createFilter("")} {}
-        explicit Filter(std::string_view filterStr) : cFilter{createFilter(filterStr)} {}
+#if __cplusplus >= 201703L //C++17 or higher
+        explicit Filter(std::string_view filterStr) : cFilter{createFilter(filterStr.data())} {}
+#else
+        explicit Filter(const std::string& filterStr) : cFilter{createFilter(filterStr.c_str())} {}
+#endif
+
 
         Filter(Filter&&) = default;
         Filter& operator=(Filter&&) = default;
 
-        Filter(const Filter& rhs) : cFilter{createFilter(rhs.getFilterString())} {}
+        Filter(const Filter& rhs) : cFilter{createFilter(rhs.getFilterString().c_str())} {}
 
         Filter& operator=(const Filter& rhs) {
             if (this != &rhs) {
-                cFilter = createFilter(rhs.getFilterString());
+                cFilter = createFilter(rhs.getFilterString().c_str());
             }
             return *this;
         }
@@ -107,17 +112,30 @@ namespace celix {
          * @brief Find the attribute based on the provided key.
          * @return The found attribute value or an empty string if the attribute was not found.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         [[nodiscard]] std::string findAttribute(std::string_view attributeKey) const {
             auto* cValue = celix_filter_findAttribute(cFilter.get(), attributeKey.data());
             return cValue == nullptr ? std::string{} : std::string{cValue};
         }
+#else
+        std::string findAttribute(const std::string& attributeKey) const {
+            auto* cValue = celix_filter_findAttribute(cFilter.get(), attributeKey.data());
+            return cValue == nullptr ? std::string{} : std::string{cValue};
+        }
+#endif
 
         /**
          * @brief Check whether the filter has a attribute with the provided attribute key.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         [[nodiscard]] bool hasAttribute(std::string_view attributeKey) const {
             return celix_filter_findAttribute(cFilter.get(), attributeKey.data()) != nullptr;
         }
+#else
+        bool hasAttribute(const std::string& attributeKey) const {
+            return celix_filter_findAttribute(cFilter.get(), attributeKey.data()) != nullptr;
+        }
+#endif
 
         /**
          * @brief Check whether the filter indicates the mandatory presence of an attribute with a specific value for the provided attribute key.
@@ -128,12 +146,18 @@ namespace celix {
          *   using this method for attribute key "key1" on filter "(key1>=value1)" yields false.
          *   using this method for attribute key "key1" on filter "(|(key1=value1)(key2=value2))" yields false.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         [[nodiscard]] bool hasMandatoryEqualsValueAttribute(std::string_view attributeKey) const {
              return celix_filter_hasMandatoryEqualsValueAttribute(cFilter.get(), attributeKey.data());
         }
+#else
+        bool hasMandatoryEqualsValueAttribute(const std::string& attributeKey) const {
+            return celix_filter_hasMandatoryEqualsValueAttribute(cFilter.get(), attributeKey.c_str());
+        }
+#endif
 
         /**
-         * @brief Chek whether the filter indicates the mandatory absence of an attribute, regardless of its value, for the provided attribute key.
+         * @brief Check whether the filter indicates the mandatory absence of an attribute, regardless of its value, for the provided attribute key.
          *
          * example:
          *   using this function for attribute key "key1" on the filter "(!(key1=*))" yields true.
@@ -141,9 +165,15 @@ namespace celix {
          *   using this function for attribute key "key1" on the filter "(key1=value)" yields false.
          *   using this function for attribute key "key1" on the filter "(|(!(key1=*))(key2=value2))" yields false.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         [[nodiscard]] bool hasMandatoryNegatedPresenceAttribute(std::string_view attributeKey) const {
             return celix_filter_hasMandatoryNegatedPresenceAttribute(cFilter.get(), attributeKey.data());
         }
+#else
+        bool hasMandatoryNegatedPresenceAttribute(const std::string& attributeKey) const {
+            return celix_filter_hasMandatoryNegatedPresenceAttribute(cFilter.get(), attributeKey.data());
+        }
+#endif
 
         /**
          * @brief Get the underlining C filter object.
@@ -163,11 +193,11 @@ namespace celix {
         }
 
     private:
-        static std::shared_ptr<celix_filter_t> createFilter(std::string_view filterStr) {
-            if (filterStr.empty()) {
+        static std::shared_ptr<celix_filter_t> createFilter(const char* filterStr) {
+            if (filterStr == nullptr || strnlen(filterStr, 1) == 0) {
                 return nullptr;
             }
-            auto* cf = celix_filter_create(filterStr.data());
+            auto* cf = celix_filter_create(filterStr);
             if (cf == nullptr) {
                 throw celix::FilterException{"Invalid LDAP filter '" + std::string{filterStr} + "'"};
             }

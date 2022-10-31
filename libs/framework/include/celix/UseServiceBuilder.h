@@ -54,11 +54,10 @@ namespace celix {
         //NOTE private to prevent move so that a build() call cannot be forgotten
         UseServiceBuilder(UseServiceBuilder&&) noexcept = default;
     public:
-        explicit UseServiceBuilder(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string_view _name, bool _useSingleService = true) :
+        explicit UseServiceBuilder(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _name, bool _useSingleService = true) :
                 cCtx{std::move(_cCtx)},
-                name{_name},
-                useSingleService{_useSingleService} {
-        }
+                name{std::move(_name)},
+                useSingleService{_useSingleService} {}
 
         UseServiceBuilder& operator=(UseServiceBuilder&&) = delete;
         UseServiceBuilder(const UseServiceBuilder&) = delete;
@@ -71,7 +70,11 @@ namespace celix {
          * Example:
          *      "(property_key=value)"
          */
+#if __cplusplus >= 201703L //C++17 or higher
         UseServiceBuilder& setFilter(std::string_view f) { filter = celix::Filter{f}; return *this; }
+#else
+        UseServiceBuilder& setFilter(const std::string& f) { filter = celix::Filter{f}; return *this; }
+#endif
 
         /**
          * @brief Set filter to be used to matching services.

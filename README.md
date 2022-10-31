@@ -22,8 +22,8 @@ limitations under the License.
 [![codecov](https://codecov.io/gh/apache/celix/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/celix)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/6685/badge.svg)](https://scan.coverity.com/projects/6685)
 
-Apache Celix is an implementation of a dynamic service framework inspired by the OSGi specification and adapted to C 
-and C++ (C++17).
+Apache Celix is an implementation of a dynamic service framework inspired by the OSGi specification and adapted to C, 
+C++14 and C++17.
 It is a framework to develop dynamic modular software applications using component and in-process service-oriented 
 programming.
 

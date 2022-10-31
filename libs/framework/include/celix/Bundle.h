@@ -64,25 +64,32 @@ namespace celix {
          * @param path The relative path to a bundle resource
          * @return The use-able entry path or an empty string if the entry is not found.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         [[nodiscard]] std::string getEntry(std::string_view path) const {
-            std::string result{};
-            char* entry = celix_bundle_getEntry(cBnd.get(), path.data());
-            if (entry != nullptr) {
-                result = std::string{entry};
-                free(entry);
-            }
-            return result;
+            return getEntryInternal(path.data());
         }
+#else
+        std::string getEntry(const std::string& path) const {
+            return getEntryInternal(path.c_str());
+        }
+#endif
 
         /**
          * @brief Get a manifest attribute value from the bundle manifest.
          * @param attribute The attribute to get the value from.
          * @return The attribute value or an empty string if the attribute is not present in the bundle manifest.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         [[nodiscard]] std::string getManifestValue(std::string_view attribute) const {
             const char* header = celix_bundle_getManifestValue(cBnd.get(), attribute.data());
             return header == nullptr ? std::string{} : std::string{header};
         }
+#else
+        [[nodiscard]] std::string getManifestValue(const std::string& attribute) const {
+            const char* header = celix_bundle_getManifestValue(cBnd.get(), attribute.c_str());
+            return header == nullptr ? std::string{} : std::string{header};
+        }
+#endif
 
         /**
          * @brief the symbolic name of the bundle.
@@ -143,6 +150,17 @@ namespace celix {
             return celix_bundle_isSystemBundle(cBnd.get());
         }
     private:
+        std::string getEntryInternal(const char* path) const {
+            std::string result{};
+            char* entry = celix_bundle_getEntry(cBnd.get(), path);
+            if (entry != nullptr) {
+                result = std::string{entry};
+                free(entry);
+            }
+            return result;
+        }
+
+
         const std::shared_ptr<celix_bundle_t> cBnd;
     };
 }

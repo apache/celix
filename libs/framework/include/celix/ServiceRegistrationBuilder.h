@@ -45,15 +45,15 @@ namespace celix {
         ServiceRegistrationBuilder(
                 std::shared_ptr<celix_bundle_context_t> _cCtx,
                 std::shared_ptr<I> _svc,
-                std::string_view _name,
+                std::string _name,
                 bool _registerAsync = true,
                 bool _unregisterAsync = true) :
                 cCtx{std::move(_cCtx)},
                 svc{std::move(_svc)},
-                name{_name},
+                name{std::move(_name)},
                 version{celix::typeVersion<I>()},
                 registerAsync{_registerAsync},
-                unregisterAsync{_unregisterAsync}{}
+                unregisterAsync{_unregisterAsync} {}
 
         ServiceRegistrationBuilder& operator=(ServiceRegistrationBuilder&&) = delete;
         ServiceRegistrationBuilder(const ServiceRegistrationBuilder&) = delete;
@@ -64,15 +64,24 @@ namespace celix {
          *
          * This will lead to a 'service.version' service property.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         ServiceRegistrationBuilder& setVersion(std::string_view v) { version = v; return *this; }
+#else
+        ServiceRegistrationBuilder& setVersion(std::string v) { version = std::move(v); return *this; }
+#endif
 
         /**
          * @brief Add a property to the service properties.
          *
          * If a key is already present the value will be overridden.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         template<typename T>
         ServiceRegistrationBuilder& addProperty(std::string_view key, T&& value) { properties.template set(key, std::forward<T>(value)); return *this; }
+#else
+        template<typename T>
+        ServiceRegistrationBuilder& addProperty(const std::string& key, T&& value) { properties.template set(key, std::forward<T>(value)); return *this; }
+#endif
 
         /**
          * @brief Set the service properties.
