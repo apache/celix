@@ -39,8 +39,9 @@
     <asfext:pmc rdf:resource="https://celix.apache.org" />
     <shortdesc>Dynamic Service framework for C and C++ inspired by OSGi.</shortdesc>
     <description>
-      Apache Celix is an implementation of a dynamic service framework inspired by the OSGi specification and adapted to C and C++ (C++17).
-      It is a framework to develop dynamic modular software applications using component and in-process service-oriented programming.
+      Apache Celix is a framework for C, C++14 and C++17 to develop dynamic modular software applications using component
+      and in-process service-oriented programming.
+      Apache Celix is inspired by the OSGi specification adapted for C and C++.
     </description>
     <bug-database rdf:resource="https://github.com/apache/celix/issues" />
     <download-page rdf:resource="https://celix.apache.org/download.cgi" />
