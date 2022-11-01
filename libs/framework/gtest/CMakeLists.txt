@@ -96,7 +96,7 @@ target_compile_definitions(test_framework PRIVATE
 add_test(NAME test_framework COMMAND test_framework)
 setup_target_for_coverage(test_framework SCAN_DIR ..)
 
-if (CELIX_TEST_DEPENDENCY_MANAGER_FOR_CXX11)
+if (ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11)
     #Setting standard to C++11 and testing C++ dependency manager to ensure that this still support C++11.
     #This ensure that the C++11 dependency manager is backwards compatible with Celix 2.2.1
     set(CMAKE_CXX_STANDARD 11)
@@ -115,7 +115,7 @@ if (CELIX_TEST_DEPENDENCY_MANAGER_FOR_CXX11)
     add_celix_bundle(test_dep_man_bundle_activator_with_cxx11 SOURCES src/HelloWorldCxxActivatorWithDepMan.cc VERSION 1.0.0)
 endif ()
 
-if (CELIX_TEST_FOR_CXX14)
+if (ENABLE_TESTING_FOR_CXX14)
     #Setting standard to C++14 and testing the C++ framework headers to ensure that C++14 is also supported.
     set(CMAKE_CXX_STANDARD 14)
 

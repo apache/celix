@@ -33,8 +33,8 @@ jobs:
             -DENABLE_CODE_COVERAGE=ON
             -DBUILD_EXPERIMENTAL=ON
             -DBUILD_CXX_REMOTE_SERVICE_ADMIN=ON
-            -DCELIX_TEST_DEPENDENCY_MANAGER_FOR_CXX11=ON
-            -DCELIX_TEST_FOR_CXX14=ON
+            -DENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11=ON
+            -DENABLE_TESTING_FOR_CXX14=ON
         run: |
           mkdir build
           cd build

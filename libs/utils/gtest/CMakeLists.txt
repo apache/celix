@@ -69,7 +69,7 @@ endif ()
 add_test(NAME test_utils COMMAND test_utils)
 setup_target_for_coverage(test_utils SCAN_DIR ..)
 
-if (CELIX_TEST_FOR_CXX14)
+if (ENABLE_TESTING_FOR_CXX14)
     #Setting standard to C++14 and testing C++ Properties.h, Filter.h and Utils.h to ensure that C++14 is supported.
     set(CMAKE_CXX_STANDARD 14)
     add_executable(test_utils_cxx_headers_with_cxx14

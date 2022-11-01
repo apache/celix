@@ -52,7 +52,7 @@ namespace celix {
         friend class BundleContext;
 
         //NOTE private to prevent move so that a build() call cannot be forgotten
-        UseServiceBuilder(UseServiceBuilder&&) noexcept = default;
+        UseServiceBuilder(UseServiceBuilder&&) = default;
     public:
         explicit UseServiceBuilder(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _name, bool _useSingleService = true) :
                 cCtx{std::move(_cCtx)},

@@ -369,9 +369,7 @@ namespace celix {
         /**
          * @brief Sets a const char* property.
          */
-        template<>
-        void set<const char*>(const std::string& key, const char* value) {
-            using namespace std;
+        void set(const std::string& key, const char* value) {
             celix_properties_set(cProps.get(), key.c_str(), value);
         }
 #endif
