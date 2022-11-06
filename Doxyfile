@@ -61,7 +61,7 @@ PROJECT_NUMBER         = latest
 # for a project that appears at the top of each page and should give viewer a
 # quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = "AApache Celix is a framework for C, C++14 and C++17 to develop dynamic modular software applications using component and in-process service-oriented programming."
+PROJECT_BRIEF          = "Apache Celix is a framework for C, C++14 and C++17 to develop dynamic modular software applications using component and in-process service-oriented programming."
 
 # With the PROJECT_LOGO tag one can specify a logo or an icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55
