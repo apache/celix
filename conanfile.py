@@ -37,8 +37,6 @@ class CelixConan(ConanFile):
                   "It is a framework to develop (dynamic) modular software applications " \
                   "using component and/or service-oriented programming."
 
-    tool_requires = "cmake/3.17.5"
-
     options = {
         "enable_testing": [True, False],
         "enable_code_coverage": [True, False],
@@ -67,6 +65,8 @@ class CelixConan(ConanFile):
         "build_rsa_remote_service_admin_dfi": [True, False],
         "build_rsa_discovery_configured": [True, False],
         "build_rsa_discovery_etcd": [True, False],
+        "build_rsa_remote_service_admin_shm_v2": [True, False],
+        "build_rsa_json_rpc": [True, False],
         "build_shell": [True, False],
         "build_remote_shell": [True, False],
         "build_shell_bonjour": [True, False],
@@ -80,6 +80,7 @@ class CelixConan(ConanFile):
         "celix_cxx": [True, False],
         "celix_install_deprecated_api": [True, False],
         "celix_add_deprecated_attributes": [True, False],
+        "celix_use_compression_for_bundle_zips": [True, False],
     }
     default_options = { 
         "enable_testing": False,
@@ -109,6 +110,8 @@ class CelixConan(ConanFile):
         "build_rsa_remote_service_admin_dfi": True,
         "build_rsa_discovery_configured": True,
         "build_rsa_discovery_etcd": False,
+        "build_rsa_remote_service_admin_shm_v2": False,
+        "build_rsa_json_rpc": False,
         "build_shell": True,
         "build_remote_shell": False,
         "build_shell_bonjour": False,
@@ -122,6 +125,7 @@ class CelixConan(ConanFile):
         "celix_cxx": False,
         "celix_install_deprecated_api": False,
         "celix_add_deprecated_attributes": True,
+        "celix_use_compression_for_bundle_zips": True,
     }
     _cmake = None
 
@@ -175,6 +179,9 @@ class CelixConan(ConanFile):
             self.options.build_rsa_remote_service_admin_dfi = False
             self.options.build_rsa_discovery_configured = False
             self.options.build_rsa_discovery_etcd = False
+            self.options.build_rsa_json_rpc = False
+        if (not self.options.build_remote_service_admin) or (self.settings.os != "Linux"):
+            self.options.build_rsa_remote_service_admin_shm_v2 = False
         if not self.options.build_shell:
             self.options.build_remote_shell = False
             self.options.build_shell_bonjour = False

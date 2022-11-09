@@ -161,6 +161,22 @@ namespace celix {
     }
 
     /**
+     * @brief Returns the inferred cmp type name for the template T if the providedCmpTypeName is empty.
+     *
+     * If the a non empty providedCmpTypeName is provided this will be returned.
+     * Otherwise the celix::impl::typeName will be used to infer the type name.
+     * celix::impl::typeName uses the macro __PRETTY_FUNCTION__ to extract a type name.
+     */
+    template<typename T>
+    std::string cmpTypeName(std::string_view providedCmpTypeName = "") {
+        if (!providedCmpTypeName.empty()) {
+            return std::string{providedCmpTypeName};
+        } else {
+            return celix::impl::extractTypeName<T>();
+        }
+    }
+
+    /**
      * @brief Returns the inferred type version for the template I if the providedVersion is empty.
      *
      * If the a non empty providedVersion is provided this will be returned.
@@ -215,6 +231,22 @@ namespace celix {
             return providedTypeName;
         } else {
             return celix::impl::extractTypeName<I>();
+        }
+    }
+
+    /**
+     * @brief Returns the inferred cmp type name for the template T if the providedCmpTypeName is empty.
+     *
+     * If the a non empty providedCmpTypeName is provided this will be returned.
+     * Otherwise the celix::impl::typeName will be used to infer the type name.
+     * celix::impl::typeName uses the macro __PRETTY_FUNCTION__ to extract a type name.
+     */
+    template<typename T>
+    std::string cmpTypeName(const std::string &providedCmpTypeName = "") {
+        if (!providedCmpTypeName.empty()) {
+            return providedCmpTypeName;
+        } else {
+            return celix::impl::extractTypeName<T>();
         }
     }
 

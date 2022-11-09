@@ -53,6 +53,23 @@ add_celix_bundle(tracker_command_services_bundle
 )
 target_link_libraries(tracker_command_services_bundle PRIVATE Celix::shell_api)
 
+add_celix_bundle(simple_component_bundle
+        VERSION 1.0.0
+        SOURCES src/simple_component_activator.c
+)
+
+add_celix_bundle(component_with_provided_service_bundle
+        VERSION 1.0.0
+        SOURCES src/component_with_provided_service_activator.c
+)
+target_link_libraries(component_with_provided_service_bundle PRIVATE Celix::shell_api)
+
+add_celix_bundle(component_with_service_dependency_bundle
+    VERSION 1.0.0
+    SOURCES src/component_with_service_dependency_activator.c
+)
+target_link_libraries(component_with_service_dependency_bundle PRIVATE Celix::shell_api)
+
 add_celix_container(readme_c_examples_container
     C
     BUNDLES
@@ -61,4 +78,22 @@ add_celix_container(readme_c_examples_container
         my_shell_command_provider_bundle
         using_command_service_bundle
         tracker_command_services_bundle
+        simple_component_bundle
+        component_with_provided_service_bundle
+        component_with_service_dependency_bundle
+)
+
+
+add_celix_bundle(http_admin_extendee_bundle # <----------------------------------------------------------------------<1>
+    VERSION 1.0.0
+    NO_ACTIVATOR # <-------------------------------------------------------------------------------------------------<2>
+)
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/index.html" "<html><body>Hello World</body></html>") # <---------------------<3>
+celix_bundle_files(http_admin_extendee_bundle "${CMAKE_CURRENT_BINARY_DIR}/index.html" DESTINATION resources) # <----<4>
+celix_bundle_headers(http_admin_extendee_bundle "X-Web-Resource: /hello$<SEMICOLON>/resources") # <------------------<5>
+
+add_celix_container(extender_pattern_example_container # <-----------------------------------------------------------<6>
+    BUNDLES
+        Celix::http_admin
+        http_admin_extendee_bundle
 )

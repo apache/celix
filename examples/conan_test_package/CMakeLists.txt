@@ -176,6 +176,9 @@ if (TEST_RSA)
             hello
             PROPERTIES
             )
+            
+    add_executable(use_c_rsa_spi test_c_rsa_spi.c)
+    target_link_libraries(use_c_rsa_spi PRIVATE Celix::c_rsa_spi)
 endif ()
 
 option(TEST_RSA_DFI "Test the Remote Service Admin Service DFI" OFF)
@@ -184,6 +187,27 @@ if (TEST_RSA_DFI)
             BUNDLES
             Celix::rsa_topology_manager
             Celix::rsa_dfi
+            hello
+            PROPERTIES
+            )
+endif ()
+
+option(TEST_RSA_SHM_V2 "Test the Remote Service Admin SHM V2" OFF)
+if (TEST_RSA_SHM_V2 AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_celix_container(use_rsa_shm_v2
+            BUNDLES
+            Celix::rsa_topology_manager
+            Celix::rsa_shm
+            hello
+            PROPERTIES
+            )
+endif ()
+
+option(TEST_RSA_RPC_JSON "Test the Remote Service Admin Json RPC" OFF)
+if (TEST_RSA_RPC_JSON)
+    add_celix_container(use_rsa_rpc_json
+            BUNDLES
+            Celix::rsa_json_rpc
             hello
             PROPERTIES
             )

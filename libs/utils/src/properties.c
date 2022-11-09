@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * properties.c
- *
- *  \date       Apr 27, 2010
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdio.h>
 #include <string.h>
@@ -34,7 +27,6 @@
 #include "utils.h"
 #include "hash_map_private.h"
 #include <errno.h>
-
 
 #define MALLOC_BLOCK_SIZE        5
 

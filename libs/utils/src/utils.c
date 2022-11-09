@@ -43,6 +43,9 @@ int utils_stringEquals(const void* string, const void* toCompare) {
 }
 
 unsigned int celix_utils_stringHash(const char* string) {
+    if (string == NULL) {
+        return 0;
+    }
     unsigned int hc = 5381;
     char ch;
     while((ch = *string++) != '\0'){
@@ -52,7 +55,7 @@ unsigned int celix_utils_stringHash(const char* string) {
 }
 
 bool celix_utils_stringEquals(const char* a, const char* b) {
-    if (a == NULL && b == NULL) {
+    if (a == b) {
         return true;
     } else if (a == NULL || b == NULL) {
         return false;

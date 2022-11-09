@@ -30,4 +30,4 @@ celix_bundle_files(topology_manager_test_bundle
     DESTINATION .
 )
 
-target_link_libraries(topology_manager_test_bundle PRIVATE Celix::deprecated_rsa_spi calculator_api)
+target_link_libraries(topology_manager_test_bundle PRIVATE Celix::c_rsa_spi calculator_api)

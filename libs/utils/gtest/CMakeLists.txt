@@ -20,6 +20,8 @@ add_executable(test_utils
         src/LogUtilsTestSuite.cc
         src/VersionRangeTestSuite.cc
         src/TimeUtilsTestSuite.cc
+        src/HashMapTestSuite.cc
+        src/ArrayListTestSuite.cc
         src/FileUtilsTestSuite.cc
         src/CxxUtilsTestSuite.cc
         src/CxxPropertiesTestSuite.cc

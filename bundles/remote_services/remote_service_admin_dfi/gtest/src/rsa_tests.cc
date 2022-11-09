@@ -93,6 +93,7 @@ extern "C" {
 
         rc = rsa->exportRegistration_close(rsa->admin,(export_registration_t *)(arrayList_get(svcRegistration,0)));
         ASSERT_EQ(CELIX_SUCCESS, rc);
+        celix_arrayList_destroy(svcRegistration);
     }
 
 

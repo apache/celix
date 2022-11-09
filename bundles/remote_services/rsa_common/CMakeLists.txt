@@ -22,7 +22,7 @@ add_library(rsa_common STATIC
     src/remote_interceptors_handler.c)
 set_target_properties(rsa_common PROPERTIES OUTPUT_NAME "celix_rsa_common")
 target_include_directories(rsa_common PRIVATE src)
-target_link_libraries(rsa_common PUBLIC Celix::framework Celix::deprecated_rsa_spi Celix::log_helper)
+target_link_libraries(rsa_common PUBLIC Celix::framework Celix::c_rsa_spi Celix::log_helper)
 
 install(TARGETS rsa_common EXPORT celix COMPONENT rsa DESTINATION ${CMAKE_INSTALL_LIBDIR})
 

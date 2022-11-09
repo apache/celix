@@ -36,7 +36,10 @@ namespace celix {
 
         void execute(int /*priority*/, std::function<void()> task) override {
             std::lock_guard lck{mutex};
-            futures.emplace_back(std::async(policy, std::move(task)));
+            futures.emplace_back(std::async(policy, [task = std::move(task)]() mutable {
+                task();
+                task = nullptr; //to ensure captures of task go out of scope
+            }));
             removeCompletedFutures();
         }
 

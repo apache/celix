@@ -4,7 +4,7 @@ title: Logging Facilities
 
 # Celix Logging Facilities
 
-The Celix Logging facility is service oriented and logging technology agnostic logging solution.
+The Celix Logging facility is service oriented and logging technology-agnostic logging solution.
 
 Bundles can request (services on demand) and use `celix_log_service_t` services to log events.
 Logging support the following log levels: `trace`, `debug`, `info`, `error`, `fatal`. 

@@ -57,7 +57,6 @@ celix_status_t bundle_create(celix_framework_t* fw, bundle_pt * bundle) {
         (*bundle)->modules = NULL;
         arrayList_create(&(*bundle)->modules);
         (*bundle)->handle = NULL;
-        (*bundle)->manifest = NULL;
 
         module = module_createFrameworkModule((*bundle));
         bundle_addModule(*bundle, module);
@@ -81,7 +80,6 @@ celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framewo
 	(*bundle)->activator = NULL;
 	(*bundle)->context = NULL;
 	(*bundle)->handle = NULL;
-	(*bundle)->manifest = NULL;
 	(*bundle)->framework = framework;
 	(*bundle)->state = CELIX_BUNDLE_STATE_INSTALLED;
 	(*bundle)->modules = NULL;
@@ -554,6 +552,25 @@ char* celix_bundle_getEntry(const bundle_t* bnd, const char *path) {
 	return entry;
 }
 
+const char* celix_bundle_getManifestValue(const celix_bundle_t* bnd, const char* attribute) {
+	const char* header = NULL;
+	if (bnd != NULL) {
+        bundle_archive_t* arch = NULL;
+        bundle_getArchive(bnd, &arch);
+        if (arch != NULL) {
+            bundle_revision_t* rev = NULL;
+            bundleArchive_getCurrentRevision(arch, &rev);
+            if (rev != NULL) {
+                manifest_pt man = NULL;
+                bundleRevision_getManifest(rev, &man);
+                if (man != NULL ) {
+                    header = manifest_getValue(man, attribute);
+                }
+            }
+        }
+	}
+	return header;
+}
 
 const char* celix_bundle_getGroup(const celix_bundle_t *bnd) {
 	return bnd->group;

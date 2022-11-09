@@ -19,6 +19,10 @@
 
 #pragma once
 
+#include <cstdio>
+#include <iostream>
+#include <vector>
+
 #include "celix/dm/types.h"
 #include "celix/dm/Component.h"
 #include "celix/dm/ServiceDependency.h"
@@ -27,8 +31,6 @@
 #include "bundle_context.h"
 #include "celix_bundle_context.h"
 #include "celix_dependency_manager.h"
-
-#include <vector>
 
 namespace celix { namespace dm {
 
@@ -215,6 +217,8 @@ namespace celix { namespace dm {
          * @return A vector of DependencyManagerInfo structs.
          */
         std::vector<celix::dm::DependencyManagerInfo> getInfos() const;
+
+        friend std::ostream& operator<<(std::ostream& out, const DependencyManager& mng);
     private:
         template<class T>
         Component<T>& createComponentInternal(std::string name, std::string uuid);
@@ -225,6 +229,10 @@ namespace celix { namespace dm {
         std::vector<std::shared_ptr<BaseComponent>> components{};
     };
 
+    /**
+     * Stream outputs the full dependency manager info.
+     */
+    inline std::ostream& operator<<(std::ostream& out, const DependencyManager& mng);
 }}
 
 #include "celix/dm/DependencyManager_Impl.h"

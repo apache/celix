@@ -75,6 +75,16 @@ namespace celix {
         }
 
         /**
+         * @brief Get a manifest attribute value from the bundle manifest.
+         * @param attribute The attribute to get the value from.
+         * @return The attribute value or an empty string if the attribute is not present in the bundle manifest.
+         */
+        [[nodiscard]] std::string getManifestValue(std::string_view attribute) const {
+            const char* header = celix_bundle_getManifestValue(cBnd.get(), attribute.data());
+            return header == nullptr ? std::string{} : std::string{header};
+        }
+
+        /**
          * @brief the symbolic name of the bundle.
          */
         [[nodiscard]] std::string getSymbolicName() const {

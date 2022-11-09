@@ -28,7 +28,7 @@ namespace celix { namespace dm {
 
     class BaseProvidedService {
     public:
-        BaseProvidedService(celix_dm_component_t* _cmp, std::string svcName, void* svc, bool _cppService);
+        BaseProvidedService(celix_dm_component_t* _cmp, std::string svcName, std::shared_ptr<void> svc, bool _cppService);
 
         BaseProvidedService(BaseProvidedService&&) = delete;
         BaseProvidedService& operator=(BaseProvidedService&&) = delete;
@@ -46,7 +46,7 @@ namespace celix { namespace dm {
     protected:
         celix_dm_component_t* cCmp;
         std::string svcName;
-        void* svcPointer;
+        std::shared_ptr<void> svc;
         bool cppService;
         std::string svcVersion{};
         celix::dm::Properties properties{};
@@ -56,7 +56,7 @@ namespace celix { namespace dm {
     template<typename T, typename I>
     class ProvidedService : public BaseProvidedService {
     public:
-        ProvidedService(celix_dm_component_t* _cmp, std::string svcName, I* svc, bool _cppService);
+        ProvidedService(celix_dm_component_t* _cmp, std::string svcName, std::shared_ptr<I> svc, bool _cppService);
 
         /**
          * Set the version of the interface

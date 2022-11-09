@@ -77,7 +77,7 @@ celix_status_t bundleArchive_createSystemBundleArchive(celix_framework_t* fw, bu
 			if (status == CELIX_SUCCESS) {
 				archive->fw = fw;
 				archive->id = CELIX_FRAMEWORK_BUNDLE_ID;
-				archive->location = strndup("System Bundle", 1024);
+				archive->location = strdup("System Bundle");
 				archive->archiveRoot = NULL;
 				archive->archiveRootDir = NULL;
 				archive->refreshCount = -1;
