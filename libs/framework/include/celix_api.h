@@ -22,14 +22,14 @@
 
 #include "properties.h"
 #include "array_list.h"
-#include "celix_constants.h"
+
 #include "bundle.h"
 #include "bundle_context.h"
 #include "framework.h"
 
 #include "celix_properties.h"
 #include "celix_array_list.h"
-//#include "celix_constants.h"
+#include "celix_constants.h"
 #include "celix_utils_api.h"
 #include "celix_bundle.h"
 #include "celix_bundle_context.h"
@@ -37,6 +37,7 @@
 #include "celix_framework.h"
 #include "celix_framework_factory.h"
 #include "celix_launcher.h"
+#include "celix_framework_utils.h"
 
 #include "celix_dependency_manager.h"
 #include "celix_dm_component.h"

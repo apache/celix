@@ -40,26 +40,33 @@ extern "C" {
 char* celix_utils_strdup(const char *str);
 
 /**
- * Creates a hash from a string
+ * @brief Creates a hash from a string
  * @param string
  * @return hash
  */
 unsigned int celix_utils_stringHash(const char* string);
 
 /**
- * Compares two strings and returns true if the strings are equal.
+ * @brief Compares two strings and returns true if the strings are equal.
  */
 bool celix_utils_stringEquals(const char* a, const char* b);
 
 /**
- * Check if a string is NULL or empty "".
+ * @brief Returns a trimmed string.
+ *
+ * The trim will remove eny leading and trailing whitespaces (' ', '\t', etc based on `isspace`)/
+ * Caller is owner of the returned string.
+ */
+char* celix_utils_trim(const char* string);
+
+/**
+ * @brief Check if a string is NULL or empty "".
  */
 bool celix_utils_isStringNullOrEmpty(const char* s);
 
 
-
 /**
- * Extract a local name and namespace from a fully qualified name using the provided namespace separator.
+ * @brief Extract a local name and namespace from a fully qualified name using the provided namespace separator.
  * so fully qualified name = celix::extra::lb, namespace separator = "::" -> local name = lb, namespace = celix::extra
  *
  * Note that if no namespace is present the output for namespace will be NULL.
@@ -72,7 +79,7 @@ bool celix_utils_isStringNullOrEmpty(const char* s);
 void celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(const char *fullyQualifiedName, const char *namespaceSeparator, char **outLocalName, char **outNamespace);
 
 /**
- * Returns the diff in seconds between tBegin and tEnd.
+ * @brief Returns the diff in seconds between tBegin and tEnd.
  * @param tBegin The begin time.
  * @param tEnd   The end time.
  * @return       Diff in seconds.
@@ -80,24 +87,24 @@ void celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(const char *
 double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd);
 
 /**
- * Returns the current time as struct timespec
+ * @brief Returns the current time as struct timespec
  * @param clockId The clock to use (see time.h)
  */
 struct timespec celix_gettime(clockid_t clockId);
 
 /**
- * Returns the elapsed time - in seconds - relative to the startTime
+ * @brief Returns the elapsed time - in seconds - relative to the startTime
  * using the clock for the provided clockid.
  */
 double celix_elapsedtime(clockid_t clockId, struct timespec startTime);
 
 /**
- * Creates a hash from a string
+ * @brief Creates a hash from a string
  */
 unsigned int celix_utils_stringHash(const char* string);
 
 /**
- * Compare services using the service id and ranking.
+ * @brief Compares services using the service id and ranking.
  *
  * If the service id are the same -> compare return 0.
  *

@@ -186,7 +186,7 @@ extern "C" {
 #define OSGI_FRAMEWORK_FRAMEWORK_UUID CELIX_FRAMEWORK_FRAMEWORK_UUID
 
 /**
- * @brief Celix framework environment property (named "CELIX_BUNDLES_PATH") which specified a `;` separated
+ * @brief Celix framework environment property (named "CELIX_BUNDLES_PATH") which specified a `:` separated
  * list of bundles path used when installing bundles with relative paths.
  *
  * Default value is "bundles".
@@ -234,6 +234,8 @@ extern "C" {
 /**
  * @brief Celix framework environment property (named "CELIX_AUTO_START_0") which specified a (ordered) space
  * separated set of bundles to load and auto start when the Celix framework is started.
+ *
+ * Note: Because the list is space separated path with spaces are not allowed.
  *
  * The Celix framework will first start bundles in for CELIX_AUTO_START_0 and lastly start bundles in CELIX_AUTO_START_6.
  * Bundles which are also started in the order they appear in the AUTO_START set; first bundles mentioned is started

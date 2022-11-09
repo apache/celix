@@ -58,7 +58,8 @@ target_compile_definitions(test_utils PRIVATE -DTEST_A_DIR_LOCATION=\"${CMAKE_CU
 
 ####### linking zip against test executable to text extract zip from data ###############################################
 if (UNIX AND NOT APPLE)
-    target_link_libraries(test_utils PRIVATE -Wl,--format=binary -Wl,"test.zip" -Wl,--format=default)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/embed_zip_linux.s.in ${CMAKE_BINARY_DIR}/embed_zip_linux.s @ONLY)
+    target_sources(test_utils PRIVATE ${CMAKE_BINARY_DIR}/embed_zip_linux.s)
 else ()
     target_link_libraries(test_utils PRIVATE -Wl,-sectcreate -Wl,resources -Wl,test_zip -Wl,${TEST_ZIP_FILE})
 endif ()

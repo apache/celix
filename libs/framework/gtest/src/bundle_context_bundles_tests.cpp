@@ -169,6 +169,7 @@ TEST_F(CelixBundleContextBundlesTests, startBundleWithException) {
 
     bool called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void */*handle*/, const celix_bundle_t *bnd) {
         auto state = celix_bundle_getState(bnd);
+        ASSERT_EQ(state, CELIX_BUNDLE_STATE_RESOLVED);
         ASSERT_EQ(state, OSGI_FRAMEWORK_BUNDLE_RESOLVED);
     });
     ASSERT_TRUE(called);
@@ -180,7 +181,8 @@ TEST_F(CelixBundleContextBundlesTests, startUnresolveableBundle) {
 
     bool called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
         auto state = celix_bundle_getState(bnd);
-        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_INSTALLED, state);
+        ASSERT_EQ(CELIX_BUNDLE_STATE_INSTALLED, state);
+        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_INSTALLED, celix_bundle_getState(bnd)); //NOTE the OSGI_ variant is equivalent
     });
     ASSERT_TRUE(called);
 
@@ -188,7 +190,8 @@ TEST_F(CelixBundleContextBundlesTests, startUnresolveableBundle) {
 
    called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
         auto state = celix_bundle_getState(bnd);
-        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_INSTALLED, state);
+        ASSERT_EQ(CELIX_BUNDLE_STATE_INSTALLED, state);
+        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_INSTALLED, state); //NOTE the OSGI_ variant is equivalent
     });
     ASSERT_TRUE(called);
 }
@@ -230,7 +233,8 @@ TEST_F(CelixBundleContextBundlesTests, StopStartTest) {
     int count = 0;
     celix_bundleContext_useBundles(ctx, &count, [](void *handle, const celix_bundle_t *bnd) {
         auto *c = (int*)handle;
-        EXPECT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
+        ASSERT_EQ(CELIX_BUNDLE_STATE_ACTIVE, celix_bundle_getState(bnd));
+        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd)); //NOTE the OSGI_ variant is the same.
         *c += 1;
     });
     EXPECT_EQ(3, count);
@@ -256,6 +260,7 @@ TEST_F(CelixBundleContextBundlesTests, StopStartTest) {
     celix_bundleContext_useBundles(ctx, &count, [](void *handle, const celix_bundle_t *bnd) {
         auto *c = (int*)handle;
         EXPECT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
+        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd)); //NOTE the OSGI_ variant is equivalent
         *c += 1;
     });
     EXPECT_EQ(3, count);
@@ -269,7 +274,8 @@ TEST_F(CelixBundleContextBundlesTests, DoubleStopTest) {
     ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId));
 
     bool called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
-        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
+        ASSERT_EQ(CELIX_BUNDLE_STATE_ACTIVE, celix_bundle_getState(bnd));
+        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd)); //NOTE the OSGI_ variant is equivalent
     });
     ASSERT_TRUE(called);
 
@@ -277,7 +283,8 @@ TEST_F(CelixBundleContextBundlesTests, DoubleStopTest) {
     celix_bundleContext_stopBundle(ctx, bndId);
 
     called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
-        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_RESOLVED, celix_bundle_getState(bnd));
+        ASSERT_EQ(CELIX_BUNDLE_STATE_RESOLVED, celix_bundle_getState(bnd));
+        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_RESOLVED, celix_bundle_getState(bnd)); //NOTE the OSGI_ variant is equivalent
     });
     ASSERT_TRUE(called);
 
@@ -285,7 +292,8 @@ TEST_F(CelixBundleContextBundlesTests, DoubleStopTest) {
     celix_bundleContext_stopBundle(ctx, bndId);
 
     called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
-        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_RESOLVED, celix_bundle_getState(bnd));
+        ASSERT_EQ(CELIX_BUNDLE_STATE_RESOLVED, celix_bundle_getState(bnd));
+        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_RESOLVED, celix_bundle_getState(bnd)); //NOTE the OSGI_ variant is equivalent
     });
     ASSERT_TRUE(called);
 
@@ -293,7 +301,8 @@ TEST_F(CelixBundleContextBundlesTests, DoubleStopTest) {
     celix_bundleContext_startBundle(ctx, bndId);
 
     called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
-        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
+        ASSERT_EQ(CELIX_BUNDLE_STATE_ACTIVE, celix_bundle_getState(bnd));
+        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd)); //NOTE the OSGI_ variant is equivalent
     });
     ASSERT_TRUE(called);
 
@@ -301,7 +310,8 @@ TEST_F(CelixBundleContextBundlesTests, DoubleStopTest) {
     celix_bundleContext_startBundle(ctx, bndId);
 
     called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
-        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
+        ASSERT_EQ(CELIX_BUNDLE_STATE_ACTIVE, celix_bundle_getState(bnd));\
+        ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd)); //NOTE the OSGI_ variant is equivalent
     });
     ASSERT_TRUE(called);
 }
@@ -584,4 +594,51 @@ TEST_F(CelixBundleContextBundlesTests, startStopBundleTrackerAsync) {
     celix_bundleContext_stopTrackerAsync(ctx, trkId, &count, cb);
     celix_bundleContext_waitForAsyncStopTracker(ctx, trkId);
     EXPECT_EQ(2, count.load()); //1x tracker started, 1x tracker stopped
+}
+
+TEST_F(CelixBundleContextBundlesTests, testBundleStateToString) {
+    const char* result = celix_bundleState_getName(CELIX_BUNDLE_STATE_UNKNOWN);
+    EXPECT_STREQ(result, "UNKNOWN");
+
+    result = celix_bundleState_getName(CELIX_BUNDLE_STATE_UNINSTALLED);
+    EXPECT_STREQ(result, "UNINSTALLED");
+
+    result = celix_bundleState_getName(CELIX_BUNDLE_STATE_INSTALLED);
+    EXPECT_STREQ(result, "INSTALLED");
+
+    result = celix_bundleState_getName(CELIX_BUNDLE_STATE_RESOLVED);
+    EXPECT_STREQ(result, "RESOLVED");
+
+    result = celix_bundleState_getName(CELIX_BUNDLE_STATE_STARTING);
+    EXPECT_STREQ(result, "STARTING");
+
+    result = celix_bundleState_getName(CELIX_BUNDLE_STATE_STOPPING);
+    EXPECT_STREQ(result, "STOPPING");
+
+    result = celix_bundleState_getName(CELIX_BUNDLE_STATE_ACTIVE);
+    EXPECT_STREQ(result, "ACTIVE");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_UNKNOWN);
+    EXPECT_STREQ(result, "UNKNOWN");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_UNINSTALLED);
+    EXPECT_STREQ(result, "UNINSTALLED");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_INSTALLED);
+    EXPECT_STREQ(result, "INSTALLED");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_RESOLVED);
+    EXPECT_STREQ(result, "RESOLVED");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_STARTING);
+    EXPECT_STREQ(result, "STARTING");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_STOPPING);
+    EXPECT_STREQ(result, "STOPPING");
+
+    result = celix_bundleState_getName(OSGI_FRAMEWORK_BUNDLE_ACTIVE);
+    EXPECT_STREQ(result, "ACTIVE");
+
+    result = celix_bundleState_getName((celix_bundle_state_e)444 /*invalid*/);
+    EXPECT_STREQ(result, "UNKNOWN");
 }
