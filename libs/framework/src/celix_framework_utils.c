@@ -35,8 +35,10 @@
 #include "celix_bundle_context.h"
 #include "framework_private.h"
 
-static const char * const EMBEDDED_BUNDLES_SYMBOL = "celix_embedded_bundles";
+static const char * const FILE_URL_SCHEME = "file://";
 
+static const char * const EMBEDDED_URL_SCHEME = "embedded://";
+static const char * const EMBEDDED_BUNDLES_SYMBOL = "celix_embedded_bundles";
 static const char * const EMBEDDED_BUNDLE_PREFIX = "celix_embedded_bundle_";
 static const char * const EMBEDDED_BUNDLE_START_POSTFIX = "_start";
 static const char * const EMBEDDED_BUNDLE_END_POSTFIX = "_end";
@@ -99,9 +101,9 @@ static bool isEmbeddedBundleUrlValid(celix_framework_t *fw, const char* bundleUR
 
     char* startSymbol = NULL;
     char* endSymbol = NULL;
-    //note +11 to remove the embedded:// part.
-    asprintf(&startSymbol, "%s%s%s", EMBEDDED_BUNDLE_PREFIX, bundleURL+11, EMBEDDED_BUNDLE_START_POSTFIX);
-    asprintf(&endSymbol, "%s%s%s", EMBEDDED_BUNDLE_PREFIX, bundleURL+11, EMBEDDED_BUNDLE_END_POSTFIX);
+    int offset = strlen(EMBEDDED_URL_SCHEME); //offset to remove the EMBEDDED_URL_SCHEME part.
+    asprintf(&startSymbol, "%s%s%s", EMBEDDED_BUNDLE_PREFIX, bundleURL+offset, EMBEDDED_BUNDLE_START_POSTFIX);
+    asprintf(&endSymbol, "%s%s%s", EMBEDDED_BUNDLE_PREFIX, bundleURL+offset, EMBEDDED_BUNDLE_END_POSTFIX);
 
     void* main = dlopen(NULL, RTLD_NOW);
     void* start = dlsym(main, startSymbol);
@@ -175,10 +177,12 @@ celix_status_t celix_framework_utils_extractBundle(celix_framework_t *fw, const 
     char* trimmedUrl = celix_utils_trim(bundleURL);
 
     bool extracted;
-    if (strncasecmp("file://", trimmedUrl, 7) == 0) {
-        extracted = extractBundlePath(fw, trimmedUrl+7, extractPath); //note +7 to remove the file:// part.
-    } else if (strncasecmp("embedded://", trimmedUrl, 11) == 0) {
-        extracted = extractBundleEmbedded(fw, trimmedUrl+11, extractPath); //note +11 to remove the embedded:// part.
+    int fileSchemeLen = strlen(FILE_URL_SCHEME);
+    int embeddedSchemeLen = strlen(EMBEDDED_URL_SCHEME);
+    if (strncasecmp(FILE_URL_SCHEME, trimmedUrl, fileSchemeLen) == 0) {
+        extracted = extractBundlePath(fw, trimmedUrl+fileSchemeLen, extractPath);
+    } else if (strncasecmp(EMBEDDED_URL_SCHEME, trimmedUrl, embeddedSchemeLen) == 0) {
+        extracted = extractBundleEmbedded(fw, trimmedUrl+embeddedSchemeLen, extractPath);
     } else {
         extracted = extractBundlePath(fw, trimmedUrl, extractPath);
     }
@@ -201,7 +205,7 @@ bool celix_framework_utils_isBundleUrlValid(celix_framework_t *fw, const char *b
         char* loc = resolveFileBundleUrl(fw, trimmedUrl+7, silent);
         valid = loc != NULL;
         free(loc);
-    } else if (strncasecmp("embedded://", trimmedUrl, 11) == 0) {
+    } else if (strncasecmp(EMBEDDED_URL_SCHEME, trimmedUrl, 11) == 0) {
         valid = isEmbeddedBundleUrlValid(fw, trimmedUrl, silent);
     } else if (strcasestr(trimmedUrl, "://")) {
         valid = false;
