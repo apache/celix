@@ -32,7 +32,7 @@
 #include <time.h>
 
 #include "bundle_revision.h"
-#include "bundle_state.h"
+#include "celix_bundle_state.h"
 #include "celix_errno.h"
 #include "celixbool.h"
 #include "framework_exports.h"
@@ -41,15 +41,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-celix_status_t bundleArchive_create(const char *archiveRoot, long id, const char *location, const char *inputFile,
-                                    bundle_archive_pt *bundle_archive);
-
-celix_status_t bundleArchive_createSystemBundleArchive(bundle_archive_pt *bundle_archive);
-
-celix_status_t bundleArchive_recreate(const char *archiveRoot, bundle_archive_pt *bundle_archive);
-
-celix_status_t bundleArchive_destroy(bundle_archive_pt archive);
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id);
 

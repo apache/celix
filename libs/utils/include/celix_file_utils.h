@@ -74,12 +74,12 @@ celix_status_t celix_utils_extractZipFile(const char* zipPath, const char* extra
  * Will create the targetDir if it does not already exist.
  *
  * @param zipData pointer to the beginning of the zip data
- * @param zipDataLen length of the zip data.
+ * @param zipDataLen the size which at least fits the zip date.
  * @param extractToDir The path where the zip data will be extracted.
  * @param errorOut An optional error output argument. If an error occurs this will point to a (static) error message.
  * @return CELIX_SUCCESS if the zip data was extracted successfully.
  */
-celix_status_t celix_utils_extractZipData(const void *zipData, size_t zipDataLen, const char* extractToDir, const char** errorOut);
+celix_status_t celix_utils_extractZipData(const void *zipData, size_t zipDataSize, const char* extractToDir, const char** errorOut);
 
 #ifdef __cplusplus
 }

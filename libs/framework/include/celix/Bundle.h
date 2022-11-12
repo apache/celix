@@ -125,17 +125,17 @@ namespace celix {
         [[nodiscard]] celix::BundleState getState() const {
             auto cState = celix_bundle_getState(cBnd.get());
             switch (cState) {
-                case OSGI_FRAMEWORK_BUNDLE_UNINSTALLED:
+                case CELIX_BUNDLE_STATE_UNINSTALLED:
                     return BundleState::UNINSTALLED;
-                case OSGI_FRAMEWORK_BUNDLE_INSTALLED:
+                case CELIX_BUNDLE_STATE_INSTALLED:
                     return BundleState::INSTALLED;
-                case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
+                case CELIX_BUNDLE_STATE_RESOLVED:
                     return BundleState::RESOLVED;
-                case OSGI_FRAMEWORK_BUNDLE_STARTING:
+                case CELIX_BUNDLE_STATE_STARTING:
                     return BundleState::STARTING;
-                case OSGI_FRAMEWORK_BUNDLE_STOPPING:
+                case CELIX_BUNDLE_STATE_STOPPING:
                     return BundleState::STOPPING;
-                case OSGI_FRAMEWORK_BUNDLE_ACTIVE:
+                case CELIX_BUNDLE_STATE_ACTIVE:
                     return BundleState::ACTIVE;
                 default:
                     return BundleState::UNKNOWN;

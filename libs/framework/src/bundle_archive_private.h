@@ -18,9 +18,18 @@
  */
 
 
-#ifndef BUNDLE_STATE_H_
-#define BUNDLE_STATE_H_
+#ifndef BUNDLE_ARCHIVE_PRIVATE_H_
+#define BUNDLE_ARCHIVE_PRIVATE_H_
 
-#include "celix_bundle_state.h"
+#include "bundle_archive.h"
 
-#endif /* BUNDLE_STATE_H_ */
+celix_status_t bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, const char *inputFile,
+                                    bundle_archive_pt *bundle_archive);
+
+celix_status_t bundleArchive_createSystemBundleArchive(celix_framework_t* fw, bundle_archive_pt *bundle_archive);
+
+celix_status_t bundleArchive_recreate(celix_framework_t* fw, const char *archiveRoot, bundle_archive_pt *bundle_archive);
+
+celix_status_t bundleArchive_destroy(bundle_archive_pt archive);
+
+#endif /* BUNDLE_ARCHIVE_PRIVATE_H_ */

@@ -17,10 +17,11 @@
  * under the License.
  */
 
-
-#ifndef BUNDLE_STATE_H_
-#define BUNDLE_STATE_H_
-
-#include "celix_bundle_state.h"
-
-#endif /* BUNDLE_STATE_H_ */
+.global _celix_embedded_bundle_@EMBED_BUNDLE_NAME@_start
+.global _celix_embedded_bundle_@EMBED_BUNDLE_NAME@_end
+.balign 64
+_celix_embedded_bundle_@EMBED_BUNDLE_NAME@_start:
+.incbin "@EMBED_BUNDLE_FILE@"
+.balign 64
+_celix_embedded_bundle_@EMBED_BUNDLE_NAME@_end:
+.byte 0

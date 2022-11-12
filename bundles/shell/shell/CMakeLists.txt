@@ -73,7 +73,7 @@ if (SHELL)
 
 	if (CELIX_CXX)
 		add_celix_bundle(ShellCxx
-			SYMBOLIC_NAME "apache::celix::CxxShell"
+			SYMBOLIC_NAME "Apache_Celix_CxxShell"
 			VERSION "2.1.0"
 			NAME "Apache Celix CXX Shell"
 			FILENAME celix_ShellCxx

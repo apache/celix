@@ -16,25 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * bundle_cache_private.h
- *
- *  \date       Feb 12, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
-
-#ifndef BUNDLE_CACHE_PRIVATE_H_
-#define BUNDLE_CACHE_PRIVATE_H_
-
-#include "bundle_cache.h"
-
-struct bundleCache {
-	properties_pt configurationMap;
-	char * cacheDir;
-	bool deleteOnDestroy;
-};
-
-
-#endif /* BUNDLE_CACHE_PRIVATE_H_ */
+.section .rodata
+.global binary_test_zip_start
+.global binary_test_zip_end
+.section .rodata
+.balign 64
+binary_test_zip_start:
+.incbin "@TEST_ZIP_FILE@"
+.balign 64
+binary_test_zip_end:
+.byte 0

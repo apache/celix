@@ -17,7 +17,7 @@
 
 add_celix_bundle(RemoteServiceAdmin
         VERSION 0.9.0
-        SYMBOLIC_NAME "apache::celix::RemoteServiceAdmin"
+        SYMBOLIC_NAME "Apache_Celix_RemoteServiceAdmin"
         NAME "Apache Celix Remote Service Admin"
         GROUP "Celix/RSA"
         FILENAME "Celix_RemoteServiceAdmin"

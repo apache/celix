@@ -25,7 +25,7 @@ add_library(Celix::RsaConfiguredDiscovery_api ALIAS RsaConfiguredDiscovery_api)
 
 add_celix_bundle(RsaConfiguredDiscovery
     VERSION 0.9.0
-    SYMBOLIC_NAME "apache::celix::RsaConfiguredDiscovery"
+    SYMBOLIC_NAME "Apache_Celix_RsaConfiguredDiscovery"
     NAME "Apache Celix Async Configured Discovery"
     FILENAME celix_RsaConfiguredDiscovery
     GROUP "Celix/RSA"

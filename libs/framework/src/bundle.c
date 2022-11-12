@@ -17,17 +17,18 @@
  * under the License.
  */
 
+#include "bundle_private.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <service_tracker.h>
 #include <celix_constants.h>
-#include <celix_api.h>
 #include <assert.h>
 
 #include "framework_private.h"
-#include "bundle_private.h"
 #include "resolver.h"
 #include "utils.h"
+#include "bundle_archive_private.h"
 
 #include "bundle_context_private.h"
 #include "service_tracker_private.h"
@@ -36,7 +37,7 @@
 celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module);
 celix_status_t bundle_closeRevisions(const_bundle_pt bundle);
 
-celix_status_t bundle_create(bundle_pt * bundle) {
+celix_status_t bundle_create(celix_framework_t* fw, bundle_pt * bundle) {
     celix_status_t status;
     bundle_archive_pt archive = NULL;
 
@@ -44,15 +45,15 @@ celix_status_t bundle_create(bundle_pt * bundle) {
 	if (*bundle == NULL) {
 		return CELIX_ENOMEM;
 	}
-	status = bundleArchive_createSystemBundleArchive(&archive);
+	status = bundleArchive_createSystemBundleArchive(fw, &archive);
 	if (status == CELIX_SUCCESS) {
         module_pt module;
 
         (*bundle)->archive = archive;
         (*bundle)->activator = NULL;
         (*bundle)->context = NULL;
-        (*bundle)->framework = NULL;
-        (*bundle)->state = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
+        (*bundle)->framework = fw;
+        (*bundle)->state = CELIX_BUNDLE_STATE_INSTALLED;
         (*bundle)->modules = NULL;
         arrayList_create(&(*bundle)->modules);
         (*bundle)->handle = NULL;
@@ -80,7 +81,7 @@ celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framewo
 	(*bundle)->context = NULL;
 	(*bundle)->handle = NULL;
 	(*bundle)->framework = framework;
-	(*bundle)->state = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
+	(*bundle)->state = CELIX_BUNDLE_STATE_INSTALLED;
 	(*bundle)->modules = NULL;
 	arrayList_create(&(*bundle)->modules);
 	
@@ -177,7 +178,7 @@ celix_status_t bundle_getEntry(const_bundle_pt bundle, const char* name, char** 
 
 celix_status_t bundle_getState(const_bundle_pt bundle, bundle_state_e *state) {
 	if (bundle==NULL) {
-		*state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
+		*state = CELIX_BUNDLE_STATE_UNKNOWN;
 		return CELIX_BUNDLE_EXCEPTION;
 	}
     __atomic_load(&bundle->state, state, __ATOMIC_ACQUIRE);
@@ -209,46 +210,25 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
 			*module = module_create(headerMap, moduleId, bundle);
 
 			if (*module != NULL) {
-				version_pt bundleVersion = module_getVersion(*module);
 				const char * symName = NULL;
 				status = module_getSymbolicName(*module, &symName);
 				if (status == CELIX_SUCCESS) {
-					array_list_pt bundles = framework_getBundles(bundle->framework);
-					unsigned int i;
-					for (i = 0; i < arrayList_size(bundles); i++) {
-						bundle_pt check = (bundle_pt) arrayList_get(bundles, i);
-
-						long id;
-						if (bundleArchive_getId(check->archive, &id) == CELIX_SUCCESS) {
-							if (id != bundleId) {
-								module_pt mod = NULL;
-								const char * sym = NULL;
-								version_pt version;
-								int cmp;
-								status = bundle_getCurrentModule(check, &mod);
-								status = module_getSymbolicName(mod, &sym);
-
-								version = module_getVersion(mod);
-								version_compareTo(bundleVersion, version, &cmp);
-								if ((symName != NULL) && (sym != NULL) && !strcmp(symName, sym) &&
-										!cmp) {
-									char *versionString = NULL;
-									version_toString(version, &versionString);
-									printf("Bundle symbolic name and version are not unique: %s:%s\n", sym, versionString);
-									free(versionString);
-									status = CELIX_BUNDLE_EXCEPTION;
-									break;
-								}
-							}
-						}
-					}
-					arrayList_destroy(bundles);
+                    /*
+                     * NOTE only allowing a single bundle with a symbolic name.
+                     * OSGi spec allows same symbolic name and different versions, but this is risky with
+                     * the behaviour of dlopen when opening shared libraries with the same SONAME.
+                     */
+                    bool alreadyInstalled = celix_framework_isBundleAlreadyInstalled(bundle->framework, symName);
+                    if (alreadyInstalled) {
+                        fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot create bundle module. Bundle with symbolic name '%s' already exists", symName);
+                        status = CELIX_BUNDLE_EXCEPTION;
+                    }
 				}
 			}
         }
 	}
 
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to create module");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to create bundle module");
 
 	return status;
 }
@@ -297,7 +277,7 @@ celix_status_t bundle_setPersistentStateInactive(bundle_pt bundle) {
 	status = bundle_isSystemBundle(bundle, &systemBundle);
 	if (status == CELIX_SUCCESS) {
 		if (!systemBundle) {
-			status = bundleArchive_setPersistentState(bundle->archive, OSGI_FRAMEWORK_BUNDLE_INSTALLED);
+			status = bundleArchive_setPersistentState(bundle->archive, CELIX_BUNDLE_STATE_INSTALLED);
 		}
 	}
 
@@ -313,7 +293,7 @@ celix_status_t bundle_setPersistentStateUninstalled(bundle_pt bundle) {
 	status = bundle_isSystemBundle(bundle, &systemBundle);
 	if (status == CELIX_SUCCESS) {
 		if (!systemBundle) {
-			status = bundleArchive_setPersistentState(bundle->archive, OSGI_FRAMEWORK_BUNDLE_UNINSTALLED);
+			status = bundleArchive_setPersistentState(bundle->archive, CELIX_BUNDLE_STATE_UNINSTALLED);
 		}
 	}
 
@@ -458,7 +438,7 @@ celix_status_t bundle_refresh(bundle_pt bundle) {
 		if (status == CELIX_SUCCESS) {
 			status = bundle_addModule(bundle, module);
 			if (status == CELIX_SUCCESS) {
-                __atomic_store_n(&bundle->state, OSGI_FRAMEWORK_BUNDLE_INSTALLED, __ATOMIC_RELEASE);
+                __atomic_store_n(&bundle->state, CELIX_BUNDLE_STATE_INSTALLED, __ATOMIC_RELEASE);
 			}
 		}
 	}
@@ -496,20 +476,6 @@ celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_list_pt *list) {
 	status = fw_getBundleServicesInUse(bundle->framework, bundle, list);
 
 	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get in use services");
-
-	return status;
-}
-
-celix_status_t bundle_setFramework(bundle_pt bundle, framework_pt framework) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (bundle != NULL && framework != NULL) {
-		bundle->framework = framework;
-	} else {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to set framework");
 
 	return status;
 }

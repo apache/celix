@@ -20,7 +20,7 @@ cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
 cmake_policy(SET CMP0068 NEW)
 
-project(Celix C CXX)
+project (Celix C CXX ASM)
 
 include(cmake/celix_project/CelixProject.cmake)
 include(cmake/cmake_celix/UseCelix.cmake)
