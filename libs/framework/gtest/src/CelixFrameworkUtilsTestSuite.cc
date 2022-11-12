@@ -19,7 +19,7 @@
 
 #include <gtest/gtest.h>
 
-#include <filesystem>
+#include <dirent.h>
 
 #include "celix/FrameworkFactory.h"
 #include "celix/FrameworkUtils.h"
@@ -43,9 +43,11 @@ public:
 };
 
 static void checkBundleCacheDir(const char* extractDir) {
-    EXPECT_TRUE(extractDir != nullptr);
-    if (extractDir) {
-        EXPECT_TRUE(std::filesystem::is_directory(extractDir));
+    ASSERT_TRUE(extractDir != nullptr);
+    DIR* dir = opendir(extractDir);
+    EXPECT_TRUE(dir != nullptr);
+    if (dir != nullptr) {
+        closedir(dir);
     }
 }
 
@@ -137,7 +139,7 @@ TEST_F(CelixFrameworkUtilsTestSuite, installEmbeddedBundles) {
     auto ids = framework->getFrameworkBundleContext()->listBundleIds();
     EXPECT_EQ(0, ids.size());
 
-    celix::installEmbeddedBundles(framework, true);
+    celix::installEmbeddedBundles(*framework, true);
     ids = framework->getFrameworkBundleContext()->listBundleIds();
     EXPECT_EQ(2, ids.size());
 }
@@ -147,11 +149,11 @@ TEST_F(CelixFrameworkUtilsTestSuite, installBundleSet) {
     EXPECT_EQ(0, ids.size());
 
     EXPECT_EQ(std::string{}, std::string{BUNDLE_EMPTY_TEST_SET});
-    celix::installBundlesSet(framework, BUNDLE_EMPTY_TEST_SET);
+    celix::installBundlesSet(*framework, BUNDLE_EMPTY_TEST_SET);
     ids = framework->getFrameworkBundleContext()->listBundleIds();
     EXPECT_EQ(0, ids.size());
 
-    celix::installBundlesSet(framework, BUNDLE_TEST_SET);
+    celix::installBundlesSet(*framework, BUNDLE_TEST_SET);
     ids = framework->getFrameworkBundleContext()->listBundleIds();
     EXPECT_EQ(3, ids.size());
 }

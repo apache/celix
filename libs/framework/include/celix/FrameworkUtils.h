@@ -65,8 +65,8 @@ namespace celix {
      * @param autoStart Whether to also start the installed bundles.
      * @return The number of installed bundles.
      */
-    inline std::size_t installEmbeddedBundles(const std::shared_ptr<celix::Framework>& framework, bool autoStart = true) {
-        return celix_framework_utils_installEmbeddedBundles(framework->getCFramework(), autoStart);
+    inline std::size_t installEmbeddedBundles(celix::Framework& framework, bool autoStart = true) {
+        return celix_framework_utils_installEmbeddedBundles(framework.getCFramework(), autoStart);
     }
 
     /**
@@ -88,8 +88,14 @@ namespace celix {
      * @param autoStart Whether to also start the installed bundles.
      * @return The number of installed bundles.
      */
-    inline std::size_t installBundlesSet(const std::shared_ptr<celix::Framework>& framework, std::string_view bundlesSet, bool autoStart = true) {
-        return celix_framework_utils_installBundleSet(framework->getCFramework(), bundlesSet.data(), autoStart);
+#if __cplusplus >= 201703L //C++17 or higher
+    inline std::size_t installBundlesSet(celix::Framework& framework, std::string_view bundlesSet, bool autoStart = true) {
+        return celix_framework_utils_installBundleSet(framework.getCFramework(), bundlesSet.data(), autoStart);
     }
+#else
+    inline std::size_t installBundlesSet(celix::Framework& framework, const std::string& bundlesSet, bool autoStart = true) {
+        return celix_framework_utils_installBundleSet(framework.getCFramework(), bundlesSet.c_str(), autoStart);
+    }
+#endif
 
 }

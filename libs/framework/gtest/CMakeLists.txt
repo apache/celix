@@ -149,6 +149,16 @@ if (ENABLE_TESTING_FOR_CXX14)
     celix_get_bundle_file(simple_cxx_bundle_with_cxx1 SIMPLE_CXX_BUNDLE_WITH_CXX11_LOC)
     celix_get_bundle_file(simple_cxx_dep_man_bundle_with_cxx1 SIMPLE_CXX_DEP_MAN_WITH_CXX11_BUNDLE_LOC)
 
+    #embed bundle in the test_framework executable
+    celix_target_embedded_bundles(test_framework_with_cxx14 simple_test_bundle1 simple_test_bundle2)
+
+    #Create bundle set definitions
+    celix_target_bundle_set_definition(test_framework_with_cxx14 NAME BUNDLE_EMPTY_TEST_SET)
+    celix_target_bundle_set_definition(test_framework_with_cxx14 NAME BUNDLE_TEST_SET
+        #Note this test set has two version fo bundle1, this is done for testing purpose.
+        simple_test_bundle1 simple_test_bundle3 simple_test_bundle1 simple_test_bundle2
+    )
+
     target_compile_definitions(test_framework_with_cxx14 PRIVATE
             SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
             SIMPLE_TEST_BUNDLE2_LOCATION="${SIMPLE_TEST_BUNDLE2}"
