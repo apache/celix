@@ -430,7 +430,7 @@ namespace celix {
             };
             opts.setWithOwner = [](void *handle, void *voidSvc, const celix_properties_t *cProps, const celix_bundle_t *cBnd) {
                 auto tracker = static_cast<ServiceTracker<I>*>(handle);
-                std::lock_guard<std::mutex> lck{tracker->mutex};
+                std::unique_lock<std::mutex> lck{tracker->mutex};
                 auto prevEntry = tracker->highestRankingServiceEntry;
                 if (voidSvc) {
                     tracker->highestRankingServiceEntry = createEntry(voidSvc, cProps, cBnd);
@@ -445,6 +445,7 @@ namespace celix {
                         cb(nullptr, nullptr, nullptr);
                     }
                 }
+                lck.unlock();
                 tracker->waitForExpiredSvcEntry(prevEntry);
             };
         }

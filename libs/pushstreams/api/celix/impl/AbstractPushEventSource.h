@@ -93,7 +93,7 @@ void celix::AbstractPushEventSource<T>::open(std::shared_ptr<celix::IPushEventCo
         _eventConsumer->accept(celix::ClosePushEvent<T>());
     } else {
         eventConsumers.push_back(_eventConsumer);
-        for(auto connect: connected) {
+        for(auto& connect: connected) {
             connect.resolve();
         }
         connected.clear();

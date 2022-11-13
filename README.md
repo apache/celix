@@ -247,7 +247,7 @@ public:
     explicit CalcTrackerBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
         tracker = ctx->trackServices<ICalc>()
             .build();
-        for (auto calc : tracker->getServices()) {
+        for (auto& calc : tracker->getServices()) {
             std::cout << "result is " << std::to_string(calc->add(2, 3)) << std::endl;
         }
     }
