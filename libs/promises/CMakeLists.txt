@@ -38,6 +38,9 @@ endif ()
 
 if (PROMISES OR PROMISES_STANDALONE)
     message("The Celix::Promises implementation is still experiment and the api and behaviour will probably still change.")
+
+    set(CMAKE_CXX_STANDARD 17)
+
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads)
 
