@@ -32,13 +32,13 @@
 #include <stdbool.h>
 
 struct endpoint_description {
-    char *frameworkUUID;
-    char *id;
+    const char *frameworkUUID;
+    const char *id;
     // array_list_pt intents;
-    char *service;
+    char *serviceName;
     // HASH_MAP packageVersions;
     celix_properties_t *properties;
-    unsigned long serviceId;
+    long serviceId;
 };
 
 typedef struct endpoint_description endpoint_description_t;

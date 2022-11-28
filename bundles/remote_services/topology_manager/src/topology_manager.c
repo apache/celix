@@ -146,7 +146,7 @@ celix_status_t topologyManager_closeImports(topology_manager_pt manager) {
 		hash_map_pt imports = hashMapEntry_getValue(entry);
 
 		if (imports != NULL) {
-			celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", ep->service, ep->id);
+			celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", ep->serviceName, ep->id);
 			hash_map_iterator_pt importsIter = hashMapIterator_create(imports);
 
 			while (hashMapIterator_hasNext(importsIter)) {
@@ -418,7 +418,7 @@ celix_status_t topologyManager_importScopeChanged(void *handle, char *service_na
 		status = topologyManager_removeImportedService_nolock(manager, endpoint, NULL);
 
 		if (status != CELIX_SUCCESS) {
-			celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_ERROR, "TOPOLOGY_MANAGER: Removal of imported service (%s; %s) failed.", endpoint->service, endpoint->id);
+			celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_ERROR, "TOPOLOGY_MANAGER: Removal of imported service (%s; %s) failed.", endpoint->serviceName, endpoint->id);
 		} else {
 			status = topologyManager_addImportedService_nolock(manager, endpoint, NULL);
 		}
@@ -434,11 +434,11 @@ static celix_status_t topologyManager_addImportedService_nolock(void *handle, en
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
 
-	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "TOPOLOGY_MANAGER: Add imported service (%s; %s).", endpoint->service, endpoint->id);
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "TOPOLOGY_MANAGER: Add imported service (%s; %s).", endpoint->serviceName, endpoint->id);
 
 	// We should not try to add imported services to a closed listener.
 	if (manager->closed) {
-		celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_TRACE,"TOPOLOGY_MANAGER: Endpointer listener will close, Ignore imported service (%s; %s).", endpoint->service, endpoint->id);
+		celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_TRACE,"TOPOLOGY_MANAGER: Endpointer listener will close, Ignore imported service (%s; %s).", endpoint->serviceName, endpoint->id);
 		return CELIX_SUCCESS;
 	}
 
@@ -482,7 +482,7 @@ static celix_status_t topologyManager_removeImportedService_nolock(void *handle,
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
 
-	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", endpoint->service, endpoint->id);
+	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", endpoint->serviceName, endpoint->id);
 
 	hash_map_iterator_pt iter = hashMapIterator_create(manager->importedServices);
 	while (hashMapIterator_hasNext(iter)) {
