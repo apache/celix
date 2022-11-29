@@ -765,7 +765,7 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         (*endpoint)->id = (char*) celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, NULL);
         (*endpoint)->serviceId = serviceReference_getServiceId(reference);
         (*endpoint)->frameworkUUID = (char*) celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
-        (*endpoint)->serviceName = celix_utils_strdup(interface);
+        (*endpoint)->serviceName = strndup(interface, 1024*10);
         (*endpoint)->properties = endpointProperties;
     }
 
