@@ -32,11 +32,13 @@ namespace example {
         std::string VERSION; //dummy non-static VERSION member, should not impact the typeVersion call
     };
 
+#if __cplusplus >= 201703L //C++17 or higher
     class TestType2 {
     public:
         static constexpr std::string_view NAME = "AnotherTestTypeName";
         static constexpr const char * const VERSION = "1.2.0";
     };
+#endif
 
     class TestType3 {
     public:
@@ -52,20 +54,24 @@ TEST_F(CxxUtilsTestSuite, testTypeName) {
     auto name = celix::typeName<example::TestType>();
     EXPECT_FALSE(name.empty());
 
+#if __cplusplus >= 201703L //C++17 or higher
     //When inferring a type name with no provided name, but the type has a NAME static member,
-    //the call should return the string value of the NAME static member
+    //the call should return the string value of the NAME static member (only support if C++17 is used).
     name = celix::typeName<example::TestType2>();
     EXPECT_EQ(std::string{name}, std::string{"AnotherTestTypeName"});
+#endif
 
     //When inferring a type name with a provided name and the type does not have a NAME static member,
     //the call should return the provided name.
     name = celix::typeName<example::TestType>("OverrideName");
     EXPECT_EQ(name, std::string{"OverrideName"});
 
+#if __cplusplus >= 201703L //C++17 or higher
     //When inferring a type name with a provided name and the type also has a NAME static member,
-    //the call should return the provided name.
+    //the call should return the provided name (only support if C++17 is used).
     name = celix::typeName<example::TestType2>("OverrideName");
     EXPECT_EQ(name, std::string{"OverrideName"});
+#endif
 
     //When inferring a type name, where there is a static NAME member but not of the right type (constructable from string),
     //the call should return an inferred name based on __PRETTY_FUNCTION__ (see celix::impl::extractTypeName)
@@ -80,20 +86,24 @@ TEST_F(CxxUtilsTestSuite, testTypeVersion) {
     auto version = celix::typeVersion<example::TestType>();
     EXPECT_TRUE(version.empty());
 
+#if __cplusplus >= 201703L //C++17 or higher
     //When inferring a type version with no provided version and the type has a VERSION static member,
-    //the call should return the value of the static member VERSION.
+    //the call should return the value of the static member VERSION (only support if C++17 is used).
     version = celix::typeVersion<example::TestType2>();
     EXPECT_EQ(std::string{version}, std::string{"1.2.0"});
+#endif
 
     //When inferring a type version with a provided version and the type does not have a VERSION static member,
     //the call should return the provided version.
     version = celix::typeVersion<example::TestType>("2.2.2");
     EXPECT_EQ(version, std::string{"2.2.2"});
 
+#if __cplusplus >= 201703L //C++17 or higher
     //When inferring a type version with a provided version and the type does have a VERSION static member,
-    //the call should return the provided version.
+    //the call should return the provided version (only support if C++17 is used).
     version = celix::typeVersion<example::TestType2>("2.2.2");
     EXPECT_EQ(version, std::string{"2.2.2"});
+#endif
 }
 
 TEST_F(CxxUtilsTestSuite, testSplit) {

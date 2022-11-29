@@ -43,6 +43,8 @@ class CelixConan(ConanFile):
         "enable_address_sanitizer": [True, False],
         "enable_undefined_sanitizer": [True, False],
         "enable_thread_sanitizer": [True, False],
+        "enable_testing_dependency_manager_for_cxx11": [True, False],
+        "enable_testing_for_cxx14": [True, False],
         "celix_add_openssl_dep": [True, False],
         "build_all": [True, False],
         "build_deployment_admin": [True, False],
@@ -88,6 +90,8 @@ class CelixConan(ConanFile):
         "enable_address_sanitizer": False,
         "enable_undefined_sanitizer": False,
         "enable_thread_sanitizer": False,
+        "enable_testing_dependency_manager_for_cxx11": False,
+        "enable_testing_for_cxx14": False,
         "celix_add_openssl_dep": False,
         "build_all": False,
         "build_deployment_admin": False,
@@ -143,6 +147,8 @@ class CelixConan(ConanFile):
         del self.info.options.build_cxx_rsa_integration
         del self.info.options.build_examples
         del self.info.options.build_shell_bonjour
+        del self.info.options.enable_testing_dependency_manager_for_cxx11
+        del self.info.options.enable_testing_for_cxx14
 
     def build_requirements(self):
         if self.options.enable_testing:

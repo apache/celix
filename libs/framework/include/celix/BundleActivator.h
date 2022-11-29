@@ -24,10 +24,10 @@
 #include "celix/dm/DependencyManager.h"
 #include "celix_bundle_activator.h"
 
-#if __cplusplus >= 201703L //C++17 or higher
+#if __cplusplus >= 201402L //C++14 or higher
 #include "celix/BundleContext.h"
-
-namespace celix::impl {
+namespace celix {
+namespace impl {
     template<typename I>
     struct BundleActivatorData {
         long bndId{};
@@ -94,7 +94,7 @@ namespace celix::impl {
         waitForExpired(bndId, ctx, "celix::dm::DependencyManager", dm);
         return CELIX_SUCCESS;
     }
-}
+}}
 #else //C++11
 namespace celix {
 namespace impl {
