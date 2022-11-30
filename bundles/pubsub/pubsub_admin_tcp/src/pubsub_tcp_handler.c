@@ -571,7 +571,6 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
                 if (rc != 0) {
                     L_ERROR("[TCP Socket] Error listen: %s\n", strerror(errno));
                     pubsub_tcpHandler_freeEntry(entry);
-                    close(fd);
                     entry = NULL;
                 }
             }
@@ -579,7 +578,6 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
                 rc = pubsub_tcpHandler_makeNonBlocking(handle, fd);
                 if (rc < 0) {
                     pubsub_tcpHandler_freeEntry(entry);
-                    close(fd);
                     entry = NULL;
                 }
             }
