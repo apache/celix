@@ -83,6 +83,27 @@ namespace impl {
 }
 }
 
+namespace celix {
+    /**
+     * @brief Splits a string using the provided delim.
+     *
+     * Also trims the entries from whitespaces.
+     * @param str The string to split
+     * @param delimiter The delimiter to use (default ",")
+     */
+    inline std::vector<std::string> split(const std::string& str, const std::string& delimiter = ",") {
+        std::vector<std::string> result{};
+        std::string delimiters = std::string{delimiter} + " \t";
+        size_t found;
+        size_t pos = 0;
+        while ((found = str.find_first_not_of(delimiters, pos)) != std::string::npos) {
+            pos = str.find_first_of(delimiters, found);
+            result.emplace_back(str.substr(found, pos - found));
+        }
+        return result;
+    }
+}
+
 #if __cplusplus >= 201703L //C++17 or higher
 namespace celix::impl {
 
@@ -194,25 +215,6 @@ namespace celix {
             return "";
         }
     }
-
-    /**
-     * @brief Splits a string using the provided delim.
-     *
-     * Also trims the entries from whitespaces.
-     * @param str The string to split
-     * @param delimiter The delimiter to use (default ",")
-     */
-     inline std::vector<std::string> split(std::string_view str, std::string_view delimiter = ",") {
-        std::vector<std::string> result{};
-        std::string delimiters = std::string{delimiter} + " \t";
-        size_t found;
-        size_t pos = 0;
-        while ((found = str.find_first_not_of(delimiters, pos)) != std::string::npos) {
-            pos = str.find_first_of(delimiters, found);
-            result.emplace_back(str.substr(found, pos - found));
-        }
-        return result;
-     }
 }
 
 #else //Assuming at least C++11

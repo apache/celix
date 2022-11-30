@@ -217,18 +217,19 @@ namespace celix {
      */
     class GenericServiceTracker : public AbstractTracker {
     public:
+#if __cplusplus >= 201703L //C++17 or higher
         GenericServiceTracker(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string_view _svcName,
                               std::string_view _svcVersionRange, celix::Filter _filter) : AbstractTracker{std::move(_cCtx)}, svcName{_svcName},
                                                                                    svcVersionRange{_svcVersionRange}, filter{std::move(_filter)} {
-            opts.trackerCreatedCallbackData = this;
-            opts.trackerCreatedCallback = [](void *data) {
-                auto* trk = static_cast<GenericServiceTracker*>(data);
-                {
-                    std::lock_guard<std::mutex> callbackLock{trk->mutex};
-                    trk->state = TrackerState::OPEN;
-                }
-            };
+            setupServiceTrackerOptions();
         }
+#else
+        GenericServiceTracker(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _svcName,
+                              std::string _svcVersionRange, celix::Filter _filter) : AbstractTracker{std::move(_cCtx)}, svcName{std::move(_svcName)},
+                                                                                   svcVersionRange{std::move(_svcVersionRange)}, filter{std::move(_filter)} {
+            setupServiceTrackerOptions();
+        }
+#endif
 
         ~GenericServiceTracker() override = default;
 
@@ -278,6 +279,18 @@ namespace celix {
         const celix::Filter filter;
         celix_service_tracking_options opts{}; //note only set in the ctor
         std::atomic<size_t> svcCount{0};
+
+    private:
+        void setupServiceTrackerOptions() {
+            opts.trackerCreatedCallbackData = this;
+            opts.trackerCreatedCallback = [](void *data) {
+                auto* trk = static_cast<GenericServiceTracker*>(data);
+                {
+                    std::lock_guard<std::mutex> callbackLock{trk->mutex};
+                    trk->state = TrackerState::OPEN;
+                }
+            };
+        }
     };
 
     /**
@@ -307,6 +320,7 @@ namespace celix {
          * @return The new service tracker as shared ptr.
          * @throws celix::Exception
          */
+#if __cplusplus >= 201703L //C++17 or higher
         static std::shared_ptr<ServiceTracker<I>> create(
                 std::shared_ptr<celix_bundle_context_t> cCtx,
                 std::string_view svcName,
@@ -315,7 +329,6 @@ namespace celix {
                 std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> setCallbacks,
                 std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> addCallbacks,
                 std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> remCallbacks) {
-
             auto tracker = std::shared_ptr<ServiceTracker<I>>{
                 new ServiceTracker<I>{
                     std::move(cCtx),
@@ -329,6 +342,29 @@ namespace celix {
             tracker->open();
             return tracker;
         }
+#else
+        static std::shared_ptr<ServiceTracker<I>> create(
+                std::shared_ptr<celix_bundle_context_t> cCtx,
+                std::string svcName,
+                std::string svcVersionRange,
+                celix::Filter filter,
+                std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> setCallbacks,
+                std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> addCallbacks,
+                std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> remCallbacks) {
+            auto tracker = std::shared_ptr<ServiceTracker<I>>{
+                new ServiceTracker<I>{
+                    std::move(cCtx),
+                    std::move(svcName),
+                    std::move(svcVersionRange),
+                    std::move(filter),
+                    std::move(setCallbacks),
+                    std::move(addCallbacks),
+                    std::move(remCallbacks)},
+                AbstractTracker::delCallback<ServiceTracker<I>>()};
+            tracker->open();
+            return tracker;
+        }
+#endif
 
         /**
          * @brief Get the current highest ranking service tracked by this tracker.
@@ -382,6 +418,7 @@ namespace celix {
             std::shared_ptr<const celix::Bundle> owner;
         };
 
+#if __cplusplus >= 201703L //C++17 or higher
         ServiceTracker(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string_view _svcName,
                        std::string_view _svcVersionRange, celix::Filter _filter,
                        std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> _setCallbacks,
@@ -391,64 +428,21 @@ namespace celix {
                 setCallbacks{std::move(_setCallbacks)},
                 addCallbacks{std::move(_addCallbacks)},
                 remCallbacks{std::move(_remCallbacks)} {
-            opts.filter.serviceName = svcName.empty() ? nullptr : svcName.c_str();
-            opts.filter.versionRange = svcVersionRange.empty() ? nullptr : svcVersionRange.c_str();
-            opts.filter.filter = filter.empty() ? nullptr : filter.getFilterCString();
-            opts.callbackHandle = this;
-            opts.addWithOwner = [](void *handle, void *voidSvc, const celix_properties_t* cProps, const celix_bundle_t* cBnd) {
-                auto tracker = static_cast<ServiceTracker<I>*>(handle);
-                auto entry = createEntry(voidSvc, cProps, cBnd);
-                {
-                    std::lock_guard<std::mutex> lck{tracker->mutex};
-                    tracker->entries.insert(entry);
-                    tracker->cachedEntries[entry->svcId] = entry;
-                }
-                tracker->svcCount.fetch_add(1, std::memory_order_relaxed);
-                for (const auto& cb : tracker->addCallbacks) {
-                    cb(entry->svc, entry->properties, entry->owner);
-                }
-                tracker->invokeUpdateCallbacks();
-            };
-            opts.removeWithOwner = [](void *handle, void*, const celix_properties_t* cProps, const celix_bundle_t*) {
-                auto tracker = static_cast<ServiceTracker<I>*>(handle);
-                long svcId = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_ID, -1L);
-                std::shared_ptr<SvcEntry> entry{};
-                {
-                    std::lock_guard<std::mutex> lck{tracker->mutex};
-                    auto it = tracker->cachedEntries.find(svcId);
-                    assert(it != tracker->cachedEntries.end()); //should not happen, added during add callback
-                    entry = it->second;
-                    tracker->cachedEntries.erase(it);
-                    tracker->entries.erase(entry);
-                }
-                for (const auto& cb : tracker->remCallbacks) {
-                    cb(entry->svc, entry->properties, entry->owner);
-                }
-                tracker->invokeUpdateCallbacks();
-                tracker->svcCount.fetch_sub(1, std::memory_order_relaxed);
-                tracker->waitForExpiredSvcEntry(entry);
-            };
-            opts.setWithOwner = [](void *handle, void *voidSvc, const celix_properties_t *cProps, const celix_bundle_t *cBnd) {
-                auto tracker = static_cast<ServiceTracker<I>*>(handle);
-                std::unique_lock<std::mutex> lck{tracker->mutex};
-                auto prevEntry = tracker->highestRankingServiceEntry;
-                if (voidSvc) {
-                    tracker->highestRankingServiceEntry = createEntry(voidSvc, cProps, cBnd);
-                } else {
-                    tracker->highestRankingServiceEntry = nullptr;
-                }
-                for (const auto& cb : tracker->setCallbacks) {
-                    if (tracker->highestRankingServiceEntry) {
-                        auto& e = tracker->highestRankingServiceEntry;
-                        cb(e->svc, e->properties, e->owner);
-                    } else /*"unset"*/ {
-                        cb(nullptr, nullptr, nullptr);
-                    }
-                }
-                lck.unlock();
-                tracker->waitForExpiredSvcEntry(prevEntry);
-            };
+            setupServiceTrackerOptions();
         }
+#else
+        ServiceTracker(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _svcName,
+                       std::string _svcVersionRange, celix::Filter _filter,
+                       std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> _setCallbacks,
+                       std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> _addCallbacks,
+                       std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> _remCallbacks) :
+                GenericServiceTracker{std::move(_cCtx), std::move(_svcName), std::move(_svcVersionRange), std::move(_filter)},
+                setCallbacks{std::move(_setCallbacks)},
+                addCallbacks{std::move(_addCallbacks)},
+                remCallbacks{std::move(_remCallbacks)} {
+            setupServiceTrackerOptions();
+        }
+#endif
 
         static std::shared_ptr<SvcEntry> createEntry(void* voidSvc, const celix_properties_t* cProps, const celix_bundle_t* cBnd) {
             long svcId = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_ID, -1L);
@@ -551,6 +545,67 @@ namespace celix {
         std::set<std::shared_ptr<SvcEntry>, SvcEntryCompare> entries{};
         std::unordered_map<long, std::shared_ptr<SvcEntry>> cachedEntries{};
         std::shared_ptr<SvcEntry> highestRankingServiceEntry{};
+
+    private:
+        void setupServiceTrackerOptions() {
+            opts.filter.serviceName = svcName.empty() ? nullptr : svcName.c_str();
+            opts.filter.versionRange = svcVersionRange.empty() ? nullptr : svcVersionRange.c_str();
+            opts.filter.filter = filter.empty() ? nullptr : filter.getFilterCString();
+            opts.callbackHandle = this;
+            opts.addWithOwner = [](void *handle, void *voidSvc, const celix_properties_t* cProps, const celix_bundle_t* cBnd) {
+                auto tracker = static_cast<ServiceTracker<I>*>(handle);
+                auto entry = createEntry(voidSvc, cProps, cBnd);
+                {
+                    std::lock_guard<std::mutex> lck{tracker->mutex};
+                    tracker->entries.insert(entry);
+                    tracker->cachedEntries[entry->svcId] = entry;
+                }
+                tracker->svcCount.fetch_add(1, std::memory_order_relaxed);
+                for (const auto& cb : tracker->addCallbacks) {
+                    cb(entry->svc, entry->properties, entry->owner);
+                }
+                tracker->invokeUpdateCallbacks();
+            };
+            opts.removeWithOwner = [](void *handle, void*, const celix_properties_t* cProps, const celix_bundle_t*) {
+                auto tracker = static_cast<ServiceTracker<I>*>(handle);
+                long svcId = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+                std::shared_ptr<SvcEntry> entry{};
+                {
+                    std::lock_guard<std::mutex> lck{tracker->mutex};
+                    auto it = tracker->cachedEntries.find(svcId);
+                    assert(it != tracker->cachedEntries.end()); //should not happen, added during add callback
+                    entry = it->second;
+                    tracker->cachedEntries.erase(it);
+                    tracker->entries.erase(entry);
+                }
+                for (const auto& cb : tracker->remCallbacks) {
+                    cb(entry->svc, entry->properties, entry->owner);
+                }
+                tracker->invokeUpdateCallbacks();
+                tracker->svcCount.fetch_sub(1, std::memory_order_relaxed);
+                tracker->waitForExpiredSvcEntry(entry);
+            };
+            opts.setWithOwner = [](void *handle, void *voidSvc, const celix_properties_t *cProps, const celix_bundle_t *cBnd) {
+                auto tracker = static_cast<ServiceTracker<I>*>(handle);
+                std::unique_lock<std::mutex> lck{tracker->mutex};
+                auto prevEntry = tracker->highestRankingServiceEntry;
+                if (voidSvc) {
+                    tracker->highestRankingServiceEntry = createEntry(voidSvc, cProps, cBnd);
+                } else {
+                    tracker->highestRankingServiceEntry = nullptr;
+                }
+                for (const auto& cb : tracker->setCallbacks) {
+                    if (tracker->highestRankingServiceEntry) {
+                        auto& e = tracker->highestRankingServiceEntry;
+                        cb(e->svc, e->properties, e->owner);
+                    } else /*"unset"*/ {
+                        cb(nullptr, nullptr, nullptr);
+                    }
+                }
+                lck.unlock();
+                tracker->waitForExpiredSvcEntry(prevEntry);
+            };
+        }
     };
 
     /**
@@ -696,22 +751,39 @@ namespace celix {
          * @return The new meta tracker as shared ptr.
          * @throws celix::Exception.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         static std::shared_ptr<MetaTracker> create(
                 std::shared_ptr<celix_bundle_context_t> cCtx,
                 std::string_view serviceName,
                 std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerCreated,
                 std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerDestroyed) {
-
             auto tracker = std::shared_ptr<MetaTracker>{
                     new MetaTracker{
                             std::move(cCtx),
-                            serviceName,
+                            std::string{serviceName},
                             std::move(onTrackerCreated),
                             std::move(onTrackerDestroyed)},
                     AbstractTracker::delCallback<MetaTracker>()};
             tracker->open();
             return tracker;
         }
+#else
+        static std::shared_ptr<MetaTracker> create(
+                std::shared_ptr<celix_bundle_context_t> cCtx,
+                std::string serviceName,
+                std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerCreated,
+                std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerDestroyed) {
+            auto tracker = std::shared_ptr<MetaTracker>{
+                    new MetaTracker{
+                            std::move(cCtx),
+                            std::move(serviceName),
+                            std::move(onTrackerCreated),
+                            std::move(onTrackerDestroyed)},
+                    AbstractTracker::delCallback<MetaTracker>()};
+            tracker->open();
+            return tracker;
+        }
+#endif
 
         /**
          * @see AbstractTracker::open
@@ -757,11 +829,11 @@ namespace celix {
     private:
         MetaTracker(
                 std::shared_ptr<celix_bundle_context_t> _cCtx,
-                std::string_view _serviceName,
+                std::string _serviceName,
                 std::vector<std::function<void(const ServiceTrackerInfo&)>> _onTrackerCreated,
                 std::vector<std::function<void(const ServiceTrackerInfo&)>> _onTrackerDestroyed) :
                 AbstractTracker{std::move(_cCtx)},
-                serviceName{_serviceName},
+                serviceName{std::move(_serviceName)},
                 onTrackerCreated{std::move(_onTrackerCreated)},
                 onTrackerDestroyed{std::move(_onTrackerDestroyed)} {}
 
