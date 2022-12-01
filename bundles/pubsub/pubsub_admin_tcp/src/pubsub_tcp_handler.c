@@ -608,6 +608,8 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
             celixThreadRwlock_unlock(&handle->dbLock);
         } else {
             L_ERROR("[TCP Socket] Error listen socket cannot bind to %s: %s\n", url ? url : "", strerror(errno));
+            free(pUrl);
+            close(fd);
         }
     }
     return rc;

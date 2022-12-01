@@ -108,6 +108,7 @@ static bool isEmbeddedBundleUrlValid(celix_framework_t *fw, const char* bundleUR
     void* main = dlopen(NULL, RTLD_NOW);
     void* start = dlsym(main, startSymbol);
     void* end = dlsym(main, endSymbol);
+    dlclose(main);
 
     if (start == NULL || end == NULL) {
         valid = false;
@@ -150,6 +151,7 @@ static bool extractBundleEmbedded(celix_framework_t *fw, const char* embeddedBun
     void* main = dlopen(NULL, RTLD_NOW);
     void* start = dlsym(main, startSymbol);
     void* end = dlsym(main, endSymbol);
+    dlclose(main);
 
     if (start == NULL || end == NULL) {
         FW_LOG(CELIX_LOG_LEVEL_ERROR, "Cannot extract embedded bundle, could not find symbols `%s` and/or `%s` for embedded bundle `%s`", startSymbol, endSymbol, embeddedBundle);
@@ -235,6 +237,7 @@ celix_array_list_t* celix_framework_utils_listEmbeddedBundles() {
         }
         free(bundles);
     }
+    dlclose(main);
     return list;
 }
 

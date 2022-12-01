@@ -422,6 +422,6 @@ static const char* importRegistration_getUrl(import_registration_t *reg) {
 }
 
 static const char* importRegistration_getServiceName(import_registration_t *reg) {
-    return reg->endpoint->service;
+    return reg->endpoint->serviceName;
 }
 

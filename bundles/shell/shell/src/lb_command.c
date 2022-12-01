@@ -188,10 +188,7 @@ bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *o
     lb_options_t opts;
     memset(&opts, 0, sizeof(opts));
 
-    const char* config = celix_bundleContext_getProperty(ctx, CELIX_SHELL_USE_ANSI_COLORS, CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
-    opts.useColors = config != NULL && strncmp("true", config, 5) == 0;
-
-
+    opts.useColors = celix_bundleContext_getPropertyAsBool(ctx, CELIX_SHELL_USE_ANSI_COLORS, CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
     opts.show_location        = false;
     opts.show_symbolic_name   = false;
     opts.show_update_location = false;
