@@ -96,8 +96,8 @@ celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(const char *str, ce
     return level;
 }
 
-static inline void celix_logUtils_inlinePrintBacktrace(FILE *stream) {
 #ifndef __UCLIBC__
+static inline void celix_logUtils_inlinePrintBacktrace(FILE *stream) {
     void *bbuf[64];
     int nrOfTraces = backtrace(bbuf, 64);
     char **lines = backtrace_symbols(bbuf, nrOfTraces);
@@ -107,8 +107,12 @@ static inline void celix_logUtils_inlinePrintBacktrace(FILE *stream) {
     }
     free(lines);
     fflush(stream);
-#endif
 }
+#else /* __UCLIBC__ */
+static inline void celix_logUtils_inlinePrintBacktrace(FILE *stream __attribute__((unused))) {
+    //nop
+}
+#endif /* __UCLIBC__ */
 
 void celix_logUtils_printBacktrace(FILE* stream) {
     celix_logUtils_inlinePrintBacktrace(stream);
