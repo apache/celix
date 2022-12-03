@@ -22,6 +22,7 @@
 #include "celix_properties.h"
 #include "celix_array_list.h"
 #include "celix_filter.h"
+#include <stdarg.h>
 
 #ifndef CELIX_BUNDLE_CONTEXT_H_
 #define CELIX_BUNDLE_CONTEXT_H_
