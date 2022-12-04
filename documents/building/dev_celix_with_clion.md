@@ -26,6 +26,14 @@ Conan will arrange the building of the Apache Celix dependencies and generate Fi
 Conan will also generate a `active_run.sh` and `deactivate_run.sh` script that does the environment (de)setup for the 
 binary locations of the build dependencies (i.e. configures `PATH` and `LD_LIBRARY_PATH`/`DYLD_LIBRARY_PATH`).
 
+## Configuring CLion for C++17
+C++ code in Celix is default configured for C++14. This is manually changed for C++17 libraries, bundles and test code
+by updating the CMAKE_CXX_STANDARD var (`set(CMAKE_CXX_STANDARD 17`) in their respective CMakelists.txt files.
+
+The downside is that CLion seems to only take into account the top level CMAKE_CXX_STANDARD value.
+To ensure that CLion provides the right syntax support for C++17, add `-DCMAKE_CXX_STANDARD=17` to the `CMake Options`
+in `File` -> `Settings` -> `Build, Execution, Deployment` -> `CMake`.
+
 ## Setting up the build directory
 ```shell
 #clone git repo
