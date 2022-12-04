@@ -15,15 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(CXX_REMOTE_SERVICE_ADMIN "Option to enable building the C++17 Remote Service Admin Service bundles" OFF)
+celix_subproject(CXX_REMOTE_SERVICE_ADMIN "Option to enable building the C++17 Remote Service Admin Service bundles" ON)
 if (CXX_REMOTE_SERVICE_ADMIN)
-    message(STATUS  "The C++ Remote Service Admin is still experimental; The API, SPI and implementation is not stable and will change")
-
     add_subdirectory(rsa_spi)
     add_subdirectory(admin)
     add_subdirectory(discovery_configured)
     add_subdirectory(integration)
-
-    #NOTE the topology manager is not yet used. The discovery and RSA need to be refactor for this
-    #add_subdirectory(topology_manager)
 endif()
