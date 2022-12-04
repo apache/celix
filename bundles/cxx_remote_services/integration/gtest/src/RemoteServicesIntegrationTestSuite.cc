@@ -142,7 +142,6 @@ TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService) {
                 elapsed = std::chrono::system_clock::now() - start;
                 while (!promise.isSuccessfullyResolved() && elapsed < std::chrono::seconds{5}) {
                     //assuming failure, because pubsub connection is not fully established (needs both ends)
-                    std::this_thread::sleep_for(std::chrono::milliseconds{10});
                     promise = calc.add(2, 4);
                     promise.wait();
                     elapsed = std::chrono::system_clock::now() - start;
