@@ -33,8 +33,10 @@ if (EXAMPLES)
         add_subdirectory(hello_world_cxx)
         add_subdirectory(dm_example_cxx)
         add_subdirectory(services_example_cxx)
-        add_subdirectory(readme_cxx_examples)
         add_subdirectory(dependency_manager_example_cxx)
+    endif ()
+    if (CELIX_CXX17)
+        add_subdirectory(readme_cxx_examples)
     endif ()
 
     #TODO refactor export_import

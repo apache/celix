@@ -16,7 +16,8 @@
 # under the License.
 
 celix_subproject(CXX_REMOTE_SERVICE_ADMIN "Option to enable building the C++17 Remote Service Admin Service bundles" ON)
-if (CXX_REMOTE_SERVICE_ADMIN)
+if (CXX_REMOTE_SERVICE_ADMIN AND CELIX_CXX17)
+    set(CMAKE_CXX_STANDARD 17)
     add_subdirectory(rsa_spi)
     add_subdirectory(admin)
     add_subdirectory(discovery_configured)

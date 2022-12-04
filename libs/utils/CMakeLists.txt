@@ -83,7 +83,9 @@ add_library(Celix::utils ALIAS utils)
 
 
 if (ENABLE_TESTING)
-    add_subdirectory(gtest)
+    if (CELIX_CXX17) #utils tests are C++17
+        add_subdirectory(gtest)
+    endif()
 
     find_package(CppUTest)
 
