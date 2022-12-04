@@ -923,20 +923,19 @@ void celix::impl::SharedPromiseState<T>::complete(std::unique_lock<std::mutex>& 
     if (!lck.owns_lock()) {
         lck.lock();
     }
-    if (done) {
-        throw celix::PromiseInvocationException("Promise is already resolved");
-    }
-    done = true;
-    cond.notify_all();
-    while (!chain.empty()) {
-        std::vector<std::function<void()>> localChains{};
-        localChains.swap(chain);
-        lck.unlock();
-        for (auto &chainTask : localChains) {
-            executor->execute(priority, std::move(chainTask));
+    if (!done) {
+        done = true;
+        cond.notify_all();
+        while (!chain.empty()) {
+            std::vector<std::function<void()>> localChains{};
+            localChains.swap(chain);
+            lck.unlock();
+            for (auto &chainTask: localChains) {
+                executor->execute(priority, std::move(chainTask));
+            }
+            localChains.clear();
+            lck.lock();
         }
-        localChains.clear();
-        lck.lock();
     }
 }
 
@@ -944,19 +943,18 @@ inline void celix::impl::SharedPromiseState<void>::complete(std::unique_lock<std
     if (!lck.owns_lock()) {
         lck.lock();
     }
-    if (done) {
-        throw celix::PromiseInvocationException("Promise is already resolved");
-    }
-    done = true;
-    cond.notify_all();
-    while (!chain.empty()) {
-        std::vector<std::function<void()>> localChains{};
-        localChains.swap(chain);
-        lck.unlock();
-        for (auto &chainTask : localChains) {
-            executor->execute(priority, std::move(chainTask));
+    if (!done) {
+        done = true;
+        cond.notify_all();
+        while (!chain.empty()) {
+            std::vector<std::function<void()>> localChains{};
+            localChains.swap(chain);
+            lck.unlock();
+            for (auto &chainTask: localChains) {
+                executor->execute(priority, std::move(chainTask));
+            }
+            localChains.clear();
+            lck.lock();
         }
-        localChains.clear();
-        lck.lock();
     }
 }
