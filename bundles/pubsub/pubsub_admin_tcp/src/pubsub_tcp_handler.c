@@ -553,64 +553,65 @@ int pubsub_tcpHandler_listen(pubsub_tcpHandler_t *handle, char *url) {
     psa_tcp_connection_entry_t *entry =
         hashMap_get(handle->connection_url_map, (void *) (intptr_t) url);
     celixThreadRwlock_unlock(&handle->dbLock);
-    if (entry == NULL) {
-        char protocol[] = "tcp";
-        int fd = pubsub_tcpHandler_open(handle, url);
-        rc = fd;
-        struct sockaddr_in *sin = pubsub_utils_url_from_fd(fd);
-        // Make handler fd entry
-        char *pUrl = pubsub_utils_url_get_url(sin, protocol);
+    if (entry != NULL) {
+        // already exist
+        return rc;
+    }
+    char protocol[] = "tcp";
+    int fd = pubsub_tcpHandler_open(handle, url);
+    rc = fd;
+    if (rc < 0) {
+        return rc;
+    }
+    struct sockaddr_in *sin = pubsub_utils_url_from_fd(fd);
+    // Make handler fd entry
+    char *pUrl = pubsub_utils_url_get_url(sin, protocol);
+    if (sin != NULL && pUrl != NULL) {
         entry = pubsub_tcpHandler_createEntry(handle, fd, pUrl, NULL, sin);
-        if (entry != NULL) {
-            __atomic_store_n(&entry->connected, true, __ATOMIC_RELEASE);
-            free(pUrl);
-            free(sin);
-            celixThreadRwlock_writeLock(&handle->dbLock);
-            if (rc >= 0) {
-                rc = listen(fd, SOMAXCONN);
-                if (rc != 0) {
-                    L_ERROR("[TCP Socket] Error listen: %s\n", strerror(errno));
-                    pubsub_tcpHandler_freeEntry(entry);
-                    entry = NULL;
-                }
+    }
+    free(pUrl);
+    free(sin);
+    if (entry != NULL) {
+        __atomic_store_n(&entry->connected, true, __ATOMIC_RELEASE);
+        if (rc >= 0) {
+            rc = listen(fd, SOMAXCONN);
+            if (rc != 0) {
+                L_ERROR("[TCP Socket] Error listen: %s\n", strerror(errno));
             }
-            if (rc >= 0) {
-                rc = pubsub_tcpHandler_makeNonBlocking(handle, fd);
-                if (rc < 0) {
-                    pubsub_tcpHandler_freeEntry(entry);
-                    entry = NULL;
-                }
-            }
-            if ((rc >= 0) && (handle->efd >= 0)) {
+        }
+        if (rc >= 0) {
+            rc = pubsub_tcpHandler_makeNonBlocking(handle, fd);
+        }
+        if ((rc >= 0) && (handle->efd >= 0)) {
 #if defined(__APPLE__)
-                struct kevent ev;
+            struct kevent ev;
                 EV_SET (&ev, fd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, 0);
                 rc = kevent(handle->efd, &ev, 1, NULL, 0, NULL);
 #else
-                struct epoll_event event;
-                bzero(&event, sizeof(event)); // zero the struct
-                event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
-                event.data.fd = fd;
-                rc = epoll_ctl(handle->efd, EPOLL_CTL_ADD, fd, &event);
+            struct epoll_event event;
+            bzero(&event, sizeof(event)); // zero the struct
+            event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
+            event.data.fd = fd;
+            rc = epoll_ctl(handle->efd, EPOLL_CTL_ADD, fd, &event);
 #endif
-                if (rc < 0) {
-                    L_ERROR("[TCP Socket] Cannot create poll: %s\n", strerror(errno));
-                    errno = 0;
-                    pubsub_tcpHandler_freeEntry(entry);
-                    entry = NULL;
-                }
-                if (entry) {
-                    L_INFO("[TCP Socket] Using %s for service annunciation", entry->url);
-                    hashMap_put(handle->interface_fd_map, (void *) (intptr_t) entry->fd, entry);
-                    hashMap_put(handle->interface_url_map, entry->url, entry);
-                }
+            if (rc == 0) {
+                L_INFO("[TCP Socket] Using %s for service annunciation", entry->url);
+                celixThreadRwlock_writeLock(&handle->dbLock);
+                hashMap_put(handle->interface_fd_map, (void *) (intptr_t) entry->fd, entry);
+                hashMap_put(handle->interface_url_map, entry->url, entry);
+                celixThreadRwlock_unlock(&handle->dbLock);
+                entry = NULL;
+            } else {
+                L_ERROR("[TCP Socket] Cannot create poll: %s\n", strerror(errno));
             }
-            celixThreadRwlock_unlock(&handle->dbLock);
-        } else {
-            L_ERROR("[TCP Socket] Error listen socket cannot bind to %s: %s\n", url ? url : "", strerror(errno));
-            free(pUrl);
-            close(fd);
         }
+        if (entry) {
+            pubsub_tcpHandler_freeEntry(entry);
+            entry = NULL;
+        }
+    } else {
+        L_ERROR("[TCP Socket] Error listen socket cannot bind to %s: %s\n", url ? url : "", strerror(errno));
+        close(fd);
     }
     return rc;
 }
