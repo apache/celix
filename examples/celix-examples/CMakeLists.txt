@@ -19,7 +19,7 @@ if (COMMAND celix_subproject)
     celix_subproject(EXAMPLES "Option to enable building the Examples" ON DEPS SHELL SHELL_TUI LOG_SERVICE)
 else ()
     set(EXAMPLES true) #celix_subproject is only available in the celix project -> using examples dir in other project is also supported
-    option(CELIX_CXX ON)
+    option(CELIX_CXX14 ON)
 endif ()
 if (EXAMPLES)
     add_definitions(-DADD_CELIX_DEPRECATED_WARNING) #ensure that no deprecated api is used in the examples
@@ -29,7 +29,7 @@ if (EXAMPLES)
     add_subdirectory(services_example_c)
     add_subdirectory(readme_c_examples)
 
-    if (CELIX_CXX)
+    if (CELIX_CXX14)
         add_subdirectory(hello_world_cxx)
         add_subdirectory(dm_example_cxx)
         add_subdirectory(services_example_cxx)
