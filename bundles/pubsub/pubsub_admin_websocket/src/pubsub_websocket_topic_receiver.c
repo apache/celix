@@ -617,7 +617,7 @@ static void psa_websocketTopicReceiver_ready(struct mg_connection *connection, v
                 entry = calloc(1, sizeof(*entry));
                 entry->key = key;
                 entry->uri = strndup(ri->request_uri, 1024 * 1024);
-                entry->socketAddress = strndup(ri->remote_addr, 1024 * 1024);
+                entry->socketAddress = strndup(ri->remote_addr, 48);
                 entry->socketPort = ri->remote_port;
                 entry->connected = true;
                 entry->statically = false;
