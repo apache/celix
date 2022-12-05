@@ -998,7 +998,7 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
             celix_logHelper_warning(manager->loghelper, "Cannot setup TopicSender for %s/%s\n", setupEntry->scope == NULL ? "(null)" : setupEntry->scope, setupEntry->topic);
             celixThreadMutex_lock(&manager->topicSenders.mutex);
             pstm_topic_receiver_or_sender_entry_t* entry = hashMap_get(manager->topicSenders.map, setupEntry->key);
-            entry->matching.needsMatch = false;
+            entry->matching.needsMatch = true;
             celixThreadMutex_unlock(&manager->topicSenders.mutex);
             celix_properties_destroy(setupEntry->topicProperties);
             celix_properties_destroy(setupEntry->endpointResult);
