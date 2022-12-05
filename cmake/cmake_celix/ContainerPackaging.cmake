@@ -238,6 +238,7 @@ function(add_celix_container)
             endif ()
         endif()
         set(STAGE1_LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.stage1.c")
+        set(STAGE2_LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.stage2.c")
 
         file(GENERATE
                 OUTPUT "${STAGE1_LAUNCHER_SRC}"
@@ -263,7 +264,15 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
 "
         )
 
-        file(GENERATE OUTPUT "${LAUNCHER_SRC}" INPUT "${STAGE1_LAUNCHER_SRC}")
+        #Rerun generate to do a second parsing of generator expression
+        file(GENERATE OUTPUT "${STAGE2_LAUNCHER_SRC}" INPUT "${STAGE1_LAUNCHER_SRC}")
+
+        #To prevent unnecessary build times a custom command is used to ensure that the copy to launcher src is only
+        #done if the stage2 file is different
+        add_custom_command(
+                OUTPUT "${LAUNCHER_SRC}"
+                COMMAND ${CMAKE_COMMAND} -E copy "${STAGE2_LAUNCHER_SRC}" "${LAUNCHER_SRC}"
+                DEPENDS "${STAGE2_LAUNCHER_SRC}")
     endif ()
 
     if (LAUNCHER_SRC) #compilation needed
@@ -490,6 +499,8 @@ Add a selection of bundles to the Celix container.
 
 ```CMake
 celix_container_bundles(<celix_container_target_name>
+    [COPY]
+    [NO_COPY]
     [LEVEL (0..6)]
     [INSTALL]
     bundle1
@@ -515,13 +526,17 @@ Optional Arguments:
 - LEVEL: The run level for the added bundles. Default is 3.
 - INSTALL: If this option is present, the bundles will only be installed instead of the default install and start.
            The bundles will be installed after all bundle in LEVEL 0..6 are installed and started.
+- COPY: If this option is present, the bundles will be copied to the container build dir. This option overrides the
+        NO_COPY option used in the add_celix_container call.
+- NO_COPY: If this option is present, the install/start bundles will be configured using a absolute path to the
+           bundle. This option overrides optional NO_COPY option used in the add_celix_container call.
 ]]
 function(celix_container_bundles)
     #0 is container TARGET
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    set(OPTIONS INSTALL)
+    set(OPTIONS INSTALL COPY NO_COPY)
     set(ONE_VAL_ARGS LEVEL)
     set(MULTI_VAL_ARGS )
     cmake_parse_arguments(BUNDLES "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
@@ -538,6 +553,12 @@ function(celix_container_bundles)
     endif ()
     get_target_property(COPY ${CONTAINER_TARGET} "CONTAINER_COPY_BUNDLES")
     get_target_property(IS_FAT ${CONTAINER_TARGET} "CONTAINER_IS_FAT")
+
+    if (BUNDLES_COPY)
+        set(COPY TRUE)
+    elseif (BUNDLES_NO_COPY)
+        set(COPY FALSE)
+    endif ()
 
     foreach(BUNDLE IN ITEMS ${BUNDLES_LIST})
         if (IS_FAT)
