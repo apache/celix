@@ -17,21 +17,23 @@
 
 ######################## Examples for the COPY / NO_COPY option in celix_container_bundles work #######################
 
-#By default bundles in a container will be copied to the bundles dir in the container dir
-add_celix_container(copy_bundles_example1 BUNDLES Celix::log_admin)
-#The shell bundle will also be copied, because of the container copy config
-celix_container_bundles(copy_bundles_example1 LEVEL 1 Celix::shell)
-#The shell_tui bundle will not be copied, because of the NO_COPY option
-celix_container_bundles(copy_bundles_example1 NO_COPY LEVEL 1 Celix::shell_tui)
-#The log_writer_syslog bundle will be copied, because of the COPY option
-celix_container_bundles(copy_bundles_example1 LEVEL 2 COPY Celix::syslog_writer)
+if (TARGET Celix::log_admin AND TARGET Celix::shell AND TARGET Celix::shell_tui AND TARGET Celix::syslog_writer)
+    #By default bundles in a container will be copied to the bundles dir in the container dir
+    add_celix_container(copy_bundles_example1 BUNDLES Celix::log_admin)
+    #The shell bundle will also be copied, because of the container copy config
+    celix_container_bundles(copy_bundles_example1 LEVEL 1 Celix::shell)
+    #The shell_tui bundle will not be copied, because of the NO_COPY option
+    celix_container_bundles(copy_bundles_example1 NO_COPY LEVEL 1 Celix::shell_tui)
+    #The log_writer_syslog bundle will be copied, because of the COPY option
+    celix_container_bundles(copy_bundles_example1 LEVEL 2 COPY Celix::syslog_writer)
 
 
-#Bundles in this container will not be copied to the bundles dir in the container dir, because of the NO_COPY option
-add_celix_container(copy_bundles_example2 NO_COPY BUNDLES Celix::log_admin)
-#The shell bundle will also mpt be copied, because of the container copy config
-celix_container_bundles(copy_bundles_example2 LEVEL 1 Celix::shell)
-#The shell_tui bundle will not be copied, because of the NO_COPY option
-celix_container_bundles(copy_bundles_example2 LEVEL 1 NO_COPY Celix::shell_tui)
-#The log_writer_syslog bundle will be copied, because of the COPY option
-celix_container_bundles(copy_bundles_example2 COPY LEVEL 2 Celix::syslog_writer)
+    #Bundles in this container will not be copied to the bundles dir in the container dir, because of the NO_COPY option
+    add_celix_container(copy_bundles_example2 NO_COPY BUNDLES Celix::log_admin)
+    #The shell bundle will also mpt be copied, because of the container copy config
+    celix_container_bundles(copy_bundles_example2 LEVEL 1 Celix::shell)
+    #The shell_tui bundle will not be copied, because of the NO_COPY option
+    celix_container_bundles(copy_bundles_example2 LEVEL 1 NO_COPY Celix::shell_tui)
+    #The log_writer_syslog bundle will be copied, because of the COPY option
+    celix_container_bundles(copy_bundles_example2 COPY LEVEL 2 Celix::syslog_writer)
+endif ()

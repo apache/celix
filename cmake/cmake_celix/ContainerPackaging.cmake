@@ -264,7 +264,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
 "
         )
 
-        #Rerun generate to do a second parsing of generator expression
+        #Rerun generate to do a second parsing of generator expressions
         file(GENERATE OUTPUT "${STAGE2_LAUNCHER_SRC}" INPUT "${STAGE1_LAUNCHER_SRC}")
 
         #To prevent unnecessary build times a custom command is used to ensure that the copy to launcher src is only
@@ -272,7 +272,8 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
         add_custom_command(
                 OUTPUT "${LAUNCHER_SRC}"
                 COMMAND ${CMAKE_COMMAND} -E copy "${STAGE2_LAUNCHER_SRC}" "${LAUNCHER_SRC}"
-                DEPENDS "${STAGE2_LAUNCHER_SRC}")
+                DEPENDS "${STAGE2_LAUNCHER_SRC}"
+        )
     endif ()
 
     if (LAUNCHER_SRC) #compilation needed
