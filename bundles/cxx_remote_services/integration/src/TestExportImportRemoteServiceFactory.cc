@@ -31,7 +31,7 @@
 #include "pubsub/publisher.h"
 #include "pubsub/subscriber.h"
 
-constexpr auto INVOKE_TIMEOUT = std::chrono::seconds{5};
+constexpr auto INVOKE_TIMEOUT = std::chrono::seconds{2};
 
 struct Calculator$add$Invoke {
     double arg1{};
