@@ -504,7 +504,7 @@ Optional Arguments:
 - COPY: If this option is present, the bundles will be copied to the container build dir. This option overrides the
   NO_COPY option used in the add_celix_container call.
 - NO_COPY: If this option is present, the install/start bundles will be configured using a absolute path to the
-  bundle. This option overrides optional NO_COPY option used in the add_celix_container call.
+  bundle. This option overrides optional COPY option used in the add_celix_container call.
 
 ## celix_container_embedded_bundles
 Embed a selection of bundles to the Celix container.
