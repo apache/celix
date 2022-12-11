@@ -54,14 +54,17 @@ Creating a Celix containers using 'add_celix_container' will lead to a CMake exe
 These targets can be used to run/debug Celix containers from a IDE (if the IDE supports CMake).
 
 Optional Arguments:
+- COPY: With this option the bundles used in the container will be copied in and configured for a bundles directory
+  next to the container executable. Only one of the COPY or NO_COPY options can be provided.
+  Default is COPY.
 - NO_COPY: With this option the bundles used in the container will be configured using absolute paths to the bundles
-  zip files.
-  Default the bundle zip files will be copied in and configured for a bundles directory
-  next to the container executable.
+  zip files. Only one of the COPY or NO_COPY options can be provided.
+  Default is COPY.
 - CXX: With this option the generated Celix launcher (if used) will be a C++ source.
-  This ensures that the Celix launcher is linked against stdlibc++.
+  This ensures that the Celix launcher is linked against stdlibc++. Only one of the C or CXX options can be provided.
   Default is CXX
-- C: With this option the generated Celix launcher (if used) will be a C source.
+- C: With this option the generated Celix launcher (if used) will be a C source. Only one of the C or CXX options can
+  be provided.
   Default is CXX
 - FAT: With this option only embedded bundles are allowed to be added to the container. Ensuring a container executable
   this is not dependent on external bundle zip files.
@@ -90,6 +93,7 @@ Optional Arguments:
 
 ```CMake
 add_celix_container(<celix_container_name>
+    [COPY]
     [NO_COPY]
     [CXX]
     [C]
@@ -111,6 +115,7 @@ add_celix_container(<celix_container_name>
 ```CMake
 add_celix_container(<celix_container_name>
     LAUNCHER launcher
+    [COPY]
     [NO_COPY]
     [CXX]
     [C]
@@ -132,6 +137,7 @@ add_celix_container(<celix_container_name>
 ```CMake
 add_celix_container(<celix_container_name>
     LAUNCHER_SRC launcher_src
+    [COPY]
     [NO_COPY]
     [CXX]
     [C]
@@ -182,7 +188,7 @@ function(add_celix_container)
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    set(OPTIONS NO_COPY C CXX FAT USE_CONFIG)
+    set(OPTIONS COPY NO_COPY C CXX FAT USE_CONFIG)
     set(ONE_VAL_ARGS GROUP NAME LAUNCHER LAUNCHER_SRC DIR)
     set(MULTI_VAL_ARGS BUNDLES INSTALL_BUNDLES EMBEDDED_BUNDLES INSTALL_EMBEDDED_BUNDLES PROPERTIES EMBEDDED_PROPERTIES RUNTIME_PROPERTIES)
     cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
@@ -193,6 +199,12 @@ function(add_celix_container)
     endif ()
     if (NOT DEFINED CONTAINER_DIR)
         set(CONTAINER_DIR "${CMAKE_BINARY_DIR}/deploy")
+    endif ()
+    if (CONTAINER_COPY AND CONTAINER_NO_COPY)
+        message(FATAL_ERROR "Only COPY of NO_COPY can be configured for a Celix container, not both")
+    endif ()
+    if (CONTAINER_C AND CONTAINER_CXX)
+        message(FATAL_ERROR "Only CXX of C can be configured for a Celix container. Not both")
     endif ()
     ######
 
@@ -358,6 +370,8 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
 
     if (CONTAINER_NO_COPY)
         set(CONTAINER_COPY FALSE)
+    elseif (CONTAINER_COPY)
+        set(CONTAINER_COPY TRUE)
     else ()
         set(CONTAINER_COPY TRUE)
     endif ()
@@ -542,6 +556,11 @@ function(celix_container_bundles)
     set(MULTI_VAL_ARGS )
     cmake_parse_arguments(BUNDLES "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
     set(BUNDLES_LIST ${BUNDLES_UNPARSED_ARGUMENTS})
+
+    #Check arguments
+    if (BUNDLES_COPY AND BUNDLES_NO_COPY)
+        message(FATAL_ERROR "Only COPY of NO_COPY can be configured for celix_container_bundles, not both.")
+    endif ()
 
     if (NOT DEFINED BUNDLES_LEVEL)
         set(BUNDLES_LEVEL 3)

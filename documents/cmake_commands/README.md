@@ -345,14 +345,17 @@ Creating a Celix containers using 'add_celix_container' will lead to a CMake exe
 These targets can be used to run/debug Celix containers from a IDE (if the IDE supports CMake).
 
 Optional Arguments:
+- COPY: With this option the bundles used in the container will be copied in and configured for a bundles directory
+  next to the container executable. Only one of the COPY or NO_COPY options can be provided.
+  Default is COPY.
 - NO_COPY: With this option the bundles used in the container will be configured using absolute paths to the bundles
-  zip files.
-  Default the bundle zip files will be copied in and configured for a bundles directory
-  next to the container executable.
+  zip files. Only one of the COPY or NO_COPY options can be provided.
+  Default is COPY.
 - CXX: With this option the generated Celix launcher (if used) will be a C++ source.
-  This ensures that the Celix launcher is linked against stdlibc++.
+  This ensures that the Celix launcher is linked against stdlibc++. Only one of the C or CXX options can be provided.
   Default is CXX
-- C: With this option the generated Celix launcher (if used) will be a C source.
+- C: With this option the generated Celix launcher (if used) will be a C source. Only one of the C or CXX options can
+  be provided.
   Default is CXX
 - FAT: With this option only embedded bundles are allowed to be added to the container. Ensuring a container executable
   this is not dependent on external bundle zip files.
@@ -381,64 +384,67 @@ Optional Arguments:
 
 ```CMake
 add_celix_container(<celix_container_name>
-        [NO_COPY]
-        [CXX]
-        [C]
-        [FAT]
-        [USE_CONFIG]
-        [GROUP group_name]
-        [NAME celix_container_name]
-        [DIR dir]
-        [BUNDLES <bundle1> <bundle2> ...]
-        [INSTALL_BUNDLES <bundle1> <bundle2> ...]
-        [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
-        [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
-        [PROPERTIES "prop1=val1" "prop2=val2" ...]
-        [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
-        [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
-        )
+    [COPY]
+    [NO_COPY]
+    [CXX]
+    [C]
+    [FAT]
+    [USE_CONFIG]
+    [GROUP group_name]
+    [NAME celix_container_name]
+    [DIR dir]
+    [BUNDLES <bundle1> <bundle2> ...]
+    [INSTALL_BUNDLES <bundle1> <bundle2> ...]
+    [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
+    [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
+    [PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
+)
 ```
 
 ```CMake
 add_celix_container(<celix_container_name>
-        LAUNCHER launcher
-        [NO_COPY]
-        [CXX]
-        [C]
-        [FAT]
-        [USE_CONFIG]
-        [GROUP group_name]
-        [NAME celix_container_name]
-        [DIR dir]
-        [BUNDLES <bundle1> <bundle2> ...]
-        [INSTALL_BUNDLES <bundle1> <bundle2> ...]
-        [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
-        [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
-        [PROPERTIES "prop1=val1" "prop2=val2" ...]
-        [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
-        [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
-        )
+    LAUNCHER launcher
+    [COPY]
+    [NO_COPY]
+    [CXX]
+    [C]
+    [FAT]
+    [USE_CONFIG]
+    [GROUP group_name]
+    [NAME celix_container_name]
+    [DIR dir]
+    [BUNDLES <bundle1> <bundle2> ...]
+    [INSTALL_BUNDLES <bundle1> <bundle2> ...]
+    [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
+    [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
+    [PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
+)
 ```
 
 ```CMake
 add_celix_container(<celix_container_name>
-        LAUNCHER_SRC launcher_src
-        [NO_COPY]
-        [CXX]
-        [C]
-        [FAT]
-        [USE_CONFIG]
-        [GROUP group_name]
-        [NAME celix_container_name]
-        [DIR dir]
-        [BUNDLES <bundle1> <bundle2> ...]
-        [INSTALL_BUNDLES <bundle1> <bundle2> ...]
-        [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
-        [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
-        [PROPERTIES "prop1=val1" "prop2=val2" ...]
-        [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
-        [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
-        )
+    LAUNCHER_SRC launcher_src
+    [COPY]
+    [NO_COPY]
+    [CXX]
+    [C]
+    [FAT]
+    [USE_CONFIG]
+    [GROUP group_name]
+    [NAME celix_container_name]
+    [DIR dir]
+    [BUNDLES <bundle1> <bundle2> ...]
+    [INSTALL_BUNDLES <bundle1> <bundle2> ...]
+    [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
+    [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
+    [PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
+)
 ```
 
 Examples:
@@ -446,13 +452,13 @@ Examples:
 #Creates a Celix container in ${CMAKE_BINARY_DIR}/deploy/simple_container which starts 3 bundles located at
 #${CMAKE_BINARY_DIR}/deploy/simple_container/bundles.
 add_celix_container(simple_container
-        BUNDLES
+    BUNDLES
         Celix::shell
         Celix::shell_tui
         Celix::log_admin
-        PROPERTIES
+    PROPERTIES
         CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=debug
-        )
+)
 ```
 
 ```CMake

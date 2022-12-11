@@ -19,7 +19,7 @@
 
 if (TARGET Celix::log_admin AND TARGET Celix::shell AND TARGET Celix::shell_tui AND TARGET Celix::syslog_writer)
     #By default bundles in a container will be copied to the bundles dir in the container dir
-    add_celix_container(copy_bundles_example1 BUNDLES Celix::log_admin)
+    add_celix_container(copy_bundles_example1 COPY BUNDLES Celix::log_admin)
     #The shell bundle will also be copied, because of the container copy config
     celix_container_bundles(copy_bundles_example1 LEVEL 1 Celix::shell)
     #The shell_tui bundle will not be copied, because of the NO_COPY option
