@@ -77,7 +77,7 @@ public:
         EXPECT_GE(bndId, 0);
     }
 
-    void printTopicSendersAndReceivers(celix::BundleContext& ctx) {
+    static void printTopicSendersAndReceivers(celix::BundleContext& ctx) {
         ctx.useService<celix_shell_command>(CELIX_SHELL_COMMAND_SERVICE_NAME)
                 .setFilter((std::string{"("}.append(CELIX_SHELL_COMMAND_NAME).append("=celix::psa_zmq)")))
                 .addUseCallback([](auto& cmd) {
@@ -105,51 +105,50 @@ public:
 
         //When I call the calculator service from the client, I expect an answer
         std::atomic<int> streamCount = 0;
-        std::atomic<double> lastValue = 0.0;
+        std::atomic<double> lastStreamValue = 0.0;
         std::atomic<bool> promiseSuccessful = false;
-        count = clientCtx->useService<ICalculator>()
-                .addUseCallback([&](auto& calc) {
-                    //NOTE inside the use callback components using suspend strategy cannot be updated, because
-                    //the use called on the event thread. So use locking instead.
+        std::atomic<double> promiseValue = 0.0;
 
-                    //testing remote stream
-                    auto stream = calc.result();
-                    auto streamEnded = stream->forEach([&](double event){
-                        lastValue = event;
-                        streamCount++;
-                    });
+        /*
+         * Testing the remote service in a while loop till it is successful or 10 seconds has passed.
+         * Note that because pubsub does not guarantee a connection when used, it is possible - and likely -
+         * that the first remote test iteration fails due to not yet completely connected pubsub.
+         */
+        auto start = std::chrono::system_clock::now();
+        auto now = std::chrono::system_clock::now();
+        int iter = 1;
+        while ((streamCount == 0 || !promiseSuccessful) && (now - start) < std::chrono::seconds{10}) {
+            clientCtx->logInfo("Testing remote C++ iteration %i.", iter++);
+            count = clientCtx->useService<ICalculator>()
+                    .addUseCallback([&](auto& calc) {
+                        //testing remote stream
+                        auto stream = calc.result();
+                        auto streamEnded = stream->forEach([&](double event){
+                            lastStreamValue = event;
+                            streamCount++;
+                        });
+                        streamEnded.onResolve([ctx = clientCtx, i = iter]() {
+                            ctx->logInfo("Stream for iteration %i closed", i);
+                        });
 
-                    auto start = std::chrono::system_clock::now();
-                    auto now = std::chrono::system_clock::now();
-                    int iter = 1;
-                    while (streamCount <= 0 && (now - start) < std::chrono::seconds{5}) {
-                        clientCtx->logInfo("Checking stream for iteration %i.", iter++);
-                        std::this_thread::sleep_for(std::chrono::milliseconds{10});
-                        now = std::chrono::system_clock::now();
-                    }
-
-                    //testing remote promise
-                    start = std::chrono::system_clock::now();
-                    now = std::chrono::system_clock::now();
-                    iter = 1;
-                    while (!promiseSuccessful && (now - start) < std::chrono::seconds{5}) {
-                        clientCtx->logInfo("Checking promise for iteration %i", iter++);
-                        auto promise = calc.add(2, 4).onFailure([ctx = clientCtx](const auto &e) {
-                            ctx->logError("Got remote promise exception: %s", e.what());
+                        //testing remote promise
+                        auto promise = calc.add(2, 4).onFailure([ctx = clientCtx, i = iter](const auto& e) {
+                            ctx->logInfo("Got remote promise exception for iteration %i: %s", i, e.what());
                         });
                         promise.wait();
                         promiseSuccessful = promise.isSuccessfullyResolved();
                         if (promiseSuccessful) {
-                            EXPECT_EQ(6, promise.getValue());
+                            promiseValue = promise.getValue();
                         }
-                        now = std::chrono::system_clock::now();
-                    }
-                })
-                .build();
+                    })
+                    .build();
+            now = std::chrono::system_clock::now();
+        }
         EXPECT_EQ(count, 1);
         EXPECT_GE(streamCount, 1);
-        EXPECT_GE(lastValue, 0.0);
+        EXPECT_GE(lastStreamValue, 0.0);
         EXPECT_TRUE(promiseSuccessful);
+        EXPECT_EQ(6, promiseValue);
 
         if (streamCount == 0 || !promiseSuccessful) {
             //extra debug info
@@ -169,84 +168,6 @@ TEST_F(RemoteServicesIntegrationTestSuite, StartStopFrameworks) {
     installConsumerBundles();
 }
 
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService1) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService2) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService3) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService4) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService5) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService6) {
-    invokeRemoteCalcService();
-
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService7) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService8) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService9) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService10) {
-    invokeRemoteCalcService();
-}
-
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService11) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService12) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService13) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService14) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService15) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService16) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService17) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService18) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService19) {
-    invokeRemoteCalcService();
-}
-
-TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService20) {
+TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService) {
     invokeRemoteCalcService();
 }
