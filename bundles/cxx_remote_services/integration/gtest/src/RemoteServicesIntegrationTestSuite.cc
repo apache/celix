@@ -136,16 +136,9 @@ TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService) {
                 EXPECT_GE(streamCount,0 );
                 EXPECT_GE(lastValue, 0.0);
 
+                //note, because stream event is received the pubsub connection is ensured to be connected.
                 auto promise = calc.add(2, 4);
                 promise.wait();
-                start = std::chrono::system_clock::now();
-                elapsed = std::chrono::system_clock::now() - start;
-                while (!promise.isSuccessfullyResolved() && elapsed < std::chrono::seconds{5}) {
-                    //assuming failure, because pubsub connection is not fully established (needs both ends)
-                    promise = calc.add(2, 4);
-                    promise.wait();
-                    elapsed = std::chrono::system_clock::now() - start;
-                }
                 EXPECT_TRUE(promise.isSuccessfullyResolved());
                 if (promise.isSuccessfullyResolved()) {
                     EXPECT_EQ(6, promise.getValue());
