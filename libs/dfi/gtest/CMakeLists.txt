@@ -31,7 +31,7 @@ add_executable(test_dfi
 		src/json_rpc_avpr_tests.cpp
 		src/avrobin_serialization_tests.cpp
 )
-
+target_compile_options(test_dfi PRIVATE -O0)
 target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils libffi::libffi jansson::jansson GTest::gtest GTest::gtest_main)
 
 file(COPY ${CMAKE_CURRENT_LIST_DIR}/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
