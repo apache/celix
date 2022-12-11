@@ -147,8 +147,8 @@ endif()
 
 # Set build type specific flags
 # Debug
-set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS}")
+set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG -Og ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG -Og ${CMAKE_CXX_FLAGS}")
 set(CMAKE_DEBUG_POSTFIX "d")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
