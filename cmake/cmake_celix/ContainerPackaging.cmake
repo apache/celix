@@ -250,7 +250,6 @@ function(add_celix_container)
             endif ()
         endif()
         set(STAGE1_LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.stage1.c")
-        set(STAGE2_LAUNCHER_SRC "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.stage2.c")
 
         file(GENERATE
                 OUTPUT "${STAGE1_LAUNCHER_SRC}"
@@ -277,15 +276,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
         )
 
         #Rerun generate to do a second parsing of generator expressions
-        file(GENERATE OUTPUT "${STAGE2_LAUNCHER_SRC}" INPUT "${STAGE1_LAUNCHER_SRC}")
-
-        #To prevent unnecessary build times a custom command is used to ensure that the copy to launcher src is only
-        #done if the stage2 file is different
-        add_custom_command(
-                OUTPUT "${LAUNCHER_SRC}"
-                COMMAND ${CMAKE_COMMAND} -E copy "${STAGE2_LAUNCHER_SRC}" "${LAUNCHER_SRC}"
-                DEPENDS "${STAGE2_LAUNCHER_SRC}"
-        )
+        file(GENERATE OUTPUT "${LAUNCHER_SRC}" INPUT "${STAGE1_LAUNCHER_SRC}")
     endif ()
 
     if (LAUNCHER_SRC) #compilation needed
