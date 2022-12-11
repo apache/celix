@@ -116,33 +116,26 @@ TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService) {
             })
             .build();
     std::shared_ptr<celix::PushStream<double>> stream;
-    //When I call the calculator service from the client, I expect an answer
+    //When I call the calculator service from the client, I expect a answer
+    std::atomic<int> streamCount = 0;
+    std::atomic<double> lastValue = 0.0;
     count = clientCtx->useService<ICalculator>()
             .addUseCallback([&](auto& calc) {
-                std::atomic<int> streamCount{0};
-                std::atomic<double> lastValue{0.0};
                 stream = calc.result();
                 auto streamEnded = stream->forEach([&](double event){
                     lastValue = event;
                     streamCount++;
                 });
 
-                auto start = std::chrono::system_clock::now();
-                auto elapsed = std::chrono::system_clock::now() - start;
-                while (streamCount.load() == 0 && elapsed < std::chrono::seconds{5}) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds{10});
-                    elapsed = std::chrono::system_clock::now() - start;
-                }
-                EXPECT_GE(streamCount,0 );
-                EXPECT_GE(lastValue, 0.0);
-
-                //note, because stream event is received the pubsub connection is ensured to be connected.
                 auto promise = calc.add(2, 4);
                 promise.wait();
                 EXPECT_TRUE(promise.isSuccessfullyResolved());
                 if (promise.isSuccessfullyResolved()) {
                     EXPECT_EQ(6, promise.getValue());
                 }
+                sleep(1);
+                EXPECT_GE(streamCount,0 );
+                EXPECT_GE(lastValue, 0.0);
             })
             .build();
     EXPECT_EQ(count, 1);
