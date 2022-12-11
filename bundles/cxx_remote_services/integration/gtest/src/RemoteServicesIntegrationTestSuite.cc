@@ -31,8 +31,7 @@ public:
                 {celix::FRAMEWORK_CACHE_DIR, ".clientCache"},
                 //Static configuration to let the pubsub zmq operate without discovery
                 {"PSA_ZMQ_STATIC_BIND_URL_FOR_test_invoke_default", "ipc:///tmp/pubsub-test-return"},
-                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_return_default", "ipc:///tmp/pubsub-test-invoke" },
-                {"PUBSUB_TOPOLOGY_MANAGER_HANDLING_THREAD_SLEEPTIME_MS", "1"}
+                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_return_default", "ipc:///tmp/pubsub-test-invoke" }
         };
         clientFw = celix::createFramework(clientConfig);
         clientCtx = clientFw->getFrameworkBundleContext();
@@ -42,8 +41,7 @@ public:
                 {celix::FRAMEWORK_CACHE_DIR, ".serverCache"},
                 //Static configuration to let the pubsub zmq operate without discovery
                 {"PSA_ZMQ_STATIC_BIND_URL_FOR_test_return_default", "ipc:///tmp/pubsub-test-invoke"},
-                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_invoke_default", "ipc:///tmp/pubsub-test-return" },
-                {"PUBSUB_TOPOLOGY_MANAGER_HANDLING_THREAD_SLEEPTIME_MS", "1"}
+                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_invoke_default", "ipc:///tmp/pubsub-test-return" }
         };
         serverFw = celix::createFramework(serverConfig);
         serverCtx = serverFw->getFrameworkBundleContext();
@@ -131,11 +129,11 @@ TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService) {
 
                 auto start = std::chrono::system_clock::now();
                 auto elapsed = std::chrono::system_clock::now() - start;
-                while (streamCount == 0 && elapsed < std::chrono::seconds{5}) {
+                while (streamCount.load() == 0 && elapsed < std::chrono::seconds{5}) {
                     std::this_thread::sleep_for(std::chrono::milliseconds{10});
                     elapsed = std::chrono::system_clock::now() - start;
                 }
-                EXPECT_GE(streamCount, 0);
+                EXPECT_GE(streamCount,0 );
                 EXPECT_GE(lastValue, 0.0);
 
                 auto promise = calc.add(2, 4);
