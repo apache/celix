@@ -118,3 +118,7 @@ endif ()
 if (TARGET Celix::pubsub_admin_nanomsg)
   find_dependency(NanoMsg)
 endif ()
+if (TARGET Celix::rsa_discovery_zeroconf)
+  find_dependency(DNSSD)
+endif ()
+

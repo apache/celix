@@ -67,6 +67,7 @@ class CelixConan(ConanFile):
         "build_rsa_discovery_etcd": [True, False],
         "build_rsa_remote_service_admin_shm_v2": [True, False],
         "build_rsa_json_rpc": [True, False],
+        "build_rsa_discovery_zeroconf": [True, False],
         "build_shell": [True, False],
         "build_remote_shell": [True, False],
         "build_shell_bonjour": [True, False],
@@ -112,6 +113,7 @@ class CelixConan(ConanFile):
         "build_rsa_discovery_etcd": False,
         "build_rsa_remote_service_admin_shm_v2": False,
         "build_rsa_json_rpc": False,
+        "build_rsa_discovery_zeroconf": False,
         "build_shell": True,
         "build_remote_shell": False,
         "build_shell_bonjour": False,
@@ -227,6 +229,8 @@ class CelixConan(ConanFile):
             self.options['zeromq'].shared = True
             self.requires("czmq/4.2.0")
             self.options['czmq'].shared = True
+        if self.options.build_rsa_discovery_zeroconf:
+            self.requires("mdnsresponder/1310.140.1")
 
     def _configure_cmake(self):
         if self._cmake:
