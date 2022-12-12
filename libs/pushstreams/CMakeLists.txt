@@ -15,10 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set(PUSHSTREAMS_DEFAULT_ON ${CELIX_CXX})
+set(PUSHSTREAMS_DEFAULT_ON ${CELIX_CXX17})
 celix_subproject(PUSHSTREAMS "Option to build the PushStreams library" ${PUSHSTREAMS_DEFAULT_ON} DEPS PROMISES)
 
 if (PUSHSTREAMS)
+    set(CMAKE_CXX_STANDARD 17)
     find_package(Threads)
     add_library(PushStreams INTERFACE)
     target_include_directories(PushStreams INTERFACE

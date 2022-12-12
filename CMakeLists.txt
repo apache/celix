@@ -83,7 +83,14 @@ set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
 set(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
 
 # Set C++ specific flags
-set(CMAKE_CXX_STANDARD 17) #Celix header only C++ supported is based on C++17.
+if (NOT DEFINED CMAKE_CXX_STANDARD)
+    #Celix header only C++ supported is based on C++14 and C++17.
+    #Default using C++14 to ensure the code compiles for C++14.
+    #To ensure IDE like CLion can provide optimal C++17 support, the CMAKE_CXX_STANDARD variable is only set if
+    #not already defined.
+    set(CMAKE_CXX_STANDARD 14)
+endif ()
+
 set(CMAKE_CXX_FLAGS "-fno-rtti ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ ${CMAKE_CXX_FLAGS}")
 
@@ -186,7 +193,12 @@ endif ()
 
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
 
-option(CELIX_CXX "Build C++ libraries and bundles. Note for tests C++ is always used." ON)
+option(CELIX_CXX14 "Build C++14 libraries and bundles. Note for tests C++ is always used." ON)
+option(CELIX_CXX17 "Build C++17 libraries and bundles." ON)
+if (CELIX_CXX17 AND NOT CELIX_CXX14)
+    set(CELIX_CXX14 ON)
+endif ()
+
 option(ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11 "Test the Dependency Manager for C++11 support" OFF)
 option(ENABLE_TESTING_FOR_CXX14 "Test celix utils and framework C++ header for C++14 support" OFF)
 

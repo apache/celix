@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+set(CMAKE_CXX_STANDARD 17)
+
 #MyBundle example
 #find_package(Celix REQUIRED) NOTE not usable inside Celix project
 

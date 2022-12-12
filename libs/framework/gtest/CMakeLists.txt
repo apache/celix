@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+set(CMAKE_CXX_STANDARD 17)
+
 add_celix_bundle(simple_test_bundle1 NO_ACTIVATOR VERSION 1.0.0)
 celix_bundle_name(simple_test_bundle1 "Simple Test Bundle")
 celix_bundle_group(simple_test_bundle1 "test/group")

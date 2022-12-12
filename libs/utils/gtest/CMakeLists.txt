@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+set(CMAKE_CXX_STANDARD 17)
+
 set(CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS
         src/CxxUtilsTestSuite.cc
         src/CxxPropertiesTestSuite.cc

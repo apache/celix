@@ -30,6 +30,6 @@ add_subdirectory(launcher)
 
 #add_subdirectory(event_admin)# event_admin is unstable
 add_subdirectory(dependency_manager)
-if (CELIX_CXX)
+if (CELIX_CXX14)
     add_subdirectory(dependency_manager_cxx)
 endif ()

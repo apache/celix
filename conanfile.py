@@ -79,7 +79,8 @@ class CelixConan(ConanFile):
         "build_launcher": [True, False],
         "build_promises": [True, False],
         "build_pushstreams": [True, False],
-        "celix_cxx": [True, False],
+        "celix_cxx14": [True, False],
+        "celix_cxx17": [True, False],
         "celix_install_deprecated_api": [True, False],
         "celix_add_deprecated_attributes": [True, False],
         "celix_use_compression_for_bundle_zips": [True, False],
@@ -108,7 +109,7 @@ class CelixConan(ConanFile):
         "build_pubsub_psa_udp_mc": False,
         "build_pubsub_psa_ws": True,
         "build_pubsub_discovery_etcd": False,
-        "build_cxx_remote_service_admin": False,
+        "build_cxx_remote_service_admin": True,
         "build_cxx_rsa_integration": False,
         "build_remote_service_admin": True,
         "build_rsa_remote_service_admin_dfi": True,
@@ -126,7 +127,8 @@ class CelixConan(ConanFile):
         "build_launcher": False,
         "build_promises": False,
         "build_pushstreams": False,
-        "celix_cxx": False,
+        "celix_cxx14": False,
+        "celix_cxx17": False,
         "celix_install_deprecated_api": False,
         "celix_add_deprecated_attributes": True,
         "celix_use_compression_for_bundle_zips": True,
@@ -160,8 +162,10 @@ class CelixConan(ConanFile):
             for opt, val in self.options.values.items():
                 if opt.startswith('build_'):
                     setattr(self.options, opt, True)
-        if not self.options.celix_cxx:
-            self.options.build_cxx_remote_service_admin = False
+        if not self.options.celix_cxx14:
+            self.options.celix_cxx17 = false
+        if not self.options.celix_cxx17:
+                self.options.build_cxx_remote_service_admin = False
             self.options.build_promises = False
             self.options.build_pushstreams = False
         if not self.options.build_cxx_remote_service_admin:

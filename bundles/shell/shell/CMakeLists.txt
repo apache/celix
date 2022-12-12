@@ -71,7 +71,7 @@ if (SHELL)
 	#Setup target aliases to match external usage
 	add_library(Celix::shell ALIAS shell)
 
-	if (CELIX_CXX)
+	if (CELIX_CXX14)
 		add_celix_bundle(ShellCxx
 			SYMBOLIC_NAME "Apache_Celix_CxxShell"
 			VERSION "2.1.0"

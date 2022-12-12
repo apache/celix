@@ -55,7 +55,7 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONE
 #Alias setup to match external usage
 add_library(Celix::framework ALIAS framework)
 
-if (ENABLE_TESTING)
+if (ENABLE_TESTING AND CELIX_CXX17) #framework tests are C++17
     add_subdirectory(gtest)
 endif()
 

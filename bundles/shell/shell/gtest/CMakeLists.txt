@@ -30,7 +30,7 @@ add_test(NAME test_shell COMMAND test_shell)
 setup_target_for_coverage(test_shell SCAN_DIR ..)
 
 
-if (CELIX_CXX)
+if (CELIX_CXX14)
     add_executable(test_cxx_shell src/ShellTestSuite.cc)
 
     target_link_libraries(test_cxx_shell PRIVATE Celix::framework Celix::shell_api GTest::gtest GTest::gtest_main)
