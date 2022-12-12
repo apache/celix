@@ -173,8 +173,9 @@ void celix_dmComponent_destroy(celix_dm_component_t *component) {
             celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_ERROR,
                    "Cannot synchronized destroy dm component on Celix event thread. Use celix_dmComponent_destroyAsync instead!");
         } else {
+            celix_bundle_context_t* context = component->context;
             celix_dmComponent_destroyAsync(component, NULL, NULL);
-            celix_bundleContext_waitForEvents(component->context);
+            celix_bundleContext_waitForEvents(context);
         }
     }
 }
