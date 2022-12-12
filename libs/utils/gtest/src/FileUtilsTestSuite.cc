@@ -140,7 +140,8 @@ TEST_F(FileUtilsTestSuite, ExtractZipDataTest) {
 
     //Given test zip data, I can extract this to a provided location and the correct files are extracted
     EXPECT_FALSE(celix_utils_fileExists(extractLocation));
-    auto status = celix_utils_extractZipData(data, dataSize, extractLocation, nullptr);
+    //adding 200 extra size to verify this does not result into issues.
+    auto status = celix_utils_extractZipData(data, dataSize + 200, extractLocation, nullptr);
     EXPECT_EQ(status, CELIX_SUCCESS);
 
     EXPECT_TRUE(celix_utils_fileExists(file1));
@@ -157,8 +158,8 @@ TEST_F(FileUtilsTestSuite, ExtractZipDataTest) {
 }
 #else
 //Given a zip files linked against the execute-able, can this be handled as a zip data entry.
-extern const uint8_t test_data_start[]  asm("_binary_test_zip_start");
-extern const uint8_t test_data_end[]    asm("_binary_test_zip_end");
+extern const uint8_t test_data_start[]  asm("binary_test_zip_start");
+extern const uint8_t test_data_end[]    asm("binary_test_zip_end");
 
 TEST_F(FileUtilsTestSuite, ExtractZipDataTest) {
     const char* extractLocation = "extract_location";

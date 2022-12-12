@@ -22,9 +22,10 @@ add_subdirectory(phase2)
 add_subdirectory(phase3)
 add_subdirectory(phase3_locking)
 
-add_celix_container("dm_example_cxx"
+add_celix_container(dm_example_cxx
+    FAT
     GROUP cxx_examples
-    BUNDLES
+    EMBEDDED_BUNDLES
         Celix::ShellCxx
         Celix::shell_tui
 
@@ -35,26 +36,4 @@ add_celix_container("dm_example_cxx"
         dm_example_cxx_phase3_locking
 )
 
-
-add_celix_docker(dm_exmpl_cxx_docker
-       CXX
-       IMAGE_NAME dm_exmpl_cxx
-       GROUP examples
-       BUNDLES_DIR /usr/share/bundles
-       WORKDIR /workspace
-       BUNDLES
-           Celix::shell
-           Celix::shell_tui
-           Celix::dm_shell
-           Celix::log_admin
-
-
-           dm_example_cxx_phase1
-           dm_example_cxx_phase2a
-           dm_example_cxx_phase2b
-           dm_example_cxx_phase3
-           dm_example_cxx_phase3_locking
-       PROPERTIES
-           LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-)
 

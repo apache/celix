@@ -32,12 +32,16 @@ if (NOT COMMAND celix_subproject)
 
     set(PROMISES_STANDALONE ON)
 else ()
-    set(PROMISES_DEFAULT_ON ${CELIX_CXX})
+    set(PROMISES_DEFAULT_ON ${CELIX_CXX17})
     celix_subproject(PROMISES "Option to build the Promises library" ${PROMISES_DEFAULT_ON})
 endif ()
 
 if (PROMISES OR PROMISES_STANDALONE)
+    set(CMAKE_CXX_STANDARD 17)
     message("The Celix::Promises implementation is still experiment and the api and behaviour will probably still change.")
+
+    set(CMAKE_CXX_STANDARD 17)
+
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads)
 

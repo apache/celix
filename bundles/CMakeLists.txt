@@ -23,8 +23,4 @@ add_subdirectory(device_access)
 add_subdirectory(deployment_admin)
 add_subdirectory(remote_services)
 add_subdirectory(pubsub)
-
-# Celix C++17 bundles
-if (CELIX_CXX)
-    add_subdirectory(cxx_remote_services)
-endif ()
+add_subdirectory(cxx_remote_services)

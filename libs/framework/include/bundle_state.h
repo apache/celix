@@ -16,38 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * bundle_state.h
- *
- *  \date       Sep 27, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #ifndef BUNDLE_STATE_H_
 #define BUNDLE_STATE_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-enum celix_bundleState {
-	OSGI_FRAMEWORK_BUNDLE_UNKNOWN = 0x00000000,
-	OSGI_FRAMEWORK_BUNDLE_UNINSTALLED = 0x00000001,
-	OSGI_FRAMEWORK_BUNDLE_INSTALLED = 0x00000002,
-	OSGI_FRAMEWORK_BUNDLE_RESOLVED = 0x00000004,
-	OSGI_FRAMEWORK_BUNDLE_STARTING = 0x00000008,
-	OSGI_FRAMEWORK_BUNDLE_STOPPING = 0x00000010,
-	OSGI_FRAMEWORK_BUNDLE_ACTIVE = 0x00000020,
-};
-
-typedef enum celix_bundleState bundle_state_e;
-typedef enum celix_bundleState celix_bundle_state_e;
-
-const char* celix_bundleState_getName(celix_bundle_state_e state);
-
-#ifdef __cplusplus
-}
-#endif
+#include "celix_bundle_state.h"
 
 #endif /* BUNDLE_STATE_H_ */

@@ -45,7 +45,7 @@ celix_status_t celixThread_create(celix_thread_t *new_thread, celix_thread_attr_
     return status;
 }
 
-#if defined(_GNU_SOURCE) && defined(__linux__)
+#if defined(_GNU_SOURCE) && defined(__linux__) && !defined(__UCLIBC__)
 void celixThread_setName(celix_thread_t *thread, const char *threadName) {
     pthread_setname_np(thread->thread, threadName);
 }

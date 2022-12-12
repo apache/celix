@@ -480,7 +480,7 @@ namespace celix {
         operator*()
         { return this->getValue(); }
     private:
-        const std::shared_ptr<celix::impl::SharedPromiseState<T>> state;
+        std::shared_ptr<celix::impl::SharedPromiseState<T>> state;
 
         friend class Promise<void>;
     };
@@ -550,7 +550,7 @@ namespace celix {
         template<typename U>
         [[nodiscard]] celix::Promise<U> then(std::function<celix::Promise<U>(celix::Promise<void>)> success, std::function<void(celix::Promise<void>)> failure = {});
     private:
-        const std::shared_ptr<celix::impl::SharedPromiseState<void>> state;
+        std::shared_ptr<celix::impl::SharedPromiseState<void>> state;
     };
 }
 

@@ -67,6 +67,7 @@ namespace celix {
          * @return The new ServiceRegistration object as shared ptr.
          * @throws celix::Exception
          */
+#if __cplusplus >= 201703L //C++17 or higher
         static std::shared_ptr<ServiceRegistration> create(std::shared_ptr<celix_bundle_context_t> cCtx,
                                                            std::shared_ptr<void> svc,
                                                            std::string_view name,
@@ -76,54 +77,25 @@ namespace celix {
                                                            bool unregisterAsync,
                                                            std::vector<std::function<void(ServiceRegistration&)>> onRegisteredCallbacks,
                                                            std::vector<std::function<void(ServiceRegistration&)>> onUnregisteredCallbacks) {
-            auto delCallback = [](ServiceRegistration* reg) {
-                if (reg->getState() == ServiceRegistrationState::UNREGISTERED) {
-                    delete reg;
-                } else {
-                    /*
-                     * if not registered/unregistering -> unregister() -> new event on the Celix event thread
-                     * if unregistering -> nop unregister() -> there is already a event on the Celix event thread to unregister
-                     */
-                    reg->unregister();
-
-                    /*
-                     * Creating event on the Event loop, this will be after the unregistration is done
-                     */
-                    auto* fw = celix_bundleContext_getFramework(reg->cCtx.get());
-                    auto* bnd = celix_bundleContext_getBundle(reg->cCtx.get());
-                    long bndId = celix_bundle_getId(bnd);
-                    celix_framework_fireGenericEvent(
-                            fw,
-                            -1,
-                            bndId,
-                            "celix::ServiceRegistration delete callback",
-                            reg,
-                            [](void *data) {
-                                auto* r = static_cast<ServiceRegistration*>(data);
-                                delete r;
-                            },
-                            nullptr,
-                            nullptr);
-                }
-            };
-
-            auto reg = std::shared_ptr<ServiceRegistration>{
-                new ServiceRegistration{
-                    std::move(cCtx),
-                    std::move(svc),
-                    name,
-                    version,
-                    std::move(properties),
-                    registerAsync,
-                    unregisterAsync,
-                    std::move(onRegisteredCallbacks),
-                    std::move(onUnregisteredCallbacks)},
-                delCallback
-            };
-            reg->setSelf(reg);
-            reg->registerService();
-            return reg;
+            return createInternal(std::move(cCtx), std::move(svc), name.data(),
+                                  version.data(), std::move(properties), registerAsync,
+                                  unregisterAsync, std::move(onRegisteredCallbacks), std::move(onUnregisteredCallbacks));
         }
+#else
+        static std::shared_ptr<ServiceRegistration> create(std::shared_ptr<celix_bundle_context_t> cCtx,
+                                                           std::shared_ptr<void> svc,
+                                                           const std::string& name,
+                                                           const std::string& version,
+                                                           celix::Properties properties,
+                                                           bool registerAsync,
+                                                           bool unregisterAsync,
+                                                           std::vector<std::function<void(ServiceRegistration&)>> onRegisteredCallbacks,
+                                                           std::vector<std::function<void(ServiceRegistration&)>> onUnregisteredCallbacks) {
+            return createInternal(std::move(cCtx), std::move(svc), name.c_str(),
+                                  version.c_str(), std::move(properties), registerAsync,
+                                  unregisterAsync, std::move(onRegisteredCallbacks), std::move(onUnregisteredCallbacks));
+        }
+#endif
 
         /**
          * @brief The service name for this service registration.
@@ -256,8 +228,8 @@ namespace celix {
         ServiceRegistration(
                 std::shared_ptr<celix_bundle_context_t> _cCtx,
                 std::shared_ptr<void> _svc,
-                std::string_view _name,
-                std::string_view _version,
+                const char* _name,
+                const char* _version,
                 celix::Properties _properties,
                 bool _registerAsync,
                 bool _unregisterAsync,
@@ -273,6 +245,64 @@ namespace celix {
                 onUnregisteredCallbacks{std::move(_onUnregisteredCallbacks)},
                 svc{std::move(_svc)} {}
 
+        static std::shared_ptr<ServiceRegistration> createInternal(
+                std::shared_ptr<celix_bundle_context_t> cCtx,
+                std::shared_ptr<void> svc,
+                const char* name,
+                const char* version,
+                celix::Properties properties,
+                bool registerAsync,
+                bool unregisterAsync,
+                std::vector<std::function<void(ServiceRegistration&)>> onRegisteredCallbacks,
+        std::vector<std::function<void(ServiceRegistration&)>> onUnregisteredCallbacks) {
+            auto delCallback = [](ServiceRegistration* reg) {
+                if (reg->getState() == ServiceRegistrationState::UNREGISTERED) {
+                    delete reg;
+                } else {
+                    /*
+                     * if not registered/unregistering -> unregister() -> new event on the Celix event thread
+                     * if unregistering -> nop unregister() -> there is already a event on the Celix event thread to unregister
+                     */
+                    reg->unregister();
+
+                    /*
+                     * Creating event on the Event loop, this will be after the unregistration is done
+                     */
+                    auto* fw = celix_bundleContext_getFramework(reg->cCtx.get());
+                    auto* bnd = celix_bundleContext_getBundle(reg->cCtx.get());
+                    long bndId = celix_bundle_getId(bnd);
+                    celix_framework_fireGenericEvent(
+                            fw,
+                            -1,
+                            bndId,
+                            "celix::ServiceRegistration delete callback",
+                            reg,
+                            [](void *data) {
+                                auto* r = static_cast<ServiceRegistration*>(data);
+                                delete r;
+                            },
+                            nullptr,
+                            nullptr);
+                }
+            };
+
+            auto reg = std::shared_ptr<ServiceRegistration>{
+                    new ServiceRegistration{
+                            std::move(cCtx),
+                            std::move(svc),
+                            name,
+                            version,
+                            std::move(properties),
+                            registerAsync,
+                            unregisterAsync,
+                            std::move(onRegisteredCallbacks),
+                            std::move(onUnregisteredCallbacks)},
+                    delCallback
+            };
+            reg->setSelf(reg);
+            reg->registerService();
+            return reg;
+        }
 
         /**
          * @brief Register service in the Celix framework.

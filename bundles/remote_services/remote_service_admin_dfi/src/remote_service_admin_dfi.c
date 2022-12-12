@@ -763,11 +763,9 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         status = CELIX_ENOMEM;
     } else {
         (*endpoint)->id = (char*) celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, NULL);
-        const char *serviceId = NULL;
-        serviceReference_getProperty(reference, (char*) OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
-        (*endpoint)->serviceId = strtoull(serviceId, NULL, 0);
+        (*endpoint)->serviceId = serviceReference_getServiceId(reference);
         (*endpoint)->frameworkUUID = (char*) celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
-        (*endpoint)->service = strndup(interface, 1024*10);
+        (*endpoint)->serviceName = strndup(interface, 1024*10);
         (*endpoint)->properties = endpointProperties;
     }
 
@@ -815,7 +813,7 @@ celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_descriptio
     celix_status_t status = CELIX_SUCCESS;
 
     celix_properties_destroy((*description)->properties);
-    free((*description)->service);
+    free((*description)->serviceName);
     free(*description);
 
     return status;
@@ -865,7 +863,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
         const char *objectClass = celix_properties_get(endpointDescription->properties, "objectClass", NULL);
         const char *serviceVersion = celix_properties_get(endpointDescription->properties, CELIX_FRAMEWORK_SERVICE_VERSION, NULL);
 
-        celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_INFO, "RSA: Import service %s", endpointDescription->service);
+        celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_INFO, "RSA: Import service %s", endpointDescription->serviceName);
         celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_INFO, "Registering service factory (proxy) for service '%s'\n",
                       objectClass);
 

@@ -108,19 +108,19 @@ namespace celix {
         }
 
         void addCCommand(const std::shared_ptr<celix_shell_command>& command, const std::shared_ptr<const celix::Properties>& properties) {
-            addEntry(command, nullptr, properties);
+            addEntry(command, {}, properties);
         }
 
         void remCCommand(const std::shared_ptr<celix_shell_command>& command, const std::shared_ptr<const celix::Properties>& properties) {
-            remEntry(command, nullptr, properties);
+            remEntry(command, {}, properties);
         }
 
         void addCxxCommand(const std::shared_ptr<celix::IShellCommand>& command, const std::shared_ptr<const celix::Properties>& properties) {
-            addEntry(nullptr, command, properties);
+            addEntry({}, command, properties);
         }
 
         void remCxxCommand(const std::shared_ptr<celix::IShellCommand>& command, const std::shared_ptr<const celix::Properties>& properties) {
-            remEntry(nullptr, command, properties);
+            remEntry({}, command, properties);
         }
 
         void setLogService(const std::shared_ptr<celix_log_service> ls) {

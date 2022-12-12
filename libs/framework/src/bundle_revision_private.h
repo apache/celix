@@ -29,6 +29,27 @@
 
 #include "bundle_revision.h"
 
+/**
+ * Creates a new revision for the given inputFile or location.
+ * The location parameter is used to identify the bundle, in case of an update or download, the inputFile
+ *  parameter can be used to point to the actual data. In the OSGi specification this is the inputstream.
+ *
+ * @param fw The Celix framework where to create the bundle revision.
+ * @param root The root for this revision in which the bundle is extracted and state is stored.
+ * @param location The location associated with the revision
+ * @param revisionNr The number of the revision
+ * @param inputFile The (optional) location of the file to use as input for this revision
+ * @param[out] bundle_revision The output parameter for the created revision.
+ *
+ * @return Status code indication failure or success:
+ * 		- CELIX_SUCCESS when no errors are encountered.
+ * 		- CELIX_ENOMEM If allocating memory for <code>bundle_revision</code> failed.
+ */
+celix_status_t bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, long revisionNr, const char *inputFile,
+                                     bundle_revision_pt *bundle_revision);
+
+celix_status_t bundleRevision_destroy(bundle_revision_pt revision);
+
 struct bundleRevision {
 	long revisionNr;
 	char *root;

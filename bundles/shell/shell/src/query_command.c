@@ -184,10 +184,7 @@ bool queryCommand_execute(void *_ptr, const char *command_line_str, FILE *sout, 
 
     opts.nameQueries = celix_arrayList_create();
     opts.filterQueries = celix_arrayList_create();
-
-    const char* config = celix_bundleContext_getProperty(ctx, CELIX_SHELL_USE_ANSI_COLORS, CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
-    opts.useColors = config != NULL && strncmp("true", config, 5) == 0;
-
+    opts.useColors = celix_bundleContext_getPropertyAsBool(ctx, CELIX_SHELL_USE_ANSI_COLORS, CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
 
     bool validCommand = true;
     char *sub_str = NULL;

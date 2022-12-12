@@ -43,6 +43,8 @@ class CelixConan(ConanFile):
         "enable_address_sanitizer": [True, False],
         "enable_undefined_sanitizer": [True, False],
         "enable_thread_sanitizer": [True, False],
+        "enable_testing_dependency_manager_for_cxx11": [True, False],
+        "enable_testing_for_cxx14": [True, False],
         "celix_add_openssl_dep": [True, False],
         "build_all": [True, False],
         "build_deployment_admin": [True, False],
@@ -78,7 +80,8 @@ class CelixConan(ConanFile):
         "build_launcher": [True, False],
         "build_promises": [True, False],
         "build_pushstreams": [True, False],
-        "celix_cxx": [True, False],
+        "celix_cxx14": [True, False],
+        "celix_cxx17": [True, False],
         "celix_install_deprecated_api": [True, False],
         "celix_add_deprecated_attributes": [True, False],
         "celix_use_compression_for_bundle_zips": [True, False],
@@ -89,6 +92,8 @@ class CelixConan(ConanFile):
         "enable_address_sanitizer": False,
         "enable_undefined_sanitizer": False,
         "enable_thread_sanitizer": False,
+        "enable_testing_dependency_manager_for_cxx11": False,
+        "enable_testing_for_cxx14": False,
         "celix_add_openssl_dep": False,
         "build_all": False,
         "build_deployment_admin": False,
@@ -105,7 +110,7 @@ class CelixConan(ConanFile):
         "build_pubsub_psa_udp_mc": False,
         "build_pubsub_psa_ws": True,
         "build_pubsub_discovery_etcd": False,
-        "build_cxx_remote_service_admin": False,
+        "build_cxx_remote_service_admin": True,
         "build_cxx_rsa_integration": False,
         "build_remote_service_admin": True,
         "build_rsa_remote_service_admin_dfi": True,
@@ -124,7 +129,8 @@ class CelixConan(ConanFile):
         "build_launcher": False,
         "build_promises": False,
         "build_pushstreams": False,
-        "celix_cxx": False,
+        "celix_cxx14": False,
+        "celix_cxx17": False,
         "celix_install_deprecated_api": False,
         "celix_add_deprecated_attributes": True,
         "celix_use_compression_for_bundle_zips": True,
@@ -145,6 +151,8 @@ class CelixConan(ConanFile):
         del self.info.options.build_cxx_rsa_integration
         del self.info.options.build_examples
         del self.info.options.build_shell_bonjour
+        del self.info.options.enable_testing_dependency_manager_for_cxx11
+        del self.info.options.enable_testing_for_cxx14
 
     def build_requirements(self):
         if self.options.enable_testing:
@@ -156,7 +164,9 @@ class CelixConan(ConanFile):
             for opt, val in self.options.values.items():
                 if opt.startswith('build_'):
                     setattr(self.options, opt, True)
-        if not self.options.celix_cxx:
+        if not self.options.celix_cxx14:
+            self.options.celix_cxx17 = False
+        if not self.options.celix_cxx17:
             self.options.build_cxx_remote_service_admin = False
             self.options.build_promises = False
             self.options.build_pushstreams = False

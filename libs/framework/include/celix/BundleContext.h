@@ -78,11 +78,19 @@ namespace celix {
          * @param name The optional name of the service. If not provided celix::typeName<I> will be used to defer the service name.
          * @return A ServiceRegistrationBuilder object.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         template<typename I, typename Implementer>
         ServiceRegistrationBuilder<I> registerService(std::shared_ptr<Implementer> implementer, std::string_view name = {}) {
             std::shared_ptr<I> svc = implementer; //note Implement should be derived from I
             return ServiceRegistrationBuilder<I>{cCtx, std::move(svc), celix::typeName<I>(name)};
         }
+#else
+        template<typename I, typename Implementer>
+        ServiceRegistrationBuilder<I> registerService(std::shared_ptr<Implementer> implementer, const std::string& name = {}) {
+            std::shared_ptr<I> svc = implementer; //note Implement should be derived from I
+            return ServiceRegistrationBuilder<I>{cCtx, std::move(svc), celix::typeName<I>(name)};
+        }
+#endif
 
         /**
          * @brief Register a (unmanaged) service in the Celix framework using a fluent builder API.
@@ -94,11 +102,19 @@ namespace celix {
          * By default the service registration is configure to register the service async, but to unregister the
          * service sync (because the svc pointer is unmanaged).
          */
+#if __cplusplus >= 201703L //C++17 or higher
         template<typename I, typename Implementer>
         ServiceRegistrationBuilder<I> registerUnmanagedService(Implementer* svc, std::string_view name = {}) {
             auto unmanagedSvc = std::shared_ptr<I>{svc, [](I*){/*nop*/}};
             return ServiceRegistrationBuilder<I>{cCtx, std::move(unmanagedSvc), celix::typeName<I>(name), true, false};
         }
+#else
+        template<typename I, typename Implementer>
+        ServiceRegistrationBuilder<I> registerUnmanagedService(Implementer* svc, const std::string& name = {}) {
+            auto unmanagedSvc = std::shared_ptr<I>{svc, [](I*){/*nop*/}};
+            return ServiceRegistrationBuilder<I>{cCtx, std::move(unmanagedSvc), celix::typeName<I>(name), true, false};
+        }
+#endif
 
         //TODO registerServiceFactory<I>()
 
@@ -128,10 +144,17 @@ namespace celix {
          * @param name The optional service name to use. If not provided celix::typeName<I> will be used to defer the service name.
          * @return A UseServiceBuilder object.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         template<typename I>
         UseServiceBuilder<I> useService(std::string_view name = {}) {
             return UseServiceBuilder<I>{cCtx, celix::typeName<I>(name), true};
         }
+#else
+        template<typename I>
+        UseServiceBuilder<I> useService(const std::string& name = {}) {
+            return UseServiceBuilder<I>{cCtx, celix::typeName<I>(name), true};
+        }
+#endif
 
         /**
          * @brief Use services registered in the Celix framework using a fluent builder API.
@@ -156,10 +179,17 @@ namespace celix {
          * @param name The optional service name to use. If not provided celix::typeName<I> will be used to defer the service name.
          * @return A UseServiceBuilder object.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         template<typename I>
         UseServiceBuilder<I> useServices(std::string_view name = {}) {
             return UseServiceBuilder<I>{cCtx, celix::typeName<I>(name), false};
         }
+#else
+        template<typename I>
+        UseServiceBuilder<I> useServices(const std::string& name = {}) {
+            return UseServiceBuilder<I>{cCtx, celix::typeName<I>(name), false};
+        }
+#endif
 
         /**
          * @brief Finds the highest ranking service using the optional provided (LDAP) filter
@@ -172,10 +202,17 @@ namespace celix {
          * @param versionRange An optional version range.
          * @return The service id of the found service or -1 if the service was not found.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         template<typename I>
         long findService(std::string_view filter = {}, std::string_view versionRange = {}) {
             return findServiceWithName(celix::typeName<I>(), filter, versionRange);
         }
+#else
+        template<typename I>
+        long findService(const std::string& filter = {}, const std::string& versionRange = {}) {
+            return findServiceWithName(celix::typeName<I>(), filter, versionRange);
+        }
+#endif
 
         /**
          * @brief Finds the highest ranking service using the provided service name and
@@ -186,6 +223,7 @@ namespace celix {
          * @param versionRange An optional version range.
          * @return The service id of the found service or -1 if the service was not found.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         long findServiceWithName(std::string_view name, std::string_view filter = {}, std::string_view versionRange = {}) {
             waitIfAbleForEvents();
             celix_service_filter_options_t opts{};
@@ -194,6 +232,16 @@ namespace celix {
             opts.versionRange = versionRange.empty() ? nullptr : versionRange.data();
             return celix_bundleContext_findServiceWithOptions(cCtx.get(), &opts);
         }
+#else
+        long findServiceWithName(const std::string& name, const std::string& filter = {}, const std::string& versionRange = {}) {
+            waitIfAbleForEvents();
+            celix_service_filter_options_t opts{};
+            opts.serviceName = name.empty() ? nullptr : name.data();
+            opts.filter = filter.empty() ? nullptr : filter.data();
+            opts.versionRange = versionRange.empty() ? nullptr : versionRange.data();
+            return celix_bundleContext_findServiceWithOptions(cCtx.get(), &opts);
+        }
+#endif
 
         /**
          * @brief Finds all services matching the optional provided (LDAP) filter
@@ -206,10 +254,17 @@ namespace celix {
          * @param versionRange An optional version range.
          * @return A vector of service ids.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         template<typename I>
         std::vector<long> findServices(std::string_view filter = {}, std::string_view versionRange = {}) {
             return findServicesWithName(celix::typeName<I>(), filter, versionRange);
         }
+#else
+        template<typename I>
+        std::vector<long> findServices(const std::string& filter = {}, const std::string& versionRange = {}) {
+            return findServicesWithName(celix::typeName<I>(), filter, versionRange);
+        }
+#endif
 
         /**
          * @brief Finds all service matching the provided service name and the optional (LDAP) filter
@@ -220,22 +275,21 @@ namespace celix {
          * @param versionRange An optional version range.
          * @return A vector of service ids.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         std::vector<long> findServicesWithName(std::string_view name, std::string_view filter = {}, std::string_view versionRange = {}) {
-            waitIfAbleForEvents();
-            celix_service_filter_options_t opts{};
-            opts.serviceName = name.empty() ? nullptr : name.data();
-            opts.filter = filter.empty() ? nullptr : filter.data();
-            opts.versionRange = versionRange.empty() ? nullptr : versionRange.data();
-
-            std::vector<long> result{};
-            auto cList = celix_bundleContext_findServicesWithOptions(cCtx.get(), &opts);
-            for (int i = 0; i < celix_arrayList_size(cList); ++i) {
-                long svcId = celix_arrayList_getLong(cList, i);
-                result.push_back(svcId);
-            }
-            celix_arrayList_destroy(cList);
-            return result;
+            return findServicesWithNameInternal(
+                    name.empty() ? nullptr : name.data(),
+                    filter.empty() ? nullptr : filter.data(),
+                    versionRange.empty() ? nullptr : versionRange.data());
         }
+#else
+        std::vector<long> findServicesWithName(const std::string& name, const std::string& filter = {}, const std::string& versionRange = {}) {
+            return findServicesWithNameInternal(
+                    name.empty() ? nullptr : name.c_str(),
+                    filter.empty() ? nullptr : filter.c_str(),
+                    versionRange.empty() ? nullptr : versionRange.c_str());
+        }
+#endif
 
         /**
          * @brief Track services in the Celix framework using a fluent builder API.
@@ -257,10 +311,17 @@ namespace celix {
          * @param name The optional service name. If empty celix::typeName<I> will be used to defer the service name.
          * @return A ServiceTrackerBuilder object.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         template<typename I>
         ServiceTrackerBuilder<I> trackServices(std::string_view name = {}) {
             return ServiceTrackerBuilder<I>{cCtx, celix::typeName<I>(name)};
         }
+#else
+        template<typename I>
+        ServiceTrackerBuilder<I> trackServices(const std::string& name = {}) {
+            return ServiceTrackerBuilder<I>{cCtx, celix::typeName<I>(name)};
+        }
+#endif
 
         /**
          * @brief Track services in the Celix framework using a fluent builder API.
@@ -310,10 +371,17 @@ namespace celix {
          * @param name The optional service name. If empty celix::typeName<I> will be used to defer the service name.
          * @return A MetaTrackerBuilder object.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         template<typename I>
         MetaTrackerBuilder trackServiceTrackers(std::string_view name = {}) {
             return MetaTrackerBuilder(cCtx, celix::typeName<I>(name));
         }
+#else
+        template<typename I>
+        MetaTrackerBuilder trackServiceTrackers(const std::string& name = {}) {
+            return MetaTrackerBuilder(cCtx, celix::typeName<I>(name));
+        }
+#endif
 
         /**
          * @brief Track service trackers in the Celix framework using a fluent builder API.
@@ -333,9 +401,15 @@ namespace celix {
          * @param autoStart If the bundle should also be started.
          * @return the bundleId (>= 0) or < 0 if the bundle could not be installed and possibly started.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         long installBundle(std::string_view bndLocation, bool autoStart = true) {
             return celix_bundleContext_installBundle(cCtx.get(), bndLocation.data(), autoStart);
         }
+#else
+        long installBundle(const std::string& bndLocation, bool autoStart = true) {
+            return celix_bundleContext_installBundle(cCtx.get(), bndLocation.c_str(), autoStart);
+        }
+#endif
 
         /**
          * @brief Uninstall the bundle with the provided bundle id.
@@ -405,9 +479,15 @@ namespace celix {
          * @param defaultVal The default value to use if the property is not found.
          * @return The config property value for the provided key or the provided defaultValue is the name is not found.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         [[nodiscard]] std::string getConfigProperty(std::string_view name, std::string_view defaultValue) const {
             return std::string{celix_bundleContext_getProperty(cCtx.get(), name.data(), defaultValue.data())};
         }
+#else
+        std::string getConfigProperty(const std::string& name, const std::string& defaultValue) const {
+            return std::string{celix_bundleContext_getProperty(cCtx.get(), name.c_str(), defaultValue.c_str())};
+        }
+#endif
 
         /**
          * @brief Gets the config property for the provided name and returns it as a long.
@@ -421,9 +501,15 @@ namespace celix {
          * @return The config property value (as long) for the provided key or the provided defaultValue is the name
          * is not found or not a valid long.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         [[nodiscard]] long getConfigPropertyAsLong(std::string_view name, long defaultValue) const {
             return celix_bundleContext_getPropertyAsLong(cCtx.get(), name.data(), defaultValue);
         }
+#else
+        long getConfigPropertyAsLong(const std::string& name, long defaultValue) const {
+            return celix_bundleContext_getPropertyAsLong(cCtx.get(), name.c_str(), defaultValue);
+        }
+#endif
 
         /**
          * @brief Gets the config property for the provided name and returns it as a double.
@@ -437,9 +523,15 @@ namespace celix {
          * @return The config property value (as double) for the provided key or the provided defaultValue is the name
          * is not found or not a valid double.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         [[nodiscard]] double getConfigPropertyAsDouble(std::string_view name, double defaultValue) const {
             return celix_bundleContext_getPropertyAsDouble(cCtx.get(), name.data(), defaultValue);
         }
+#else
+        double getConfigPropertyAsDouble(const std::string& name, double defaultValue) const {
+            return celix_bundleContext_getPropertyAsDouble(cCtx.get(), name.c_str(), defaultValue);
+        }
+#endif
 
         /**
          * @brief Gets the config property for the provided name and returns it as a bool.
@@ -455,9 +547,15 @@ namespace celix {
          * @return The config property value (as boolean) for the provided key or the provided defaultValue is the name
          * is not found or not a valid boolean.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         [[nodiscard]] long getConfigPropertyAsBool(std::string_view name, bool defaultValue) const {
             return celix_bundleContext_getPropertyAsBool(cCtx.get(), name.data(), defaultValue);
         }
+#else
+        long getConfigPropertyAsBool(const std::string& name, bool defaultValue) const {
+            return celix_bundleContext_getPropertyAsBool(cCtx.get(), name.c_str(), defaultValue);
+        }
+#endif
 
         /**
          * @brief Get the bundle of this bundle context.
@@ -616,6 +714,23 @@ namespace celix {
                 result.push_back(celix_arrayList_getLong(ids, i));
             }
             celix_arrayList_destroy(ids);
+            return result;
+        }
+
+        std::vector<long> findServicesWithNameInternal(const char* name, const char* filter, const char* versionRange) {
+            waitIfAbleForEvents();
+            celix_service_filter_options_t opts{};
+            opts.serviceName = name;
+            opts.filter = filter;
+            opts.versionRange = versionRange;
+
+            std::vector<long> result{};
+            auto cList = celix_bundleContext_findServicesWithOptions(cCtx.get(), &opts);
+            for (int i = 0; i < celix_arrayList_size(cList); ++i) {
+                long svcId = celix_arrayList_getLong(cList, i);
+                result.push_back(svcId);
+            }
+            celix_arrayList_destroy(cList);
             return result;
         }
 
