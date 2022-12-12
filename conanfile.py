@@ -163,9 +163,9 @@ class CelixConan(ConanFile):
                 if opt.startswith('build_'):
                     setattr(self.options, opt, True)
         if not self.options.celix_cxx14:
-            self.options.celix_cxx17 = false
+            self.options.celix_cxx17 = False
         if not self.options.celix_cxx17:
-                self.options.build_cxx_remote_service_admin = False
+            self.options.build_cxx_remote_service_admin = False
             self.options.build_promises = False
             self.options.build_pushstreams = False
         if not self.options.build_cxx_remote_service_admin:
