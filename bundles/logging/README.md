@@ -54,4 +54,4 @@ If the Celix Log Service is installed, 'find_package(Celix)' will set:
  
 Also the following deprecated bundle will be set:
  - The `Celix::log_service` bundle target. The log service bundle. Deprecated, use Celix::log_admin instead.
- - The `Celix::log_writer_stdout` bundle target. Deprecated bundle. Logging to stdout is now an integral part of the log admin.
+ - The `Celix::syslog_writer` bundle target. Deprecated bundle. Logging to stdout is now an integral part of the log admin.
