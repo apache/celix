@@ -337,9 +337,9 @@ void pubsub_topologyManager_subscriberAdded(void *handle, void *svc __attribute_
         free(scopeAndTopicKey);
     } else {
         entry = calloc(1, sizeof(*entry));
-        entry->scopeAndTopicKey = scopeAndTopicKey; //note taking owner ship
-        entry->scope = scope == NULL ? NULL : strndup(scope, 1024 * 1024);
-        entry->topic = strndup(topic, 1024 * 1024);
+        entry->scopeAndTopicKey = scopeAndTopicKey; //note taking ownership
+        entry->scope = scope == NULL ? NULL : celix_utils_strdup(scope);
+        entry->topic = celix_utils_strdup(topic);
         entry->usageCount = 1;
         entry->matching.selectedPsaSvcId = -1L;
         entry->matching.selectedSerializerSvcId = -1L;
@@ -996,6 +996,10 @@ static void pstm_setupTopicSenders(pubsub_topology_manager_t *manager) {
             celixThreadMutex_unlock(&manager->topicSenders.mutex);
         } else {
             celix_logHelper_warning(manager->loghelper, "Cannot setup TopicSender for %s/%s\n", setupEntry->scope == NULL ? "(null)" : setupEntry->scope, setupEntry->topic);
+            celixThreadMutex_lock(&manager->topicSenders.mutex);
+            pstm_topic_receiver_or_sender_entry_t* entry = hashMap_get(manager->topicSenders.map, setupEntry->key);
+            entry->matching.needsMatch = true;
+            celixThreadMutex_unlock(&manager->topicSenders.mutex);
             celix_properties_destroy(setupEntry->topicProperties);
             celix_properties_destroy(setupEntry->endpointResult);
         }
@@ -1109,6 +1113,10 @@ static void pstm_setupTopicReceivers(pubsub_topology_manager_t *manager) {
             celixThreadMutex_unlock(&manager->topicReceivers.mutex);
         } else {
             celix_logHelper_warning(manager->loghelper, "Cannot setup TopicReceiver for %s/%s\n", setupEntry->scope == NULL ? "(null)" : setupEntry->scope, setupEntry->topic);
+            celixThreadMutex_lock(&manager->topicReceivers.mutex);
+            pstm_topic_receiver_or_sender_entry_t* entry = hashMap_get(manager->topicReceivers.map, setupEntry->key);
+            entry->matching.needsMatch = true;
+            celixThreadMutex_unlock(&manager->topicReceivers.mutex);
         }
         free(setupEntry->scope);
         free(setupEntry->topic);

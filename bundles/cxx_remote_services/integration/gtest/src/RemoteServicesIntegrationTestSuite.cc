@@ -26,22 +26,25 @@
 class RemoteServicesIntegrationTestSuite : public ::testing::Test {
 public:
     RemoteServicesIntegrationTestSuite() {
+        auto pubsubTestReturnIpc = std::string{"ipc:///tmp/pubsub-test-return"};
+        auto pubsubTestInvokeIpc = std::string{"ipc:///tmp/pubsub-test-invoke"};
+
         celix::Properties clientConfig{
-                {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"},
+                {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "info"},
                 {celix::FRAMEWORK_CACHE_DIR, ".clientCache"},
                 //Static configuration to let the pubsub zmq operate without discovery
-                {"PSA_ZMQ_STATIC_BIND_URL_FOR_test_invoke_default", "ipc:///tmp/pubsub-test-return"},
-                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_return_default", "ipc:///tmp/pubsub-test-invoke" }
+                {"PSA_ZMQ_STATIC_BIND_URL_FOR_test_invoke_default", pubsubTestInvokeIpc},
+                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_return_default", pubsubTestReturnIpc }
         };
         clientFw = celix::createFramework(clientConfig);
         clientCtx = clientFw->getFrameworkBundleContext();
 
         celix::Properties serverConfig{
-                {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"},
+                {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "info"},
                 {celix::FRAMEWORK_CACHE_DIR, ".serverCache"},
                 //Static configuration to let the pubsub zmq operate without discovery
-                {"PSA_ZMQ_STATIC_BIND_URL_FOR_test_return_default", "ipc:///tmp/pubsub-test-invoke"},
-                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_invoke_default", "ipc:///tmp/pubsub-test-return" }
+                {"PSA_ZMQ_STATIC_BIND_URL_FOR_test_return_default",  pubsubTestReturnIpc },
+                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_invoke_default", pubsubTestInvokeIpc }
         };
         serverFw = celix::createFramework(serverConfig);
         serverCtx = serverFw->getFrameworkBundleContext();
@@ -74,6 +77,86 @@ public:
         EXPECT_GE(bndId, 0);
     }
 
+    static void printTopicSendersAndReceivers(celix::BundleContext& ctx) {
+        ctx.useService<celix_shell_command>(CELIX_SHELL_COMMAND_SERVICE_NAME)
+                .setFilter((std::string{"("}.append(CELIX_SHELL_COMMAND_NAME).append("=celix::psa_zmq)")))
+                .addUseCallback([](auto& cmd) {
+                    cmd.executeCommand(cmd.handle, "psa_zmq", stdout, stdout);
+                })
+                .build();
+    }
+
+    void invokeRemoteCalcService() {
+        installProviderBundles();
+        installConsumerBundles();
+
+        //If a calculator provider bundle is installed I expect a exported calculator interface
+        auto count = serverCtx->useService<ICalculator>()
+                .setFilter("(service.exported.interfaces=*)")
+                .build();
+        EXPECT_EQ(count, 1);
+
+        //If a calculator consumer bundle is installed and also the needed remote services bundle, I expect an import calculator interface
+        count = clientCtx->useService<ICalculator>()
+                .setTimeout(std::chrono::seconds{1})
+                .setFilter("(service.imported=*)")
+                .build();
+        EXPECT_EQ(count, 1);
+
+        //When I call the calculator service from the client, I expect an answer
+        std::atomic<int> streamCount = 0;
+        std::atomic<double> lastStreamValue = 0.0;
+        std::atomic<bool> promiseSuccessful = false;
+        std::atomic<double> promiseValue = 0.0;
+
+        /*
+         * Testing the remote service in a while loop till it is successful or 10 seconds has passed.
+         * Note that because pubsub does not guarantee a connection when used, it is possible - and likely -
+         * that the first remote test iteration fails due to not yet completely connected pubsub.
+         */
+        auto start = std::chrono::system_clock::now();
+        auto now = std::chrono::system_clock::now();
+        int iter = 1;
+        while ((streamCount == 0 || !promiseSuccessful) && (now - start) < std::chrono::seconds{10}) {
+            clientCtx->logInfo("Testing remote C++ iteration %i.", iter++);
+            count = clientCtx->useService<ICalculator>()
+                    .addUseCallback([&](auto& calc) {
+                        //testing remote stream
+                        auto stream = calc.result();
+                        auto streamEnded = stream->forEach([&](double event){
+                            lastStreamValue = event;
+                            streamCount++;
+                        });
+                        streamEnded.onResolve([ctx = clientCtx, i = iter]() {
+                            ctx->logInfo("Stream for iteration %i closed", i);
+                        });
+
+                        //testing remote promise
+                        auto promise = calc.add(2, 4).onFailure([ctx = clientCtx, i = iter](const auto& e) {
+                            ctx->logInfo("Got remote promise exception for iteration %i: %s", i, e.what());
+                        });
+                        promise.wait();
+                        promiseSuccessful = promise.isSuccessfullyResolved();
+                        if (promiseSuccessful) {
+                            promiseValue = promise.getValue();
+                        }
+                    })
+                    .build();
+            now = std::chrono::system_clock::now();
+        }
+        EXPECT_EQ(count, 1);
+        EXPECT_GE(streamCount, 1);
+        EXPECT_GE(lastStreamValue, 0.0);
+        EXPECT_TRUE(promiseSuccessful);
+        EXPECT_EQ(6, promiseValue);
+
+        if (streamCount == 0 || !promiseSuccessful) {
+            //extra debug info
+            printTopicSendersAndReceivers(*clientCtx);
+            printTopicSendersAndReceivers(*serverCtx);
+        }
+    }
+
     std::shared_ptr<celix::Framework> clientFw{};
     std::shared_ptr<celix::BundleContext> clientCtx{};
     std::shared_ptr<celix::Framework> serverFw{};
@@ -86,57 +169,5 @@ TEST_F(RemoteServicesIntegrationTestSuite, StartStopFrameworks) {
 }
 
 TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService) {
-    installProviderBundles();
-    installConsumerBundles();
-
-    //If a calculator provider bundle is installed I expect a exported calculator interface
-    auto count = serverCtx->useService<ICalculator>()
-            .setFilter("(service.exported.interfaces=*)")
-            .build();
-    EXPECT_EQ(count, 1);
-
-    //If a calculator consumer bundle is installed and also the needed remote services bundle,  I expect a import calculator interface
-    count = clientCtx->useService<ICalculator>()
-            .setTimeout(std::chrono::seconds{1})
-            .setFilter("(service.imported=*)")
-            .build();
-    EXPECT_EQ(count, 1);
-
-    /*DEBUG INFO*/
-    clientCtx->useService<celix_shell_command>(CELIX_SHELL_COMMAND_SERVICE_NAME)
-            .setFilter((std::string{"("}.append(CELIX_SHELL_COMMAND_NAME).append("=celix::psa_zmq)")))
-            .addUseCallback([](auto& cmd) {
-                cmd.executeCommand(cmd.handle, "psa_zmq", stdout, stdout);
-            })
-            .build();
-    serverCtx->useService<celix_shell_command>(CELIX_SHELL_COMMAND_SERVICE_NAME)
-            .setFilter((std::string{"("}.append(CELIX_SHELL_COMMAND_NAME).append("=celix::psa_zmq)")))
-            .addUseCallback([](auto& cmd) {
-                cmd.executeCommand(cmd.handle, "psa_zmq", stdout, stdout);
-            })
-            .build();
-    std::shared_ptr<celix::PushStream<double>> stream;
-    //When I call the calculator service from the client, I expect a answer
-    std::atomic<int> streamCount = 0;
-    std::atomic<double> lastValue = 0.0;
-    count = clientCtx->useService<ICalculator>()
-            .addUseCallback([&](auto& calc) {
-                stream = calc.result();
-                auto streamEnded = stream->forEach([&](double event){
-                    lastValue = event;
-                    streamCount++;
-                });
-
-                auto promise = calc.add(2, 4);
-                promise.wait();
-                EXPECT_TRUE(promise.isSuccessfullyResolved());
-                if (promise.isSuccessfullyResolved()) {
-                    EXPECT_EQ(6, promise.getValue());
-                }
-                sleep(1);
-                EXPECT_GE(streamCount,0 );
-                EXPECT_GE(lastValue, 0.0);
-            })
-            .build();
-    EXPECT_EQ(count, 1);
+    invokeRemoteCalcService();
 }

@@ -112,8 +112,6 @@ typedef struct psa_zmq_zerocopy_free_entry {
 static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_zmq_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static unsigned int rand_range(unsigned int min, unsigned int max);
-static void delay_first_send_for_late_joiners(pubsub_zmq_topic_sender_t *sender);
-
 static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *msg, celix_properties_t *metadata);
 
 pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
@@ -424,8 +422,6 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
         return status;
     }
 
-    delay_first_send_for_late_joiners(sender);
-
     // Some ZMQ functions are not thread-safe, but this atomic compare exchange ensures one access at a time.
     // Also protect sender->zmqBuffers (header, meta and footer)
     bool expected = false;
@@ -554,17 +550,6 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
     celix_properties_destroy(metadata);
     return status;
-}
-
-static void delay_first_send_for_late_joiners(pubsub_zmq_topic_sender_t *sender) {
-
-    static bool firstSend = true;
-
-    if (firstSend) {
-        L_INFO("PSA_ZMQ_TP: Delaying first send for late joiners...\n");
-        sleep(FIRST_SEND_DELAY_IN_SECONDS);
-        firstSend = false;
-    }
 }
 
 static unsigned int rand_range(unsigned int min, unsigned int max) {
