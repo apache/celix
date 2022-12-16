@@ -22,7 +22,8 @@ add_subdirectory(phase2b)
 add_subdirectory(phase3)
 
 add_celix_container(dm_example
-    COPY
+    C
+    NO_COPY
     GROUP c_examples
     BUNDLES
         Celix::shell
@@ -38,44 +39,4 @@ add_celix_container(dm_example
         PROP2=val2
         PROP3=val3
 )
-
-
-add_celix_docker(dm_exmpl_base
-        NAME dmbase
-        IMAGE_NAME dmbase
-        GROUP examples
-        INSTRUCTIONS
-            "LABEL exmpl=value"
-)
-add_celix_docker(dm_exmpl
-    FROM dmbase
-    GROUP examples
-    BUNDLES
-        Celix::shell
-        Celix::shell_tui
-        Celix::dm_shell
-        dm_example_phase1
-        dm_example_phase2a
-        dm_example_phase2b
-        dm_example_phase3
-    PROPERTIES
-        LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-)
-add_celix_docker(dm_exmpl2
-    GROUP examples
-    BUNDLES
-        Celix::shell
-        Celix::shell_tui
-        Celix::dm_shell
-        dm_example_phase1
-        dm_example_phase2a
-        dm_example_phase2b
-        dm_example_phase3
-    PROPERTIES
-        LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-)
-
-set(CELIX_BUILD_DOCKER_USE_DOCKER_DIR_TAR ON)
-set(CELIX_BUILD_DOCKER_TAR_LOCATION ${CMAKE_BINARY_DIR}/export)
-
-install_celix_docker(dm_exmpl)
+celix_target_embedded_bundles(dm_example Celix::shell)

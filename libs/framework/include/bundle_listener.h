@@ -21,7 +21,7 @@
 #define BUNDLE_LISTENER_H_
 
 typedef struct bundle_listener bundle_listener_t;
-typedef struct bundle_listener *bundle_listener_pt; // TODO: Deprecate
+typedef struct bundle_listener *bundle_listener_pt;
 
 #include "celix_errno.h"
 #include "bundle_event.h"

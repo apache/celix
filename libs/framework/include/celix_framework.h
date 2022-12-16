@@ -25,6 +25,7 @@
 #include "celix_properties.h"
 #include "celix_log_level.h"
 #include "celix_array_list.h"
+#include <stdarg.h>
 
 #ifdef __cplusplus
 extern "C" {

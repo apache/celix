@@ -93,6 +93,7 @@ namespace celix {
         bool end{false};
     };
 
+
     /**
      * @brief A collection of strings key values mainly used as meta data for registered services.
      *
@@ -295,6 +296,9 @@ namespace celix {
             return celix_properties_getAsBool(cProps.get(), key.data(), defaultValue);
         }
 
+        /**
+         * @brief Sets a T&& property. Will use (std::) to_string to convert the value to string.
+         */
         template<typename T>
         void set(std::string_view key, T&& value) {
             if constexpr (std::is_same_v<std::decay_t<T>, bool>) {
@@ -347,13 +351,6 @@ namespace celix {
         }
 
         /**
-         * @brief Sets a property
-         */
-        void set(const std::string& key, const char* value) {
-            celix_properties_set(cProps.get(), key.c_str(), value);
-        }
-
-        /**
          * @brief Sets a bool property
          */
         void set(const std::string& key, bool value) {
@@ -361,10 +358,17 @@ namespace celix {
         }
 
         /**
-         * @brief Sets a T property. Will use std::to_string to convert the value to string.
+         * @brief Sets a const char* property
+         */
+        void set(const std::string& key, const char* value) {
+            celix_properties_set(cProps.get(), key.c_str(), value);
+        }
+
+        /**
+         * @brief Sets a T property. Will use (std::) to_string to convert the value to string.
          */
         template<typename T>
-        void set(const std::string& key, T value) {
+        void set(const std::string& key, T&& value) {
             using namespace std;
             celix_properties_set(cProps.get(), key.c_str(), to_string(value).c_str());
         }

@@ -18,7 +18,7 @@
 # https://cwiki.apache.org/confluence/display/INFRA/git+-+.asf.yaml+features
 ---
 github:
-  description: "Apache Celix - An implementation of the OSGi specification adapted to C and C++"
+  description: "Apache Celix is a framework for C, C++14 and C++17 to develop dynamic modular software applications using component and in-process service-oriented programming."
   homepage: https://celix.apache.org/
   labels:
     - apache

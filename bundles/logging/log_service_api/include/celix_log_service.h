@@ -21,6 +21,7 @@
 #define CELIX_LOG_SERVICE_H
 
 #include "celix_log_level.h"
+#include <stdarg.h>
 
 #ifdef __cplusplus
 extern "C" {

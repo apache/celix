@@ -24,6 +24,7 @@
 #include "celix_filter.h"
 #include "celix_bundle_event.h"
 #include "celix_log_level.h"
+#include <stdarg.h>
 
 #ifndef CELIX_BUNDLE_CONTEXT_H_
 #define CELIX_BUNDLE_CONTEXT_H_

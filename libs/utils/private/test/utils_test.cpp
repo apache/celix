@@ -239,6 +239,10 @@ TEST(utils, stringTrim) {
     STRCMP_EQUAL("abc  \n asdf", result);
 
     free(toTrim);
+
+    char* trimmed = celix_utils_trim("  abc   ");
+    STRCMP_EQUAL("abc", trimmed);
+    free(trimmed);
 }
 
 TEST(utils, thread_equalsSelf){

@@ -21,7 +21,9 @@
 
 #include <stdbool.h>
 #include <stdarg.h>
+#ifndef __UCLIBC__
 #include <execinfo.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
@@ -94,6 +96,7 @@ celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(const char *str, ce
     return level;
 }
 
+#ifndef __UCLIBC__
 static inline void celix_logUtils_inlinePrintBacktrace(FILE *stream) {
     void *bbuf[64];
     int nrOfTraces = backtrace(bbuf, 64);
@@ -105,6 +108,11 @@ static inline void celix_logUtils_inlinePrintBacktrace(FILE *stream) {
     free(lines);
     fflush(stream);
 }
+#else /* __UCLIBC__ */
+static inline void celix_logUtils_inlinePrintBacktrace(FILE *stream __attribute__((unused))) {
+    //nop
+}
+#endif /* __UCLIBC__ */
 
 void celix_logUtils_printBacktrace(FILE* stream) {
     celix_logUtils_inlinePrintBacktrace(stream);

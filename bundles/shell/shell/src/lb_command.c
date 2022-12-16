@@ -112,7 +112,7 @@ static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_
 
         bundle_archive_pt archive_ptr = NULL;
         long id = 0;
-        bundle_state_e state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
+        bundle_state_e state = CELIX_BUNDLE_STATE_UNKNOWN;
         const char *state_str = NULL;
         module_pt module_ptr = NULL;
         const char *name_str = NULL;
@@ -187,10 +187,7 @@ bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *o
     lb_options_t opts;
     memset(&opts, 0, sizeof(opts));
 
-    const char* config = celix_bundleContext_getProperty(ctx, CELIX_SHELL_USE_ANSI_COLORS, CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
-    opts.useColors = config != NULL && strncmp("true", config, 5) == 0;
-
-
+    opts.useColors = celix_bundleContext_getPropertyAsBool(ctx, CELIX_SHELL_USE_ANSI_COLORS, CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
     opts.show_location        = false;
     opts.show_symbolic_name   = false;
     opts.show_update_location = false;
@@ -225,15 +222,15 @@ bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *o
 
 static char * psCommand_stateString(bundle_state_e state) {
     switch (state) {
-        case OSGI_FRAMEWORK_BUNDLE_ACTIVE:
+        case CELIX_BUNDLE_STATE_ACTIVE:
             return "Active      ";
-        case OSGI_FRAMEWORK_BUNDLE_INSTALLED:
+        case CELIX_BUNDLE_STATE_INSTALLED:
             return "Installed   ";
-        case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
+        case CELIX_BUNDLE_STATE_RESOLVED:
             return "Resolved    ";
-        case OSGI_FRAMEWORK_BUNDLE_STARTING:
+        case CELIX_BUNDLE_STATE_STARTING:
             return "Starting    ";
-        case OSGI_FRAMEWORK_BUNDLE_STOPPING:
+        case CELIX_BUNDLE_STATE_STOPPING:
             return "Stopping    ";
         default:
             return "Unknown     ";

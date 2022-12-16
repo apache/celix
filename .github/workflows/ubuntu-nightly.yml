@@ -48,6 +48,10 @@ jobs:
         CXX: ${{ matrix.cxx_compiler }}
         BUILD_OPTIONS: |
           -DENABLE_TESTING=ON
+          -DBUILD_EXPERIMENTAL=ON
+          -DBUILD_CXX_REMOTE_SERVICE_ADMIN=ON
+          -DENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11=ON
+          -DENABLE_TESTING_FOR_CXX14=ON
         BUILD_OPTIONS_SANITIZER: |
           -DENABLE_ADDRESS_SANITIZER=ON
       run: |

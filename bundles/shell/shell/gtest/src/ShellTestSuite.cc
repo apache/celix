@@ -27,11 +27,10 @@
 
 class ShellTestSuite : public ::testing::Test {
 public:
-    static constexpr const char * const SHELL_BUNDLE_LOC = "" SHELL_BUNDLE_LOCATION "";
-
     ShellTestSuite() : ctx{createFrameworkContext()} {
-        shellBundleId = celix_bundleContext_installBundle(ctx.get(), SHELL_BUNDLE_LOCATION, true);
-        EXPECT_GE(shellBundleId, 0);
+        auto* fw = celix_bundleContext_getFramework(ctx.get());
+        size_t nr = celix_framework_utils_installBundleSet(fw, TEST_BUNDLES, true);
+        EXPECT_EQ(nr, 1); //shell bundle
     }
 
     static std::shared_ptr<celix_bundle_context_t> createFrameworkContext() {
@@ -49,7 +48,6 @@ public:
         }};
     }
 
-    long shellBundleId = -1;
     std::shared_ptr<celix_bundle_context_t> ctx;
 };
 
@@ -122,6 +120,7 @@ TEST_F(ShellTestSuite, stopFrameworkTest) {
 TEST_F(ShellTestSuite, stopSelfTest) {
     auto* list = celix_bundleContext_listBundles(ctx.get());
     EXPECT_EQ(1, celix_arrayList_size(list));
+    long shellBundleId = celix_arrayList_getLong(list, 0);
     celix_arrayList_destroy(list);
 
     //rule it should be possible to stop the Shell bundle from the stop command (which is part of the Shell bundle)

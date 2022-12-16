@@ -188,7 +188,6 @@ TEST_F(ArrayListTestSuite, TestRemovedCallbacksForArrayList) {
     celix_array_list_create_options_t opts{};
     opts.removedCallbackData = &count;
     opts.removedCallback = [](void *data, celix_array_list_entry_t entry) {
-        printf("bingo\n");
         int* c = (int*)data;
         if (entry.intVal == 1 || entry.intVal == 2 || entry.intVal == 3 || entry.intVal == 4) {
             (*c)++;

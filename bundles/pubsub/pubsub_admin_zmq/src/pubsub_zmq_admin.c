@@ -137,7 +137,7 @@ pubsub_zmq_admin_t* pubsub_zmqAdmin_create(celix_bundle_context_t *ctx, celix_lo
 
     if (ip == NULL) {
         L_WARN("[PSA_ZMQ] Could not determine IP address for PSA, using default ip (%s)", PUBSUB_ZMQ_DEFAULT_IP);
-        ip = strndup(PUBSUB_ZMQ_DEFAULT_IP, 1024);
+        ip = strdup(PUBSUB_ZMQ_DEFAULT_IP);
     }
 
     psa->ipAddress = ip;
