@@ -62,8 +62,9 @@ static celix_status_t pubsubProtocol_createNetstring(const char* string, char** 
                 return CELIX_ENOMEM;
             }
         }
-        *netstringOutLength = numlen + str_len + 2;
-        sprintf(*netstringOut, "%zu:%s,", str_len, string);
+        *netstringOutLength = numlen + str_len + 2; //Note +2 for ':', ','
+        int written = snprintf(*netstringOut, *netstringOutLength+1, "%zu:%s,", str_len, string); //adding +1 for '\0'
+        status = written < *netstringMemoryOutLength+1 ? CELIX_SUCCESS : CELIX_ILLEGAL_ARGUMENT;
     }
 
     return status;

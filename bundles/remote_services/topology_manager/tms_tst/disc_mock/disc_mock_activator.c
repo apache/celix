@@ -72,14 +72,8 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
         return CELIX_ILLEGAL_STATE;
     }
 
-    size_t len = 11 + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + strlen(OSGI_RSA_ENDPOINT_FRAMEWORK_UUID) + strlen(uuid);
-    char *scope = malloc(len + 1);
-    if (!scope) {
-        return CELIX_ENOMEM;
-    }
-
-    sprintf(scope, "(&(%s=*)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
-    scope[len] = 0;
+    char* scope = NULL;
+    asprintf(&scope, "(&(%s=*)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 
     celix_properties_t *props = celix_properties_create();
     celix_properties_set(props, "DISCOVERY", "true");

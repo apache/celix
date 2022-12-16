@@ -209,13 +209,13 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
     return status;
 }
 
-celix_status_t endpointDiscoveryServer_getUrl(endpoint_discovery_server_t *server, char* url)
-{
+celix_status_t endpointDiscoveryServer_getUrl(endpoint_discovery_server_t *server, char* url, size_t maxLenUrl) {
+
     celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 
     if (server->ip && server->port && server->path) {
-        sprintf(url, "http://%s:%s/%s", server->ip, server->port, server->path);
-        status = CELIX_SUCCESS;
+        int written = snprintf(url, maxLenUrl, "http://%s:%s/%s", server->ip, server->port, server->path);
+        status = written < maxLenUrl ? CELIX_SUCCESS : CELIX_ILLEGAL_ARGUMENT;
     }
 
     return status;

@@ -172,6 +172,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeMetadata_Test) { // NOLINT(c
     void *data = nullptr;
     size_t length = 0;
     celix_status_t status = pubsubProtocol_v1_encodeMetadata(nullptr, &message, &data, &length);
+    ASSERT_EQ(status, CELIX_SUCCESS);
 
     unsigned char exp[12];
     uint32_t s = htonl(1);
@@ -181,7 +182,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeMetadata_Test) { // NOLINT(c
     ASSERT_EQ(status, CELIX_SUCCESS);
     ASSERT_EQ(12, length);
     for (int i = 0; i < 12; i++) {
-        ASSERT_EQ(((unsigned char*) data)[i], exp[i]);
+        ASSERT_EQ(((unsigned char*) data)[i], exp[i]) << "Error at index " << i;
     }
 
     celix_properties_destroy(message.metadata.metadata);

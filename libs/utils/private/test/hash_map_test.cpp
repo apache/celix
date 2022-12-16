@@ -390,15 +390,14 @@ TEST(hash_map, resize){
     LONGS_EQUAL(16, map->tablelength);
     LONGS_EQUAL(12, map->treshold);
     for (i = 0; i < 12; i++) {
-        char key[6];
-        sprintf(key, "key%d", i);
+        snprintf(key, sizeof(key), "key%d", i);
         hashMap_put(map, my_strdup(key), my_strdup(key));
     }
     LONGS_EQUAL(12, map->size);
     LONGS_EQUAL(16, map->tablelength);
     LONGS_EQUAL(12, map->treshold);
 
-    sprintf(key, "key%d", i);
+    snprintf(key, sizeof(key), "key%d", i);
     hashMap_put(map, my_strdup(key), my_strdup(key));
     LONGS_EQUAL(13, map->size);
     LONGS_EQUAL(32, map->tablelength);

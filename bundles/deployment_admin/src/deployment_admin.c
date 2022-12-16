@@ -199,8 +199,10 @@ static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, 
         fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error initializing curl.");
     }
 
-    char url[strlen(admin->auditlogUrl)+6];
-    sprintf(url, "%s/send", admin->auditlogUrl);
+    size_t maxUrlLen = strlen(admin->auditlogUrl)+6;
+    char url[maxUrlLen];
+    int written = snprintf(url, sizeof(url), "%s/send", admin->auditlogUrl);
+    status = written < sizeof(url) ? CELIX_SUCCESS : CELIX_ILLEGAL_ARGUMENT;
 
     if (status == CELIX_SUCCESS) {
             curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
@@ -212,6 +214,8 @@ static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, 
                 status = CELIX_BUNDLE_EXCEPTION;
                 fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error sending auditlog, got curl error code %d", res);
             }
+    } else {
+        fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error creating send url for audit log url", admin->auditlogUrl);
     }
 
     return status;
