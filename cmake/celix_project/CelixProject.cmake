@@ -104,7 +104,7 @@ celix_deprecated_utils_headers(<target_name>))
 function(celix_deprecated_utils_headers)
     list(GET ARGN 0 TARGET_NAME)
     target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/libs/utils/include_deprecated)
-    set_properties(TARGET celix-deprecated APPEND PROPERTY "UTIL_TARGETS" "${TARGET_NAME}")
+    set_property(TARGET celix-deprecated APPEND PROPERTY "UTIL_TARGETS" "${TARGET_NAME}")
 endfunction()
 
 include(${CMAKE_CURRENT_LIST_DIR}/ApacheRat.cmake)

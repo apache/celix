@@ -24,6 +24,7 @@
 #include "celix_framework_factory.h"
 #include "celix_bundle_context.h"
 #include "celix_shell.h"
+#include "celix_framework_utils.h"
 
 class ShellTestSuite : public ::testing::Test {
 public:
