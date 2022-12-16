@@ -20,6 +20,7 @@
 #pragma once
 
 #include <memory>
+#include <cstring>
 
 #include "celix_filter.h"
 #include "celix/Properties.h"
