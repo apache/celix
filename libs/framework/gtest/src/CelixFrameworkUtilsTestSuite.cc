@@ -149,11 +149,11 @@ TEST_F(CelixFrameworkUtilsTestSuite, installBundleSet) {
     EXPECT_EQ(0, ids.size());
 
     EXPECT_EQ(std::string{}, std::string{BUNDLE_EMPTY_TEST_SET});
-    celix::installBundlesSet(*framework, BUNDLE_EMPTY_TEST_SET);
+    celix::installBundleSet(*framework, BUNDLE_EMPTY_TEST_SET);
     ids = framework->getFrameworkBundleContext()->listBundleIds();
     EXPECT_EQ(0, ids.size());
 
-    celix::installBundlesSet(*framework, BUNDLE_TEST_SET);
+    celix::installBundleSet(*framework, BUNDLE_TEST_SET);
     ids = framework->getFrameworkBundleContext()->listBundleIds();
     EXPECT_EQ(3, ids.size());
 }

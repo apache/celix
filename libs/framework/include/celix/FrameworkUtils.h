@@ -89,12 +89,12 @@ namespace celix {
      * @return The number of installed bundles.
      */
 #if __cplusplus >= 201703L //C++17 or higher
-    inline std::size_t installBundlesSet(celix::Framework& framework, std::string_view bundlesSet, bool autoStart = true) {
-        return celix_framework_utils_installBundleSet(framework.getCFramework(), bundlesSet.data(), autoStart);
+    inline std::size_t installBundleSet(celix::Framework& framework, std::string_view bundleSet, bool autoStart = true) {
+        return celix_framework_utils_installBundleSet(framework.getCFramework(), bundleSet.data(), autoStart);
     }
 #else
-    inline std::size_t installBundlesSet(celix::Framework& framework, const std::string& bundlesSet, bool autoStart = true) {
-        return celix_framework_utils_installBundleSet(framework.getCFramework(), bundlesSet.c_str(), autoStart);
+    inline std::size_t installBundleSet(celix::Framework& framework, const std::string& bundleSet, bool autoStart = true) {
+        return celix_framework_utils_installBundleSet(framework.getCFramework(), bundleSet.c_str(), autoStart);
     }
 #endif
 

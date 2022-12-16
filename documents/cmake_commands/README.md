@@ -665,7 +665,8 @@ The bundles will be embedded using their symbolic name if the bundle is a CMake 
 extension) if the bundle is a file (absolute path).
 
 ## celix_target_bundle_set_definition
-Add a compile definition with a set of bundles to a target.
+Add a compile-definition with a set of comma seperated bundles paths to a target and also adds the bundles as 
+dependency to the target.
 
 ```CMake
 celix_target_bundle_set_definition(<cmake_target>
@@ -679,8 +680,8 @@ Example:
 celix_target_bundle_set_definition(test_example NAME TEST_BUNDLES Celix::shell Celix::shell_tui)
 ```
 
-The compile definition will have the name `${NAME}` and will contain a `,` separated list of bundle paths.
-The bundle can be installed using the Celix framework util function `celix_framework_utils_installBundleSet` (C)
-or `celix::installBundlesSet` (C++).
+The compile-definition will have the name `${NAME}` and will contain a `,` separated list of bundle paths.
+The bundle set can be installed using the Celix framework util function `celix_framework_utils_installBundleSet` (C)
+or `celix::installBundleSet` (C++).
 
-Adding a compile definition with a set of bundles can be useful for testing purpose.
+Adding a compile-definition with a set of bundles can be useful for testing purpose.
