@@ -17,9 +17,10 @@
  * under the License.
  */
 
-#include "celixbool.h"
 #include "celix_errno.h"
 #include "stdbool.h"
+
+#include <stdbool.h>
 
 #ifndef CELIX_ARRAY_LIST_H_
 #define CELIX_ARRAY_LIST_H_

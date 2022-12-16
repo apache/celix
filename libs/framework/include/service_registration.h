@@ -20,7 +20,7 @@
 #ifndef SERVICE_REGISTRATION_H_
 #define SERVICE_REGISTRATION_H_
 
-#include "celixbool.h"
+#include <stdbool.h>
 
 typedef struct serviceRegistration service_registration_t;
 typedef struct serviceRegistration *service_registration_pt; // TODO: Deprecate

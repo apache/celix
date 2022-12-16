@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
-#include "celixbool.h"
+#include <stdbool.h>
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"

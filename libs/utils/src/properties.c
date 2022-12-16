@@ -21,7 +21,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "celixbool.h"
+#include <stdbool.h>
+
 #include "properties.h"
 #include "celix_properties.h"
 #include "utils.h"

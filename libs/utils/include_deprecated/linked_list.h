@@ -28,9 +28,10 @@
 #define LINKED_LIST_H_
 
 
-#include "celixbool.h"
 #include "celix_errno.h"
 #include "exports.h"
+
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {

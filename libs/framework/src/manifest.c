@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "celixbool.h"
+#include <stdbool.h>
 
 #include "manifest.h"
 #include "utils.h"

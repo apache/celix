@@ -20,8 +20,9 @@
 #ifndef CELIX_CELIX_UTILS_API_H_
 #define CELIX_CELIX_UTILS_API_H_
 
+#include <stdbool.h>
+
 #include "celix_errno.h"
-#include "celixbool.h"
 #include "celix_threads.h"
 #include "array_list.h"
 #include "hash_map.h"

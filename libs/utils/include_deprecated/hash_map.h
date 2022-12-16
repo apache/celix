@@ -27,7 +27,7 @@
 #ifndef HASH_MAP_H_
 #define HASH_MAP_H_
 
-#include "celixbool.h"
+#include <stdbool.h>
 #include "exports.h"
 
 #ifdef __cplusplus

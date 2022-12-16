@@ -20,11 +20,12 @@
 #ifndef ARRAY_LIST_H_
 #define ARRAY_LIST_H_
 
-#include "celixbool.h"
 #include "exports.h"
 #include "celix_errno.h"
 #include "stdbool.h"
 #include "celix_array_list.h"
+
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {

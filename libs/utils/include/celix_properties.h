@@ -18,8 +18,9 @@
  */
 
 #include <stdio.h>
+#include <stdbool.h>
+
 #include "celix_errno.h"
-#include "celixbool.h"
 
 #ifndef CELIX_PROPERTIES_H_
 #define CELIX_PROPERTIES_H_

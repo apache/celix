@@ -26,10 +26,10 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "driver_attributes.h"
 #include "bundle.h"
-#include "celixbool.h"
 #include "driver_loader.h"
 #include "device.h"
 #include "celix_constants.h"

@@ -27,7 +27,7 @@
  * @{
  */
 
-#include "celixbool.h"
+#include <stdbool.h>
 #include "celix_errno.h"
 #include "version.h"
 

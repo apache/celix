@@ -21,9 +21,9 @@
 #define UTILS_H_
 
 #include <ctype.h>
+#include <stdbool.h>
 
 #include "celix_errno.h"
-#include "celixbool.h"
 #include "exports.h"
 #include "celix_threads.h"
 #include "celix_utils.h"
