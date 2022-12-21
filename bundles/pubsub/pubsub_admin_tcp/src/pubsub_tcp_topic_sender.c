@@ -95,8 +95,6 @@ static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *req
 static void psa_tcp_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle,
                                           const celix_properties_t *svcProperties);
 
-static void delay_first_send_for_late_joiners(pubsub_tcp_topic_sender_t *sender);
-
 static int
 psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *msg, celix_properties_t *metadata);
 
@@ -389,8 +387,6 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
         return status;
     }
 
-    delay_first_send_for_late_joiners(sender);
-
     pubsub_protocol_message_t message;
     message.metadata.metadata = NULL;
     message.payload.payload = NULL;
@@ -430,19 +426,6 @@ psa_tcp_topicPublicationSend(void *handle, unsigned int msgTypeId, const void *i
 
     celix_properties_destroy(metadata);
     return status;
-}
-
-static void delay_first_send_for_late_joiners(pubsub_tcp_topic_sender_t *sender) {
-
-    static bool firstSend = true;
-
-    if (firstSend) {
-        if (sender->send_delay ) {
-            L_INFO("PSA_TCP_TP: Delaying first send for late joiners...\n");
-        }
-        usleep(sender->send_delay * 1000);
-        firstSend = false;
-    }
 }
 
 static int psa_tcp_localMsgTypeIdForMsgType(void *handle, const char *msgType, unsigned int *msgTypeId) {
