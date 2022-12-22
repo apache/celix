@@ -148,13 +148,13 @@ TEST_F(RsaShmTestSuite, ImportService) {
     endpointDesc.frameworkUUID = (char*)celix_properties_get(endpointDesc.properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
     endpointDesc.serviceId = 0;
     endpointDesc.id = (char*)celix_properties_get(endpointDesc.properties, OSGI_RSA_ENDPOINT_ID, NULL);
-    endpointDesc.service = strdup(CALCULATOR_SERVICE);
+    endpointDesc.serviceName = strdup(CALCULATOR_SERVICE);
 
     import_registration_t *registration = nullptr;
     auto status = admin->importService(admin->admin, &endpointDesc, &registration);
     EXPECT_EQ(CELIX_SUCCESS, status);
     EXPECT_NE(nullptr, registration);
-    free(endpointDesc.service);
+    free(endpointDesc.serviceName);
     celix_properties_destroy(endpointDesc.properties);
 
     status = admin->importRegistration_close(admin->admin, registration);

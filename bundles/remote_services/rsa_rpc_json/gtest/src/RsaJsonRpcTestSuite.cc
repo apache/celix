@@ -70,7 +70,7 @@ public:
         endpointDesc->frameworkUUID = (char*)celix_properties_get(endpointDesc->properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
         endpointDesc->serviceId = 0;
         endpointDesc->id = (char*)celix_properties_get(endpointDesc->properties, OSGI_RSA_ENDPOINT_ID, NULL);
-        endpointDesc->service = strdup(CALCULATOR_SERVICE);
+        endpointDesc->serviceName = strdup(CALCULATOR_SERVICE);
         return endpointDesc;
     }
 

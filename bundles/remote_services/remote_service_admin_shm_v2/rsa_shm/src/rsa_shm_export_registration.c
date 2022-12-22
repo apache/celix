@@ -87,7 +87,7 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
     export->reference = reference;
     status = bundleContext_retainServiceReference(context, reference);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error(logHelper,"RSA export reg: Retain refrence for %s failed. %d.", endpointDesc->service,status);
+        celix_logHelper_error(logHelper,"RSA export reg: Retain refrence for %s failed. %d.", endpointDesc->serviceName, status);
         goto err_retaining_service_ref;
     }
 
@@ -240,7 +240,7 @@ static void exportRegistration_addRpcFac(void *handle, void *svc) {
             &reqHandlerSvcId);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(export->logHelper,"RSA export reg: Error Installing %s endpoint. %d.",
-                export->endpointDesc->service, status);
+                export->endpointDesc->serviceName, status);
         goto err_installing_endpoint;
     }
 
