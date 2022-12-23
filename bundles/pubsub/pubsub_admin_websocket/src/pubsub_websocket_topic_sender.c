@@ -86,8 +86,6 @@ typedef struct psa_websocket_bounded_service_entry {
 static int psa_websocket_localMsgTypeIdForMsgType(void* handle __attribute__((unused)), const char* msgType, unsigned int* msgTypeId);
 static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_websocket_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
-static void delay_first_send_for_late_joiners(pubsub_websocket_topic_sender_t *sender);
-
 static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *msg, celix_properties_t *metadata);
 
 static void psa_websocketTopicSender_ready(struct mg_connection *connection, void *handle);
@@ -275,7 +273,6 @@ static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgType
     }
 
     if (sender->sockConnection != NULL) {
-        delay_first_send_for_late_joiners(sender);
         size_t serializedOutputLen = 0;
         struct iovec* serializedOutput = NULL;
         status = pubsub_serializerHandler_serialize(sender->serializerHandler, msgTypeId, inMsg, &serializedOutput, &serializedOutputLen);
@@ -331,15 +328,4 @@ static void psa_websocketTopicSender_close(const struct mg_connection *connectio
     //Connection closed so reset connection
     pubsub_websocket_topic_sender_t *sender = (pubsub_websocket_topic_sender_t *) handle;
     sender->sockConnection = NULL;
-}
-
-static void delay_first_send_for_late_joiners(pubsub_websocket_topic_sender_t *sender) {
-
-    static bool firstSend = true;
-
-    if (firstSend) {
-        L_INFO("PSA_WEBSOCKET_TP: Delaying first send for late joiners...\n");
-        sleep(FIRST_SEND_DELAY_IN_SECONDS);
-        firstSend = false;
-    }
 }

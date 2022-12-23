@@ -302,7 +302,7 @@ inline static dyn_function_argument_type * dynAvprFunction_prepareArgumentEntry(
     }
 
     dyn_function_argument_type *arg = calloc(1, sizeof(*arg));
-    arg->name = strndup(name, ARG_SIZE);
+    arg->name = strdup(name);
     return arg;
 }
 

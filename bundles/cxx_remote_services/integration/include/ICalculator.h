@@ -26,7 +26,16 @@ class ICalculator {
 public:
     virtual ~ICalculator() noexcept = default;
 
+    /**
+     * (Remote) call which provides a stream from provider -> user.
+     * @return
+     */
+    virtual std::shared_ptr<celix::PushStream<double>> result() = 0;
+
+    /**
+     * (Remote) call which invokes async and return a Promise object for async resolving the successful or
+     * unsuccessful return value.
+     */
     virtual celix::Promise<double> add(double a, double b) = 0;
 
-    virtual std::shared_ptr<celix::PushStream<double>> result() = 0;
 };

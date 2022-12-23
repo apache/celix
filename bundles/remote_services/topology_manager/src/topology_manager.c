@@ -290,15 +290,12 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(importedSvcIter);
 		hash_map_pt imports = hashMapEntry_getValue(entry);
 
-		import_registration_t *import = hashMap_get(imports, rsa);
+		import_registration_t *import = (import_registration_t *)hashMap_remove(imports, rsa);
 
 		if (import != NULL) {
 			celix_status_t subStatus = rsa->importRegistration_close(rsa->admin, import);
-
-			if (subStatus == CELIX_SUCCESS) {
-				hashMap_remove(imports, rsa);
-			} else {
-				status = subStatus;
+			if (subStatus != CELIX_SUCCESS) {
+				celix_logHelper_error(manager->loghelper, "TOPOLOGY_MANAGER: Failed to close imported endpoint.");
 			}
 		}
 	}

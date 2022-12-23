@@ -212,7 +212,7 @@ celix_status_t rsaShm_send(rsa_shm_t *admin, endpoint_description_t *endpoint,
 
     const char *shmServerName = celix_properties_get(endpoint->properties, RSA_SHM_SERVER_NAME_KEY, NULL);
     if (shmServerName == NULL) {
-        celix_logHelper_error(admin->logHelper,"RSA shm server name of %s is invalid.", endpoint->service);
+        celix_logHelper_error(admin->logHelper,"RSA shm server name of %s is invalid.", endpoint->serviceName);
         status = CELIX_SERVICE_EXCEPTION;
     }
     celix_properties_t * newMetadata = celix_properties_copy(metadata);
@@ -441,7 +441,7 @@ celix_status_t rsaShm_removeExportedService(rsa_shm_t *admin, export_registratio
         celixThreadMutex_lock(&admin->exportedServicesLock);
         status = exportReference_getExportedEndpoint(ref, &endpoint);
         assert(status == CELIX_SUCCESS);
-        celix_logHelper_info(admin->logHelper, "Remove exported service %s", endpoint->service);
+        celix_logHelper_info(admin->logHelper, "Remove exported service %s", endpoint->serviceName);
         celix_array_list_t *registrations = (celix_array_list_t *)celix_longHashMap_get(admin->exportedServices,
                 (long)endpoint->serviceId);
         if (registrations != NULL) {
@@ -537,7 +537,7 @@ static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
     (*description)->frameworkUUID = (char*)celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
     (*description)->serviceId = serviceId;
     (*description)->id = (char*)celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, NULL);
-    (*description)->service = strndup(interface, 1024*10);
+    (*description)->serviceName = strndup(interface, 1024*10);
 
     return CELIX_SUCCESS;
 }
@@ -561,7 +561,7 @@ celix_status_t rsaShm_importService(rsa_shm_t *admin, endpoint_description_t *en
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    celix_logHelper_info(admin->logHelper, "Import service %s", endpointDesc->service);
+    celix_logHelper_info(admin->logHelper, "Import service %s", endpointDesc->serviceName);
 
     bool importService = false;
     const char *importConfigs = celix_properties_get(endpointDesc->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
@@ -593,21 +593,21 @@ celix_status_t rsaShm_importService(rsa_shm_t *admin, endpoint_description_t *en
         shmServerName = celix_properties_get(endpointDesc->properties, RSA_SHM_SERVER_NAME_KEY, NULL);
         if (shmServerName == NULL) {
             status = CELIX_ILLEGAL_ARGUMENT;
-            celix_logHelper_error(admin->logHelper, "Get shm server name for service %s failed", endpointDesc->service);
+            celix_logHelper_error(admin->logHelper, "Get shm server name for service %s failed", endpointDesc->serviceName);
             goto shm_server_name_err;
         }
 
         status = rsaShmClientManager_createOrAttachClient(admin->shmClientManager,
                 shmServerName, (long)endpointDesc->serviceId);
         if (status != CELIX_SUCCESS) {
-            celix_logHelper_error(admin->logHelper, "Error Creating shm client for service %s. %d", endpointDesc->service, status);
+            celix_logHelper_error(admin->logHelper, "Error Creating shm client for service %s. %d", endpointDesc->serviceName, status);
             goto shm_client_err;
         }
 
         status = importRegistration_create(admin->context, admin->logHelper,
                 endpointDesc, admin->reqSenderSvcId, &import);
         if (status != CELIX_SUCCESS) {
-            celix_logHelper_error(admin->logHelper, "Error Creating import registration for service %s. %d", endpointDesc->service, status);
+            celix_logHelper_error(admin->logHelper, "Error Creating import registration for service %s. %d", endpointDesc->serviceName, status);
             goto registration_create_failed;
         }
 
@@ -636,17 +636,17 @@ celix_status_t rsaShm_removeImportedService(rsa_shm_t *admin, import_registratio
     endpoint_description_t *endpoint = NULL;// Its owner is registration.
     status = importRegistration_getImportedEndpoint(registration, &endpoint);
     if (status == CELIX_SUCCESS) {
-        celix_logHelper_info(admin->logHelper, "Remove imported service %s", endpoint->service);
+        celix_logHelper_info(admin->logHelper, "Remove imported service %s", endpoint->serviceName);
         const char *shmServerName = celix_properties_get(endpoint->properties,
                 RSA_SHM_SERVER_NAME_KEY, NULL);
         if (shmServerName != NULL) {
             rsaShmClientManager_destroyOrDetachClient(admin->shmClientManager,
                     shmServerName, (long)endpoint->serviceId);
         } else {
-            celix_logHelper_error(admin->logHelper, "Error getting shm server name for service %s. It maybe cause resource leaks.", endpoint->service);
+            celix_logHelper_error(admin->logHelper, "Error getting shm server name for service %s. It maybe cause resource leaks.", endpoint->serviceName);
         }
     } else {
-        celix_logHelper_error(admin->logHelper, "Error getting endpoint from imported registration for service %s. It maybe cause resource leaks.", endpoint->service);
+        celix_logHelper_error(admin->logHelper, "Error getting endpoint from imported registration for service %s. It maybe cause resource leaks.", endpoint->serviceName);
     }
 
     celixThreadMutex_lock(&admin->importedServicesLock);

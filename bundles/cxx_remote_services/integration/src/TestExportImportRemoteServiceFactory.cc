@@ -31,7 +31,7 @@
 #include "pubsub/publisher.h"
 #include "pubsub/subscriber.h"
 
-constexpr auto INVOKE_TIMEOUT = std::chrono::seconds{5};
+constexpr auto INVOKE_TIMEOUT = std::chrono::milliseconds {500};
 
 struct Calculator$add$Invoke {
     double arg1{};
@@ -263,13 +263,16 @@ private:
         auto& cmp = ctx->getDependencyManager()->createComponent(std::make_unique<ImportedCalculator>(logHelper));
         cmp.createServiceDependency<pubsub_publisher>(PUBSUB_PUBLISHER_SERVICE_NAME)
                 .setRequired(true)
+                .setStrategy(DependencyUpdateStrategy::suspend)
                 .setFilter(std::string{"(&(topic="}.append(invokeTopic).append(")(scope=").append(scope).append("))"))
                 .setCallbacks(&ImportedCalculator::setPublisher);
         cmp.createServiceDependency<celix::PromiseFactory>()
                 .setRequired(true)
+                .setStrategy(DependencyUpdateStrategy::suspend)
                 .setCallbacks(&ImportedCalculator::setPromiseFactory);
         cmp.createServiceDependency<celix::PushStreamProvider>()
                 .setRequired(true)
+                .setStrategy(DependencyUpdateStrategy::suspend)
                 .setCallbacks(&ImportedCalculator::setPushStreamProvider);
 
         cmp.setCallbacks(&ImportedCalculator::init, &ImportedCalculator::start, &ImportedCalculator::stop, &ImportedCalculator::deinit);
@@ -512,15 +515,18 @@ private:
         auto& cmp = ctx->getDependencyManager()->createComponent(std::make_unique<ExportedCalculator>(logHelper));
         cmp.createServiceDependency<pubsub_publisher>(PUBSUB_PUBLISHER_SERVICE_NAME)
                 .setRequired(true)
+                .setStrategy(DependencyUpdateStrategy::suspend)
                 .setFilter(std::string{"(&(topic="}.append(returnTopic).append(")(scope=").append(scope).append("))"))
                 .setCallbacks(&ExportedCalculator::setPublisher);
 
         cmp.createServiceDependency<celix::PromiseFactory>()
                 .setRequired(true)
+                .setStrategy(DependencyUpdateStrategy::suspend)
                 .setCallbacks(&ExportedCalculator::setPromiseFactory);
 
         cmp.createServiceDependency<ICalculator>()
                 .setRequired(true)
+                .setStrategy(DependencyUpdateStrategy::suspend)
                 .setFilter(std::string{"("}.append(celix::SERVICE_ID).append("=").append(svcId).append(")"))
                 .setCallbacks(&ExportedCalculator::setICalculator);
 

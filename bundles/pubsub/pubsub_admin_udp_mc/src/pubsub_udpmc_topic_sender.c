@@ -334,17 +334,6 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
     return status;
 }
 
-static void delay_first_send_for_late_joiners() {
-
-    static bool firstSend = true;
-
-    if (firstSend) {
-        printf("PSA_UDP_MC_TP: Delaying first send for late joiners...\n");
-        sleep(FIRST_SEND_DELAY_IN_SECONDS);
-        firstSend = false;
-    }
-}
-
 static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_udp_msg_t* msg) {
     const int iovec_len = 3; // header + size + payload
     bool ret = true;
@@ -356,8 +345,6 @@ static bool psa_udpmc_sendMsg(psa_udpmc_bounded_service_entry_t *entry, pubsub_u
     msg_iovec[1].iov_len = sizeof(msg->payloadSize);
     msg_iovec[2].iov_base = msg->payload;
     msg_iovec[2].iov_len = msg->payloadSize;
-
-    delay_first_send_for_late_joiners();
 
     if (largeUdp_sendmsg(entry->largeUdpHandle, entry->parent->sendSocket, msg_iovec, iovec_len, 0, &entry->parent->destAddr, sizeof(entry->parent->destAddr)) == -1) {
         perror("send_pubsub_msg:sendSocket");
