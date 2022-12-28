@@ -101,7 +101,7 @@ static void OnServiceBrowseCallback(DNSServiceRef sdRef, DNSServiceFlags flags, 
         DNSServiceProcessResult(dsRef);
         EXPECT_TRUE(celix_properties_getAsLong(prop, DZC_SERVICE_PROPERTIES_SIZE_KEY, 0) > 0);// TODO maybe failed
         //The txt record should not include DZC_SERVICE_ANNOUNCED_IF_INDEX_KEY,DZC_SERVICE_TYPE_KEY
-        EXPECT_EQ(nullptr, celix_properties_get(prop, DZC_SERVICE_ANNOUNCED_IF_INDEX_KEY, nullptr));
+        EXPECT_EQ(nullptr, celix_properties_get(prop, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX, nullptr));
         EXPECT_EQ(nullptr, celix_properties_get(prop, DZC_SERVICE_TYPE_KEY, nullptr));
         DNSServiceRefDeallocate(dsRef);
         celix_properties_destroy(prop);
@@ -113,7 +113,7 @@ static void OnUseServiceCallback(void *handle, void *svc) {
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
     const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), OSGI_FRAMEWORK_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
-    celix_properties_setLong(properties, DZC_SERVICE_ANNOUNCED_IF_INDEX_KEY, t->ifIndex);
+    celix_properties_setLong(properties, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX, t->ifIndex);
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, OSGI_FRAMEWORK_OBJECTCLASS, "dzc_test_service");
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
@@ -162,7 +162,7 @@ static void OnUseServiceWithJumboEndpointCallback(void *handle, void *svc) {
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
     const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), OSGI_FRAMEWORK_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
-    celix_properties_setLong(properties, DZC_SERVICE_ANNOUNCED_IF_INDEX_KEY, t->ifIndex);
+    celix_properties_setLong(properties, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX, t->ifIndex);
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, OSGI_FRAMEWORK_OBJECTCLASS, "dzc_test_service");
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
@@ -223,7 +223,7 @@ static void OnUseServiceWithInvalidEndpointCallback(void *handle, void *svc) {
 
     const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), OSGI_FRAMEWORK_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
-    celix_properties_setLong(properties, DZC_SERVICE_ANNOUNCED_IF_INDEX_KEY, DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT);
+    celix_properties_setLong(properties, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX, DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT);
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, OSGI_FRAMEWORK_OBJECTCLASS, "dzc_test_service");
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");

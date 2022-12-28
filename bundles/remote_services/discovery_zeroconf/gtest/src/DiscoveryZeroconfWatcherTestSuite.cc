@@ -48,7 +48,7 @@ static  celix_status_t discoveryZeroconfWatcherTest_endpointAdded(void *handle, 
     (void)handle;
     (void)matchedFilter;
     EXPECT_STREQ("60f49d89-d105-430c-b12b-93fbb54b1d19", endpoint->id);
-    EXPECT_STREQ("dzc_test_service", endpoint->service);
+    EXPECT_STREQ("dzc_test_service", endpoint->serviceName);
     EXPECT_EQ(100, endpoint->serviceId);
     sem_post(&syncSem);
     return CELIX_SUCCESS;

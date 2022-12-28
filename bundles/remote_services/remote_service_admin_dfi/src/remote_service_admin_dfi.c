@@ -28,6 +28,7 @@
 #include <uuid/uuid.h>
 #include <curl/curl.h>
 #include <limits.h>
+#include <net/if.h>
 
 #include <jansson.h>
 #include "json_serializer.h"
@@ -68,6 +69,7 @@
  */
 #define CELIX_RSA_USE_STOP_EXPORT_THREAD true
 
+
 struct remote_service_admin {
     celix_bundle_context_t *context;
     celix_log_helper_t *loghelper;
@@ -87,6 +89,7 @@ struct remote_service_admin {
 
     char *port;
     char *ip;
+    uint32_t ifIndex;
 
     struct mg_context *ctx;
 
@@ -134,6 +137,7 @@ static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb
 static void remoteServiceAdmin_log(remote_service_admin_t *admin, int level, const char *file, int line, const char *msg, ...);
 static void remoteServiceAdmin_setupStopExportsThread(remote_service_admin_t* admin);
 static void remoteServiceAdmin_teardownStopExportsThread(remote_service_admin_t* admin);
+static uint32_t remoteServiceAdmin_getIfIndex(const char *ip);
 
 static void remoteServiceAdmin_curlshare_lock(CURL *handle, curl_lock_data data, curl_lock_access laccess, void *userptr)
 {
@@ -257,6 +261,11 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
 
         unsigned int port_counter = 0;
         bool bindToAllInterfaces = celix_bundleContext_getPropertyAsBool(context, CELIX_RSA_BIND_ON_ALL_INTERFACES, CELIX_RSA_BIND_ON_ALL_INTERFACES_DEFAULT);
+        if (bindToAllInterfaces) {
+            (*admin)->ifIndex = 0;
+        } else {
+            (*admin)->ifIndex = remoteServiceAdmin_getIfIndex((*admin)->ip);
+        }
         do {
             char *listeningPorts = NULL;
             if (bindToAllInterfaces) {
@@ -748,6 +757,7 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED, "true");
     celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) RSA_DFI_CONFIGURATION_TYPE);
     celix_properties_set(endpointProperties, RSA_DFI_ENDPOINT_URL, url);
+    celix_properties_setLong(endpointProperties, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX, admin->ifIndex);
 
     if (props != NULL) {
         hash_map_iterator_pt propIter = hashMapIterator_create(props);
@@ -807,6 +817,32 @@ static celix_status_t remoteServiceAdmin_getIpAddress(char* interface, char** ip
     return status;
 }
 
+static uint32_t remoteServiceAdmin_getIfIndex(const char *ip) {
+    uint32_t ifIndex = 0;
+
+    struct ifaddrs *ifaddr, *ifa;
+    char host[NI_MAXHOST];
+
+    if (ip != NULL && getifaddrs(&ifaddr) != -1)
+    {
+        for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+        {
+            if (ifa->ifa_addr == NULL)
+                continue;
+
+            if ((getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == 0)) {
+                if (strcmp(host, ip) == 0) {
+                    ifIndex = if_nametoindex(ifa->ifa_name);
+                    break;
+                }
+            }
+        }
+
+        freeifaddrs(ifaddr);
+    }
+
+    return ifIndex;
+}
 
 celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_description_t **description)
 {

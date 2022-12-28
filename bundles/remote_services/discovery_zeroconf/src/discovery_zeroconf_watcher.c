@@ -418,7 +418,7 @@ static void discoveryZeroconfWatcher_refreshEndpoints(discovery_zeroconf_watcher
                     svcEntry->resolved = false;
                     continue;
                 }
-                celix_logHelper_debug(watcher->logHelper, "Watcher: Add endpoint for %s on %s.", ep->service,ep->frameworkUUID);
+                celix_logHelper_debug(watcher->logHelper, "Watcher: Add endpoint for %s on %s.", ep->serviceName,ep->frameworkUUID);
                 epEntry = (watched_endpoint_entry_t *)calloc(1, sizeof(*epEntry));
                 epEntry->endpoint = ep;
                 discoveryZeroConfWatcher_informEPLs(watcher, ep, true);
@@ -437,7 +437,7 @@ static void discoveryZeroconfWatcher_refreshEndpoints(discovery_zeroconf_watcher
             if (epEntry->expiredTime.tv_sec == INT_MAX) {
                 epEntry->expiredTime = celix_gettime(CLOCK_MONOTONIC);
             } else if (celix_elapsedtime(CLOCK_MONOTONIC, epEntry->expiredTime) >= DZC_EP_JITTER_INTERVAL) {
-                celix_logHelper_debug(watcher->logHelper, "Watcher: Remove endpoint for %s on %s.", epEntry->endpoint->service, epEntry->endpoint->frameworkUUID);
+                celix_logHelper_debug(watcher->logHelper, "Watcher: Remove endpoint for %s on %s.", epEntry->endpoint->serviceName, epEntry->endpoint->frameworkUUID);
                 celix_stringHashMapIterator_remove(&epIter);
                 discoveryZeroConfWatcher_informEPLs(watcher, epEntry->endpoint, false);
                 endpointDescription_destroy(epEntry->endpoint);

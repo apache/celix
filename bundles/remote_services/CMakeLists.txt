@@ -125,6 +125,7 @@ if (REMOTE_SERVICE_ADMIN)
                 celix_remote_interceptors_example
                 calculator
                 PROPERTIES
+                CELIX_RSA_BIND_ON_ALL_INTERFACES=false
                 )
 
         add_celix_container(remote-services-zeroconf-client
@@ -142,6 +143,7 @@ if (REMOTE_SERVICE_ADMIN)
                 celix_remote_interceptors_example
                 calculator_shell
                 PROPERTIES
+                CELIX_RSA_BIND_ON_ALL_INTERFACES=false
                 )
     endif()
     

@@ -24,7 +24,6 @@ extern "C" {
 #endif
 #include <dns_sd.h>
 
-#define DZC_SERVICE_ANNOUNCED_IF_INDEX_KEY "DZC_IF_INDEX"
 #define DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT kDNSServiceInterfaceIndexLocalOnly
 
 #define DZC_SERVICE_TYPE_KEY "DZC_SERVICE_TYPE_KEY"

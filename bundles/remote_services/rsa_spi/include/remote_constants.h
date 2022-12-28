@@ -36,4 +36,6 @@ static const char * const OSGI_RSA_SERVICE_IMPORTED_CONFIGS = "service.imported.
 static const char * const OSGI_RSA_SERVICE_EXPORTED_CONFIGS = "service.exported.configs";
 static const char * const OSGI_RSA_SERVICE_LOCATION = "service.location";
 
+static const char * const RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX = "RSA_DZC_IF_INDEX";
+
 #endif /* REMOTE_CONSTANTS_H_ */
