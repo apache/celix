@@ -177,7 +177,7 @@ typedef struct pubsub_protocol_service {
      * @param outLength length of the byte array
      * @return status code indicating failure or success
      */
-    celix_status_t (*encodeMetadata)(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
+    celix_status_t (*encodeMetadata)(void *handle, pubsub_protocol_message_t *message, void **BufferInOut, size_t *bufferLengthInOut); /*TODO, size_t* bufferContentLengthOut);*/
 
     /**
      * Encodes the footer
