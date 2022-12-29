@@ -74,6 +74,38 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeHeader_Test) { // NOLINT(cer
     free(headerData);
 }
 
+TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeHeader_TestWithExistingMemory) {
+    pubsub_protocol_wire_v1_t *wireprotocol;
+    pubsubProtocol_create(&wireprotocol);
+
+    pubsub_protocol_message_t message;
+    message.header.msgId = 1;
+    message.header.msgMajorVersion = 0;
+    message.header.msgMinorVersion = 0;
+    message.header.payloadSize = 2;
+    message.header.metadataSize = 3;
+
+    void* headerData = malloc(3);
+    size_t headerLength = 0;
+    void* orgHeaderDataPointer = headerData;
+    //calling with too small of a buffer (new buffer with new length should be created).
+    celix_status_t status = pubsubProtocol_encodeHeader(nullptr, &message, &headerData, &headerLength);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(24, headerLength);
+    EXPECT_NE(headerData, orgHeaderDataPointer);
+
+    orgHeaderDataPointer = headerData;
+    //calling with matching buffer, buffer will be re-used.
+    status = pubsubProtocol_encodeHeader(nullptr, &message, &headerData, &headerLength);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(24, headerLength);
+    EXPECT_EQ(headerData, orgHeaderDataPointer);
+
+
+    pubsubProtocol_destroy(wireprotocol);
+    free(headerData);
+}
+
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeHeader_Test) { // NOLINT(cert-err58-cpp)
     pubsub_protocol_wire_v1_t *wireprotocol;
     pubsubProtocol_create(&wireprotocol);

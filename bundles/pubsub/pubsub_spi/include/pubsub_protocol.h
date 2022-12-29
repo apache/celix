@@ -151,18 +151,23 @@ typedef struct pubsub_protocol_service {
     celix_status_t (*isMessageSegmentationSupported)(void *handle, bool *isSupported);
 
     /**
-     * @brief Encodes the header using the supplied message.header.
+     * @brief Encode the header using the supplied message.header.
+     *
+     * If *bufferInOut is NULL a new buffer will be allocated.
+     * If *bufferInOut is not NULL and *bufferLengthInOut matches the header size the buffer will be reused.
+     * If *bufferInOut is not NULL, but *bufferLengthInOut does not match the header size, the provided buffer will
+     * be freed and a new buffer (matching the header size) will be allocated.
      *
      * @param handle handle for service
      * @param message message to use header from
-     * @param outBuffer byte array containing the encoded header
-     * @param outLength length of the byte array
+     * @param bufferInOut byte array containing the encoded header
+     * @param bufferLengthInOut length of the byte array
      * @return status code indicating failure or success
      */
-    celix_status_t (*encodeHeader)(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
+    celix_status_t (*encodeHeader)(void *handle, pubsub_protocol_message_t *message, void **bufferInOut, size_t *bufferLengthInOut);
 
     /**
-     * @brief Encodes the payload using the supplied message.header. Note, this decode is for protocol specific tasks,
+     * @brief Encode the payload using the supplied message.header. Note, this decode is for protocol specific tasks,
      * and does not perform the needed message serialization. See the serialization service for that.
      * In most cases this will simply use the known data and length from message.payload.
      *
@@ -195,15 +200,20 @@ typedef struct pubsub_protocol_service {
     celix_status_t (*encodeMetadata)(void *handle, pubsub_protocol_message_t *message, void **bufferInOut, size_t *bufferLengthInOut, size_t* bufferContentLengthOut);
 
     /**
-     * @brief Encodes the footer
+     * @brief Encode the footer
+     *
+     * If *bufferInOut is NULL a new buffer will be allocated.
+     * If *bufferInOut is not NULL and *bufferLengthInOut matches the footer size the buffer will be reused.
+     * If *bufferInOut is not NULL, but *bufferLengthInOut does not match the footer size, the provided buffer will
+     * be freed and a new buffer (matching the footer size) will be allocated.
      *
      * @param handle handle for service
      * @param message message to use footer from
-     * @param outBuffer byte array containing the encoded footer
-     * @param outLength length of the byte array
+     * @param bufferInOut byte array containing the encoded footer
+     * @param bufferLengthInOut length of the byte array
      * @return status code indicating failure or success
      */
-    celix_status_t (*encodeFooter)(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
+    celix_status_t (*encodeFooter)(void *handle, pubsub_protocol_message_t *message, void **bufferInOut, size_t *bufferLengthInOut);
 
 
   /**
