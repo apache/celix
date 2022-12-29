@@ -170,8 +170,9 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeMetadata_Test) { // NOLINT(c
     celix_properties_set(message.metadata.metadata, "a", "b");
 
     void *data = nullptr;
+    size_t dataLength = 0;
     size_t length = 0;
-    celix_status_t status = pubsubProtocol_v1_encodeMetadata(nullptr, &message, &data, &length);
+    celix_status_t status = pubsubProtocol_v1_encodeMetadata(nullptr, &message, &data, &dataLength, &length);
     ASSERT_EQ(status, CELIX_SUCCESS);
 
     unsigned char exp[12];

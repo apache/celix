@@ -17,15 +17,14 @@
  *under the License.
  */
 
+
+
+#include <gtest/gtest.h>
 #include <iostream>
-
-#include <pubsub_wire_protocol_common.h>
-
-#include "gtest/gtest.h"
-
 #include <cstring>
-#include <chrono>
 #include <dlfcn.h>
+
+#include "pubsub_wire_protocol_common.h"
 
 class WireProtocolCommonTest : public ::testing::Test {
 public:
@@ -255,8 +254,7 @@ TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeMetadataWithNoMemory
     //reset malloc
     disableMallocFail();
 
-    //TODO more test
-
+    free(data);
     celix_properties_destroy(message.metadata.metadata);
 }
 

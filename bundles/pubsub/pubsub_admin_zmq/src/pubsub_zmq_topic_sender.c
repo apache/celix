@@ -438,9 +438,10 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     size_t payloadLength = 0;
     sender->protocol->encodePayload(sender->protocol->handle, &message, &payloadData, &payloadLength);
 
+    size_t metadataSize = 0;
     if (metadata != NULL) {
         message.metadata.metadata = metadata;
-        sender->protocol->encodeMetadata(sender->protocol->handle, &message, &sender->zmqBuffers.metadataBuffer, &sender->zmqBuffers.metadataBufferSize);
+        sender->protocol->encodeMetadata(sender->protocol->handle, &message, &sender->zmqBuffers.metadataBuffer, &sender->zmqBuffers.metadataBufferSize, &metadataSize);
     } else {
         message.metadata.metadata = NULL;
     }
@@ -452,7 +453,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     message.header.msgMajorVersion = majorVersion;
     message.header.msgMinorVersion = minorversion;
     message.header.payloadSize = payloadLength;
-    message.header.metadataSize = sender->zmqBuffers.metadataBufferSize;
+    message.header.metadataSize = metadataSize;
     message.header.payloadPartSize = payloadLength;
     message.header.payloadOffset = 0;
     message.header.isLastSegment = 1;
@@ -484,7 +485,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
 
         //send Payload
         if (rc > 0) {
-            int flag = ((sender->zmqBuffers.metadataBufferSize > 0)  || (sender->zmqBuffers.footerBufferSize > 0)) ? ZMQ_SNDMORE : 0;
+            int flag = ((metadataSize > 0)  || (sender->zmqBuffers.footerBufferSize > 0)) ? ZMQ_SNDMORE : 0;
             zmq_msg_init_data(&msg2, payloadData, payloadLength, psa_zmq_freeMsg, freeMsgEntry);
             rc = zmq_msg_send(&msg2, socket, flag);
             if (rc == -1) {
@@ -494,9 +495,9 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
         }
 
         //send MetaData
-        if (rc > 0 && sender->zmqBuffers.metadataBufferSize > 0) {
+        if (rc > 0 && metadataSize > 0) {
             int flag = (sender->zmqBuffers.footerBufferSize > 0 ) ? ZMQ_SNDMORE : 0;
-            zmq_msg_init_data(&msg3, sender->zmqBuffers.metadataBuffer, sender->zmqBuffers.metadataBufferSize, NULL, NULL);
+            zmq_msg_init_data(&msg3, sender->zmqBuffers.metadataBuffer, metadataSize, NULL, NULL);
             rc = zmq_msg_send(&msg3, socket, flag);
             if (rc == -1) {
                 L_WARN("Error sending metadata msg. %s", strerror(errno));
@@ -519,8 +520,8 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
         zmsg_t *msg = zmsg_new();
         zmsg_addmem(msg, sender->zmqBuffers.headerBuffer, sender->zmqBuffers.headerBufferSize);
         zmsg_addmem(msg, payloadData, payloadLength);
-        if (sender->zmqBuffers.metadataBufferSize > 0) {
-            zmsg_addmem(msg, sender->zmqBuffers.metadataBuffer, sender->zmqBuffers.metadataBufferSize);
+        if (metadataSize > 0) {
+            zmsg_addmem(msg, sender->zmqBuffers.metadataBuffer, metadataSize);
         }
         if (sender->zmqBuffers.footerBufferSize > 0) {
             zmsg_addmem(msg, sender->zmqBuffers.footerBuffer, sender->zmqBuffers.footerBufferSize);

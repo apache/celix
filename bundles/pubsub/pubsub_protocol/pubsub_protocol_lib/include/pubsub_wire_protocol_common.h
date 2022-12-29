@@ -58,7 +58,7 @@ celix_status_t pubsubProtocol_decodePayload(void *data, size_t length, pubsub_pr
 celix_status_t pubsubProtocol_decodeMetadata(void *data, size_t length, pubsub_protocol_message_t *message);
 
 /**
- * Encode metadata to bufferInOut.
+ * @brief Encode metadata to bufferInOut.
  *
  * The metadata is encoded as a bytebuffer where the first 4 bytes is used to specify how many metadata (key,value)
  * entries there are and then every metadata entry is encoded as a netstring key followed by a netstring value.
