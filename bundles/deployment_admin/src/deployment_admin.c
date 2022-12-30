@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * deployment_admin.c
- *
- *  \date       Nov 7, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -136,16 +129,6 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
 			(*admin)->pollUrl = strdup(pollUrl);
 			(*admin)->auditlogUrl = strdup(auditlogUrl);
 
-//				log_store_pt store = NULL;
-//				log_t *log = NULL;
-//				log_sync_pt sync = NULL;
-//				logStore_create(subpool, &store);
-//				log_create(subpool, store, &log);
-//				logSync_create(subpool, (*admin)->targetIdentification, store, &sync);
-//
-//				log_log(log, 20000, NULL);
-
-
 			celixThread_create(&(*admin)->poller, NULL, deploymentAdmin_poll, *admin);
 		}
 	}
@@ -199,23 +182,22 @@ static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, 
         fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error initializing curl.");
     }
 
-    size_t maxUrlLen = strlen(admin->auditlogUrl)+6;
-    char url[maxUrlLen];
-    int written = snprintf(url, sizeof(url), "%s/send", admin->auditlogUrl);
-    status = written < sizeof(url) ? CELIX_SUCCESS : CELIX_ILLEGAL_ARGUMENT;
+    char* url;
+    int rc = asprintf(&url, "%s/send", admin->auditlogUrl);
+    status = rc < 0 ? CELIX_ENOMEM : CELIX_SUCCESS;
 
     if (status == CELIX_SUCCESS) {
             curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
             curl_easy_setopt(curl, CURLOPT_URL, url);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, entry);
             res = curl_easy_perform(curl);
-
             if (res != CURLE_OK ) {
                 status = CELIX_BUNDLE_EXCEPTION;
-                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error sending auditlog, got curl error code %d", res);
+                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error sending auditlog to %s, got curl error code %d", url, res);
             }
+            free(url);
     } else {
-        fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error creating send url for audit log url", admin->auditlogUrl);
+        fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error creating send url for audit log url: %s", admin->auditlogUrl);
     }
 
     return status;
