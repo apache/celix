@@ -90,7 +90,7 @@ TEST_F(SyslogWriterTestSuite, LogToSysLog) {
                 buf[i] = 'A';
             }
             buf[2047] = '\0';
-            ls->fatal(ls->handle, buf);
+            ls->fatal(ls->handle, "%s", buf);
         };
         bool called = celix_bundleContext_useServiceWithOptions(ctx.get(), &opts);
         EXPECT_TRUE(called);
