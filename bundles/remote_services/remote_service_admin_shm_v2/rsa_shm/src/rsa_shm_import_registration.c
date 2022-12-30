@@ -150,7 +150,7 @@ static void importRegistration_addRpcFac(void *handle, void *svc) {
             import->reqSenderSvcId, &proxySvcId);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(import->logHelper,"RSA import reg: Error Installing %s proxy. %d.",
-                import->endpointDesc->service, status);
+                import->endpointDesc->serviceName, status);
         return;
     }
     import->proxySvcId = proxySvcId;

@@ -158,7 +158,7 @@ celix_status_t rsaJsonRpc_createProxy(void *handle, const endpoint_description_t
             jsonRpc->callsLogFile, jsonRpc->interceptorsHandler, endpointDesc,
             jsonRpc->reqSenderTracker, requestSenderSvcId, jsonRpc->serialProtoId, &proxyFactory);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error(jsonRpc->logHelper, "Error creating proxy factory for %s.", endpointDesc->service);
+        celix_logHelper_error(jsonRpc->logHelper, "Error creating proxy factory for %s.", endpointDesc->serviceName);
         goto err_creating_proxy_fac;
     }
     long factorySvcId = rsaJsonRpcProxy_factorySvcId(proxyFactory);
