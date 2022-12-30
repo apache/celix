@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * endpoint_discovery_server.c
- *
- * \date        Aug 12, 2014
- * \author      <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- * \copyright   Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <string.h>
@@ -215,7 +208,7 @@ celix_status_t endpointDiscoveryServer_getUrl(endpoint_discovery_server_t *serve
 
     if (server->ip && server->port && server->path) {
         int written = snprintf(url, maxLenUrl, "http://%s:%s/%s", server->ip, server->port, server->path);
-        status = written < maxLenUrl ? CELIX_SUCCESS : CELIX_ILLEGAL_ARGUMENT;
+        status = written < maxLenUrl && written > 0 ? CELIX_SUCCESS : CELIX_ILLEGAL_ARGUMENT;
     }
 
     return status;

@@ -692,7 +692,8 @@ static int avrobinSerializer_writeSequence(dyn_type *type, void *loc, FILE *stre
 
 static int avrobinSerializer_writeEnum(dyn_type *type, void *loc, FILE *stream) {
     char enum_value_str[16];
-    if (snprintf(enum_value_str, sizeof(enum_value_str), "%d", *(int32_t*)loc) >= sizeof(enum_value_str)) {
+    int rc = snprintf(enum_value_str, sizeof(enum_value_str), "%d", *(int32_t*)loc);
+    if (rc >= sizeof(enum_value_str) || rc < 0) {
         return ERROR;
     }
 
@@ -1101,7 +1102,8 @@ static int generate_sync(uint8_t **result) {
 
 static int generate_record_name(char **result) {
     char num_str[16];
-    if (snprintf(num_str, sizeof(num_str), "R%u", record_name_counter) >= sizeof(num_str)) {
+    int rc = snprintf(num_str, sizeof(num_str), "R%u", record_name_counter);
+    if (rc >= sizeof(num_str) || rc < 0) {
         return ERROR;
     }
     size_t len = strlen(num_str);
