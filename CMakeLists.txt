@@ -80,11 +80,11 @@ endif ()
 
 # Set C specific flags
 set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
-set(CMAKE_C_FLAGS "-Wall -Werror -Wformat=2 ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "-Wall -Werror -Wformat ${CMAKE_C_FLAGS}")
 
 # Set C++ specific flags
 set(CMAKE_CXX_FLAGS "-fno-rtti ${CMAKE_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ -Wformat=2 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ -Wformat ${CMAKE_CXX_FLAGS}")
 
 if (NOT DEFINED CMAKE_CXX_STANDARD)
     #Celix header only C++ supported is based on C++14 and C++17.
