@@ -50,7 +50,7 @@ extern "C" void* malloc(size_t size) {
     }
     static auto* orgMallocFp = (void*(*)(size_t))dlsym(RTLD_NEXT, "malloc");
     if (orgMallocFp == nullptr) {
-        perror(dlerror());
+        perror("Cannot find malloc symbol");
         return nullptr;
     }
     return orgMallocFp(size);
@@ -64,7 +64,7 @@ extern "C" void* realloc(void* buf, size_t newSize) {
     }
     static auto* orgReallocFp = (void*(*)(void*, size_t))dlsym(RTLD_NEXT, "realloc");
     if (orgReallocFp == nullptr) {
-        perror(dlerror());
+        perror("Cannot find realloc symbol");
         return nullptr;
     }
     return orgReallocFp(buf, newSize);
