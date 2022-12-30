@@ -1256,12 +1256,20 @@ celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t
  * @param format    printf style format string
  * @param ...       printf style format arguments
  */
-void celix_bundleContext_log(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, ...);
+void celix_bundleContext_log(
+        const celix_bundle_context_t* ctx,
+        celix_log_level_e level,
+        const char* format,
+        ...) __attribute__((format(printf,3,4)));
 
 /**
  * @brief Logs a message to Celix framework logger with the provided log level.
  */
-void celix_bundleContext_vlog(const celix_bundle_context_t* ctx, celix_log_level_e level, const char* format, va_list formatArgs);
+void celix_bundleContext_vlog(
+        const celix_bundle_context_t* ctx,
+        celix_log_level_e level,
+        const char* format,
+        va_list formatArgs) __attribute__((format(printf,3,0)));
 
 
 /**
