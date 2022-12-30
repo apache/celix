@@ -32,6 +32,7 @@ public:
     ~WireProtocolCommonTest() override = default;
 };
 
+#ifdef ENABLE_MALLOC_RETURN_NULL_TESTS
 /**
  * If set to true the mocked malloc will always return NULL.
  * Should be read/written using __atomic builtins.
@@ -78,6 +79,7 @@ void setupMallocFailAfterNrCalls(int nrOfCalls) {
 void disableMallocFail() {
     __atomic_store_n(&mallocFailAfterCalls, 0, __ATOMIC_RELEASE);
 }
+#endif
 
 TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeMetadataWithSingleEntries) {
     pubsub_protocol_message_t message;
@@ -215,7 +217,7 @@ TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeWithExistinBufferWhi
     celix_properties_destroy(message.metadata.metadata);
 }
 
-
+#ifdef ENABLE_MALLOC_RETURN_NULL_TESTS
 TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeMetadataWithNoMemoryLeft) {
     pubsub_protocol_message_t message;
     message.header.convertEndianess = 0;
@@ -257,7 +259,7 @@ TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeMetadataWithNoMemory
     free(data);
     celix_properties_destroy(message.metadata.metadata);
 }
-
+#endif
 
 TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DecodeMetadataWithSingleEntries) {
     pubsub_protocol_message_t message;
