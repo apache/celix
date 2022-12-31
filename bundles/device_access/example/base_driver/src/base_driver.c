@@ -29,7 +29,7 @@
 #include <celix_errno.h>
 #include <bundle_activator.h>
 #include <bundle_context.h>
-#include <celixbool.h>
+#include <stdbool.h>
 #include <device.h>
 
 #include "base_driver_device.h"

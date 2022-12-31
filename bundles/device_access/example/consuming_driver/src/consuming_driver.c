@@ -31,7 +31,7 @@
 #include <service_tracker.h>
 #include <service_reference.h>
 
-#include "celixbool.h"
+#include <stdbool.h>
 #include "consuming_driver_private.h"
 #include "refining_driver_device.h"
 
