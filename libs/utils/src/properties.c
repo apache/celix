@@ -24,6 +24,7 @@
 #include <stdbool.h>
 
 #include "properties.h"
+#include "celix_build_assert.h"
 #include "celix_properties.h"
 #include "utils.h"
 #include "hash_map_private.h"
