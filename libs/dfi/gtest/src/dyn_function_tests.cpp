@@ -156,14 +156,9 @@ TEST_F(DynFunctionTests, DynFuncAccTest) {
 }
 
 extern "C" {
-#ifdef __clang__
-[[clang::optnone]]
-#else
-__attribute__((optimize("0")))
-#endif
 static bool func_test3() {
     dyn_function_type *dynFunc = nullptr;
-    void (*fp)(void) = (void(*)(void)) testExample3;
+    void (*fp)(void) = (void (*)(void)) testExample3;
     int rc;
 
     rc = dynFunction_parseWithStr(EXAMPLE3_DESCRIPTOR, nullptr, &dynFunc);
@@ -182,7 +177,7 @@ static bool func_test3() {
 
         rc = dynFunction_call(dynFunc, fp, &rVal, args);
 
-        double *inMemResult = (double *)calloc(1, sizeof(double));
+        double *inMemResult = (double *) calloc(1, sizeof(double));
         a = 2.0;
         ptr = &a;
         args[0] = &ptr;
@@ -201,7 +196,6 @@ static bool func_test3() {
     return rc == 0 && result1 == 4.0 && result2 == 4.0;
 }
 }
-
 
 TEST_F(DynFunctionTests, DynFuncTest3) {
     //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to
