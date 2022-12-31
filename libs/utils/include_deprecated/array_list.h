@@ -20,24 +20,19 @@
 #ifndef ARRAY_LIST_H_
 #define ARRAY_LIST_H_
 
-#include "celixbool.h"
 #include "exports.h"
 #include "celix_errno.h"
 #include "stdbool.h"
 #include "celix_array_list.h"
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifdef ADD_CELIX_DEPRECATED_WARNING
-#define CELIX_DEPRECATED_ATTR __attribute__ ((deprecated))
-#else
-#define CELIX_DEPRECATED_ATTR
-#endif
-
-typedef struct celix_array_list *array_list_pt CELIX_DEPRECATED_ATTR;
-typedef struct celix_array_list array_list_t CELIX_DEPRECATED_ATTR;
+typedef struct celix_array_list *array_list_pt __attribute__((deprecated("array_list is deprecated use celix_array_list instead")));
+typedef struct celix_array_list array_list_t __attribute__((deprecated("array_list is deprecated use celix_array_list instead")));
 
 typedef struct celix_array_list_iterator *array_list_iterator_pt;
 typedef struct celix_array_list_iterator array_list_iterator_t;

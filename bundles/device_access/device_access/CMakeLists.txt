@@ -37,6 +37,7 @@ target_link_libraries(device_manager PRIVATE Celix::log_helper)
 
 target_include_directories(device_manager PRIVATE src)
 target_link_libraries(device_manager PRIVATE device_access_api)
+celix_deprecated_utils_headers(device_manager)
 
 install(TARGETS device_access_api EXPORT celix COMPONENT device_access
 		INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/device_access)

@@ -25,6 +25,7 @@
 #include "hash_map.h"
 #include "celix_shell_command.h"
 #include "celix_log_helper.h"
+#include "celix_threads.h"
 
 #ifdef CELIX_INSTALL_DEPRECATED_API
 #include "command.h"

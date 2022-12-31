@@ -17,28 +17,24 @@
  * under the License.
  */
 
-#include "celix_properties.h"
-#include "celix_bundle.h"
+#ifndef CELIX_CELIX_UTILS_API_H_
+#define CELIX_CELIX_UTILS_API_H_
 
-#ifndef CELIX_SERVICE_FACTORY_H_
-#define CELIX_SERVICE_FACTORY_H_
+#include <stdbool.h>
 
-#ifdef __cplusplus
-extern "C" {
+#include "celix_errno.h"
+#include "celix_threads.h"
+#include "array_list.h"
+#include "hash_map.h"
+#include "properties.h"
+#include "utils.h"
+#include "celix_utils.h"
+#include "version.h"
+#include "version_range.h"
+
+#if defined(NO_MEMSTREAM_AVAILABLE)
+#include "memstream/open_memstream.h"
+#include "memstream/fmemopen.h"
 #endif
 
-typedef struct celix_service_factory celix_service_factory_t;
-
-struct celix_service_factory {
-    void *handle;
-
-    void* (*getService)(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
-
-    void (*ungetService)(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
-};
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* CELIX_SERVICE_FACTORY_H_ */
+#endif //CELIX_CELIX_UTILS_API_H_

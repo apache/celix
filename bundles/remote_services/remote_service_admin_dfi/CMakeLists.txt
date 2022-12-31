@@ -43,6 +43,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             CURL::libcurl
             jansson::jansson
             )
+    celix_deprecated_utils_headers(rsa_dfi)
 
     install_celix_bundle(rsa_dfi EXPORT celix COMPONENT rsa)
     #Setup target aliases to match external usage

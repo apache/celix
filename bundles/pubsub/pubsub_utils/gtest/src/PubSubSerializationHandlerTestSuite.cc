@@ -22,11 +22,13 @@
 #include <memory>
 #include <cstdarg>
 
-#include "celix_api.h"
+#include "celix_bundle_context.h"
 #include "pubsub_message_serialization_service.h"
 #include "pubsub_serializer_handler.h"
 #include "dyn_message.h"
 #include "pubsub_message_serialization_marker.h"
+#include "celix_framework_factory.h"
+#include "celix_constants.h"
 
 static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
     va_list ap;

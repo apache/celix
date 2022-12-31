@@ -17,7 +17,7 @@
  *under the License.
  */
 
-#include "celix_api.h"
+#include "celix_bundle_activator.h"
 #include "celix_log_admin.h"
 
 typedef struct celix_log_admin_activator {

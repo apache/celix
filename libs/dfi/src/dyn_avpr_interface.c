@@ -151,7 +151,8 @@ inline static bool dynAvprInterface_createHeader(dyn_interface_type* intf, json_
         return false;
     }
 
-    if (CELIX_SUCCESS != version_createVersionFromString(version, &(intf->version))) {
+    intf->version = celix_version_createVersionFromString(version);
+    if (intf->version == NULL) {
         LOG_ERROR("Invalid version (%s) in parsed descriptor\n", version);
         return false;
     }

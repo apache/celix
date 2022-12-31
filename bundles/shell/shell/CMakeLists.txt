@@ -49,6 +49,7 @@ if (SHELL)
 	)
 	target_include_directories(shell_commands PRIVATE src)
 	target_link_libraries(shell_commands PRIVATE Celix::shell_api Celix::log_helper)
+	celix_deprecated_utils_headers(shell_commands)
 
     add_celix_bundle(shell
         SYMBOLIC_NAME "apache_celix_c_shell"
@@ -63,6 +64,7 @@ if (SHELL)
 	target_include_directories(shell PRIVATE src)
 	target_link_libraries(shell PRIVATE shell_commands Celix::shell_api Celix::log_helper)
 	target_compile_options(shell PRIVATE -Wno-deprecated-declarations)
+	celix_deprecated_utils_headers(shell)
 	if (CELIX_INSTALL_DEPRECATED_API)
 		target_compile_definitions(shell PRIVATE CELIX_INSTALL_DEPRECATED_API)
 	endif ()

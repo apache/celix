@@ -24,12 +24,12 @@
  *  \copyright  Apache License, Version 2.0
  */
 
-#include "celixbool.h"
-#include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
 
 #include "linked_list.h"
 #include "linked_list_private.h"
+
 
 celix_status_t linkedList_create(linked_list_pt *list) {
     linked_list_pt linked_list = malloc(sizeof(*linked_list));

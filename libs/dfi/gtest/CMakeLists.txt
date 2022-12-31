@@ -33,6 +33,7 @@ add_executable(test_dfi
 )
 
 target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils libffi::libffi jansson::jansson GTest::gtest GTest::gtest_main)
+celix_deprecated_utils_headers(test_dfi)
 
 file(COPY ${CMAKE_CURRENT_LIST_DIR}/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${CMAKE_CURRENT_LIST_DIR}/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

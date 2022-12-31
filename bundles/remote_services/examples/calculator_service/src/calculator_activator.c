@@ -19,10 +19,10 @@
 
 #include <stdlib.h>
 
-#include <celix_api.h>
-
+#include "celix_bundle_activator.h"
 #include "calculator_impl.h"
 #include "remote_constants.h"
+#include "celix_constants.h"
 
 struct activator {
     calculator_t *calculator;

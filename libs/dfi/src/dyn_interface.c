@@ -71,13 +71,14 @@ int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
             status = dynInterface_checkInterface(intf);
         }
 
-        if(status==OK){ /* We are sure that version field is present in the header */
-        	char* version=NULL;
+        if (status == OK) { /* We are sure that version field is present in the header */
+        	char* version = NULL;
             dynInterface_getVersionString(intf,&version);
-            if(version!=NULL){
-            	status = (version_createVersionFromString(version,&(intf->version)) == CELIX_SUCCESS)?OK:ERROR;
+            if (version != NULL){
+                intf->version = celix_version_createVersionFromString(version);
+                status = intf->version != NULL ? OK : ERROR;
             }
-            if(status==ERROR){
+            if (status == ERROR) {
             	LOG_ERROR("Invalid version (%s) in parsed descriptor\n",version);
             }
         }
@@ -373,7 +374,7 @@ void dynInterface_destroy(dyn_interface_type *intf) {
         }
 
         if(intf->version!=NULL){
-        	version_destroy(intf->version);
+        	celix_version_destroy(intf->version);
         }
 
         free(intf);
@@ -384,7 +385,7 @@ int dynInterface_getName(dyn_interface_type *intf, char **out) {
     return dynInterface_getEntryForHead(&intf->header, "name", out);
 }
 
-int dynInterface_getVersion(dyn_interface_type* intf , version_pt* version){
+int dynInterface_getVersion(dyn_interface_type* intf , celix_version_t** version){
 	*version = intf->version;
 	if(*version==NULL){
 		return ERROR;

@@ -45,7 +45,6 @@ class CelixConan(ConanFile):
         "enable_thread_sanitizer": [True, False],
         "enable_testing_dependency_manager_for_cxx11": [True, False],
         "enable_testing_for_cxx14": [True, False],
-        "celix_add_openssl_dep": [True, False],
         "build_all": [True, False],
         "build_deployment_admin": [True, False],
         "build_device_access_example": [True, False],
@@ -82,7 +81,6 @@ class CelixConan(ConanFile):
         "celix_cxx14": [True, False],
         "celix_cxx17": [True, False],
         "celix_install_deprecated_api": [True, False],
-        "celix_add_deprecated_attributes": [True, False],
         "celix_use_compression_for_bundle_zips": [True, False],
     }
     default_options = { 
@@ -93,7 +91,6 @@ class CelixConan(ConanFile):
         "enable_thread_sanitizer": False,
         "enable_testing_dependency_manager_for_cxx11": False,
         "enable_testing_for_cxx14": False,
-        "celix_add_openssl_dep": False,
         "build_all": False,
         "build_deployment_admin": False,
         "build_device_access": False,
@@ -130,7 +127,6 @@ class CelixConan(ConanFile):
         "celix_cxx14": False,
         "celix_cxx17": False,
         "celix_install_deprecated_api": False,
-        "celix_add_deprecated_attributes": True,
         "celix_use_compression_for_bundle_zips": True,
     }
     _cmake = None
@@ -141,7 +137,6 @@ class CelixConan(ConanFile):
 
     def package_id(self):
         del self.info.options.build_all
-        del self.info.options.celix_add_openssl_dep
         # the followings are not installed
         del self.info.options.build_device_access_example
         del self.info.options.build_pubsub_integration
@@ -219,10 +214,6 @@ class CelixConan(ConanFile):
             self.options['gtest'].shared = True
             if self.options.enable_address_sanitizer:
                 self.options["cpputest"].with_leak_detection = False
-        if self.options.celix_add_openssl_dep:
-            # fix a remotely exploitable OpenSSL/LibreSSL vulnerability
-            # https://lwn.net/Articles/887970/
-            self.requires("openssl/1.1.1n")
         if self.options.build_remote_service_admin or self.options.build_shell_bonjour:
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
         if self.options.build_cxx_remote_service_admin:

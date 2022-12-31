@@ -215,7 +215,7 @@ specifically:
 ### Example: Register a service in C
 ```C
 //src/my_shell_command_provider_bundle_activator.c
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 #include <celix_shell_command.h>
 
 typedef struct my_shell_command_provider_activator_data {
@@ -371,7 +371,7 @@ this responsibility to the user; i.e. by adding an api to "lock" and "unlock" se
 ### Example: Using a service in C
 ```C
 #include <stdio.h>
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 #include <celix_shell_command.h>
 
 typedef struct use_command_service_example_data {
@@ -481,7 +481,9 @@ added callbacks will not be invoked anymore.
 ```C
 //src/track_command_services_example.c
 #include <stdio.h>
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
+#include <celix_threads.h>
+#include <celix_constants.h>
 #include <celix_shell_command.h>
 
 typedef struct track_command_services_example_data {

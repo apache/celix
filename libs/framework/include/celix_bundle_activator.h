@@ -21,6 +21,9 @@
 
 #include "celix_bundle_context.h"
 #include "celix_dependency_manager.h"
+#include "celix_dm_component.h"
+#include "celix_dm_service_dependency.h"
+#include "celix_constants.h"
 
 #ifndef CELIX_BUNDLE_ACTIVATOR_H_
 #define CELIX_BUNDLE_ACTIVATOR_H_

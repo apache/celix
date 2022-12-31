@@ -19,7 +19,8 @@
 
 #include <gtest/gtest.h>
 
-#include "celix_api.h"
+#include "celix_launcher.h"
+#include "celix_bundle_context.h"
 #include <unistd.h>
 #include "receive_count_service.h"
 

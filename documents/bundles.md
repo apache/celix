@@ -141,7 +141,7 @@ stop 0 #stop the Apache Celix framework
 ### C Example
 ```C
 //src/my_bundle_activator.c
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 
 typedef struct my_bundle_activator_data {
     /*the hello world bundle activator struct is empty*/

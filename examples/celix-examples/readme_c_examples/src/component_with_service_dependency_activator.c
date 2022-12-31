@@ -19,7 +19,7 @@
 
 //src/component_with_service_dependency_activator.c
 #include <stdlib.h>
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 #include <celix_shell_command.h>
 
 //********************* COMPONENT *******************************/

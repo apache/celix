@@ -30,7 +30,7 @@ extern "C" {
 /**
  * The definition of the version_pt abstract data type.
  */
-typedef struct celix_version *version_pt;
+typedef struct celix_version *version_pt __attribute__((deprecated("version is deprecated use celix_version instead")));;
 
 /**
  * Creates a new version_pt using the supplied arguments.

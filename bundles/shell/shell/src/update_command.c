@@ -26,6 +26,7 @@
 #include "celix_utils.h"
 #include "celix_array_list.h"
 #include "celix_bundle_context.h"
+#include "bundle_context.h"
 
 celix_status_t updateCommand_download(bundle_context_pt context, char * url, char **inputFile);
 size_t updateCommand_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream);

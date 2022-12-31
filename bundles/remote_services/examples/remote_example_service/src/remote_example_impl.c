@@ -23,6 +23,7 @@
 #include <pthread.h>
 #include <remote_constants.h>
 
+#include "celix_utils.h"
 #include "remote_example.h"
 #include "remote_example_impl.h"
 

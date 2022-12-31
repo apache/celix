@@ -34,6 +34,8 @@ celix_bundle_private_libs(http_admin civetweb_shared)
 file(MAKE_DIRECTORY resources)
 celix_bundle_add_dir(http_admin resources/ DESTINATION root/)
 
+celix_deprecated_utils_headers(http_admin)
+
 
 install_celix_bundle(http_admin EXPORT celix COMPONENT http_admin)
 #Setup target aliases to match external usage

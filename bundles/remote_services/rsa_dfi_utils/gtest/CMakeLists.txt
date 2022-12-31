@@ -29,6 +29,7 @@ celix_bundle_files(rsa_dfi_utils_test_descriptor
 add_executable(test_rsa_dfi_utils
         src/DfiUtilsTestSuite.cc
 )
+celix_deprecated_utils_headers(test_rsa_dfi_utils)
 
 target_link_libraries(test_rsa_dfi_utils PRIVATE Celix::rsa_dfi_utils Celix::framework GTest::gtest GTest::gtest_main)
 

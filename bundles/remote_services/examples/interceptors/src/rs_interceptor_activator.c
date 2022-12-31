@@ -16,12 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include "celix_api.h"
+
 
 #include "first_interceptor_private.h"
 #include "second_interceptor_private.h"
+#include "celix_bundle_activator.h"
+#include "celix_constants.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 struct interceptorActivator {
     first_interceptor_t *interceptor;

@@ -27,7 +27,7 @@
  * @{
  */
 
-#include "celixbool.h"
+#include <stdbool.h>
 #include "celix_errno.h"
 #include "version.h"
 
@@ -38,7 +38,7 @@ extern "C" {
 /**
  * Type definition for the version_range_pt abstract data type.
  */
-typedef struct celix_version_range *version_range_pt;
+typedef struct celix_version_range *version_range_pt __attribute__((deprecated("version_range is deprecated use celix_version_range instead")));
 
 /**
  * Creates a new <code>version_range_pt</code>.

@@ -22,7 +22,8 @@
 #include <celix_log_sink.h>
 #include <celix_log_control.h>
 
-#include "celix_api.h"
+#include "celix_bundle_context.h"
+#include "celix_framework_factory.h"
 #include "celix_log_service.h"
 #include "celix_log_constants.h"
 

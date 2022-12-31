@@ -29,6 +29,7 @@ target_include_directories(pubsub_utils PUBLIC
 )
 target_link_libraries(pubsub_utils PUBLIC Celix::framework Celix::pubsub_api Celix::log_helper Celix::shell_api)
 target_link_libraries(pubsub_utils PRIVATE Celix::pubsub_spi)
+celix_deprecated_utils_headers(pubsub_utils)
 
 add_library(Celix::pubsub_utils ALIAS pubsub_utils)
 
