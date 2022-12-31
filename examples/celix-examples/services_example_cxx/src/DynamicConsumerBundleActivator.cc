@@ -149,7 +149,7 @@ namespace /*anon*/ {
             std::lock_guard<std::mutex> lock{mutex};
             int nextConsumerId = 1;
             while (consumers.size() < MAX_CONSUMERS) {
-                ctx->logInfo("Creating dynamic consumer nr %i", consumers.size());
+                ctx->logInfo("Creating dynamic consumer nr %zu", consumers.size());
                 auto consumer = DynamicConsumer::create(nextConsumerId++);
                 consumers[consumer] = ctx->trackServices<examples::ICalc>()
                         .addSetWithPropertiesCallback([consumer](std::shared_ptr<examples::ICalc> calc, std::shared_ptr<const celix::Properties> properties) {
