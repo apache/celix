@@ -76,7 +76,7 @@ static inline void fw_bundleEntry_waitTillUseCountIs(celix_framework_bundle_entr
         if (entry->useCount != desiredUseCount) {
             struct timespec now = celix_gettime(CLOCK_MONOTONIC);
             if (celix_difftime(&start, &now) > 5) {
-                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle '%s' (bnd id = %li) still in use. Use count is %lu, desired is %li", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
+                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle '%s' (bnd id = %li) still in use. Use count is %zu, desired is %li", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
                 start = celix_gettime(CLOCK_MONOTONIC);
             }
         }
@@ -326,7 +326,7 @@ celix_status_t framework_destroy(framework_pt framework) {
         bundle_t *bnd = entry->bnd;
         if (count > 0) {
             const char *bndName = celix_bundle_getSymbolicName(bnd);
-            fw_log(framework->logger, CELIX_LOG_LEVEL_FATAL, "Cannot destroy framework. The use count of bundle %s (bnd id %li) is not 0, but %lu.", bndName, entry->bndId, count);
+            fw_log(framework->logger, CELIX_LOG_LEVEL_FATAL, "Cannot destroy framework. The use count of bundle %s (bnd id %li) is not 0, but %zu.", bndName, entry->bndId, count);
             celixThreadMutex_lock(&framework->dispatcher.mutex);
             int nrOfRequests = framework->dispatcher.eventQueueSize + celix_arrayList_size(framework->dispatcher.dynamicEventQueue);
             celixThreadMutex_unlock(&framework->dispatcher.mutex);
