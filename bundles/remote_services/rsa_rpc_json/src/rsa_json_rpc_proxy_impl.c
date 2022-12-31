@@ -100,7 +100,7 @@ celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_
     celix_properties_t *props =  celix_properties_copy(endpointDesc->properties);
     assert(props != NULL);
     proxyFactory->factorySvcId = celix_bundleContext_registerServiceFactoryAsync(
-            ctx, &proxyFactory->factory, endpointDesc->service, props);
+            ctx, &proxyFactory->factory, endpointDesc->serviceName, props);
     if (proxyFactory->factorySvcId  < 0) {
         celix_logHelper_error(logHelper, "Proxy: Error Registering proxy service.");
         status = CELIX_SERVICE_EXCEPTION;
@@ -150,7 +150,7 @@ static void* rsaJsonRpcProxy_getService(void *handle, const celix_bundle_t *requ
         status = rsaJsonRpcProxy_create(proxyFactory, requestingBundle, &proxy);
         if (status != CELIX_SUCCESS) {
             celix_logHelper_error(proxyFactory->logHelper,"Error Creating service proxy for %s. %d",
-                    proxyFactory->endpointDesc->service, status);
+                    proxyFactory->endpointDesc->serviceName, status);
             goto service_proxy_err;
         }
         hashMap_put(proxyFactory->proxies, (void*)requestingBundle, proxy);
@@ -246,7 +246,7 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
         remoteInterceptorHandler_invokePostProxyCall(proxyFactory->interceptorsHandler,
                 proxyFactory->endpointDesc->properties, entry->name, metadata);
     } else {
-        celix_logHelper_error(proxyFactory->logHelper, "%s has been intercepted.", proxyFactory->endpointDesc->service);
+        celix_logHelper_error(proxyFactory->logHelper, "%s has been intercepted.", proxyFactory->endpointDesc->serviceName);
         status = CELIX_INTERCEPTOR_EXCEPTION;
     }
 
@@ -257,7 +257,7 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
 
     if (proxyFactory->callsLogFile != NULL) {
         fprintf(proxyFactory->callsLogFile, "PROXY REMOTE CALL:\n\tservice=%s\n\tservice_id=%lu\n\trequest_payload=%s\n\trequest_response=%s\n\tstatus=%i\n",
-                proxyFactory->endpointDesc->service, proxyFactory->endpointDesc->serviceId, invokeRequest, (char *)replyIovec.iov_base, status);
+                proxyFactory->endpointDesc->serviceName, proxyFactory->endpointDesc->serviceId, invokeRequest, (char *)replyIovec.iov_base, status);
         fflush(proxyFactory->callsLogFile);
     }
 
@@ -281,7 +281,7 @@ static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxy
     proxy->proxyFactory = proxyFactory;
     proxy->useCnt = 0;
     status = dfi_findAndParseInterfaceDescriptor(proxyFactory->logHelper,
-            proxyFactory->ctx, requestingBundle, proxyFactory->endpointDesc->service, &intfType);
+            proxyFactory->ctx, requestingBundle, proxyFactory->endpointDesc->serviceName, &intfType);
     if (status != CELIX_SUCCESS) {
         goto intf_descriptor_err;
     }

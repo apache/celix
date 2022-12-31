@@ -71,7 +71,7 @@ celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_
     status = celixThreadRwlock_create(&endpoint->lock, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(logHelper, "RSA json rpc endpoint: Error initilizing lock for %s. %d.",
-                endpointDesc->service, status);
+                endpointDesc->serviceName, status);
         goto mutex_err;
     }
 
@@ -84,7 +84,7 @@ celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_
     opts.removeWithOwner = rsaJsonRpcEndpoint_removeSvcWithOwner;
     endpoint->svcTrackerId = celix_bundleContext_trackServicesWithOptionsAsync(endpoint->ctx, &opts);
     if (endpoint->svcTrackerId < 0) {
-        celix_logHelper_error(logHelper, "RSA json rpc endpoint: Error Registering %s tracker.", endpointDesc->service);
+        celix_logHelper_error(logHelper, "RSA json rpc endpoint: Error Registering %s tracker.", endpointDesc->serviceName);
         status = CELIX_ILLEGAL_STATE;
         goto service_tracker_err;
     }
@@ -97,7 +97,7 @@ celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_
     opts1.svc = &endpoint->reqHandlerSvc;
     endpoint->reqHandlerSvcId = celix_bundleContext_registerServiceWithOptionsAsync(endpoint->ctx, &opts1);
     if (endpoint->reqHandlerSvcId< 0) {
-        celix_logHelper_error(logHelper, "Error Registering endpoint request handler service for %s.", endpointDesc->service);
+        celix_logHelper_error(logHelper, "Error Registering endpoint request handler service for %s.", endpointDesc->serviceName);
         goto req_handler_svc_err;
     }
 
@@ -160,7 +160,7 @@ static void rsaJsonRpcEndpoint_addSvcWithOwner(void *handle, void *service,
     celixThreadRwlock_writeLock(&endpoint->lock);
 
     status = dfi_findAndParseInterfaceDescriptor(endpoint->logHelper,endpoint->ctx,
-            svcOwner, endpoint->endpointDesc->service, &intfType);
+            svcOwner, endpoint->endpointDesc->serviceName, &intfType);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(endpoint->logHelper, "Endpoint: Error Parsing service descriptor for %s.", serviceName);
         goto intf_type_err;
@@ -256,7 +256,7 @@ static celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_prope
             status = (rc != 0) ? CELIX_SERVICE_EXCEPTION : CELIX_SUCCESS;
         } else {
             status = CELIX_ILLEGAL_STATE;
-            celix_logHelper_error(endpoint->logHelper, "%s is null, please try again.", endpoint->endpointDesc->service);
+            celix_logHelper_error(endpoint->logHelper, "%s is null, please try again.", endpoint->endpointDesc->serviceName);
         }
         celixThreadRwlock_unlock(&endpoint->lock);
 
@@ -270,7 +270,7 @@ static celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_prope
 
     if (endpoint->callsLogFile != NULL) {
         fprintf(endpoint->callsLogFile, "ENDPOINT REMOTE CALL:\n\tservice=%s\n\tservice_id=%lu\n\trequest_payload=%s\n\trequest_response=%s\n\tstatus=%i\n",
-                endpoint->endpointDesc->service, endpoint->endpointDesc->serviceId, (char *)request->iov_base, szResponse, status);
+                endpoint->endpointDesc->serviceName, endpoint->endpointDesc->serviceId, (char *)request->iov_base, szResponse, status);
         fflush(endpoint->callsLogFile);
     }
 
