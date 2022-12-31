@@ -470,6 +470,8 @@ int celix_properties_size(const celix_properties_t *properties) {
 
 celix_properties_iterator_t celix_propertiesIterator_construct(const celix_properties_t *properties) {
     celix_properties_iterator_t iter;
+    CELIX_BUILD_ASSERT(sizeof(celix_properties_iterator_t) == sizeof(hash_map_iterator_t));
+    CELIX_BUILD_ASSERT(__alignof__(celix_properties_iterator_t) == __alignof__(hash_map_iterator_t));
     hash_map_iterator_t mapIter = hashMapIterator_construct((hash_map_t*)properties);
     iter._data1 = mapIter.map;
     iter._data2 = mapIter.next;
