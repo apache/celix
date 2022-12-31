@@ -31,6 +31,8 @@ add_celix_bundle(rsa_shm
     src/rsa_shm_import_registration.c
 )
 
+celix_deprecated_utils_headers(rsa_shm)
+
 target_include_directories(rsa_shm PRIVATE src)
 
 

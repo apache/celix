@@ -32,7 +32,8 @@ if (RSA_JSON_RPC)
         src/rsa_json_rpc_proxy_impl.c
         src/rsa_request_sender_tracker.c
     )
-    
+
+    celix_deprecated_utils_headers(rsa_json_rpc)
     target_include_directories(rsa_json_rpc PRIVATE src)
 
     target_link_libraries(rsa_json_rpc PRIVATE

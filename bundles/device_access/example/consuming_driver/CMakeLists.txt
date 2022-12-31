@@ -24,6 +24,7 @@ add_celix_bundle(word_consumingdriver
 		src/consuming_driver.c
 )
 
+celix_deprecated_utils_headers(word_consumingdriver)
 target_include_directories(word_consumingdriver PRIVATE src)
 
 target_link_libraries(word_consumingdriver PRIVATE Celix::device_access_api base_driver char_refiningdriver)

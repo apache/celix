@@ -37,7 +37,7 @@
 #include <dns_sd.h>
 #include <libxml/xmlreader.h>
 #include <libxml/xmlwriter.h>
-#include <celixbool.h>
+#include <stdbool.h>
 #include <shell.h>
 
 #if defined(BSD) || defined(__APPLE__)  || defined(ANDROID)

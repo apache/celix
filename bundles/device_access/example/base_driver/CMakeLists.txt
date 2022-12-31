@@ -23,6 +23,7 @@ add_celix_bundle(base_driver
 		src/activator.c
 		src/base_driver.c
 )
+celix_deprecated_utils_headers(base_driver)
 target_include_directories(base_driver PRIVATE src)
 target_include_directories(base_driver PUBLIC include)
 target_link_libraries(base_driver PRIVATE Celix::device_access_api)
