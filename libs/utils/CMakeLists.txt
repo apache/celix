@@ -36,7 +36,7 @@ add_library(utils SHARED
     src/celix_threads.c
     src/version.c
     src/version_range.c
-    src/properties.c
+        src/properties_v1.c
     src/utils.c
     src/ip_utils.c
     src/filter.c
