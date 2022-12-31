@@ -20,7 +20,9 @@
 #include "gtest/gtest.h"
 
 #include <remote_constants.h>
-#include "celix_api.h"
+#include "celix_framework_factory.h"
+#include "celix_bundle_context.h"
+#include "celix_constants.h"
 #include "calculator_service.h"
 
 extern "C" {

@@ -17,35 +17,38 @@
  * under the License.
  */
 
-#ifndef FILTER_H_
-#define FILTER_H_
 
-#include "celix_errno.h"
-#include "properties.h"
-#include "celix_properties.h"
-#include "celix_filter.h"
+#ifndef CELIX_BUNDLE_EVENT_H_
+#define CELIX_BUNDLE_EVENT_H_
+
+#include "celix_bundle.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct celix_filter_struct filter_t; //deprecated
-typedef struct celix_filter_struct *filter_pt; //deprecated
+enum celix_bundle_event_type {
+    CELIX_BUNDLE_EVENT_INSTALLED =          1,
+    CELIX_BUNDLE_EVENT_STARTED =            2,
+    CELIX_BUNDLE_EVENT_STOPPED =            3,
+    CELIX_BUNDLE_EVENT_UPDATED =            4,
+    CELIX_BUNDLE_EVENT_UNINSTALLED =        5,
+    CELIX_BUNDLE_EVENT_RESOLVED =           6,
+    CELIX_BUNDLE_EVENT_UNRESOLVED =         7,
+    CELIX_BUNDLE_EVENT_STARTING =           8,
+    CELIX_BUNDLE_EVENT_STOPPING =           9
+};
+typedef enum celix_bundle_event_type celix_bundle_event_type_e;
 
-
-celix_filter_t* filter_create(const char *filterString);
-
-void filter_destroy(celix_filter_t *filter);
-
-celix_status_t filter_match(celix_filter_t *filter, celix_properties_t *properties, bool *result);
-
-celix_status_t filter_match_filter(celix_filter_t *src, filter_t *dest, bool *result);
-
-celix_status_t filter_getString(celix_filter_t *filter, const char **filterStr);
+typedef struct celix_bundle_event {
+    celix_bundle_t* bnd;
+    char *bundleSymbolicName;
+    celix_bundle_event_type_e type;
+} celix_bundle_event_t;
 
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* FILTER_H_ */
+#endif /* CELIX_BUNDLE_EVENT_H_ */

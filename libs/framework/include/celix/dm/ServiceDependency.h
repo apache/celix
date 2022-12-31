@@ -31,7 +31,7 @@
 #include <cstring>
 #include <chrono>
 
-#include "dm_service_dependency.h"
+#include "celix_dm_service_dependency.h"
 #include "celix_constants.h"
 #include "celix_properties.h"
 #include "celix/Utils.h"

@@ -242,9 +242,9 @@ int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, Propert
     const char* value {nullptr};
 
     if (props != nullptr) {
-        hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
-        while(hashMapIterator_hasNext(&iter)) {
-            key = (const char*) hashMapIterator_nextKey(&iter);
+        celix_properties_iterator_t iter = celix_propertiesIterator_construct(props);
+        while(celix_propertiesIterator_hasNext(&iter)) {
+            key = (const char*) celix_propertiesIterator_nextKey(&iter);
             value = celix_properties_get(props, key, ""); //note. C++ does not allow nullptr entries for std::string
             //std::cout << "got property " << key << "=" << value << "\n";
             properties[key] = value;
@@ -512,9 +512,9 @@ int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)>
     const char* value {nullptr};
 
     if (props != nullptr) {
-        hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
-        while(hashMapIterator_hasNext(&iter)) {
-            key = (const char*) hashMapIterator_nextKey(&iter);
+        celix_properties_iterator_t iter = celix_propertiesIterator_construct(props);
+        while(celix_propertiesIterator_hasNext(&iter)) {
+            key = (const char*) celix_propertiesIterator_nextKey(&iter);
             value = celix_properties_get(props, key, "");
             //std::cout << "got property " << key << "=" << value << "\n";
             properties[key] = value;

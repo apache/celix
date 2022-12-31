@@ -22,6 +22,8 @@
 #include "celix_properties.h"
 #include "celix_array_list.h"
 #include "celix_filter.h"
+#include "celix_bundle_event.h"
+#include "celix_log_level.h"
 #include <stdarg.h>
 
 #ifndef CELIX_BUNDLE_CONTEXT_H_
@@ -427,7 +429,7 @@ long celix_bundleContext_trackService(
         const char* serviceName,
         void* callbackHandle,
         void (*set)(void* handle, void* svc)
-); //__attribute__((deprecated("Use celix_bundleContext_trackServiceSync instead!")));
+);
 
 /**
  * @brief Track services with the provided serviceName.
@@ -613,7 +615,7 @@ long celix_bundleContext_trackServicesWithOptionsAsync(celix_bundle_context_t *c
  * @param opts The pointer to the tracker options.
  * @return the tracker id (>=0) or < 0 if unsuccessful.
  */
-long celix_bundleContext_trackServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_tracking_options_t *opts); //__attribute__((deprecated("Use celix_bundleContext_trackServicesWithOptionsAsync instead!")));
+long celix_bundleContext_trackServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_tracking_options_t *opts);
 
 /**
  * @brief Stop the tracker with the provided track id.
@@ -990,7 +992,7 @@ long celix_bundleContext_trackBundles(
         void* callbackHandle,
         void (*onStarted)(void* handle, const celix_bundle_t *bundle),
         void (*onStopped)(void *handle, const celix_bundle_t *bundle)
-); //__attribute__((deprecated("Use celix_bundleContext_trackBundlesAsync instead!")));
+);
 
 
 /**
@@ -1220,7 +1222,7 @@ long celix_bundleContext_trackServiceTrackers(
         const char *serviceName,
         void *callbackHandle,
         void (*trackerAdd)(void *handle, const celix_service_tracker_info_t *info),
-        void (*trackerRemove)(void *handle, const celix_service_tracker_info_t *info)); //__attribute__((deprecated("Use celix_bundleContext_trackServiceTrackersAsync instead!")));
+        void (*trackerRemove)(void *handle, const celix_service_tracker_info_t *info));
 
 /**
  * @brief Gets the dependency manager for this bundle context.

@@ -26,7 +26,6 @@
 
 #include "celix_properties.h"
 #include "celix_utils.h"
-#include "hash_map.h"
 
 namespace celix {
 
@@ -36,12 +35,12 @@ namespace celix {
     class PropertiesIterator {
     public:
         explicit PropertiesIterator(celix_properties_t* props) {
-            iter = hashMapIterator_construct((hash_map_t*)props);
+            iter = celix_propertiesIterator_construct(props);
             next();
         }
 
         explicit PropertiesIterator(const celix_properties_t* props) {
-            iter = hashMapIterator_construct((hash_map_t*)props);
+            iter = celix_propertiesIterator_construct(props);
             next();
         }
 
@@ -55,8 +54,8 @@ namespace celix {
         }
 
         bool operator==(const celix::PropertiesIterator& rhs) const {
-            bool sameMap = iter.map == rhs.iter.map;
-            bool sameIndex = iter.index == rhs.iter.index;
+            bool sameMap = iter._data1 == rhs.iter._data1; //map
+            bool sameIndex = iter._data5 == rhs.iter._data5; //index
             bool oneIsEnd = end || rhs.end;
             if (oneIsEnd) {
                 return sameMap && end && rhs.end;
@@ -70,10 +69,10 @@ namespace celix {
         }
 
         void next() {
-            if (hashMapIterator_hasNext(&iter)) {
-                auto* entry = hashMapIterator_nextEntry(&iter);
-                auto *k = hashMapEntry_getKey(entry);
-                auto *v = hashMapEntry_getValue(entry);
+            if (celix_propertiesIterator_hasNext(&iter)) {
+                auto* k = celix_propertiesIterator_nextKey(&iter);
+                auto* props = celix_propertiesIterator_properties(&iter);
+                auto *v = celix_properties_get(props, k, "");
                 first = std::string{(const char*)k};
                 second = std::string{(const char*)v};
             } else {
@@ -90,7 +89,7 @@ namespace celix {
         std::string first{};
         std::string second{};
     private:
-        hash_map_iterator_t iter{nullptr, nullptr, nullptr, 0, 0};
+        celix_properties_iterator_t iter{nullptr, nullptr, nullptr, 0, 0};
         bool end{false};
     };
 

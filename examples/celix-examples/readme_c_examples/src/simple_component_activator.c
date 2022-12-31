@@ -19,7 +19,8 @@
 
 //src/simple_component_activator.c
 #include <stdio.h>
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
+#include <celix_dm_component.h>
 
 //********************* COMPONENT *******************************/
 

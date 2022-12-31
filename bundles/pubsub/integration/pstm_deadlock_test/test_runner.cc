@@ -17,13 +17,15 @@
  * under the License.
  */
 
-#include "celix_api.h"
+#include "celix_launcher.h"
 #include <celix/dm/Component.h>
 #include <celix/dm/DependencyManager.h>
 #include "pubsub/api.h"
 #include <unistd.h>
 #include <memory>
 #include <mutex>
+#include "celix_bundle_context.h"
+#include "celix_constants.h"
 
 #include <gtest/gtest.h>
 #include <future>

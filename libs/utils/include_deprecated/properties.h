@@ -37,15 +37,8 @@
 extern "C" {
 #endif
 
-
-#ifdef ADD_CELIX_DEPRECATED_WARNING
-#define CELIX_DEPRECATED_ATTR __attribute__ ((deprecated))
-#else
-#define CELIX_DEPRECATED_ATTR
-#endif
-
-typedef hash_map_pt properties_pt CELIX_DEPRECATED_ATTR;
-typedef hash_map_t properties_t CELIX_DEPRECATED_ATTR;
+typedef hash_map_pt properties_pt __attribute__((deprecated("properties is deprecated use celix_properties instead")));
+typedef hash_map_t properties_t __attribute__((deprecated("properties is deprecated use celix_properties instead")));
 
 UTILS_EXPORT celix_properties_t* properties_create(void);
 

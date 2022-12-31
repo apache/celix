@@ -29,5 +29,7 @@ endif()
 
 install(TARGETS dependency_manager_cxx_static EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
 
+celix_deprecated_utils_headers(dependency_manager_cxx_static)
+
 #Setup target aliases to match external usage
 add_library(Celix::dependency_manager_cxx_static ALIAS dependency_manager_cxx_static)

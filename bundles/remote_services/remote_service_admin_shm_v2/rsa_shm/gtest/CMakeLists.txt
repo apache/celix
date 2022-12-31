@@ -24,6 +24,7 @@ add_executable(test_rsa_shm
 )
 
 target_include_directories(test_rsa_shm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+celix_deprecated_utils_headers(test_rsa_shm)
 
 target_link_libraries(test_rsa_shm PRIVATE 
     Celix::c_rsa_spi

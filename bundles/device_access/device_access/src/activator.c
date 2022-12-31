@@ -25,10 +25,10 @@
  */
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include <bundle_activator.h>
 #include <bundle_context.h>
-#include <celixbool.h>
 #include <service_tracker.h>
 
 #include "driver_locator.h"

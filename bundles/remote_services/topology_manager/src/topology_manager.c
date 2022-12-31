@@ -28,8 +28,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdbool.h>
 
-#include "celixbool.h"
 #include "topology_manager.h"
 #include "bundle_context.h"
 #include "celix_constants.h"

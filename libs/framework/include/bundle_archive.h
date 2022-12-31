@@ -30,11 +30,11 @@
 #include "celix_types.h"
 
 #include <time.h>
+#include <stdbool.h>
 
 #include "bundle_revision.h"
 #include "celix_bundle_state.h"
 #include "celix_errno.h"
-#include "celixbool.h"
 #include "framework_exports.h"
 #include "celix_log.h"
 

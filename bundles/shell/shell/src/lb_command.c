@@ -19,7 +19,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <celix_api.h>
 
 #include "utils.h"
 #include "celix_bundle_context.h"

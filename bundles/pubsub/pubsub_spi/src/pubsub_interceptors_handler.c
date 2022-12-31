@@ -20,6 +20,7 @@
 #include "celix_constants.h"
 #include "celix_array_list.h"
 #include "celix_utils.h"
+#include "celix_threads.h"
 
 #include "pubsub_interceptors_handler.h"
 

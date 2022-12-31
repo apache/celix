@@ -24,6 +24,7 @@ add_celix_bundle(char_refiningdriver
 		src/refining_driver.c
 )
 
+celix_deprecated_utils_headers(char_refiningdriver)
 target_include_directories(char_refiningdriver PRIVATE src)
 target_include_directories(char_refiningdriver PUBLIC include)
 target_link_libraries(char_refiningdriver PRIVATE Celix::device_access_api base_driver)

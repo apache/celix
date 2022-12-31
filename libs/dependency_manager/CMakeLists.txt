@@ -39,6 +39,9 @@ endif()
 #now part of the the shell bundle
 add_library(dm_shell INTERFACE)
 
+celix_deprecated_utils_headers(dependency_manager_static)
+celix_deprecated_utils_headers(dependency_manager_so)
+
 #Setup target aliases to match external usage
 add_library(Celix::dm_shell ALIAS dm_shell)
 add_library(Celix::dependency_manager_static ALIAS dependency_manager_static)

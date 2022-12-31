@@ -17,23 +17,35 @@
  * under the License.
  */
 
-#ifndef CELIX_CELIX_UTILS_API_H_
-#define CELIX_CELIX_UTILS_API_H_
+#ifndef FILTER_H_
+#define FILTER_H_
 
 #include "celix_errno.h"
-#include "celixbool.h"
-#include "celix_threads.h"
-#include "array_list.h"
-#include "hash_map.h"
 #include "properties.h"
-#include "utils.h"
-#include "celix_utils.h"
-#include "version.h"
-#include "version_range.h"
+#include "celix_properties.h"
+#include "celix_filter.h"
 
-#if defined(NO_MEMSTREAM_AVAILABLE)
-#include "memstream/open_memstream.h"
-#include "memstream/fmemopen.h"
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-#endif //CELIX_CELIX_UTILS_API_H_
+typedef struct celix_filter_struct filter_t __attribute__((deprecated("filter is deprecated use celix_filter instead")));
+typedef struct celix_filter_struct *filter_pt __attribute__((deprecated("filter is deprecated use celix_filter instead")));
+
+
+celix_filter_t* filter_create(const char *filterString);
+
+void filter_destroy(celix_filter_t *filter);
+
+celix_status_t filter_match(celix_filter_t *filter, celix_properties_t *properties, bool *result);
+
+celix_status_t filter_match_filter(celix_filter_t *src, filter_t *dest, bool *result);
+
+celix_status_t filter_getString(celix_filter_t *filter, const char **filterStr);
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* FILTER_H_ */

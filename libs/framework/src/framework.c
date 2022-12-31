@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "celixbool.h"
+#include <stdbool.h>
 #include <uuid/uuid.h>
 #include <assert.h>
 #include <celix_log_utils.h>

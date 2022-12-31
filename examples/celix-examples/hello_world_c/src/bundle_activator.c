@@ -17,7 +17,7 @@
  * under the License.
  */
 
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 
 typedef struct activator_data {
     /*intentional empty*/

@@ -31,6 +31,7 @@ if (SHELL_TUI)
 	
 	target_include_directories(shell_tui PRIVATE src)
     target_link_libraries(shell_tui PRIVATE Celix::shell_api Celix::utils)
+	celix_deprecated_utils_headers(shell_tui)
 
 	install_celix_bundle(shell_tui EXPORT celix)
 

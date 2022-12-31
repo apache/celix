@@ -16,46 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * celixbool.h
- *
- *  \date       Jun 16, 2011
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #ifndef CELIXBOOL_H_
 #define CELIXBOOL_H_
 
-
-#if defined(__STDC__)
-# define C89
-# if defined(__STDC_VERSION__)
-#  define C90
-#  if (__STDC_VERSION__ >= 199409L)
-#   define C94
-#  endif
-#  if (__STDC_VERSION__ >= 199901L)
-#   define C99
-#  endif
-# endif
-#endif
-
-
-#if __STDC_VERSION__ < 199901L && __GNUC__ < 3
-// #ifndef C99
-
-typedef int _Bool;
-
-#define bool _Bool
-#define false 0 
-#define true 1
-
-
-#else
-
+#warning celixbool.h is deprecated, use <stdbool.h> instead.
 #include <stdbool.h>
-
-#endif
 
 #endif /* CELIXBOOL_H_ */

@@ -22,7 +22,6 @@
 #include <math.h>
 #include <string.h>
 
-#include "utils.h"
 #include "celix_properties.h"
 
 #include "pubsub_wire_protocol_impl.h"

@@ -30,7 +30,7 @@
 #include <algorithm>
 #include <cstdio>
 
-#include "dm_component.h"
+#include "celix_dm_component.h"
 #include "celix/dm/types.h"
 #include "celix/dm/ServiceDependency.h"
 #include "celix/dm/ProvidedService.h"

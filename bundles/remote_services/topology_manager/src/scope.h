@@ -27,7 +27,8 @@
 #ifndef TOPOLOGY_SCOPE_H_
 #define TOPOLOGY_SCOPE_H_
 
-#include "celixbool.h"
+#include <stdbool.h>
+
 #include "celix_errno.h"
 #include "celix_threads.h"
 #include "hash_map.h"

@@ -27,6 +27,7 @@ add_celix_bundle(driver_locator
 
 target_include_directories(driver_locator PRIVATE src)
 target_link_libraries(driver_locator PRIVATE Celix::device_access_api)
+celix_deprecated_utils_headers(driver_locator)
 
 #Setup target aliases to match external usage
 install_celix_bundle(driver_locator EPXORT celix COMPONENT device_access)

@@ -28,13 +28,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include <curl/curl.h>
 #include <curl/easy.h>
 
 #include "celix_errno.h"
 #include "celix_log.h"
-#include "celixbool.h"
 
 #include "celix_threads.h"
 

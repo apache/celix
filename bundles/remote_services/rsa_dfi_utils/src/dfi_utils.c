@@ -20,6 +20,7 @@
 #include "dfi_utils.h"
 #include <stdlib.h>
 #include <unistd.h>
+#include "bundle_context.h"
 
 static celix_status_t dfi_findFileForFramework(celix_bundle_context_t *context, const char *fileName, FILE **out) {
     celix_status_t  status;

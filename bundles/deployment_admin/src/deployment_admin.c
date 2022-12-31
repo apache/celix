@@ -30,10 +30,10 @@
 
 #include <curl/curl.h>
 #include <curl/easy.h>
-
+#include <stdbool.h>
 #include <uuid/uuid.h>
 
-#include "celixbool.h"
+
 #include "deployment_admin.h"
 #include "celix_errno.h"
 #include "bundle_context.h"

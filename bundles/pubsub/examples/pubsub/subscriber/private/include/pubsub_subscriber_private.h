@@ -29,8 +29,7 @@
 
 
 #include <string.h>
-
-#include "celixbool.h"
+#include <stdbool.h>
 
 #include "pubsub/subscriber.h"
 

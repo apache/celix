@@ -29,7 +29,8 @@
 
 typedef struct module *module_pt;
 
-#include "celixbool.h"
+#include <stdbool.h>
+
 #include "linked_list.h"
 #include "manifest.h"
 #include "version.h"

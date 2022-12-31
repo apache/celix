@@ -21,7 +21,7 @@
 #define CELIX_REMOTE_EXAMPLE_IMPL_H
 
 #include <stdlib.h>
-#include <celix_api.h>
+#include "celix_bundle_context.h"
 
 typedef struct remote_example_impl remote_example_impl_t;
 

@@ -31,4 +31,5 @@ if (UTILS_BENCHMARK)
             src/LongHashmapBenchmark.cc
     )
     target_link_libraries(celix_utils_benchmark PRIVATE Celix::utils benchmark::benchmark)
+    celix_deprecated_utils_headers(celix_utils_benchmark)
 endif ()

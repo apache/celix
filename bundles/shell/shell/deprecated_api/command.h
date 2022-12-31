@@ -33,11 +33,6 @@
 typedef struct commandService command_service_t;
 typedef command_service_t * command_service_pt;
 
-#ifdef CELIX_ADD_DEPRECATED_ATTRIBUTES
-#define DEP_ATTRIBUTE __attribute__((deprecated("command_service_t is replaced by celix_shell_command_t in celix_shell_command.h")))
-#else
-#define DEP_ATTRIBUTE
-#endif
 
 /**
  * The command service can be used to register additional shell commands.
@@ -51,7 +46,7 @@ typedef command_service_t * command_service_pt;
 struct commandService {
     void *handle;
 
-    celix_status_t (*executeCommand)(void *handle, char * commandLine, FILE *outStream, FILE *errorStream) DEP_ATTRIBUTE;
+    celix_status_t (*executeCommand)(void *handle, char * commandLine, FILE *outStream, FILE *errorStream) __attribute__((deprecated("command_service_t is replaced by celix_shell_command_t in celix_shell_command.h")));
 };
 
 
