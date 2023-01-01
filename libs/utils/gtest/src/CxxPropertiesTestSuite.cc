@@ -59,6 +59,22 @@ TEST_F(CxxPropertiesTestSuite, testFillAndLoop) {
     EXPECT_EQ(5, count);
 }
 
+TEST_F(CxxPropertiesTestSuite, testLoopForSize0And1) {
+    celix::Properties props0{};
+    for (const auto& pair : props0) {
+        FAIL() << "Should not get an loop entry with a properties size of 0. got key: " << pair.first;
+    }
+
+    celix::Properties props1{};
+    props1.set("key1", "value1");
+    int count = 0;
+    for (const auto& pair : props1) {
+        EXPECT_EQ(pair.first, "key1");
+        count++;
+    }
+    EXPECT_EQ(1, count);
+}
+
 TEST_F(CxxPropertiesTestSuite, testCopy) {
     celix::Properties props{};
 

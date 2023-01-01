@@ -200,17 +200,14 @@ FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_referen
     properties_pt props = NULL;
 
     serviceRegistration_getProperties(ref->registration, &props);
-    hash_map_iterator_pt it;
     int i = 0;
-    int vsize = hashMap_size(props);
+    int vsize = celix_properties_size(props);
     *size = (unsigned int)vsize;
     *keys = malloc(vsize * sizeof(**keys));
-    it = hashMapIterator_create(props);
-    while (hashMapIterator_hasNext(it)) {
-        (*keys)[i] = hashMapIterator_nextKey(it);
-        i++;
+    const char* key;
+    CELIX_PROPERTIES_FOR_EACH(props, key) {
+        (*keys)[i++] = (char*)key;
     }
-    hashMapIterator_destroy(it);
     return status;
 }
 

@@ -290,7 +290,11 @@ void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter);
  *     printf("Visiting hash map entry with key %li\n", inter.key);
  * }
  * @endcode
+ *
+ * @param map The (const celix_long_hash_map_t*) map to iterate over.
+ * @param iterName A iterName which will be of type celix_long_hash_map_iterator_t to hold the iterator.
  */
+//TODO test if the macro can be used nested
 #define CELIX_LONG_HASH_MAP_ITERATE(map, iterName) \
     for (celix_long_hash_map_iterator_t iterName = celix_longHashMap_begin(map); !celix_longHashMapIterator_isEnd(&(iterName)); celix_longHashMapIterator_next(&(iterName)))
 

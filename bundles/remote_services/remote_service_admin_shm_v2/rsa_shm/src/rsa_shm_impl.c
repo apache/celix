@@ -230,12 +230,12 @@ static void rsaShm_overlayProperties(celix_properties_t *additionalProperties, c
      * A property key in the additional properties map must therefore override any case variant property key in the properties of the specified Service Reference.*/
     const char *additionalPropKey = NULL;
     const char *servicePropKey = NULL;
-    PROPERTIES_FOR_EACH(additionalProperties, additionalPropKey) {
+    CELIX_PROPERTIES_FOR_EACH(additionalProperties, additionalPropKey) {
         if (strcmp(additionalPropKey,(char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0
                 && strcmp(additionalPropKey,(char*) OSGI_FRAMEWORK_SERVICE_ID) != 0) {
             bool propKeyCaseEqual = false;
 
-            PROPERTIES_FOR_EACH(serviceProperties, servicePropKey) {
+            CELIX_PROPERTIES_FOR_EACH(serviceProperties, servicePropKey) {
                 if (strcasecmp(additionalPropKey,servicePropKey) == 0) {
                     const char* val = celix_properties_get(additionalProperties,additionalPropKey,NULL);
                     celix_properties_set(serviceProperties,servicePropKey,val);
@@ -250,7 +250,6 @@ static void rsaShm_overlayProperties(celix_properties_t *additionalProperties, c
             }
         }
     }
-    return;
 }
 
 static bool rsaShm_isConfigTypeMatched(celix_properties_t *properties) {

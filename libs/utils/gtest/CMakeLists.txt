@@ -30,12 +30,17 @@ add_executable(test_utils
         src/HashMapTestSuite.cc
         src/ArrayListTestSuite.cc
         src/FileUtilsTestSuite.cc
+        src/PropertiesTestSuite.cc
         ${CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS}
 )
 
 target_link_libraries(test_utils PRIVATE Celix::utils GTest::gtest GTest::gtest_main)
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
 celix_deprecated_utils_headers(test_utils)
+
+####### Configure properties file for testing #########################################################################
+configure_file(resources/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
+
 
 ####### generating zip file used for testing ##########################################################################
 file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties" CONTENT "level=1\n")

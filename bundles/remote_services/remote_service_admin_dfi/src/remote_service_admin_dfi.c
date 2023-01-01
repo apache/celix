@@ -723,10 +723,7 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         }
     }
 
-    hash_map_entry_pt entry = hashMap_getEntry(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
-
-    char* key = hashMapEntry_getKey(entry);
-    char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
+    const char* serviceId = celix_properties_get(endpointProperties, CELIX_FRAMEWORK_SERVICE_ID, "-1");
     const char *uuid = NULL;
 
     char buf[512];
@@ -750,12 +747,10 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     celix_properties_set(endpointProperties, RSA_DFI_ENDPOINT_URL, url);
 
     if (props != NULL) {
-        hash_map_iterator_pt propIter = hashMapIterator_create(props);
-        while (hashMapIterator_hasNext(propIter)) {
-            hash_map_entry_pt entry = hashMapIterator_nextEntry(propIter);
-            celix_properties_set(endpointProperties, (char*)hashMapEntry_getKey(entry), (char*)hashMapEntry_getValue(entry));
+        const char* key;
+        CELIX_PROPERTIES_FOR_EACH(props, key) {
+            celix_properties_set(endpointProperties, key, celix_properties_get(props, key, ""));
         }
-        hashMapIterator_destroy(propIter);
     }
 
     *endpoint = calloc(1, sizeof(**endpoint));
@@ -769,8 +764,6 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         (*endpoint)->properties = endpointProperties;
     }
 
-    free(key);
-    free(serviceId);
     free(keys);
 
     return status;

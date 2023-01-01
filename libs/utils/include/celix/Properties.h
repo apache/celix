@@ -54,14 +54,10 @@ namespace celix {
         }
 
         bool operator==(const celix::PropertiesIterator& rhs) const {
-            bool sameMap = iter._data1 == rhs.iter._data1; //map
-            bool sameIndex = iter._data5 == rhs.iter._data5; //index
-            bool oneIsEnd = end || rhs.end;
-            if (oneIsEnd) {
-                return sameMap && end && rhs.end;
-            } else {
-                return sameMap && sameIndex;
+            if (end || rhs.end) {
+                return end && rhs.end;
             }
+            return celix_propertiesIterator_equals(&iter, &rhs.iter);
         }
 
         bool operator!=(const celix::PropertiesIterator& rhs) const {
@@ -81,15 +77,16 @@ namespace celix {
         }
 
         void moveToEnd() {
-            end = true;
             first = {};
             second = {};
+            end = true;
         }
 
+        //TODO for C++17 try to update first and second to stringview
         std::string first{};
         std::string second{};
     private:
-        celix_properties_iterator_t iter{nullptr, nullptr, nullptr, 0, 0};
+        celix_properties_iterator_t iter{._data = {}};
         bool end{false};
     };
 
@@ -414,6 +411,10 @@ namespace celix {
             return convertToMap();
         }
 #endif
+
+
+        //TODO save
+        //TODO load
     private:
         explicit Properties(celix_properties_t* props) : cProps{props, [](celix_properties_t*) { /*nop*/ }} {}
 

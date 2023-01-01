@@ -291,6 +291,7 @@ void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter);
 /**
  * @brief Marco to loop over all the entries of a string hash map.
  *
+ *
  * Small example of how to use the iterate macro:
  * @code
  * celix_string_hash_map_t* map = ...
@@ -298,7 +299,11 @@ void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter);
  *     printf("Visiting hash map entry with key %s\n", inter.key);
  * }
  * @endcode
+ *
+ * @param map The (const celix_string_hash_map_t*) map to iterate over.
+ * @param iterName A iterName which will be of type celix_string_hash_map_iterator_t to hold the iterator.
  */
+//TODO test if the macro can be used nested
 #define CELIX_STRING_HASH_MAP_ITERATE(map, iterName) \
     for (celix_string_hash_map_iterator_t iterName = celix_stringHashMap_begin(map); !celix_stringHashMapIterator_isEnd(&(iterName)); celix_stringHashMapIterator_next(&(iterName)))
 
