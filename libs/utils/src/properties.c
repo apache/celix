@@ -26,6 +26,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <assert.h>
 
 #include "celix_build_assert.h"
 #include "utils.h" //TODO try to remove
@@ -33,18 +34,37 @@
 #include "celix_string_hash_map.h"
 
 
-#define PROPERTIES_INITIAL_HASHMAP_CAPACITY 10
-#define SHORT_PROPERTIES_OPTIMIZATION_SIZE 1024
+#define CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE 1024
+#define CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE 16
+
+static const char* const CELIX_PROPERTIES_BOOL_TRUE_STRVAL = "true";
+static const char* const CELIX_PROPERTIES_BOOL_FALSE_STRVAL = "false";
 
 struct celix_properties {
     celix_string_hash_map_t* map;
 
     /**
-     * buffer used to store the first key/value entries so that no additional memory allocation is needed.
+     * String buffer used to store the first key/value entries, so that in many cases additional memory allocation
+     * can be prevented.
      */
-    char buffer[SHORT_PROPERTIES_OPTIMIZATION_SIZE];
-};
+    char stringBuffer[CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE];
 
+    /**
+     * The current string buffer index.
+     */
+    int currentStringBufferIndex;
+
+    /**
+     * Entries buffer used to store the first entries, so that in many cases additional memory allocation
+     * can be prevented.
+     */
+    celix_properties_entry_t entriesBuffer[CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE];
+
+    /**
+     * The current string buffer index.
+     */
+    int currentEntriesBufferIndex;
+};
 
 #define MALLOC_BLOCK_SIZE        5
 
@@ -75,7 +95,7 @@ properties_pt properties_loadFromString(const char *input){
  * Header is ignored for now, cannot handle comments yet
  */
 void properties_store(properties_pt properties, const char* filename, const char* header) {
-    return celix_properties_store(properties, filename, header);
+    celix_properties_store(properties, filename, header);
 }
 
 celix_status_t properties_copy(properties_pt properties, properties_pt *out) {
@@ -217,19 +237,187 @@ static void parseLine(const char* line, celix_properties_t *props) {
 
 }
 
+/**
+ * Create a new string from the provided str by either using strup or storing the string the short properties
+ * optimization string buffer.
+ */
+static char* celix_properties_createString(celix_properties_t* properties, const char* str) {
+    size_t len = str == NULL ? 0 : strnlen(str, CELIX_UTILS_MAX_STRLEN) + 1;
+    size_t left = CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE - properties->currentStringBufferIndex;
+    char* result;
+    if (len < left) {
+        memcpy(&properties->stringBuffer[properties->currentStringBufferIndex], str, len);
+        result = &properties->stringBuffer[properties->currentStringBufferIndex];
+        properties->currentStringBufferIndex += (int)len;
+    } else {
+        result = celix_utils_strdup(str);
+    }
+    return result;
+}
+
+/**
+ * Fill entry and optional use the short properties optimization string buffer.
+ */
+static celix_status_t celix_properties_fillEntry(
+        celix_properties_t *properties,
+        celix_properties_entry_t* entry,
+        const char *key,
+        const char *strValue,
+        const long* longValue,
+        const double* doubleValue,
+        const bool* boolValue,
+        const celix_version_t* versionValue) {
+    char convertedValueBuffer[32];
+    entry->key = celix_properties_createString(properties, key);
+    if (strValue != NULL) {
+        entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_STRING;
+        entry->value = celix_properties_createString(properties, strValue);
+        entry->typed.strValue = entry->value;
+    } else if (longValue != NULL) {
+        entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_LONG;
+        entry->typed.longValue = *longValue;
+        int written = snprintf(convertedValueBuffer, sizeof(convertedValueBuffer), "%li", entry->typed.longValue);
+        if (written < 0 || written >= sizeof(convertedValueBuffer)) {
+            entry->value = celix_properties_createString(properties, convertedValueBuffer);
+        } else {
+            char* val = NULL;
+            asprintf(&val, "%li", entry->typed.longValue);
+            entry->value = val;
+        }
+    } else if (doubleValue != NULL) {
+        entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_DOUBLE;
+        entry->typed.doubleValue = *doubleValue;
+        int written = snprintf(convertedValueBuffer, sizeof(convertedValueBuffer), "%f", entry->typed.doubleValue);
+        if (written < 0 || written >= sizeof(convertedValueBuffer)) {
+            entry->value = celix_properties_createString(properties, convertedValueBuffer);
+        } else {
+            char* val = NULL;
+            asprintf(&val, "%f", entry->typed.doubleValue);
+            entry->value = val;
+        }
+    } else if (boolValue != NULL) {
+        entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_BOOL;
+        entry->typed.boolValue = *boolValue;
+        entry->value = entry->typed.boolValue ? CELIX_PROPERTIES_BOOL_TRUE_STRVAL : CELIX_PROPERTIES_BOOL_FALSE_STRVAL;
+    } else /*versionValue*/ {
+        assert(versionValue != NULL);
+        entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_VERSION;
+        entry->typed.versionValue = celix_version_copy(versionValue);
+
+        bool written = celix_version_fillString(versionValue, convertedValueBuffer, sizeof(convertedValueBuffer));
+        if (written) {
+            entry->value = celix_properties_createString(properties, convertedValueBuffer);
+        } else {
+            entry->value = celix_version_toString(versionValue);
+        }
+    }
+    if (entry->key == NULL || entry->value == NULL) {
+        return CELIX_ENOMEM;
+    }
+    return CELIX_SUCCESS;
+}
+
+/**
+ * Allocate entry and optionally use the short properties optimization entries buffer.
+ */
+static celix_properties_entry_t* celix_properties_allocEntry(celix_properties_t* properties) {
+    celix_properties_entry_t* entry;
+    if (properties->currentEntriesBufferIndex < CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE) {
+        entry = &properties->entriesBuffer[properties->currentEntriesBufferIndex++];
+    } else {
+        entry = malloc(sizeof(*entry));
+    }
+    return entry;
+}
+
+/**
+ * Create entry and optionally use the short properties optimization entries buffer and take ownership of the
+ * provided key and value strings.
+ */
+static celix_properties_entry_t* celix_properties_createEntryWithNoCopy(celix_properties_t *properties,
+                                                                        char *key,
+                                                                        char *strValue) {
+    celix_properties_entry_t* entry = celix_properties_allocEntry(properties);
+    if (entry == NULL) {
+        return NULL;
+    }
+    entry->key = key;
+    entry->value = strValue;
+    entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_STRING;
+    entry->typed.strValue = strValue;
+    return entry;
+}
 
 
-/**********************************************************************************************************************
- **********************************************************************************************************************
- * Updated API
- **********************************************************************************************************************
- **********************************************************************************************************************/
+/**
+ * Create entry and optionally use the short properties optimization buffers.
+ * Only 1 of the types values (strValue, LongValue, etc) should be provided.
+ */
+static celix_properties_entry_t* celix_properties_createEntry(
+        celix_properties_t *properties,
+        const char *key,
+        const char *strValue,
+        const long* longValue,
+        const double* doubleValue,
+        const bool* boolValue,
+        const celix_version_t* versionValue) {
+    celix_properties_entry_t* entry = celix_properties_allocEntry(properties);
+    if (entry == NULL) {
+        return NULL;
+    }
 
-static void celix_properties_removeEntryCallback(void* handle, const char* key, celix_hash_map_value_t val) {
-    //celix_properties_t* props = handle;
-    //TODO add check of short properties optimization buffer
-    free((char*)key);
-    free(val.ptrValue);
+    celix_status_t status = celix_properties_fillEntry(properties, entry, key, strValue, longValue, doubleValue,
+                                                       boolValue, versionValue);
+    if (status != CELIX_SUCCESS) {
+        free(entry);
+        entry = NULL;
+    }
+    return entry;
+}
+
+/**
+ * Create and add entry and optionally use the short properties optimization buffers.
+ * Only 1 of the types values (strValue, LongValue, etc) should be provided.
+ */
+static void celix_properties_createAndSetEntry(
+        celix_properties_t *properties,
+        const char *key,
+        const char *strValue,
+        const long* longValue,
+        const double* doubleValue,
+        const bool* boolValue,
+        const celix_version_t* versionValue) {
+    celix_properties_entry_t* entry = celix_properties_createEntry(properties, key, strValue, longValue, doubleValue,
+                                                                   boolValue, versionValue);
+    if (entry != NULL) {
+        celix_stringHashMap_put(properties->map, key, entry);
+    }
+}
+
+
+
+static void celix_properties_freeString(celix_properties_t* properties, char* str) {
+    if (str == CELIX_PROPERTIES_BOOL_TRUE_STRVAL || str == CELIX_PROPERTIES_BOOL_FALSE_STRVAL) {
+        //str is static const char* const -> nop
+    } else if (str >= properties->stringBuffer &&
+               str < (properties->stringBuffer + CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE))   {
+        //str is part of the properties string buffer -> nop
+    } else {
+        free(str);
+    }
+}
+
+static void celix_properties_removeEntryCallback(void* handle, const char* key __attribute__((unused)), celix_hash_map_value_t val) {
+    celix_properties_t* properties = handle;
+    celix_properties_entry_t* entry = val.ptrValue;
+    celix_properties_freeString(properties, (char*)entry->key);
+    celix_properties_freeString(properties, (char*)entry->value);
+    if (entry >= properties->entriesBuffer &&
+            entry <= (properties->entriesBuffer + CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE)) {
+        //entry is part of the properties entries buffer -> nop.
+    } else {
+        free(entry);
+    }
 }
 
 
@@ -238,10 +426,12 @@ celix_properties_t* celix_properties_create(void) {
     if (props != NULL) {
         celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
         opts.storeKeysWeakly = true;
-        opts.initialCapacity = PROPERTIES_INITIAL_HASHMAP_CAPACITY;
+        opts.initialCapacity = CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE;
         opts.removedCallbackData = props;
         opts.removedCallback = celix_properties_removeEntryCallback;
         props->map = celix_stringHashMap_createWithOptions(&opts);
+        props->currentStringBufferIndex = 0;
+        props->currentEntriesBufferIndex = 0;
     }
     return props;
 }
@@ -329,32 +519,47 @@ celix_properties_t* celix_properties_loadFromString(const char *input) {
 /**
  * @brief Store properties string to file and escape the characters '#', '!', '=' and ':' if encountered.
  */
-static void celix_properties_storeEscapedString(FILE* file, const char* str) {
+static int celix_properties_storeEscapedString(FILE* file, const char* str) {
+    int rc = 0;
     for (int i = 0; i < strlen(str); i += 1) {
         if (str[i] == '#' || str[i] == '!' || str[i] == '=' || str[i] == ':') {
-            fputc('\\', file);
+            rc = fputc('\\', file);
+            if (rc == EOF) {
+                break;
+            }
         }
-        fputc(str[i], file);
+        rc = fputc(str[i], file);
     }
+    return rc;
 }
 
-void celix_properties_store(celix_properties_t *properties, const char *filename, const char *header) {
+celix_status_t celix_properties_store(celix_properties_t *properties, const char *filename, const char *header) {
     FILE *file = fopen (filename, "w+" );
 
     if (file == NULL) {
-        perror("File is null");
-        return;
+        return CELIX_FILE_IO_EXCEPTION;
     }
 
+    int rc = 0;
     CELIX_STRING_HASH_MAP_ITERATE(properties->map, iter) {
         const char* val = iter.value.ptrValue;
-        celix_properties_storeEscapedString(file, iter.key);
-        fputc('=', file);
-        celix_properties_storeEscapedString(file, val);
-        fputc('\n', file);
-
+        if (rc != EOF) {
+            rc = celix_properties_storeEscapedString(file, iter.key);
+        }
+        if (rc != EOF) {
+            rc = fputc('=', file);
+        }
+        if (rc != EOF) {
+            rc = celix_properties_storeEscapedString(file, val);
+        }
+        if (rc != EOF) {
+            rc = fputc('\n', file);
+        }
     }
-    fclose(file);
+    if (rc != EOF) {
+        rc = fclose(file);
+    }
+    return rc != EOF ? CELIX_SUCCESS : CELIX_FILE_IO_EXCEPTION;
 }
 
 celix_properties_t* celix_properties_copy(const celix_properties_t *properties) {
@@ -363,30 +568,55 @@ celix_properties_t* celix_properties_copy(const celix_properties_t *properties) 
         return copy;
     }
 
-    CELIX_STRING_HASH_MAP_ITERATE(properties->map, iter) {
-        celix_properties_set(copy, iter.key, iter.value.ptrValue);
+    CELIX_PROPERTIES_ITERATE(properties, iter) {
+        if (iter.entry.valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
+            celix_properties_set(copy, iter.entry.key, iter.entry.value);
+        } else if (iter.entry.valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG) {
+            celix_properties_setLong(copy, iter.entry.key, iter.entry.typed.longValue);
+        } else if (iter.entry.valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
+            celix_properties_setDouble(copy, iter.entry.key, iter.entry.typed.doubleValue);
+        } else if (iter.entry.valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL) {
+            celix_properties_setBool(copy, iter.entry.key, iter.entry.typed.boolValue);
+        } else /*version*/ {
+            assert(iter.entry.valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION);
+            celix_properties_setVersion(copy, iter.entry.key, iter.entry.typed.versionValue);
+        }
     }
     return copy;
 }
 
+celix_properties_value_type_e celix_properties_getType(const celix_properties_t* properties, const char* key) {
+    celix_properties_entry_t* entry = celix_stringHashMap_get(properties->map, key);
+    return entry == NULL ? CELIX_PROPERTIES_VALUE_TYPE_UNSET : entry->valueType;
+}
+
 const char* celix_properties_get(const celix_properties_t *properties, const char *key, const char *defaultValue) {
-    const char* value = NULL;
+    celix_properties_entry_t* entry = NULL;
     if (properties != NULL) {
-        value = celix_stringHashMap_get(properties->map, key);
+         entry = celix_stringHashMap_get(properties->map, key);
     }
-    return value == NULL ? defaultValue : value;
+    return entry == NULL ? defaultValue : entry->value;
+}
+
+celix_properties_entry_t celix_properties_getEntry(const celix_properties_t* properties, const char* key) {
+    celix_properties_entry_t invalidEntry;
+    memset(&invalidEntry, 0, sizeof(invalidEntry));
+    invalidEntry.valueType = CELIX_PROPERTIES_VALUE_TYPE_UNSET;
+    celix_properties_entry_t* entry = celix_stringHashMap_get(properties->map, key);
+    return entry == NULL ? invalidEntry : *entry;
 }
 
 void celix_properties_set(celix_properties_t *properties, const char *key, const char *value) {
-    if (properties != NULL) {
-        celix_stringHashMap_put(properties->map, celix_utils_strdup(key), celix_utils_strdup(value));
+    if (properties != NULL && key != NULL && value != NULL) {
+        celix_properties_createAndSetEntry(properties, key, value, NULL, NULL, NULL, NULL);
     }
 }
 
 void celix_properties_setWithoutCopy(celix_properties_t *properties, char *key, char *value) {
-    if (properties != NULL) {
-        if (properties != NULL) {
-            celix_stringHashMap_put(properties->map, key, value);
+    if (properties != NULL && key != NULL && value != NULL) {
+        celix_properties_entry_t* entry = celix_properties_createEntryWithNoCopy(properties, key, value);
+        if (entry != NULL) {
+            celix_stringHashMap_put(properties->map, entry->key, entry);
         }
     }
 }
@@ -399,12 +629,14 @@ void celix_properties_unset(celix_properties_t *properties, const char *key) {
 
 long celix_properties_getAsLong(const celix_properties_t *props, const char *key, long defaultValue) {
     long result = defaultValue;
-    const char *val = celix_properties_get(props, key, NULL);
-    if (val != NULL) {
+    celix_properties_entry_t* entry = celix_stringHashMap_get(props->map, key);
+    if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG) {
+        return entry->typed.longValue;
+    } else if (entry != NULL) {
         char *enptr = NULL;
         errno = 0;
-        long r = strtol(val, &enptr, 10);
-        if (enptr != val && errno == 0) {
+        long r = strtol(entry->value, &enptr, 10);
+        if (enptr != entry->value && errno == 0) {
             result = r;
         }
     }
@@ -412,23 +644,19 @@ long celix_properties_getAsLong(const celix_properties_t *props, const char *key
 }
 
 void celix_properties_setLong(celix_properties_t *props, const char *key, long value) {
-    char buf[32]; //should be enough to store long long int
-    int writen = snprintf(buf, 32, "%li", value);
-    if (writen <= 31) {
-        celix_properties_set(props, key, buf);
-    } else {
-        fprintf(stderr,"buf to small for value '%li'\n", value);
-    }
+    celix_properties_createAndSetEntry(props, key, NULL, &value, NULL, NULL, NULL);
 }
 
 double celix_properties_getAsDouble(const celix_properties_t *props, const char *key, double defaultValue) {
     double result = defaultValue;
-    const char *val = celix_properties_get(props, key, NULL);
-    if (val != NULL) {
+    celix_properties_entry_t* entry = celix_stringHashMap_get(props->map, key);
+    if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
+        return entry->typed.doubleValue;
+    } else if (entry != NULL) {
         char *enptr = NULL;
         errno = 0;
-        double r = strtod(val, &enptr);
-        if (enptr != val && errno == 0) {
+        double r = strtod(entry->value, &enptr);
+        if (enptr != entry->value && errno == 0) {
             result = r;
         }
     }
@@ -436,21 +664,17 @@ double celix_properties_getAsDouble(const celix_properties_t *props, const char 
 }
 
 void celix_properties_setDouble(celix_properties_t *props, const char *key, double val) {
-    char buf[32]; //should be enough to store long long int
-    int writen = snprintf(buf, 32, "%f", val);
-    if (writen <= 31) {
-        celix_properties_set(props, key, buf);
-    } else {
-        fprintf(stderr,"buf to small for value '%f'\n", val);
-    }
+    celix_properties_createAndSetEntry(props, key, NULL, NULL, &val, NULL, NULL);
 }
 
 bool celix_properties_getAsBool(const celix_properties_t *props, const char *key, bool defaultValue) {
     bool result = defaultValue;
-    const char *val = celix_properties_get(props, key, NULL);
-    if (val != NULL) {
+    celix_properties_entry_t* entry = celix_stringHashMap_get(props->map, key);
+    if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL) {
+        return entry->typed.boolValue;
+    } else if (entry != NULL) {
         char buf[32];
-        snprintf(buf, 32, "%s", val);
+        snprintf(buf, 32, "%s", entry->value);
         char *trimmed = utils_stringTrim(buf);
         if (strncasecmp("true", trimmed, strlen("true")) == 0) {
             result = true;
@@ -462,8 +686,28 @@ bool celix_properties_getAsBool(const celix_properties_t *props, const char *key
 }
 
 void celix_properties_setBool(celix_properties_t *props, const char *key, bool val) {
-    celix_properties_set(props, key, val ? "true" : "false");
+    celix_properties_createAndSetEntry(props, key, NULL, NULL, NULL, &val, NULL);
 }
+
+const celix_version_t* celix_properties_getAsVersion(
+        const celix_properties_t* properties,
+        const char* key,
+        const celix_version_t* defaultValue) {
+    celix_properties_entry_t* entry = celix_stringHashMap_get(properties->map, key);
+    if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
+        return entry->typed.versionValue;
+    } else if (entry != NULL) {
+        //NOTE not converting to version, due to ownership
+        //TODO improve?
+        return NULL;
+    }
+    return NULL;
+}
+
+void celix_properties_setVersion(celix_properties_t *props, const char *key, const celix_version_t* version) {
+    celix_properties_createAndSetEntry(props, key, NULL, NULL, NULL, NULL, version);
+}
+
 
 int celix_properties_size(const celix_properties_t *properties) {
     return (int)celix_stringHashMap_size(properties->map);
@@ -475,12 +719,15 @@ typedef struct {
 }  celix_properties_iterator_internal_t;
 
 celix_properties_iterator_t celix_propertiesIterator_construct(const celix_properties_t *properties) {
-    CELIX_BUILD_ASSERT(sizeof(celix_properties_iterator_internal_t) <= sizeof(celix_properties_iterator_t));
     celix_properties_iterator_internal_t internalIter;
     internalIter.mapIter = celix_stringHashMap_begin(properties->map);
     internalIter.props = properties;
 
     celix_properties_iterator_t iter;
+    iter.index = -1;
+    memset(&iter.entry, 0, sizeof(iter.entry));
+
+    CELIX_BUILD_ASSERT(sizeof(celix_properties_iterator_internal_t) <= sizeof(iter._data));
     memset(&iter._data, 0, sizeof(iter._data));
     memcpy(iter._data, &internalIter, sizeof(internalIter));
     return iter;
@@ -488,20 +735,61 @@ celix_properties_iterator_t celix_propertiesIterator_construct(const celix_prope
 
 bool celix_propertiesIterator_hasNext(celix_properties_iterator_t *iter) {
     celix_properties_iterator_internal_t internalIter;
-    memcpy(&internalIter, iter, sizeof(internalIter));
+    memcpy(&internalIter, iter->_data, sizeof(internalIter));
+    //celix_stringHashMapIterator_next(&internalIter.mapIter);
     return !celix_stringHashMapIterator_isEnd(&internalIter.mapIter);
 }
 
 const char* celix_propertiesIterator_nextKey(celix_properties_iterator_t *iter) {
     celix_properties_iterator_internal_t internalIter;
-    memcpy(&internalIter, iter, sizeof(internalIter));
+    memcpy(&internalIter, iter->_data, sizeof(internalIter));
 
     //note assigning key first and then move the next, because celix string hash map iter start at the beginning
     const char* key = internalIter.mapIter.key;
+    iter->index = (int)internalIter.mapIter.index;
+    celix_properties_entry_t* entry = internalIter.mapIter.value.ptrValue;
+    if (entry != NULL) {
+        memcpy(&iter->entry, iter, sizeof(iter->entry));
+    } else {
+        memset(&iter->entry, 0, sizeof(iter->entry));
+    }
     celix_stringHashMapIterator_next(&internalIter.mapIter);
 
-    memcpy(iter, &internalIter, sizeof(internalIter));
+    memcpy(iter->_data, &internalIter, sizeof(internalIter));
     return key;
+}
+
+celix_properties_iterator_t celix_properties_begin(const celix_properties_t* properties) {
+    CELIX_BUILD_ASSERT(sizeof(celix_properties_iterator_internal_t) <= sizeof(celix_properties_iterator_t));
+    celix_properties_iterator_internal_t internalIter;
+    internalIter.mapIter = celix_stringHashMap_begin(properties->map);
+    internalIter.props = properties;
+
+    celix_properties_iterator_t iter;
+    iter.index = 0;
+    memcpy(&iter.entry, internalIter.mapIter.value.ptrValue, sizeof(iter.entry));
+
+    memset(&iter._data, 0, sizeof(iter._data));
+    memcpy(iter._data, &internalIter, sizeof(internalIter));
+    return iter;
+}
+
+void celix_propertiesIterator_next(celix_properties_iterator_t *iter) {
+    celix_properties_iterator_internal_t internalIter;
+    memcpy(&internalIter, iter->_data, sizeof(internalIter));
+    celix_stringHashMapIterator_next(&internalIter.mapIter);
+    memcpy(iter->_data, &internalIter, sizeof(internalIter));
+    if (celix_stringHashMapIterator_isEnd(&internalIter.mapIter)) {
+        memset(&iter->entry, 0, sizeof(iter->entry));
+    } else {
+        memcpy(&iter->entry, internalIter.mapIter.value.ptrValue, sizeof(iter->entry));
+    }
+}
+
+bool celix_propertiesIterator_isEnd(const celix_properties_iterator_t* iter) {
+    celix_properties_iterator_internal_t internalIter;
+    memcpy(&internalIter, iter->_data, sizeof(internalIter));
+    return celix_stringHashMapIterator_isEnd(&internalIter.mapIter);
 }
 
 bool celix_propertiesIterator_equals(const celix_properties_iterator_t* a, const celix_properties_iterator_t* b) {
@@ -513,10 +801,7 @@ bool celix_propertiesIterator_equals(const celix_properties_iterator_t* a, const
            internalIterA.mapIter.key == internalIterB.mapIter.key;
 }
 
-
-//TODO can the return be const?
-//TODO and can this be removed -> look into C++ PropetiesIter
-celix_properties_t* celix_propertiesIterator_properties(celix_properties_iterator_t *iter) {
+celix_properties_t* celix_propertiesIterator_properties(const celix_properties_iterator_t *iter) {
     celix_properties_iterator_internal_t internalIter;
     memcpy(&internalIter, iter, sizeof(internalIter));
     return (celix_properties_t*)internalIter.props;

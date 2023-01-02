@@ -286,6 +286,15 @@ char* celix_version_toString(const celix_version_t* version) {
     return string;
 }
 
+bool celix_version_fillString(const celix_version_t* version, char *str, size_t strLen) {
+    int written;
+    if (strnlen(version->qualifier, 1) > 0) {
+        written = snprintf(str, strLen, "%d.%d.%d.%s", version->major, version->minor, version->micro, version->qualifier);
+    } else {
+        written = snprintf(str, strLen, "%d.%d.%d", version->major, version->minor, version->micro);
+    }
+    return written >= 0 && written < strLen;
+}
 
 bool celix_version_isCompatible(const celix_version_t* user, const celix_version_t* provider) {
     if (user == NULL && provider == NULL) {

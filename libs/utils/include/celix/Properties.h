@@ -86,7 +86,7 @@ namespace celix {
         std::string first{};
         std::string second{};
     private:
-        celix_properties_iterator_t iter{._data = {}};
+        celix_properties_iterator_t iter{.index = -1, .entry = {}, ._data = {}};
         bool end{false};
     };
 

@@ -137,6 +137,22 @@ TEST_F(PropertiesTestSuite, getSet) {
     celix_properties_destroy(properties);
 }
 
+TEST_F(PropertiesTestSuite, getSetWithNULL) {
+    auto* properties = celix_properties_create();
+
+    celix_properties_set(properties, nullptr, "value");
+    EXPECT_EQ(celix_properties_size(properties), 0); //NULL key will be ignored
+
+    celix_properties_set(properties, nullptr, nullptr);
+    EXPECT_EQ(celix_properties_size(properties), 0); //NULL key will be ignored
+
+    celix_properties_set(properties, "key", nullptr);
+    EXPECT_EQ(celix_properties_size(properties), 0); //NULL value will be ignored
+
+    celix_properties_destroy(properties);
+}
+
+
 TEST_F(PropertiesTestSuite, setUnset) {
     auto* properties = celix_properties_create();
     char keyA[] = "x";
@@ -234,6 +250,132 @@ TEST_F(PropertiesTestSuite, sizeAndIteratorTest) {
         count++;
     }
     EXPECT_EQ(4, count);
+
+    celix_properties_destroy(props);
+}
+
+TEST_F(PropertiesTestSuite, getType) {
+    auto* props = celix_properties_create();
+    celix_properties_set(props, "string", "value");
+    celix_properties_setLong(props, "long", 123);
+    celix_properties_setDouble(props, "double", 3.14);
+    celix_properties_setBool(props, "bool", true);
+    auto* version = celix_version_createVersion(1, 2, 3, nullptr);
+    celix_properties_setVersion(props, "version", version);
+
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_STRING, celix_properties_getType(props, "string"));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_LONG, celix_properties_getType(props, "long"));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_DOUBLE, celix_properties_getType(props, "double"));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_BOOL, celix_properties_getType(props, "bool"));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_VERSION, celix_properties_getType(props, "version"));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_UNSET, celix_properties_getType(props, "missing"));
+
+    celix_properties_destroy(props);
+}
+
+TEST_F(PropertiesTestSuite, getEntry) {
+    auto *props = celix_properties_create();
+    celix_properties_set(props, "key1", "value1");
+    celix_properties_setLong(props, "key2", 123);
+    celix_properties_setDouble(props, "key3", 123.456);
+    celix_properties_setBool(props, "key4", true);
+    auto *version = celix_version_createVersion(1, 2, 3, nullptr);
+    celix_properties_setVersion(props, "key5", version);
+
+    auto entry = celix_properties_getEntry(props, "key1");
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_STRING, entry.valueType);
+    EXPECT_STREQ("value1", entry.value);
+    EXPECT_STREQ("value1", entry.typed.strValue);
+
+    entry = celix_properties_getEntry(props, "key2");
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_LONG, entry.valueType);
+    EXPECT_STREQ("123", entry.value);
+    EXPECT_EQ(123, entry.typed.longValue);
+
+    entry = celix_properties_getEntry(props, "key3");
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_DOUBLE, entry.valueType);
+    EXPECT_NE(strstr(entry.value, "123.456"), nullptr);
+    EXPECT_DOUBLE_EQ(123.456, entry.typed.doubleValue);
+
+    entry = celix_properties_getEntry(props, "key4");
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_BOOL, entry.valueType);
+    EXPECT_STREQ("true", entry.value);
+    EXPECT_TRUE(entry.typed.boolValue);
+
+    entry = celix_properties_getEntry(props, "key5");
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_VERSION, entry.valueType);
+    EXPECT_STREQ("1.2.3", entry.value);
+    EXPECT_EQ(1, celix_version_getMajor(entry.typed.versionValue));
+    EXPECT_EQ(2, celix_version_getMinor(entry.typed.versionValue));
+    EXPECT_EQ(3, celix_version_getMicro(entry.typed.versionValue));
+
+    entry = celix_properties_getEntry(props, "key6");
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_UNSET, entry.valueType);
+
+    celix_properties_destroy(props);
+}
+
+TEST_F(PropertiesTestSuite, iteratorNextKey) {
+    auto *props = celix_properties_create();
+    celix_properties_set(props, "key1", "value1");
+    celix_properties_set(props, "key2", "value2");
+    celix_properties_set(props, "key3", "value3");
+    auto iter = celix_propertiesIterator_construct(props);
+    const char* key;
+    int count = 0;
+    while (celix_propertiesIterator_hasNext(&iter)) {
+        key = celix_propertiesIterator_nextKey(&iter);
+        EXPECT_NE(strstr(key, "key"), nullptr);
+        count++;
+    }
+    EXPECT_EQ(count, 3);
+    key = celix_propertiesIterator_nextKey(&iter);
+    EXPECT_EQ(nullptr, key) << "got key: " << key;
+
+    celix_properties_destroy(props);
+}
+
+TEST_F(PropertiesTestSuite, iteratorNext) {
+    auto *props = celix_properties_create();
+    celix_properties_set(props, "key1", "value1");
+    celix_properties_set(props, "key2", "value2");
+    celix_properties_set(props, "key3", "value3");
+
+    int count = 0;
+    auto iter = celix_properties_begin(props);
+    while (!celix_propertiesIterator_isEnd(&iter)) {
+        EXPECT_NE(strstr(iter.entry.key, "key"), nullptr);
+        EXPECT_NE(strstr(iter.entry.value, "value"), nullptr);
+        count++;
+        celix_propertiesIterator_next(&iter);
+    }
+    EXPECT_EQ(count, 3);
+    celix_propertiesIterator_next(&iter);
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_UNSET, iter.entry.valueType);
+
+    celix_properties_destroy(props);
+}
+
+TEST_F(PropertiesTestSuite, iterateOverProperties) {
+    celix_properties_t* props = celix_properties_create();
+    celix_properties_set(props, "key1", "value1");
+    celix_properties_set(props, "key2", "value2");
+
+    int outerCount = 0;
+    int innerCount = 0;
+    CELIX_PROPERTIES_ITERATE(props, outerIter) {
+        outerCount++;
+        EXPECT_NE(strstr(outerIter.entry.key, "key"), nullptr);
+
+        // Inner loop to test nested iteration
+        CELIX_PROPERTIES_ITERATE(props, innerIter) {
+            innerCount++;
+            EXPECT_NE(strstr(innerIter.entry.key, "key"), nullptr);
+        }
+    }
+    // Check that both entries were iterated over
+    EXPECT_EQ(outerCount, 2);
+    EXPECT_EQ(innerCount, 4);
 
     celix_properties_destroy(props);
 }
