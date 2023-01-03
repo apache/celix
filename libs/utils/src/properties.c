@@ -387,6 +387,9 @@ static void celix_properties_createAndSetEntry(
         const double* doubleValue,
         const bool* boolValue,
         const celix_version_t* versionValue) {
+    if (properties == NULL) {
+        return;
+    }
     celix_properties_entry_t* entry = celix_properties_createEntry(properties, key, strValue, longValue, doubleValue,
                                                                    boolValue, versionValue);
     if (entry != NULL) {
@@ -696,12 +699,8 @@ const celix_version_t* celix_properties_getAsVersion(
     celix_properties_entry_t* entry = celix_stringHashMap_get(properties->map, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
         return entry->typed.versionValue;
-    } else if (entry != NULL) {
-        //NOTE not converting to version, due to ownership
-        //TODO improve?
-        return NULL;
     }
-    return NULL;
+    return defaultValue;
 }
 
 void celix_properties_setVersion(celix_properties_t *props, const char *key, const celix_version_t* version) {
@@ -767,7 +766,11 @@ celix_properties_iterator_t celix_properties_begin(const celix_properties_t* pro
 
     celix_properties_iterator_t iter;
     iter.index = 0;
-    memcpy(&iter.entry, internalIter.mapIter.value.ptrValue, sizeof(iter.entry));
+    if (!celix_stringHashMapIterator_isEnd(&internalIter.mapIter)) {
+        memcpy(&iter.entry, internalIter.mapIter.value.ptrValue, sizeof(iter.entry));
+    } else {
+        memset(&iter.entry, 0, sizeof(iter.entry));
+    }
 
     memset(&iter._data, 0, sizeof(iter._data));
     memcpy(iter._data, &internalIter, sizeof(internalIter));

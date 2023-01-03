@@ -34,14 +34,8 @@ namespace celix {
      */
     class PropertiesIterator {
     public:
-        explicit PropertiesIterator(celix_properties_t* props) {
-            iter = celix_propertiesIterator_construct(props);
-            next();
-        }
-
         explicit PropertiesIterator(const celix_properties_t* props) {
-            iter = celix_propertiesIterator_construct(props);
-            next();
+            iter = celix_properties_begin(props);
         }
 
         PropertiesIterator& operator++() {
@@ -65,17 +59,17 @@ namespace celix {
         }
 
         void next() {
-            if (celix_propertiesIterator_hasNext(&iter)) {
-                auto* k = celix_propertiesIterator_nextKey(&iter);
-                auto* props = celix_propertiesIterator_properties(&iter);
-                auto *v = celix_properties_get(props, k, "");
-                first = std::string{(const char*)k};
-                second = std::string{(const char*)v};
-            } else {
+            celix_propertiesIterator_next(&iter);
+            if (celix_propertiesIterator_isEnd(&iter)) {
                 moveToEnd();
+            } else {
+                first = iter.entry.key;
+                second = iter.entry.value;
+                end = false;
             }
         }
 
+        //TODO try to remove moveToEnd
         void moveToEnd() {
             first = {};
             second = {};
@@ -85,6 +79,7 @@ namespace celix {
         //TODO for C++17 try to update first and second to stringview
         std::string first{};
         std::string second{};
+        //TODO iter?
     private:
         celix_properties_iterator_t iter{.index = -1, .entry = {}, ._data = {}};
         bool end{false};
@@ -134,6 +129,8 @@ namespace celix {
                 return *this;
             }
 #endif
+
+            //TODO operator= with long, double, boolean and version
 
             [[nodiscard]] const char* getValue() const {
                 if (charKey == nullptr) {
@@ -306,6 +303,7 @@ namespace celix {
                 std::string_view view{value};
                 celix_properties_set(cProps.get(), key.data(), view.data());
             } else {
+                //TODO spit up to use setLong, setBool, setDouble and setVersion
                 using namespace std;
                 celix_properties_set(cProps.get(), key.data(), to_string(value).c_str());
             }

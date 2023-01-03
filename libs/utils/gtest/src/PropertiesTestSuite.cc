@@ -233,6 +233,20 @@ TEST_F(PropertiesTestSuite, boolTest) {
     celix_properties_destroy(properties);
 }
 
+TEST_F(PropertiesTestSuite, fillTest) {
+    celix_properties_t *props = celix_properties_create();
+    int testCount = 1000;
+    for (int i = 0; i < 1000; ++i) {
+        char k[5];
+        snprintf(k, sizeof(k), "%i", i);
+        const char* v = "a";
+        celix_properties_set(props, k, v);
+    }
+    EXPECT_EQ(celix_properties_size(props), testCount);
+    celix_properties_destroy(props);
+}
+
+
 TEST_F(PropertiesTestSuite, sizeAndIteratorTest) {
     celix_properties_t *props = celix_properties_create();
     EXPECT_EQ(0, celix_properties_size(props));
@@ -274,12 +288,12 @@ TEST_F(PropertiesTestSuite, getType) {
 }
 
 TEST_F(PropertiesTestSuite, getEntry) {
-    auto *props = celix_properties_create();
+    auto* props = celix_properties_create();
     celix_properties_set(props, "key1", "value1");
     celix_properties_setLong(props, "key2", 123);
     celix_properties_setDouble(props, "key3", 123.456);
     celix_properties_setBool(props, "key4", true);
-    auto *version = celix_version_createVersion(1, 2, 3, nullptr);
+    auto* version = celix_version_createVersion(1, 2, 3, nullptr);
     celix_properties_setVersion(props, "key5", version);
 
     auto entry = celix_properties_getEntry(props, "key1");
@@ -316,7 +330,7 @@ TEST_F(PropertiesTestSuite, getEntry) {
 }
 
 TEST_F(PropertiesTestSuite, iteratorNextKey) {
-    auto *props = celix_properties_create();
+    auto* props = celix_properties_create();
     celix_properties_set(props, "key1", "value1");
     celix_properties_set(props, "key2", "value2");
     celix_properties_set(props, "key3", "value3");
@@ -336,7 +350,7 @@ TEST_F(PropertiesTestSuite, iteratorNextKey) {
 }
 
 TEST_F(PropertiesTestSuite, iteratorNext) {
-    auto *props = celix_properties_create();
+    auto* props = celix_properties_create();
     celix_properties_set(props, "key1", "value1");
     celix_properties_set(props, "key2", "value2");
     celix_properties_set(props, "key3", "value3");
@@ -357,7 +371,7 @@ TEST_F(PropertiesTestSuite, iteratorNext) {
 }
 
 TEST_F(PropertiesTestSuite, iterateOverProperties) {
-    celix_properties_t* props = celix_properties_create();
+    auto* props = celix_properties_create();
     celix_properties_set(props, "key1", "value1");
     celix_properties_set(props, "key2", "value2");
 
@@ -378,4 +392,41 @@ TEST_F(PropertiesTestSuite, iterateOverProperties) {
     EXPECT_EQ(innerCount, 4);
 
     celix_properties_destroy(props);
+
+
+    props = celix_properties_create();
+    int count = 0;
+    CELIX_PROPERTIES_ITERATE(props, outerIter) {
+        count++;
+    }
+    EXPECT_EQ(count, 0);
+    celix_properties_destroy(props);
+}
+
+TEST_F(PropertiesTestSuite, getAsVersion) {
+    auto* properties = celix_properties_create();
+
+    // Test getting a version property
+    auto* expected = celix_version_createVersion(1, 2, 3, "test");
+    celix_properties_setVersion(properties, "key", expected);
+    const auto* actual = celix_properties_getAsVersion(properties, "key", nullptr);
+    EXPECT_EQ(celix_version_getMajor(expected), celix_version_getMajor(actual));
+    EXPECT_EQ(celix_version_getMinor(expected), celix_version_getMinor(actual));
+    EXPECT_EQ(celix_version_getMicro(expected), celix_version_getMicro(actual));
+    EXPECT_STREQ(celix_version_getQualifier(expected), celix_version_getQualifier(actual));
+
+    // Test getting a non-version property
+    celix_properties_set(properties, "key2", "value");
+    auto* emptyVersion = celix_version_createEmptyVersion();
+    actual = celix_properties_getAsVersion(properties, "key2", emptyVersion);
+    EXPECT_EQ(celix_version_getMajor(actual), 0);
+    EXPECT_EQ(celix_version_getMinor(actual), 0);
+    EXPECT_EQ(celix_version_getMicro(actual), 0);
+    EXPECT_STREQ(celix_version_getQualifier(actual), "");
+
+    EXPECT_EQ(celix_properties_getAsVersion(properties, "non-existent", nullptr), nullptr);
+
+    celix_version_destroy(expected);
+    celix_version_destroy(emptyVersion);
+    celix_properties_destroy(properties);
 }

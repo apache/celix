@@ -270,7 +270,10 @@ bool celix_stringHashMap_remove(celix_string_hash_map_t* map, const char* key);
 void celix_stringHashMap_clear(celix_string_hash_map_t* map);
 
 /**
- * @brief Create and return a hash map iterator for the beginning of the hash map.
+ * @brief Returns an iterator pointing to the first element in the map.
+ *
+ * @param map The map to get the iterator for.
+ * @return An iterator pointing to the first element in the map.
  */
 celix_string_hash_map_iterator_t celix_stringHashMap_begin(const celix_string_hash_map_t* map);
 
@@ -303,7 +306,6 @@ void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter);
  * @param map The (const celix_string_hash_map_t*) map to iterate over.
  * @param iterName A iterName which will be of type celix_string_hash_map_iterator_t to hold the iterator.
  */
-//TODO test if the macro can be used nested
 #define CELIX_STRING_HASH_MAP_ITERATE(map, iterName) \
     for (celix_string_hash_map_iterator_t iterName = celix_stringHashMap_begin(map); !celix_stringHashMapIterator_isEnd(&(iterName)); celix_stringHashMapIterator_next(&(iterName)))
 
