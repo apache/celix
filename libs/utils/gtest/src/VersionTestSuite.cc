@@ -68,23 +68,25 @@ TEST_F(VersionTestSuite, create) {
     free(str);
 }
 
-TEST_F(VersionTestSuite, clone) {
-    celix_version_t* version = nullptr;
-    celix_version_t* clone = nullptr;
-    char * str;
+TEST_F(VersionTestSuite, copy) {
+    auto* version = celix_version_create(1, 2, 3, "abc");
+    auto* copy = celix_version_copy(version);
+    EXPECT_NE(nullptr, version);
+    EXPECT_NE(nullptr, copy);
+    EXPECT_EQ(1, celix_version_getMajor(copy));
+    EXPECT_EQ(2, celix_version_getMinor(copy));
+    EXPECT_EQ(3, celix_version_getMicro(copy));
+    EXPECT_STREQ("abc", celix_version_getQualifier(copy));
+    celix_version_destroy(copy);
+    celix_version_destroy(version);
 
-    str = celix_utils_strdup("abc");
-    EXPECT_EQ(CELIX_SUCCESS, version_createVersion(1, 2, 3, str, &version));
-    EXPECT_EQ(CELIX_SUCCESS, version_clone(version, &clone));
-    EXPECT_TRUE(version != nullptr);
-    EXPECT_EQ(1, clone->major);
-    EXPECT_EQ(2, clone->minor);
-    EXPECT_EQ(3, clone->micro);
-    EXPECT_STREQ("abc", clone->qualifier);
-
-    version_destroy(clone);
-    version_destroy(version);
-    free(str);
+    copy = celix_version_copy(nullptr); //returns "empty" version
+    EXPECT_NE(nullptr, copy);
+    EXPECT_EQ(0, celix_version_getMajor(copy));
+    EXPECT_EQ(0, celix_version_getMinor(copy));
+    EXPECT_EQ(0, celix_version_getMicro(copy));
+    EXPECT_STREQ("", celix_version_getQualifier(copy));
+    celix_version_destroy(copy);
 }
 
 TEST_F(VersionTestSuite, createFromString) {
@@ -277,8 +279,8 @@ TEST_F(VersionTestSuite, compare) {
 }
 
 TEST_F(VersionTestSuite, celix_version_compareToMajorMinor) {
-    celix_version_t *version1 = celix_version_createVersion(2, 2, 0, nullptr);
-    celix_version_t *version2 = celix_version_createVersion(2, 2, 4, "qualifier");
+    auto* version1 = celix_version_create(2, 2, 0, nullptr);
+    auto* version2 = celix_version_create(2, 2, 4, "qualifier");
 
     EXPECT_EQ(0, celix_version_compareToMajorMinor(version1, 2, 2));
     EXPECT_EQ(0, celix_version_compareToMajorMinor(version2, 2, 2));
@@ -367,8 +369,8 @@ TEST_F(VersionTestSuite,semanticCompatibility) {
 
 TEST_F(VersionTestSuite, compareEmptyAndNullQualifier) {
     //nullptr or "" qualifier should be the same
-    auto* v1 = celix_version_createVersion(0, 0, 0, nullptr);
-    auto* v2 = celix_version_createVersion(0, 0, 0, "");
+    auto* v1 = celix_version_create(0, 0, 0, nullptr);
+    auto* v2 = celix_version_create(0, 0, 0, "");
     EXPECT_EQ(0, celix_version_compareTo(v1, v1));
     EXPECT_EQ(0, celix_version_compareTo(v1, v2));
     EXPECT_EQ(0, celix_version_compareTo(v2, v2));
@@ -379,7 +381,7 @@ TEST_F(VersionTestSuite, compareEmptyAndNullQualifier) {
 
 TEST_F(VersionTestSuite, fillString) {
     // Create a version object
-    celix_version_t* version = celix_version_createVersion(1, 2, 3, "alpha");
+    auto* version = celix_version_create(1, 2, 3, "alpha");
 
     // Test with buffer large enough to hold the formatted string
     char buffer[32];

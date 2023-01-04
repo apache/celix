@@ -42,7 +42,13 @@ typedef struct celix_version celix_version_t;
  *        the empty string.
  * @return The created version or NULL if the input was incorrect
  */
-celix_version_t* celix_version_createVersion(int major, int minor, int micro, const char* qualifier);
+celix_version_t* celix_version_create(int major, int minor, int micro, const char* qualifier);
+
+/**
+ * @brief Same as celix_version_create, but deprecated
+ */
+celix_version_t* celix_version_createVersion(int major, int minor, int micro, const char* qualifier)
+    __attribute__((deprecated(("celix_version_createVersion is deprecated use celix_version_create instead"))));
 
 void celix_version_destroy(celix_version_t* version);
 

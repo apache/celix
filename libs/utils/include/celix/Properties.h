@@ -36,6 +36,7 @@ namespace celix {
     public:
         explicit PropertiesIterator(const celix_properties_t* props) {
             iter = celix_properties_begin(props);
+            setFields();
         }
 
         PropertiesIterator& operator++() {
@@ -60,27 +61,27 @@ namespace celix {
 
         void next() {
             celix_propertiesIterator_next(&iter);
-            if (celix_propertiesIterator_isEnd(&iter)) {
-                moveToEnd();
-            } else {
-                first = iter.entry.key;
-                second = iter.entry.value;
-                end = false;
-            }
+            setFields();
         }
 
-        //TODO try to remove moveToEnd
         void moveToEnd() {
             first = {};
             second = {};
             end = true;
         }
 
-        //TODO for C++17 try to update first and second to stringview
         std::string first{};
         std::string second{};
-        //TODO iter?
     private:
+        void setFields() {
+            if (celix_propertiesIterator_isEnd(&iter)) {
+                moveToEnd();
+            } else {
+                first = iter.entry.key;
+                second = iter.entry.value;
+            }
+        }
+
         celix_properties_iterator_t iter{.index = -1, .entry = {}, ._data = {}};
         bool end{false};
     };
@@ -130,8 +131,6 @@ namespace celix {
             }
 #endif
 
-            //TODO operator= with long, double, boolean and version
-
             [[nodiscard]] const char* getValue() const {
                 if (charKey == nullptr) {
                     return celix_properties_get(props.get(), stringKey.c_str(), nullptr);
@@ -139,6 +138,8 @@ namespace celix {
                     return celix_properties_get(props.get(), charKey, nullptr);
                 }
             }
+
+            //TODO get typed value
 
             operator std::string() const {
                 auto *cstr = getValue();
@@ -290,6 +291,10 @@ namespace celix {
             return celix_properties_getAsBool(cProps.get(), key.data(), defaultValue);
         }
 
+        //TODO getType
+
+        //TODO getAsVersion
+
         /**
          * @brief Sets a T&& property. Will use (std::) to_string to convert the value to string.
          */
@@ -367,6 +372,8 @@ namespace celix {
             using namespace std;
             celix_properties_set(cProps.get(), key.c_str(), to_string(value).c_str());
         }
+
+        //TODO set long, double, boolean and version
 #endif
 
         /**
@@ -382,7 +389,7 @@ namespace celix {
         [[nodiscard]] std::map<std::string, std::string> convertToMap() const {
             std::map<std::string, std::string> result{};
             for (const auto& pair : *this) {
-                result[pair.first] = pair.second;
+                result[std::string{pair.first}] = pair.second;
             }
             return result;
         }
@@ -393,7 +400,7 @@ namespace celix {
         [[nodiscard]] std::unordered_map<std::string, std::string> convertToUnorderedMap() const {
             std::unordered_map<std::string, std::string> result{};
             for (const auto& pair : *this) {
-                result[pair.first] = pair.second;
+                result[std::string{pair.first}] = pair.second;
             }
             return result;
         }
@@ -411,8 +418,13 @@ namespace celix {
 #endif
 
 
-        //TODO save
-        //TODO load
+        //TODO test
+        void store(const std::string& file, const std::string& header = {}) const {
+            celix_properties_store(cProps.get(), file.c_str(), header.empty() ? nullptr : header.c_str());
+        }
+
+        //TODO laod
+
     private:
         explicit Properties(celix_properties_t* props) : cProps{props, [](celix_properties_t*) { /*nop*/ }} {}
 

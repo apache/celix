@@ -284,13 +284,29 @@ void celix_properties_setDouble(celix_properties_t* properties, const char* key,
 double celix_properties_getAsDouble(const celix_properties_t* properties, const char* key, double defaultValue);
 
 /**
- * @brief Sets the value of a property as a Celix version string.
+ * @brief Sets the value of a property as a Celix version.
  *
- * @param properties The property set to modify.
- * @param key The key of the property to set.
- * @param version The value to set.
+ * This function will make a copy of the provided celix_version_t object and store it in the property set.
+ *
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] version The value to set. The function will make a copy of this object and store it in the property set.
  */
 void celix_properties_setVersion(celix_properties_t* properties, const char* key, const celix_version_t* version);
+
+/**
+ * @brief Sets the value of a property as a Celix version.
+ *
+ * This function will store a reference to the provided celix_version_t object in the property set and takes
+ * ownership of the provided version.
+ *
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] version The value to set. The function will store a reference to this object in the property set and
+ *                    takes ownership of the provided version.
+ */
+void celix_properties_setVersionWithoutCopy(celix_properties_t* properties, const char* key, celix_version_t* version);
+
 
 /**
  * @brief Gets the value of a property as a Celix version.
@@ -303,7 +319,7 @@ void celix_properties_setVersion(celix_properties_t* properties, const char* key
  * @return The value of the property if it is a Celix version, or the default value if the property is not set or the
  *         value is not a Celix version.
  */
-const celix_version_t* celix_properties_getAsVersion(
+const celix_version_t* celix_properties_getVersion(
         const celix_properties_t* properties,
         const char* key,
         const celix_version_t* defaultValue);

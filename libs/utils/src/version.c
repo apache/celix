@@ -96,6 +96,10 @@ celix_status_t version_isCompatible(version_pt user, version_pt provider, bool* 
 }
 
 celix_version_t* celix_version_createVersion(int major, int minor, int micro, const char* qualifier) {
+    return celix_version_create(major, minor, micro, qualifier);
+}
+
+celix_version_t* celix_version_create(int major, int minor, int micro, const char* qualifier) {
     if (major < 0 || minor < 0 || micro < 0) {
         return NULL;
     }
@@ -141,6 +145,9 @@ void celix_version_destroy(celix_version_t* version) {
 
 
 celix_version_t* celix_version_copy(const celix_version_t* version) {
+    if (version == NULL) {
+        return celix_version_createEmptyVersion();
+    }
     return celix_version_createVersion(version->major, version->minor, version->micro, version->qualifier);
 }
 

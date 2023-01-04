@@ -284,6 +284,7 @@ TEST_F(PropertiesTestSuite, getType) {
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_VERSION, celix_properties_getType(props, "version"));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_UNSET, celix_properties_getType(props, "missing"));
 
+    celix_version_destroy(version);
     celix_properties_destroy(props);
 }
 
@@ -326,6 +327,7 @@ TEST_F(PropertiesTestSuite, getEntry) {
     entry = celix_properties_getEntry(props, "key6");
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_UNSET, entry.valueType);
 
+    celix_version_destroy(version);
     celix_properties_destroy(props);
 }
 
@@ -403,13 +405,14 @@ TEST_F(PropertiesTestSuite, iterateOverProperties) {
     celix_properties_destroy(props);
 }
 
-TEST_F(PropertiesTestSuite, getAsVersion) {
+TEST_F(PropertiesTestSuite, getVersion) {
     auto* properties = celix_properties_create();
+    auto* emptyVersion = celix_version_createEmptyVersion();
 
     // Test getting a version property
     auto* expected = celix_version_createVersion(1, 2, 3, "test");
     celix_properties_setVersion(properties, "key", expected);
-    const auto* actual = celix_properties_getAsVersion(properties, "key", nullptr);
+    const auto* actual = celix_properties_getVersion(properties, "key", nullptr);
     EXPECT_EQ(celix_version_getMajor(expected), celix_version_getMajor(actual));
     EXPECT_EQ(celix_version_getMinor(expected), celix_version_getMinor(actual));
     EXPECT_EQ(celix_version_getMicro(expected), celix_version_getMicro(actual));
@@ -417,16 +420,22 @@ TEST_F(PropertiesTestSuite, getAsVersion) {
 
     // Test getting a non-version property
     celix_properties_set(properties, "key2", "value");
-    auto* emptyVersion = celix_version_createEmptyVersion();
-    actual = celix_properties_getAsVersion(properties, "key2", emptyVersion);
+    actual = celix_properties_getVersion(properties, "key2", emptyVersion);
     EXPECT_EQ(celix_version_getMajor(actual), 0);
     EXPECT_EQ(celix_version_getMinor(actual), 0);
     EXPECT_EQ(celix_version_getMicro(actual), 0);
     EXPECT_STREQ(celix_version_getQualifier(actual), "");
-
-    EXPECT_EQ(celix_properties_getAsVersion(properties, "non-existent", nullptr), nullptr);
-
+    EXPECT_EQ(celix_properties_getVersion(properties, "non-existent", nullptr), nullptr);
     celix_version_destroy(expected);
+
+    // Test setting without copy
+    celix_properties_setVersionWithoutCopy(properties, "key3", celix_version_createVersion(3,3,3,""));
+    actual = celix_properties_getVersion(properties, "key3", emptyVersion);
+    EXPECT_EQ(celix_version_getMajor(actual), 3);
+    EXPECT_EQ(celix_version_getMinor(actual), 3);
+    EXPECT_EQ(celix_version_getMicro(actual), 3);
+    EXPECT_STREQ(celix_version_getQualifier(actual), "");
+
     celix_version_destroy(emptyVersion);
     celix_properties_destroy(properties);
 }
