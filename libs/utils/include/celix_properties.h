@@ -103,6 +103,7 @@ typedef struct celix_properties_iterator {
 
 /**
  * @brief Creates a new empty property set.
+ *
  * @return A new empty property set.
  */
 celix_properties_t* celix_properties_create(void);
@@ -110,14 +111,14 @@ celix_properties_t* celix_properties_create(void);
 /**
  * @brief Destroys a property set, freeing all associated resources.
  *
- * @param properties The property set to destroy. If properties is NULL, this function will do nothing.
+ * @param[in] properties The property set to destroy. If properties is NULL, this function will do nothing.
  */
 void celix_properties_destroy(celix_properties_t* properties);
 
 /**
  * @brief Loads properties from a file.
  *
- * @param filename The name of the file to load properties from.
+ * @param[in] filename The name of the file to load properties from.
  * @return A property set containing the properties from the file.
  * @retval NULL If an error occurred (e.g. file not found).
  */
@@ -127,7 +128,7 @@ celix_properties_t* celix_properties_load(const char *filename);
 /**
  * @brief Loads properties from a stream.
  *
- * @param stream The stream to load properties from.
+ * @param[in,out] stream The stream to load properties from.
  * @return A property set containing the properties from the stream.
  * @retval NULL If an error occurred (e.g. invalid format).
  */
@@ -136,7 +137,7 @@ celix_properties_t* celix_properties_loadWithStream(FILE *stream);
 /**
  * @brief Loads properties from a string.
  *
- * @param input The string to load properties from.
+ * @param[in] input The string to load properties from.
  * @return A property set containing the properties from the string.
  * @retval NULL If an error occurred (e.g. invalid format).
  */
@@ -145,9 +146,9 @@ celix_properties_t* celix_properties_loadFromString(const char *input);
 /**
  * @brief Stores properties to a file.
  *
- * @param properties The property set to store.
- * @param file The name of the file to store the properties to.
- * @param header An optional header to write to the file before the properties.
+ * @param[in] properties The property set to store.
+ * @param[in] file The name of the file to store the properties to.
+ * @param[in] header An optional header to write to the file before the properties.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_FILE_IO_EXCEPTION if there was an error writing to the
  *         file.
  */
@@ -156,8 +157,8 @@ celix_status_t celix_properties_store(celix_properties_t* properties, const char
 /**
  * @brief Gets the entry for a given key in a property set.
  *
- * @param properties The property set to search.
- * @param key The key to search for.
+ * @param[in] properties The property set to search.
+ * @param[in] key The key to search for.
  * @return The entry for the given key, or a default entry with the valueType set to CELIX_PROPERTIES_VALUE_TYPE_UNSET
  *         if the key is not found.
  */
@@ -166,63 +167,64 @@ celix_properties_entry_t celix_properties_getEntry(const celix_properties_t* pro
 /**
  * @brief Gets the value of a property.
  *
- * @param properties The property set to search.
- * @param key The key of the property to get.
- * @param defaultValue The value to return if the property is not set.
+ * @param[in] properties The property set to search.
+ * @param[in] key The key of the property to get.
+ * @param[in] defaultValue The value to return if the property is not set.
  * @return The value of the property, or the default value if the property is not set.
   */
 const char* celix_properties_get(const celix_properties_t* properties, const char* key, const char* defaultValue);
 
 /**
  * @brief Gets the type of a property value.
- * @param properties The property set to search.
- * @param key The key of the property to get the type of.
+ *
+ * @param[in] properties The property set to search.
+ * @param[in] key The key of the property to get the type of.
  * @return The type of the property value, or CELIX_PROPERTIES_VALUE_TYPE_UNSET if the property is not set.
  */
 celix_properties_value_type_e celix_properties_getType(const celix_properties_t* properties, const char* key);
 
 /**
- * @brief Sets the value of a property.
+ * @brief Set the value of a property.
  *
- *
- * @param properties The property set to modify.
- * @param key The key of the property to set.
- * @param value The value to set the property to.
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] value The value to set the property to.
  */
 void celix_properties_set(celix_properties_t* properties, const char* key, const char *value);
 
 /**
- * @brief Sets the value of a property without copying the key and value strings.
+ * @brief Set the value of a property without copying the key and value strings.
  *
- * @param properties The property set to modify.
- * @param key The key of the property to set. This string will be used directly, so it must not be freed or modified
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set. This string will be used directly, so it must not be freed or modified
  *            after calling this function.
- * @param value The value to set the property to. This string will be used directly, so it must not be freed or
+ * @param[in] value The value to set the property to. This string will be used directly, so it must not be freed or
  *              modified after calling this function.
  */
 void celix_properties_setWithoutCopy(celix_properties_t* properties, char* key, char *value);
 
 /**
- * @brief Unsets a property, removing it from the property set.
- * @param properties The property set to modify.
- * @param key The key of the property to unset.
+ * @brief Unset a property, removing it from the property set.
+ *
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to unset.
  */
 void celix_properties_unset(celix_properties_t* properties, const char *key);
 
 /**
- * @brief Makes a copy of a property set.
+ * @brief Make a copy of a property set.
  *
- * @param properties The property set to copy.
+ * @param[in] properties The property set to copy.
  * @return A copy of the given property set.
  */
 celix_properties_t* celix_properties_copy(const celix_properties_t* properties);
 
 /**
- * @brief Gets the value of a property as a long integer.
+ * @brief Get the value of a property as a long integer.
  *
- * @param properties The property set to search.
- * @param key The key of the property to get.
- * @param defaultValue The value to return if the property is not set, the value is not a long integer,
+ * @param[in] properties The property set to search.
+ * @param[in] key The key of the property to get.
+ * @param[in] defaultValue The value to return if the property is not set, the value is not a long integer,
  *                     or if the value cannot be converted to a long integer.
  * @return The value of the property as a long integer, or the default value if the property is not set,
  *         the value is not a long integer, or if the value cannot be converted to a long integer.
@@ -231,20 +233,20 @@ celix_properties_t* celix_properties_copy(const celix_properties_t* properties);
 long celix_properties_getAsLong(const celix_properties_t* properties, const char* key, long defaultValue);
 
 /**
- * @brief Sets the value of a property to a long integer.
+ * @brief Set the value of a property to a long integer.
  *
- * @param properties The property set to modify.
- * @param key The key of the property to set.
- * @param value The long value to set the property to.
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] value The long value to set the property to.
  */
 void celix_properties_setLong(celix_properties_t* properties, const char* key, long value);
 
 /**
- * @brief Gets the value of a property as a boolean.
+ * @brief Get the value of a property as a boolean.
  *
- * @param properties The property set to search.
- * @param key The key of the property to get.
- * @param defaultValue The value to return if the property is not set, the value is not a boolean, or if the value
+ * @param[in] properties The property set to search.
+ * @param[in] key The key of the property to get.
+ * @param[in] defaultValue The value to return if the property is not set, the value is not a boolean, or if the value
  *                     cannot be converted to a boolean.
  * @return The value of the property as a boolean, or the default value if the property is not set, the value is not a
  *         boolean, or if the value cannot be converted to a boolean. If the value is a string, it will be converted
@@ -253,29 +255,29 @@ void celix_properties_setLong(celix_properties_t* properties, const char* key, l
 bool celix_properties_getAsBool(const celix_properties_t* properties, const char* key, bool defaultValue);
 
 /**
- * @brief Sets the value of a property to a boolean.
+ * @brief Set the value of a property to a boolean.
  *
- * @param properties The property set to modify.
- * @param key The key of the property to set.
- * @param val The boolean value to set the property to.
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] val The boolean value to set the property to.
  */
 void celix_properties_setBool(celix_properties_t* properties, const char* key, bool val);
 
 /**
- * @brief Sets the value of a property to a double.
+ * @brief Set the value of a property to a double.
  *
- * @param properties The property set to modify.
- * @param key The key of the property to set.
- * @param val The double value to set the property to.
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] val The double value to set the property to.
  */
 void celix_properties_setDouble(celix_properties_t* properties, const char* key, double val);
 
 /**
- * @brief Gets the value of a property as a double.
+ * @brief Get the value of a property as a double.
  *
- * @param properties The property set to search.
- * @param key The key of the property to get.
- * @param defaultValue The value to return if the property is not set, the value is not a double,
+ * @param[in] properties The property set to search.
+ * @param[in] key The key of the property to get.
+ * @param[in] defaultValue The value to return if the property is not set, the value is not a double,
  *                     or if the value cannot be converted to a double.
  * @return The value of the property as a double, or the default value if the property is not set, the value is not
  *         a double, or if the value cannot be converted to a double. If the value is a string, it will be converted
@@ -284,7 +286,7 @@ void celix_properties_setDouble(celix_properties_t* properties, const char* key,
 double celix_properties_getAsDouble(const celix_properties_t* properties, const char* key, double defaultValue);
 
 /**
- * @brief Sets the value of a property as a Celix version.
+ * @brief Set the value of a property as a Celix version.
  *
  * This function will make a copy of the provided celix_version_t object and store it in the property set.
  *
@@ -295,7 +297,7 @@ double celix_properties_getAsDouble(const celix_properties_t* properties, const 
 void celix_properties_setVersion(celix_properties_t* properties, const char* key, const celix_version_t* version);
 
 /**
- * @brief Sets the value of a property as a Celix version.
+ * @brief Set the value of a property as a Celix version.
  *
  * This function will store a reference to the provided celix_version_t object in the property set and takes
  * ownership of the provided version.
@@ -309,7 +311,7 @@ void celix_properties_setVersionWithoutCopy(celix_properties_t* properties, cons
 
 
 /**
- * @brief Gets the value of a property as a Celix version.
+ * @brief Get the value of a property as a Celix version.
  *
  * This function does not convert a string property value to a Celix version automatically.
  *
@@ -325,15 +327,15 @@ const celix_version_t* celix_properties_getVersion(
         const celix_version_t* defaultValue);
 
 /**
- * @brief Gets the number of properties in a property set.
+ * @brief Get the number of properties in a property set.
  *
- * @param properties The property set to get the size of.
+ * @param[in] properties The property set to get the size of.
  * @return The number of properties in the property set.
  */
 int celix_properties_size(const celix_properties_t* properties);
 
 /**
- * @brief Constructs an iterator pointing to the first entry in the properties object.
+ * @brief Construct an iterator pointing to the first entry in the properties object.
  *
  * @param[in] properties The properties object to iterate over.
  * @return The iterator pointing to the first entry in the properties object.
@@ -341,14 +343,25 @@ int celix_properties_size(const celix_properties_t* properties);
 celix_properties_iterator_t celix_properties_begin(const celix_properties_t* properties);
 
 /**
- * @brief Advances the iterator to the next entry.
+ * @brief Construct an iterator pointing to the past-the-end entry in the properties object.
+ *
+ * This iterator is used to mark the end of the properties object and is not associated with any element in the
+ * properties object.
+ *
+ * @param[in] properties The properties object to iterate over.
+ * @return The iterator pointing to the past-the-end entry in the properties object.
+ */
+celix_properties_iterator_t celix_properties_end(const celix_properties_t* properties);
+
+/**
+ * @brief Advance the iterator to the next entry.
  *
  * @param[in, out] iter The iterator.
  */
 void celix_propertiesIterator_next(celix_properties_iterator_t* iter);
 
 /**
- * @brief Determines whether the iterator is pointing to an end position.
+ * @brief Determine whether the iterator is pointing to an end position.
  *
  * An iterator is at an end position if it has no more entries to visit.
  *
@@ -358,7 +371,7 @@ void celix_propertiesIterator_next(celix_properties_iterator_t* iter);
 bool celix_propertiesIterator_isEnd(const celix_properties_iterator_t* iter);
 
 /**
- * @brief Gets the property set being iterated over.
+ * @brief Get the property set being iterated over.
  *
  * @param[in] iter The iterator to get the property set from.
  * @return The property set being iterated over.
@@ -366,7 +379,7 @@ bool celix_propertiesIterator_isEnd(const celix_properties_iterator_t* iter);
 celix_properties_t* celix_propertiesIterator_properties(const celix_properties_iterator_t *iter);
 
 /**
- * @brief Determines whether two iterators are equal.
+ * @brief Determine whether two iterators are equal.
  *
  * @param[in] a The first iterator to compare.
  * @param[in] b The second iterator to compare.
@@ -375,14 +388,14 @@ celix_properties_t* celix_propertiesIterator_properties(const celix_properties_i
 bool celix_propertiesIterator_equals(const celix_properties_iterator_t* a, const celix_properties_iterator_t* b);
 
 /**
- * @brief Iterates over the entries in the specified celix_properties_t object.
+ * @brief Iterate over the entries in the specified celix_properties_t object.
  *
  * This macro allows you to easily iterate over the entries in a celix_properties_t object.
  * The loop variable `iterName` will be of type celix_properties_iterator_t and will contain the current
  * entry during each iteration.
  *
- * @param map The properties object to iterate over.
- * @param iterName The name of the iterator variable to use in the loop.
+ * @param[in] map The properties object to iterate over.
+ * @param[in] iterName The name of the iterator variable to use in the loop.
  *
  * Example usage:
  * @code{.c}

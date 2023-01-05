@@ -26,6 +26,7 @@
 
 #include "celix_properties.h"
 #include "celix_utils.h"
+#include "celix/Version.h"
 
 namespace celix {
 
@@ -36,6 +37,11 @@ namespace celix {
     public:
         explicit PropertiesIterator(const celix_properties_t* props) {
             iter = celix_properties_begin(props);
+            setFields();
+        }
+
+        explicit PropertiesIterator(celix_properties_iterator_t _iter) {
+            iter = std::move(_iter);
             setFields();
         }
 
@@ -64,18 +70,13 @@ namespace celix {
             setFields();
         }
 
-        void moveToEnd() {
-            first = {};
-            second = {};
-            end = true;
-        }
-
         std::string first{};
         std::string second{};
     private:
         void setFields() {
             if (celix_propertiesIterator_isEnd(&iter)) {
-                moveToEnd();
+                first = {};
+                second = {};
             } else {
                 first = iter.entry.key;
                 second = iter.entry.value;
@@ -96,6 +97,19 @@ namespace celix {
     class Properties {
     public:
         using const_iterator = PropertiesIterator;
+
+        /**
+         * @brief Enum representing the possible types of a property value.
+         */
+        enum class ValueType {
+            Unset,    /**< Property value is not set. */
+            String,   /**< Property value is a string. */
+            Long,     /**< Property value is a long integer. */
+            Double,   /**< Property value is a double. */
+            Bool,     /**< Property value is a boolean. */
+            Version   /**< Property value is a Celix version. */
+        };
+
 
         class ValueRef {
         public:
@@ -138,8 +152,6 @@ namespace celix {
                     return celix_properties_get(props.get(), charKey, nullptr);
                 }
             }
-
-            //TODO get typed value
 
             operator std::string() const {
                 auto *cstr = getValue();
@@ -240,9 +252,7 @@ namespace celix {
          * @brief end iterator
          */
         [[nodiscard]] const_iterator end() const noexcept {
-            auto iter = PropertiesIterator{cProps.get()};
-            iter.moveToEnd();
-            return iter;
+            return PropertiesIterator{celix_properties_end(cProps.get())};
         }
 
         /**
@@ -256,9 +266,7 @@ namespace celix {
          * @brief constant end iterator
          */
         [[nodiscard]] const_iterator cend() const noexcept {
-            auto iter = PropertiesIterator{cProps.get()};
-            iter.moveToEnd();
-            return iter;
+            return PropertiesIterator{celix_properties_end(cProps.get())};
         }
 
 #if __cplusplus >= 201703L //C++17 or higher
@@ -271,32 +279,85 @@ namespace celix {
         }
 
         /**
-         * @brief Get the value as long for a property key or return the defaultValue if the key does not exists.
+         * @brief Get the value of the property with key as a long.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set or if the value cannot be converted
+         *                         to a long.
+         * @return The long value of the property if it exists and can be converted, or the default value otherwise.
          */
         [[nodiscard]] long getAsLong(std::string_view key, long defaultValue) const {
             return celix_properties_getAsLong(cProps.get(), key.data(), defaultValue);
         }
 
         /**
-         * @brief Get the value as double for a property key or return the defaultValue if the key does not exists.
+         * @brief Get the value of the property with key as a double.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set or if the value cannot be converted
+         *                         to a double.
+         * @return The double value of the property if it exists and can be converted, or the default value otherwise.
          */
         [[nodiscard]] double getAsDouble(std::string_view key, double defaultValue) const {
             return celix_properties_getAsDouble(cProps.get(), key.data(), defaultValue);
         }
 
         /**
-         * @brief Get the value as bool for a property key or return the defaultValue if the key does not exists.
+         * @brief Get the value of the property with key as a boolean.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set or if the value cannot be converted
+         *                         to a boolean.
+         * @return The boolean value of the property if it exists and can be converted, or the default value otherwise.
          */
         [[nodiscard]] bool getAsBool(std::string_view key, bool defaultValue) const {
             return celix_properties_getAsBool(cProps.get(), key.data(), defaultValue);
         }
 
-        //TODO getType
-
-        //TODO getAsVersion
+        /**
+         * @brief Get the value of the property with key as a Celix version.
+         *
+         * Note that this function does not automatically convert a string property value to a Celix version.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set or if the value is not a Celix
+         *                         version.
+         * @return The value of the property if it is a Celix version, or the default value if the property is not set
+         *         or the value is not a Celix version.
+         */
+         //TODO test
+        [[nodiscard]] celix::Version getVersion(std::string_view key, celix::Version defaultValue = {}) {
+            auto* cVersion = celix_properties_getVersion(cProps.get(), key.data(), nullptr);
+            if (cVersion) {
+                return celix::Version{
+                    celix_version_getMajor(cVersion),
+                    celix_version_getMinor(cVersion),
+                    celix_version_getMicro(cVersion),
+                    celix_version_getQualifier(cVersion)};
+            }
+            return defaultValue;
+        }
 
         /**
-         * @brief Sets a T&& property. Will use (std::) to_string to convert the value to string.
+         * @brief Get the type of the property with key.
+         *
+         * @param[in] key The key of the property to get the type for.
+         * @return The type of the property with the given key, or ValueType::Unset if the property
+         *         does not exist.
+         */
+         //TODO test
+        [[nodiscard]] ValueType getType(std::string_view key) {
+            return getAndConvertType(cProps, key.data());
+        }
+
+        /**
+         * @brief Set the value of a property.
+         *
+         * @tparam T The type of the value to set. This can be one of: bool, std::string_view, a type that is
+         *           convertible to std::string_view, bool, long, double, celix::Version, or celix_version_t*.
+         * @param[im] key The key of the property to set.
+         * @param[in] value The value to set. If the type of the value is not one of the above types, it will be
+         *            converted to a string using std::to_string before being set.
          */
         template<typename T>
         void set(std::string_view key, T&& value) {
@@ -307,8 +368,17 @@ namespace celix {
             } else if constexpr (std::is_convertible_v<T, std::string_view>) {
                 std::string_view view{value};
                 celix_properties_set(cProps.get(), key.data(), view.data());
+            } else if constexpr (std::is_same_v<std::decay_t<T>, bool>) {
+                celix_properties_setBool(cProps.get(), key.data(), value);
+            } else if constexpr (std::is_convertible_v<std::decay_t<T>, long>) {
+                celix_properties_setLong(cProps.get(), key.data(), value);
+            } else if constexpr (std::is_convertible_v<std::decay_t<T>, double>) {
+                celix_properties_setDouble(cProps.get(), key.data(), value);
+            } else if constexpr (std::is_same_v<std::decay_t<T>, celix::Version>) {
+                celix_properties_setVersion(cProps.get(), key.data(), value.getCVersion());
+            } else if constexpr (std::is_same_v<T, celix_version_t*>) {
+                celix_properties_setVersion(cProps.get(), key.data(), value);
             } else {
-                //TODO spit up to use setLong, setBool, setDouble and setVersion
                 using namespace std;
                 celix_properties_set(cProps.get(), key.data(), to_string(value).c_str());
             }
@@ -323,68 +393,181 @@ namespace celix {
         }
 
         /**
-         * @brief Get the value as long for a property key or return the defaultValue if the key does not exists.
+         * @brief Get the value of the property with key as a long.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set or if the value cannot be converted
+         *                         to a long.
+         * @return The long value of the property if it exists and can be converted, or the default value otherwise.
          */
         [[nodiscard]] long getAsLong(const std::string& key, long defaultValue) const {
             return celix_properties_getAsLong(cProps.get(), key.c_str(), defaultValue);
         }
 
         /**
-         * @brief Get the value as double for a property key or return the defaultValue if the key does not exists.
+         * @brief Get the value of the property with key as a double.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set or if the value cannot be converted
+         *                         to a double.
+         * @return The double value of the property if it exists and can be converted, or the default value otherwise.
          */
         [[nodiscard]] double getAsDouble(const std::string &key, double defaultValue) const {
             return celix_properties_getAsDouble(cProps.get(), key.c_str(), defaultValue);
         }
 
         /**
-         * @brief Get the value as bool for a property key or return the defaultValue if the key does not exists.
+         * @brief Get the value of the property with key as a boolean.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set or if the value cannot be converted
+         *                         to a boolean.
+         * @return The boolean value of the property if it exists and can be converted, or the default value otherwise.
          */
         [[nodiscard]] bool getAsBool(const std::string &key, bool defaultValue) const {
             return celix_properties_getAsBool(cProps.get(), key.c_str(), defaultValue);
         }
+        
+        /**
+         * @brief Get the value of the property with key as a Celix version.
+         *
+         * Note that this function does not automatically convert a string property value to a Celix version.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set or if the value is not a Celix
+         *                         version.
+         * @return The value of the property if it is a Celix version, or the default value if the property is not set
+         *         or the value is not a Celix version.
+         */
+        [[nodiscard]] celix::Version getVersion(const std::string& key, celix::Version defaultValue = {}) {
+            auto* cVersion = celix_properties_getVersion(cProps.get(), key.data(), nullptr);
+            if (cVersion) {
+                return celix::Version{
+                    celix_version_getMajor(cVersion),
+                    celix_version_getMinor(cVersion),
+                    celix_version_getMicro(cVersion),
+                    celix_version_getQualifier(cVersion)};
+            }
+            return defaultValue;
+        }
 
         /**
-         * @brief Sets a property
+         * @brief Get the type of the property with key.
+         *
+         * @param[in] key The key of the property to get the type for.
+         * @return The type of the property with the given key, or ValueType::Unset if the property
+         *         does not exist.
+         */
+        [[nodiscard]] ValueType getType(const std::string& key) {
+            return getAndConvertType(cProps, key.data());
+        }
+
+        /**
+         * @brief Set the value of a property.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] value The value to set the property to.
          */
         void set(const std::string& key, const std::string& value) {
-            celix_properties_set(cProps.get(), key.c_str(), value.c_str());
+            celix_properties_set(cProps.get(), key.data(), value.c_str());
         }
 
         /**
-         * @brief Sets a bool property
+         * @brief Set the value of a property to a boolean.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] value The boolean value to set the property to.
          */
         void set(const std::string& key, bool value) {
-            celix_properties_setBool(cProps.get(), key.c_str(), value);
+            celix_properties_setBool(cProps.get(), key.data(), value);
         }
 
         /**
-         * @brief Sets a const char* property
+         * @brief Set the value of a property.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] value The value to set the property to.
          */
         void set(const std::string& key, const char* value) {
-            celix_properties_set(cProps.get(), key.c_str(), value);
+            celix_properties_set(cProps.get(), key.data(), value);
         }
 
         /**
-         * @brief Sets a T property. Will use (std::) to_string to convert the value to string.
+         * @brief Sets a property with a value of type T.
+         *
+         * This function will use the std::to_string function to convert the value of type T to a string,
+         * which will be used as the value for the property.
+         *
+         * @tparam T The type of the value to set.
+         * @param[in] key The key of the property to set.
+         * @param[in] value The value to set for the property.
          */
         template<typename T>
         void set(const std::string& key, T&& value) {
             using namespace std;
-            celix_properties_set(cProps.get(), key.c_str(), to_string(value).c_str());
+            celix_properties_set(cProps.get(), key.data()(), to_string(value).c_str());
         }
 
-        //TODO set long, double, boolean and version
+        /**
+         * @brief Sets a bool property value for a given key.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] value The value to set for the property.
+         */
+        void set(const std::string& key, bool value) {
+            celix_properties_setBool(cProps.get(), key.data(), value);
+        }
+
+        /**
+         * @brief Sets a long property value for a given key.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] value The value to set for the property.
+         */
+        void set(const std::string& key, long value) {
+            celix_properties_setLong(cProps.get(), key.data(), value);
+        }
+
+        /**
+         * @brief Sets a double property value for a given key.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] value The value to set for the property.
+         */
+        void set(const std::string& key, double value) {
+            celix_properties_setDouble(cProps.get(), key.data(), value);
+        }
+
+        /**
+         * @brief Sets a celix::Version property value for a given key.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] value The value to set for the property.
+         */
+        void set(const std::string& key, const celix::Version& value) {
+            celix_properties_setVersion(cProps.get(), key.data(), value.getCVersion());
+        }
+
+        /**
+         * @brief Sets a celix_version_t* property value for a given key.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] value The value to set for the property.
+         */
+        void set(const std::string& key, const celix_version_t* value) {
+            celix_properties_setVersion(cProps.get(), key.data(), value);
+        }
 #endif
 
         /**
-         * @brief Returns the nr of properties.
+         * @brief Returns the number of properties in the Properties object.
          */
         [[nodiscard]] std::size_t size() const {
             return celix_properties_size(cProps.get());
         }
 
         /**
-         * @brief Converts the properties a (new) std::string, std::string map.
+         * @brief Convert the properties a (new) std::string, std::string map.
          */
         [[nodiscard]] std::map<std::string, std::string> convertToMap() const {
             std::map<std::string, std::string> result{};
@@ -395,7 +578,7 @@ namespace celix {
         }
 
         /**
-         * @brief Converts the properties a (new) std::string, std::string unordered map.
+         * @brief Convert the properties a (new) std::string, std::string unordered map.
          */
         [[nodiscard]] std::unordered_map<std::string, std::string> convertToUnorderedMap() const {
             std::unordered_map<std::string, std::string> result{};
@@ -427,6 +610,26 @@ namespace celix {
 
     private:
         explicit Properties(celix_properties_t* props) : cProps{props, [](celix_properties_t*) { /*nop*/ }} {}
+
+        static celix::Properties::ValueType getAndConvertType(
+                const std::shared_ptr<celix_properties_t>& cProperties,
+                const char* key) {
+            auto cType = celix_properties_getType(cProperties.get(), key);
+            switch (cType) {
+                case CELIX_PROPERTIES_VALUE_TYPE_STRING:
+                    return ValueType::String;
+                case CELIX_PROPERTIES_VALUE_TYPE_LONG:
+                    return ValueType::Long;
+                case CELIX_PROPERTIES_VALUE_TYPE_DOUBLE:
+                    return ValueType::Double;
+                case CELIX_PROPERTIES_VALUE_TYPE_BOOL:
+                    return ValueType::Bool;
+                case CELIX_PROPERTIES_VALUE_TYPE_VERSION:
+                    return ValueType::Version;
+                default: /*unset*/
+                    return ValueType::Unset;
+            }
+        }
 
         std::shared_ptr<celix_properties_t> cProps;
     };

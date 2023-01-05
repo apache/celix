@@ -261,24 +261,33 @@ bool celix_longHashMap_remove(celix_long_hash_map_t* map, long key);
 void celix_longHashMap_clear(celix_long_hash_map_t* map);
 
 /**
- * @brief Returns an iterator pointing to the first element in the map.
+ * @brief Get an iterator pointing to the first element in the map.
  *
- * @param map The map to get the iterator for.
+ * @param[in] map The map to get the iterator for.
  * @return An iterator pointing to the first element in the map.
  */
 celix_long_hash_map_iterator_t celix_longHashMap_begin(const celix_long_hash_map_t* map);
 
 /**
- * @brief Check if the iterator is the end of the hash map.
+ * @brief Get an iterator pointing to the element following the last element in the map.
  *
- * @note the end iterator should not be used to retrieve a key of value.
+ * @param[in] map The map to get the iterator for.
+ * @return An iterator pointing to the element following the last element in the map.
+ */
+celix_long_hash_map_iterator_t celix_longHashMap_end(const celix_long_hash_map_t* map);
+
+/**
  *
- * @return true if the iterator is the end.
+ * @brief Determine if the iterator points to the element following the last element in the map.
+ *
+ * @param[in] iter The iterator to check.
+ * @return true if the iterator points to the element following the last element in the map, false otherwise.
  */
 bool celix_longHashMapIterator_isEnd(const celix_long_hash_map_iterator_t* iter);
 
 /**
- * @brief Moves the provided iterator to the next entry in the hash map.
+ * @brief Advance the iterator to the next element in the map.
+ * @param[in] iter The iterator to advance.
  */
 void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter);
 

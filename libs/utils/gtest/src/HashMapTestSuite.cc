@@ -546,3 +546,31 @@ TEST_F(HashMapTestSuite, IterateWithRemoveTest) {
     EXPECT_TRUE(celix_longHashMapIterator_isEnd(&iter2));
     celix_longHashMap_destroy(lMap);
 }
+
+TEST_F(HashMapTestSuite, IterateEndTest) {
+    auto* sMap1 = createStringHashMap(0);
+    auto* sMap2 = createStringHashMap(6);
+    auto* lMap1 = createLongHashMap(0);
+    auto* lMap2 = createLongHashMap(6);
+
+    auto sIter1 = celix_stringHashMap_end(sMap1);
+    auto sIter2 = celix_stringHashMap_end(sMap2);
+    auto lIter1 = celix_longHashMap_end(lMap1);
+    auto lIter2 = celix_longHashMap_end(lMap2);
+
+    EXPECT_EQ(sIter1.index, 0);
+    EXPECT_EQ(sIter2.index, 6);
+    EXPECT_EQ(lIter1.index, 0);
+    EXPECT_EQ(lIter2.index, 6);
+    EXPECT_TRUE(celix_stringHashMapIterator_isEnd(&sIter1));
+    EXPECT_TRUE(celix_stringHashMapIterator_isEnd(&sIter2));
+    EXPECT_TRUE(celix_longHashMapIterator_isEnd(&lIter1));
+    EXPECT_TRUE(celix_longHashMapIterator_isEnd(&lIter2));
+
+    //TODO loop and test with index.
+
+    celix_stringHashMap_destroy(sMap1);
+    celix_stringHashMap_destroy(sMap2);
+    celix_longHashMap_destroy(lMap1);
+    celix_longHashMap_destroy(lMap2);
+}

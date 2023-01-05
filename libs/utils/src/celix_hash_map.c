@@ -588,6 +588,22 @@ celix_long_hash_map_iterator_t celix_longHashMap_begin(const celix_long_hash_map
     return iter;
 }
 
+celix_string_hash_map_iterator_t celix_stringHashMap_end(const celix_string_hash_map_t* map) {
+    celix_string_hash_map_iterator_t iter;
+    memset(&iter, 0, sizeof(iter));
+    iter.index = map->genericMap.size;
+    iter._internal[0] = (void*)&map->genericMap;
+    return iter;
+}
+
+celix_long_hash_map_iterator_t celix_longHashMap_end(const celix_long_hash_map_t* map) {
+    celix_long_hash_map_iterator_t iter;
+    memset(&iter, 0, sizeof(iter));
+    iter.index = map->genericMap.size;
+    iter._internal[0] = (void*)&map->genericMap;
+    return iter;
+}
+
 bool celix_stringHashMapIterator_isEnd(const celix_string_hash_map_iterator_t* iter) {
     return iter->_internal[1] == NULL; //check if entry is NULL
 }
@@ -600,9 +616,9 @@ void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter) {
     const celix_hash_map_t* map = iter->_internal[0];
     celix_hash_map_entry_t *entry = iter->_internal[1];
     entry = celix_hashMap_nextEntry(map, entry);
+    iter->index += 1;
     if (entry != NULL) {
         iter->_internal[1] = entry;
-        iter->index += 1;
         iter->key = entry->key.strKey;
         iter->value = entry->value;
     } else {

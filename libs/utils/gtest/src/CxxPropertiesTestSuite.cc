@@ -105,6 +105,35 @@ TEST_F(CxxPropertiesTestSuite, testWrap) {
     celix_properties_destroy(props);
 }
 
+TEST_F(CxxPropertiesTestSuite, getType) {
+    celix::Properties props{};
+
+    props.set("bool", true);
+    props.set("long1", 1l);
+    props.set("long2", (int)1); //should lead to long;
+    props.set("long3", (unsigned int)1); //should lead to long;
+    props.set("long4", (short)1); //should lead to long;
+    props.set("long5", (unsigned short)1); //should lead to long;
+    props.set("long6", (char)1); //should lead to long;
+    props.set("long7", (unsigned char)1); //should lead to long;
+    props.set("double1", 1.0);
+    props.set("double2", 1.0f); //set float should lead to double
+    //TODO version
+
+    EXPECT_EQ(props.getType("bool"), celix::Properties::ValueType::Bool);
+    EXPECT_EQ(props.getType("long1"), celix::Properties::ValueType::Long);
+    EXPECT_EQ(props.getType("long2"), celix::Properties::ValueType::Long);
+    EXPECT_EQ(props.getType("long3"), celix::Properties::ValueType::Long);
+    EXPECT_EQ(props.getType("long4"), celix::Properties::ValueType::Long);
+    EXPECT_EQ(props.getType("long5"), celix::Properties::ValueType::Long);
+    EXPECT_EQ(props.getType("long6"), celix::Properties::ValueType::Long);
+    EXPECT_EQ(props.getType("long7"), celix::Properties::ValueType::Long);
+    EXPECT_EQ(props.getType("double1"), celix::Properties::ValueType::Double);
+    EXPECT_EQ(props.getType("double2"), celix::Properties::ValueType::Double);
+
+}
+
+
 #if __cplusplus >= 201703L //C++17 or higher
 TEST_F(CxxPropertiesTestSuite, testStringView) {
     constexpr std::string_view stringViewKey = "KEY1";

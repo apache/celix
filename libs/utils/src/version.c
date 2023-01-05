@@ -27,6 +27,8 @@
 #include "celix_errno.h"
 #include "version_private.h"
 
+static const char* const CELIX_VERSION_EMPTY_QUALIFIER = "";
+
 celix_status_t version_createVersion(int major, int minor, int micro, const char * qualifier, version_pt *version) {
     *version = celix_version_createVersion(major, minor, micro, qualifier);
     return *version == NULL ? CELIX_ILLEGAL_ARGUMENT : CELIX_SUCCESS;
@@ -107,7 +109,8 @@ celix_version_t* celix_version_create(int major, int minor, int micro, const cha
     if (qualifier == NULL) {
         qualifier = "";
     }
-    for (int i = 0; i < strlen(qualifier); i++) {
+    size_t qualifierLen = strlen(qualifier);
+    for (int i = 0; i < qualifierLen; i++) {
         char ch = qualifier[i];
         if (('A' <= ch) && (ch <= 'Z')) {
             continue;
@@ -125,12 +128,12 @@ celix_version_t* celix_version_create(int major, int minor, int micro, const cha
         return NULL;
     }
 
-    celix_version_t* version = calloc(1, sizeof(*version));
+    celix_version_t* version = malloc(sizeof(*version));
 
     version->major = major;
     version->minor = minor;
     version->micro = micro;
-    version->qualifier = celix_utils_strdup(qualifier);
+    version->qualifier = qualifierLen == 0 ? (char*)CELIX_VERSION_EMPTY_QUALIFIER : celix_utils_strdup(qualifier);
 
 
     return version;
@@ -138,7 +141,9 @@ celix_version_t* celix_version_create(int major, int minor, int micro, const cha
 
 void celix_version_destroy(celix_version_t* version) {
     if (version != NULL) {
-        free(version->qualifier);
+        if (version->qualifier != CELIX_VERSION_EMPTY_QUALIFIER) {
+            free(version->qualifier);
+        }
         free(version);
     }
 }

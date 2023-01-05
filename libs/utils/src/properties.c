@@ -342,6 +342,15 @@ celix_properties_t* celix_properties_create(void) {
 
 void celix_properties_destroy(celix_properties_t *props) {
     if (props != NULL) {
+        //TODO measure print nr of entries and total size of the string keys and values
+//        fprintf(stdout, "Properties size; %d", celix_properties_size(props));
+//        size_t size = 0;
+//        CELIX_PROPERTIES_ITERATE(props, iter) {
+//            size += strlen(iter.entry.key) + 1;
+//            size += strlen(iter.entry.value) + 1;
+//        }
+//        fprintf(stdout, "Properties string size: %zu", size);
+
         celix_stringHashMap_destroy(props->map);
         free(props);
     }
@@ -448,12 +457,14 @@ static void parseLine(const char* line, celix_properties_t *props) {
         //printf("putting 'key'/'value' '%s'/'%s' in properties\n", utils_stringTrim(key), utils_stringTrim(value));
         celix_utils_trimInPlace(key);
         celix_utils_trimInPlace(value);
-        celix_properties_setWithoutCopy(props, key, value);
+//        celix_properties_setWithoutCopy(props, key, value);
+        celix_properties_set(props, key, value);
     } else {
-        free(key);
-        free(value);
+//        free(key);
+//        free(value);
     }
-
+    free(key);
+    free(value);
 
 }
 
@@ -782,6 +793,18 @@ celix_properties_iterator_t celix_properties_begin(const celix_properties_t* pro
     }
 
     memset(&iter._data, 0, sizeof(iter._data));
+    memcpy(iter._data, &internalIter, sizeof(internalIter));
+    return iter;
+}
+
+celix_properties_iterator_t celix_properties_end(const celix_properties_t* properties) {
+    celix_properties_iterator_internal_t internalIter;
+    internalIter.mapIter = celix_stringHashMap_end(properties->map);
+    internalIter.props = properties;
+
+    celix_properties_iterator_t iter;
+    memset(&iter, 0, sizeof(iter));
+    iter.index = (int)internalIter.mapIter.index; //TODO make inter.index size_t
     memcpy(iter._data, &internalIter, sizeof(internalIter));
     return iter;
 }
