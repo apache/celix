@@ -1038,7 +1038,7 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
             if (message->metadata.metadata) {
                 handle->protocol->encodeMetadata(handle->protocol->handle, message, &entry->writeMetaBuffer, &entry->writeMetaBufferSize, &metadataSize);
                 // When maxMsgSize is smaller then meta data is disabled
-                if (metadataSize + payloadSize > entry->maxMsgSize) {
+               if (metadataSize > entry->maxMsgSize) {
                     metadataSize = 0;
                 }
             }
