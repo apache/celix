@@ -167,7 +167,7 @@ typedef struct pubsub_protocol_service {
     celix_status_t (*encodeHeader)(void *handle, pubsub_protocol_message_t *message, void **bufferInOut, size_t *bufferLengthInOut);
 
     /**
-     * @brief Encode the payload using the supplied message.header. Note, this decode is for protocol specific tasks,
+     * @brief Encode the payload using the supplied message.header. Note, this encoding is for protocol specific tasks,
      * and does not perform the needed message serialization. See the serialization service for that.
      * In most cases this will simply use the known data and length from message.payload.
      *
