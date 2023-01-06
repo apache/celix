@@ -102,20 +102,18 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
 		return CELIX_ILLEGAL_STATE;
 	}
 
-	size_t len = 11 + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + strlen(OSGI_RSA_ENDPOINT_FRAMEWORK_UUID) + strlen(uuid);
-	char *scope = malloc(len + 1);
-	if (!scope) {
-		return CELIX_ENOMEM;
-	}
+    char* scope = NULL;
+    int rc = asprintf(&scope, "(&(%s=*)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+    status = rc < 0 ? CELIX_ENOMEM : CELIX_SUCCESS;
 
-	sprintf(scope, "(&(%s=*)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
-	scope[len] = 0;
+    celix_properties_t *props = NULL;
+    if (status == CELIX_SUCCESS) {
+        celix_logHelper_debug(activator->loghelper, "using scope %s.", scope);
 
-    celix_logHelper_debug(activator->loghelper, "using scope %s.", scope);
-
-	celix_properties_t *props = celix_properties_create();
-	celix_properties_set(props, "DISCOVERY", "true");
-	celix_properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
+	    props = celix_properties_create();
+	    celix_properties_set(props, "DISCOVERY", "true");
+	    celix_properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
+    }
 
 	if (status == CELIX_SUCCESS) {
 		status = serviceTracker_open(activator->endpointListenerTracker);
@@ -139,7 +137,10 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
 				activator->endpointListener = endpointListener;
 			}
 		}
-	}
+	} else {
+        celix_properties_destroy(props);
+    }
+
 	// We can release the scope, as celix_properties_set makes a copy of the key & value...
 	free(scope);
 

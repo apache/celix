@@ -87,7 +87,8 @@ celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message
     size_t headerSize = 0;
     pubsubProtocol_getHeaderSize(handle, &headerSize);
 
-    if (*outBuffer == NULL) {
+    if (*outBuffer == NULL || headerSize != *outLength) {
+        free(*outBuffer);
         *outBuffer = calloc(1, headerSize);
         *outLength = headerSize;
     }
@@ -113,12 +114,11 @@ celix_status_t pubsubProtocol_v1_encodePayload(void *handle __attribute__((unuse
     return pubsubProtocol_encodePayload(message, outBuffer, outLength);
 }
 
-celix_status_t pubsubProtocol_v1_encodeMetadata(void *handle __attribute__((unused)), pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
-    return pubsubProtocol_encodeMetadata(message, outBuffer, outLength);
+celix_status_t pubsubProtocol_v1_encodeMetadata(void *handle __attribute__((unused)), pubsub_protocol_message_t *message, void **bufferInOut, size_t *bufferLengthInOut, size_t *bufferContentLengthOut) {
+    return pubsubProtocol_encodeMetadata(message, (char**)bufferInOut, bufferLengthInOut, bufferContentLengthOut);
 }
 
 celix_status_t pubsubProtocol_encodeFooter(void *handle __attribute__((unused)), pubsub_protocol_message_t *message __attribute__((unused)), void **outBuffer, size_t *outLength) {
-    *outBuffer = NULL;
     return pubsubProtocol_getFooterSize(handle,  outLength);
 }
 

@@ -15,14 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set(SOURCES
-        src/main.cc
-        src/PS_WP_common_tests.cc
-    )
-add_executable(celix_pswp_common_tests ${SOURCES})
-#target_include_directories(celix_cxx_pswp_tests SYSTEM PRIVATE gtest)
+add_executable(celix_pswp_common_tests src/PS_WP_common_tests.cc)
 target_include_directories(celix_pswp_common_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
-target_link_libraries(celix_pswp_common_tests PRIVATE celix_pubsub_protocol_lib GTest::gtest Celix::pubsub_spi)
+target_link_libraries(celix_pswp_common_tests PRIVATE celix_pubsub_protocol_lib GTest::gtest Celix::pubsub_spi GTest::gtest_main ${CMAKE_DL_LIBS})
+if (NOT ENABLE_ADDRESS_SANITIZER)
+    target_compile_definitions(celix_pswp_common_tests PRIVATE ENABLE_MALLOC_RETURN_NULL_TESTS)
+endif ()
 
 add_test(NAME celix_pswp_common_tests COMMAND celix_pswp_common_tests)
 setup_target_for_coverage(celix_pswp_common_tests SCAN_DIR ..)

@@ -598,11 +598,11 @@ namespace celix {
         }
 
         /**
-         * @brief Logs a message to the Celix framework logger using the TRACE log level.
+         * @brief Log a message to the Celix framework logger using the TRACE log level.
          *
          * @note Only supports printf style call (so use c_str() instead of std::string)
          */
-        void logTrace(const char* format...) {
+        void logTrace(const char* format...) __attribute__((format(printf,2,3))) {
             va_list args;
             va_start(args, format);
             celix_bundleContext_vlog(cCtx.get(), CELIX_LOG_LEVEL_TRACE, format, args);
@@ -610,11 +610,11 @@ namespace celix {
         }
 
         /**
-         * @brief Logs a message to the Celix framework logger using the DEBUG log level.
+         * @brief Log a message to the Celix framework logger using the DEBUG log level.
          *
          * @note Only supports printf style call (so use c_str() instead of std::string)
          */
-        void logDebug(const char* format...) {
+        void logDebug(const char* format...) __attribute__((format(printf,2,3))) {
             va_list args;
             va_start(args, format);
             celix_bundleContext_vlog(cCtx.get(), CELIX_LOG_LEVEL_DEBUG, format, args);
@@ -622,11 +622,11 @@ namespace celix {
         }
 
         /**
-         * @brief Logs a message to the Celix framework logger using the INFO log level.
+         * @brief Log a message to the Celix framework logger using the INFO log level.
          *
          * @note Only supports printf style call (so use c_str() instead of std::string)
          */
-        void logInfo(const char* format...) {
+        void logInfo(const char* format...) __attribute__((format(printf,2,3))) {
             va_list args;
             va_start(args, format);
             celix_bundleContext_vlog(cCtx.get(), CELIX_LOG_LEVEL_INFO, format, args);
@@ -634,11 +634,11 @@ namespace celix {
         }
 
         /**
-         * @brief Logs a message to the Celix framework logger using the WARNING log level.
+         * @brief Log a message to the Celix framework logger using the WARNING log level.
          *
          * @note Only supports printf style call (so use c_str() instead of std::string)
          */
-        void logWarn(const char* format...) {
+        void logWarn(const char* format...) __attribute__((format(printf,2,3))) {
             va_list args;
             va_start(args, format);
             celix_bundleContext_vlog(cCtx.get(), CELIX_LOG_LEVEL_WARNING, format, args);
@@ -646,11 +646,11 @@ namespace celix {
         }
 
         /**
-         * @brief Logs a message to the Celix framework logger using the ERROR log level.
+         * @brief Log a message to the Celix framework logger using the ERROR log level.
          *
          * @note Only supports printf style call (so use c_str() instead of std::string)
          */
-        void logError(const char* format...) {
+        void logError(const char* format...) __attribute__((format(printf,2,3))) {
             va_list args;
             va_start(args, format);
             celix_bundleContext_vlog(cCtx.get(), CELIX_LOG_LEVEL_ERROR, format, args);
@@ -658,11 +658,11 @@ namespace celix {
         }
 
         /**
-         * @brief Logs a message to the Celix framework logger using the FATAL log level.
+         * @brief Log a message to the Celix framework logger using the FATAL log level.
          *
          * @note Only supports printf style call (so use c_str() instead of std::string)
          */
-        void logFatal(const char* format...) {
+        void logFatal(const char* format...) __attribute__((format(printf,2,3))) {
             va_list args;
             va_start(args, format);
             celix_bundleContext_vlog(cCtx.get(), CELIX_LOG_LEVEL_FATAL, format, args);

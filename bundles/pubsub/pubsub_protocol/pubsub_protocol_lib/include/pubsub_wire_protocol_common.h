@@ -54,9 +54,29 @@ int pubsubProtocol_writeInt(unsigned char *data, int offset, uint32_t convert, u
 int pubsubProtocol_writeLong(unsigned char *data, int offset, uint32_t convert, uint64_t val);
 
 celix_status_t pubsubProtocol_encodePayload(pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
-celix_status_t pubsubProtocol_encodeMetadata(pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
 celix_status_t pubsubProtocol_decodePayload(void *data, size_t length, pubsub_protocol_message_t *message);
 celix_status_t pubsubProtocol_decodeMetadata(void *data, size_t length, pubsub_protocol_message_t *message);
+
+/**
+ * @brief Encode metadata to bufferInOut.
+ *
+ * The metadata is encoded as a bytebuffer where the first 4 bytes is used to specify how many metadata (key,value)
+ * entries there are and then every metadata entry is encoded as a netstring key followed by a netstring value.
+ *
+ * If *bufferInOut is NULL, a new buffer will be allocated. If *bufferInOut is not NULL, the buffer is reused and the
+ * provided *bufferLengthInOut must indicate the length of the provided buffer.
+ * If a provided *bufferInOut is not large enough to fit the encoded metadata, the buffer will be reallocated.
+ *
+ * If this calls return with an error, the caller is still owner of a possible returned output buffer.
+ *
+ * @param message The message containing the metadata to encode
+ * @param bufferInOut Input/output argument for the buffer, if call is successful will contain the metadata header
+ * @param bufferLengthInOut Input/output arguments for the length of the bufferInOut argument.
+ * @param bufferContentLengthOut Output argument for the actual content size of the bufferInOut. Note that the
+ *                               bufferContentLengthOut can be smaller than the buffer length.
+ * @return CELIX_SUCCESS if encoding was successful.
+ */
+celix_status_t pubsubProtocol_encodeMetadata(pubsub_protocol_message_t* message, char** bufferInOut, size_t* bufferLengthInOut, size_t* bufferContentLengthOut);
 
 
 #ifdef __cplusplus

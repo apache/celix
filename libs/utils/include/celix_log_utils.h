@@ -31,53 +31,40 @@ extern "C" {
 #endif
 
 /**
- * Converts the celix log level enum to a const char* value.
+ * Convert a celix log level enum to a const char* value.
  */
 const char* celix_logUtils_logLevelToString(celix_log_level_e level);
 
 /**
- * Converts a const char* value to a celix log level
+ * Convert a const char* value to a celix log level
  * If the provided log level cannot be parsed or is NULL, the fallbackLogLevel is returned.
  */
 celix_log_level_e celix_logUtils_logLevelFromString(const char *level, celix_log_level_e fallbackLogLevel);
 
 /**
- * Converts a const char* value to a celix log level
+ * Convert a const char* value to a celix log level
  * If the provided log level cannot be parsed or is NULL, the fallbackLogLevel is returned and
  * if a convertedSuccessfully pointer is provided this will be set to false.
- * If converted succcessfully and the convertedSuccessfully pointer is provided. This will be set to true.
+ * If converted successfully and the convertedSuccessfully pointer is provided. This will be set to true.
  */
-celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(const char *level, celix_log_level_e fallbackLogLevel, bool *convertedSuccessfully);
+celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(
+        const char *level,
+        celix_log_level_e fallbackLogLevel,
+        bool *convertedSuccessfully);
 
 /**
- * Logs a message to stdout/stderr using the provided logName and log level.
+ * Log a message to stdout/stderr using the provided logName and log level.
  * If the provided log level is higher than info, stderr will be used.
  *
  */
-void celix_logUtils_logToStdout(const char *logName, celix_log_level_e level, const char *format, ...);
+void celix_logUtils_logToStdout(
+        const char *logName,
+        celix_log_level_e level,
+        const char *format,
+        ...) __attribute__((format(printf,3,4)));
 
 /**
- * Logs a detailed message to stdout/stderr using the provided logName and log level.
- * If the provided log level is higher than info, stderr will be used.
- *
- * The file, function and line arguments are expected to be called with the values:
- * __FILE__, __FUNCTION__ and __LINE__.
- *
- * If the argument file or function is NULL, the arguments file, function and line are not used.
- *
- */
-void celix_logUtils_logToStdoutDetails(const char *logName, celix_log_level_e level, const char* file, const char* function, int line, const char *format, ...);
-
-
-/**
- * Logs a message to stdout/stderr using the provided logName and log level.
- * If the provided log level is higher than info, stderr will be used.
- *
- */
-void celix_logUtils_vLogToStdout(const char *logName, celix_log_level_e level, const char *format, va_list formatArgs);
-
-/**
- * Logs - a detailed - messages to stdout/stderr using the provided logName and log level.
+ * Log a detailed message to stdout/stderr using the provided logName and log level.
  * If the provided log level is higher than info, stderr will be used.
  *
  * The file, function and line arguments are expected to be called with the values:
@@ -86,11 +73,48 @@ void celix_logUtils_vLogToStdout(const char *logName, celix_log_level_e level, c
  * If the argument file or function is NULL, the arguments file, function and line are not used.
  *
  */
-void celix_logUtils_vLogToStdoutDetails(const char *logName, celix_log_level_e level, const char* file, const char* function, int line, const char *format, va_list formatArgs);
+void celix_logUtils_logToStdoutDetails(
+        const char *logName,
+        celix_log_level_e level,
+        const char* file,
+        const char* function,
+        int line,
+        const char *format,
+        ...) __attribute__((format(printf,6,7)));
+
 
 /**
- * Prints a backtrace to the provided output stream.
+ * Log a message to stdout/stderr using the provided logName and log level.
+ * If the provided log level is higher than info, stderr will be used.
  *
+ */
+void celix_logUtils_vLogToStdout(
+        const char *logName,
+        celix_log_level_e level,
+        const char *format,
+        va_list formatArgs) __attribute__((format(printf,3,0)));
+
+/**
+ * Log - a detailed - messages to stdout/stderr using the provided logName and log level.
+ * If the provided log level is higher than info, stderr will be used.
+ *
+ * The file, function and line arguments are expected to be called with the values:
+ * __FILE__, __FUNCTION__ and __LINE__.
+ *
+ * If the argument file or function is NULL, the arguments file, function and line are not used.
+ *
+ */
+void celix_logUtils_vLogToStdoutDetails(
+        const char *logName,
+        celix_log_level_e level,
+        const char* file,
+        const char* function,
+        int line,
+        const char *format,
+        va_list formatArgs) __attribute__((format(printf,6,0)));
+
+/**
+ * Print a backtrace to the provided output stream.
  */
 void celix_logUtils_printBacktrace(FILE* stream);
 
