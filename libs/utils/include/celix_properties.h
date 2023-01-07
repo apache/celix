@@ -22,10 +22,17 @@
  * @brief Header file for the Celix Properties API.
  *
  * The Celix Properties API provides a means for storing and manipulating key-value pairs, called properties,
- * which can be used to store configuration data or metadata for a services, components, or framework configuration.
+ * which can be used to store configuration data or metadata for a service, component, or framework configuration.
  * Functions are provided for creating and destroying property sets, loading and storing properties from/to a file
  * or stream, and setting, getting, and unsetting individual properties. There are also functions for converting
  * property values to various types (e.g. long, bool, double) and for iterating over the properties in a set.
+ *
+ * Supported property value types include:
+ *  - string (char*)
+ *  - long
+ *  - double
+ *  - bool
+ *  - celix_version_t*
  */
 
 #include <stdio.h>
@@ -41,8 +48,7 @@ extern "C" {
 #endif
 
 /**
- * @brief celix_properties_t is a type that represents a set of key-value pairs called properties,
- * which can be used to store configuration data or metadata for a services, components or framework configuration.
+ * @brief celix_properties_t is a type that represents a set of key-value pairs called properties.
  *
  * @note Not thread safe.
  */
@@ -102,21 +108,21 @@ typedef struct celix_properties_iterator {
 } celix_properties_iterator_t;
 
 /**
- * @brief Creates a new empty property set.
+ * @brief Create a new empty property set.
  *
  * @return A new empty property set.
  */
 celix_properties_t* celix_properties_create(void);
 
 /**
- * @brief Destroys a property set, freeing all associated resources.
+ * @brief Destroy a property set, freeing all associated resources.
  *
  * @param[in] properties The property set to destroy. If properties is NULL, this function will do nothing.
  */
 void celix_properties_destroy(celix_properties_t* properties);
 
 /**
- * @brief Loads properties from a file.
+ * @brief Load properties from a file.
  *
  * @param[in] filename The name of the file to load properties from.
  * @return A property set containing the properties from the file.
@@ -126,7 +132,7 @@ celix_properties_t* celix_properties_load(const char *filename);
 
 
 /**
- * @brief Loads properties from a stream.
+ * @brief Load properties from a stream.
  *
  * @param[in,out] stream The stream to load properties from.
  * @return A property set containing the properties from the stream.
@@ -135,7 +141,7 @@ celix_properties_t* celix_properties_load(const char *filename);
 celix_properties_t* celix_properties_loadWithStream(FILE *stream);
 
 /**
- * @brief Loads properties from a string.
+ * @brief Load properties from a string.
  *
  * @param[in] input The string to load properties from.
  * @return A property set containing the properties from the string.
@@ -144,7 +150,7 @@ celix_properties_t* celix_properties_loadWithStream(FILE *stream);
 celix_properties_t* celix_properties_loadFromString(const char *input);
 
 /**
- * @brief Stores properties to a file.
+ * @brief Store properties to a file.
  *
  * @param[in] properties The property set to store.
  * @param[in] file The name of the file to store the properties to.
@@ -155,17 +161,16 @@ celix_properties_t* celix_properties_loadFromString(const char *input);
 celix_status_t celix_properties_store(celix_properties_t* properties, const char* file, const char* header);
 
 /**
- * @brief Gets the entry for a given key in a property set.
+ * @brief Get the entry for a given key in a property set.
  *
  * @param[in] properties The property set to search.
  * @param[in] key The key to search for.
- * @return The entry for the given key, or a default entry with the valueType set to CELIX_PROPERTIES_VALUE_TYPE_UNSET
- *         if the key is not found.
+ * @return The entry for the given key, or a NULL if the key is not found.
  */
-celix_properties_entry_t celix_properties_getEntry(const celix_properties_t* properties, const char* key);
+celix_properties_entry_t* celix_properties_getEntry(const celix_properties_t* properties, const char* key);
 
 /**
- * @brief Gets the value of a property.
+ * @brief Get the value of a property.
  *
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
@@ -175,7 +180,7 @@ celix_properties_entry_t celix_properties_getEntry(const celix_properties_t* pro
 const char* celix_properties_get(const celix_properties_t* properties, const char* key, const char* defaultValue);
 
 /**
- * @brief Gets the type of a property value.
+ * @brief Get the type of a property value.
  *
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get the type of.
@@ -311,7 +316,7 @@ void celix_properties_setVersionWithoutCopy(celix_properties_t* properties, cons
 
 
 /**
- * @brief Get the value of a property as a Celix version.
+ * @brief Get the Celix version value of a property.
  *
  * This function does not convert a string property value to a Celix version automatically.
  *
@@ -322,6 +327,28 @@ void celix_properties_setVersionWithoutCopy(celix_properties_t* properties, cons
  *         value is not a Celix version.
  */
 const celix_version_t* celix_properties_getVersion(
+        const celix_properties_t* properties,
+        const char* key,
+        const celix_version_t* defaultValue);
+
+/**
+ * @brief Get the value of a property as a Celix version.
+ *
+ * If the property value is a Celix version, a copy of this version will be returned.
+ * If the property value is a string, this function will attempt to convert it to a new Celix version.
+ * If the property is not set or is not a valid Celix version string, a copy of the provided defaultValue is returned.
+ *
+ * @note The caller is responsible for deallocating the memory of the returned version.
+ *
+ * @param[in] properties The property set to search.
+ * @param[in] key The key of the property to get.
+ * @param[in] defaultValue The value to return if the property is not set or if the value is not a Celix version.
+ * @return A copy of the property value if it is a Celix version, or a new Celix version created from the property
+ *         value string if it can be converted, or a copy of the default value if the property is not set or the value
+ *         is not a valid Celix version.
+ * @retval NULL if version cannot be found/converted and the defaultValue is NULL.
+ */
+celix_version_t* celix_properties_getAsVersion(
         const celix_properties_t* properties,
         const char* key,
         const celix_version_t* defaultValue);

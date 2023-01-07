@@ -23,13 +23,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <stdbool.h>
 #include <errno.h>
 #include <assert.h>
+#include <math.h>
 
 #include "celix_build_assert.h"
-#include "utils.h" //TODO try to remove
 #include "celix_utils.h"
 #include "celix_string_hash_map.h"
 
@@ -68,7 +67,7 @@ struct celix_properties {
 
 #define MALLOC_BLOCK_SIZE        5
 
-static void parseLine(const char* line, celix_properties_t *props);
+static void celix_properties_parseLine(const char* line, celix_properties_t *props);
 
 properties_pt properties_create(void) {
     return celix_properties_create();
@@ -292,7 +291,7 @@ static void celix_properties_createAndSetEntry(
     celix_properties_entry_t* entry = celix_properties_createEntry(properties, key, strValue, longValue, doubleValue,
                                                                    boolValue, versionValue);
     if (entry != NULL) {
-        celix_stringHashMap_put(properties->map, key, entry);
+        celix_stringHashMap_put(properties->map, entry->key, entry);
     }
 }
 
@@ -330,7 +329,7 @@ celix_properties_t* celix_properties_create(void) {
     if (props != NULL) {
         celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
         opts.storeKeysWeakly = true;
-        opts.initialCapacity = CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE;
+        opts.initialCapacity = (unsigned int)ceil(CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE / 0.75);
         opts.removedCallbackData = props;
         opts.removedCallback = celix_properties_removeEntryCallback;
         props->map = celix_stringHashMap_createWithOptions(&opts);
@@ -366,7 +365,7 @@ celix_properties_t* celix_properties_load(const char *filename) {
     return props;
 }
 
-static void parseLine(const char* line, celix_properties_t *props) {
+static void celix_properties_parseLine(const char* line, celix_properties_t *props) {
     int linePos = 0;
     bool precedingCharIsBackslash = false;
     bool isComment = false;
@@ -454,18 +453,13 @@ static void parseLine(const char* line, celix_properties_t *props) {
     }
 
     if (!isComment) {
-        //printf("putting 'key'/'value' '%s'/'%s' in properties\n", utils_stringTrim(key), utils_stringTrim(value));
         celix_utils_trimInPlace(key);
         celix_utils_trimInPlace(value);
-//        celix_properties_setWithoutCopy(props, key, value);
-        celix_properties_set(props, key, value);
+        celix_properties_setWithoutCopy(props, key, value);
     } else {
-//        free(key);
-//        free(value);
+        free(key);
+        free(value);
     }
-    free(key);
-    free(value);
-
 }
 
 celix_properties_t* celix_properties_loadWithStream(FILE *file) {
@@ -473,6 +467,7 @@ celix_properties_t* celix_properties_loadWithStream(FILE *file) {
         return NULL;
     }
 
+    //TODO create properties with no internal short properties buffer, so celix_properties_createWithOptions()
     celix_properties_t *props = celix_properties_create();
     if (props == NULL) {
         return NULL;
@@ -500,7 +495,7 @@ celix_properties_t* celix_properties_loadWithStream(FILE *file) {
     char* savePtr = NULL;
     char* line = strtok_r(fileBuffer, "\n", &savePtr);
     while (line != NULL) {
-        parseLine(line, props);
+        celix_properties_parseLine(line, props);
         line = strtok_r(NULL, "\n", &savePtr);
     }
     free(fileBuffer);
@@ -528,7 +523,7 @@ celix_properties_t* celix_properties_loadFromString(const char *input) {
             break;
         }
 
-        parseLine(line, props);
+        celix_properties_parseLine(line, props);
     } while(line != NULL);
 
     free(in);
@@ -611,19 +606,19 @@ celix_properties_value_type_e celix_properties_getType(const celix_properties_t*
 }
 
 const char* celix_properties_get(const celix_properties_t *properties, const char *key, const char *defaultValue) {
-    celix_properties_entry_t* entry = NULL;
-    if (properties != NULL) {
-         entry = celix_stringHashMap_get(properties->map, key);
+    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    if (entry != NULL) {
+         return entry->value;
     }
-    return entry == NULL ? defaultValue : entry->value;
+    return defaultValue;
 }
 
-celix_properties_entry_t celix_properties_getEntry(const celix_properties_t* properties, const char* key) {
-    celix_properties_entry_t invalidEntry;
-    memset(&invalidEntry, 0, sizeof(invalidEntry));
-    invalidEntry.valueType = CELIX_PROPERTIES_VALUE_TYPE_UNSET;
-    celix_properties_entry_t* entry = celix_stringHashMap_get(properties->map, key);
-    return entry == NULL ? invalidEntry : *entry;
+celix_properties_entry_t* celix_properties_getEntry(const celix_properties_t* properties, const char* key) {
+    celix_properties_entry_t* entry = NULL;
+    if (properties) {
+        entry = celix_stringHashMap_get(properties->map, key);
+    }
+    return entry;
 }
 
 void celix_properties_set(celix_properties_t *properties, const char *key, const char *value) {
@@ -649,7 +644,7 @@ void celix_properties_unset(celix_properties_t *properties, const char *key) {
 
 long celix_properties_getAsLong(const celix_properties_t *props, const char *key, long defaultValue) {
     long result = defaultValue;
-    celix_properties_entry_t* entry = celix_stringHashMap_get(props->map, key);
+    celix_properties_entry_t* entry = celix_properties_getEntry(props, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG) {
         return entry->typed.longValue;
     } else if (entry != NULL) {
@@ -669,7 +664,7 @@ void celix_properties_setLong(celix_properties_t *props, const char *key, long v
 
 double celix_properties_getAsDouble(const celix_properties_t *props, const char *key, double defaultValue) {
     double result = defaultValue;
-    celix_properties_entry_t* entry = celix_stringHashMap_get(props->map, key);
+    celix_properties_entry_t* entry = celix_properties_getEntry(props, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
         return entry->typed.doubleValue;
     } else if (entry != NULL) {
@@ -689,16 +684,16 @@ void celix_properties_setDouble(celix_properties_t *props, const char *key, doub
 
 bool celix_properties_getAsBool(const celix_properties_t *props, const char *key, bool defaultValue) {
     bool result = defaultValue;
-    celix_properties_entry_t* entry = celix_stringHashMap_get(props->map, key);
+    celix_properties_entry_t* entry = celix_properties_getEntry(props, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL) {
         return entry->typed.boolValue;
     } else if (entry != NULL) {
         char buf[32];
         snprintf(buf, 32, "%s", entry->value);
-        char *trimmed = utils_stringTrim(buf);
-        if (strncasecmp("true", trimmed, strlen("true")) == 0) {
+        celix_utils_trimInPlace(buf);
+        if (strncasecmp("true", buf, strlen("true")) == 0) {
             result = true;
-        } else if (strncasecmp("false", trimmed, strlen("false")) == 0) {
+        } else if (strncasecmp("false", buf, strlen("false")) == 0) {
             result = false;
         }
     }
@@ -713,11 +708,28 @@ const celix_version_t* celix_properties_getVersion(
         const celix_properties_t* properties,
         const char* key,
         const celix_version_t* defaultValue) {
-    celix_properties_entry_t* entry = celix_stringHashMap_get(properties->map, key);
+    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
         return entry->typed.versionValue;
     }
     return defaultValue;
+}
+
+celix_version_t* celix_properties_getAsVersion(
+        const celix_properties_t* properties,
+        const char* key,
+        const celix_version_t* defaultValue) {
+    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
+        return celix_version_copy(entry->typed.versionValue);
+    }
+    if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
+        celix_version_t* createdVersion = celix_version_createVersionFromString(entry->value);
+        if (createdVersion != NULL) {
+            return createdVersion;
+        }
+    }
+    return defaultValue == NULL ? NULL : celix_version_copy(defaultValue);
 }
 
 void celix_properties_setVersion(celix_properties_t *properties, const char *key, const celix_version_t* version) {
@@ -786,10 +798,10 @@ celix_properties_iterator_t celix_properties_begin(const celix_properties_t* pro
 
     celix_properties_iterator_t iter;
     iter.index = 0;
-    if (!celix_stringHashMapIterator_isEnd(&internalIter.mapIter)) {
-        memcpy(&iter.entry, internalIter.mapIter.value.ptrValue, sizeof(iter.entry));
-    } else {
+    if (celix_stringHashMapIterator_isEnd(&internalIter.mapIter)) {
         memset(&iter.entry, 0, sizeof(iter.entry));
+    } else {
+        memcpy(&iter.entry, internalIter.mapIter.value.ptrValue, sizeof(iter.entry));
     }
 
     memset(&iter._data, 0, sizeof(iter._data));
@@ -814,6 +826,7 @@ void celix_propertiesIterator_next(celix_properties_iterator_t *iter) {
     memcpy(&internalIter, iter->_data, sizeof(internalIter));
     celix_stringHashMapIterator_next(&internalIter.mapIter);
     memcpy(iter->_data, &internalIter, sizeof(internalIter));
+    iter->index = internalIter.mapIter.index;
     if (celix_stringHashMapIterator_isEnd(&internalIter.mapIter)) {
         memset(&iter->entry, 0, sizeof(iter->entry));
     } else {
@@ -829,11 +842,10 @@ bool celix_propertiesIterator_isEnd(const celix_properties_iterator_t* iter) {
 
 bool celix_propertiesIterator_equals(const celix_properties_iterator_t* a, const celix_properties_iterator_t* b) {
     celix_properties_iterator_internal_t internalIterA;
-    memcpy(&internalIterA, a, sizeof(internalIterA));
+    memcpy(&internalIterA, a->_data, sizeof(internalIterA));
     celix_properties_iterator_internal_t internalIterB;
-    memcpy(&internalIterB, b, sizeof(internalIterB));
-    return internalIterA.props == internalIterB.props &&
-           internalIterA.mapIter.key == internalIterB.mapIter.key;
+    memcpy(&internalIterB, b->_data, sizeof(internalIterB));
+    return celix_stringHashMapIterator_equals(&internalIterA.mapIter, &internalIterB.mapIter);
 }
 
 celix_properties_t* celix_propertiesIterator_properties(const celix_properties_iterator_t *iter) {

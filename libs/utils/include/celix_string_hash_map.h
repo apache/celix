@@ -169,12 +169,15 @@ void celix_stringHashMap_destroy(celix_string_hash_map_t* map);
 size_t celix_stringHashMap_size(const celix_string_hash_map_t* map);
 
 /**
- * @brief add pointer entry the string hash map.
+ * @brief Add pointer entry the string hash map.
  *
- * @param map The hashmap.
- * @param key  The key to use. The hashmap will create a copy if needed.
- * @param value The value to store with the key.
- * @return The previous key or NULL of no key was set. Note also returns NULL if the previous value for the key was NULL.
+ * @note The returned previous value can be already freed by a removed callback (if configured).
+ *
+ * @param[in] map The hashmap.
+ * @param[in] key  The key to use. The hashmap will create a copy if needed.
+ * @param[in] value The value to store with the key.
+ * @return The previous value or NULL of no value was set for th provided key.
+ *         Note also returns NULL if the previous value for the key was NULL.
  */
 void* celix_stringHashMap_put(celix_string_hash_map_t* map, const char* key, void* value);
 
@@ -301,21 +304,14 @@ bool celix_stringHashMapIterator_isEnd(const celix_string_hash_map_iterator_t* i
 void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter);
 
 /**
- * @brief Marco to loop over all the entries of a string hash map.
- *
- * Small example of how to use the iterate macro:
- * @code{.c}
- * celix_string_hash_map_t* map = ...
- * CELIX_STRING_HASH_MAP_ITERATE(map, iter) {
- *     printf("Visiting hash map entry with key %s\n", inter.key);
- * }
- * @endcode
- *
- * @param map The (const celix_string_hash_map_t*) map to iterate over.
- * @param iterName A iterName which will be of type celix_string_hash_map_iterator_t to hold the iterator.
+ * @brief Compares two celix_string_hash_map_iterator_t objects for equality.
+ * @param[in] iterator The first iterator to compare.
+ * @param[in] other The second iterator to compare.
+ * @return true if the iterators point to the same entry in the same hash map, false otherwise.
  */
-#define CELIX_STRING_HASH_MAP_ITERATE(map, iterName) \
-    for (celix_string_hash_map_iterator_t iterName = celix_stringHashMap_begin(map); !celix_stringHashMapIterator_isEnd(&(iterName)); celix_stringHashMapIterator_next(&(iterName)))
+bool celix_stringHashMapIterator_equals(
+        const celix_string_hash_map_iterator_t* iterator,
+        const celix_string_hash_map_iterator_t* other);
 
 /**
  * @brief Remove the hash map entry for the provided iterator and updates the iterator to the next hash map entry
@@ -335,6 +331,24 @@ void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter);
  * @endcode
  */
 void celix_stringHashMapIterator_remove(celix_string_hash_map_iterator_t* iter);
+
+/**
+ * @brief Marco to loop over all the entries of a string hash map.
+ *
+ * Small example of how to use the iterate macro:
+ * @code{.c}
+ * celix_string_hash_map_t* map = ...
+ * CELIX_STRING_HASH_MAP_ITERATE(map, iter) {
+ *     printf("Visiting hash map entry with key %s\n", inter.key);
+ * }
+ * @endcode
+ *
+ * @param map The (const celix_string_hash_map_t*) map to iterate over.
+ * @param iterName A iterName which will be of type celix_string_hash_map_iterator_t to hold the iterator.
+ */
+#define CELIX_STRING_HASH_MAP_ITERATE(map, iterName) \
+    for (celix_string_hash_map_iterator_t iterName = celix_stringHashMap_begin(map); !celix_stringHashMapIterator_isEnd(&(iterName)); celix_stringHashMapIterator_next(&(iterName)))
+
 
 #ifdef __cplusplus
 }

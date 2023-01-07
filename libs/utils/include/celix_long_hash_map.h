@@ -159,12 +159,15 @@ void celix_longHashMap_destroy(celix_long_hash_map_t* map);
 size_t celix_longHashMap_size(const celix_long_hash_map_t* map);
 
 /**
- * @brief add pointer entry the string hash map.
+ * @brief Add pointer entry the string hash map.
  *
- * @param map The hashmap
- * @param key  The key to use.
- * @param value The value to store with the key
- * @return The previous key or NULL of no key was set. Note also returns NULL if the previous value for the key was NULL.
+ * @note The returned previous value can be already freed by a removed callback (if configured).
+ *
+ * @param[in] map The hashmap
+ * @param[in] key  The key to use.
+ * @param[in] value The value to store with the key
+ * @return The previous value or NULL of no value was set for th provided key.
+ *         Note also returns NULL if the previous value for the key was NULL.
  */
 void* celix_longHashMap_put(celix_long_hash_map_t* map, long key, void* value);
 
@@ -292,21 +295,14 @@ bool celix_longHashMapIterator_isEnd(const celix_long_hash_map_iterator_t* iter)
 void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter);
 
 /**
- * @brief Marco to loop over all the entries of a long hash map.
- *
- * Small example of how to use the iterate macro:
- * @code{.c}
- * celix_long_hash_map_t* map = ...
- * CELIX_LONG_HASH_MAP_ITERATE(map, iter) {
- *     printf("Visiting hash map entry with key %li\n", inter.key);
- * }
- * @endcode
- *
- * @param map The (const celix_long_hash_map_t*) map to iterate over.
- * @param iterName A iterName which will be of type celix_long_hash_map_iterator_t to hold the iterator.
+ * @brief Compares two celix_long_hash_map_iterator_t objects for equality.
+ * @param[in] iterator The first iterator to compare.
+ * @param[in] other The second iterator to compare.
+ * @return true if the iterators point to the same entry in the same hash map, false otherwise.
  */
-#define CELIX_LONG_HASH_MAP_ITERATE(map, iterName) \
-    for (celix_long_hash_map_iterator_t iterName = celix_longHashMap_begin(map); !celix_longHashMapIterator_isEnd(&(iterName)); celix_longHashMapIterator_next(&(iterName)))
+bool celix_longHashMapIterator_equals(
+        const celix_long_hash_map_iterator_t* iterator,
+        const celix_long_hash_map_iterator_t* other);
 
 /**
  * @brief Remove the hash map entry for the provided iterator and updates the iterator to the next hash map entry
@@ -326,6 +322,23 @@ void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter);
  * @endcode
  */
 void celix_longHashMapIterator_remove(celix_long_hash_map_iterator_t* iter);
+
+/**
+ * @brief Marco to loop over all the entries of a long hash map.
+ *
+ * Small example of how to use the iterate macro:
+ * @code{.c}
+ * celix_long_hash_map_t* map = ...
+ * CELIX_LONG_HASH_MAP_ITERATE(map, iter) {
+ *     printf("Visiting hash map entry with key %li\n", inter.key);
+ * }
+ * @endcode
+ *
+ * @param map The (const celix_long_hash_map_t*) map to iterate over.
+ * @param iterName A iterName which will be of type celix_long_hash_map_iterator_t to hold the iterator.
+ */
+#define CELIX_LONG_HASH_MAP_ITERATE(map, iterName) \
+    for (celix_long_hash_map_iterator_t iterName = celix_longHashMap_begin(map); !celix_longHashMapIterator_isEnd(&(iterName)); celix_longHashMapIterator_next(&(iterName)))
 
 #ifdef __cplusplus
 }

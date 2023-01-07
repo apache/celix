@@ -221,7 +221,7 @@ TEST_F(HashMapTestSuite, DestroyHashMapWithSimpleRemovedCallback) {
     celix_longHashMap_destroy(lMap);
 }
 
-TEST_F(HashMapTestSuite, ClearHashMapWithRemovedCallback) {
+TEST_F(HashMapTestSuite, ReplaceAndClearHashMapWithRemovedCallback) {
     std::atomic<int> count{0};
     celix_string_hash_map_create_options_t sOpts{};
     sOpts.removedCallbackData = &count;
@@ -229,17 +229,19 @@ TEST_F(HashMapTestSuite, ClearHashMapWithRemovedCallback) {
         auto* c = static_cast<std::atomic<int>*>(data);
         if (celix_utils_stringEquals(key, "key1")) {
             c->fetch_add(1);
-            EXPECT_EQ(value.longValue, 1);
+            EXPECT_TRUE(value.longValue == 1 || value.longValue == 2);
         } else if (celix_utils_stringEquals(key, "key2")) {
             c->fetch_add(1);
-            EXPECT_EQ(value.longValue, 2);
+            EXPECT_TRUE(value.longValue == 3 || value.longValue == 4);
         }
     };
     auto* sMap = celix_stringHashMap_createWithOptions(&sOpts);
     celix_stringHashMap_putLong(sMap, "key1", 1);
-    celix_stringHashMap_putLong(sMap, "key2", 2);
-    celix_stringHashMap_clear(sMap);
-    EXPECT_EQ(count.load(), 2);
+    celix_stringHashMap_putLong(sMap, "key1", 2); //replacing old value, count +1
+    celix_stringHashMap_putLong(sMap, "key2", 3);
+    celix_stringHashMap_putLong(sMap, "key2", 4); //replacing old value, count +1
+    celix_stringHashMap_clear(sMap); //count +2
+    EXPECT_EQ(count.load(), 4);
     EXPECT_EQ(celix_stringHashMap_size(sMap), 0);
     celix_stringHashMap_destroy(sMap);
 
@@ -250,17 +252,19 @@ TEST_F(HashMapTestSuite, ClearHashMapWithRemovedCallback) {
         auto* c = static_cast<std::atomic<int>*>(data);
         if (key == 1) {
             c->fetch_add(1);
-            EXPECT_EQ(value.longValue, 1);
+            EXPECT_TRUE(value.longValue == 1 || value.longValue == 2);
         } else if (key == 2) {
             c->fetch_add(1);
-            EXPECT_EQ(value.longValue, 2);
+            EXPECT_TRUE(value.longValue == 3 || value.longValue == 4);
         }
     };
     auto* lMap = celix_longHashMap_createWithOptions(&lOpts);
     celix_longHashMap_putLong(lMap, 1, 1);
-    celix_longHashMap_putLong(lMap, 2, 2);
-    celix_longHashMap_clear(lMap);
-    EXPECT_EQ(count.load(), 2);
+    celix_longHashMap_putLong(lMap, 1, 2); //replacing old value, count +1
+    celix_longHashMap_putLong(lMap, 2, 3);
+    celix_longHashMap_putLong(lMap, 2, 4); //replacing old value, count +1
+    celix_longHashMap_clear(lMap); //count +2
+    EXPECT_EQ(count.load(), 4);
     EXPECT_EQ(celix_longHashMap_size(lMap), 0);
     celix_longHashMap_destroy(lMap);
 }
@@ -518,7 +522,7 @@ TEST_F(HashMapTestSuite, IterateWithRemoveTest) {
     auto iter1 = celix_stringHashMap_begin(sMap);
     while (!celix_stringHashMapIterator_isEnd(&iter1)) {
         if (iter1.index % 2 == 0) {
-            //note only removing entries where the iter index is even
+            //note only removing entries where the iter key is even
             celix_stringHashMapIterator_remove(&iter1);
         } else {
             celix_stringHashMapIterator_next(&iter1);
@@ -567,10 +571,64 @@ TEST_F(HashMapTestSuite, IterateEndTest) {
     EXPECT_TRUE(celix_longHashMapIterator_isEnd(&lIter1));
     EXPECT_TRUE(celix_longHashMapIterator_isEnd(&lIter2));
 
-    //TODO loop and test with index.
-
     celix_stringHashMap_destroy(sMap1);
     celix_stringHashMap_destroy(sMap2);
     celix_longHashMap_destroy(lMap1);
     celix_longHashMap_destroy(lMap2);
+}
+
+
+TEST_F(HashMapTestSuite, EqualsTest) {
+    auto* sMap = createStringHashMap(2);
+    auto sIter1 = celix_stringHashMap_begin(sMap);
+    auto sIter2 = celix_stringHashMap_begin(sMap);
+
+    // Test equal iterators
+    EXPECT_TRUE(celix_stringHashMapIterator_equals(&sIter1, &sIter2));
+
+    // Test unequal iterators after only 1 modification
+    celix_stringHashMapIterator_next(&sIter1);
+    EXPECT_FALSE(celix_stringHashMapIterator_equals(&sIter1, &sIter2));
+
+    // Test equal iterators after both modification
+    celix_stringHashMapIterator_next(&sIter2);
+    EXPECT_TRUE(celix_stringHashMapIterator_equals(&sIter1, &sIter2));
+
+
+    //Same for long hash map
+    auto *lMap = createLongHashMap(1);
+    auto lIter1 = celix_longHashMap_begin(lMap);
+    auto lIter2 = celix_longHashMap_begin(lMap);
+
+    // Test equal iterators
+    EXPECT_TRUE(celix_longHashMapIterator_equals(&lIter1, &lIter2));
+
+    // Test unequal iterators after only 1 modification
+    celix_longHashMapIterator_next(&lIter1);
+    EXPECT_FALSE(celix_longHashMapIterator_equals(&lIter1, &lIter2));
+
+    // Test equal iterators after both modification
+    celix_longHashMapIterator_next(&lIter2);
+    EXPECT_TRUE(celix_longHashMapIterator_equals(&lIter1, &lIter2));
+
+    celix_stringHashMap_destroy(sMap);
+    celix_longHashMap_destroy(lMap);
+}
+
+TEST_F(HashMapTestSuite, EqualsZeroSizeMapTest) {
+    // Because map size is 0, begin iter should equal end iter
+    auto* sMap = createStringHashMap(0);
+    auto sIter1 = celix_stringHashMap_begin(sMap);
+    auto sEnd = celix_stringHashMap_end(sMap);
+    EXPECT_TRUE(celix_stringHashMapIterator_equals(&sIter1, &sEnd));
+
+
+    // Because map size is 0, begin iter should equal end iter
+    auto *lMap = createLongHashMap(0);
+    auto lIter1 = celix_longHashMap_begin(lMap);
+    auto lEnd = celix_longHashMap_end(lMap);
+    EXPECT_TRUE(celix_longHashMapIterator_equals(&lIter1, &lEnd));
+
+    celix_stringHashMap_destroy(sMap);
+    celix_longHashMap_destroy(lMap);
 }

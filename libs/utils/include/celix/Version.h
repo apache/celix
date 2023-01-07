@@ -28,40 +28,40 @@ namespace celix {
 
     //TODO CxxVersionTestSuite
     //TODO doxygen
+    //TODO test in unordered map and set
+    //TODO test in map and set
     class Version {
     public:
-        Version() : cVersion{createVersion(celix_version_createEmptyVersion())} {}
+        Version() :
+            cVersion{createVersion(celix_version_createEmptyVersion())},
+            qualifier{celix_version_getQualifier(cVersion.get())} {}
+
 #if __cplusplus >= 201703L //C++17 or higher
         explicit Version(int major, int minor, int micro, std::string_view qualifier = {}) :
-            cVersion{createVersion(celix_version_create(major, minor, micro, qualifier.empty() ? "" : qualifier.data()))} {}
+            cVersion{createVersion(celix_version_create(major, minor, micro, qualifier.empty() ? "" : qualifier.data()))},
+            qualifier{celix_version_getQualifier(cVersion.get())} {}
 #else
-        explicit Version(int major, int minor, int micro, const& std::string qualifier = {}) :
-            cVersion{createVersion(celix_version_create(major, minor, micro, qualifier.empty() ? "" : qualifier.c_str()))} {}
+        explicit Version(int major, int minor, int micro, const std::string& qualifier = {}) :
+            cVersion{createVersion(celix_version_create(major, minor, micro, qualifier.empty() ? "" : qualifier.c_str()))},
+            qualifier{celix_version_getQualifier(cVersion.get())} {}
 #endif
 
 
         Version(Version&&) = default;
+        Version(const Version& rhs) = default;
 
         Version& operator=(Version&&) = default;
+        Version& operator=(const Version& rhs) = default;
 
-        Version(const Version& rhs) : cVersion{createVersion(celix_version_copy(rhs.cVersion.get()))} {}
-
-        Version& operator=(const Version& rhs) {
-            if (this != &rhs) {
-                cVersion = createVersion(rhs.cVersion.get());
-            }
-            return *this;
-        }
-
-        bool operator==(const Version& rhs) {
+        bool operator==(const Version& rhs) const {
             return celix_version_compareTo(cVersion.get(), rhs.cVersion.get()) == 0;
         }
 
-        bool operator<(const Version& rhs) {
+        bool operator<(const Version& rhs) const {
             return celix_version_compareTo(cVersion.get(), rhs.cVersion.get()) < 0;
         }
 
-        //TODO rest of the operators
+        //TODO rest of the operators, is that needed?
 
         /**
          * @brief Warps a C Celix Version to a C++ Celix Version, but takes no ownership.
@@ -81,28 +81,24 @@ namespace celix {
             return cVersion.get();
         }
 
+        //TODO doc
         [[nodiscard]] int getMajor() const {
             return celix_version_getMajor(cVersion.get());
         }
 
+        //TODO doc
         [[nodiscard]] int getMinor() const {
             return celix_version_getMinor(cVersion.get());
         }
 
+        //TODO doc
         [[nodiscard]] int getMicro() const {
             return celix_version_getMicro(cVersion.get());
         }
 
-        [[nodiscard]] std::string getQualifier() const {
-            return std::string{celix_version_getQualifier(cVersion.get())};
-        }
-
-        /**
-         * @brief Return whether the version is an empty version (0.0.0."").
-         */
-        [[nodiscard]] bool emptyVersion() const {
-            //TODO celix_version_isEmpty(cVersion.get());
-            return false;
+        //TODO doc
+        [[nodiscard]] const std::string& getQualifier() const {
+            return qualifier;
         }
     private:
         static std::shared_ptr<celix_version_t> createVersion(celix_version_t* cVersion) {
@@ -117,5 +113,18 @@ namespace celix {
         explicit Version(celix_version_t* v) : cVersion{v, [](celix_version_t *){/*nop*/}} {}
 
         std::shared_ptr<celix_version_t> cVersion;
+        std::string qualifier; //cached qualifier of the const char* from celix_version_getQualifier
+    };
+}
+
+namespace std {
+    template<>
+    struct hash<celix::Version> {
+        size_t operator()(const celix::Version& v) const {
+            return std::hash<int>()(v.getMajor()) ^
+                   std::hash<int>()(v.getMinor()) ^
+                   std::hash<int>()(v.getMicro()) ^
+                   std::hash<std::string>()(v.getQualifier());
+        }
     };
 }

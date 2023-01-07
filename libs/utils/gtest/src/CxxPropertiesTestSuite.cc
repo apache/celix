@@ -52,6 +52,13 @@ TEST_F(CxxPropertiesTestSuite, testFillAndLoop) {
     EXPECT_EQ(props.getAsBool("key5", false), true);
 
     int count = 0;
+    for (auto it = props.begin(); it != props.end(); ++it) {
+        EXPECT_NE(it.first, "");
+        count++;
+    }
+    EXPECT_EQ(5, count);
+
+    count = 0;
     for (const auto& pair : props) {
         EXPECT_NE(pair.first, "");
         count++;
@@ -118,7 +125,7 @@ TEST_F(CxxPropertiesTestSuite, getType) {
     props.set("long7", (unsigned char)1); //should lead to long;
     props.set("double1", 1.0);
     props.set("double2", 1.0f); //set float should lead to double
-    //TODO version
+    props.set("version", celix::Version{1, 2, 3});
 
     EXPECT_EQ(props.getType("bool"), celix::Properties::ValueType::Bool);
     EXPECT_EQ(props.getType("long1"), celix::Properties::ValueType::Long);
@@ -130,9 +137,31 @@ TEST_F(CxxPropertiesTestSuite, getType) {
     EXPECT_EQ(props.getType("long7"), celix::Properties::ValueType::Long);
     EXPECT_EQ(props.getType("double1"), celix::Properties::ValueType::Double);
     EXPECT_EQ(props.getType("double2"), celix::Properties::ValueType::Double);
-
+    EXPECT_EQ(props.getType("version"), celix::Properties::ValueType::Version);
 }
 
+TEST_F(CxxPropertiesTestSuite, testGetAsVersion) {
+    celix::Properties props;
+
+    // Test getting a version from a string property
+    props.set("key", "1.2.3");
+    celix::Version ver{1, 2, 3};
+    EXPECT_TRUE(props.getAsVersion("key") == ver);
+
+    // Test getting a version from a version property
+    props.set("key", celix::Version{2, 3, 4});
+    ver = celix::Version{2, 3, 4};
+    EXPECT_EQ(props.getAsVersion("key"), ver);
+
+    // Test getting default value when property is not set
+    ver = celix::Version{3, 4, 5};
+    EXPECT_EQ(props.getAsVersion("non_existent_key", celix::Version{3, 4, 5}), ver);
+
+    // Test getting default value when property value is not a valid version string
+    props.set("key", "invalid_version_string");
+    ver = celix::Version{4, 5, 6};
+    EXPECT_EQ(props.getAsVersion("key", celix::Version{4, 5, 6}), ver);
+}
 
 #if __cplusplus >= 201703L //C++17 or higher
 TEST_F(CxxPropertiesTestSuite, testStringView) {
@@ -183,10 +212,10 @@ TEST_F(CxxPropertiesTestSuite, testStringView) {
 
         props.set(key, 1L); //long
         EXPECT_EQ(1L, props.getAsLong(key, -1));
-        props.set(key, 1.0); //double
-        EXPECT_EQ(1.0, props.getAsDouble(key, -1));
-        props.set(key, true); //bool
-        EXPECT_EQ(true, props.getAsBool(key, false));
+        props.set(key, 2.0); //double
+        EXPECT_EQ(2.0, props.getAsDouble(key, -1));
+        props.set(key, false); //bool
+        EXPECT_EQ(false, props.getAsBool(key, true));
     }
 }
 

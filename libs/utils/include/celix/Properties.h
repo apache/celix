@@ -33,35 +33,32 @@ namespace celix {
     /**
      * @brief A iterator for celix::Properties.
      */
-    class PropertiesIterator {
+    class ConstPropertiesIterator {
     public:
-        explicit PropertiesIterator(const celix_properties_t* props) {
+        explicit ConstPropertiesIterator(const celix_properties_t* props) {
             iter = celix_properties_begin(props);
             setFields();
         }
 
-        explicit PropertiesIterator(celix_properties_iterator_t _iter) {
-            iter = std::move(_iter);
+        explicit ConstPropertiesIterator(celix_properties_iterator_t _iter) {
+            iter = _iter;
             setFields();
         }
 
-        PropertiesIterator& operator++() {
+        ConstPropertiesIterator& operator++() {
             next();
             return *this;
         }
 
-        PropertiesIterator& operator*() {
+        const ConstPropertiesIterator& operator*() {
             return *this;
         }
 
-        bool operator==(const celix::PropertiesIterator& rhs) const {
-            if (end || rhs.end) {
-                return end && rhs.end;
-            }
+        bool operator==(const celix::ConstPropertiesIterator& rhs) const {
             return celix_propertiesIterator_equals(&iter, &rhs.iter);
         }
 
-        bool operator!=(const celix::PropertiesIterator& rhs) const {
+        bool operator!=(const celix::ConstPropertiesIterator& rhs) const {
             return !operator==(rhs);
         }
 
@@ -84,7 +81,6 @@ namespace celix {
         }
 
         celix_properties_iterator_t iter{.index = -1, .entry = {}, ._data = {}};
-        bool end{false};
     };
 
 
@@ -96,7 +92,7 @@ namespace celix {
      */
     class Properties {
     public:
-        using const_iterator = PropertiesIterator;
+        using const_iterator = ConstPropertiesIterator; //note currently only a const iterator is supported.
 
         /**
          * @brief Enum representing the possible types of a property value.
@@ -245,28 +241,28 @@ namespace celix {
          * @brief begin iterator
          */
         [[nodiscard]] const_iterator begin() const noexcept {
-            return PropertiesIterator{cProps.get()};
+            return ConstPropertiesIterator{cProps.get()};
         }
 
         /**
          * @brief end iterator
          */
         [[nodiscard]] const_iterator end() const noexcept {
-            return PropertiesIterator{celix_properties_end(cProps.get())};
+            return ConstPropertiesIterator{celix_properties_end(cProps.get())};
         }
 
         /**
          * @brief constant begin iterator
          */
         [[nodiscard]] const_iterator cbegin() const noexcept {
-            return PropertiesIterator{cProps.get()};
+            return ConstPropertiesIterator{cProps.get()};
         }
 
         /**
          * @brief constant end iterator
          */
         [[nodiscard]] const_iterator cend() const noexcept {
-            return PropertiesIterator{celix_properties_end(cProps.get())};
+            return ConstPropertiesIterator{celix_properties_end(cProps.get())};
         }
 
 #if __cplusplus >= 201703L //C++17 or higher
@@ -317,23 +313,22 @@ namespace celix {
         /**
          * @brief Get the value of the property with key as a Celix version.
          *
-         * Note that this function does not automatically convert a string property value to a Celix version.
-         *
          * @param[in] key The key of the property to get.
-         * @param[in] defaultValue The value to return if the property is not set or if the value is not a Celix
-         *                         version.
-         * @return The value of the property if it is a Celix version, or the default value if the property is not set
-         *         or the value is not a Celix version.
+         * @param[in] defaultValue The value to return if the property is not set or if the value cannot be converted
+         *                         to a Celix version.
+         * @return The Celix version value of the property if it exists and can be converted,
+         *         or the default value otherwise.
          */
-         //TODO test
-        [[nodiscard]] celix::Version getVersion(std::string_view key, celix::Version defaultValue = {}) {
-            auto* cVersion = celix_properties_getVersion(cProps.get(), key.data(), nullptr);
+        [[nodiscard]] celix::Version getAsVersion(std::string_view key, celix::Version defaultValue = {}) {
+            auto* cVersion = celix_properties_getAsVersion(cProps.get(), key.data(), nullptr);
             if (cVersion) {
-                return celix::Version{
+                celix::Version version{
                     celix_version_getMajor(cVersion),
                     celix_version_getMinor(cVersion),
                     celix_version_getMicro(cVersion),
                     celix_version_getQualifier(cVersion)};
+                celix_version_destroy(cVersion);
+                return version;
             }
             return defaultValue;
         }
@@ -345,7 +340,6 @@ namespace celix {
          * @return The type of the property with the given key, or ValueType::Unset if the property
          *         does not exist.
          */
-         //TODO test
         [[nodiscard]] ValueType getType(std::string_view key) {
             return getAndConvertType(cProps, key.data());
         }
@@ -361,20 +355,21 @@ namespace celix {
          */
         template<typename T>
         void set(std::string_view key, T&& value) {
-            if constexpr (std::is_same_v<std::decay_t<T>, bool>) {
+            using DecayedT = std::decay_t<T>;
+            if constexpr (std::is_same_v<DecayedT, bool>) {
                 celix_properties_setBool(cProps.get(), key.data(), value);
-            } else if constexpr (std::is_same_v<std::decay_t<T>, std::string_view>) {
+            } else if constexpr (std::is_same_v<DecayedT, std::string_view>) {
                 celix_properties_set(cProps.get(), key.data(), value.data());
             } else if constexpr (std::is_convertible_v<T, std::string_view>) {
                 std::string_view view{value};
                 celix_properties_set(cProps.get(), key.data(), view.data());
-            } else if constexpr (std::is_same_v<std::decay_t<T>, bool>) {
+            } else if constexpr (std::is_same_v<DecayedT, bool>) {
                 celix_properties_setBool(cProps.get(), key.data(), value);
-            } else if constexpr (std::is_convertible_v<std::decay_t<T>, long>) {
+            } else if constexpr (std::is_integral_v<DecayedT> and std::is_convertible_v<DecayedT, long>) {
                 celix_properties_setLong(cProps.get(), key.data(), value);
-            } else if constexpr (std::is_convertible_v<std::decay_t<T>, double>) {
+            } else if constexpr (std::is_convertible_v<DecayedT, double>) {
                 celix_properties_setDouble(cProps.get(), key.data(), value);
-            } else if constexpr (std::is_same_v<std::decay_t<T>, celix::Version>) {
+            } else if constexpr (std::is_same_v<DecayedT, celix::Version>) {
                 celix_properties_setVersion(cProps.get(), key.data(), value.getCVersion());
             } else if constexpr (std::is_same_v<T, celix_version_t*>) {
                 celix_properties_setVersion(cProps.get(), key.data(), value);
@@ -439,16 +434,18 @@ namespace celix {
          * @return The value of the property if it is a Celix version, or the default value if the property is not set
          *         or the value is not a Celix version.
          */
-        [[nodiscard]] celix::Version getVersion(const std::string& key, celix::Version defaultValue = {}) {
-            auto* cVersion = celix_properties_getVersion(cProps.get(), key.data(), nullptr);
+        [[nodiscard]] celix::Version getAsVersion(const std::string& key, celix::Version defaultValue = {}) {
+            auto* cVersion = celix_properties_getAsVersion(cProps.get(), key.data(), nullptr);
             if (cVersion) {
-                return celix::Version{
+                celix::Version version{
                     celix_version_getMajor(cVersion),
                     celix_version_getMinor(cVersion),
                     celix_version_getMicro(cVersion),
                     celix_version_getQualifier(cVersion)};
+                celix_version_destroy(cVersion);
+                return version;
             }
-            return defaultValue;
+            return defaultValue
         }
 
         /**
