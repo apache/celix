@@ -19,24 +19,27 @@
 #pragma once
 
 #include <exception>
+#if __cplusplus >= 201703L //C++17 or higher
+#include <string_view>
+#endif
 
 namespace celix {
 
     /**
-     * @brief Celix runtime Exception
+     * @brief Celix runtime IO Exception
      */
-    class Exception : public std::exception {
+    class IOException : public std::exception {
     public:
 #if __cplusplus >= 201703L //C++17 or higher
-        explicit Exception(std::string_view msg) : w{msg} {}
+        explicit IOException(std::string_view msg) : w{msg} {}
 #else
-        explicit Exception(std::string msg) : w{std::move(msg)} {}
+        explicit IOException(std::string msg) : w{std::move(msg)} {}
 #endif
 
-        Exception(const Exception&) = default;
-        Exception(Exception&&) = default;
-        Exception& operator=(const Exception&) = default;
-        Exception& operator=(Exception&&) = default;
+        IOException(const IOException&) = default;
+        IOException(IOException&&) = default;
+        IOException& operator=(const IOException&) = default;
+        IOException& operator=(IOException&&) = default;
 
         [[nodiscard]] const char* what() const noexcept override {
             return w.c_str();

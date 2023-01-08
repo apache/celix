@@ -632,3 +632,23 @@ TEST_F(HashMapTestSuite, EqualsZeroSizeMapTest) {
     celix_stringHashMap_destroy(sMap);
     celix_longHashMap_destroy(lMap);
 }
+
+TEST_F(HashMapTestSuite, StoreKeysWeaklyTest) {
+    celix_string_hash_map_create_options_t opts{};
+    opts.removedCallbackData = (void*)0x1;
+    opts.storeKeysWeakly = true;
+    opts.removedKeyCallback = [](void* data, char* key) {
+        EXPECT_EQ(data, (void*)0x1);
+        free(key);
+    };
+    auto* sMap = celix_stringHashMap_createWithOptions(&opts);
+    EXPECT_FALSE(celix_stringHashMap_putLong(sMap, celix_utils_strdup("key1"), 1)); //new key -> takes ownership
+    EXPECT_TRUE(celix_stringHashMap_putLong(sMap, "key1", 2)); //replace key -> takes no ownership
+
+    EXPECT_FALSE(celix_stringHashMap_putLong(sMap, celix_utils_strdup("key2"), 3));  //new key -> takes ownership
+    EXPECT_TRUE(celix_stringHashMap_putLong(sMap, "key2", 4)); //replace key -> takes no ownership
+    celix_stringHashMap_remove(sMap, "key1");
+
+    celix_stringHashMap_destroy(sMap);
+}
+

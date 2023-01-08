@@ -32,6 +32,7 @@ add_executable(test_utils
         src/FileUtilsTestSuite.cc
         src/PropertiesTestSuite.cc
         src/VersionTestSuite.cc
+        src/CxxVersionTestSuite.cc
         ${CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS}
 )
 

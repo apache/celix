@@ -107,7 +107,7 @@ celix_version_t* celix_version_create(int major, int minor, int micro, const cha
     }
 
     if (qualifier == NULL) {
-        qualifier = "";
+        qualifier = CELIX_VERSION_EMPTY_QUALIFIER;
     }
     size_t qualifierLen = strlen(qualifier);
     for (int i = 0; i < qualifierLen; i++) {

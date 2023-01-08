@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include "celix_properties.h"
+#include "celix_utils.h"
 
 using ::testing::MatchesRegex;
 
@@ -28,14 +29,14 @@ public:
 };
 
 
-TEST_F(PropertiesTestSuite, create) {
+TEST_F(PropertiesTestSuite, CreateTest) {
     auto* properties = celix_properties_create();
     EXPECT_TRUE(properties);
 
     celix_properties_destroy(properties);
 }
 
-TEST_F(PropertiesTestSuite, load) {
+TEST_F(PropertiesTestSuite, LoadTest) {
     char propertiesFile[] = "resources-test/properties.txt";
     auto* properties = celix_properties_load(propertiesFile);
     EXPECT_EQ(4, celix_properties_size(properties));
@@ -55,7 +56,21 @@ TEST_F(PropertiesTestSuite, load) {
     celix_properties_destroy(properties);
 }
 
-TEST_F(PropertiesTestSuite, asLong) {
+TEST_F(PropertiesTestSuite, StoreTest) {
+    const char* propertiesFile = "resources-test/properties_out.txt";
+    auto* properties = celix_properties_create();
+    char keyA[] = "x";
+    char keyB[] = "y";
+    char valueA[] = "1";
+    char valueB[] = "2";
+    celix_properties_set(properties, keyA, valueA);
+    celix_properties_set(properties, keyB, valueB);
+    celix_properties_store(properties, propertiesFile, nullptr);
+
+    celix_properties_destroy(properties);
+}
+
+TEST_F(PropertiesTestSuite, GetAsLongTest) {
     celix_properties_t *props = celix_properties_create();
     celix_properties_set(props, "t1", "42");
     celix_properties_set(props, "t2", "-42");
@@ -84,21 +99,7 @@ TEST_F(PropertiesTestSuite, asLong) {
     celix_properties_destroy(props);
 }
 
-TEST_F(PropertiesTestSuite, store) {
-    char propertiesFile[] = "resources-test/properties_out.txt";
-    auto* properties = celix_properties_create();
-    char keyA[] = "x";
-    char keyB[] = "y";
-    char valueA[] = "1";
-    char valueB[] = "2";
-    celix_properties_set(properties, keyA, valueA);
-    celix_properties_set(properties, keyB, valueB);
-    celix_properties_store(properties, propertiesFile, nullptr);
-
-    celix_properties_destroy(properties);
-}
-
-TEST_F(PropertiesTestSuite, copy) {
+TEST_F(PropertiesTestSuite, CopyTest) {
     char propertiesFile[] = "resources-test/properties.txt";
     auto* properties = celix_properties_load(propertiesFile);
     EXPECT_EQ(4, celix_properties_size(properties));
@@ -115,7 +116,7 @@ TEST_F(PropertiesTestSuite, copy) {
     celix_properties_destroy(copy);
 }
 
-TEST_F(PropertiesTestSuite, getSet) {
+TEST_F(PropertiesTestSuite, GetSetTest) {
     auto* properties = celix_properties_create();
     char keyA[] = "x";
     char keyB[] = "y";
@@ -137,7 +138,7 @@ TEST_F(PropertiesTestSuite, getSet) {
     celix_properties_destroy(properties);
 }
 
-TEST_F(PropertiesTestSuite, getSetWithNULL) {
+TEST_F(PropertiesTestSuite, GetSetWithNullTest) {
     auto* properties = celix_properties_create();
 
     celix_properties_set(properties, nullptr, "value");
@@ -153,7 +154,7 @@ TEST_F(PropertiesTestSuite, getSetWithNULL) {
 }
 
 
-TEST_F(PropertiesTestSuite, setUnset) {
+TEST_F(PropertiesTestSuite, SetUnsetTest) {
     auto* properties = celix_properties_create();
     char keyA[] = "x";
     char *keyD = strndup("a", 1);
@@ -171,7 +172,7 @@ TEST_F(PropertiesTestSuite, setUnset) {
     celix_properties_destroy(properties);
 }
 
-TEST_F(PropertiesTestSuite, longTest) {
+TEST_F(PropertiesTestSuite, GetLongTest) {
     auto* properties = celix_properties_create();
 
     celix_properties_set(properties, "a", "2");
@@ -201,7 +202,7 @@ TEST_F(PropertiesTestSuite, longTest) {
     celix_properties_destroy(properties);
 }
 
-TEST_F(PropertiesTestSuite, boolTest) {
+TEST_F(PropertiesTestSuite, GetBoolTest) {
     auto* properties = celix_properties_create();
 
     celix_properties_set(properties, "a", "true");
@@ -233,7 +234,7 @@ TEST_F(PropertiesTestSuite, boolTest) {
     celix_properties_destroy(properties);
 }
 
-TEST_F(PropertiesTestSuite, fillTest) {
+TEST_F(PropertiesTestSuite, GetFillTest) {
     celix_properties_t *props = celix_properties_create();
     int testCount = 1000;
     for (int i = 0; i < 1000; ++i) {
@@ -246,31 +247,34 @@ TEST_F(PropertiesTestSuite, fillTest) {
     celix_properties_destroy(props);
 }
 
-TEST_F(PropertiesTestSuite, setOverwrite) {
+TEST_F(PropertiesTestSuite, GetSetOverwrite) {
     auto* props = celix_properties_create();
     auto* version = celix_version_createEmptyVersion();
-    const char* key = "key";
 
-    celix_properties_set(props, key, "str1");
-    EXPECT_STREQ("str1", celix_properties_get(props, key, ""));
-    celix_properties_set(props, key, "str2");
-    EXPECT_STREQ("str2", celix_properties_get(props, key, ""));
-    celix_properties_setLong(props, key, 1);
-    EXPECT_EQ(1, celix_properties_getAsLong(props, key, -1L));
-    celix_properties_setDouble(props, key, 2.0);
-    EXPECT_EQ(2.0, celix_properties_getAsLong(props, key, -2.0));
-    celix_properties_setBool(props, key, false);
-    EXPECT_EQ(false, celix_properties_getAsBool(props, key, true));
-    celix_properties_setVersionWithoutCopy(props, key, version);
-    EXPECT_EQ(version, celix_properties_getVersion(props, key, nullptr));
-    celix_properties_set(props, key, "last");
+    {
+        char* key = celix_utils_strdup("key");
+        celix_properties_set(props, key, "str1");
+        free(key);
+    }
+    EXPECT_STREQ("str1", celix_properties_get(props, "key", ""));
+    celix_properties_set(props, "key", "str2");
+    EXPECT_STREQ("str2", celix_properties_get(props, "key", ""));
+    celix_properties_setLong(props, "key", 1);
+    EXPECT_EQ(1, celix_properties_getAsLong(props, "key", -1L));
+    celix_properties_setDouble(props, "key", 2.0);
+    EXPECT_EQ(2.0, celix_properties_getAsLong(props, "key", -2.0));
+    celix_properties_setBool(props, "key", false);
+    EXPECT_EQ(false, celix_properties_getAsBool(props, "key", true));
+    celix_properties_setVersionWithoutCopy(props, "key", version);
+    EXPECT_EQ(version, celix_properties_getVersion(props, "key", nullptr));
+    celix_properties_set(props, "key", "last");
 
     celix_properties_destroy(props);
 }
 
 
 
-TEST_F(PropertiesTestSuite, sizeAndIteratorTest) {
+TEST_F(PropertiesTestSuite, SizeAndIteratorTest) {
     celix_properties_t *props = celix_properties_create();
     EXPECT_EQ(0, celix_properties_size(props));
     celix_properties_set(props, "a", "1");
@@ -291,7 +295,7 @@ TEST_F(PropertiesTestSuite, sizeAndIteratorTest) {
     celix_properties_destroy(props);
 }
 
-TEST_F(PropertiesTestSuite, getType) {
+TEST_F(PropertiesTestSuite, GetTypeTest) {
     auto* props = celix_properties_create();
     celix_properties_set(props, "string", "value");
     celix_properties_setLong(props, "long", 123);
@@ -311,7 +315,7 @@ TEST_F(PropertiesTestSuite, getType) {
     celix_properties_destroy(props);
 }
 
-TEST_F(PropertiesTestSuite, getEntry) {
+TEST_F(PropertiesTestSuite, GetEntryTest) {
     auto* props = celix_properties_create();
     celix_properties_set(props, "key1", "value1");
     celix_properties_setLong(props, "key2", 123);
@@ -354,7 +358,7 @@ TEST_F(PropertiesTestSuite, getEntry) {
     celix_properties_destroy(props);
 }
 
-TEST_F(PropertiesTestSuite, iteratorNextKey) {
+TEST_F(PropertiesTestSuite, IteratorNextKeyTest) {
     auto* props = celix_properties_create();
     celix_properties_set(props, "key1", "value1");
     celix_properties_set(props, "key2", "value2");
@@ -374,7 +378,7 @@ TEST_F(PropertiesTestSuite, iteratorNextKey) {
     celix_properties_destroy(props);
 }
 
-TEST_F(PropertiesTestSuite, iteratorNext) {
+TEST_F(PropertiesTestSuite, IteratorNextTest) {
     auto* props = celix_properties_create();
     celix_properties_set(props, "key1", "value1");
     celix_properties_set(props, "key2", "value2");
@@ -383,7 +387,7 @@ TEST_F(PropertiesTestSuite, iteratorNext) {
     int count = 0;
     auto iter = celix_properties_begin(props);
     while (!celix_propertiesIterator_isEnd(&iter)) {
-        EXPECT_NE(strstr(iter.entry.key, "key"), nullptr);
+        EXPECT_NE(strstr(iter.key, "key"), nullptr);
         EXPECT_NE(strstr(iter.entry.value, "value"), nullptr);
         count++;
         celix_propertiesIterator_next(&iter);
@@ -395,7 +399,7 @@ TEST_F(PropertiesTestSuite, iteratorNext) {
     celix_properties_destroy(props);
 }
 
-TEST_F(PropertiesTestSuite, iterateOverProperties) {
+TEST_F(PropertiesTestSuite, IterateOverPropertiesTest) {
     auto* props = celix_properties_create();
     celix_properties_set(props, "key1", "value1");
     celix_properties_set(props, "key2", "value2");
@@ -404,12 +408,12 @@ TEST_F(PropertiesTestSuite, iterateOverProperties) {
     int innerCount = 0;
     CELIX_PROPERTIES_ITERATE(props, outerIter) {
         outerCount++;
-        EXPECT_NE(strstr(outerIter.entry.key, "key"), nullptr);
+        EXPECT_NE(strstr(outerIter.key, "key"), nullptr);
 
         // Inner loop to test nested iteration
         CELIX_PROPERTIES_ITERATE(props, innerIter) {
             innerCount++;
-            EXPECT_NE(strstr(innerIter.entry.key, "key"), nullptr);
+            EXPECT_NE(strstr(innerIter.key, "key"), nullptr);
         }
     }
     // Check that both entries were iterated over
@@ -428,7 +432,7 @@ TEST_F(PropertiesTestSuite, iterateOverProperties) {
     celix_properties_destroy(props);
 }
 
-TEST_F(PropertiesTestSuite, getVersion) {
+TEST_F(PropertiesTestSuite, GetVersionTest) {
     auto* properties = celix_properties_create();
     auto* emptyVersion = celix_version_createEmptyVersion();
 
@@ -483,7 +487,7 @@ TEST_F(PropertiesTestSuite, getVersion) {
     celix_properties_destroy(properties);
 }
 
-TEST_F(PropertiesTestSuite, TestEndOfProperties) {
+TEST_F(PropertiesTestSuite, EndOfPropertiesTest) {
     auto* props = celix_properties_create();
     celix_properties_set(props, "key1", "value1");
     celix_properties_set(props, "key2", "value2");
@@ -495,7 +499,7 @@ TEST_F(PropertiesTestSuite, TestEndOfProperties) {
     celix_properties_destroy(props);
 }
 
-TEST_F(PropertiesTestSuite, TestEndOfEmptyProperties) {
+TEST_F(PropertiesTestSuite, EndOfEmptyPropertiesTest) {
     auto* props = celix_properties_create();
 
     celix_properties_iterator_t endIter = celix_properties_end(props);
@@ -504,3 +508,5 @@ TEST_F(PropertiesTestSuite, TestEndOfEmptyProperties) {
 
     celix_properties_destroy(props);
 }
+
+//TODO test replace and replace WithCopy

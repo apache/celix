@@ -27,6 +27,7 @@
 #include "celix_properties.h"
 #include "celix_utils.h"
 #include "celix/Version.h"
+#include "celix/IOException.h"
 
 namespace celix {
 
@@ -75,12 +76,12 @@ namespace celix {
                 first = {};
                 second = {};
             } else {
-                first = iter.entry.key;
+                first = iter.key;
                 second = iter.entry.value;
             }
         }
 
-        celix_properties_iterator_t iter{.index = -1, .entry = {}, ._data = {}};
+        celix_properties_iterator_t iter{.index = 0, .key = nullptr, .entry = {}, ._data = {}};
     };
 
 
@@ -190,11 +191,19 @@ namespace celix {
 #endif
 
         /**
-         * @brief Wraps C properties, but does not take ownership -> dtor will not destroy properties
+         * @brief Wrap C properties and returns it as const in a shared_ptr,
+         * but does not take ownership -> dtor will not destroy C properties.
          */
         static std::shared_ptr<const Properties> wrap(const celix_properties_t* wrapProps) {
             auto* cp = const_cast<celix_properties_t*>(wrapProps);
-            return std::shared_ptr<const Properties>{new Properties{cp}};
+            return std::shared_ptr<const Properties>{new Properties{cp, false}};
+        }
+
+        /**
+         * @brief Wrap C properties and take ownership -> dtor will destroy C properties.
+         */
+        static Properties own(celix_properties_t* wrapProps) {
+            return Properties{wrapProps, true};
         }
 
         /**
@@ -598,15 +607,43 @@ namespace celix {
 #endif
 
 
-        //TODO test
-        void store(const std::string& file, const std::string& header = {}) const {
-            celix_properties_store(cProps.get(), file.c_str(), header.empty() ? nullptr : header.c_str());
-        }
 
-        //TODO laod
+        /**
+         * @brief Store the property set to the given file path.
+         *
+         * This function writes the properties in the given set to the specified file path in a format suitable
+         * for loading with the load() function.
+         * If a non-empty header string is provided, it will be written as a comment at the beginning of the file.
+         *
+         * @param[in] file The file to store the properties to.
+         * @param[in] header An optional header string to include as a comment at the beginning of the file.
+         * @throws celix::IOException If an error occurs while writing to the file.
+         */
+#if __cplusplus >= 201703L //C++17 or higher
+        void store(std::string_view path, std::string_view header = {}) const {
+            storeTo(path.data(), header.empty() ? nullptr : header.data());
+        }
+#else
+        void store(const std::string& path, const std::string& header = {}) const {
+            storeTo(path.data(), header.empty() ? nullptr : header.data());
+        }
+#endif
+
+        /**
+         * @brief Loads properties from the file at the given path.
+         * @param[in] path The path to the file containing the properties.
+         * @return A new Properties object containing the properties from the file.
+         * @throws celix::IOException If the file cannot be opened or read.
+         */
+#if __cplusplus >= 201703L //C++17 or higher
+        static celix::Properties load(std::string_view path) { return loadFrom(path.data()); }
+#else
+        static celix::Properties load(const std::string& path) { return loadFrom(path.data()); }
+#endif
 
     private:
-        explicit Properties(celix_properties_t* props) : cProps{props, [](celix_properties_t*) { /*nop*/ }} {}
+        Properties(celix_properties_t* props, bool takeOwnership) :
+            cProps{props, [ownership = takeOwnership](celix_properties_t* p){ if (ownership) { celix_properties_destroy(p); }}} {}
 
         static celix::Properties::ValueType getAndConvertType(
                 const std::shared_ptr<celix_properties_t>& cProperties,
@@ -625,6 +662,21 @@ namespace celix {
                     return ValueType::Version;
                 default: /*unset*/
                     return ValueType::Unset;
+            }
+        }
+
+        static celix::Properties loadFrom(const char* path) {
+            auto* cProps = celix_properties_load(path);
+            if (cProps) {
+                return celix::Properties::own(cProps);
+            }
+            throw celix::IOException{"Cannot load celix::Properties from path " + std::string{path}};
+        }
+
+        void storeTo(const char* path, const char* header) const {
+            auto status = celix_properties_store(cProps.get(), path, header);
+            if (status != CELIX_SUCCESS) {
+                throw celix::IOException{"Cannot store celix::Properties to " + std::string{path}};
             }
         }
 

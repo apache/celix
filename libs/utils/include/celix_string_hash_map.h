@@ -68,11 +68,14 @@ typedef struct celix_string_hash_map_create_options {
      * only the simpledRemoveCallback will be used.
      *
      * Default is NULL.
+     *
+     * @param[in] removedValue The value that was removed from the hash map. This value is no longer used by the
+     *                         hash map and can be freed.
      */
-    void (*simpleRemovedCallback)(void* value) CELIX_OPTS_INIT;
+    void (*simpleRemovedCallback)(void* removedValue) CELIX_OPTS_INIT;
 
     /**
-     * Optional callback data, which will be provided to the removedCallback callback.
+     * Optional callback data, which will be provided to the removedCallback and removedKeyCallback callback.
      *
      * Default is NULL.
      */
@@ -88,14 +91,37 @@ typedef struct celix_string_hash_map_create_options {
      * only the simpledRemoveCallback will be used.
      *
      * Default is NULL.
+     *
+     * @param[in] data The void pointer to the data that was provided when the callback was set as removedCallbackData.
+     * @param[in] removedKey The key of the value that was removed from the hash map.
+     *                       Note that the removedKey can still be in use if the a value entry for the same key is
+     *                       replaced, so this callback should not free the removedKey.
+     * @param[in] removedValue The value that was removed from the hash map. This value is no longer used by the
+     *                         hash map and can be freed.
      */
     void (*removedCallback)(void* data, const char* removedKey, celix_hash_map_value_t removedValue) CELIX_OPTS_INIT;
+
+    /**
+     * @brief A removed key callback, which if provided will be called if a key is no longer used in the hash map.
+     *
+     * @param[in] data The void pointer to the data that was provided when the callback was set as removedCallbackData.
+     * @param[in] key The key that is no longer used in the hash map. if `storeKeysWeakly` was configured as true,
+     *                the key can be freed.
+     */
+    void (*removedKeyCallback)(void* data, char* key) CELIX_OPTS_INIT;
 
     /**
      * @brief If set to true, the string hash map will not make of copy of the keys and assumes
      * that the keys are in scope/memory for the complete lifecycle of the string hash map.
      *
-     * Note that this changes the default behaviour of the celix_stringHashMap_put* functions.
+     * When keys are stored weakly it is the caller responsibility to check the return value of
+     * celix_stringHashMap_put* function calls.
+     * If a celix_stringHashMap_put* function call returns true, the key is used in the hash map and the key
+     * should never be freed or freed in a configured removedKeyCallback.
+     * If a celix_stringHashMap_put* function call returns false, a value is replaced and the already existing
+     * key is reused. If the needed the caller should free the provided key.
+     *
+     * @note This changes the default behaviour of the celix_stringHashMap_put* functions.
      *
      * Default is false.
      */
@@ -137,6 +163,7 @@ typedef struct celix_string_hash_map_create_options {
     .simpleRemovedCallback = NULL,                      \
     .removedCallbackData = NULL,                        \
     .removedCallback = NULL,                            \
+    .removedKeyCallback = NULL,                         \
     .storeKeysWeakly = false,                           \
     .initialCapacity = 0,                               \
     .loadFactor = 0                                     \

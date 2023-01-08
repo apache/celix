@@ -69,6 +69,9 @@ typedef struct celix_long_hash_map_create_options {
      * only the simpleRemovedCallback will be used.
      *
      * Default is NULL.
+     *
+     * @param[in] removedValue The value that was removed from the hash map. This value is no longer used by the
+     *                         hash map and can be freed.
      */
     void (*simpleRemovedCallback)(void* value) CELIX_OPTS_INIT;
 
@@ -89,6 +92,11 @@ typedef struct celix_long_hash_map_create_options {
      * only the simpleRemovedCallback will be used.
      *
      * Default is NULL.
+     *
+     * @param[in] data The void pointer to the data that was provided when the callback was set as removedCallbackData.
+     * @param[in] removedKey The key of the value that was removed from the hash map.
+     * @param[in] removedValue The value that was removed from the hash map. This value is no longer used by the
+     *                         hash map and can be freed.
      */
     void (*removedCallback)(void* data, long removedKey, celix_hash_map_value_t removedValue) CELIX_OPTS_INIT;
 

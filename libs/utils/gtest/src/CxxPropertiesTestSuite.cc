@@ -27,12 +27,12 @@ class CxxPropertiesTestSuite : public ::testing::Test {
 public:
 };
 
-TEST_F(CxxPropertiesTestSuite, testCreateDestroy) {
+TEST_F(CxxPropertiesTestSuite, CreateDestroyTest) {
     celix::Properties props{};
     EXPECT_EQ(0, props.size());
 }
 
-TEST_F(CxxPropertiesTestSuite, testFillAndLoop) {
+TEST_F(CxxPropertiesTestSuite, FillAndLoopTest) {
     celix::Properties props{};
     EXPECT_EQ(0, props.size());
 
@@ -66,7 +66,7 @@ TEST_F(CxxPropertiesTestSuite, testFillAndLoop) {
     EXPECT_EQ(5, count);
 }
 
-TEST_F(CxxPropertiesTestSuite, testLoopForSize0And1) {
+TEST_F(CxxPropertiesTestSuite, LoopForSize0And1Test) {
     celix::Properties props0{};
     for (const auto& pair : props0) {
         FAIL() << "Should not get an loop entry with a properties size of 0. got key: " << pair.first;
@@ -82,7 +82,7 @@ TEST_F(CxxPropertiesTestSuite, testLoopForSize0And1) {
     EXPECT_EQ(1, count);
 }
 
-TEST_F(CxxPropertiesTestSuite, testCopy) {
+TEST_F(CxxPropertiesTestSuite, CopyTest) {
     celix::Properties props{};
 
     props["key1"] = "value1";
@@ -97,7 +97,7 @@ TEST_F(CxxPropertiesTestSuite, testCopy) {
     EXPECT_EQ(v2, "value1_new");
 }
 
-TEST_F(CxxPropertiesTestSuite, testWrap) {
+TEST_F(CxxPropertiesTestSuite, WrapTest) {
     auto *props = celix_properties_create();
     celix_properties_set(props, "test", "test");
 
@@ -112,7 +112,7 @@ TEST_F(CxxPropertiesTestSuite, testWrap) {
     celix_properties_destroy(props);
 }
 
-TEST_F(CxxPropertiesTestSuite, getType) {
+TEST_F(CxxPropertiesTestSuite, GetTypeTest) {
     celix::Properties props{};
 
     props.set("bool", true);
@@ -140,7 +140,7 @@ TEST_F(CxxPropertiesTestSuite, getType) {
     EXPECT_EQ(props.getType("version"), celix::Properties::ValueType::Version);
 }
 
-TEST_F(CxxPropertiesTestSuite, testGetAsVersion) {
+TEST_F(CxxPropertiesTestSuite, GetAsVersionTest) {
     celix::Properties props;
 
     // Test getting a version from a string property
@@ -163,8 +163,24 @@ TEST_F(CxxPropertiesTestSuite, testGetAsVersion) {
     EXPECT_EQ(props.getAsVersion("key", celix::Version{4, 5, 6}), ver);
 }
 
+TEST_F(CxxPropertiesTestSuite, StoreAndLoadTest) {
+    std::string path{"cxx_store_and_load_test.properties"};
+
+    celix::Properties props{};
+    props.set("key1", 1);
+    props.set("key2", 2);
+
+    EXPECT_NO_THROW(props.store(path));
+
+    celix::Properties loadedProps{};
+    EXPECT_NO_THROW(loadedProps = celix::Properties::load(path));
+    EXPECT_EQ(props.size(), loadedProps.size());
+
+    EXPECT_THROW(loadedProps = celix::Properties::load("non-existence"), celix::IOException);
+}
+
 #if __cplusplus >= 201703L //C++17 or higher
-TEST_F(CxxPropertiesTestSuite, testStringView) {
+TEST_F(CxxPropertiesTestSuite, StringViewTest) {
     constexpr std::string_view stringViewKey = "KEY1";
     constexpr std::string_view stringViewValue = "VALUE1";
     std::string stringKey{"KEY2"};
@@ -219,7 +235,7 @@ TEST_F(CxxPropertiesTestSuite, testStringView) {
     }
 }
 
-TEST_F(CxxPropertiesTestSuite, testUseOfConstexprInSetMethod) {
+TEST_F(CxxPropertiesTestSuite, UseOfConstexprInSetMethodTest) {
     celix::Properties props{};
 
     //Test if different bool "types" are correctly handled

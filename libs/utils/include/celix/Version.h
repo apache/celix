@@ -26,10 +26,7 @@
 
 namespace celix {
 
-    //TODO CxxVersionTestSuite
     //TODO doxygen
-    //TODO test in unordered map and set
-    //TODO test in map and set
     class Version {
     public:
         Version() :
@@ -37,7 +34,7 @@ namespace celix {
             qualifier{celix_version_getQualifier(cVersion.get())} {}
 
 #if __cplusplus >= 201703L //C++17 or higher
-        explicit Version(int major, int minor, int micro, std::string_view qualifier = {}) :
+        Version(int major, int minor, int micro, std::string_view qualifier = {}) :
             cVersion{createVersion(celix_version_create(major, minor, micro, qualifier.empty() ? "" : qualifier.data()))},
             qualifier{celix_version_getQualifier(cVersion.get())} {}
 #else
@@ -110,7 +107,9 @@ namespace celix {
         /**
          * @brief Create a wrap around a C Celix version without taking ownership.
          */
-        explicit Version(celix_version_t* v) : cVersion{v, [](celix_version_t *){/*nop*/}} {}
+        explicit Version(celix_version_t* v) :
+            cVersion{v, [](celix_version_t *){/*nop*/}},
+            qualifier{celix_version_getQualifier(cVersion.get())} {}
 
         std::shared_ptr<celix_version_t> cVersion;
         std::string qualifier; //cached qualifier of the const char* from celix_version_getQualifier

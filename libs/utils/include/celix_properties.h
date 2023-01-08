@@ -70,7 +70,6 @@ typedef enum celix_properties_value_type {
  * @brief A structure representing a single entry in a property set.
  */
 typedef struct celix_properties_entry {
-    const char* key;                            /**< The key of the entry*/
     const char* value;                          /**< The string value or string representation of a non-string
                                                      typed value.*/
     celix_properties_value_type_e valueType;    /**< The type of the value of the entry */
@@ -94,10 +93,15 @@ typedef struct celix_properties_iterator {
     /**
      * @brief The index of the current iterator.
      */
-    int index;
+    size_t index;
 
     /**
-     * @brief The current entry.
+     * @brief Te current key.
+     */
+    const char* key;
+
+    /**
+     * @brief The current value entry.
      */
     celix_properties_entry_t entry;
 
@@ -152,6 +156,8 @@ celix_properties_t* celix_properties_loadFromString(const char *input);
 /**
  * @brief Store properties to a file.
  *
+ * @note Properties values are always stored as string values, regardless of their actual underlining types.
+ *
  * @param[in] properties The property set to store.
  * @param[in] file The name of the file to store the properties to.
  * @param[in] header An optional header to write to the file before the properties.
@@ -199,6 +205,8 @@ void celix_properties_set(celix_properties_t* properties, const char* key, const
 
 /**
  * @brief Set the value of a property without copying the key and value strings.
+ *
+ * @note If the setWithoutCopy replaced an exising value, the key will be freed by callee.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set. This string will be used directly, so it must not be freed or modified
