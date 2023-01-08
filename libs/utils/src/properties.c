@@ -33,7 +33,7 @@
 #include "celix_string_hash_map.h"
 
 
-#define CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE 1024
+#define CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE 512
 #define CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE 16
 
 static const char* const CELIX_PROPERTIES_BOOL_TRUE_STRVAL = "true";
@@ -43,8 +43,11 @@ struct celix_properties {
     celix_string_hash_map_t* map;
 
     /**
-     * String buffer used to store the first key/value entries, so that in many cases additional memory allocation
-     * can be prevented.
+     * String buffer used to store the first key/value entries,
+     * so that in many cases - for usage in service properties - additional memory allocations are not needed.
+     *
+     * @note based on some small testing most services properties seem to max out at 11 entries.
+     * So 16 (next factor 2 based value) seems like a good fit.
      */
     char stringBuffer[CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE];
 
@@ -56,6 +59,9 @@ struct celix_properties {
     /**
      * Entries buffer used to store the first entries, so that in many cases additional memory allocation
      * can be prevented.
+     *
+     * @note based on some small testing most services properties seem to max around 300 bytes.
+     * So 512 (next factor 2 based value) seems like a good fit.
      */
     celix_properties_entry_t entriesBuffer[CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE];
 
@@ -350,15 +356,6 @@ celix_properties_t* celix_properties_create(void) {
 
 void celix_properties_destroy(celix_properties_t *props) {
     if (props != NULL) {
-        //TODO measure print nr of entries and total size of the string keys and values
-        fprintf(stdout, "Properties entries size: %d\n", celix_properties_size(props));
-        size_t size = 0;
-        CELIX_PROPERTIES_ITERATE(props, iter) {
-            size += strlen(iter.key) + 1;
-            size += strlen(iter.entry.value) + 1;
-        }
-        fprintf(stdout, "Properties total string size: %zu\n\n", size);
-
         celix_stringHashMap_destroy(props->map);
         free(props);
     }
@@ -476,7 +473,6 @@ celix_properties_t* celix_properties_loadWithStream(FILE *file) {
         return NULL;
     }
 
-    //TODO create properties with no internal short properties buffer, so celix_properties_createWithOptions()
     celix_properties_t *props = celix_properties_create();
     if (props == NULL) {
         return NULL;
