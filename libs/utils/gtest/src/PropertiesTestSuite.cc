@@ -21,6 +21,7 @@
 
 #include "celix_properties.h"
 #include "celix_utils.h"
+#include "properties.h"
 
 using ::testing::MatchesRegex;
 
@@ -55,6 +56,16 @@ TEST_F(PropertiesTestSuite, LoadTest) {
 
     celix_properties_destroy(properties);
 }
+
+TEST_F(PropertiesTestSuite, LoadFromStringTest) {
+    const char* string = "key1=value1\nkey2=value2";
+    auto* props = celix_properties_loadFromString(string);
+    EXPECT_EQ(2, celix_properties_size(props));
+    EXPECT_STREQ("value1", celix_properties_get(props, "key1", ""));
+    EXPECT_STREQ("value2", celix_properties_get(props, "key2", ""));
+    celix_properties_destroy(props);
+}
+
 
 TEST_F(PropertiesTestSuite, StoreTest) {
     const char* propertiesFile = "resources-test/properties_out.txt";
@@ -97,23 +108,6 @@ TEST_F(PropertiesTestSuite, GetAsLongTest) {
     EXPECT_EQ(-1, v);
 
     celix_properties_destroy(props);
-}
-
-TEST_F(PropertiesTestSuite, CopyTest) {
-    char propertiesFile[] = "resources-test/properties.txt";
-    auto* properties = celix_properties_load(propertiesFile);
-    EXPECT_EQ(4, celix_properties_size(properties));
-
-    celix_properties_t *copy = celix_properties_copy(properties);
-
-    char keyA[] = "a";
-    const char *valueA = celix_properties_get(copy, keyA, nullptr);
-    EXPECT_STREQ("b", valueA);
-    const char keyB[] = "b";
-    EXPECT_STREQ("c \t d", celix_properties_get(copy, keyB, nullptr));
-
-    celix_properties_destroy(properties);
-    celix_properties_destroy(copy);
 }
 
 TEST_F(PropertiesTestSuite, GetSetTest) {
@@ -169,6 +163,13 @@ TEST_F(PropertiesTestSuite, SetUnsetTest) {
     celix_properties_unset(properties, keyD);
     EXPECT_EQ(nullptr, celix_properties_get(properties, keyA, nullptr));
     EXPECT_EQ(nullptr, celix_properties_get(properties, "a", nullptr));
+    EXPECT_EQ(0, celix_properties_size(properties));
+
+    celix_properties_set(properties, keyA, nullptr);
+    EXPECT_EQ(1, celix_properties_size(properties));
+    celix_properties_unset(properties, keyA);
+    EXPECT_EQ(0, celix_properties_size(properties));
+
     celix_properties_destroy(properties);
 }
 
@@ -198,6 +199,35 @@ TEST_F(PropertiesTestSuite, GetLongTest) {
     b = celix_properties_getAsLong(properties, "b", -1L);
     EXPECT_EQ(3L, a);
     EXPECT_EQ(-4L, b);
+
+    celix_properties_destroy(properties);
+}
+
+TEST_F(PropertiesTestSuite, GetAsDoubleTest) {
+    auto* properties = celix_properties_create();
+
+    celix_properties_set(properties, "a", "2");
+    celix_properties_set(properties, "b", "-10032L");
+    celix_properties_set(properties, "c", "1.2");
+    celix_properties_setDouble(properties, "d", 1.4);
+    celix_properties_set(properties, "e", "");
+    celix_properties_set(properties, "f", "garbage");
+
+    double a = celix_properties_getAsDouble(properties, "a", -1);
+    double b = celix_properties_getAsDouble(properties, "b", -1);
+    double c = celix_properties_getAsDouble(properties, "c", -1);
+    double d = celix_properties_getAsDouble(properties, "d", -1);
+    double e = celix_properties_getAsDouble(properties, "e", -1);
+    double f = celix_properties_getAsDouble(properties, "f", -1);
+    double g = celix_properties_getAsDouble(properties, "g", -1); //does not exist
+
+    EXPECT_EQ(2, a);
+    EXPECT_EQ(-10032L, b);
+    EXPECT_EQ(1.2, c);
+    EXPECT_EQ(1.4, d);
+    EXPECT_EQ(-1L, e);
+    EXPECT_EQ(-1L, f);
+    EXPECT_EQ(-1L, g);
 
     celix_properties_destroy(properties);
 }
@@ -295,7 +325,7 @@ TEST_F(PropertiesTestSuite, SizeAndIteratorTest) {
     celix_properties_destroy(props);
 }
 
-TEST_F(PropertiesTestSuite, GetTypeTest) {
+TEST_F(PropertiesTestSuite, GetTypeAndCopyTest) {
     auto* props = celix_properties_create();
     celix_properties_set(props, "string", "value");
     celix_properties_setLong(props, "long", 123);
@@ -304,6 +334,7 @@ TEST_F(PropertiesTestSuite, GetTypeTest) {
     auto* version = celix_version_createVersion(1, 2, 3, nullptr);
     celix_properties_setVersion(props, "version", version);
 
+    EXPECT_EQ(5, celix_properties_size(props));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_STRING, celix_properties_getType(props, "string"));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_LONG, celix_properties_getType(props, "long"));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_DOUBLE, celix_properties_getType(props, "double"));
@@ -311,8 +342,17 @@ TEST_F(PropertiesTestSuite, GetTypeTest) {
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_VERSION, celix_properties_getType(props, "version"));
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_UNSET, celix_properties_getType(props, "missing"));
 
+    auto* copy = celix_properties_copy(props);
+    EXPECT_EQ(5, celix_properties_size(copy));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_STRING, celix_properties_getType(copy, "string"));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_LONG, celix_properties_getType(copy, "long"));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_DOUBLE, celix_properties_getType(copy, "double"));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_BOOL, celix_properties_getType(copy, "bool"));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_VERSION, celix_properties_getType(copy, "version"));
+
     celix_version_destroy(version);
     celix_properties_destroy(props);
+    celix_properties_destroy(copy);
 }
 
 TEST_F(PropertiesTestSuite, GetEntryTest) {
@@ -509,4 +549,38 @@ TEST_F(PropertiesTestSuite, EndOfEmptyPropertiesTest) {
     celix_properties_destroy(props);
 }
 
-//TODO test replace and replace WithCopy
+TEST_F(PropertiesTestSuite, SetWithCopyTest) {
+    auto* props = celix_properties_create();
+    celix_properties_setWithoutCopy(props, celix_utils_strdup("key"), celix_utils_strdup("value2"));
+    //replace, should free old value and provided key
+    celix_properties_setWithoutCopy(props, celix_utils_strdup("key"), celix_utils_strdup("value2"));
+    EXPECT_EQ(1, celix_properties_size(props));
+    celix_properties_destroy(props);
+}
+
+TEST_F(PropertiesTestSuite, DeprecatedApiTest) {
+    //Check if the deprecated api can still be used
+    auto* props = properties_create();
+    properties_set(props, "key", "value");
+    EXPECT_EQ(1, celix_properties_size(props));
+    EXPECT_STREQ("value", properties_get(props, "key"));
+    EXPECT_STREQ("notfound", properties_getWithDefault(props, "non-existing", "notfound"));
+    properties_unset(props, "key");
+    EXPECT_EQ(0, celix_properties_size(props));
+    celix_properties_t * copy = nullptr;
+    EXPECT_EQ(CELIX_SUCCESS, properties_copy(props, &copy));
+    properties_destroy(copy);
+
+
+    properties_store(props, "deprecated-api-stored.properties", "");
+    auto* loaded = properties_load("deprecated-api-stored.properties");
+    EXPECT_NE(nullptr, loaded);
+    properties_destroy(loaded);
+
+    loaded = properties_loadFromString("key=value");
+    EXPECT_EQ(1, celix_properties_size(loaded));
+    properties_destroy(loaded);
+
+
+    properties_destroy(props);
+}

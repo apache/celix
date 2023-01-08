@@ -141,7 +141,10 @@ static void updateBuffers(char **key, char ** value, char **output, int outputPo
  * optimization string buffer.
  */
 static char* celix_properties_createString(celix_properties_t* properties, const char* str) {
-    size_t len = str == NULL ? 0 : strnlen(str, CELIX_UTILS_MAX_STRLEN) + 1;
+    if (str == NULL) {
+        return NULL;
+    }
+    size_t len = strnlen(str, CELIX_UTILS_MAX_STRLEN) + 1;
     size_t left = CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE - properties->currentStringBufferIndex;
     char* result;
     if (len < left) {
@@ -160,7 +163,7 @@ static char* celix_properties_createString(celix_properties_t* properties, const
 static celix_status_t celix_properties_fillEntry(
         celix_properties_t *properties,
         celix_properties_entry_t* entry,
-        const char *strValue,
+        const char** strValue,
         const long* longValue,
         const double* doubleValue,
         const bool* boolValue,
@@ -168,7 +171,7 @@ static celix_status_t celix_properties_fillEntry(
     char convertedValueBuffer[32];
     if (strValue != NULL) {
         entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_STRING;
-        entry->value = celix_properties_createString(properties, strValue);
+        entry->value = celix_properties_createString(properties, *strValue);
         entry->typed.strValue = entry->value;
     } else if (longValue != NULL) {
         entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_LONG;
@@ -250,7 +253,7 @@ static celix_properties_entry_t* celix_properties_createEntryWithNoCopy(celix_pr
 static celix_properties_entry_t* celix_properties_createEntry(
         celix_properties_t *properties,
         const char *key,
-        const char *strValue,
+        const char** strValue,
         const long* longValue,
         const double* doubleValue,
         const bool* boolValue,
@@ -276,7 +279,7 @@ static celix_properties_entry_t* celix_properties_createEntry(
 static void celix_properties_createAndSetEntry(
         celix_properties_t *properties,
         const char *key,
-        const char *strValue,
+        const char** strValue,
         const long* longValue,
         const double* doubleValue,
         const bool* boolValue,
@@ -348,13 +351,13 @@ celix_properties_t* celix_properties_create(void) {
 void celix_properties_destroy(celix_properties_t *props) {
     if (props != NULL) {
         //TODO measure print nr of entries and total size of the string keys and values
-//        fprintf(stdout, "Properties size; %d", celix_properties_size(props));
-//        size_t size = 0;
-//        CELIX_PROPERTIES_ITERATE(props, iter) {
-//            size += strlen(iter.entry.key) + 1;
-//            size += strlen(iter.entry.value) + 1;
-//        }
-//        fprintf(stdout, "Properties string size: %zu", size);
+        fprintf(stdout, "Properties entries size: %d\n", celix_properties_size(props));
+        size_t size = 0;
+        CELIX_PROPERTIES_ITERATE(props, iter) {
+            size += strlen(iter.key) + 1;
+            size += strlen(iter.entry.value) + 1;
+        }
+        fprintf(stdout, "Properties total string size: %zu\n\n", size);
 
         celix_stringHashMap_destroy(props->map);
         free(props);
@@ -628,8 +631,8 @@ celix_properties_entry_t* celix_properties_getEntry(const celix_properties_t* pr
 }
 
 void celix_properties_set(celix_properties_t *properties, const char *key, const char *value) {
-    if (properties != NULL && key != NULL && value != NULL) {
-        celix_properties_createAndSetEntry(properties, key, value, NULL, NULL, NULL, NULL);
+    if (properties != NULL && key != NULL) {
+        celix_properties_createAndSetEntry(properties, key, &value, NULL, NULL, NULL, NULL);
     }
 }
 
@@ -863,8 +866,3 @@ bool celix_propertiesIterator_equals(const celix_properties_iterator_t* a, const
     return celix_stringHashMapIterator_equals(&internalIterA.mapIter, &internalIterB.mapIter);
 }
 
-celix_properties_t* celix_propertiesIterator_properties(const celix_properties_iterator_t *iter) {
-    celix_properties_iterator_internal_t internalIter;
-    memcpy(&internalIter, iter, sizeof(internalIter));
-    return (celix_properties_t*)internalIter.props;
-}

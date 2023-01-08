@@ -204,9 +204,8 @@ FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_referen
     int vsize = celix_properties_size(props);
     *size = (unsigned int)vsize;
     *keys = malloc(vsize * sizeof(**keys));
-    const char* key;
-    CELIX_PROPERTIES_FOR_EACH(props, key) {
-        (*keys)[i++] = (char*)key;
+    CELIX_PROPERTIES_ITERATE(props, iter) {
+        (*keys)[i++] = (char*)iter.key;
     }
     return status;
 }

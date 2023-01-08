@@ -176,7 +176,12 @@ TEST_F(CxxPropertiesTestSuite, StoreAndLoadTest) {
     EXPECT_NO_THROW(loadedProps = celix::Properties::load(path));
     EXPECT_EQ(props.size(), loadedProps.size());
 
-    EXPECT_THROW(loadedProps = celix::Properties::load("non-existence"), celix::IOException);
+    try {
+        loadedProps = celix::Properties::load("non-existence");
+        FAIL() << "Expected exception not thrown";
+    } catch (const celix::IOException& e) {
+        EXPECT_TRUE(strstr(e.what(), "Cannot load celix::Properties"));
+    }
 }
 
 #if __cplusplus >= 201703L //C++17 or higher

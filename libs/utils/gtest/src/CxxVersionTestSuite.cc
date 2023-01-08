@@ -18,6 +18,8 @@
  */
 
 #include <gtest/gtest.h>
+#include <unordered_map>
+#include <map>
 
 #include "celix/Version.h"
 

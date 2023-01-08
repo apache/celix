@@ -406,14 +406,6 @@ void celix_propertiesIterator_next(celix_properties_iterator_t* iter);
 bool celix_propertiesIterator_isEnd(const celix_properties_iterator_t* iter);
 
 /**
- * @brief Get the property set being iterated over.
- *
- * @param[in] iter The iterator to get the property set from.
- * @return The property set being iterated over.
- */
-celix_properties_t* celix_propertiesIterator_properties(const celix_properties_iterator_t *iter);
-
-/**
  * @brief Determine whether two iterators are equal.
  *
  * @param[in] a The first iterator to compare.
@@ -516,8 +508,6 @@ const char* celix_propertiesIterator_nextKey(celix_properties_iterator_t* iter)
 #define CELIX_PROPERTIES_FOR_EACH(properties, key) \
     for(celix_properties_iterator_t iter_##key = celix_propertiesIterator_construct(properties); \
        celix_propertiesIterator_hasNext(&iter_##key), (key) = celix_propertiesIterator_nextKey(&iter_##key);)
-
-
 
 #ifdef __cplusplus
 }

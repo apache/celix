@@ -199,16 +199,13 @@ celix_status_t pubsubProtocol_encodeMetadata(pubsub_protocol_message_t *message,
     size_t len = 0;
 
     if (message->metadata.metadata != NULL && celix_properties_size(message->metadata.metadata) > 0) {
-        const char *key;
         char *keyNetString = NULL;
         int netStringMemoryLength = 0;
 
-        CELIX_PROPERTIES_FOR_EACH(message->metadata.metadata, key) {
-            const char *val = celix_properties_get(message->metadata.metadata, key, "!Error!");
-
+        CELIX_PROPERTIES_ITERATE(message->metadata.metadata, iter) {
             //refactoring these two copies to a function leads to a slow down of about 2x
             int strlenKeyNetString = 0;
-            status = pubsubProtocol_createNetstring(key, &keyNetString, &strlenKeyNetString, &netStringMemoryLength);
+            status = pubsubProtocol_createNetstring(iter.key, &keyNetString, &strlenKeyNetString, &netStringMemoryLength);
             if (status != CELIX_SUCCESS) {
                 break;
             }
@@ -227,7 +224,7 @@ celix_status_t pubsubProtocol_encodeMetadata(pubsub_protocol_message_t *message,
             memcpy(line + idx, keyNetString, strlenKeyNetString);
             idx += strlenKeyNetString;
 
-            status = pubsubProtocol_createNetstring(val, &keyNetString, &strlenKeyNetString, &netStringMemoryLength);
+            status = pubsubProtocol_createNetstring(iter.entry.value, &keyNetString, &strlenKeyNetString, &netStringMemoryLength);
             if (status != CELIX_SUCCESS) {
                 break;
             }

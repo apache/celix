@@ -139,16 +139,15 @@ static celix_status_t endpointDescriptorWriter_writeEndpoint(endpoint_descriptor
     } else {
         xmlTextWriterStartElement(writer->writer, ENDPOINT_DESCRIPTION);
 
-        const char* propertyName;
-        CELIX_PROPERTIES_FOR_EACH(endpoint->properties, propertyName) {
-			const xmlChar* propertyValue = (const xmlChar*) celix_properties_get(endpoint->properties, propertyName, "");
+        CELIX_PROPERTIES_ITERATE(endpoint->properties, iter) {
+			const xmlChar* propertyValue = (const xmlChar*) celix_properties_get(endpoint->properties, iter.key, "");
             xmlTextWriterStartElement(writer->writer, PROPERTY);
-            xmlTextWriterWriteAttribute(writer->writer, NAME, (const xmlChar*)propertyName);
+            xmlTextWriterWriteAttribute(writer->writer, NAME, (const xmlChar*)iter.key);
 
-            if (strcmp(OSGI_FRAMEWORK_OBJECTCLASS, (char*) propertyName) == 0) {
+            if (strcmp(OSGI_FRAMEWORK_OBJECTCLASS, (char*) iter.key) == 0) {
             	// objectClass *must* be represented as array of string values...
             	endpointDescriptorWriter_writeArrayValue(writer->writer, propertyValue);
-            } else if (strcmp(OSGI_RSA_ENDPOINT_SERVICE_ID, (char*) propertyName) == 0) {
+            } else if (strcmp(OSGI_RSA_ENDPOINT_SERVICE_ID, (char*) iter.key) == 0) {
             	// endpoint.service.id *must* be represented as long value...
             	endpointDescriptorWriter_writeTypedValue(writer->writer, VALUE_TYPE_LONG, propertyValue);
             } else {

@@ -188,17 +188,15 @@ void celixLauncher_stop(celix_framework_t* framework) {
 }
 
 static void show_properties(celix_properties_t *embeddedProps, const char *configFile) {
-	const char *key = NULL;
 	celix_properties_t *keys = celix_properties_create(); //only to store the keys
 
 	printf("Embedded properties:\n");
 	if (embeddedProps == NULL || celix_properties_size(embeddedProps) == 0) {
 		printf("|- Empty!\n");
 	} else {
-		CELIX_PROPERTIES_FOR_EACH(embeddedProps, key) {
-			const char *val = celix_properties_get(embeddedProps, key, "!Error!");
-			printf("|- %s=%s\n", key, val);
-            celix_properties_set(keys, key, NULL);
+        CELIX_PROPERTIES_ITERATE(embeddedProps, iter) {
+			printf("|- %s=%s\n", iter.key, iter.entry.value);
+            celix_properties_set(keys, iter.key, NULL);
         }
 	}
 	printf("\n");
@@ -211,10 +209,9 @@ static void show_properties(celix_properties_t *embeddedProps, const char *confi
 	if (runtimeProps == NULL || celix_properties_size(runtimeProps) == 0) {
 		printf("|- Empty!\n");
 	} else {
-		CELIX_PROPERTIES_FOR_EACH(runtimeProps, key) {
-			const char *val = celix_properties_get(runtimeProps, key, "!Error!");
-			printf("|- %s=%s\n", key, val);
-            celix_properties_set(keys, key, NULL);
+        CELIX_PROPERTIES_ITERATE(runtimeProps, iter) {
+			printf("|- %s=%s\n", iter.key, iter.entry.value);
+            celix_properties_set(keys, iter.key, NULL);
 		}
 	}
     printf("\n");
@@ -225,13 +222,13 @@ static void show_properties(celix_properties_t *embeddedProps, const char *confi
 	if (celix_properties_size(keys) == 0) {
 		printf("|- Empty!\n");
 	} else {
-		CELIX_PROPERTIES_FOR_EACH(keys, key) {
-			const char *valEm = celix_properties_get(embeddedProps, key, NULL);
-            const char *valRt = celix_properties_get(runtimeProps, key, NULL);
-            const char *envVal = getenv(key);
+        CELIX_PROPERTIES_ITERATE(keys, iter) {
+			const char *valEm = celix_properties_get(embeddedProps, iter.key, NULL);
+            const char *valRt = celix_properties_get(runtimeProps, iter.key, NULL);
+            const char *envVal = getenv(iter.key);
             const char *val = envVal != NULL ? envVal : valRt != NULL ? valRt : valEm;
             const char *source = envVal != NULL ? "environment" : valRt != NULL ? "runtime" : "embedded";
-			printf("|- %s=%s (source %s)\n", key, val, source);
+			printf("|- %s=%s (source %s)\n", iter.key, val, source);
 		}
 	}
     printf("\n");
@@ -258,9 +255,8 @@ static void printEmbeddedBundles() {
 
 static void combine_properties(celix_properties_t *original, const celix_properties_t *append) {
 	if (original != NULL && append != NULL) {
-		const char *key = NULL;
-		CELIX_PROPERTIES_FOR_EACH(append, key) {
-			celix_properties_set(original, key, celix_properties_get(append, key, NULL));
+		CELIX_PROPERTIES_ITERATE(append, iter) {
+			celix_properties_set(original, iter.key, iter.entry.value);
 		}
 	}
 }

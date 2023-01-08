@@ -747,9 +747,8 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     celix_properties_set(endpointProperties, RSA_DFI_ENDPOINT_URL, url);
 
     if (props != NULL) {
-        const char* key;
-        CELIX_PROPERTIES_FOR_EACH(props, key) {
-            celix_properties_set(endpointProperties, key, celix_properties_get(props, key, ""));
+        CELIX_PROPERTIES_ITERATE(props, iter) {
+            celix_properties_set(endpointProperties, iter.key, iter.entry.value);
         }
     }
 
@@ -947,14 +946,10 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
     } else {
         struct curl_slist *metadataHeader = NULL;
         if (metadata != NULL && celix_properties_size(metadata) > 0) {
-            const char *key = NULL;
-            CELIX_PROPERTIES_FOR_EACH(metadata, key) {
-                const char *val = celix_properties_get(metadata, key, "");
-                size_t length = strlen(key) + strlen(val) + 18; // "X-RSA-Metadata-key: val\0"
-
+            CELIX_PROPERTIES_ITERATE(metadata, iter) {
+                size_t length = strlen(iter.key) + strlen(iter.entry.value) + 18; // "X-RSA-Metadata-key: val\0"
                 char header[length];
-
-                snprintf(header, length, "X-RSA-Metadata-%s: %s", key, val);
+                snprintf(header, length, "X-RSA-Metadata-%s: %s", iter.key, iter.entry.value);
                 metadataHeader = curl_slist_append(metadataHeader, header);
             }
 

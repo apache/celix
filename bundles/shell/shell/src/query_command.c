@@ -95,18 +95,10 @@ static void queryCommand_callback(void *handle, const celix_bundle_t *bnd) {
                 queryCommand_printBundleHeader(data->sout, bnd, &printBundleCalled);
                 fprintf(data->sout, "|- Provided service '%s' [id = %li]\n", entry->serviceName, entry->serviceId);
                 if (data->opts->verbose) {
-                    const char *cmpUUID = celix_properties_get(entry->serviceProperties, "component.uuid", NULL);
-                    if (cmpUUID != NULL) {
-                        //TODO add context to opts
-                        //TODO add celix_dependencyManager_createInfoForUUID()                    }
-                        //TODO print component name
-                    }
                     fprintf(data->sout, "   |- Is factory: %s\n", entry->factory ? "true" : "false");
                     fprintf(data->sout, "   |- Properties:\n");
-                    const char *key;
-                    CELIX_PROPERTIES_FOR_EACH(entry->serviceProperties, key) {
-                        const char *val = celix_properties_get(entry->serviceProperties, key, "!ERROR!");
-                        fprintf(data->sout, "      |- %20s = %s\n", key, val);
+                    CELIX_PROPERTIES_ITERATE(entry->serviceProperties, iter) {
+                        fprintf(data->sout, "      |- %20s = %s\n", iter.key, iter.entry.value);
                     }
                 }
             }

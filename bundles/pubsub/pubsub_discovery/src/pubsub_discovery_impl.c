@@ -557,10 +557,8 @@ static char* pubsub_discovery_createJsonEndpoint(const celix_properties_t *props
     //note props is already check for validity (pubsubEndpoint_isValid)
 
     json_t *jsEndpoint = json_object();
-    const char* propKey = NULL;
-    CELIX_PROPERTIES_FOR_EACH(props, propKey) {
-        const char* val = celix_properties_get(props, propKey, NULL);
-        json_object_set_new(jsEndpoint, propKey, json_string(val));
+    CELIX_PROPERTIES_ITERATE(props, iter) {
+        json_object_set_new(jsEndpoint, iter.key, json_string(iter.entry.value));
     }
     char* str = json_dumps(jsEndpoint, JSON_COMPACT);
     json_decref(jsEndpoint);

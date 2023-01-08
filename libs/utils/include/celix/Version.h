@@ -45,8 +45,6 @@ namespace celix {
             cVersion{createVersion(celix_version_createEmptyVersion())},
             qualifier{celix_version_getQualifier(cVersion.get())} {}
 
-#if __cplusplus >= 201703L //C++17 or higher
-
         /**
          * @brief Constructs a new version with the given components and qualifier.
          * @param major The major component of the version.
@@ -54,6 +52,7 @@ namespace celix {
          * @param micro The micro component of the version.
          * @param qualifier The qualifier string of the version.
          */
+#if __cplusplus >= 201703L //C++17 or higher
         Version(int major, int minor, int micro, std::string_view qualifier = {}) :
             cVersion{createVersion(celix_version_create(major, minor, micro, qualifier.empty() ? "" : qualifier.data()))},
             qualifier{celix_version_getQualifier(cVersion.get())} {}
