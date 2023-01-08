@@ -47,7 +47,7 @@ celix_status_t pubsubProtocol_wire_v2_decodeHeader(void* handle, void *data, siz
 celix_status_t pubsubProtocol_wire_v2_decodeFooter(void* handle, void *data, size_t length, pubsub_protocol_message_t *message);
 
 celix_status_t pubsubProtocol_wire_v2_encodePayload(void* handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
-celix_status_t pubsubProtocol_wire_v2_encodeMetadata(void* handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
+celix_status_t pubsubProtocol_wire_v2_encodeMetadata(void *handle, pubsub_protocol_message_t *message, void **bufferInOut, size_t *bufferLengthInOut, size_t* bufferContentLengthOut);
 celix_status_t pubsubProtocol_wire_v2_decodePayload(void* handle, void *data, size_t length, pubsub_protocol_message_t *message);
 celix_status_t pubsubProtocol_wire_v2_decodeMetadata(void* handle, void *data, size_t length, pubsub_protocol_message_t *message);
 

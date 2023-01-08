@@ -70,7 +70,7 @@ namespace impl {
                            "\n";
                 auto ctx = weakCtx.lock();
                 if (ctx) {
-                    ctx->logWarn(msg.c_str());
+                    ctx->logWarn("%s", msg.c_str());
                 } else {
                     std::cout << msg;
                 }

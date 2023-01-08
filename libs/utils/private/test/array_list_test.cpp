@@ -127,7 +127,7 @@ TEST(array_list, clone) {
     for (i = 0; i < 12; i++) {
         bool added;
         char entry[11];
-        sprintf(entry, "|%s|%d|", "entry", i);
+        snprintf(entry, sizeof(entry), "|%s|%d|", "entry", i);
         added = arrayList_add(list, my_strdup(entry));
         CHECK(added);
     }
@@ -144,7 +144,7 @@ TEST(array_list, clone) {
     for (j = 0; j < 12; j++) {
         void *entry = NULL;
         char entrys[11];
-        sprintf(entrys, "|%s|%d|", "entry", j);
+        snprintf(entrys, sizeof(entrys), "|%s|%d|", "entry", j);
 
         entry = arrayList_get(clone, j);
         STRCMP_EQUAL((char *) entry, entrys);

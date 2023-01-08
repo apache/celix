@@ -80,9 +80,12 @@ endif ()
 
 # Set C specific flags
 set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
-set(CMAKE_C_FLAGS "-Wall -Werror -Wno-error=deprecated-declarations ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "-Wall -Werror -Wformat -Wno-error=deprecated-declarations ${CMAKE_C_FLAGS}")
 
 # Set C++ specific flags
+set(CMAKE_CXX_FLAGS "-fno-rtti ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ -Wformat -Wno-error=deprecated-declarations ${CMAKE_CXX_FLAGS}")
+
 if (NOT DEFINED CMAKE_CXX_STANDARD)
     #Celix header only C++ supported is based on C++14 and C++17.
     #Default using C++14 to ensure the code compiles for C++14.
@@ -90,9 +93,6 @@ if (NOT DEFINED CMAKE_CXX_STANDARD)
     #not already defined.
     set(CMAKE_CXX_STANDARD 14)
 endif ()
-
-set(CMAKE_CXX_FLAGS "-fno-rtti ${CMAKE_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ -Wno-error=deprecated-declarations ${CMAKE_CXX_FLAGS}")
 
 if(APPLE)
     set(CMAKE_MACOSX_RPATH 1)
