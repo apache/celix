@@ -23,6 +23,12 @@
 #include <unordered_map>
 #include <memory>
 #include <string>
+#if __cplusplus >= 201703L //C++17 or higher
+#include <string_view>
+#else
+#include <type_traits>
+#endif
+
 
 #include "celix_properties.h"
 #include "celix_utils.h"
@@ -30,6 +36,48 @@
 #include "celix/IOException.h"
 
 namespace celix {
+
+
+#if __cplusplus < 201703L //lower than C++17
+    template<typename T>
+    struct IsIntegralDoubleBoolOrVersion : std::false_type {};
+
+    template <>
+    struct IsIntegralDoubleBoolOrVersion<char> : std::true_type {};
+
+    template <>
+    struct IsIntegralDoubleBoolOrVersion<unsigned char> : std::true_type {};
+
+    template <>
+    struct IsIntegralDoubleBoolOrVersion<short> : std::true_type {};
+
+    template <>
+    struct IsIntegralDoubleBoolOrVersion<unsigned short> : std::true_type {};
+
+    template <>
+    struct IsIntegralDoubleBoolOrVersion<int> : std::true_type {};
+
+    template <>
+    struct IsIntegralDoubleBoolOrVersion<long> : std::true_type {};
+
+    template <>
+    struct IsIntegralDoubleBoolOrVersion<unsigned int> : std::true_type {};
+
+    template<>
+    struct IsIntegralDoubleBoolOrVersion<double> : std::true_type {};
+
+    template<>
+    struct IsIntegralDoubleBoolOrVersion<float> : std::true_type {};
+
+    template<>
+    struct IsIntegralDoubleBoolOrVersion<bool> : std::true_type {};
+
+    template<>
+    struct IsIntegralDoubleBoolOrVersion<celix::Version> : std::true_type {};
+
+    template<>
+    struct IsIntegralDoubleBoolOrVersion<celix_version_t*> : std::true_type {};
+#endif
 
     /**
      * @brief A iterator for celix::Properties.
@@ -431,7 +479,7 @@ namespace celix {
         [[nodiscard]] bool getAsBool(const std::string &key, bool defaultValue) const {
             return celix_properties_getAsBool(cProps.get(), key.c_str(), defaultValue);
         }
-        
+
         /**
          * @brief Get the value of the property with key as a Celix version.
          *
@@ -454,7 +502,7 @@ namespace celix {
                 celix_version_destroy(cVersion);
                 return version;
             }
-            return defaultValue
+            return defaultValue;
         }
 
         /**
@@ -479,16 +527,6 @@ namespace celix {
         }
 
         /**
-         * @brief Set the value of a property to a boolean.
-         *
-         * @param[in] key The key of the property to set.
-         * @param[in] value The boolean value to set the property to.
-         */
-        void set(const std::string& key, bool value) {
-            celix_properties_setBool(cProps.get(), key.data(), value);
-        }
-
-        /**
          * @brief Set the value of a property.
          *
          * @param[in] key The key of the property to set.
@@ -509,9 +547,21 @@ namespace celix {
          * @param[in] value The value to set for the property.
          */
         template<typename T>
-        void set(const std::string& key, T&& value) {
+        typename std::enable_if<!celix::IsIntegralDoubleBoolOrVersion<T>::value, void>::type
+        set(const std::string& key, T&& value) {
+            std::cout << "Setting with T&&" << std::endl;
             using namespace std;
-            celix_properties_set(cProps.get(), key.data()(), to_string(value).c_str());
+            celix_properties_set(cProps.get(), key.data(), to_string(value).c_str());
+        }
+
+        /**
+         * @brief Sets a celix::Version property value for a given key.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] value The value to set for the property.
+         */
+        void set(const std::string& key, celix::Version&& value) {
+            celix_properties_setVersion(cProps.get(), key.data(), value.getCVersion());
         }
 
         /**
@@ -535,6 +585,26 @@ namespace celix {
         }
 
         /**
+         * @brief Sets a long property value for a given key.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] value The value to set for the property.
+         */
+        void set(const std::string& key, int value) {
+            celix_properties_setLong(cProps.get(), key.data(), value);
+        }
+
+        /**
+         * @brief Sets a long property value for a given key.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] value The value to set for the property.
+         */
+        void set(const std::string& key, unsigned int value) {
+            celix_properties_setLong(cProps.get(), key.data(), value);
+        }
+
+        /**
          * @brief Sets a double property value for a given key.
          *
          * @param[in] key The key of the property to set.
@@ -542,16 +612,6 @@ namespace celix {
          */
         void set(const std::string& key, double value) {
             celix_properties_setDouble(cProps.get(), key.data(), value);
-        }
-
-        /**
-         * @brief Sets a celix::Version property value for a given key.
-         *
-         * @param[in] key The key of the property to set.
-         * @param[in] value The value to set for the property.
-         */
-        void set(const std::string& key, const celix::Version& value) {
-            celix_properties_setVersion(cProps.get(), key.data(), value.getCVersion());
         }
 
         /**
@@ -643,7 +703,7 @@ namespace celix {
 
     private:
         Properties(celix_properties_t* props, bool takeOwnership) :
-            cProps{props, [ownership = takeOwnership](celix_properties_t* p){ if (ownership) { celix_properties_destroy(p); }}} {}
+            cProps{props, [takeOwnership](celix_properties_t* p){ if (takeOwnership) { celix_properties_destroy(p); }}} {}
 
         static celix::Properties::ValueType getAndConvertType(
                 const std::shared_ptr<celix_properties_t>& cProperties,

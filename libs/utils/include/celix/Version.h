@@ -26,14 +26,34 @@
 
 namespace celix {
 
-    //TODO doxygen
+    /**
+     * @class Version
+     * @brief Class for storing and manipulating version information.
+     *
+     * The Version class represents a version number that follows the Semantic Versioning specification (SemVer).
+     * It consists of three non-negative integers for the major, minor, and micro version, and an optional string for
+     * the qualifier.
+     * The Version class provides comparison operators and functions for getting the individual version components.
+     *
+     * @note This class is a thin wrapper around the C API defined in celix_version.h.
+     */
     class Version {
     public:
+
+        ///@brief Constructs a new empty version with all components set to zero.
         Version() :
             cVersion{createVersion(celix_version_createEmptyVersion())},
             qualifier{celix_version_getQualifier(cVersion.get())} {}
 
 #if __cplusplus >= 201703L //C++17 or higher
+
+        /**
+         * @brief Constructs a new version with the given components and qualifier.
+         * @param major The major component of the version.
+         * @param minor The minor component of the version.
+         * @param micro The micro component of the version.
+         * @param qualifier The qualifier string of the version.
+         */
         Version(int major, int minor, int micro, std::string_view qualifier = {}) :
             cVersion{createVersion(celix_version_create(major, minor, micro, qualifier.empty() ? "" : qualifier.data()))},
             qualifier{celix_version_getQualifier(cVersion.get())} {}
@@ -43,26 +63,31 @@ namespace celix {
             qualifier{celix_version_getQualifier(cVersion.get())} {}
 #endif
 
-
+        ///@brief Move-constructs a new version from an existing one.
         Version(Version&&) = default;
+
+        ///@brief Copy constructor for a Celix Version object.
         Version(const Version& rhs) = default;
 
+        ///@brief Move assignment operator for the Celix Version class.
         Version& operator=(Version&&) = default;
+
+        ///@brief Copy assignment operator for the Celix Version class.
         Version& operator=(const Version& rhs) = default;
 
+        ///@brief Test whether two Version objects are equal.
         bool operator==(const Version& rhs) const {
             return celix_version_compareTo(cVersion.get(), rhs.cVersion.get()) == 0;
         }
 
+        ///@brief Overload the < operator to compare two Version objects.
         bool operator<(const Version& rhs) const {
             return celix_version_compareTo(cVersion.get(), rhs.cVersion.get()) < 0;
         }
 
-        //TODO rest of the operators, is that needed?
-
         /**
-         * @brief Warps a C Celix Version to a C++ Celix Version, but takes no ownership.
-         * Dealloction is still the responsibility of the caller.
+         * @brief Warp a C Celix Version to a C++ Celix Version, but takes no ownership.
+         * De-allocation is still the responsibility of the caller.
          */
         static Version wrap(celix_version_t* v) {
             return Version{v};
@@ -78,22 +103,38 @@ namespace celix {
             return cVersion.get();
         }
 
-        //TODO doc
+        /**
+         * @brief Get the major component of the version.
+         * The major component designates the primary release.
+         * @return The major component of the version.
+         */
         [[nodiscard]] int getMajor() const {
             return celix_version_getMajor(cVersion.get());
         }
 
-        //TODO doc
+        /**
+         * @brief Get the minor component of the version.
+         * The minor component designates a new or improved feature.
+         * @return The minor component of the version.
+         */
         [[nodiscard]] int getMinor() const {
             return celix_version_getMinor(cVersion.get());
         }
 
-        //TODO doc
+        /**
+         * @brief Get the micro component of the version.
+         * The micro component designates a bug fix.
+         * @return The micro component of the version.
+         */
         [[nodiscard]] int getMicro() const {
             return celix_version_getMicro(cVersion.get());
         }
 
-        //TODO doc
+        /**
+         * @brief Get the qualifier component of the version.
+         * The qualifier component designates additional information about the version.
+         * @return The qualifier component of the version.
+         */
         [[nodiscard]] const std::string& getQualifier() const {
             return qualifier;
         }
@@ -117,6 +158,12 @@ namespace celix {
 }
 
 namespace std {
+
+    /**
+     * @brief The hash celix::Version struct provides a std::hash compatible hashing function for the celix::Version
+     * class. This allows celix::Version objects to be used as keys in std::unordered_map and std::unordered_set.
+     * @see std::hash
+     */
     template<>
     struct hash<celix::Version> {
         size_t operator()(const celix::Version& v) const {

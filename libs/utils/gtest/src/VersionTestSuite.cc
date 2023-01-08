@@ -150,8 +150,6 @@ TEST_F(VersionTestSuite, CreateEmptyVersionTest) {
 }
 
 TEST_F(VersionTestSuite, CompareTest) {
-    //TODO update to updated API
-
     celix_version_t* version = nullptr;
     celix_version_t* compare = nullptr;
     celix_status_t status = CELIX_SUCCESS;
@@ -227,8 +225,6 @@ TEST_F(VersionTestSuite, CompareToMajorMinorTest) {
 }
 
 TEST_F(VersionTestSuite, ToStringTest) {
-    //TODO update to updated API
-
     celix_version_t* version = nullptr;
     celix_status_t status = CELIX_SUCCESS;
     char * str;
@@ -262,8 +258,6 @@ TEST_F(VersionTestSuite, ToStringTest) {
 }
 
 TEST_F(VersionTestSuite, SemanticCompatibilityTest) {
-    //TODO update to updated API
-
     celix_version_t* provider = nullptr;
     celix_version_t* compatible_user = nullptr;
     celix_version_t* incompatible_user_by_major = nullptr;

@@ -26,6 +26,17 @@ extern "C" {
 
 #include <stdbool.h>
 
+
+/**
+ * @file celix_version.h
+ * @brief Header file for the Celix Version API.
+ *
+ * The Celix Version API provides a means for storing and manipulating version information, which consists of
+ * three non-negative integers for the major, minor, and micro version, and an optional string for the qualifier.
+ * This implementation is based on the Semantic Versioning specification (SemVer).
+ * Functions are provided for creating and destroying version objects, comparing versions, and extracting the individual version components.
+ */
+
 /**
  * @brief The definition of the celix_version_t* abstract data type.
  */
