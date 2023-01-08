@@ -141,8 +141,9 @@ TEST_F(PropertiesTestSuite, GetSetWithNullTest) {
     celix_properties_set(properties, nullptr, nullptr);
     EXPECT_EQ(celix_properties_size(properties), 0); //NULL key will be ignored
 
-    celix_properties_set(properties, "key", nullptr);
-    EXPECT_EQ(celix_properties_size(properties), 0); //NULL value will be ignored
+    celix_properties_set(properties, "key", nullptr); //NULL value will result in empty string value
+    EXPECT_STREQ("", celix_properties_get(properties, "key", "not found"));
+    EXPECT_EQ(celix_properties_size(properties), 1);
 
     celix_properties_destroy(properties);
 }

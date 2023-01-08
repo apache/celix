@@ -38,6 +38,7 @@
 
 static const char* const CELIX_PROPERTIES_BOOL_TRUE_STRVAL = "true";
 static const char* const CELIX_PROPERTIES_BOOL_FALSE_STRVAL = "false";
+static const char* const CELIX_PROPERTIES_EMPTY_STRVAL = "";
 
 struct celix_properties {
     celix_string_hash_map_t* map;
@@ -148,7 +149,7 @@ static void updateBuffers(char **key, char ** value, char **output, int outputPo
  */
 static char* celix_properties_createString(celix_properties_t* properties, const char* str) {
     if (str == NULL) {
-        return NULL;
+        return (char*)CELIX_PROPERTIES_EMPTY_STRVAL;
     }
     size_t len = strnlen(str, CELIX_UTILS_MAX_STRLEN) + 1;
     size_t left = CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE - properties->currentStringBufferIndex;
@@ -161,6 +162,22 @@ static char* celix_properties_createString(celix_properties_t* properties, const
         result = celix_utils_strdup(str);
     }
     return result;
+}
+/**
+ * Free string, but first check if it a static const char* const string or part of the short properties
+ * optimization.
+ */
+static void celix_properties_freeString(celix_properties_t* properties, char* str) {
+    if (str == CELIX_PROPERTIES_BOOL_TRUE_STRVAL ||
+            str == CELIX_PROPERTIES_BOOL_FALSE_STRVAL ||
+            str == CELIX_PROPERTIES_EMPTY_STRVAL) {
+        //str is static const char* const -> nop
+    } else if (str >= properties->stringBuffer &&
+               str < (properties->stringBuffer + CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE))   {
+        //str is part of the properties string buffer -> nop
+    } else {
+        free(str);
+    }
 }
 
 /**
@@ -272,7 +289,12 @@ static celix_properties_entry_t* celix_properties_createEntry(
     celix_status_t status = celix_properties_fillEntry(properties, entry, strValue, longValue, doubleValue,
                                                        boolValue, versionValue);
     if (status != CELIX_SUCCESS) {
-        free(entry);
+        if (entry >= properties->entriesBuffer &&
+            entry <= (properties->entriesBuffer + CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE)) {
+            //entry is part of the properties entries buffer -> nop.
+        } else {
+            free(entry);
+        }
         entry = NULL;
     }
     return entry;
@@ -302,19 +324,6 @@ static void celix_properties_createAndSetEntry(
     }
     if (entry != NULL) {
         celix_stringHashMap_put(properties->map, mapKey, entry);
-    }
-}
-
-
-
-static void celix_properties_freeString(celix_properties_t* properties, char* str) {
-    if (str == CELIX_PROPERTIES_BOOL_TRUE_STRVAL || str == CELIX_PROPERTIES_BOOL_FALSE_STRVAL) {
-        //str is static const char* const -> nop
-    } else if (str >= properties->stringBuffer &&
-               str < (properties->stringBuffer + CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE))   {
-        //str is part of the properties string buffer -> nop
-    } else {
-        free(str);
     }
 }
 
@@ -861,4 +870,3 @@ bool celix_propertiesIterator_equals(const celix_properties_iterator_t* a, const
     memcpy(&internalIterB, b->_data, sizeof(internalIterB));
     return celix_stringHashMapIterator_equals(&internalIterA.mapIter, &internalIterB.mapIter);
 }
-
