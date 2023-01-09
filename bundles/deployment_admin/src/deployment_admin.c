@@ -177,9 +177,8 @@ static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, 
     curl = curl_easy_init();
 
     if (!curl) {
-        status = CELIX_BUNDLE_EXCEPTION;
-
         fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error initializing curl.");
+        return CELIX_BUNDLE_EXCEPTION;
     }
 
     char* url;
@@ -199,6 +198,8 @@ static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, 
     } else {
         fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error creating send url for audit log url: %s", admin->auditlogUrl);
     }
+    curl_easy_cleanup(curl);
+
 
     return status;
 }
