@@ -38,7 +38,6 @@
 #include <sys/eventfd.h>
 #include <sys/select.h>
 #include <sys/param.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -50,6 +49,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <errno.h>
+#include <limits.h>
 
 
 #define DZC_MAX_CONFLICT_CNT 256
@@ -64,6 +64,7 @@ struct discovery_zeroconf_announcer {
     endpoint_listener_t epListener;
     long epListenerSvcId;
     DNSServiceRef sharedRef;
+    DNSServiceRef browseRef;
     int eventFd;
     celix_thread_t refreshEPThread;
     celix_thread_mutex_t mutex;//projects below
@@ -80,6 +81,9 @@ typedef struct announce_endpoint_entry {
     const char *serviceName;
     char serviceType[64];
     bool announced;
+    char instanceName[64];
+    struct timespec offlineTime;
+    void *data;
 }announce_endpoint_entry_t;
 
 
@@ -96,7 +100,7 @@ celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, ce
     announcer->ctx = ctx;
     announcer->logHelper = logHelper;
     announcer->sharedRef = NULL;
-
+    announcer->browseRef = NULL;
     announcer->eventFd = eventfd(0, 0);
     if (announcer->eventFd < 0) {
         status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
@@ -241,6 +245,9 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
     assert(entry != NULL);
     entry->registerRef = NULL;
     entry->announced = false;
+    entry->instanceName[0] = '\0';
+    entry->offlineTime.tv_sec = INT_MAX;
+    entry->offlineTime.tv_nsec = 0;
     entry->uid = celix_utils_stringHash(endpoint->id);
     entry->ifIndex = celix_properties_getAsLong(endpoint->properties, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX, DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT);
     // If it is a loopback interface,we will announce the service on the local only interface.
@@ -305,10 +312,15 @@ static celix_status_t discoveryZeroconfAnnouncer_endpointRemoved(void *handle, e
 
 static void OnDNSServiceRegisterCallback(DNSServiceRef sdRef, DNSServiceFlags flags, DNSServiceErrorType errorCode, const char *instanceName, const char *serviceType, const char *domain, void *data) {
     (void)sdRef;//unused
-    discovery_zeroconf_announcer_t *announcer = (discovery_zeroconf_announcer_t *)data;
+    announce_endpoint_entry_t *entry  = (announce_endpoint_entry_t *)data;
+    assert(entry != NULL);
+    discovery_zeroconf_announcer_t *announcer = (discovery_zeroconf_announcer_t *)entry->data;
     assert(announcer != NULL);
     if (errorCode == kDNSServiceErr_NoError) {
         celix_logHelper_info(announcer->logHelper, "Announcer: Got a reply for service %s.%s%s: %s.", instanceName, serviceType, domain, (flags & kDNSServiceFlagsAdd) ? "Registered" : "Removed");
+        if ((flags & kDNSServiceFlagsAdd) != 0 && instanceName != NULL && sizeof(entry->instanceName) > strlen(instanceName)) {
+            strncpy(entry->instanceName, instanceName, sizeof(entry->instanceName));
+        }
     } else {
         celix_logHelper_error(announcer->logHelper, "Announcer: Failed to register service, %d.", errorCode);
     }
@@ -384,13 +396,15 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
         DNSServiceRef dsRef;
         do {
             dsRef = announcer->sharedRef;//DNSServiceRegister will set a new value for dsRef
-            int bytes = snprintf(instanceName, sizeof(instanceName), "%s-%X", entry->serviceName, entry->uid + conflictCnt);
+            entry->uid += conflictCnt;
+            int bytes = snprintf(instanceName, sizeof(instanceName), "%s-%X", entry->serviceName, entry->uid);
             if (bytes >= sizeof(instanceName)) {
                 celix_logHelper_error(announcer->logHelper, "Announcer: Please reduce the length of service name for %s.", entry->serviceName);
                 break;
             }
             celix_logHelper_info(announcer->logHelper, "Announcer: Register service %s on interface %d.", instanceName, entry->ifIndex);
-            dnsErr = DNSServiceRegister(&dsRef, kDNSServiceFlagsShareConnection, entry->ifIndex, instanceName, entry->serviceType, "local", DZC_HOST_DEFAULT, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback, announcer);
+            entry->data = announcer;
+            dnsErr = DNSServiceRegister(&dsRef, kDNSServiceFlagsShareConnection, entry->ifIndex, instanceName, entry->serviceType, "local", DZC_HOST_DEFAULT, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback, entry);
             if (dnsErr == kDNSServiceErr_NoError) {
                 registered = true;
             } else {
@@ -430,6 +444,7 @@ static void discoveryZeroconfAnnouncer_handleMDNSEvent(discovery_zeroconf_announ
 
         DNSServiceRefDeallocate(announcer->sharedRef);
         announcer->sharedRef = NULL;
+        announcer->browseRef = NULL;//no need free entry->browseRef, 'DNSServiceRefDeallocate(announcer->sharedRef)' has do it.
 
         announce_endpoint_entry_t *entry;
         celixThreadMutex_lock(&announcer->mutex);
@@ -437,6 +452,9 @@ static void discoveryZeroconfAnnouncer_handleMDNSEvent(discovery_zeroconf_announ
             entry = (announce_endpoint_entry_t *) iter.value.ptrValue;
             entry->registerRef = NULL;//no need free entry->registerRef, 'DNSServiceRefDeallocate(announcer->sharedRef)' has do it.
             entry->announced = false;
+            entry->instanceName[0] = '\0';
+            entry->offlineTime.tv_sec = INT_MAX;
+            entry->offlineTime.tv_nsec = 0;
         }
         int size = celix_arrayList_size(announcer->revokedEndpoints);
         for (int i = 0; i < size; ++i) {
@@ -448,6 +466,100 @@ static void discoveryZeroconfAnnouncer_handleMDNSEvent(discovery_zeroconf_announ
         celix_logHelper_error(announcer->logHelper, "Announcer: Failed to process mDNS result, %d.", dnsErr);
     }
     return;
+}
+
+static void discoveryZeroconfAnnouncer_onServiceBrowseCallback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *instanceName, const char *regtype, const char *replyDomain, void *context) {
+    (void)sdRef;//unused
+    (void)regtype;//unused
+    (void)replyDomain;//unused
+    discovery_zeroconf_announcer_t *announcer = (discovery_zeroconf_announcer_t *)context;
+    assert(announcer != NULL);
+
+    if (errorCode != kDNSServiceErr_NoError) {
+         celix_logHelper_error(announcer->logHelper, "Announcer: Failed to browse service, %d.", errorCode);
+         return;
+     }
+
+    if (instanceName == NULL) {
+        celix_logHelper_error(announcer->logHelper, "Announcer: service name err.");
+        return;
+    }
+
+    celix_logHelper_info(announcer->logHelper, "Announcer: Found %s %s on interface %d.", instanceName, (flags & kDNSServiceFlagsAdd) ? "Added" : "Removed", interfaceIndex);
+
+    celixThreadMutex_lock(&announcer->mutex);
+    announce_endpoint_entry_t *entry = NULL;
+    CELIX_STRING_HASH_MAP_ITERATE(announcer->endpoints, iter) {
+        entry = (announce_endpoint_entry_t *) iter.value.ptrValue;
+        if (strcmp(instanceName, entry->instanceName) == 0 && (entry->ifIndex == 0 || entry->ifIndex == interfaceIndex)) {
+            if (flags & kDNSServiceFlagsAdd) {
+                entry->offlineTime.tv_sec = INT_MAX;
+                entry->offlineTime.tv_nsec = 0;
+            } else {
+                if (entry->offlineTime.tv_sec == INT_MAX) {
+                    entry->offlineTime = celix_gettime(CLOCK_MONOTONIC);
+                }
+            }
+        }
+    }
+    celixThreadMutex_unlock(&announcer->mutex);
+    return;
+}
+
+static void discoveryZeroconfAnnouncer_reregisterOfflineService(discovery_zeroconf_announcer_t *announcer) {
+#define DZC_OFFLINE_EPS_MAX 512
+    announce_endpoint_entry_t *offlineEndpoints[DZC_OFFLINE_EPS_MAX] = {NULL};
+    announce_endpoint_entry_t *entry;
+    bool registerOfflineEndpoint = false;
+    int offlineEpNum;
+    do {
+        offlineEpNum = 0;
+        celixThreadMutex_lock(&announcer->mutex);
+        CELIX_STRING_HASH_MAP_ITERATE(announcer->endpoints, iter) {
+            entry = (announce_endpoint_entry_t *) iter.value.ptrValue;
+            if (celix_elapsedtime(CLOCK_MONOTONIC, entry->offlineTime) >= DZC_EP_JITTER_INTERVAL/2) {
+                offlineEndpoints[offlineEpNum] = entry;
+                offlineEpNum++;
+                if (offlineEpNum == DZC_OFFLINE_EPS_MAX) {
+                    break;
+                }
+            }
+        }
+        celixThreadMutex_unlock(&announcer->mutex);
+
+        for (int i = 0; i < offlineEpNum; i++) {
+            entry = offlineEndpoints[i];
+            if (entry->registerRef) {
+                DNSServiceRefDeallocate(entry->registerRef);//Deregister offline service, and try to register it again later.
+                entry->registerRef = NULL;
+                entry->announced = false;
+                entry->instanceName[0] = '\0';
+                entry->offlineTime.tv_sec = INT_MAX;
+                entry->offlineTime.tv_nsec = 0;
+                registerOfflineEndpoint = true;
+            }
+        }
+    } while (offlineEpNum == DZC_OFFLINE_EPS_MAX);
+
+    if (registerOfflineEndpoint) {
+        discoveryZeroconfAnnouncer_eventNotify(announcer);// Trigger an event to register offline service
+    }
+    return ;
+}
+
+static bool discoveryZeroconfAnnouncer_hasOfflineService(discovery_zeroconf_announcer_t *announcer) {
+    announce_endpoint_entry_t *entry;
+    bool hasOfflineService = false;
+    celixThreadMutex_lock(&announcer->mutex);
+    CELIX_STRING_HASH_MAP_ITERATE(announcer->endpoints, iter) {
+        entry = (announce_endpoint_entry_t *) iter.value.ptrValue;
+        if (entry->offlineTime.tv_sec != INT_MAX) {
+            hasOfflineService = true;
+            break;
+        }
+    }
+    celixThreadMutex_unlock(&announcer->mutex);
+    return hasOfflineService;
 }
 
 static void *discoveryZeroconfAnnouncer_refreshEndpointThread(void *data) {
@@ -474,6 +586,15 @@ static void *discoveryZeroconfAnnouncer_refreshEndpointThread(void *data) {
             }
         }
 
+        if (announcer->sharedRef != NULL && announcer->browseRef == NULL) {
+            announcer->browseRef = announcer->sharedRef;
+            dnsErr = DNSServiceBrowse(&announcer->browseRef, kDNSServiceFlagsShareConnection, 0, DZC_SERVICE_PRIMARY_TYPE, "local", discoveryZeroconfAnnouncer_onServiceBrowseCallback, announcer);
+            if (dnsErr != kDNSServiceErr_NoError) {
+                celix_logHelper_error(announcer->logHelper, "Announcer: Failed to browse DNS service, %d.", dnsErr);
+                announcer->browseRef = NULL;
+            }
+        }
+
         FD_ZERO(&readfds);
         FD_SET(announcer->eventFd, &readfds);
         maxFd = announcer->eventFd;
@@ -482,7 +603,13 @@ static void *discoveryZeroconfAnnouncer_refreshEndpointThread(void *data) {
             assert(dsFd >= 0);
             FD_SET(dsFd, &readfds);
             maxFd = MAX(maxFd, dsFd);
-            timeout = NULL;
+            if (discoveryZeroconfAnnouncer_hasOfflineService(announcer)) {
+                timeVal.tv_sec = 1;
+                timeVal.tv_usec = 0;
+                timeout = &timeVal;
+            } else {
+                timeout = NULL;
+            }
         } else {
             dsFd = -1;
             timeVal.tv_sec = 5;//If the connection fails to be created, reconnect it after 5 seconds
@@ -505,7 +632,7 @@ static void *discoveryZeroconfAnnouncer_refreshEndpointThread(void *data) {
                 if (announcer->sharedRef != NULL) {
                     CELIX_STRING_HASH_MAP_ITERATE(announcer->endpoints, iter) {
                         announce_endpoint_entry_t *entry = (announce_endpoint_entry_t *) iter.value.ptrValue;
-                        if (entry->announced == false && entry->registerRef == NULL) {
+                        if (entry->announced == false) {
                             celix_arrayList_add(announcedEndpoints, entry);
                         }
                     }
@@ -524,6 +651,10 @@ static void *discoveryZeroconfAnnouncer_refreshEndpointThread(void *data) {
             }
         } else if (result == -1 && errno != EINTR) {
                 celix_logHelper_error(announcer->logHelper, "Announcer: Error Selecting event, %d.", errno);
+        }
+        if (announcer->sharedRef != NULL) {
+            //If the service offline time is greater than ’DZC_EP_JITTER_INTERVAL/2‘ seconds, we will reregister it.
+            discoveryZeroconfAnnouncer_reregisterOfflineService(announcer);
         }
     }
     if (announcer->sharedRef) {
