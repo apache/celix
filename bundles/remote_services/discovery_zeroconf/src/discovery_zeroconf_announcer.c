@@ -370,7 +370,7 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
     int size = celix_arrayList_size(endpoints);
     for (int i = 0; i < size; ++i) {
         entry = celix_arrayList_get(endpoints, i);
-        entry->announced = true;//Set the flag first, aviod announcing invalid endpoint again.
+        entry->announced = true;//Set the flag first, avoid announcing invalid endpoint again.
         bool splitTxtRecord = true;
         //If the service is local only,then its txt record must be added all at once
         if (entry->ifIndex == kDNSServiceInterfaceIndexLocalOnly) {
