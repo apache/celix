@@ -118,7 +118,7 @@ class CelixConan(ConanFile):
         "build_rsa_discovery_etcd": False,
         "build_rsa_remote_service_admin_shm_v2": False,
         "build_rsa_json_rpc": False,
-        "build_rsa_discovery_zeroconf": False,
+        "build_rsa_discovery_zeroconf": True,
         "build_shell": True,
         "build_remote_shell": False,
         "build_shell_bonjour": False,

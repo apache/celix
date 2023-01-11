@@ -40,6 +40,7 @@
 #include <assert.h>
 #include <errno.h>
 
+#define DZC_EP_JITTER_INTERVAL 10
 #define DZC_MAX_RESOLVED_TIMEOUT 5
 #define DZC_MAX_RESOLVED_CNT 10
 
@@ -515,7 +516,7 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data) {
             watcher->browseRef = watcher->sharedRef;
             dnsErr = DNSServiceBrowse(&watcher->browseRef, kDNSServiceFlagsShareConnection, 0, DZC_SERVICE_PRIMARY_TYPE, "local", OnServiceBrowseCallback, watcher);
             if (dnsErr != kDNSServiceErr_NoError) {
-                celix_logHelper_error(watcher->logHelper, "Watcher: Failed to browse DNS service, %d.", dnsErr);
+                celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create connection for DNS service, %d.", dnsErr);
                 watcher->browseRef = NULL;
             }
         }
@@ -560,5 +561,7 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data) {
     discoveryZeroconfWatcher_closeMDNSConnection(watcher);
     discoveryZeroconfWatcher_clearEndpoints(watcher);
 
+// TODO:check service auto remove but will not auto add
+// TODO:admin dfi inspect interface index
     return NULL;
 }
