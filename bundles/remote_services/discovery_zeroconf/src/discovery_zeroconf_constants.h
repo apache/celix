@@ -35,8 +35,6 @@ extern "C" {
 
 #define DZC_SERVICE_PROPERTIES_SIZE_KEY "DZC_SVC_PROPS_SIZE_KEY"
 
-#define DZC_EP_JITTER_INTERVAL 30
-
 #ifdef __cplusplus
 }
 #endif
