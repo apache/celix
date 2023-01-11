@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(RSA_REMOTE_SERVICE_ADMIN_SHM_V2 "Option to enable building the Remote Service Admin Service SHM V2 bundle" OFF)
+celix_subproject(RSA_REMOTE_SERVICE_ADMIN_SHM_V2 "Option to enable building the Remote Service Admin Service SHM V2 bundle" ON)
 if (RSA_REMOTE_SERVICE_ADMIN_SHM_V2 AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
     add_subdirectory(shm_pool)
