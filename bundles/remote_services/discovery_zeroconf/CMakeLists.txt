@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(RSA_DISCOVERY_ZEROCONF "Option to enable building the zeroconf service discovery bundles" ON)
+celix_subproject(RSA_DISCOVERY_ZEROCONF "Option to enable building the zeroconf service discovery bundles" OFF)
 if (RSA_DISCOVERY_ZEROCONF)
 
     find_package(DNSSD REQUIRED)
