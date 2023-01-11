@@ -1893,17 +1893,19 @@ long celix_framework_registerService(framework_t *fw, celix_bundle_t *bnd, const
     celix_status_t status;
     service_registration_t *reg = NULL;
 
+    if (serviceName == NULL) {
+        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Null serviceName");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+
     long bndId = celix_bundle_getId(bnd);
     celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
 
 
-    if (serviceName != NULL && factory != NULL) {
+    if (factory != NULL) {
         status = celix_serviceRegistry_registerServiceFactory(fw->registry, bnd, serviceName, factory, properties, 0, &reg);
-    } else if (serviceName != NULL) {
-        status = celix_serviceRegistry_registerService(fw->registry, bnd, serviceName, svc, properties, 0, &reg);
     } else {
-        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Invalid arguments serviceName: %s", serviceName);
-        status = CELIX_ILLEGAL_ARGUMENT;
+        status = celix_serviceRegistry_registerService(fw->registry, bnd, serviceName, svc, properties, 0, &reg);
     }
 
     celix_framework_bundleEntry_decreaseUseCount(entry);

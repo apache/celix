@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(RSA_JSON_RPC "Option to enable building the Remote Service Admin JSON RPC bundle" OFF)
+celix_subproject(RSA_JSON_RPC "Option to enable building the Remote Service Admin JSON RPC bundle" ON)
 if (RSA_JSON_RPC)
 
     find_package(jansson REQUIRED)

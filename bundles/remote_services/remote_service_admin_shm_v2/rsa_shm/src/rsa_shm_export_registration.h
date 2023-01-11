@@ -23,14 +23,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <export_registration.h>
 #include <endpoint_description.h>
 #include <celix_log_helper.h>
 #include <celix_api.h>
 #include <sys/uio.h>
 
-
-typedef struct export_registration export_registration_t;
-typedef struct export_reference export_reference_t;
 
 celix_status_t exportRegistration_create(celix_bundle_context_t *context,
         celix_log_helper_t *logHelper, service_reference_pt reference,
