@@ -29,16 +29,30 @@ extern "C" {
 #include <celix_errno.h>
 #include <gtest/gtest.h>
 #include <netinet/in.h>
+#include <net/if.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <ifaddrs.h>
 #include <string.h>
+#include <stdbool.h>
+
+static void KillMDNSDeamon(void) {
+    system("kill -TERM `cat /var/run/mdnsd.pid`");
+}
+
+static void StartMDNSDeamon(void) {
+    system(MDNSD);
+}
 
 class DiscoveryZeroconfAnnouncerTestSuite : public ::testing::Test {
 public:
     static void SetUpTestCase() {
-        system(MDNSD);
+        StartMDNSDeamon();
     }
 
     static void TearDownTestCase() {
-        system("kill -TERM `cat /var/run/mdnsd.pid`");
+        KillMDNSDeamon();
     }
     DiscoveryZeroconfAnnouncerTestSuite() {
         auto* props = celix_properties_create();
@@ -56,6 +70,7 @@ public:
     std::shared_ptr<celix_bundle_context_t> ctx{};
     std::shared_ptr<celix_log_helper_t> logHelper{};
     int ifIndex{0};
+    bool restartMDNSDeamon{false};
 };
 
 TEST_F(DiscoveryZeroconfAnnouncerTestSuite, CreateAndDestroyAnnouncer) {
@@ -99,7 +114,7 @@ static void OnServiceBrowseCallback(DNSServiceRef sdRef, DNSServiceFlags flags, 
         DNSServiceErrorType dnsErr = DNSServiceResolve(&dsRef, 0, interfaceIndex, instanceName, regtype, replyDomain, OnServiceResolveCallback, prop);
         EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
         DNSServiceProcessResult(dsRef);
-        EXPECT_TRUE(celix_properties_getAsLong(prop, DZC_SERVICE_PROPERTIES_SIZE_KEY, 0) > 0);// TODO maybe failed
+        EXPECT_TRUE(celix_properties_getAsLong(prop, DZC_SERVICE_PROPERTIES_SIZE_KEY, 0) > 0);
         //The txt record should not include DZC_SERVICE_ANNOUNCED_IF_INDEX_KEY,DZC_SERVICE_TYPE_KEY
         EXPECT_EQ(nullptr, celix_properties_get(prop, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX, nullptr));
         EXPECT_EQ(nullptr, celix_properties_get(prop, DZC_SERVICE_TYPE_KEY, nullptr));
@@ -132,7 +147,17 @@ static void OnUseServiceCallback(void *handle, void *svc) {
     DNSServiceProcessResult(dsRef);
     DNSServiceRefDeallocate(dsRef);
 
+    if (t->restartMDNSDeamon) {
+        KillMDNSDeamon();
+        StartMDNSDeamon();
+    }
+
     epl->endpointRemoved(epl->handle, endpoint, nullptr);
+
+    if (t->restartMDNSDeamon) {
+        KillMDNSDeamon();
+        StartMDNSDeamon();
+    }
 
     endpointDescription_destroy(endpoint);
 }
@@ -152,6 +177,54 @@ TEST_F(DiscoveryZeroconfAnnouncerTestSuite, AddAndRemoveLocalOnlyEndpoint) {
     auto status = discoveryZeroconfAnnouncer_create(ctx.get(), logHelper.get(), &announcer);
     EXPECT_EQ(status, CELIX_SUCCESS);
     ifIndex = kDNSServiceInterfaceIndexLocalOnly;
+    auto found = celix_bundleContext_useService(ctx.get(), OSGI_ENDPOINT_LISTENER_SERVICE, this, OnUseServiceCallback);
+    EXPECT_TRUE(found);
+    discoveryZeroconfAnnouncer_destroy(announcer);
+}
+
+static int GetLoopBackIfIndex(void) {
+    int ifIndex = 0;
+
+    struct ifaddrs *ifaddr, *ifa;
+    char host[NI_MAXHOST];
+
+    if (getifaddrs(&ifaddr) != -1)
+    {
+        for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+        {
+            if (ifa->ifa_addr == NULL)
+                continue;
+
+            if ((getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == 0)) {
+                if (strcmp(host, "127.0.0.1") == 0) {
+                    ifIndex = (int)if_nametoindex(ifa->ifa_name);
+                    break;
+                }
+            }
+        }
+
+        freeifaddrs(ifaddr);
+    }
+
+    return ifIndex;
+}
+
+TEST_F(DiscoveryZeroconfAnnouncerTestSuite, AddAndRemoveLoopBackEndpoint) {
+    discovery_zeroconf_announcer_t *announcer{};
+    auto status = discoveryZeroconfAnnouncer_create(ctx.get(), logHelper.get(), &announcer);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    ifIndex = GetLoopBackIfIndex();
+    auto found = celix_bundleContext_useService(ctx.get(), OSGI_ENDPOINT_LISTENER_SERVICE, this, OnUseServiceCallback);
+    EXPECT_TRUE(found);
+    discoveryZeroconfAnnouncer_destroy(announcer);
+}
+
+TEST_F(DiscoveryZeroconfAnnouncerTestSuite, RestartMDNSDeamon) {
+    discovery_zeroconf_announcer_t *announcer{};
+    auto status = discoveryZeroconfAnnouncer_create(ctx.get(), logHelper.get(), &announcer);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    ifIndex = kDNSServiceInterfaceIndexAny;
+    restartMDNSDeamon = true;
     auto found = celix_bundleContext_useService(ctx.get(), OSGI_ENDPOINT_LISTENER_SERVICE, this, OnUseServiceCallback);
     EXPECT_TRUE(found);
     discoveryZeroconfAnnouncer_destroy(announcer);
