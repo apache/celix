@@ -32,6 +32,13 @@ add_executable(test_dfi
 		src/avrobin_serialization_tests.cpp
 )
 
+#[[
+Note: setting optimize -O0 for the dfi test, because this is needed to get the
+DynFunctionTests.DynFuncTest2 and DynFunctionTests.DynFuncTest3 working.
+See issue #232
+]]
+target_compile_options(test_dfi PRIVATE -O0) #This is needed because
+
 target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils libffi::libffi jansson::jansson GTest::gtest GTest::gtest_main)
 celix_deprecated_utils_headers(test_dfi)
 
