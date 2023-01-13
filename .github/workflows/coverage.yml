@@ -4,46 +4,37 @@ on: [push, pull_request]
 
 jobs:
   coverage:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
-      - name: Install dependencies
+        uses: actions/checkout@v3.3.0
+      - name: Install conan and lcov
         run: |
-          sudo apt-get update
-          sudo apt-get install -yq --no-install-recommends \
-            build-essential \
-            curl \
-            uuid-dev \
-            libjansson-dev \
-            libcurl4-openssl-dev \
-            default-jdk \
-            cmake \
-            libffi-dev \
-            libxml2-dev \
-            libczmq-dev \
-            libcpputest-dev \
-            rapidjson-dev \
-            libzip-dev \
-            lcov
-      - name: Build
+          sudo apt-get install -yq --no-install-recommends lcov
+          sudo pip install conan
+      - name: Setup Conan Profile
+        run: |
+          conan profile new default --detect
+          conan profile update settings.build_type=Debug default
+          #Note no backwards compatiblity for gcc5 needed, setting libcxx to c++11.
+          conan profile update settings.compiler.libcxx=libstdc++11 default
+      - name: Install Dependencies
         env:
-          BUILD_OPTIONS: |
-            -DENABLE_TESTING=ON
-            -DENABLE_CODE_COVERAGE=ON
-            -DBUILD_EXPERIMENTAL=ON
-            -DBUILD_CXX_REMOTE_SERVICE_ADMIN=ON
-            -DENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11=ON
-            -DENABLE_TESTING_FOR_CXX14=ON
+          CONAN_BUILD_OPTIONS: |
+            -o celix:enable_testing=True
+            -o celix:build_all=True
+            -o enable_code_coverage=True
         run: |
-          mkdir build
+          #force reequire libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
+          conan install . celix/ci -pr:b default -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing --require-override=libcurl/7.64.1
+      - name: Build
+        run: |
+          conan build . -bf build --configure
+          conan build . -bf build --build
+      - name: Test with coverage
+        run: |
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ..
-          make -j $(nproc)
-      - name: Coverage
-        run: |
-          cd $GITHUB_WORKSPACE/build
-          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:$(pwd)/utils:$(pwd)/framework:$(pwd)/dfi
           make coverage
           lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx
       - name: Codecov
@@ -51,11 +42,3 @@ jobs:
         with:
           file: build/coverage.info
           name: codecov-celix
-
-#      NOTE For now disabled, need to be able to configure coveralls thresholds
-#      See https://github.com/lemurheavy/coveralls-public/issues/1431
-#      - name: Coveralls
-#        uses: coverallsapp/github-action@master
-#        with:
-#          github-token: ${{ secrets.GITHUB_TOKEN }}
-#          path-to-lcov: build/coverage.info

@@ -1,30 +1,68 @@
 name: Celix Ubuntu
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron:  '0 0 * * *'
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+
+  build-conan:
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        #os: [ubuntu-20.04]
-        #compiler: [gcc, clang]
-        include:
-          - os: ubuntu-20.04
-            name: clang
-            sanitizer: false #note sanitizer on clang with cpputest does not work
-            compiler: clang
-            cxx_compiler: clang++
-          - os: ubuntu-20.04
-            name: gcc
-            sanitizer: true
-            compiler: gcc
-            cxx_compiler: g++
+        compiler: [ [gcc,g++], [clang,clang++] ]
+        type: [ Debug ]
+    timeout-minutes: 120
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3.3.0
+      - name: Install conan
+        run: |
+          sudo pip install conan
+      - name: Setup Conan Profile
+        env:
+          CC: ${{ matrix.compiler[0] }}
+          CXX: ${{ matrix.compiler[1] }}
+        run: |
+          conan profile new default --detect
+          conan profile update settings.build_type=${{ matrix.type }} default
+          #Note no backwards compatiblity for gcc5 needed, setting libcxx to c++11.
+          conan profile update settings.compiler.libcxx=libstdc++11 default
+          conan profile show default
+      - name: Configure and install dependencies
+        env:
+          CC: ${{ matrix.compiler[0] }}
+          CXX: ${{ matrix.compiler[1] }}
+          CONAN_BUILD_OPTIONS: |
+            -o celix:enable_testing=True
+            -o celix:enable_address_sanitizer=True
+            -o celix:build_all=True
+        run: |
+          #force reequire libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
+          conan install . celix/ci -pr:b default -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing  --require-override=libcurl/7.64.1
+      - name: Build
+        env:
+          CC: ${{ matrix.compiler[0] }}
+          CXX: ${{ matrix.compiler[1] }}
+        run: |
+          conan build . -bf build --configure
+          conan build . -bf build --build
+      - name: Test
+        run: |
+          cd build
+          source activate_run.sh
+          ctest --verbose
+          source deactivate_run.sh
+
+  build-apt:
+    runs-on: ubuntu-20.04
     timeout-minutes: 120
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3.3.0
     - name: Install dependencies
       run: |
         sudo apt-get update
@@ -32,6 +70,7 @@ jobs:
           build-essential \
           curl \
           uuid-dev \
+          libzip-dev \
           libjansson-dev \
           libcurl4-openssl-dev \
           default-jdk \
@@ -41,30 +80,26 @@ jobs:
           libczmq-dev \
           libcpputest-dev \
           rapidjson-dev \
-          libzip-dev
+          libavahi-compat-libdnssd-dev
     - name: Build
       env:
-        CC: ${{ matrix.compiler }}
-        CXX: ${{ matrix.cxx_compiler }}
         BUILD_OPTIONS: |
-          -DENABLE_TESTING=ON
           -DBUILD_EXPERIMENTAL=ON
-          -DBUILD_CXX_REMOTE_SERVICE_ADMIN=ON
+          -DENABLE_TESTING=ON
           -DENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11=ON
           -DENABLE_TESTING_FOR_CXX14=ON
-        BUILD_OPTIONS_SANITIZER: |
-          -DENABLE_ADDRESS_SANITIZER=ON
+          -DRSA_JSON_RPC=ON
+          -DRSA_SHM=ON
+          -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON
+          -DSHELL_BONJOUR=ON
+          -DCMAKE_BUILD_TYPE=Release
       run: |
         mkdir build install
         cd build
-        if [[ "${{ matrix.sanitizer }}" == "true" ]]; then
-          export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_SANITIZER}"
-        fi
-        cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
+        cmake ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
         make -j $(nproc) && make install
     - name: Test
       run: |
         cd $GITHUB_WORKSPACE/build
         export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:$(pwd)/utils:$(pwd)/framework:$(pwd)/dfi
         make test ARGS="-V"
-
