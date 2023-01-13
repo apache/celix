@@ -39,6 +39,12 @@ target_link_libraries(RsaConfiguredDiscovery PRIVATE
         Celix::rsa_spi
         Celix::log_helper
 )
+
+#Note import target RapidJSON::RapidJSO only created when using conan, else /usr/include is used.
+if (TARGET RapidJSON::RapidJSON)
+    target_link_libraries(RsaConfiguredDiscovery PRIVATE RapidJSON::RapidJSON)
+endif ()
+
 target_include_directories(RsaConfiguredDiscovery PRIVATE src)
 install_celix_bundle(RsaConfiguredDiscovery EXPORT celix COMPONENT rsa)
 add_library(Celix::RsaConfiguredDiscovery ALIAS RsaConfiguredDiscovery)

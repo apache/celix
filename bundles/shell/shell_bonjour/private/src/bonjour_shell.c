@@ -40,7 +40,7 @@
 #include <stdbool.h>
 #include <shell.h>
 
-#if defined(BSD) || defined(__APPLE__)  || defined(ANDROID)
+#if CELIX_UTILS_NO_MEMSTREAM_AVAILABLE
 #include "open_memstream.h"
 #include "fmemopen.h"
 #endif

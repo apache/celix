@@ -49,7 +49,7 @@ set_target_properties(utils PROPERTIES OUTPUT_NAME "celix_utils")
 target_link_libraries(utils PRIVATE libzip::libzip)
 
 if (NOT OPEN_MEMSTREAM_EXISTS)
-    target_compile_definitions(utils PUBLIC -DNO_MEMSTREAM_AVAILABLE)
+    target_compile_definitions(utils PUBLIC -DCELIX_UTILS_NO_MEMSTREAM_AVAILABLE)
 endif ()
 
 if (ANDROID)

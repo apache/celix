@@ -78,12 +78,13 @@ class CelixConan(ConanFile):
         "build_launcher": [True, False],
         "build_promises": [True, False],
         "build_pushstreams": [True, False],
+        "build_experimental": [True, False],
         "celix_cxx14": [True, False],
         "celix_cxx17": [True, False],
         "celix_install_deprecated_api": [True, False],
         "celix_use_compression_for_bundle_zips": [True, False],
     }
-    default_options = { 
+    default_options = {
         "enable_testing": False,
         "enable_code_coverage": False,
         "enable_address_sanitizer": False,
@@ -124,8 +125,9 @@ class CelixConan(ConanFile):
         "build_launcher": False,
         "build_promises": False,
         "build_pushstreams": False,
-        "celix_cxx14": False,
-        "celix_cxx17": False,
+        "build_experimental": False,
+        "celix_cxx14": True,
+        "celix_cxx17": True,
         "celix_install_deprecated_api": False,
         "celix_use_compression_for_bundle_zips": True,
     }
@@ -228,6 +230,14 @@ class CelixConan(ConanFile):
             self.options['zeromq'].shared = True
             self.requires("czmq/4.2.0")
             self.options['czmq'].shared = True
+
+            #If czmq is needed, disable crypto for libzip to prevent openssl conflict:
+            # 'czmq/4.2.0' requires 'openssl/1.1.1m' while 'libcurl/7.86.0' requires 'openssl/1.1.1s'
+            self.options['libzip'].crypto = False
+
+            #If czmq is needed, disable ssl for libcurl to prevent openssl conflict:
+            # 'czmq/4.2.0' requires 'openssl/1.1.1m' while 'libcurl/7.87.0' requires 'openssl/1.1.1s'
+            self.options['libcurl'].with_ssl = False
 
     def _configure_cmake(self):
         if self._cmake:
