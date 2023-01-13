@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
 
   build-conan:
-    if: false #issues in pubsub tests, disable for now
+    if: false #See #471
     runs-on: macOS-latest
     timeout-minutes: 120
     steps:
@@ -22,6 +22,7 @@ jobs:
         env:
           CONAN_BUILD_OPTIONS: |
             -o celix:enable_testing=True
+            -o celix:enable_address_sanitizer=True
             -o celix:build_all=True
         run: |
           #force reequire libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
@@ -49,6 +50,7 @@ jobs:
           brew install lcov zeromq czmq cpputest jansson rapidjson libzip
       - name: Build
         env:
+          #syslog disabled and Release not use because of #471
           BUILD_OPTIONS: |
             -DENABLE_TESTING=ON
             -DENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11=ON
