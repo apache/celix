@@ -22,64 +22,17 @@
 #include <gtest/gtest.h>
 #include <iostream>
 #include <cstring>
-#include <dlfcn.h>
+#include <malloc_ei.h>
 
 #include "pubsub_wire_protocol_common.h"
 
 class WireProtocolCommonTest : public ::testing::Test {
 public:
     WireProtocolCommonTest() = default;
-    ~WireProtocolCommonTest() override = default;
+    ~WireProtocolCommonTest() override {
+        celix_ei_expect_realloc(nullptr, 0, NULL);
+    };
 };
-
-#ifdef ENABLE_MALLOC_RETURN_NULL_TESTS
-/**
- * If set to true the mocked malloc will always return NULL.
- * Should be read/written using __atomic builtins.
- */
-static int mallocFailAfterCalls = 0;
-static int mallocCurrentCallCount = 0;
-
-/**
- * mocked malloc to ensure testing can be done for the "malloc returns NULL" scenario
- */
-extern "C" void* malloc(size_t size) {
-    int count = __atomic_add_fetch(&mallocCurrentCallCount, 1, __ATOMIC_ACQ_REL);
-    int target = __atomic_load_n(&mallocFailAfterCalls, __ATOMIC_ACQUIRE);
-    if (target > 0 && count == target) {
-        return nullptr;
-    }
-    static auto* orgMallocFp = (void*(*)(size_t))dlsym(RTLD_NEXT, "malloc");
-    if (orgMallocFp == nullptr) {
-        perror("Cannot find malloc symbol");
-        return nullptr;
-    }
-    return orgMallocFp(size);
-}
-
-extern "C" void* realloc(void* buf, size_t newSize) {
-    int count = __atomic_add_fetch(&mallocCurrentCallCount, 1, __ATOMIC_ACQ_REL);
-    int target = __atomic_load_n(&mallocFailAfterCalls, __ATOMIC_ACQUIRE);
-    if (target > 0 && count == target) {
-        return nullptr;
-    }
-    static auto* orgReallocFp = (void*(*)(void*, size_t))dlsym(RTLD_NEXT, "realloc");
-    if (orgReallocFp == nullptr) {
-        perror("Cannot find realloc symbol");
-        return nullptr;
-    }
-    return orgReallocFp(buf, newSize);
-}
-
-void setupMallocFailAfterNrCalls(int nrOfCalls) {
-    __atomic_store_n(&mallocFailAfterCalls, nrOfCalls, __ATOMIC_RELEASE);
-    __atomic_store_n(&mallocCurrentCallCount, 0, __ATOMIC_RELEASE);
-}
-
-void disableMallocFail() {
-    __atomic_store_n(&mallocFailAfterCalls, 0, __ATOMIC_RELEASE);
-}
-#endif
 
 TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeMetadataWithSingleEntries) {
     pubsub_protocol_message_t message;
@@ -217,7 +170,6 @@ TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeWithExistinBufferWhi
     celix_properties_destroy(message.metadata.metadata);
 }
 
-#ifdef ENABLE_MALLOC_RETURN_NULL_TESTS
 TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeMetadataWithNoMemoryLeft) {
     pubsub_protocol_message_t message;
     message.header.convertEndianess = 0;
@@ -225,8 +177,8 @@ TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeMetadataWithNoMemory
     celix_properties_set(message.metadata.metadata, "key1", "value1");
 
     //Scenario: No mem with no pre-allocated data
-    //Given (mocked) malloc is forced to return NULL
-    setupMallocFailAfterNrCalls(1);
+    //Given (mocked) realloc is forced to return NULL
+    celix_ei_expect_realloc((void *)pubsubProtocol_encodeMetadata, 0, nullptr);
 
     //When I try to encode a metadata
     char *data = nullptr;
@@ -236,16 +188,13 @@ TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeMetadataWithNoMemory
     //Then I expect a failure
     EXPECT_NE(status, CELIX_SUCCESS);
 
-    //reset malloc
-    disableMallocFail();
-
     //Scenario: No mem with some pre-allocated data
     //Given a data set with some space
     data = (char*)malloc(16);
     length = 16;
 
-    //And (mocked) malloc is forced to return NULL
-    setupMallocFailAfterNrCalls(1);
+    //And (mocked) realloc is forced to return NULL
+    celix_ei_expect_realloc((void *)pubsubProtocol_encodeMetadata, 0, nullptr);
 
     //When I try to encode a metadata
     status = pubsubProtocol_encodeMetadata(&message, &data, &length, &contentLength);
@@ -253,13 +202,9 @@ TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeMetadataWithNoMemory
     //Then I expect a failure
     EXPECT_NE(status, CELIX_SUCCESS);
 
-    //reset malloc
-    disableMallocFail();
-
     free(data);
     celix_properties_destroy(message.metadata.metadata);
 }
-#endif
 
 TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DecodeMetadataWithSingleEntries) {
     pubsub_protocol_message_t message;

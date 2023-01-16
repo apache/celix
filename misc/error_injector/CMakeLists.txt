@@ -15,9 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_executable(celix_pswp_common_tests src/PS_WP_common_tests.cc)
-target_include_directories(celix_pswp_common_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
-target_link_libraries(celix_pswp_common_tests PRIVATE celix_pubsub_protocol_lib GTest::gtest Celix::pubsub_spi GTest::gtest_main malloc_ei)
+add_library(error_injector INTERFACE error_injector.h)
+target_include_directories(error_injector INTERFACE ${CMAKE_CURRENT_LIST_DIR})
+# get caller address of the target function, into which errors are injected
+target_link_libraries(error_injector INTERFACE dl)
+target_link_options(error_injector INTERFACE -rdynamic)
+target_compile_options(error_injector INTERFACE -Wno-frame-address)
 
-add_test(NAME celix_pswp_common_tests COMMAND celix_pswp_common_tests)
-setup_target_for_coverage(celix_pswp_common_tests SCAN_DIR ..)
+add_subdirectory(malloc)

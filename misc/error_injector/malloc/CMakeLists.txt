@@ -15,9 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_executable(celix_pswp_common_tests src/PS_WP_common_tests.cc)
-target_include_directories(celix_pswp_common_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
-target_link_libraries(celix_pswp_common_tests PRIVATE celix_pubsub_protocol_lib GTest::gtest Celix::pubsub_spi GTest::gtest_main malloc_ei)
+add_library(malloc_ei STATIC malloc_ei.cpp)
 
-add_test(NAME celix_pswp_common_tests COMMAND celix_pswp_common_tests)
-setup_target_for_coverage(celix_pswp_common_tests SCAN_DIR ..)
+target_include_directories(malloc_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_link_libraries(malloc_ei PUBLIC error_injector)
+# It plays nicely with address sanitizer this way.
+target_link_options(malloc_ei INTERFACE -Wl,-wrap,malloc -Wl,-wrap,realloc)
