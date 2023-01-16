@@ -39,7 +39,6 @@ target_include_directories(dfi PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 	$<INSTALL_INTERFACE:include/celix/dfi>
 )
-
 target_link_libraries(dfi PRIVATE libffi::libffi)
 target_link_libraries(dfi PUBLIC jansson::jansson)
 target_link_libraries(dfi PRIVATE Celix::utils)

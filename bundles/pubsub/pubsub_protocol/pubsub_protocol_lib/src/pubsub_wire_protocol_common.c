@@ -108,7 +108,7 @@ celix_status_t pubsubProtocol_encodeMetadata(pubsub_protocol_message_t* message,
         }
         celix_status_t status = CELIX_SUCCESS;
         CELIX_PROPERTIES_FOR_EACH(message->metadata.metadata, key) {
-            const char *val = celix_properties_get(message->metadata.metadata, key, NULL);
+            const char *val = celix_properties_get(message->metadata.metadata, key, "");
             if (status == CELIX_SUCCESS) {
                 status = pubsubProtocol_addNetstringEntryToBuffer(*bufferInOut, *bufferLengthInOut, &offset, key);
             }
