@@ -33,4 +33,11 @@ void *__wrap_realloc(void *__ptr, size_t __size) {
     CELIX_EI_IMPL0(realloc);
     return __real_realloc(__ptr, __size);
 }
+
+void *__real_calloc (size_t __nmemb, size_t __size);
+CELIX_EI_DEFINE(calloc, void *)
+void *__wrap_calloc (size_t __nmemb, size_t __size) {
+    CELIX_EI_IMPL0(calloc);
+    return __real_calloc(__nmemb, __size);
+}
 }

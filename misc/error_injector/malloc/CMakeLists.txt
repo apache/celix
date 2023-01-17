@@ -20,4 +20,4 @@ add_library(malloc_ei STATIC malloc_ei.cpp)
 target_include_directories(malloc_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(malloc_ei PUBLIC error_injector)
 # It plays nicely with address sanitizer this way.
-target_link_options(malloc_ei INTERFACE -Wl,-wrap,malloc -Wl,-wrap,realloc)
+target_link_options(malloc_ei INTERFACE -Wl,-wrap,malloc -Wl,-wrap,realloc -Wl,-wrap,calloc)

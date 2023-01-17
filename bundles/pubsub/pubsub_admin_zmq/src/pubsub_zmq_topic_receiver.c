@@ -468,6 +468,7 @@ static inline void processMsg(pubsub_zmq_topic_receiver_t *receiver, pubsub_prot
                                                                      &deSerializeBuffer, 0, &deserializedMsg);
         if (status == CELIX_SUCCESS) {
             celix_properties_t *metadata = message->metadata.metadata;
+            bool metadataWasNull = metadata == NULL;
             bool cont = pubsubInterceptorHandler_invokePreReceive(receiver->interceptorsHandler, msgFqn, message->header.msgId, deserializedMsg, &metadata);
             bool release = true;
             if (cont) {
@@ -478,6 +479,10 @@ static inline void processMsg(pubsub_zmq_topic_receiver_t *receiver, pubsub_prot
             }
             if (release) {
                 pubsub_serializerHandler_freeDeserializedMsg(receiver->serializerHandler, message->header.msgId, deserializedMsg);
+            }
+            if (metadataWasNull) {
+                //note that if the metadata was created by the pubsubInterceptorHandler_invokePreReceive, this needs to be deallocated
+                celix_properties_destroy(metadata);
             }
         } else {
             L_WARN("[PSA_ZMQ_TR] Cannot deserialize msg type %s for scope/topic %s/%s", msgFqn,

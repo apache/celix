@@ -22,6 +22,7 @@
 #include <gtest/gtest.h>
 #include <iostream>
 #include <cstring>
+#include <celix_properties_ei.h>
 #include <malloc_ei.h>
 
 #include "pubsub_wire_protocol_common.h"
@@ -30,7 +31,9 @@ class WireProtocolCommonTest : public ::testing::Test {
 public:
     WireProtocolCommonTest() = default;
     ~WireProtocolCommonTest() override {
-        celix_ei_expect_realloc(nullptr, 0, NULL);
+        celix_ei_expect_realloc(nullptr, 0, nullptr);
+        celix_ei_expect_calloc(nullptr, 0, nullptr);
+        celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
     };
 };
 
@@ -244,3 +247,142 @@ TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DencodeMetadataWithMultipl
     celix_properties_destroy(message.metadata.metadata);
 }
 
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DencodeMetadataWithExtraEntries) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 1;
+    message.metadata.metadata = nullptr;
+
+    char* data = strdup("ABCD4:key1,6:value1,4:key2,6:value2,6:key111,8:value111,"); //note 3 entries
+    auto len = strlen(data);
+    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 2);
+    auto status = pubsubProtocol_decodeMetadata((void*)data, len, &message);
+    // the 3rd entry should be ignored
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(2, celix_properties_size(message.metadata.metadata));
+    EXPECT_STREQ("value1", celix_properties_get(message.metadata.metadata, "key1", "not-found"));
+    EXPECT_STREQ("value2", celix_properties_get(message.metadata.metadata, "key2", "not-found"));
+    EXPECT_STREQ("not-found", celix_properties_get(message.metadata.metadata, "key111", "not-found"));
+
+    free(data);
+    celix_properties_destroy(message.metadata.metadata);
+}
+
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DencodeMetadataMissingEntries) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 1;
+    message.metadata.metadata = nullptr;
+
+    char* data = strdup("ABCD4:key1,6:value1,4:key2,6:value2,6:key111,8:value111,"); //note 3 entries
+    auto len = strlen(data);
+    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 4);
+    auto status = pubsubProtocol_decodeMetadata((void*)data, len, &message);
+
+    EXPECT_EQ(status, CELIX_INVALID_SYNTAX);
+    EXPECT_EQ(nullptr, message.metadata.metadata);
+
+    free(data);
+}
+
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DecodeMetadataWithSingleEntryWithIncompleteValue) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 0;
+    message.metadata.metadata = nullptr;
+
+    char* data = strdup("ABCD4:key1,6:val,"); //note 1 entry with short value
+    auto len = strlen(data);
+    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 1);
+    auto status = pubsubProtocol_decodeMetadata((void*)data, len, &message);
+
+    EXPECT_EQ(status, CELIX_INVALID_SYNTAX);
+    EXPECT_EQ(nullptr, message.metadata.metadata);
+
+    free(data);
+}
+
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DecodeMetadataTooShort) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 0;
+    message.metadata.metadata = nullptr;
+
+    char* data = strdup("ABCD4:key1,6:value1,"); //note 1 entry
+    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 1);
+    auto status = pubsubProtocol_decodeMetadata((void*)data, 3, &message); // not enough data for `nOfElements`
+
+    EXPECT_EQ(status, CELIX_INVALID_SYNTAX);
+    EXPECT_EQ(nullptr, message.metadata.metadata);
+
+    free(data);
+}
+
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DecodeEmptyMetadata) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 0;
+    message.metadata.metadata = nullptr;
+
+    uint32_t data = 0;
+    auto status = pubsubProtocol_decodeMetadata((void*)&data, 4, &message);
+
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(nullptr, message.metadata.metadata);
+
+    // incorrect `nOfElements`
+    data = 4;
+    status = pubsubProtocol_decodeMetadata((void*)&data, 4, &message);
+
+    EXPECT_EQ(status, CELIX_INVALID_SYNTAX);
+    EXPECT_EQ(nullptr, message.metadata.metadata);
+}
+
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_NotEnoughMemoryForMultipleEntries) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 1;
+    message.metadata.metadata = nullptr;
+
+    char* data = strdup("ABCD4:key1,6:value1,4:key2,6:value2,6:key111,8:value111,"); //note 3 entries
+    auto len = strlen(data);
+    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 3);
+    for (int i = 0; i < 6; ++i) {
+        celix_ei_expect_calloc((void *)pubsubProtocol_decodeMetadata, 0, nullptr, i+1);
+        auto status = pubsubProtocol_decodeMetadata((void*)data, len, &message);
+
+        EXPECT_EQ(status, CELIX_ENOMEM);
+        EXPECT_EQ(nullptr, message.metadata.metadata);
+    }
+    free(data);
+}
+
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_PropertiesAllocFailureWhenDecodingMetadata) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 0;
+    message.metadata.metadata = nullptr;
+
+    char* data = strdup("ABCD4:key1,6:value1,"); //note 1 entry
+    auto len = strlen(data);
+    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 1);
+    celix_ei_expect_celix_properties_create((void*)pubsubProtocol_decodeMetadata, 0, nullptr);
+    auto status = pubsubProtocol_decodeMetadata((void*)data, len, &message);
+
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    EXPECT_EQ(nullptr, message.metadata.metadata);
+
+    free(data);
+}
+
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DencodeMetadataWithDuplicateEntries) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 1;
+    message.metadata.metadata = nullptr;
+
+    char* data = strdup("ABCD4:key1,6:value1,4:key1,6:value2,6:key111,8:value111,"); //note 3 entries with duplicate key1
+    auto len = strlen(data);
+    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 3);
+    auto status = pubsubProtocol_decodeMetadata((void*)data, len, &message);
+
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(2, celix_properties_size(message.metadata.metadata));
+    EXPECT_STREQ("value2", celix_properties_get(message.metadata.metadata, "key1", "not-found"));
+    EXPECT_STREQ("value111", celix_properties_get(message.metadata.metadata, "key111", "not-found"));
+
+    free(data);
+    celix_properties_destroy(message.metadata.metadata);
+}
