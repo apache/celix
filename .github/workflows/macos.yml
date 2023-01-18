@@ -18,7 +18,8 @@ jobs:
       - name: Install conan
         run: |
           brew update
-          brew install conan
+          brew install python
+          pip3 install -U conan
       - name: Setup Conan Profile
         run: |
           conan profile new default --detect
