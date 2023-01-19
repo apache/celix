@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,15 +15,21 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set(RSA_REMOTE_SERVICE_ADMIN_SHM_V2_DEFAULT OFF)
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(RSA_REMOTE_SERVICE_ADMIN_SHM_V2_DEFAULT ON)
-endif ()
-celix_subproject(RSA_REMOTE_SERVICE_ADMIN_SHM_V2 "Option to enable building the Remote Service Admin Service SHM V2 bundle" RSA_REMOTE_SERVICE_ADMIN_SHM_V2_DEFAULT)
-if (RSA_REMOTE_SERVICE_ADMIN_SHM_V2)
+find_path(RapidJSON_INCLUDE_DIR rapidjson.h
+        PATH_SUFFIXES rapidjson)
 
-    add_subdirectory(shm_pool)
-    add_subdirectory(rsa_shm)
+get_filename_component(RapidJSON_INCLUDE_DIRS ${RapidJSON_INCLUDE_DIR}/.. ABSOLUTE)
 
-endif ()
+include(FindPackageHandleStandardArgs)
+# handle the QUIETLY and REQUIRED arguments and set ZeroMQ_FOUND to TRUE
+# if all listed variables are TRUE
+find_package_handle_standard_args(RapidJSON DEFAULT_MSG
+        RapidJSON_INCLUDE_DIR)
 
+mark_as_advanced(RapidJSON_INCLUDE_DIR)
+
+if(RapidJSON_FOUND AND NOT TARGET RapidJSON::RapidJSON)
+    add_library(RapidJSON::RapidJSON INTERFACE IMPORTED)
+    set_target_properties(RapidJSON::RapidJSON PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
+            "${RapidJSON_INCLUDE_DIRS}")
+endif()

@@ -27,7 +27,7 @@
 #include "celix_threads.h"
 #include "celix_array_list.h"
 
-#ifdef NO_MEMSTREAM_AVAILABLE
+#ifdef CELIX_UTILS_NO_MEMSTREAM_AVAILABLE
 #include "memstream/open_memstream.h"
 #endif
 
