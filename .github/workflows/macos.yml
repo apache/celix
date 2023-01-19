@@ -16,7 +16,6 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Install conan
         run: |
-          brew update
           brew install python
           pip3 install -U conan
       - name: Setup Conan Profile
