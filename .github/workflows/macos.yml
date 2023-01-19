@@ -9,7 +9,6 @@ on:
 jobs:
 
   build-conan:
-    if: false #See #471
     runs-on: macos-10.15
     timeout-minutes: 120
     steps:

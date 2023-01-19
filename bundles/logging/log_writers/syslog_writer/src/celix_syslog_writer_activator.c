@@ -58,7 +58,10 @@ static void celix_syslogWriter_sinkLog(void *handle __attribute__((unused)), cel
     }
 
     char buffer[1024];
-    size_t needed = vsnprintf(buffer, 1024, format, formatArgs);
+    va_list argCopy;
+    va_copy(argCopy, formatArgs);
+    size_t needed = vsnprintf(buffer, 1024, format, argCopy);
+    va_end(argCopy);
     if (needed > 1024) {
         char *allocatedBuffer = NULL;
         vasprintf(&allocatedBuffer, format, formatArgs);
