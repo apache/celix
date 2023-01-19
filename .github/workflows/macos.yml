@@ -24,7 +24,7 @@ jobs:
           conan profile update settings.build_type=Release default
           conan profile update settings.compiler=apple-clang default
           conan profile update settings.compiler.cppstd=17 default
-          conan profile update settings.compiler.libcxx=libc++11 default
+          conan profile update settings.compiler.libcxx=libc++ default
           conan profile update settings.compiler.version=12.0 default
       - name: Install Dependencies
         env:
