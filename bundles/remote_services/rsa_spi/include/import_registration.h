@@ -24,8 +24,17 @@
 #include "endpoint_description.h"
 #include "service_reference.h"
 
-typedef struct import_registration import_registration_t;
+/**
+ * This headers contains a opaque declaration of the import_registration type and declaration of some generic
+ * importRegistration functions. The import_registration type and the generic importRegistration functions are used
+ * the common remote service parts.
+ *
+ * Service providers (i.e. RSA implementations) must provide the definition of type import_registration and can
+ * must implement the importRegistration functions. Service providers can add additional importRegistration functions,
+ * if needed.
+ */
 
+typedef struct import_registration import_registration_t;
 typedef struct import_reference import_reference_t;
 
 celix_status_t importRegistration_getException(import_registration_t *registration);

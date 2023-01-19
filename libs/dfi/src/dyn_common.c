@@ -24,7 +24,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-#if NO_MEMSTREAM_AVAILABLE
+#if CELIX_UTILS_NO_MEMSTREAM_AVAILABLE
 #include "open_memstream.h"
 #include "fmemopen.h"
 #endif
