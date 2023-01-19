@@ -27,13 +27,11 @@ extern "C" {
 #include <dlfcn.h>
 #include <stddef.h>
 
-#define CELIX_EI_GET_CALLER(addr, level)        \
-do {                                            \
-    Dl_info dlinfo;                             \
-    void *dlret;                                \
-    dlret = __builtin_return_address((level));  \
-    assert(dladdr(dlret, &dlinfo));             \
-    (addr) = dlinfo.dli_saddr;                  \
+#define CELIX_EI_GET_CALLER(addr, level)                                   \
+do {                                                                       \
+    Dl_info dlinfo;                                                        \
+    assert(dladdr(__builtin_return_address((level), &dlinfo));             \
+    (addr) = dlinfo.dli_saddr;                                             \
 } while(0)
 
 #define CELIX_EI_UNKNOWN_CALLER ((void *)-1)
