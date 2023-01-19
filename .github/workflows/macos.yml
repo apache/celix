@@ -21,7 +21,7 @@ jobs:
       - name: Setup Conan Profile
         run: |
           conan profile new default --detect
-          conan profile update settings.build_type=Debug default
+          conan profile update settings.build_type=RelWithDebInfo default
       - name: Install Dependencies
         env:
           CONAN_BUILD_OPTIONS: |
