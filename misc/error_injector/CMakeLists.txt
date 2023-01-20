@@ -20,7 +20,9 @@ target_include_directories(error_injector INTERFACE ${CMAKE_CURRENT_LIST_DIR})
 # get caller address of the target function, into which errors are injected
 target_link_libraries(error_injector INTERFACE dl)
 target_link_options(error_injector INTERFACE -rdynamic)
-target_compile_options(error_injector INTERFACE -Wno-frame-address)
+if(NOT APPLE)
+    target_compile_options(error_injector INTERFACE -Wno-frame-address)
+endif()
 
 add_subdirectory(malloc)
 add_subdirectory(celix_properties)
