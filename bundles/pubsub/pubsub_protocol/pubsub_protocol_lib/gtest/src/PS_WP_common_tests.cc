@@ -22,8 +22,6 @@
 #include <gtest/gtest.h>
 #include <iostream>
 #include <cstring>
-#include <celix_properties_ei.h>
-#include <malloc_ei.h>
 
 #include "pubsub_wire_protocol_common.h"
 
