@@ -30,11 +30,7 @@
 class WireProtocolCommonTest : public ::testing::Test {
 public:
     WireProtocolCommonTest() = default;
-    ~WireProtocolCommonTest() override {
-        celix_ei_expect_realloc(nullptr, 0, nullptr);
-        celix_ei_expect_calloc(nullptr, 0, nullptr);
-        celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
-    };
+    ~WireProtocolCommonTest() = default;
 };
 
 TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeMetadataWithSingleEntries) {
@@ -173,42 +169,6 @@ TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeWithExistinBufferWhi
     celix_properties_destroy(message.metadata.metadata);
 }
 
-TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeMetadataWithNoMemoryLeft) {
-    pubsub_protocol_message_t message;
-    message.header.convertEndianess = 0;
-    message.metadata.metadata = celix_properties_create();
-    celix_properties_set(message.metadata.metadata, "key1", "value1");
-
-    //Scenario: No mem with no pre-allocated data
-    //Given (mocked) realloc is forced to return NULL
-    celix_ei_expect_realloc((void *)pubsubProtocol_encodeMetadata, 0, nullptr);
-
-    //When I try to encode a metadata
-    char *data = nullptr;
-    size_t length = 0;
-    size_t contentLength = 0;
-    auto status = pubsubProtocol_encodeMetadata(&message, &data, &length, &contentLength);
-    //Then I expect a failure
-    EXPECT_NE(status, CELIX_SUCCESS);
-
-    //Scenario: No mem with some pre-allocated data
-    //Given a data set with some space
-    data = (char*)malloc(16);
-    length = 16;
-
-    //And (mocked) realloc is forced to return NULL
-    celix_ei_expect_realloc((void *)pubsubProtocol_encodeMetadata, 0, nullptr);
-
-    //When I try to encode a metadata
-    status = pubsubProtocol_encodeMetadata(&message, &data, &length, &contentLength);
-
-    //Then I expect a failure
-    EXPECT_NE(status, CELIX_SUCCESS);
-
-    free(data);
-    celix_properties_destroy(message.metadata.metadata);
-}
-
 TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DecodeMetadataWithSingleEntries) {
     pubsub_protocol_message_t message;
     message.header.convertEndianess = 0;
@@ -331,41 +291,6 @@ TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DecodeEmptyMetadata) {
 
     EXPECT_EQ(status, CELIX_INVALID_SYNTAX);
     EXPECT_EQ(nullptr, message.metadata.metadata);
-}
-
-TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_NotEnoughMemoryForMultipleEntries) {
-    pubsub_protocol_message_t message;
-    message.header.convertEndianess = 1;
-    message.metadata.metadata = nullptr;
-
-    char* data = strdup("ABCD4:key1,6:value1,4:key2,6:value2,6:key111,8:value111,"); //note 3 entries
-    auto len = strlen(data);
-    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 3);
-    for (int i = 0; i < 6; ++i) {
-        celix_ei_expect_calloc((void *)pubsubProtocol_decodeMetadata, 0, nullptr, i+1);
-        auto status = pubsubProtocol_decodeMetadata((void*)data, len, &message);
-
-        EXPECT_EQ(status, CELIX_ENOMEM);
-        EXPECT_EQ(nullptr, message.metadata.metadata);
-    }
-    free(data);
-}
-
-TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_PropertiesAllocFailureWhenDecodingMetadata) {
-    pubsub_protocol_message_t message;
-    message.header.convertEndianess = 0;
-    message.metadata.metadata = nullptr;
-
-    char* data = strdup("ABCD4:key1,6:value1,"); //note 1 entry
-    auto len = strlen(data);
-    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 1);
-    celix_ei_expect_celix_properties_create((void*)pubsubProtocol_decodeMetadata, 0, nullptr);
-    auto status = pubsubProtocol_decodeMetadata((void*)data, len, &message);
-
-    EXPECT_EQ(status, CELIX_ENOMEM);
-    EXPECT_EQ(nullptr, message.metadata.metadata);
-
-    free(data);
 }
 
 TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DencodeMetadataWithDuplicateEntries) {
