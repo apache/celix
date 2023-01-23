@@ -739,7 +739,7 @@ static bool rsaShmClient_shouldBreakInvocation(rsa_shm_client_t *client, long se
         }
 
         if (svcDiagInfo->concurrentInvocations > clientManager->maxConcurrentNum) {
-            celix_logHelper_error(clientManager->logHelper,"RsaShmClient:The number of concurrent invocation for service id %ld is greater than %d.",
+            celix_logHelper_error(clientManager->logHelper,"RsaShmClient:The number of concurrent invocation for service id %ld is greater than %ld.",
                     serviceId, clientManager->maxConcurrentNum);
             breaked = true;
             break;

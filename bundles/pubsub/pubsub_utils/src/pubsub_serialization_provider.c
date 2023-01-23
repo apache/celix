@@ -454,7 +454,7 @@ static void pubsub_serializationProvider_parseDescriptors(pubsub_serialization_p
 
         bool unique = pubsub_serializationProvider_validateEntry(provider, serEntry);
         if (unique && serEntry->valid) { //note only register if unique and valid
-            L_DEBUG("Adding message serialization entry for msg %s with id %d and version %s", serEntry->msgFqn, serEntry->msgId, serEntry->msgVersion);
+            L_DEBUG("Adding message serialization entry for msg %s with id %d and version %s", serEntry->msgFqn, serEntry->msgId, serEntry->msgVersionStr);
             pubsub_serializationProvider_registerSerializationEntry(provider, serEntry);
         }
 

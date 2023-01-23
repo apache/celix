@@ -344,7 +344,7 @@ void pubsub_websocketTopicReceiver_listConnections(pubsub_websocket_topic_receiv
 
 
 void pubsub_websocketTopicReceiver_connectTo(pubsub_websocket_topic_receiver_t *receiver, const char *socketAddress, long socketPort) {
-    L_DEBUG("[PSA_WEBSOCKET] TopicReceiver %s/%s ('%s') connecting to websocket address %s:li", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, receiver->uri, socketAddress, socketPort);
+    L_DEBUG("[PSA_WEBSOCKET] TopicReceiver %s/%s ('%s') connecting to websocket address %s:%ld", receiver->scope == NULL ? "(null)" : receiver->scope, receiver->topic, receiver->uri, socketAddress, socketPort);
 
     char *key = NULL;
     asprintf(&key, "%s:%li", socketAddress, socketPort);
@@ -539,7 +539,7 @@ static void processMsg(pubsub_websocket_topic_receiver_t *receiver, const char *
             free(payload);
         } else {
             L_WARN("[PSA_WEBSOCKET_TR] Received unsupported message: "
-                   "ID = %s, major = %d, minor = %d, seqNr = %d, data valid? %s",
+                   "ID = %s, major = %"JSON_INTEGER_FORMAT", minor = %"JSON_INTEGER_FORMAT", seqNr = %"JSON_INTEGER_FORMAT", data valid? %s",
                    (jsId ? json_string_value(jsId) : "ERROR"),
                    json_integer_value(jsMajor), json_integer_value(jsMinor),
                    json_integer_value(jsSeqNr), (jsData ? "TRUE" : "FALSE"));
