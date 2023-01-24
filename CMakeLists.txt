@@ -210,11 +210,6 @@ add_subdirectory(bundles)
 #Experimental Bundles/Libraries
 add_subdirectory(misc/experimental)
 
-# Error Injectors
-if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
-    add_subdirectory(misc/error_injector)
-endif ()
-
 #Example as last, because some example will check if underlining options are enabled
 add_subdirectory(examples/celix-examples examples)
 

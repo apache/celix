@@ -15,9 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(celix_properties_ei STATIC celix_properties_ei.cpp)
+add_library(malloc_ei STATIC src/malloc_ei.cc)
 
-target_include_directories(celix_properties_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR})
-target_link_libraries(celix_properties_ei PUBLIC error_injector Celix::utils)
+target_include_directories(malloc_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(malloc_ei PUBLIC Celix::error_injector)
 # It plays nicely with address sanitizer this way.
-target_link_options(celix_properties_ei INTERFACE LINKER:--wrap,celix_properties_create)
+target_link_options(malloc_ei INTERFACE LINKER:--wrap,malloc LINKER:--wrap,realloc LINKER:--wrap,calloc)
+add_library(Celix::malloc_ei ALIAS malloc_ei)

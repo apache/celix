@@ -17,27 +17,19 @@
   under the License.
  */
 
-#include <malloc_ei.h>
-
+#ifndef CELIX_MALLOC_EI_H
+#define CELIX_MALLOC_EI_H
+#ifdef __cplusplus
 extern "C" {
-void *__real_malloc(size_t);
-CELIX_EI_DEFINE(malloc, void *)
-void *__wrap_malloc(size_t size) {
-    CELIX_EI_IMPL0(malloc);
-    return __real_malloc(size);
-}
+#endif
 
-void *__real_realloc(void *__ptr, size_t __size);
-CELIX_EI_DEFINE(realloc, void *)
-void *__wrap_realloc(void *__ptr, size_t __size) {
-    CELIX_EI_IMPL0(realloc);
-    return __real_realloc(__ptr, __size);
-}
+#include "celix_error_injector.h"
 
-void *__real_calloc (size_t __nmemb, size_t __size);
-CELIX_EI_DEFINE(calloc, void *)
-void *__wrap_calloc (size_t __nmemb, size_t __size) {
-    CELIX_EI_IMPL0(calloc);
-    return __real_calloc(__nmemb, __size);
+CELIX_EI_DECLARE(malloc, void *);
+CELIX_EI_DECLARE(realloc, void *);
+CELIX_EI_DECLARE(calloc, void *);
+
+#ifdef __cplusplus
 }
-}
+#endif
+#endif //CELIX_MALLOC_EI_H

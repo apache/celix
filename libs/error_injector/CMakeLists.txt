@@ -15,9 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(malloc_ei STATIC malloc_ei.cpp)
+add_library(error_injector INTERFACE)
+target_include_directories(error_injector INTERFACE ${CMAKE_CURRENT_LIST_DIR}/api)
+# get caller address of the target function, into which errors are injected
+target_link_libraries(error_injector INTERFACE dl)
+target_link_options(error_injector INTERFACE -rdynamic)
+target_compile_options(error_injector INTERFACE -Wno-frame-address)
+add_library(Celix::error_injector ALIAS error_injector)
 
-target_include_directories(malloc_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR})
-target_link_libraries(malloc_ei PUBLIC error_injector)
-# It plays nicely with address sanitizer this way.
-target_link_options(malloc_ei INTERFACE LINKER:--wrap,malloc LINKER:--wrap,realloc LINKER:--wrap,calloc)
+add_subdirectory(malloc)
+add_subdirectory(celix_properties)

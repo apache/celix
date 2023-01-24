@@ -17,13 +17,27 @@
   under the License.
  */
 
-#include <celix_properties_ei.h>
+#include "malloc_ei.h"
 
 extern "C" {
-void *__real_celix_properties_create(void);
-CELIX_EI_DEFINE(celix_properties_create, celix_properties_t*)
-void *__wrap_celix_properties_create(void) {
-    CELIX_EI_IMPL0(celix_properties_create);
-    return __real_celix_properties_create();
+void *__real_malloc(size_t);
+CELIX_EI_DEFINE(malloc, void *)
+void *__wrap_malloc(size_t size) {
+    CELIX_EI_IMPL0(malloc);
+    return __real_malloc(size);
+}
+
+void *__real_realloc(void *__ptr, size_t __size);
+CELIX_EI_DEFINE(realloc, void *)
+void *__wrap_realloc(void *__ptr, size_t __size) {
+    CELIX_EI_IMPL0(realloc);
+    return __real_realloc(__ptr, __size);
+}
+
+void *__real_calloc (size_t __nmemb, size_t __size);
+CELIX_EI_DEFINE(calloc, void *)
+void *__wrap_calloc (size_t __nmemb, size_t __size) {
+    CELIX_EI_IMPL0(calloc);
+    return __real_calloc(__nmemb, __size);
 }
 }

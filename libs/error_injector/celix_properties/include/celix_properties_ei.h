@@ -17,19 +17,18 @@
   under the License.
  */
 
-#ifndef CELIX_MALLOC_EI_H
-#define CELIX_MALLOC_EI_H
+#ifndef CELIX_CELIX_PROPERTIES_EI_H
+#define CELIX_CELIX_PROPERTIES_EI_H
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <error_injector.h>
+#include "celix_properties.h"
+#include "celix_error_injector.h"
 
-CELIX_EI_DECLARE(malloc, void *);
-CELIX_EI_DECLARE(realloc, void *);
-CELIX_EI_DECLARE(calloc, void *);
+CELIX_EI_DECLARE(celix_properties_create, celix_properties_t*);
 
 #ifdef __cplusplus
 }
 #endif
-#endif //CELIX_MALLOC_EI_H
+#endif //CELIX_CELIX_PROPERTIES_EI_H

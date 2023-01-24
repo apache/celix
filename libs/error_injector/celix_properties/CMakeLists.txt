@@ -15,11 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(error_injector INTERFACE error_injector.h)
-target_include_directories(error_injector INTERFACE ${CMAKE_CURRENT_LIST_DIR})
-# get caller address of the target function, into which errors are injected
-target_link_libraries(error_injector INTERFACE dl)
-target_link_options(error_injector INTERFACE -rdynamic)
-target_compile_options(error_injector INTERFACE -Wno-frame-address)
-add_subdirectory(malloc)
-add_subdirectory(celix_properties)
+add_library(properties_ei STATIC src/celix_properties_ei.cc)
+
+target_include_directories(properties_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(properties_ei PUBLIC Celix::error_injector Celix::utils)
+# It plays nicely with address sanitizer this way.
+target_link_options(properties_ei INTERFACE LINKER:--wrap,celix_properties_create)
+add_library(Celix::properties_ei ALIAS properties_ei)

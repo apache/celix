@@ -25,7 +25,7 @@ setup_target_for_coverage(celix_pswp_common_tests SCAN_DIR ..)
 if (LINKER_WRAP_SUPPORTED)
     add_executable(celix_pswp_common_ei_tests src/PS_WP_common_ei_tests.cc)
     target_include_directories(celix_pswp_common_ei_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
-    target_link_libraries(celix_pswp_common_ei_tests PRIVATE celix_pubsub_protocol_lib GTest::gtest Celix::pubsub_spi GTest::gtest_main malloc_ei celix_properties_ei)
+    target_link_libraries(celix_pswp_common_ei_tests PRIVATE celix_pubsub_protocol_lib GTest::gtest Celix::pubsub_spi GTest::gtest_main Celix::malloc_ei Celix::properties_ei)
 
     add_test(NAME celix_pswp_common_ei_tests COMMAND celix_pswp_common_ei_tests)
     setup_target_for_coverage(celix_pswp_common_ei_tests SCAN_DIR ..)
