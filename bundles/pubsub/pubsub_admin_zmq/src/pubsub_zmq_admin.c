@@ -160,7 +160,7 @@ pubsub_zmq_admin_t* pubsub_zmqAdmin_create(celix_bundle_context_t *ctx, celix_lo
     long nrThreads = celix_bundleContext_getPropertyAsLong(ctx, PUBSUB_ZMQ_NR_THREADS_KEY, 0);
     if (nrThreads > 0) {
         zsys_set_io_threads((size_t)nrThreads);
-        L_INFO("[PSA_ZMQ] Using %d threads for ZMQ", (size_t)nrThreads);
+        L_INFO("[PSA_ZMQ] Using %ld threads for ZMQ", nrThreads);
     }
 
 

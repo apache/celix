@@ -258,7 +258,7 @@ static void exportRegistration_addRpcFac(void *handle, void *svc) {
     opts.remove = exportRegistration_removeRequestHandlerSvc;
     export->reqHandlerSvcTrkId = celix_bundleContext_trackServicesWithOptionsAsync(export->context, &opts);
     if (export->reqHandlerSvcTrkId < 0) {
-        celix_logHelper_error(export->logHelper,"RSA export reg: Error Tracking service for %s(%d)", RSA_REQUEST_HANDLER_SERVICE_NAME, export->reqHandlerSvcId);
+        celix_logHelper_error(export->logHelper,"RSA export reg: Error Tracking service for %s(%ld)", RSA_REQUEST_HANDLER_SERVICE_NAME, export->reqHandlerSvcId);
         goto err_tracking_endpoint_svc;
     }
     export->reqHandlerSvcId = reqHandlerSvcId;

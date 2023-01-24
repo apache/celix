@@ -227,7 +227,7 @@ static celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_prope
 
     long serialProtoId  = celix_properties_getAsLong(metadata, "SerialProtocolId", 0);
     if (serialProtoId != endpoint->serialProtoId) {
-        celix_logHelper_error(endpoint->logHelper, "Serialization protocol ID mismatch. expect:%ld actual:%ld.", serialProtoId, endpoint->serialProtoId);
+        celix_logHelper_error(endpoint->logHelper, "Serialization protocol ID mismatch. expect:%ld actual:%u.", serialProtoId, endpoint->serialProtoId);
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
