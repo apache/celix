@@ -27,6 +27,11 @@ extern "C" {
 #include <dlfcn.h>
 #include <stddef.h>
 
+/**
+ * @brief This macro find the address of target function's caller, or caller's caller.
+ * The level argument is number of frames to scan up the call stack: 0 means caller, 1 means caller's caller.
+ * The result is stored in the addr argument.
+ */
 #define CELIX_EI_GET_CALLER(addr, level)                                   \
 do {                                                                       \
     Dl_info dlinfo;                                                        \
