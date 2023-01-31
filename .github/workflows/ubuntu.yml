@@ -93,7 +93,8 @@ jobs:
           libczmq-dev \
           libcpputest-dev \
           rapidjson-dev \
-          libavahi-compat-libdnssd-dev
+          libavahi-compat-libdnssd-dev \
+          libcivetweb-dev
     - name: Build
       env:
         BUILD_OPTIONS: |
