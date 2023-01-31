@@ -30,7 +30,8 @@ jobs:
             libcpputest-dev \
             rapidjson-dev \
             libavahi-compat-libdnssd-dev \
-            libcivetweb-dev
+            libcivetweb-dev \
+            civetweb
       - name: Download Coverity Build Tool
         run: |
           mkdir -p build/cov-analysis-linux64

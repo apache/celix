@@ -94,7 +94,8 @@ jobs:
           libcpputest-dev \
           rapidjson-dev \
           libavahi-compat-libdnssd-dev \
-          libcivetweb-dev
+          libcivetweb-dev \
+          civetweb
     - name: Build
       env:
         BUILD_OPTIONS: |
