@@ -17,9 +17,9 @@
 
 celix_subproject(HTTP_ADMIN "Service to use a HTTP server with websocket support" ON)
 if (HTTP_ADMIN)
+    find_package(civetweb REQUIRED)
 
     add_subdirectory(http_admin_api)
-    add_subdirectory(civetweb)
     add_subdirectory(http_admin)
 
     if (ENABLE_TESTING)

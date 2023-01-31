@@ -346,7 +346,7 @@ if (PUBSUB_INTEGRATION)
                 pubsub_tst
                 pubsub_serializer
                 )
-        target_link_libraries(pubsub_websocket_v2_tests PRIVATE Celix::pubsub_api jansson::jansson civetweb_shared GTest::gtest GTest::gtest_main)
+        target_link_libraries(pubsub_websocket_v2_tests PRIVATE Celix::pubsub_api jansson::jansson GTest::gtest GTest::gtest_main)
         target_include_directories(pubsub_websocket_v2_tests SYSTEM PRIVATE gtest)
         add_test(NAME pubsub_websocket_v2_tests COMMAND pubsub_websocket_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_v2_tests,CONTAINER_LOC>)
         setup_target_for_coverage(pubsub_websocket_v2_tests SCAN_DIR ..)
@@ -368,7 +368,7 @@ if (PUBSUB_INTEGRATION)
                 pubsub_serializer
                 )
         target_compile_definitions(pstm_deadlock_websocket_v2_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
-        target_link_libraries(pstm_deadlock_websocket_v2_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main jansson::jansson Celix::dfi civetweb_shared)
+        target_link_libraries(pstm_deadlock_websocket_v2_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main jansson::jansson Celix::dfi)
         target_include_directories(pstm_deadlock_websocket_v2_test SYSTEM PRIVATE pstm_deadlock_websocket_v2_test)
 
         #Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.

@@ -26,7 +26,6 @@ if (TARGET Celix::http_admin AND TARGET Celix::shell AND TARGET Celix::shell_wui
     )
 
     target_link_libraries(http_example PRIVATE Celix::http_admin_api)
-    celix_bundle_private_libs(http_example Celix::civetweb_shared)
     celix_bundle_add_dir(http_example resources)
     celix_bundle_headers(http_example "X-Web-Resource: /hello$<SEMICOLON>/resources")
 
