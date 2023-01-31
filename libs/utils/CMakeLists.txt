@@ -43,6 +43,7 @@ add_library(utils SHARED
     src/celix_log_utils.c
     src/celix_hash_map.c
     src/celix_file_utils.c
+    src/celix_convert_utils.c
     ${MEMSTREAM_SOURCES}
 )
 set_target_properties(utils PROPERTIES OUTPUT_NAME "celix_utils")
@@ -118,10 +119,6 @@ if (ENABLE_TESTING)
         target_include_directories(properties_test PRIVATE include_deprecated)
         target_link_libraries(properties_test CppUTest::CppUTest CppUTest::CppUTestExt  Celix::utils pthread)
 
-        add_executable(utils_test private/test/utils_test.cpp)
-        target_include_directories(utils_test PRIVATE include_deprecated)
-        target_link_libraries(utils_test CppUTest::CppUTest  Celix::utils pthread)
-
         add_executable(ip_utils_test private/test/ip_utils_test.cpp)
         target_include_directories(ip_utils_test PRIVATE include_deprecated)
         target_link_libraries(ip_utils_test CppUTest::CppUTest  Celix::utils pthread)
@@ -141,7 +138,6 @@ if (ENABLE_TESTING)
         add_test(NAME run_celix_threads_test COMMAND celix_threads_test)
         add_test(NAME run_linked_list_test COMMAND linked_list_test)
         add_test(NAME run_properties_test COMMAND properties_test)
-        add_test(NAME run_utils_test COMMAND utils_test)
         add_test(NAME run_ip_utils_test COMMAND ip_utils_test)
         add_test(NAME filter_test COMMAND filter_test)
         add_test(NAME version_test COMMAND version_test)
@@ -151,7 +147,6 @@ if (ENABLE_TESTING)
         setup_target_for_coverage(celix_threads_test)
         setup_target_for_coverage(linked_list_test)
         setup_target_for_coverage(properties_test)
-        setup_target_for_coverage(utils_test)
         setup_target_for_coverage(ip_utils_test)
         setup_target_for_coverage(filter_test)
         setup_target_for_coverage(version_test)

@@ -30,6 +30,8 @@ add_executable(test_utils
         src/HashMapTestSuite.cc
         src/ArrayListTestSuite.cc
         src/FileUtilsTestSuite.cc
+        src/CelixUtilsTestSuite.cc
+        src/ConvertUtilsTestSuite.cc
         ${CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS}
 )
 

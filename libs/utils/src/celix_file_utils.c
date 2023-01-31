@@ -25,6 +25,7 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <zip.h>
+#include <sys/time.h>
 
 #include "celix_utils.h"
 
@@ -235,7 +236,7 @@ celix_status_t celix_utils_extractZipFile(const char* zipPath, const char* extra
         status = celix_utils_extractZipInternal(zip, extractToDir, errorOut);
         zip_close(zip);
     } else {
-        //note libzip can give more info with zip_error_to_str if needed (but this requires a allocated string buf).
+        //note libzip can give more info with zip_error_to_str if needed (but this requires an allocated string buf).
         status = CELIX_FILE_IO_EXCEPTION;
         *errorOut = ERROR_OPENING_ZIP;
     }
@@ -277,4 +278,28 @@ celix_status_t celix_utils_extractZipData(const void *zipData, size_t zipDataSiz
     return status;
 }
 
+celix_status_t celix_utils_getLastModified(const char* path, struct timespec* lastModified) {
+    celix_status_t status = CELIX_SUCCESS;
+    struct stat st;
+    if (stat(path, &st) == 0) {
+#ifdef __APPLE__
+        *lastModified = st.st_mtimespec;
+#else
+        *lastModified = st.st_mtim;
+#endif
+    } else {
+        lastModified->tv_sec = 0;
+        lastModified->tv_nsec = 0;
+        status = CELIX_FILE_IO_EXCEPTION;
+    }
+    return status;
+}
 
+celix_status_t celix_utils_touch(const char* path) {
+    celix_status_t status = CELIX_SUCCESS;
+    int rc = utimes(path, NULL);
+    if (rc != 0) {
+        status = CELIX_FILE_IO_EXCEPTION;
+    }
+    return status;
+}
