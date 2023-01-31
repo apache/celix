@@ -60,8 +60,14 @@ namespace celix {
          * For example if there is a resource entry in the bundle at path 'META-INF/descriptors/foo.descriptor`
          * this call will return a relative path to the extracted location of the bundle resource, e.g.:
          * .cache/bundle5/version0.0/META-INF/descriptors/foo.descriptor
+         *
+         * A path is always relative to the bundle root and can start with a "/".
+         * A path "." or "/" indicated the root of this bundle.
+         *
+         * The returned entry path should be treated as read-only, use celix::Bundle::getDataFile to access the
+         * bundle's persistent storage.
          * 
-         * @param path The relative path to a bundle resource
+         * @param path The relative path to a bundle resource.
          * @return The use-able entry path or an empty string if the entry is not found.
          */
 #if __cplusplus >= 201703L //C++17 or higher
@@ -71,6 +77,43 @@ namespace celix {
 #else
         std::string getEntry(const std::string& path) const {
             return getEntryInternal(path.c_str());
+        }
+#endif
+
+       /**
+        * @brief Return a use-able entry path for the provided relative path to a bundle persistent storage.
+        *
+        * For example if there is a resource entry in the bundle persistent storage at path 'resources/counters.txt` this call
+        * will return a relative path to entry in the bundle persistent storage.
+        * .cache/bundle5/storage/resources/counters.txt
+        *
+        * A provided path is always relative to the bundle persistent storage root and can start with a "/".
+        * A provided path NULL, "", "." or "/" indicates the root of this bundle cache store.
+        *
+        * The returned entry path should can be treated as read-write.
+        *
+        * @param path The relative path to a bundle persistent storage entry.
+        * @return The use-able entry path or an empty string if the entry is not found.
+        */
+#if __cplusplus >= 201703L //C++17 or higher
+        [[nodiscard]] std::string getDataFile(std::string_view path) const {
+            std::string result{};
+            char* entry = celix_bundle_getDataFile(cBnd.get(), path.data());
+            if (entry != nullptr) {
+                result = std::string{entry};
+                free(entry);
+            }
+            return result;
+        }
+#else
+        [[nodiscard]] std::string getDataFile(const std::string& path) const {
+            std::string result{};
+            char* entry = celix_bundle_getDataFile(cBnd.get(), path.c_str());
+            if (entry != nullptr) {
+                result = std::string{entry};
+                free(entry);
+            }
+            return result;
         }
 #endif
 
@@ -148,6 +191,15 @@ namespace celix {
          */
         [[nodiscard]] bool isSystemBundle() const {
             return celix_bundle_isSystemBundle(cBnd.get());
+        }
+
+        /**
+         * @brief Get the C bundle handle.
+         * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
+         * the C++ API.
+         */
+        [[nodiscard]] celix_bundle_t* getCBundle() const {
+            return cBnd.get();
         }
     private:
         std::string getEntryInternal(const char* path) const {

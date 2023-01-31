@@ -44,6 +44,8 @@ typedef struct manifest *manifest_pt;
 
 FRAMEWORK_EXPORT celix_status_t manifest_create(manifest_pt *manifest);
 
+FRAMEWORK_EXPORT manifest_pt manifest_clone(manifest_pt manifest);
+
 FRAMEWORK_EXPORT celix_status_t manifest_createFromFile(const char *filename, manifest_pt *manifest);
 
 FRAMEWORK_EXPORT celix_status_t manifest_destroy(manifest_pt manifest);

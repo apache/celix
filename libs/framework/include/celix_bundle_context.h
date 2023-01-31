@@ -891,11 +891,11 @@ bool celix_bundleContext_isBundleActive(celix_bundle_context_t *ctx, long bndId)
  * then the function will return after the bundle is started.
  *
  * @param ctx The bundle context
- * @param bundleLoc The bundle location to the bundle zip file.
+ * @param bundleUrl The bundle location to the bundle zip file.
  * @param autoStart If the bundle should also be started.
  * @return the bundleId (>= 0) or < 0 if the bundle could not be installed and possibly started.
  */
-long celix_bundleContext_installBundle(celix_bundle_context_t *ctx, const char *bundleLoc, bool autoStart);
+long celix_bundleContext_installBundle(celix_bundle_context_t *ctx, const char *bundleUrl, bool autoStart);
 
 /**
  * @brief Uninstall the bundle with the provided bundle id. If needed the bundle will be stopped first.
@@ -941,6 +941,31 @@ bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bndId);
  * @return true if the bundle is found & correctly started. False if not.
  */
 bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bndId);
+
+/**
+ * @brief Update the bundle with the provided bundle id async.
+ *
+ * This will do the following:
+ *  - stop the bundle (if needed);
+ *  - update the bundle revision if a newer bundle zip if found;
+ *  - start the bundle, if it was started.
+ *
+ * Will silently ignore bundle ids < 0.
+ *
+ * If this function is called on the Celix event thread, the actual updating of the bundle will be done async and
+ * on a separate thread.
+ * If this function is called from a different thread than the Celix event thread, then the function will
+ * return after the bundle update is completed.
+ *
+ * @warning Update bundle is not yet fully supported. Use at your own risk.
+ *
+ * @param ctx The bundle context
+ * @param bndId The bundle id to start.
+ * @param updatedBundleUrl The optional updated bundle url to the bundle zip file. If NULL, the existing bundle url
+ *                         from the bundle cache will be used.
+ * @return true if the bundle is found & correctly started. False if not.
+ */
+bool celix_bundleContext_updateBundle(celix_bundle_context_t *ctx, long bndId, const char* updatedBundleUrl);
 
 /**
  * @brief Returns the bundle symbolic name for the provided bundle id.
@@ -1275,40 +1300,64 @@ void celix_bundleContext_vlog(
 
 
 /**
- * @brief Gets the config property - or environment variable if the config property does not exist - for the provided name.
- * @param key The key of the property to receive.
- * @param defaultVal The default value to use if the property is not found (can be NULL).
- * @return The property value for the provided key or the provided defaultValue is the key is not found.
+ * @brief Get the config property for the given key.
+ *
+ * The config property is a property from the framework configuration or a system property.
+ * If a system property is found, the system property is returned.
+ * Otherwise the framework configuration property - if found - is returned.
+ *
+ * @param ctx The bundle context.
+ * @param name The name of the property.
+ * @param defaultValue The default value if the property is not found.
+ * @return The property value or the default value if the property is not found.
  */
 const char* celix_bundleContext_getProperty(celix_bundle_context_t *ctx, const char *key, const char *defaultVal);
 
 /**
- * @brief Gets the config property as converts it to long. If the property is not a valid long, the defaultValue will be returned.
- * The rest of the behaviour is the same as celix_bundleContext_getProperty.
-
- * @param key The key of the property to receive.
- * @param defaultVal The default value to use if the property is not found.
- * @return The property value for the provided key or the provided defaultValue is the key is not found.
+ * @brief Get the config property for the given key converted as long value.
+ *
+ * The config property is a property from the framework configuration or a system property.
+ * If a system property is found, the system property is returned.
+ * Otherwise the framework configuration property - if found - is returned.
+ *
+ * @param framework The framework.
+ * @param name The name of the property.
+ * @param defaultValue The default value if the property is not found.
+ * @param found If not NULL, the found flag is set to true if the property is found, otherwise false.
+ * @return The property value or the default value if the property is not found or the property value cannot be converted
+ *         to a long value.
  */
 long celix_bundleContext_getPropertyAsLong(celix_bundle_context_t *ctx, const char *key, long defaultValue);
 
 /**
- * @brief Gets the config property as converts it to double. If the property is not a valid double, the defaultValue will be returned.
- * The rest of the behaviour is the same as celix_bundleContext_getProperty.
-
- * @param key The key of the property to receive.
- * @param defaultVal The default value to use if the property is not found.
- * @return The property value for the provided key or the provided defaultValue is the key is not found.
+ * @brief Get the config property for the given key converted as double value.
+ *
+ * The config property is a property from the framework configuration or a system property.
+ * If a system property is found, the system property is returned.
+ * Otherwise the framework configuration property - if found - is returned.
+ *
+ * @param framework The framework.
+ * @param name The name of the property.
+ * @param defaultValue The default value if the property is not found.
+ * @param found If not NULL, the found flag is set to true if the property is found, otherwise false.
+ * @return The property value or the default value if the property is not found or the property value cannot be converted
+ *         to a double value.
  */
 double celix_bundleContext_getPropertyAsDouble(celix_bundle_context_t *ctx, const char *key, double defaultValue);
 
 /**
- * @brief Gets the config property as converts it to bool. If the property is not a valid bool, the defaultValue will be returned.
- * The rest of the behaviour is the same as celix_bundleContext_getProperty.
-
- * @param key The key of the property to receive.
- * @param defaultVal The default value to use if the property is not found.
- * @return The property value for the provided key or the provided defaultValue is the key is not found.
+ * @brief Get the config property for the given key converted as bool value.
+ *
+ * The config property is a property from the framework configuration or a system property.
+ * If a system property is found, the system property is returned.
+ * Otherwise the framework configuration property - if found - is returned.
+ *
+ * @param framework The framework.
+ * @param name The name of the property.
+ * @param defaultValue The default value if the property is not found.
+ * @param found If not NULL, the found flag is set to true if the property is found, otherwise false.
+ * @return The property value or the default value if the property is not found or the property value cannot be converted
+ *         to a bool value.
  */
 bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const char *key, bool defaultValue);
 

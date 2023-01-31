@@ -156,11 +156,11 @@ TEST_F(CelixBundleContextBundlesTests, installAndUninstallBundlesTest) {
     long bndId6 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
 
     ASSERT_TRUE(bndId4 >= 0L);
-    ASSERT_FALSE(bndId1 == bndId4); //not new id
+    ASSERT_TRUE(bndId1 == bndId4); //bundle cache -> reuse of bundle id.
     ASSERT_TRUE(bndId5 >= 0L);
-    ASSERT_FALSE(bndId2 == bndId5); //not new id
+    ASSERT_TRUE(bndId2 == bndId5); //bundle cache -> reuse of bundle id.
     ASSERT_TRUE(bndId6 >= 0L);
-    ASSERT_FALSE(bndId5 == bndId6); //not new id
+    ASSERT_TRUE(bndId3 == bndId6); //bundle cache -> reuse of bundle id.
 }
 
 TEST_F(CelixBundleContextBundlesTests, startBundleWithException) {

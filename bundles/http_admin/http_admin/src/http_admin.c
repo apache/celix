@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * http_admin.c
- *
- *  \date       May 24, 2019
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <memory.h>
@@ -498,14 +491,12 @@ void http_admin_startBundle(void *data, const celix_bundle_t *bundle) {
     }
 
     if(status == CELIX_SUCCESS && manifest != NULL) {
-        const char *aliases = NULL;
-        const char *revision_root = NULL;
-        long bnd_id;
 
-        aliases = manifest_getValue(manifest, "X-Web-Resource");
-        bnd_id = celix_bundle_getId(bundle);
-        bundleRevision_getRoot(revision, &revision_root);
-        createAliasesSymlink(aliases, admin->root, revision_root, bnd_id, admin->aliasList);
+        long bnd_id = celix_bundle_getId(bundle);
+        const char* aliases = manifest_getValue(manifest, "X-Web-Resource");
+        char* bundleRoot = celix_bundle_getEntry(bundle, "");
+        createAliasesSymlink(aliases, admin->root, bundleRoot, bnd_id, admin->aliasList);
+        free(bundleRoot);
     }
     httpAdmin_updateInfoSvc(admin);
 }

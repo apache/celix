@@ -24,6 +24,7 @@
 #include "bundle_archive.h"
 #include "celix_framework.h"
 #include "celix_array_list.h"
+#include "celix_long_hash_map.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,22 +58,6 @@ celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cache_t **out);
 celix_status_t celix_bundleCache_destroy(celix_bundle_cache_t *cache);
 
 /**
- * @brief Recreates and retrieves the list of archives for the given bundle cache.
- *
- * Archives are recreated on the bundle cache memory pool, the list for the results is created on the supplied pool, and is owned by the caller.
- *
- * @param cache The cache to recreate archives out
- * @param pool The pool on which the list of archives is created
- * @param archives List with recreated archives
- * @return Status code indication failure or success:
- * 		- CELIX_SUCCESS when no errors are encountered.
- * 		- CELIX_ILLEGAL_ARGUMENT If <code>archives</code> not is null.
- * 		- CELIX_ENOMEM If allocating memory for <code>archives</code> failed.
- * 		- CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
- */
-celix_status_t celix_bundleCache_getArchives(celix_bundle_cache_t *cache, celix_array_list_t **archives);
-
-/**
  * @brief Creates a new archive for the given bundle (using the id and location). The archive is created on the supplied bundlePool.
  *
  * @param cache The Celix framework to create an archive in
@@ -88,8 +73,21 @@ celix_status_t celix_bundleCache_getArchives(celix_bundle_cache_t *cache, celix_
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_archive</code> failed.
  */
 celix_status_t
-celix_bundleCache_createArchive(celix_framework_t *fw, long id, const char *location, const char *inputFile,
-                                bundle_archive_pt *archive);
+celix_bundleCache_createArchive(celix_framework_t *fw, long id, const char *location, bundle_archive_pt *archive);
+
+/**
+ * @@brief Creates a new system archive for framework bundle.
+ * @param[in] fw The Celix framework to create an archive in
+ * @param[out] archive  The archive to create
+ * @return Status code indication failure or success:
+ *         - CELIX_SUCCESS when no errors are encountered.
+ *         - CELIX_ILLEGAL_ARGUMENT If <code>bundle_archive</code> not is null.
+ *         - CELIX_ENOMEM If allocating memory for <code>bundle_archive</code> failed.
+ *         - CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
+ *         - CELIX_BUNDLE_EXCEPTION If the bundle cannot be created.
+ */
+celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, bundle_archive_pt *archive);
+
 
 /**
  * @brief Deletes the entire bundle cache.
@@ -100,7 +98,41 @@ celix_bundleCache_createArchive(celix_framework_t *fw, long id, const char *loca
  * 		- CELIX_ILLEGAL_ARGUMENT If the cache is invalid
  * 		- CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
  */
-celix_status_t celix_bundleCache_delete(celix_bundle_cache_t *cache);
+celix_status_t celix_bundleCache_deleteCacheDir(celix_bundle_cache_t *cache);
+
+/**
+ * @brief Find if the there is already a bundle cache for the provided bundle zip location and if this is true
+ * return the bundle id for the bundle cache entry.
+ *
+ * @param fw The framework.
+ * @param location The location of the bundle zip to find the id for.
+ * @return The bundle id or -1 if not found.
+ */
+long celix_bundleCache_findBundleIdForLocation(celix_framework_t *fw, const char *location);
+
+/**
+ * @brief Find if the there is already a bundle cache for the provided bundle id.
+ * @param fw The framework.
+ * @param bndId  The bundle id to find the bundle cache for.
+ * @return Whether the bundle id is already used in a bundle cache entry.
+ */
+bool celix_bundleCache_isBundleIdAlreadyUsed(celix_framework_t *fw, long bndId);
+
+/**
+ * Clean existing cache dir and create the bundle archives cache for all the bundles configured for starting and
+ * installed.
+ *
+ * For bundle ids, the first bundle will have CELIX_FRAMEWORK_BUNDLE_ID+1 and the next CELIX_FRAMEWORK_BUNDLE_ID+2 etc.
+ *
+ *  CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3, CELIX_AUTO_START_4,
+ *  CELIX_AUTO_START_5, CELIX_AUTO_START_6 and lastly CELIX_AUTO_INSTALL.
+ *
+ * The returned hash map uses the bundle id as key and the bundle archive as value.
+ *
+ * @param[in] fw The framework to create the archives for.
+ * @return Status code indication failure or success.
+ */
+celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t *fw, bool printProgress);
 
 #ifdef __cplusplus
 }

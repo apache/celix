@@ -18,9 +18,11 @@
  */
 
 #include <gtest/gtest.h>
+#include <thread>
 
 #include "celix_file_utils.h"
 #include "celix_properties.h"
+#include "celix_utils.h"
 
 class FileUtilsTestSuite : public ::testing::Test {};
 
@@ -185,3 +187,82 @@ TEST_F(FileUtilsTestSuite, ExtractZipDataTest) {
     celix_properties_destroy(props);
 }
 #endif
+
+TEST_F(FileUtilsTestSuite, LastModifiedTest) {
+    //create test dir and test file
+    const char* testDir = "file_utils_test_dir";
+    const char* testFile = "file_utils_test_dir/test_file";
+    celix_utils_deleteDirectory(testDir, nullptr);
+    EXPECT_FALSE(celix_utils_fileExists(testDir));
+    EXPECT_FALSE(celix_utils_fileExists(testFile));
+    celix_utils_createDirectory(testDir, false, nullptr);
+    FILE* fp = fopen(testFile, "w");
+    EXPECT_NE(fp, nullptr);
+    fclose(fp);
+    EXPECT_TRUE(celix_utils_fileExists(testFile));
+
+
+    //Given a file, I can get the last modified time
+    struct timespec lastModified{};
+    auto status = celix_utils_getLastModified(testFile, &lastModified);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_NE(lastModified.tv_sec, 0);
+
+    //Given a directory, I can get the last modified time
+    status = celix_utils_getLastModified(testDir, &lastModified);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_NE(lastModified.tv_sec, 0);
+
+    //Given a non-existing file, I can get the last modified time
+    status = celix_utils_getLastModified("does-not-exists", &lastModified);
+    EXPECT_NE(status, CELIX_SUCCESS);
+    EXPECT_EQ(lastModified.tv_sec, 0);
+    EXPECT_EQ(lastModified.tv_nsec, 0);
+}
+
+TEST_F(FileUtilsTestSuite, TouchTest) {
+    //create test dir and test file
+    const char* testDir = "file_utils_test_dir";
+    const char* testFile = "file_utils_test_dir/test_file";
+    celix_utils_deleteDirectory(testDir, nullptr);
+    EXPECT_FALSE(celix_utils_fileExists(testDir));
+    EXPECT_FALSE(celix_utils_fileExists(testFile));
+    celix_utils_createDirectory(testDir, false, nullptr);
+    FILE* fp = fopen(testFile, "w");
+    EXPECT_NE(fp, nullptr);
+    fclose(fp);
+    EXPECT_TRUE(celix_utils_fileExists(testFile));
+
+    //Given a file, I can touch the file
+    struct timespec lastModified{};
+    auto status = celix_utils_getLastModified(testFile, &lastModified);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_NE(lastModified.tv_sec, 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    status = celix_utils_touch(testFile);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    struct timespec lastModified2{};
+    status = celix_utils_getLastModified(testFile, &lastModified2);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_NE(lastModified2.tv_sec, 0);
+    double diff = celix_difftime(&lastModified, &lastModified2);
+    EXPECT_LT(diff, 1.0); //should be less than 1 seconds
+    EXPECT_GT(diff, 0.0); //should be more than 0 seconds
+
+    //Given a directory, I can touch the directory
+    status = celix_utils_getLastModified(testDir, &lastModified);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_NE(lastModified.tv_sec, 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    status = celix_utils_touch(testDir);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    status = celix_utils_getLastModified(testDir, &lastModified2);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    diff = celix_difftime(&lastModified, &lastModified2);
+    EXPECT_LT(diff, 1.0); //should be less than 1 seconds
+    EXPECT_GT(diff, 0.0); //should be more than 0 seconds
+
+    //Given a non-existing file, I cannot touch the file
+    status = celix_utils_touch("does-not-exists");
+    EXPECT_NE(status, CELIX_SUCCESS);
+}

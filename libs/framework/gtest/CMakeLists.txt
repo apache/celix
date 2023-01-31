@@ -51,6 +51,8 @@ set(CELIX_FRAMEWORK_TEST_SOURCES
     src/HelloWorldCxxActivator.cc
     src/CxxFrameworkFactoryTestSuite.cc
     src/CxxBundleActivatorTestSuite.cc
+    src/BundleArchiveTestSuite.cc
+    src/CelixLauncherTestSuite.cc
 )
 
 add_executable(test_framework ${CELIX_FRAMEWORK_TEST_SOURCES})
@@ -109,7 +111,6 @@ target_compile_definitions(test_framework PRIVATE
         CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"
         INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE="${CMAKE_CURRENT_BINARY_DIR}/install_and_start_bundles.properties"
 )
-
 add_test(NAME test_framework COMMAND test_framework)
 setup_target_for_coverage(test_framework SCAN_DIR ..)
 
@@ -178,7 +179,6 @@ if (ENABLE_TESTING_FOR_CXX14)
             CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"
             INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE="${CMAKE_CURRENT_BINARY_DIR}/install_and_start_bundles.properties"
     )
-
     add_test(NAME test_framework_with_cxx14 COMMAND test_framework_with_cxx14)
     setup_target_for_coverage(test_framework_with_cxx14 SCAN_DIR ..)
 endif ()

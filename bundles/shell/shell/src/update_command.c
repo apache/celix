@@ -20,99 +20,45 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <curl/curl.h>
-#include <sys/stat.h>
 
+#include "std_commands.h"
 #include "celix_utils.h"
 #include "celix_array_list.h"
 #include "celix_bundle_context.h"
-#include "bundle_context.h"
+#include "celix_framework.h"
+#include "celix_convert_utils.h"
 
-celix_status_t updateCommand_download(bundle_context_pt context, char * url, char **inputFile);
-size_t updateCommand_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream);
+bool updateCommand_execute(void *handle, const char *constCommandLine, FILE *outStream, FILE *errStream) {
+    celix_bundle_context_t *ctx = handle;
 
-bool updateCommand_execute(void *handle, const char *const_line, FILE *outStream, FILE *errStream) {
-	bundle_context_pt context = handle;
-    bundle_pt bundle = NULL;
-	char delims[] = " ";
-	char * sub = NULL;
-	char *save_ptr = NULL;
-	char *line = celix_utils_strdup(const_line);
+    char* sub = NULL;
+    char* savePtr = NULL;
+    char* command = celix_utils_strdup(constCommandLine);
+    strtok_r(command, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr); //ignore command name
+    sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr);
 
-	sub = strtok_r(line, delims, &save_ptr);
-	sub = strtok_r(NULL, delims, &save_ptr);
-
-	bool updateSucceeded = false;
-	if (sub == NULL) {
-		fprintf(errStream, "Incorrect number of arguments.\n");
-	} else {
-		long id = atol(sub);
-		celix_status_t ret = bundleContext_getBundleById(context, id, &bundle);
-		if (ret==CELIX_SUCCESS && bundle!=NULL) {
-			char inputFile[256];
-			sub = strtok_r(NULL, delims, &save_ptr);
-			inputFile[0] = '\0';
-			if (sub != NULL) {
-				char *test = inputFile;
-				printf("URL: %s\n", sub);
-
-				if (updateCommand_download(context, sub, &test) == CELIX_SUCCESS) {
-					printf("Update bundle with stream\n");
-					celix_status_t status = bundle_update(bundle, inputFile);
-                    updateSucceeded = status == CELIX_SUCCESS;
-				} else {
-					fprintf(errStream, "Unable to download from %s\n", sub);
-				}
-			} else {
-				bundle_update(bundle, NULL);
-			}
-		} else {
-			fprintf(errStream, "Bundle id is invalid.\n");
-		}
-	}
-	free(line);
-	return updateSucceeded;
+    bool updateSucceeded = false;
+    if (sub == NULL) {
+        fprintf(errStream, "Incorrect number of arguments.\n");
+    } else {
+        while (sub != NULL) {
+            bool converted;
+            long bndId = celix_utils_convertStringToLong(sub, 0, &converted);
+            bool exists = celix_bundleContext_isBundleInstalled(ctx, bndId);
+            if (!converted) {
+                fprintf(errStream, "Cannot convert '%s' to long (bundle id).\n", sub);
+            } else if (!exists) {
+                fprintf(outStream, "No bundle with id %li.\n", bndId);
+            } else {
+                fprintf(errStream, "Update bundle is not yet fully supported. Use at your own risk.\n");
+                celix_framework_t* fw = celix_bundleContext_getFramework(ctx);
+                celix_framework_updateBundleAsync(fw, bndId, NULL);
+                updateSucceeded = true;
+            }
+            sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr);
+        }
+    }
+    free(command);
+    return updateSucceeded;
 }
 
-celix_status_t updateCommand_download(bundle_context_pt context, char * url, char **inputFile) {
-	CURL *curl = NULL;
-	CURLcode res = CURLE_FILE_COULDNT_READ_FILE;
-	curl = curl_easy_init();
-	if (curl) {
-		FILE *fp = NULL;
-		snprintf(*inputFile, 13,"updateXXXXXX");
-		umask(0011);
-		int fd = mkstemp(*inputFile);
-		if (fd) {
-		    fp = fopen(*inputFile, "wb+");
-		    if(fp!=NULL){
-		    	printf("Temp file: %s\n", *inputFile);
-		    	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-		    	curl_easy_setopt(curl, CURLOPT_URL, url);
-		    	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, updateCommand_writeData);
-		    	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-		    	//curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
-		    	//curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, updateCommand_downloadProgress);
-		    	res = curl_easy_perform(curl);
-		    	fclose(fp);
-		    }
-		    /* always cleanup */
-		    curl_easy_cleanup(curl);
-		    if(fp==NULL){
-		    	return CELIX_FILE_IO_EXCEPTION;
-		    }
-		}
-	}
-	if (res != CURLE_OK) {
-		printf("Error: %d\n", res);
-		*inputFile[0] = '\0';
-		return CELIX_ILLEGAL_STATE;
-	} else {
-		return CELIX_SUCCESS;
-	}
-}
-
-size_t updateCommand_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream) {
-    size_t written = fwrite(ptr, size, nmemb, stream);
-    return written;
-}

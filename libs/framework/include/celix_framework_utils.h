@@ -81,6 +81,17 @@ size_t celix_framework_utils_installEmbeddedBundles(celix_framework_t* fw, bool 
  */
 size_t celix_framework_utils_installBundleSet(celix_framework_t* fw, const char* bundleSet, bool autoStart);
 
+
+/**
+ * @brief Create the bundle archives cache for the provided framework, but do not create, install or start the bundles.
+ *
+ * This function can be used to preconfigure a application, so that during startup no bundle zip extraction is needed.
+ *
+ * @param fw The Celix framework used to create the bundle archives cache.
+ * @return CELIX_SUCCESS if the bundle archives cache is created successfully.
+ */
+celix_status_t celix_framework_utils_createBundleArchivesCache(celix_framework_t* fw);
+
 #ifdef __cplusplus
 }
 #endif

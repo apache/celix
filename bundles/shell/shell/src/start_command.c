@@ -23,42 +23,37 @@
 
 #include "celix_api.h"
 #include "std_commands.h"
+#include "celix_convert_utils.h"
 
-bool startCommand_execute(void *handle, const char *const_command, FILE *outStream, FILE *errStream) {
+bool startCommand_execute(void *handle, const char *constCommandLine, FILE *outStream, FILE *errStream) {
     celix_bundle_context_t *ctx = handle;
 
-    char *sub_str = NULL;
-    char *save_ptr = NULL;
-    char *command = celix_utils_strdup(const_command);
-
-    strtok_r(command, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-    sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+    char* sub = NULL;
+    char* savePtr = NULL;
+    char* command = celix_utils_strdup(constCommandLine);
+    strtok_r(command, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr); //ignore command name
+    sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr);
 
     bool startSucceeded = false;
-    if (sub_str == NULL) {
+    if (sub == NULL) {
         fprintf(outStream, "Incorrect number of arguments.\n");
     } else {
-        while (sub_str != NULL) {
-            char *end_str = NULL;
-            long bndId = strtol(sub_str, &end_str, 10);
-            if (*end_str) {
-                fprintf(errStream, "Bundle id '%s' is invalid, problem at %s\n", sub_str, end_str);
+        while (sub != NULL) {
+            bool converted;
+            long bndId = celix_utils_convertStringToLong(sub, 0, &converted);
+            bool exists = celix_bundleContext_isBundleInstalled(ctx, bndId);
+            if (!converted) {
+                fprintf(errStream, "Cannot convert '%s' to long (bundle id).\n", sub);
+            } else if (!exists) {
+                fprintf(outStream, "No bundle with id %li.\n", bndId);
             } else {
-                bool exists = celix_bundleContext_isBundleInstalled(ctx, bndId);
-                if (exists) {
-                    celix_framework_t* fw = celix_bundleContext_getFramework(ctx);
-                    celix_framework_startBundleAsync(fw, bndId);
-                    startSucceeded = true;
-                } else {
-                    fprintf(outStream, "No bundle with id %li.\n", bndId);
-                }
+                celix_framework_t* fw = celix_bundleContext_getFramework(ctx);
+                celix_framework_startBundleAsync(fw, bndId);
+                startSucceeded = true;
             }
-
-            sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+            sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr);
         }
     }
-
     free(command);
-
     return startSucceeded;
 }

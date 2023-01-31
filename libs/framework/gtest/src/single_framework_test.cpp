@@ -21,11 +21,14 @@
 #include <atomic>
 #include <chrono>
 #include <thread>
+#include <future>
 
 #include "celix_launcher.h"
 #include "celix_framework_factory.h"
 #include "celix_framework.h"
 #include "framework.h"
+#include "celix_constants.h"
+#include "celix_utils.h"
 
 
 class CelixFramework : public ::testing::Test {
@@ -241,7 +244,7 @@ TEST_F(FrameworkFactory, restartFramework) {
 
 TEST_F(CelixFramework, testLaunchFrameworkWithConfig) {
     /* Rule: When a Celix framework is started with a config for auto starting bundles and installing bundles,
-     * the specified bundle are installed and if needed started.
+     * the specified bundles will be installed and - if needed - started.
      */
 
     auto* config = celix_properties_load(INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE);
@@ -271,4 +274,3 @@ TEST_F(CelixFramework, testLaunchFrameworkWithConfig) {
     framework_waitForStop(fw);
     framework_destroy(fw);
 }
-

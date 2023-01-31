@@ -78,9 +78,9 @@ static void callCommand(std::shared_ptr<celix_bundle_context_t>& ctx, const char
         EXPECT_TRUE(shell != nullptr);
         celix_status_t status = shell->executeCommand(shell->handle, d->cmdLine, stdout, stderr);
         if (d->cmdShouldSucceed) {
-            EXPECT_EQ(CELIX_SUCCESS, status);
+            EXPECT_EQ(CELIX_SUCCESS, status) << "Command '" << d->cmdLine << "' should succeed";
         } else {
-            EXPECT_TRUE(status != CELIX_SUCCESS);
+            EXPECT_NE(CELIX_SUCCESS, status) << "Command '" << d->cmdLine << "' should not succeed";
         }
     };
     bool called = celix_bundleContext_useServiceWithOptions(ctx.get(), &opts);
@@ -98,10 +98,14 @@ TEST_F(ShellTestSuite, testAllCommandsAreCallable) {
     callCommand(ctx, "lb -l", true);
     callCommand(ctx, "query", true);
     callCommand(ctx, "q -v", true);
-    callCommand(ctx, "stop 15", false);
-    callCommand(ctx, "start 15", false);
-    callCommand(ctx, "uninstall 15", false);
-    callCommand(ctx, "update 15", false);
+    callCommand(ctx, "stop not-a-number", false);
+    callCommand(ctx, "start not-a-number", false);
+    callCommand(ctx, "uninstall not-a-number", false);
+    callCommand(ctx, "update not-a-number", false);
+    callCommand(ctx, "stop 15", false); //non existing bundle id
+    callCommand(ctx, "start 15", false); //non existing bundle id
+    callCommand(ctx, "uninstall 15", false); //non existing bundle id
+    callCommand(ctx, "update 15", false); //non existing bundle id
 }
 
 TEST_F(ShellTestSuite, quitTest) {

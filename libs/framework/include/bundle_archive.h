@@ -77,6 +77,21 @@ FRAMEWORK_EXPORT celix_status_t bundleArchive_setPersistentState(bundle_archive_
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getPersistentState(bundle_archive_pt archive, bundle_state_e *state);
 
+/**
+ * @brief Return the last modified time of the bundle archive.
+ *
+ * The last modified time is based on the last modified time of the bundle archives MANIFEST.MF file.
+ *
+ * If the bundle archive cache directory does not exist, lastModified will be set to 0.
+ *
+ * @param[in] archive The bundle archive.
+ * @parar[in] alreadyLocked If true, the bundle archive lock is already acquired.
+ * @param[out] lastModified The last modified time of the bundle archive.
+ * @return CELIX_SUCCESS if the last modified time could be retrieved, CELIX_ILLEGAL_ARGUMENT if the last modified
+ * time could not be retrieved.
+ */
+celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, struct timespec* lastModified);
+
 #ifdef __cplusplus
 }
 #endif

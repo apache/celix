@@ -333,6 +333,8 @@ namespace celix {
             return ServiceTrackerBuilder<void>{cCtx, {}};
         }
 
+        //TODO UseBundleBuilder useBundles()
+
         /**
          * @brief Track bundles in the Celix framework using a fluent builder API.
          *
@@ -429,8 +431,13 @@ namespace celix {
          *
          * Will silently ignore bundle ids < 0.
          *
+         * If this function is called on the Celix event thread, the actual starting of the bundle will be done async
+         * and on a separate thread.
+         * If this function is called from a different thread than the Celix event thread, then the function will
+         * return after the bundle start is completed.
+         *
          * @param bndId The bundle id to start.
-         * @return true if the bundle is found & correctly started. False if not.
+         * @return true if the bundle is found & correctly started or if the bundle is started async. False if not.
          */
         bool startBundle(long bndId) {
             return celix_bundleContext_startBundle(cCtx.get(), bndId);
@@ -441,12 +448,48 @@ namespace celix {
          *
          * Will silently ignore bundle ids < 0.
          *
+         * If this function is called on the Celix event thread, the actual stopping of the bundle will be done async
+         * and on a separate thread.
+         * If this function is called from a different thread than the Celix event thread, then the function will
+         * return after the bundle stop is completed.
+         *
          * @param bndId The bundle id to stop.
-         * @return true if the bundle is found & correctly stop. False if not.
+         * @return true if the bundle is found & correctly stop or if the bundle is stopped async. False if not.
          */
         bool stopBundle(long bndId) {
             return celix_bundleContext_stopBundle(cCtx.get(), bndId);
         }
+
+        /**
+         * @brief Update the bundle with the provided bundle id async.
+         *
+         * This will do the following:
+         *  - Stop the bundle (if needed);
+         *  - Update the bundle revision if a newer bundle zip if found;
+         *  - Start the bundle, if it was started.
+         *
+         * Will silently ignore bundle ids < 0.
+         *
+         * If this function is called on the Celix event thread, the actual updating of the bundle will be done async
+         * and on a separate thread.
+         * If this function is called from a different thread than the Celix event thread, then the function will
+         * return after the bundle update is completed.
+         *
+         * @param ctx The bundle context
+         * @param bndId The bundle id to start.
+         * @param updatedBundleUrl The optional updated bundle url to the bundle zip file. If empty, the existing
+         *                         bundle url from the bundle cache will be used.
+         * @return true if the bundle is found & correctly started or if the bundle is updated async. False if not.
+         */
+#if __cplusplus >= 201703L //C++17 or higher
+        bool updateBundle(long bndId, std::string_view updatedBundleUrl = {}) {
+            return celix_bundleContext_updateBundle(cCtx.get(), bndId, updatedBundleUrl.empty() ? nullptr : updatedBundleUrl.data());
+        }
+#else
+        bool updateBundle(long bndId, const std::string& updatedBundleUrl = {}) {
+            return celix_bundleContext_updateBundle(cCtx.get(), bndId, updatedBundleUrl.empty() ? nullptr : updatedBundleUrl.data());
+        }
+#endif
 
         /**
          * @brief List the installed and started bundle ids.
@@ -590,8 +633,8 @@ namespace celix {
         /**
          * @brief Get the C bundle context.
          *
-         * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
-         * the C++ API.
+         * @warning Try not the depend on the C API from a C++ BundleContext.
+         * If features are missing these should be added to the C++ API.
          */
         [[nodiscard]] celix_bundle_context_t* getCBundleContext() const {
             return cCtx.get();

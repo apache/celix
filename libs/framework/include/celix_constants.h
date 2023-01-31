@@ -158,19 +158,54 @@ extern "C" {
 #define OSGI_FRAMEWORK_IMPORT_LIBRARY CELIX_FRAMEWORK_IMPORT_LIBRARY
 
 /**
- * @brief Celix framework environment property (named "org.osgi.framework.storage") specifying the cache
+ * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CACHE_DIR") specifying the cache
  * directory used for the bundle caches.
  *
- * If not specified ".cache" is used.
+ * This property is not used if CELIX_FRAMEWORK_CACHE_USE_TMP_DIR=true.
+ *
+ * Default value is ".cache".
  */
-#define CELIX_FRAMEWORK_FRAMEWORK_STORAGE "org.osgi.framework.storage"
-#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE CELIX_FRAMEWORK_FRAMEWORK_STORAGE
+#define CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR "CELIX_FRAMEWORK_CACHE_DIR"
 
+//@deprecated use CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR
+#define CELIX_FRAMEWORK_FRAMEWORK_STORAGE   "CELIX_FRAMEWORK_CACHE_DIR"
+
+//@deprecated use CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR
+#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE    "org.osgi.framework.storage"
+
+/**
+ * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CACHE_USE_TMP_DIR") specifying the
+ * whether to use a tmp directory for the bundle cache dir.
+ *
+ * If set to "true" the cache dir is set to a tmp directory and the default for CELIX_FRAMEWORK_DELETE_CACHE_ON_DESTROY
+ * becomes "true".
+ */
+#define CELIX_FRAMEWORK_CACHE_USE_TMP_DIR "CELIX_FRAMEWORK_CACHE_USE_TMP_DIR"
+
+//@deprecated use CELIX_FRAMEWORK_CACHE_USE_TMP_DIR
 #define CELIX_FRAMEWORK_STORAGE_USE_TMP_DIR "org.osgi.framework.storage.use.tmp.dir"
+
+/**
+ * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE") specifying
+ * whether to delete the cache dir on framework creation.
+ *
+ * If not specified "true" is used.
+ */
+#define CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE "CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE"
+
+//@deprecated use CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE
 #define CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME "org.osgi.framework.storage.clean"
+
+//@deprecated use CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE
 #define CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT true
+
+//@deprecated use CELIX_FRAMEWORK_CACHE_USE_TMP_DIR
 #define OSGI_FRAMEWORK_STORAGE_USE_TMP_DIR CELIX_FRAMEWORK_STORAGE_USE_TMP_DIR
+
+//@deprecated use CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE
 #define OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME
+
+//@deprecated use CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE
 #define OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT
 
 /**
