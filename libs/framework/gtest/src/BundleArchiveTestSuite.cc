@@ -129,6 +129,7 @@ TEST_F(CxxBundleArchiveTestSuite, BundleArchiveUpdatedAfterCleanOnCreateTest) {
     tracker.reset();
     ctx.reset();
     fw.reset();
+    std::this_thread::sleep_for(std::chrono::milliseconds{100}); //wait so that the zip <-> archive dir modification time is different
 
     timespec secondInstallTime{};
 
