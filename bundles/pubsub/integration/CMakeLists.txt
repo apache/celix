@@ -346,7 +346,7 @@ if (PUBSUB_INTEGRATION)
                 pubsub_tst
                 pubsub_serializer
                 )
-        target_link_libraries(pubsub_websocket_v2_tests PRIVATE Celix::pubsub_api jansson::jansson civetweb_shared GTest::gtest GTest::gtest_main)
+        target_link_libraries(pubsub_websocket_v2_tests PRIVATE Celix::pubsub_api Celix::dfi jansson::jansson civetweb_shared GTest::gtest GTest::gtest_main)
         target_include_directories(pubsub_websocket_v2_tests SYSTEM PRIVATE gtest)
         add_test(NAME pubsub_websocket_v2_tests COMMAND pubsub_websocket_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_v2_tests,CONTAINER_LOC>)
         setup_target_for_coverage(pubsub_websocket_v2_tests SCAN_DIR ..)
