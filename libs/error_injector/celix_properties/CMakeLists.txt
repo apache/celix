@@ -15,10 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include(FetchContent)
-FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG        release-1.11.0
-)
-FetchContent_MakeAvailable(googletest)
+add_library(properties_ei STATIC src/celix_properties_ei.cc)
+
+target_include_directories(properties_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(properties_ei PUBLIC Celix::error_injector Celix::utils)
+# It plays nicely with address sanitizer this way.
+target_link_options(properties_ei INTERFACE LINKER:--wrap,celix_properties_create)
+add_library(Celix::properties_ei ALIAS properties_ei)

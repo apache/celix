@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required (VERSION 3.14)
+cmake_minimum_required (VERSION 3.18)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
 cmake_policy(SET CMP0068 NEW)
@@ -72,7 +72,7 @@ ENDIF()
 # Options
 option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 if (ENABLE_TESTING)
-    find_package(GTest CONFIG QUIET)
+    find_package(GTest QUIET)
     if (NOT GTest_FOUND)
         include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
     endif()
@@ -193,6 +193,13 @@ if (CELIX_INSTALL_DEPRECATED_API)
     set(CMAKE_C_FLAGS "-Wno-deprecated-declarations ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-Wno-deprecated-declarations ${CMAKE_CXX_FLAGS}")
 endif ()
+
+include(CMakePushCheckState)
+cmake_push_check_state()
+cmake_reset_check_state()
+include(CheckLinkerFlag)
+check_linker_flag(CXX LINKER:--wrap,celix_nonexistent_symbol LINKER_WRAP_SUPPORTED)
+cmake_pop_check_state()
 
 #Libraries and Launcher
 add_subdirectory(libs)
