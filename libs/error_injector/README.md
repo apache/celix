@@ -34,6 +34,13 @@ You only have to:
 3. Specify the target function call you want to injector specific error into with a single function call before the code under test runs.
 4. Disable error injector during the TearDown phase of the test. Forgetting this step may interrupt other tests.
 
+We have implemented several injectors. 
+
+* `malloc`/`realloc`/`calloc`
+* `celix_properties_create`
+
+Have a look at them before implementing your own.
+
 ## Example Usage
 
 ```c++
