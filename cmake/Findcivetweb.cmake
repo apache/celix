@@ -20,6 +20,7 @@ if (NOT civetweb_FOUND)
     include(FetchContent)
     set(CIVETWEB_ENABLE_WEBSOCKETS TRUE CACHE BOOL "" FORCE)
     set(CIVETWEB_BUILD_TESTING FALSE CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS TRUE CACHE BOOL "" FORCE)
     FetchContent_Declare(
             civetweb
             GIT_REPOSITORY https://github.com/civetweb/civetweb.git
