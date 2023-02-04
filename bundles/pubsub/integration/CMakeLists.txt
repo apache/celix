@@ -18,6 +18,7 @@
 celix_subproject(PUBSUB_INTEGRATION "Option to build the pubsub integration" ON DEPS SHELL SHELL_TUI)
 if (PUBSUB_INTEGRATION)
     find_package(jansson REQUIRED)
+    find_package(civetweb REQUIRED)
 
     add_celix_bundle(pubsub_endpoint_sut
             #"Vanilla" bundle which is under test
