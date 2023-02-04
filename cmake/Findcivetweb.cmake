@@ -23,6 +23,7 @@ if (NOT civetweb_FOUND)
     FetchContent_Declare(
             civetweb
             GIT_REPOSITORY https://github.com/civetweb/civetweb.git
+#            GIT_REPOSITORY https://gitee.com/mirrors/civetweb.git
             GIT_TAG        eefb26f82b233268fc98577d265352720d477ba4 # V1.15
     )
     FetchContent_MakeAvailable(civetweb)

@@ -65,14 +65,13 @@ jobs:
           brew install lcov zeromq czmq cpputest jansson rapidjson libzip
       - name: Build
         env:
-          #syslog disabled and Release not use because of #471
+          # Release not use because of #471
           BUILD_OPTIONS: |
             -DENABLE_TESTING=ON
             -DENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11=ON
             -DENABLE_TESTING_FOR_CXX14=ON
             -DENABLE_ADDRESS_SANITIZER=ON
             -DCMAKE_BUILD_TYPE=Debug
-            -DBUILD_SYSLOG_WRITER=OFF
         run: |
           mkdir build install
           cd build
