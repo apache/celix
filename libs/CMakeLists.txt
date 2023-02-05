@@ -33,3 +33,9 @@ add_subdirectory(dependency_manager)
 if (CELIX_CXX14)
     add_subdirectory(dependency_manager_cxx)
 endif ()
+
+# Error Injectors
+if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
+    add_subdirectory(error_injector)
+endif ()
+

@@ -234,7 +234,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_Test) { // NOLINT(c
     memcpy(exp + 4, "1:a,1:b,", 8);
 
     pubsub_protocol_message_t message;
-    message.header.convertEndianess = false;
+    message.header.convertEndianess = true;
     celix_status_t status = pubsubProtocol_v1_decodeMetadata(nullptr, exp, 12, &message);
 
     ASSERT_EQ(status, CELIX_SUCCESS);
@@ -257,7 +257,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_EmptyKey_Test) { //
     memcpy(exp + 4, "0:,1:b,", 7);
 
     pubsub_protocol_message_t message;
-    message.header.convertEndianess = false;
+    message.header.convertEndianess = true;
     celix_status_t status = pubsubProtocol_v1_decodeMetadata(nullptr, exp, 11, &message);
 
     ASSERT_EQ(status, CELIX_SUCCESS);
@@ -279,7 +279,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_SpecialChars_Test) 
     memcpy(exp + 4, "4:a,:l,1:b,", 11);
 
     pubsub_protocol_message_t message;
-    message.header.convertEndianess = false;
+    message.header.convertEndianess = true;
     celix_status_t status = pubsubProtocol_v1_decodeMetadata(nullptr, &exp, 15, &message);
 
     ASSERT_EQ(status, CELIX_SUCCESS);

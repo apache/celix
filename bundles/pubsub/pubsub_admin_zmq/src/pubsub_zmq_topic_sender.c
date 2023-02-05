@@ -433,6 +433,7 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     pubsub_protocol_message_t message;
     message.payload.payload = serializedIoVecOutput->iov_base;
     message.payload.length = serializedIoVecOutput->iov_len;
+    message.header.convertEndianess = 0;
 
     void *payloadData = NULL;
     size_t payloadLength = 0;
@@ -457,7 +458,6 @@ static int psa_zmq_topicPublicationSend(void* handle, unsigned int msgTypeId, co
     message.header.payloadPartSize = payloadLength;
     message.header.payloadOffset = 0;
     message.header.isLastSegment = 1;
-    message.header.convertEndianess = 0;
 
     sender->protocol->encodeHeader(sender->protocol->handle, &message, &sender->zmqBuffers.headerBuffer, &sender->zmqBuffers.headerBufferSize);
 

@@ -15,10 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include(FetchContent)
-FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG        release-1.11.0
-)
-FetchContent_MakeAvailable(googletest)
+add_library(error_injector INTERFACE)
+target_include_directories(error_injector INTERFACE ${CMAKE_CURRENT_LIST_DIR}/api)
+# get caller address of the target function, into which errors are injected
+target_link_libraries(error_injector INTERFACE dl)
+target_link_options(error_injector INTERFACE -rdynamic)
+target_compile_options(error_injector INTERFACE -Wno-frame-address)
+add_library(Celix::error_injector ALIAS error_injector)
+
+add_subdirectory(malloc)
+add_subdirectory(celix_properties)
