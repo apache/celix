@@ -38,6 +38,7 @@ static celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *a
     (void)properties;
     (void)registrations;
     celix_logHelper_info(admin->loghelper, "%s called: serviceId=%s\n", __FUNCTION__, serviceId);
+    return CELIX_SUCCESS;
 }
 
 static celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t *admin, array_list_pt *services) {
