@@ -9,7 +9,7 @@ on:
 jobs:
 
   build-conan:
-    runs-on: macOS-latest
+    runs-on: macOS-10.15
     timeout-minutes: 120
     steps:
       - name: Checkout source code

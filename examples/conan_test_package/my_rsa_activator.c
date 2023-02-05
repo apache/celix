@@ -72,6 +72,12 @@ static celix_status_t remoteServiceAdmin_removeImportedService(remote_service_ad
     return CELIX_SUCCESS;
 }
 
+celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_description_t **description)
+{
+    celix_status_t status = CELIX_SUCCESS;
+    return status;
+}
+
 static celix_status_t my_rsa_start(my_remote_service_admin_activator_t* activator, celix_bundle_context_t* ctx) {
     celix_status_t status = CELIX_SUCCESS;
     activator->admin.context = ctx;
