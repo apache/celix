@@ -77,6 +77,7 @@ class CelixConan(ConanFile):
         "build_promises": [True, False],
         "build_pushstreams": [True, False],
         "build_experimental": [True, False],
+        "build_dfi": [True, False],
         "celix_cxx14": [True, False],
         "celix_cxx17": [True, False],
         "celix_install_deprecated_api": [True, False],
@@ -122,6 +123,7 @@ class CelixConan(ConanFile):
         "build_promises": False,
         "build_pushstreams": False,
         "build_experimental": False,
+        "build_dfi": True,
         "celix_cxx14": True,
         "celix_cxx17": True,
         "celix_install_deprecated_api": False,
@@ -191,8 +193,6 @@ class CelixConan(ConanFile):
             self.options.build_shell_bonjour = False
 
     def requirements(self):
-        self.requires("libffi/[>=3.2.1 <4.0.0]")
-        self.options['libffi'].shared = True
         self.requires("jansson/[>=2.12 <3.0.0]")
         self.options['jansson'].shared = True
         self.requires("libcurl/[>=7.64.1 <8.0.0]")
@@ -223,6 +223,10 @@ class CelixConan(ConanFile):
             self.options['zeromq'].shared = True
             self.requires("czmq/4.2.0")
             self.options['czmq'].shared = True
+        if self.options.build_dfi:
+            self.requires("libffi/[>=3.2.1 <4.0.0]")
+            self.options['libffi'].shared = True
+
 
     def _configure_cmake(self):
         if self._cmake:
