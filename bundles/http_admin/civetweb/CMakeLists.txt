@@ -15,16 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(HTTP_ADMIN "Service to use a HTTP server with websocket support" ON)
-if (HTTP_ADMIN)
-    find_package(civetweb REQUIRED)
+#Create shared library
+add_library(civetweb_shared SHARED
+        src/civetweb_dummy.c
+        )
+add_library(Celix::civetweb_shared ALIAS civetweb_shared)
 
-    add_subdirectory(civetweb)
-    add_subdirectory(http_admin_api)
-    add_subdirectory(http_admin)
-
-    if (ENABLE_TESTING)
-        add_subdirectory(gtest)
-    endif()
-
-endif (HTTP_ADMIN)
+install(TARGETS civetweb_shared EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT http_admin
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/http_admin)
