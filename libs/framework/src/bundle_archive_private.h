@@ -23,6 +23,10 @@
 
 #include "bundle_archive.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CELIX_BUNDLE_ARCHIVE_STATE_PROPERTIES_FILE_NAME "bundle_state.properties"
 
 #define CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME "bundle.symbolic_name"
@@ -77,5 +81,9 @@ const char* celix_bundleArchive_getPersistentStoreRoot(bundle_archive_t *archive
  * @retval NULL if the current revision root is not set.
  */
 const char* celix_bundleArchive_getCurrentRevisionRoot(bundle_archive_pt archive);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUNDLE_ARCHIVE_PRIVATE_H_ */

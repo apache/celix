@@ -129,7 +129,7 @@ static celix_status_t celix_bundleArchive_extractBundle(
  * Initialize archive by creating the bundle cache directory, optionally extracting the bundle from the bundle file,
  * reading the bundle state properties, reading the bundle manifest and updating the bundle state properties.
  */
-static celix_status_t celix_bundleArchive_createCache(bundle_archive_pt archive, manifest_pt* manifestOut) {
+static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archive, manifest_pt* manifestOut) {
     if (celix_utils_fileExists(archive->archiveRoot)) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_TRACE, "Bundle archive root for bundle id %li already exists.",
                archive->id);
@@ -206,8 +206,13 @@ static celix_status_t celix_bundleArchive_createCache(bundle_archive_pt archive,
 
     return status;
 }
-
-static celix_status_t bundleArchive_createArchiveInternal(celix_framework_t* fw, const char* archiveRoot, long id, const char *location, long revisionNr, bundle_archive_pt* bundle_archive) {
+/**
+ * Create a bundle archive for the given root, id, location and revision nr.
+ *
+ * Also create the bundle cache dir and if will reuse a existing bundle resource cache dir if the provided
+ * bundle zip location is older then the existing bundle resource cache dir.
+ */
+celix_status_t celix_bundleArchive_createArchiveInternal(celix_framework_t* fw, const char* archiveRoot, long id, const char *location, long revisionNr, bundle_archive_pt* bundle_archive) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_archive_pt archive = calloc(1, sizeof(*archive));
 
@@ -250,7 +255,7 @@ static celix_status_t bundleArchive_createArchiveInternal(celix_framework_t* fw,
     if (archive->isSystemBundle) {
         status = manifest_create(&manifest);
     } else {
-        status = celix_bundleArchive_createCache(archive, &manifest);
+        status = celix_bundleArchive_createCacheDirectory(archive, &manifest);
     }
     if (!manifest) {
         status = CELIX_ENOMEM;
@@ -282,7 +287,7 @@ static celix_status_t bundleArchive_createArchiveInternal(celix_framework_t* fw,
 }
 
 celix_status_t bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, bundle_archive_pt *bundle_archive) {
-    return bundleArchive_createArchiveInternal(fw, archiveRoot, id, location, 1, bundle_archive);
+    return celix_bundleArchive_createArchiveInternal(fw, archiveRoot, id, location, 1, bundle_archive);
 }
 
 celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {

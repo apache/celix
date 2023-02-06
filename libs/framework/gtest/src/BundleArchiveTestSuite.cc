@@ -26,8 +26,10 @@
 #include "framework.h"
 #include "bundle_archive.h"
 
-//declare private functions used to test the bundle archive
-extern "C" bundle_archive_t* celix_bundle_getArchive(const celix_bundle_t *bundle);
+//including private headers, which should only be used for testing
+#include "bundle_archive_private.h"
+#include "bundle_private.h"
+
 
 class CxxBundleArchiveTestSuite : public ::testing::Test {
 public:

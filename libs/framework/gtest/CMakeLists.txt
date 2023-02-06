@@ -114,6 +114,26 @@ target_compile_definitions(test_framework PRIVATE
 add_test(NAME test_framework COMMAND test_framework)
 setup_target_for_coverage(test_framework SCAN_DIR ..)
 
+if (LINKER_WRAP_SUPPORTED)
+    add_executable(test_framework_with_ei
+            src/BundleArchiveWithErrorInjectionTestSuite.cc
+    )
+    target_compile_definitions(test_framework_with_ei PRIVATE
+            SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
+    )
+    target_include_directories(test_framework_with_ei PRIVATE ../src)
+    add_celix_bundle_dependencies(test_framework_with_ei simple_test_bundle1)
+    celix_deprecated_utils_headers(test_framework_with_ei)
+    target_link_libraries(test_framework_with_ei PRIVATE
+            Celix::framework
+            GTest::gtest GTest::gtest_main
+            Celix::malloc_ei
+    )
+
+    add_test(NAME test_framework_with_ei COMMAND test_framework_with_ei)
+    setup_target_for_coverage(test_framework_with_ei SCAN_DIR ..)
+endif ()
+
 if (ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11)
     #Setting standard to C++11 and testing C++ dependency manager to ensure that this still support C++11.
     #This ensure that the C++11 dependency manager is backwards compatible with Celix 2.2.1
