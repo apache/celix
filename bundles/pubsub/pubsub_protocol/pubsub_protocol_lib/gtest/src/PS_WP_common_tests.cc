@@ -22,64 +22,14 @@
 #include <gtest/gtest.h>
 #include <iostream>
 #include <cstring>
-#include <dlfcn.h>
 
 #include "pubsub_wire_protocol_common.h"
 
 class WireProtocolCommonTest : public ::testing::Test {
 public:
     WireProtocolCommonTest() = default;
-    ~WireProtocolCommonTest() override = default;
+    ~WireProtocolCommonTest() = default;
 };
-
-#ifdef ENABLE_MALLOC_RETURN_NULL_TESTS
-/**
- * If set to true the mocked malloc will always return NULL.
- * Should be read/written using __atomic builtins.
- */
-static int mallocFailAfterCalls = 0;
-static int mallocCurrentCallCount = 0;
-
-/**
- * mocked malloc to ensure testing can be done for the "malloc returns NULL" scenario
- */
-extern "C" void* malloc(size_t size) {
-    int count = __atomic_add_fetch(&mallocCurrentCallCount, 1, __ATOMIC_ACQ_REL);
-    int target = __atomic_load_n(&mallocFailAfterCalls, __ATOMIC_ACQUIRE);
-    if (target > 0 && count == target) {
-        return nullptr;
-    }
-    static auto* orgMallocFp = (void*(*)(size_t))dlsym(RTLD_NEXT, "malloc");
-    if (orgMallocFp == nullptr) {
-        perror("Cannot find malloc symbol");
-        return nullptr;
-    }
-    return orgMallocFp(size);
-}
-
-extern "C" void* realloc(void* buf, size_t newSize) {
-    int count = __atomic_add_fetch(&mallocCurrentCallCount, 1, __ATOMIC_ACQ_REL);
-    int target = __atomic_load_n(&mallocFailAfterCalls, __ATOMIC_ACQUIRE);
-    if (target > 0 && count == target) {
-        return nullptr;
-    }
-    static auto* orgReallocFp = (void*(*)(void*, size_t))dlsym(RTLD_NEXT, "realloc");
-    if (orgReallocFp == nullptr) {
-        perror("Cannot find realloc symbol");
-        return nullptr;
-    }
-    return orgReallocFp(buf, newSize);
-}
-
-void setupMallocFailAfterNrCalls(int nrOfCalls) {
-    __atomic_store_n(&mallocFailAfterCalls, nrOfCalls, __ATOMIC_RELEASE);
-    __atomic_store_n(&mallocCurrentCallCount, 0, __ATOMIC_RELEASE);
-}
-
-void disableMallocFail() {
-    __atomic_store_n(&mallocFailAfterCalls, 0, __ATOMIC_RELEASE);
-}
-#endif
 
 TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeMetadataWithSingleEntries) {
     pubsub_protocol_message_t message;
@@ -217,50 +167,6 @@ TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeWithExistinBufferWhi
     celix_properties_destroy(message.metadata.metadata);
 }
 
-#ifdef ENABLE_MALLOC_RETURN_NULL_TESTS
-TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_EncodeMetadataWithNoMemoryLeft) {
-    pubsub_protocol_message_t message;
-    message.header.convertEndianess = 0;
-    message.metadata.metadata = celix_properties_create();
-    celix_properties_set(message.metadata.metadata, "key1", "value1");
-
-    //Scenario: No mem with no pre-allocated data
-    //Given (mocked) malloc is forced to return NULL
-    setupMallocFailAfterNrCalls(1);
-
-    //When I try to encode a metadata
-    char *data = nullptr;
-    size_t length = 0;
-    size_t contentLength = 0;
-    auto status = pubsubProtocol_encodeMetadata(&message, &data, &length, &contentLength);
-    //Then I expect a failure
-    EXPECT_NE(status, CELIX_SUCCESS);
-
-    //reset malloc
-    disableMallocFail();
-
-    //Scenario: No mem with some pre-allocated data
-    //Given a data set with some space
-    data = (char*)malloc(16);
-    length = 16;
-
-    //And (mocked) malloc is forced to return NULL
-    setupMallocFailAfterNrCalls(1);
-
-    //When I try to encode a metadata
-    status = pubsubProtocol_encodeMetadata(&message, &data, &length, &contentLength);
-
-    //Then I expect a failure
-    EXPECT_NE(status, CELIX_SUCCESS);
-
-    //reset malloc
-    disableMallocFail();
-
-    free(data);
-    celix_properties_destroy(message.metadata.metadata);
-}
-#endif
-
 TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DecodeMetadataWithSingleEntries) {
     pubsub_protocol_message_t message;
     message.header.convertEndianess = 0;
@@ -299,3 +205,107 @@ TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DencodeMetadataWithMultipl
     celix_properties_destroy(message.metadata.metadata);
 }
 
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DencodeMetadataWithExtraEntries) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 1;
+    message.metadata.metadata = nullptr;
+
+    char* data = strdup("ABCD4:key1,6:value1,4:key2,6:value2,6:key111,8:value111,"); //note 3 entries
+    auto len = strlen(data);
+    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 2);
+    auto status = pubsubProtocol_decodeMetadata((void*)data, len, &message);
+    // the 3rd entry should be ignored
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(2, celix_properties_size(message.metadata.metadata));
+    EXPECT_STREQ("value1", celix_properties_get(message.metadata.metadata, "key1", "not-found"));
+    EXPECT_STREQ("value2", celix_properties_get(message.metadata.metadata, "key2", "not-found"));
+    EXPECT_STREQ("not-found", celix_properties_get(message.metadata.metadata, "key111", "not-found"));
+
+    free(data);
+    celix_properties_destroy(message.metadata.metadata);
+}
+
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DencodeMetadataMissingEntries) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 1;
+    message.metadata.metadata = nullptr;
+
+    char* data = strdup("ABCD4:key1,6:value1,4:key2,6:value2,6:key111,8:value111,"); //note 3 entries
+    auto len = strlen(data);
+    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 4);
+    auto status = pubsubProtocol_decodeMetadata((void*)data, len, &message);
+
+    EXPECT_EQ(status, CELIX_INVALID_SYNTAX);
+    EXPECT_EQ(nullptr, message.metadata.metadata);
+
+    free(data);
+}
+
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DecodeMetadataWithSingleEntryWithIncompleteValue) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 0;
+    message.metadata.metadata = nullptr;
+
+    char* data = strdup("ABCD4:key1,6:val,"); //note 1 entry with short value
+    auto len = strlen(data);
+    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 1);
+    auto status = pubsubProtocol_decodeMetadata((void*)data, len, &message);
+
+    EXPECT_EQ(status, CELIX_INVALID_SYNTAX);
+    EXPECT_EQ(nullptr, message.metadata.metadata);
+
+    free(data);
+}
+
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DecodeMetadataTooShort) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 0;
+    message.metadata.metadata = nullptr;
+
+    char* data = strdup("ABCD4:key1,6:value1,"); //note 1 entry
+    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 1);
+    auto status = pubsubProtocol_decodeMetadata((void*)data, 3, &message); // not enough data for `nOfElements`
+
+    EXPECT_EQ(status, CELIX_INVALID_SYNTAX);
+    EXPECT_EQ(nullptr, message.metadata.metadata);
+
+    free(data);
+}
+
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DecodeEmptyMetadata) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 0;
+    message.metadata.metadata = nullptr;
+
+    uint32_t data = 0;
+    auto status = pubsubProtocol_decodeMetadata((void*)&data, 4, &message);
+
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(nullptr, message.metadata.metadata);
+
+    // incorrect `nOfElements`
+    data = 4;
+    status = pubsubProtocol_decodeMetadata((void*)&data, 4, &message);
+
+    EXPECT_EQ(status, CELIX_INVALID_SYNTAX);
+    EXPECT_EQ(nullptr, message.metadata.metadata);
+}
+
+TEST_F(WireProtocolCommonTest, WireProtocolCommonTest_DencodeMetadataWithDuplicateEntries) {
+    pubsub_protocol_message_t message;
+    message.header.convertEndianess = 1;
+    message.metadata.metadata = nullptr;
+
+    char* data = strdup("ABCD4:key1,6:value1,4:key1,6:value2,6:key111,8:value111,"); //note 3 entries with duplicate key1
+    auto len = strlen(data);
+    pubsubProtocol_writeInt((unsigned char*)data, 0, message.header.convertEndianess, 3);
+    auto status = pubsubProtocol_decodeMetadata((void*)data, len, &message);
+
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(2, celix_properties_size(message.metadata.metadata));
+    EXPECT_STREQ("value2", celix_properties_get(message.metadata.metadata, "key1", "not-found"));
+    EXPECT_STREQ("value111", celix_properties_get(message.metadata.metadata, "key111", "not-found"));
+
+    free(data);
+    celix_properties_destroy(message.metadata.metadata);
+}
