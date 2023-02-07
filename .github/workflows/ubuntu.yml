@@ -9,7 +9,7 @@ on:
 jobs:
 
   build-conan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -47,9 +47,11 @@ jobs:
             -o celix:enable_testing=True
             -o celix:enable_address_sanitizer=True
             -o celix:build_all=True
+            -o celix:enable_testing_for_cxx14=True
+            -o celix:enable_testing_dependency_manager_for_cxx11=True
         run: |
           #force require libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
-          conan install . celix/ci -pr:b release -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing  --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s
+          conan install . celix/ci -pr:b release -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing  -b cpputest --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s
       - name: Build
         env:
           CC: ${{ matrix.compiler[0] }}
@@ -71,7 +73,7 @@ jobs:
           conan create -pr:b release -pr:h default -tf examples/conan_test_package -tbf test-build -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s .
 
   build-apt:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
     - name: Checkout source code
@@ -93,7 +95,9 @@ jobs:
           libczmq-dev \
           libcpputest-dev \
           rapidjson-dev \
-          libavahi-compat-libdnssd-dev
+          libavahi-compat-libdnssd-dev \
+          libcivetweb-dev \
+          civetweb
     - name: Build
       env:
         BUILD_OPTIONS: |

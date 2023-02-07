@@ -223,6 +223,9 @@ class CelixConan(ConanFile):
             self.options['zeromq'].shared = True
             self.requires("czmq/4.2.0")
             self.options['czmq'].shared = True
+        if self.options.build_http_admin or self.options.build_remote_service_admin:
+            self.requires("civetweb/1.15")
+            self.options['civetweb'].shared = True
 
     def _configure_cmake(self):
         if self._cmake:
@@ -256,3 +259,4 @@ class CelixConan(ConanFile):
         # check https://docs.conan.io/en/latest/reference/conanfile/methods.html#imports
         self.cpp_info.bindirs = ["bin", os.path.join("share", self.name, "bundles")]
         self.cpp_info.build_modules["cmake"].append(os.path.join("lib", "cmake", "Celix", "CelixConfig.cmake"))
+        self.cpp_info.build_modules["cmake_find_package"].append(os.path.join("lib", "cmake", "Celix", "CelixConfig.cmake"))

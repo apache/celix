@@ -25,6 +25,8 @@ project (Celix C CXX ASM)
 include(cmake/celix_project/CelixProject.cmake)
 include(cmake/cmake_celix/UseCelix.cmake)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 #find required packages
 find_package(ZLIB REQUIRED) #framework
 find_package(libuuid REQUIRED) #framework
@@ -74,7 +76,7 @@ option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 if (ENABLE_TESTING)
     find_package(GTest QUIET)
     if (NOT GTest_FOUND)
-        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
+        include(AddGTest)
     endif()
 endif ()
 
@@ -123,6 +125,10 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
         set(CMAKE_C_FLAGS "-Wno-stringop-truncation ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-Wno-stringop-truncation ${CMAKE_CXX_FLAGS}")
+    endif()
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
+        set(CMAKE_C_FLAGS "-Wno-error=stringop-overread ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-Wno-error=stringop-overread ${CMAKE_CXX_FLAGS}")
     endif()
 endif()
 
