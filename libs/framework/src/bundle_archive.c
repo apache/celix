@@ -272,7 +272,6 @@ celix_status_t celix_bundleArchive_createArchiveInternal(celix_framework_t* fw, 
     }
     if (status != CELIX_SUCCESS) {
         fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create archive. Could not create bundle revision.");
-        manifest_destroy(manifest);
         bundleArchive_destroy(archive);
         return status;
     }

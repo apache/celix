@@ -1241,7 +1241,6 @@ static void* framework_shutdown(void *framework) {
         if (state == CELIX_BUNDLE_STATE_ACTIVE || state == CELIX_BUNDLE_STATE_STARTING) {
             celix_framework_stopBundleEntry(fw, fwEntry);
         }
-        bundle_close(bnd);
         celix_framework_bundleEntry_decreaseUseCount(fwEntry);
     }
 

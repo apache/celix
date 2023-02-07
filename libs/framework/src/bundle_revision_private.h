@@ -30,6 +30,10 @@
 #include "bundle_revision.h"
 #include "celix_threads.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * The bundle revision structure represents a revision of a bundle.
  * A bundle can have multiple revisions. A bundle revision is immutable.
@@ -65,5 +69,8 @@ bundle_revision_t* bundleRevision_revise(const bundle_revision_t* revision, cons
 
 celix_status_t bundleRevision_destroy(bundle_revision_pt revision);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUNDLE_REVISION_PRIVATE_H_ */
