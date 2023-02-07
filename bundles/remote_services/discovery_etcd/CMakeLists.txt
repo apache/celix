@@ -20,6 +20,7 @@ if (RSA_DISCOVERY_ETCD)
 	find_package(CURL REQUIRED)
 	find_package(LibXml2 REQUIRED)
 	find_package(jansson REQUIRED)
+	find_package(civetweb REQUIRED)
 
 	add_celix_bundle(rsa_discovery_etcd
 			VERSION 0.9.0
@@ -30,13 +31,11 @@ if (RSA_DISCOVERY_ETCD)
 			src/discovery_impl.c
 			src/etcd_watcher.c
 			$<TARGET_OBJECTS:Celix::rsa_discovery_common>
-			$<TARGET_OBJECTS:Celix::civetweb>
 			)
-	target_link_libraries(rsa_discovery_etcd PRIVATE Celix::log_helper Celix::etcdlib_static Celix::rsa_common)
+	target_link_libraries(rsa_discovery_etcd PRIVATE Celix::log_helper Celix::etcdlib_static Celix::rsa_common civetweb::civetweb)
 	target_include_directories(rsa_discovery_etcd PRIVATE src)
 	target_include_directories(rsa_discovery_etcd PRIVATE
 			$<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
-			$<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>
 			)
 	target_include_directories(rsa_discovery_etcd SYSTEM PRIVATE
 			${CURL_INCLUDE_DIR}

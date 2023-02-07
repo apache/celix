@@ -28,7 +28,6 @@ if (SHELL_WUI)
     )
 
     target_link_libraries(shell_wui PRIVATE Celix::shell_api Celix::http_admin_api)
-    celix_bundle_private_libs(shell_wui civetweb_shared)
     celix_bundle_add_dir(shell_wui resources)
     celix_bundle_headers(shell_wui "X-Web-Resource: /shell$<SEMICOLON>/resources")
 

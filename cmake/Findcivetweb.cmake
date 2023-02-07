@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,12 +15,20 @@
 # specific language governing permissions and limitations
 # under the License.
 
-
-add_library(civetweb OBJECT
-		src/civetweb.c
-		src/md5.inl
-)
-target_include_directories(civetweb PUBLIC include)
-
-#Setup target aliases to match external usage
-add_library(Celix::civetweb ALIAS civetweb)
+find_package(civetweb CONFIG QUIET)
+if (NOT civetweb_FOUND)
+    include(FetchContent)
+    set(CIVETWEB_ENABLE_WEBSOCKETS TRUE CACHE BOOL "" FORCE)
+    set(CIVETWEB_BUILD_TESTING FALSE CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS TRUE CACHE BOOL "" FORCE)
+    FetchContent_Declare(
+            civetweb
+            GIT_REPOSITORY https://github.com/civetweb/civetweb.git
+#            GIT_REPOSITORY https://gitee.com/mirrors/civetweb.git
+            GIT_TAG        eefb26f82b233268fc98577d265352720d477ba4 # V1.15
+    )
+    FetchContent_MakeAvailable(civetweb)
+    if (NOT TARGET civetweb::civetweb)
+        add_library(civetweb::civetweb ALIAS civetweb-c-library)
+    endif ()
+endif()
