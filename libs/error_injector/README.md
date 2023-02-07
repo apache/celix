@@ -30,9 +30,10 @@ As its name suggests, Celix Error Injector enables you to inject arbitrary error
 You only have to:
 
 1. Implement a simple stub module for your target API under this folder.
-2. Link it into your test executable **statically**. Check `test_framework_with_ei` for a way of doing this with minimal CMake duplication.
-3. Specify the target function call you want to injector specific error into with a single function call before the code under test runs.
-4. Disable error injector during the TearDown phase of the test. Forgetting this step may interrupt other tests.
+2. Link it into your test executable.
+3. Link the code under test into your test executable **statically**. Check `test_framework_with_ei` for a way of doing this with minimal CMake duplication.
+4. Specify the target function call you want to injector specific error into with a single function call before the code under test runs.
+5. Disable error injector during the TearDown phase of the test. Forgetting this step may interrupt other tests.
 
 We have implemented several injectors. 
 
