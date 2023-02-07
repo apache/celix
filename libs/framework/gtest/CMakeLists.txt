@@ -125,9 +125,9 @@ if (LINKER_WRAP_SUPPORTED)
     add_celix_bundle_dependencies(test_framework_with_ei simple_test_bundle1)
     celix_deprecated_utils_headers(test_framework_with_ei)
     target_link_libraries(test_framework_with_ei PRIVATE
-            Celix::framework
-            GTest::gtest GTest::gtest_main
+            Celix::framework_obj
             Celix::malloc_ei
+            GTest::gtest GTest::gtest_main
     )
 
     add_test(NAME test_framework_with_ei COMMAND test_framework_with_ei)
