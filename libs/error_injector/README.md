@@ -42,6 +42,8 @@ We have implemented several injectors.
 
 Have a look at them before implementing your own.
 
+> Celix Error injector only works properly in debug build.
+
 ## Example Usage
 
 ```c++
