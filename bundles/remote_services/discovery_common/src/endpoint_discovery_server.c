@@ -401,10 +401,10 @@ static int endpointDiscoveryServer_callback(struct mg_connection* conn) {
     int status = CIVETWEB_REQUEST_NOT_HANDLED;
 
     const struct mg_request_info *request_info = mg_get_request_info(conn);
-    if (request_info->uri != NULL && strcmp("GET", request_info->request_method) == 0) {
+    if (request_info->request_uri != NULL && strcmp("GET", request_info->request_method) == 0) {
         endpoint_discovery_server_t *server = request_info->user_data;
 
-        const char *uri = request_info->uri;
+        const char *uri = request_info->request_uri;
         const size_t path_len = strlen(server->path);
         const size_t uri_len = strlen(uri);
 

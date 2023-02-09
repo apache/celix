@@ -132,6 +132,7 @@ static celix_status_t addDiscoveredEndpoint(void *handle, const celix_properties
 static celix_status_t removeDiscoveredEndpoint(void *handle, const celix_properties_t *endpoint) {
     (void)handle;
     (void)endpoint;
+    return CELIX_SUCCESS;
 }
 
 int psa_udpmc_start(my_psa_activator_t *act, celix_bundle_context_t *ctx) {

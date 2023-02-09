@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   coverage:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     timeout-minutes: 120
     steps:
       - name: Checkout source code
@@ -24,10 +24,12 @@ jobs:
           CONAN_BUILD_OPTIONS: |
             -o celix:enable_testing=True
             -o celix:build_all=True
-            -o enable_code_coverage=True
+            -o celix:enable_code_coverage=True
+            -o celix:enable_testing_for_cxx14=True
+            -o celix:enable_testing_dependency_manager_for_cxx11=True
         run: |
           #force reequire libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
-          conan install . celix/ci -pr:b default -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s
+          conan install . celix/ci -pr:b default -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing -b cpputest --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s
       - name: Build
         run: |
           conan build . -bf build --configure
@@ -35,7 +37,9 @@ jobs:
       - name: Test with coverage
         run: |
           cd build
+          source activate_run.sh
           make coverage
+          source deactivate_run.sh
           lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx
       - name: Codecov
         uses: codecov/codecov-action@e156083f13aff6830c92fc5faa23505779fbf649
