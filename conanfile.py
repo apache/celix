@@ -230,7 +230,6 @@ class CelixConan(ConanFile):
             self.requires("libffi/[>=3.2.1 <4.0.0]")
             self.options['libffi'].shared = True
 
-
     def _configure_cmake(self):
         if self._cmake:
             return self._cmake
