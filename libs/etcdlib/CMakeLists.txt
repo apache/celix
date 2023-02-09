@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(CURL REQUIRED)
+find_package(jansson REQUIRED)
 
 if (NOT COMMAND celix_subproject) 
     #If COMMAND celix_subproject is not defined, this CMakeLists will
@@ -35,9 +37,6 @@ if (NOT COMMAND celix_subproject)
     set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
 
     set(ETCDLIB_CMP ${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
-
-    find_package(CURL REQUIRED)
-    find_package(jansson REQUIRED)
 
     if (NOT TARGET CURL::libcurl)
         #Note more recent curl will create CURL::libcurl target
