@@ -193,8 +193,6 @@ class CelixConan(ConanFile):
             self.options.build_shell_bonjour = False
 
     def requirements(self):
-        self.requires("jansson/[>=2.12 <3.0.0]")
-        self.options['jansson'].shared = True
         self.requires("libcurl/[>=7.64.1 <8.0.0]")
         self.options['libcurl'].shared = True
         self.requires("zlib/[>=1.2.8 <2.0.0]")
@@ -229,6 +227,9 @@ class CelixConan(ConanFile):
         if self.options.build_celix_dfi:
             self.requires("libffi/[>=3.2.1 <4.0.0]")
             self.options['libffi'].shared = True
+        if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
+            self.requires("jansson/[>=2.12 <3.0.0]")
+            self.options['jansson'].shared = True
 
     def _configure_cmake(self):
         if self._cmake:
