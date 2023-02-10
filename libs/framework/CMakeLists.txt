@@ -44,7 +44,7 @@ target_compile_options(framework PRIVATE -DUSE_FILE32API)
 target_compile_options(framework PRIVATE -Wno-deprecated-declarations) #note part of the api is deprecated, ignore this warning on own api
 set_target_properties(framework PROPERTIES "SOVERSION" ${CELIX_MAJOR})
 
-target_link_libraries(framework PUBLIC Celix::utils Celix::dfi ${CELIX_OPTIONAL_EXTRA_LIBS})
+target_link_libraries(framework PUBLIC Celix::utils ${CELIX_OPTIONAL_EXTRA_LIBS})
 target_link_libraries(framework PUBLIC libuuid::libuuid CURL::libcurl ZLIB::ZLIB)
 target_link_libraries(framework PRIVATE ${CMAKE_DL_LIBS})
 
