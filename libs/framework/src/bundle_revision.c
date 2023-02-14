@@ -36,10 +36,10 @@ celix_status_t bundleRevision_create(celix_framework_t* fw, const char *root, co
     if (revision == NULL || revision->libraryHandles == NULL) {
         status = CELIX_ENOMEM;
         fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create bundle revision, out of memory");
+        manifest_destroy(manifest);
         if (revision != NULL) {
+            revision->manifest = NULL;
             bundleRevision_destroy(revision);
-        } else {
-            manifest_destroy(manifest);
         }
         return status;
     }

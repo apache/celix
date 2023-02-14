@@ -21,11 +21,18 @@
 
 extern "C" {
 
-void *__real_celix_utils_strdup(const char*);
+char* __real_celix_utils_strdup(const char*);
 CELIX_EI_DEFINE(celix_utils_strdup, char*)
-void *__wrap_celix_utils_strdup(const char* __str) {
+char* __wrap_celix_utils_strdup(const char* __str) {
     CELIX_EI_IMPL0(celix_utils_strdup);
     return __real_celix_utils_strdup(__str);
+}
+
+celix_status_t __real_celix_utils_createDirectory(const char* path, bool failIfPresent, const char** errorOut);
+CELIX_EI_DEFINE(celix_utils_createDirectory, celix_status_t)
+celix_status_t __wrap_celix_utils_createDirectory(const char* path, bool failIfPresent, const char** errorOut) {
+    CELIX_EI_IMPL0(celix_utils_createDirectory);
+    return __real_celix_utils_createDirectory(path, failIfPresent, errorOut);
 }
 
 }

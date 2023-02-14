@@ -72,6 +72,12 @@ do {                                                                            
             case 1:                                                                                      \
                 CELIX_EI_GET_CALLER(addr, 1);                                                            \
                 break;                                                                                   \
+            case 2:                                                                                      \
+                CELIX_EI_GET_CALLER(addr, 2);                                                            \
+                break;                                                                                   \
+            case 3:                                                                                      \
+                CELIX_EI_GET_CALLER(addr, 3);                                                            \
+                break;                                                                                   \
             default:                                                                                     \
                 assert(0);                                                                               \
             }                                                                                            \

@@ -129,7 +129,7 @@ static celix_status_t celix_bundleArchive_extractBundle(
  * Initialize archive by creating the bundle cache directory, optionally extracting the bundle from the bundle file,
  * reading the bundle state properties, reading the bundle manifest and updating the bundle state properties.
  */
-static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archive, manifest_pt* manifestOut) {
+celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archive, manifest_pt* manifestOut) {
     if (celix_utils_fileExists(archive->archiveRoot)) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_TRACE, "Bundle archive root for bundle id %li already exists.",
                archive->id);
@@ -257,8 +257,7 @@ celix_status_t celix_bundleArchive_createArchiveInternal(celix_framework_t* fw, 
     } else {
         status = celix_bundleArchive_createCacheDirectory(archive, &manifest);
     }
-    if (!manifest) {
-        status = CELIX_ENOMEM;
+    if (status != CELIX_SUCCESS) {
         fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create archive. Failed to initialize archive or create manifest.");
         bundleArchive_destroy(archive);
         return status;

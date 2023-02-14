@@ -31,67 +31,77 @@
 
 class BundleArchiveWithErrorInjectionTestSuite : public ::testing::Test {
 public:
-    BundleArchiveWithErrorInjectionTestSuite() = default;
+    BundleArchiveWithErrorInjectionTestSuite() {
+        fw = celix::createFramework({
+             {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"},
+             {CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true"}
+        });
+        ctx = fw->getFrameworkBundleContext();
+    }
 
     ~BundleArchiveWithErrorInjectionTestSuite() override {
         teardownErrorInjectors();
+        ctx.reset();
+        fw.reset();
     }
 
     void teardownErrorInjectors() {
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
+        celix_ei_expect_celix_utils_createDirectory(nullptr, 0, CELIX_SUCCESS);
     }
 
-    void installBundleAndExpectFailure(celix::BundleContext& ctx) {
-        long bndId = ctx.installBundle(SIMPLE_TEST_BUNDLE1_LOCATION);
+    void installBundleAndExpectFailure() {
+        //When I create bundle from a bundle zip by installing a bundle
+        //Then the bundle install fails, and the bundle id is < 0
+        long bndId = ctx->installBundle(SIMPLE_TEST_BUNDLE1_LOCATION);
         EXPECT_LT(bndId, 0);
     }
+
+protected:
+    std::shared_ptr<celix::Framework> fw{};
+    std::shared_ptr<celix::BundleContext> ctx{};
 };
 
 
 TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreatedFailedTest) {
-    auto fw = celix::createFramework({
-         {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"},
-         {CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true"}
-    });
-    auto ctx = fw->getFrameworkBundleContext();
-
     teardownErrorInjectors();
     //Given a mocked calloc which returns NULL from a (indirect) call from bundleArchive_create
     celix_ei_expect_calloc((void*)bundleArchive_create, 1, nullptr);
-    //When I create bundle from a bundle zip by installing a bundle
-    //Then the bundle install fails, and the bundle id is < 0
-    installBundleAndExpectFailure(*ctx);
-
+    installBundleAndExpectFailure();
 
     teardownErrorInjectors();
     //Given a mocked celix_utils_strdup which returns NULL from a (indirect) call from bundleArchive_create
     celix_ei_expect_celix_utils_strdup((void*)bundleArchive_create, 1, nullptr);
-    //When I create bundle from a bundle zip by installing a bundle
-    //Then the bundle install fails, and the bundle id is < 0
-    installBundleAndExpectFailure(*ctx);
+    installBundleAndExpectFailure();
 
     teardownErrorInjectors();
     //Given a mocked malloc which returns NULL from a call from manifest_create
     celix_ei_expect_malloc((void*)manifest_create, 0, nullptr);
-    //When I create bundle from a bundle zip by installing a bundle
-    //Then the bundle install fails, and the bundle id is < 0
-    installBundleAndExpectFailure(*ctx);
+    installBundleAndExpectFailure();
 
     teardownErrorInjectors();
     //Given a mocked calloc which returns NULL from a call from bundleRevision_create
     celix_ei_expect_calloc((void*)bundleRevision_create, 0, nullptr);
-    //When I create bundle from a bundle zip by installing a bundle
-    //Then the bundle install fails, and the bundle id is < 0
-    installBundleAndExpectFailure(*ctx);
+    installBundleAndExpectFailure();
 
     teardownErrorInjectors();
     //Given a mocked celix_utils_strdup which returns NULL from a call from bundleRevision_create
     celix_ei_expect_celix_utils_strdup((void*)bundleRevision_create, 0, nullptr);
-    //When I create bundle from a bundle zip by installing a bundle
-    //Then the bundle install fails, and the bundle id is < 0
-    installBundleAndExpectFailure(*ctx);
-
-    //TODO inject errors for celix_bundleArchive_createCacheDirectory
+    installBundleAndExpectFailure();
 }
+
+/*
+FIXME could not yet get this to work, __wrap_celix_utils_createDirectory is called but cannot yet match on
+ bundleArchive_create.
+TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreateCacheDirectoryFailedTest) {
+    teardownErrorInjectors();
+    //Given a mocked celix_utils_createDirectory which returns CELIX_FILE_IO_EXCEPTION from a (indirect) call from
+    //bundleArchive_create
+    celix_ei_expect_celix_utils_createDirectory((void*)bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION);
+    installBundleAndExpectFailure();
+
+    //TODO inject errors for the rest of celix_bundleArchive_createCacheDirectory
+}
+*/

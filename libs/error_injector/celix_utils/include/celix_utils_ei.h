@@ -24,9 +24,12 @@ extern "C" {
 #endif
 
 #include "celix_utils.h"
+#include "celix_file_utils.h"
 #include "celix_error_injector.h"
 
 CELIX_EI_DECLARE(celix_utils_strdup, char*);
+
+CELIX_EI_DECLARE(celix_utils_createDirectory, celix_status_t);
 
 #ifdef __cplusplus
 }
