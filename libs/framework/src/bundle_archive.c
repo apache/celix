@@ -39,7 +39,7 @@
 #include "celix_framework_utils_private.h"
 
 
-static celix_status_t celix_bundleArchive_getLastModifiedInternal(bundle_archive_pt archive, struct timespec *lastModified);
+celix_status_t celix_bundleArchive_getLastModifiedInternal(bundle_archive_pt archive, struct timespec *lastModified);
 
 /**
  * The bundle archive which is used to store the bundle data and can be reused when a framework is restarted.
@@ -86,7 +86,7 @@ static void celix_bundleArchive_updateAndStoreBundleStateProperties(bundle_archi
     celixThreadMutex_unlock(&archive->lock);
 }
 
-static celix_status_t celix_bundleArchive_extractBundle(
+celix_status_t celix_bundleArchive_extractBundle(
         bundle_archive_t* archive,
         const char* revisionRoot,
         const char* bundleUrl,
@@ -161,6 +161,7 @@ celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archiv
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Failed to create bundle revision dir.");
         return CELIX_ENOMEM;
     }
+
     status = celix_utils_createDirectory(archive->currentRevisionRoot, false, &errorStr);
     if (status != CELIX_SUCCESS) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Failed to create bundle revision dir: %s", errorStr);
@@ -399,7 +400,7 @@ celix_status_t bundleArchive_getLastModified(bundle_archive_pt archive, time_t *
     return status;
 }
 
-static celix_status_t celix_bundleArchive_getLastModifiedInternal(bundle_archive_pt archive, struct timespec *lastModified) {
+celix_status_t celix_bundleArchive_getLastModifiedInternal(bundle_archive_pt archive, struct timespec *lastModified) {
     //precondition: archive->lock is locked
     celix_status_t status = CELIX_SUCCESS;
     char manifestPathBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];

@@ -55,7 +55,7 @@ namespace celix {
         [[nodiscard]] long getId() const { return celix_bundle_getId(cBnd.get()); }
 
         /**
-         * @brief Get a use-able entry path for the provided relative path to a bundle resource.
+         * @brief Get a use-able entry path for the provided relative path to a bundle resource cache.
          * 
          * For example if there is a resource entry in the bundle at path 'META-INF/descriptors/foo.descriptor`
          * this call will return a relative path to the extracted location of the bundle resource, e.g.:

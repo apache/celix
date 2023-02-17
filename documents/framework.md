@@ -206,6 +206,21 @@ add_executable(create_framework_with_celix_launcher src/launcher.c)
 target_link_libraries(create_framework_with_celix_launcher PRIVATE Celix::framework)
 ```
 
+## Framework bundle cache
+The Apache Celix framework uses a bundle cache to store the installed bundles, their state and for a 
+persistent bundle storage.
+
+The bundle caches are created in the directory configured in the framework property `CELIX_FRAMEWORK_CACHE_DIR`.
+A bundle cache consists of a resource bundle cache and a persistent storage bundle cache.
+
+The resource bundle cache is used to store and access the bundle resources (e.g. the bundle zip file) and
+should be treated as read-only.
+The resource bundle cache can be accessed using `celix_bundle_getEntry` or `celix::Bundle::getEntry`.
+
+The persistent storage bundle cache can be used to storage persistent data for a bundle and can be treated as 
+read-write.
+The persistent storage bundle cache can be accessed using `celix_bundle_getDataFile` or `celix::Bundle::getDataFile`.
+
 ## Framework configuration options
 The Apache Celix framework can be configured using framework properties. 
 

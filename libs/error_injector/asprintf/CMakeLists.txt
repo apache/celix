@@ -15,15 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(utils_ei STATIC src/celix_utils_ei.cc)
+add_library(asprintf_ei STATIC src/asprintf_ei.cc)
 
-target_include_directories(utils_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(utils_ei PUBLIC Celix::error_injector Celix::utils)
+target_include_directories(asprintf_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(asprintf_ei PUBLIC Celix::error_injector)
 # It plays nicely with address sanitizer this way.
-target_link_options(utils_ei INTERFACE
-        LINKER:--wrap,celix_utils_strdup
-        LINKER:--wrap,celix_utils_createDirectory
-        LINKER:--wrap,celix_utils_getLastModified
-        LINKER:--wrap,celix_utils_deleteDirectory
-)
-add_library(Celix::utils_ei ALIAS utils_ei)
+target_link_options(asprintf_ei INTERFACE LINKER:--wrap,asprintf)
+add_library(Celix::asprintf_ei ALIAS asprintf_ei)

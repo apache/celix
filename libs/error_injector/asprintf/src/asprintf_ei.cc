@@ -17,25 +17,20 @@
   under the License.
  */
 
-#ifndef CELIX_CELIX_UTILS_EI_H
-#define CELIX_CELIX_UTILS_EI_H
-#ifdef __cplusplus
+#include <cstdarg>
+#include "asprintf_ei.h"
+
 extern "C" {
-#endif
 
-#include "celix_utils.h"
-#include "celix_file_utils.h"
-#include "celix_error_injector.h"
-
-CELIX_EI_DECLARE(celix_utils_strdup, char*);
-
-CELIX_EI_DECLARE(celix_utils_createDirectory, celix_status_t);
-
-CELIX_EI_DECLARE(celix_utils_getLastModified, celix_status_t);
-
-CELIX_EI_DECLARE(celix_utils_deleteDirectory, celix_status_t);
-
-#ifdef __cplusplus
+int __real_asprintf(char** buf, const char* format, ...);
+CELIX_EI_DEFINE(asprintf, int)
+int __wrap_asprintf(char** buf, const char* format, ...) {
+    CELIX_EI_IMPL(asprintf);
+    va_list args;
+    va_start(args, format);
+    int rc = __real_asprintf(buf, format, args);
+    va_end(args);
+    return rc;
 }
-#endif
-#endif //CELIX_CELIX_UTILS_EI_H
+
+}

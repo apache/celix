@@ -24,5 +24,6 @@ target_compile_options(error_injector INTERFACE -Wno-frame-address)
 add_library(Celix::error_injector ALIAS error_injector)
 
 add_subdirectory(malloc)
+add_subdirectory(asprintf)
 add_subdirectory(celix_properties)
 add_subdirectory(celix_utils)

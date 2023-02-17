@@ -24,6 +24,7 @@
 #include "celix_framework_utils.h"
 #include "malloc_ei.h"
 #include "celix_utils_ei.h"
+#include "asprintf_ei.h"
 
 //including private headers, which should only be used for testing
 #include "bundle_archive_private.h"
@@ -46,10 +47,13 @@ public:
     }
 
     void teardownErrorInjectors() {
+        celix_ei_expect_asprintf(nullptr, 0, 0);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_createDirectory(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_utils_getLastModified(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_utils_deleteDirectory(nullptr, 0, CELIX_SUCCESS);
     }
 
     void installBundleAndExpectFailure() {
@@ -92,9 +96,6 @@ TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreatedFailedTest)
     installBundleAndExpectFailure();
 }
 
-/*
-FIXME could not yet get this to work, __wrap_celix_utils_createDirectory is called but cannot yet match on
- bundleArchive_create.
 TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreateCacheDirectoryFailedTest) {
     teardownErrorInjectors();
     //Given a mocked celix_utils_createDirectory which returns CELIX_FILE_IO_EXCEPTION from a (indirect) call from
@@ -102,6 +103,35 @@ TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreateCacheDirecto
     celix_ei_expect_celix_utils_createDirectory((void*)bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION);
     installBundleAndExpectFailure();
 
-    //TODO inject errors for the rest of celix_bundleArchive_createCacheDirectory
+    teardownErrorInjectors();
+    //Given a mocked asprintf which returns -1 from a (indirect) call from bundleArchive_create
+    celix_ei_expect_asprintf((void*)bundleArchive_create, 2, -1);
+    installBundleAndExpectFailure();
+
+    teardownErrorInjectors();
+    //Given a mocked celix_utils_createDirectory which returns CELIX_FILE_IO_EXCEPTION from a second (indirect) call
+    // from bundleArchive_create
+    celix_ei_expect_celix_utils_createDirectory((void*)bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION, 2);
+    installBundleAndExpectFailure();
+
+    teardownErrorInjectors();
+    //Given a mocked asprintf which returns -1 from a (indirect) call from bundleArchive_create
+    celix_ei_expect_asprintf((void*)bundleArchive_create, 2, -1, 2);
+    installBundleAndExpectFailure();
+
+    teardownErrorInjectors();
+    //Given a mocked celix_utils_createDirectory which returns CELIX_FILE_IO_EXCEPTION from a third (indirect) call
+    // from bundleArchive_create
+    celix_ei_expect_celix_utils_createDirectory((void*)bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION, 3);
+    installBundleAndExpectFailure();
+
+    teardownErrorInjectors();
+    //Given a mocked celix_utils_strdup which returns NULL from a (indirect) call from bundleArchive_create
+    celix_ei_expect_celix_utils_strdup((void*)bundleArchive_create, 2, nullptr);
+    installBundleAndExpectFailure();
+
+    teardownErrorInjectors();
+    //Given a mocked celix_utils_strdup which returns NULL from a second (indirect) call from bundleArchive_create
+    celix_ei_expect_celix_utils_strdup((void*)bundleArchive_create, 2, nullptr, 2);
+    installBundleAndExpectFailure();
 }
-*/
