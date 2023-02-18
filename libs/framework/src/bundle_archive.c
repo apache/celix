@@ -184,12 +184,14 @@ celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archiv
     }
 
     //read manifest from extracted bundle zip
+    *manifestOut = NULL;
     char pathBuffer[512];
     char* manifestPath = celix_utils_writeOrCreateString(pathBuffer, sizeof(pathBuffer), "%s/%s", archive->currentRevisionRoot, CELIX_BUNDLE_MANIFEST_REL_PATH);
     status = manifest_createFromFile(manifestPath, manifestOut);
     celix_utils_freeStringIfNeeded(pathBuffer, manifestPath);
     if (status != CELIX_SUCCESS) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Cannot read manifest.");
+        manifest_destroy(*manifestOut);
         return status;
     }
 
@@ -197,11 +199,13 @@ celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archiv
     archive->bundleSymbolicName = celix_utils_strdup(manifest_getValue(*manifestOut, OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME));
     if (archive->bundleSymbolicName == NULL) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Cannot read bundle symbolic name.");
+        manifest_destroy(*manifestOut);
         return CELIX_BUNDLE_EXCEPTION;
     }
     archive->bundleVersion = celix_utils_strdup(manifest_getValue(*manifestOut, OSGI_FRAMEWORK_BUNDLE_VERSION));
     if (archive->bundleVersion == NULL) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Cannot read bundle version.");
+        manifest_destroy(*manifestOut);
         return CELIX_BUNDLE_EXCEPTION;
     }
 

@@ -207,19 +207,44 @@ target_link_libraries(create_framework_with_celix_launcher PRIVATE Celix::framew
 ```
 
 ## Framework bundle cache
-The Apache Celix framework uses a bundle cache to store the installed bundles, their state and for a 
-persistent bundle storage.
+The Apache Celix framework uses a bundle cache directory to store the installed bundles, their state and for a 
+persistent bundle storage. The bundle cache directory is created in the directory configured in the framework 
+property `CELIX_FRAMEWORK_CACHE_DIR` (default is ".cache"). A bundle cache consists of a bundle state property file, 
+a resource bundle cache and a persistent storage bundle cache.
 
-The bundle caches are created in the directory configured in the framework property `CELIX_FRAMEWORK_CACHE_DIR`.
-A bundle cache consists of a resource bundle cache and a persistent storage bundle cache.
-
-The resource bundle cache is used to store and access the bundle resources (e.g. the bundle zip file) and
-should be treated as read-only.
-The resource bundle cache can be accessed using `celix_bundle_getEntry` or `celix::Bundle::getEntry`.
+The resource bundle cache is used to store and access the bundle resources (e.g. the content of the bundle zip file) 
+and should be treated as read-only. The resource bundle cache can be accessed using `celix_bundle_getEntry` 
+or `celix::Bundle::getEntry`.
 
 The persistent storage bundle cache can be used to storage persistent data for a bundle and can be treated as 
-read-write.
-The persistent storage bundle cache can be accessed using `celix_bundle_getDataFile` or `celix::Bundle::getDataFile`.
+read-write. The persistent storage bundle cache can be accessed using `celix_bundle_getDataFile` or 
+`celix::Bundle::getDataFile`.
+
+If a framework is started with only a `Celix::shell` and `Celix::shell_tui bundle`, the following directory structure
+is created:
+
+```bash
+% find .cache
+.cache/
+.cache/bundle1
+.cache/bundle1/bundle_state.properties
+.cache/bundle1/storage
+.cache/bundle1/version1.0
+.cache/bundle1/version1.0/libshelld.so.2
+.cache/bundle1/version1.0/libshell.so.2
+.cache/bundle1/version1.0/META-INF
+.cache/bundle1/version1.0/META-INF/MANIFEST.MF
+.cache/bundle2
+.cache/bundle2/bundle_state.properties
+.cache/bundle2/storage
+.cache/bundle2/version1.0
+.cache/bundle2/version1.0/libshell_tuid.so.1
+.cache/bundle2/version1.0/META-INF
+.cache/bundle2/version1.0/META-INF/MANIFEST.MF
+```
+
+The entry `.cache/bundle1/version1.0` is the resource bundle cache and the entry `.cache/bundle1/storage` is the 
+persistent storage bundle cache for the `Celix::shell` bundle.
 
 ## Framework configuration options
 The Apache Celix framework can be configured using framework properties. 
