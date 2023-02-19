@@ -31,6 +31,7 @@ target_link_libraries(test_rsa_shm PRIVATE
     calculator_api
     Celix::shell_api
     Celix::framework
+    Celix::dfi
     libuuid::libuuid
     GTest::gtest
     GTest::gtest_main

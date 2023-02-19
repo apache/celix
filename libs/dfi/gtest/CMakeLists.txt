@@ -39,6 +39,7 @@ See issue #232
 ]]
 target_compile_options(test_dfi PRIVATE -O0) #This is needed because
 
+target_include_directories(test_dfi PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../src)
 target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils libffi::libffi jansson::jansson GTest::gtest GTest::gtest_main)
 celix_deprecated_utils_headers(test_dfi)
 
