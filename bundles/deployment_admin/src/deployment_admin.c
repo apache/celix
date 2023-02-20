@@ -583,7 +583,6 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_p
 		if (updateBundle != NULL) {
 			//printf("Update bundle from: %s\n", bundlePath);
             celix_bundleContext_updateBundle(admin->context, celix_bundle_getId(updateBundle), bundlePath);
-			bundle_update(updateBundle, bundlePath);
 		} else {
 			//printf("Install bundle from: %s\n", bundlePath);
             celix_bundleContext_installBundle(admin->context, bundlePath, false);
