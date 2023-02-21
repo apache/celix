@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * endpoint_discovery_server.c
- *
- * \date        Aug 12, 2014
- * \author      <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- * \copyright   Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <string.h>
@@ -161,10 +154,18 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
 
     unsigned int port_counter = 0;
     char newPort[10];
+    bool bindToAllInterfaces = celix_bundleContext_getPropertyAsBool(context, CELIX_DISCOVERY_BIND_ON_ALL_INTERFACES, CELIX_DISCOVERY_BIND_ON_ALL_INTERFACES_DEFAULT);
 
     do {
+        char *listeningPorts = NULL;
+        if (bindToAllInterfaces) {
+            asprintf(&listeningPorts,"0.0.0.0:%s", port);
+        } else {
+            asprintf(&listeningPorts,"%s:%s", (*server)->ip, port);
+        }
+
         const char *options[] = {
-                "listening_ports", port,
+                "listening_ports", listeningPorts,
                 "num_threads", DEFAULT_SERVER_THREADS,
                 NULL
         };
@@ -173,7 +174,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
 
         if ((*server)->ctx != NULL)
         {
-            celix_logHelper_info(discovery->loghelper, "Starting discovery server on port %s...", port);
+            celix_logHelper_info(discovery->loghelper, "Starting discovery server on port %s...", listeningPorts);
         }
         else {
             errno = 0;
@@ -192,6 +193,8 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
 
         }
 
+        free(listeningPorts);
+
     } while(((*server)->ctx == NULL) && (port_counter < max_ep_num));
 
     (*server)->port = strdup(port);
@@ -199,13 +202,13 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
     return status;
 }
 
-celix_status_t endpointDiscoveryServer_getUrl(endpoint_discovery_server_t *server, char* url)
-{
+celix_status_t endpointDiscoveryServer_getUrl(endpoint_discovery_server_t *server, char* url, size_t maxLenUrl) {
+
     celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 
     if (server->ip && server->port && server->path) {
-        sprintf(url, "http://%s:%s/%s", server->ip, server->port, server->path);
-        status = CELIX_SUCCESS;
+        int written = snprintf(url, maxLenUrl, "http://%s:%s/%s", server->ip, server->port, server->path);
+        status = written < maxLenUrl && written > 0 ? CELIX_SUCCESS : CELIX_ILLEGAL_ARGUMENT;
     }
 
     return status;
@@ -398,10 +401,10 @@ static int endpointDiscoveryServer_callback(struct mg_connection* conn) {
     int status = CIVETWEB_REQUEST_NOT_HANDLED;
 
     const struct mg_request_info *request_info = mg_get_request_info(conn);
-    if (request_info->uri != NULL && strcmp("GET", request_info->request_method) == 0) {
+    if (request_info->request_uri != NULL && strcmp("GET", request_info->request_method) == 0) {
         endpoint_discovery_server_t *server = request_info->user_data;
 
-        const char *uri = request_info->uri;
+        const char *uri = request_info->request_uri;
         const size_t path_len = strlen(server->path);
         const size_t uri_len = strlen(uri);
 

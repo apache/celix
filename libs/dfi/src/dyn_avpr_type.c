@@ -30,7 +30,7 @@
 
 #include "dyn_type.h"
 #include "dyn_type_common.h"
-#include "version.h"
+#include "celix_version.h"
 
 DFI_SETUP_LOG(dynAvprType)
 
@@ -348,7 +348,7 @@ static dyn_type * dynAvprType_parseRecord(dyn_type * root, dyn_type * parent, js
     // Create namespace + name for storage in type->name (to preserve namespacing)
     char fqn_buffer[FQN_SIZE];
     snprintf(fqn_buffer, FQN_SIZE, "%s.%s", record_ns, json_string_value(json_object_get(record_obj, "name")));
-    type->name = strndup(fqn_buffer, STR_LENGTH);
+    type->name = strdup(fqn_buffer);
     if (!type->name) {
         LOG_ERROR("Record: failed to allocate memory for type->name");
         dynType_destroy(type);
@@ -488,7 +488,7 @@ static inline struct complex_type_entry *dynAvprType_prepareRecordEntry(json_t c
     }
 
     entry = calloc(1, sizeof(*entry));
-    entry->name = strndup(entry_name, STR_LENGTH);
+    entry->name = strdup(entry_name);
     return entry;
 }
 
@@ -615,7 +615,7 @@ static inline struct type_entry * dynAvprType_prepareNestedEntry(dyn_type * cons
     struct type_entry *entry = calloc(1, sizeof(*entry));
     if (allocate) {
         entry->type = calloc(1, sizeof(*entry->type));
-        entry->type->name = strndup(fqn, STR_LENGTH);
+        entry->type->name = strdup(fqn);
 
         // Initialize information
         entry->type->parent = parent;
@@ -692,7 +692,7 @@ static inline struct meta_entry * dynAvprType_createMetaEntry(const char* enum_e
     }
 
     struct meta_entry *entry = calloc(1, sizeof(*entry));
-    entry->name = strndup(enum_entry_name, STR_LENGTH);
+    entry->name = strdup(enum_entry_name);
     return entry;
 }
 
@@ -708,7 +708,7 @@ static inline bool dynAvprType_metaEntrySetValue(struct meta_entry * meta_entry_
             return false;
         }
 
-        meta_entry_ptr->value = strndup(enumValue, STR_LENGTH);
+        meta_entry_ptr->value = strdup(enumValue);
         if (!meta_entry_ptr->value) {
             LOG_ERROR("MetaEntrySetValue: could not allocate memory for meta_entry->value");
             return false;
@@ -948,7 +948,7 @@ static dyn_type * dynAvprType_createSimpleType(dyn_type * parent, char kind, con
             return NULL;
     }
 
-    type->name = strndup(name, FQN_SIZE);
+    type->name = strdup(name);
     type->type = (kind == 't') ? DYN_TYPE_TEXT : DYN_TYPE_SIMPLE;
     type->descriptor = kind;
     type->ffiType = ffiType;
@@ -1003,20 +1003,19 @@ static inline void dynAvprType_createVersionMetaEntry(dyn_type * type, json_t co
     if (json_is_string(json_type_version)) {
         const char* version_str = json_string_value(json_type_version);
         // Check if a valid version was given
-        version_pt v = NULL;
-        celix_status_t status = version_createVersionFromString(version_str, &v);
-        if (CELIX_SUCCESS == status) {
-            m_entry->value = strndup(version_str, STR_LENGTH);
-            version_destroy(v);
+        celix_version_t* v = celix_version_createVersionFromString(version_str);
+        if (v != NULL) {
+            m_entry->value = strdup(version_str);
+            celix_version_destroy(v);
         }
         else {
-            m_entry->value = strndup("0.0.0", STR_LENGTH);
+            m_entry->value = strdup("0.0.0");
             LOG_WARNING("parseAvpr: Did not find valid version, set version to 0.0.0");
         }
     }
     else {
         // If no version or an invalid version is available, default to 0.0.0
-        m_entry->value = strndup("0.0.0", STR_LENGTH);
+        m_entry->value = strdup("0.0.0");
         LOG_WARNING("parseAvpr: Did not find version entry, set version to 0.0.0");
     }
 
@@ -1040,7 +1039,7 @@ static inline void dynAvprType_createAnnotationEntries(dyn_type * type, json_t c
 
             switch (json_typeof(value)) {
                 case JSON_STRING:
-                    m_entry->value = strndup(json_string_value(value), STR_LENGTH);
+                    m_entry->value = strdup(json_string_value(value));
                     break;
                 case JSON_INTEGER:
                     asprintf(&m_entry->value, "%" JSON_INTEGER_FORMAT, json_integer_value(value));

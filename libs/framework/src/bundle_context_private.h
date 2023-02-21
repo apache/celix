@@ -47,7 +47,7 @@ typedef struct celix_bundle_context_service_tracker_entry {
 	celix_service_tracker_t* tracker;
     void *trackerCreatedCallbackData;
     void (*trackerCreatedCallback)(void *trackerCreatedCallbackData);
-
+    bool isFreeFilterNeeded;
 
     //used for sync
     long createEventId;
@@ -79,7 +79,7 @@ struct celix_bundle_context {
 	celix_dependency_manager_t *mng;
 	long nextTrackerId;
 	hash_map_t *bundleTrackers; //key = trackerId, value = celix_bundle_context_bundle_tracker_entry_t*
-	hash_map_t *serviceTrackers; //key = trackerId, value = celix_service_tracker_t*
+	hash_map_t *serviceTrackers; //key = trackerId, value = celix_bundle_context_service_tracker_entry_t*
 	hash_map_t *metaTrackers; //key = trackerId, value = celix_bundle_context_service_tracker_tracker_entry_t*
     hash_map_t *stoppingTrackerEventIds; //key = trackerId, value = eventId for stopping the tracker. Note id are only present if the stop tracking is queued.
 };

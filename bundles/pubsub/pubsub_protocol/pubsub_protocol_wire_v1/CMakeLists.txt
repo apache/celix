@@ -21,6 +21,7 @@ add_library(celix_wire_protocol_v1_impl STATIC
 target_include_directories(celix_wire_protocol_v1_impl PRIVATE src)
 target_link_libraries(celix_wire_protocol_v1_impl PUBLIC Celix::pubsub_spi)
 target_link_libraries(celix_wire_protocol_v1_impl PUBLIC celix_pubsub_protocol_lib)
+celix_deprecated_utils_headers(celix_wire_protocol_v1_impl)
 
 add_celix_bundle(celix_pubsub_protocol_wire_v1
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_protocol_wire_v1"
@@ -32,10 +33,11 @@ add_celix_bundle(celix_pubsub_protocol_wire_v1
 target_include_directories(celix_pubsub_protocol_wire_v1 PRIVATE src)
 target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
 target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE celix_wire_protocol_v1_impl)
+celix_deprecated_utils_headers(celix_pubsub_protocol_wire_v1)
 
 install_celix_bundle(celix_pubsub_protocol_wire_v1 EXPORT celix COMPONENT pubsub)
 
-add_library(Celix::pubsub_protocol_wire_v1 ALIAS celix_pubsub_protocol_wire_v1)
+add_library(Celix::celix_pubsub_protocol_wire_v1 ALIAS celix_pubsub_protocol_wire_v1)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)

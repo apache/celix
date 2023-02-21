@@ -39,6 +39,9 @@ namespace celix {
          * @brief Executes the given command at some time in the future. The command may execute in a new thread,
          * in a pooled thread, or in the calling thread, at the discretion of the Executor implementation.
          *
+         * @note After a task has been executed, the `std::function<void()>` task object must go out of scope to
+         * ensure that the potential capture objects also go out of scope.
+         *
          * @param priority the priority of the task. It depends on the executor implementation whether this is supported.
          * @param command the "runnable" task
          * @throws celix::RejectedExecutionException if this task cannot be accepted for execution.

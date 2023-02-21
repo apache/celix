@@ -29,7 +29,8 @@
 
 typedef struct module *module_pt;
 
-#include "celixbool.h"
+#include <stdbool.h>
+
 #include "linked_list.h"
 #include "manifest.h"
 #include "version.h"
@@ -88,6 +89,10 @@ FRAMEWORK_EXPORT void module_removeDependentRequirer(module_pt module, module_pt
 FRAMEWORK_EXPORT celix_array_list_t *module_getDependents(module_pt module);
 
 FRAMEWORK_EXPORT celix_status_t module_getGroup(module_pt module, const char **group);
+
+FRAMEWORK_EXPORT celix_status_t module_getName(module_pt module, const char **name);
+
+FRAMEWORK_EXPORT celix_status_t module_getDescription(module_pt module, const char **descriptoin);
 
 #ifdef __cplusplus
 }

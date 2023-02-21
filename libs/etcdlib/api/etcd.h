@@ -27,11 +27,7 @@ extern "C"
 
 #include "etcdlib.h"
 
-#ifdef CELIX_ADD_DEPRECATED_ATTRIBUTES
 #define DEP_ATTRIBUTE __attribute__((deprecated("etcd_ call are placed by etcdlib_ calls, use etcdlib.h instead of etcd.h")))
-#else
-#define DEP_ATTRIBUTE
-#endif
 
 /**
  * @desc Initialize the ETCD-LIB  with the server/port where Etcd can be reached.
@@ -108,6 +104,8 @@ int etcd_del(const char* key) DEP_ATTRIBUTE;
  * @return ETCDLIB_RC_OK (0) on success, non zero otherwise. Note that a timeout is signified by a ETCDLIB_RC_TIMEOUT return code.
  */
 int etcd_watch(const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex) DEP_ATTRIBUTE;
+
+#undef DEP_ATTRIBUTE
 
 #ifdef __cplusplus
 }

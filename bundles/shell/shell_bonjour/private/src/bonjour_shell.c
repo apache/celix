@@ -37,10 +37,10 @@
 #include <dns_sd.h>
 #include <libxml/xmlreader.h>
 #include <libxml/xmlwriter.h>
-#include <celixbool.h>
+#include <stdbool.h>
 #include <shell.h>
 
-#if defined(BSD) || defined(__APPLE__)  || defined(ANDROID)
+#if CELIX_UTILS_NO_MEMSTREAM_AVAILABLE
 #include "open_memstream.h"
 #include "fmemopen.h"
 #endif
@@ -345,7 +345,7 @@ static void bonjourShell_parseCommand(bonjour_shell_pt shell, struct connection_
                         FILE *out = open_memstream(&outbuf, &outsize);
                         FILE *err = open_memstream(&errbuf, &errsize);
 
-                        shell->service->executeCommand(shell->service->shell, (char *) command, out, err);
+                        shell->service->executeCommand(shell->service->handle, (char *) command, out, err);
 
                         fclose(out);
                         fclose(err);

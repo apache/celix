@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 
 #include "example_calc.h"
 

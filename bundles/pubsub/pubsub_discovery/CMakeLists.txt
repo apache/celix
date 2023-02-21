@@ -15,24 +15,29 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(CURL REQUIRED)
-find_package(Jansson REQUIRED)
+celix_subproject(PUBSUB_DISCOVERY_ETCD "Option to enable building the PubSub Discovery (ETCD) bundle" ON DEPS CELIX_ETCDLIB)
+if (PUBSUB_DISCOVERY_ETCD)
+    find_package(CURL REQUIRED)
+    find_package(jansson REQUIRED)
 
-add_celix_bundle(celix_pubsub_discovery_etcd
-    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_discovery_etcd"
-    VERSION "1.1.0"
-    GROUP "Celix/PubSub"
-    SOURCES
-        src/psd_activator.c
-        src/pubsub_discovery_impl.c
-)
-target_include_directories(celix_pubsub_discovery_etcd PRIVATE src)
-target_link_libraries(celix_pubsub_discovery_etcd PRIVATE
-         Celix::framework Celix::etcdlib_static
-        Celix::shell_api Celix::log_helper
-        CURL::libcurl Jansson)
-target_link_libraries(celix_pubsub_discovery_etcd PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
+    add_celix_bundle(celix_pubsub_discovery_etcd
+            BUNDLE_SYMBOLICNAME "apache_celix_pubsub_discovery_etcd"
+            VERSION "1.1.0"
+            GROUP "Celix/PubSub"
+            SOURCES
+            src/psd_activator.c
+            src/pubsub_discovery_impl.c
+            )
+    target_include_directories(celix_pubsub_discovery_etcd PRIVATE src)
+    target_link_libraries(celix_pubsub_discovery_etcd PRIVATE
+            Celix::framework Celix::etcdlib_static
+            Celix::shell_api Celix::log_helper
+            CURL::libcurl jansson::jansson
+            )
+    target_link_libraries(celix_pubsub_discovery_etcd PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
+    celix_deprecated_utils_headers(celix_pubsub_discovery_etcd)
 
-install_celix_bundle(celix_pubsub_discovery_etcd EXPORT celix COMPONENT pubsub)
+    install_celix_bundle(celix_pubsub_discovery_etcd EXPORT celix COMPONENT pubsub)
 
-add_library(Celix::pubsub_discovery_etcd ALIAS celix_pubsub_discovery_etcd)
+    add_library(Celix::celix_pubsub_discovery_etcd ALIAS celix_pubsub_discovery_etcd)
+endif ()

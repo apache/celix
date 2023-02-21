@@ -45,7 +45,6 @@ struct manifestParser {
 	manifest_pt manifest;
 
 	version_pt bundleVersion;
-	char * bundleSymbolicName;
 	linked_list_pt capabilities;
 	linked_list_pt requirements;
 };
@@ -64,7 +63,6 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, mani
 	parser = (manifest_parser_pt) malloc(sizeof(*parser));
 	if (parser) {
 		const char * bundleVersion = NULL;
-		const char * bundleSymbolicName = NULL;
 		parser->manifest = manifest;
 		parser->owner = owner;
 
@@ -75,10 +73,6 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, mani
 		} else {
 			parser->bundleVersion = NULL;
 			version_createEmptyVersion(&parser->bundleVersion);
-		}
-		bundleSymbolicName = manifest_getValue(manifest, OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME);
-		if (bundleSymbolicName != NULL) {
-			parser->bundleSymbolicName = (char*)bundleSymbolicName;
 		}
 
 		parser->capabilities = manifestParser_parseExportHeader(owner, manifest_getValue(manifest, OSGI_FRAMEWORK_EXPORT_LIBRARY));
@@ -101,7 +95,6 @@ celix_status_t manifestParser_destroy(manifest_parser_pt mp) {
 	mp->capabilities = NULL;
 	linkedList_destroy(mp->requirements);
 	mp->requirements = NULL;
-	mp->bundleSymbolicName = NULL;
 	version_destroy(mp->bundleVersion);
 	mp->bundleVersion = NULL;
 	mp->manifest = NULL;
@@ -465,19 +458,30 @@ static linked_list_pt manifestParser_parseExportHeader(module_pt module, const c
 	return capabilities;
 }
 
+static celix_status_t manifestParser_getDuplicateEntry(manifest_parser_pt parser, const char* entryName, char **result) {
+    const char *val = manifest_getValue(parser->manifest, entryName);
+    if (result != NULL && val == NULL) {
+        *result = NULL;
+    } else if (result != NULL) {
+        *result = celix_utils_strdup(val);
+    }
+    return CELIX_SUCCESS;
+}
+
 celix_status_t manifestParser_getAndDuplicateGroup(manifest_parser_pt parser, char **group) {
-	const char *val = manifest_getValue(parser->manifest, "Bundle-Group");
-	if (group != NULL && val == NULL) {
-		*group = NULL;
-	} else if (group != NULL) {
-		*group = strndup(val, 1024*10);
-	}
-	return CELIX_SUCCESS;
+    return manifestParser_getDuplicateEntry(parser, CELIX_FRAMEWORK_BUNDLE_GROUP, group);
 }
 
 celix_status_t manifestParser_getAndDuplicateSymbolicName(manifest_parser_pt parser, char **symbolicName) {
-	*symbolicName = strndup(parser->bundleSymbolicName, 1024*10);
-	return CELIX_SUCCESS;
+    return manifestParser_getDuplicateEntry(parser, OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME, symbolicName);
+}
+
+celix_status_t manifestParser_getAndDuplicateName(manifest_parser_pt parser, char **name) {
+    return manifestParser_getDuplicateEntry(parser, CELIX_FRAMEWORK_BUNDLE_NAME, name);
+}
+
+celix_status_t manifestParser_getAndDuplicateDescription(manifest_parser_pt parser, char **description) {
+    return manifestParser_getDuplicateEntry(parser, CELIX_FRAMEWORK_BUNDLE_DESCRIPTION, description);
 }
 
 celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, version_pt *version) {

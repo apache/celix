@@ -20,12 +20,16 @@
 #ifndef PUBSUB_PROTOCOL_SERVICE_H_
 #define PUBSUB_PROTOCOL_SERVICE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "celix_properties.h"
 
 #define PUBSUB_PROTOCOL_SERVICE_NAME      "pubsub_protocol"
-#define PUBSUB_PROTOCOL_SERVICE_VERSION   "1.0.0"
-#define PUBSUB_PROTOCOL_SERVICE_RANGE     "[1,2)"
+#define PUBSUB_PROTOCOL_SERVICE_VERSION   "2.0.0"
+#define PUBSUB_PROTOCOL_SERVICE_RANGE     "[2,3)"
 
 typedef struct pubsub_protocol_header pubsub_protocol_header_t;
 
@@ -79,7 +83,8 @@ struct pubsub_protocol_message {
 typedef struct pubsub_protocol_service {
     void* handle;
   /**
-    * Returns the size of the header.
+    * @brief Returns the size of the header.
+    *
     * Is used by the receiver to configure the expected size of the header.
     * The receiver first reads the header to know if the receive is big enough
     * to contain the complete payload.
@@ -90,7 +95,8 @@ typedef struct pubsub_protocol_service {
     */
     celix_status_t (*getHeaderSize)(void *handle, size_t *length);
   /**
-    * Returns the size of the header buffer for the receiver.
+    * @brief Returns the size of the header buffer for the receiver.
+    *
     * Is used by the receiver to configure the buffer size of the header.
     * Note for a protocol with a header the headerBufferSize >= headerSize.
     * Note for header-less protocol the headerBufferSize is zero
@@ -102,7 +108,8 @@ typedef struct pubsub_protocol_service {
     */
     celix_status_t (*getHeaderBufferSize)(void *handle, size_t *length);
   /**
-    * Returns the size of the sync word
+    * @brief Returns the size of the sync word
+    *
     * Is used by the receiver to skip the sync in the header buffer,
     * to get in sync with data reception.
     *
@@ -112,7 +119,8 @@ typedef struct pubsub_protocol_service {
     */
     celix_status_t (*getSyncHeaderSize)(void *handle, size_t *length);
     /**
-     * Returns the header (as byte array) that should be used by the underlying protocol as sync between messages.
+     * @brief Returns the header (as byte array) that should be used by the underlying protocol as sync between
+     * messages.
      *
      * @param handle handle for service
      * @param sync output param for byte array
@@ -121,7 +129,8 @@ typedef struct pubsub_protocol_service {
     celix_status_t (*getSyncHeader)(void *handle, void *sync);
 
   /**
-    * Returns the size of the footer.
+    * @brief Returns the size of the footer.
+    *
     * Is used by the receiver to configure the expected size of the footer.
     * The receiver reads the footer to know if the complete message including paylaod is received.
     *
@@ -132,7 +141,8 @@ typedef struct pubsub_protocol_service {
     celix_status_t (*getFooterSize)(void *handle, size_t *length);
 
   /**
-    * Returns the if the protocol service supports the message segmentation attributes that is used by the underlying protocol.
+    * @brief Returns the if the protocol service supports the message segmentation attributes that is used by the
+    * underlying protocol.
     *
     * @param handle handle for service
     * @param isSupported indicates that message segmentation is supported or not.
@@ -141,19 +151,24 @@ typedef struct pubsub_protocol_service {
     celix_status_t (*isMessageSegmentationSupported)(void *handle, bool *isSupported);
 
     /**
-     * Encodes the header using the supplied message.header.
+     * @brief Encode the header using the supplied message.header.
+     *
+     * If *bufferInOut is NULL a new buffer will be allocated.
+     * If *bufferInOut is not NULL and *bufferLengthInOut matches the header size the buffer will be reused.
+     * If *bufferInOut is not NULL, but *bufferLengthInOut does not match the header size, the provided buffer will
+     * be freed and a new buffer (matching the header size) will be allocated.
      *
      * @param handle handle for service
      * @param message message to use header from
-     * @param outBuffer byte array containing the encoded header
-     * @param outLength length of the byte array
+     * @param bufferInOut byte array containing the encoded header
+     * @param bufferLengthInOut length of the byte array
      * @return status code indicating failure or success
      */
-    celix_status_t (*encodeHeader)(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
+    celix_status_t (*encodeHeader)(void *handle, pubsub_protocol_message_t *message, void **bufferInOut, size_t *bufferLengthInOut);
 
     /**
-     * Encodes the payload using the supplied message.header. Note, this decode is for protocol specific tasks, and does not perform
-     * the needed message serialization. See the serialization service for that.
+     * @brief Encode the payload using the supplied message.header. Note, this encoding is for protocol specific tasks,
+     * and does not perform the needed message serialization. See the serialization service for that.
      * In most cases this will simply use the known data and length from message.payload.
      *
      * @param handle handle for service
@@ -165,30 +180,44 @@ typedef struct pubsub_protocol_service {
     celix_status_t (*encodePayload)(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
 
     /**
-     * Encodes the metadata using the supplied message.metadata.
+    * @brief Encode metadata to bufferInOut using the supplied message.metadata
+    *
+    * If *bufferInOut is NULL, a new buffer will be allocated. If *bufferInOut is not NULL, the buffer is reused and
+    * the provided *bufferLengthInOut must indicate the length of the provided buffer.
+    * If a provided *bufferInOut is not large enough to fit the encoded metadata, the buffer will be reallocated and
+    * enlarged.
+    *
+    * If this calls return with an error, the caller is still owner of a possible returned output buffer.
      *
-     * @param handle handle for service
-     * @param message message to use header from
-     * @param outBuffer byte array containing the encoded metadata
-     * @param outLength length of the byte array
-     * @return status code indicating failure or success
-     */
-    celix_status_t (*encodeMetadata)(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
+    * @param handle handle for service
+    * @param message The message containing the metadata to encode
+    * @param bufferInOut Input/output argument for the buffer, if call is successful will contain the metadata header
+    * @param bufferLengthInOut Input/output arguments for the length of the bufferInOut argument.
+    * @param bufferContentLengthOut Output argument for the actual content size of the bufferInOut. Note that the
+    *                               bufferContentLengthOut can be smaller than the buffer length.
+    * @return CELIX_SUCCESS if encoding was successful.
+    */
+    celix_status_t (*encodeMetadata)(void *handle, pubsub_protocol_message_t *message, void **bufferInOut, size_t *bufferLengthInOut, size_t* bufferContentLengthOut);
 
     /**
-     * Encodes the footer
+     * @brief Encode the footer
+     *
+     * If *bufferInOut is NULL a new buffer will be allocated.
+     * If *bufferInOut is not NULL and *bufferLengthInOut matches the footer size the buffer will be reused.
+     * If *bufferInOut is not NULL, but *bufferLengthInOut does not match the footer size, the provided buffer will
+     * be freed and a new buffer (matching the footer size) will be allocated.
      *
      * @param handle handle for service
      * @param message message to use footer from
-     * @param outBuffer byte array containing the encoded footer
-     * @param outLength length of the byte array
+     * @param bufferInOut byte array containing the encoded footer
+     * @param bufferLengthInOut length of the byte array
      * @return status code indicating failure or success
      */
-    celix_status_t (*encodeFooter)(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
+    celix_status_t (*encodeFooter)(void *handle, pubsub_protocol_message_t *message, void **bufferInOut, size_t *bufferLengthInOut);
 
 
   /**
-     * Decodes the given data into message.header.
+     * @brief Decodes the given data into message.header.
      *
      * @param handle handle for service
      * @param data incoming byte array to decode
@@ -199,8 +228,9 @@ typedef struct pubsub_protocol_service {
     celix_status_t (*decodeHeader)(void* handle, void *data, size_t length, pubsub_protocol_message_t *message);
 
     /**
-     * Decodes the given data into message.payload. Note, this decode is for protocol specific tasks, and does not perform
-     * the needed message serialization. See the serialization service for that.
+     * @brief Decodes the given data into message.payload. Note, this decode is for protocol specific tasks, and
+     * does not performthe needed message serialization. See the serialization service for that.
+     *
      * In most cases this will simply set the incoming data and length in message.payload.
      *
      * @param handle handle for service
@@ -212,7 +242,7 @@ typedef struct pubsub_protocol_service {
     celix_status_t (*decodePayload)(void* handle, void *data, size_t length, pubsub_protocol_message_t *message);
 
     /**
-     * Decodes the given data into message.metadata.
+     * @brief Decodes the given data into message.metadata.
      *
      * @param handle handle for service
      * @param data incoming byte array to decode
@@ -223,7 +253,7 @@ typedef struct pubsub_protocol_service {
     celix_status_t (*decodeMetadata)(void* handle, void *data, size_t length, pubsub_protocol_message_t *message);
 
     /**
-     * Decodes the given data into message.header.
+     * @brief Decodes the given data into message.header.
      *
      * @param handle handle for service
      * @param data incoming byte array to decode
@@ -234,4 +264,7 @@ typedef struct pubsub_protocol_service {
     celix_status_t (*decodeFooter)(void* handle, void *data, size_t length, pubsub_protocol_message_t *message);
 } pubsub_protocol_service_t;
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* PUBSUB_PROTOCOL_SERVICE_H_ */

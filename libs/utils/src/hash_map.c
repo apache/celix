@@ -24,7 +24,7 @@
  *  \copyright  Apache License, Version 2.0
  */
 
-#include "celixbool.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

@@ -25,6 +25,7 @@
 #include "celix_log_level.h"
 #include "celix_errno.h"
 #include "framework_exports.h"
+#include <stdarg.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,15 +50,35 @@ typedef struct celix_framework_logger celix_framework_logger_t; //opaque
 celix_framework_logger_t* celix_frameworkLogger_create(celix_log_level_e activeLogLevel);
 void celix_frameworkLogger_destroy(celix_framework_logger_t* logger);
 void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs));
-celix_framework_logger_t* celix_frameworkLogger_globalLogger(); //TODO do not use global logger, make this deprecated __attribute__((deprecated));
+celix_framework_logger_t* celix_frameworkLogger_globalLogger();
 
-void celix_framework_log(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
-              const char *format, ...);
+void celix_framework_log(
+        celix_framework_logger_t* logger,
+        celix_log_level_e level,
+        const char *func,
+        const char *file,
+        int line,
+        const char *format,
+        ...) __attribute__((format(printf,6,7)));
 
-void celix_framework_logCode(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
-                  celix_status_t code, const char *format, ...);
+void celix_framework_logCode(
+        celix_framework_logger_t* logger,
+        celix_log_level_e level,
+        const char *func,
+        const char *file,
+        int line,
+        celix_status_t code,
+        const char *format,
+        ...) __attribute__((format(printf,7,8)));
 
-void celix_framework_vlog(celix_framework_logger_t* logger, celix_log_level_e level, const char* file, const char* function, int line, const char* format, va_list args);
+void celix_framework_vlog(
+        celix_framework_logger_t* logger,
+        celix_log_level_e level,
+        const char* file,
+        const char* function,
+        int line,
+        const char* format,
+        va_list args) __attribute__((format(printf,6,0)));
 
 #ifdef __cplusplus
 }

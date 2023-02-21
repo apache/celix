@@ -31,6 +31,7 @@ public:
 
 TEST_F(CxxFrameworkFactoryTestSuite, CreateDestroy) {
     auto fw = celix::createFramework();
+    EXPECT_TRUE(fw->getFrameworkBundleContext()->getBundle().isSystemBundle());
 }
 
 TEST_F(CxxFrameworkFactoryTestSuite, WaitForStop) {

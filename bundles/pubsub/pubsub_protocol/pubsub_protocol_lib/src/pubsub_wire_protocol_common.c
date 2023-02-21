@@ -21,52 +21,114 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include <ctype.h>
 #include "celix_byteswap.h"
+#include "celix_utils.h"
 
-static celix_status_t pubsubProtocol_createNetstring(const char* string, char** netstringOut, int *netstringOutLength, int *netstringMemoryOutLength) {
-    celix_status_t status = CELIX_SUCCESS;
+#define PUBSUB_METADATA_INITIAL_BUFFER_SIZE 1024
+#define PUBSUB_METADATA_MAX_BUFFER_SIZE (1024 * 1024 * 1024) //max 1gb
+#define PUBSUB_METADATA_BUFFER_INCREASE_FACTOR 2.0
 
-    size_t str_len = strlen(string);
-    if (str_len == 0) {
-        // 0:,
-        if(*netstringOut == NULL) {
-            *netstringMemoryOutLength = 1024;
-            *netstringOut = calloc(1, 1024);
-            *netstringOutLength = 3;
-        }
-        if (*netstringOut == NULL) {
-            status = CELIX_ENOMEM;
-        } else {
-            *netstringOut[0] = '0';
-            *netstringOut[1] = ':';
-            *netstringOut[2] = ',';
-            *netstringOut[3] = '\0';
-        }
-    } else {
-        size_t numlen = ceil(log10(str_len + 1));
-        if(*netstringOut == NULL) {
-            *netstringMemoryOutLength = 1024;
-            *netstringOut = calloc(1, *netstringMemoryOutLength);
-            if (*netstringOut == NULL) {
-                return CELIX_ENOMEM;
-            }
-        } else if (*netstringMemoryOutLength < numlen + str_len + 2) {
-            free(*netstringOut);
-            while(*netstringMemoryOutLength < numlen + str_len + 2) {
-                *netstringMemoryOutLength *= 2;
-            }
-            *netstringOut = calloc(1, *netstringMemoryOutLength);
-            if (*netstringOut == NULL) {
-                return CELIX_ENOMEM;
-            }
-        }
-        *netstringOutLength = numlen + str_len + 2;
-        sprintf(*netstringOut, "%zu:%s,", str_len, string);
+/**
+ * @brief Add - as netstring formatted - str to the provided buffer.
+ *
+ * The provided offset will be updated to point to the next unused byte for the provided buffer.
+ *
+ * @return CELIX_FILE_IO_EXCEPTION if the provided buffer is not big enough.
+ */
+static celix_status_t pubsubProtocol_addNetstringEntryToBuffer(char* buffer, size_t bufferSize, size_t* offsetInOut, const char* str) {
+    size_t offset = *offsetInOut;
+
+    size_t strLen = strnlen(str, CELIX_UTILS_MAX_STRLEN);
+    if (strLen == CELIX_UTILS_MAX_STRLEN) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    return status;
+    char strLenString[32]; //note the str needed to print the strLen of str.
+    int written = snprintf(strLenString, sizeof(strLenString), "%zu", strLen);
+    if (written >= sizeof(strLenString) || written < 0) {
+        return CELIX_ILLEGAL_ARGUMENT; //str too large to capture in 31 characters.
+    }
+    size_t strLenStringLen = written;
+
+    if (strLen == 0) {
+        if ((bufferSize - offset) < 3) {
+            return CELIX_FILE_IO_EXCEPTION;
+        } else {
+            memcpy(buffer + offset, "0:,", 3);
+            offset += 3;
+        }
+    } else {
+        size_t sizeNeeded = strLenStringLen + 1 /*:*/ + strLen + 1 /*,*/;      //e.g "5:hello,"
+        if (sizeNeeded > bufferSize - offset) {
+            return CELIX_FILE_IO_EXCEPTION;
+        }
+        memcpy(buffer + offset, strLenString, strLenStringLen);                //e.g "5"
+        offset += strLenStringLen;
+        buffer[offset++] = ':';
+        memcpy(buffer + offset, str, strLen);                                  //e.g. "hello"
+        offset += strLen;
+        buffer[offset++] = ',';
+    }
+
+    *offsetInOut = offset;
+    return CELIX_SUCCESS;
+}
+
+celix_status_t pubsubProtocol_encodeMetadata(pubsub_protocol_message_t* message, char** bufferInOut, size_t* bufferLengthInOut, size_t* bufferContentLengthOut) {
+    int metadataSize = message->metadata.metadata == NULL ? 0 : celix_properties_size(message->metadata.metadata);
+    bool reallocBuffer = false;
+    bool encoded = false;
+
+    if (*bufferInOut == NULL || *bufferLengthInOut < 4 /*note buffer needs to fit int for nr of metadata entries*/) {
+        reallocBuffer = true;
+    }
+
+    size_t offset = 4; //note starting at index 4, to keep the first 4 bytes free for the nr metadata elements entry
+    while (!encoded) {
+        if (reallocBuffer) {
+            size_t newLength = *bufferInOut == NULL ?
+                    PUBSUB_METADATA_INITIAL_BUFFER_SIZE :
+                    (size_t)((double)*bufferLengthInOut * PUBSUB_METADATA_BUFFER_INCREASE_FACTOR);
+            if (newLength > PUBSUB_METADATA_MAX_BUFFER_SIZE) {
+                //max buffer size reached
+                return CELIX_ILLEGAL_ARGUMENT;
+            }
+            char* newBuffer = realloc(*bufferInOut, newLength);
+            if (newBuffer == NULL) {
+                return CELIX_ENOMEM;
+            }
+            *bufferInOut = newBuffer;
+            *bufferLengthInOut = newLength;
+        }
+        const char* key;
+        if (metadataSize == 0) {
+            encoded = true;
+            continue;
+        }
+        celix_status_t status = CELIX_SUCCESS;
+        CELIX_PROPERTIES_FOR_EACH(message->metadata.metadata, key) {
+            const char *val = celix_properties_get(message->metadata.metadata, key, "");
+            if (status == CELIX_SUCCESS) {
+                status = pubsubProtocol_addNetstringEntryToBuffer(*bufferInOut, *bufferLengthInOut, &offset, key);
+            }
+            if (status == CELIX_SUCCESS) {
+                status = pubsubProtocol_addNetstringEntryToBuffer(*bufferInOut, *bufferLengthInOut, &offset, val);
+            }
+        }
+        if (status == CELIX_FILE_IO_EXCEPTION) {
+            reallocBuffer = true;
+            continue;
+        } else if (status != CELIX_SUCCESS) {
+            return status;
+        }
+        encoded =true;
+    }
+
+    //write nr of meta elements at the beginning of the pubsub protocol metadata entry
+    pubsubProtocol_writeInt((unsigned char *)*bufferInOut, 0, message->header.convertEndianess, metadataSize);
+    *bufferContentLengthOut = offset;
+    return CELIX_SUCCESS;
 }
 
 /* Reads a netstring from a `buffer` of length `buffer_length`. Writes
@@ -190,76 +252,6 @@ celix_status_t pubsubProtocol_encodePayload(pubsub_protocol_message_t *message, 
     return CELIX_SUCCESS;
 }
 
-celix_status_t pubsubProtocol_encodeMetadata(pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    size_t lineMemoryLength = *outBuffer == NULL ? 1024 : *outLength;
-    unsigned char *line = *outBuffer == NULL ? calloc(1, lineMemoryLength) : *outBuffer;
-    size_t idx = 4;
-    size_t len = 0;
-
-    if (message->metadata.metadata != NULL && celix_properties_size(message->metadata.metadata) > 0) {
-        const char *key;
-        char *keyNetString = NULL;
-        int netStringMemoryLength = 0;
-
-        CELIX_PROPERTIES_FOR_EACH(message->metadata.metadata, key) {
-            const char *val = celix_properties_get(message->metadata.metadata, key, "!Error!");
-
-            //refactoring these two copies to a function leads to a slow down of about 2x
-            int strlenKeyNetString = 0;
-            status = pubsubProtocol_createNetstring(key, &keyNetString, &strlenKeyNetString, &netStringMemoryLength);
-            if (status != CELIX_SUCCESS) {
-                break;
-            }
-
-            len += strlenKeyNetString;
-            if(lineMemoryLength < len + 1) {
-                lineMemoryLength *= 2;
-                unsigned char *tmp = realloc(line, lineMemoryLength);
-                if (!tmp) {
-                    free(line);
-                    status = CELIX_ENOMEM;
-                    break;
-                }
-                line = tmp;
-            }
-            memcpy(line + idx, keyNetString, strlenKeyNetString);
-            idx += strlenKeyNetString;
-
-            status = pubsubProtocol_createNetstring(val, &keyNetString, &strlenKeyNetString, &netStringMemoryLength);
-            if (status != CELIX_SUCCESS) {
-                break;
-            }
-
-            len += strlenKeyNetString;
-            if(lineMemoryLength < len + 1) {
-                while(lineMemoryLength < len + 1) {
-                    lineMemoryLength *= 2;
-                }
-                unsigned char *tmp = realloc(line, lineMemoryLength);
-                if (!tmp) {
-                    free(line);
-                    status = CELIX_ENOMEM;
-                    break;
-                }
-                line = tmp;
-            }
-            memcpy(line + idx, keyNetString, strlenKeyNetString);
-            idx += strlenKeyNetString;
-        }
-
-        free(keyNetString);
-    }
-    int size = celix_properties_size(message->metadata.metadata);
-    pubsubProtocol_writeInt((unsigned char *) line, 0, true, size);
-
-    *outBuffer = line;
-    *outLength = idx;
-
-    return status;
-}
-
 celix_status_t pubsubProtocol_decodePayload(void *data, size_t length, pubsub_protocol_message_t *message){
     message->payload.payload = data;
     message->payload.length = length;
@@ -269,37 +261,58 @@ celix_status_t pubsubProtocol_decodePayload(void *data, size_t length, pubsub_pr
 
 celix_status_t pubsubProtocol_decodeMetadata(void *data, size_t length, pubsub_protocol_message_t *message) {
     celix_status_t status = CELIX_SUCCESS;
-
+    message->metadata.metadata = NULL;
+    if (length < sizeof(uint32_t)) {
+        return CELIX_INVALID_SYNTAX;
+    }
     uint32_t nOfElements;
-    size_t idx = pubsubProtocol_readInt(data, 0, true, &nOfElements);
+    size_t idx = pubsubProtocol_readInt(data, 0, message->header.convertEndianess, &nOfElements);
+    if (nOfElements  == 0) {
+        return CELIX_SUCCESS;
+    }
     unsigned char *netstring = data + idx;
-    int netstringLen = length - idx;
+    size_t netstringLen = length - idx;
 
     message->metadata.metadata = celix_properties_create();
-    while (idx < length) {
-        size_t outlen;
-        status = pubsubProtocol_parseNetstring(netstring, netstringLen, &netstring, &outlen);
-        if (status != CELIX_SUCCESS) {
-            break;
-        }
-        char *key = calloc(outlen + 1, sizeof(char));
-        memcpy(key, netstring, outlen);
-        key[outlen] = '\0';
-        netstring += outlen + 1;
-        idx += outlen + 3;
-
-        status = pubsubProtocol_parseNetstring(netstring, netstringLen, &netstring, &outlen);
-        if (status != CELIX_SUCCESS) {
-            break;
-        }
-        char *value = calloc(outlen + 1, sizeof(char));
-        memcpy(value, netstring, outlen);
-        value[outlen] = '\0';
-        netstring += outlen + 1;
-        idx += outlen + 3;
-
-        celix_properties_setWithoutCopy(message->metadata.metadata, key, value);
+    if (message->metadata.metadata == NULL) {
+        return CELIX_ENOMEM;
     }
-
+    for (; nOfElements > 0 && netstringLen > 0; nOfElements--) {
+        int i;
+        char *strs[2] = {NULL, NULL};
+        for (i = 0; i < 2; ++i) {
+            unsigned char *outstring = NULL;
+            size_t outlen;
+            status = pubsubProtocol_parseNetstring(netstring, netstringLen, &outstring, &outlen);
+            if (status != CELIX_SUCCESS) {
+                status = CELIX_INVALID_SYNTAX;
+                break;
+            }
+            strs[i] = calloc(outlen + 1, sizeof(char));
+            if (strs[i] == NULL) {
+                status = CELIX_ENOMEM;
+                break;
+            }
+            memcpy(strs[i], outstring, outlen);
+            strs[i][outlen] = '\0';
+            netstringLen -= (outstring - netstring + outlen + 1);
+            netstring = outstring + (outlen + 1);
+        }
+        if (i == 2) {
+            // if metadata has duplicate keys, the last one takes effect
+            celix_properties_unset(message->metadata.metadata, strs[0]);
+            celix_properties_setWithoutCopy(message->metadata.metadata, strs[0], strs[1]);
+        } else {
+            for (int j = 0; j < i; ++j) {
+                free(strs[j]);
+            }
+            break;
+        }
+    }
+    if (nOfElements > 0) {
+        celix_properties_destroy(message->metadata.metadata);
+        message->metadata.metadata = NULL;
+        status = (status != CELIX_SUCCESS) ? status : CELIX_INVALID_SYNTAX;
+    }
     return status;
 }

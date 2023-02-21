@@ -51,11 +51,10 @@ add_executable(test_pubsub_utils
 		src/PubSubSerializationProviderTestSuite.cc
 		src/PubSubMatchingTestSuite.cpp
 )
-target_link_libraries(test_pubsub_utils PRIVATE Celix::framework Celix::pubsub_utils GTest::gtest GTest::gtest_main)
-target_compile_options(test_pubsub_utils PRIVATE -std=c++14) #Note test code is allowed to be C++14
+target_link_libraries(test_pubsub_utils PRIVATE Celix::framework Celix::pubsub_utils GTest::gtest GTest::gtest_main Celix::pubsub_spi)
+celix_deprecated_utils_headers(test_pubsub_utils)
 add_test(NAME test_pubsub_utils COMMAND test_pubsub_utils)
 setup_target_for_coverage(test_pubsub_utils SCAN_DIR ..)
-
-add_dependencies(test_pubsub_utils pubsub_serialization_matching_descriptors pubsub_serialization_provider_descriptors_bundle)
+add_celix_bundle_dependencies(test_pubsub_utils pubsub_serialization_matching_descriptors pubsub_serialization_provider_descriptors)
 target_compile_definitions(test_pubsub_utils PRIVATE -DDESCRIPTOR_BUNDLE=\"$<TARGET_PROPERTY:pubsub_serialization_provider_descriptors,BUNDLE_FILE>\")
 target_compile_definitions(test_pubsub_utils PRIVATE -DMATCHING_BUNDLE=\"$<TARGET_PROPERTY:pubsub_serialization_matching_descriptors,BUNDLE_FILE>\")

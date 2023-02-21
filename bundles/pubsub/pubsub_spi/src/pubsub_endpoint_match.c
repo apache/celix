@@ -33,17 +33,17 @@
 
 static double getPSAScore(const char *requested_admin, const char *request_qos, const char *adminType, double sampleScore, double controlScore, double defaultScore) {
     double score;
-    if (requested_admin != NULL && strncmp(requested_admin, adminType, strlen(adminType)) == 0) {
+    if (requested_admin != NULL && strncmp(requested_admin, adminType, strlen(adminType) + 1) == 0) {
         /* We got precise specification on the pubsub_admin we want */
         //Full match
         score = PUBSUB_ADMIN_FULL_MATCH_SCORE;
     } else if (requested_admin != NULL) {
         //admin type requested, but no match -> do not select this psa
         score = PUBSUB_ADMIN_NO_MATCH_SCORE;
-    } else if (request_qos != NULL && strncmp(request_qos, PUBSUB_UTILS_QOS_TYPE_SAMPLE, strlen(PUBSUB_UTILS_QOS_TYPE_SAMPLE)) == 0) {
+    } else if (request_qos != NULL && strncmp(request_qos, PUBSUB_UTILS_QOS_TYPE_SAMPLE, strlen(PUBSUB_UTILS_QOS_TYPE_SAMPLE) + 1) == 0) {
         //qos match
         score = sampleScore;
-    } else if (request_qos != NULL && strncmp(request_qos, PUBSUB_UTILS_QOS_TYPE_CONTROL, strlen(PUBSUB_UTILS_QOS_TYPE_CONTROL)) == 0) {
+    } else if (request_qos != NULL && strncmp(request_qos, PUBSUB_UTILS_QOS_TYPE_CONTROL, strlen(PUBSUB_UTILS_QOS_TYPE_CONTROL) + 1) == 0) {
         //qos match
         score = controlScore;
     } else if (request_qos != NULL) {
@@ -273,7 +273,7 @@ bool pubsubEndpoint_match(
     bool psaMatch = false;
     const char *configured_admin = celix_properties_get(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, NULL);
     if (configured_admin != NULL) {
-        psaMatch = strncmp(configured_admin, adminType, strlen(adminType)) == 0;
+        psaMatch = strncmp(configured_admin, adminType, strlen(adminType) + 1) == 0;
     }
 
     bool serMatch = false;

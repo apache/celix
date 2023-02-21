@@ -35,7 +35,7 @@
 #include "framework_listener.h"
 #include "service_registration.h"
 #include "bundle_context.h"
-#include "bundle_cache.h"
+#include "celix_bundle_cache.h"
 #include "celix_log.h"
 
 #include "celix_threads.h"
@@ -131,7 +131,7 @@ struct celix_framework {
 
     long nextBundleId;
     celix_service_registry_t *registry;
-    bundle_cache_pt cache;
+    celix_bundle_cache_t* cache;
 
     struct {
         celix_thread_mutex_t mutex;
@@ -162,6 +162,13 @@ struct celix_framework {
         int eventQueueSize;
         int eventQueueFirstEntry;
         celix_array_list_t *dynamicEventQueue; //entry = celix_framework_event_t*. Used when the eventQueue is full
+        struct {
+            int nbFramework; // number of pending framework events
+            int nbBundle; // number of pending bundle events
+            int nbRegister; // number of pending registration
+            int nbUnregister; // number of pending async de-registration
+            int nbEvent; // number of pending generic events
+        } stats;
     } dispatcher;
 
     celix_framework_logger_t* logger;
@@ -187,9 +194,6 @@ FRAMEWORK_EXPORT celix_status_t fw_registerServiceFactory(framework_pt framework
 FRAMEWORK_EXPORT void fw_unregisterService(service_registration_pt registration);
 
 FRAMEWORK_EXPORT celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *references, bundle_pt bundle, const char* serviceName, const char* filter);
-FRAMEWORK_EXPORT celix_status_t framework_ungetServiceReference(framework_pt framework, bundle_pt bundle, service_reference_pt reference);
-FRAMEWORK_EXPORT celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, const void** service);
-FRAMEWORK_EXPORT celix_status_t framework_ungetService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, bool *result);
 FRAMEWORK_EXPORT celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, array_list_pt *services);
 FRAMEWORK_EXPORT celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundle, array_list_pt *services);
 
@@ -301,23 +305,39 @@ void celix_framework_bundleEntry_decreaseUseCount(celix_framework_bundle_entry_t
 celix_framework_bundle_entry_t* celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(celix_framework_t *fw, long bndId);
 
 /**
- * Start a bundle and ensure that this is not done on the Celix event thread.
- * Will spawn a thread if needed.
+ * @brief Check if a bundle with the provided bundle symbolic name is already installed.
  */
-celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+bool celix_framework_isBundleAlreadyInstalled(celix_framework_t* fw, const char* bundleSymbolicName);
+
+ /**
+  * Start a bundle and ensure that this is not done on the Celix event thread.
+  * Will spawn a thread if needed.
+  * @param fw The Celix framework
+  * @param bndEntry A bnd entry
+  * @param forceSpawnThread If the true, the start bundle will always be done on a spawn thread
+  * @return CELIX_SUCCESS of the call went alright.
+  */
+celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread);
 
 /**
  * Stop a bundle and ensure that this is not done on the Celix event thread.
  * Will spawn a thread if needed.
+ * @param fw The Celix framework
+ * @param bndEntry A bnd entry
+ * @param forceSpawnThread If the true, the start bundle will always be done on a spawn thread
+ * @return CELIX_SUCCESS of the call went alright.
  */
-celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread);
 
 /**
  * Uninstall (and if needed stop) a bundle and ensure that this is not done on the Celix event thread.
  * Will spawn a thread if needed.
+ * @param fw The Celix framework
+ * @param bndEntry A bnd entry
+ * @param forceSpawnThread If the true, the start bundle will always be done on a spawn thread
+ * @return CELIX_SUCCESS of the call went alright.
  */
-celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
-
+celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread);
 
 /**
  * cleanup finished bundle lifecyles threads.
@@ -337,7 +357,7 @@ celix_status_t celix_framework_startBundleEntry(celix_framework_t* fw, celix_fra
 celix_status_t celix_framework_stopBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
 
 /**
- * Uinstall a bundle. Cannot be called on the Celix event thread.
+ * Uninstall a bundle. Cannot be called on the Celix event thread.
  */
 celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
 

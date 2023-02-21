@@ -61,7 +61,7 @@ PROJECT_NUMBER         = latest
 # for a project that appears at the top of each page and should give viewer a
 # quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = "An implementation of the OSGi specification adapted to C and C++"
+PROJECT_BRIEF          = "Apache Celix is a framework for C, C++14 and C++17 to develop dynamic modular software applications using component and in-process service-oriented programming."
 
 # With the PROJECT_LOGO tag one can specify a logo or an icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55
@@ -2059,7 +2059,7 @@ INCLUDE_FILE_PATTERNS  =
 # recursively expanded use the := operator instead of the = operator.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-PREDEFINED             = 
+PREDEFINED             = __cplusplus=201703L
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The

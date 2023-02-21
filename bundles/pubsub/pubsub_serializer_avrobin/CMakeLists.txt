@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(Jansson REQUIRED)
+find_package(jansson REQUIRED)
 
 add_celix_bundle(celix_pubsub_serializer_avrobin
         BUNDLE_SYMBOLICNAME "apache_celix_pubsub_serializer_avrobin"
@@ -33,10 +33,11 @@ target_include_directories(celix_pubsub_serializer_avrobin PRIVATE
 set_target_properties(celix_pubsub_serializer_avrobin PROPERTIES INSTALL_RPATH "$ORIGIN")
 target_link_libraries(celix_pubsub_serializer_avrobin PRIVATE Celix::framework Celix::dfi ${JANSSON_LIBRARIES} Celix::log_helper)
 target_link_libraries(celix_pubsub_serializer_avrobin PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
+celix_deprecated_utils_headers(celix_pubsub_serializer_avrobin)
 
 install_celix_bundle(celix_pubsub_serializer_avrobin EXPORT celix COMPONENT pubsub)
 
-add_library(Celix::pubsub_serializer_avrobin ALIAS celix_pubsub_serializer_avrobin)
+add_library(Celix::celix_pubsub_serializer_avrobin ALIAS celix_pubsub_serializer_avrobin)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)

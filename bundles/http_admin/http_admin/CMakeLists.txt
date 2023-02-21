@@ -17,21 +17,23 @@
 
 add_celix_bundle(http_admin
     SOURCES
-        src/http_admin
-        src/websocket_admin
-        src/activator
-        src/service_tree
+        src/http_admin.c
+        src/websocket_admin.c
+        src/activator.c
+        src/service_tree.c
     VERSION 0.0.1
     SYMBOLIC_NAME "apache_celix_http_admin"
     GROUP "Celix/HTTP_admin"
     NAME "Apache Celix HTTP Admin"
+    FILENAME celix_http_admin
 )
 target_include_directories(http_admin PRIVATE src)
 
 target_link_libraries(http_admin PUBLIC Celix::http_admin_api)
-celix_bundle_private_libs(http_admin civetweb_shared)
 file(MAKE_DIRECTORY resources)
 celix_bundle_add_dir(http_admin resources/ DESTINATION root/)
+
+celix_deprecated_utils_headers(http_admin)
 
 
 install_celix_bundle(http_admin EXPORT celix COMPONENT http_admin)

@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <phase1_cmp.h>
 
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 
 #include "phase1.h"
 
@@ -43,7 +43,9 @@ static celix_status_t activator_start(struct phase1_activator_struct *act, celix
 
         celix_dm_component_t *cmp= celix_dmComponent_create(ctx, "PHASE1_PROCESSING_COMPONENT");
         celix_dmComponent_setImplementation(cmp, act->phase1Cmp);
-        CELIX_DMCOMPONENT_SETCALLBACKS(cmp, phase1_cmp_t *, phase1_init, phase1_start, phase1_stop, phase1_deinit);
+        CELIX_DM_COMPONENT_SET_CALLBACKS(cmp, phase1_cmp_t, phase1_init, phase1_start, phase1_stop, phase1_deinit);
+        CELIX_DM_COMPONENT_SET_IMPLEMENTATION_DESTROY_FUNCTION(cmp, phase1_cmp_t, phase1_destroy);
+
         phase1_setComp(act->phase1Cmp, cmp);
         celix_dmComponent_addInterface(cmp, PHASE1_NAME, PHASE1_VERSION, &act->phase1Serv, props);
 
@@ -57,12 +59,6 @@ static celix_status_t activator_start(struct phase1_activator_struct *act, celix
 
 static celix_status_t activator_stop(struct phase1_activator_struct *act, celix_bundle_context_t *ctx) {
     printf("PHASE1: stop\n");
-    celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(ctx);
-    celix_dependencyManager_removeAllComponents(mng);
-    if (act->phase1Cmp != NULL) {
-        phase1_destroy(act->phase1Cmp);
-    }
-
     return CELIX_SUCCESS;
 }
 

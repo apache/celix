@@ -20,7 +20,7 @@
 #ifndef SERVICE_REGISTRATION_H_
 #define SERVICE_REGISTRATION_H_
 
-#include "celixbool.h"
+#include <stdbool.h>
 
 typedef struct serviceRegistration service_registration_t;
 typedef struct serviceRegistration *service_registration_pt; // TODO: Deprecate
@@ -38,9 +38,6 @@ FRAMEWORK_EXPORT celix_status_t serviceRegistration_unregister(service_registrat
 
 FRAMEWORK_EXPORT celix_status_t
 serviceRegistration_getProperties(service_registration_t *registration, celix_properties_t **properties);
-
-FRAMEWORK_EXPORT celix_status_t
-serviceRegistration_setProperties(service_registration_t *registration, celix_properties_t *properties);
 
 FRAMEWORK_EXPORT celix_status_t
 serviceRegistration_getServiceName(service_registration_t *registration, const char **serviceName);

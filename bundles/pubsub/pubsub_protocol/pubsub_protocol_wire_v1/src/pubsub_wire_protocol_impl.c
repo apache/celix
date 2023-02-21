@@ -22,13 +22,11 @@
 #include <math.h>
 #include <string.h>
 
-#include "utils.h"
 #include "celix_properties.h"
 
 #include "pubsub_wire_protocol_impl.h"
 #include "pubsub_wire_protocol_common.h"
 
-#define BYTESWAP_SYNC true
 
 struct pubsub_protocol_wire_v1 {
 };
@@ -88,7 +86,8 @@ celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message
     size_t headerSize = 0;
     pubsubProtocol_getHeaderSize(handle, &headerSize);
 
-    if (*outBuffer == NULL) {
+    if (*outBuffer == NULL || headerSize != *outLength) {
+        free(*outBuffer);
         *outBuffer = calloc(1, headerSize);
         *outLength = headerSize;
     }
@@ -96,7 +95,7 @@ celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message
         status = CELIX_ENOMEM;
     } else {
         int idx = 0;
-        idx = pubsubProtocol_writeInt(*outBuffer, idx,  BYTESWAP_SYNC, PROTOCOL_WIRE_V1_SYNC_HEADER);
+        idx = pubsubProtocol_writeInt(*outBuffer, idx,  true, PROTOCOL_WIRE_V1_SYNC_HEADER);
         idx = pubsubProtocol_writeInt(*outBuffer, idx,  true, PROTOCOL_WIRE_V1_ENVELOPE_VERSION);
         idx = pubsubProtocol_writeInt(*outBuffer, idx,  true, message->header.msgId);
         idx = pubsubProtocol_writeShort(*outBuffer, idx, true, message->header.msgMajorVersion);
@@ -111,23 +110,27 @@ celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message
 }
 
 celix_status_t pubsubProtocol_v1_encodePayload(void *handle __attribute__((unused)), pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
+    message->header.convertEndianess = true;
     return pubsubProtocol_encodePayload(message, outBuffer, outLength);
 }
 
-celix_status_t pubsubProtocol_v1_encodeMetadata(void *handle __attribute__((unused)), pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
-    return pubsubProtocol_encodeMetadata(message, outBuffer, outLength);
+celix_status_t pubsubProtocol_v1_encodeMetadata(void *handle __attribute__((unused)), pubsub_protocol_message_t *message, void **bufferInOut, size_t *bufferLengthInOut, size_t *bufferContentLengthOut) {
+    message->header.convertEndianess = true;
+    return pubsubProtocol_encodeMetadata(message, (char**)bufferInOut, bufferLengthInOut, bufferContentLengthOut);
 }
 
 celix_status_t pubsubProtocol_encodeFooter(void *handle __attribute__((unused)), pubsub_protocol_message_t *message __attribute__((unused)), void **outBuffer, size_t *outLength) {
-    *outBuffer = NULL;
+    message->header.convertEndianess = true;
     return pubsubProtocol_getFooterSize(handle,  outLength);
 }
 
 celix_status_t pubsubProtocol_v1_decodePayload(void* handle __attribute__((unused)), void *data, size_t length, pubsub_protocol_message_t *message){
+    message->header.convertEndianess = true;
     return pubsubProtocol_decodePayload(data, length, message);
 }
 
 celix_status_t pubsubProtocol_v1_decodeMetadata(void* handle __attribute__((unused)), void *data, size_t length, pubsub_protocol_message_t *message) {
+    message->header.convertEndianess = true;
     return pubsubProtocol_decodeMetadata(data, length, message);
 }
 
@@ -144,7 +147,7 @@ celix_status_t pubsubProtocol_decodeHeader(void *handle, void *data, size_t leng
     pubsubProtocol_getHeaderSize(handle, &headerSize);
     if (length == headerSize) {
         unsigned int sync;
-        idx = pubsubProtocol_readInt(data, idx,  BYTESWAP_SYNC, &sync);
+        idx = pubsubProtocol_readInt(data, idx,  true, &sync);
         if (sync != PROTOCOL_WIRE_V1_SYNC_HEADER) {
             status = CELIX_ILLEGAL_ARGUMENT;
         } else {
@@ -158,6 +161,7 @@ celix_status_t pubsubProtocol_decodeHeader(void *handle, void *data, size_t leng
                 idx = pubsubProtocol_readShort(data, idx, true, &message->header.msgMinorVersion);
                 idx = pubsubProtocol_readInt(data, idx,  true, &message->header.payloadSize);
                 pubsubProtocol_readInt(data, idx,  true, &message->header.metadataSize);
+                message->header.convertEndianess = true;
                 // Set message segmentation parameters to defaults
                 message->header.seqNr           = 0;
                 message->header.payloadPartSize = message->header.payloadSize;

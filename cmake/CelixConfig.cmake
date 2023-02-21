@@ -51,7 +51,9 @@ set(CELIX_FRAMEWORK_LIBRARY Celix::framework)
 set(CELIX_UTILS_LIBRARY Celix::utils)
 set(CELIX_DFI_LIBRARY Celix::dfi)
 
-set(CELIX_LAUNCHER Celix::launcher)
+if (TARGET Celix::launcher)
+  set(CELIX_LAUNCHER Celix::launcher)
+endif ()
 
 if (TARGET Celix::etcdlib)
   set(CELIX_ETCD_INCLUDE_DIRS $<TARGET_PROPERTY:Celix::etcdlib,INTERFACE_INCLUDE_DIRECTORIES>)
@@ -73,9 +75,54 @@ set(CELIX_SHELL_BUNDLE ${CELIX_BUNDLES_DIR}/shell.zip)
 set(CELIX_SHELL_TUI_BUNDLE ${CELIX_BUNDLES_DIR}/shell_tui.zip)
 
 include(CMakeFindDependencyMacro)
-find_dependency(ZLIB)
-find_dependency(UUID)
-find_dependency(OpenSSL)
-find_dependency(CURL)
-find_dependency(FFI)
-find_dependency(Jansson)
+
+find_dependency(ZLIB) #Needed by framework
+find_dependency(libuuid) #Needed by framework
+find_dependency(CURL) #Needed by framework (used for curl initialization), etcdlib
+find_dependency(libzip) #Needed by utils
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_dependency(Threads)
+
+if (NOT TARGET ZLIB::ZLIB)
+  #Note more recent zlib will create ZLIB::ZLIB target
+  message("Note ZLIB::ZLIB target not created by find_package(ZLIB). Creating ZLIB::ZLIB Target.")
+  add_library(ZLIB::ZLIB SHARED IMPORTED)
+  set_target_properties(ZLIB::ZLIB PROPERTIES
+          IMPORTED_LOCATION "${ZLIB_LIBRARIES}"
+          INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIRS}"
+          )
+endif ()
+
+if (NOT TARGET CURL::libcurl)
+  #Note more recent curl will create CURL::libcurl target
+  message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
+  add_library(CURL::libcurl SHARED IMPORTED)
+  set_target_properties(CURL::libcurl PROPERTIES
+          IMPORTED_LOCATION "${CURL_LIBRARIES}"
+          INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
+          )
+endif ()
+
+if (TARGET Celix::dfi)
+  find_dependency(libffi)
+  find_dependency(jansson)
+endif ()
+if (TARGET Celix::etcdlib)
+  find_dependency(jansson)
+endif ()
+if (TARGET Celix::RsaConfiguredDiscovery)
+  find_dependency(RapidJSON)
+endif ()
+if (TARGET Celix::rsa_discovery_common OR TARGET Celix::bonjour_shell)
+  find_dependency(LibXml2)
+endif ()
+if (TARGET  Celix::celix_pubsub_admin_zmq OR TARGET Celix::celix_pubsub_admin_zmq_v2)
+  find_dependency(ZeroMQ)
+  find_dependency(czmq)
+endif ()
+if (TARGET Celix::pubsub_admin_nanomsg)
+  find_dependency(NanoMsg)
+endif ()
+if (TARGET Celix::http_admin_api)
+  find_dependency(civetweb)
+endif ()

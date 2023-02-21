@@ -74,6 +74,38 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeHeader_Test) { // NOLINT(cer
     free(headerData);
 }
 
+TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeHeader_TestWithExistingMemory) {
+    pubsub_protocol_wire_v1_t *wireprotocol;
+    pubsubProtocol_create(&wireprotocol);
+
+    pubsub_protocol_message_t message;
+    message.header.msgId = 1;
+    message.header.msgMajorVersion = 0;
+    message.header.msgMinorVersion = 0;
+    message.header.payloadSize = 2;
+    message.header.metadataSize = 3;
+
+    void* headerData = malloc(3);
+    size_t headerLength = 0;
+
+    //calling with too small of a buffer (new buffer with new length should be created).
+    celix_status_t status = pubsubProtocol_encodeHeader(nullptr, &message, &headerData, &headerLength);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(24, headerLength);
+    EXPECT_NE(3, headerLength);
+
+    void* orgHeaderDataPointer = headerData;
+    //calling with matching buffer, buffer will be re-used.
+    status = pubsubProtocol_encodeHeader(nullptr, &message, &headerData, &headerLength);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(24, headerLength);
+    EXPECT_EQ(headerData, orgHeaderDataPointer);
+
+
+    pubsubProtocol_destroy(wireprotocol);
+    free(headerData);
+}
+
 TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeHeader_Test) { // NOLINT(cert-err58-cpp)
     pubsub_protocol_wire_v1_t *wireprotocol;
     pubsubProtocol_create(&wireprotocol);
@@ -167,11 +199,14 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeMetadata_Test) { // NOLINT(c
     pubsub_protocol_message_t message;
 
     message.metadata.metadata = celix_properties_create();
+    message.header.convertEndianess = 1;
     celix_properties_set(message.metadata.metadata, "a", "b");
 
     void *data = nullptr;
+    size_t dataLength = 0;
     size_t length = 0;
-    celix_status_t status = pubsubProtocol_v1_encodeMetadata(nullptr, &message, &data, &length);
+    celix_status_t status = pubsubProtocol_v1_encodeMetadata(nullptr, &message, &data, &dataLength, &length);
+    ASSERT_EQ(status, CELIX_SUCCESS);
 
     unsigned char exp[12];
     uint32_t s = htonl(1);
@@ -181,7 +216,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_EncodeMetadata_Test) { // NOLINT(c
     ASSERT_EQ(status, CELIX_SUCCESS);
     ASSERT_EQ(12, length);
     for (int i = 0; i < 12; i++) {
-        ASSERT_EQ(((unsigned char*) data)[i], exp[i]);
+        ASSERT_EQ(((unsigned char*) data)[i], exp[i]) << "Error at index " << i;
     }
 
     celix_properties_destroy(message.metadata.metadata);
@@ -199,6 +234,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_Test) { // NOLINT(c
     memcpy(exp + 4, "1:a,1:b,", 8);
 
     pubsub_protocol_message_t message;
+    message.header.convertEndianess = true;
     celix_status_t status = pubsubProtocol_v1_decodeMetadata(nullptr, exp, 12, &message);
 
     ASSERT_EQ(status, CELIX_SUCCESS);
@@ -221,6 +257,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_EmptyKey_Test) { //
     memcpy(exp + 4, "0:,1:b,", 7);
 
     pubsub_protocol_message_t message;
+    message.header.convertEndianess = true;
     celix_status_t status = pubsubProtocol_v1_decodeMetadata(nullptr, exp, 11, &message);
 
     ASSERT_EQ(status, CELIX_SUCCESS);
@@ -242,6 +279,7 @@ TEST_F(WireProtocolV1Test, WireProtocolV1Test_DecodeMetadata_SpecialChars_Test) 
     memcpy(exp + 4, "4:a,:l,1:b,", 11);
 
     pubsub_protocol_message_t message;
+    message.header.convertEndianess = true;
     celix_status_t status = pubsubProtocol_v1_decodeMetadata(nullptr, &exp, 15, &message);
 
     ASSERT_EQ(status, CELIX_SUCCESS);

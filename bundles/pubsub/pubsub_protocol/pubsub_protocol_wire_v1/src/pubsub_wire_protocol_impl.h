@@ -42,7 +42,7 @@ celix_status_t pubsubProtocol_isMessageSegmentationSupported(void* handle, bool 
 
 celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
 celix_status_t pubsubProtocol_v1_encodePayload(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
-celix_status_t pubsubProtocol_v1_encodeMetadata(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
+celix_status_t pubsubProtocol_v1_encodeMetadata(void *handle __attribute__((unused)), pubsub_protocol_message_t *message, void **bufferInOut, size_t *bufferLengthInOut, size_t *bufferContentLengthOut);
 celix_status_t pubsubProtocol_encodeFooter(void *handle, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength);
 
 celix_status_t pubsubProtocol_decodeHeader(void* handle, void *data, size_t length, pubsub_protocol_message_t *message);

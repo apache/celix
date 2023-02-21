@@ -40,6 +40,7 @@ struct export_registration {
     struct export_reference exportReference;
     char *servId;
     dyn_interface_type *intf; //owner
+    char filter[32];
 
 
     celix_thread_mutex_t mutex;
@@ -153,7 +154,7 @@ void exportRegistration_waitTillNotUsed(export_registration_t *export) {
     celixThreadMutex_unlock(&export->mutex);
 }
 
-celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, celix_properties_t *metadata, char **responseOut, int *responseLength) {
+celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, celix_properties_t **metadata, char **responseOut, int *responseLength) {
     int status = CELIX_SUCCESS;
 
     char* response = NULL;
@@ -163,11 +164,12 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
     const char *sig;
     if (js_request) {
         if (json_unpack(js_request, "{s:s}", "m", &sig) == 0) {
-            bool cont = remoteInterceptorHandler_invokePreExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, &metadata);
+            bool cont = remoteInterceptorHandler_invokePreExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, metadata);
             if (cont) {
                 celixThreadMutex_lock(&export->mutex);
                 if (export->active && export->service != NULL) {
-                    status = jsonRpc_call(export->intf, export->service, data, &response);
+                    int rc = jsonRpc_call(export->intf, export->service, data, &response);
+                    status = (rc != 0) ? CELIX_BUNDLE_EXCEPTION : CELIX_SUCCESS;
                 } else if (!export->active) {
                     status = CELIX_ILLEGAL_STATE;
                     celix_logHelper_warning(export->helper, "Cannot call an inactive service export");
@@ -177,7 +179,7 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
                 }
                 celixThreadMutex_unlock(&export->mutex);
 
-                remoteInterceptorHandler_invokePostExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, metadata);
+                remoteInterceptorHandler_invokePostExportCall(export->interceptorsHandler, export->exportReference.endpoint->properties, sig, *metadata);
             }
             *responseOut = response;
 
@@ -228,47 +230,52 @@ static celix_status_t exportRegistration_findAndParseInterfaceDescriptor(celix_l
     return CELIX_BUNDLE_EXCEPTION;
 }
 
+static void exportRegistration_destroyCallback(void* data) {
+    export_registration_t* reg = data;
+    if (reg->intf != NULL) {
+        dyn_interface_type *intf = reg->intf;
+        reg->intf = NULL;
+        dynInterface_destroy(intf);
+    }
+
+    if (reg->exportReference.endpoint != NULL) {
+        endpoint_description_t *ep = reg->exportReference.endpoint;
+        reg->exportReference.endpoint = NULL;
+        endpointDescription_destroy(ep);
+    }
+    if (reg->servId != NULL) {
+        free(reg->servId);
+    }
+    remoteInterceptorsHandler_destroy(reg->interceptorsHandler);
+    bundleContext_ungetServiceReference(reg->context, reg->exportReference.reference);
+
+    celixThreadMutex_destroy(&reg->mutex);
+    celixThreadCondition_destroy(&reg->cond);
+    free(reg);
+}
+
 void exportRegistration_destroy(export_registration_t *reg) {
     if (reg != NULL) {
-        if (reg->intf != NULL) {
-            dyn_interface_type *intf = reg->intf;
-            reg->intf = NULL;
-            dynInterface_destroy(intf);
-        }
-
-        if (reg->exportReference.endpoint != NULL) {
-            endpoint_description_t *ep = reg->exportReference.endpoint;
-            reg->exportReference.endpoint = NULL;
-            endpointDescription_destroy(ep);
-        }
         if (reg->trackerId >= 0) {
-            celix_bundleContext_stopTracker(reg->context, reg->trackerId);
+            celix_bundleContext_stopTrackerAsync(reg->context, reg->trackerId, reg, exportRegistration_destroyCallback);
+        } else {
+            exportRegistration_destroyCallback(reg);
         }
-        if (reg->servId != NULL) {
-            free(reg->servId);
-        }
-
-        remoteInterceptorsHandler_destroy(reg->interceptorsHandler);
-
-        celixThreadMutex_destroy(&reg->mutex);
-        celixThreadCondition_destroy(&reg->cond);
-        free(reg);
     }
 }
 
 celix_status_t exportRegistration_start(export_registration_t *reg) {
     celix_status_t status = CELIX_SUCCESS;
 
-    char filter[32];
-    snprintf(filter, 32, "(service.id=%s)", reg->servId);
+    snprintf(reg->filter, 32, "(service.id=%s)", reg->servId);
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    opts.filter.filter = filter;
+    opts.filter.filter = reg->filter;
     opts.filter.serviceName = "*";
     opts.filter.ignoreServiceLanguage = true;
     opts.callbackHandle = reg;
     opts.add = exportRegistration_addServ;
     opts.remove = exportRegistration_removeServ;
-    long newTrkId = celix_bundleContext_trackServicesWithOptions(reg->context, &opts);
+    long newTrkId = celix_bundleContext_trackServicesWithOptionsAsync(reg->context, &opts);
 
     celixThreadMutex_lock(&reg->mutex);
     long prevTrkId = reg->trackerId;
@@ -277,25 +284,9 @@ celix_status_t exportRegistration_start(export_registration_t *reg) {
 
     if (prevTrkId >= 0) {
         celix_logHelper_error(reg->helper, "Error starting export registration. The export registration already had an active service tracker");
-        celix_bundleContext_stopTracker(reg->context, prevTrkId);
+        celix_bundleContext_stopTrackerAsync(reg->context, prevTrkId, NULL, NULL);
     }
 
-    return status;
-}
-
-
-celix_status_t exportRegistration_stop(export_registration_t *reg) {
-    celix_status_t status = CELIX_SUCCESS;
-    if (status == CELIX_SUCCESS) {
-        status = bundleContext_ungetServiceReference(reg->context, reg->exportReference.reference);
-
-        celixThreadMutex_lock(&reg->mutex);
-        long trkId = reg->trackerId;
-        reg->trackerId = -1L;
-        celixThreadMutex_unlock(&reg->mutex);
-        celix_bundleContext_stopTracker(reg->context, trkId);
-
-    }
     return status;
 }
 

@@ -1,21 +1,18 @@
-name: Standalone Celix etcdlib Weekly
+name: Standalone Celix etcdlib
 
 on:
+  push:
+  pull_request:
   schedule:
-    - cron:  '0 0 * * 0'
+    - cron:  '0 0 * * *'
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-18.04]
-        compiler: [gcc]
+    runs-on: ubuntu-22.04
     timeout-minutes: 15
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.3.0
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -26,11 +23,8 @@ jobs:
             libjansson-dev \
             libcurl4-openssl-dev
       - name: Build
-        env:
-          CC: ${{ matrix.compiler }}
-          CXX: ${{ matrix.cxx_compiler }}
         run: |
           mkdir build install
           cd build
           cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=../install ../libs/etcdlib
-          make -j && make install
+          make -j $(nproc) && make install

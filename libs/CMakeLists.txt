@@ -21,6 +21,7 @@ add_subdirectory(utils)
 add_subdirectory(dfi)
 add_subdirectory(etcdlib)
 add_subdirectory(promises)
+add_subdirectory(pushstreams)
 
 add_subdirectory(framework)
 
@@ -29,4 +30,12 @@ add_subdirectory(launcher)
 
 #add_subdirectory(event_admin)# event_admin is unstable
 add_subdirectory(dependency_manager)
-add_subdirectory(dependency_manager_cxx)
+if (CELIX_CXX14)
+    add_subdirectory(dependency_manager_cxx)
+endif ()
+
+# Error Injectors
+if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
+    add_subdirectory(error_injector)
+endif ()
+

@@ -150,7 +150,7 @@ static celix_status_t bundleActivator_createExportedServicesTracker(struct activ
     service_tracker_customizer_t *customizer = NULL;
     status = serviceTrackerCustomizer_create(activator->manager, NULL, topologyManager_addExportedService, NULL, topologyManager_removeExportedService, &customizer);
     if (status == CELIX_SUCCESS) {
-        status = serviceTracker_createWithFilter(activator->context, "(service.exported.interfaces=*)", customizer, tracker);
+        status = serviceTracker_createWithFilter(activator->context, "(&(objectClass=*)(service.exported.interfaces=*))", customizer, tracker);
     }
     return status;
 }
@@ -183,6 +183,8 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
 	celix_logHelper_log(activator->celix_logHelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: endpoint listener scope is %s", scope);
 
 	celix_properties_t *props = celix_properties_create();
+	// topology manager should ingore itself endpoint listener service
+	celix_properties_set(props, "TOPOLOGY_MANAGER", "true");
 	celix_properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
 
 	// We can release the scope, as celix_properties_set makes a copy of the key & value...
@@ -201,11 +203,11 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
     bundleContext_registerService(context, (char *) OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, hookService, NULL, &activator->hook);
 
     if (status == CELIX_SUCCESS) {
-        status = serviceTracker_open(activator->exportedServicesTracker);
+        serviceTracker_open(activator->remoteServiceAdminTracker);
     }
 
     if (status == CELIX_SUCCESS) {
-        serviceTracker_open(activator->remoteServiceAdminTracker);
+        status = serviceTracker_open(activator->exportedServicesTracker);
     }
 
     if (status == CELIX_SUCCESS) {
@@ -234,12 +236,13 @@ celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *con
 	serviceRegistration_unregister(activator->hook);
 	free(activator->hookService);
 
+
+	topologyManager_closeImports(activator->manager);
 	serviceRegistration_unregister(activator->endpointListenerService);
 	free(activator->endpointListener);
 
 	serviceRegistration_unregister(activator->scopeReg);
 
-	topologyManager_closeImports(activator->manager);
 
 	return status;
 }

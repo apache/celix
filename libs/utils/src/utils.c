@@ -43,6 +43,9 @@ int utils_stringEquals(const void* string, const void* toCompare) {
 }
 
 unsigned int celix_utils_stringHash(const char* string) {
+    if (string == NULL) {
+        return 0;
+    }
     unsigned int hc = 5381;
     char ch;
     while((ch = *string++) != '\0'){
@@ -52,7 +55,7 @@ unsigned int celix_utils_stringHash(const char* string) {
 }
 
 bool celix_utils_stringEquals(const char* a, const char* b) {
-    if (a == NULL && b == NULL) {
+    if (a == b) {
         return true;
     } else if (a == NULL || b == NULL) {
         return false;
@@ -79,33 +82,45 @@ char * string_ndup(const char *s, size_t n) {
     return ret;
 }
 
-char * utils_stringTrim(char * string) {
-    char* copy = string;
+static char* celix_utilsTrimInternal(char *string) {
+    if (string == NULL) {
+        return NULL;
+    }
+
+    char* begin = string; //save begin to correctly free in the end.
 
     char *end;
     // Trim leading space
-    while (isspace(*copy)) {
-        copy++;
+    while (isspace(*string)) {
+        string++;
     }
 
     // Trim trailing space
-    end = copy + strlen(copy) - 1;
-    while(end > copy && isspace(*end)) {
+    end = string + strlen(string) - 1;
+    while(end > string && isspace(*end)) {
         *(end) = '\0';
         end--;
     }
 
-    if (copy != string) { 
+    if (string != begin) {
         //beginning whitespaces -> move char in copy to to begin string
         //This to ensure free still works on the same pointer.
-        char* nstring = string;
-        while(*copy != '\0') {
-            *(nstring++) = *(copy++);
+        char* nstring = begin;
+        while(*string != '\0') {
+            *(nstring++) = *(string++);
         }
         (*nstring) = '\0';
     }
 
-    return string;
+    return begin;
+}
+
+char* celix_utils_trim(const char* string) {
+    return celix_utilsTrimInternal(celix_utils_strdup(string));
+}
+
+char* utils_stringTrim(char* string) {
+    return celix_utilsTrimInternal(string);
 }
 
 bool utils_isStringEmptyOrNull(const char * const str) {
@@ -169,13 +184,13 @@ double celix_difftime(const struct timespec *tBegin, const struct timespec *tEnd
     struct timespec diff;
     if ((tEnd->tv_nsec - tBegin->tv_nsec) < 0) {
         diff.tv_sec = tEnd->tv_sec - tBegin->tv_sec - 1;
-        diff.tv_nsec = tEnd->tv_nsec - tBegin->tv_nsec + 1000000000;
+        diff.tv_nsec = tEnd->tv_nsec - tBegin->tv_nsec + CELIX_NS_IN_SEC;
     } else {
         diff.tv_sec = tEnd->tv_sec - tBegin->tv_sec;
         diff.tv_nsec = tEnd->tv_nsec - tBegin->tv_nsec;
     }
 
-    return ((double)diff.tv_sec) + diff.tv_nsec /  1000000000.0;
+    return ((double)diff.tv_sec) + diff.tv_nsec * 1.0 /  CELIX_NS_IN_SEC;
 }
 
 struct timespec celix_gettime(clockid_t clockId) {

@@ -27,7 +27,7 @@ inline DependencyManager::DependencyManager(celix_bundle_context_t *ctx) :
     cDepMan{celix_bundleContext_getDependencyManager(ctx), [](celix_dependency_manager_t*){/*nop*/}} {}
 
 inline DependencyManager::~DependencyManager() {
-    clear();
+    clearAsync();
 }
 
 template<class T>
@@ -216,4 +216,15 @@ inline std::vector<celix::dm::DependencyManagerInfo> DependencyManager::getInfos
     }
     celix_dependencyManager_destroyInfos(cDependencyManager(), cInfos);
     return result;
+}
+
+std::ostream& celix::dm::operator<<(std::ostream &out, const DependencyManager &mng) {
+    char* buf = nullptr;
+    size_t bufSize = 0;
+    FILE* stream = open_memstream(&buf, &bufSize);
+    celix_dependencyManager_printInfo(mng.cDepMan.get(), true, true, stream);
+    fclose(stream);
+    out << buf;
+    free(buf);
+    return out;
 }

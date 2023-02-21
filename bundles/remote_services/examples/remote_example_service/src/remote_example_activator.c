@@ -19,8 +19,7 @@
 
 #include <stdlib.h>
 
-#include <celix_api.h>
-
+#include "celix_bundle_activator.h"
 #include "remote_example.h"
 #include "remote_constants.h"
 #include "remote_example_impl.h"

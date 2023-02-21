@@ -100,6 +100,9 @@ TEST(utils, stringHash) {
     hash = utils_stringHash((void *) toHash);
     LONGS_EQUAL(3721605959, hash);
     free(toHash);
+
+    hash = utils_stringHash(NULL);
+    LONGS_EQUAL(0, hash);
 }
 
 TEST(utils, stringEquals) {
@@ -236,6 +239,10 @@ TEST(utils, stringTrim) {
     STRCMP_EQUAL("abc  \n asdf", result);
 
     free(toTrim);
+
+    char* trimmed = celix_utils_trim("  abc   ");
+    STRCMP_EQUAL("abc", trimmed);
+    free(trimmed);
 }
 
 TEST(utils, thread_equalsSelf){

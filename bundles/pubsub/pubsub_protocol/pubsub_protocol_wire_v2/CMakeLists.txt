@@ -35,7 +35,7 @@ target_link_libraries(celix_pubsub_protocol_wire_v2 PRIVATE celix_wire_protocol_
 
 install_celix_bundle(celix_pubsub_protocol_wire_v2 EXPORT celix COMPONENT pubsub)
 
-add_library(Celix::pubsub_protocol_wire_v2 ALIAS celix_pubsub_protocol_wire_v2)
+add_library(Celix::celix_pubsub_protocol_wire_v2 ALIAS celix_pubsub_protocol_wire_v2)
 
 if (ENABLE_TESTING)
     add_subdirectory(gtest)

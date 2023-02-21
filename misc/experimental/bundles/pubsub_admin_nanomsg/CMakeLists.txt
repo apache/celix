@@ -18,7 +18,6 @@
 if (BUILD_PUBSUB_PSA_NANOMSG)
 
     find_package(NanoMsg REQUIRED)
-    find_package(Jansson REQUIRED)
 
     add_celix_bundle(celix_pubsub_admin_nanomsg
         BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_nanomsg"

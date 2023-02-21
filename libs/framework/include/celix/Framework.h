@@ -44,14 +44,14 @@ namespace celix {
         /**
          * @brief Get the framework UUID.
          */
-        std::string getUUID() const {
+        [[nodiscard]] std::string getUUID() const {
             return std::string{celix_framework_getUUID(cFw.get())};
         }
 
         /**
          * @brief Get the bundle context for the framework.
          */
-        std::shared_ptr<celix::BundleContext> getFrameworkBundleContext() const {
+        [[nodiscard]] std::shared_ptr<celix::BundleContext> getFrameworkBundleContext() const {
             return fwCtx;
         }
 
@@ -105,7 +105,7 @@ namespace celix {
          * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
          * the C++ API.
          */
-        celix_framework_t * getCFramework() const {
+        [[nodiscard]] celix_framework_t * getCFramework() const {
             return cFw.get();
         }
     private:

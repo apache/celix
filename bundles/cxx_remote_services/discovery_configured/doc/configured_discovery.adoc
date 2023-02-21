@@ -1,0 +1,77 @@
+/*
+* Licensed to the Apache Software Foundation (ASF) under one
+* or more contributor license agreements.  See the NOTICE file
+* distributed with this work for additional information
+* regarding copyright ownership.  The ASF licenses this file
+* to you under the Apache License, Version 2.0 (the
+* "License"); you may not use this file except in compliance
+* with the License.  You may obtain a copy of the License at
+*
+*   http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an
+* "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+*  KIND, either express or implied.  See the License for the
+* specific language governing permissions and limitations
+* under the License.
+*/
+
+[plantuml]
+.RSA Design - (Configured) Discovery
+----
+@startuml
+
+class topo as "TopologyManager"
+class rsa as "RemoteServiceAdmin"
+interface json as "JSON"
+
+package "common" {
+
+    interface idisc as "IDiscovery" {
+        + virtual void discoverEndpoints() = 0;
+        + virtual void addExportedEndpoint(Properties&&) = 0;
+        + virtual void removeExportedEndpoint(Properties&&) = 0;
+    }
+
+    interface iend as "IEndpoint"
+}
+
+package "discovery/configured" {
+
+    class discact as "ConfiguredDiscoveryManagerActivator" {
+        + Activator(std::shared_ptr<celix::dm::DependencyManager>)
+    }
+
+    class disc as "ConfiguredDiscoveryManager" {
+        + void discoverEndpoints() override;
+        + void addExportedEndpoint(Properties&&) override;
+        + void removeExportedEndpoint(Properties&&) override;
+        - void publishDiscoveredEndpoints();
+        - std::vector<ConfiguredEndpoint> _endpoints;
+    }
+
+    class cend as "ConfiguredEndpoint" <<IEndpoint>> {
+        - ConfiguredEndpointProperties _properties;
+    }
+
+    class cendprop as "ConfiguredEndpointProperties" {
+        - std::string _endpointId;
+        - std::vector<std::string> _imports;
+        ...
+    }
+}
+
+discact *-u-> disc
+disc -u-|> idisc
+disc -> json : reads
+disc *-> cend
+disc -> iend : publishes
+cend -u-|> iend
+cend *--> cendprop
+
+topo -d-> idisc : service dependency
+rsa -d-> iend : service dependency
+
+@enduml
+----

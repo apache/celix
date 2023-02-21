@@ -29,24 +29,20 @@ include_directories(
 add_subdirectory(bundle)
 add_subdirectory(disc_mock)
 
-#SET(CMAKE_SKIP_BUILD_RPATH  FALSE) #TODO needed?
-#SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
-#SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}/utils" "${PROJECT_BINARY_DIR}/dfi")
-
 add_executable(test_tm_scoped
-    run_tests.cpp
-    tms_tests.cpp
+        tms_tests.cpp
 )
-target_include_directories(test_tm_scoped SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR} PRIVATE ../src ../include)
+celix_deprecated_utils_headers(test_tm_scoped)
+target_include_directories(test_tm_scoped PRIVATE ../src ../include)
 target_link_libraries(test_tm_scoped PRIVATE
         Celix::framework
-        ${CppUTest_LIBRARY}
-        Jansson
+        GTest::gtest GTest::gtest_main
+        jansson::jansson
         calculator_api
         Celix::rsa_common
 )
 
-add_dependencies(test_tm_scoped rsa_dfi_bundle rsa_topology_manager_bundle)
+add_celix_bundle_dependencies(test_tm_scoped Celix::rsa_dfi Celix::rsa_topology_manager)
 
 file(GENERATE 
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config.properties"

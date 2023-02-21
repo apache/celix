@@ -19,7 +19,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <celix_api.h>
 
 #include "utils.h"
 #include "celix_bundle_context.h"
@@ -48,82 +47,9 @@ typedef struct lb_options {
 
     //group
     char *listGroup;
-    bool listAllGroups;
 } lb_options_t;
 
 static char * psCommand_stateString(bundle_state_e state);
-
-static void addToGroup(hash_map_t *map, const char *group, long bndId) {
-    celix_array_list_t *ids = hashMap_get(map, group);
-    if (ids == NULL) {
-        ids = celix_arrayList_create();
-        char *key = strndup(group, 1024 * 1024);
-        hashMap_put(map, key, ids);
-    }
-    celix_arrayList_addLong(ids, bndId);
-}
-
-static void collectGroups(void *handle, const celix_bundle_t *bnd) {
-    hash_map_t *map = handle;
-    const char *group = celix_bundle_getGroup(bnd);
-    if (group == NULL) {
-        group = "-";
-        addToGroup(map, group, celix_bundle_getId(bnd));
-    } else {
-        char *at = strstr(group, "/");
-        if (at != NULL) {
-            unsigned long size = at-group;
-            char buf[size+1];
-            strncpy(buf, group, size);
-            buf[size] = '\0';
-            addToGroup(map, buf, celix_bundle_getId(bnd));
-        } else {
-            addToGroup(map, group, celix_bundle_getId(bnd));
-        }
-    }
-}
-
-static void lbCommand_showGroups(celix_bundle_context_t *ctx, const lb_options_t *opts, FILE *out) {
-    const char* startColor = "";
-    const char* endColor = "";
-    if (opts->useColors) {
-        startColor = HEAD_COLOR;
-        endColor = END_COLOR;
-    }
-
-    fprintf(out, "%s  Groups:%s\n", startColor, endColor);
-    fprintf(out, "%s  %-20s %-20s %s\n", startColor, "Group", "Bundle Ids", endColor);
-
-    hash_map_t *map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-    celix_bundleContext_useBundle(ctx, 0, map, collectGroups);
-    celix_bundleContext_useBundles(ctx, map, collectGroups);
-
-    hash_map_iterator_t iter = hashMapIterator_construct(map);
-    int count = 0;
-    while (hashMapIterator_hasNext(&iter)) {
-        startColor = "";
-        endColor = "";
-        if (opts->useColors) {
-            startColor = count++ % 2 == 0 ? EVEN_COLOR : ODD_COLOR;
-            endColor = END_COLOR;
-        }
-
-        hash_map_entry_t *entry = hashMapIterator_nextEntry(&iter);
-        char *key = hashMapEntry_getKey(entry);
-        fprintf(out, "%s  %-20s ", startColor, key);
-        celix_array_list_t *ids = hashMapEntry_getValue(entry);
-        int s = celix_arrayList_size(ids);
-        for (int i = s-1; i >= 0; --i) { //note reverse to start with lower bundle id first
-            long id = celix_arrayList_getLong(ids, (int)i);
-            fprintf(out, "%li ", id);
-        }
-        fprintf(out, "%s\n", endColor);
-        free(key);
-        celix_arrayList_destroy(ids);
-    }
-    fprintf(out, "\n\n");
-    hashMap_destroy(map, false, false);
-}
 
 static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_t *opts, FILE *out) {
     const char *message_str = "Name";
@@ -186,7 +112,7 @@ static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_
 
         bundle_archive_pt archive_ptr = NULL;
         long id = 0;
-        bundle_state_e state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
+        bundle_state_e state = CELIX_BUNDLE_STATE_UNKNOWN;
         const char *state_str = NULL;
         module_pt module_ptr = NULL;
         const char *name_str = NULL;
@@ -208,23 +134,7 @@ static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_
         }
 
         if (sub_status == CELIX_SUCCESS) {
-            if (id == CELIX_FRAMEWORK_BUNDLE_ID) {
-                name_str = "Celix framework";
-            } else {
-                bundle_archive_t* arch = NULL;
-                bundle_revision_t* rev = NULL;
-                manifest_pt man = NULL;
-                bundle_getArchive(bundle_ptr, &arch);
-                if (arch != NULL) {
-                    bundleArchive_getCurrentRevision(arch, &rev);
-                    if (rev != NULL) {
-                        bundleRevision_getManifest(rev, &man);
-                        if (man != NULL) {
-                            name_str = manifest_getValue(man, "Bundle-Name");
-                        }
-                    }
-                }
-            }
+            name_str = celix_bundle_getName(bundle_ptr);
         }
 
         if (sub_status == CELIX_SUCCESS) {
@@ -248,14 +158,9 @@ static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_
                 startColor = i % 2 == 0 ? EVEN_COLOR : ODD_COLOR;
                 endColor = END_COLOR;
             }
-            bool print = false;
-            if (opts->listAllGroups) {
-                print = true;
-            } else if (opts->listGroup != NULL && group_str != NULL) {
-                print = strncmp(opts->listGroup, group_str, strlen(opts->listGroup)) == 0;
-            } else if (opts->listGroup == NULL){
-                //listGroup == NULL -> only print not grouped bundles
-                print = group_str == NULL;
+            bool print = true;
+            if (opts->listGroup != NULL) {
+                print = group_str != NULL && strstr(group_str, opts->listGroup) != NULL;
             }
 
             if (print) {
@@ -282,10 +187,7 @@ bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *o
     lb_options_t opts;
     memset(&opts, 0, sizeof(opts));
 
-    const char* config = celix_bundleContext_getProperty(ctx, CELIX_SHELL_USE_ANSI_COLORS, CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
-    opts.useColors = config != NULL && strncmp("true", config, 5) == 0;
-
-
+    opts.useColors = celix_bundleContext_getPropertyAsBool(ctx, CELIX_SHELL_USE_ANSI_COLORS, CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
     opts.show_location        = false;
     opts.show_symbolic_name   = false;
     opts.show_update_location = false;
@@ -302,15 +204,14 @@ bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *o
             opts.show_symbolic_name = true;
         } else if (strcmp(sub_str, "-u") == 0) {
             opts.show_update_location = true;
-        } else if (strcmp(sub_str, "-a") == 0) {
-            opts.listAllGroups = true;
+        } else if (strncmp(sub_str, "-", 1) == 0) {
+            fprintf(out_ptr, "Ignoring unknown lb option '%s'\n", sub_str);
         } else {
             opts.listGroup = strdup(sub_str);
         }
         sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
     }
 
-    lbCommand_showGroups(ctx, &opts, out_ptr);
     lbCommand_listBundles(ctx, &opts, out_ptr);
 
     free(opts.listGroup);
@@ -321,15 +222,15 @@ bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *o
 
 static char * psCommand_stateString(bundle_state_e state) {
     switch (state) {
-        case OSGI_FRAMEWORK_BUNDLE_ACTIVE:
+        case CELIX_BUNDLE_STATE_ACTIVE:
             return "Active      ";
-        case OSGI_FRAMEWORK_BUNDLE_INSTALLED:
+        case CELIX_BUNDLE_STATE_INSTALLED:
             return "Installed   ";
-        case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
+        case CELIX_BUNDLE_STATE_RESOLVED:
             return "Resolved    ";
-        case OSGI_FRAMEWORK_BUNDLE_STARTING:
+        case CELIX_BUNDLE_STATE_STARTING:
             return "Starting    ";
-        case OSGI_FRAMEWORK_BUNDLE_STOPPING:
+        case CELIX_BUNDLE_STATE_STOPPING:
             return "Stopping    ";
         default:
             return "Unknown     ";

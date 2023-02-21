@@ -16,25 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * properties.c
- *
- *  \date       Apr 27, 2010
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "celixbool.h"
+#include <stdbool.h>
+
 #include "properties.h"
+#include "celix_build_assert.h"
 #include "celix_properties.h"
 #include "utils.h"
 #include "hash_map_private.h"
 #include <errno.h>
-
+#include "hash_map.h"
 
 #define MALLOC_BLOCK_SIZE        5
 
@@ -398,7 +393,7 @@ void celix_properties_setWithoutCopy(celix_properties_t *properties, char *key, 
 }
 
 void celix_properties_unset(celix_properties_t *properties, const char *key) {
-    char* oldValue = hashMap_remove(properties, key);
+    char* oldValue = hashMap_removeFreeKey(properties, key);
     free(oldValue);
 }
 
@@ -475,11 +470,44 @@ int celix_properties_size(const celix_properties_t *properties) {
 }
 
 celix_properties_iterator_t celix_propertiesIterator_construct(const celix_properties_t *properties) {
-    return hashMapIterator_construct((hash_map_t*)properties);
+    celix_properties_iterator_t iter;
+    CELIX_BUILD_ASSERT(sizeof(celix_properties_iterator_t) == sizeof(hash_map_iterator_t));
+    CELIX_BUILD_ASSERT(__alignof__(celix_properties_iterator_t) == __alignof__(hash_map_iterator_t));
+    hash_map_iterator_t mapIter = hashMapIterator_construct((hash_map_t*)properties);
+    iter._data1 = mapIter.map;
+    iter._data2 = mapIter.next;
+    iter._data3 = mapIter.current;
+    iter._data4 = mapIter.expectedModCount;
+    iter._data5 = mapIter.index;
+    return iter;
 }
+
 bool celix_propertiesIterator_hasNext(celix_properties_iterator_t *iter) {
-    return hashMapIterator_hasNext(iter);
+    hash_map_iterator_t mapIter;
+    mapIter.map = iter->_data1;
+    mapIter.next = iter->_data2;
+    mapIter.current = iter->_data3;
+    mapIter.expectedModCount = iter->_data4;
+    mapIter.index = iter->_data5;
+    bool hasNext = hashMapIterator_hasNext(&mapIter);
+    return hasNext;
 }
 const char* celix_propertiesIterator_nextKey(celix_properties_iterator_t *iter) {
-    return (const char*)hashMapIterator_nextKey(iter);
+    hash_map_iterator_t mapIter;
+    mapIter.map = iter->_data1;
+    mapIter.next = iter->_data2;
+    mapIter.current = iter->_data3;
+    mapIter.expectedModCount = iter->_data4;
+    mapIter.index = iter->_data5;
+    const char* result = (const char*)hashMapIterator_nextKey(&mapIter);
+    iter->_data1 = mapIter.map;
+    iter->_data2 = mapIter.next;
+    iter->_data3 = mapIter.current;
+    iter->_data4 = mapIter.expectedModCount;
+    iter->_data5 = mapIter.index;
+    return result;
+}
+
+celix_properties_t* celix_propertiesIterator_properties(celix_properties_iterator_t *iter) {
+    return (celix_properties_t*)iter->_data1;
 }

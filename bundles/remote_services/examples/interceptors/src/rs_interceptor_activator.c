@@ -16,19 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include "celix_api.h"
+
 
 #include "first_interceptor_private.h"
 #include "second_interceptor_private.h"
+#include "celix_bundle_activator.h"
+#include "celix_constants.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 struct interceptorActivator {
     first_interceptor_t *interceptor;
     uint64_t interceptorSvcId;
+    remote_interceptor_t *interceptorSvc;
 
     second_interceptor_t *secondInterceptor;
     uint64_t secondInterceptorSvcId;
+    remote_interceptor_t *secondInterceptorSvc;
 };
 
 static int interceptor_start(struct interceptorActivator *act, celix_bundle_context_t *ctx) {
@@ -41,6 +46,7 @@ static int interceptor_start(struct interceptorActivator *act, celix_bundle_cont
     interceptorSvc->postProxyCall = firstInterceptor_postProxyCall;
     interceptorSvc->preExportCall = firstInterceptor_preExportCall;
     interceptorSvc->postExportCall = firstInterceptor_postExportCall;
+    act->interceptorSvc = interceptorSvc;
 
     act->interceptor = interceptor;
 
@@ -64,6 +70,7 @@ static int interceptor_start(struct interceptorActivator *act, celix_bundle_cont
     secondInterceptorSvc->postProxyCall = secondInterceptor_postProxyCall;
     secondInterceptorSvc->preExportCall = secondInterceptor_preExportCall;
     secondInterceptorSvc->postExportCall = secondInterceptor_postExportCall;
+    act->secondInterceptorSvc = secondInterceptorSvc;
 
     act->secondInterceptor = secondInterceptor;
 
@@ -84,9 +91,11 @@ static int interceptor_start(struct interceptorActivator *act, celix_bundle_cont
 static int interceptor_stop(struct interceptorActivator *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_unregisterService(ctx, act->interceptorSvcId);
     firstInterceptor_destroy(act->interceptor);
+    free(act->interceptorSvc);
 
     celix_bundleContext_unregisterService(ctx, act->secondInterceptorSvcId);
     secondInterceptor_destroy(act->secondInterceptor);
+    free(act->secondInterceptorSvc);
 
     return 0;
 }

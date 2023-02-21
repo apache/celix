@@ -34,24 +34,22 @@ bool installCommand_execute(void *handle, const char *const_line, FILE *outStrea
 	sub = strtok_r(line, delims, &save_ptr);
 	sub = strtok_r(NULL, delims, &save_ptr);
 
-	bool installSucceeded = false;
-	
 	if (sub == NULL) {
 		fprintf(errStream, "Incorrect number of arguments.\n");
 	} else {
 		while (sub != NULL) {
-		    long bndId = celix_bundleContext_installBundle(ctx, sub, true);
-			if (bndId >= 0) {
-			    char *name = celix_bundleContext_getBundleSymbolicName(ctx, bndId);
-                fprintf(outStream, "Bundle '%s' installed with bundle id %li\n", name, bndId);
-                free(name);
-                installSucceeded = true;
-			}
+            celix_framework_t* fw = celix_bundleContext_getFramework(ctx);
+            long bndId = celix_framework_installBundleAsync(fw, sub, true);
+            if (bndId >= 0) {
+                fprintf(outStream, "Bundle installed with bundle id %li\n", bndId);
+            } else {
+                fprintf(errStream, "Error installed bundle\n");
+            }
 			sub = strtok_r(NULL, delims, &save_ptr);
 		}
 	}
 
 	free(line);
 
-	return installSucceeded;
+	return true;
 }

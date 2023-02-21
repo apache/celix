@@ -17,7 +17,7 @@
  * under the License.
  */
 
-#include "celix_api.h"
+#include "celix_bundle_activator.h"
 
 struct bundle_act {
 

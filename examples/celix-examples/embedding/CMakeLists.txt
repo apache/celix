@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+add_executable(create_framework_in_c src/main.c)
+target_link_libraries(create_framework_in_c PRIVATE Celix::framework)
 
-add_executable(embedding src/main)
-target_link_libraries(embedding Celix::framework )
+add_executable(embedding src/main.c)
+target_link_libraries(embedding PRIVATE Celix::framework )
+celix_target_embedded_bundles(embedding Celix::shell Celix::shell_tui)

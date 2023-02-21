@@ -29,19 +29,18 @@
 
 #include "registry_callback_private.h"
 #include "service_reference.h"
+#include "celix_ref.h"
 
 
 struct serviceReference {
-    registry_callback_t callback;
-	bundle_pt referenceOwner;
-	struct serviceRegistration * registration;
-    bundle_pt registrationBundle;
-    const void* service;
-
-	size_t refCount;
+    struct celix_ref refCount;
+    registry_callback_t callback; // read-only
+	bundle_pt referenceOwner; // read-only
+	struct serviceRegistration * registration; // read-only, this registration is always accessible within the reference, though the service embedded might be unregistered by its provider
+    bundle_pt registrationBundle; // read-only
+    celix_thread_rwlock_t lock; // protect below
+    const void* serviceCache;
     size_t usageCount;
-
-    celix_thread_rwlock_t lock;
 };
 
 celix_status_t serviceReference_create(registry_callback_t callback, bundle_pt referenceOwner, service_registration_pt registration, service_reference_pt *reference);
@@ -49,17 +48,13 @@ celix_status_t serviceReference_create(registry_callback_t callback, bundle_pt r
 celix_status_t serviceReference_retain(service_reference_pt ref);
 celix_status_t serviceReference_release(service_reference_pt ref, bool *destroyed);
 
-celix_status_t serviceReference_increaseUsage(service_reference_pt ref, size_t *updatedCount);
-celix_status_t serviceReference_decreaseUsage(service_reference_pt ref, size_t *updatedCount);
-
-celix_status_t serviceReference_invalidate(service_reference_pt reference);
-celix_status_t serviceReference_isValid(service_reference_pt reference, bool *result);
+celix_status_t serviceReference_invalidateCache(service_reference_pt reference);
 
 celix_status_t serviceReference_getUsageCount(service_reference_pt reference, size_t *count);
 celix_status_t serviceReference_getReferenceCount(service_reference_pt reference, size_t *count);
 
-celix_status_t serviceReference_setService(service_reference_pt ref, const void *service);
-celix_status_t serviceReference_getService(service_reference_pt reference, void **service);
+celix_status_t serviceReference_getService(service_reference_pt ref, const void **service);
+celix_status_t serviceReference_ungetService(service_reference_pt ref, bool *result);
 
 celix_status_t serviceReference_getOwner(service_reference_pt reference, bundle_pt *owner);
 

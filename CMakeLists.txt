@@ -15,17 +15,45 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required (VERSION 3.14)
+cmake_minimum_required (VERSION 3.18)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
-if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.9.0")
-   cmake_policy(SET CMP0068 NEW)
-endif()
+cmake_policy(SET CMP0068 NEW)
 
-project (Celix C CXX)
+project (Celix C CXX ASM)
 
 include(cmake/celix_project/CelixProject.cmake)
 include(cmake/cmake_celix/UseCelix.cmake)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+#find required packages
+find_package(ZLIB REQUIRED) #framework
+find_package(libuuid REQUIRED) #framework
+find_package(CURL REQUIRED) #framework, etcdlib
+find_package(libzip REQUIRED) #framework, etcdlib
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
+if (NOT TARGET ZLIB::ZLIB)
+    #Note more recent zlib will create ZLIB::ZLIB target
+    message("Note ZLIB::ZLIB target not created by find_package(ZLIB). Creating ZLIB::ZLIB Target.")
+    add_library(ZLIB::ZLIB SHARED IMPORTED)
+    set_target_properties(ZLIB::ZLIB PROPERTIES
+            IMPORTED_LOCATION "${ZLIB_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIRS}"
+            )
+endif ()
+
+if (NOT TARGET CURL::libcurl)
+    #Note more recent curl will create CURL::libcurl target
+    message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
+    add_library(CURL::libcurl SHARED IMPORTED)
+    set_target_properties(CURL::libcurl PROPERTIES
+            IMPORTED_LOCATION "${CURL_LIBRARIES}"
+            INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
+            )
+endif ()
 
 # see https://public.kitware.com/Bug/view.php?id=15696
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
@@ -35,21 +63,27 @@ ENDIF()
 # Options
 option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 if (ENABLE_TESTING)
-    find_package(GTest CONFIG QUIET)
+    find_package(GTest QUIET)
     if (NOT GTest_FOUND)
-        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
+        include(AddGTest)
     endif()
 endif ()
 
-set(ENABLE_MORE_WARNINGS OFF)
-
 # Set C specific flags
 set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
-set(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "-Wall -Werror -Wformat -Wno-error=deprecated-declarations ${CMAKE_C_FLAGS}")
 
 # Set C++ specific flags
-set(CMAKE_CXX_FLAGS "-std=c++11 -fno-rtti ${CMAKE_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-fno-rtti ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ -Wformat -Wno-error=deprecated-declarations ${CMAKE_CXX_FLAGS}")
+
+if (NOT DEFINED CMAKE_CXX_STANDARD)
+    #Celix header only C++ supported is based on C++14 and C++17.
+    #Default using C++14 to ensure the code compiles for C++14.
+    #To ensure IDE like CLion can provide optimal C++17 support, the CMAKE_CXX_STANDARD variable is only set if
+    #not already defined.
+    set(CMAKE_CXX_STANDARD 14)
+endif ()
 
 if(APPLE)
     set(CMAKE_MACOSX_RPATH 1)
@@ -71,14 +105,23 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set(CMAKE_C_FLAGS "-Wno-unused-result -Wno-format-truncation -Wno-stringop-overflow ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-Wno-unused-result -Wno-format-truncation -Wno-stringop-overflow ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_C_FLAGS "-Wno-unused-result ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-Wno-unused-result ${CMAKE_CXX_FLAGS}")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0)
+        set(CMAKE_C_FLAGS "-Wno-format-truncation -Wno-stringop-overflow ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-Wno-format-truncation -Wno-stringop-overflow ${CMAKE_CXX_FLAGS}")
+    endif()
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0)
         set(CMAKE_C_FLAGS "-Wno-stringop-truncation ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-Wno-stringop-truncation ${CMAKE_CXX_FLAGS}")
     endif()
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
+        set(CMAKE_C_FLAGS "-Wno-error=stringop-overread ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-Wno-error=stringop-overread ${CMAKE_CXX_FLAGS}")
+    endif()
 endif()
 
+option(ENABLE_MORE_WARNINGS "whether to enable more compiler warnings." OFF)
 if (ENABLE_MORE_WARNINGS)
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 4)
@@ -106,8 +149,8 @@ endif()
 
 # Set build type specific flags
 # Debug
-set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS}")
+set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG -Og ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG -Og ${CMAKE_CXX_FLAGS}")
 set(CMAKE_DEBUG_POSTFIX "d")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -115,9 +158,11 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 # Set version for the framework package/release
-set(CELIX_MAJOR "2")
-set(CELIX_MINOR "2")
-set(CELIX_MICRO "1")
+if (NOT DEFINED CELIX_MAJOR)
+    set(CELIX_MAJOR "2")
+    set(CELIX_MINOR "3")
+    set(CELIX_MICRO "0")
+endif ()
 
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
@@ -127,23 +172,29 @@ if (ENABLE_TESTING)
 endif()
 
 option(CELIX_INSTALL_DEPRECATED_API "whether to install (and use) deprecated apis (i.e. header without a celix_ prefix." ON)
-
-option(CELIX_ADD_DEPRECATED_ATTRIBUTES "If enabled add deprecated attributes to deprecated services/functions." ON)
-if (CELIX_ADD_DEPRECATED_ATTRIBUTES)
-    set(CMAKE_C_FLAGS "-DCELIX_ADD_DEPRECATED_ATTRIBUTES ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-DCELIX_ADD_DEPRECATED_ATTRIBUTES ${CMAKE_CXX_FLAGS}")
-endif ()
-
-option(CELIX_ADD_OPENSSL_DEP "Enabled building Celix framework & etcdlib with OpenSSL library dependency. This can help in some libcurl resolving issues" OFF)
-set(CELIX_OPTIONAL_EXTRA_LIBS "")
-if (CELIX_ADD_OPENSSL_DEP)
-    find_package(OpenSSL REQUIRED)
-    set(CELIX_OPTIONAL_EXTRA_LIBS "OpenSSL::SSL")
-endif ()
-
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
 
-option(CELIX_CXX "Build C++ libraries and bundles. Note for tests C++ is always used." ON)
+option(CELIX_CXX14 "Build C++14 libraries and bundles. Note for tests C++ is always used." ON)
+option(CELIX_CXX17 "Build C++17 libraries and bundles." ON)
+if (CELIX_CXX17 AND NOT CELIX_CXX14)
+    set(CELIX_CXX14 ON)
+endif ()
+
+option(ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11 "Test the Dependency Manager for C++11 support" OFF)
+option(ENABLE_TESTING_FOR_CXX14 "Test celix utils and framework C++ header for C++14 support" OFF)
+
+if (CELIX_INSTALL_DEPRECATED_API)
+    #ignore deprecated warnings
+    set(CMAKE_C_FLAGS "-Wno-deprecated-declarations ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-Wno-deprecated-declarations ${CMAKE_CXX_FLAGS}")
+endif ()
+
+include(CMakePushCheckState)
+cmake_push_check_state()
+cmake_reset_check_state()
+include(CheckLinkerFlag)
+check_linker_flag(CXX LINKER:--wrap,celix_nonexistent_symbol LINKER_WRAP_SUPPORTED)
+cmake_pop_check_state()
 
 #Libraries and Launcher
 add_subdirectory(libs)

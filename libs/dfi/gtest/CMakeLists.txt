@@ -32,7 +32,16 @@ add_executable(test_dfi
 		src/avrobin_serialization_tests.cpp
 )
 
-target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils FFI::lib Jansson GTest::gtest GTest::gtest_main)
+#[[
+Note: setting optimize -O0 for the dfi test, because this is needed to get the
+DynFunctionTests.DynFuncTest2 and DynFunctionTests.DynFuncTest3 working.
+See issue #232
+]]
+target_compile_options(test_dfi PRIVATE -O0) #This is needed because
+
+target_include_directories(test_dfi PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../src)
+target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils libffi::libffi jansson::jansson GTest::gtest GTest::gtest_main)
+celix_deprecated_utils_headers(test_dfi)
 
 file(COPY ${CMAKE_CURRENT_LIST_DIR}/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${CMAKE_CURRENT_LIST_DIR}/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

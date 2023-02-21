@@ -14,28 +14,31 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" ON DEPS LAUNCHER SHELL)
+celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" ON DEPS SHELL)
 if (SHELL_TUI)
 
     add_celix_bundle(shell_tui
     	SYMBOLIC_NAME "apache_celix_shell_tui"
     	VERSION "1.1.0"
     	NAME "Apache Celix Shell TUI"
+		FILENAME celix_shell_tui
 		GROUP "Celix/Shell"
     	SOURCES 
-    		private/src/activator 
-    		private/src/shell_tui
-    		private/src/history
+    		src/activator.c
+    		src/shell_tui.c
+    		src/history.c
 	)
 	
-	target_include_directories(shell_tui PRIVATE
-			"${PROJECT_SOURCE_DIR}/utils/public/include"
-			private/include
-	)
-    target_link_libraries(shell_tui PRIVATE Celix::shell_api)
+	target_include_directories(shell_tui PRIVATE src)
+    target_link_libraries(shell_tui PRIVATE Celix::shell_api Celix::utils)
+	celix_deprecated_utils_headers(shell_tui)
 
 	install_celix_bundle(shell_tui EXPORT celix)
 
 	#Alias setup to match external usage
 	add_library(Celix::shell_tui ALIAS shell_tui)
+
+	if (ENABLE_TESTING)
+		add_subdirectory(gtest)
+	endif()
 endif (SHELL_TUI)

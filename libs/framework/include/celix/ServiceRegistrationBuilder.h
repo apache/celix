@@ -23,6 +23,7 @@
 #include <vector>
 #include <memory>
 
+#include "celix/Utils.h"
 #include "celix/ServiceRegistration.h"
 
 namespace celix {
@@ -39,7 +40,7 @@ namespace celix {
         friend class BundleContext;
 
         //NOTE private to prevent move so that a build() call cannot be forgotten
-        ServiceRegistrationBuilder(ServiceRegistrationBuilder&&) = default;
+        ServiceRegistrationBuilder(ServiceRegistrationBuilder&&) noexcept = default;
     public:
         ServiceRegistrationBuilder(
                 std::shared_ptr<celix_bundle_context_t> _cCtx,
@@ -50,8 +51,9 @@ namespace celix {
                 cCtx{std::move(_cCtx)},
                 svc{std::move(_svc)},
                 name{std::move(_name)},
+                version{celix::typeVersion<I>()},
                 registerAsync{_registerAsync},
-                unregisterAsync{_unregisterAsync}{}
+                unregisterAsync{_unregisterAsync} {}
 
         ServiceRegistrationBuilder& operator=(ServiceRegistrationBuilder&&) = delete;
         ServiceRegistrationBuilder(const ServiceRegistrationBuilder&) = delete;
@@ -62,34 +64,29 @@ namespace celix {
          *
          * This will lead to a 'service.version' service property.
          */
+#if __cplusplus >= 201703L //C++17 or higher
+        ServiceRegistrationBuilder& setVersion(std::string_view v) { version = v; return *this; }
+#else
         ServiceRegistrationBuilder& setVersion(std::string v) { version = std::move(v); return *this; }
+#endif
 
         /**
          * @brief Add a property to the service properties.
          *
          * If a key is already present the value will be overridden.
          */
-        ServiceRegistrationBuilder& addProperty(std::string key, std::string value) { properties.set(std::move(key), std::move(value)); return *this; }
-
-        /**
-         * @brief Add a property to the service properties.
-         *
-         * If a key is already present the value will be overridden.
-         */
-        ServiceRegistrationBuilder& addProperty(std::string key, const char* value) { properties.set(std::move(key), std::string{value}); return *this; }
-
-        /**
-         * @brief Add a property to the service properties.
-         *
-         * If a key is already present the value will be overridden.
-         */
+#if __cplusplus >= 201703L //C++17 or higher
         template<typename T>
-        ServiceRegistrationBuilder& addProperty(std::string key, T value) { properties.set(std::move(key), std::to_string(std::move(value))); return *this; }
+        ServiceRegistrationBuilder& addProperty(std::string_view key, T&& value) { properties.template set(key, std::forward<T>(value)); return *this; }
+#else
+        template<typename T>
+        ServiceRegistrationBuilder& addProperty(const std::string& key, T&& value) { properties.set(key, std::forward<T>(value)); return *this; }
+#endif
 
         /**
          * @brief Set the service properties.
          *
-         * Note this call will clear any already set properties.
+         * Note this call will clear already set properties.
          */
         ServiceRegistrationBuilder& setProperties(celix::Properties p) { properties = std::move(p); return *this; }
 
@@ -192,9 +189,9 @@ namespace celix {
         const std::shared_ptr<celix_bundle_context_t> cCtx;
         std::shared_ptr<I> svc;
         std::string name;
+        std::string version;
         bool registerAsync;
         bool unregisterAsync;
-        std::string version{};
         celix::Properties properties{};
         std::vector<std::function<void(ServiceRegistration&)>> onRegisteredCallbacks{};
         std::vector<std::function<void(ServiceRegistration&)>> onUnregisteredCallbacks{};

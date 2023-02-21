@@ -32,6 +32,11 @@ if (ENABLE_ADDRESS_SANITIZER)
         set(CMAKE_C_FLAGS "-lasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-lasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
     endif ()
+
+    if (ENABLE_TESTING)
+        set(CMAKE_C_FLAGS "-DCPPUTEST_MEM_LEAK_DETECTION_DISABLED ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-DCPPUTEST_MEM_LEAK_DETECTION_DISABLED ${CMAKE_CXX_FLAGS}")
+    endif ()
 endif()
 
 if (ENABLE_UNDEFINED_SANITIZER)
@@ -66,36 +71,41 @@ MACRO(celix_subproject)
     
     option(${NAME} "${OPTION_DESCRIPTION}" ${OPTION_DEFAULT})
     
-    get_property(BUILD GLOBAL PROPERTY ${NAME}_INTERNAL)
-    if (NOT DEFINED BUILD)
-        set(BUILD "OFF")
-    endif (NOT DEFINED BUILD)
-    
-    IF (${NAME} OR ${BUILD})
+    IF (${NAME})
         set(${OPTION_NAME} "ON")
-    	set_property(GLOBAL PROPERTY ${NAME}_INTERNAL "ON")
-    	
         FOREACH (DEP ${OPTION_DEPS})
             string(TOUPPER ${DEP} UC_DEP)
             set(DEP_NAME "BUILD_${UC_DEP}")
-            set_property(GLOBAL PROPERTY ${DEP_NAME}_INTERNAL "ON")
+            if (NOT ${DEP_NAME})
+                message(FATAL_ERROR "${DEP} is required by ${OPTION_NAME}: please add -D${DEP_NAME}:BOOL=ON")
+            endif ()
         ENDFOREACH (DEP)
-    ELSE (${NAME} OR ${BUILD})
-        set(${OPTION_NAME} "OFF")
-    ENDIF (${NAME} OR ${BUILD})
+    ENDIF (${NAME})
 ENDMACRO(celix_subproject)
 
-MACRO(is_enabled name)
-    string(TOUPPER "BUILD_${name}_INTERNAL" OPTION)
-    
-    get_property(BUILD GLOBAL PROPERTY ${OPTION})
-    
-    if(BUILD)
-        set(${name} "ON")
-    else()
-        set(${name} "OFF")
-    endif()
-ENDMACRO(is_enabled)
+#[[
+Custom target which list the Celix CMake targets that are still using deprecated headers.
+]]
+if (NOT TARGET celix-deprecated)
+    add_custom_target(celix-deprecated
+        COMMAND ${CMAKE_COMMAND} -E echo "Targets still using deprecated utils headers: $<JOIN:$<TARGET_PROPERTY:celix-deprecated,UTIL_TARGETS>, >"
+    )
+    set_target_properties(celix-deprecated PROPERTIES "UTIL_TARGETS" "")
+endif ()
+
+
+#[[
+Add include path for the Celix utils deprecated headers to the provided target (as PRIVATE)
+
+```CMake
+celix_deprecated_utils_headers(<target_name>))
+```
+]]
+function(celix_deprecated_utils_headers)
+    list(GET ARGN 0 TARGET_NAME)
+    target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/libs/utils/include_deprecated)
+    set_property(TARGET celix-deprecated APPEND PROPERTY "UTIL_TARGETS" "${TARGET_NAME}")
+endfunction()
 
 include(${CMAKE_CURRENT_LIST_DIR}/ApacheRat.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/CodeCoverage.cmake)

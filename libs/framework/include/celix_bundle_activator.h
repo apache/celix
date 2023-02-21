@@ -20,6 +20,10 @@
 #include <stdlib.h>
 
 #include "celix_bundle_context.h"
+#include "celix_dependency_manager.h"
+#include "celix_dm_component.h"
+#include "celix_dm_service_dependency.h"
+#include "celix_constants.h"
 
 #ifndef CELIX_BUNDLE_ACTIVATOR_H_
 #define CELIX_BUNDLE_ACTIVATOR_H_
@@ -29,7 +33,8 @@ extern "C" {
 #endif
 
 /**
- * Called when this bundle is started so the bundle can create an instance for its activator.
+ * @brief Called when this bundle is started so the bundle can create an instance for its activator.
+ *
  * The framework does not assume any type for the activator instance, this is implementation specific.
  * The activator instance is handle as a void pointer by the framework, the implementation must cast it to the
  * implementation specific type.
@@ -45,9 +50,10 @@ extern "C" {
 celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx, void **userData);
 
 /**
- * Called when this bundle is started so the Framework can perform the bundle-specific activities necessary
- * to start this bundle. This method can be used to register services or to allocate any resources that this
- * bundle needs.
+ * @brief Called when this bundle is started so the Framework can perform the bundle-specific activities necessary
+ * to start this bundle.
+ *
+ * This method can be used to register services or to allocate any resources that this bundle needs.
  *
  * <p>
  * This method must complete and return to its caller in a timely manner.
@@ -63,8 +69,10 @@ celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx, void **
 celix_status_t celix_bundleActivator_start(void *userData, celix_bundle_context_t *ctx);
 
 /**
- * Called when this bundle is stopped so the Framework can perform the bundle-specific activities necessary
- * to stop the bundle. In general, this method should undo the work that the <code>bundleActivator_start()</code>
+ * @brief Called when this bundle is stopped so the Framework can perform the bundle-specific activities necessary
+ * to stop the bundle.
+ *
+ * In general, this method should undo the work that the <code>bundleActivator_start()</code>
  * function started. There should be no active threads that were started by this bundle when this bundle returns.
  * A stopped bundle must not call any Framework objects.
  *
@@ -82,8 +90,9 @@ celix_status_t celix_bundleActivator_start(void *userData, celix_bundle_context_
 celix_status_t celix_bundleActivator_stop(void *userData, celix_bundle_context_t *ctx);
 
 /**
- * Called when this bundle is stopped so the bundle can destroy the instance of its activator. In general, this
- * method should undo the work that the <code>bundleActivator_create()</code> function initialized.
+ * @brief Called when this bundle is stopped so the bundle can destroy the instance of its activator.
+ *
+ * In general, this method should undo the work that the <code>bundleActivator_create()</code> function initialized.
  *
  * <p>
  * This method must complete and return to its caller in a timely manner.
@@ -98,9 +107,9 @@ celix_status_t celix_bundleActivator_stop(void *userData, celix_bundle_context_t
  */
 celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_context_t* ctx);
 
-
 /**
- * This macro generates the required bundle activator functions for C.
+ * @brief This macro generates the required bundle activator functions for C.
+ *
  * This can be used to more type safe bundle activator entries.
  *
  * The macro will create the following bundle activator functions:
@@ -108,14 +117,22 @@ celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_contex
  * - bundleActivator_start/stop which will call the respectively provided typed start/stop functions.
  * - bundleActivator_destroy will free the allocated for the provided type.
  *
- * @param type The activator type (e.g. 'struct shell_activator').
- * @param start the activator actStart function with the following signature: celix_status_t (*)(<actType>*, celix_bundle_context_t*).
- * @param stop the activator actStop function with the following signature: celix_status_t (*)(<actType>*, celix_bundle_context_t*).
+ * After the (optional) provided activator stop callback is called, the generated `celix_bundleActivator_stop`
+ * function will remove all components from the bundle's dependency manager
+ * (using `celix_dependencyManager_removeAllComponents). This will ensure that dependency manager components can be
+ * used without explicitly programming their removal and destroy functionality.
+ *
+ * @param actType The activator type (e.g. 'struct shell_activator').
+ * @param actStart The optional activator actStart function with the following signature:
+ *                 celix_status_t (*)(<actType>*, celix_bundle_context_t*).
+ * @param actStop The optional activator actStop function with the following signature:
+ *                celix_status_t (*)(<actType>*, celix_bundle_context_t*).
  */
 #define CELIX_GEN_BUNDLE_ACTIVATOR(actType, actStart, actStop)                                                         \
-celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx __attribute__((unused)), void **userData) {    \
+                                                                                                                       \
+celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx, void **userData) {                            \
     celix_status_t status = CELIX_SUCCESS;                                                                             \
-    actType *data = (actType*)calloc(1, sizeof(*data));                                                                \
+    void* data = calloc(1, sizeof(actType));                                                                           \
     if (data != NULL) {                                                                                                \
         *userData = data;                                                                                              \
     } else {                                                                                                           \
@@ -125,14 +142,27 @@ celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx __attrib
 }                                                                                                                      \
                                                                                                                        \
 celix_status_t celix_bundleActivator_start(void *userData, celix_bundle_context_t *ctx) {                              \
-    return actStart((actType*)userData, ctx);                                                                          \
+    celix_status_t status = CELIX_SUCCESS;                                                                             \
+    celix_status_t (*fn)(actType*, celix_bundle_context_t*) = (actStart);                                              \
+    if (fn != NULL) {                                                                                                  \
+        status = fn((actType*)userData, ctx);                                                                          \
+    }                                                                                                                  \
+    return status;                                                                                                     \
 }                                                                                                                      \
                                                                                                                        \
 celix_status_t celix_bundleActivator_stop(void *userData, celix_bundle_context_t *ctx) {                               \
-    return actStop((actType*)userData, ctx);                                                                           \
+    celix_status_t status = CELIX_SUCCESS;                                                                             \
+    celix_status_t (*fn)(actType*, celix_bundle_context_t*) = (actStop);                                               \
+    if (fn != NULL) {                                                                                                  \
+        status = fn((actType*)userData, ctx);                                                                          \
+    }                                                                                                                  \
+    celix_dependency_manager_t* mng = celix_bundleContext_getDependencyManager(ctx);                                   \
+    celix_dependencyManager_removeAllComponents(mng);                                                                  \
+    return status;                                                                                                     \
 }                                                                                                                      \
                                                                                                                        \
-celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_context_t *ctx __attribute__((unused))) {    \
+celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_context_t *ctx) {                            \
+    celix_bundleContext_waitForEvents(ctx);                                                                            \
     free(userData);                                                                                                    \
     return CELIX_SUCCESS;                                                                                              \
 }

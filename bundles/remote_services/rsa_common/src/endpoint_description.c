@@ -26,6 +26,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
+#include <assert.h>
 
 #include "celix_errno.h"
 #include "celix_log.h"
@@ -33,36 +35,28 @@
 #include "endpoint_description.h"
 #include "remote_constants.h"
 #include "celix_constants.h"
-
-static celix_status_t endpointDescription_verifyLongProperty(celix_properties_t *properties, char *propertyName, unsigned long *longProperty);
+#include "celix_utils.h"
 
 celix_status_t endpointDescription_create(celix_properties_t *properties, endpoint_description_t **endpointDescription) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	unsigned long serviceId = 0UL;
-	status = endpointDescription_verifyLongProperty(properties, (char *) OSGI_RSA_ENDPOINT_SERVICE_ID, &serviceId);
-	if (status != CELIX_SUCCESS) {
-		return status;
-	}
-
 	endpoint_description_t *ep = calloc(1,sizeof(*ep));
-
     ep->properties = properties;
     ep->frameworkUUID = (char*)celix_properties_get(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
     ep->id = (char*)celix_properties_get(properties, OSGI_RSA_ENDPOINT_ID, NULL);
-    ep->service = strndup(celix_properties_get(properties, OSGI_FRAMEWORK_OBJECTCLASS, NULL), 1024*10);
-    ep->serviceId = serviceId;
+    ep->serviceName = celix_utils_strdup(celix_properties_get(properties, OSGI_FRAMEWORK_OBJECTCLASS, NULL));
+    ep->serviceId = celix_properties_getAsLong(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, -1);
 
-    if (!(ep->frameworkUUID) || !(ep->id) || !(ep->service) ) {
+    if (!(ep->frameworkUUID) || !(ep->id) || !(ep->serviceName) || ep->serviceId < 0) {
     	fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "ENDPOINT_DESCRIPTION: incomplete description!.");
     	status = CELIX_BUNDLE_EXCEPTION;
     }
 
-    if(status == CELIX_SUCCESS){
+    if (status == CELIX_SUCCESS) {
         *endpointDescription = ep;
-    }
-    else{
+    } else {
         *endpointDescription = NULL;
+        free(ep->serviceName);
         free(ep);
     }
 
@@ -71,20 +65,32 @@ celix_status_t endpointDescription_create(celix_properties_t *properties, endpoi
 
 celix_status_t endpointDescription_destroy(endpoint_description_t *description) {
     celix_properties_destroy(description->properties);
-    free(description->service);
+    free(description->serviceName);
     free(description);
     return CELIX_SUCCESS;
 }
 
-static celix_status_t endpointDescription_verifyLongProperty(celix_properties_t *properties, char *propertyName, unsigned long *longProperty) {
-    celix_status_t status = CELIX_SUCCESS;
+bool endpointDescription_isInvalid(const endpoint_description_t *description) {
+    return description == NULL || description->properties == NULL || description->serviceId < 0
+            || description->serviceName == NULL || strlen(description->serviceName) > NAME_MAX
+            || description->frameworkUUID == NULL || description->id == NULL;
+}
 
-    const char *value = celix_properties_get(properties, propertyName, NULL);
-    if (value == NULL) {
-        *longProperty = 0UL;
-    } else {
-        *longProperty = strtoul(value, NULL, 10);
+endpoint_description_t *endpointDescription_clone(const endpoint_description_t *description) {
+    if (endpointDescription_isInvalid(description)) {
+        return NULL;
     }
+    endpoint_description_t *newDesc = (endpoint_description_t*)calloc(1, sizeof(endpoint_description_t));
+    assert(newDesc != NULL);
+    newDesc->properties = celix_properties_copy(description->properties);
+    assert(newDesc->properties != NULL);
+    newDesc->frameworkUUID = (char*)celix_properties_get(newDesc->properties,
+            OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
+    newDesc->serviceId = description->serviceId;
+    newDesc->id = (char*)celix_properties_get(newDesc->properties,
+            OSGI_RSA_ENDPOINT_ID, NULL);
+    newDesc->serviceName = strdup(description->serviceName);
+    assert(newDesc->serviceName != NULL);
 
-    return status;
+    return newDesc;
 }

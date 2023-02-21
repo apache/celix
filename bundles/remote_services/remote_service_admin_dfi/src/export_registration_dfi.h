@@ -29,10 +29,9 @@ celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_ref
 void exportRegistration_destroy(export_registration_t *registration);
 
 celix_status_t exportRegistration_start(export_registration_t *registration);
-celix_status_t exportRegistration_stop(export_registration_t *registration);
 void exportRegistration_setActive(export_registration_t *registration, bool active);
 
-celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, celix_properties_t *metadata, char **response, int *responseLength);
+celix_status_t exportRegistration_call(export_registration_t *export, char *data, int datalength, celix_properties_t **metadata, char **response, int *responseLength);
 
 void exportRegistration_increaseUsage(export_registration_t *export);
 void exportRegistration_decreaseUsage(export_registration_t *export);

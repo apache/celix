@@ -26,7 +26,7 @@ namespace celix {
 
     /**
      * The shell command interface can be used to register additional Celix shell commands.
-     * This service should be register with the following properties:
+     * This service should be registered with the following properties:
      *  - name: mandatory, name of the command e.g. 'celix::lb'
      *  - usage: optional, string describing how tu use the command e.g. 'celix::lb [-l | -s | -u]'
      *  - description: optional, string describing the command e.g. 'list bundles.'
@@ -48,7 +48,7 @@ namespace celix {
          */
         static constexpr const char * const COMMAND_DESCRIPTION = "description";
 
-        virtual ~IShellCommand() = default;
+        virtual ~IShellCommand() noexcept = default;
 
         /**
          * Calls the shell command.

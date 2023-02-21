@@ -20,33 +20,31 @@
 #include <gtest/gtest.h>
 #include <atomic>
 
+#include "celix/FrameworkFactory.h"
+#include "celix/BundleContext.h"
 #include "celix_log_service.h"
 #include "celix_log_constants.h"
-#include "celix_api.h"
 #include "celix_log_helper.h"
+#include "celix/LogHelper.h"
 
 class LogHelperTestSuite : public ::testing::Test {
 public:
     LogHelperTestSuite() {
-        auto* properties = celix_properties_create();
-        celix_properties_set(properties, "org.osgi.framework.storage", ".cacheLogHelperTestSuite");
-        celix_properties_set(properties, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, "debug");
-
-
-        auto* fwPtr = celix_frameworkFactory_createFramework(properties);
-        auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
-        fw = std::shared_ptr<celix_framework_t>{fwPtr, [](celix_framework_t* f) {celix_frameworkFactory_destroyFramework(f);}};
-        ctx = std::shared_ptr<celix_bundle_context_t>{ctxPtr, [](celix_bundle_context_t*){/*nop*/}};
+        celix::Properties properties{};
+        properties.set("org.osgi.framework.storage", ".cacheLogHelperTestSuite");
+        properties.set(CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, "debug");
+        fw = celix::createFramework(properties);
+        ctx = fw->getFrameworkBundleContext();
     }
 
-    std::shared_ptr<celix_framework_t> fw{nullptr};
-    std::shared_ptr<celix_bundle_context_t> ctx{nullptr};
+    std::shared_ptr<celix::Framework> fw{};
+    std::shared_ptr<celix::BundleContext> ctx{};
 };
 
 
 
 TEST_F(LogHelperTestSuite, LogToStdOut) {
-    auto *helper = celix_logHelper_create(ctx.get(), "test::Log");
+    auto *helper = celix_logHelper_create(ctx->getCBundleContext(), "test::Log");
     EXPECT_EQ(0, celix_logHelper_logCount(helper));
 
     celix_logHelper_trace(helper, "testing %i", 0); //not not active
@@ -61,7 +59,7 @@ TEST_F(LogHelperTestSuite, LogToStdOut) {
 }
 
 TEST_F(LogHelperTestSuite, LogToLogSvc) {
-    auto *helper = celix_logHelper_create(ctx.get(), "test::Log");
+    auto *helper = celix_logHelper_create(ctx->getCBundleContext(), "test::Log");
     EXPECT_EQ(0, celix_logHelper_logCount(helper));
 
     std::atomic<size_t> logCount{0};
@@ -81,7 +79,7 @@ TEST_F(LogHelperTestSuite, LogToLogSvc) {
     opts.serviceVersion = CELIX_LOG_SERVICE_VERSION;
     opts.properties = props;
     opts.svc = (void*)&logSvc;
-    long svcId = celix_bundleContext_registerServiceWithOptions(ctx.get(), &opts);
+    long svcId = celix_bundleContext_registerServiceWithOptions(ctx->getCBundleContext(), &opts);
 
     EXPECT_EQ(0, celix_logHelper_logCount(helper));
     EXPECT_EQ(0, logCount.load());
@@ -96,6 +94,20 @@ TEST_F(LogHelperTestSuite, LogToLogSvc) {
     EXPECT_EQ(6, celix_logHelper_logCount(helper));
     EXPECT_EQ(6, logCount.load());
 
-    celix_bundleContext_unregisterService(ctx.get(), svcId);
+    celix_bundleContext_unregisterService(ctx->getCBundleContext(), svcId);
     celix_logHelper_destroy(helper);
+}
+
+TEST_F(LogHelperTestSuite, CxxLogHelper) {
+    celix::LogHelper helper{ctx, "test name"};
+
+    EXPECT_EQ(0, helper.count());
+
+    helper.trace("testing %i", 0); //not not active
+    helper.debug("testing %i", 1); //not not active
+    helper.info("testing %i", 2); //not not active
+    helper.warning("testing %i", 3); //not not active
+    helper.error("testing %i", 4); //not not active
+    helper.fatal("testing %i", 5); //not not active
+    EXPECT_EQ(5, helper.count());
 }

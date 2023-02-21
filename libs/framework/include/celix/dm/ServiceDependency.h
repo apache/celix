@@ -29,8 +29,9 @@
 #include <atomic>
 #include <vector>
 #include <cstring>
+#include <chrono>
 
-#include "dm_service_dependency.h"
+#include "celix_dm_service_dependency.h"
 #include "celix_constants.h"
 #include "celix_properties.h"
 #include "celix/Utils.h"
@@ -45,8 +46,9 @@ namespace celix { namespace dm {
 
     class BaseServiceDependency {
     private:
-        celix_dm_component_t* cCmp;
+        const std::chrono::milliseconds warningTimoutForNonExpiredSvcObject{5000};
         std::atomic<bool> depAddedToCmp{false};
+        celix_dm_component_t* cCmp;
     protected:
         celix_dm_service_dependency_t *cServiceDep {nullptr};
 
@@ -57,6 +59,9 @@ namespace celix { namespace dm {
                 celix_dmServiceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
             }
         }
+
+        template<typename U>
+        void waitForExpired(std::weak_ptr<U> observe, long svcId, const char* observeType);
     public:
         BaseServiceDependency(celix_dm_component_t* c)  : cCmp{c} {
             this->cServiceDep = celix_dmServiceDependency_create();
@@ -119,6 +124,12 @@ namespace celix { namespace dm {
         void setComponentInstance(T* cmp) { componentInstance = cmp;}
     };
 
+    /**
+     * @brief A service dependency for a component.
+     * @tparam T The component type
+     * @tparam I The service interface type
+     * @warning CServiceDependency is considered deprecated use celix::dm::ServiceDependency instead.
+     */
     template<class T, typename I>
     class CServiceDependency : public TypedServiceDependency<T> {
         using type = I;
@@ -246,6 +257,11 @@ namespace celix { namespace dm {
         void setupService();
     };
 
+    /**
+     * @brief A service dependency for a component.
+     * @tparam T The component type
+     * @tparam I The service interface type
+     */
     template<class T, class I>
     class ServiceDependency : public TypedServiceDependency<T> {
         using type = I;
@@ -261,56 +277,84 @@ namespace celix { namespace dm {
         /**
          * Set the service name of the service dependency.
          *
-         * @return the C++ service dependency reference for chaining (fluent API)
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setName(const std::string &_name);
 
         /**
          * Set the service filter of the service dependency.
          *
-         * @return the C++ service dependency reference for chaining (fluent API)
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setFilter(const std::string &filter);
 
         /**
          * Set the service version range of the service dependency.
          *
-         * @return the C++ service dependency reference for chaining (fluent API)
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setVersionRange(const std::string &versionRange);
 
         /**
          * Set the set callback for when the service dependency becomes available
          *
-         * @return the C++ service dependency reference for chaining (fluent API)
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setCallbacks(void (T::*set)(I* service));
 
         /**
          * Set the set callback for when the service dependency becomes available
          *
-         * @return the C++ service dependency reference for chaining (fluent API)
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setCallbacks(void (T::*set)(I* service, Properties&& properties));
 
         /**
          * Set the set callback for when the service dependency becomes available
          *
-         * @return the C service dependency reference for chaining (fluent API)
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setCallbacks(std::function<void(I* service, Properties&& properties)> set);
 
         /**
+         * @brief Set the set callback for when the service dependency becomes available using shared pointers
+         *
+         * @return the service dependency reference for chaining (fluent API)
+         */
+        ServiceDependency<T,I>& setCallbacks(void (T::*set)(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties));
+
+        /**
+         * @brief Set the set callback for when the service dependency becomes available using shared pointers.
+         *
+         * @return the service dependency reference for chaining (fluent API)
+         */
+        ServiceDependency<T,I>& setCallbacks(std::function<void(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)> set);
+
+        /**
+         * @brief Set the set callback for when the service dependency becomes available using shared pointers
+         *
+         * @return the service dependency reference for chaining (fluent API)
+         */
+        ServiceDependency<T,I>& setCallbacks(void (T::*set)(const std::shared_ptr<I>& service));
+
+        /**
+         * @brief Set the set callback for when the service dependency becomes available using shared pointers.
+         *
+         * @return the service dependency reference for chaining (fluent API)
+         */
+        ServiceDependency<T,I>& setCallbacks(std::function<void(const std::shared_ptr<I>& service)> set);
+
+        /**
          * Set the add and remove callback for when the services of service dependency are added or removed.
          *
-         * @return the C++ service dependency reference for chaining (fluent API)
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setCallbacks(void (T::*add)(I* service),  void (T::*remove)(I* service));
 
         /**
          * Set the add and remove callback for when the services of service dependency are added or removed.
          *
-         * @return the C++ service dependency reference for chaining (fluent API)
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setCallbacks(
                 void (T::*add)(I* service, Properties&& properties),
@@ -320,7 +364,7 @@ namespace celix { namespace dm {
         /**
          * Set the add and remove callback for when the services of service dependency are added or removed.
          *
-         * @return the C service dependency reference for chaining (fluent API)
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setCallbacks(
                 std::function<void(I* service, Properties&& properties)> add,
@@ -328,16 +372,53 @@ namespace celix { namespace dm {
         );
 
         /**
+         * @brief Set the add and remove callback for a service dependency using shared pointers.
+         *
+         * @return the service dependency reference for chaining (fluent API)
+         */
+        ServiceDependency<T,I>& setCallbacks(
+                void (T::*add)(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties),
+                void (T::*remove)(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties));
+
+        /**
+         * @brief Set the add and remove callback for a service dependency using shared pointers.
+         *
+         * @return the service dependency reference for chaining (fluent API)
+         */
+        ServiceDependency<T,I>& setCallbacks(
+                std::function<void(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)> add,
+                std::function<void(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)> remove);
+
+
+        /**
+         * @brief Set the add and remove callback for a service dependency using shared pointers.
+         *
+         * @return the service dependency reference for chaining (fluent API)
+         */
+        ServiceDependency<T,I>& setCallbacks(
+                void (T::*add)(const std::shared_ptr<I>& service),
+                void (T::*remove)(const std::shared_ptr<I>& service));
+
+        /**
+         * @brief Set the add and remove callback for a service dependency using shared pointers.
+         *
+         * @return the service dependency reference for chaining (fluent API)
+         */
+        ServiceDependency<T,I>& setCallbacks(
+                std::function<void(const std::shared_ptr<I>& service)> add,
+                std::function<void(const std::shared_ptr<I>& service)> remove);
+
+        /**
          * Specify if the service dependency is required. Default is false
          *
-         * @return the C service dependency reference for chaining (fluent API)
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setRequired(bool req);
 
         /**
          * Specify if the update strategy to use
          *
-         * @return the C service dependency reference for chaining (fluent API)
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setStrategy(DependencyUpdateStrategy strategy);
 
@@ -345,6 +426,8 @@ namespace celix { namespace dm {
          * Specify if the service dependency should add a service.lang filter part if it is not already present
          * For C++ service dependencies 'service.lang=C++' will be added.
          * Should be called before
+         *
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setAddLanguageFilter(bool addLang);
 
@@ -354,26 +437,38 @@ namespace celix { namespace dm {
          * When build the service dependency is active and the service tracker is created.
          *
          * Should not be called on the Celix event thread.
+         *
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& build();
 
         /**
          * Same a build, but will not wait till the underlining service trackers are opened.
          * Can be called on the Celix event thread.
+         *
+         * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& buildAsync();
     private:
+        void setupService();
+        void setupCallbacks();
+        int invokeCallback(std::function<void(I*, Properties&&)> fp, const celix_properties_t *props, const void* service);
+
         std::string name {};
         std::string filter {};
         std::string versionRange {};
 
-        std::function<void(I* service, Properties&& properties)> setFp{nullptr};
-        std::function<void(I* service, Properties&& properties)> addFp{nullptr};
-        std::function<void(I* service, Properties&& properties)> removeFp{nullptr};
+        std::function<void(I* service, Properties&& properties)> setFp{};
+        std::function<void(I* service, Properties&& properties)> addFp{};
+        std::function<void(I* service, Properties&& properties)> removeFp{};
 
-        void setupService();
-        void setupCallbacks();
-        int invokeCallback(std::function<void(I*, Properties&&)> fp, const celix_properties_t *props, const void* service);
+        std::function<void(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)> setFpUsingSharedPtr{};
+        std::function<void(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)> addFpUsingSharedPtr{};
+        std::function<void(const std::shared_ptr<I>& service, const std::shared_ptr<const celix::Properties>& properties)> removeFpUsingSharedPtr{};
+
+        //note below is only updated in the Celix event thread.
+        std::unordered_map<long, std::pair<std::shared_ptr<I>, std::shared_ptr<const celix::Properties>>> addedServices{};
+        std::pair<std::shared_ptr<I>, std::shared_ptr<const celix::Properties>> setService{};
     };
 }}
 

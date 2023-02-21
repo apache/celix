@@ -28,9 +28,9 @@
 #include <iostream>
 #include <type_traits>
 #include <algorithm>
+#include <cstdio>
 
-
-#include "dm_component.h"
+#include "celix_dm_component.h"
 #include "celix/dm/types.h"
 #include "celix/dm/ServiceDependency.h"
 #include "celix/dm/ProvidedService.h"
@@ -41,10 +41,17 @@
 namespace celix { namespace dm {
 
     enum class ComponentState {
-        INACTIVE = 1,
-        WAITING_FOR_REQUIRED = 2,
-        INSTANTIATED_AND_WAITING_FOR_REQUIRED = 3,
-        TRACKING_OPTIONAL = 4,
+        INACTIVE =                              1,
+        WAITING_FOR_REQUIRED =                  2,
+        INITIALIZING =                          3,
+        DEINITIALIZING =                        4,
+        INSTANTIATED_AND_WAITING_FOR_REQUIRED = 5,
+        STARTING =                              6,
+        STOPPING =                              7,
+        TRACKING_OPTIONAL =                     8,
+        SUSPENDING =                            9,
+        SUSPENDED =                             10,
+        RESUMING =                              11,
     };
 
     class BaseComponent {
@@ -90,14 +97,28 @@ namespace celix { namespace dm {
         ComponentState getState() const {
              auto cState = celix_dmComponent_currentState(cCmp);
              switch (cState) {
-                 case DM_CMP_STATE_INACTIVE:
-                     return ComponentState::INACTIVE;
-                 case DM_CMP_STATE_WAITING_FOR_REQUIRED:
+                 case CELIX_DM_CMP_STATE_WAITING_FOR_REQUIRED:
                      return ComponentState::WAITING_FOR_REQUIRED;
-                 case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED:
+                 case CELIX_DM_CMP_STATE_INITIALIZING:
+                     return ComponentState::INITIALIZING;
+                 case CELIX_DM_CMP_STATE_DEINITIALIZING:
+                     return ComponentState::DEINITIALIZING;
+                 case CELIX_DM_CMP_STATE_INITIALIZED_AND_WAITING_FOR_REQUIRED:
                      return ComponentState::INSTANTIATED_AND_WAITING_FOR_REQUIRED;
-                 default:
+                 case CELIX_DM_CMP_STATE_STARTING:
+                     return ComponentState::STARTING;
+                 case CELIX_DM_CMP_STATE_STOPPING:
+                     return ComponentState::STOPPING;
+                 case CELIX_DM_CMP_STATE_TRACKING_OPTIONAL:
                      return ComponentState::TRACKING_OPTIONAL;
+                 case CELIX_DM_CMP_STATE_SUSPENDING:
+                     return ComponentState::SUSPENDING;
+                 case CELIX_DM_CMP_STATE_SUSPENDED:
+                     return ComponentState::SUSPENDED;
+                 case CELIX_DM_CMP_STATE_RESUMING:
+                     return ComponentState::RESUMING;
+                 default:
+                     return ComponentState::INACTIVE;
              }
          }
 
@@ -116,6 +137,8 @@ namespace celix { namespace dm {
          * The underlining service registration and service tracker will be registered/created async.
          */
         void runBuild();
+
+        friend std::ostream& operator<<(std::ostream& out, const BaseComponent& cmp);
     protected:
         celix_bundle_context_t* context;
         celix_dependency_manager_t* cDepMan;
@@ -131,6 +154,10 @@ namespace celix { namespace dm {
         std::vector<std::shared_ptr<void>> componentContexts{};
     };
 
+    /**
+     * Stream outputs the full component info.
+     */
+    inline std::ostream& operator<<(std::ostream& out, const BaseComponent& cmp);
 
     template<class T>
     class Component : public BaseComponent {
@@ -237,19 +264,38 @@ namespace celix { namespace dm {
 
 
         /**
-         * Creates a provided C services. The provided service can be fine tuned and build using a fluent API
+         * @brief Creates a provided C services the component.
+         *
+         * The provided service can be fine tuned and build using a fluent API
+         *
          * @param svc  The pointer to a C service (c struct)
          * @param serviceName The service name to use
          */
         template<class I> ProvidedService<T,I>& createProvidedCService(I* svc, std::string serviceName);
 
         /**
-         * Creates a provided C++ services. The provided service can be fine tuned and build using a fluent API
-         * The service pointer is based on the component instance.
+         * @brief Creates a provided C++ services for the component.
+         *
+         * The provided service can be fine tuned and build using a fluent API
+         *
+         * @note The service type I must be a base of component type T.
          *
          * @param serviceName The optional service name. If not provided the service name is inferred from I.
          */
         template<class I> ProvidedService<T,I>& createProvidedService(std::string serviceName = {});
+
+        /**
+         * @brief Creates a unassociated provided services for the component.
+         *
+         * The provided service can be fine tuned and build using a fluent API
+         *
+         * @note The provided service can - and is expected to be - be unassociated with the component type.
+         * I.e. it can be a C service.
+         * The ProvidedService result will store the shared_ptr of the service during its lifecycle.
+         *
+         * @param serviceName The optional service name. If not provided the service name is inferred from I.
+         */
+        template<class I> ProvidedService<T,I>& createUnassociatedProvidedService(std::shared_ptr<I> svc, std::string serviceName = {});
 
         /**
          * Adds a C interface to provide as service to the Celix framework.

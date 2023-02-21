@@ -17,10 +17,20 @@ limitations under the License.
 
 # Intro
 
-The main way to use Celix is through the bundle context of a bundle.
-When a bundle is started the bundle context will be injected in the bundle activator.
+Apache Celix is a framework for C, C++14 and C++17 to develop dynamic modular software applications using component
+and in-process service-oriented programming.
+Apache Celix is inspired by the [OSGi specification](https://www.osgi.org/) and adapted to C and C++.
 
-Apache Celix is a C framework with a C and C++ (C++11) API. 
+
+# Bundles
+
+The main way to use Celix is by creating dynamic modules named bundles.
+
+An Apache Celix Bundle contains a collection of shared libraries, configuration files and optional
+an activation entry combined in a zip file. 
+Bundles can be dynamically installed and started in an Apache Celix framework.
+ 
+When a bundle is started a C or C++ bundle context will be injected in the bundle activator.
 
 ## C Bundle Activator
 ```
@@ -45,7 +55,7 @@ CELIX_GEN_BUNDLE_ACTIVATOR(activator_data_t, activator_start, activator_stop)
 
 ## C++ Bundle Activator
 ```
-#include "celix/BundleActivator.h"
+#include <celix/BundleActivator.h>
 
 class MyBundleActivator {
 public:

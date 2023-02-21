@@ -57,8 +57,7 @@ namespace celix {
         explicit UseServiceBuilder(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _name, bool _useSingleService = true) :
                 cCtx{std::move(_cCtx)},
                 name{std::move(_name)},
-                useSingleService{_useSingleService} {
-        }
+                useSingleService{_useSingleService} {}
 
         UseServiceBuilder& operator=(UseServiceBuilder&&) = delete;
         UseServiceBuilder(const UseServiceBuilder&) = delete;
@@ -71,7 +70,11 @@ namespace celix {
          * Example:
          *      "(property_key=value)"
          */
-        UseServiceBuilder& setFilter(std::string f) { filter = celix::Filter{std::move(f)}; return *this; }
+#if __cplusplus >= 201703L //C++17 or higher
+        UseServiceBuilder& setFilter(std::string_view f) { filter = celix::Filter{f}; return *this; }
+#else
+        UseServiceBuilder& setFilter(const std::string& f) { filter = celix::Filter{f}; return *this; }
+#endif
 
         /**
          * @brief Set filter to be used to matching services.
@@ -155,7 +158,7 @@ namespace celix {
             opts.useWithOwner = [](void* data, void *voidSvc, const celix_properties_t* cProps, const celix_bundle_t* cBnd) {
                 auto* builder = static_cast<UseServiceBuilder<I>*>(data);
                 auto* svc = static_cast<I*>(voidSvc);
-                const Bundle bnd = Bundle{const_cast<celix_bundle_t*>(cBnd)};
+                const Bundle bnd{const_cast<celix_bundle_t*>(cBnd)};
                 auto props = celix::Properties::wrap(cProps);
                 for (const auto& func : builder->callbacks) {
                     func(*svc);

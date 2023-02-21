@@ -24,6 +24,7 @@
 #include <dirent.h>
 #include <string.h>
 
+#include "pubsub_message_serialization_marker.h"
 #include "celix_constants.h"
 #include "dyn_function.h"
 #include "celix_version.h"
@@ -70,6 +71,9 @@ struct pubsub_serialization_provider {
 
     celix_shell_command_t cmdSvc;
     long cmdSvcId;
+
+    pubsub_message_serialization_marker_t markerSvc;
+    long markerSvcId;
 
     celix_thread_mutex_t mutex; //protects below
     celix_array_list_t *serializationSvcEntries; //key = pubsub_serialization_entry;
@@ -450,7 +454,7 @@ static void pubsub_serializationProvider_parseDescriptors(pubsub_serialization_p
 
         bool unique = pubsub_serializationProvider_validateEntry(provider, serEntry);
         if (unique && serEntry->valid) { //note only register if unique and valid
-            L_DEBUG("Adding message serialization entry for msg %s with id %d and version %s", serEntry->msgFqn, serEntry->msgId, serEntry->msgVersion);
+            L_DEBUG("Adding message serialization entry for msg %s with id %d and version %s", serEntry->msgFqn, serEntry->msgId, serEntry->msgVersionStr);
             pubsub_serializationProvider_registerSerializationEntry(provider, serEntry);
         }
 
@@ -586,6 +590,7 @@ void pubsub_serializationProvider_onInstalledBundle(void *handle, const celix_bu
 pubsub_serialization_provider_t *pubsub_serializationProvider_create(
         celix_bundle_context_t *ctx,
         const char* serializationType,
+        bool backwardsCompatible,
         long serializationServiceRanking,
         celix_status_t (*serialize)(pubsub_serialization_entry_t* entry, const void* msg, struct iovec** output, size_t* outputIovLen),
         void (*freeSerializeMsg)(pubsub_serialization_entry_t* entry, struct iovec* input, size_t inputIovLen),
@@ -601,18 +606,14 @@ pubsub_serialization_provider_t *pubsub_serializationProvider_create(
     provider->freeSerializeMsg = freeSerializeMsg;
     provider->deserialize = deserialize;
     provider->freeDeserializeMsg = freeDeserializeMsg;
-
-
-    {
-        provider->logHelper = celix_logHelper_create(ctx, "celix_pubsub_serialization_provider");
-
-    }
+    provider->logHelper = celix_logHelper_create(ctx, "celix_pubsub_serialization_provider");
 
     dynFunction_logSetup(dfi_log, provider, 1);
     dynType_logSetup(dfi_log, provider, 1);
     dynCommon_logSetup(dfi_log, provider, 1);
 
     {
+        //Start bundle tracker and register pubsub_message_serialization services
         celix_bundle_tracking_options_t opts = CELIX_EMPTY_BUNDLE_TRACKING_OPTIONS;
         opts.callbackHandle  = provider;
         opts.onInstalled = pubsub_serializationProvider_onInstalledBundle;
@@ -621,13 +622,13 @@ pubsub_serialization_provider_t *pubsub_serializationProvider_create(
     }
 
     {
+        //Register shell command to query serializers
         provider->cmdSvc.handle = provider;
         provider->cmdSvc.executeCommand = pubsub_serializationProvider_executeCommand;
 
         char *name = NULL;
         asprintf(&name,"celix::%s_message_serialization", provider->serializationType);
         char *usage = NULL;
-        //TODO add support for listing invalid entries
         asprintf(&usage,"celix::%s_message_serialization [verbose | invalids | <msg id> | <msg fqn>]", provider->serializationType);
 
         celix_properties_t* props = celix_properties_create();
@@ -645,11 +646,28 @@ pubsub_serialization_provider_t *pubsub_serializationProvider_create(
         free(name);
         free(usage);
     }
+
+    {
+        //Register pubsub_message_serialization_marker service to indicate the availability of this message serialization type.
+        celix_properties_t* props = celix_properties_create();
+        provider->markerSvc.handle = provider;
+        celix_properties_set(props, PUBSUB_MESSAGE_SERIALIZATION_MARKER_SERIALIZATION_TYPE_PROPERTY, provider->serializationType);
+        celix_properties_setBool(props, PUBSUB_MESSAGE_SERIALIZATION_MARKER_SERIALIZATION_BACKWARDS_COMPATIBLE, backwardsCompatible);
+        celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
+        opts.svc = &provider->markerSvc;
+        opts.serviceName = PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME;
+        opts.serviceVersion = PUBSUB_MESSAGE_SERIALIZATION_MARKER_VERSION;
+        opts.properties = props;
+        provider->markerSvcId = celix_bundleContext_registerServiceWithOptions(ctx, &opts);
+    }
+
     return provider;
 }
 
 void pubsub_serializationProvider_destroy(pubsub_serialization_provider_t* provider) {
     if (provider != NULL) {
+        celix_bundleContext_unregisterService(provider->ctx, provider->markerSvcId);
+
         celix_bundleContext_stopTracker(provider->ctx, provider->bundleTrackerId);
         celix_bundleContext_unregisterService(provider->ctx, provider->cmdSvcId);
 
@@ -657,6 +675,9 @@ void pubsub_serializationProvider_destroy(pubsub_serialization_provider_t* provi
         for (int i = 0; i < celix_arrayList_size(provider->serializationSvcEntries); ++i) {
             pubsub_serialization_entry_t *entry = celix_arrayList_get(provider->serializationSvcEntries, i);
             celix_bundleContext_unregisterService(provider->ctx, entry->svcId);
+            if (entry->freeUserData) {
+                entry->freeUserData(entry->userData);
+            }
             free(entry->descriptorContent);
             free(entry->readFromEntryPath);
             free(entry->msgVersionStr);

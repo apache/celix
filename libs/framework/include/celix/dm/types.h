@@ -32,11 +32,11 @@ namespace celix { namespace dm {
     template<typename T, typename I>
     class ProvidedService;
 
-    template<class T, typename I>
-    class CServiceDependency;
-
     template<class T, class I>
     class ServiceDependency;
+
+    template<class T, typename I>
+    class CServiceDependency;
 
     template<typename T>
     std::string typeName() {

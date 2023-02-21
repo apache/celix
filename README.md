@@ -22,47 +22,13 @@ limitations under the License.
 [![codecov](https://codecov.io/gh/apache/celix/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/celix)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/6685/badge.svg)](https://scan.coverity.com/projects/6685)
 
-Apache Celix is an implementation of the OSGi specification adapted to C and C++ (C++11). It is a framework to develop (dynamic) modular software applications using component and/or service-oriented programming.
+Apache Celix is a framework for C, C++14 and C++17 to develop dynamic modular software applications using component 
+and in-process service-oriented programming. 
+Apache Celix is inspired by the [OSGi specification](https://www.osgi.org/) adapted for C and C++.
 
 ## Documentation
 - [Building Apache Celix](documents/building/README.md)
-- [Apache Celix Intro](documents/intro/README.md)
-- [Getting Started Guide](documents/getting_started/README.md)
-
-## Building in a Nutshell
-
-### Building Celix
-```bash
-#bash
-git clone git@github.com:apache/celix.git
-mkdir celix/build
-cd celix/build
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
-make -j
-sudo make install
-```
-
-### Building Celix Promises library standalone
-```bash
-#bash
-git clone git@github.com:apache/celix.git
-mkdir celix/build
-cd celix/build
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/promises
-make -j
-sudo make install
-```
-
-### Building etcdlib library standalone
-```bash
-#bash
-git clone git@github.com:apache/celix.git
-mkdir celix/build
-cd celix/build
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/etcdlib
-make -j
-sudo make install
-```
+- [Apache Celix Intro](documents/README.md)
 
 ## C++ Usage
 
@@ -280,7 +246,7 @@ public:
     explicit CalcTrackerBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
         tracker = ctx->trackServices<ICalc>()
             .build();
-        for (auto calc : tracker->getServices()) {
+        for (auto& calc : tracker->getServices()) {
             std::cout << "result is " << std::to_string(calc->add(2, 3)) << std::endl;
         }
     }

@@ -20,7 +20,9 @@
 #include <stdlib.h>
 #include <phase2b_cmp.h>
 
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
+#include <celix_dm_component.h>
+#include <celix_dm_service_dependency.h>
 
 #include "phase1.h"
 #include "phase2.h"
@@ -45,7 +47,9 @@ static celix_status_t activator_start(struct phase2b_activator_struct *act, celi
 
         celix_dm_component_t *cmp = celix_dmComponent_create(ctx, "PHASE2B_PROCESSING_COMPONENT");
         celix_dmComponent_setImplementation(cmp, act->phase2bCmp);
-        CELIX_DMCOMPONENT_SETCALLBACKS(cmp, phase2b_cmp_t *, phase2b_init, phase2b_start, phase2b_stop, phase2b_deinit);
+        CELIX_DM_COMPONENT_SET_CALLBACKS(cmp, phase2b_cmp_t, phase2b_init, phase2b_start, phase2b_stop, phase2b_deinit);\
+        //note not configuring destroy callback -> destroying component manually in the activator stop callback.
+
         celix_dmComponent_addInterface(cmp, PHASE2_NAME, PHASE2_VERSION, &act->phase2Serv, props);
 
 
@@ -70,7 +74,7 @@ static celix_status_t activator_stop(struct phase2b_activator_struct *act, celix
     celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(ctx);
     celix_dependencyManager_removeAllComponents(mng);
     if (act->phase2bCmp != NULL) {
-        phase2b_destroy(act->phase2bCmp);
+        phase2b_destroy(act->phase2bCmp); //destroy component implementation
     }
     return CELIX_SUCCESS;
 }

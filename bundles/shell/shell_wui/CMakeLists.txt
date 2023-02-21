@@ -17,18 +17,17 @@
 celix_subproject(SHELL_WUI "Option to enable building the Shell Web User Interface bundles" ON DEPS SHELL HTTP_ADMIN)
 if (SHELL_WUI)
 
-
     add_celix_bundle(shell_wui
         SYMBOLIC_NAME "apache_celix_shell_wui"
         VERSION "1.0.0"
         NAME "Apache Celix Shell WUI"
+        FILENAME celix_shell_wui
         GROUP "Celix/Shell"
         SOURCES
             src/shell_wui_bundle_activator.c
     )
 
     target_link_libraries(shell_wui PRIVATE Celix::shell_api Celix::http_admin_api)
-    celix_bundle_private_libs(shell_wui civetweb_shared)
     celix_bundle_add_dir(shell_wui resources)
     celix_bundle_headers(shell_wui "X-Web-Resource: /shell$<SEMICOLON>/resources")
 
@@ -36,6 +35,5 @@ if (SHELL_WUI)
     install_celix_bundle(shell_wui EXPORT celix)
     #Alias setup to match external usage
     add_library(Celix::shell_wui ALIAS shell_wui)
-
 
 endif ()

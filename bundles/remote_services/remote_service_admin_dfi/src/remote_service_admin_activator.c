@@ -17,102 +17,58 @@
  * under the License.
  */
 
-#include <stdlib.h>
-#include <remote_service_admin.h>
+#include "celix_api.h"
 
 #include "remote_service_admin_dfi.h"
-
-#include "bundle_activator.h"
-#include "service_registration.h"
-
 #include "export_registration_dfi.h"
 #include "import_registration_dfi.h"
 
-struct activator {
-	remote_service_admin_t *admin;
-	remote_service_admin_service_t *adminService;
-	service_registration_t *registration;
-};
+typedef struct celix_remote_service_admin_activator {
+    remote_service_admin_t *admin;
+    remote_service_admin_service_t adminService;
+    long svcIdRsa;
+} celix_remote_service_admin_activator_t;
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator;
-
-	activator = calloc(1, sizeof(*activator));
-	if (!activator) {
-		status = CELIX_ENOMEM;
-	} else {
-		activator->admin = NULL;
-		activator->registration = NULL;
-
-		*userData = activator;
-	}
-
-	return status;
-}
-
-celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-	remote_service_admin_service_t *remoteServiceAdmin = NULL;
-
-	status = remoteServiceAdmin_create(context, &activator->admin);
-	if (status == CELIX_SUCCESS) {
-		remoteServiceAdmin = calloc(1, sizeof(*remoteServiceAdmin));
-		if (!remoteServiceAdmin) {
-			status = CELIX_ENOMEM;
-		} else {
-			remoteServiceAdmin->admin = activator->admin;
-			remoteServiceAdmin->exportService = remoteServiceAdmin_exportService;
-
-			remoteServiceAdmin->getExportedServices = remoteServiceAdmin_getExportedServices;
-			remoteServiceAdmin->getImportedEndpoints = remoteServiceAdmin_getImportedEndpoints;
-			remoteServiceAdmin->importService = remoteServiceAdmin_importService;
-
-			remoteServiceAdmin->exportReference_getExportedEndpoint = exportReference_getExportedEndpoint;
-			remoteServiceAdmin->exportReference_getExportedService = exportReference_getExportedService;
-
-			remoteServiceAdmin->exportRegistration_close = remoteServiceAdmin_removeExportedService;
-			remoteServiceAdmin->exportRegistration_getException = exportRegistration_getException;
-			remoteServiceAdmin->exportRegistration_getExportReference = exportRegistration_getExportReference;
-
-			remoteServiceAdmin->importReference_getImportedEndpoint = importReference_getImportedEndpoint;
-			remoteServiceAdmin->importReference_getImportedService = importReference_getImportedService;
-
-			remoteServiceAdmin->importRegistration_close = remoteServiceAdmin_removeImportedService;
-			remoteServiceAdmin->importRegistration_getException = importRegistration_getException;
-			remoteServiceAdmin->importRegistration_getImportReference = importRegistration_getImportReference;
-
-			status = bundleContext_registerService(context, OSGI_RSA_REMOTE_SERVICE_ADMIN, remoteServiceAdmin, NULL, &activator->registration);
-			activator->adminService = remoteServiceAdmin;
-		}
-	}
-
-	return status;
-}
-
-celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
+static celix_status_t celix_rsa_start(celix_remote_service_admin_activator_t* activator, celix_bundle_context_t* ctx) {
     celix_status_t status = CELIX_SUCCESS;
-    struct activator *activator = userData;
+    activator->svcIdRsa = -1;
 
-    serviceRegistration_unregister(activator->registration);
-    activator->registration = NULL;
+    status = remoteServiceAdmin_create(ctx, &activator->admin);
+    if (status == CELIX_SUCCESS) {
+        activator->adminService.admin = activator->admin;
+        activator->adminService.exportService = remoteServiceAdmin_exportService;
 
-    remoteServiceAdmin_stop(activator->admin);
-    remoteServiceAdmin_destroy(&activator->admin);
+        activator->adminService.getExportedServices = remoteServiceAdmin_getExportedServices;
+        activator->adminService.getImportedEndpoints = remoteServiceAdmin_getImportedEndpoints;
+        activator->adminService.importService = remoteServiceAdmin_importService;
 
-    free(activator->adminService);
+        activator->adminService.exportReference_getExportedEndpoint = exportReference_getExportedEndpoint;
+        activator->adminService.exportReference_getExportedService = exportReference_getExportedService;
+
+        activator->adminService.exportRegistration_close = remoteServiceAdmin_removeExportedService;
+        activator->adminService.exportRegistration_getException = exportRegistration_getException;
+        activator->adminService.exportRegistration_getExportReference = exportRegistration_getExportReference;
+
+        activator->adminService.importReference_getImportedEndpoint = importReference_getImportedEndpoint;
+        activator->adminService.importReference_getImportedService = importReference_getImportedService;
+
+        activator->adminService.importRegistration_close = remoteServiceAdmin_removeImportedService;
+        activator->adminService.importRegistration_getException = importRegistration_getException;
+        activator->adminService.importRegistration_getImportReference = importRegistration_getImportReference;
+
+        activator->svcIdRsa = celix_bundleContext_registerService(ctx, &activator->adminService, OSGI_RSA_REMOTE_SERVICE_ADMIN, NULL);
+    }
 
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-
-	free(activator);
-
-	return status;
+static celix_status_t celix_rsa_stop(celix_remote_service_admin_activator_t* activator, celix_bundle_context_t* ctx) {
+    celix_bundleContext_unregisterService(ctx, activator->svcIdRsa);
+    remoteServiceAdmin_stop(activator->admin);
+    remoteServiceAdmin_destroy(&activator->admin);
+    return CELIX_SUCCESS;
 }
+
+CELIX_GEN_BUNDLE_ACTIVATOR(celix_remote_service_admin_activator_t, celix_rsa_start, celix_rsa_stop)
 
 

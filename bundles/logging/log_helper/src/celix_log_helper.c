@@ -24,6 +24,7 @@
 #include "celix_log_utils.h"
 #include "celix_log_helper.h"
 #include "celix_log_service.h"
+#include "celix_threads.h"
 
 struct celix_log_helper {
     celix_bundle_context_t *ctx;

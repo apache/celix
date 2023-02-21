@@ -18,12 +18,13 @@
 add_celix_bundle(syslog_writer
 		SYMBOLIC_NAME "apache_celix_syslog_writer"
 		NAME "Apache Celix Syslog Writer"
+		FILENAME celix_syslog_writer
 		GROUP "Celix/Logging"
 		VERSION "1.0.0"
 		SOURCES
 		src/celix_syslog_writer_activator.c
 )
-target_link_libraries(syslog_writer PRIVATE Celix::log_helper)
+target_link_libraries(syslog_writer PRIVATE Celix::log_helper Celix::log_service_api)
 install_celix_bundle(syslog_writer EXPORT celix COMPONENT logging)
 
 #Setup target aliases to match external usage

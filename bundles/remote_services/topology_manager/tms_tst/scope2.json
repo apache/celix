@@ -2,7 +2,7 @@
 "exportServices": [
 {
 "filter": "(&(objectClass=org.apache.celix.calc.api.Calculator)(module=Calc))",
-"zone": "thales"
+"zone": "a_zone"
 },
 {
 "filter": "(objectClass=org.apache.celix.calc.*)",

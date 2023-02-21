@@ -15,14 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(CppUTest REQUIRED)
-include_directories(SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR})
-
 add_celix_bundle(rsa_dfi_tst_bundle
     VERSION 0.0.1
     SOURCES
         src/tst_activator.c
 )
+celix_deprecated_utils_headers(rsa_dfi_tst_bundle)
 
 #add calculator avpr
 get_target_property(DESCR calculator_api INTERFACE_DESCRIPTOR)
@@ -32,7 +30,7 @@ celix_bundle_files(rsa_dfi_tst_bundle ${DESCR} DESTINATION .)
 get_target_property(DESCR remote_example_api INTERFACE_DESCRIPTOR)
 celix_bundle_files(rsa_dfi_tst_bundle ${DESCR} DESTINATION .)
 
-target_link_libraries(rsa_dfi_tst_bundle PRIVATE ${CppUTest_LIBRARY} calculator_api remote_example_api)
+target_link_libraries(rsa_dfi_tst_bundle PRIVATE calculator_api remote_example_api)
 target_include_directories(rsa_dfi_tst_bundle PRIVATE src)
 
 add_executable(test_rsa_dfi
@@ -41,7 +39,9 @@ add_executable(test_rsa_dfi
     src/rsa_client_server_tests.cc
 )
 target_include_directories(test_rsa_dfi PRIVATE src)
+celix_deprecated_utils_headers(test_rsa_dfi)
 target_link_libraries(test_rsa_dfi PRIVATE
+        civetweb::civetweb
         CURL::libcurl
         Celix::framework
         Celix::rsa_common
@@ -60,11 +60,17 @@ get_property(remote_example_bundle_file TARGET remote_example_service PROPERTY B
 configure_file(config.properties.in config.properties)
 configure_file(client.properties.in client.properties)
 configure_file(server.properties.in server.properties)
+#add exception service interface descriptor
+configure_file(exception_test_service.descriptor exception_test_service.descriptor)
 
-add_dependencies(test_rsa_dfi
-        rsa_dfi_bundle #note depend on the target creating the bundle zip not the lib target
-        calculator_bundle
-        remote_example_service_bundle
+add_celix_bundle_dependencies(test_rsa_dfi
+        rsa_dfi #note depend on the target creating the bundle zip not the lib target
+        calculator
+        remote_example_service
+        calculator_shell
+        rsa_discovery
+        Celix::rsa_topology_manager
+        rsa_dfi_tst_bundle
 )
 
 add_test(NAME run_test_rsa_dfi COMMAND test_rsa_dfi)

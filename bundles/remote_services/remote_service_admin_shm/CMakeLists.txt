@@ -17,7 +17,7 @@
 celix_subproject(RSA_REMOTE_SERVICE_ADMIN_SHM "Option to enable building the Remote Service Admin Service SHM bundle" OFF)
 if (RSA_REMOTE_SERVICE_ADMIN_SHM)
 
-        find_package(UUID REQUIRED)
+	find_package(libuuid REQUIRED)
 
 
 	link_directories("/opt/local/lib")

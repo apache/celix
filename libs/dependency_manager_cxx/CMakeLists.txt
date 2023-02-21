@@ -27,10 +27,9 @@ else()
     target_link_libraries(dependency_manager_cxx_static Celix::framework)
 endif()
 
-#add_library(dependency_manager_cxx_static INTERFACE)
-#target_sources(dependency_manager_cxx_static INTERFACE src/dm_activator.cc)
-
 install(TARGETS dependency_manager_cxx_static EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
+
+celix_deprecated_utils_headers(dependency_manager_cxx_static)
 
 #Setup target aliases to match external usage
 add_library(Celix::dependency_manager_cxx_static ALIAS dependency_manager_cxx_static)

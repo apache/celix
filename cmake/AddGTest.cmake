@@ -16,15 +16,11 @@
 # under the License.
 
 include(FetchContent)
+set(INSTALL_GTEST FALSE CACHE BOOL "" FORCE)
 FetchContent_Declare(
         googletest
         GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG        release-1.10.0
+#        GIT_REPOSITORY https://gitee.com/mirrors/googletest.git
+        GIT_TAG        release-1.11.0
 )
 FetchContent_MakeAvailable(googletest)
-
-add_library(GTest::gtest ALIAS gtest)
-add_library(GTest::gtest_main ALIAS gtest_main)
-
-add_library(GTest::gmock ALIAS gmock)
-add_library(GTest::gmock_main ALIAS gmock_main)

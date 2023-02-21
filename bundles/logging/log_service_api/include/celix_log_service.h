@@ -21,6 +21,7 @@
 #define CELIX_LOG_SERVICE_H
 
 #include "celix_log_level.h"
+#include <stdarg.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,38 +50,38 @@ typedef struct celix_log_service {
     /**
      * Logs a trace message, printf style.
      */
-    void (*trace)(void *handle, const char* format, ...);
+    void (*trace)(void *handle, const char* format, ...) __attribute__((format(printf,2,3)));
 
     /**
      * Logs a debug message, printf style.
      */
-    void (*debug)(void *handle, const char* format, ...);
+    void (*debug)(void *handle, const char* format, ...) __attribute__((format(printf,2,3)));
 
     /**
      * Logs a info message, printf style.
      */
-    void (*info)(void *handle, const char* format, ...);
+    void (*info)(void *handle, const char* format, ...) __attribute__((format(printf,2,3)));
 
     /**
      * Logs a warning message, printf style.
      */
-    void (*warning)(void *handle, const char* format, ...);
+    void (*warning)(void *handle, const char* format, ...) __attribute__((format(printf,2,3)));
 
     /**
      * Logs a error message, printf style.
      */
-    void (*error)(void *handle, const char* format, ...);
+    void (*error)(void *handle, const char* format, ...) __attribute__((format(printf,2,3)));
 
     /**
      * Logs a fatal message, printf style.
      */
-    void (*fatal)(void *handle, const char* format, ...);
+    void (*fatal)(void *handle, const char* format, ...) __attribute__((format(printf,2,3)));
 
     /**
      * Logs a message using the provided log level, printf style
      * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
      */
-    void (*log)(void *handle, celix_log_level_e level, const char* format, ...);
+    void (*log)(void *handle, celix_log_level_e level, const char* format, ...) __attribute__((format(printf,3,4)));
 
     /**
      * Logs a message using the provided log level, printf style
@@ -91,13 +92,22 @@ typedef struct celix_log_service {
      *
      * If the argument file or function is NULL, the arguments file, function and line are not used.
      */
-    void (*logDetails)(void *handle, celix_log_level_e level, const char* file, const char* function, int line, const char* format, ...);
+    void (*logDetails)(
+            void *handle, celix_log_level_e level,
+            const char* file,
+            const char* function,
+            int line,
+            const char* format, ...) __attribute__((format(printf,6,7)));
 
     /**
      * Log a message using a format string and va_list argument (vprintf style)
      * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
      */
-    void (*vlog)(void *handle, celix_log_level_e level, const char* format, va_list formatArgs);
+    void (*vlog)(
+            void *handle,
+            celix_log_level_e level,
+            const char* format,
+            va_list formatArgs) __attribute__((format(printf,3,0)));
 
     /**
      * Log a detailed message using a format string and va_list argument (vprintf style)
@@ -108,7 +118,14 @@ typedef struct celix_log_service {
      *
      * If the argument file or function is NULL, the arguments file, function and line are not used.
      */
-    void (*vlogDetails)(void *handle, celix_log_level_e level, const char* file, const char* function, int line, const char* format, va_list formatArgs);
+    void (*vlogDetails)(
+            void *handle,
+            celix_log_level_e level,
+            const char* file,
+            const char* function,
+            int line,
+            const char* format,
+            va_list formatArgs) __attribute__((format(printf,6,0)));
 } celix_log_service_t;
 
 #ifdef __cplusplus

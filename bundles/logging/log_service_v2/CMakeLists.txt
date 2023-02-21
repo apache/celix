@@ -18,30 +18,34 @@
 add_celix_bundle(log_service
 	SYMBOLIC_NAME "apache_celix_log_service"
 	NAME "Apache Celix Log Service"
+	FILENAME celix_log_service
 	GROUP "Celix/Logging"
 	VERSION "1.1.0"
 	SOURCES
 		#v2 api
-		src/log
-		src/log_entry
-		src/log_factory
-		src/log_service_impl
-		src/log_service_activator
-		src/log_reader_service_impl
+		src/log.c
+		src/log_entry.c
+		src/log_factory.c
+		src/log_service_impl.c
+		src/log_service_activator.c
+		src/log_reader_service_impl.c
 )
 target_include_directories(log_service PRIVATE src)
 target_link_libraries(log_service PRIVATE Celix::log_service_api)
+celix_deprecated_utils_headers(log_service)
 install_celix_bundle(log_service EXPORT celix COMPONENT logging)
 
 add_celix_bundle(log_writer_stdout
 	SYMBOLIC_NAME "apache_celix_log_writer_stdout"
 	NAME "Apache Celix Log Writer Stdout"
+	FILENAME celix_log_writer_stdout
 	GROUP "Celix/Logging"
 	VERSION "1.1.0"
 	SOURCES
 		#v2 api
 		src/deprecated_log_writer_stdout_activator.c
 )
+celix_deprecated_utils_headers(log_writer_stdout)
 install_celix_bundle(log_writer_stdout EXPORT celix COMPONENT logging)
 
 #Setup target aliases to match external usage

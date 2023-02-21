@@ -30,7 +30,7 @@ namespace celix {
     /**
      * @brief Create a new celix Framework instance.
      */
-    static std::shared_ptr<celix::Framework> createFramework(const celix::Properties& properties = {}) {
+    inline std::shared_ptr<celix::Framework> createFramework(const celix::Properties& properties = {}) {
         auto* copy = celix_properties_copy(properties.getCProperties());
         auto* cFw= celix_frameworkFactory_createFramework(copy);
         auto fwCtx = std::make_shared<celix::BundleContext>(celix_framework_getFrameworkContext(cFw));

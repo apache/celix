@@ -17,56 +17,23 @@
  * under the License.
  */
 
-#include <stdlib.h>
+#include <celix_framework_factory.h>
+#include <celix_bundle_context.h>
 
-#include <celix_api.h>
+int main() {
+    //create framework properties
+    celix_properties_t* properties = celix_properties_create();
+    celix_properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "debug");
+    celix_properties_set(properties, "CELIX_BUNDLES_PATH", "bundles;/opt/alternative/bundles");
 
-typedef struct foo {
-    int val;
-} foo_t;
+    //create framework
+    celix_framework_t* fw = celix_frameworkFactory_createFramework(properties);
 
-#define FOO_SERVICE_NAME "foo_service"
-typedef struct foo_service {
-    void *handle;
-    void (*foo)(void *handle);
-} foo_service_t;
+    //get framework bundle context and log hello
+    celix_bundle_context_t* fwContext = celix_framework_getFrameworkContext(fw);
+    celix_bundleContext_log(fwContext, CELIX_LOG_LEVEL_INFO, "Hello from framework bundle context");
+    celix_bundleContext_installBundle(fwContext, "FooBundle.zip", true);
 
-static void embedded_foo(void *handle) {
-    foo_t *foo = handle;
-    printf("foo with val %i\n", foo->val);
+    //destroy framework
+    celix_frameworkFactory_destroyFramework(fw);
 }
-
-static void use_foo_service(void *callbackHandle __attribute__((unused)), void *voidSvc) {
-    foo_service_t *svc = voidSvc;
-    svc->foo(svc->handle);
-}
-
-int main(void) {
-
-    celix_framework_t *framework = NULL;
-    celix_properties_t *config = celix_properties_create();
-    int rc = celixLauncher_launchWithProperties(config, &framework);
-
-    if (rc == 0) {
-        celix_bundle_context_t *ctx = celix_framework_getFrameworkContext(framework);
-
-        foo_t *foo = calloc(1, sizeof(*foo));
-        foo->val = 42;
-        foo_service_t *svc = calloc(1, sizeof(*svc));
-
-        svc->handle = foo;
-        svc->foo = embedded_foo;
-
-        long svcId = celix_bundleContext_registerService(ctx, svc, FOO_SERVICE_NAME, NULL);
-        celix_bundleContext_useService(ctx, FOO_SERVICE_NAME, NULL, use_foo_service);
-
-        celix_bundleContext_unregisterService(ctx, svcId);
-        free(svc);
-        free(foo);
-
-        celixLauncher_destroy(framework);
-    }
-
-    return rc;
-}
-

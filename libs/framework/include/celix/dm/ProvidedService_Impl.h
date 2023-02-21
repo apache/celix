@@ -17,7 +17,7 @@
  * under the License.
  */
 
-inline celix::dm::BaseProvidedService::BaseProvidedService(celix_dm_component_t* _cmp, std::string _svcName, void* _svc, bool _cppService) : cCmp{_cmp}, svcName{std::move(_svcName)}, svcPointer{_svc}, cppService{_cppService} {}
+inline celix::dm::BaseProvidedService::BaseProvidedService(celix_dm_component_t* _cmp, std::string _svcName, std::shared_ptr<void> _svc, bool _cppService) : cCmp{_cmp}, svcName{std::move(_svcName)}, svc{std::move(_svc)}, cppService{_cppService} {}
 
 inline const std::string &BaseProvidedService::getName() const {
     return svcName;
@@ -31,8 +31,8 @@ inline bool BaseProvidedService::isCppService() const {
     return cppService;
 }
 
-inline void *BaseProvidedService::getService() const {
-    return svcPointer;
+inline void* BaseProvidedService::getService() const {
+    return svc.get();
 }
 
 inline const celix::dm::Properties &BaseProvidedService::getProperties() const {
@@ -42,13 +42,13 @@ inline const celix::dm::Properties &BaseProvidedService::getProperties() const {
 inline void BaseProvidedService::runBuild() {
     if (!provideAddedToCmp) {
         //setup c properties
-        celix_properties_t *cProperties = properties_create();
+        celix_properties_t *cProperties = celix_properties_create();
         for (const auto &pair : properties) {
-            properties_set(cProperties, pair.first.c_str(), pair.second.c_str());
+            celix_properties_set(cProperties, pair.first.c_str(), pair.second.c_str());
         }
 
         const char *cVersion = svcVersion.empty() ? nullptr : svcVersion.c_str();
-        celix_dmComponent_addInterface(cCmp, svcName.c_str(), cVersion, svcPointer, cProperties);
+        celix_dmComponent_addInterface(cCmp, svcName.c_str(), cVersion, svc.get(), cProperties);
     }
     provideAddedToCmp = true;
 }
@@ -100,8 +100,8 @@ ProvidedService<T, I> &ProvidedService<T, I>::buildAsync() {
 }
 
 template<typename T, typename I>
-ProvidedService<T, I>::ProvidedService(celix_dm_component_t *_cmp, std::string svcName, I* _svc, bool _cppService)
-        :BaseProvidedService(_cmp, svcName, static_cast<void*>(_svc), _cppService) {
+ProvidedService<T, I>::ProvidedService(celix_dm_component_t *_cmp, std::string svcName, std::shared_ptr<I> _svc, bool _cppService)
+        :BaseProvidedService(_cmp, svcName, std::static_pointer_cast<void>(std::move(_svc)), _cppService) {
 
 }
 

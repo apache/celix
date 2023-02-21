@@ -136,6 +136,7 @@ add_celix_docker(<docker_target_name>
 ```
 ]]
 function(add_celix_docker)
+  message(DEPRECATION "Support for docker creation with Celix CMake commands is deprecated and will be removed in future Celix releases.")
   list(GET ARGN 0 DOCKER_TARGET)
   list(REMOVE_AT ARGN 0)
 

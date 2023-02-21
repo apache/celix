@@ -164,7 +164,7 @@ static void* discoveryShmWatcher_run(void* data) {
         celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot retrieve local discovery path.");
     }
 
-    if (endpointDiscoveryServer_getUrl(discovery->server, &url[0]) != CELIX_SUCCESS) {
+    if (endpointDiscoveryServer_getUrl(discovery->server, &url[0], MAX_LOCALNODE_LENGTH) != CELIX_SUCCESS) {
         snprintf(url, MAX_LOCALNODE_LENGTH, "http://%s:%s/%s", DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT, DEFAULT_SERVER_PATH);
     }
 

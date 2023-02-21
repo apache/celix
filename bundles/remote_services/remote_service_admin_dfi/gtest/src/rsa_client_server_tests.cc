@@ -34,6 +34,13 @@ extern "C" {
 #include "celix_launcher.h"
 #include "framework.h"
 #include "remote_service_admin.h"
+#include "remote_interceptor.h"
+
+#define RSA_DIF_EXCEPTION_TEST_SERVICE "exception_test_service"
+typedef struct rsa_dfi_exception_test_service {
+    void *handle;
+    int (*func1)(void *handle);
+}rsa_dfi_exception_test_service_t;
 
     static celix_framework_t *serverFramework = NULL;
     static celix_bundle_context_t *serverContext = NULL;
@@ -41,7 +48,16 @@ extern "C" {
     static celix_framework_t *clientFramework = NULL;
     static celix_bundle_context_t *clientContext = NULL;
 
-    static void setupFm(void) {
+    static rsa_dfi_exception_test_service_t *exceptionTestService = NULL;
+    static long exceptionTestSvcId = -1L;
+    static remote_interceptor_t *serverSvcInterceptor=NULL;
+    static remote_interceptor_t *clientSvcInterceptor=NULL;
+    static long serverSvcInterceptorSvcId = -1L;
+    static long clientSvcInterceptorSvcId = -1L;
+    static bool clientInterceptorPreProxyCallRetval=true;
+    static bool svcInterceptorPreExportCallRetval=true;
+
+    static void setupFm(bool useCurlShare) {
         //server
         celix_properties_t *serverProps = celix_properties_load("server.properties");
         ASSERT_TRUE(serverProps != NULL);
@@ -52,6 +68,7 @@ extern "C" {
 
         //client
         celix_properties_t *clientProperties = celix_properties_load("client.properties");
+        celix_properties_setBool(clientProperties, "RSA_DFI_USE_CURL_SHARE_HANDLE", useCurlShare);
         ASSERT_TRUE(clientProperties != NULL);
         clientFramework = celix_frameworkFactory_createFramework(clientProperties);
         ASSERT_TRUE(clientFramework != NULL);
@@ -62,6 +79,99 @@ extern "C" {
     static void teardownFm(void) {
         celix_frameworkFactory_destroyFramework(serverFramework);
         celix_frameworkFactory_destroyFramework(clientFramework);
+    }
+
+    static int rsaDfi_excepTestFunc1(void *handle __attribute__((unused))) {
+        return CELIX_CUSTOMER_ERROR_MAKE(0,1);
+    }
+
+    static void registerExceptionTestServer(void) {
+        celix_properties_t *properties = celix_properties_create();
+        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, RSA_DIF_EXCEPTION_TEST_SERVICE);
+        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, "org.amdatu.remote.admin.http");
+        exceptionTestService = (rsa_dfi_exception_test_service_t *)calloc(1,sizeof(*exceptionTestService));
+        exceptionTestService->handle = NULL;
+        exceptionTestService->func1 = rsaDfi_excepTestFunc1;
+        exceptionTestSvcId = celix_bundleContext_registerService(serverContext, exceptionTestService, RSA_DIF_EXCEPTION_TEST_SERVICE, properties);
+    }
+
+    static void unregisterExceptionTestServer(void) {
+        celix_bundleContext_unregisterService(serverContext, exceptionTestSvcId);
+        free(exceptionTestService);
+    }
+
+    static bool serverServiceInterceptor_preProxyCall(void *, const celix_properties_t *, const char *, celix_properties_t *) {
+        return true;
+    }
+
+    static void serverServiceInterceptor_postProxyCall(void *, const celix_properties_t *, const char *, celix_properties_t *) {
+
+    }
+
+    static bool serverServiceInterceptor_preExportCall(void *, const celix_properties_t *, const char *, celix_properties_t *) {
+        return svcInterceptorPreExportCallRetval;
+    }
+
+    static void serverServiceInterceptor_postExportCall(void *, const celix_properties_t *, const char *, celix_properties_t *) {
+
+    }
+
+    static bool clientServiceInterceptor_preProxyCall(void *, const celix_properties_t *, const char *, celix_properties_t *) {
+        return clientInterceptorPreProxyCallRetval;
+    }
+
+    static void clientServiceInterceptor_postProxyCall(void *, const celix_properties_t *, const char *, celix_properties_t *) {
+
+    }
+
+    static bool clientServiceInterceptor_preExportCall(void *, const celix_properties_t *, const char *, celix_properties_t *) {
+        return true;
+    }
+
+    static void clientServiceInterceptor_postExportCall(void *, const celix_properties_t *, const char *, celix_properties_t *) {
+
+    }
+
+    static void registerInterceptorService(void) {
+        svcInterceptorPreExportCallRetval = true;
+        serverSvcInterceptor = (remote_interceptor_t *)calloc(1,sizeof(*serverSvcInterceptor));
+        serverSvcInterceptor->handle = NULL;
+        serverSvcInterceptor->preProxyCall = serverServiceInterceptor_preProxyCall;
+        serverSvcInterceptor->postProxyCall = serverServiceInterceptor_postProxyCall;
+        serverSvcInterceptor->preExportCall = serverServiceInterceptor_preExportCall;
+        serverSvcInterceptor->postExportCall = serverServiceInterceptor_postExportCall;
+        celix_properties_t *svcInterceptorProps = celix_properties_create();
+        celix_properties_setLong(svcInterceptorProps, OSGI_FRAMEWORK_SERVICE_RANKING, 10);
+        celix_service_registration_options_t svcInterceptorOpts{};
+        svcInterceptorOpts.svc = serverSvcInterceptor;
+        svcInterceptorOpts.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
+        svcInterceptorOpts.serviceVersion = REMOTE_INTERCEPTOR_SERVICE_VERSION;
+        svcInterceptorOpts.properties = svcInterceptorProps;
+        serverSvcInterceptorSvcId = celix_bundleContext_registerServiceWithOptions(serverContext, &svcInterceptorOpts);
+
+        clientInterceptorPreProxyCallRetval = true;
+        clientSvcInterceptor = (remote_interceptor_t *)calloc(1,sizeof(*clientSvcInterceptor));
+        clientSvcInterceptor->handle = NULL;
+        clientSvcInterceptor->preProxyCall = clientServiceInterceptor_preProxyCall;
+        clientSvcInterceptor->postProxyCall = clientServiceInterceptor_postProxyCall;
+        clientSvcInterceptor->preExportCall = clientServiceInterceptor_preExportCall;
+        clientSvcInterceptor->postExportCall = clientServiceInterceptor_postExportCall;
+        celix_properties_t *clientInterceptorProps = celix_properties_create();
+        celix_properties_setLong(clientInterceptorProps, OSGI_FRAMEWORK_SERVICE_RANKING, 10);
+        celix_service_registration_options_t clientInterceptorOpts{};
+        clientInterceptorOpts.svc = clientSvcInterceptor;
+        clientInterceptorOpts.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
+        clientInterceptorOpts.serviceVersion = REMOTE_INTERCEPTOR_SERVICE_VERSION;
+        clientInterceptorOpts.properties = clientInterceptorProps;
+        clientSvcInterceptorSvcId = celix_bundleContext_registerServiceWithOptions(clientContext, &clientInterceptorOpts);
+    }
+
+    static void unregisterInterceptorService(void) {
+        celix_bundleContext_unregisterService(clientContext, clientSvcInterceptorSvcId);
+        free(clientSvcInterceptor);
+
+        celix_bundleContext_unregisterService(serverContext, serverSvcInterceptorSvcId);
+        free(serverSvcInterceptor);
     }
 
     static void testComplex(void *handle __attribute__((unused)), void *svc) {
@@ -148,6 +258,37 @@ extern "C" {
         ASSERT_TRUE(ok);
     };
 
+    static void testInterceptorPreExportCallReturnFalse(void *handle __attribute__((unused)), void *svc) {
+        svcInterceptorPreExportCallRetval = false;
+        auto *tst = static_cast<tst_service_t *>(svc);
+
+        bool ok = tst->testRemoteAction(tst->handle);
+        ASSERT_FALSE(ok);
+    }
+
+    static void testInterceptorPreProxyCallReturnFalse(void *handle __attribute__((unused)), void *svc) {
+        clientInterceptorPreProxyCallRetval = false;
+        auto *tst = static_cast<tst_service_t *>(svc);
+
+        bool ok = tst->testRemoteAction(tst->handle);
+        ASSERT_FALSE(ok);
+    }
+
+    static void testExceptionServiceCallback(void *handle __attribute__((unused)), void *svc) {
+        rsa_dfi_exception_test_service_t * service = (rsa_dfi_exception_test_service_t *)(svc);
+        int ret = service->func1(service->handle);
+        EXPECT_EQ(CELIX_CUSTOMER_ERROR_MAKE(0,1),ret);
+    }
+
+    static void testExceptionService(void) {
+        celix_service_use_options_t opts{};
+        opts.filter.serviceName = RSA_DIF_EXCEPTION_TEST_SERVICE;
+        opts.use = testExceptionServiceCallback;
+        opts.filter.ignoreServiceLanguage = true;
+        opts.waitTimeoutInSeconds = 2;
+        bool called = celix_bundleContext_useServiceWithOptions(clientContext, &opts);
+        ASSERT_TRUE(called);
+    }
 }
 
 template<typename F>
@@ -164,7 +305,7 @@ static void test(F&& f) {
 class RsaDfiClientServerTests : public ::testing::Test {
 public:
     RsaDfiClientServerTests() {
-        setupFm();
+        setupFm(false);
     }
     ~RsaDfiClientServerTests() override {
         teardownFm();
@@ -172,12 +313,54 @@ public:
 
 };
 
+class RsaDfiClientServerWithCurlShareTests : public ::testing::Test {
+public:
+    RsaDfiClientServerWithCurlShareTests() {
+        setupFm(true);
+    }
+    ~RsaDfiClientServerWithCurlShareTests() override {
+        teardownFm();
+    }
+
+};
+
+class RsaDfiClientServerInterceptorTests : public ::testing::Test {
+public:
+    RsaDfiClientServerInterceptorTests() {
+        setupFm(false);
+        registerInterceptorService();
+    }
+    ~RsaDfiClientServerInterceptorTests() override {
+        unregisterInterceptorService();
+        teardownFm();
+    }
+};
+
+class RsaDfiClientServerExceptionTests : public ::testing::Test {
+public:
+    RsaDfiClientServerExceptionTests() {
+        setupFm(false);
+        registerExceptionTestServer();
+    }
+    ~RsaDfiClientServerExceptionTests() override {
+        unregisterExceptionTestServer();
+        teardownFm();
+    }
+};
 
 TEST_F(RsaDfiClientServerTests, TestRemoteCalculator) {
     test(testCalculator);
 }
 
+TEST_F(RsaDfiClientServerWithCurlShareTests, TestRemoteCalculator) {
+    test(testCalculator);
+}
+
 TEST_F(RsaDfiClientServerTests, TestRemoteComplex) {
+    test(testComplex);
+}
+
+TEST_F(RsaDfiClientServerWithCurlShareTests, TestRemoteComplex) {
     test(testComplex);
 }
 
@@ -207,4 +390,16 @@ TEST_F(RsaDfiClientServerTests, CreateDestroyComponentWithRemoteService) {
 
 TEST_F(RsaDfiClientServerTests, AddRemoteServiceInRemoteService) {
     test(testAddRemoteServiceInRemoteService);
+}
+
+TEST_F(RsaDfiClientServerInterceptorTests,TestInterceptorPreExportCallReturnFalse) {
+    test(testInterceptorPreExportCallReturnFalse);
+}
+
+TEST_F(RsaDfiClientServerInterceptorTests,TestInterceptorPreProxyCallReturnFalse) {
+    test(testInterceptorPreProxyCallReturnFalse);
+}
+
+TEST_F(RsaDfiClientServerExceptionTests,TestExceptionService) {
+    testExceptionService();
 }

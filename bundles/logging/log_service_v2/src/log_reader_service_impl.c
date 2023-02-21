@@ -28,7 +28,6 @@
 #include <stddef.h>
 
 #include "log_reader_service_impl.h"
-#include "celixbool.h"
 
 struct log_reader_data {
     log_t *log;
