@@ -18,6 +18,7 @@
  */
 
 #include <cstdarg>
+#include <cstdio>
 #include "asprintf_ei.h"
 
 extern "C" {
@@ -28,7 +29,7 @@ int __wrap_asprintf(char** buf, const char* format, ...) {
     CELIX_EI_IMPL(asprintf);
     va_list args;
     va_start(args, format);
-    int rc = __real_asprintf(buf, format, args);
+    int rc = vasprintf(buf, format, args);
     va_end(args);
     return rc;
 }
