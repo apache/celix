@@ -473,31 +473,17 @@ static bool aliasList_containsAlias(celix_array_list_t *alias_list, const char *
 }
 
 void http_admin_startBundle(void *data, const celix_bundle_t *bundle) {
-    bundle_archive_pt archive = NULL;
-    bundle_revision_pt revision = NULL;
-    manifest_pt manifest = NULL;
-
     http_admin_manager_t *admin = data;
-
-    // Retrieve manifest from current bundle revision (retrieve revision from bundle archive) to check for
-    // Amdatu pattern manifest property X-Web-Resource. This property is used for aliases.
-    celix_status_t status = bundle_getArchive((celix_bundle_t*)bundle, &archive);
-    if(status == CELIX_SUCCESS && archive != NULL) {
-        status = bundleArchive_getCurrentRevision(archive, &revision);
+    long bndId = celix_bundle_getId(bundle);
+    const char* aliases = celix_bundle_getManifestValue(bundle, "X-Web-Resource");
+    char* bundleRoot = celix_bundle_getEntry(bundle, "");
+    if (aliases != NULL && bundleRoot != NULL) {
+        createAliasesSymlink(aliases, admin->root, bundleRoot, bndId, admin->aliasList);
+    } else if (aliases == NULL) {
+        celix_bundleContext_log(admin->context, CELIX_LOG_LEVEL_TRACE, "No aliases found for bundle %s",
+                                celix_bundle_getSymbolicName(bundle));
     }
-
-    if(status == CELIX_SUCCESS && revision != NULL) {
-        status = bundleRevision_getManifest(revision, &manifest);
-    }
-
-    if(status == CELIX_SUCCESS && manifest != NULL) {
-
-        long bnd_id = celix_bundle_getId(bundle);
-        const char* aliases = manifest_getValue(manifest, "X-Web-Resource");
-        char* bundleRoot = celix_bundle_getEntry(bundle, "");
-        createAliasesSymlink(aliases, admin->root, bundleRoot, bnd_id, admin->aliasList);
-        free(bundleRoot);
-    }
+    free(bundleRoot);
     httpAdmin_updateInfoSvc(admin);
 }
 

@@ -55,7 +55,7 @@ static int http_admin_start(http_admin_activator_t *act, celix_bundle_context_t 
     if (rc < 0) {
         celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR, "Cannot create http root directory for the http admin bundle.");
         free(storeRoot);
-        return CELIX_BUNDLE_EXCEPTION;
+        return CELIX_ENOMEM;
     }
     free(storeRoot);
 
@@ -63,7 +63,7 @@ static int http_admin_start(http_admin_activator_t *act, celix_bundle_context_t 
     if (status != CELIX_SUCCESS) {
         celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR, "Cannot create http root directory for the http admin bundle.");
         free(httpRoot);
-        return CELIX_BUNDLE_EXCEPTION;
+        return CELIX_ENOMEM;
     }
     celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_DEBUG, "Using http root directory %s", httpRoot);
 
