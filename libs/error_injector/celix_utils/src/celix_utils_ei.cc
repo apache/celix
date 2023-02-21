@@ -25,7 +25,7 @@ extern "C" {
 char* __real_celix_utils_strdup(const char *);
 CELIX_EI_DEFINE(celix_utils_strdup, char*)
 char* __wrap_celix_utils_strdup(const char* str) {
-    CELIX_EI_IMPL0(celix_utils_strdup);
+    CELIX_EI_IMPL(celix_utils_strdup);
     return __real_celix_utils_strdup(str);
 }
 
