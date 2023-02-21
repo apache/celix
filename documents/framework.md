@@ -268,7 +268,7 @@ The following framework properties are supported:
 | CELIX_BUNDLES_PATH                                  | "bundles"     | The directories where the Apache Celix framework will search for bundles. Multiple directories can be provided separated by a colon.      |
 | CELIX_LOAD_BUNDLES_WITH_NODELETE                    | "false"       | If true, the Apache Celix framework will not delete bundles when they are uninstalled. Note for cmake build type Debug, default is "true" |
 | CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE             | "100"         | The size of the static event queue. If more than 100 events in the queue are needed, dynamic memory allocation will be used.              |
-| CELIX_FRAMEWORK_AUTO_START_0                        | ""            | The bundles to install and start before the framework is started. Multiple bundles can be provided separated by a space.                  |
+| CELIX_FRAMEWORK_AUTO_START_0                        | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                   |
 | CELIX_FRAMEWORK_AUTO_START_1                        | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                   |
 | CELIX_FRAMEWORK_AUTO_START_2                        | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                   |
 | CELIX_FRAMEWORK_AUTO_START_3                        | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                   |
