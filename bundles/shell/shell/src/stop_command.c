@@ -17,42 +17,8 @@
  * under the License.
  */
 
-#include <stdlib.h>
-#include <string.h>
-
-#include "celix_api.h"
-#include "std_commands.h"
-#include "celix_convert_utils.h"
+#include "bundle_command.h"
 
 bool stopCommand_execute(void *handle, const char *constCommandLine, FILE *outStream, FILE *errStream) {
-    celix_bundle_context_t *ctx = handle;
-
-    char* sub = NULL;
-    char* savePtr = NULL;
-    char* command = celix_utils_strdup(constCommandLine);
-    strtok_r(command, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr); //ignore command name
-    sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr);
-
-    bool stoppedCalledAndSucceeded = false;
-    if (sub == NULL) {
-        fprintf(outStream, "Incorrect number of arguments.\n");
-    } else {
-        while (sub != NULL) {
-            bool converted;
-            long bndId = celix_utils_convertStringToLong(sub, 0, &converted);
-            bool exists = celix_bundleContext_isBundleInstalled(ctx, bndId);
-            if (!converted) {
-                fprintf(errStream, "Cannot convert '%s' to long (bundle id).\n", sub);
-            } else if (!exists) {
-                fprintf(outStream, "No bundle with id %li.\n", bndId);
-            } else {
-                celix_framework_t* fw = celix_bundleContext_getFramework(ctx);
-                celix_framework_stopBundleAsync(fw, bndId);
-                stoppedCalledAndSucceeded = true;
-            }
-            sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr);
-        }
-    }
-    free(command);
-    return stoppedCalledAndSucceeded;
+    return bundleCommand_execute(handle, constCommandLine, outStream, errStream, celix_framework_stopBundleAsync);
 }
