@@ -100,6 +100,7 @@ TEST_F(ShellTestSuite, testAllCommandsAreCallable) {
     callCommand(ctx, "q -v", true);
     callCommand(ctx, "stop not-a-number", false);
     callCommand(ctx, "start not-a-number", false);
+    callCommand(ctx, "start", false); // incorrect number of arguments
     callCommand(ctx, "uninstall not-a-number", false);
     callCommand(ctx, "update not-a-number", false);
     callCommand(ctx, "stop 15", false); //non existing bundle id
