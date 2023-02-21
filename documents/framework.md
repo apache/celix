@@ -216,7 +216,7 @@ The resource bundle cache is used to store and access the bundle resources (e.g.
 and should be treated as read-only. The resource bundle cache can be accessed using `celix_bundle_getEntry` 
 or `celix::Bundle::getEntry`.
 
-The persistent storage bundle cache can be used to storage persistent data for a bundle and can be treated as 
+The persistent storage bundle cache can be used to store persistent data for a bundle and can be treated as 
 read-write. The persistent storage bundle cache can be accessed using `celix_bundle_getDataFile` or 
 `celix::Bundle::getDataFile`.
 
