@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Install conan
         run: |
-          sudo pip install -U conan
+          sudo pip install -U conan==1.59.0
       - name: Setup Conan Profile
         env:
           CC: ${{ matrix.compiler[0] }}

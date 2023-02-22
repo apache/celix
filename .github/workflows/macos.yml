@@ -17,7 +17,7 @@ jobs:
       - name: Install conan
         run: |
           brew install python
-          pip3 install -U conan
+          pip3 install -U conan==1.59.0
       - name: Setup Conan Profile
         run: |
           conan profile new default --detect
