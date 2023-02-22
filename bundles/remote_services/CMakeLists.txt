@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(REMOTE_SERVICE_ADMIN "Option to enable building the Remote Service Admin Service bundles" ON)
+celix_subproject(REMOTE_SERVICE_ADMIN "Option to enable building the Remote Service Admin Service bundles" ON DEPS CELIX_DFI)
 if (REMOTE_SERVICE_ADMIN)
 
     add_subdirectory(thpool)

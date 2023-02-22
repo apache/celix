@@ -31,6 +31,7 @@ target_link_libraries(test_rsa_json_rpc PRIVATE
     Celix::rsa_common
     libuuid::libuuid
     jansson::jansson
+    Celix::dfi
     Celix::framework
     Celix::shell_api
     GTest::gtest

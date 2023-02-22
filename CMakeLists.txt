@@ -32,8 +32,6 @@ find_package(ZLIB REQUIRED) #framework
 find_package(libuuid REQUIRED) #framework
 find_package(CURL REQUIRED) #framework, etcdlib
 find_package(libzip REQUIRED) #framework, etcdlib
-find_package(jansson REQUIRED) #etcdlib, dfi
-find_package(libffi REQUIRED) #dfi
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
@@ -54,15 +52,6 @@ if (NOT TARGET CURL::libcurl)
     set_target_properties(CURL::libcurl PROPERTIES
             IMPORTED_LOCATION "${CURL_LIBRARIES}"
             INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
-            )
-endif ()
-
-if (NOT TARGET jansson::jansson)
-    message("Note jansson::jansson target not created by find_package(jansson). Creating jansson::jansson Target.")
-    add_library(jansson::jansson SHARED IMPORTED)
-    set_target_properties(jansson::jansson PROPERTIES
-            IMPORTED_LOCATION "${JANSSON_LIBRARIES}"
-            INTERFACE_INCLUDE_DIRECTORIES "${JANSSON_INCLUDE_DIRS}"
             )
 endif ()
 

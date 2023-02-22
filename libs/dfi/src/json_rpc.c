@@ -26,7 +26,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <ffi.h>
-#include <dyn_type_common.h>
+#include "dyn_type_common.h"
 
 static int OK = 0;
 static int ERROR = 1;
