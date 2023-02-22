@@ -474,7 +474,6 @@ static bool aliasList_containsAlias(celix_array_list_t *alias_list, const char *
 
 void http_admin_startBundle(void *data, const celix_bundle_t *bundle) {
     http_admin_manager_t *admin = data;
-    long bndId = celix_bundle_getId(bundle);
     const char* aliases = celix_bundle_getManifestValue(bundle, "X-Web-Resource");
     if (aliases == NULL) {
         celix_bundleContext_log(admin->context, CELIX_LOG_LEVEL_TRACE, "No aliases found for bundle %s",
@@ -483,6 +482,7 @@ void http_admin_startBundle(void *data, const celix_bundle_t *bundle) {
     }
     char* bundleRoot = celix_bundle_getEntry(bundle, "");
     if (bundleRoot != NULL) {
+        long bndId = celix_bundle_getId(bundle);
         createAliasesSymlink(aliases, admin->root, bundleRoot, bndId, admin->aliasList);
     } else {
         celix_bundleContext_log(admin->context, CELIX_LOG_LEVEL_ERROR, "No root for bundle %s",
