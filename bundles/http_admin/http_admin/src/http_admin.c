@@ -481,13 +481,13 @@ void http_admin_startBundle(void *data, const celix_bundle_t *bundle) {
         return;
     }
     char* bundleRoot = celix_bundle_getEntry(bundle, "");
-    if (bundleRoot != NULL) {
-        long bndId = celix_bundle_getId(bundle);
-        createAliasesSymlink(aliases, admin->root, bundleRoot, bndId, admin->aliasList);
-    } else {
+    if (bundleRoot == NULL) {
         celix_bundleContext_log(admin->context, CELIX_LOG_LEVEL_ERROR, "No root for bundle %s",
                                 celix_bundle_getSymbolicName(bundle));
+        return;
     }
+    long bndId = celix_bundle_getId(bundle);
+    createAliasesSymlink(aliases, admin->root, bundleRoot, bndId, admin->aliasList);
     free(bundleRoot);
     httpAdmin_updateInfoSvc(admin);
 }
