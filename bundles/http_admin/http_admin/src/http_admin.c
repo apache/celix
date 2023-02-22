@@ -476,11 +476,16 @@ void http_admin_startBundle(void *data, const celix_bundle_t *bundle) {
     http_admin_manager_t *admin = data;
     long bndId = celix_bundle_getId(bundle);
     const char* aliases = celix_bundle_getManifestValue(bundle, "X-Web-Resource");
-    char* bundleRoot = celix_bundle_getEntry(bundle, "");
-    if (aliases != NULL && bundleRoot != NULL) {
-        createAliasesSymlink(aliases, admin->root, bundleRoot, bndId, admin->aliasList);
-    } else if (aliases == NULL) {
+    if (aliases == NULL) {
         celix_bundleContext_log(admin->context, CELIX_LOG_LEVEL_TRACE, "No aliases found for bundle %s",
+                                celix_bundle_getSymbolicName(bundle));
+        return;
+    }
+    char* bundleRoot = celix_bundle_getEntry(bundle, "");
+    if (bundleRoot != NULL) {
+        createAliasesSymlink(aliases, admin->root, bundleRoot, bndId, admin->aliasList);
+    } else {
+        celix_bundleContext_log(admin->context, CELIX_LOG_LEVEL_ERROR, "No root for bundle %s",
                                 celix_bundle_getSymbolicName(bundle));
     }
     free(bundleRoot);
