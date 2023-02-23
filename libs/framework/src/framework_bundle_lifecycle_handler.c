@@ -23,6 +23,15 @@
 #include "celix_log.h"
 #include "bundle.h"
 
+static void celix_framework_cleanupBundleLifecycleHandler(celix_framework_t* fw, celix_framework_bundle_lifecycle_handler_t *handler) {
+    celixThreadMutex_lock(&fw->bundleLifecycleHandling.mutex);
+    celix_arrayList_remove(fw->bundleLifecycleHandling.bundleLifecycleHandlers, handler);
+    free(handler->updatedBundleUrl);
+    free(handler);
+    celixThreadCondition_broadcast(&fw->bundleLifecycleHandling.cond);
+    celixThreadMutex_unlock(&fw->bundleLifecycleHandling.mutex);
+}
+
 /**
  * Functions focusing on handling stop, start, uninstall or update bundle commands so that they will not be executed on the celix Event thread.
  */
@@ -44,11 +53,10 @@ static void* celix_framework_BundleLifecycleHandlingThread(void *data) {
             celix_framework_updateBundleEntry(handler->framework, handler->bndEntry, handler->updatedBundleUrl);
             break;
     }
-    int doneVal = 1;
-    __atomic_store(&handler->done, &doneVal, __ATOMIC_SEQ_CST);
     if (handler->command != CELIX_BUNDLE_LIFECYCLE_UNINSTALL) {
         celix_framework_bundleEntry_decreaseUseCount(handler->bndEntry);
     }
+    celix_framework_cleanupBundleLifecycleHandler(handler->framework, handler);
     return NULL;
 }
 
@@ -65,27 +73,12 @@ static const char* celix_bundleLifecycleCommand_getDesc(enum celix_bundle_lifecy
     }
 }
 
-void celix_framework_cleanupBundleLifecycleHandlers(celix_framework_t* fw, bool waitTillEmpty) {
+void celix_framework_waitForBundleLifecycleHandlers(celix_framework_t* fw) {
     celixThreadMutex_lock(&fw->bundleLifecycleHandling.mutex);
-    bool cont = true;
-    while (cont) {
-        cont = false; //only continue if thread is joined or if waitTillEmpty and list is not empty.
-        for (int i = 0; i < celix_arrayList_size(fw->bundleLifecycleHandling.bundleLifecycleHandlers); ++i) {
-            celix_framework_bundle_lifecycle_handler_t* handler = celix_arrayList_get(fw->bundleLifecycleHandling.bundleLifecycleHandlers, i);
-            if (__atomic_load_n(&handler->done, __ATOMIC_RELAXED) > 0) {
-                celixThread_join(handler->thread, NULL);
-                fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "Joined thread for %s bundle %li",
-                       celix_bundleLifecycleCommand_getDesc(handler->command) , handler->bndId);
-                celix_arrayList_removeAt(fw->bundleLifecycleHandling.bundleLifecycleHandlers, i);
-                free(handler->updatedBundleUrl);
-                free(handler);
-                cont = true;
-                break;
-            }
-        }
-        if (!cont) {
-            cont = waitTillEmpty && celix_arrayList_size(fw->bundleLifecycleHandling.bundleLifecycleHandlers) != 0;
-        }
+    while (celix_arrayList_size(fw->bundleLifecycleHandling.bundleLifecycleHandlers) != 0) {
+        fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "%d bundle lifecycle handlers left, waiting",
+               celix_arrayList_size(fw->bundleLifecycleHandling.bundleLifecycleHandlers));
+        celixThreadCondition_timedwaitRelative(&fw->bundleLifecycleHandling.cond, &fw->bundleLifecycleHandling.mutex, 5, 0);
     }
     celixThreadMutex_unlock(&fw->bundleLifecycleHandling.mutex);
 }
@@ -103,7 +96,9 @@ static void celix_framework_createAndStartBundleLifecycleHandler(celix_framework
 
     fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "Creating thread for %s bundle %li",
            celix_bundleLifecycleCommand_getDesc(handler->command) , handler->bndId);
-    celixThread_create(&handler->thread, NULL, celix_framework_BundleLifecycleHandlingThread, handler);
+    celix_thread_t handlerTask;
+    celixThread_create(&handlerTask, NULL, celix_framework_BundleLifecycleHandlingThread, handler);
+    celixThread_detach(handlerTask);
     celixThreadMutex_unlock(&fw->bundleLifecycleHandling.mutex);
 }
 

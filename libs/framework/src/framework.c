@@ -295,6 +295,7 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     }
 
     //setup framework bundle lifecycle handling
+    celixThreadCondition_init(&framework->bundleLifecycleHandling.cond, NULL);
     celixThreadMutex_create(&framework->bundleLifecycleHandling.mutex, NULL);
     framework->bundleLifecycleHandling.bundleLifecycleHandlers = celix_arrayList_create();
 
@@ -369,9 +370,10 @@ celix_status_t framework_destroy(framework_pt framework) {
     celixThreadMutex_destroy(&framework->installedBundles.mutex);
 
     //teardown framework bundle lifecycle handling
-    celixThreadMutex_destroy(&framework->bundleLifecycleHandling.mutex);
     assert(celix_arrayList_size(framework->bundleLifecycleHandling.bundleLifecycleHandlers) == 0);
     celix_arrayList_destroy(framework->bundleLifecycleHandling.bundleLifecycleHandlers);
+    celixThreadMutex_destroy(&framework->bundleLifecycleHandling.mutex);
+    celixThreadCondition_destroy(&framework->bundleLifecycleHandling.cond);
 
     hashMap_destroy(framework->installRequestMap, false, false);
 
@@ -1194,7 +1196,7 @@ static void* framework_shutdown(void *framework) {
 
     fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "Celix framework shutting down");
 
-    celix_framework_cleanupBundleLifecycleHandlers(fw, true);
+    celix_framework_waitForBundleLifecycleHandlers(fw);
 
     celix_array_list_t *stopEntries = celix_arrayList_create();
     celix_framework_bundle_entry_t *fwEntry = NULL;

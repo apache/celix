@@ -115,13 +115,11 @@ enum celix_bundle_lifecycle_command {
 };
 
 typedef struct celix_framework_bundle_lifecycle_handler {
-    celix_thread_t thread;
     celix_framework_t* framework;
     celix_framework_bundle_entry_t* bndEntry;
     long bndId;
     char* updatedBundleUrl; //only relevant and present for update command
     enum celix_bundle_lifecycle_command command;
-    int done; //NOTE atomic -> 0 not done, 1 done (thread can be joined)
 } celix_framework_bundle_lifecycle_handler_t;
 
 struct celix_framework {
@@ -182,6 +180,7 @@ struct celix_framework {
     long nextGenericEventId;
 
     struct {
+        celix_thread_cond_t cond;
         celix_thread_mutex_t mutex; //protects below
         celix_array_list_t* bundleLifecycleHandlers; //entry = celix_framework_bundle_lifecycle_handler_t*
     } bundleLifecycleHandling;
@@ -402,7 +401,6 @@ celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_frame
 /**
  * Update (and if needed stop and start) a bundle and ensure that this is not done on the Celix event thread.
  * Will spawn a thread if needed.
- * @param fw The Celix framework
  * @param bndEntry A bnd entry
  * @param forceSpawnThread If the true, the start bundle will always be done on a spawn thread
  * @return CELIX_SUCCESS of the call went alright.
@@ -410,11 +408,10 @@ celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_frame
 celix_status_t celix_framework_updateBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, const char* updatedBundleUrl, bool forceSpawnThread);
 
 /**
- * cleanup finished bundle lifecyles threads.
- * @param fw                The framework.
- * @param waitTillEmpty     Whether to wait for all threads to be finished.
+ * Wait for all bundle lifecycle handlers finishing their jobs.
+ * @param fw The Celix framework
  */
-void celix_framework_cleanupBundleLifecycleHandlers(celix_framework_t* fw, bool waitTillEmpty);
+void celix_framework_waitForBundleLifecycleHandlers(celix_framework_t* fw);
 
 /**
  * Start a bundle. Cannot be called on the Celix event thread.
