@@ -19,6 +19,7 @@ celix_subproject(RSA_DISCOVERY_CONFIGURED "Option to enable building the Discove
 if (RSA_DISCOVERY_CONFIGURED)
     find_package(CURL REQUIRED)
     find_package(LibXml2 REQUIRED)
+    find_package(civetweb REQUIRED)
 
     add_celix_bundle(rsa_discovery
             VERSION 0.9.0
@@ -27,14 +28,12 @@ if (RSA_DISCOVERY_CONFIGURED)
             SOURCES
             src/discovery_impl.c
             $<TARGET_OBJECTS:Celix::rsa_discovery_common>
-            $<TARGET_OBJECTS:Celix::civetweb>
             )
     target_include_directories(rsa_discovery PRIVATE
             src
             $<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
-            $<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>
             )
-    target_link_libraries(rsa_discovery PRIVATE CURL::libcurl ${LIBXML2_LIBRARIES} Celix::log_helper Celix::rsa_common)
+    target_link_libraries(rsa_discovery PRIVATE CURL::libcurl ${LIBXML2_LIBRARIES} Celix::log_helper Celix::rsa_common civetweb::civetweb)
 
     install_celix_bundle(rsa_discovery EXPORT celix COMPONENT rsa)
     #Setup target aliases to match external usage

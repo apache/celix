@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 
 #define CALC_SERVICE_NAME   "CALC_SERVICE"
 typedef struct calc_service {

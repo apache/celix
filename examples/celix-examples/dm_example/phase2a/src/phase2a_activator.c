@@ -20,7 +20,9 @@
 #include <stdlib.h>
 #include <phase2a_cmp.h>
 
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
+#include <celix_dm_component.h>
+#include <celix_dm_service_dependency.h>
 
 #include "phase1.h"
 #include "phase2.h"

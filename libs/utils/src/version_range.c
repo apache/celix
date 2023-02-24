@@ -263,47 +263,25 @@ char* celix_versionRange_createLDAPFilter(const celix_version_range_t* range, co
 }
 
 bool celix_versionRange_createLDAPFilterInPlace(const celix_version_range_t* range, const char *serviceVersionAttributeName, char* buffer, size_t bufferLength) {
-    if(buffer == NULL || bufferLength == 0) {
+    if(buffer == NULL || bufferLength == 0 || range->low == NULL) {
         return false;
     }
 
-    const char* format = "(&(%s%s%i.%i.%i)(%s%s%i.%i.%i))";
-    if(range->high == NULL) {
-        format = "(&(%s%s%i.%i.%i))";
-    }
-
-    // check if buffer is long enough
-    int size = 0;
-    if(range->high == NULL) {
-        size = snprintf(NULL, 0, format,
-                        serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
-                        range->low->minor, range->low->micro);
-    } else {
-        size = snprintf(NULL, 0, format,
-                        serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
-                        range->low->minor, range->low->micro,
-                        serviceVersionAttributeName, range->isHighInclusive ? "<=" : "<", range->high->major,
-                        range->high->minor, range->high->micro);
-    }
-
-    if(size >= bufferLength || size < 0) {
-        return false;
-    }
-
+    int size;
     // write contents into buffer
-    if(range->high == NULL) {
-        size = snprintf(buffer, bufferLength, format,
+    if (range->high == NULL) {
+        size = snprintf(buffer, bufferLength, "(&(%s%s%i.%i.%i))",
                         serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
                         range->low->minor, range->low->micro);
     } else {
-        size = snprintf(buffer, bufferLength, format,
+        size = snprintf(buffer, bufferLength, "(&(%s%s%i.%i.%i)(%s%s%i.%i.%i))",
                         serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
                         range->low->minor, range->low->micro,
                         serviceVersionAttributeName, range->isHighInclusive ? "<=" : "<", range->high->major,
                         range->high->minor, range->high->micro);
     }
 
-    if(size >= bufferLength || size < 0) {
+    if (size >= bufferLength || size < 0) {
         return false;
     }
 

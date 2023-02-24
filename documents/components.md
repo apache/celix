@@ -112,7 +112,8 @@ Remarks for the C example:
 ```C
 //src/simple_component_activator.c
 #include <stdio.h>
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
+#include <celix_dm_component.h>
 
 //********************* COMPONENT *******************************/
 
@@ -271,7 +272,7 @@ Remarks for the C example:
 ```C
  //src/component_with_provided_service_activator.c
 #include <stdlib.h>
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 #include <celix_shell_command.h>
 
 //********************* COMPONENT *******************************/
@@ -488,7 +489,7 @@ Remarks for the C example:
 ```C
 //src/component_with_service_dependency_activator.c
 #include <stdlib.h>
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 #include <celix_shell_command.h>
 
 //********************* COMPONENT *******************************/

@@ -49,7 +49,7 @@ set_target_properties(utils PROPERTIES OUTPUT_NAME "celix_utils")
 target_link_libraries(utils PRIVATE libzip::libzip)
 
 if (NOT OPEN_MEMSTREAM_EXISTS)
-    target_compile_definitions(utils PUBLIC -DNO_MEMSTREAM_AVAILABLE)
+    target_compile_definitions(utils PUBLIC -DCELIX_UTILS_NO_MEMSTREAM_AVAILABLE)
 endif ()
 
 if (ANDROID)
@@ -64,7 +64,7 @@ target_include_directories(utils PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
 )
-target_include_directories(utils PRIVATE src)
+target_include_directories(utils PRIVATE src include_deprecated)
 set_target_properties(utils PROPERTIES "SOVERSION" 2)
 
 IF(UNIX AND NOT ANDROID)
@@ -77,6 +77,10 @@ install(TARGETS utils EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework
         PATTERN memstream* EXCLUDE)
+
+if (CELIX_INSTALL_DEPRECATED_API)
+    install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework)
+endif ()
 
 #Alias setup to match external usage
 add_library(Celix::utils ALIAS utils)
@@ -95,30 +99,39 @@ if (ENABLE_TESTING)
         include_directories(src)
 
         add_executable(hash_map_test private/test/hash_map_test.cpp)
+        target_include_directories(hash_map_test PRIVATE include_deprecated)
         target_link_libraries(hash_map_test Celix::utils CppUTest::CppUTest pthread)
 
         add_executable(array_list_test private/test/array_list_test.cpp)
+        target_include_directories(array_list_test PRIVATE include_deprecated)
         target_link_libraries(array_list_test  Celix::utils CppUTest::CppUTest pthread)
 
         add_executable(celix_threads_test private/test/celix_threads_test.cpp)
+        target_include_directories(celix_threads_test PRIVATE include_deprecated)
         target_link_libraries(celix_threads_test Celix::utils CppUTest::CppUTest ${CppUTest_EXT_LIBRARIES} pthread)
 
         add_executable(linked_list_test private/test/linked_list_test.cpp)
+        target_include_directories(linked_list_test PRIVATE include_deprecated)
         target_link_libraries(linked_list_test  Celix::utils CppUTest::CppUTest pthread)
 
         add_executable(properties_test private/test/properties_test.cpp)
+        target_include_directories(properties_test PRIVATE include_deprecated)
         target_link_libraries(properties_test CppUTest::CppUTest CppUTest::CppUTestExt  Celix::utils pthread)
 
         add_executable(utils_test private/test/utils_test.cpp)
+        target_include_directories(utils_test PRIVATE include_deprecated)
         target_link_libraries(utils_test CppUTest::CppUTest  Celix::utils pthread)
 
         add_executable(ip_utils_test private/test/ip_utils_test.cpp)
+        target_include_directories(ip_utils_test PRIVATE include_deprecated)
         target_link_libraries(ip_utils_test CppUTest::CppUTest  Celix::utils pthread)
 
         add_executable(filter_test private/test/filter_test.cpp)
+        target_include_directories(filter_test PRIVATE include_deprecated)
         target_link_libraries(filter_test CppUTest::CppUTest  Celix::utils pthread)
 
         add_executable(version_test private/test/version_test.cpp)
+        target_include_directories(version_test PRIVATE include_deprecated)
         target_link_libraries(version_test CppUTest::CppUTest  Celix::utils pthread)
 
         configure_file(private/resources-test/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)

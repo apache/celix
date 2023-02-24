@@ -22,7 +22,7 @@
 
 
 #include "celix_shell_command.h"
-#include "celix_api.h"
+#include "celix_bundle_activator.h"
 
 #include "add_command.h"
 #include "sub_command.h"

@@ -32,7 +32,7 @@ struct _dyn_message_type {
     struct namvals_head annotations;
     struct types_head types;
     dyn_type *msgType;
-    version_pt msgVersion;
+    celix_version_t* msgVersion;
 };
 
 static const int OK = 0;
@@ -75,13 +75,14 @@ int dynMessage_parse(FILE *descriptor, dyn_message_type **out) {
             status = dynMessage_checkMessage(msg);
         }
 
-        if(status==OK){ /* We are sure that version field is present in the header */
+        if (status == OK) { /* We are sure that version field is present in the header */
         	char* version=NULL;
         	dynMessage_getVersionString(msg,&version);
-        	if(version!=NULL){
-        		status = (version_createVersionFromString(version,&(msg->msgVersion)) == CELIX_SUCCESS)?OK:ERROR;
+        	if (version != NULL) {
+                msg->msgVersion = celix_version_createVersionFromString(version);
+                status = msg->msgVersion != NULL ? OK : ERROR;
         	}
-        	if(status==ERROR){
+        	if (status == ERROR) {
         		LOG_ERROR("Invalid version (%s) in parsed descriptor\n",version);
         	}
         }
@@ -302,7 +303,7 @@ void dynMessage_destroy(dyn_message_type *msg) {
         }
 
         if(msg->msgVersion != NULL){
-        	version_destroy(msg->msgVersion);
+        	celix_version_destroy(msg->msgVersion);
         }
 
         free(msg);
@@ -313,7 +314,7 @@ int dynMessage_getName(dyn_message_type *msg, char **out) {
     return dynMessage_getEntryForHead(&msg->header, "name", out);
 }
 
-int dynMessage_getVersion(dyn_message_type *msg, version_pt* version){
+int dynMessage_getVersion(dyn_message_type *msg, celix_version_t** version){
 	*version = msg->msgVersion;
 	if(*version==NULL){
 		return ERROR;

@@ -20,7 +20,8 @@
 #include <stdlib.h>
 #include <pubsub_constants.h>
 
-#include "celix_api.h"
+#include "celix_bundle_activator.h"
+#include "celix_constants.h"
 #include "pubsub_wire_v2_protocol_impl.h"
 
 typedef struct ps_wp_activator {

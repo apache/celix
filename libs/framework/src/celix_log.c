@@ -27,7 +27,7 @@
 #include "celix_threads.h"
 #include "celix_array_list.h"
 
-#ifdef NO_MEMSTREAM_AVAILABLE
+#ifdef CELIX_UTILS_NO_MEMSTREAM_AVAILABLE
 #include "memstream/open_memstream.h"
 #endif
 
@@ -118,7 +118,7 @@ static void celix_framework_vlogInternal(celix_framework_logger_t* logger, celix
             vfprintf(logger->stream, format, args);
             fputc('\0', logger->stream); //note not sure if this is needed
             fflush(logger->stream);
-            celix_logUtils_logToStdoutDetails(LOG_NAME, level, file, function, line, logger->buf);
+            celix_logUtils_logToStdoutDetails(LOG_NAME, level, file, function, line, "%s", logger->buf);
         } else {
             celix_logUtils_vLogToStdoutDetails(LOG_NAME, level, file, function, line, format, args);
         }

@@ -30,6 +30,8 @@
 #include "celix_errno.h"
 #include "discovery_type.h"
 #include "celix_log_helper.h"
+#include "celix_threads.h"
+#include "hash_map.h"
 
 typedef struct endpoint_discovery_poller endpoint_discovery_poller_t;
 

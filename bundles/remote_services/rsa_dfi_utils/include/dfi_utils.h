@@ -26,8 +26,8 @@ extern "C" {
 
 #include <celix_log_helper.h>
 #include <dyn_interface.h>
-#include <bundle.h>
-#include <bundle_context.h>
+#include <celix_bundle.h>
+#include <celix_bundle_context.h>
 #include <celix_errno.h>
 #include <stdio.h>
 

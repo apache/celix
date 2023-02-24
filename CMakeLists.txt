@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required (VERSION 3.14)
+cmake_minimum_required (VERSION 3.18)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
 cmake_policy(SET CMP0068 NEW)
@@ -25,13 +25,13 @@ project (Celix C CXX ASM)
 include(cmake/celix_project/CelixProject.cmake)
 include(cmake/cmake_celix/UseCelix.cmake)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 #find required packages
 find_package(ZLIB REQUIRED) #framework
 find_package(libuuid REQUIRED) #framework
 find_package(CURL REQUIRED) #framework, etcdlib
 find_package(libzip REQUIRED) #framework, etcdlib
-find_package(jansson REQUIRED) #etcdlib, dfi
-find_package(libffi REQUIRED) #dfi
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
@@ -55,15 +55,6 @@ if (NOT TARGET CURL::libcurl)
             )
 endif ()
 
-if (NOT TARGET jansson::jansson)
-    message("Note jansson::jansson target not created by find_package(jansson). Creating jansson::jansson Target.")
-    add_library(jansson::jansson SHARED IMPORTED)
-    set_target_properties(jansson::jansson PROPERTIES
-            IMPORTED_LOCATION "${JANSSON_LIBRARIES}"
-            INTERFACE_INCLUDE_DIRECTORIES "${JANSSON_INCLUDE_DIRS}"
-            )
-endif ()
-
 # see https://public.kitware.com/Bug/view.php?id=15696
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
     message( FATAL_ERROR "Building Celix using CMake 3.3 and makefiles is not supported due to a bug in the Makefile Generator (see Bug 15696). Please change the used CMake version - both, CMake 3.2 and CMake 3.4 are working fine. Or use a different generator (e.g. Ninja)." )
@@ -72,17 +63,20 @@ ENDIF()
 # Options
 option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 if (ENABLE_TESTING)
-    find_package(GTest CONFIG QUIET)
+    find_package(GTest QUIET)
     if (NOT GTest_FOUND)
-        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
+        include(AddGTest)
     endif()
 endif ()
 
 # Set C specific flags
 set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
-set(CMAKE_C_FLAGS "-Wall -Werror ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "-Wall -Werror -Wformat -Wno-error=deprecated-declarations ${CMAKE_C_FLAGS}")
 
 # Set C++ specific flags
+set(CMAKE_CXX_FLAGS "-fno-rtti ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ -Wformat -Wno-error=deprecated-declarations ${CMAKE_CXX_FLAGS}")
+
 if (NOT DEFINED CMAKE_CXX_STANDARD)
     #Celix header only C++ supported is based on C++14 and C++17.
     #Default using C++14 to ensure the code compiles for C++14.
@@ -90,9 +84,6 @@ if (NOT DEFINED CMAKE_CXX_STANDARD)
     #not already defined.
     set(CMAKE_CXX_STANDARD 14)
 endif ()
-
-set(CMAKE_CXX_FLAGS "-fno-rtti ${CMAKE_CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ ${CMAKE_CXX_FLAGS}")
 
 if(APPLE)
     set(CMAKE_MACOSX_RPATH 1)
@@ -124,6 +115,10 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         set(CMAKE_C_FLAGS "-Wno-stringop-truncation ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-Wno-stringop-truncation ${CMAKE_CXX_FLAGS}")
     endif()
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
+        set(CMAKE_C_FLAGS "-Wno-error=stringop-overread ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-Wno-error=stringop-overread ${CMAKE_CXX_FLAGS}")
+    endif()
 endif()
 
 option(ENABLE_MORE_WARNINGS "whether to enable more compiler warnings." OFF)
@@ -154,8 +149,8 @@ endif()
 
 # Set build type specific flags
 # Debug
-set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS}")
+set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG -Og ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG -Og ${CMAKE_CXX_FLAGS}")
 set(CMAKE_DEBUG_POSTFIX "d")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -177,20 +172,6 @@ if (ENABLE_TESTING)
 endif()
 
 option(CELIX_INSTALL_DEPRECATED_API "whether to install (and use) deprecated apis (i.e. header without a celix_ prefix." ON)
-
-option(CELIX_ADD_DEPRECATED_ATTRIBUTES "If enabled add deprecated attributes to deprecated services/functions." ON)
-if (CELIX_ADD_DEPRECATED_ATTRIBUTES)
-    set(CMAKE_C_FLAGS "-DCELIX_ADD_DEPRECATED_ATTRIBUTES ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-DCELIX_ADD_DEPRECATED_ATTRIBUTES ${CMAKE_CXX_FLAGS}")
-endif ()
-
-option(CELIX_ADD_OPENSSL_DEP "Enabled building Celix framework & etcdlib with OpenSSL library dependency. This can help in some libcurl resolving issues" OFF)
-set(CELIX_OPTIONAL_EXTRA_LIBS "")
-if (CELIX_ADD_OPENSSL_DEP)
-    find_package(OpenSSL REQUIRED)
-    set(CELIX_OPTIONAL_EXTRA_LIBS "OpenSSL::SSL")
-endif ()
-
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
 
 option(CELIX_CXX14 "Build C++14 libraries and bundles. Note for tests C++ is always used." ON)
@@ -201,6 +182,19 @@ endif ()
 
 option(ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11 "Test the Dependency Manager for C++11 support" OFF)
 option(ENABLE_TESTING_FOR_CXX14 "Test celix utils and framework C++ header for C++14 support" OFF)
+
+if (CELIX_INSTALL_DEPRECATED_API)
+    #ignore deprecated warnings
+    set(CMAKE_C_FLAGS "-Wno-deprecated-declarations ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-Wno-deprecated-declarations ${CMAKE_CXX_FLAGS}")
+endif ()
+
+include(CMakePushCheckState)
+cmake_push_check_state()
+cmake_reset_check_state()
+include(CheckLinkerFlag)
+check_linker_flag(CXX LINKER:--wrap,celix_nonexistent_symbol LINKER_WRAP_SUPPORTED)
+cmake_pop_check_state()
 
 #Libraries and Launcher
 add_subdirectory(libs)

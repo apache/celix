@@ -337,7 +337,7 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
         entry->connected = false;
         unsigned minimalMsgSize = entry->writeHeaderBufferSize + entry->writeFooterBufferSize;
         if ((minimalMsgSize > handle->maxMsgSize) && (handle->maxMsgSize)) {
-            L_ERROR("[TCP Socket] maxMsgSize (%d) < headerSize + FooterSize (%d): %s\n", handle->maxMsgSize, minimalMsgSize);
+            L_ERROR("[TCP Socket] maxMsgSize (%d) < headerSize + FooterSize (%d)\n", handle->maxMsgSize, minimalMsgSize);
         } else {
             entry->maxMsgSize = (handle->maxMsgSize) ? handle->maxMsgSize : LONG_MAX;
         }
@@ -1034,16 +1034,13 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
             message->header.payloadOffset = 0;
             message->header.isLastSegment = 1;
 
-            void *metadataData = NULL;
             size_t metadataSize = 0;
             if (message->metadata.metadata) {
-                metadataSize = entry->writeMetaBufferSize;
-                metadataData = entry->writeMetaBuffer;
+                handle->protocol->encodeMetadata(handle->protocol->handle, message, &entry->writeMetaBuffer, &entry->writeMetaBufferSize, &metadataSize);
                 // When maxMsgSize is smaller then meta data is disabled
-                if (metadataSize > entry->maxMsgSize) {
+               if (metadataSize > entry->maxMsgSize) {
                     metadataSize = 0;
                 }
-                handle->protocol->encodeMetadata(handle->protocol->handle, message, &metadataData, &metadataSize);
             }
 
             message->header.metadataSize = metadataSize;
@@ -1119,10 +1116,10 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
 
                 // Write optional metadata in vector buffer
                 if (allPayloadAdded &&
-                    (metadataSize != 0 && metadataData) &&
+                    (metadataSize != 0 && entry->writeMetaBuffer) &&
                     (msgPartSize < maxMsgSize) &&
                     (msg.msg_iovlen-1 < max_msg_iov_len)) {  // header is already included
-                    msg.msg_iov[msg.msg_iovlen].iov_base = metadataData;
+                    msg.msg_iov[msg.msg_iovlen].iov_base = entry->writeMetaBuffer;
                     msg.msg_iov[msg.msg_iovlen].iov_len = metadataSize;
                     msg.msg_iovlen++;
                     msgPartSize += metadataSize;
@@ -1195,15 +1192,12 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 } else if (msgPartSize) {
                     entry->retryCount = 0;
                     if (nbytes != msgPartSize) {
-                        L_ERROR("[TCP Socket] seq: %d MsgSize not correct: %d != %d (%s)\n", message->header.seqNr, msgPartSize, nbytes, strerror(errno));
+                        L_ERROR("[TCP Socket] seq: %d MsgSize not correct: %zu != %ld (%s)\n", message->header.seqNr, msgPartSize, nbytes, strerror(errno));
                     }
                 }
                 // Note: serialized Payload is deleted by serializer
                 if (payloadData && (payloadData != message->payload.payload)) {
                     free(payloadData);
-                }
-                if (metadataData && metadataSize > 0) {
-                    free(metadataData);
                 }
             }
             celixThreadMutex_unlock(&entry->writeMutex);

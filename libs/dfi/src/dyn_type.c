@@ -24,7 +24,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <ffi.h>
-#include <dyn_type_common.h>
+#include "dyn_type_common.h"
 
 #include "dyn_type_common.h"
 #include "dyn_common.h"

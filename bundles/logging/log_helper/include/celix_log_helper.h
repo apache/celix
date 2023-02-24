@@ -38,39 +38,39 @@ void celix_logHelper_destroy(celix_log_helper_t* logHelper);
 /**
  * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_TRACE level, printf style
  */
-void celix_logHelper_trace(celix_log_helper_t* logHelper, const char *format, ...);
+void celix_logHelper_trace(celix_log_helper_t* logHelper, const char *format, ...) __attribute__((format(printf,2,3)));
 
 /**
  * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_DEBUG level, printf style
  */
-void celix_logHelper_debug(celix_log_helper_t* logHelper, const char *format, ...);
+void celix_logHelper_debug(celix_log_helper_t* logHelper, const char *format, ...) __attribute__((format(printf,2,3)));
 
 /**
  * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_INFO level, printf style
  */
-void celix_logHelper_info(celix_log_helper_t* logHelper, const char *format, ...);
+void celix_logHelper_info(celix_log_helper_t* logHelper, const char *format, ...) __attribute__((format(printf,2,3)));
 
 /**
  * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_WARNING level, printf style
  */
-void celix_logHelper_warning(celix_log_helper_t* logHelper, const char *format, ...);
+void celix_logHelper_warning(celix_log_helper_t* logHelper, const char *format, ...) __attribute__((format(printf,2,3)));
 
 /**
  * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_ERROR level, printf style
  */
-void celix_logHelper_error(celix_log_helper_t* logHelper, const char *format, ...);
+void celix_logHelper_error(celix_log_helper_t* logHelper, const char *format, ...) __attribute__((format(printf,2,3)));
 
 /**
  * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_FATAL level, printf style
  */
-void celix_logHelper_fatal(celix_log_helper_t* logHelper, const char *format, ...);
+void celix_logHelper_fatal(celix_log_helper_t* logHelper, const char *format, ...) __attribute__((format(printf,2,3)));
 
 /**
  * @brief Logs a message using the provided celix log level to the log_helper, printf style.
  *
  * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
  */
-void celix_logHelper_log(celix_log_helper_t* logHelper, celix_log_level_e level, const char *format, ...);
+void celix_logHelper_log(celix_log_helper_t* logHelper, celix_log_level_e level, const char *format, ...) __attribute__((format(printf,3,4)));
 
 /**
  * @brief Logs a detailed message using the provided celix log level to the log_helper, printf style.
@@ -83,14 +83,22 @@ void celix_logHelper_log(celix_log_helper_t* logHelper, celix_log_level_e level,
  * If the argument file or function is NULL, the arguments file, function and line are not used.
  *
  */
-void celix_logHelper_logDetails(celix_log_helper_t* logHelper, celix_log_level_e level, const char* file, const char* function, int line, const char *format, ...);
+void celix_logHelper_logDetails(celix_log_helper_t* logHelper,
+                                celix_log_level_e level,
+                                const char* file,
+                                const char* function,
+                                int line,
+                                const char *format, ...) __attribute__((format(printf,6,7)));
 
 /**
  * @brief Logs a message to the log_helper using a format string and a va_list argument (vprintf style).
  *
  * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
  */
-void celix_logHelper_vlog(celix_log_helper_t* logHelper, celix_log_level_e level, const char *format, va_list formatArgs);
+void celix_logHelper_vlog(celix_log_helper_t* logHelper,
+                          celix_log_level_e level,
+                          const char *format,
+                          va_list formatArgs) __attribute__((format(printf,3,0)));
 
 /**
  * @brief Logs a detailed message to log_helper using a format string and a va_list argument (vprintf style).
@@ -103,7 +111,13 @@ void celix_logHelper_vlog(celix_log_helper_t* logHelper, celix_log_level_e level
  * If the argument file or function is NULL, the arguments file, function and line are not used.
  *
  */
-void celix_logHelper_vlogDetails(celix_log_helper_t* logHelper, celix_log_level_e level, const char* file, const char* function, int line, const char *format, va_list formatArgs);
+void celix_logHelper_vlogDetails(celix_log_helper_t* logHelper,
+                                 celix_log_level_e level,
+                                 const char* file,
+                                 const char* function,
+                                 int line,
+                                 const char *format,
+                                 va_list formatArgs) __attribute__((format(printf,6,0)));
 
 /**
  * @brief nr of times a helper log function has been called.

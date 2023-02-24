@@ -20,6 +20,7 @@
 #include "gtest/gtest.h"
 
 #include <stdarg.h>
+#include "version.h"
 
 
 extern "C" {

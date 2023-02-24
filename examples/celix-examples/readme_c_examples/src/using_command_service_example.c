@@ -17,7 +17,7 @@
  * under the License.
  */
 #include <stdio.h>
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 #include <celix_shell_command.h>
 
 typedef struct use_command_service_example_data {

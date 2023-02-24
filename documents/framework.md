@@ -39,7 +39,7 @@ for C++ this happens when the framework goes out of scope.
 ### Example: Creating an Apache Celix Framework in C
 ```C
 //src/main.c
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 int main() {
     //create framework properties
     celix_properties_t* properties = properties_create();
@@ -107,7 +107,7 @@ The Apache Celix launcher also does some additional work:
 ### Example: Creating an Apache Celix Framework with the Apache Celix Launcher
 ```C
 //src/launcher.c
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 int main(int argc, char** argv) {
     return celixLauncher_launchAndWaitForShutdown(argc, argv, NULL);
 }
@@ -149,7 +149,7 @@ Framework properties to install and start bundles:
 ### Example: Installing and starting bundles in C
 ```C
 //src/main.c
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 int main() {
     //create framework properties
     celix_properties_t* properties = properties_create();
@@ -189,7 +189,7 @@ int main() {
 
 ```C
 //src/launcher.c
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 int main(int argc, char** argv) {
     return celixLauncher_launchAndWaitForShutdown(argc, argv, NULL);
 }

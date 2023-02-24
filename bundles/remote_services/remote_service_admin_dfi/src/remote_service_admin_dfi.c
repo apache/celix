@@ -450,14 +450,14 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
     celix_properties_t *metadata = NULL;
 
     const struct mg_request_info *request_info = mg_get_request_info(conn);
-    if (request_info->uri != NULL) {
+    if (request_info->request_uri != NULL) {
         remote_service_admin_t *rsa = request_info->user_data;
 
 
-        if (strncmp(request_info->uri, "/service/", 9) == 0 && strcmp("POST", request_info->request_method) == 0) {
+        if (strncmp(request_info->request_uri, "/service/", 9) == 0 && strcmp("POST", request_info->request_method) == 0) {
 
             // uri = /services/myservice/call
-            const char *uri = request_info->uri;
+            const char *uri = request_info->request_uri;
             // rest = myservice/call
 
             const char *rest = uri+9;

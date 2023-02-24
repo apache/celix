@@ -21,8 +21,10 @@
 #include <thread>
 
 #include "celix_shell_command.h"
-#include "celix_api.h"
+#include "celix_framework_factory.h"
+#include "celix_bundle_context.h"
 #include "celix_shell.h"
+#include "celix_framework_utils.h"
 
 class ShellTestSuite : public ::testing::Test {
 public:
@@ -33,13 +35,13 @@ public:
     }
 
     static std::shared_ptr<celix_bundle_context_t> createFrameworkContext() {
-        auto properties = properties_create();
-        properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
-        properties_set(properties, "org.osgi.framework.storage", ".cacheShellTestSuite");
-        properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
+        auto properties = celix_properties_create();
+        celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
+        celix_properties_set(properties, "org.osgi.framework.storage", ".cacheShellTestSuite");
+        celix_properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
 
         auto* cFw = celix_frameworkFactory_createFramework(properties);
-        auto cCtx = framework_getContext(cFw);
+        auto cCtx = celix_framework_getFrameworkContext(cFw);
 
         return std::shared_ptr<celix_bundle_context_t>{cCtx, [](celix_bundle_context_t* context) {
             auto *fw = celix_bundleContext_getFramework(context);

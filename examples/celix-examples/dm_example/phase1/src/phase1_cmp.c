@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * phase1_cmp.c
- *
- *  \date       Oct 29, 2015
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,7 +25,6 @@
 
 #include "celix_threads.h"
 #include "phase1_cmp.h"
-#include "dm_component.h"
 
 #define SLEEPTIME 1000
 

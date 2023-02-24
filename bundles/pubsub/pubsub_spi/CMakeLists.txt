@@ -29,6 +29,7 @@ target_include_directories(pubsub_spi PUBLIC
 
 target_link_libraries(pubsub_spi PUBLIC Celix::framework Celix::pubsub_api)
 target_link_libraries(pubsub_spi PUBLIC Celix::pubsub_utils )
+celix_deprecated_utils_headers(pubsub_spi)
 add_library(Celix::pubsub_spi ALIAS pubsub_spi)
 
 install(TARGETS pubsub_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub

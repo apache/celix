@@ -22,6 +22,7 @@ add_executable(test_rsa_json_rpc
         src/RsaJsonRpcActivatorTestSuite.cc
         src/RsaJsonRpcTestSuite.cc
 )
+celix_deprecated_utils_headers(test_rsa_json_rpc)
 
 
 target_link_libraries(test_rsa_json_rpc PRIVATE
@@ -30,6 +31,7 @@ target_link_libraries(test_rsa_json_rpc PRIVATE
     Celix::rsa_common
     libuuid::libuuid
     jansson::jansson
+    Celix::dfi
     Celix::framework
     Celix::shell_api
     GTest::gtest

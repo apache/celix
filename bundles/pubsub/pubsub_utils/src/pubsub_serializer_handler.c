@@ -21,12 +21,15 @@
 #include "pubsub_serializer_handler.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 #include "pubsub_message_serialization_marker.h"
 #include "celix_version.h"
 #include "pubsub_message_serialization_service.h"
 #include "celix_log_helper.h"
 #include "celix_constants.h"
+#include "celix_threads.h"
+#include "celix_utils.h"
 
 #define L_DEBUG(...) \
     celix_logHelper_debug(handler->logHelper, __VA_ARGS__)
@@ -216,7 +219,7 @@ void pubsub_serializerHandler_addSerializationService(pubsub_serializer_handler_
 
     celix_version_t* msgVersion = celix_version_createVersionFromString(version);
     if (msgVersion == NULL) {
-        L_ERROR("%s service has an invalid %s property. value is '%s'", PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_VERSION_PROPERTY, msgVersion);
+        L_ERROR("%s service has an invalid %s property. value is '%s'", PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_VERSION_PROPERTY, version);
         return;
     }
 

@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 #include "celix_log_helper.h"
 
 typedef struct user_data {

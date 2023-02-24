@@ -20,6 +20,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
     find_package(CURL REQUIRED)
     find_package(jansson REQUIRED)
     find_package(libuuid REQUIRED)
+    find_package(civetweb REQUIRED)
 
     add_celix_bundle(rsa_dfi
             VERSION 0.9.0
@@ -31,18 +32,18 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             src/remote_service_admin_activator.c
             src/export_registration_dfi.c
             src/import_registration_dfi.c
-            $<TARGET_OBJECTS:Celix::civetweb>
             )
     celix_bundle_private_libs(rsa_dfi Celix::dfi)
-    target_include_directories(rsa_dfi PRIVATE $<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>)
     target_link_libraries(rsa_dfi PRIVATE
             Celix::rsa_dfi_utils
             Celix::dfi
             Celix::log_helper
             Celix::rsa_common
             CURL::libcurl
+            civetweb::civetweb
             jansson::jansson
             )
+    celix_deprecated_utils_headers(rsa_dfi)
 
     install_celix_bundle(rsa_dfi EXPORT celix COMPONENT rsa)
     #Setup target aliases to match external usage

@@ -18,6 +18,7 @@
 celix_subproject(PUBSUB_INTEGRATION "Option to build the pubsub integration" ON DEPS SHELL SHELL_TUI)
 if (PUBSUB_INTEGRATION)
     find_package(jansson REQUIRED)
+    find_package(civetweb REQUIRED)
 
     add_celix_bundle(pubsub_endpoint_sut
             #"Vanilla" bundle which is under test
@@ -27,6 +28,7 @@ if (PUBSUB_INTEGRATION)
             )
     target_include_directories(pubsub_endpoint_sut PRIVATE gtest)
     target_link_libraries(pubsub_endpoint_sut PRIVATE Celix::pubsub_api)
+    celix_deprecated_utils_headers(pubsub_endpoint_sut)
     celix_bundle_files(pubsub_endpoint_sut
             meta_data/msg.descriptor
             DESTINATION "META-INF/descriptors"
@@ -43,6 +45,7 @@ if (PUBSUB_INTEGRATION)
             VERSION 1.0.0
             )
     target_link_libraries(pubsub_endpoint_tst PRIVATE Celix::framework Celix::pubsub_api)
+    celix_deprecated_utils_headers(pubsub_endpoint_tst)
     celix_bundle_files(pubsub_endpoint_tst
             meta_data/msg.descriptor
             DESTINATION "META-INF/descriptors"
@@ -59,6 +62,7 @@ if (PUBSUB_INTEGRATION)
             gtest/loopback_activator.c
             VERSION 1.0.0
             )
+    celix_deprecated_utils_headers(pubsub_loopback)
     target_include_directories(pubsub_loopback PRIVATE gtest)
     target_link_libraries(pubsub_loopback PRIVATE Celix::pubsub_api)
     celix_bundle_files(pubsub_loopback
@@ -80,6 +84,7 @@ if (PUBSUB_INTEGRATION)
             gtest/sut_activator.c
             VERSION 1.0.0
             )
+    celix_deprecated_utils_headers(pubsub_sut)
     target_include_directories(pubsub_sut PRIVATE gtest)
     target_link_libraries(pubsub_sut PRIVATE Celix::pubsub_api)
     celix_bundle_files(pubsub_sut
@@ -97,6 +102,7 @@ if (PUBSUB_INTEGRATION)
             gtest/tst_activator.c
             VERSION 1.0.0
             )
+    celix_deprecated_utils_headers(pubsub_tst)
     target_link_libraries(pubsub_tst PRIVATE Celix::framework Celix::pubsub_api)
     celix_bundle_files(pubsub_tst
             meta_data/msg.descriptor
@@ -113,6 +119,7 @@ if (PUBSUB_INTEGRATION)
             gtest/sut_activator.c
             VERSION 1.0.0
             )
+    celix_deprecated_utils_headers(pubsub_deadlock_sut)
     celix_bundle_files(pubsub_deadlock_sut
             meta_data/msg.descriptor
             DESTINATION "META-INF/descriptors"
@@ -135,6 +142,7 @@ if (PUBSUB_INTEGRATION)
             gtest/serializer_activator.cc
             VERSION 1.0.0
             )
+    celix_deprecated_utils_headers(pubsub_serializer)
     target_include_directories(pubsub_serializer PRIVATE gtest)
     target_link_libraries(pubsub_serializer PRIVATE Celix::pubsub_api Celix::pubsub_spi)
 
@@ -339,7 +347,7 @@ if (PUBSUB_INTEGRATION)
                 pubsub_tst
                 pubsub_serializer
                 )
-        target_link_libraries(pubsub_websocket_v2_tests PRIVATE Celix::pubsub_api jansson::jansson civetweb_shared GTest::gtest GTest::gtest_main)
+        target_link_libraries(pubsub_websocket_v2_tests PRIVATE Celix::pubsub_api Celix::dfi jansson::jansson GTest::gtest GTest::gtest_main civetweb::civetweb)
         target_include_directories(pubsub_websocket_v2_tests SYSTEM PRIVATE gtest)
         add_test(NAME pubsub_websocket_v2_tests COMMAND pubsub_websocket_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_v2_tests,CONTAINER_LOC>)
         setup_target_for_coverage(pubsub_websocket_v2_tests SCAN_DIR ..)
@@ -361,7 +369,7 @@ if (PUBSUB_INTEGRATION)
                 pubsub_serializer
                 )
         target_compile_definitions(pstm_deadlock_websocket_v2_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
-        target_link_libraries(pstm_deadlock_websocket_v2_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main jansson::jansson Celix::dfi civetweb_shared)
+        target_link_libraries(pstm_deadlock_websocket_v2_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main jansson::jansson Celix::dfi civetweb::civetweb)
         target_include_directories(pstm_deadlock_websocket_v2_test SYSTEM PRIVATE pstm_deadlock_websocket_v2_test)
 
         #Note we do not link to bundles, as result (to ensure a bundle zip file is created) an dependency on the bundle is needed.

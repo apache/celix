@@ -52,6 +52,7 @@ add_executable(test_pubsub_utils
 		src/PubSubMatchingTestSuite.cpp
 )
 target_link_libraries(test_pubsub_utils PRIVATE Celix::framework Celix::pubsub_utils GTest::gtest GTest::gtest_main Celix::pubsub_spi)
+celix_deprecated_utils_headers(test_pubsub_utils)
 add_test(NAME test_pubsub_utils COMMAND test_pubsub_utils)
 setup_target_for_coverage(test_pubsub_utils SCAN_DIR ..)
 add_celix_bundle_dependencies(test_pubsub_utils pubsub_serialization_matching_descriptors pubsub_serialization_provider_descriptors)

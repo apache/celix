@@ -148,7 +148,7 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_t *watcher)
         return status;
     }
 
-	if (endpointDiscoveryServer_getUrl(server, url) != CELIX_SUCCESS) {
+	if (endpointDiscoveryServer_getUrl(server, url, MAX_VALUE_LENGTH) != CELIX_SUCCESS) {
 		snprintf(url, MAX_VALUE_LENGTH, "http://%s:%s/%s", DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT, DEFAULT_SERVER_PATH);
 	}
 

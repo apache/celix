@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "celix_api.h"
+#include "celix_bundle_context.h"
 #include "add_command.h"
 #include "calculator_service.h"
 #include "celix_utils.h"

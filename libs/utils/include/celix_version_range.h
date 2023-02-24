@@ -21,7 +21,8 @@
 #ifndef CELIX_VERSION_RANGE_H_
 #define CELIX_VERSION_RANGE_H_
 
-#include "celixbool.h"
+#include <stdbool.h>
+
 #include "celix_errno.h"
 #include "celix_version.h"
 

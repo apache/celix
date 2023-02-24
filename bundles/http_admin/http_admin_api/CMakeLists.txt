@@ -21,7 +21,7 @@ add_library(http_admin_api INTERFACE)
 target_include_directories(http_admin_api INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 )
-target_link_libraries(http_admin_api INTERFACE civetweb_shared)
+target_link_libraries(http_admin_api INTERFACE civetweb::civetweb)
 
 #install api
 install(TARGETS http_admin_api EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT http_admin

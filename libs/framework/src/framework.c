@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "celixbool.h"
+#include <stdbool.h>
 #include <uuid/uuid.h>
 #include <assert.h>
 #include <celix_log_utils.h>
@@ -76,7 +76,7 @@ static inline void fw_bundleEntry_waitTillUseCountIs(celix_framework_bundle_entr
         if (entry->useCount != desiredUseCount) {
             struct timespec now = celix_gettime(CLOCK_MONOTONIC);
             if (celix_difftime(&start, &now) > 5) {
-                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle '%s' (bnd id = %li) still in use. Use count is %u, desired is %li", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
+                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle '%s' (bnd id = %li) still in use. Use count is %zu, desired is %li", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
                 start = celix_gettime(CLOCK_MONOTONIC);
             }
         }
@@ -326,7 +326,7 @@ celix_status_t framework_destroy(framework_pt framework) {
         bundle_t *bnd = entry->bnd;
         if (count > 0) {
             const char *bndName = celix_bundle_getSymbolicName(bnd);
-            fw_log(framework->logger, CELIX_LOG_LEVEL_FATAL, "Cannot destroy framework. The use count of bundle %s (bnd id %li) is not 0, but %u.", bndName, entry->bndId, count);
+            fw_log(framework->logger, CELIX_LOG_LEVEL_FATAL, "Cannot destroy framework. The use count of bundle %s (bnd id %li) is not 0, but %zu.", bndName, entry->bndId, count);
             celixThreadMutex_lock(&framework->dispatcher.mutex);
             int nrOfRequests = framework->dispatcher.eventQueueSize + celix_arrayList_size(framework->dispatcher.dynamicEventQueue);
             celixThreadMutex_unlock(&framework->dispatcher.mutex);
@@ -1893,17 +1893,19 @@ long celix_framework_registerService(framework_t *fw, celix_bundle_t *bnd, const
     celix_status_t status;
     service_registration_t *reg = NULL;
 
+    if (serviceName == NULL) {
+        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Null serviceName");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+
     long bndId = celix_bundle_getId(bnd);
     celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
 
 
-    if (serviceName != NULL && factory != NULL) {
+    if (factory != NULL) {
         status = celix_serviceRegistry_registerServiceFactory(fw->registry, bnd, serviceName, factory, properties, 0, &reg);
-    } else if (serviceName != NULL) {
-        status = celix_serviceRegistry_registerService(fw->registry, bnd, serviceName, svc, properties, 0, &reg);
     } else {
-        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Invalid arguments serviceName", serviceName);
-        status = CELIX_ILLEGAL_ARGUMENT;
+        status = celix_serviceRegistry_registerService(fw->registry, bnd, serviceName, svc, properties, 0, &reg);
     }
 
     celix_framework_bundleEntry_decreaseUseCount(entry);

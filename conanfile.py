@@ -45,11 +45,8 @@ class CelixConan(ConanFile):
         "enable_thread_sanitizer": [True, False],
         "enable_testing_dependency_manager_for_cxx11": [True, False],
         "enable_testing_for_cxx14": [True, False],
-        "celix_add_openssl_dep": [True, False],
         "build_all": [True, False],
         "build_deployment_admin": [True, False],
-        "build_device_access_example": [True, False],
-        "build_device_access": [True, False],
         "build_http_admin": [True, False],
         "build_log_service": [True, False],
         "build_syslog_writer": [True, False],
@@ -80,13 +77,14 @@ class CelixConan(ConanFile):
         "build_launcher": [True, False],
         "build_promises": [True, False],
         "build_pushstreams": [True, False],
+        "build_experimental": [True, False],
+        "build_celix_dfi": [True, False],
         "celix_cxx14": [True, False],
         "celix_cxx17": [True, False],
         "celix_install_deprecated_api": [True, False],
-        "celix_add_deprecated_attributes": [True, False],
         "celix_use_compression_for_bundle_zips": [True, False],
     }
-    default_options = { 
+    default_options = {
         "enable_testing": False,
         "enable_code_coverage": False,
         "enable_address_sanitizer": False,
@@ -94,11 +92,8 @@ class CelixConan(ConanFile):
         "enable_thread_sanitizer": False,
         "enable_testing_dependency_manager_for_cxx11": False,
         "enable_testing_for_cxx14": False,
-        "celix_add_openssl_dep": False,
         "build_all": False,
         "build_deployment_admin": False,
-        "build_device_access": False,
-        "build_device_access_example": False,
         "build_http_admin": True,
         "build_log_service": True,
         "build_syslog_writer": True,
@@ -129,10 +124,11 @@ class CelixConan(ConanFile):
         "build_launcher": False,
         "build_promises": False,
         "build_pushstreams": False,
-        "celix_cxx14": False,
-        "celix_cxx17": False,
+        "build_experimental": False,
+        "build_celix_dfi": True,
+        "celix_cxx14": True,
+        "celix_cxx17": True,
         "celix_install_deprecated_api": False,
-        "celix_add_deprecated_attributes": True,
         "celix_use_compression_for_bundle_zips": True,
     }
     _cmake = None
@@ -143,9 +139,7 @@ class CelixConan(ConanFile):
 
     def package_id(self):
         del self.info.options.build_all
-        del self.info.options.celix_add_openssl_dep
         # the followings are not installed
-        del self.info.options.build_device_access_example
         del self.info.options.build_pubsub_integration
         del self.info.options.build_pubsub_examples
         del self.info.options.build_cxx_rsa_integration
@@ -175,8 +169,6 @@ class CelixConan(ConanFile):
         if not self.options.enable_testing:
             self.options.build_pubsub_integration = False
             self.options.enable_code_coverage = False
-        if not self.options.build_device_access:
-            self.options.build_device_access_example = False
         if not self.options.build_log_service:
             self.options.build_syslog_writer = False
         if not self.options.build_pubsub:
@@ -203,10 +195,6 @@ class CelixConan(ConanFile):
             self.options.build_shell_bonjour = False
 
     def requirements(self):
-        self.requires("libffi/[>=3.2.1 <4.0.0]")
-        self.options['libffi'].shared = True
-        self.requires("jansson/[>=2.12 <3.0.0]")
-        self.options['jansson'].shared = True
         self.requires("libcurl/[>=7.64.1 <8.0.0]")
         self.options['libcurl'].shared = True
         self.requires("zlib/[>=1.2.8 <2.0.0]")
@@ -221,10 +209,6 @@ class CelixConan(ConanFile):
             self.options['gtest'].shared = True
             if self.options.enable_address_sanitizer:
                 self.options["cpputest"].with_leak_detection = False
-        if self.options.celix_add_openssl_dep:
-            # fix a remotely exploitable OpenSSL/LibreSSL vulnerability
-            # https://lwn.net/Articles/887970/
-            self.requires("openssl/1.1.1n")
         if self.options.build_remote_service_admin or self.options.build_shell_bonjour:
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
         if self.options.build_cxx_remote_service_admin:
@@ -239,6 +223,15 @@ class CelixConan(ConanFile):
             self.options['zeromq'].shared = True
             self.requires("czmq/4.2.0")
             self.options['czmq'].shared = True
+        if self.options.build_http_admin or self.options.build_remote_service_admin:
+            self.requires("civetweb/1.15")
+            self.options['civetweb'].shared = True
+        if self.options.build_celix_dfi:
+            self.requires("libffi/[>=3.2.1 <4.0.0]")
+            self.options['libffi'].shared = True
+        if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
+            self.requires("jansson/[>=2.12 <3.0.0]")
+            self.options['jansson'].shared = True
         if self.options.build_rsa_discovery_zeroconf:
             self.requires("mdnsresponder/1310.140.1")
 
@@ -274,3 +267,4 @@ class CelixConan(ConanFile):
         # check https://docs.conan.io/en/latest/reference/conanfile/methods.html#imports
         self.cpp_info.bindirs = ["bin", os.path.join("share", self.name, "bundles")]
         self.cpp_info.build_modules["cmake"].append(os.path.join("lib", "cmake", "Celix", "CelixConfig.cmake"))
+        self.cpp_info.build_modules["cmake_find_package"].append(os.path.join("lib", "cmake", "Celix", "CelixConfig.cmake"))

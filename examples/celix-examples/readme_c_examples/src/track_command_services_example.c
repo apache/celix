@@ -18,7 +18,9 @@
  */
 
 #include <stdio.h>
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
+#include <celix_threads.h>
+#include <celix_constants.h>
 #include <celix_shell_command.h>
 
 typedef struct track_command_services_example_data {

@@ -1,41 +1,79 @@
 name: Celix MacOS
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron:  '0 0 * * *'
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macOS-latest]
-        compiler: [clang]
+
+  build-conan:
+    runs-on: macOS-10.15
     timeout-minutes: 120
     steps:
-    - name: Checkout source code
-      uses: actions/checkout@v2
-    - name: Install dependencies
-      run: |
-        brew update
-        brew install lcov zeromq czmq openssl cpputest jansson rapidjson libzip
-        brew unlink openssl && brew link openssl --force
-    - name: Build
-      env:
-        CC: ${{ matrix.compiler }}
-        BUILD_OPTIONS: |
-          -DENABLE_TESTING=ON
-          -DENABLE_ADDRESS_SANITIZER=ON
-          -DBUILD_CXX_REMOTE_SERVICE_ADMIN=ON
-          -DENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11=ON
-          -DENABLE_TESTING_FOR_CXX14=ON
-      run: |
-        mkdir build install
-        cd build
-        cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
-        make -j && make install
-    - name: Test
-      run: |
-        cd $GITHUB_WORKSPACE/build
-        export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:$(pwd)/utils:$(pwd)/framework:$(pwd)/dfi
-        make test ARGS="-V"
+      - name: Checkout source code
+        uses: actions/checkout@v3.3.0
+      - name: Install conan
+        run: |
+          brew install python
+          pip3 install -U conan==1.59.0
+      - name: Setup Conan Profile
+        run: |
+          conan profile new default --detect
+          conan profile update settings.build_type=Release default
+      - name: Install Dependencies
+        env:
+          CONAN_BUILD_OPTIONS: |
+            -o celix:enable_testing=True
+            -o celix:enable_address_sanitizer=True
+            -o celix:build_all=True
+            -o celix:enable_testing_for_cxx14=True
+            -o celix:enable_testing_dependency_manager_for_cxx11=True
+        run: |
+          #force reequire libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
+          conan install . celix/ci -pr:b default -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing -b cpputest --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s
+      - name: Build
+        run: |
+          conan build . -bf build --configure
+          conan build . -bf build --build
+
+      - name: Test
+        run: |
+          cd build
+          source activate_run.sh
+          ctest --verbose
+          source deactivate_run.sh
+      - name: Test Installed Celix
+        run: |
+          conan create -pr:b default -pr:h default -tf examples/conan_test_package -tbf test-build -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s .
+
+  build-brew:
+    runs-on: macOS-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3.3.0
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install lcov zeromq czmq cpputest jansson rapidjson libzip
+      - name: Build
+        env:
+          BUILD_OPTIONS: |
+            -DENABLE_TESTING=ON
+            -DENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11=ON
+            -DENABLE_TESTING_FOR_CXX14=ON
+            -DENABLE_ADDRESS_SANITIZER=ON
+            -DCMAKE_BUILD_TYPE=Release
+        run: |
+          mkdir build install
+          cd build
+          cmake ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
+          make -j && make install
+      - name: Test
+        run: |
+          cd $GITHUB_WORKSPACE/build
+          export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:$(pwd)/utils:$(pwd)/framework:$(pwd)/dfi
+          make test ARGS="-V"
 

@@ -18,7 +18,7 @@
  */
 
 #include "celix_properties.h"
-#include "bundle.h"
+#include "celix_bundle.h"
 
 #ifndef CELIX_SERVICE_FACTORY_H_
 #define CELIX_SERVICE_FACTORY_H_

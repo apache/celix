@@ -27,6 +27,7 @@ add_celix_bundle(log_admin
 )
 target_link_libraries(log_admin PRIVATE Celix::log_helper Celix::shell_api)
 target_include_directories(log_admin PRIVATE src)
+celix_deprecated_utils_headers(log_admin)
 install_celix_bundle(log_admin EXPORT celix COMPONENT logging)
 
 #Setup target aliases to match external usage

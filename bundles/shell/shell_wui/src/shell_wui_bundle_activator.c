@@ -20,10 +20,9 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <celix_api.h>
-#include <celix_shell.h>
-#include <civetweb.h>
-
+#include "celix_bundle_activator.h"
+#include "celix_shell.h"
+#include "civetweb.h"
 #include "http_admin/api.h"
 
 typedef struct shell_wui_activator_data {

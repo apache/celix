@@ -32,6 +32,7 @@ add_subdirectory(disc_mock)
 add_executable(test_tm_scoped
         tms_tests.cpp
 )
+celix_deprecated_utils_headers(test_tm_scoped)
 target_include_directories(test_tm_scoped PRIVATE ../src ../include)
 target_link_libraries(test_tm_scoped PRIVATE
         Celix::framework
