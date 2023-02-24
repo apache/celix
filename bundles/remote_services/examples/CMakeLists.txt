@@ -25,24 +25,3 @@ add_subdirectory(remote_example_service)
 
 add_subdirectory(interceptors)
 
-
-#    TODO refactor shm remote service admin to use dfi
-#    if (BUILD_RSA_REMOTE_SERVICE_ADMIN_SHM AND BUILD_RSA_DISCOVERY_SHM)
-#        add_celix_container(remote-services-shm
-#            NAME "server"
-#            GROUP "remote-services/remote-services-shm"
-#            BUNDLES discovery_shm topology_manager remote_service_admin_shm calculator shell shell_tui log_service log_writer
-#        )
-#        celix_container_bundles_dir(remote-services-shm DIR_NAME "endpoints"
-#            BUNDLES org.apache.celix.calc.api.Calculator_endpoint
-#        )
-#
-#        add_celix_container(remote-services-shm-client
-#            NAME "client"
-#            GROUP "remote-services/remote-services-shm"
-#            BUNDLES topology_manager remote_service_admin_shm shell shell_tui log_service log_writer calculator_shell discovery_shm
-#        )
-#        celix_container_bundles_dir(remote-services-shm-client DIR_NAME "endpoints"
-#            BUNDLES org.apache.celix.calc.api.Calculator_proxy
-#        )
-#    endif ()
