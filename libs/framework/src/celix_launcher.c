@@ -69,13 +69,8 @@ int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], celix_propert
 int celixLauncher_launchWithArgv(int argc, char *argv[], celix_properties_t* embeddedConfig, celix_framework_t** frameworkOut) {
 	celix_framework_t* framework = NULL;
 
-
 	// Perform some minimal command-line option parsing...
 	char *opt = NULL;
-	if (argc > 1) {
-		opt = argv[1];
-	}
-
 	char* configFile = NULL;
 	bool showProps = false;
     bool showEmbeddedBundles = false;
@@ -83,15 +78,15 @@ int celixLauncher_launchWithArgv(int argc, char *argv[], celix_properties_t* emb
 	for (int i = 1; i < argc; ++i) {
 		opt = argv[i];
 		// Check whether the user wants some help...
-		if (strncmp("-?", opt, strlen("-?")) == 0 || strncmp("-h", opt, strlen("-h")) == 0 || strncmp("--help", opt, strlen("--help")) == 0) {
+        if (strncmp("-?", opt, sizeof("-?")) == 0 || strncmp("-h", opt, sizeof("-h")) == 0 || strncmp("--help", opt, sizeof("--help")) == 0) {
             celixLauncher_printUsage(argv[0]);
-			celix_properties_destroy(embeddedConfig);
-			return 0;
-		} else if (strncmp("-p", opt, strlen("-p")) == 0 || strncmp("--props", opt, strlen("--props")) == 0) {
+            celix_properties_destroy(embeddedConfig);
+            return 0;
+        } else if (strncmp("-p", opt, sizeof("-p")) == 0 || strncmp("--props", opt, sizeof("--props")) == 0) {
             showProps = true;
-        } else if (strncmp("-c", opt, strlen("-c")) == 0 || strncmp("--create-bundle-cache", opt, strlen("--create-bundle-cache")) == 0) {
+        } else if (strncmp("-c", opt, sizeof("-c")) == 0 || strncmp("--create-bundle-cache", opt, sizeof("--create-bundle-cache")) == 0) {
             createCache = true;
-        } else if (strncmp("--embedded_bundles", opt, strlen("--embedded_bundles")) == 0) {
+        } else if (strncmp("--embedded_bundles", opt, sizeof("--embedded_bundles")) == 0) {
             showEmbeddedBundles = true;
 		} else {
             configFile = opt;
@@ -231,7 +226,6 @@ static void celixLauncher_printProperties(celix_properties_t *embeddedProps, con
     printf("\n");
 
 	//combined result
-    celixLauncher_combineProperties(embeddedProps, runtimeProps);
 	printf("Resolved (env, runtime and embedded) properties:\n");
 	if (celix_properties_size(keys) == 0) {
 		printf("|- Empty!\n");
