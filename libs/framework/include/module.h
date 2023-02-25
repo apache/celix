@@ -43,7 +43,7 @@ typedef struct module celix_module_t;
 extern "C" {
 #endif
 
-module_pt module_create(manifest_pt headerMap, const char *moduleId, celix_framework_t* fw, celix_bundle_t *bundle);
+module_pt module_create(manifest_pt headerMap, const char *moduleId, celix_bundle_t *bundle);
 
 module_pt module_createFrameworkModule(celix_framework_t* fw, celix_bundle_t *bundle);
 

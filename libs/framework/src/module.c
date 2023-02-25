@@ -69,11 +69,13 @@ struct module {
     void* bundleActivatorHandle;
 };
 
-module_pt module_create(manifest_pt headerMap, const char * moduleId, celix_framework_t* fw, bundle_pt bundle) {
+module_pt module_create(manifest_pt headerMap, const char * moduleId, bundle_pt bundle) {
     module_pt module = NULL;
     manifest_parser_pt mp;
+    celix_framework_t* fw = NULL;
+    bundle_getFramework(bundle, &fw);
 
-    if (headerMap != NULL) {
+    if (headerMap != NULL && fw != NULL) {
         module = (module_pt) calloc(1, sizeof(*module));
         module->fw = fw;
         module->headerMap = headerMap;

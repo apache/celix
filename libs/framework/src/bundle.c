@@ -196,7 +196,7 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt* moduleOut) {
         int revision_no = 0;
         char moduleId[512];
         snprintf(moduleId, sizeof(moduleId), "%ld.%d", bundleId, revision_no);
-        module = module_create(headerMap, moduleId, bundle->framework, bundle);
+        module = module_create(headerMap, moduleId, bundle);
     }
     if (!module) {
         status = CELIX_BUNDLE_EXCEPTION;

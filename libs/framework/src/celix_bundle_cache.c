@@ -50,7 +50,7 @@ struct celix_bundle_cache {
     bool deleteOnDestroy;
     bool deleteOnCreate;
 
-    celix_thread_mutex_t mutex; //protects below
+    celix_thread_mutex_t mutex; //protects below and access to the cache dir
     celix_string_hash_map_t* locationToBundleIdLookupMap; //key = location, value = bundle id.
 };
 
@@ -176,7 +176,9 @@ celix_status_t celix_bundleCache_destroy(celix_bundle_cache_t* cache) {
 
 celix_status_t celix_bundleCache_deleteCacheDir(celix_bundle_cache_t* cache) {
     const char* err = NULL;
+    celixThreadMutex_lock(&cache->mutex);
     celix_status_t status = celix_utils_deleteDirectory(cache->cacheDir, &err);
+    celixThreadMutex_unlock(&cache->mutex);
     if (status != CELIX_SUCCESS) {
         fw_logCode(cache->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot delete bundle cache directory %s: %s", cache->cacheDir, err);
     }
@@ -190,7 +192,9 @@ celix_status_t celix_bundleCache_createArchive(celix_framework_t* fw, long id, c
     char archiveRootBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
     char *archiveRoot = celix_utils_writeOrCreateString(archiveRootBuffer, sizeof(archiveRootBuffer), CELIX_BUNDLE_ARCHIVE_ROOT_FORMAT, fw->cache->cacheDir, id);
     if (archiveRoot) {
+        celixThreadMutex_lock(&fw->cache->mutex);
 		status = bundleArchive_create(fw, archiveRoot, id, location, &archive);
+        celixThreadMutex_unlock(&fw->cache->mutex);
         if (status != CELIX_SUCCESS) {
             celix_utils_freeStringIfNeeded(archiveRootBuffer, archiveRoot);
             return status;
@@ -219,6 +223,7 @@ celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, bund
  * Assumes that bundle cache dir are not removed, so only adding not removing entries.
  */
 static void celix_bundleCache_updateIdForLocationLookupMap(celix_framework_t* fw) {
+    celixThreadMutex_lock(&fw->cache->mutex);
     DIR* dir = opendir(fw->cache->cacheDir);
     if (dir == NULL) {
         fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, CELIX_BUNDLE_EXCEPTION, "Cannot open bundle cache directory %s", fw->cache->cacheDir);
@@ -238,11 +243,9 @@ static void celix_bundleCache_updateIdForLocationLookupMap(celix_framework_t* fw
             const char *visitLoc = celix_properties_get(props, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, NULL);
             long bndId = celix_properties_getAsLong(props, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, -1);
             if (visitLoc != NULL && bndId >= 0) {
-                celixThreadMutex_lock(&fw->cache->mutex);
                 fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "Adding location %s -> bnd id %li to lookup map",
                        visitLoc, bndId);
                 celix_stringHashMap_putLong(fw->cache->locationToBundleIdLookupMap, visitLoc, bndId);
-                celixThreadMutex_unlock(&fw->cache->mutex);
             }
             celix_properties_destroy(props);
         }
@@ -319,7 +322,6 @@ celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t *fw
     const char* const cosgiKeys[] = {"cosgi.auto.start.0","cosgi.auto.start.1","cosgi.auto.start.2","cosgi.auto.start.3","cosgi.auto.start.4","cosgi.auto.start.5","cosgi.auto.start.6", NULL};
     const char* const celixKeys[] = {CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3, CELIX_AUTO_START_4, CELIX_AUTO_START_5, CELIX_AUTO_START_6, NULL};
     CELIX_BUILD_ASSERT(sizeof(*cosgiKeys) == sizeof(*celixKeys));
-
     long bndId = CELIX_FRAMEWORK_BUNDLE_ID+1; //note cleaning cache, so starting bundle id at 1
 
     const char* errorStr = NULL;
