@@ -251,10 +251,10 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     framework->currentBundleId = CELIX_FRAMEWORK_BUNDLE_ID;
     framework->installRequestMap = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
     framework->installedBundles.entries = celix_arrayList_create();
-    framework->configurationMap = config;
+    framework->configurationMap = config; //note form now on celix_framework_getConfigProperty* can be used
     framework->bundleListeners = celix_arrayList_create();
     framework->frameworkListeners = celix_arrayList_create();
-    framework->dispatcher.eventQueueCap = (int)celix_properties_getAsLong(config, CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE, CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE);
+    framework->dispatcher.eventQueueCap = (int)celix_framework_getConfigPropertyAsLong(framework, CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE, CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE, NULL);
     framework->dispatcher.eventQueue = malloc(sizeof(celix_framework_event_t) * framework->dispatcher.eventQueueCap);
     framework->dispatcher.dynamicEventQueue = celix_arrayList_create();
 
@@ -266,10 +266,7 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     properties_set(framework->configurationMap, (char*) OSGI_FRAMEWORK_FRAMEWORK_UUID, uuid);
 
     //setup framework logger
-    const char* logStr = getenv(CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME);
-    if (logStr == NULL) {
-        logStr = celix_properties_get(config, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_DEFAULT_VALUE);
-    }
+    const char* logStr = celix_framework_getConfigProperty(framework, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_DEFAULT_VALUE, NULL);
     framework->logger = celix_frameworkLogger_create(celix_logUtils_logLevelFromString(logStr, CELIX_LOG_LEVEL_INFO));
 
     celix_status_t status = celix_bundleCache_create(framework, &framework->cache);
