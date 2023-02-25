@@ -73,7 +73,7 @@ static const char* celix_bundleCache_cacheDirPath(celix_framework_t* fw) {
     if (!found) {
         //falling back to old property
         cacheDir = celix_framework_getConfigProperty(fw,
-            CELIX_FRAMEWORK_FRAMEWORK_STORAGE,
+            OSGI_FRAMEWORK_FRAMEWORK_STORAGE,
             CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR_DEFAULT,
             NULL);
     }
