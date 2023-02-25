@@ -948,7 +948,7 @@ bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bndId);
  * This will do the following:
  *  - stop the bundle (if needed);
  *  - update the bundle revision if a newer bundle zip if found;
- *  - start the bundle, if it was started.
+ *  - start the bundle, if it was started before the update.
  *
  * Will silently ignore bundle ids < 0.
  *
@@ -960,7 +960,7 @@ bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bndId);
  * @warning Update bundle is not yet fully supported. Use at your own risk.
  *
  * @param ctx The bundle context
- * @param bndId The bundle id to start.
+ * @param bndId The bundle id to update.
  * @param updatedBundleUrl The optional updated bundle url to the bundle zip file. If NULL, the existing bundle url
  *                         from the bundle cache will be used.
  * @return true if the bundle is found & correctly started. False if not.

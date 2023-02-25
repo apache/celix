@@ -47,11 +47,15 @@ TEST_F(CelixLauncherTestSuite, PrintPropertiesTest) {
 }
 
 TEST_F(CelixLauncherTestSuite, PrintHelpTest) {
+    // props should be released by launcher
+    auto* props = celix_properties_create();
+    celix_properties_set(props, CELIX_AUTO_START_0, SIMPLE_TEST_BUNDLE1_LOCATION);
+    celix_properties_set(props, CELIX_AUTO_INSTALL, SIMPLE_TEST_BUNDLE2_LOCATION);
     //When I run the celixLauncher with "-h" argument
     char* arg1 = celix_utils_strdup("programName");
     char* arg2 = celix_utils_strdup("-h");
     char* argv[] = {arg1, arg2};
-    int rc = celixLauncher_launchAndWaitForShutdown(2, argv, nullptr);
+    int rc = celixLauncher_launchAndWaitForShutdown(2, argv, props);
 
     //Then it will print the usage and exit with 0
     EXPECT_EQ(rc, 0);
@@ -81,7 +85,7 @@ TEST_F(CelixLauncherTestSuite, ExtractBundlesTest) {
 
     //When I run the celixLauncher with "-c" argument
     char* arg1 = celix_utils_strdup("programName");
-    char* arg2 = celix_utils_strdup("--embedded_bundles");
+    char* arg2 = celix_utils_strdup("-c");
     char* argv[] = {arg1, arg2};
     int rc = celixLauncher_launchAndWaitForShutdown(2, argv, props);
 
