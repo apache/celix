@@ -40,8 +40,8 @@ typedef struct celix_bundle_cache celix_bundle_cache_t;
  *
  * @param fwUUID the framework uuid. Can be used in cache directory naming if a tmp dir used.
  * @param config The config properties to use for this cache. The configuration is checked for cache behaviour configuration:
- *  - OSGI_FRAMEWORK_FRAMEWORK_STORAGE
- *  - OSGI_FRAMEWORK_STORAGE_USE_TMP_DIR
+ *  - CELIX_FRAMEWORK_FRAMEWORK_STORAGE
+ *  - CELIX_FRAMEWORK_CACHE_USE_TMP_DIR
  * @param out The bundle cache output param. Cannot be NULL.
  * @return CELIX_SUCCESS if bundle cache is successfully created.
  */
