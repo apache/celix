@@ -92,14 +92,9 @@ celix_status_t bundleRevision_getRoot(const bundle_revision_t* revision, const c
 celix_status_t bundleRevision_getManifest(const bundle_revision_t* revision, manifest_pt *manifest);
 
 /**
- * Retrieves the handles of the installed libraries for this revision.
- *
- * @param revision The revision to get the manifest for.
- * @param[out] handles celix_array_list_t *containing the handles.
- *
- * @return Status code indication failure or success:
- *      - CELIX_SUCCESS when no errors are encountered.
- *      - CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
+ * Originally retrieved the handles of the installed libraries for this revision.
+ * Currently deprecated and will not return any handles.
+ * @return CELIX_SUCCESS and an empty list.
  */
 celix_status_t bundleRevision_getHandles(const bundle_revision_t* revision, celix_array_list_t **handles)
     __attribute__((deprecated("Deprecated. Library handles are no now handled by the bundle module.")));

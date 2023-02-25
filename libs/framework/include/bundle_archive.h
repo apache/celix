@@ -85,12 +85,11 @@ FRAMEWORK_EXPORT celix_status_t bundleArchive_getPersistentState(bundle_archive_
  * If the bundle archive cache directory does not exist, lastModified will be set to 0.
  *
  * @param[in] archive The bundle archive.
- * @parar[in] alreadyLocked If true, the bundle archive lock is already acquired.
  * @param[out] lastModified The last modified time of the bundle archive.
- * @return CELIX_SUCCESS if the last modified time could be retrieved, CELIX_ILLEGAL_ARGUMENT if the last modified
+ * @return CELIX_SUCCESS if the last modified time could be retrieved, CELIX_FILE_IO_EXCEPTION if the last modified
  * time could not be retrieved.
  */
-celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, struct timespec* lastModified);
+FRAMEWORK_EXPORT celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, struct timespec* lastModified);
 
 #ifdef __cplusplus
 }

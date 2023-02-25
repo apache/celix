@@ -98,3 +98,11 @@ celix_status_t bundleRevision_getManifest(const bundle_revision_t* revision, man
     return CELIX_SUCCESS;
 }
 
+celix_status_t bundleRevision_getHandles(const bundle_revision_t* revision __attribute__((unused)), celix_array_list_t** handles) {
+    //nop, usage deprecated
+    if (handles) {
+        *handles = celix_arrayList_create();
+    }
+    return CELIX_SUCCESS;
+}
+
