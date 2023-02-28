@@ -271,7 +271,6 @@ static int celixLauncher_createBundleCache(celix_properties_t* embeddedPropertie
     }
     status = celix_framework_utils_createBundleArchivesCache(fw);
     status = CELIX_DO_IF(status, framework_destroy(fw));
-    //status = CELIX_DO_IF(status, framework_destroy(fw));
     if (status != CELIX_SUCCESS) {
         fprintf(stderr, "Failed to create bundle cache\n");
         return 1;
