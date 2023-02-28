@@ -18,7 +18,9 @@
  */
 
 #include <gtest/gtest.h>
+#include <string>
 #include <thread>
+#include <unistd.h>
 
 #include "celix_file_utils.h"
 #include "celix_properties.h"
@@ -72,7 +74,7 @@ TEST_F(FileUtilsTestSuite, CreateAndDeleteDirectory) {
     status = celix_utils_deleteDirectory(testDir, nullptr);
     EXPECT_EQ(status, CELIX_SUCCESS);
 
-    //Can i create and delete a dir with ends with a /
+    //Can I create and delete a dir with ends with a /
     status = celix_utils_createDirectory(testDir2, true, nullptr);
     EXPECT_EQ(status, CELIX_SUCCESS);
     EXPECT_TRUE(celix_utils_fileExists(testDir2));
@@ -82,6 +84,37 @@ TEST_F(FileUtilsTestSuite, CreateAndDeleteDirectory) {
     status = celix_utils_createDirectory(testDir3, true, nullptr);
     EXPECT_EQ(status, CELIX_SUCCESS);
     status = celix_utils_deleteDirectory(testDir3, nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    //Can I delete dir containing a dangling symbolic link, which will cause `stat` return ENOENT
+    status = celix_utils_createDirectory(testDir, true, &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(error, nullptr);
+    std::string symLink = testDir;
+    symLink += "/link";
+    status = symlink("non-existent", symLink.c_str());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    status = celix_utils_deleteDirectory(testDir, nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    //Can I delete a dir containing a symbolic link without touch the target
+    status = celix_utils_createDirectory(testDir, true, &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(error, nullptr);
+    status = celix_utils_createDirectory(testDir2, true, &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(error, nullptr);
+    std::string subDir = testDir2;
+    subDir += "sub";
+    status = celix_utils_createDirectory(subDir.c_str(), true, &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    status = symlink("../directory2", symLink.c_str()); // link -> ../directory2
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    status = celix_utils_deleteDirectory(testDir, nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_TRUE(celix_utils_fileExists(testDir2));
+    EXPECT_TRUE(celix_utils_fileExists(subDir.c_str()));
+    status = celix_utils_deleteDirectory(testDir2, nullptr);
     EXPECT_EQ(status, CELIX_SUCCESS);
 }
 

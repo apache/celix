@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <zip.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include "celix_utils.h"
 
@@ -139,7 +140,8 @@ celix_status_t celix_utils_deleteDirectory(const char* path, const char** errorO
             asprintf(&subdir, "%s/%s", path, dent->d_name);
 
             struct stat st;
-            if (stat(subdir, &st) == 0) {
+            // we don't follow symbol link, remove it directly
+            if (lstat(subdir, &st) == 0) {
                 if (S_ISDIR (st.st_mode)) {
                     status = celix_utils_deleteDirectory(subdir, errorOut);
                 } else {
