@@ -177,7 +177,7 @@ extern "C" {
  * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CACHE_USE_TMP_DIR") specifying the
  * whether to use a tmp directory for the bundle cache dir.
  *
- * If set to "true" the cache dir is set to a tmp directory.
+ * If set to "true", the cache dir is set to a tmp directory and will be removed when destroying the framework.
  */
 #define CELIX_FRAMEWORK_CACHE_USE_TMP_DIR "CELIX_FRAMEWORK_CACHE_USE_TMP_DIR"
 

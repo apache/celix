@@ -83,7 +83,7 @@ size_t celix_framework_utils_installBundleSet(celix_framework_t* fw, const char*
 
 
 /**
- * @brief Create the bundle archives cache for the provided framework, but do not create, install or start the bundles.
+ * @brief Create the bundle archives cache for the provided framework, but do not install or start the bundles.
  *
  * This function can be used to preconfigure a application, so that during startup no bundle zip extraction is needed.
  *
