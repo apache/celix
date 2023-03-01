@@ -19,6 +19,7 @@
 
 #include <pubsub_serializer.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <pubsub/subscriber.h>
 #include <memory.h>
 #include <pubsub_constants.h>
@@ -54,11 +55,6 @@
 #define L_ERROR(...) \
     celix_logHelper_log(receiver->logHelper, CELIX_LOG_LEVEL_ERROR, __VA_ARGS__)
 
-typedef struct pubsub_websocket_rcv_buffer {
-    celix_thread_mutex_t mutex;
-    celix_array_list_t *list;     //List of received websocket messages (type: pubsub_websocket_msg_entry_t *)
-} pubsub_websocket_rcv_buffer_t;
-
 typedef struct pubsub_websocket_msg_entry {
     size_t msgSize;
     const char *msgData;
@@ -68,6 +64,8 @@ struct pubsub_websocket_topic_receiver {
     celix_bundle_context_t *ctx;
     celix_log_helper_t *logHelper;
     void *admin;
+    size_t timeout;
+
     char *scope;
     char *topic;
     char scopeAndTopicFilter[5];
@@ -78,8 +76,6 @@ struct pubsub_websocket_topic_receiver {
 
     celix_websocket_service_t sockSvc;
     long svcId;
-
-    pubsub_websocket_rcv_buffer_t recvBuffer;
 
     struct {
         celix_thread_t thread;
@@ -150,15 +146,18 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
 
     receiver->uri = psa_websocket_createURI(scope, topic);
 
+    // Set receiver connection thread timeout.
+    // property is in ms, timeout value in us. (convert ms to us).
+    receiver->timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_TIMEOUT,
+                                                              PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT) * 1000;
+
     if (receiver->uri != NULL) {
         celixThreadMutex_create(&receiver->subscribers.mutex, NULL);
         celixThreadMutex_create(&receiver->requestedConnections.mutex, NULL);
         celixThreadMutex_create(&receiver->recvThread.mutex, NULL);
-        celixThreadMutex_create(&receiver->recvBuffer.mutex, NULL);
 
         receiver->subscribers.map = hashMap_create(NULL, NULL, NULL, NULL);
         receiver->requestedConnections.map = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-        arrayList_create(&receiver->recvBuffer.list);
     }
 
     //track subscribers
@@ -292,16 +291,6 @@ void pubsub_websocketTopicReceiver_destroy(pubsub_websocket_topic_receiver_t *re
         celixThreadMutex_destroy(&receiver->subscribers.mutex);
         celixThreadMutex_destroy(&receiver->requestedConnections.mutex);
         celixThreadMutex_destroy(&receiver->recvThread.mutex);
-
-        celixThreadMutex_destroy(&receiver->recvBuffer.mutex);
-        int msgBufSize = celix_arrayList_size(receiver->recvBuffer.list);
-        while(msgBufSize > 0) {
-            pubsub_websocket_msg_entry_t *msg = celix_arrayList_get(receiver->recvBuffer.list, msgBufSize - 1);
-            free((void *) msg->msgData);
-            free(msg);
-            msgBufSize--;
-        }
-        celix_arrayList_destroy(receiver->recvBuffer.list);
 
         pubsubInterceptorsHandler_destroy(receiver->interceptorsHandler);
 
@@ -573,17 +562,8 @@ static void* psa_websocket_recvThread(void * data) {
         if (!allInitialized) {
             psa_websocket_initializeAllSubscribers(receiver);
         }
+        usleep(receiver->timeout);
 
-        while(celix_arrayList_size(receiver->recvBuffer.list) > 0) {
-            celixThreadMutex_lock(&receiver->recvBuffer.mutex);
-            pubsub_websocket_msg_entry_t *msg = (pubsub_websocket_msg_entry_t *) celix_arrayList_get(receiver->recvBuffer.list, 0);
-            celix_arrayList_removeAt(receiver->recvBuffer.list, 0);
-            celixThreadMutex_unlock(&receiver->recvBuffer.mutex);
-
-            processMsg(receiver, msg->msgData, msg->msgSize);
-            free((void *)msg->msgData);
-            free(msg);
-        }
 
         celixThreadMutex_lock(&receiver->recvThread.mutex);
         running = receiver->recvThread.running;
@@ -639,18 +619,12 @@ static int psa_websocketTopicReceiver_data(struct mg_connection *connection __at
                                             char *data,
                                             size_t length,
                                             void *handle) {
+    
+
     //Received a websocket message, append this message to the buffer of the receiver.
     if (handle != NULL) {
         pubsub_websocket_topic_receiver_t *receiver = (pubsub_websocket_topic_receiver_t *) handle;
-
-        celixThreadMutex_lock(&receiver->recvBuffer.mutex);
-        pubsub_websocket_msg_entry_t *msg = malloc(sizeof(*msg));
-        const char *rcvdMsgData = malloc(length);
-        memcpy((void *) rcvdMsgData, data, length);
-        msg->msgData = rcvdMsgData;
-        msg->msgSize = length;
-        celix_arrayList_add(receiver->recvBuffer.list, msg);
-        celixThreadMutex_unlock(&receiver->recvBuffer.mutex);
+        processMsg(receiver, data, length);
     }
 
     return 1; //keep open (non-zero), 0 to close the socket

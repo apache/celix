@@ -39,6 +39,11 @@
 #define PUBSUB_WEBSOCKET_ADDRESS_KEY                  "websocket.socket_address"
 #define PUBSUB_WEBSOCKET_PORT_KEY                     "websocket.socket_port"
 
+
+/* With this interval new connections and receivers are polled and registred. Similar to the TCP admin */
+#define PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_TIMEOUT   "PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_TIMEOUT"
+#define PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT 250 // 250 ms
+
 /**
  * The static url which a subscriber should try to connect to.
  * The urls are space separated
