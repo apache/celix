@@ -27,7 +27,7 @@ if (RSA_DISCOVERY_ZEROCONF)
             )
 
     set(RSA_DISCOVERY_ZEROCONF_DEPS
-            dns_sd
+            DNSSD::DNSSD
             Celix::c_rsa_spi
             Celix::rsa_common
             Celix::log_helper
@@ -44,6 +44,8 @@ if (RSA_DISCOVERY_ZEROCONF)
         ${RSA_DISCOVERY_ZEROCONF_SRC}
     )
 
+    celix_deprecated_utils_headers(rsa_discovery_zeroconf)
+
     target_link_libraries(rsa_discovery_zeroconf PRIVATE ${RSA_DISCOVERY_ZEROCONF_DEPS})
 
     target_include_directories(rsa_discovery_zeroconf PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
@@ -55,6 +57,7 @@ if (RSA_DISCOVERY_ZEROCONF)
 
     if (ENABLE_TESTING)
         add_library(rsa_discovery_zeroconf_cut STATIC ${RSA_DISCOVERY_ZEROCONF_SRC})
+        celix_deprecated_utils_headers(rsa_discovery_zeroconf_cut)
         target_include_directories(rsa_discovery_zeroconf_cut PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
         target_link_libraries(rsa_discovery_zeroconf_cut PUBLIC ${RSA_DISCOVERY_ZEROCONF_DEPS})
         add_subdirectory(gtest)

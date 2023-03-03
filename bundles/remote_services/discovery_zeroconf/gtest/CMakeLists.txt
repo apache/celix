@@ -23,6 +23,8 @@ add_executable(integration_test_discovery_zeroconf
         src/DiscoveryZeroconfIntegrationTestSuite.cc
         )
 
+celix_deprecated_utils_headers(integration_test_discovery_zeroconf)
+
 target_link_libraries(integration_test_discovery_zeroconf PRIVATE
         Celix::c_rsa_spi
         Celix::framework
@@ -43,6 +45,8 @@ add_executable(unit_test_discovery_zeroconf
         src/DiscoveryZeroconfAnnouncerTestSuite.cc
         src/DiscoveryZeroconfWatcherTestSuite.cc
         )
+
+celix_deprecated_utils_headers(unit_test_discovery_zeroconf)
 
 target_link_libraries(unit_test_discovery_zeroconf PRIVATE
         rsa_discovery_zeroconf_cut

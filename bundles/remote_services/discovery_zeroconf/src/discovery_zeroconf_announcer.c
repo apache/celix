@@ -333,13 +333,13 @@ static void discoveryZeroconfAnnouncer_revokeEndpoints(discovery_zeroconf_announ
 static bool discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(discovery_zeroconf_announcer_t *announcer, celix_properties_iterator_t *propIter, TXTRecordRef *txtRecord, uint16_t maxTxtLen, bool splitTxtRecord) {
     const char *key;
     const char *val;
-    hash_map_entry_t * entry;
+    celix_properties_t *props;
     while (celix_propertiesIterator_hasNext(propIter)) {
-        entry = hashMapIterator_nextEntry(propIter);
-        key = hashMapEntry_getKey(entry);
-        val = hashMapEntry_getValue(entry);
+        key = celix_propertiesIterator_nextKey(propIter);
+        props = celix_propertiesIterator_properties(propIter);
+        val = celix_properties_get(props, key, "");
         if (key) {
-            DNSServiceErrorType err = TXTRecordSetValue(txtRecord, key, val == NULL ? 0 : strlen(val), val);
+            DNSServiceErrorType err = TXTRecordSetValue(txtRecord, key, strlen(val), val);
             if (err != kDNSServiceErr_NoError) {
                 celix_logHelper_error(announcer->logHelper, "Announcer: Failed to set txt value, %d.", err);
                 return false;
