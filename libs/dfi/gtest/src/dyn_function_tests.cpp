@@ -24,7 +24,7 @@
 
 #include "dyn_common.h"
 #include "dyn_function.h"
-
+#include <ffi.h>
 
 static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
     va_list ap;
@@ -62,7 +62,7 @@ extern "C" {
 
         rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, nullptr, &dynFunc);
 
-        int32_t rVal = 0;
+        ffi_sarg rVal = 0;
         int32_t a = 2;
         int32_t b = 4;
         int32_t c = 8;
@@ -173,7 +173,7 @@ static bool func_test3() {
         args[0] = &ptr;
         args[1] = &a;
         args[2] = &input;
-        int rVal = 0;
+        ffi_sarg rVal = 0;
 
         rc = dynFunction_call(dynFunc, fp, &rVal, args);
 

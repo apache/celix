@@ -20,6 +20,7 @@
 #include "gtest/gtest.h"
 
 #include <celix_utils.h>
+#include <ffi.h>
 
 extern "C" {
     #include <stdio.h>
@@ -259,7 +260,7 @@ TEST_F(DynAvprFunctionTests, Example1) {
     values[2] = &b;
     values[3] = &c;
     values[4] = &p_out;
-    int rVal = 1;
+    ffi_sarg rVal = 1;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, values);
     ASSERT_EQ(0, rc);
@@ -305,7 +306,7 @@ TEST_F(DynAvprFunctionTests, Example2) {
     values[2] = &arg2;
     values[3] = &c;
     values[4] = &p_out;
-    int rVal = 1;
+    ffi_sarg rVal = 1;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, values);
     ASSERT_EQ(0, rc);
@@ -366,7 +367,7 @@ TEST(DynAvprFunctionTests, Example4) {
     args[2] = &a;
     args[3] = &input;
     args[4] = &out_ptr;
-    int rVal = 1;
+    ffi_sarg rVal = 1;
     int rc = dynFunction_call(dynFunc, fp, &rVal, args);
 
     ASSERT_EQ(0, rc);
@@ -422,7 +423,7 @@ TEST_F(DynAvprFunctionTests, Example5) {
     args[0] = &handle_ptr;
     args[1] = &seq;
     args[2] = &out_ptr;
-    int retArg = 1;
+    ffi_sarg retArg = 1;
 
     int rc = dynFunction_call(dynFunc, fp, &retArg, args);
     ASSERT_EQ(0, rc);
@@ -464,7 +465,7 @@ TEST_F(DynAvprFunctionTests, Example6) {
     values[0] = &handle_ptr;
     values[1] = &argument;
     values[2] = &out_ptr;
-    int rVal = 1;
+    ffi_sarg rVal = 1;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, values);
     ASSERT_EQ(0, rc);
@@ -508,7 +509,7 @@ TEST_F(DynAvprFunctionTests, Example7) {
     args[0] = &handle_ptr;
     args[1] = &s_seq;
     args[2] = &out_ptr;
-    int rVal = 0;
+    ffi_sarg rVal = 0;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, args);
     ASSERT_EQ(0, rc);
@@ -549,7 +550,7 @@ TEST_F(DynAvprFunctionTests, Example8) {
     args[0] = &handle_ptr;
     args[1] = &arg1;
     args[2] = &out_ptr_ptr;
-    int rVal = 0;
+    ffi_sarg rVal = 0;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, args);
     ASSERT_EQ(0, rc);
@@ -581,7 +582,7 @@ TEST_F(DynAvprFunctionTests, Example9) {
     void *args[2];
     args[0] = &handle_ptr;
     args[1] = &out_ptr;
-    int rVal = 1;
+    ffi_sarg rVal = 1;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, args);
     ASSERT_EQ(0, rc);
@@ -621,7 +622,7 @@ TEST_F(DynAvprFunctionTests, Example10) {
     void *args[2];
     args[0] = &handle_ptr;
     args[1] = &out_ptr_ptr;
-    int rVal = 1;
+    ffi_sarg rVal = 1;
 
     int rc = dynFunction_call(dynFunc, fp, &rVal, args);
     ASSERT_EQ(0, rc);
