@@ -32,7 +32,6 @@
 #include <celix_types.h>
 #include <celix_errno.h>
 #include <celix_build_assert.h>
-#include <hash_map.h>
 #include <netinet/in.h>
 #include <net/if.h>
 #include <sys/eventfd.h>
@@ -241,7 +240,7 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
     entry->registerRef = NULL;
     entry->announced = false;
     entry->uid = celix_utils_stringHash(endpoint->id);
-    entry->ifIndex = celix_properties_getAsLong(endpoint->properties, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX, DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT);
+    entry->ifIndex = (int)celix_properties_getAsLong(endpoint->properties, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX, DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT);
     // If it is a loopback interface,we will announce the service on the local only interface.
     // Because the mDNSResponder will skip the loopback interface,if it found a normal interface.
     entry->ifIndex = isLoopBackNetInterface(entry->ifIndex) ? kDNSServiceInterfaceIndexLocalOnly : entry->ifIndex;
@@ -370,7 +369,7 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
         TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
         char propSizeStr[16]= {0};
         sprintf(propSizeStr, "%d", celix_properties_size(entry->properties) + 1);
-        TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
+        (void)TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
         if (!discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(announcer, &propIter, &txtRecord, sizeof(txtBuf), splitTxtRecord)) {
             TXTRecordDeallocate(&txtRecord);
             continue;

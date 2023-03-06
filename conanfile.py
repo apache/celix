@@ -235,12 +235,19 @@ class CelixConan(ConanFile):
         if self.options.build_rsa_discovery_zeroconf:
             self.requires("mdnsresponder/1310.140.1")
 
+    def _enable_error_injectors(self):
+        for k in self.deps_cpp_info.deps:
+            if k == "mdnsresponder":
+                self._cmake.definitions["BUILD_ERROR_INJECTOR_MDNSRESPONDER"] = "ON"
+
     def _configure_cmake(self):
         if self._cmake:
             return self._cmake
         self._cmake = CMake(self)
         for opt, val in self.options.values.items():
             self._cmake.definitions[opt.upper()] = self.options.get_safe(opt, False)
+        if self.options.enable_testing:
+            self._enable_error_injectors()
         self._cmake.definitions["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":

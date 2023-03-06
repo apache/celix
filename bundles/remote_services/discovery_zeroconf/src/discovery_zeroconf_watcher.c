@@ -309,7 +309,7 @@ static void OnServiceBrowseCallback(DNSServiceRef sdRef, DNSServiceFlags flags, 
         svcEntry->endpointId = NULL;
         svcEntry->resolved = false;
         strcpy(svcEntry->instanceName, instanceName);
-        svcEntry->ifIndex = interfaceIndex;
+        svcEntry->ifIndex = (int)interfaceIndex;
         svcEntry->resolvedStartTime.tv_sec = INT_MAX;
         svcEntry->resolvedCnt = 0;
         celix_stringHashMap_put(watcher->watchedServices, key, svcEntry);

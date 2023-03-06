@@ -44,6 +44,7 @@ setup_target_for_coverage(integration_test_discovery_zeroconf SCAN_DIR ..)
 add_executable(unit_test_discovery_zeroconf
         src/DiscoveryZeroconfAnnouncerTestSuite.cc
         src/DiscoveryZeroconfWatcherTestSuite.cc
+        src/DiscoveryZeroconfActivatorTestSuite.cc
         )
 
 celix_deprecated_utils_headers(unit_test_discovery_zeroconf)
@@ -53,6 +54,10 @@ target_link_libraries(unit_test_discovery_zeroconf PRIVATE
         Celix::rsa_common
         Celix::c_rsa_spi
         Celix::framework
+        Celix::threads_ei
+        Celix::eventfd_ei
+        Celix::bundle_ctx_ei
+        Celix::mdnsresponder_ei
         GTest::gtest
         GTest::gtest_main
         )

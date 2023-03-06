@@ -15,22 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(error_injector INTERFACE)
-target_include_directories(error_injector INTERFACE ${CMAKE_CURRENT_LIST_DIR}/api)
-# get caller address of the target function, into which errors are injected
-target_link_libraries(error_injector INTERFACE dl)
-target_link_options(error_injector INTERFACE -rdynamic)
-target_compile_options(error_injector INTERFACE -Wno-frame-address)
-add_library(Celix::error_injector ALIAS error_injector)
+add_library(bundle_ctx_ei STATIC src/celix_bundle_context_ei.cc)
 
-add_subdirectory(malloc)
-add_subdirectory(celix_properties)
-add_subdirectory(celix_threads)
-add_subdirectory(eventfd)
-add_subdirectory(celix_bundle_ctx)
+target_include_directories(bundle_ctx_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(bundle_ctx_ei PUBLIC Celix::error_injector)
+target_link_libraries(bundle_ctx_ei PRIVATE Celix::framework)
 
-celix_subproject(ERROR_INJECTOR_MDNSRESPONDER "Option to enable building the mdnsresponder error injector" OFF)
-if (ERROR_INJECTOR_MDNSRESPONDER)
-    add_subdirectory(mdnsresponder)
-endif ()
-
+target_link_options(bundle_ctx_ei INTERFACE LINKER:--wrap,celix_bundleContext_getProperty LINKER:--wrap,celix_bundleContext_registerServiceWithOptionsAsync LINKER:--wrap,celix_bundleContext_trackServicesWithOptionsAsync)
+add_library(Celix::bundle_ctx_ei ALIAS bundle_ctx_ei)
