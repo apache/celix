@@ -186,6 +186,7 @@ class CelixConan(ConanFile):
             self.options.build_rsa_json_rpc = False
         if (not self.options.build_remote_service_admin) or (self.settings.os != "Linux"):
             self.options.build_rsa_remote_service_admin_shm_v2 = False
+            self.options.build_rsa_discovery_zeroconf = False
         if not self.options.build_shell:
             self.options.build_remote_shell = False
             self.options.build_shell_bonjour = False
