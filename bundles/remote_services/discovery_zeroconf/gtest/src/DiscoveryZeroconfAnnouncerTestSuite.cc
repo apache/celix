@@ -39,17 +39,20 @@ extern "C" {
 #include <ifaddrs.h>
 #include <cstring>
 #include <unistd.h>
+#include <stdlib.h>
 
 static int GetLoopBackIfIndex(void);
 
 class DiscoveryZeroconfAnnouncerTestSuite : public ::testing::Test {
 public:
     static void SetUpTestCase() {
+        (void)setenv("DNSSD_UDS_PATH", UDS_PATH, 0);
         (void)system(MDNSD);
     }
 
     static void TearDownTestCase() {
-        (void)system("kill -TERM `cat /var/run/mdnsd.pid`");
+        (void)system("kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
+        (void)unsetenv("DNSSD_UDS_PATH");
     }
     DiscoveryZeroconfAnnouncerTestSuite() {
         auto* props = celix_properties_create();
