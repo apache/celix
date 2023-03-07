@@ -71,13 +71,11 @@ static  celix_status_t discoveryZeroconfWatcherTest_endpointRemoved(void *handle
 class DiscoveryZeroconfWatcherTestSuite : public ::testing::Test {
 public:
     static void SetUpTestCase() {
-        (void)setenv("DNSSD_UDS_PATH", UDS_PATH, 0);
         (void)system(MDNSD);
     }
 
     static void TearDownTestCase() {
         (void)system("kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
-        (void)unsetenv("DNSSD_UDS_PATH");
     }
 
     DiscoveryZeroconfWatcherTestSuite() {

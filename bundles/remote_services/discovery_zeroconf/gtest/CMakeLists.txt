@@ -62,10 +62,8 @@ target_link_libraries(unit_test_discovery_zeroconf PRIVATE
         GTest::gtest_main
         )
 
-#FIXME: If we use the mdnsd in conan cache. We cannot specify an MDNS server path for the mdnsd, and the default server path is only accessible by the root user, but the tester is not rooter.
-#This issue will be resolved in mdnsresponder/1790.80.10 conan package
-target_compile_definitions(unit_test_discovery_zeroconf PRIVATE -DMDNSD="${CMAKE_CURRENT_SOURCE_DIR}/res/mdnsd" -DUDS_PATH="${CMAKE_BINARY_DIR}/mdnsUds.socket")
+target_compile_definitions(unit_test_discovery_zeroconf PRIVATE -DMDNSD="${DNSSD_LIB_DIRS}/../bin/mdnsd")
 
 
-add_test(NAME run_unit_test_discovery_zeroconf COMMAND unit_test_discovery_zeroconf)
+add_test(NAME run_unit_test_discovery_zeroconf COMMAND sudo $<TARGET_FILE:unit_test_discovery_zeroconf>)
 setup_target_for_coverage(unit_test_discovery_zeroconf SCAN_DIR ..)
