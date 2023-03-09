@@ -74,6 +74,10 @@ celix_status_t celix_utils_createDirectory(const char* path, bool failIfPresent,
 
     //loop over al finding of / and create intermediate dirs
     for (char* slashAt = strchr(path, '/'); slashAt != NULL; slashAt = strchr(slashAt + 1, '/'))  {
+        // skip the first / of the absolute path
+        if( slashAt == path) {
+            continue;
+        }
         char* subPath = strndup(path, slashAt - path);
         if (!celix_utils_directoryExists(subPath)) {
             int rc = mkdir(subPath, S_IRWXU);
