@@ -58,6 +58,7 @@ target_link_libraries(unit_test_discovery_zeroconf PRIVATE
         Celix::eventfd_ei
         Celix::bundle_ctx_ei
         Celix::mdnsresponder_ei
+        Celix::malloc_ei
         GTest::gtest
         GTest::gtest_main
         )

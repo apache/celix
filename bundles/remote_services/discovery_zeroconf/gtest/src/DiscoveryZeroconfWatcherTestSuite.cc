@@ -24,6 +24,7 @@
 #include <celix_threads_ei.h>
 #include <celix_bundle_context_ei.h>
 #include <mdnsresponder_ei.h>
+#include <malloc_ei.h>
 #include <celix_framework.h>
 #include <celix_framework_factory.h>
 #include <celix_log_helper.h>
@@ -101,6 +102,7 @@ public:
         celix_ei_expect_DNSServiceCreateConnection(nullptr, 0, 0);
         celix_ei_expect_DNSServiceBrowse(nullptr, 0, 0);
         celix_ei_expect_DNSServiceProcessResult(nullptr, 0, 0);
+        celix_ei_expect_calloc(nullptr, 0, nullptr);
 
         sem_destroy(&syncSem);
         celix_bundleContext_unregisterService(ctx.get(), eplId);
@@ -144,6 +146,13 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, CreateWatcherFailed3) {
 TEST_F(DiscoveryZeroconfWatcherTestSuite, CreateWatcherFailed4) {
     discovery_zeroconf_watcher_t *watcher;
     celix_ei_expect_celixThread_create((void*)&discoveryZeroconfWatcher_create, 0, CELIX_ENOMEM);
+    celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+}
+
+TEST_F(DiscoveryZeroconfWatcherTestSuite, CreateWatcherFailed5) {
+    discovery_zeroconf_watcher_t *watcher;
+    celix_ei_expect_calloc((void*)&discoveryZeroconfWatcher_create, 0, nullptr);
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_ENOMEM, status);
 }

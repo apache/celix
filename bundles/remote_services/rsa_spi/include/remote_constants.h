@@ -36,6 +36,12 @@ static const char * const OSGI_RSA_SERVICE_IMPORTED_CONFIGS = "service.imported.
 static const char * const OSGI_RSA_SERVICE_EXPORTED_CONFIGS = "service.exported.configs";
 static const char * const OSGI_RSA_SERVICE_LOCATION = "service.location";
 
+/**
+ * In a multi-network interface environment，RSA can use RSA_DZC_IF_INDEX to specify
+ * on which interface its exported services can be discovered.
+ * If RSA unset 'RSA_DZC_IF_INDEX', its exported service will be discovered
+ * only by other local clients on the same machine
+ */
 static const char * const RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX = "RSA_DZC_IF_INDEX";
 
 #endif /* REMOTE_CONSTANTS_H_ */

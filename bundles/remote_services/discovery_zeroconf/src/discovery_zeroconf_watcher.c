@@ -89,8 +89,12 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data);
 
 celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celix_log_helper_t *logHelper, discovery_zeroconf_watcher_t **watcherOut) {
     celix_status_t status = CELIX_SUCCESS;
-    discovery_zeroconf_watcher_t *watcher = calloc(1, sizeof(*watcher));
-    assert(watcher != NULL);
+    discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)calloc(1, sizeof(*watcher));
+    if (watcher == NULL) {
+        celix_logHelper_fatal(logHelper, "Watcher: Failed to alloc watcher.");
+        status = CELIX_ENOMEM;
+        goto watcher_err;
+    }
     watcher->logHelper = logHelper;
     watcher->ctx = ctx;
     watcher->sharedRef = NULL;
@@ -161,6 +165,7 @@ fw_uuid_err:
     close(watcher->eventFd);
 event_fd_err:
     free(watcher);
+watcher_err:
     return status;
 }
 
@@ -195,6 +200,11 @@ static void discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix
         return;
     }
 
+    watched_epl_entry_t *eplEntry = (watched_epl_entry_t *)calloc(1, sizeof(*eplEntry));
+    if (eplEntry == NULL) {
+        return;
+    }
+
     const char *scope = celix_properties_get(props, OSGI_ENDPOINT_LISTENER_SCOPE, NULL);//matching on empty filter is always true
     celix_filter_t *filter = scope == NULL ? NULL : celix_filter_create(scope);
 
@@ -206,7 +216,7 @@ static void discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix
             epl->endpointAdded(epl->handle, epEntry->endpoint, (char*)scope);
         }
     }
-    watched_epl_entry_t *eplEntry = (watched_epl_entry_t *)calloc(1, sizeof(*eplEntry));
+
     eplEntry->epl = epl;
     eplEntry->filter = filter;
     celix_longHashMap_put(watcher->epls, serviceId, eplEntry);
@@ -304,6 +314,10 @@ static void OnServiceBrowseCallback(DNSServiceRef sdRef, DNSServiceFlags flags, 
     (void)snprintf(key, sizeof(key), "%s%d", instanceName, (int)interfaceIndex);
     if (flags & kDNSServiceFlagsAdd) {
         svcEntry = (watched_service_entry_t *)calloc(1, sizeof(*svcEntry));
+        if (svcEntry == NULL) {
+            celix_logHelper_error(watcher->logHelper, "Watcher: Failed service entry.");
+            return;
+        }
         svcEntry->resolveRef = NULL;
         svcEntry->txtRecord = celix_properties_create();
         svcEntry->endpointId = NULL;
@@ -415,11 +429,19 @@ static void discoveryZeroconfWatcher_refreshEndpoints(discovery_zeroconf_watcher
                 celix_status_t status = endpointDescription_create(properties,&ep);
                 if (status != CELIX_SUCCESS) {
                     celix_properties_destroy(properties);
+                    // If properties invalid,endpointDescription_create will return error.
+                    // Avoid endpointDescription_create again, set svcEntry->resolved false.
                     svcEntry->resolved = false;
                     continue;
                 }
                 celix_logHelper_debug(watcher->logHelper, "Watcher: Add endpoint for %s on %s.", ep->serviceName,ep->frameworkUUID);
                 epEntry = (watched_endpoint_entry_t *)calloc(1, sizeof(*epEntry));
+                if (epEntry == NULL) {
+                    celix_logHelper_error(watcher->logHelper, "Watcher:Failed to alloc endpoint entry.");
+                    //It will free ep and properties
+                    endpointDescription_destroy(ep);
+                    continue;
+                }
                 epEntry->endpoint = ep;
                 discoveryZeroConfWatcher_informEPLs(watcher, ep, true);
                 celix_stringHashMap_put(watcher->watchedEndpoints, epEntry->endpoint->id, epEntry);

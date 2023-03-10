@@ -823,10 +823,8 @@ static uint32_t remoteServiceAdmin_getIfIndex(const char *ip) {
     struct ifaddrs *ifaddr, *ifa;
     char host[NI_MAXHOST];
 
-    if (ip != NULL && getifaddrs(&ifaddr) != -1)
-    {
-        for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
-        {
+    if (ip != NULL && getifaddrs(&ifaddr) != -1) {
+        for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
             if (ifa->ifa_addr == NULL)
                 continue;
 
@@ -837,7 +835,6 @@ static uint32_t remoteServiceAdmin_getIfIndex(const char *ip) {
                 }
             }
         }
-
         freeifaddrs(ifaddr);
     }
 

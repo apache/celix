@@ -24,15 +24,51 @@ extern "C" {
 #endif
 #include <dns_sd.h>
 
+/**
+ * The default network interface index for announcing service,
+ * "kDNSServiceInterfaceIndexLocalOnly" indicates that service will be
+ * discovered only by other local clients on the same machine.
+ */
 #define DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT kDNSServiceInterfaceIndexLocalOnly
 
-#define DZC_SERVICE_TYPE_KEY "DZC_SERVICE_TYPE_KEY"
-
+/**
+ * mDNS service name for celix service.
+ * About mDNS service name, see rfc6363 section 4.1.2 and section 7
+ */
 #define DZC_SERVICE_PRIMARY_TYPE "_celix-rpc._udp"
 
+/**
+ * mDNS service subtype for celix.service, it can be null.
+ * About mDNS service subtype, see rfc6363 section 7.1
+ * The subtype mechanism can be illustrated with some examples using the dns-sd command-line tool:
+ * If we register the following three services:
+ *    % dns-sd -R service1 _celix-rpc._udp local 1001
+ *    % dns-sd -R service2 _celix-rpc._udp,subtype1 local 1002
+ *    % dns-sd -R service3   _celix-rpc._udp,subtype1,subtype2 local 1003
+ * Now:
+ *    % dns-sd -B _celix-rpc._udp             # will find all three services
+ *    % dns-sd -B _celix-rpc._udp,subtype1 # will find "service2" and "service3"
+ *    % dns-sd -B _celix-rpc._udp,subtype2 # will find only "service3"
+ */
+#define DZC_SERVICE_TYPE_KEY "DZC_SERVICE_TYPE_KEY"
+
+/**
+ * Host name and  port for mDNS service.
+ *
+ * To reduce the operation of conversion between host name and address info(ip and port).
+ * we set the address info to txt record, and set a dummy value("celix_rpc_dumb_host.local."
+ * and "50009") to the host name and port for mDNS service.
+ */
 #define DZC_HOST_DEFAULT "celix_rpc_dumb_host.local."
 #define DZC_PORT_DEFAULT 50009
 
+/**
+ * The size of celix service properties.
+ *
+ * Because we will split service properties into multi txt records,
+ * we set the properties size to a txt records,
+ * and use it to verify whether the complete service properties is resolved.
+ */
 #define DZC_SERVICE_PROPERTIES_SIZE_KEY "DZC_SVC_PROPS_SIZE_KEY"
 
 #ifdef __cplusplus

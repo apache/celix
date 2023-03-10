@@ -89,8 +89,12 @@ static void *discoveryZeroconfAnnouncer_refreshEndpointThread(void *data);
 
 celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, celix_log_helper_t *logHelper, discovery_zeroconf_announcer_t **announcerOut) {
     celix_status_t status = CELIX_SUCCESS;
-    discovery_zeroconf_announcer_t *announcer = calloc(1, sizeof(*announcer));
-    assert(announcer != NULL);
+    discovery_zeroconf_announcer_t *announcer = (discovery_zeroconf_announcer_t *)calloc(1, sizeof(*announcer));
+    if (announcer == NULL) {
+        celix_logHelper_fatal(logHelper, "Announcer: Failed to alloc announcer.");
+        status = CELIX_ENOMEM;
+        goto announcer_err;
+    }
     announcer->ctx = ctx;
     announcer->logHelper = logHelper;
     announcer->sharedRef = NULL;
@@ -164,6 +168,7 @@ mutex_err:
     close(announcer->eventFd);
 eventfd_err:
     free(announcer);
+announcer_err:
     return status;
 }
 
@@ -235,10 +240,18 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
 
     celix_logHelper_info(announcer->logHelper, "Announcer: Add endpoint for %s(%s).", endpoint->serviceName, endpoint->id);
 
-    announce_endpoint_entry_t *entry = calloc(1, sizeof(*entry));
-    assert(entry != NULL);
+    announce_endpoint_entry_t *entry = (announce_endpoint_entry_t *)calloc(1, sizeof(*entry));
+    if (entry == NULL) {
+        celix_logHelper_error(announcer->logHelper, "Announcer:  Failed to alloc endpoint entry.");
+        status = CELIX_ENOMEM;
+        goto endpoint_entry_err;
+    }
     entry->registerRef = NULL;
     entry->announced = false;
+    // The entry->uid is used in mDNS instance name.
+    // To avoid instance name conflicts on localonly interface,
+    // in our code, the instance name consists of the service name and the UID.
+    // Because the maximum size of an mDNS instance name is 64 bytes, so we use the hash of endpoint->id.
     entry->uid = celix_utils_stringHash(endpoint->id);
     entry->ifIndex = (int)celix_properties_getAsLong(endpoint->properties, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX, DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT);
     // If it is a loopback interface,we will announce the service on the local only interface.
@@ -276,6 +289,7 @@ service_name_err:
     celix_properties_destroy(entry->properties);
 service_type_err:
     free(entry);
+endpoint_entry_err:
     return status;
 }
 

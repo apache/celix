@@ -22,7 +22,6 @@
 #include <celix_bundle_activator.h>
 #include <celix_types.h>
 #include <celix_errno.h>
-#include <assert.h>
 
 typedef struct discovery_zeroconf_activator {
     celix_log_helper_t *logHelper;
@@ -33,7 +32,10 @@ typedef struct discovery_zeroconf_activator {
 celix_status_t discoveryZeroconfActivator_start(discovery_zeroconf_activator_t *act, celix_bundle_context_t *ctx) {
     celix_status_t status = CELIX_SUCCESS;
     act->logHelper = celix_logHelper_create(ctx,"celix_rsa_zeroconf_discovery");
-    assert(act->logHelper != NULL);
+    if (act->logHelper == NULL) {
+        status = CELIX_ENOMEM;
+        goto log_helper_err;
+    }
     status = discoveryZeroconfAnnouncer_create(ctx, act->logHelper, &act->announcer);
     if (status != CELIX_SUCCESS) {
         goto announcer_err;
@@ -47,6 +49,7 @@ watcher_err:
     discoveryZeroconfAnnouncer_destroy(act->announcer);
 announcer_err:
     celix_logHelper_destroy(act->logHelper);
+log_helper_err:
     return status;
 }
 

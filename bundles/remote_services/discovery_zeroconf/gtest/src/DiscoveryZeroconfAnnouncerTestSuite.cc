@@ -31,6 +31,7 @@ extern "C" {
 #include <celix_threads_ei.h>
 #include <celix_bundle_context_ei.h>
 #include <mdnsresponder_ei.h>
+#include <malloc_ei.h>
 #include <gtest/gtest.h>
 #include <netinet/in.h>
 #include <net/if.h>
@@ -74,6 +75,7 @@ public:
         celix_ei_expect_DNSServiceRegister(nullptr, 0, 0);
         celix_ei_expect_DNSServiceProcessResult(nullptr, 0, 0);
         celix_ei_expect_TXTRecordSetValue(nullptr, 0, 0);
+        celix_ei_expect_calloc(nullptr, 0, nullptr);
     }
 
     std::shared_ptr<celix_framework_t> fw{};
@@ -121,6 +123,13 @@ TEST_F(DiscoveryZeroconfAnnouncerTestSuite, CreateAnnouncerFailed4) {
 TEST_F(DiscoveryZeroconfAnnouncerTestSuite, CreateAnnouncerFailed5) {
     discovery_zeroconf_announcer_t *announcer{nullptr};
     celix_ei_expect_celixThread_create((void*)&discoveryZeroconfAnnouncer_create, 0, CELIX_ENOMEM);
+    auto status = discoveryZeroconfAnnouncer_create(ctx.get(), logHelper.get(), &announcer);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+}
+
+TEST_F(DiscoveryZeroconfAnnouncerTestSuite, CreateAnnouncerFailed6) {
+    discovery_zeroconf_announcer_t *announcer{nullptr};
+    celix_ei_expect_calloc((void*)&discoveryZeroconfAnnouncer_create, 0, nullptr);
     auto status = discoveryZeroconfAnnouncer_create(ctx.get(), logHelper.get(), &announcer);
     EXPECT_EQ(status, CELIX_ENOMEM);
 }
@@ -471,6 +480,40 @@ TEST_F(DiscoveryZeroconfAnnouncerTestSuite, AddInvalidEndpoint) {
     auto status = discoveryZeroconfAnnouncer_create(ctx.get(), logHelper.get(), &announcer);
     EXPECT_EQ(status, CELIX_SUCCESS);
     auto found = celix_bundleContext_useService(ctx.get(), OSGI_ENDPOINT_LISTENER_SERVICE, this, OnUseServiceWithInvalidEndpointCallback);
+    EXPECT_TRUE(found);
+    discoveryZeroconfAnnouncer_destroy(announcer);
+}
+
+static void OnUseServiceForAddEndpointENOMEM(void *handle, void *svc) {
+    DiscoveryZeroconfAnnouncerTestSuite *t = (DiscoveryZeroconfAnnouncerTestSuite *)handle;
+    endpoint_listener_t *epl = (endpoint_listener_t *)svc;
+    const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), OSGI_FRAMEWORK_FRAMEWORK_UUID, nullptr);
+    celix_properties_t *properties = celix_properties_create();
+    celix_properties_setLong(properties, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX, t->ifIndex);
+    celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
+    celix_properties_set(properties, OSGI_FRAMEWORK_OBJECTCLASS, "dzc_test_service");
+    celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
+    celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "100");
+    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
+    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "dzc_test_config_type");
+    endpoint_description_t *endpoint{};
+    auto status = endpointDescription_create(properties,&endpoint);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    status = epl->endpointAdded(epl->handle, endpoint, nullptr);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+
+    epl->endpointRemoved(epl->handle, endpoint, nullptr);
+
+    endpointDescription_destroy(endpoint);
+}
+
+TEST_F(DiscoveryZeroconfAnnouncerTestSuite, AddEndpointENOMEM) {
+    discovery_zeroconf_announcer_t *announcer{};
+    auto status = discoveryZeroconfAnnouncer_create(ctx.get(), logHelper.get(), &announcer);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    auto found = celix_bundleContext_useService(ctx.get(), OSGI_ENDPOINT_LISTENER_SERVICE, this, OnUseServiceForAddEndpointENOMEM);
     EXPECT_TRUE(found);
     discoveryZeroconfAnnouncer_destroy(announcer);
 }
