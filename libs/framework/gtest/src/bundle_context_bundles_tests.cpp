@@ -642,3 +642,34 @@ TEST_F(CelixBundleContextBundlesTests, testBundleStateToString) {
     result = celix_bundleState_getName((celix_bundle_state_e)444 /*invalid*/);
     EXPECT_STREQ(result, "UNKNOWN");
 }
+
+class CelixBundleContextTempBundlesTests : public ::testing::Test {
+public:
+    celix_framework_t* fw = nullptr;
+    celix_bundle_context_t *ctx = nullptr;
+    celix_properties_t *properties = nullptr;
+
+    const char * const TEST_BND1_LOC = "" SIMPLE_TEST_BUNDLE1_LOCATION "";
+
+    CelixBundleContextTempBundlesTests() {
+        properties = celix_properties_create();
+        celix_properties_setBool(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", true);
+        celix_properties_setBool(properties, CELIX_FRAMEWORK_CACHE_USE_TMP_DIR, true);
+        fw = celix_frameworkFactory_createFramework(properties);
+        ctx = framework_getContext(fw);
+    }
+
+    ~CelixBundleContextTempBundlesTests() override {
+        celix_frameworkFactory_destroyFramework(fw);
+    }
+
+    CelixBundleContextTempBundlesTests(CelixBundleContextTempBundlesTests&&) = delete;
+    CelixBundleContextTempBundlesTests(const CelixBundleContextTempBundlesTests&) = delete;
+    CelixBundleContextTempBundlesTests& operator=(CelixBundleContextTempBundlesTests&&) = delete;
+    CelixBundleContextTempBundlesTests& operator=(const CelixBundleContextTempBundlesTests&) = delete;
+};
+
+TEST_F(CelixBundleContextTempBundlesTests, installABundleTest) {
+    long bndId = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    ASSERT_TRUE(bndId >= 0);
+}
