@@ -18,6 +18,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <stdlib.h>
 #include <string>
 #include <thread>
 #include <unistd.h>
@@ -84,6 +85,18 @@ TEST_F(FileUtilsTestSuite, CreateAndDeleteDirectory) {
     status = celix_utils_createDirectory(testDir3, true, nullptr);
     EXPECT_EQ(status, CELIX_SUCCESS);
     status = celix_utils_deleteDirectory(testDir3, nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    //Can I create and delete a dir that begins with a /
+    auto cwd = getcwd(nullptr, 0);
+    std::string testDir4 = cwd;
+    free(cwd);
+    testDir4 += "/";
+    testDir4 += testDir;
+    status = celix_utils_createDirectory(testDir4.c_str(), true, &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(error, nullptr);
+    status = celix_utils_deleteDirectory(testDir4.c_str(), nullptr);
     EXPECT_EQ(status, CELIX_SUCCESS);
 
     //Can I delete dir containing a dangling symbolic link, which will cause `stat` return ENOENT
