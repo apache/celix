@@ -28,6 +28,7 @@
 #include <arpa/inet.h>
 #include <celix_log_helper.h>
 #include <math.h>
+#include <limits.h>
 #include "pubsub_websocket_topic_receiver.h"
 #include "pubsub_psa_websocket_constants.h"
 #include "pubsub_websocket_common.h"
@@ -64,7 +65,7 @@ struct pubsub_websocket_topic_receiver {
     celix_bundle_context_t *ctx;
     celix_log_helper_t *logHelper;
     void *admin;
-    size_t timeout;
+    useconds_t timeoutUs;
 
     char *scope;
     char *topic;
@@ -146,10 +147,13 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
 
     receiver->uri = psa_websocket_createURI(scope, topic);
 
-    // Set receiver connection thread timeout.
-    // property is in ms, timeout value in us. (convert ms to us).
-    receiver->timeout = celix_bundleContext_getPropertyAsLong(ctx, PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_TIMEOUT,
-                                                              PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT) * 1000;
+    long timeoutMs = celix_bundleContext_getPropertyAsLong(ctx, PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_TIMEOUT,
+                                                                PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT);
+    receiver->timeoutUs = (useconds_t)((
+            ((timeoutMs < 0) || (timeoutMs > INT_MAX))            // Protect against under and overflow
+            ? PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT // Use default for excessive values
+            : timeoutMs)
+         * 1000);
 
     if (receiver->uri != NULL) {
         celixThreadMutex_create(&receiver->subscribers.mutex, NULL);
@@ -562,7 +566,7 @@ static void* psa_websocket_recvThread(void * data) {
         if (!allInitialized) {
             psa_websocket_initializeAllSubscribers(receiver);
         }
-        usleep(receiver->timeout);
+        usleep(receiver->timeoutUs);
 
 
         celixThreadMutex_lock(&receiver->recvThread.mutex);
