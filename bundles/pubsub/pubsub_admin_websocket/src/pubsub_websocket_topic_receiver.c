@@ -150,7 +150,10 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
     long timeoutMs = celix_bundleContext_getPropertyAsLong(ctx, PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_TIMEOUT,
                                                                 PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT);
     receiver->timeoutUs = (useconds_t)((
-            ((timeoutMs < 0) || (timeoutMs > INT_MAX))            // Protect against under and overflow
+            (
+                (timeoutMs < PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_MIN_TIMEOUT) 
+                || (timeoutMs > PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_MAX_TIMEOUT)
+            )  // Protect against under and overflow
             ? PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT // Use default for excessive values
             : timeoutMs)
          * 1000);

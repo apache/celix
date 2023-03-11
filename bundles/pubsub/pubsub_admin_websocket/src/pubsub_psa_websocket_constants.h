@@ -43,6 +43,8 @@
 /* With this interval new connections and receivers are polled and registred. Similar to the TCP admin */
 #define PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_TIMEOUT   "PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_TIMEOUT"
 #define PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_DEFAULT_TIMEOUT 250 // 250 ms
+#define PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_MIN_TIMEOUT     0
+#define PSA_WEBSOCKET_SUBSCRIBER_CONNECTION_MAX_TIMEOUT     (UINT_MAX / 1000)
 
 /**
  * The static url which a subscriber should try to connect to.
