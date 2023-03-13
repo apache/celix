@@ -38,8 +38,9 @@ typedef struct celix_bundle_cache celix_bundle_cache_t;
 /**
  * @brief Creates the bundle cache using the supplied configuration map.
  *
- * @param fwUUID the framework uuid. Can be used in cache directory naming if a tmp dir used.
- * @param config The config properties to use for this cache. The configuration is checked for cache behaviour configuration:
+ * @param fw The Celix framework to create bundle cache for.
+ * Its UUID can be used in cache directory naming if a tmp dir used.
+ * Its configuration is checked for cache behaviour configuration:
  *  - CELIX_FRAMEWORK_FRAMEWORK_STORAGE
  *  - CELIX_FRAMEWORK_CACHE_USE_TMP_DIR
  * @param out The bundle cache output param. Cannot be NULL.
@@ -49,9 +50,9 @@ celix_status_t
 celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cache_t **out);
 
 /**
- * @brief Frees the bundle_cache memory allocated in celix_bundleCache_create
+ * @brief Destroy the bundle cache, releasing all resources allocated in celix_bundleCache_create
  *
- * @param bundle_cache parameter for the created cache
+ * @param cache The bundle cache to destroy.
  * @return Status code indication failure or success:
  *      - CELIX_SUCCESS when no errors are encountered.
  */
@@ -60,11 +61,9 @@ celix_status_t celix_bundleCache_destroy(celix_bundle_cache_t *cache);
 /**
  * @brief Creates a new archive for the given bundle (using the id and location). The archive is created on the supplied bundlePool.
  *
- * @param cache The Celix framework to create an archive in
- * @param bundlePool The pool to use for the archive creation
+ * @param fw The Celix framework to create an archive in
  * @param id The id of the bundle
  * @param location The location identifier of the bundle
- * @param inputFile Input identifier to read the bundle data from
  * @param archive The archive to create
  *
  * @return Status code indication failure or success:
@@ -130,6 +129,7 @@ bool celix_bundleCache_isBundleIdAlreadyUsed(celix_framework_t *fw, long bndId);
  * The returned hash map uses the bundle id as key and the bundle archive as value.
  *
  * @param[in] fw The framework to create the archives for.
+ * @param[in] printProgress Whether report progress of bundle archive creation.
  * @return Status code indication failure or success.
  */
 celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t *fw, bool printProgress);
