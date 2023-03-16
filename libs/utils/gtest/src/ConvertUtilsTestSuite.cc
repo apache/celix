@@ -135,25 +135,42 @@ TEST_F(ConvertUtilsTestSuite, ConvertToBoolTest) {
 }
 
 TEST_F(ConvertUtilsTestSuite, ConvertToVersionTest) {
+    celix_version_t* defaultVersion = celix_version_createVersion(1, 2, 3, "B");
+
     //test for a valid string
-    celix_version_t* result = celix_utils_convertStringToVersion("1.2.3");
+    celix_version_t* result = celix_utils_convertStringToVersion("1.2.3", nullptr, nullptr);
     checkVersion(result, 1, 2, 3, nullptr);
     celix_version_destroy(result);
 
     //test for an invalid string
-    result = celix_utils_convertStringToVersion("A");
+    result = celix_utils_convertStringToVersion("A", nullptr, nullptr);
     EXPECT_EQ(nullptr, result);
 
     //test for a string with a number
-    result = celix_utils_convertStringToVersion("1.2.3.A");
+    result = celix_utils_convertStringToVersion("1.2.3.A", nullptr, nullptr);
     checkVersion(result, 1, 2, 3, "A");
     celix_version_destroy(result);
 
     //test for a string with a partly (strict) version
-    result = celix_utils_convertStringToVersion("1");
+    result = celix_utils_convertStringToVersion("1", nullptr, nullptr);
     EXPECT_EQ(nullptr, result);
 
     //test for a string with a partly (strict) version
-    result = celix_utils_convertStringToVersion("1.2");
+    result = celix_utils_convertStringToVersion("1.2", nullptr, nullptr);
     EXPECT_EQ(nullptr, result);
+
+    //test for a string with a valid version, default version and a converted bool arg
+    bool converted;
+    result = celix_utils_convertStringToVersion("1.2.3", defaultVersion, &converted);
+    checkVersion(result, 1, 2, 3, nullptr);
+    celix_version_destroy(result);
+    EXPECT_TRUE(converted);
+
+    //test for a string with a invalid version, default version and a converted bool arg
+    result = celix_utils_convertStringToVersion("A", defaultVersion, &converted);
+    checkVersion(result, 1, 2, 3, "B"); //default version
+    celix_version_destroy(result);
+    EXPECT_FALSE(converted);
+
+    celix_version_destroy(defaultVersion);
 }

@@ -32,8 +32,8 @@ bool celix_utils_convertStringToBool(const char* val, bool defaultValue, bool* c
     }
     if (val != NULL) {
         char buf[32];
-        snprintf(buf, 32, "%s", val);
-        char *trimmed = utils_stringTrim(buf);
+        char* valCopy = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s", val);
+        char *trimmed = utils_stringTrim(valCopy);
         if (strncasecmp("true", trimmed, 5) == 0) {
             result = true;
             if (converted) {
@@ -45,6 +45,7 @@ bool celix_utils_convertStringToBool(const char* val, bool defaultValue, bool* c
                 *converted = true;
             }
         }
+        celix_utils_freeStringIfNotEqual(buf, valCopy);
     }
     return result;
 }
@@ -85,7 +86,7 @@ long celix_utils_convertStringToLong(const char* val, long defaultValue, bool* c
     return result;
 }
 
-celix_version_t* celix_utils_convertStringToVersion(const char* val) {
+celix_version_t* celix_utils_convertStringToVersion(const char* val, const celix_version_t* defaultValue, bool* converted) {
     celix_version_t* result = NULL;
     if (val != NULL) {
         //check if string has two dots ('.'), and only try to create string if it has two dots
@@ -94,6 +95,12 @@ celix_version_t* celix_utils_convertStringToVersion(const char* val) {
         if (firstDot != NULL && lastDot != NULL && firstDot != lastDot) {
             result = celix_version_createVersionFromString(val);
         }
+    }
+    if (converted) {
+        *converted = result != NULL;
+    }
+    if (result == NULL && defaultValue != NULL) {
+        result = celix_version_copy(defaultValue);
     }
     return result;
 }

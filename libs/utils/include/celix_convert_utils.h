@@ -68,10 +68,12 @@ long celix_utils_convertStringToLong(const char* val, long defaultValue, bool* c
  * @note This convert function will only convert version strings in the format major.minor.micro(.qualifier)?.
  * So the major, minor and micro are required, the qualifier is optional.
  *
- * @param val The string to convert.
+ * @param[in] val The string to convert.
+ * @param[in] defaultValue The default value if the string is not a valid celix_version_t.
+ * @param[out] converted If not NULL, will be set to true if the string is a valid celix_version_t, otherwise false.
  * @return A new celix_version_t* if the string is a valid version, otherwise NULL.
  */
-celix_version_t* celix_utils_convertStringToVersion(const char* val);
+celix_version_t* celix_utils_convertStringToVersion(const char* val, const celix_version_t* defaultValue, bool* converted);
 
 #ifdef __cplusplus
 }
