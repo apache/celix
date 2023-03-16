@@ -58,6 +58,7 @@ unsigned int celix_utils_stringHash(const char* string);
  * @param[in] format The format string.
  * @param[in] ... The arguments for the format string.
  * @return The formatted string in the provided buffer or a newly allocated buffer if the provided buffer is to small.
+ * @retval NULL if a allocation was needed, but failed.
  */
 char* celix_utils_writeOrCreateString(char* buffer, size_t bufferSize, const char* format, ...)
     __attribute__((format(printf, 3, 4)));
@@ -68,7 +69,7 @@ char* celix_utils_writeOrCreateString(char* buffer, size_t bufferSize, const cha
  * @param buffer The buffer to compare the str to.
  * @param str The string to free if it is not equal to the buffer.
  */
-void celix_utils_freeStringIfNeeded(const char* buffer, char* str);
+void celix_utils_freeStringIfNotEqual(const char* buffer, char* str);
 
 
 /**

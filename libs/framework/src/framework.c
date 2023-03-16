@@ -546,7 +546,7 @@ static void framework_autoInstallConfiguredBundlesForList(celix_framework_t* fw,
     } else {
         fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Could not auto install bundles, out of memory.");
     }
-    celix_utils_freeStringIfNeeded(autoStartBuffer, autoStart);
+    celix_utils_freeStringIfNotEqual(autoStartBuffer, autoStart);
 }
 
 static void framework_autoStartConfiguredBundlesForList(celix_framework_t* fw, const celix_array_list_t *installedBundles) {

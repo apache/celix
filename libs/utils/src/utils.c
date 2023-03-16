@@ -181,14 +181,14 @@ char* celix_utils_writeOrCreateString(char* buffer, size_t bufferSize, const cha
         //buffer to small, create new string
         char* newStr = NULL;
         va_start(args, format);
-        vasprintf(&newStr, format, args);
+        int rc = vasprintf(&newStr, format, args);
         va_end(args);
-        return newStr;
+        return rc == -1 ? NULL : newStr;
     }
     return buffer;
 }
 
-void celix_utils_freeStringIfNeeded(const char* buffer, char* str) {
+void celix_utils_freeStringIfNotEqual(const char* buffer, char* str) {
     if (str != buffer) {
         free(str);
     }

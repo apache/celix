@@ -196,7 +196,7 @@ celix_status_t celix_bundleCache_createArchive(celix_framework_t* fw, long id, c
 		status = bundleArchive_create(fw, archiveRoot, id, location, &archive);
         celixThreadMutex_unlock(&fw->cache->mutex);
         if (status != CELIX_SUCCESS) {
-            celix_utils_freeStringIfNeeded(archiveRootBuffer, archiveRoot);
+            celix_utils_freeStringIfNotEqual(archiveRootBuffer, archiveRoot);
             return status;
         }
 	} else {
@@ -311,11 +311,10 @@ static celix_status_t celix_bundleCache_createBundleArchivesForSpaceSeparatedLis
         status = CELIX_ENOMEM;
         fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to create zip file list.");
     }
-    celix_utils_freeStringIfNeeded(zipFileListBuffer, zipFileList);
+    celix_utils_freeStringIfNotEqual(zipFileListBuffer, zipFileList);
     return status;
 }
 
-//using tmp cache and that bundle cache is not deleted during bundle cache destroy.
 celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t *fw, bool logProgress) {
     celix_status_t status = CELIX_SUCCESS;
 

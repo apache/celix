@@ -54,7 +54,7 @@ static const char * const EMBEDDED_BUNDLE_END_POSTFIX = "_end";
 /**
  * @brief Resolves path to bundle. Uses the provided pathBuffer if is big enough, otherwise allocates a new buffer.
  * @note The returned pathBuffer can be part of the provide buffer, when done the result must be freed by calling
- * celix_utils_freeStringIfNeeded.
+ * celix_utils_freeStringIfNotEqual.
  */
 static char* celix_framework_utils_resolveFileBundleUrl(char* pathBuffer, size_t pathBufferSize, celix_framework_t* fw, const char* bundleLocation, bool silent) {
     char *result = NULL;
@@ -85,7 +85,7 @@ static char* celix_framework_utils_resolveFileBundleUrl(char* pathBuffer, size_t
                     result = resolvedPath;
                     break;
                 } else {
-                    celix_utils_freeStringIfNeeded(pathBuffer, resolvedPath);
+                    celix_utils_freeStringIfNotEqual(pathBuffer, resolvedPath);
                 }
             }
             free(paths);
@@ -138,7 +138,7 @@ static bool celix_framework_utils_isBundlePathNewerThan(celix_framework_t *fw, c
         return false;
     }
     double diff = celix_difftime(&bundleModTime, time);
-    celix_utils_freeStringIfNeeded(pathBuffer, resolvedPath);
+    celix_utils_freeStringIfNotEqual(pathBuffer, resolvedPath);
     return diff < 0.0;
 }
 
@@ -174,7 +174,7 @@ static bool celix_framework_utils_extractBundlePath(celix_framework_t *fw, const
     if (status != CELIX_SUCCESS) {
         FW_LOG(CELIX_LOG_LEVEL_ERROR, "Could not extract bundle zip file `%s` to `%s`: %s", resolvedPath, extractPath, err);
     }
-    celix_utils_freeStringIfNeeded(buffer, resolvedPath);
+    celix_utils_freeStringIfNotEqual(buffer, resolvedPath);
     return status == CELIX_SUCCESS;
 }
 
@@ -244,7 +244,7 @@ bool celix_framework_utils_isBundleUrlValid(celix_framework_t *fw, const char *b
     if (strncasecmp("file://", trimmedUrl, 7) == 0) {
         char* loc = celix_framework_utils_resolveFileBundleUrl(buffer, sizeof(buffer), fw, trimmedUrl + 7, silent);
         valid = loc != NULL;
-        celix_utils_freeStringIfNeeded(buffer, loc);
+        celix_utils_freeStringIfNotEqual(buffer, loc);
     } else if (strncasecmp(EMBEDDED_URL_SCHEME, trimmedUrl, 11) == 0) {
         valid = celix_framework_utils_isEmbeddedBundleUrlValid(fw, trimmedUrl, silent);
     } else if (strcasestr(trimmedUrl, "://")) {
@@ -255,7 +255,7 @@ bool celix_framework_utils_isBundleUrlValid(celix_framework_t *fw, const char *b
     } else {
         char* loc = celix_framework_utils_resolveFileBundleUrl(buffer, sizeof(buffer), fw, trimmedUrl, silent);
         valid = loc != NULL;
-        celix_utils_freeStringIfNeeded(buffer, loc);
+        celix_utils_freeStringIfNotEqual(buffer, loc);
     }
     free(trimmedUrl);
 

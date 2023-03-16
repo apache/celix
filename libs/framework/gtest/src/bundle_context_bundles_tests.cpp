@@ -656,7 +656,9 @@ public:
         celix_properties_setBool(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", true);
         celix_properties_setBool(properties, CELIX_FRAMEWORK_CACHE_USE_TMP_DIR, true);
         fw = celix_frameworkFactory_createFramework(properties);
+        EXPECT_NE(fw, nullptr);
         ctx = framework_getContext(fw);
+        EXPECT_NE(ctx, nullptr);
     }
 
     ~CelixBundleContextTempBundlesTests() override {

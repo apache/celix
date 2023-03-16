@@ -412,7 +412,7 @@ static celix_status_t celix_module_loadLibraryForManifestEntry(celix_module_t* m
     }
 
     status = celix_module_loadLibrary(module, path, handle);
-    celix_utils_freeStringIfNeeded(libraryPath, path);
+    celix_utils_freeStringIfNotEqual(libraryPath, path);
     framework_logIfError(module->fw->logger, status, error, "Could not load library: %s", libraryPath);
     return status;
 }
