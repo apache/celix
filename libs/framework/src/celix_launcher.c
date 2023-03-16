@@ -52,6 +52,9 @@ static int celixLauncher_createBundleCache(celix_properties_t* embeddedPropertie
 
 #define DEFAULT_CONFIG_FILE "config.properties"
 
+#define CELIX_LAUNCHER_OK_EXIT_CODE 0
+#define CELIX_LAUNCHER_ERROR_EXIT_CODE 1
+
 static framework_t *g_fw = NULL;
 
 
@@ -81,7 +84,7 @@ int celixLauncher_launchWithArgv(int argc, char *argv[], celix_properties_t* emb
         if (strncmp("-?", opt, sizeof("-?")) == 0 || strncmp("-h", opt, sizeof("-h")) == 0 || strncmp("--help", opt, sizeof("--help")) == 0) {
             celixLauncher_printUsage(argv[0]);
             celix_properties_destroy(embeddedConfig);
-            return 0;
+            return CELIX_LAUNCHER_OK_EXIT_CODE;
         } else if (strncmp("-p", opt, sizeof("-p")) == 0 || strncmp("--props", opt, sizeof("--props")) == 0) {
             showProps = true;
         } else if (strncmp("-c", opt, sizeof("-c")) == 0 || strncmp("--create-bundle-cache", opt, sizeof("--create-bundle-cache")) == 0) {
@@ -104,7 +107,7 @@ int celixLauncher_launchWithArgv(int argc, char *argv[], celix_properties_t* emb
 	if (showProps) {
         celixLauncher_printProperties(embeddedConfig, configFile);
 		celix_properties_destroy(embeddedConfig);
-		return 0;
+		return CELIX_LAUNCHER_OK_EXIT_CODE;
 	}
 
     if (createCache) {
@@ -114,7 +117,7 @@ int celixLauncher_launchWithArgv(int argc, char *argv[], celix_properties_t* emb
     if (showEmbeddedBundles) {
         celixLauncher_printEmbeddedBundles();
         celix_properties_destroy(embeddedConfig);
-        return 0;
+        return CELIX_LAUNCHER_OK_EXIT_CODE;
     }
 
 	struct sigaction sigact;
@@ -130,7 +133,7 @@ int celixLauncher_launchWithArgv(int argc, char *argv[], celix_properties_t* emb
 
 
 	int rc = celixLauncher_launchWithConfigAndProps(configFile, &framework, embeddedConfig);
-	if (rc == 0) {
+	if (rc == CELIX_LAUNCHER_OK_EXIT_CODE) {
 		g_fw = framework;
 		*frameworkOut = framework;
 	}
@@ -163,7 +166,7 @@ int celixLauncher_launchWithProperties(celix_properties_t* config, celix_framewo
 	curl_global_init(CURL_GLOBAL_NOTHING);
 #endif
 	*framework = celix_frameworkFactory_createFramework(config);
-	return *framework != NULL ? CELIX_SUCCESS : CELIX_ILLEGAL_STATE;
+	return *framework != NULL ? CELIX_LAUNCHER_OK_EXIT_CODE : CELIX_LAUNCHER_ERROR_EXIT_CODE;
 }
 
 void celixLauncher_waitForShutdown(celix_framework_t* framework) {
@@ -267,15 +270,15 @@ static int celixLauncher_createBundleCache(celix_properties_t* embeddedPropertie
     celix_status_t status = framework_create(&fw, config);
     if (status != CELIX_SUCCESS) {
         fprintf(stderr, "Failed to create framework for bundle cache creation\n");
-        return 1;
+        return CELIX_LAUNCHER_ERROR_EXIT_CODE;
     }
     status = celix_framework_utils_createBundleArchivesCache(fw);
     status = CELIX_DO_IF(status, framework_destroy(fw));
     if (status != CELIX_SUCCESS) {
         fprintf(stderr, "Failed to create bundle cache\n");
-        return 1;
+        return CELIX_LAUNCHER_ERROR_EXIT_CODE;
     }
-    return 0;
+    return CELIX_LAUNCHER_OK_EXIT_CODE;
 }
 
 static void celixLauncher_combineProperties(celix_properties_t *original, const celix_properties_t *append) {
