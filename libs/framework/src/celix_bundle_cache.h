@@ -126,8 +126,6 @@ bool celix_bundleCache_isBundleIdAlreadyUsed(celix_framework_t *fw, long bndId);
  *  CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3, CELIX_AUTO_START_4,
  *  CELIX_AUTO_START_5, CELIX_AUTO_START_6 and lastly CELIX_AUTO_INSTALL.
  *
- * The returned hash map uses the bundle id as key and the bundle archive as value.
- *
  * @param[in] fw The framework to create the archives for.
  * @param[in] printProgress Whether report progress of bundle archive creation.
  * @return Status code indication failure or success.
