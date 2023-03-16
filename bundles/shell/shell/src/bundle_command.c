@@ -32,26 +32,44 @@ bool bundleCommand_execute(void *handle, const char *constCommandLine, FILE *out
     char* command = celix_utils_strdup(constCommandLine);
     strtok_r(command, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr); //ignore command name
     sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr);
+    celix_array_list_t* bundleIds = celix_arrayList_create();
+    bool validArgs = true;
 
-    bool succeeded = false;
     if (sub == NULL) {
         fprintf(errStream, "Incorrect number of arguments.\n");
+        validArgs = false;
     }
+
     for (; sub != NULL; sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr)) {
         bool converted;
         long bndId = celix_utils_convertStringToLong(sub, 0, &converted);
         if (!converted) {
+            validArgs = false;
             fprintf(errStream, "Cannot convert '%s' to long (bundle id).\n", sub);
             continue;
         }
         if (!celix_bundleContext_isBundleInstalled(ctx, bndId)) {
+            validArgs = false;
             fprintf(outStream, "No bundle with id %li.\n", bndId);
             continue;
         }
+        celix_arrayList_addLong(bundleIds, bndId);
+    }
+    free(command);
+
+    bool succeeded = false;
+    if (!validArgs) {
+        succeeded = false;
+        goto cleanup;
+    }
+    for (int i = 0; i < celix_arrayList_size(bundleIds); i++) {
+        long bndId = celix_arrayList_getLong(bundleIds, i);
         celix_framework_t* fw = celix_bundleContext_getFramework(ctx);
         ctrl(fw, bndId);
         succeeded = true;
     }
-    free(command);
+
+cleanup:
+    celix_arrayList_destroy(bundleIds);
     return succeeded;
 }

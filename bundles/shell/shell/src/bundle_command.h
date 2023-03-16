@@ -31,6 +31,16 @@ extern "C" {
 
 typedef void (*bundle_control_fpt)(celix_framework_t *fw, long bndId);
 
+/**
+ * @brief Execute a bundle control command.
+ *
+ * @param[in] handle The handle to the bundle command.
+ * @param[in] constCommandLine The command line to execute.
+ * @param[in] outStream The output stream to write the output to.
+ * @param[in] errStream The error stream to write the error to.
+ * @param[in] ctrl The actual bundle control function to use. This can be start, stop, uninstall or update.
+ * @return True if the command was executed successfully, otherwise false.
+ */
 bool bundleCommand_execute(void *handle, const char *constCommandLine, FILE *outStream, FILE *errStream, bundle_control_fpt ctrl);
 
 #ifdef __cplusplus
