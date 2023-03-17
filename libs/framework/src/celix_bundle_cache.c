@@ -195,13 +195,12 @@ celix_status_t celix_bundleCache_createArchive(celix_framework_t* fw, long id, c
         celixThreadMutex_lock(&fw->cache->mutex);
 		status = bundleArchive_create(fw, archiveRoot, id, location, &archive);
         celixThreadMutex_unlock(&fw->cache->mutex);
-        if (status != CELIX_SUCCESS) {
-            celix_utils_freeStringIfNotEqual(archiveRootBuffer, archiveRoot);
-            return status;
-        }
 	} else {
         status = CELIX_ENOMEM;
-        fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to create archive. Out of memory.");
+    }
+    celix_utils_freeStringIfNotEqual(archiveRootBuffer, archiveRoot);
+    if (status != CELIX_SUCCESS) {
+        fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to create archive.");
         return status;
     }
 
