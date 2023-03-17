@@ -95,6 +95,45 @@ TEST_F(CelixLauncherTestSuite, ExtractBundlesTest) {
     free(arg2);
 }
 
+TEST_F(CelixLauncherTestSuite, ExtractNonexistentBundlesTest) {
+    //launch framework with bundle configured to start
+    //Given a properties set with 2 bundles configured for start
+    auto* props = celix_properties_create();
+    auto start = std::string{} + "nonexistent";
+    celix_properties_set(props, CELIX_AUTO_START_0, start.c_str());
+
+    //When I run the celixLauncher with "-c" argument
+    char* arg1 = celix_utils_strdup("programName");
+    char* arg2 = celix_utils_strdup("-c");
+    char* argv[] = {arg1, arg2};
+    int rc = celixLauncher_launchAndWaitForShutdown(2, argv, props);
+
+    //Then it will print the result of the extracted bundles and exit with 0
+    EXPECT_EQ(rc, 1);
+    free(arg1);
+    free(arg2);
+}
+
+TEST_F(CelixLauncherTestSuite, ExtractBundlesIntoTempTest) {
+    //launch framework with bundle configured to start
+    //Given a properties set with 2 bundles configured for start
+    auto* props = celix_properties_create();
+    auto start = std::string{} + SIMPLE_TEST_BUNDLE1_LOCATION + " " + SIMPLE_TEST_BUNDLE2_LOCATION;
+    celix_properties_set(props, CELIX_AUTO_START_0, start.c_str());
+    celix_properties_setBool(props, CELIX_FRAMEWORK_CACHE_USE_TMP_DIR, true);
+
+    //When I run the celixLauncher with "-c" argument
+    char* arg1 = celix_utils_strdup("programName");
+    char* arg2 = celix_utils_strdup("-c");
+    char* argv[] = {arg1, arg2};
+    int rc = celixLauncher_launchAndWaitForShutdown(2, argv, props);
+
+    //Then it will print the result of the extracted bundles and exit with 0
+    EXPECT_EQ(rc, 1);
+    free(arg1);
+    free(arg2);
+}
+
 TEST_F(CelixLauncherTestSuite, LaunchCelixTest) {
     //launch framework with bundle configured to start
     //Given a properties set with 2 bundles configured for start

@@ -243,6 +243,7 @@ celix_status_t celix_bundleArchive_createArchiveInternal(celix_framework_t* fw, 
         archive->currentRevisionRoot = getcwd(NULL, 0);
         archive->storeRoot = getcwd(NULL, 0);
     } else {
+        // assert(location != NULL)
         archive->location = celix_utils_strdup(location);
         archive->archiveRoot = celix_utils_strdup(archiveRoot);
         rc = asprintf(&archive->savedBundleStatePropertiesPath, "%s/%s", archiveRoot,
