@@ -57,19 +57,16 @@ bool bundleCommand_execute(void *handle, const char *constCommandLine, FILE *out
     }
     free(command);
 
-    bool succeeded = false;
     if (!validArgs) {
-        succeeded = false;
         goto cleanup;
     }
     for (int i = 0; i < celix_arrayList_size(bundleIds); i++) {
         long bndId = celix_arrayList_getLong(bundleIds, i);
         celix_framework_t* fw = celix_bundleContext_getFramework(ctx);
         ctrl(fw, bndId);
-        succeeded = true;
     }
 
 cleanup:
     celix_arrayList_destroy(bundleIds);
-    return succeeded;
+    return validArgs;
 }
