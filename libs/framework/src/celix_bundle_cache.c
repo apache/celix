@@ -186,19 +186,19 @@ celix_status_t celix_bundleCache_deleteCacheDir(celix_bundle_cache_t* cache) {
 }
 
 celix_status_t celix_bundleCache_createArchive(celix_framework_t* fw, long id, const char *location, bundle_archive_t** archiveOut) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
     bundle_archive_t* archive = NULL;
 
     char archiveRootBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
     char *archiveRoot = celix_utils_writeOrCreateString(archiveRootBuffer, sizeof(archiveRootBuffer), CELIX_BUNDLE_ARCHIVE_ROOT_FORMAT, fw->cache->cacheDir, id);
     if (archiveRoot) {
         celixThreadMutex_lock(&fw->cache->mutex);
-		status = bundleArchive_create(fw, archiveRoot, id, location, &archive);
+        status = bundleArchive_create(fw, archiveRoot, id, location, &archive);
         celixThreadMutex_unlock(&fw->cache->mutex);
-	} else {
+        celix_utils_freeStringIfNotEqual(archiveRootBuffer, archiveRoot);
+    } else {
         status = CELIX_ENOMEM;
     }
-    celix_utils_freeStringIfNotEqual(archiveRootBuffer, archiveRoot);
     if (status != CELIX_SUCCESS) {
         fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to create archive.");
         return status;
@@ -210,7 +210,7 @@ celix_status_t celix_bundleCache_createArchive(celix_framework_t* fw, long id, c
     celixThreadMutex_unlock(&fw->cache->mutex);
 
     *archiveOut = archive;
-	return status;
+    return status;
 }
 
 celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, bundle_archive_pt* archive) {
