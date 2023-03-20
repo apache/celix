@@ -25,39 +25,32 @@
 
 celix_status_t bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, long revisionNr, manifest_pt manifest, bundle_revision_pt *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
-	bundle_revision_pt revision = calloc(1, sizeof(*revision));
+    bundle_revision_pt revision = calloc(1, sizeof(*revision));
     if (revision != NULL) {
         revision->fw = fw;
-        revision->libraryHandles = celix_arrayList_create();
         revision->revisionNr = revisionNr;
+        if (root != NULL) {
+            revision->root = celix_utils_strdup(root);
+        }
+        if (location != NULL) {
+            revision->location = celix_utils_strdup(location);
+        }
         revision->manifest = manifest;
     }
 
-    if (revision == NULL || revision->libraryHandles == NULL) {
+    if (revision == NULL || (root != NULL && revision->root == NULL) || (location != NULL && revision->location == NULL)) {
         status = CELIX_ENOMEM;
         fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create bundle revision, out of memory");
-        manifest_destroy(manifest);
         if (revision != NULL) {
-            revision->manifest = NULL;
             bundleRevision_destroy(revision);
+        } else {
+            manifest_destroy(manifest);
         }
         return status;
     }
 
-    bool isSystemRevision = root == NULL && location == NULL;
-    if (!isSystemRevision) {
-        revision->location = celix_utils_strdup(location);
-        revision->root = celix_utils_strdup(root);
-        if (revision->location == NULL || revision->root == NULL) {
-            status = CELIX_ENOMEM;
-            fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create bundle revision, out of memory");
-            bundleRevision_destroy(revision);
-            return status;
-        }
-    }
-
     *bundle_revision = revision;
-	return status;
+    return status;
 }
 
 bundle_revision_t* bundleRevision_revise(const bundle_revision_t* rev, const char* updatedBundleUrl) {
@@ -69,13 +62,12 @@ bundle_revision_t* bundleRevision_revise(const bundle_revision_t* rev, const cha
 
 celix_status_t bundleRevision_destroy(bundle_revision_pt revision) {
     if (revision != NULL) {
-        celix_arrayList_destroy(revision->libraryHandles);
         manifest_destroy(revision->manifest);
         free(revision->root);
         free(revision->location);
         free(revision);
     }
-	return CELIX_SUCCESS;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleRevision_getNumber(const bundle_revision_t* revision, long *revisionNr) {

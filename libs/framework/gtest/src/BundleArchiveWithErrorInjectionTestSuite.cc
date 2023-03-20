@@ -94,6 +94,9 @@ TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreatedFailedTest)
     //Given a mocked celix_utils_strdup which returns NULL from a call from bundleRevision_create
     celix_ei_expect_celix_utils_strdup((void*)bundleRevision_create, 0, nullptr);
     installBundleAndExpectFailure();
+
+    celix_ei_expect_celix_utils_strdup((void*)bundleRevision_create, 0, nullptr, 2);
+    installBundleAndExpectFailure();
 }
 
 TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreateCacheDirectoryFailedTest) {

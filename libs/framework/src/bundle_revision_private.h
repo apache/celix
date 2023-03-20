@@ -44,8 +44,6 @@ struct bundleRevision {
     char *root;
     char *location;
     manifest_pt manifest;
-
-    celix_array_list_t* libraryHandles; //deprecated, moved to module
 };
 
 /**
