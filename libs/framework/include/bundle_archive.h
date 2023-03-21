@@ -59,7 +59,7 @@ bundleArchive_getRevision(bundle_archive_pt archive, long revNr, bundle_revision
 FRAMEWORK_EXPORT celix_status_t
 bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundle_revision_pt *revision);
 
-FRAMEWORK_EXPORT celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive, long *revisionNumber);
+FRAMEWORK_EXPORT celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive, long *revisionNumber) __attribute__((deprecated));
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getRefreshCount(bundle_archive_pt archive, long *refreshCount);
 

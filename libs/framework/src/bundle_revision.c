@@ -23,12 +23,11 @@
 #include "bundle_revision_private.h"
 #include "framework_private.h"
 
-celix_status_t bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, long revisionNr, manifest_pt manifest, bundle_revision_pt *bundle_revision) {
+celix_status_t bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, manifest_pt manifest, bundle_revision_pt *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_revision_pt revision = calloc(1, sizeof(*revision));
     if (revision != NULL) {
         revision->fw = fw;
-        revision->revisionNr = revisionNr;
         if (root != NULL) {
             revision->root = celix_utils_strdup(root);
         }
@@ -56,7 +55,7 @@ celix_status_t bundleRevision_create(celix_framework_t* fw, const char *root, co
 bundle_revision_t* bundleRevision_revise(const bundle_revision_t* rev, const char* updatedBundleUrl) {
     bundle_revision_pt newRev = NULL;
     manifest_pt clonedManifest = manifest_clone(rev->manifest);
-    bundleRevision_create(rev->fw, rev->root, updatedBundleUrl, rev->revisionNr+1, clonedManifest, &newRev);
+    bundleRevision_create(rev->fw, rev->root, updatedBundleUrl, clonedManifest, &newRev);
     return newRev;
 }
 
@@ -71,7 +70,7 @@ celix_status_t bundleRevision_destroy(bundle_revision_pt revision) {
 }
 
 celix_status_t bundleRevision_getNumber(const bundle_revision_t* revision, long *revisionNr) {
-    *revisionNr = revision->revisionNr;
+    *revisionNr = 1; //note revision nr is deprecated
     return CELIX_SUCCESS;
 }
 

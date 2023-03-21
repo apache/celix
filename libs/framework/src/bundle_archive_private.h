@@ -33,15 +33,8 @@ extern "C" {
 #define CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME "bundle.version"
 #define CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME "bundle.id"
 #define CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME "bundle.location"
-#define CELIX_BUNDLE_ARCHIVE_REVISION_PROPERTY_NAME "bundle.archive.revision"
 
-//for Celix 3.0 update to a different revision name scheme
-//#define CELIX_BUNDLE_ARCHIVE_REVISION_DIRECTORY_NAME_FORMAT "%s/revision_%li"
-//OR
-//#define CELIX_BUNDLE_ARCHIVE_REVISION_DIRECTORY_NAME_FORMAT "%s/revision"
-
-//The refresh count in the revision version is always 0 and not supported.
-#define CELIX_BUNDLE_ARCHIVE_REVISION_DIRECTORY_NAME_FORMAT "%s/version%li.0"
+#define CELIX_BUNDLE_ARCHIVE_RESOURCE_CACHE_NAME "resources"
 #define CELIX_BUNDLE_ARCHIVE_STORE_DIRECTORY_NAME "storage"
 
 #define CELIX_BUNDLE_MANIFEST_REL_PATH "META-INF/MANIFEST.MF"

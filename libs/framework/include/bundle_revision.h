@@ -53,7 +53,7 @@ extern "C" {
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
  */
-celix_status_t bundleRevision_getNumber(const bundle_revision_t* revision, long *revisionNr);
+celix_status_t bundleRevision_getNumber(const bundle_revision_t* revision, long *revisionNr) __attribute__((deprecated));
 
 /**
  * Retrieves the location of the given revision.
