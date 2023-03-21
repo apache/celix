@@ -67,23 +67,25 @@ struct bundleArchive {
 
     //bundle cache state info
 	long revisionNr;
-
-    //bundle cache state in properties form
-    celix_properties_t* bundleStateProperties;
 };
 
-static void celix_bundleArchive_updateAndStoreBundleStateProperties(bundle_archive_pt archive) {
-    celixThreadMutex_lock(&archive->lock);
-    //set/update bundle cache state properties
-    celix_properties_setLong(archive->bundleStateProperties, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, archive->id);
-    celix_properties_set(archive->bundleStateProperties, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, archive->location);
-    celix_properties_set(archive->bundleStateProperties, CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME, archive->bundleSymbolicName);
-    celix_properties_set(archive->bundleStateProperties, CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME, archive->bundleVersion);
-    celix_properties_setLong(archive->bundleStateProperties, CELIX_BUNDLE_ARCHIVE_REVISION_PROPERTY_NAME, archive->revisionNr);
+static void celix_bundleArchive_storeBundleStateProperties(bundle_archive_pt archive) {
+    celix_properties_t* bundleStateProperties = celix_properties_create();
+    if (bundleStateProperties != NULL) {
+        celixThreadMutex_lock(&archive->lock);
+        //set/update bundle cache state properties
+        celix_properties_setLong(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, archive->id);
+        celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, archive->location);
+        celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME,
+                             archive->bundleSymbolicName);
+        celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME, archive->bundleVersion);
 
-    //save bundle cache state properties
-    celix_properties_store(archive->bundleStateProperties, archive->savedBundleStatePropertiesPath, "Bundle State Properties");
-    celixThreadMutex_unlock(&archive->lock);
+        //save bundle cache state properties
+        celix_properties_store(bundleStateProperties, archive->savedBundleStatePropertiesPath,
+                               "Bundle State Properties");
+        celixThreadMutex_unlock(&archive->lock);
+    }
+    celix_properties_destroy(bundleStateProperties);
 }
 
 celix_status_t celix_bundleArchive_extractBundle(
@@ -191,7 +193,6 @@ celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archiv
     celix_utils_freeStringIfNotEqual(pathBuffer, manifestPath);
     if (status != CELIX_SUCCESS) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Cannot read manifest.");
-        manifest_destroy(*manifestOut);
         return status;
     }
 
@@ -226,12 +227,11 @@ celix_status_t celix_bundleArchive_createArchiveInternal(celix_framework_t* fw, 
         archive->id = id;
         archive->isSystemBundle = id == CELIX_FRAMEWORK_BUNDLE_ID;
         archive->revisionNr = revisionNr;
-        archive->bundleStateProperties = celix_properties_create();
         archive->revisions = celix_arrayList_create();
         celixThreadMutex_create(&archive->lock, NULL);
     }
 
-    if (archive == NULL || archive->bundleStateProperties == NULL || archive->revisions == NULL) {
+    if (archive == NULL || archive->revisions == NULL) {
         status = CELIX_ENOMEM;
         fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create archive. Out of memory.");
         bundleArchive_destroy(archive);
@@ -283,7 +283,7 @@ celix_status_t celix_bundleArchive_createArchiveInternal(celix_framework_t* fw, 
     celix_arrayList_add(archive->revisions, rev);
 
     if (!archive->isSystemBundle) {
-        celix_bundleArchive_updateAndStoreBundleStateProperties(archive);
+        celix_bundleArchive_storeBundleStateProperties(archive);
     }
 
     *bundle_archive = archive;
@@ -309,7 +309,6 @@ celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
         free(archive->storeRoot);
         free(archive->bundleSymbolicName);
         free(archive->bundleVersion);
-        celix_properties_destroy(archive->bundleStateProperties);
         celix_arrayList_destroy(archive->revisions);
         celixThreadMutex_destroy(&archive->lock);
         free(archive);
