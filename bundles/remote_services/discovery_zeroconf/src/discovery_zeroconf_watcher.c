@@ -314,6 +314,10 @@ static void OnServiceBrowseCallback(DNSServiceRef sdRef, DNSServiceFlags flags, 
     char key[128]={0};
     (void)snprintf(key, sizeof(key), "%s%d", instanceName, (int)interfaceIndex);
     if (flags & kDNSServiceFlagsAdd) {
+        if (celix_stringHashMap_hasKey(watcher->watchedServices, key)) {
+            celix_logHelper_info(watcher->logHelper,"Watcher: %s already on interface %d.", instanceName, interfaceIndex);
+            return;
+        }
         svcEntry = (watched_service_entry_t *)calloc(1, sizeof(*svcEntry));
         if (svcEntry == NULL) {
             celix_logHelper_error(watcher->logHelper, "Watcher: Failed service entry.");
