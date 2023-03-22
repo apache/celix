@@ -16,12 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include <discovery_zeroconf_announcer.h>
-#include <discovery_zeroconf_watcher.h>
-#include <celix_log_helper.h>
-#include <celix_bundle_activator.h>
-#include <celix_types.h>
-#include <celix_errno.h>
+#include "discovery_zeroconf_announcer.h"
+#include "discovery_zeroconf_watcher.h"
+#include "celix_log_helper.h"
+#include "celix_bundle_activator.h"
+#include "celix_types.h"
+#include "celix_errno.h"
 
 typedef struct discovery_zeroconf_activator {
     celix_log_helper_t *logHelper;

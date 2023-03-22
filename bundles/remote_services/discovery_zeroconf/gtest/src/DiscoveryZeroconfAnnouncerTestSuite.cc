@@ -16,22 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include <discovery_zeroconf_announcer.h>
-#include <discovery_zeroconf_constants.h>
+#include "discovery_zeroconf_announcer.h"
+#include "discovery_zeroconf_constants.h"
 #include <dns_sd.h>
-#include <remote_constants.h>
+#include "remote_constants.h"
 extern "C" {
-#include <endpoint_description.h>
+#include "endpoint_description.h"
 }
-#include <endpoint_listener.h>
-#include <celix_log_helper.h>
-#include <celix_api.h>
-#include <celix_errno.h>
-#include <eventfd_ei.h>
-#include <celix_threads_ei.h>
-#include <celix_bundle_context_ei.h>
-#include <mdnsresponder_ei.h>
-#include <malloc_ei.h>
+#include "endpoint_listener.h"
+#include "celix_log_helper.h"
+#include "celix_api.h"
+#include "celix_errno.h"
+#include "eventfd_ei.h"
+#include "celix_threads_ei.h"
+#include "celix_bundle_context_ei.h"
+#include "mdnsresponder_ei.h"
+#include "malloc_ei.h"
 #include <gtest/gtest.h>
 #include <netinet/in.h>
 #include <net/if.h>

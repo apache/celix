@@ -17,13 +17,13 @@
  * under the License.
  */
 
-#include <discovery_zeroconf_announcer.h>
-#include <discovery_zeroconf_watcher.h>
-#include <eventfd_ei.h>
-#include <celix_framework.h>
-#include <celix_framework_factory.h>
-#include <celix_bundle_activator.h>
-#include <celix_errno.h>
+#include "discovery_zeroconf_announcer.h"
+#include "discovery_zeroconf_watcher.h"
+#include "eventfd_ei.h"
+#include "celix_framework.h"
+#include "celix_framework_factory.h"
+#include "celix_bundle_activator.h"
+#include "celix_errno.h"
 #include <gtest/gtest.h>
 
 class DiscoveryZeroconfActivatorTestSuite : public ::testing::Test {

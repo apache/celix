@@ -16,19 +16,19 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include <discovery_zeroconf_watcher.h>
-#include <discovery_zeroconf_constants.h>
+#include "discovery_zeroconf_watcher.h"
+#include "discovery_zeroconf_constants.h"
+#include "endpoint_listener.h"
+#include "remote_constants.h"
+#include "celix_bundle_context.h"
+#include "celix_filter.h"
+#include "celix_constants.h"
+#include "celix_long_hash_map.h"
+#include "celix_string_hash_map.h"
+#include "celix_threads.h"
+#include "celix_utils.h"
+#include "celix_errno.h"
 #include <dns_sd.h>
-#include <endpoint_listener.h>
-#include <remote_constants.h>
-#include <celix_bundle_context.h>
-#include <celix_filter.h>
-#include <celix_constants.h>
-#include <celix_long_hash_map.h>
-#include <celix_string_hash_map.h>
-#include <celix_threads.h>
-#include <celix_utils.h>
-#include <celix_errno.h>
 #include <sys/eventfd.h>
 #include <sys/select.h>
 #include <sys/param.h>

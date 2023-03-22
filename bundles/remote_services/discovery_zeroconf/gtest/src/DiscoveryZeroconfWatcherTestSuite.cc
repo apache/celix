@@ -16,21 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include <discovery_zeroconf_watcher.h>
-#include <discovery_zeroconf_constants.h>
-#include <endpoint_listener.h>
+#include "discovery_zeroconf_watcher.h"
+#include "discovery_zeroconf_constants.h"
+#include "endpoint_listener.h"
 #include <dns_sd.h>
-#include <remote_constants.h>
-#include <celix_threads_ei.h>
-#include <celix_bundle_context_ei.h>
-#include <mdnsresponder_ei.h>
-#include <malloc_ei.h>
-#include <celix_framework.h>
-#include <celix_framework_factory.h>
-#include <celix_log_helper.h>
-#include <celix_properties.h>
-#include <celix_constants.h>
-#include <celix_errno.h>
+#include "remote_constants.h"
+#include "celix_threads_ei.h"
+#include "celix_bundle_context_ei.h"
+#include "mdnsresponder_ei.h"
+#include "malloc_ei.h"
+#include "celix_framework.h"
+#include "celix_framework_factory.h"
+#include "celix_log_helper.h"
+#include "celix_properties.h"
+#include "celix_constants.h"
+#include "celix_errno.h"
 #include <netinet/in.h>
 #include <semaphore.h>
 #include <ctime>

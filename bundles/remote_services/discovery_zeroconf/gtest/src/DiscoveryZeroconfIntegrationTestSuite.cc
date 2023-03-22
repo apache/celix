@@ -16,8 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include <endpoint_listener.h>
-#include <celix_api.h>
+#include "endpoint_listener.h"
+#include "celix_api.h"
 #include <gtest/gtest.h>
 
 class DiscoveryZeroconfIntegrationTestSuite : public ::testing::Test {

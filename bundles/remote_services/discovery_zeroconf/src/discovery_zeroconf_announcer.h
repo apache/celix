@@ -23,9 +23,9 @@
 extern "C" {
 #endif
 
-#include <celix_log_helper.h>
-#include <celix_types.h>
-#include <celix_errno.h>
+#include "celix_log_helper.h"
+#include "celix_types.h"
+#include "celix_errno.h"
 
 typedef struct discovery_zeroconf_announcer discovery_zeroconf_announcer_t;
 
