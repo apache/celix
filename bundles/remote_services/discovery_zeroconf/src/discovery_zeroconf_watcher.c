@@ -286,6 +286,7 @@ static void OnServiceResolveCallback(DNSServiceRef sdRef, DNSServiceFlags flags,
 
     long propSize = celix_properties_getAsLong(properties, DZC_SERVICE_PROPERTIES_SIZE_KEY, 0);
     if (propSize == celix_properties_size(properties)) {
+        celix_properties_unset(properties, DZC_SERVICE_PROPERTIES_SIZE_KEY);//Service endpoint do not need it
         svcEntry->resolved = true;
     }
     return;
