@@ -35,9 +35,8 @@
 #include "celix_bundle_context.h"
 #include "framework_private.h"
 
-static const char * const FILE_URL_SCHEME = "file://";
-
-static const char * const EMBEDDED_URL_SCHEME = "embedded://";
+#define FILE_URL_SCHEME "file://"
+#define EMBEDDED_URL_SCHEME  "embedded://"
 static const char * const EMBEDDED_BUNDLES_SYMBOL = "celix_embedded_bundles";
 static const char * const EMBEDDED_BUNDLE_PREFIX = "celix_embedded_bundle_";
 static const char * const EMBEDDED_BUNDLE_START_POSTFIX = "_start";
@@ -63,17 +62,10 @@ static char* celix_framework_utils_resolveFileBundleUrl(char* pathBuffer, size_t
                                                                NULL);
 
     if (!celix_utils_isStringNullOrEmpty(bundleLocation)) {
-        if (bundleLocation[0] == '/') {
-            //absolute path.
-            if (celix_utils_fileExists(bundleLocation)) {
-                result = celix_utils_writeOrCreateString(pathBuffer, pathBufferSize, "%s", bundleLocation);
-            } else if (!silent) {
-                FW_LOG(CELIX_LOG_LEVEL_ERROR, "Bundle location '%s' is not valid, file does not exist.", bundleLocation);
-            }
-        } else if (celix_utils_fileExists(bundleLocation)) {
-            //relative path to existing file.
+        if (celix_utils_fileExists(bundleLocation)) {
+            //absolute/relative path to existing file.
             result = celix_utils_writeOrCreateString(pathBuffer, pathBufferSize, "%s", bundleLocation);
-        } else {
+        } else if (bundleLocation[0] != '/'){
             //relative path to a non-existing file, check the bundle paths.
             char *paths = celix_utils_strdup(bundlePath);
             const char *sep = ":";
@@ -93,7 +85,13 @@ static char* celix_framework_utils_resolveFileBundleUrl(char* pathBuffer, size_t
             if (result == NULL && !silent) {
                 FW_LOG(CELIX_LOG_LEVEL_ERROR, "Bundle location '%s' is not valid. Relative path does not point to existing file taking into account the cwd and Celix bundle path '%s'.", bundleLocation, bundlePath);
             }
+        } else {
+            // absolute path to non-existing file.
+            if (!silent) {
+                FW_LOG(CELIX_LOG_LEVEL_ERROR, "Bundle location '%s' is not valid, file does not exist.", bundleLocation);
+            }
         }
+
     } else if (!silent) {
         FW_LOG(CELIX_LOG_LEVEL_ERROR, "Invalid bundle empty bundle path.");
     }
@@ -105,14 +103,14 @@ static bool celix_framework_utils_isEmbeddedBundleUrlValid(celix_framework_t *fw
 
     char* startSymbol = NULL;
     char* endSymbol = NULL;
-    int offset = strlen(EMBEDDED_URL_SCHEME); //offset to remove the EMBEDDED_URL_SCHEME part.
+    size_t offset = sizeof(EMBEDDED_URL_SCHEME)-1; //offset to remove the EMBEDDED_URL_SCHEME part.
     asprintf(&startSymbol, "%s%s%s", EMBEDDED_BUNDLE_PREFIX, bundleURL+offset, EMBEDDED_BUNDLE_START_POSTFIX);
     asprintf(&endSymbol, "%s%s%s", EMBEDDED_BUNDLE_PREFIX, bundleURL+offset, EMBEDDED_BUNDLE_END_POSTFIX);
 
-    void* main = dlopen(NULL, RTLD_NOW);
-    void* start = dlsym(main, startSymbol);
-    void* end = dlsym(main, endSymbol);
-    dlclose(main);
+    void* prog = dlopen(NULL, RTLD_NOW);
+    void* start = dlsym(prog, startSymbol);
+    void* end = dlsym(prog, endSymbol);
+    dlclose(prog);
 
     if (start == NULL || end == NULL) {
         valid = false;
@@ -149,8 +147,8 @@ bool celix_framework_utils_isBundleUrlNewerThan(celix_framework_t* fw, const cha
 
     char* trimmedUrl = celix_utils_trim(bundleURL);
     bool newer;
-    int fileSchemeLen = strlen(FILE_URL_SCHEME);
-    int embeddedSchemeLen = strlen(EMBEDDED_URL_SCHEME);
+    size_t fileSchemeLen = sizeof(FILE_URL_SCHEME)-1;
+    size_t embeddedSchemeLen = sizeof(EMBEDDED_URL_SCHEME)-1;
     if (strncasecmp(FILE_URL_SCHEME, trimmedUrl, fileSchemeLen) == 0) {
         newer = celix_framework_utils_isBundlePathNewerThan(fw, trimmedUrl + fileSchemeLen, time); //skip the file:// part
     } else if (strncasecmp(EMBEDDED_URL_SCHEME, trimmedUrl, embeddedSchemeLen) == 0) {
@@ -185,10 +183,10 @@ static bool celix_framework_utils_extractBundleEmbedded(celix_framework_t *fw, c
     asprintf(&startSymbol, "%s%s%s", EMBEDDED_BUNDLE_PREFIX, embeddedBundle, EMBEDDED_BUNDLE_START_POSTFIX);
     asprintf(&endSymbol, "%s%s%s", EMBEDDED_BUNDLE_PREFIX, embeddedBundle, EMBEDDED_BUNDLE_END_POSTFIX);
 
-    void* main = dlopen(NULL, RTLD_NOW);
-    void* start = dlsym(main, startSymbol);
-    void* end = dlsym(main, endSymbol);
-    dlclose(main);
+    void* prog = dlopen(NULL, RTLD_NOW);
+    void* start = dlsym(prog, startSymbol);
+    void* end = dlsym(prog, endSymbol);
+    dlclose(prog);
 
     if (start == NULL || end == NULL) {
         FW_LOG(CELIX_LOG_LEVEL_ERROR, "Cannot extract embedded bundle, could not find symbols `%s` and/or `%s` for embedded bundle `%s`", startSymbol, endSymbol, embeddedBundle);
@@ -216,8 +214,8 @@ celix_status_t celix_framework_utils_extractBundle(celix_framework_t *fw, const 
     char* trimmedUrl = celix_utils_trim(bundleURL);
 
     bool extracted;
-    int fileSchemeLen = strlen(FILE_URL_SCHEME);
-    int embeddedSchemeLen = strlen(EMBEDDED_URL_SCHEME);
+    size_t fileSchemeLen = sizeof(FILE_URL_SCHEME)-1;
+    size_t embeddedSchemeLen = sizeof(EMBEDDED_URL_SCHEME)-1;
     if (strncasecmp(FILE_URL_SCHEME, trimmedUrl, fileSchemeLen) == 0) {
         extracted = celix_framework_utils_extractBundlePath(fw, trimmedUrl + fileSchemeLen, extractPath);
     } else if (strncasecmp(EMBEDDED_URL_SCHEME, trimmedUrl, embeddedSchemeLen) == 0) {
@@ -241,11 +239,13 @@ bool celix_framework_utils_isBundleUrlValid(celix_framework_t *fw, const char *b
 
     bool valid;
     char buffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
-    if (strncasecmp("file://", trimmedUrl, 7) == 0) {
-        char* loc = celix_framework_utils_resolveFileBundleUrl(buffer, sizeof(buffer), fw, trimmedUrl + 7, silent);
+    size_t fileSchemeLen = sizeof(FILE_URL_SCHEME)-1;
+    size_t embeddedSchemeLen = sizeof(EMBEDDED_URL_SCHEME)-1;
+    if (strncasecmp(FILE_URL_SCHEME, trimmedUrl, fileSchemeLen) == 0) {
+        char* loc = celix_framework_utils_resolveFileBundleUrl(buffer, sizeof(buffer), fw, trimmedUrl + fileSchemeLen, silent);
         valid = loc != NULL;
         celix_utils_freeStringIfNotEqual(buffer, loc);
-    } else if (strncasecmp(EMBEDDED_URL_SCHEME, trimmedUrl, 11) == 0) {
+    } else if (strncasecmp(EMBEDDED_URL_SCHEME, trimmedUrl, embeddedSchemeLen) == 0) {
         valid = celix_framework_utils_isEmbeddedBundleUrlValid(fw, trimmedUrl, silent);
     } else if (strcasestr(trimmedUrl, "://")) {
         valid = false;
@@ -264,8 +264,8 @@ bool celix_framework_utils_isBundleUrlValid(celix_framework_t *fw, const char *b
 
 celix_array_list_t* celix_framework_utils_listEmbeddedBundles() {
     celix_array_list_t* list = celix_arrayList_create();
-    void* main = dlopen(NULL, RTLD_NOW);
-    const char** embeddedBundles = dlsym(main, EMBEDDED_BUNDLES_SYMBOL);
+    void* prog = dlopen(NULL, RTLD_NOW);
+    const char** embeddedBundles = dlsym(prog, EMBEDDED_BUNDLES_SYMBOL);
     if (embeddedBundles != NULL) {
         char delims[] = ",";
         char *savePtr = NULL;
@@ -275,7 +275,7 @@ celix_array_list_t* celix_framework_utils_listEmbeddedBundles() {
         }
         free(bundles);
     }
-    dlclose(main);
+    dlclose(prog);
     return list;
 }
 

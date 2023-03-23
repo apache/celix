@@ -92,7 +92,7 @@ celix_status_t celix_bundleArchive_extractBundle(
     bool extractBundle = true;
 
     //check if bundle location is newer than current revision
-    if (celix_utils_fileExists(revisionRoot)) {
+    if (revisionModificationTime->tv_sec != 0 && revisionModificationTime->tv_nsec != 0) {
         extractBundle = celix_framework_utils_isBundleUrlNewerThan(archive->fw, bundleUrl, revisionModificationTime);
     }
 
