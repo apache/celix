@@ -251,6 +251,8 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
     // To avoid instance name conflicts on localonly interface,
     // in our code, the instance name consists of the service name and the UID.
     // Because the maximum size of an mDNS instance name is 64 bytes, so we use the hash of endpoint->id.
+    // Don't worry about the uniqueness of the endpoint->id hash, it is only used to reduce the probability of instance name conflicts.
+    // If a conflict occurs， mDNS daemon will resolve it.
     entry->uid = celix_utils_stringHash(endpoint->id);
     const char *ifName = celix_properties_get(endpoint->properties, CELIX_RSA_NETWORK_INTERFACES, NULL);
     if (ifName != NULL) {
@@ -419,7 +421,8 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
             } else {
                 celix_logHelper_error(announcer->logHelper, "Announcer: Failed to announce service, %s. %d", instanceName, dnsErr);
             }
-        } while (dnsErr == kDNSServiceErr_NameConflict && conflictCnt++ < DZC_MAX_CONFLICT_CNT);//LocalOnly service may be return kDNSServiceErr_NameConflict
+            //LocalOnly service may be return kDNSServiceErr_NameConflict, but mDNS daemon will resolve the instance name conflicts for non-LocalOnly service
+        } while (dnsErr == kDNSServiceErr_NameConflict && conflictCnt++ < DZC_MAX_CONFLICT_CNT);
 
         TXTRecordDeallocate(&txtRecord);
 
