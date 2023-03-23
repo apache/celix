@@ -209,8 +209,8 @@ static void discoveryZeroconfAnnouncer_eventNotify(discovery_zeroconf_announcer_
     return;
 }
 
-static bool isLoopBackNetInterface(int ifIndex) {
-    if (ifIndex <= 0) {
+static bool isLoopBackNetInterface(const char *ifName) {
+    if (strlen(ifName) >= IF_NAMESIZE) {
         return false;
     }
     bool loopBack = false;
@@ -218,10 +218,9 @@ static bool isLoopBackNetInterface(int ifIndex) {
     if (fd >= 0) {
         struct ifreq ifr;
         memset(&ifr, 0, sizeof(ifr));
-        if (if_indextoname((unsigned int)ifIndex, ifr.ifr_name) != NULL) {
-            if (ioctl(fd, SIOCGIFFLAGS, &ifr) == 0) {
-                loopBack = !!(ifr.ifr_ifru.ifru_flags & IFF_LOOPBACK);
-            }
+        strcpy(ifr.ifr_name, ifName);
+        if (ioctl(fd, SIOCGIFFLAGS, &ifr) == 0) {
+            loopBack = !!(ifr.ifr_ifru.ifru_flags & IFF_LOOPBACK);
         }
         close(fd);
     }
@@ -253,10 +252,22 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
     // in our code, the instance name consists of the service name and the UID.
     // Because the maximum size of an mDNS instance name is 64 bytes, so we use the hash of endpoint->id.
     entry->uid = celix_utils_stringHash(endpoint->id);
-    entry->ifIndex = (int)celix_properties_getAsLong(endpoint->properties, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX, DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT);
-    // If it is a loopback interface,we will announce the service on the local only interface.
-    // Because the mDNSResponder will skip the loopback interface,if it found a normal interface.
-    entry->ifIndex = isLoopBackNetInterface(entry->ifIndex) ? kDNSServiceInterfaceIndexLocalOnly : entry->ifIndex;
+    const char *ifName = celix_properties_get(endpoint->properties, CELIX_RSA_NETWORK_INTERFACES, NULL);
+    if (ifName != NULL) {
+        if (strcmp(ifName, "all") == 0) {
+            entry->ifIndex = kDNSServiceInterfaceIndexAny;
+        } else if (isLoopBackNetInterface(ifName)) {
+            // If it is a loopback interface,we will announce the service on the local only interface.
+            // Because the mDNSResponder will skip the loopback interface,if it found a normal interface.
+            entry->ifIndex = kDNSServiceInterfaceIndexLocalOnly;
+        } else {
+            entry->ifIndex = if_nametoindex(ifName);
+            entry->ifIndex = entry->ifIndex == 0 ? DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT : entry->ifIndex;
+        }
+    } else {
+        entry->ifIndex = DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT;
+    }
+
     const char *serviceSubType = celix_properties_get(endpoint->properties, DZC_SERVICE_TYPE_KEY, NULL);
     if (serviceSubType != NULL) {
         int bytes = snprintf(entry->serviceType, sizeof(entry->serviceType), DZC_SERVICE_PRIMARY_TYPE",%s", serviceSubType);
@@ -271,8 +282,8 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
     }
     entry->properties = celix_properties_copy(endpoint->properties);
 
-    //Remove properties that mDNS txt record does not need
-    celix_properties_unset(entry->properties, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX);
+    //Remove properties that remote service does not need
+    celix_properties_unset(entry->properties, CELIX_RSA_NETWORK_INTERFACES);
     celix_properties_unset(entry->properties, DZC_SERVICE_TYPE_KEY);
     entry->serviceName = celix_properties_get(entry->properties, OSGI_FRAMEWORK_OBJECTCLASS, NULL);
     if (entry->serviceName == NULL) {

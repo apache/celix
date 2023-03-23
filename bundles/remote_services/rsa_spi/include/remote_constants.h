@@ -37,11 +37,13 @@ static const char * const OSGI_RSA_SERVICE_EXPORTED_CONFIGS = "service.exported.
 static const char * const OSGI_RSA_SERVICE_LOCATION = "service.location";
 
 /**
- * In a multi-network interface environment，RSA can use RSA_DZC_IF_INDEX to specify
- * on which interface its exported services can be discovered.
- * If RSA unset 'RSA_DZC_IF_INDEX', its exported service will be discovered
- * only by other local clients on the same machine
+ * Remote service admin property identifying the network interfaces that announce service.
+ * The property value is network interfaces name, it Can be a comma separated list of CIDR notation,eg:"eth0,en0".
+ * Default value is "", and the loopback interface will be used. Its exported service will be discovered
+ * only by other local clients on the same machine.
+ * If want to bound service to all network interfaces, we can set the property value to "all".
  */
-static const char * const RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX = "RSA_DZC_IF_INDEX";
+static const char * const CELIX_RSA_NETWORK_INTERFACES = "org.apache.celix.rsa.network.interfaces";
+
 
 #endif /* REMOTE_CONSTANTS_H_ */

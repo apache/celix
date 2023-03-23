@@ -89,7 +89,7 @@ struct remote_service_admin {
 
     char *port;
     char *ip;
-    uint32_t ifIndex;
+    char *discoveryInterface;
 
     struct mg_context *ctx;
 
@@ -132,12 +132,12 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn);
 static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_t *admin, service_reference_pt reference, celix_properties_t *props, char *interface, endpoint_description_t **description);
 static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply, int* replyStatus);
 static celix_status_t remoteServiceAdmin_getIpAddress(char* interface, char** ip);
+static char* remoteServiceAdmin_getIFNameForIP(const char *ip);
 static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp);
 static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp);
 static void remoteServiceAdmin_log(remote_service_admin_t *admin, int level, const char *file, int line, const char *msg, ...);
 static void remoteServiceAdmin_setupStopExportsThread(remote_service_admin_t* admin);
 static void remoteServiceAdmin_teardownStopExportsThread(remote_service_admin_t* admin);
-static uint32_t remoteServiceAdmin_getIfIndex(const char *ip);
 
 static void remoteServiceAdmin_curlshare_lock(CURL *handle, curl_lock_data data, curl_lock_access laccess, void *userptr)
 {
@@ -208,12 +208,30 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         const char *interface = celix_bundleContext_getProperty(context, RSA_INTERFACE_KEY, NULL);
         (*admin)->curlShareEnabled = celix_bundleContext_getPropertyAsBool(context, RSA_DFI_USE_CURL_SHARE_HANDLE, RSA_DFI_USE_CURL_SHARE_HANDLE_DEFAULT);
 
+        const char *networkInterfaces = celix_bundleContext_getProperty(context, CELIX_RSA_NETWORK_INTERFACES, NULL);
+        char *interfacesCopy = NULL;
+        if (networkInterfaces != NULL) {
+            interfacesCopy = celix_utils_strdup(networkInterfaces);
+            const char delimiter[2] = ",";
+            char *savePtr;
+            //TODO Supports multiple network interfaces
+            interface = strtok_r(interfacesCopy, delimiter, &savePtr);
+        }
+
+        char *discoveryInterface = NULL;
         char *detectedIp = NULL;
         if ((interface != NULL) && (remoteServiceAdmin_getIpAddress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
             celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_WARNING, "RSA: Could not retrieve IP address for interface %s", interface);
         }
         if (detectedIp != NULL) {
             ip = detectedIp;
+            discoveryInterface = celix_utils_strdup(interface);
+        } else {
+            discoveryInterface = remoteServiceAdmin_getIFNameForIP(ip);
+        }
+
+        if (interfacesCopy != NULL) {
+            free(interfacesCopy);
         }
 
         if (ip != NULL) {
@@ -261,11 +279,6 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
 
         unsigned int port_counter = 0;
         bool bindToAllInterfaces = celix_bundleContext_getPropertyAsBool(context, CELIX_RSA_BIND_ON_ALL_INTERFACES, CELIX_RSA_BIND_ON_ALL_INTERFACES_DEFAULT);
-        if (bindToAllInterfaces) {
-            (*admin)->ifIndex = 0;
-        } else {
-            (*admin)->ifIndex = remoteServiceAdmin_getIfIndex((*admin)->ip);
-        }
         do {
             char *listeningPorts = NULL;
             if (bindToAllInterfaces) {
@@ -291,6 +304,12 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
 
         } while (((*admin)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
 
+        if (bindToAllInterfaces) {
+            free(discoveryInterface);
+            (*admin)->discoveryInterface = celix_utils_strdup("all");//announce service to all network interface
+        } else {
+            (*admin)->discoveryInterface = discoveryInterface;
+        }
     }
 
     bool logCalls = celix_bundleContext_getPropertyAsBool(context, RSA_LOG_CALLS_KEY, RSA_LOG_CALLS_DEFAULT);
@@ -318,7 +337,7 @@ celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin) {
     if ( (*admin)->logFile != NULL && (*admin)->logFile != stdout) {
         fclose((*admin)->logFile);
     }
-
+    free((*admin)->discoveryInterface);
     free((*admin)->ip);
     free((*admin)->port);
     curl_share_cleanup((*admin)->curlShare);
@@ -757,7 +776,9 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED, "true");
     celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) RSA_DFI_CONFIGURATION_TYPE);
     celix_properties_set(endpointProperties, RSA_DFI_ENDPOINT_URL, url);
-    celix_properties_setLong(endpointProperties, RSA_DISCOVERY_ZEROCONF_SERVICE_ANNOUNCED_IF_INDEX, admin->ifIndex);
+    if (admin->discoveryInterface != NULL) {
+        celix_properties_set(endpointProperties, CELIX_RSA_NETWORK_INTERFACES, admin->discoveryInterface);
+    }
 
     if (props != NULL) {
         hash_map_iterator_pt propIter = hashMapIterator_create(props);
@@ -817,28 +838,28 @@ static celix_status_t remoteServiceAdmin_getIpAddress(char* interface, char** ip
     return status;
 }
 
-static uint32_t remoteServiceAdmin_getIfIndex(const char *ip) {
-    uint32_t ifIndex = 0;
-
+static char* remoteServiceAdmin_getIFNameForIP(const char *ip) {
     struct ifaddrs *ifaddr, *ifa;
     char host[NI_MAXHOST];
-
-    if (ip != NULL && getifaddrs(&ifaddr) != -1) {
-        for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+    char *ifName = NULL;
+    if (ip != NULL && getifaddrs(&ifaddr) != -1)
+    {
+        for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+        {
             if (ifa->ifa_addr == NULL)
                 continue;
 
             if ((getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == 0)) {
                 if (strcmp(host, ip) == 0) {
-                    ifIndex = if_nametoindex(ifa->ifa_name);
+                    ifName = celix_utils_strdup(ifa->ifa_name);
                     break;
                 }
             }
         }
+
         freeifaddrs(ifaddr);
     }
-
-    return ifIndex;
+    return ifName;
 }
 
 celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_description_t **description)
