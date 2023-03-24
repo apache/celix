@@ -86,14 +86,22 @@ static void celix_bundleArchive_storeBundleStateProperties(bundle_archive_pt arc
 celix_status_t celix_bundleArchive_extractBundle(
         bundle_archive_t* archive,
         const char* revisionRoot,
-        const char* bundleUrl,
-        const struct timespec* revisionModificationTime) {
+        const char* bundleUrl) {
     celix_status_t status = CELIX_SUCCESS;
     bool extractBundle = true;
 
+    //get revision mod time;
+    struct timespec revisionMod;
+    status = celix_bundleArchive_getLastModifiedInternal(archive, &revisionMod);
+    if (status != CELIX_SUCCESS && errno != ENOENT) {
+        fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to get last modified time for bundle archive revision directory '%s'", archive->resourceCacheRoot);
+        return status;
+    }
+
+
     //check if bundle location is newer than current revision
-    if (revisionModificationTime != NULL) {
-        extractBundle = celix_framework_utils_isBundleUrlNewerThan(archive->fw, bundleUrl, revisionModificationTime);
+    if (status == CELIX_SUCCESS) {
+        extractBundle = celix_framework_utils_isBundleUrlNewerThan(archive->fw, bundleUrl, &revisionMod);
     }
 
     if (!extractBundle) {
@@ -165,17 +173,8 @@ celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archiv
         return status;
     }
 
-    //get revision mod time;
-    struct timespec revisionMod;
-    status = celix_bundleArchive_getLastModifiedInternal(archive, &revisionMod);
-    if (status != CELIX_SUCCESS && errno != ENOENT) {
-        fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to get last modified time for bundle archive revision directory '%s'", archive->resourceCacheRoot);
-        return status;
-    }
-
     //extract bundle zip to revision directory
-    status = celix_bundleArchive_extractBundle(archive, archive->resourceCacheRoot, archive->location,
-                                               status == CELIX_SUCCESS ? &revisionMod : NULL);
+    status = celix_bundleArchive_extractBundle(archive, archive->resourceCacheRoot, archive->location);
     if (status != CELIX_SUCCESS) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Failed to extract bundle.");
         return status;
@@ -401,10 +400,8 @@ celix_status_t bundleArchive_revise(bundle_archive_pt archive, const char * loca
         updateUrl = updatedBundleUrl;
     }
 
-    struct timespec lastModified;
     const char *reason = NULL;
-    celix_bundleArchive_getLastModifiedInternal(archive, &lastModified);
-    celix_status_t status = celix_bundleArchive_extractBundle(archive, archive->resourceCacheRoot, updateUrl, &lastModified);
+    celix_status_t status = celix_bundleArchive_extractBundle(archive, archive->resourceCacheRoot, updateUrl);
     if (status == CELIX_SUCCESS) {
         bundle_revision_t* current = archive->revision;
         bundle_revision_t* revised = bundleRevision_revise(current, updateUrl);

@@ -67,12 +67,9 @@ const char* celix_bundleArchive_getSymbolicName(bundle_archive_pt archive);
  */
 const char* celix_bundleArchive_getPersistentStoreRoot(bundle_archive_t *archive);
 
-/**
- * Get the last modified time of the current bundle revision.
- * @param[in] archive The bundle archive.
- * @return The current revision root
- * @retval NULL if the current revision root is not set.
- */
+ /**
+  * Returns the root of the current revision.
+  */
 const char* celix_bundleArchive_getCurrentRevisionRoot(bundle_archive_pt archive);
 
 #ifdef __cplusplus
