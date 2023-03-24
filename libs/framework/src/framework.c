@@ -2354,16 +2354,7 @@ celix_status_t celix_framework_bundleEntry_refreshBundleEntry(celix_framework_t*
         return status;
     }
 
-    const char* location = NULL;
-    status = bundleArchive_getLocation(archive, &location);
-    if (!location) {
-        fw_log(framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot refresh bundle %s (id=%li), bundle has no location",
-               celix_bundle_getSymbolicName(entry->bnd),
-               entry->bndId);
-        return status;
-    }
-
-    status = bundleArchive_revise(archive, location, updatedBundleUrl);
+    status = bundleArchive_revise(archive, NULL, updatedBundleUrl);
     if (status != CELIX_SUCCESS) {
         fw_log(framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot refresh bundle %s (id=%li), bundle archive revision failed",
                celix_bundle_getSymbolicName(entry->bnd),

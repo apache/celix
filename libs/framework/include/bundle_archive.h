@@ -87,7 +87,7 @@ FRAMEWORK_EXPORT celix_status_t bundleArchive_getPersistentState(bundle_archive_
  * @param[in] archive The bundle archive.
  * @param[out] lastModified The last modified time of the bundle archive.
  * @return CELIX_SUCCESS if the last modified time could be retrieved, CELIX_FILE_IO_EXCEPTION if the last modified
- * time could not be retrieved.
+ * time could not be retrieved. Check errno for more specific error information.
  */
 FRAMEWORK_EXPORT celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, struct timespec* lastModified);
 
