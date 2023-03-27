@@ -169,9 +169,7 @@ static bool celix_framework_utils_extractBundlePath(celix_framework_t *fw, const
     char* resolvedPath = celix_framework_utils_resolveFileBundleUrl(buffer, sizeof(buffer), fw, bundlePath, false);
     assert(resolvedPath != NULL); //should be caught by celix_framework_utils_isBundleUrlValid
     celix_status_t status = celix_utils_extractZipFile(resolvedPath, extractPath, &err);
-    if (status != CELIX_SUCCESS) {
-        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Could not extract bundle zip file `%s` to `%s`: %s", resolvedPath, extractPath, err);
-    }
+    framework_logIfError(fw->logger, status, err, "Could not extract bundle zip file `%s` to `%s`", resolvedPath, extractPath);
     celix_utils_freeStringIfNotEqual(buffer, resolvedPath);
     return status == CELIX_SUCCESS;
 }
@@ -201,9 +199,8 @@ static bool celix_framework_utils_extractBundleEmbedded(celix_framework_t *fw, c
     celix_status_t status = celix_utils_extractZipData(start, end-start, extractPath, &err);
     if (status == CELIX_SUCCESS) {
         FW_LOG(CELIX_LOG_LEVEL_TRACE, "Embedded bundle zip `%s` extracted to `%s`", embeddedBundle, extractPath);
-    } else {
-        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Could not extract embedded bundle zip `%s` to `%s`: %s", embeddedBundle, extractPath, err);
     }
+    framework_logIfError(fw->logger, status, err, "Could not extract embedded bundle zip `%s` to `%s`", embeddedBundle, extractPath);
     return status == CELIX_SUCCESS;
 }
 

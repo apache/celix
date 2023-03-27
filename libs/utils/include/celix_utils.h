@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 #include <time.h>
+#include <stdarg.h>
 #include <stdbool.h>
 
 #define CELIX_UTILS_MAX_STRLEN      1024*1024*1024
@@ -62,6 +63,18 @@ unsigned int celix_utils_stringHash(const char* string);
  */
 char* celix_utils_writeOrCreateString(char* buffer, size_t bufferSize, const char* format, ...)
     __attribute__((format(printf, 3, 4)));
+
+/**
+ * @brief Format a string to the provided buffer or a newly allocated buffer if the provided buffer is to small.
+ * @param[in,out] buffer The buffer to write the formatted string to.
+ * @param[in] bufferSize The size of the buffer.
+ * @param[in] format The format string.
+ * @param[in] formatArgs The arguments for the format string.
+ * @return The formatted string in the provided buffer or a newly allocated buffer if the provided buffer is to small.
+ * @retval NULL if a allocation was needed, but failed.
+ */
+char* celix_utils_writeOrCreateVString(char* buffer, size_t bufferSize, const char* format, va_list formatArgs)
+__attribute__((format(printf, 3, 0)));
 
 /**
  * @brief Free the provided str if the str is not equal to the provided buffer.

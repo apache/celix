@@ -173,19 +173,27 @@ bool utils_isStringEmptyOrNull(const char * const str) {
 }
 
 char* celix_utils_writeOrCreateString(char* buffer, size_t bufferSize, const char* format, ...) {
+    char *ret = NULL;
     va_list args;
     va_start(args, format);
-    int written = vsnprintf(buffer, bufferSize, format, args);
+    ret = celix_utils_writeOrCreateVString(buffer, bufferSize, format, args);
     va_end(args);
+    return ret;
+}
+
+char* celix_utils_writeOrCreateVString(char* buffer, size_t bufferSize, const char* format, va_list formatArgs) {
+    va_list argCopy;
+    va_copy(argCopy, formatArgs);
+    int written = vsnprintf(buffer, bufferSize, format, argCopy);
+    va_end(argCopy);
     if (written < 0 || written >= bufferSize) {
         //buffer to small, create new string
         char* newStr = NULL;
-        va_start(args, format);
-        int rc = vasprintf(&newStr, format, args);
-        va_end(args);
+        int rc = vasprintf(&newStr, format, formatArgs);
         return rc == -1 ? NULL : newStr;
     }
     return buffer;
+
 }
 
 void celix_utils_freeStringIfNotEqual(const char* buffer, char* str) {

@@ -190,8 +190,7 @@ static celix_status_t celix_utils_extractZipInternal(zip_t *zip, const char* ext
         zip_stat_t st;
         zip_stat_index(zip, i, 0, &st);
 
-        char* path = NULL;
-        asprintf(&path, "%s/%s", extractToDir, st.name);
+        char* path = celix_utils_writeOrCreateString(buf, bufSize, "%s/%s", extractToDir, st.name);
         if (st.name[strlen(st.name) - 1] == '/') {
             status = celix_utils_createDirectory(path, false, errorOut);
         } else {
@@ -220,7 +219,7 @@ static celix_status_t celix_utils_extractZipInternal(zip_t *zip, const char* ext
                 zip_fclose(zf);
             }
         }
-        free(path);
+        celix_utils_freeStringIfNotEqual(buf, path);
     }
     return status;
 }
@@ -272,7 +271,7 @@ celix_status_t celix_utils_extractZipData(const void *zipData, size_t zipDataSiz
 
     if (source == NULL || zip == NULL) {
         status = CELIX_FILE_IO_EXCEPTION;
-        *errorOut = zip_error_strerror(&zipError);
+        *errorOut = ERROR_OPENING_ZIP;
     }
     if (zip != NULL) {
         zip_close(zip);

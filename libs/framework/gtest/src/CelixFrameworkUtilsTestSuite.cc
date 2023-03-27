@@ -84,6 +84,11 @@ TEST_F(CelixFrameworkUtilsTestSuite, testExtractBundlePath) {
     status = celix_framework_utils_extractBundle(framework->getCFramework(), "non-existing.zip", testExtractDir); //note nullptr framwork is allowed, fallback to global logger.
     EXPECT_NE(status, CELIX_SUCCESS);
 
+
+    //invalid bundle path -> no extraction
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), "./", testExtractDir); //note nullptr framwork is allowed, fallback to global logger.
+    EXPECT_NE(status, CELIX_SUCCESS);
+
     //invalid url prefix -> no extraction
     std::string path = std::string{"bla://"} + SIMPLE_TEST_BUNDLE1_LOCATION;
     status = celix_framework_utils_extractBundle(framework->getCFramework(), path.c_str(), testExtractDir);
