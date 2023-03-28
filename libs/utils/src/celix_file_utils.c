@@ -268,6 +268,8 @@ celix_status_t celix_utils_extractZipData(const void *zipData, size_t zipDataSiz
     if (source) {
         zip = zip_open_from_source(source, 0, &zipError);
         if (zip) {
+            // so that we can call zip_source_free no matter whether zip_open_from_source succeeded or not
+            zip_source_keep(source);
             status = celix_utils_extractZipInternal(zip, extractToDir, errorOut);
         }
     }
@@ -280,7 +282,7 @@ celix_status_t celix_utils_extractZipData(const void *zipData, size_t zipDataSiz
         zip_close(zip);
     }
     if (source != NULL) {
-        zip_source_close(source);
+        zip_source_free(source);
     }
 
     return status;

@@ -22,6 +22,7 @@
 #include <string>
 #include <thread>
 #include <unistd.h>
+#include <vector>
 
 #include "celix_file_utils.h"
 #include "celix_properties.h"
@@ -231,6 +232,20 @@ TEST_F(FileUtilsTestSuite, ExtractZipDataTest) {
     EXPECT_NE(props, nullptr);
     EXPECT_EQ(celix_properties_getAsLong(props, "level", 0), 2);
     celix_properties_destroy(props);
+}
+
+TEST_F(FileUtilsTestSuite, ExtractBadZipDataTest) {
+    const char* extractLocation = "extract_location";
+    const char* file1 = "extract_location/top.properties";
+    const char* file2 = "extract_location/subdir/sub.properties";
+    celix_utils_deleteDirectory(extractLocation, nullptr);
+
+    EXPECT_FALSE(celix_utils_fileExists(extractLocation));
+    std::vector<uint8_t> zipData(test_data_start, test_data_start+(test_data_end-test_data_start)/2);
+    auto status = celix_utils_extractZipData(zipData.data(), zipData.size(), extractLocation, nullptr);
+    EXPECT_NE(status, CELIX_SUCCESS);
+    EXPECT_FALSE(celix_utils_fileExists(file1));
+    EXPECT_FALSE(celix_utils_fileExists(file2));
 }
 #endif
 
