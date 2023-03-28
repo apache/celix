@@ -51,12 +51,9 @@ target_link_libraries(framework PUBLIC framework_obj)
 set_target_properties(framework PROPERTIES OUTPUT_NAME "celix_framework")
 set_target_properties(framework PROPERTIES "SOVERSION" ${CELIX_MAJOR})
 
-target_link_libraries(framework PUBLIC Celix::utils ${CELIX_OPTIONAL_EXTRA_LIBS})
-target_link_libraries(framework PUBLIC libuuid::libuuid CURL::libcurl ZLIB::ZLIB)
-target_link_libraries(framework PRIVATE ${CMAKE_DL_LIBS})
-
 celix_deprecated_utils_headers(framework)
 
+# By omitting OBJECTS DESTINATION, object files will NOT be installed.
 install(TARGETS framework framework_obj EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework)

@@ -23,6 +23,7 @@
 #include <thread>
 #include <unistd.h>
 #include <vector>
+#include <zip.h>
 
 #include "celix_file_utils.h"
 #include "celix_properties.h"
@@ -248,6 +249,17 @@ TEST_F(FileUtilsTestSuite, ExtractBadZipDataTest) {
     EXPECT_FALSE(celix_utils_fileExists(file2));
 }
 #endif
+
+TEST_F(FileUtilsTestSuite, ExtractNullZipDataTest) {
+    const char* extractLocation = "extract_location";
+    celix_utils_deleteDirectory(extractLocation, nullptr);
+
+    EXPECT_FALSE(celix_utils_fileExists(extractLocation));
+    const char* error = nullptr;
+    auto status = celix_utils_extractZipData(nullptr, 1, extractLocation, &error);
+    EXPECT_EQ(status, CELIX_ERROR_MAKE(CELIX_FACILITY_ZIP,ZIP_ER_INVAL));
+    EXPECT_NE(error, nullptr);
+}
 
 TEST_F(FileUtilsTestSuite, LastModifiedTest) {
     //create test dir and test file

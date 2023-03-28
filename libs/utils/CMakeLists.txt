@@ -28,53 +28,55 @@ if (NOT OPEN_MEMSTREAM_EXISTS)
     install(DIRECTORY include/memstream/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/memstream COMPONENT framework)
 endif()
 
-add_library(utils SHARED
-    src/array_list.c
-    src/hash_map.c
-    src/linked_list.c
-    src/linked_list_iterator.c
-    src/celix_threads.c
-    src/version.c
-    src/version_range.c
-    src/properties.c
-    src/utils.c
-    src/ip_utils.c
-    src/filter.c
-    src/celix_log_utils.c
-    src/celix_hash_map.c
-    src/celix_file_utils.c
-    src/celix_convert_utils.c
-    ${MEMSTREAM_SOURCES}
-)
-set_target_properties(utils PROPERTIES OUTPUT_NAME "celix_utils")
-target_link_libraries(utils PRIVATE libzip::libzip)
-
+add_library(utils_obj OBJECT
+        src/array_list.c
+        src/hash_map.c
+        src/linked_list.c
+        src/linked_list_iterator.c
+        src/celix_threads.c
+        src/version.c
+        src/version_range.c
+        src/properties.c
+        src/utils.c
+        src/ip_utils.c
+        src/filter.c
+        src/celix_log_utils.c
+        src/celix_hash_map.c
+        src/celix_file_utils.c
+        src/celix_convert_utils.c
+        ${MEMSTREAM_SOURCES}
+        )
+target_link_libraries(utils_obj PRIVATE libzip::libzip)
 if (NOT OPEN_MEMSTREAM_EXISTS)
-    target_compile_definitions(utils PUBLIC -DCELIX_UTILS_NO_MEMSTREAM_AVAILABLE)
+    target_compile_definitions(utils_obj PUBLIC -DCELIX_UTILS_NO_MEMSTREAM_AVAILABLE)
 endif ()
 
 if (ANDROID)
-    target_compile_definitions(utils PRIVATE -DUSE_FILE32API)
+    target_compile_definitions(utils_obj PRIVATE -DUSE_FILE32API)
 endif ()
 
-if (NOT APPLE) 
-    target_link_libraries(utils PUBLIC -lrt)
+if (NOT APPLE)
+    target_link_libraries(utils_obj PUBLIC -lrt)
 endif ()
 
-target_include_directories(utils PUBLIC
+target_include_directories(utils_obj PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
-)
-target_include_directories(utils PRIVATE src include_deprecated)
-set_target_properties(utils PROPERTIES "SOVERSION" 2)
-
+        )
+target_include_directories(utils_obj PRIVATE src include_deprecated)
 IF(UNIX AND NOT ANDROID)
-    target_link_libraries(utils PRIVATE m pthread)
+    target_link_libraries(utils_obj PRIVATE m pthread)
 ELSEIF(ANDROID)
-    target_link_libraries(utils PRIVATE m)
+    target_link_libraries(utils_obj PRIVATE m)
 ENDIF()
 
-install(TARGETS utils EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
+add_library(utils SHARED)
+target_link_libraries(utils PUBLIC utils_obj)
+set_target_properties(utils PROPERTIES OUTPUT_NAME "celix_utils")
+set_target_properties(utils PROPERTIES "SOVERSION" 2)
+
+# By omitting OBJECTS DESTINATION, object files will NOT be installed.
+install(TARGETS utils utils_obj EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework
         PATTERN memstream* EXCLUDE)
@@ -85,6 +87,7 @@ endif ()
 
 #Alias setup to match external usage
 add_library(Celix::utils ALIAS utils)
+add_library(Celix::utils_obj ALIAS utils_obj)
 
 
 if (ENABLE_TESTING)

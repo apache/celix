@@ -15,17 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(error_injector INTERFACE)
-target_include_directories(error_injector INTERFACE ${CMAKE_CURRENT_LIST_DIR}/api)
-# get caller address of the target function, into which errors are injected
-target_link_libraries(error_injector INTERFACE dl)
-target_link_options(error_injector INTERFACE -rdynamic)
-target_compile_options(error_injector INTERFACE -Wno-frame-address)
-add_library(Celix::error_injector ALIAS error_injector)
+add_library(zip_ei STATIC src/zip_ei.cc)
 
-add_subdirectory(malloc)
-add_subdirectory(asprintf)
-add_subdirectory(celix_properties)
-add_subdirectory(celix_utils)
-add_subdirectory(zip)
-add_subdirectory(stdio)
+target_include_directories(zip_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(zip_ei PUBLIC Celix::error_injector libzip::libzip)
+# It plays nicely with address sanitizer this way.
+
+target_link_options(zip_ei INTERFACE
+        LINKER:--wrap,zip_stat_index
+        LINKER:--wrap,zip_fopen_index
+        LINKER:--wrap,zip_fread
+        )
+add_library(Celix::zip_ei ALIAS zip_ei)

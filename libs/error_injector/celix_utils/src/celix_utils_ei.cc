@@ -17,8 +17,9 @@
   under the License.
  */
 
-#include <cstdarg>
 #include "celix_utils_ei.h"
+#include <cstdarg>
+#include <errno.h>
 
 extern "C" {
 
@@ -58,7 +59,9 @@ celix_status_t __wrap_celix_utils_deleteDirectory(const char* path, const char**
 
 CELIX_EI_DEFINE(celix_utils_writeOrCreateString, char *)
 char* __wrap_celix_utils_writeOrCreateString(char* buffer, size_t bufferSize, const char* format, ...) {
+    errno = ENOMEM;
     CELIX_EI_IMPL(celix_utils_writeOrCreateString);
+    errno = 0;
     va_list args;
     va_start(args, format);
     char *ret = celix_utils_writeOrCreateVString(buffer, bufferSize, format, args);

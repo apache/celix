@@ -34,6 +34,7 @@ static const char * const DIRECTORY_ALREADY_EXISTS_ERROR = "Directory already ex
 static const char * const FILE_ALREADY_EXISTS_AND_NOT_DIR_ERROR = "File already exists, but is not a directory.";
 static const char * const CANNOT_DELETE_DIRECTORY_PATH_IS_FILE = "Cannot delete directory; Path points to a file.";
 static const char * const ERROR_OPENING_ZIP = "Error opening zip file.";
+static const char * const ERROR_QUERYING_FILE_ZIP = "Error querying file in zip.";
 static const char * const ERROR_OPENING_FILE_ZIP = "Error opening file in zip.";
 static const char * const ERROR_READING_FILE_ZIP = "Error reading file in zip.";
 
@@ -190,38 +191,52 @@ static celix_status_t celix_utils_extractZipInternal(zip_t *zip, const char* ext
 
     for (zip_int64_t i = 0; status == CELIX_SUCCESS && i < nrOfEntries; ++i) {
         zip_stat_t st;
-        zip_stat_index(zip, i, 0, &st);
-
+        if(zip_stat_index(zip, i, 0, &st) == -1) {
+            status = CELIX_ERROR_MAKE(CELIX_FACILITY_ZIP, zip_error_code_zip(zip_get_error(zip)));
+            *errorOut = ERROR_QUERYING_FILE_ZIP;
+            continue;
+        }
         char* path = celix_utils_writeOrCreateString(buf, bufSize, "%s/%s", extractToDir, st.name);
+        if (path == NULL) {
+            status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+            *errorOut = strerror(errno);
+            continue;
+        }
         if (st.name[strlen(st.name) - 1] == '/') {
             status = celix_utils_createDirectory(path, false, errorOut);
-        } else {
-            //file
-            zip_file_t *zf = zip_fopen_index(zip, i, 0);
-            if (!zf) {
-                status = CELIX_ERROR_MAKE(CELIX_FACILITY_ZIP, zip_error_code_zip(zip_get_error(zip)));
-                *errorOut = ERROR_OPENING_FILE_ZIP;
-            } else {
-                FILE* f = fopen(path, "w+");
-                if (f) {
-                    zip_int64_t read = zip_fread(zf, buf, bufSize);
-                    while (read > 0) {
-                        fwrite(buf, read, 1, f);
-                        read = zip_fread(zf, buf, bufSize);
-                    }
-                    if (read < 0) {
-
-                        status = CELIX_ERROR_MAKE(CELIX_FACILITY_ZIP, zip_error_code_zip(zip_file_get_error(zf)));
-                        *errorOut = ERROR_READING_FILE_ZIP;
-                    }
-                    fclose(f);
-                } else {
-                    status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
-                    *errorOut = strerror(errno);
-                }
-                zip_fclose(zf);
-            }
+            goto clean_string_buf;
         }
+        FILE* f = fopen(path, "w+");
+        if (f == NULL) {
+            status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+            *errorOut = strerror(errno);
+            goto clean_string_buf;
+        }
+
+        zip_file_t *zf = zip_fopen_index(zip, i, 0);
+        if (!zf) {
+            status = CELIX_ERROR_MAKE(CELIX_FACILITY_ZIP, zip_error_code_zip(zip_get_error(zip)));
+            *errorOut = ERROR_OPENING_FILE_ZIP;
+            goto close_output_file;
+        }
+        zip_int64_t read = zip_fread(zf, buf, bufSize);
+        while (read > 0) {
+            if (fwrite(buf, read, 1, f) == 0) {
+                status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+                *errorOut = strerror(errno);
+                goto close_zip_file;
+            }
+            read = zip_fread(zf, buf, bufSize);
+        }
+        if (read < 0) {
+            status = CELIX_ERROR_MAKE(CELIX_FACILITY_ZIP, zip_error_code_zip(zip_file_get_error(zf)));
+            *errorOut = ERROR_READING_FILE_ZIP;
+        }
+close_zip_file:
+        zip_fclose(zf);
+close_output_file:
+        fclose(f);
+clean_string_buf:
         celix_utils_freeStringIfNotEqual(buf, path);
     }
     return status;
