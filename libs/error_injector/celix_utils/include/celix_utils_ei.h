@@ -35,6 +35,12 @@ CELIX_EI_DECLARE(celix_utils_getLastModified, celix_status_t);
 
 CELIX_EI_DECLARE(celix_utils_deleteDirectory, celix_status_t);
 
+CELIX_EI_DECLARE(celix_utils_writeOrCreateString, char *);
+
+CELIX_EI_DECLARE(celix_utils_extractZipData, celix_status_t);
+
+CELIX_EI_DECLARE(celix_utils_extractZipFile, celix_status_t);
+
 #ifdef __cplusplus
 }
 #endif

@@ -161,7 +161,7 @@ bool celix_framework_utils_isBundleUrlNewerThan(celix_framework_t* fw, const cha
     return newer;
 }
 
-static bool celix_framework_utils_extractBundlePath(celix_framework_t *fw, const char* bundlePath, const char* extractPath) {
+static celix_status_t celix_framework_utils_extractBundlePath(celix_framework_t *fw, const char* bundlePath, const char* extractPath) {
     FW_LOG(CELIX_LOG_LEVEL_TRACE, "Extracting bundle url `%s` to dir `%s`", bundlePath, extractPath);
     const char* err = NULL;
 
@@ -171,10 +171,10 @@ static bool celix_framework_utils_extractBundlePath(celix_framework_t *fw, const
     celix_status_t status = celix_utils_extractZipFile(resolvedPath, extractPath, &err);
     framework_logIfError(fw->logger, status, err, "Could not extract bundle zip file `%s` to `%s`", resolvedPath, extractPath);
     celix_utils_freeStringIfNotEqual(buffer, resolvedPath);
-    return status == CELIX_SUCCESS;
+    return status;
 }
 
-static bool celix_framework_utils_extractBundleEmbedded(celix_framework_t *fw, const char* embeddedBundle, const char* extractPath) {
+static celix_status_t celix_framework_utils_extractBundleEmbedded(celix_framework_t *fw, const char* embeddedBundle, const char* extractPath) {
     FW_LOG(CELIX_LOG_LEVEL_TRACE, "Extracting embedded bundle `%s` to dir `%s`", embeddedBundle, extractPath);
     char* startSymbol = NULL;
     char* endSymbol = NULL;
@@ -190,7 +190,7 @@ static bool celix_framework_utils_extractBundleEmbedded(celix_framework_t *fw, c
         FW_LOG(CELIX_LOG_LEVEL_ERROR, "Cannot extract embedded bundle, could not find symbols `%s` and/or `%s` for embedded bundle `%s`", startSymbol, endSymbol, embeddedBundle);
         free(startSymbol);
         free(endSymbol);
-        return false;
+        return CELIX_ILLEGAL_ARGUMENT;
     }
     free(startSymbol);
     free(endSymbol);
@@ -201,7 +201,7 @@ static bool celix_framework_utils_extractBundleEmbedded(celix_framework_t *fw, c
         FW_LOG(CELIX_LOG_LEVEL_TRACE, "Embedded bundle zip `%s` extracted to `%s`", embeddedBundle, extractPath);
     }
     framework_logIfError(fw->logger, status, err, "Could not extract embedded bundle zip `%s` to `%s`", embeddedBundle, extractPath);
-    return status == CELIX_SUCCESS;
+    return status;
 }
 
 celix_status_t celix_framework_utils_extractBundle(celix_framework_t *fw, const char *bundleURL,  const char* extractPath) {
@@ -210,19 +210,19 @@ celix_status_t celix_framework_utils_extractBundle(celix_framework_t *fw, const 
     }
     char* trimmedUrl = celix_utils_trim(bundleURL);
 
-    bool extracted;
+    celix_status_t status;
     size_t fileSchemeLen = sizeof(FILE_URL_SCHEME)-1;
     size_t embeddedSchemeLen = sizeof(EMBEDDED_URL_SCHEME)-1;
     if (strncasecmp(FILE_URL_SCHEME, trimmedUrl, fileSchemeLen) == 0) {
-        extracted = celix_framework_utils_extractBundlePath(fw, trimmedUrl + fileSchemeLen, extractPath);
+        status = celix_framework_utils_extractBundlePath(fw, trimmedUrl + fileSchemeLen, extractPath);
     } else if (strncasecmp(EMBEDDED_URL_SCHEME, trimmedUrl, embeddedSchemeLen) == 0) {
-        extracted = celix_framework_utils_extractBundleEmbedded(fw, trimmedUrl + embeddedSchemeLen, extractPath);
+        status = celix_framework_utils_extractBundleEmbedded(fw, trimmedUrl + embeddedSchemeLen, extractPath);
     } else {
-        extracted = celix_framework_utils_extractBundlePath(fw, trimmedUrl, extractPath);
+        status = celix_framework_utils_extractBundlePath(fw, trimmedUrl, extractPath);
     }
 
     free(trimmedUrl);
-    return extracted ? CELIX_SUCCESS : CELIX_FILE_IO_EXCEPTION;
+    return status;
 }
 
 bool celix_framework_utils_isBundleUrlValid(celix_framework_t *fw, const char *bundleURL, bool silent) {

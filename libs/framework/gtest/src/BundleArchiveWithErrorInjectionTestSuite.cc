@@ -54,6 +54,8 @@ public:
         celix_ei_expect_celix_utils_createDirectory(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_celix_utils_getLastModified(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_celix_utils_deleteDirectory(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_utils_writeOrCreateString(nullptr, 0, nullptr);
+        celix_ei_expect_celix_utils_extractZipData(nullptr, 0, CELIX_SUCCESS);
     }
 
     void installBundleAndExpectFailure() {

@@ -25,5 +25,8 @@ target_link_options(utils_ei INTERFACE
         LINKER:--wrap,celix_utils_createDirectory
         LINKER:--wrap,celix_utils_getLastModified
         LINKER:--wrap,celix_utils_deleteDirectory
+        LINKER:--wrap,celix_utils_writeOrCreateString
+        LINKER:--wrap,celix_utils_extractZipData
+        LINKER:--wrap,celix_utils_extractZipFile
 )
 add_library(Celix::utils_ei ALIAS utils_ei)

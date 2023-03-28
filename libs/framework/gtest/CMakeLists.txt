@@ -117,12 +117,14 @@ setup_target_for_coverage(test_framework SCAN_DIR ..)
 if (LINKER_WRAP_SUPPORTED)
     add_executable(test_framework_with_ei
             src/BundleArchiveWithErrorInjectionTestSuite.cc
+            src/CelixFrameworkUtilsErrorInjectionTestSuite.cc
     )
     target_compile_definitions(test_framework_with_ei PRIVATE
             SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
     )
     target_include_directories(test_framework_with_ei PRIVATE ../src)
     add_celix_bundle_dependencies(test_framework_with_ei simple_test_bundle1)
+    celix_target_embedded_bundles(test_framework_with_ei simple_test_bundle1)
     celix_deprecated_utils_headers(test_framework_with_ei)
     target_link_libraries(test_framework_with_ei PRIVATE
             Celix::framework_obj

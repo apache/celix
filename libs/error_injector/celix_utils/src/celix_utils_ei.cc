@@ -33,7 +33,7 @@ celix_status_t __real_celix_utils_createDirectory(const char* path, bool failIfP
 CELIX_EI_DEFINE(celix_utils_createDirectory, celix_status_t)
 celix_status_t __wrap_celix_utils_createDirectory(const char* path, bool failIfPresent, const char** errorOut) {
     if (errorOut) {
-        *errorOut = nullptr;
+        *errorOut = "Error Injected";
     }
     CELIX_EI_IMPL(celix_utils_createDirectory);
     return __real_celix_utils_createDirectory(path, failIfPresent, errorOut);
@@ -50,10 +50,41 @@ celix_status_t __real_celix_utils_deleteDirectory(const char* path, const char**
 CELIX_EI_DEFINE(celix_utils_deleteDirectory, celix_status_t)
 celix_status_t __wrap_celix_utils_deleteDirectory(const char* path, const char** errorOut) {
     if (errorOut) {
-        *errorOut = nullptr;
+        *errorOut = "Error Injected";
     }
     CELIX_EI_IMPL(celix_utils_deleteDirectory);
     return __real_celix_utils_deleteDirectory(path, errorOut);
+}
+
+CELIX_EI_DEFINE(celix_utils_writeOrCreateString, char *)
+char* __wrap_celix_utils_writeOrCreateString(char* buffer, size_t bufferSize, const char* format, ...) {
+    CELIX_EI_IMPL(celix_utils_writeOrCreateString);
+    va_list args;
+    va_start(args, format);
+    char *ret = celix_utils_writeOrCreateVString(buffer, bufferSize, format, args);
+    va_end(args);
+    return ret;
+}
+
+
+celix_status_t __real_celix_utils_extractZipData(const void *zipData, size_t zipDataSize, const char* extractToDir, const char** errorOut);
+CELIX_EI_DEFINE(celix_utils_extractZipData, celix_status_t)
+celix_status_t __wrap_celix_utils_extractZipData(const void *zipData, size_t zipDataSize, const char* extractToDir, const char** errorOut) {
+    if (errorOut) {
+        *errorOut = "Error Injected";
+    }
+    CELIX_EI_IMPL(celix_utils_extractZipData);
+    return __real_celix_utils_extractZipData(zipData, zipDataSize, extractToDir, errorOut);
+}
+
+celix_status_t __real_celix_utils_extractZipFile(const char *zipFilePath, const char* extractToDir, const char** errorOut);
+CELIX_EI_DEFINE(celix_utils_extractZipFile, celix_status_t)
+celix_status_t __wrap_celix_utils_extractZipFile(const char *zipFilePath, const char* extractToDir, const char** errorOut) {
+    if (errorOut) {
+        *errorOut = "Error Injected";
+    }
+    CELIX_EI_IMPL(celix_utils_extractZipFile);
+    return __real_celix_utils_extractZipFile(zipFilePath, extractToDir, errorOut);
 }
 
 }

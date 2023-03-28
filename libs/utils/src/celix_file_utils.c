@@ -34,6 +34,8 @@ static const char * const DIRECTORY_ALREADY_EXISTS_ERROR = "Directory already ex
 static const char * const FILE_ALREADY_EXISTS_AND_NOT_DIR_ERROR = "File already exists, but is not a directory.";
 static const char * const CANNOT_DELETE_DIRECTORY_PATH_IS_FILE = "Cannot delete directory; Path points to a file.";
 static const char * const ERROR_OPENING_ZIP = "Error opening zip file.";
+static const char * const ERROR_OPENING_FILE_ZIP = "Error opening file in zip.";
+static const char * const ERROR_READING_FILE_ZIP = "Error reading file in zip.";
 
 bool celix_utils_fileExists(const char* path) {
     struct stat st;
@@ -197,8 +199,8 @@ static celix_status_t celix_utils_extractZipInternal(zip_t *zip, const char* ext
             //file
             zip_file_t *zf = zip_fopen_index(zip, i, 0);
             if (!zf) {
-                status = CELIX_FILE_IO_EXCEPTION;
-                *errorOut = zip_strerror(zip);
+                status = CELIX_ERROR_MAKE(CELIX_FACILITY_ZIP, zip_error_code_zip(zip_get_error(zip)));
+                *errorOut = ERROR_OPENING_FILE_ZIP;
             } else {
                 FILE* f = fopen(path, "w+");
                 if (f) {
@@ -208,12 +210,13 @@ static celix_status_t celix_utils_extractZipInternal(zip_t *zip, const char* ext
                         read = zip_fread(zf, buf, bufSize);
                     }
                     if (read < 0) {
-                        status = CELIX_FILE_IO_EXCEPTION;
-                        *errorOut = zip_file_strerror(zf);
+
+                        status = CELIX_ERROR_MAKE(CELIX_FACILITY_ZIP, zip_error_code_zip(zip_file_get_error(zf)));
+                        *errorOut = ERROR_READING_FILE_ZIP;
                     }
                     fclose(f);
                 } else {
-                    status = CELIX_FILE_IO_EXCEPTION;
+                    status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
                     *errorOut = strerror(errno);
                 }
                 zip_fclose(zf);
@@ -242,7 +245,7 @@ celix_status_t celix_utils_extractZipFile(const char* zipPath, const char* extra
         zip_close(zip);
     } else {
         //note libzip can give more info with zip_error_to_str if needed (but this requires an allocated string buf).
-        status = CELIX_FILE_IO_EXCEPTION;
+        status = CELIX_ERROR_MAKE(CELIX_FACILITY_ZIP, error);
         *errorOut = ERROR_OPENING_ZIP;
     }
 
@@ -270,7 +273,7 @@ celix_status_t celix_utils_extractZipData(const void *zipData, size_t zipDataSiz
     }
 
     if (source == NULL || zip == NULL) {
-        status = CELIX_FILE_IO_EXCEPTION;
+        status = CELIX_ERROR_MAKE(CELIX_FACILITY_ZIP, zip_error_code_zip(&zipError));
         *errorOut = ERROR_OPENING_ZIP;
     }
     if (zip != NULL) {
