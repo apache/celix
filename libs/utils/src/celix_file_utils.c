@@ -48,8 +48,41 @@ bool celix_utils_directoryExists(const char* path) {
     return stat(path, &st) == 0 && S_ISDIR(st.st_mode);
 }
 
+// https://gist.github.com/JonathonReinhart/8c0d90191c38af2dcadb102c4e202950
+/* Make a directory; already existing dir okay */
+static int maybe_mkdir(const char* path, mode_t mode)
+{
+    struct stat st;
+    errno = 0;
+
+    /* Try to make the directory */
+    if (mkdir(path, mode) == 0)
+        return 0;
+
+    /* If it fails for any reason but EEXIST, fail */
+    if (errno != EEXIST)
+        return -1;
+
+    /* Check if the existing path is a directory */
+    if (stat(path, &st) != 0)
+        return -1;
+
+    /* If not, fail with ENOTDIR */
+    if (!S_ISDIR(st.st_mode)) {
+        errno = ENOTDIR;
+        return -1;
+    }
+
+    errno = 0;
+    return 0;
+}
+
 celix_status_t celix_utils_createDirectory(const char* path, bool failIfPresent, const char** errorOut) {
     const char *dummyErrorOut = NULL;
+    if (*path == '\0') {
+        //empty path, nothing to do
+        return CELIX_SUCCESS;
+    }
     if (errorOut) {
         //reset errorOut
         *errorOut = NULL;
@@ -77,30 +110,36 @@ celix_status_t celix_utils_createDirectory(const char* path, bool failIfPresent,
 
     celix_status_t status = CELIX_SUCCESS;
 
-    //loop over al finding of / and create intermediate dirs
-    for (char* slashAt = strchr(path, '/'); slashAt != NULL; slashAt = strchr(slashAt + 1, '/'))  {
-        // skip the first / of the absolute path
-        if( slashAt == path) {
-            continue;
-        }
-        char* subPath = strndup(path, slashAt - path);
-        if (!celix_utils_directoryExists(subPath)) {
-            int rc = mkdir(subPath, S_IRWXU);
-            if (rc != 0) {
-                status = CELIX_FILE_IO_EXCEPTION;
-                *errorOut = strerror(errno);
-            }
-        }
-        free(subPath);
-    }
+    char *_path = NULL;
+    char *p;
+    int result = -1;
+    errno = 0;
+    /* Copy string so it's mutable */
+    _path = celix_utils_strdup(path);
+    if (_path == NULL)
+        goto out;
 
-    //create last part of the dir (expect when path ends with / then this is already done in the loop)
-    if (status == CELIX_SUCCESS && strlen(path) >0 && path[strlen(path)-1] != '/') {
-        int rc = mkdir(path, S_IRWXU);
-        if (rc != 0) {
-            status = CELIX_FILE_IO_EXCEPTION;
-            *errorOut = strerror(errno);
+    /* Iterate the string */
+    for (p = _path + 1; *p; p++) {
+        if (*p == '/') {
+            /* Temporarily truncate */
+            *p = '\0';
+            if (maybe_mkdir(_path, S_IRWXU) != 0) {
+                goto out;
+            }
+            *p = '/';
         }
+    }
+    if (maybe_mkdir(_path, S_IRWXU) != 0) {
+        goto out;
+    }
+    result = 0;
+
+out:
+    free(_path);
+    if (result != 0) {
+        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+        *errorOut = strerror(errno);
     }
     return status;
 }

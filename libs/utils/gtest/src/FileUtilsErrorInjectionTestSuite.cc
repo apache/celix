@@ -37,6 +37,7 @@ public:
         celix_ei_expect_zip_fopen_index(nullptr, 0, nullptr);
         celix_ei_expect_zip_fread(nullptr, 0, -1);
         celix_ei_expect_celix_utils_writeOrCreateString(nullptr, 0, nullptr);
+        celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_fopen(nullptr, 0, nullptr);
         celix_ei_expect_fwrite(nullptr, 0, 0);
     }
@@ -94,4 +95,18 @@ TEST_F(FileUtilsWithErrorInjectionTestSuite, ExtractZipFileTest) {
     status = celix_utils_extractZipFile(TEST_ZIP_LOCATION, extractLocation, &error);
     EXPECT_EQ(status, CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,ENOSPC));
     EXPECT_NE(error, nullptr);
+}
+
+TEST_F(FileUtilsWithErrorInjectionTestSuite, CreateDirectory) {
+    const char* testDir = "celix_file_utils_test/directory";
+    celix_utils_deleteDirectory(testDir, nullptr);
+
+    //I can create a new directory.
+    const char* error = nullptr;
+    EXPECT_FALSE(celix_utils_directoryExists(testDir));
+    celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    auto status = celix_utils_createDirectory(testDir, true, &error);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    EXPECT_NE(error, nullptr);
+    EXPECT_FALSE(celix_utils_fileExists(testDir));
 }
