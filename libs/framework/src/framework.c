@@ -1970,7 +1970,6 @@ celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework
             CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, removedEntry));
 
             status = CELIX_DO_IF(status, bundle_setState(bnd, CELIX_BUNDLE_STATE_UNINSTALLED));
-            status = CELIX_DO_IF(status, bundleArchive_setLastModified(archive, time(NULL)));
 
             CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNINSTALLED, removedEntry));
 
