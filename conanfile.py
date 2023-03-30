@@ -66,6 +66,7 @@ class CelixConan(ConanFile):
         "build_rsa_discovery_etcd": [True, False],
         "build_rsa_remote_service_admin_shm_v2": [True, False],
         "build_rsa_json_rpc": [True, False],
+        "build_rsa_discovery_zeroconf": [True, False],
         "build_shell": [True, False],
         "build_remote_shell": [True, False],
         "build_shell_bonjour": [True, False],
@@ -112,6 +113,7 @@ class CelixConan(ConanFile):
         "build_rsa_discovery_etcd": False,
         "build_rsa_remote_service_admin_shm_v2": False,
         "build_rsa_json_rpc": False,
+        "build_rsa_discovery_zeroconf": False,
         "build_shell": True,
         "build_remote_shell": False,
         "build_shell_bonjour": False,
@@ -184,6 +186,7 @@ class CelixConan(ConanFile):
             self.options.build_rsa_json_rpc = False
         if (not self.options.build_remote_service_admin) or (self.settings.os != "Linux"):
             self.options.build_rsa_remote_service_admin_shm_v2 = False
+            self.options.build_rsa_discovery_zeroconf = False
         if not self.options.build_shell:
             self.options.build_remote_shell = False
             self.options.build_shell_bonjour = False
@@ -230,6 +233,15 @@ class CelixConan(ConanFile):
         if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
             self.requires("jansson/[>=2.12 <3.0.0]")
             self.options['jansson'].shared = True
+        if self.options.build_rsa_discovery_zeroconf:
+            # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
+            # https://github.com/conan-io/conan-center-index/pull/16254
+            self.requires("mdnsresponder/1310.140.1")
+
+    def _enable_error_injectors(self):
+        for k in self.deps_cpp_info.deps:
+            if k == "mdnsresponder":
+                self._cmake.definitions["BUILD_ERROR_INJECTOR_MDNSRESPONDER"] = "ON"
 
     def _configure_cmake(self):
         if self._cmake:
@@ -237,6 +249,8 @@ class CelixConan(ConanFile):
         self._cmake = CMake(self)
         for opt, val in self.options.values.items():
             self._cmake.definitions[opt.upper()] = self.options.get_safe(opt, False)
+        if self.options.enable_testing:
+            self._enable_error_injectors()
         self._cmake.definitions["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":

@@ -15,22 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(error_injector INTERFACE)
-target_include_directories(error_injector INTERFACE ${CMAKE_CURRENT_LIST_DIR}/api)
-# get caller address of the target function, into which errors are injected
-target_link_libraries(error_injector INTERFACE dl)
-target_link_options(error_injector INTERFACE -rdynamic)
-target_compile_options(error_injector INTERFACE -Wno-frame-address)
-add_library(Celix::error_injector ALIAS error_injector)
+add_library(mdnsresponder_ei STATIC src/mdnsresponder_ei.cc)
 
-add_subdirectory(malloc)
-add_subdirectory(celix_properties)
-add_subdirectory(celix_threads)
-add_subdirectory(eventfd)
-add_subdirectory(celix_bundle_ctx)
+find_package(DNSSD)
 
-celix_subproject(ERROR_INJECTOR_MDNSRESPONDER "Option to enable building the mdnsresponder error injector" OFF)
-if (ERROR_INJECTOR_MDNSRESPONDER)
-    add_subdirectory(mdnsresponder)
-endif ()
+target_include_directories(mdnsresponder_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(mdnsresponder_ei PUBLIC Celix::error_injector DNSSD::DNSSD)
 
+target_link_options(mdnsresponder_ei INTERFACE LINKER:--wrap,DNSServiceCreateConnection LINKER:--wrap,DNSServiceProcessResult LINKER:--wrap,DNSServiceRegister LINKER:--wrap,TXTRecordSetValue LINKER:--wrap,DNSServiceBrowse)
+add_library(Celix::mdnsresponder_ei ALIAS mdnsresponder_ei)

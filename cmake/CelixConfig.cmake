@@ -126,3 +126,7 @@ endif ()
 if (TARGET Celix::http_admin_api)
   find_dependency(civetweb)
 endif ()
+if (TARGET Celix::rsa_discovery_zeroconf)
+  find_dependency(DNSSD)
+endif ()
+
