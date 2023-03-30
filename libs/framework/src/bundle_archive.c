@@ -315,7 +315,9 @@ const char* celix_bundleArchive_getSymbolicName(bundle_archive_pt archive) {
 }
 
 celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char **location) {
+    celixThreadMutex_lock(&archive->lock);
     *location = archive->location;
+    celixThreadMutex_unlock(&archive->lock);
     return CELIX_SUCCESS;
 }
 
@@ -330,7 +332,9 @@ celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive,
 }
 
 celix_status_t bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundle_revision_pt *revision) {
+    celixThreadMutex_lock(&archive->lock);
     *revision = archive->revision;
+    celixThreadMutex_unlock(&archive->lock);
     return CELIX_SUCCESS;
 }
 
@@ -388,7 +392,12 @@ celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, st
 }
 
 celix_status_t bundleArchive_setLastModified(bundle_archive_pt archive __attribute__((unused)), time_t lastModifiedTime  __attribute__((unused))) {
-    return celix_utils_touch(archive->archiveRoot);
+    celix_status_t status = CELIX_SUCCESS;
+    char manifestPathBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
+    char* manifestPath = celix_utils_writeOrCreateString(manifestPathBuffer, sizeof(manifestPathBuffer), "%s/%s", archive->resourceCacheRoot, CELIX_BUNDLE_MANIFEST_REL_PATH);
+    status = celix_utils_touch(manifestPath);
+    celix_utils_freeStringIfNotEqual(manifestPathBuffer, manifestPath);
+    return status;
 }
 
 celix_status_t bundleArchive_revise(bundle_archive_pt archive, const char * location __attribute__((unused)), const char *updatedBundleUrl) {

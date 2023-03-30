@@ -64,6 +64,7 @@ celix_status_t celix_bundle_createFromArchive(celix_framework_t *framework, bund
     if (bundle->modules == NULL) {
         status = CELIX_ENOMEM;
         fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create bundle from archive, out of memory.");
+        free(bundle);
         return status;
     }
 
@@ -303,11 +304,6 @@ celix_status_t bundle_revise(bundle_pt bundle, const char * location, const char
 	return status;
 }
 
-//bool bundle_rollbackRevise(bundle_pt bundle) {
-//	module_pt module = arrayList_remove(bundle->modules, arrayList_set(bundle->modules) - 1);
-//	return resolver_removeModule(module);
-//}
-
 celix_status_t bundle_addModule(bundle_pt bundle, module_pt module) {
 	celix_arrayList_add(bundle->modules, module);
 	resolver_addModule(module);
@@ -355,7 +351,7 @@ celix_status_t bundle_isSystemBundle(const_bundle_pt bundle, bool *systemBundle)
 }
 
 celix_status_t bundle_close(const_bundle_pt bundle) {
-    fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_DEBUG, "Usage of bundle_close is deprecated. Called for bundle %s", bundle->symbolicName);
+    fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_DEBUG, "Usage of bundle_close is deprecated and no longer needed. Called for bundle %s", bundle->symbolicName);
     return CELIX_SUCCESS;
 }
 
