@@ -36,4 +36,14 @@ static const char * const OSGI_RSA_SERVICE_IMPORTED_CONFIGS = "service.imported.
 static const char * const OSGI_RSA_SERVICE_EXPORTED_CONFIGS = "service.exported.configs";
 static const char * const OSGI_RSA_SERVICE_LOCATION = "service.location";
 
+/**
+ * Remote service admin property identifying the network interfaces that announce service.
+ * The property value is network interfaces name, it Can be a comma separated list of CIDR notation,eg:"eth0,en0".
+ * Default value is "", and the loopback interface will be used. Its exported service will be discovered
+ * only by other local clients on the same machine.
+ * If want to bound service to all network interfaces, we can set the property value to "all".
+ */
+static const char * const CELIX_RSA_NETWORK_INTERFACES = "org.apache.celix.rsa.network.interfaces";
+
+
 #endif /* REMOTE_CONSTANTS_H_ */

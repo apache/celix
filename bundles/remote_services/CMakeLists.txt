@@ -26,6 +26,7 @@ if (REMOTE_SERVICE_ADMIN)
     add_subdirectory(discovery_common)
     add_subdirectory(discovery_configured)
     add_subdirectory(discovery_etcd)
+    add_subdirectory(discovery_zeroconf)
     add_subdirectory(examples)
     add_subdirectory(topology_manager)
     add_subdirectory(remote_service_admin_dfi)
@@ -104,6 +105,44 @@ if (REMOTE_SERVICE_ADMIN)
                 celix_remote_interceptors_example
                 calculator_shell
                 PROPERTIES
+                )
+    endif()
+
+    if (BUILD_RSA_DISCOVERY_ZEROCONF AND BUILD_RSA_REMOTE_SERVICE_ADMIN_DFI AND BUILD_RSA_REMOTE_SERVICE_ADMIN_SHM_V2 AND BUILD_RSA_JSON_RPC AND BUILD_SHELL AND BUILD_SHELL_TUI AND BUILD_LOG_SERVICE)
+        add_celix_container(remote-services-zeroconf-server
+                NAME "server"
+                GROUP "remote-services/remote-services-zeroconf"
+                BUNDLES
+                Celix::rsa_discovery_zeroconf
+                Celix::rsa_topology_manager
+                Celix::rsa_shm
+                Celix::rsa_json_rpc
+                Celix::rsa_dfi
+                Celix::shell
+                Celix::shell_tui
+                Celix::log_admin
+                celix_remote_interceptors_example
+                calculator
+                PROPERTIES
+                CELIX_RSA_BIND_ON_ALL_INTERFACES=false
+                )
+
+        add_celix_container(remote-services-zeroconf-client
+                NAME "client"
+                GROUP "remote-services/remote-services-zeroconf"
+                BUNDLES
+                Celix::rsa_discovery_zeroconf
+                Celix::rsa_topology_manager
+                Celix::rsa_shm
+                Celix::rsa_json_rpc
+                Celix::rsa_dfi
+                Celix::shell
+                Celix::shell_tui
+                Celix::log_admin
+                celix_remote_interceptors_example
+                calculator_shell
+                PROPERTIES
+                CELIX_RSA_BIND_ON_ALL_INTERFACES=false
                 )
     endif()
     
