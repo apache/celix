@@ -591,6 +591,24 @@ const char* celix_bundle_getDescription(const celix_bundle_t* bnd) {
     return bnd->description;
 }
 
+const char* celix_bundle_getLocation(const celix_bundle_t *bnd) {
+    const char* result = NULL;
+    if (bnd->archive != NULL) {
+        bundleArchive_getLocation(bnd->archive, &result);
+    }
+    return result;
+}
+
+const celix_version_t* celix_bundle_getVersion(const celix_bundle_t *bnd) {
+    celix_version_t* result = NULL;
+    celix_module_t* mod = NULL;
+    bundle_getCurrentModule(bnd, &mod);
+    if (mod != NULL) {
+        result = module_getVersion(mod);
+    }
+    return result;
+}
+
 bool celix_bundle_isSystemBundle(const celix_bundle_t *bnd) {
     return bnd != NULL && celix_bundle_getId(bnd) == 0;
 }

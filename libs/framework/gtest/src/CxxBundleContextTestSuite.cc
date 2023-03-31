@@ -693,6 +693,7 @@ TEST_F(CxxBundleContextTestSuite, GetBundleInformation) {
     EXPECT_EQ(ctx->getBundle().getName(), std::string{"Celix Framework"});
     EXPECT_EQ(ctx->getBundle().getGroup(), std::string{"Celix/Framework"});
     EXPECT_EQ(ctx->getBundle().getDescription(), std::string{"The Celix Framework System Bundle"});
+    EXPECT_EQ(ctx->getBundle().getLocation(), std::string{""});
 
     std::atomic<bool> startCalled{false};
     auto bndTracker = ctx->trackBundles()
@@ -701,6 +702,7 @@ TEST_F(CxxBundleContextTestSuite, GetBundleInformation) {
             EXPECT_EQ(bnd.getName(), std::string{"Simple Test Bundle"});
             EXPECT_EQ(bnd.getGroup(), std::string{"test/group"});
             EXPECT_EQ(bnd.getDescription(), std::string{"Test Description"});
+            EXPECT_TRUE(strstr(bnd.getLocation().c_str(), ".zip") != nullptr);
             EXPECT_TRUE(!bnd.getEntry("META-INF/MANIFEST.MF").empty());
             EXPECT_EQ(bnd.getEntry("/META-INF/MANIFEST.MF"), bnd.getEntry("META-INF/MANIFEST.MF"));
             EXPECT_EQ(bnd.getEntry("does-not-exist"), std::string{});

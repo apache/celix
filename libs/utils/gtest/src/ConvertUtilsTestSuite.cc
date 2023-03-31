@@ -50,10 +50,10 @@ TEST_F(ConvertUtilsTestSuite, ConvertToLongTest) {
     EXPECT_EQ(0, result);
     EXPECT_FALSE(converted);
 
-    //test for a string with a number
+    //test for a string with a invalid number
     result = celix_utils_convertStringToLong("10A", 0, &converted);
-    EXPECT_EQ(10, result);
-    EXPECT_TRUE(converted);
+    EXPECT_EQ(0, result);
+    EXPECT_FALSE(converted);
 
     //test for a string with a number and a negative sign
     result = celix_utils_convertStringToLong("-10", 0, &converted);
@@ -68,6 +68,21 @@ TEST_F(ConvertUtilsTestSuite, ConvertToLongTest) {
     //test for a convert with a nullptr for the converted parameter
     result = celix_utils_convertStringToLong("10", 0, nullptr);
     EXPECT_EQ(10, result);
+
+    //test for a convert with a double value
+    result = celix_utils_convertStringToLong("10.1", 0, &converted);
+    EXPECT_EQ(0, result);
+    EXPECT_FALSE(converted);
+
+    //test for a convert with a long value with trailing whitespaces
+    result = celix_utils_convertStringToLong("11 \t\n", 0, &converted);
+    EXPECT_EQ(11, result);
+    EXPECT_TRUE(converted);
+
+    //test for a convert with a long value with starting and trailing whitespaces
+    result = celix_utils_convertStringToLong("\t 12 \t\n", 0, &converted);
+    EXPECT_EQ(12, result);
+    EXPECT_TRUE(converted);
 }
 
 TEST_F(ConvertUtilsTestSuite, ConvertToDoubleTest) {
@@ -82,10 +97,9 @@ TEST_F(ConvertUtilsTestSuite, ConvertToDoubleTest) {
     EXPECT_EQ(0, result);
     EXPECT_FALSE(converted);
 
-    //test for a string with a number
+    //test for a string with a invalid number
     result = celix_utils_convertStringToDouble("10.5A", 0, &converted);
-    EXPECT_EQ(10.5, result);
-    EXPECT_TRUE(converted);
+    EXPECT_FALSE(converted);
 
     //test for a string with a number and a negative sign
     result = celix_utils_convertStringToDouble("-10.5", 0, &converted);
@@ -105,6 +119,20 @@ TEST_F(ConvertUtilsTestSuite, ConvertToDoubleTest) {
     //test for a convert with a nullptr for the converted parameter
     result = celix_utils_convertStringToDouble("10.5", 0, nullptr);
     EXPECT_EQ(10.5, result);
+
+    //test for a convert with an invalid double value with trailing info
+    result = celix_utils_convertStringToDouble("11.1.2", 0, &converted);
+    EXPECT_FALSE(converted);
+
+    //test for a convert with a double value with trailing whitespaces
+    result = celix_utils_convertStringToDouble("11.1 \t\n", 0, &converted);
+    EXPECT_EQ(11.1, result);
+    EXPECT_TRUE(converted);
+
+    //test for a convert with a double value with starting and trailing whitespaces
+    result = celix_utils_convertStringToDouble("\t 12.2 \t\n", 0, &converted);
+    EXPECT_EQ(12.2, result);
+    EXPECT_TRUE(converted);
 }
 
 TEST_F(ConvertUtilsTestSuite, ConvertToBoolTest) {
@@ -132,6 +160,20 @@ TEST_F(ConvertUtilsTestSuite, ConvertToBoolTest) {
     //test for a convert with a nullptr for the converted parameter
     result = celix_utils_convertStringToBool("true", false, nullptr);
     EXPECT_EQ(true, result);
+
+    //test for a convert with a bool value with trailing chars
+    result = celix_utils_convertStringToBool("true and ok", 0, &converted);
+    EXPECT_FALSE(converted);
+
+    //test for a convert with a bool value with trailing whitespaces
+    result = celix_utils_convertStringToBool("true \t\n", 0, &converted);
+    EXPECT_TRUE(result);
+    EXPECT_TRUE(converted);
+
+    //test for a convert with a bool value with starting and trailing whitespaces
+    result = celix_utils_convertStringToBool("\t false \t\n", 0, &converted);
+    EXPECT_FALSE(result);
+    EXPECT_TRUE(converted);
 }
 
 TEST_F(ConvertUtilsTestSuite, ConvertToVersionTest) {
@@ -171,6 +213,20 @@ TEST_F(ConvertUtilsTestSuite, ConvertToVersionTest) {
     checkVersion(result, 1, 2, 3, "B"); //default version
     celix_version_destroy(result);
     EXPECT_FALSE(converted);
+
+    //test for a convert with a version value with trailing chars
+    celix_utils_convertStringToVersion("2.1.1 and something else", nullptr, &converted);
+    EXPECT_FALSE(converted);
+
+    //test for a convert with a version value with trailing whitespaces
+    result = celix_utils_convertStringToVersion("1.2.3 \t\n", nullptr, &converted);
+    EXPECT_TRUE(converted);
+    celix_version_destroy(result);
+
+    //test for a convert with a version value with starting and trailing whitespaces
+    result = celix_utils_convertStringToVersion("\t 3.2.2 \t\n", nullptr, &converted);
+    EXPECT_TRUE(converted);
+    celix_version_destroy(result);
 
     celix_version_destroy(defaultVersion);
 }
