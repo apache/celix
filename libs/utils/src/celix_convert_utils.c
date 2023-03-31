@@ -25,6 +25,29 @@
 #include "celix_utils.h"
 #include "celix_version.h"
 
+const char* celix_utils_eatWhitespace(const char* str) {
+    if (str != NULL) {
+        while (isspace(*str)) {
+            str++;
+        }
+    }
+    return str;
+}
+
+bool celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(const char* endptr) {
+    bool result = false;
+    if (endptr != NULL) {
+        while (*endptr != '\0') {
+            if (!isspace(*endptr)) {
+                break;
+            }
+            endptr++;
+        }
+        result = *endptr == '\0';
+    }
+    return result;
+}
+
 bool celix_utils_convertStringToBool(const char* val, bool defaultValue, bool* converted) {
     bool result = defaultValue;
     if (converted != NULL) {
@@ -57,8 +80,8 @@ double celix_utils_convertStringToDouble(const char* val, double defaultValue, b
     }
     if (val != NULL) {
         char *endptr;
-        double d = strtod(val, &endptr);
-        if (endptr != val) {
+        double d = strtod(celix_utils_eatWhitespace(val), &endptr);
+        if (endptr != val && celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(endptr)) {
             result = d;
             if (converted) {
                 *converted = true;
@@ -75,8 +98,8 @@ long celix_utils_convertStringToLong(const char* val, long defaultValue, bool* c
     }
     if (val != NULL) {
         char *endptr;
-        long l = strtol(val, &endptr, 10);
-        if (endptr != val) {
+        long l = strtol(celix_utils_eatWhitespace(val), &endptr, 10);
+        if (endptr != val && celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(endptr)) {
             result = l;
             if (converted) {
                 *converted = true;
@@ -93,7 +116,11 @@ celix_version_t* celix_utils_convertStringToVersion(const char* val, const celix
         char* firstDot = strchr(val, '.');
         char* lastDot = strrchr(val, '.');
         if (firstDot != NULL && lastDot != NULL && firstDot != lastDot) {
-            result = celix_version_createVersionFromString(val);
+            char buf[64];
+            char* valCopy = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s", val);
+            valCopy = celix_utils_trim(valCopy);
+            result = celix_version_createVersionFromString(valCopy);
+            celix_utils_freeStringIfNotEqual(buf, valCopy);
         }
     }
     if (converted) {
