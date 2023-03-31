@@ -56,16 +56,19 @@ static int maybe_mkdir(const char* path, mode_t mode)
     errno = 0;
 
     /* Try to make the directory */
-    if (mkdir(path, mode) == 0)
+    if (mkdir(path, mode) == 0) {
         return 0;
+    }
 
     /* If it fails for any reason but EEXIST, fail */
-    if (errno != EEXIST)
+    if (errno != EEXIST) {
         return -1;
+    }
 
     /* Check if the existing path is a directory */
-    if (stat(path, &st) != 0)
+    if (stat(path, &st) != 0) {
         return -1;
+    }
 
     /* If not, fail with ENOTDIR */
     if (!S_ISDIR(st.st_mode)) {
@@ -116,8 +119,9 @@ celix_status_t celix_utils_createDirectory(const char* path, bool failIfPresent,
     errno = 0;
     /* Copy string so it's mutable */
     _path = celix_utils_strdup(path);
-    if (_path == NULL)
+    if (_path == NULL) {
         goto out;
+    }
 
     /* Iterate the string */
     for (p = _path + 1; *p; p++) {

@@ -17,6 +17,7 @@
  * under the License.
  */
 
+#include <fstream>
 #include <gtest/gtest.h>
 #include <stdlib.h>
 #include <string>
@@ -27,6 +28,7 @@
 #include "celix_file_utils.h"
 #include "celix_properties.h"
 #include "celix_utils_ei.h"
+#include "stat_ei.h"
 #include "stdio_ei.h"
 #include "zip_ei.h"
 
@@ -40,6 +42,8 @@ public:
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_fopen(nullptr, 0, nullptr);
         celix_ei_expect_fwrite(nullptr, 0, 0);
+        celix_ei_expect_mkdir(nullptr, 0, 0);
+        celix_ei_expect_stat(nullptr, 0, 0);
     }
 };
 
@@ -98,15 +102,49 @@ TEST_F(FileUtilsWithErrorInjectionTestSuite, ExtractZipFileTest) {
 }
 
 TEST_F(FileUtilsWithErrorInjectionTestSuite, CreateDirectory) {
-    const char* testDir = "celix_file_utils_test/directory";
-    celix_utils_deleteDirectory(testDir, nullptr);
+    const std::string root = "celix_file_utils_test";
+    const std::string testDir = root + "/directory";
+    celix_utils_deleteDirectory(root.c_str(), nullptr);
 
-    //I can create a new directory.
     const char* error = nullptr;
-    EXPECT_FALSE(celix_utils_directoryExists(testDir));
+    EXPECT_FALSE(celix_utils_directoryExists(testDir.c_str()));
     celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
-    auto status = celix_utils_createDirectory(testDir, true, &error);
+    auto status = celix_utils_createDirectory(testDir.c_str(), true, &error);
     EXPECT_EQ(status, CELIX_ENOMEM);
     EXPECT_NE(error, nullptr);
-    EXPECT_FALSE(celix_utils_fileExists(testDir));
+    EXPECT_FALSE(celix_utils_fileExists(testDir.c_str()));
+
+    status = celix_utils_createDirectory(root.c_str(), true, &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    const std::string invalidDir = root + "/file/directory";
+    const std::string filename = invalidDir.substr(0, invalidDir.rfind('/'));
+    // Create file to make directory path invalid
+    std::fstream file(filename, std::ios::out);
+    file.close();
+
+    status = celix_utils_createDirectory(filename.c_str(), true, &error);
+    EXPECT_EQ(status, CELIX_FILE_IO_EXCEPTION);
+
+    status = celix_utils_createDirectory(invalidDir.c_str(), true, &error);
+    EXPECT_EQ(status, CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,ENOTDIR));
+
+    celix_utils_deleteDirectory(root.c_str(), nullptr);
+    celix_ei_expect_mkdir(CELIX_EI_UNKNOWN_CALLER, 0, -1);
+    status = celix_utils_createDirectory(testDir.c_str(), true, &error);
+    EXPECT_EQ(status, CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EACCES));
+    EXPECT_NE(error, nullptr);
+
+    celix_utils_deleteDirectory(root.c_str(), nullptr);
+    celix_ei_expect_mkdir(CELIX_EI_UNKNOWN_CALLER, 0, -1, 2);
+    status = celix_utils_createDirectory(testDir.c_str(), true, &error);
+    EXPECT_EQ(status, CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EACCES));
+    EXPECT_NE(error, nullptr);
+
+    celix_utils_deleteDirectory(root.c_str(), nullptr);
+    status = celix_utils_createDirectory(root.c_str(), true, &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_ei_expect_stat(CELIX_EI_UNKNOWN_CALLER, 0, -1, 2);
+    status = celix_utils_createDirectory(testDir.c_str(), true, &error);
+    EXPECT_EQ(status, CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EOVERFLOW));
+    EXPECT_NE(error, nullptr);
 }
