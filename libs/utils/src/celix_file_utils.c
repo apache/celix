@@ -172,37 +172,36 @@ celix_status_t celix_utils_deleteDirectory(const char* path, const char** errorO
     //file exist and is directory
     celix_status_t status = CELIX_SUCCESS;
     char *paths[] = { (char*)path, NULL };
-    FTS *fts = fts_open(paths, FTS_PHYSICAL | FTS_XDEV | FTS_NOCHDIR, NULL);
+    FTS *fts = fts_open(paths, FTS_PHYSICAL | FTS_XDEV | FTS_NOCHDIR | FTS_NOSTAT, NULL);
     if (fts == NULL) {
-        status = CELIX_FILE_IO_EXCEPTION;
-        *errorOut = strerror(errno);
-    } else {
-        FTSENT *ent;
-        while ((ent = fts_read(fts)) != NULL) {
-            switch (ent->fts_info) {
-                case FTS_DP:
-                case FTS_F:
-                case FTS_SL:
-                case FTS_SLNONE:
-                    if (remove(ent->fts_accpath) != 0) {
-                        status = CELIX_FILE_IO_EXCEPTION;
-                        *errorOut = strerror(errno);
-                    }
-                    break;
-                case FTS_DNR:
-                case FTS_ERR:
-                case FTS_NS:
-                    status = CELIX_FILE_IO_EXCEPTION;
-                    *errorOut = strerror(ent->fts_errno);
-                    break;
-                default:
-                    break;
-            }
-            if (status != CELIX_SUCCESS) {
+        goto out;
+    }
+    FTSENT *ent = NULL;
+    while ((ent = fts_read(fts)) != NULL) {
+        switch (ent->fts_info) {
+            case FTS_DP:
+            case FTS_NSOK:
+            case FTS_SL:
+            case FTS_SLNONE:
+                if (remove(ent->fts_accpath) != 0) {
+                    goto out;
+                }
                 break;
-            }
+            case FTS_DNR:
+            case FTS_ERR:
+                errno = ent->fts_errno;
+                goto out;
+            default:
+                break;
         }
-        fts_close(fts);
+    }
+out:
+    if (errno != 0) {
+        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+        *errorOut = strerror(errno);
+    }
+    if (fts != NULL) {
+        fts_close(fts); // it may change errno
     }
     return status;
 }

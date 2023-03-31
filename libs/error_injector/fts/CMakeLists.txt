@@ -15,14 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(stdio_ei STATIC src/stdio_ei.cc)
+add_library(fts_ei STATIC src/fts_ei.cc)
 
-target_include_directories(stdio_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(stdio_ei PUBLIC Celix::error_injector)
-# It plays nicely with address sanitizer this way.
-target_link_options(stdio_ei INTERFACE
-        LINKER:--wrap,fopen
-        LINKER:--wrap,fwrite
-        LINKER:--wrap,remove
+target_include_directories(fts_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(fts_ei PUBLIC Celix::error_injector)
+
+target_link_options(fts_ei INTERFACE
+        LINKER:--wrap,fts_open
+        LINKER:--wrap,fts_read
         )
-add_library(Celix::stdio_ei ALIAS stdio_ei)
+add_library(Celix::fts_ei ALIAS fts_ei)

@@ -17,22 +17,20 @@
   under the License.
  */
 
-#ifndef CELIX_STDIO_EI_H
-#define CELIX_STDIO_EI_H
+#ifndef CELIX_FTS_EI_H
+#define CELIX_FTS_EI_H
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "celix_error_injector.h"
-#include <stdio.h>
+#include <fts.h>
 
-CELIX_EI_DECLARE(fopen, FILE *);
+CELIX_EI_DECLARE(fts_open, FTS*);
 
-CELIX_EI_DECLARE(fwrite, size_t);
-
-CELIX_EI_DECLARE(remove, int);
+CELIX_EI_DECLARE(fts_read, FTSENT*);
 
 #ifdef __cplusplus
 }
 #endif
-#endif //CELIX_STDIO_EI_H
+#endif //CELIX_FTS_EI_H

@@ -17,22 +17,29 @@
   under the License.
  */
 
-#ifndef CELIX_STDIO_EI_H
-#define CELIX_STDIO_EI_H
-#ifdef __cplusplus
+#include "fts_ei.h"
+#include <errno.h>
+
 extern "C" {
-#endif
 
-#include "celix_error_injector.h"
-#include <stdio.h>
 
-CELIX_EI_DECLARE(fopen, FILE *);
-
-CELIX_EI_DECLARE(fwrite, size_t);
-
-CELIX_EI_DECLARE(remove, int);
-
-#ifdef __cplusplus
+FTS	*__real_fts_open (char * const *, int, int (*)(const FTSENT **, const FTSENT **));
+CELIX_EI_DEFINE(fts_open, FTS*)
+FTS	*__wrap_fts_open (char * const *path_argv, int options, int (*compar)(const FTSENT **, const FTSENT **)) {
+    errno = ENOMEM;
+    CELIX_EI_IMPL(fts_open);
+    errno = 0;
+    return __real_fts_open(path_argv, options, compar);
 }
-#endif
-#endif //CELIX_STDIO_EI_H
+
+
+FTSENT *__real_fts_read (FTS *);
+CELIX_EI_DEFINE(fts_read, FTSENT*)
+FTSENT *__wrap_fts_read (FTS *ftsp) {
+    errno = ENOMEM;
+    CELIX_EI_IMPL(fts_read);
+    errno = 0;
+    return __real_fts_read(ftsp);
+}
+
+}

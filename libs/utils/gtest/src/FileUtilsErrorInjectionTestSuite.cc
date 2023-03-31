@@ -20,6 +20,7 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <stdlib.h>
+#include <string.h>
 #include <string>
 #include <thread>
 #include <unistd.h>
@@ -28,6 +29,7 @@
 #include "celix_file_utils.h"
 #include "celix_properties.h"
 #include "celix_utils_ei.h"
+#include "fts_ei.h"
 #include "stat_ei.h"
 #include "stdio_ei.h"
 #include "zip_ei.h"
@@ -42,8 +44,11 @@ public:
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_fopen(nullptr, 0, nullptr);
         celix_ei_expect_fwrite(nullptr, 0, 0);
+        celix_ei_expect_remove(nullptr, 0, 0);
         celix_ei_expect_mkdir(nullptr, 0, 0);
         celix_ei_expect_stat(nullptr, 0, 0);
+        celix_ei_expect_fts_open(nullptr, 0, nullptr);
+        celix_ei_expect_fts_read(nullptr, 0, nullptr);
     }
 };
 
@@ -147,4 +152,55 @@ TEST_F(FileUtilsWithErrorInjectionTestSuite, CreateDirectory) {
     status = celix_utils_createDirectory(testDir.c_str(), true, &error);
     EXPECT_EQ(status, CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EOVERFLOW));
     EXPECT_NE(error, nullptr);
+    celix_utils_deleteDirectory(root.c_str(), nullptr);
+}
+
+TEST_F(FileUtilsWithErrorInjectionTestSuite, DeleteDirectory) {
+    const std::string root = "celix_file_utils_test";
+    const std::string testDir = root + "/directory";
+
+    auto status = celix_utils_createDirectory(root.c_str(), false, nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_ei_expect_fts_open(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    celix_ei_expect_fts_read(nullptr, 0, nullptr);
+    const char* error = nullptr;
+    status = celix_utils_deleteDirectory(root.c_str(), &error);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    EXPECT_NE(error, nullptr);
+    EXPECT_TRUE(celix_utils_directoryExists(root.c_str()));
+
+    status = celix_utils_createDirectory(testDir.c_str(), false, nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_ei_expect_fts_open(nullptr, 0, nullptr);
+    // fts_open followed by fts_close without calling fts_read will cause memory leak reported by ASAN
+    celix_ei_expect_fts_read(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 2);
+    status = celix_utils_deleteDirectory(root.c_str(), &error);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    EXPECT_NE(error, nullptr);
+    EXPECT_TRUE(celix_utils_directoryExists(root.c_str()));
+
+    status = celix_utils_createDirectory(testDir.c_str(), false, nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    FTSENT ent;
+    memset(&ent, 0, sizeof(ent));
+    ent.fts_info = FTS_DNR;
+    ent.fts_errno = EACCES;
+    celix_ei_expect_fts_open(nullptr, 0, nullptr);
+    // fts_open followed by fts_close without calling fts_read will cause memory leak reported by ASAN
+    celix_ei_expect_fts_read(CELIX_EI_UNKNOWN_CALLER, 0, &ent, 2);
+    status = celix_utils_deleteDirectory(root.c_str(), &error);
+    EXPECT_EQ(status, CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EACCES));
+    EXPECT_NE(error, nullptr);
+    EXPECT_TRUE(celix_utils_directoryExists(root.c_str()));
+
+    status = celix_utils_createDirectory(testDir.c_str(), false, nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_ei_expect_remove(CELIX_EI_UNKNOWN_CALLER, 0, -1);
+    status = celix_utils_deleteDirectory(root.c_str(), &error);
+    EXPECT_EQ(status, CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EACCES));
+    EXPECT_NE(error, nullptr);
+    EXPECT_TRUE(celix_utils_directoryExists(root.c_str()));
+
+    status = celix_utils_deleteDirectory(root.c_str(), &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
 }

@@ -33,6 +33,7 @@ add_subdirectory(celix_threads)
 add_subdirectory(eventfd)
 add_subdirectory(celix_bundle_ctx)
 add_subdirectory(stat)
+add_subdirectory(fts)
 
 celix_subproject(ERROR_INJECTOR_MDNSRESPONDER "Option to enable building the mdnsresponder error injector" OFF)
 if (ERROR_INJECTOR_MDNSRESPONDER)
