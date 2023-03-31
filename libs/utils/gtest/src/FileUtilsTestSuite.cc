@@ -57,7 +57,6 @@ TEST_F(FileUtilsTestSuite, CreateAndDeleteDirectory) {
     EXPECT_TRUE(celix_utils_fileExists(testDir));
     EXPECT_TRUE(celix_utils_directoryExists(testDir));
 
-
     //Creating a directory if it already exists fails when using failIfPresent=true.
     status = celix_utils_createDirectory(testDir, true, &error);
     EXPECT_NE(status, CELIX_SUCCESS);
