@@ -39,6 +39,31 @@ struct celix_filter_internal {
     celix_version_t *versionValue;
 };
 
+//TODO remove with usage of celix_convert_utils.h if gh-476 is merged
+static const char* celix_utils_eatWhitespace(const char* str) {
+    if (str != NULL) {
+        while (isspace(*str)) {
+            str++;
+        }
+    }
+    return str;
+}
+
+//TODO remove with usage of celix_convert_utils.h if gh-476 is merged
+static bool celix_utils_endptrIsEndOfStringOrOnlyWhitespace(const char* endptr) {
+    bool result = false;
+    if (endptr != NULL) {
+        while (*endptr != '\0') {
+            if (!isspace(*endptr)) {
+                break;
+            }
+            endptr++;
+        }
+        result = *endptr == '\0';
+    }
+    return result;
+}
+
 //TODO replace with usage of celix_convert_utils.h if gh-476 is merged
 static double celix_utils_convertStringToDouble(const char* val, double defaultValue, bool* converted) {
     double result = defaultValue;
@@ -47,8 +72,8 @@ static double celix_utils_convertStringToDouble(const char* val, double defaultV
     }
     if (val != NULL) {
         char *endptr;
-        double d = strtod(val, &endptr);
-        if (endptr != val && *endptr == '\0') {
+        double d = strtod(celix_utils_eatWhitespace(val), &endptr);
+        if (endptr != val && celix_utils_endptrIsEndOfStringOrOnlyWhitespace(endptr)) {
             result = d;
             if (converted) {
                 *converted = true;
@@ -66,8 +91,8 @@ static long celix_utils_convertStringToLong(const char* val, long defaultValue, 
     }
     if (val != NULL) {
         char *endptr;
-        long l = strtol(val, &endptr, 10);
-        if (endptr != val && *endptr == '\0') {
+        long l = strtol(celix_utils_eatWhitespace(val), &endptr, 10);
+        if (endptr != val && celix_utils_endptrIsEndOfStringOrOnlyWhitespace(endptr)) {
             result = l;
             if (converted) {
                 *converted = true;
@@ -79,11 +104,11 @@ static long celix_utils_convertStringToLong(const char* val, long defaultValue, 
 
 //TODO replace with usage of celix_convert_utils.h if gh-476 is merged
 static celix_version_t* celix_utils_convertStringToVersion(const char* val, const celix_version_t* defaultValue, bool* converted) {
-    celix_version_t *result = NULL;
+    celix_version_t* result = NULL;
     if (val != NULL) {
         //check if string has two dots ('.'), and only try to create string if it has two dots
-        char *firstDot = strchr(val, '.');
-        char *lastDot = strrchr(val, '.');
+        char* firstDot = strchr(val, '.');
+        char* lastDot = strrchr(val, '.');
         if (firstDot != NULL && lastDot != NULL && firstDot != lastDot) {
             result = celix_version_createVersionFromString(val);
         }
@@ -649,7 +674,7 @@ static celix_status_t filter_compare(const celix_filter_t* filter, const char *p
             return CELIX_SUCCESS;
         }
         case CELIX_FILTER_OPERAND_APPROX: {
-            *out = strcasestr(propertyValue, filter->value) != NULL;
+            *out = strcasecmp(propertyValue, filter->value) == 0;
             return CELIX_SUCCESS;
         }
         case CELIX_FILTER_OPERAND_EQUAL: {
