@@ -163,6 +163,16 @@ namespace celix {
         }
 
         /**
+         * @brief Return the update location of the bundle.
+         * The location the location passed to celix::BundleContext::installBundle when a bundle is installed.
+         * For the framework bundle, the location will be "".
+         */
+        [[nodiscard]] std::string getLocation() const {
+            const auto* loc = celix_bundle_getLocation(cBnd.get());
+            return std::string{loc == nullptr ? "" : loc};
+        }
+
+        /**
          * @brief The current bundle state.
          */
         [[nodiscard]] celix::BundleState getState() const {

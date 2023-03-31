@@ -109,6 +109,10 @@ TEST_F(CelixBundleContextBundlesTests, useBundlesTest) {
         *c += 1;
         long id = celix_bundle_getId(bnd);
         ASSERT_TRUE(id >= 0);
+
+        const auto* v = celix_bundle_getVersion(bnd);
+        ASSERT_TRUE(v != nullptr);
+        ASSERT_EQ(celix_version_getMajor(v), 1);
     };
 
     celix_bundleContext_useBundles(ctx, &count, use);

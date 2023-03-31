@@ -21,6 +21,7 @@
 #include "celix_bundle_state.h"
 #include "celix_properties.h"
 #include "celix_array_list.h"
+#include "celix_version.h"
 
 #ifndef CELIX_BUNDLE_H_
 #define CELIX_BUNDLE_H_
@@ -116,6 +117,21 @@ const char* celix_bundle_getName(const celix_bundle_t* bnd);
  * Note the return value is valid as long as the bundle is installed.
  */
 const char* celix_bundle_getDescription(const celix_bundle_t* bnd);
+
+/**
+ * @brief Return the update location of the bundle.
+ * The location the location passed to celix_bundleContext_installBundle when a bundle is installed.
+ * For the framework bundle, the location will be NULL.
+ *
+ * Note the return value is valid as long as the bundle is installed.
+ */
+const char* celix_bundle_getLocation(const celix_bundle_t *bnd);
+
+/**
+ * @brief Return the bundle version.
+ * Note the return value is valid as long as the bundle is installed.
+ */
+const celix_version_t* celix_bundle_getVersion(const celix_bundle_t *bnd);
 
 /**
  * @brief Return whether the bundle is the system bundle.
