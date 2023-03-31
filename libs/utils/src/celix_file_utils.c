@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <dirent.h>
+#include <fts.h>
 #include <stdlib.h>
 #include <zip.h>
 #include <sys/time.h>
@@ -169,57 +170,39 @@ celix_status_t celix_utils_deleteDirectory(const char* path, const char** errorO
     }
 
     //file exist and is directory
-    DIR *dir;
-    dir = opendir(path);
-    if (dir == NULL) {
-        *errorOut = strerror(errno);
-        return CELIX_FILE_IO_EXCEPTION;
-    }
-
     celix_status_t status = CELIX_SUCCESS;
-    struct dirent* dent = NULL;
-    errno = 0;
-    dent = readdir(dir);
-    if (errno != 0) {
+    char *paths[] = { (char*)path, NULL };
+    FTS *fts = fts_open(paths, FTS_PHYSICAL | FTS_XDEV | FTS_NOCHDIR, NULL);
+    if (fts == NULL) {
         status = CELIX_FILE_IO_EXCEPTION;
         *errorOut = strerror(errno);
-    }
-    while (status == CELIX_SUCCESS && dent != NULL) {
-        if ((strcmp((dent->d_name), ".") != 0) && (strcmp((dent->d_name), "..") != 0)) {
-            char* subdir = NULL;
-            asprintf(&subdir, "%s/%s", path, dent->d_name);
-
-            struct stat st;
-            // we don't follow symbol link, remove it directly
-            if (lstat(subdir, &st) == 0) {
-                if (S_ISDIR (st.st_mode)) {
-                    status = celix_utils_deleteDirectory(subdir, errorOut);
-                } else {
-                    if (remove(subdir) != 0) {
+    } else {
+        FTSENT *ent;
+        while ((ent = fts_read(fts)) != NULL) {
+            switch (ent->fts_info) {
+                case FTS_DP:
+                case FTS_F:
+                case FTS_SL:
+                case FTS_SLNONE:
+                    if (remove(ent->fts_accpath) != 0) {
                         status = CELIX_FILE_IO_EXCEPTION;
                         *errorOut = strerror(errno);
                     }
-                }
+                    break;
+                case FTS_DNR:
+                case FTS_ERR:
+                case FTS_NS:
+                    status = CELIX_FILE_IO_EXCEPTION;
+                    *errorOut = strerror(ent->fts_errno);
+                    break;
+                default:
+                    break;
             }
-            free(subdir);
             if (status != CELIX_SUCCESS) {
                 break;
             }
         }
-        errno = 0;
-        dent = readdir(dir);
-        if (errno != 0) {
-            status = CELIX_FILE_IO_EXCEPTION;
-            *errorOut = strerror(errno);
-        }
-    }
-    closedir(dir);
-
-    if (status == CELIX_SUCCESS) {
-        if (remove(path) != 0) {
-            status = CELIX_FILE_IO_EXCEPTION;
-            *errorOut = strerror(errno);
-        }
+        fts_close(fts);
     }
     return status;
 }
