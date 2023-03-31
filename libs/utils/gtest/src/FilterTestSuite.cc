@@ -401,3 +401,33 @@ TEST_F(FilterTestSuite, getString) {
     //cleanup
     celix_filter_destroy(filter);
 }
+
+
+TEST_F(FilterTestSuite, filterMatch) {
+    auto* f1 = celix_filter_create("(test_attr1=attr1)");
+    auto* f2 = celix_filter_create("(test_attr1=attr1)");
+    auto* f3 = celix_filter_create("(test_attr1=attr2)");
+    EXPECT_TRUE(celix_filter_matchFilter(f1, f2));
+    EXPECT_FALSE(celix_filter_matchFilter(f1, f3));
+    celix_filter_destroy(f1);
+    celix_filter_destroy(f2);
+    celix_filter_destroy(f3);
+}
+
+#include "filter.h"
+TEST_F(FilterTestSuite, deprecatedApi) {
+    auto* f1 = filter_create("(test_attr1=attr1)");
+    auto* f2 = filter_create("(test_attr1=attr1)");
+    bool result;
+    auto status = filter_match_filter(f1, f2, &result);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_TRUE(result);
+
+    const char* str;
+    status = filter_getString(f1, &str);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_STREQ(str, "(test_attr1=attr1)");
+
+    filter_destroy(f1);
+    filter_destroy(f2);
+}

@@ -553,19 +553,6 @@ celix_status_t filter_match(celix_filter_t * filter, celix_properties_t *propert
     return CELIX_SUCCESS;
 }
 
-static bool celix_filter_propertyValueHasAtLeastTwoDots(const char* propertyValue) {
-    int count = 0;
-    for (int i = 0; i < strlen(propertyValue); i++) {
-        if (propertyValue[i] == '.') {
-            count += 1;
-            if (count >= 2) {
-                break;
-            }
-        }
-    }
-    return count >= 2;
-}
-
 static int celix_filter_compareAttributeValue(const celix_filter_t* filter, const char* propertyValue) {
     if (!filter->internal->convertedToLong && !filter->internal->convertedToDouble && !filter->internal->convertedToVersion) {
         return strcmp(propertyValue, filter->value);
@@ -593,9 +580,7 @@ static int celix_filter_compareAttributeValue(const celix_filter_t* filter, cons
         }
     }
 
-    //note: only supporting version compare if the property value has at least two dots, this to prevent unnecessary
-    //malloc and free of version objects.
-    if (filter->internal->convertedToVersion && celix_filter_propertyValueHasAtLeastTwoDots(propertyValue)) {
+    if (filter->internal->convertedToVersion) {
         bool propertyValueIsVersion = false;
         celix_version_t *value = celix_utils_convertStringToVersion(propertyValue, NULL, &propertyValueIsVersion);
         if (propertyValueIsVersion) {
