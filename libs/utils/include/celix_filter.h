@@ -42,6 +42,9 @@ typedef enum celix_filter_operand_enum
     CELIX_FILTER_OPERAND_NOT,
 } celix_filter_operand_t;
 
+
+typedef struct celix_filter_internal celix_filter_internal_t; //opaque struct for internal use only
+
 typedef struct celix_filter_struct celix_filter_t;
 
 struct celix_filter_struct {
@@ -53,9 +56,9 @@ struct celix_filter_struct {
     //type is celix_filter_t* for AND, OR and NOT operator and char* for SUBSTRING
     //for other operands children is NULL
     celix_array_list_t *children;
+
+    celix_filter_internal_t* internal; //for internal use only
 };
-
-
 
 celix_filter_t* celix_filter_create(const char *filterStr);
 
