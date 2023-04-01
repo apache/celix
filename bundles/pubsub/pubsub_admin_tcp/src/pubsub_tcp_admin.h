@@ -23,7 +23,6 @@
 #include <pubsub_admin_metrics.h>
 #include <pubsub_message_serialization_service.h>
 #include <stdint.h>
-#include "celix_api.h"
 #include "celix_log_helper.h"
 #include "pubsub_psa_tcp_constants.h"
 

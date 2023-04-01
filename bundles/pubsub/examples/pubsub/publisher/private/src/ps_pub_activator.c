@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "celix_api.h"
+#include "celix_bundle_activator.h"
 
 #include "pubsub/publisher.h"
 #include "pubsub_publisher_private.h"
@@ -34,7 +34,7 @@ static const char * PUB_TOPICS[] = {
 
 struct publisherActivator {
     pubsub_sender_t *client;
-    array_list_pt trackerList;//List<service_tracker_pt>
+    celix_array_list_t* trackerList;//List<service_tracker_pt>
 };
 
 static int pub_start(struct publisherActivator *act, celix_bundle_context_t *ctx) {
@@ -82,7 +82,7 @@ static int pub_start(struct publisherActivator *act, celix_bundle_context_t *ctx
 }
 
 static int pub_stop(struct publisherActivator *act, celix_bundle_context_t *ctx) {
-    for (int i = 0; i < arrayList_size(act->trackerList); i++) {
+    for (int i = 0; i < celix_arrayList_size(act->trackerList); i++) {
         long trkId = celix_arrayList_getLong(act->trackerList, i);
         celix_bundleContext_stopTracker(ctx, trkId);
     }

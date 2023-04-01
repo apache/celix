@@ -20,7 +20,6 @@
 #ifndef PUBSUB_UTILS_H_
 #define PUBSUB_UTILS_H_
 
-#include "bundle_context.h"
 #include "celix_array_list.h"
 #include "celix_bundle_context.h"
 #ifdef __cplusplus

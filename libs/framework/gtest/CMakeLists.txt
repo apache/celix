@@ -57,6 +57,7 @@ set(CELIX_FRAMEWORK_TEST_SOURCES
 
 add_executable(test_framework ${CELIX_FRAMEWORK_TEST_SOURCES})
 target_link_libraries(test_framework PRIVATE Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
+celix_deprecated_framework_headers(test_framework)
 
 
 #embed bundle in the test_framework executable

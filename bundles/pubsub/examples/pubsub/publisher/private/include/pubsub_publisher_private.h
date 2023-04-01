@@ -20,12 +20,13 @@
 #ifndef PUBSUB_PUBLISHER_PRIVATE_H_
 #define PUBSUB_PUBLISHER_PRIVATE_H_
 
-#include "celix_api.h"
+#include "celix_array_list.h"
+#include "hash_map.h"
 #include <pthread.h>
 #include "pubsub/publisher.h"
 
 struct pubsub_sender {
-    array_list_pt trackers;
+    celix_array_list_t* trackers;
     const char *ident;
     hash_map_pt tid_map; //service -> tid
     long bundleId;
@@ -40,7 +41,7 @@ struct send_thread_struct {
 };
 typedef struct send_thread_struct send_thread_struct_t;
 
-pubsub_sender_t* publisher_create(array_list_pt trackers, const char* ident,long bundleId);
+pubsub_sender_t* publisher_create(celix_array_list_t* trackers, const char* ident,long bundleId);
 
 void publisher_start(pubsub_sender_t *client);
 void publisher_stop(pubsub_sender_t *client);

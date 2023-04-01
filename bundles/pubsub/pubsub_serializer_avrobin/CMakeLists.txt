@@ -34,6 +34,7 @@ set_target_properties(celix_pubsub_serializer_avrobin PROPERTIES INSTALL_RPATH "
 target_link_libraries(celix_pubsub_serializer_avrobin PRIVATE Celix::framework Celix::dfi ${JANSSON_LIBRARIES} Celix::log_helper)
 target_link_libraries(celix_pubsub_serializer_avrobin PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
 celix_deprecated_utils_headers(celix_pubsub_serializer_avrobin)
+celix_deprecated_framework_headers(celix_pubsub_serializer_avrobin)
 
 install_celix_bundle(celix_pubsub_serializer_avrobin EXPORT celix COMPONENT pubsub)
 

@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <pubsub_message_serialization_service.h>
 
-#include "celix_api.h"
+#include "celix_bundle_activator.h"
 #include "pubsub_protocol.h"
 #include "celix_log_helper.h"
 

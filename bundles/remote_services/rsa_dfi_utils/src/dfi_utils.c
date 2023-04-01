@@ -20,59 +20,52 @@
 #include "dfi_utils.h"
 #include <stdlib.h>
 #include <unistd.h>
-#include "bundle_context.h"
+#include "celix_bundle_context.h"
 
 static celix_status_t dfi_findFileForFramework(celix_bundle_context_t *context, const char *fileName, FILE **out) {
-    celix_status_t  status;
+    celix_status_t  status = CELIX_SUCCESS;
 
     char pwd[1024];
     char path[1024];
-    const char *extPath = NULL;
-   
-    status = bundleContext_getProperty(context, "CELIX_FRAMEWORK_EXTENDER_PATH", &extPath);
-    if (status != CELIX_SUCCESS || extPath == NULL) {
+    const char *extPath = celix_bundleContext_getProperty(context, "CELIX_FRAMEWORK_EXTENDER_PATH", NULL);
+    if (extPath == NULL) {
         getcwd(pwd, sizeof(pwd));
         extPath = pwd;
     }
 
     snprintf(path, sizeof(path), "%s/%s", extPath, fileName);
 
-    if (status == CELIX_SUCCESS) {
-        FILE *df = fopen(path, "r");
-        if (df == NULL) {
-            status = CELIX_FILE_IO_EXCEPTION;
-        } else {
-            *out = df;
-        }
+    FILE *df = fopen(path, "r");
+    if (df == NULL) {
+        status = CELIX_FILE_IO_EXCEPTION;
+    } else {
+        *out = df;
     }
 
     return status;
 }
 
 static celix_status_t dfi_findFileForBundle(const celix_bundle_t *bundle, const char *fileName, FILE **out) {
-    celix_status_t  status;
+    celix_status_t  status = CELIX_SUCCESS;
 
     //Checking if descriptor is in root dir of bundle
-    char *path = NULL;
-    status = bundle_getEntry(bundle, fileName, &path);
+    char *path = celix_bundle_getEntry(bundle, fileName);
 
     char metaInfFileName[512];
-    if (status != CELIX_SUCCESS || path == NULL) {
-        free(path);
+    if (path == NULL) {
         //Checking if descriptor is in META-INF/descriptors
         snprintf(metaInfFileName, sizeof(metaInfFileName), "META-INF/descriptors/%s", fileName);
-        status = bundle_getEntry(bundle, metaInfFileName, &path);
+        path = celix_bundle_getEntry(bundle, metaInfFileName);
     }
 
-    if (status != CELIX_SUCCESS || path == NULL) {
-        free(path);
+    if (path == NULL) {
         //Checking if descriptor is in META-INF/descriptors/services
         snprintf(metaInfFileName, sizeof(metaInfFileName), "META-INF/descriptors/services/%s", fileName);
-        status = bundle_getEntry(bundle, metaInfFileName, &path);
+        path = celix_bundle_getEntry(bundle, metaInfFileName);
     }
 
 
-    if (status == CELIX_SUCCESS && path != NULL) {
+    if (path != NULL) {
         FILE *df = fopen(path, "r");
         if (df == NULL) {
             status = CELIX_FILE_IO_EXCEPTION;
@@ -87,19 +80,17 @@ static celix_status_t dfi_findFileForBundle(const celix_bundle_t *bundle, const 
 }
 
 static celix_status_t dfi_findAvprFileForBundle(const celix_bundle_t *bundle, const char* fileName, FILE **out) {
-    celix_status_t status;
-    char *path = NULL;
-    status = bundle_getEntry(bundle, fileName, &path);
+    celix_status_t status = CELIX_SUCCESS;
+    char* path = celix_bundle_getEntry(bundle, fileName);
 
     char metaInfFileName[512];
 
-    if (status != CELIX_SUCCESS || path == NULL) {
-        free(path);
+    if (path == NULL) {
         snprintf(metaInfFileName, sizeof(metaInfFileName), "META-INF/avpr/%s", fileName);
-        status = bundle_getEntry(bundle, metaInfFileName, &path);
+        path = celix_bundle_getEntry(bundle, metaInfFileName);
     }
 
-    if (status == CELIX_SUCCESS && path != NULL) {
+    if (path != NULL) {
         FILE *df = fopen(path, "r");
         if (df == NULL)  {
             status = CELIX_FILE_IO_EXCEPTION;
@@ -114,44 +105,35 @@ static celix_status_t dfi_findAvprFileForBundle(const celix_bundle_t *bundle, co
 }
 
 celix_status_t dfi_findDescriptor(celix_bundle_context_t *context, const celix_bundle_t *bundle, const char *name, FILE **out) {
-    celix_status_t  status;
     char fileName[128];
-
     snprintf(fileName, 128, "%s.descriptor", name);
+    long id = celix_bundle_getId(bundle);
 
-    long id;
-    status = bundle_getBundleId(bundle, &id);
-    
-    if (status == CELIX_SUCCESS) {
-        if (id == 0) {
-            //framework bundle
-            status = dfi_findFileForFramework(context, fileName, out);
-        } else {
-            //normal bundle
-            status = dfi_findFileForBundle(bundle, fileName, out);
-        }
+    celix_status_t status;
+    if (id == 0) {
+        //framework bundle
+        status = dfi_findFileForFramework(context, fileName, out);
+    } else {
+        //normal bundle
+        status = dfi_findFileForBundle(bundle, fileName, out);
     }
+
 
     return status;
 }
 
 celix_status_t dfi_findAvprDescriptor(celix_bundle_context_t *context, const celix_bundle_t *bundle, const char *name, FILE **out) {
-    celix_status_t  status;
     char fileName[128];
-
     snprintf(fileName, 128, "%s.avpr", name);
+    long id = celix_bundle_getId(bundle);
 
-    long id;
-    status = bundle_getBundleId(bundle, &id);
-
-    if (status == CELIX_SUCCESS) {
-        if (id == 0) {
-            //framework bundle
-            status = dfi_findFileForFramework(context, fileName, out);
-        } else {
-            //normal bundle
-            status = dfi_findAvprFileForBundle(bundle, fileName, out);
-        }
+    celix_status_t status;
+    if (id == 0) {
+        //framework bundle
+        status = dfi_findFileForFramework(context, fileName, out);
+    } else {
+        //normal bundle
+        status = dfi_findAvprFileForBundle(bundle, fileName, out);
     }
 
     return status;

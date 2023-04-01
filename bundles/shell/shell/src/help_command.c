@@ -21,7 +21,8 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "celix_api.h"
+#include "celix_array_list.h"
+#include "celix_utils.h"
 #include "celix_shell.h"
 #include "std_commands.h"
 
@@ -54,8 +55,8 @@ static void printHelp(void *handle, void *svc) {
         celix_array_list_t *commands = NULL;
 
         shell->getCommands(shell->handle, &commands);
-        for (i = 0; i < arrayList_size(commands); i++) {
-            char *name = arrayList_get(commands, i);
+        for (i = 0; i < celix_arrayList_size(commands); i++) {
+            char *name = celix_arrayList_get(commands, i);
             fprintf(out, "%s\n", name);
             free(name);
         }

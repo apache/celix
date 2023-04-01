@@ -19,11 +19,11 @@
 
 #include <dfi_utils.h>
 #include <celix_log_helper.h>
-#include <celix_api.h>
 #include <gtest/gtest.h>
 #include <memory>
 #include <string>
-
+#include "celix_constants.h"
+#include "celix_framework_factory.h"
 
 class DfiUtilsTestSuite : public ::testing::Test {
 public:

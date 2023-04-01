@@ -22,12 +22,14 @@
 #include <string.h>
 
 #include "shell_private.h"
-#include "bundle_activator.h"
+#include "celix_bundle_activator.h"
 #include "std_commands.h"
-#include "service_tracker.h"
 #include "celix_constants.h"
 #include "celix_shell_command.h"
 #include "std_commands.h"
+
+//declaration of bundleArchive_create used for testing
+extern celix_status_t bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, bundle_archive_pt *bundle_archive);
 
 
 struct shell_bundle_activator {
@@ -42,7 +44,7 @@ struct shell_bundle_activator {
 
 typedef struct shell_bundle_activator shell_bundle_activator_t;
 
-celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr) {
+celix_status_t celix_bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr) {
 	celix_status_t status = CELIX_SUCCESS;
 
     shell_bundle_activator_t* activator = NULL;
@@ -68,13 +70,13 @@ celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr)
 
 
     if (status != CELIX_SUCCESS) {
-        bundleActivator_destroy(activator, ctx);
+        celix_bundleActivator_destroy(activator, ctx);
     }
 
 	return status;
 }
 
-celix_status_t bundleActivator_start(void *activatorData, celix_bundle_context_t* ctx) {
+celix_status_t celix_bundleActivator_start(void *activatorData, celix_bundle_context_t* ctx) {
 	celix_status_t status = CELIX_SUCCESS;
 
     shell_bundle_activator_t* activator  = (shell_bundle_activator_t*) activatorData;
@@ -128,7 +130,7 @@ celix_status_t bundleActivator_start(void *activatorData, celix_bundle_context_t
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void *activatorData, celix_bundle_context_t* ctx) {
+celix_status_t celix_bundleActivator_stop(void *activatorData, celix_bundle_context_t* ctx) {
     celix_status_t status = CELIX_SUCCESS;
 
     shell_bundle_activator_t* activator = activatorData;
@@ -146,7 +148,7 @@ celix_status_t bundleActivator_stop(void *activatorData, celix_bundle_context_t*
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void *activatorData, celix_bundle_context_t* __attribute__((__unused__)) ctx) {
+celix_status_t celix_bundleActivator_destroy(void *activatorData, celix_bundle_context_t* __attribute__((__unused__)) ctx) {
     celix_status_t status = CELIX_SUCCESS;
     shell_bundle_activator_t* activator = activatorData;
 
