@@ -17,7 +17,9 @@
  * under the License.
  */
 #include "endpoint_listener.h"
-#include "celix_api.h"
+#include "celix_framework_factory.h"
+#include "celix_bundle_context.h"
+#include "celix_constants.h"
 #include <gtest/gtest.h>
 
 class DiscoveryZeroconfIntegrationTestSuite : public ::testing::Test {

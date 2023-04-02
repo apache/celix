@@ -25,7 +25,9 @@ extern "C" {
 }
 #include "endpoint_listener.h"
 #include "celix_log_helper.h"
-#include "celix_api.h"
+#include "celix_bundle_context.h"
+#include "celix_framework_factory.h"
+#include "celix_constants.h"
 #include "celix_errno.h"
 #include "eventfd_ei.h"
 #include "celix_threads_ei.h"
