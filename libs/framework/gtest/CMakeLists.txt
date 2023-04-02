@@ -149,6 +149,7 @@ if (ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11)
             SIMPLE_CXX_DEP_MAN_BUNDLE_LOC="${SIMPLE_CXX_DEP_MAN_BUNDLE_LOC}"
             )
     celix_deprecated_utils_headers(test_dep_man_with_cxx11)
+    celix_deprecated_framework_headers(test_dep_man_with_cxx11)
     add_test(NAME test_dep_man_with_cxx11 COMMAND test_dep_man_with_cxx11)
     setup_target_for_coverage(test_dep_man_with_cxx11 SCAN_DIR ..)
 
@@ -164,6 +165,7 @@ if (ENABLE_TESTING_FOR_CXX14)
     add_executable(test_framework_with_cxx14 ${CELIX_FRAMEWORK_TEST_SOURCES})
     target_link_libraries(test_framework_with_cxx14 PRIVATE Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
     celix_deprecated_utils_headers(test_framework_with_cxx14)
+    celix_deprecated_framework_headers(test_framework_with_cxx14)
     add_celix_bundle_dependencies(test_framework_with_cxx14
             simple_test_bundle1
             simple_test_bundle2 simple_test_bundle3 simple_test_bundle4
