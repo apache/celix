@@ -36,4 +36,11 @@ celix_status_t __wrap_celixThread_create(celix_thread_t *__new_thread, celix_thr
     CELIX_EI_IMPL_POSITIVE(celixThread_create);
     return __real_celixThread_create(__new_thread, __attr, __func, __data);
 }
+
+celix_status_t __real_celixThreadCondition_init(celix_thread_cond_t *__condition, celix_thread_condattr_t *__attr);
+CELIX_EI_DEFINE(celixThreadCondition_init, celix_status_t)
+celix_status_t __wrap_celixThreadCondition_init(celix_thread_cond_t *__condition, celix_thread_condattr_t *__attr) {
+    CELIX_EI_IMPL_POSITIVE(celixThreadCondition_init);
+    return __real_celixThreadCondition_init(__condition, __attr);
+}
 }

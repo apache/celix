@@ -16,22 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-
-#ifndef CELIX_CELIX_THREADS_EI_H
-#define CELIX_CELIX_THREADS_EI_H
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include "celix_errno.h"
+#include "sys_shm_ei.h"
 #include "celix_error_injector.h"
+#include <sys/shm.h>
 
-CELIX_EI_DECLARE(celixThreadMutex_create, celix_status_t);
-CELIX_EI_DECLARE(celixThread_create, celix_status_t);
-CELIX_EI_DECLARE(celixThreadCondition_init, celix_status_t);
-#ifdef __cplusplus
+extern "C" {
+int __real_shmget(key_t __key, size_t __size, int __shmflg);
+CELIX_EI_DEFINE(shmget, int)
+int __wrap_shmget(key_t __key, size_t __size, int __shmflg) {
+    CELIX_EI_IMPL_NEGATIVE(shmget);
+    return __real_shmget(__key, __size, __shmflg);
 }
-#endif
 
-#endif //CELIX_CELIX_THREADS_EI_H
+void *__real_shmat(int __shmid, const void *__shmaddr, int __shmflg);
+CELIX_EI_DEFINE(shmat, void *)
+void *__wrap_shmat(int __shmid, const void *__shmaddr, int __shmflg) {
+    CELIX_EI_IMPL0(shmat);
+    return __real_shmat(__shmid, __shmaddr, __shmflg);
+}
+
+}

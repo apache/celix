@@ -15,20 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+add_library(sys_shm_ei STATIC src/sys_shm_ei.cc)
 
-add_executable(test_shm_pool
-        src/ShmPoolTestSuite.cc
-        src/ShmCacheTestSuite.cc
-)
+target_include_directories(sys_shm_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(sys_shm_ei PUBLIC Celix::error_injector)
 
-target_link_libraries(test_shm_pool PRIVATE
-        Celix::shm_pool
-        Celix::utils
-        Celix::malloc_ei
-        Celix::threads_ei
-        Celix::sys_shm_ei
-        GTest::gtest GTest::gtest_main)
-
-add_test(NAME run_test_shm_pool COMMAND test_shm_pool)
-setup_target_for_coverage(test_shm_pool SCAN_DIR ..)
-
+target_link_options(sys_shm_ei INTERFACE LINKER:--wrap,shmget LINKER:--wrap,shmat)
+add_library(Celix::sys_shm_ei ALIAS sys_shm_ei)
