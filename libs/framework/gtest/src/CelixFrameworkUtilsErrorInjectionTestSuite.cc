@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include <dirent.h>
+#include <time.h>
 
 #include "celix/FrameworkFactory.h"
 #include "celix/FrameworkUtils.h"
@@ -37,6 +38,8 @@ public:
     ~CelixFrameworkUtilsErrorInjectionTestSuite () override {
         celix_ei_expect_celix_utils_extractZipData(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_celix_utils_extractZipFile(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_utils_writeOrCreateString(nullptr, 0, nullptr);
+        celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
     }
     std::shared_ptr<celix::Framework> framework{};
 };
@@ -59,4 +62,28 @@ TEST_F(CelixFrameworkUtilsErrorInjectionTestSuite, testExtractFileBundle) {
     auto status = celix_framework_utils_extractBundle(framework->getCFramework(), SIMPLE_TEST_BUNDLE1_LOCATION, testExtractDir);
     EXPECT_EQ(status, CELIX_ENOMEM);
     celix_utils_deleteDirectory(testExtractDir, nullptr);
+
+    // not enough memory for bundle url validation
+    celix_ei_expect_celix_utils_writeOrCreateString(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 1);
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), SIMPLE_TEST_BUNDLE1_LOCATION, testExtractDir);
+    EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+    celix_utils_deleteDirectory(testExtractDir, nullptr);
+
+    // not enough memory to resolve URL before unzipping
+    celix_ei_expect_celix_utils_writeOrCreateString(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 2);
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), SIMPLE_TEST_BUNDLE1_LOCATION, testExtractDir);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    celix_utils_deleteDirectory(testExtractDir, nullptr);
+}
+
+TEST_F(CelixFrameworkUtilsErrorInjectionTestSuite, CheckBundleAge) {
+    struct timespec now = {0, 0};
+    celix_ei_expect_celix_utils_writeOrCreateString(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 1);
+    EXPECT_FALSE(celix_framework_utils_isBundleUrlNewerThan(framework->getCFramework(), SIMPLE_TEST_BUNDLE1_LOCATION, &now));
+}
+
+TEST_F(CelixFrameworkUtilsErrorInjectionTestSuite, testIsBundleUrlValid) {
+    celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    auto valid = celix_framework_utils_isBundleUrlValid(framework->getCFramework(), "non-existing.zip", false);
+    EXPECT_FALSE(valid);
 }

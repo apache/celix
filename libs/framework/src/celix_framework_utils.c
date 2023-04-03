@@ -20,6 +20,7 @@
 #include "celix_framework_utils.h"
 #include "celix_framework_utils_private.h"
 
+#include <errno.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -57,43 +58,42 @@ static const char * const EMBEDDED_BUNDLE_END_POSTFIX = "_end";
  */
 static char* celix_framework_utils_resolveFileBundleUrl(char* pathBuffer, size_t pathBufferSize, celix_framework_t* fw, const char* bundleLocation, bool silent) {
     char *result = NULL;
+    if (celix_utils_isStringNullOrEmpty(bundleLocation)) {
+        if (!silent) {
+            FW_LOG(CELIX_LOG_LEVEL_ERROR, "Invalid bundle empty bundle path.");
+        }
+        return NULL;
+    }
 
-    const char *bundlePath = celix_framework_getConfigProperty(fw, CELIX_BUNDLES_PATH_NAME, CELIX_BUNDLES_PATH_DEFAULT,
-                                                               NULL);
-
-    if (!celix_utils_isStringNullOrEmpty(bundleLocation)) {
-        if (celix_utils_fileExists(bundleLocation)) {
-            //absolute/relative path to existing file.
-            result = celix_utils_writeOrCreateString(pathBuffer, pathBufferSize, "%s", bundleLocation);
-        } else if (bundleLocation[0] != '/'){
-            //relative path to a non-existing file, check the bundle paths.
-            char *paths = celix_utils_strdup(bundlePath);
-            const char *sep = ":";
-            char *savePtr = NULL;
-
-            for (char *path = strtok_r(paths, sep, &savePtr); path != NULL; path = strtok_r(NULL, sep, &savePtr)){
-                char* resolvedPath = celix_utils_writeOrCreateString(pathBuffer, pathBufferSize, "%s/%s", path, bundleLocation);
-                if (celix_utils_fileExists(resolvedPath)) {
-                    result = resolvedPath;
-                    break;
-                } else {
-                    celix_utils_freeStringIfNotEqual(pathBuffer, resolvedPath);
-                }
-            }
-            free(paths);
-
-            if (result == NULL && !silent) {
-                FW_LOG(CELIX_LOG_LEVEL_ERROR, "Bundle location '%s' is not valid. Relative path does not point to existing file taking into account the cwd and Celix bundle path '%s'.", bundleLocation, bundlePath);
-            }
-        } else {
-            // absolute path to non-existing file.
-            if (!silent) {
-                FW_LOG(CELIX_LOG_LEVEL_ERROR, "Bundle location '%s' is not valid, file does not exist.", bundleLocation);
-            }
+    const char *bundlePath = celix_framework_getConfigProperty(fw, CELIX_BUNDLES_PATH_NAME, CELIX_BUNDLES_PATH_DEFAULT, NULL);
+    if (celix_utils_fileExists(bundleLocation)) {
+        //absolute/relative path to existing file.
+        result = celix_utils_writeOrCreateString(pathBuffer, pathBufferSize, "%s", bundleLocation);
+    } else if (bundleLocation[0] != '/'){
+        errno = 0;
+        //relative path to a non-existing file, check the bundle paths.
+        char *paths = celix_utils_strdup(bundlePath);
+        const char *sep = ":";
+        char *savePtr = NULL;
+        if (paths == NULL) {
+            goto error_out;
         }
 
-    } else if (!silent) {
-        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Invalid bundle empty bundle path.");
+        for (char *path = strtok_r(paths, sep, &savePtr); path != NULL; path = strtok_r(NULL, sep, &savePtr)){
+            char* resolvedPath = celix_utils_writeOrCreateString(pathBuffer, pathBufferSize, "%s/%s", path, bundleLocation);
+            if (celix_utils_fileExists(resolvedPath)) {
+                result = resolvedPath;
+                break;
+            } else {
+                celix_utils_freeStringIfNotEqual(pathBuffer, resolvedPath);
+            }
+        }
+        free(paths);
+    }
+error_out:
+    if (result == NULL && !silent) {
+        FW_LOG(CELIX_LOG_LEVEL_ERROR, "Failed(%s) to resolve bundle location '%s', taking into account the cwd and Celix bundle path '%s'.",
+               strerror(errno), bundleLocation, bundlePath);
     }
     return result;
 }
@@ -167,7 +167,10 @@ static celix_status_t celix_framework_utils_extractBundlePath(celix_framework_t 
 
     char buffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
     char* resolvedPath = celix_framework_utils_resolveFileBundleUrl(buffer, sizeof(buffer), fw, bundlePath, false);
-    assert(resolvedPath != NULL); //should be caught by celix_framework_utils_isBundleUrlValid
+    if (resolvedPath == NULL) {
+        //other errors should be caught by celix_framework_utils_isBundleUrlValid
+        return CELIX_ENOMEM;
+    }
     celix_status_t status = celix_utils_extractZipFile(resolvedPath, extractPath, &err);
     framework_logIfError(fw->logger, status, err, "Could not extract bundle zip file `%s` to `%s`", resolvedPath, extractPath);
     celix_utils_freeStringIfNotEqual(buffer, resolvedPath);
