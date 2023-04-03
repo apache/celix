@@ -138,7 +138,7 @@ namespace celix {
             }
 #endif
 
-            [[nodiscard]] const char* getValue() const {
+            const char* getValue() const {
                 if (charKey == nullptr) {
                     return celix_properties_get(props.get(), stringKey.c_str(), nullptr);
                 } else {
@@ -200,7 +200,7 @@ namespace celix {
          * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
          * the C++ API.
          */
-        [[nodiscard]] celix_properties_t* getCProperties() const {
+        celix_properties_t* getCProperties() const {
             return cProps.get();
         }
 
@@ -237,14 +237,14 @@ namespace celix {
         /**
          * @brief begin iterator
          */
-        [[nodiscard]] const_iterator begin() const noexcept {
+        const_iterator begin() const noexcept {
             return PropertiesIterator{cProps.get()};
         }
 
         /**
          * @brief end iterator
          */
-        [[nodiscard]] const_iterator end() const noexcept {
+        const_iterator end() const noexcept {
             auto iter = PropertiesIterator{cProps.get()};
             iter.moveToEnd();
             return iter;
@@ -253,14 +253,14 @@ namespace celix {
         /**
          * @brief constant begin iterator
          */
-        [[nodiscard]] const_iterator cbegin() const noexcept {
+        const_iterator cbegin() const noexcept {
             return PropertiesIterator{cProps.get()};
         }
 
         /**
          * @brief constant end iterator
          */
-        [[nodiscard]] const_iterator cend() const noexcept {
+        const_iterator cend() const noexcept {
             auto iter = PropertiesIterator{cProps.get()};
             iter.moveToEnd();
             return iter;
@@ -270,7 +270,7 @@ namespace celix {
         /**
          * @brief Get the value for a property key or return the defaultValue if the key does not exists.
          */
-        [[nodiscard]] std::string get(std::string_view key, std::string_view defaultValue = {}) const {
+        std::string get(std::string_view key, std::string_view defaultValue = {}) const {
             const char* found = celix_properties_get(cProps.get(), key.data(), nullptr);
             return found == nullptr ? std::string{defaultValue} : std::string{found};
         }
@@ -278,21 +278,21 @@ namespace celix {
         /**
          * @brief Get the value as long for a property key or return the defaultValue if the key does not exists.
          */
-        [[nodiscard]] long getAsLong(std::string_view key, long defaultValue) const {
+        long getAsLong(std::string_view key, long defaultValue) const {
             return celix_properties_getAsLong(cProps.get(), key.data(), defaultValue);
         }
 
         /**
          * @brief Get the value as double for a property key or return the defaultValue if the key does not exists.
          */
-        [[nodiscard]] double getAsDouble(std::string_view key, double defaultValue) const {
+        double getAsDouble(std::string_view key, double defaultValue) const {
             return celix_properties_getAsDouble(cProps.get(), key.data(), defaultValue);
         }
 
         /**
          * @brief Get the value as bool for a property key or return the defaultValue if the key does not exists.
          */
-        [[nodiscard]] bool getAsBool(std::string_view key, bool defaultValue) const {
+        bool getAsBool(std::string_view key, bool defaultValue) const {
             return celix_properties_getAsBool(cProps.get(), key.data(), defaultValue);
         }
 
@@ -317,7 +317,7 @@ namespace celix {
         /**
          * @brief Get the value for a property key or return the defaultValue if the key does not exists.
          */
-        [[nodiscard]] std::string get(const std::string& key, const std::string& defaultValue = {}) const {
+        std::string get(const std::string& key, const std::string& defaultValue = {}) const {
             const char* found = celix_properties_get(cProps.get(), key.c_str(), nullptr);
             return found == nullptr ? std::string{defaultValue} : std::string{found};
         }
@@ -325,21 +325,21 @@ namespace celix {
         /**
          * @brief Get the value as long for a property key or return the defaultValue if the key does not exists.
          */
-        [[nodiscard]] long getAsLong(const std::string& key, long defaultValue) const {
+        long getAsLong(const std::string& key, long defaultValue) const {
             return celix_properties_getAsLong(cProps.get(), key.c_str(), defaultValue);
         }
 
         /**
          * @brief Get the value as double for a property key or return the defaultValue if the key does not exists.
          */
-        [[nodiscard]] double getAsDouble(const std::string &key, double defaultValue) const {
+        double getAsDouble(const std::string &key, double defaultValue) const {
             return celix_properties_getAsDouble(cProps.get(), key.c_str(), defaultValue);
         }
 
         /**
          * @brief Get the value as bool for a property key or return the defaultValue if the key does not exists.
          */
-        [[nodiscard]] bool getAsBool(const std::string &key, bool defaultValue) const {
+        bool getAsBool(const std::string &key, bool defaultValue) const {
             return celix_properties_getAsBool(cProps.get(), key.c_str(), defaultValue);
         }
 
@@ -377,14 +377,14 @@ namespace celix {
         /**
          * @brief Returns the nr of properties.
          */
-        [[nodiscard]] std::size_t size() const {
+        std::size_t size() const {
             return celix_properties_size(cProps.get());
         }
 
         /**
          * @brief Converts the properties a (new) std::string, std::string map.
          */
-        [[nodiscard]] std::map<std::string, std::string> convertToMap() const {
+        std::map<std::string, std::string> convertToMap() const {
             std::map<std::string, std::string> result{};
             for (const auto& pair : *this) {
                 result[pair.first] = pair.second;
@@ -395,7 +395,7 @@ namespace celix {
         /**
          * @brief Converts the properties a (new) std::string, std::string unordered map.
          */
-        [[nodiscard]] std::unordered_map<std::string, std::string> convertToUnorderedMap() const {
+        std::unordered_map<std::string, std::string> convertToUnorderedMap() const {
             std::unordered_map<std::string, std::string> result{};
             for (const auto& pair : *this) {
                 result[pair.first] = pair.second;

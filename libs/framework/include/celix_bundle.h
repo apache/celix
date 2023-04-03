@@ -123,9 +123,10 @@ const char* celix_bundle_getDescription(const celix_bundle_t* bnd);
  * The location the location passed to celix_bundleContext_installBundle when a bundle is installed.
  * For the framework bundle, the location will be NULL.
  *
- * Note the return value is valid as long as the bundle is installed.
+ * @return The update location of the bundle or NULL if the bundle is the framework bundle.
+ * The caller is responsible for freeing the returned string.
  */
-const char* celix_bundle_getLocation(const celix_bundle_t *bnd);
+char* celix_bundle_getLocation(const celix_bundle_t *bnd);
 
 /**
  * @brief Return the bundle version.

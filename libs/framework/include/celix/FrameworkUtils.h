@@ -46,8 +46,13 @@ namespace celix {
         list.reserve(celix_arrayList_size(cList));
         for (int i = 0; i< celix_arrayList_size(cList); ++i) {
             auto* cStr = static_cast<char*>(celix_arrayList_get(cList, i));
-            list.emplace_back(std::string{cStr});
-            free(cStr);
+            try {
+                list.emplace_back(cStr);
+                free(cStr);
+            } catch (...) {
+                free(cStr);
+                throw;
+            }
         }
         celix_arrayList_destroy(cList);
         return list;

@@ -497,7 +497,7 @@ namespace celix {
          *
          * @return A vector with bundle ids.
          */
-        [[nodiscard]] std::vector<long> listBundleIds() const {
+        std::vector<long> listBundleIds() const {
             return listBundlesInternal(true);
         }
 
@@ -507,7 +507,7 @@ namespace celix {
          *
          * @return A vector with bundle ids.
          */
-        [[nodiscard]] std::vector<long> listInstalledBundleIds() {
+        std::vector<long> listInstalledBundleIds() {
             return listBundlesInternal(false);
         }
 
@@ -523,7 +523,7 @@ namespace celix {
          * @return The config property value for the provided key or the provided defaultValue is the name is not found.
          */
 #if __cplusplus >= 201703L //C++17 or higher
-        [[nodiscard]] std::string getConfigProperty(std::string_view name, std::string_view defaultValue) const {
+        std::string getConfigProperty(std::string_view name, std::string_view defaultValue) const {
             return std::string{celix_bundleContext_getProperty(cCtx.get(), name.data(), defaultValue.data())};
         }
 #else
@@ -545,7 +545,7 @@ namespace celix {
          * is not found or not a valid long.
          */
 #if __cplusplus >= 201703L //C++17 or higher
-        [[nodiscard]] long getConfigPropertyAsLong(std::string_view name, long defaultValue) const {
+        long getConfigPropertyAsLong(std::string_view name, long defaultValue) const {
             return celix_bundleContext_getPropertyAsLong(cCtx.get(), name.data(), defaultValue);
         }
 #else
@@ -567,7 +567,7 @@ namespace celix {
          * is not found or not a valid double.
          */
 #if __cplusplus >= 201703L //C++17 or higher
-        [[nodiscard]] double getConfigPropertyAsDouble(std::string_view name, double defaultValue) const {
+        double getConfigPropertyAsDouble(std::string_view name, double defaultValue) const {
             return celix_bundleContext_getPropertyAsDouble(cCtx.get(), name.data(), defaultValue);
         }
 #else
@@ -591,7 +591,7 @@ namespace celix {
          * is not found or not a valid boolean.
          */
 #if __cplusplus >= 201703L //C++17 or higher
-        [[nodiscard]] long getConfigPropertyAsBool(std::string_view name, bool defaultValue) const {
+        long getConfigPropertyAsBool(std::string_view name, bool defaultValue) const {
             return celix_bundleContext_getPropertyAsBool(cCtx.get(), name.data(), defaultValue);
         }
 #else
@@ -603,21 +603,21 @@ namespace celix {
         /**
          * @brief Get the bundle of this bundle context.
          */
-        [[nodiscard]] const Bundle& getBundle() const {
+        const Bundle& getBundle() const {
             return bnd;
         }
 
         /**
          * @brief Get the bundle id for the bundle of this bundle context
          */
-        [[nodiscard]] long getBundleId() const {
+        long getBundleId() const {
              return bnd.getId();
          }
 
         /**
          * @brief Get the Celix framework for this bundle context.
          */
-        [[nodiscard]] std::shared_ptr<Framework> getFramework() const {
+        std::shared_ptr<Framework> getFramework() const {
             auto* cFw = celix_bundleContext_getFramework(cCtx.get());
             auto fwCtx = std::make_shared<celix::BundleContext>(celix_framework_getFrameworkContext(cFw));
             return std::make_shared<Framework>(fwCtx, cFw);
@@ -626,7 +626,7 @@ namespace celix {
         /**
          * @brief Get the Celix dependency manager for this bundle context
          */
-        [[nodiscard]] std::shared_ptr<dm::DependencyManager> getDependencyManager() const {
+        std::shared_ptr<dm::DependencyManager> getDependencyManager() const {
             return dm;
         }
 
@@ -636,7 +636,7 @@ namespace celix {
          * @warning Try not the depend on the C API from a C++ BundleContext.
          * If features are missing these should be added to the C++ API.
          */
-        [[nodiscard]] celix_bundle_context_t* getCBundleContext() const {
+        celix_bundle_context_t* getCBundleContext() const {
             return cCtx.get();
         }
 
@@ -747,7 +747,7 @@ namespace celix {
             }
          }
     private:
-        [[nodiscard]] std::vector<long> listBundlesInternal(bool activeOnly) const {
+        std::vector<long> listBundlesInternal(bool activeOnly) const {
             std::vector<long> result{};
             auto* ids = activeOnly ?
                         celix_bundleContext_listBundles(getCBundleContext()) :
