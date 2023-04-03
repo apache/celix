@@ -71,8 +71,8 @@ static void lbCommand_collectBundleInfo_callback(void* data, const celix_bundle_
         info->version = celix_version_copy(celix_bundle_getVersion(bnd));
         info->group = celix_utils_strdup(celix_bundle_getGroup(bnd));
         info->state = celix_bundle_getState(bnd);
+        celix_arrayList_add(infoEntries, info);
     }
-    celix_arrayList_add(infoEntries, info);
 }
 
 static celix_array_list_t* lbCommand_collectBundleInfo(celix_bundle_context_t *ctx) {
