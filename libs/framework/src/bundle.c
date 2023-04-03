@@ -591,10 +591,10 @@ const char* celix_bundle_getDescription(const celix_bundle_t* bnd) {
     return bnd->description;
 }
 
-const char* celix_bundle_getLocation(const celix_bundle_t *bnd) {
-    const char* result = NULL;
+char* celix_bundle_getLocation(const celix_bundle_t *bnd) {
+    char* result = NULL;
     if (bnd->archive != NULL) {
-        bundleArchive_getLocation(bnd->archive, &result);
+        result = celix_bundleArchive_getLocation(bnd->archive);
     }
     return result;
 }
