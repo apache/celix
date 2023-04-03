@@ -75,29 +75,25 @@ static void lbCommand_collectBundleInfo_callback(void* data, const celix_bundle_
     }
 }
 
+static void lbCommand_freeBundleInfoEntry(void* entry) {
+    lb_command_bundle_info_t* info = entry;
+    free(info->name);
+    free(info->symbolicName);
+    free(info->location);
+    free(info->group);
+    celix_version_destroy(info->version);
+    free(info);
+}
+
 static celix_array_list_t* lbCommand_collectBundleInfo(celix_bundle_context_t *ctx) {
-    celix_array_list_t* infoEntries = celix_arrayList_create();
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    opts.simpleRemovedCallback = lbCommand_freeBundleInfoEntry;
+    celix_array_list_t* infoEntries = celix_arrayList_createWithOptions(&opts);
     if (infoEntries != NULL) {
         celix_bundleContext_useBundles(ctx, (void*)infoEntries, lbCommand_collectBundleInfo_callback);
         celix_arrayList_sortEntries(infoEntries, lbCommand_bundleInfoCmp);
     }
     return infoEntries;
-}
-
-static void lbCommand_freeBundleInfoEntries(celix_array_list_t* infoEntries) {
-    if (infoEntries == NULL) {
-        return;
-    }
-    for (int i = 0; i < celix_arrayList_size(infoEntries); ++i) {
-        lb_command_bundle_info_t* info = celix_arrayList_get(infoEntries, i);
-        free(info->name);
-        free(info->symbolicName);
-        free(info->location);
-        free(info->group);
-        celix_version_destroy(info->version);
-        free(info);
-    }
-    celix_arrayList_destroy(infoEntries);
 }
 
 static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_t *opts, FILE *out) {
@@ -153,7 +149,7 @@ static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_
     }
     fprintf(out, "\n\n");
 
-    lbCommand_freeBundleInfoEntries(infoEntries);
+    celix_arrayList_destroy(infoEntries);
 }
 
 bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *out_ptr, FILE *err_ptr) {

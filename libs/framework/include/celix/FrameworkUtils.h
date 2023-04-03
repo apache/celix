@@ -46,13 +46,8 @@ namespace celix {
         list.reserve(celix_arrayList_size(cList));
         for (int i = 0; i< celix_arrayList_size(cList); ++i) {
             auto* cStr = static_cast<char*>(celix_arrayList_get(cList, i));
-            try {
-                list.emplace_back(cStr);
-                free(cStr);
-            } catch (...) {
-                free(cStr);
-                throw;
-            }
+            std::unique_ptr<char, void(*)(void*)> strGuard{cStr, free}; //ensure RAII if emplace_back throws
+            list.emplace_back(cStr);
         }
         celix_arrayList_destroy(cList);
         return list;
