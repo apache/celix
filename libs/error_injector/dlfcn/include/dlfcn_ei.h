@@ -17,24 +17,20 @@
   under the License.
  */
 
-#include "asprintf_ei.h"
-#include <cstdarg>
-#include <cstdio>
-#include <errno.h>
-
+#ifndef CELIX_DLFCN_EI_H
+#define CELIX_DLFCN_EI_H
+#ifdef __cplusplus
 extern "C" {
+#endif
 
-int __real_asprintf(char** buf, const char* format, ...);
-CELIX_EI_DEFINE(asprintf, int)
-int __wrap_asprintf(char** buf, const char* format, ...) {
-    errno = ENOMEM;
-    CELIX_EI_IMPL(asprintf);
-    errno = 0;
-    va_list args;
-    va_start(args, format);
-    int rc = vasprintf(buf, format, args);
-    va_end(args);
-    return rc;
-}
+#include "celix_error_injector.h"
+#include <dlfcn.h>
 
+CELIX_EI_DECLARE(dlopen, void *);
+
+CELIX_EI_DECLARE(dlerror, char *);
+
+#ifdef __cplusplus
 }
+#endif
+#endif //CELIX_DLFCN_EI_H

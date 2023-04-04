@@ -27,7 +27,9 @@
 
 #include "celix_framework_utils_private.h"
 #include "celix_file_utils.h"
+#include "asprintf_ei.h"
 #include "celix_utils_ei.h"
+#include "dlfcn_ei.h"
 
 class CelixFrameworkUtilsErrorInjectionTestSuite : public ::testing::Test {
 public:
@@ -40,6 +42,9 @@ public:
         celix_ei_expect_celix_utils_extractZipFile(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_celix_utils_writeOrCreateString(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
+        celix_ei_expect_dlopen(nullptr, 0, nullptr);
+        celix_ei_expect_dlerror(nullptr, 0, nullptr);
+        celix_ei_expect_asprintf(nullptr, 0, 0);
     }
     std::shared_ptr<celix::Framework> framework{};
 };
@@ -51,6 +56,12 @@ TEST_F(CelixFrameworkUtilsErrorInjectionTestSuite, testExtractEmbeddedBundle) {
     celix_ei_expect_celix_utils_extractZipData(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_BUNDLE_EXCEPTION);
     auto status = celix_framework_utils_extractBundle(framework->getCFramework(), "embedded://simple_test_bundle1", testExtractDir);
     EXPECT_EQ(status, CELIX_BUNDLE_EXCEPTION);
+    celix_utils_deleteDirectory(testExtractDir, nullptr);
+
+    celix_ei_expect_dlopen(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 2);
+    celix_ei_expect_dlerror(CELIX_EI_UNKNOWN_CALLER, 0, (char *)"Inject dl error");
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), "embedded://simple_test_bundle1", testExtractDir);
+    EXPECT_EQ(status, CELIX_FRAMEWORK_EXCEPTION);
     celix_utils_deleteDirectory(testExtractDir, nullptr);
 }
 
@@ -85,5 +96,18 @@ TEST_F(CelixFrameworkUtilsErrorInjectionTestSuite, CheckBundleAge) {
 TEST_F(CelixFrameworkUtilsErrorInjectionTestSuite, testIsBundleUrlValid) {
     celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
     auto valid = celix_framework_utils_isBundleUrlValid(framework->getCFramework(), "non-existing.zip", false);
+    EXPECT_FALSE(valid);
+
+    celix_ei_expect_dlopen(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    celix_ei_expect_dlerror(CELIX_EI_UNKNOWN_CALLER, 0, (char *)"Inject dl error");
+    valid = celix_framework_utils_isBundleUrlValid(framework->getCFramework(), "embedded://simple_test_bundle1", false);
+    EXPECT_FALSE(valid);
+
+    celix_ei_expect_asprintf(CELIX_EI_UNKNOWN_CALLER, 0, -1);
+    valid = celix_framework_utils_isBundleUrlValid(framework->getCFramework(), "embedded://simple_test_bundle1", false);
+    EXPECT_FALSE(valid);
+
+    celix_ei_expect_asprintf(CELIX_EI_UNKNOWN_CALLER, 0, -1, 2);
+    valid = celix_framework_utils_isBundleUrlValid(framework->getCFramework(), "embedded://simple_test_bundle1", false);
     EXPECT_FALSE(valid);
 }

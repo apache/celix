@@ -17,24 +17,22 @@
   under the License.
  */
 
-#include "asprintf_ei.h"
-#include <cstdarg>
-#include <cstdio>
+#include "dlfcn_ei.h"
 #include <errno.h>
 
 extern "C" {
+void *__real_dlopen(const char *__file, int __mode);
+CELIX_EI_DEFINE(dlopen, void *)
+void *__wrap_dlopen(const char *__file, int __mode) {
+    CELIX_EI_IMPL(dlopen);
+    return __real_dlopen(__file, __mode);
+}
 
-int __real_asprintf(char** buf, const char* format, ...);
-CELIX_EI_DEFINE(asprintf, int)
-int __wrap_asprintf(char** buf, const char* format, ...) {
-    errno = ENOMEM;
-    CELIX_EI_IMPL(asprintf);
-    errno = 0;
-    va_list args;
-    va_start(args, format);
-    int rc = vasprintf(buf, format, args);
-    va_end(args);
-    return rc;
+char *__real_dlerror(void);
+CELIX_EI_DEFINE(dlerror, char *)
+char *__wrap_dlerror(void) {
+    CELIX_EI_IMPL(dlerror);
+    return __real_dlerror();
 }
 
 }
