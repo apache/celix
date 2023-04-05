@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-#
+# 
 #   http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,28 +15,19 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#utils, dfi and etcdlib are standalone
-#(e.g. no dependency on celix framework
-add_subdirectory(utils)
-add_subdirectory(dfi)
-add_subdirectory(etcdlib)
-add_subdirectory(promises)
-add_subdirectory(pushstreams)
-add_subdirectory(rcm)
+add_library(rcm STATIC
+    src/celix_resource.c
+    src/celix_capability.c
+    src/celix_requirement.c
+    src/celix_rcm_err.c
+)
+set_target_properties(rcm PROPERTIES OUTPUT_NAME "celix_rcm")
+target_include_directories(rcm PRIVATE src)
+target_include_directories(rcm PUBLIC include)
+target_link_libraries(rcm PUBLIC Celix::utils)
 
-add_subdirectory(framework)
+add_library(Celix::rcm ALIAS rcm)
 
-#launcher
-add_subdirectory(launcher)
-
-#add_subdirectory(event_admin)# event_admin is unstable
-add_subdirectory(dependency_manager)
-if (CELIX_CXX14)
-    add_subdirectory(dependency_manager_cxx)
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
 endif ()
-
-# Error Injectors
-if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
-    add_subdirectory(error_injector)
-endif ()
-

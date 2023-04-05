@@ -15,28 +15,21 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#utils, dfi and etcdlib are standalone
-#(e.g. no dependency on celix framework
-add_subdirectory(utils)
-add_subdirectory(dfi)
-add_subdirectory(etcdlib)
-add_subdirectory(promises)
-add_subdirectory(pushstreams)
-add_subdirectory(rcm)
+set(CMAKE_CXX_STANDARD 17)
 
-add_subdirectory(framework)
+add_executable(test_rcm
+    src/RequirementCapabilityModelTestSuite.cc
+)
 
-#launcher
-add_subdirectory(launcher)
+target_link_libraries(test_rcm PRIVATE Celix::rcm GTest::gtest GTest::gtest_main)
+add_test(NAME test_rcm COMMAND test_rcm)
+setup_target_for_coverage(test_rcm SCAN_DIR ..)
 
-#add_subdirectory(event_admin)# event_admin is unstable
-add_subdirectory(dependency_manager)
-if (CELIX_CXX14)
-    add_subdirectory(dependency_manager_cxx)
-endif ()
-
-# Error Injectors
-if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
-    add_subdirectory(error_injector)
-endif ()
+#TODO
+#add_executable(test_rcm_with_error_injection
+#    src/RequirementCapabilityModelWithErrorInjectionTestSuite.cc
+#)
+#target_link_libraries(test_rcm PRIVATE Celix::rcm GTest::gtest GTest::gtest_main)
+#add_test(NAME test_rcm_with_error_injection COMMAND test_rcm_with_error_injection)
+#setup_target_for_coverage(test_rcm_with_error_injection SCAN_DIR ..)
 
