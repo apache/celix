@@ -44,7 +44,13 @@ extern "C" {
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id);
 
-FRAMEWORK_EXPORT celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char **location);
+/**
+ * Return the current location of the bundle.
+ * @warning Not safe, because location can change during bundle revise.
+ * @return
+ */
+FRAMEWORK_EXPORT celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char **location)
+    __attribute__((deprecated("use celix_bundle_getLocation instead")));
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getArchiveRoot(bundle_archive_pt archive, const char **archiveRoot);
 
@@ -90,6 +96,14 @@ FRAMEWORK_EXPORT celix_status_t bundleArchive_getPersistentState(bundle_archive_
  * time could not be retrieved. Check errno for more specific error information.
  */
 FRAMEWORK_EXPORT celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, struct timespec* lastModified);
+
+/**
+ * @brief Return the location of the bundle archive.b
+ * @param[in] archive The bundle archive.
+ * @return The location of the bundle archive. The caller is responsible for freeing the returned string.
+ */
+FRAMEWORK_EXPORT char* celix_bundleArchive_getLocation(bundle_archive_pt archive);
+
 
 #ifdef __cplusplus
 }

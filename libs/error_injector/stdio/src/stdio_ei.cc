@@ -39,4 +39,14 @@ size_t __wrap_fwrite (const void *__restrict __ptr, size_t __size, size_t __n, F
     errno = 0;
     return __real_fwrite(__ptr, __size, __n, __s);
 }
+
+
+int __real_remove (const char *__filename);
+CELIX_EI_DEFINE(remove, int)
+int __wrap_remove (const char *__filename) {
+    errno = EACCES;
+    CELIX_EI_IMPL(remove);
+    errno = 0;
+    return __real_remove(__filename);
+}
 }

@@ -133,6 +133,12 @@ TEST_F(CelixFrameworkUtilsTestSuite, testExtractEmbeddedBundle) {
     celix_utils_deleteDirectory(testExtractDir, nullptr);
 }
 
+TEST_F(CelixFrameworkUtilsTestSuite, CheckBundleAge) {
+    struct timespec now = {0, 0};
+    EXPECT_TRUE(celix_framework_utils_isBundleUrlNewerThan(framework->getCFramework(), SIMPLE_TEST_BUNDLE1_LOCATION, &now));
+    EXPECT_TRUE(celix_framework_utils_isBundleUrlNewerThan(framework->getCFramework(), SIMPLE_TEST_BUNDLE1_LOCATION, nullptr));
+}
+
 TEST_F(CelixFrameworkUtilsTestSuite, testListEmbeddedBundles) {
     auto list = celix::listEmbeddedBundles();
     ASSERT_EQ(2, list.size());

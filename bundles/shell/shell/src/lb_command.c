@@ -56,8 +56,8 @@ typedef struct lb_command_bundle_info {
     bundle_state_e state;
 } lb_command_bundle_info_t;
 
-static int lbCommand_bundleInfoCmp(const lb_command_bundle_info_t* a, const lb_command_bundle_info_t* b) {
-    return (int)(a->id - b->id);
+static int lbCommand_bundleInfoCmp(celix_array_list_entry_t a, celix_array_list_entry_t b) {
+    return (int)(a.intVal - b.intVal);
 }
 
 static void lbCommand_collectBundleInfo_callback(void* data, const celix_bundle_t* bnd) {
@@ -66,38 +66,34 @@ static void lbCommand_collectBundleInfo_callback(void* data, const celix_bundle_
     if (info != NULL) {
         info->id = celix_bundle_getId(bnd);
         info->name = celix_utils_strdup(celix_bundle_getName(bnd));
-        info->location = celix_utils_strdup(celix_bundle_getLocation(bnd));
+        info->location = celix_bundle_getLocation(bnd);
         info->symbolicName = celix_utils_strdup(celix_bundle_getSymbolicName(bnd));
         info->version = celix_version_copy(celix_bundle_getVersion(bnd));
         info->group = celix_utils_strdup(celix_bundle_getGroup(bnd));
         info->state = celix_bundle_getState(bnd);
+        celix_arrayList_add(infoEntries, info);
     }
-    celix_arrayList_add(infoEntries, info);
+}
+
+static void lbCommand_freeBundleInfoEntry(void* entry) {
+    lb_command_bundle_info_t* info = entry;
+    free(info->name);
+    free(info->symbolicName);
+    free(info->location);
+    free(info->group);
+    celix_version_destroy(info->version);
+    free(info);
 }
 
 static celix_array_list_t* lbCommand_collectBundleInfo(celix_bundle_context_t *ctx) {
-    celix_array_list_t* infoEntries = celix_arrayList_create();
-    celix_bundleContext_useBundles(ctx, (void*)infoEntries, lbCommand_collectBundleInfo_callback);
-    celix_arrayList_sort(infoEntries, (int (*)(const void *, const void *))lbCommand_bundleInfoCmp);
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    opts.simpleRemovedCallback = lbCommand_freeBundleInfoEntry;
+    celix_array_list_t* infoEntries = celix_arrayList_createWithOptions(&opts);
+    if (infoEntries != NULL) {
+        celix_bundleContext_useBundles(ctx, (void*)infoEntries, lbCommand_collectBundleInfo_callback);
+        celix_arrayList_sortEntries(infoEntries, lbCommand_bundleInfoCmp);
+    }
     return infoEntries;
-}
-
-static void lbCommand_freeBundleInfoEntries(celix_array_list_t* infoEntries) {
-    if (infoEntries == NULL) {
-        return;
-    }
-    for (int i = 0; i < celix_arrayList_size(infoEntries); ++i) {
-        lb_command_bundle_info_t* info = celix_arrayList_get(infoEntries, i);
-        if (info != NULL) {
-            free(info->name);
-            free(info->symbolicName);
-            free(info->location);
-            free(info->group);
-            celix_version_destroy(info->version);
-        }
-        free(info);
-    }
-    celix_arrayList_destroy(infoEntries);
 }
 
 static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_t *opts, FILE *out) {
@@ -119,7 +115,7 @@ static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_
     fprintf(out, "%s  Bundles:%s\n", startColor, endColor);
     fprintf(out, "%s  %-5s %-12s %-40s %-20s%s\n", startColor, "ID", "State", messageStr, "Group", endColor);
 
-    for (int i = 0; i < celix_arrayList_size(infoEntries); i++) {
+    for (int i = 0; infoEntries != NULL && i < celix_arrayList_size(infoEntries); i++) {
         lb_command_bundle_info_t* info = celix_arrayList_get(infoEntries, i);
 
         const char* printValue = info->name;
@@ -153,7 +149,7 @@ static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_
     }
     fprintf(out, "\n\n");
 
-    lbCommand_freeBundleInfoEntries(infoEntries);
+    celix_arrayList_destroy(infoEntries);
 }
 
 bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *out_ptr, FILE *err_ptr) {

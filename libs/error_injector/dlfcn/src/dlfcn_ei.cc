@@ -17,22 +17,22 @@
   under the License.
  */
 
-#ifndef CELIX_STDIO_EI_H
-#define CELIX_STDIO_EI_H
-#ifdef __cplusplus
+#include "dlfcn_ei.h"
+#include <errno.h>
+
 extern "C" {
-#endif
-
-#include "celix_error_injector.h"
-#include <stdio.h>
-
-CELIX_EI_DECLARE(fopen, FILE *);
-
-CELIX_EI_DECLARE(fwrite, size_t);
-
-CELIX_EI_DECLARE(remove, int);
-
-#ifdef __cplusplus
+void *__real_dlopen(const char *__file, int __mode);
+CELIX_EI_DEFINE(dlopen, void *)
+void *__wrap_dlopen(const char *__file, int __mode) {
+    CELIX_EI_IMPL(dlopen);
+    return __real_dlopen(__file, __mode);
 }
-#endif
-#endif //CELIX_STDIO_EI_H
+
+char *__real_dlerror(void);
+CELIX_EI_DEFINE(dlerror, char *)
+char *__wrap_dlerror(void) {
+    CELIX_EI_IMPL(dlerror);
+    return __real_dlerror();
+}
+
+}

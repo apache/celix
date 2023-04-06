@@ -321,6 +321,16 @@ celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char *
     return CELIX_SUCCESS;
 }
 
+char* celix_bundleArchive_getLocation(bundle_archive_pt archive) {
+    char* result = NULL;
+    celixThreadMutex_lock(&archive->lock);
+    if (archive->location) {
+        result = celix_utils_strdup(archive->location);
+    }
+    celixThreadMutex_unlock(&archive->lock);
+    return result;
+}
+
 celix_status_t bundleArchive_getArchiveRoot(bundle_archive_pt archive, const char **archiveRoot) {
     *archiveRoot = archive->archiveRoot;
     return CELIX_SUCCESS;

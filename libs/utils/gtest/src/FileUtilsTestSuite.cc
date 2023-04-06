@@ -17,6 +17,7 @@
  * under the License.
  */
 
+#include <fstream>
 #include <gtest/gtest.h>
 #include <stdlib.h>
 #include <string>
@@ -130,6 +131,38 @@ TEST_F(FileUtilsTestSuite, CreateAndDeleteDirectory) {
     EXPECT_TRUE(celix_utils_fileExists(subDir.c_str()));
     status = celix_utils_deleteDirectory(testDir2, nullptr);
     EXPECT_EQ(status, CELIX_SUCCESS);
+}
+
+TEST_F(FileUtilsTestSuite, DeleteFileAsDirectory) {
+    const std::string root = "celix_file_utils_test";
+    celix_utils_deleteDirectory(root.c_str(), nullptr);
+    const char* error = nullptr;
+    celix_utils_createDirectory(root.c_str(), true, nullptr);
+    const std::string filename = root + "/file";
+    std::fstream file(filename, std::ios::out);
+    file.close();
+    auto status = celix_utils_deleteDirectory(filename.c_str(), &error);
+    EXPECT_EQ(status, CELIX_FILE_IO_EXCEPTION);
+    EXPECT_NE(error, nullptr);
+    EXPECT_TRUE(celix_utils_fileExists(filename.c_str()));
+    celix_utils_deleteDirectory(root.c_str(), nullptr);
+}
+
+TEST_F(FileUtilsTestSuite, DeleteSymbolicLinkToDirectory) {
+    const std::string root = "celix_file_utils_test";
+    const std::string testDir = root + "/directory";
+    const std::string symLink = root + "/link";
+    celix_utils_deleteDirectory(root.c_str(), nullptr);
+    const char* error = nullptr;
+    celix_utils_createDirectory(testDir.c_str(), true, nullptr);
+    auto status = symlink("./directory", symLink.c_str()); // link -> ./directory
+    EXPECT_EQ(status, 0);
+    status = celix_utils_deleteDirectory(symLink.c_str(), &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(error, nullptr);
+    EXPECT_FALSE(celix_utils_fileExists(symLink.c_str()));
+    EXPECT_TRUE(celix_utils_directoryExists(testDir.c_str()));
+    celix_utils_deleteDirectory(root.c_str(), nullptr);
 }
 
 TEST_F(FileUtilsTestSuite, ExtractZipFileTest) {
