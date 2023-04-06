@@ -82,7 +82,7 @@ void celix_resource_destroy(celix_resource_t* resource) {
         free(resource);
     }
 }
-
+/*
 bool celix_resource_equals(const celix_resource_t* res1, const celix_resource_t* res2) {
     if (res1 == res2) {
         return true;
@@ -93,42 +93,57 @@ bool celix_resource_equals(const celix_resource_t* res1, const celix_resource_t*
         return false;
     }
 
-    //FIXME this is not correct, as the order of the capabilities and requirements is not important
+
+    int equalCount = 0;
     for (int i = 0; i < celix_arrayList_size(res1->allCapabilities); ++i) {
         celix_capability_t* cap1 = celix_arrayList_get(res1->allCapabilities, i);
-        celix_capability_t* cap2 = celix_arrayList_get(res2->allCapabilities, i);
-        if (!celix_capability_equals(cap1, cap2)) {
-            return false;
+        for (int k = 0; k < celix_arrayList_size(res2->allCapabilities); ++k) {
+            celix_capability_t* cap2 = celix_arrayList_get(res2->allCapabilities, k);
+            if (celix_capability_equals(cap1, cap2)) {
+                equalCount++;
+                break;
+            }
         }
+    }
+    //FIXME only correct if all capabilities are unique
+    if (equalCount != celix_arrayList_size(res1->allCapabilities)) {
+        return false;
     }
 
-    //FIXME this is not correct, as the order of the capabilities and requirements is not important
-    for (int i = 0; i < celix_arrayList_size(res1->allCapabilities); ++i) {
-        celix_requirement_t* req1 = celix_arrayList_get(res1->allCapabilities, i);
-        celix_requirement_t* req2 = celix_arrayList_get(res2->allCapabilities, i);
-        if (!celix_requirement_equals(req1, req2)) {
-            return false;
+    equalCount = 0;
+    for (int i = 0; i < celix_arrayList_size(res1->allRequirements); ++i) {
+        celix_requirement_t* req1 = celix_arrayList_get(res1->allRequirements, i);
+        for (int k = 0; k < celix_arrayList_size(res2->allRequirements); ++k) {
+            celix_requirement_t* req2 = celix_arrayList_get(res2->allRequirements, k);
+            if (celix_requirement_equals(req1, req2)) {
+                equalCount++;
+                break;
+            }
         }
     }
+    //FIXME only correct if all capabilities are unique
+    if (equalCount != celix_arrayList_size(res1->allCapabilities)) {
+        return false;
+    }
+
     return true;
 }
 
 unsigned int celix_resource_hashCode(const celix_resource_t* res) {
     unsigned int hash = 0;
 
-    //FIXME this is not correct, as the order of the capabilities and requirements is not important
     for (int i = 0; i < celix_arrayList_size(res->allCapabilities); ++i) {
         celix_capability_t* cap = celix_arrayList_get(res->allCapabilities, i);
         hash += celix_capability_hashCode(cap);
     }
 
-    //FIXME this is not correct, as the order of the capabilities and requirements is not important
     for (int i = 0; i < celix_arrayList_size(res->allRequirements); ++i) {
         celix_requirement_t* req = celix_arrayList_get(res->allRequirements, i);
         hash += celix_requirement_hashCode(req);
     }
     return hash;
 }
+ */
 
 const celix_array_list_t* celix_resource_getCapabilities(const celix_resource_t* res, const char* ns) {
     if (ns != NULL) {
@@ -157,6 +172,10 @@ bool celix_resource_addCapability(celix_resource_t* res, celix_capability_t* cap
     celix_array_list_t* caps = celix_stringHashMap_get(res->capabilitiesByNamespace, ns);
     if (caps == NULL) {
         caps = celix_arrayList_create();
+        if (caps == NULL) {
+            celix_rcmErr_push("Failed to allocate capabilities list. Out of memory.");
+            return false;
+        }
         celix_stringHashMap_put(res->capabilitiesByNamespace, ns, caps);
     }
     celix_arrayList_add(caps, cap);
@@ -176,6 +195,10 @@ bool celix_resource_addRequirement(celix_resource_t* res, celix_requirement_t* r
     celix_array_list_t* reqs = celix_stringHashMap_get(res->requirementsByNamespace, ns);
     if (reqs == NULL) {
         reqs = celix_arrayList_create();
+        if (reqs == NULL) {
+            celix_rcmErr_push("Failed to allocate requirement list. Out of memory.");
+            return false;
+        }
         celix_stringHashMap_put(res->requirementsByNamespace, ns, reqs);
     }
     celix_arrayList_add(reqs, req);

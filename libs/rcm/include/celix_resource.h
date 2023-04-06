@@ -42,9 +42,9 @@ celix_resource_t* celix_resource_create();
 
 void celix_resource_destroy(celix_resource_t* resource);
 
-bool celix_resource_equals(const celix_resource_t* res1, const celix_resource_t* res2);
+//bool celix_resource_equals(const celix_resource_t* res1, const celix_resource_t* res2);
 
-unsigned int celix_resource_hashCode(const celix_resource_t* res);
+//unsigned int celix_resource_hashCode(const celix_resource_t* res);
 
 const celix_array_list_t* celix_resource_getCapabilities(const celix_resource_t* res, const char* ns);
 
