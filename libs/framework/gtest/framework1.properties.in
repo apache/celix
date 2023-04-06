@@ -15,6 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
+CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE=true
+CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR=.cacheFramework1
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-org.osgi.framework.storage.clean=onFirstInit
-org.osgi.framework.storage=.cacheFramework1

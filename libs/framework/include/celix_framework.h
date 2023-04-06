@@ -32,6 +32,25 @@ extern "C" {
 #endif
 
 /**
+ * @file
+ * @brief The Celix Framework API.
+ *
+ * The Celix Framework API provides the functionality to create and destroy a Celix framework instance.
+ *
+ * The Celix framework instance provides the following functionality:
+ *  - Bundle management
+ *  - Service management
+ *  - Event management
+ *  - Logging
+ *  - Framework config properties
+ *  - Framework events
+ *  - Framework shutdown
+ *
+ * @note The Celix framework instance is thread safe.
+ */
+
+
+/**
  * @brief Returns the framework UUID. This is unique for every created framework and will not be the same if the process is
  * restarted.
  */
@@ -118,6 +137,26 @@ long celix_framework_installBundle(celix_framework_t *fw, const char *bundleLoc,
 bool celix_framework_uninstallBundle(celix_framework_t *fw, long bndId);
 
 /**
+ * @brief Update the bundle with the provided bundle id.
+ *
+ * This will do the following:
+ *  - stop the bundle (if needed);
+ *  - update the bundle revision if a newer bundle zip if found;
+ *  - start the bundle, if it was started.
+ *
+ *  Will silently ignore bundle ids < 0.
+ *
+ * @warning Update bundle is not yet fully supported. Use at your own risk.
+ *
+ * @param fw The Celix framework
+ * @parma bndId the bundle id to update.
+ * @param updatedBundleUrl The optional updated bundle url to the bundle zip file. If NULL, the existing bundle url
+ *                         from the bundle cache will be used.
+ * @return true if the bundle is correctly updated. False if not.
+ */
+bool celix_framework_updateBundle(celix_framework_t *fw, long bndId, const char* updatedBundleUrl);
+
+/**
  * @brief Stop the bundle with the provided bundle id.
  * Will silently ignore bundle ids < 0.
  *
@@ -149,6 +188,25 @@ bool celix_framework_startBundle(celix_framework_t *fw, long bndId);
  * @return The bundle id of the installed bundle or -1 if the bundle could not be installed
  */
 long celix_framework_installBundleAsync(celix_framework_t *fw, const char *bundleLoc, bool autoStart);
+
+/**
+ * @brief Update the bundle with the provided bundle id async.
+ *
+ * This will do the following:
+ *  - stop the bundle (if needed);
+ *  - update the bundle revision if a newer bundle zip if found;
+ *  - start the bundle, if it was started.
+ *
+ *  Will silently ignore bundle ids < 0.
+ *
+ *  @warning Update bundle is not yet fully supported. Use at your own risk.
+ *
+ *  @param fw The Celix framework
+ *  @parma bndId the bundle id to update.
+ *  @param updatedBundleUrl The optional updated bundle url to the bundle zip file. If NULL, the existing bundle url
+ *                         from the bundle cache will be used.
+ */
+void celix_framework_updateBundleAsync(celix_framework_t *fw, long bndId, const char* updatedBundleUrl);
 
 /**
  * @brief Uninstall the bundle with the provided bundle id async. If needed the bundle will be stopped first.

@@ -26,7 +26,7 @@ extern "C" {
 const char* __real_celix_bundleContext_getProperty(celix_bundle_context_t *__ctx, const char *__key, const char *__defaultVal);
 CELIX_EI_DEFINE(celix_bundleContext_getProperty, const char*)
 const char* __wrap_celix_bundleContext_getProperty(celix_bundle_context_t *__ctx, const char *__key, const char *__defaultVal) {
-    CELIX_EI_IMPL0(celix_bundleContext_getProperty);
+    CELIX_EI_IMPL(celix_bundleContext_getProperty);
     return __real_celix_bundleContext_getProperty(__ctx, __key, __defaultVal);
 }
 

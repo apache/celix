@@ -109,6 +109,10 @@ TEST_F(CelixBundleContextBundlesTests, useBundlesTest) {
         *c += 1;
         long id = celix_bundle_getId(bnd);
         ASSERT_TRUE(id >= 0);
+
+        const auto* v = celix_bundle_getVersion(bnd);
+        ASSERT_TRUE(v != nullptr);
+        ASSERT_EQ(celix_version_getMajor(v), 1);
     };
 
     celix_bundleContext_useBundles(ctx, &count, use);
@@ -156,11 +160,11 @@ TEST_F(CelixBundleContextBundlesTests, installAndUninstallBundlesTest) {
     long bndId6 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
 
     ASSERT_TRUE(bndId4 >= 0L);
-    ASSERT_FALSE(bndId1 == bndId4); //not new id
+    ASSERT_TRUE(bndId1 == bndId4); //bundle cache -> reuse of bundle id.
     ASSERT_TRUE(bndId5 >= 0L);
-    ASSERT_FALSE(bndId2 == bndId5); //not new id
+    ASSERT_TRUE(bndId2 == bndId5); //bundle cache -> reuse of bundle id.
     ASSERT_TRUE(bndId6 >= 0L);
-    ASSERT_FALSE(bndId5 == bndId6); //not new id
+    ASSERT_TRUE(bndId3 == bndId6); //bundle cache -> reuse of bundle id.
 }
 
 TEST_F(CelixBundleContextBundlesTests, startBundleWithException) {
@@ -641,4 +645,37 @@ TEST_F(CelixBundleContextBundlesTests, testBundleStateToString) {
 
     result = celix_bundleState_getName((celix_bundle_state_e)444 /*invalid*/);
     EXPECT_STREQ(result, "UNKNOWN");
+}
+
+class CelixBundleContextTempBundlesTests : public ::testing::Test {
+public:
+    celix_framework_t* fw = nullptr;
+    celix_bundle_context_t *ctx = nullptr;
+    celix_properties_t *properties = nullptr;
+
+    const char * const TEST_BND1_LOC = "" SIMPLE_TEST_BUNDLE1_LOCATION "";
+
+    CelixBundleContextTempBundlesTests() {
+        properties = celix_properties_create();
+        celix_properties_setBool(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", true);
+        celix_properties_setBool(properties, CELIX_FRAMEWORK_CACHE_USE_TMP_DIR, true);
+        fw = celix_frameworkFactory_createFramework(properties);
+        EXPECT_NE(fw, nullptr);
+        ctx = framework_getContext(fw);
+        EXPECT_NE(ctx, nullptr);
+    }
+
+    ~CelixBundleContextTempBundlesTests() override {
+        celix_frameworkFactory_destroyFramework(fw);
+    }
+
+    CelixBundleContextTempBundlesTests(CelixBundleContextTempBundlesTests&&) = delete;
+    CelixBundleContextTempBundlesTests(const CelixBundleContextTempBundlesTests&) = delete;
+    CelixBundleContextTempBundlesTests& operator=(CelixBundleContextTempBundlesTests&&) = delete;
+    CelixBundleContextTempBundlesTests& operator=(const CelixBundleContextTempBundlesTests&) = delete;
+};
+
+TEST_F(CelixBundleContextTempBundlesTests, installABundleTest) {
+    long bndId = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    ASSERT_TRUE(bndId >= 0);
 }

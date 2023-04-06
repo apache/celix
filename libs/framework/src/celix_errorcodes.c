@@ -42,6 +42,8 @@ const char* celix_strerror(celix_status_t status) {
             return "File I/O exception";
         case CELIX_SERVICE_EXCEPTION:
             return "Service exception";
+        case CELIX_ENOMEM:
+            return "Out of memory";
         default:
             return "Unknown code";
 	}

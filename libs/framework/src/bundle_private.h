@@ -23,29 +23,51 @@
 #include "bundle.h"
 #include "celix_bundle.h"
 
-/**
- * @brief Create system bundle
- */
-FRAMEWORK_EXPORT celix_status_t bundle_create(celix_framework_t* fw, celix_bundle_t **bundle);
-
-FRAMEWORK_EXPORT celix_status_t
-bundle_createFromArchive(celix_bundle_t **bundle, celix_framework_t *framework, bundle_archive_pt archive);
-
-FRAMEWORK_EXPORT celix_status_t bundle_destroy(celix_bundle_t *bundle);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct celix_bundle {
-	bundle_context_pt context;
+    bundle_context_pt context;
     char *symbolicName;
-	char *name;
-	char *group;
-	char *description;
-	struct celix_bundle_activator *activator;
-	bundle_state_e state;
-	void * handle;
-	bundle_archive_pt archive;
-	array_list_pt modules;
+    char *name;
+    char *group;
+    char *description;
+    struct celix_bundle_activator *activator;
+    bundle_state_e state;
+    void *handle;
+    bundle_archive_pt archive;
+    array_list_pt modules;
 
-	celix_framework_t *framework;
+    celix_framework_t *framework;
 };
+
+/**
+ * Creates a bundle from the given archive.
+ * @param[in] framework The framework.
+ * @param[in] archive The archive.
+ * @param[out] bundleOut The created bundle.
+ * @return CELIX_SUCCESS if the bundle is created successfully.
+ */
+celix_status_t
+celix_bundle_createFromArchive(celix_framework_t *framework, bundle_archive_pt archive, celix_bundle_t **bundleOut);
+
+/**
+ * Get the bundle archive.
+ * @param[in] bundle The bundle.
+ * @return The bundle archive.
+ */
+bundle_archive_t *celix_bundle_getArchive(const celix_bundle_t *bundle);
+
+/**
+ * Destroys the bundle.
+ * @param[in] bundle The bundle to destroy.
+ * @return CELIX_SUCCESS if the bundle is destroyed successfully.
+ */
+celix_status_t bundle_destroy(celix_bundle_t *bundle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUNDLE_PRIVATE_H_ */
