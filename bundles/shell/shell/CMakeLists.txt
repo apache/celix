@@ -46,7 +46,7 @@ if (SHELL)
 			src/query_command.c
 			src/quit_command.c
 			src/std_commands.c
-	)
+			src/bundle_command.c)
 	target_include_directories(shell_commands PRIVATE src)
 	target_link_libraries(shell_commands PRIVATE Celix::shell_api Celix::log_helper)
 	celix_deprecated_utils_headers(shell_commands)

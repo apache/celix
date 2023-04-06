@@ -41,7 +41,7 @@
 #include "service_tracker_private.h"
 #include "service_reference_private.h"
 #include "celix_array_list.h"
-#include "celix_libloader.h"
+#include "celix_convert_utils.h"
 
 static celix_status_t bundleContext_bundleChanged(void *handle, bundle_event_t *event);
 static void bundleContext_cleanupBundleTrackers(bundle_context_t *ct);
@@ -158,7 +158,7 @@ celix_status_t bundleContext_installBundle2(bundle_context_pt context, const cha
 	bundle_pt b = NULL;
 
 	if (context != NULL) {
-		if (fw_installBundle(context->framework, &b, location, inputFile) != CELIX_SUCCESS) {
+		if (celix_framework_installBundleInternal(context->framework, location, &b) != CELIX_SUCCESS) {
             status = CELIX_FRAMEWORK_EXCEPTION;
 		} else {
 			*bundle = b;
@@ -1101,17 +1101,20 @@ bool celix_bundleContext_isBundleActive(celix_bundle_context_t *ctx, long bndId)
     return celix_framework_isBundleActive(ctx->framework, bndId);
 }
 
-bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bundleId) {
-    return celix_framework_startBundle(ctx->framework, bundleId);
+bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bndId) {
+    return celix_framework_startBundle(ctx->framework, bndId);
 }
 
-
-bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bundleId) {
-    return celix_framework_stopBundle(ctx->framework, bundleId);
+bool celix_bundleContext_updateBundle(celix_bundle_context_t *ctx, long bndId, const char* updatedBundleUrl) {
+    return celix_framework_updateBundle(ctx->framework, bndId, updatedBundleUrl);
 }
 
-bool celix_bundleContext_uninstallBundle(bundle_context_t *ctx, long bundleId) {
-    return celix_framework_uninstallBundle(ctx->framework, bundleId);
+bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bndId) {
+    return celix_framework_stopBundle(ctx->framework, bndId);
+}
+
+bool celix_bundleContext_uninstallBundle(bundle_context_t *ctx, long bndId) {
+    return celix_framework_uninstallBundle(ctx->framework, bndId);
 }
 
 bool celix_bundleContext_useServiceWithId(
@@ -1628,57 +1631,36 @@ celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t
     return fw;
 }
 
-const char* celix_bundleContext_getProperty(celix_bundle_context_t *ctx, const char *key, const char *defaultVal) {
-    const char *val = NULL;
+const char* celix_bundleContext_getProperty(celix_bundle_context_t *ctx, const char *key, const char* defaultValue) {
+    const char* val = defaultValue;
     if (ctx != NULL) {
-        fw_getProperty(ctx->framework, key, defaultVal, &val);
+        val = celix_framework_getConfigProperty(ctx->framework, key, defaultValue, NULL);
     }
     return val;
 }
 
 long celix_bundleContext_getPropertyAsLong(celix_bundle_context_t *ctx, const char *key, long defaultValue) {
-    long result = defaultValue;
-    const char *val = celix_bundleContext_getProperty(ctx, key, NULL);
-    if (val != NULL) {
-        char *enptr = NULL;
-        errno = 0;
-        long r = strtol(val, &enptr, 10);
-        if (enptr != val && errno == 0) {
-            result = r;
-        }
+    long val = defaultValue;
+    if (ctx != NULL) {
+        val = celix_framework_getConfigPropertyAsLong(ctx->framework, key, defaultValue, NULL);
     }
-    return result;
+    return val;
 }
 
 double celix_bundleContext_getPropertyAsDouble(celix_bundle_context_t *ctx, const char *key, double defaultValue) {
-    double result = defaultValue;
-    const char *val = celix_bundleContext_getProperty(ctx, key, NULL);
-    if (val != NULL) {
-        char *enptr = NULL;
-        errno = 0;
-        double r = strtod(val, &enptr);
-        if (enptr != val && errno == 0) {
-            result = r;
-        }
+    double val = defaultValue;
+    if (ctx != NULL) {
+        val = celix_framework_getConfigPropertyAsDouble(ctx->framework, key, defaultValue, NULL);
     }
-    return result;
+    return val;
 }
 
-
 bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const char *key, bool defaultValue) {
-    bool result = defaultValue;
-    const char *val = celix_bundleContext_getProperty(ctx, key, NULL);
-    if (val != NULL) {
-        char buf[32];
-        snprintf(buf, 32, "%s", val);
-        char *trimmed = utils_stringTrim(buf);
-        if (strncasecmp("true", trimmed, strlen("true")) == 0) {
-            result = true;
-        } else if (strncasecmp("false", trimmed, strlen("false")) == 0) {
-            result = false;
-        }
+    bool val = defaultValue;
+    if (ctx != NULL) {
+        val = celix_framework_getConfigPropertyAsBool(ctx->framework, key, defaultValue, NULL);
     }
-    return result;
+    return val;
 }
 
 static void celix_bundleContext_getBundleSymbolicNameCallback(void *data, const celix_bundle_t *bnd) {

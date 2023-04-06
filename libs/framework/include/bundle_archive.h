@@ -44,7 +44,13 @@ extern "C" {
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id);
 
-FRAMEWORK_EXPORT celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char **location);
+/**
+ * Return the current location of the bundle.
+ * @warning Not safe, because location can change during bundle revise.
+ * @return
+ */
+FRAMEWORK_EXPORT celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char **location)
+    __attribute__((deprecated("use celix_bundle_getLocation instead")));
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getArchiveRoot(bundle_archive_pt archive, const char **archiveRoot);
 
@@ -59,7 +65,7 @@ bundleArchive_getRevision(bundle_archive_pt archive, long revNr, bundle_revision
 FRAMEWORK_EXPORT celix_status_t
 bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundle_revision_pt *revision);
 
-FRAMEWORK_EXPORT celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive, long *revisionNumber);
+FRAMEWORK_EXPORT celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive, long *revisionNumber) __attribute__((deprecated));
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getRefreshCount(bundle_archive_pt archive, long *refreshCount);
 
@@ -76,6 +82,28 @@ FRAMEWORK_EXPORT celix_status_t bundleArchive_getLastModified(bundle_archive_pt 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_setPersistentState(bundle_archive_pt archive, bundle_state_e state);
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getPersistentState(bundle_archive_pt archive, bundle_state_e *state);
+
+/**
+ * @brief Return the last modified time of the bundle archive.
+ *
+ * The last modified time is based on the last modified time of the bundle archives MANIFEST.MF file.
+ *
+ * If the bundle archive cache directory does not exist, lastModified will be set to 0.
+ *
+ * @param[in] archive The bundle archive.
+ * @param[out] lastModified The last modified time of the bundle archive.
+ * @return CELIX_SUCCESS if the last modified time could be retrieved, CELIX_FILE_IO_EXCEPTION if the last modified
+ * time could not be retrieved. Check errno for more specific error information.
+ */
+FRAMEWORK_EXPORT celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, struct timespec* lastModified);
+
+/**
+ * @brief Return the location of the bundle archive.b
+ * @param[in] archive The bundle archive.
+ * @return The location of the bundle archive. The caller is responsible for freeing the returned string.
+ */
+FRAMEWORK_EXPORT char* celix_bundleArchive_getLocation(bundle_archive_pt archive);
+
 
 #ifdef __cplusplus
 }

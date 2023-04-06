@@ -39,7 +39,7 @@ namespace celix {
         FilterException& operator=(const FilterException&) = default;
         FilterException& operator=(FilterException&&) = default;
 
-        [[nodiscard]] const char* what() const noexcept override {
+        const char* what() const noexcept override {
             return w.c_str();
         }
     private:
@@ -90,7 +90,7 @@ namespace celix {
         /**
          * @brief Gets the filter string
          */
-        [[nodiscard]] std::string getFilterString() const {
+        std::string getFilterString() const {
             auto cStr = getFilterCString();
             return cStr == nullptr ? std::string{} : std::string{cStr};
         }
@@ -98,14 +98,14 @@ namespace celix {
         /**
          * @brief Get the C string. valid as long as the filter object is valid.
          */
-        [[nodiscard]] const char* getFilterCString() const {
+        const char* getFilterCString() const {
             return celix_filter_getFilterString(cFilter.get());
         }
 
         /**
          * @brief match the filter against the provided properties
          */
-        [[nodiscard]] bool match(const celix::Properties& properties)  const {
+        bool match(const celix::Properties& properties)  const {
             return celix_filter_match(cFilter.get(), properties.getCProperties());
         }
 
@@ -114,7 +114,7 @@ namespace celix {
          * @return The found attribute value or an empty string if the attribute was not found.
          */
 #if __cplusplus >= 201703L //C++17 or higher
-        [[nodiscard]] std::string findAttribute(std::string_view attributeKey) const {
+        std::string findAttribute(std::string_view attributeKey) const {
             auto* cValue = celix_filter_findAttribute(cFilter.get(), attributeKey.data());
             return cValue == nullptr ? std::string{} : std::string{cValue};
         }
@@ -129,7 +129,7 @@ namespace celix {
          * @brief Check whether the filter has a attribute with the provided attribute key.
          */
 #if __cplusplus >= 201703L //C++17 or higher
-        [[nodiscard]] bool hasAttribute(std::string_view attributeKey) const {
+        bool hasAttribute(std::string_view attributeKey) const {
             return celix_filter_findAttribute(cFilter.get(), attributeKey.data()) != nullptr;
         }
 #else
@@ -148,7 +148,7 @@ namespace celix {
          *   using this method for attribute key "key1" on filter "(|(key1=value1)(key2=value2))" yields false.
          */
 #if __cplusplus >= 201703L //C++17 or higher
-        [[nodiscard]] bool hasMandatoryEqualsValueAttribute(std::string_view attributeKey) const {
+        bool hasMandatoryEqualsValueAttribute(std::string_view attributeKey) const {
              return celix_filter_hasMandatoryEqualsValueAttribute(cFilter.get(), attributeKey.data());
         }
 #else
@@ -167,7 +167,7 @@ namespace celix {
          *   using this function for attribute key "key1" on the filter "(|(!(key1=*))(key2=value2))" yields false.
          */
 #if __cplusplus >= 201703L //C++17 or higher
-        [[nodiscard]] bool hasMandatoryNegatedPresenceAttribute(std::string_view attributeKey) const {
+        bool hasMandatoryNegatedPresenceAttribute(std::string_view attributeKey) const {
             return celix_filter_hasMandatoryNegatedPresenceAttribute(cFilter.get(), attributeKey.data());
         }
 #else
@@ -182,14 +182,14 @@ namespace celix {
          * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
          * the C++ API.
          */
-        [[nodiscard]] celix_filter_t* getCFilter() const {
+        celix_filter_t* getCFilter() const {
             return cFilter.get();
         }
 
         /**
          * @brief Return whether the filter is empty.
          */
-        [[nodiscard]] bool empty() const {
+        bool empty() const {
             return cFilter == nullptr;
         }
 

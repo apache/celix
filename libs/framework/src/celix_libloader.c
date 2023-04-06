@@ -21,7 +21,6 @@
 
 #include "celix_constants.h"
 #include "celix_libloader.h"
-#include "utils.h"
 
 celix_library_handle_t* celix_libloader_open(celix_bundle_context_t *ctx, const char *libPath) {
     bool defaultNoDelete = true;
@@ -34,13 +33,20 @@ celix_library_handle_t* celix_libloader_open(celix_bundle_context_t *ctx, const 
     if (noDelete) {
         flags = RTLD_LAZY|RTLD_LOCAL|RTLD_NODELETE;
     }
+
     handle = dlopen(libPath, flags);
+    if (handle == NULL) {
+        celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR, "Cannot open library: %s, error: %s", libPath, dlerror());
+    }
     return handle;
 }
 
 
-void celix_libloader_close(celix_library_handle_t *handle) {
-    dlclose(handle);
+void celix_libloader_close(celix_bundle_context_t* ctx, celix_library_handle_t *handle) {
+    int rc = dlclose(handle);
+    if (rc != 0) {
+        celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR, "Cannot close library: %s", dlerror());
+    }
 }
 
 void* celix_libloader_getSymbol(celix_library_handle_t *handle, const char *name) {

@@ -17,40 +17,8 @@
  * under the License.
  */
 
-#include <stdlib.h>
-#include <string.h>
+#include "bundle_command.h"
 
-#include "celix_api.h"
-
-
-bool uninstallCommand_execute(void *handle, const char* const_command, FILE *outStream, FILE *errStream) {
-	celix_bundle_context_t *ctx = handle;
-	char delims[] = " ";
-	char * sub = NULL;
-	char *save_ptr = NULL;
-	char *command = celix_utils_strdup(const_command);
-
-	sub = strtok_r(command, delims, &save_ptr);
-	sub = strtok_r(NULL, delims, &save_ptr);
-
-	bool uninstallSucceeded = false;
-
-	if (sub == NULL) {
-		fprintf(errStream, "Incorrect number of arguments.\n");
-	} else {
-		while (sub != NULL) {
-			long bndId = atol(sub);
-			bool exists = celix_bundleContext_isBundleInstalled(ctx, bndId);
-			if (exists) {
-                celix_framework_t* fw = celix_bundleContext_getFramework(ctx);
-                celix_framework_uninstallBundleAsync(fw, bndId);
-                uninstallSucceeded = true;
-			} else {
-                fprintf(outStream, "No bundle with id %li.\n", bndId);
-            }
-			sub = strtok_r(NULL, delims, &save_ptr);
-		}
-	}
-	free(command);
-	return uninstallSucceeded;
+bool uninstallCommand_execute(void *handle, const char* constCommandLine, FILE *outStream, FILE *errStream) {
+    return bundleCommand_execute(handle, constCommandLine, outStream, errStream, celix_framework_uninstallBundleAsync);
 }

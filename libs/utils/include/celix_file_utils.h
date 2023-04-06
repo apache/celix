@@ -21,6 +21,7 @@
 #define CELIX_FILE_UTILS_H
 
 #include <stdbool.h>
+#include <sys/time.h>
 #include "celix_errno.h"
 
 #ifdef __cplusplus
@@ -80,6 +81,23 @@ celix_status_t celix_utils_extractZipFile(const char* zipPath, const char* extra
  * @return CELIX_SUCCESS if the zip data was extracted successfully.
  */
 celix_status_t celix_utils_extractZipData(const void *zipData, size_t zipDataSize, const char* extractToDir, const char** errorOut);
+
+/**
+ * @brief Returns the last modified time of the file at path.
+ *
+ * @param[in] path The path to the file.
+ * @param[out] lastModified The last modified time of the file.
+ * @return CELIX_SUCCESS if the last modified time was successfully retrieved.
+ */
+celix_status_t celix_utils_getLastModified(const char* path, struct timespec* lastModified);
+
+/**
+ * @brief Touch the file at path and thus update the last modified time.
+ * @param path The path to the file.
+ * @return CELIX_SUCCESS if the last modified time was successfully updated.
+ */
+celix_status_t celix_utils_touch(const char* path);
+
 
 #ifdef __cplusplus
 }

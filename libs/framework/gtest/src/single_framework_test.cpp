@@ -21,16 +21,19 @@
 #include <atomic>
 #include <chrono>
 #include <thread>
+#include <future>
 
 #include "celix_launcher.h"
 #include "celix_framework_factory.h"
 #include "celix_framework.h"
 #include "framework.h"
+#include "celix_constants.h"
+#include "celix_utils.h"
 
 
-class CelixFramework : public ::testing::Test {
+class CelixFrameworkTestSuite : public ::testing::Test {
 public:
-    CelixFramework() {
+    CelixFrameworkTestSuite() {
         int rc;
         celix_framework_t *fw = nullptr;
         celix_bundle_context_t *context = nullptr;
@@ -54,11 +57,11 @@ public:
     std::shared_ptr<celix_framework_t> framework{};
 };
 
-TEST_F(CelixFramework, testFramework) {
+TEST_F(CelixFrameworkTestSuite, FrameworkTest) {
     //nop
 }
 
-TEST_F(CelixFramework, testEventQueue) {
+TEST_F(CelixFrameworkTestSuite, EventQueueTest) {
     long eid = celix_framework_nextEventId(framework.get());
     EXPECT_GE(eid, 0);
     celix_framework_waitForGenericEvent(framework.get(), eid); //event never issued so should return directly
@@ -76,7 +79,7 @@ TEST_F(CelixFramework, testEventQueue) {
     EXPECT_EQ(4, count);
 }
 
-TEST_F(CelixFramework, testAsyncInstallStartStopAndUninstallBundle) {
+TEST_F(CelixFrameworkTestSuite, AsyncInstallStartStopAndUninstallBundleTest) {
     long bndId = celix_framework_installBundleAsync(framework.get(), SIMPLE_TEST_BUNDLE1_LOCATION, false);
     EXPECT_GE(bndId, 0);
     EXPECT_TRUE(celix_framework_isBundleInstalled(framework.get(), bndId));
@@ -95,7 +98,7 @@ TEST_F(CelixFramework, testAsyncInstallStartStopAndUninstallBundle) {
     EXPECT_FALSE(celix_framework_isBundleInstalled(framework.get(), bndId));
 }
 
-TEST_F(CelixFramework, listBundles) {
+TEST_F(CelixFrameworkTestSuite, ListBundlesTest) {
     auto list = celix_framework_listBundles(framework.get());
     EXPECT_EQ(0, celix_arrayList_size(list));
     celix_arrayList_destroy(list);
@@ -141,20 +144,20 @@ TEST_F(CelixFramework, listBundles) {
     celix_arrayList_destroy(list);
 }
 
-class FrameworkFactory : public ::testing::Test {
+class FrameworkFactoryTestSuite : public ::testing::Test {
 public:
-    FrameworkFactory() = default;
-    ~FrameworkFactory() override = default;
+    FrameworkFactoryTestSuite() = default;
+    ~FrameworkFactoryTestSuite() override = default;
 };
 
 
-TEST_F(FrameworkFactory, testFactoryCreate) {
+TEST_F(FrameworkFactoryTestSuite, FactoryCreateTest) {
     framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
     ASSERT_TRUE(fw != nullptr);
     celix_frameworkFactory_destroyFramework(fw);
 }
 
-TEST_F(FrameworkFactory, testFactoryCreateAndToManyStartAndStops) {
+TEST_F(FrameworkFactoryTestSuite, FactoryCreateAndToManyStartAndStopsTest) {
     framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
     ASSERT_TRUE(fw != nullptr);
 
@@ -173,7 +176,7 @@ TEST_F(FrameworkFactory, testFactoryCreateAndToManyStartAndStops) {
     framework_destroy(fw); //note stop, wait and then destroy is needed .. combine ?
 }
 
-TEST_F(FrameworkFactory, recreateFramework) {
+TEST_F(FrameworkFactoryTestSuite, RecreateFrameworkTest) {
     framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
     ASSERT_TRUE(fw != nullptr);
     framework_stop(fw);
@@ -209,7 +212,7 @@ TEST_F(FrameworkFactory, recreateFramework) {
     framework_destroy(fw);
 }
 
-TEST_F(FrameworkFactory, restartFramework) {
+TEST_F(FrameworkFactoryTestSuite, RestartFrameworkTest) {
     framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
     ASSERT_TRUE(fw != nullptr);
     framework_stop(fw);
@@ -239,9 +242,9 @@ TEST_F(FrameworkFactory, restartFramework) {
 }
 
 
-TEST_F(CelixFramework, testLaunchFrameworkWithConfig) {
+TEST_F(FrameworkFactoryTestSuite, LaunchFrameworkWithConfigTest) {
     /* Rule: When a Celix framework is started with a config for auto starting bundles and installing bundles,
-     * the specified bundle are installed and if needed started.
+     * the specified bundles will be installed and - if needed - started.
      */
 
     auto* config = celix_properties_load(INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE);
@@ -271,4 +274,3 @@ TEST_F(CelixFramework, testLaunchFrameworkWithConfig) {
     framework_waitForStop(fw);
     framework_destroy(fw);
 }
-

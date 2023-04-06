@@ -312,7 +312,7 @@ void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager __a
 }
 
 
-void celix_dependencyManager_destroyInfos(celix_dependency_manager_t *manager, celix_array_list_t * infos /*entries celix_dm_dependency_manager_info_t*/) {
+void celix_dependencyManager_destroyInfos(celix_dependency_manager_t *manager __attribute__((unused)), celix_array_list_t * infos /*entries celix_dm_dependency_manager_info_t*/) {
 	celix_arrayList_destroy(infos);
 }
 
