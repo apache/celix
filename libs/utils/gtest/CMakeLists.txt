@@ -30,10 +30,12 @@ add_executable(test_utils
         src/HashMapTestSuite.cc
         src/ArrayListTestSuite.cc
         src/FileUtilsTestSuite.cc
+        src/CelixUtilsTestSuite.cc
+        src/ConvertUtilsTestSuite.cc
         ${CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS}
 )
 
-target_link_libraries(test_utils PRIVATE Celix::utils GTest::gtest GTest::gtest_main)
+target_link_libraries(test_utils PRIVATE Celix::utils GTest::gtest GTest::gtest_main libzip::libzip)
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
 celix_deprecated_utils_headers(test_utils)
 
@@ -72,6 +74,21 @@ endif ()
 
 add_test(NAME test_utils COMMAND test_utils)
 setup_target_for_coverage(test_utils SCAN_DIR ..)
+
+
+if (LINKER_WRAP_SUPPORTED)
+    add_executable(test_utils_with_ei
+            src/FileUtilsErrorInjectionTestSuite.cc
+            )
+    target_link_libraries(test_utils_with_ei PRIVATE Celix::zip_ei Celix::stdio_ei Celix::stat_ei Celix::fts_ei Celix::utils_obj Celix::utils_ei GTest::gtest GTest::gtest_main)
+    target_include_directories(test_utils_with_ei PRIVATE ../src) #for version_private (needs refactoring of test)
+    celix_deprecated_utils_headers(test_utils_with_ei)
+    add_dependencies(test_utils_with_ei test_utils_resources)
+    target_compile_definitions(test_utils_with_ei PRIVATE -DTEST_ZIP_LOCATION=\"${TEST_ZIP_FILE}\")
+    target_compile_definitions(test_utils_with_ei PRIVATE -DTEST_A_DIR_LOCATION=\"${CMAKE_CURRENT_SOURCE_DIR}\")
+    add_test(NAME test_utils_with_ei COMMAND test_utils_with_ei)
+    setup_target_for_coverage(test_utils_with_ei SCAN_DIR ..)
+endif ()
 
 if (ENABLE_TESTING_FOR_CXX14)
     #Setting standard to C++14 and testing C++ Properties.h, Filter.h and Utils.h to ensure that C++14 is supported.

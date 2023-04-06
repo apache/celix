@@ -103,7 +103,7 @@ void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void
 }
 
 
-static void celix_framework_vlogInternal(celix_framework_logger_t* logger, celix_log_level_e level, celix_status_t *optionalStatus, const char* file, const char* function, int line, const char* format, va_list args) {
+static void celix_framework_vlogInternal(celix_framework_logger_t* logger, celix_log_level_e level, celix_status_t optionalStatus, const char* file, const char* function, int line, const char* format, va_list args) {
     if (level == CELIX_LOG_LEVEL_DISABLED) {
         return;
     }
@@ -112,9 +112,9 @@ static void celix_framework_vlogInternal(celix_framework_logger_t* logger, celix
         //note let log function handle active log levels
         logger->logFunction(logger->logHandle, level, file, function, line, format, args);
     } else if (level >= logger->activeLogLevel) {
-        if (optionalStatus != NULL) {
+        if (optionalStatus != CELIX_SUCCESS) {
             fseek(logger->stream, 0L, SEEK_SET);
-            fprintf(logger->stream, "%s: ", celix_strerror(*optionalStatus));
+            fprintf(logger->stream, "%s(0x%x): ", celix_strerror(optionalStatus), optionalStatus);
             vfprintf(logger->stream, format, args);
             fputc('\0', logger->stream); //note not sure if this is needed
             fflush(logger->stream);
@@ -128,20 +128,20 @@ static void celix_framework_vlogInternal(celix_framework_logger_t* logger, celix
 
 void celix_framework_vlog(celix_framework_logger_t* logger, celix_log_level_e level, const char *func, const char *file, int line,
                           const char *format, va_list formatArgs) {
-    celix_framework_vlogInternal(logger, level, NULL, func, file, line, format, formatArgs);
+    celix_framework_vlogInternal(logger, level, CELIX_SUCCESS, func, file, line, format, formatArgs);
 }
 
 
 void celix_framework_log(celix_framework_logger_t*  logger, celix_log_level_e level, const char *func, const char *file, int line, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    celix_framework_vlogInternal(logger, level, NULL, file, func, line, format, args);
+    celix_framework_vlogInternal(logger, level, CELIX_SUCCESS, file, func, line, format, args);
     va_end(args);
 }
 
 void celix_framework_logCode(celix_framework_logger_t*  logger, celix_log_level_e level, const char *func, const char *file, int line, celix_status_t code, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    celix_framework_vlogInternal(logger, level, &code, file, func, line, format, args);
+    celix_framework_vlogInternal(logger, level, code, file, func, line, format, args);
     va_end(args);
 }

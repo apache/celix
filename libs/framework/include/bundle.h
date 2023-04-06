@@ -93,7 +93,8 @@ FRAMEWORK_EXPORT celix_status_t bundle_getState(const celix_bundle_t *bundle, bu
 
 FRAMEWORK_EXPORT celix_status_t bundle_closeAndDelete(const celix_bundle_t *bundle);
 
-FRAMEWORK_EXPORT celix_status_t bundle_close(const celix_bundle_t *bundle);
+FRAMEWORK_EXPORT celix_status_t bundle_close(const celix_bundle_t *bundle)
+    __attribute__((deprecated("bundle_close is deprecated and does nothing")));
 
 FRAMEWORK_EXPORT celix_status_t bundle_refresh(celix_bundle_t *bundle);
 

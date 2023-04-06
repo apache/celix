@@ -130,7 +130,7 @@ function (setup_target_for_coverage)
     		# Cleanup lcov
     		COMMAND ${LCOV_PATH} --directory . --zerocounters
 
-            COMMAND ${CMAKE_CTEST_COMMAND} -R ${TEST_TARGET_NAME}
+            COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -R ${TEST_TARGET_NAME}
 
     		# Capturing lcov counters and generating report
             COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/coverage

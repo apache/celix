@@ -21,34 +21,11 @@ limitations under the License.
 
 ## Launcher
 
-The Celix Launcher is a generic executable for launching the Framework. It reads a java properties based configuration file.
+The Celix Launcher is a generic executable for launching the Framework. It reads a config properties based configuration file.
+The Launcher also passes the entire configuration to the Framework, this makes them available to the celix_bundleContext_getProperty function.
 
-The Launcher also passes the entire configuration to the Framework, this makes them available to the bundleContext_getProperty function.
+The launcher also supports some command line options, for more information about this read the Celix containers
+documentation.
 
-###### Properties
-
-    CELIX_AUTO_START_0                  Space delimited list of bundles to install and start when the
-                                        Framework is started. The is for runtime level 0, which is started first.
-
-    CELIX_AUTO_START_1                  Space delimited list of bundles to install and start when the
-                                        Framework is started. The is for runtime level 1.
-
-    CELIX_AUTO_START_2                  Space delimited list of bundles to install and start when the
-                                        Framework is started. The is for runtime level 2.
-
-    CELIX_AUTO_START_3                  Space delimited list of bundles to install and start when the
-                                        Framework is started. The is for runtime level 3.
-
-    CELIX_AUTO_START_4                  Space delimited list of bundles to install and start when the
-                                        Framework is started. The is for runtime level 4.
-
-    CELIX_AUTO_START_5                  Space delimited list of bundles to install and start when the
-                                        Framework is started. The is for runtime level 5, which is started last.
-
-    org.osgi.framework.storage          Sets the bundle cache directory
-
-    org.osgi.framework.storage.clean    If set to "onFirstInit", the bundle cache will be flushed
-                                        when the framework starts
-
-###### CMake option
+### CMake option
     BUILD_LAUNCHER=ON

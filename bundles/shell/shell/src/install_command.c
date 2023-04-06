@@ -31,7 +31,7 @@ bool installCommand_execute(void *handle, const char *const_line, FILE *outStrea
 	char *line = celix_utils_strdup(const_line);
 
 	// ignore the command
-	sub = strtok_r(line, delims, &save_ptr);
+	strtok_r(line, delims, &save_ptr);
 	sub = strtok_r(NULL, delims, &save_ptr);
 
 	if (sub == NULL) {

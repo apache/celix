@@ -39,11 +39,7 @@ typedef struct celix_framework_logger celix_framework_logger_t; //opaque
 
 #define framework_logIfError(logger, status, error, fmsg, args...) \
     if (status != CELIX_SUCCESS) { \
-        if (error != NULL) { \
-            fw_logCode(logger, CELIX_LOG_LEVEL_ERROR, status, #fmsg";\n Cause: %s", ## args, (char*) error); \
-        } else { \
-            fw_logCode(logger, CELIX_LOG_LEVEL_ERROR, status, #fmsg, ## args); \
-        } \
+        fw_logCode(logger, CELIX_LOG_LEVEL_ERROR, status, #fmsg";\n Cause: %s", ## args, (const char*) (error ? error : "")); \
     }
 
 

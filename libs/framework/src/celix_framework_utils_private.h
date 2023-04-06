@@ -23,9 +23,25 @@
 
 #include "celix_framework_utils.h"
 
+#include <time.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @brief Checks whether the provided bundle url is newer than the provided time.
+ * @param fw Celix framework (used for logging).
+ * @param bundleURL The bundle url. Which must be the following:
+ * - prefixed with file:// -> url is a file path.
+ * - prefixed with embedded:// -> url is a symbol for the bundle embedded in the current executable.
+ * - *:// -> not supported
+ * - no :// -> assuming that the url is a file path (same as with a file:// prefix)
+ * @param time The time to compare the bundle url with.
+ * @return Whether the bundle url is newer than the provided time. Will also be true if time is NULL or if the bundleUrl
+ *         is an embedded:// url.
+ */
+bool celix_framework_utils_isBundleUrlNewerThan(celix_framework_t* fw, const char* bundleURL, const struct timespec* time);
 
 /**
  * @brief extracts a bundle for the given cache.

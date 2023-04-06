@@ -57,7 +57,7 @@ extern "C" {
  * @param properties The meta properties associated with the service. The service registration will take ownership of the properties (i.e. no destroy needed)
  * @return The serviceId (>=0) or -1 if the registration was unsuccessful.
  */
-long celix_bundleContext_registerServiceAsync(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties);
+long celix_bundleContext_registerServiceAsync(celix_bundle_context_t *ctx, void *svc, const char* serviceName, celix_properties_t *properties);
 
 /**
  * @brief Register a service to the Celix framework.
@@ -70,7 +70,7 @@ long celix_bundleContext_registerServiceAsync(celix_bundle_context_t *ctx, void 
  * @param properties The meta properties associated with the service. The service registration will take ownership of the properties (i.e. no destroy needed)
  * @return The serviceId (>=0) or -1 if the registration was unsuccessful.
  */
-long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties);
+long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc, const char* serviceName, celix_properties_t *properties);
 
 /**
  * @brief Register a service factory in the framework.
@@ -94,7 +94,7 @@ long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc,
  * @param properties The optional service factory properties. For a service consumer this will be seen as the service properties.
  * @return The serviceId (>= 0) or < 0 if the registration was unsuccessful.
  */
-long celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props);
+long celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char* serviceName, celix_properties_t *props);
 
 /**
  * @brief Register a service factory in the framework.
@@ -114,7 +114,7 @@ long celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *ctx
  * @param properties The optional service factory properties. For a service consumer this will be seen as the service properties.
  * @return The serviceId (>= 0) or < 0 if the registration was unsuccessful.
  */
-long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props);
+long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char* serviceName, celix_properties_t *props);
 
 /**
  * @brief Service Registration Options when registering services to the Celix framework.
@@ -154,7 +154,7 @@ typedef struct celix_service_registration_options {
      * This is used to identify the service. A fully qualified name with a namespace is
      * advisable to prevent name collision. (e.g. EXAMPLE_PRESSURE_SENSOR).
      */
-    const char *serviceName CELIX_OPTS_INIT;
+    const char* serviceName CELIX_OPTS_INIT;
 
     /**
      * @brief The optional service properties.
@@ -172,7 +172,7 @@ typedef struct celix_service_registration_options {
      *
      * If this is NULL, CELIX_FRAMEWORK_SERVICE_LANGUAGE_C is used.
      */
-    const char *serviceLanguage CELIX_OPTS_INIT;
+    const char* serviceLanguage CELIX_OPTS_INIT;
 
     /**
      * @brief The optional service version (in the form of <MAJOR>.<MINOR>.<MICRO>.<QUALIFIER>).
@@ -182,7 +182,7 @@ typedef struct celix_service_registration_options {
      * service in those version range are compatible (binary of source). It is advisable to use semantic versioning
      * for this.
      */
-    const char *serviceVersion CELIX_OPTS_INIT;
+    const char* serviceVersion CELIX_OPTS_INIT;
 
     /**
      * @brief Async data pointer for the async register callback.
@@ -247,7 +247,7 @@ long celix_bundleContext_registerServiceWithOptions(celix_bundle_context_t *ctx,
  * Silently ignore service ids < 0.
  * Will directly return if there is no pending service registration for the provided service id.
  */
-void celix_bundleContext_waitForAsyncRegistration(celix_bundle_context_t* ctx, long serviceId);
+void celix_bundleContext_waitForAsyncRegistration(celix_bundle_context_t *ctx, long serviceId);
 
 /**
  * @brief Checks whether a service for the provided service id is registered in the service registry.
@@ -257,7 +257,7 @@ void celix_bundleContext_waitForAsyncRegistration(celix_bundle_context_t* ctx, l
  *
  * Returns true if the service is registered in the service registry.
  */
-bool celix_bundleContext_isServiceRegistered(celix_bundle_context_t* ctx, long serviceId);
+bool celix_bundleContext_isServiceRegistered(celix_bundle_context_t *ctx, long serviceId);
 
 
 /**
@@ -295,7 +295,7 @@ void celix_bundleContext_unregisterServiceAsync(celix_bundle_context_t *ctx, lon
  *
  * Silently ignore service < 0.
  */
-void celix_bundleContext_waitForAsyncUnregistration(celix_bundle_context_t* ctx, long serviceId);
+void celix_bundleContext_waitForAsyncUnregistration(celix_bundle_context_t *ctx, long serviceId);
 
 
 
@@ -307,7 +307,7 @@ void celix_bundleContext_waitForAsyncUnregistration(celix_bundle_context_t* ctx,
  * @param serviceName The required service name
  * @return If found a valid service id (>= 0) if not found -1.
  */
-long celix_bundleContext_findService(celix_bundle_context_t *ctx, const char *serviceName);
+long celix_bundleContext_findService(celix_bundle_context_t *ctx, const char* serviceName);
 
 /**
  * @brief Finds the services with the provided service name and returns a list of the found service ids.
@@ -316,7 +316,7 @@ long celix_bundleContext_findService(celix_bundle_context_t *ctx, const char *se
  * @param serviceName The required service name
  * @return A array list with as value a long int.
  */
-celix_array_list_t* celix_bundleContext_findServices(celix_bundle_context_t *ctx, const char *serviceName);
+celix_array_list_t* celix_bundleContext_findServices(celix_bundle_context_t *ctx, const char* serviceName);
 
 /**
  * @brief Service filter options which can be used to query for certain services.
@@ -403,7 +403,7 @@ celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_con
  * @return the tracker id (>=0) or < 0 if unsuccessful.
  */
 long celix_bundleContext_trackServiceAsync(
-        celix_bundle_context_t* ctx,
+        celix_bundle_context_t *ctx,
         const char* serviceName,
         void* callbackHandle,
         void (*set)(void* handle, void* svc)
@@ -425,7 +425,7 @@ long celix_bundleContext_trackServiceAsync(
  * @return the tracker id (>=0) or < 0 if unsuccessful.
  */
 long celix_bundleContext_trackService(
-        celix_bundle_context_t* ctx,
+        celix_bundle_context_t *ctx,
         const char* serviceName,
         void* callbackHandle,
         void (*set)(void* handle, void* svc)
@@ -446,7 +446,7 @@ long celix_bundleContext_trackService(
  * @return the tracker id (>=0) or < 0 if unsuccessful.
  */
 long celix_bundleContext_trackServicesAsync(
-        celix_bundle_context_t* ctx,
+        celix_bundle_context_t *ctx,
         const char* serviceName,
         void* callbackHandle,
         void (*add)(void* handle, void* svc),
@@ -467,7 +467,7 @@ long celix_bundleContext_trackServicesAsync(
  * @return the tracker id (>=0) or < 0 if unsuccessful.
  */
 long celix_bundleContext_trackServices(
-        celix_bundle_context_t* ctx,
+        celix_bundle_context_t *ctx,
         const char* serviceName,
         void* callbackHandle,
         void (*add)(void* handle, void* svc),
@@ -640,12 +640,12 @@ void celix_bundleContext_stopTrackerAsync(
 /**
  * @brief Wait for (async) creation of tracker
  */
-void celix_bundleContext_waitForAsyncTracker(celix_bundle_context_t* ctx, long trackerId);
+void celix_bundleContext_waitForAsyncTracker(celix_bundle_context_t *ctx, long trackerId);
 
 /**
  * @brief Wait for (async) stopping of tracking.
  */
-void celix_bundleContext_waitForAsyncStopTracker(celix_bundle_context_t* ctx, long trackerId);
+void celix_bundleContext_waitForAsyncStopTracker(celix_bundle_context_t *ctx, long trackerId);
 
 /**
  * @brief Stop the tracker with the provided track id.
@@ -680,7 +680,7 @@ void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId
 bool celix_bundleContext_useServiceWithId(
         celix_bundle_context_t *ctx,
         long serviceId,
-        const char *serviceName /*sanity check*/,
+        const char* serviceName /*sanity check*/,
         void *callbackHandle,
         void (*use)(void *handle, void* svc)
 );
@@ -891,11 +891,11 @@ bool celix_bundleContext_isBundleActive(celix_bundle_context_t *ctx, long bndId)
  * then the function will return after the bundle is started.
  *
  * @param ctx The bundle context
- * @param bundleLoc The bundle location to the bundle zip file.
+ * @param bundleUrl The bundle location to the bundle zip file.
  * @param autoStart If the bundle should also be started.
  * @return the bundleId (>= 0) or < 0 if the bundle could not be installed and possibly started.
  */
-long celix_bundleContext_installBundle(celix_bundle_context_t *ctx, const char *bundleLoc, bool autoStart);
+long celix_bundleContext_installBundle(celix_bundle_context_t *ctx, const char* bundleUrl, bool autoStart);
 
 /**
  * @brief Uninstall the bundle with the provided bundle id. If needed the bundle will be stopped first.
@@ -943,6 +943,31 @@ bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bndId);
 bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bndId);
 
 /**
+ * @brief Update the bundle with the provided bundle id async.
+ *
+ * This will do the following:
+ *  - stop the bundle (if needed);
+ *  - update the bundle revision if a newer bundle zip if found;
+ *  - start the bundle, if it was started before the update.
+ *
+ * Will silently ignore bundle ids < 0.
+ *
+ * If this function is called on the Celix event thread, the actual updating of the bundle will be done async and
+ * on a separate thread.
+ * If this function is called from a different thread than the Celix event thread, then the function will
+ * return after the bundle update is completed.
+ *
+ * @warning Update bundle is not yet fully supported. Use at your own risk.
+ *
+ * @param ctx The bundle context
+ * @param bndId The bundle id to update.
+ * @param updatedBundleUrl The optional updated bundle url to the bundle zip file. If NULL, the existing bundle url
+ *                         from the bundle cache will be used.
+ * @return true if the bundle is found & correctly started. False if not.
+ */
+bool celix_bundleContext_updateBundle(celix_bundle_context_t *ctx, long bndId, const char* updatedBundleUrl);
+
+/**
  * @brief Returns the bundle symbolic name for the provided bundle id.
  * The caller is owner of the return string.
  *
@@ -968,7 +993,7 @@ char* celix_bundleContext_getBundleSymbolicName(celix_bundle_context_t *ctx, lon
  * @return                  The bundle tracker id or < 0 if unsuccessful.
  */
 long celix_bundleContext_trackBundlesAsync(
-        celix_bundle_context_t* ctx,
+        celix_bundle_context_t *ctx,
         void* callbackHandle,
         void (*onStarted)(void* handle, const celix_bundle_t *bundle),
         void (*onStopped)(void *handle, const celix_bundle_t *bundle)
@@ -988,7 +1013,7 @@ long celix_bundleContext_trackBundlesAsync(
  * @return                  The bundle tracker id or < 0 if unsuccessful.
  */
 long celix_bundleContext_trackBundles(
-        celix_bundle_context_t* ctx,
+        celix_bundle_context_t *ctx,
         void* callbackHandle,
         void (*onStarted)(void* handle, const celix_bundle_t *bundle),
         void (*onStopped)(void *handle, const celix_bundle_t *bundle)
@@ -1078,7 +1103,7 @@ typedef struct celix_bundle_tracker_options {
  * @return      The bundle tracker id (>=0) or < 0 if unsuccessful.
  */
 long celix_bundleContext_trackBundlesWithOptionsAsync(
-        celix_bundle_context_t* ctx,
+        celix_bundle_context_t *ctx,
         const celix_bundle_tracking_options_t *opts
 );
 
@@ -1095,7 +1120,7 @@ long celix_bundleContext_trackBundlesWithOptionsAsync(
  * @return      The bundle tracker id (>=0) or < 0 if unsuccessful.
  */
 long celix_bundleContext_trackBundlesWithOptions(
-        celix_bundle_context_t* ctx,
+        celix_bundle_context_t *ctx,
         const celix_bundle_tracking_options_t *opts
 );
 
@@ -1146,13 +1171,13 @@ typedef struct celix_service_tracker_info {
     /**
      * @brief The service name filter attribute parsed from the service filter (i.e. the value of the objectClass attribute key)
      */
-    const char *serviceName;
+    const char* serviceName;
 
     /**
      * @deprecated
      * Deprecated. the value will be NULL.
      */
-    const char *serviceLanguage;
+    const char* serviceLanguage;
 
     /**
      * @brief Bundle id of the owner of the service tracker.
@@ -1189,7 +1214,7 @@ typedef struct celix_service_tracker_info {
  */
 long celix_bundleContext_trackServiceTrackersAsync(
         celix_bundle_context_t *ctx,
-        const char *serviceName,
+        const char* serviceName,
         void *callbackHandle,
         void (*trackerAdd)(void *handle, const celix_service_tracker_info_t *info),
         void (*trackerRemove)(void *handle, const celix_service_tracker_info_t *info),
@@ -1219,7 +1244,7 @@ long celix_bundleContext_trackServiceTrackersAsync(
  */
 long celix_bundleContext_trackServiceTrackers(
         celix_bundle_context_t *ctx,
-        const char *serviceName,
+        const char* serviceName,
         void *callbackHandle,
         void (*trackerAdd)(void *handle, const celix_service_tracker_info_t *info),
         void (*trackerRemove)(void *handle, const celix_service_tracker_info_t *info));
@@ -1235,7 +1260,7 @@ celix_dependency_manager_t* celix_bundleContext_getDependencyManager(celix_bundl
 /**
  * @brief Wait until all Celix event for this bundle are completed.
  */
-void celix_bundleContext_waitForEvents(celix_bundle_context_t* ctx);
+void celix_bundleContext_waitForEvents(celix_bundle_context_t *ctx);
 
 
 /**
@@ -1249,7 +1274,7 @@ celix_bundle_t* celix_bundleContext_getBundle(const celix_bundle_context_t *ctx)
  */
 long celix_bundleContext_getBundleId(const celix_bundle_context_t *ctx);
 
-celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t* ctx);
+celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t *ctx);
 
 /**
  * @brief Logs a message to Celix framework logger with the provided log level.
@@ -1259,7 +1284,7 @@ celix_framework_t* celix_bundleContext_getFramework(const celix_bundle_context_t
  * @param ...       printf style format arguments
  */
 void celix_bundleContext_log(
-        const celix_bundle_context_t* ctx,
+        const celix_bundle_context_t *ctx,
         celix_log_level_e level,
         const char* format,
         ...) __attribute__((format(printf,3,4)));
@@ -1268,49 +1293,70 @@ void celix_bundleContext_log(
  * @brief Logs a message to Celix framework logger with the provided log level.
  */
 void celix_bundleContext_vlog(
-        const celix_bundle_context_t* ctx,
+        const celix_bundle_context_t *ctx,
         celix_log_level_e level,
         const char* format,
         va_list formatArgs) __attribute__((format(printf,3,0)));
 
 
 /**
- * @brief Gets the config property - or environment variable if the config property does not exist - for the provided name.
- * @param key The key of the property to receive.
- * @param defaultVal The default value to use if the property is not found (can be NULL).
- * @return The property value for the provided key or the provided defaultValue is the key is not found.
+ * @brief Get the config property for the given key.
+ *
+ * The config property is a property from the framework configuration or a system property.
+ * If a system property is found, the system property is returned.
+ * Otherwise the framework configuration property - if found - is returned.
+ *
+ * @param ctx The bundle context.
+ * @param name The name of the property.
+ * @param defaultValue The default value if the property is not found.
+ * @return The property value or the default value if the property is not found.
  */
-const char* celix_bundleContext_getProperty(celix_bundle_context_t *ctx, const char *key, const char *defaultVal);
+const char* celix_bundleContext_getProperty(celix_bundle_context_t *ctx, const char* key, const char* defaultVal);
 
 /**
- * @brief Gets the config property as converts it to long. If the property is not a valid long, the defaultValue will be returned.
- * The rest of the behaviour is the same as celix_bundleContext_getProperty.
-
- * @param key The key of the property to receive.
- * @param defaultVal The default value to use if the property is not found.
- * @return The property value for the provided key or the provided defaultValue is the key is not found.
+ * @brief Get the config property for the given key converted as long value.
+ *
+ * The config property is a property from the framework configuration or a system property.
+ * If a system property is found, the system property is returned.
+ * Otherwise the framework configuration property - if found - is returned.
+ *
+ * @param framework The framework.
+ * @param name The name of the property.
+ * @param defaultValue The default value if the property is not found.
+ * @return The property value or the default value if the property is not found or the property value cannot be converted
+ *         to a long value.
  */
-long celix_bundleContext_getPropertyAsLong(celix_bundle_context_t *ctx, const char *key, long defaultValue);
+long celix_bundleContext_getPropertyAsLong(celix_bundle_context_t *ctx, const char* name, long defaultValue);
 
 /**
- * @brief Gets the config property as converts it to double. If the property is not a valid double, the defaultValue will be returned.
- * The rest of the behaviour is the same as celix_bundleContext_getProperty.
-
- * @param key The key of the property to receive.
- * @param defaultVal The default value to use if the property is not found.
- * @return The property value for the provided key or the provided defaultValue is the key is not found.
+ * @brief Get the config property for the given key converted as double value.
+ *
+ * The config property is a property from the framework configuration or a system property.
+ * If a system property is found, the system property is returned.
+ * Otherwise the framework configuration property - if found - is returned.
+ *
+ * @param framework The framework.
+ * @param name The name of the property.
+ * @param defaultValue The default value if the property is not found.
+ * @return The property value or the default value if the property is not found or the property value cannot be converted
+ *         to a double value.
  */
-double celix_bundleContext_getPropertyAsDouble(celix_bundle_context_t *ctx, const char *key, double defaultValue);
+double celix_bundleContext_getPropertyAsDouble(celix_bundle_context_t *ctx, const char* name, double defaultValue);
 
 /**
- * @brief Gets the config property as converts it to bool. If the property is not a valid bool, the defaultValue will be returned.
- * The rest of the behaviour is the same as celix_bundleContext_getProperty.
-
- * @param key The key of the property to receive.
- * @param defaultVal The default value to use if the property is not found.
- * @return The property value for the provided key or the provided defaultValue is the key is not found.
+ * @brief Get the config property for the given key converted as bool value.
+ *
+ * The config property is a property from the framework configuration or a system property.
+ * If a system property is found, the system property is returned.
+ * Otherwise the framework configuration property - if found - is returned.
+ *
+ * @param framework The framework.
+ * @param name The name of the property.
+ * @param defaultValue The default value if the property is not found.
+ * @return The property value or the default value if the property is not found or the property value cannot be converted
+ *         to a bool value.
  */
-bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const char *key, bool defaultValue);
+bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const char* name, bool defaultValue);
 
 #undef CELIX_OPTS_INIT
 

@@ -34,7 +34,8 @@
 #include "celix_log.h"
 
 int fpeek(FILE *stream);
-celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file);
+
+static celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file);
 
 celix_status_t manifest_create(manifest_pt *manifest) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -50,6 +51,25 @@ celix_status_t manifest_create(manifest_pt *manifest) {
 	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot create manifest");
 
 	return status;
+}
+
+manifest_pt manifest_clone(manifest_pt manifest) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	manifest_pt clone = NULL;
+	status = manifest_create(&clone);
+	if (status == CELIX_SUCCESS) {
+		hash_map_iterator_t iter = hashMapIterator_construct(manifest->attributes);
+		while (hashMapIterator_hasNext(&iter)) {
+			hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
+			char *key = hashMapEntry_getKey(entry);
+			celix_properties_t* value = hashMapEntry_getValue(entry);
+			celix_properties_t* cloneValue = celix_properties_copy(value);
+			hashMap_put(clone->attributes, key, cloneValue);
+		}
+	}
+
+	return clone;
 }
 
 celix_status_t manifest_destroy(manifest_pt manifest) {
@@ -178,7 +198,9 @@ celix_status_t manifest_read(manifest_pt manifest, const char *filename) {
 		status = CELIX_FILE_IO_EXCEPTION;
 	}
 
-	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot read manifest");
+    if (status != CELIX_SUCCESS) {
+        fw_logCode(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, status, "Cannot read manifest");
+    }
 
 	return status;
 }
@@ -200,7 +222,7 @@ int fpeek(FILE *stream) {
 	return c;
 }
 
-celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file) {
+static celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file) {
 	char name[512]; memset(name,0,512);
 	char value[512]; memset(value,0,512);
 	char lastLine[512]; memset(lastLine,0,512);

@@ -32,6 +32,7 @@
 #include <curl/easy.h>
 #include <stdbool.h>
 #include <uuid/uuid.h>
+#include <celix_bundle_context.h>
 
 
 #include "deployment_admin.h"
@@ -581,10 +582,10 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_p
 		deploymentPackage_getBundle(source, info->symbolicName, &updateBundle);
 		if (updateBundle != NULL) {
 			//printf("Update bundle from: %s\n", bundlePath);
-			bundle_update(updateBundle, bundlePath);
+            celix_bundleContext_updateBundle(admin->context, celix_bundle_getId(updateBundle), bundlePath);
 		} else {
 			//printf("Install bundle from: %s\n", bundlePath);
-			bundleContext_installBundle2(admin->context, bsn, bundlePath, &updateBundle);
+            celix_bundleContext_installBundle(admin->context, bundlePath, false);
 		}
 
         free(entry);
@@ -674,7 +675,7 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 					bundle_getEntry(bundle, "/", &entry);
 					deploymentPackage_getName(source, &name);
 
-					int length = strlen(entry) + strlen(name) + strlen(info->path) + 7;
+					length = strlen(entry) + strlen(name) + strlen(info->path) + 7;
 					char resourcePath[length];
 					snprintf(resourcePath, length, "%srepo/%s/%s", entry, name, info->path);
 					deploymentPackage_getName(source, &packageName);

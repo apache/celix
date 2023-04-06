@@ -84,6 +84,11 @@ TEST_F(CelixFrameworkUtilsTestSuite, testExtractBundlePath) {
     status = celix_framework_utils_extractBundle(framework->getCFramework(), "non-existing.zip", testExtractDir); //note nullptr framwork is allowed, fallback to global logger.
     EXPECT_NE(status, CELIX_SUCCESS);
 
+
+    //invalid bundle path -> no extraction
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), "./", testExtractDir); //note nullptr framwork is allowed, fallback to global logger.
+    EXPECT_NE(status, CELIX_SUCCESS);
+
     //invalid url prefix -> no extraction
     std::string path = std::string{"bla://"} + SIMPLE_TEST_BUNDLE1_LOCATION;
     status = celix_framework_utils_extractBundle(framework->getCFramework(), path.c_str(), testExtractDir);
@@ -126,6 +131,12 @@ TEST_F(CelixFrameworkUtilsTestSuite, testExtractEmbeddedBundle) {
     EXPECT_EQ(status, CELIX_SUCCESS);
     checkBundleCacheDir(testExtractDir);
     celix_utils_deleteDirectory(testExtractDir, nullptr);
+}
+
+TEST_F(CelixFrameworkUtilsTestSuite, CheckBundleAge) {
+    struct timespec now = {0, 0};
+    EXPECT_TRUE(celix_framework_utils_isBundleUrlNewerThan(framework->getCFramework(), SIMPLE_TEST_BUNDLE1_LOCATION, &now));
+    EXPECT_TRUE(celix_framework_utils_isBundleUrlNewerThan(framework->getCFramework(), SIMPLE_TEST_BUNDLE1_LOCATION, nullptr));
 }
 
 TEST_F(CelixFrameworkUtilsTestSuite, testListEmbeddedBundles) {

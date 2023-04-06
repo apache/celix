@@ -51,5 +51,8 @@ celix_get_bundle_file(Celix::rsa_discovery RSA_DISCOVERY_BUNDLE_FILE)
 configure_file(resources/client.properties.in client.properties)
 configure_file(resources/server.properties.in server.properties)
 
+
+add_celix_bundle_dependencies(test_rsa_shm Celix::rsa_shm Celix::rsa_json_rpc calculator_shell calculator)
+
 add_test(NAME run_test_rsa_shm COMMAND test_rsa_shm)
 setup_target_for_coverage(test_rsa_shm SCAN_DIR ..)

@@ -96,6 +96,12 @@ const char* celix_strerror(celix_status_t status);
 #define CELIX_FACILITY_HTTP 2
 
 /*!
+ * The facility of the libzip error code
+ *
+ */
+#define CELIX_FACILITY_ZIP 3
+
+/*!
  * Make the error code accroding to the specification
  * \param fac Facility
  * \param code Code
