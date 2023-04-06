@@ -17,14 +17,13 @@
  * under the License.
  */
 
-#include <rsa_shm_import_registration.h>
-#include <rsa_shm_constants.h>
-#include <remote_constants.h>
-#include <celix_log_helper.h>
-#include <celix_api.h>
+#include "rsa_shm_import_registration.h"
+#include "rsa_rpc_factory.h"
+#include "remote_constants.h"
+#include "celix_log_helper.h"
+#include "celix_api.h"
 #include <string.h>
 #include <assert.h>
-#include <rsa_rpc_factory.h>
 
 struct import_registration {
     celix_bundle_context_t *context;

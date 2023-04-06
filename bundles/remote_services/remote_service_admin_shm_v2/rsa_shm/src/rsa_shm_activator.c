@@ -16,13 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include <rsa_shm_impl.h>
-#include <rsa_shm_export_registration.h>
-#include <rsa_shm_import_registration.h>
-#include <remote_service_admin.h>
-#include <rsa_request_sender_service.h>
-#include <celix_log_helper.h>
-#include <celix_api.h>
+#include "rsa_shm_export_registration.h"
+#include "rsa_shm_import_registration.h"
+#include "rsa_shm_impl.h"
+#include "remote_service_admin.h"
+#include "rsa_request_sender_service.h"
+#include "celix_log_helper.h"
+#include "celix_api.h"
 #include <assert.h>
 
 typedef struct rsa_shm_activator {

@@ -16,17 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include <rsa_shm_impl.h>
-#include <rsa_shm_server.h>
-#include <rsa_shm_client.h>
-#include <rsa_shm_constants.h>
-#include <rsa_shm_export_registration.h>
-#include <rsa_shm_import_registration.h>
-#include <rsa_rpc_factory.h>
-#include <endpoint_description.h>
-#include <remote_constants.h>
-#include <celix_api.h>
-#include <celix_long_hash_map.h>
+#include "rsa_shm_impl.h"
+#include "rsa_shm_server.h"
+#include "rsa_shm_client.h"
+#include "rsa_shm_constants.h"
+#include "rsa_shm_export_registration.h"
+#include "rsa_shm_import_registration.h"
+#include "rsa_rpc_factory.h"
+#include "endpoint_description.h"
+#include "remote_constants.h"
+#include "celix_api.h"
+#include "celix_long_hash_map.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

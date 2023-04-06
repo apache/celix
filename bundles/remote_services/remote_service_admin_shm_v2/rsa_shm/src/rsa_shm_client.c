@@ -17,14 +17,14 @@
  * under the License.
  */
 
-#include <rsa_shm_client.h>
-#include <rsa_shm_msg.h>
-#include <rsa_shm_constants.h>
-#include <celix_log_helper.h>
-#include <shm_pool.h>
-#include <celix_api.h>
-#include <celix_long_hash_map.h>
-#include <celix_string_hash_map.h>
+#include "rsa_shm_client.h"
+#include "rsa_shm_msg.h"
+#include "rsa_shm_constants.h"
+#include "celix_log_helper.h"
+#include "shm_pool.h"
+#include "celix_api.h"
+#include "celix_long_hash_map.h"
+#include "celix_string_hash_map.h"
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/types.h>

@@ -23,8 +23,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <celix_log_helper.h>
-#include <celix_api.h>
+#include "celix_log_helper.h"
+#include "celix_api.h"
 #include <sys/uio.h>
 
 

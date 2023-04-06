@@ -16,13 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include <rsa_shm_server.h>
-#include <rsa_shm_msg.h>
-#include <rsa_shm_constants.h>
-#include <shm_cache.h>
-#include <celix_log_helper.h>
-#include <celix_build_assert.h>
-#include <celix_api.h>
+#include "rsa_shm_server.h"
+#include "rsa_shm_msg.h"
+#include "rsa_shm_constants.h"
+#include "shm_cache.h"
+#include "celix_log_helper.h"
+#include "celix_build_assert.h"
+#include "celix_api.h"
 #include <thpool.h>
 #include <sys/un.h>
 #include <sys/socket.h>

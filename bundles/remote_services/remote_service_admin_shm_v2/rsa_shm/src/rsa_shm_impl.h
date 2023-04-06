@@ -23,10 +23,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <rsa_shm_export_registration.h>
-#include <rsa_shm_import_registration.h>
-#include <endpoint_description.h>
-#include <celix_api.h>
+#include "rsa_shm_export_registration.h"
+#include "rsa_shm_import_registration.h"
+#include "endpoint_description.h"
+#include "celix_api.h"
 
 
 typedef struct rsa_shm rsa_shm_t;
