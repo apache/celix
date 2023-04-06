@@ -40,19 +40,21 @@ celix_capability_t* celix_capability_create(
     }
 
     celix_capability_t* cap = malloc(sizeof(*cap));
-    if (cap != NULL) {
-        cap->resource = resource;
-        cap->ns = celix_utils_strdup(ns);
-        cap->attributes = celix_properties_create();
-        cap->directives = celix_properties_create();
-        if (cap->ns == NULL || cap->attributes == NULL || cap->directives == NULL) {
-            celix_rcmErr_push("Failed to allocate celix_capability_t fields. Out of memory.");
-            celix_capability_destroy(cap);
-            cap = NULL;
-        }
-    } else {
+    if (cap == NULL) {
         celix_rcmErr_push("Failed to allocate celix_capability_t. Out of memory.");
+        return NULL;
     }
+
+    cap->resource = resource;
+    cap->ns = celix_utils_strdup(ns);
+    cap->attributes = celix_properties_create();
+    cap->directives = celix_properties_create();
+    if (cap->ns == NULL || cap->attributes == NULL || cap->directives == NULL) {
+        celix_rcmErr_push("Failed to allocate celix_capability_t fields. Out of memory.");
+        celix_capability_destroy(cap);
+        return NULL;
+    }
+
     return cap;
 }
 

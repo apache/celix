@@ -46,29 +46,30 @@ static void celix_resource_freeReqOrCapList(void* list) {
 
 celix_resource_t* celix_resource_create() {
     celix_resource_t* res = malloc(sizeof(*res));
-    if (res != NULL) {
-        celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-        opts.simpleRemovedCallback = celix_resource_destroyCapability;
-        res->allCapabilities = celix_arrayList_createWithOptions(&opts);
-
-        opts.simpleRemovedCallback = celix_resource_destroyRequirement;
-        res->allRequirements = celix_arrayList_createWithOptions(&opts);
-
-        celix_string_hash_map_create_options_t mapOpts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
-        mapOpts.simpleRemovedCallback = celix_resource_freeReqOrCapList;
-        res->capabilitiesByNamespace = celix_stringHashMap_createWithOptions(&mapOpts);
-        res->requirementsByNamespace = celix_stringHashMap_createWithOptions(&mapOpts);
-
-        if (    res->allCapabilities == NULL ||
-                res->allRequirements == NULL ||
-                res->capabilitiesByNamespace == NULL ||
-                res->requirementsByNamespace == NULL) {
-            celix_rcmErr_push("Failed to allocate celix_resource_t fields. Out of memory.");
-            celix_resource_destroy(res);
-            res = NULL;
-        }
-    } else {
+    if (res == NULL) {
         celix_rcmErr_push("Failed to allocate celix_resource_t. Out of memory.");
+        return NULL;
+    }
+
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    opts.simpleRemovedCallback = celix_resource_destroyCapability;
+    res->allCapabilities = celix_arrayList_createWithOptions(&opts);
+
+    opts.simpleRemovedCallback = celix_resource_destroyRequirement;
+    res->allRequirements = celix_arrayList_createWithOptions(&opts);
+
+    celix_string_hash_map_create_options_t mapOpts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
+    mapOpts.simpleRemovedCallback = celix_resource_freeReqOrCapList;
+    res->capabilitiesByNamespace = celix_stringHashMap_createWithOptions(&mapOpts);
+    res->requirementsByNamespace = celix_stringHashMap_createWithOptions(&mapOpts);
+
+    if (    res->allCapabilities == NULL ||
+            res->allRequirements == NULL ||
+            res->capabilitiesByNamespace == NULL ||
+            res->requirementsByNamespace == NULL) {
+        celix_rcmErr_push("Failed to allocate celix_resource_t fields. Out of memory.");
+        celix_resource_destroy(res);
+        return NULL;
     }
     return res;
 }

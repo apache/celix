@@ -43,21 +43,25 @@ celix_requirement_t* celix_requirement_create(
     }
 
     celix_requirement_t* req = malloc(sizeof(*req));
-    if (req != NULL) {
-        req->resource = resource;
-        req->ns = celix_utils_strdup(ns);
-        req->attributes = celix_properties_create();
-        req->directives = celix_properties_create();
-        if (req->ns == NULL || req->attributes == NULL || req->directives == NULL) {
-            celix_rcmErr_push("Failed to allocate celix_requirement_t fields. Out of memory.");
-            celix_requirement_destroy(req);
-            req = NULL;
-        } else if (filter != NULL) {
-            celix_properties_set(req->directives, CELIX_REQUIREMENT_DIRECTIVE_FILTER, filter);
-        }
-    } else {
+    if (req == NULL) {
         celix_rcmErr_push("Failed to allocate celix_requirement_t. Out of memory.");
+        return NULL;
     }
+
+    req->resource = resource;
+    req->ns = celix_utils_strdup(ns);
+    req->attributes = celix_properties_create();
+    req->directives = celix_properties_create();
+    if (req->ns == NULL || req->attributes == NULL || req->directives == NULL) {
+        celix_rcmErr_push("Failed to allocate celix_requirement_t fields. Out of memory.");
+        celix_requirement_destroy(req);
+        return NULL;
+    }
+
+    if (filter != NULL) {
+        celix_properties_set(req->directives, CELIX_REQUIREMENT_DIRECTIVE_FILTER, filter);
+    }
+
     return req;
 }
 

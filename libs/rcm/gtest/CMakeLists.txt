@@ -25,11 +25,10 @@ target_link_libraries(test_rcm PRIVATE Celix::rcm GTest::gtest GTest::gtest_main
 add_test(NAME test_rcm COMMAND test_rcm)
 setup_target_for_coverage(test_rcm SCAN_DIR ..)
 
-#TODO
-#add_executable(test_rcm_with_error_injection
-#    src/RequirementCapabilityModelWithErrorInjectionTestSuite.cc
-#)
-#target_link_libraries(test_rcm PRIVATE Celix::rcm GTest::gtest GTest::gtest_main)
-#add_test(NAME test_rcm_with_error_injection COMMAND test_rcm_with_error_injection)
-#setup_target_for_coverage(test_rcm_with_error_injection SCAN_DIR ..)
-
+add_executable(test_rcm_with_error_injection
+    src/RequirementCapabilityModelWithErrorInjectionTestSuite.cc
+)
+target_link_libraries(test_rcm_with_error_injection PRIVATE Celix::rcm GTest::gtest GTest::gtest_main)
+target_link_libraries(test_rcm_with_error_injection PRIVATE Celix::malloc_ei Celix::utils_ei)
+add_test(NAME test_rcm_with_error_injection COMMAND test_rcm_with_error_injection)
+setup_target_for_coverage(test_rcm_with_error_injection SCAN_DIR ..)
