@@ -118,8 +118,8 @@ celix_version_t* celix_utils_convertStringToVersion(const char* val, const celix
         if (firstDot != NULL && lastDot != NULL && firstDot != lastDot) {
             char buf[64];
             char* valCopy = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s", val);
-            valCopy = celix_utils_trim(valCopy);
-            result = celix_version_createVersionFromString(valCopy);
+            char *trim = utils_stringTrim(valCopy);
+            result = celix_version_createVersionFromString(trim);
             celix_utils_freeStringIfNotEqual(buf, valCopy);
         }
     }

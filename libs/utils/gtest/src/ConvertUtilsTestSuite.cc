@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include "celix_convert_utils.h"
+#include <string>
 
 class ConvertUtilsTestSuite : public ::testing::Test {
 public:
@@ -227,6 +228,15 @@ TEST_F(ConvertUtilsTestSuite, ConvertToVersionTest) {
     result = celix_utils_convertStringToVersion("\t 3.2.2 \t\n", nullptr, &converted);
     EXPECT_TRUE(converted);
     celix_version_destroy(result);
+
+    //test for a convert with a super long invalid version string
+    std::string longString = "1";
+    for (int i = 0; i < 128; ++i) {
+        longString += ".1";
+    }
+    result = celix_utils_convertStringToVersion(longString.c_str(), nullptr, &converted);
+    EXPECT_FALSE(converted);
+    EXPECT_EQ(nullptr, result);
 
     celix_version_destroy(defaultVersion);
 }
