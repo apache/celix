@@ -122,13 +122,16 @@ celix_version_t* celix_version_createVersion(int major, int minor, int micro, co
     }
 
     celix_version_t* version = calloc(1, sizeof(*version));
-
-    version->major = major;
-    version->minor = minor;
-    version->micro = micro;
-    version->qualifier = celix_utils_strdup(qualifier);
-
-
+    if (version != NULL) {
+        version->major = major;
+        version->minor = minor;
+        version->micro = micro;
+        version->qualifier = celix_utils_strdup(qualifier);
+        if (version->qualifier == NULL) {
+            free(version);
+            version = NULL;
+        }
+    }
     return version;
 }
 

@@ -51,6 +51,11 @@ TEST_F(ConvertUtilsTestSuite, ConvertToLongTest) {
     EXPECT_EQ(0, result);
     EXPECT_FALSE(converted);
 
+    //test for a string consisting of whitespaces
+    result = celix_utils_convertStringToLong("   ", 1, &converted);
+    EXPECT_EQ(1, result);
+    EXPECT_FALSE(converted);
+
     //test for a string with a invalid number
     result = celix_utils_convertStringToLong("10A", 0, &converted);
     EXPECT_EQ(0, result);
@@ -96,6 +101,11 @@ TEST_F(ConvertUtilsTestSuite, ConvertToDoubleTest) {
     //test for an invalid string
     result = celix_utils_convertStringToDouble("A", 0, &converted);
     EXPECT_EQ(0, result);
+    EXPECT_FALSE(converted);
+
+    //test for an string consisting of whitespaces
+    result = celix_utils_convertStringToDouble("  ", 1.0, &converted);
+    EXPECT_EQ(1.0, result);
     EXPECT_FALSE(converted);
 
     //test for a string with a invalid number
