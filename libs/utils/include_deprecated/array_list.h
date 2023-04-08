@@ -47,7 +47,7 @@ UTILS_EXPORT void arrayList_destroy(celix_array_list_t *list);
 
 UTILS_EXPORT void arrayList_trimToSize(celix_array_list_t *list);
 
-UTILS_EXPORT void arrayList_ensureCapacity(celix_array_list_t *list, int capacity);
+UTILS_EXPORT celix_status_t arrayList_ensureCapacity(celix_array_list_t *list, int capacity);
 
 UTILS_EXPORT unsigned int arrayList_size(celix_array_list_t *list);
 

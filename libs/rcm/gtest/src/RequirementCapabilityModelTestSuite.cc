@@ -25,11 +25,14 @@
 #include "celix_resource.h"
 #include "celix_rcm_err.h"
 
+extern void celix_rcm_deinitThreadSpecificStorageKey(); //private function, used to ensure coverage
+
 class RequirementCapabilityModelTestSuite : public ::testing::Test {};
 
 TEST_F(RequirementCapabilityModelTestSuite, TestRequirement) {
     celix_requirement_t* req = celix_requirement_create(nullptr, "test-namespace", "(&(capability.attribute1=foo)(capability.attribute2=bar))");
     ASSERT_TRUE(req != nullptr);
+    EXPECT_TRUE(celix_requirement_equals(req, req));
     EXPECT_STREQ("test-namespace", celix_requirement_getNamespace(req));
     EXPECT_STREQ("(&(capability.attribute1=foo)(capability.attribute2=bar))", celix_requirement_getFilter(req));
 
@@ -77,6 +80,7 @@ TEST_F(RequirementCapabilityModelTestSuite, TestRequirement) {
 TEST_F(RequirementCapabilityModelTestSuite, TestCapability) {
     celix_capability_t* cap = celix_capability_create(nullptr, "test-namespace");
     ASSERT_TRUE(cap != nullptr);
+    EXPECT_TRUE(celix_capability_equals(cap, cap));
     EXPECT_STREQ("test-namespace", celix_capability_getNamespace(cap));
 
     celix_capability_t* cap2 = celix_capability_create(nullptr, "test-namespace");

@@ -19,8 +19,11 @@
 
 #include <gtest/gtest.h>
 
+#include <memory>
+
 #include "malloc_ei.h"
 #include "celix_utils_ei.h"
+#include "celix_array_list_ei.h"
 
 #include "celix/Properties.h"
 #include "celix_capability.h"
@@ -35,7 +38,9 @@ public:
     ~RequirementCapabilityModelWithErrorInjectionTestSuite() override {
         celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
-        //TODO add celix_ei_expect_celix_arrayList_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_add(nullptr, 0, CELIX_SUCCESS);
         celix_rcmErr_resetErrors();
     }
 };
@@ -77,9 +82,50 @@ TEST_F(RequirementCapabilityModelWithErrorInjectionTestSuite, TestResourceErrorH
     EXPECT_EQ(nullptr, res);
     EXPECT_EQ(1, celix_rcmErr_getErrorCount());
 
-    //TODO inject error on first celix_arrayList_create call from celix_resource_create
+    //inject error on first celix_arrayList_createWithOptions call from celix_resource_create
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_resource_create, 0, nullptr);
+    res = celix_resource_create();
+    EXPECT_EQ(nullptr, res);
+    EXPECT_EQ(2, celix_rcmErr_getErrorCount());
 
-    //TODO inject error on first celix_arrayList_create call from celix_resource_addCapability
+    res = celix_resource_create();
+    EXPECT_NE(nullptr, res);
+    celix_capability_t* cap = celix_capability_create(res, "test");
+    EXPECT_NE(nullptr, cap);
+    celix_requirement_t* req = celix_requirement_create(res, "test", nullptr);
+    EXPECT_NE(nullptr, req);
 
-    //TODO inject error on first celix_arrayList_create call from celix_resource_addRequirement
+    //inject error on first celix_arrayList_create call from celix_resource_addCapability
+    celix_ei_expect_celix_arrayList_create((void*)celix_resource_addCapability, 0, nullptr);
+    EXPECT_FALSE(celix_resource_addCapability(res, cap));
+    EXPECT_EQ(3, celix_rcmErr_getErrorCount());
+
+    //inject error on first celix_arrayList_add call from celix_resource_addCapability
+    celix_ei_expect_celix_arrayList_add((void*)celix_resource_addCapability, 0, CELIX_ENOMEM);
+    EXPECT_FALSE(celix_resource_addCapability(res, cap));
+    EXPECT_EQ(4, celix_rcmErr_getErrorCount());
+
+    //inject error on second celix_arrayList_add call from celix_resource_addCapability
+    celix_ei_expect_celix_arrayList_add((void*)celix_resource_addCapability, 0, CELIX_ENOMEM, 2);
+    EXPECT_FALSE(celix_resource_addCapability(res, cap));
+    EXPECT_EQ(5, celix_rcmErr_getErrorCount());
+
+    //inject error on first celix_arrayList_create call from celix_resource_addRequirement
+    celix_ei_expect_celix_arrayList_create((void*)celix_resource_addRequirement, 0, nullptr);
+    EXPECT_FALSE(celix_resource_addRequirement(res, req));
+    EXPECT_EQ(6, celix_rcmErr_getErrorCount());
+
+    //inject error on first celix_arrayList_add call from celix_resource_addRequirement
+    celix_ei_expect_celix_arrayList_add((void*)celix_resource_addRequirement, 0, CELIX_ENOMEM);
+    EXPECT_FALSE(celix_resource_addRequirement(res, req));
+    EXPECT_EQ(7, celix_rcmErr_getErrorCount());
+
+    //inject error on second celix_arrayList_add call from celix_resource_addRequirement
+    celix_ei_expect_celix_arrayList_add((void*)celix_resource_addRequirement, 0, CELIX_ENOMEM, 2);
+    EXPECT_FALSE(celix_resource_addRequirement(res, req));
+    EXPECT_EQ(8, celix_rcmErr_getErrorCount());
+
+    celix_capability_destroy(cap);
+    celix_requirement_destroy(req);
+    celix_resource_destroy(res);
 }

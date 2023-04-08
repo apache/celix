@@ -34,7 +34,6 @@ void celix_rcmErr_pushf(char* format, ...) __attribute__((format(printf, 1, 2)))
  */
 void celix_rcmErr_push(const char* msg);
 
-
 #ifdef __cplusplus
 }
 #endif

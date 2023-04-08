@@ -168,19 +168,30 @@ bool celix_resource_addCapability(celix_resource_t* res, celix_capability_t* cap
         return false;
     }
 
-    celix_arrayList_add(res->allCapabilities, cap);
     const char* ns = celix_capability_getNamespace(cap);
     celix_array_list_t* caps = celix_stringHashMap_get(res->capabilitiesByNamespace, ns);
     if (caps == NULL) {
         caps = celix_arrayList_create();
         if (caps == NULL) {
-            celix_rcmErr_push("Failed to allocate capabilities list. Out of memory.");
-            return false;
+            goto err_handling;
         }
         celix_stringHashMap_put(res->capabilitiesByNamespace, ns, caps);
     }
-    celix_arrayList_add(caps, cap);
+    celix_status_t status = celix_arrayList_add(caps, cap);
+    if (status != CELIX_SUCCESS) {
+        goto err_handling;
+    }
+    status = celix_arrayList_add(res->allCapabilities, cap);
+    if (status != CELIX_SUCCESS) {
+        goto err_handling;
+    }
     return true;
+err_handling:
+    celix_rcmErr_push("Failed to add capability to resource. Out of memory.");
+    if (caps != NULL) {
+        celix_arrayList_remove(caps, cap);
+    }
+    return false;
 }
 
 bool celix_resource_addRequirement(celix_resource_t* res, celix_requirement_t* req) {
@@ -191,17 +202,29 @@ bool celix_resource_addRequirement(celix_resource_t* res, celix_requirement_t* r
         return false;
     }
 
-    celix_arrayList_add(res->allRequirements, req);
     const char* ns = celix_requirement_getNamespace(req);
     celix_array_list_t* reqs = celix_stringHashMap_get(res->requirementsByNamespace, ns);
     if (reqs == NULL) {
         reqs = celix_arrayList_create();
         if (reqs == NULL) {
-            celix_rcmErr_push("Failed to allocate requirement list. Out of memory.");
-            return false;
+            goto err_handling;
         }
         celix_stringHashMap_put(res->requirementsByNamespace, ns, reqs);
     }
-    celix_arrayList_add(reqs, req);
+    celix_status_t status = celix_arrayList_add(reqs, req);
+    if (status != CELIX_SUCCESS) {
+        goto err_handling;
+    }
+    status = celix_arrayList_add(res->allRequirements, req);
+    if (status != CELIX_SUCCESS) {
+        goto err_handling;
+    }
+
     return true;
+err_handling:
+    celix_rcmErr_push("Failed to add requirement to resource. Out of memory.");
+    if (reqs != NULL) {
+        celix_arrayList_remove(reqs, req);
+    }
+    return false;
 }

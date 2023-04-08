@@ -42,12 +42,12 @@ static void celix_rcm_destroyTssErrors(void* data) {
     celix_arrayList_destroy(errors);
 }
 
-__attribute__((constructor)) static void celix_rcm_initThreadSpecificStorageKey() {
+__attribute__((constructor)) void celix_rcm_initThreadSpecificStorageKey() {
     //tss_create(&celix_rcm_tssErrorsKey, celix_rcm_destroyTssErrors);
     pthread_key_create(&celix_rcm_tssErrorsKey, celix_rcm_destroyTssErrors);
 }
 
-__attribute__((destructor)) static void celix_rcm_deinitThreadSpecificStorageKey() {
+__attribute__((destructor)) void celix_rcm_deinitThreadSpecificStorageKey() {
     //tss_delete(celix_rcm_tssErrorsKey);
     pthread_key_delete(celix_rcm_tssErrorsKey);
 }
@@ -76,13 +76,8 @@ int celix_rcmErr_getErrorCount() {
 void celix_rcmErr_resetErrors() {
     //celix_array_list_t* errors = tss_get(celix_rcm_tssErrorsKey);
     celix_array_list_t* errors = pthread_getspecific(celix_rcm_tssErrorsKey);
-    if (errors != NULL) {
-        for (int i = 0; i < celix_arrayList_size(errors); ++i) {
-            char* msg = celix_arrayList_get(errors, i);
-            free(msg);
-        }
-        celix_arrayList_clear(errors);
-    }
+    celix_rcm_destroyTssErrors(errors);
+    pthread_setspecific(celix_rcm_tssErrorsKey, NULL);
 }
 
 static void celix_rcm_pushMsg(char* msg) {
