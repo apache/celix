@@ -85,6 +85,7 @@ static void celix_rcm_pushMsg(char* msg) {
         errors = celix_arrayList_create();
         if (errors == NULL) {
             fprintf(stderr, "Failed to create error list for Apache Celix rcm lib\n");
+            free(msg);
             return;
         }
         pthread_setspecific(celix_rcm_tssErrorsKey, errors);
