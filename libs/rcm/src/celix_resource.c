@@ -98,12 +98,12 @@ const celix_array_list_t* celix_resource_getRequirements(const celix_resource_t*
     return res->allRequirements;
 }
 
-bool celix_resource_addCapability(celix_resource_t* res, celix_capability_t* cap) {
+celix_status_t celix_resource_addCapability(celix_resource_t* res, celix_capability_t* cap) {
     if (celix_capability_getResource(cap) != res) {
         celix_rcmErr_pushf(
                 "Capability is not added to the correct resource. (Capability is added to resource %p, but resource %p is expected.)",
                 celix_capability_getResource(cap), res);
-        return false;
+        return CELIX_ILLEGAL_ARGUMENT;
     }
 
     const char* ns = celix_capability_getNamespace(cap);
@@ -115,29 +115,23 @@ bool celix_resource_addCapability(celix_resource_t* res, celix_capability_t* cap
         }
         celix_stringHashMap_put(res->capabilitiesByNamespace, ns, caps);
     }
-    celix_status_t status = celix_arrayList_add(caps, cap);
-    if (status != CELIX_SUCCESS) {
-        goto err_handling;
-    }
-    status = celix_arrayList_add(res->allCapabilities, cap);
-    if (status != CELIX_SUCCESS) {
-        goto err_handling;
-    }
-    return true;
+    CELIX_GOTO_IF_ERR(celix_arrayList_add(caps, cap), err_handling);
+    CELIX_GOTO_IF_ERR(celix_arrayList_add(res->allCapabilities, cap), err_handling);
+    return CELIX_SUCCESS;
 err_handling:
     celix_rcmErr_push("Failed to add capability to resource. Out of memory.");
     if (caps != NULL) {
         celix_arrayList_remove(caps, cap);
     }
-    return false;
+    return CELIX_ENOMEM;
 }
 
-bool celix_resource_addRequirement(celix_resource_t* res, celix_requirement_t* req) {
+celix_status_t celix_resource_addRequirement(celix_resource_t* res, celix_requirement_t* req) {
     if (celix_requirement_getResource(req) != res) {
         celix_rcmErr_pushf(
                 "Requirement is not added to the correct resource. (Requirement is added to resource %p, but resource %p is expected.)",
                 celix_requirement_getResource(req), res);
-        return false;
+        return CELIX_ILLEGAL_ARGUMENT;
     }
 
     const char* ns = celix_requirement_getNamespace(req);
@@ -149,20 +143,13 @@ bool celix_resource_addRequirement(celix_resource_t* res, celix_requirement_t* r
         }
         celix_stringHashMap_put(res->requirementsByNamespace, ns, reqs);
     }
-    celix_status_t status = celix_arrayList_add(reqs, req);
-    if (status != CELIX_SUCCESS) {
-        goto err_handling;
-    }
-    status = celix_arrayList_add(res->allRequirements, req);
-    if (status != CELIX_SUCCESS) {
-        goto err_handling;
-    }
-
-    return true;
+    CELIX_GOTO_IF_ERR(celix_arrayList_add(reqs, req), err_handling);
+    CELIX_GOTO_IF_ERR(celix_arrayList_add(res->allRequirements, req), err_handling);
+    return CELIX_SUCCESS;
 err_handling:
     celix_rcmErr_push("Failed to add requirement to resource. Out of memory.");
     if (reqs != NULL) {
         celix_arrayList_remove(reqs, req);
     }
-    return false;
+    return CELIX_ENOMEM;
 }

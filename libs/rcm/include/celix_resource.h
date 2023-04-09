@@ -38,21 +38,63 @@ extern "C" {
 * @thread_safety none
 */
 
+/**
+ * @brief Creates a new resource.
+ * @return A new resource. Returns NULL if the resource could not be created.
+ */
 celix_resource_t* celix_resource_create();
 
+/**
+ * @brief Destroys the resource.
+ * @param[in] resource The resource to destroy. Can be NULL.
+ */
 void celix_resource_destroy(celix_resource_t* resource);
 
-//bool celix_resource_equals(const celix_resource_t* res1, const celix_resource_t* res2);
-
-//unsigned int celix_resource_hashCode(const celix_resource_t* res);
-
+/**
+ * @brief Returns the capabilities of the resource.
+ *
+ * Will return all resource capabilities if the provided namespace is NULL.
+ *
+ * @param[in] res The resource.
+ * @param[in] ns The namespace of the capabilities. Can be NULL.
+ * @return The capabilities of the resource. Will be an empty list if the resource has no capabilities or
+ *         has no capabilities with the provided namespace.
+ */
 const celix_array_list_t* celix_resource_getCapabilities(const celix_resource_t* res, const char* ns);
 
+/**
+ * @brief Returns the requirements of the resource for the provided namespace.
+ *
+ * Will return all resource requirements if the provided namespace is NULL.
+ *
+ * @param[in] res The resource.
+ * @param[in] ns The namespace of the requirements. Can be NULL.
+ * @return The requirements of the resource. Will be an empty list if the resource has no requirements or
+ *         has no requirements with the provided namespace.
+ */
 const celix_array_list_t* celix_resource_getRequirements(const celix_resource_t* res, const char* ns);
 
-bool celix_resource_addCapability(celix_resource_t* res, celix_capability_t* cap);
+/**
+ * @brief Adds a capability to the resource.
+ *
+ * The capability resource must be the same as this resource or a CELIX_ILLEGAL_ARGUMENT error is returned.
+ *
+ * @param[in] res The resource.
+ * @param[in] cap The capability to add.
+ * @return CELIX_SUCCESS if the capability was added successfully.
+ */
+celix_status_t celix_resource_addCapability(celix_resource_t* res, celix_capability_t* cap);
 
-bool celix_resource_addRequirement(celix_resource_t* res, celix_requirement_t* req);
+/**
+ * @brief Adds a requirement to the resource.
+ *
+ * The requirement resource must be the same as this resource or a CELIX_ILLEGAL_ARGUMENT error is returned.
+ *
+ * @param[in] res The resource.
+ * @param[in] req The requirement to add.
+ * @return CELIX_SUCCESS if the requirement was added successfully.
+ */
+celix_status_t celix_resource_addRequirement(celix_resource_t* res, celix_requirement_t* req);
 
 
 #ifdef __cplusplus

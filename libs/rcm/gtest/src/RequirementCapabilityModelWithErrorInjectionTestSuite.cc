@@ -98,32 +98,32 @@ TEST_F(RequirementCapabilityModelWithErrorInjectionTestSuite, TestResourceErrorH
 
     //inject error on first celix_arrayList_create call from celix_resource_addCapability
     celix_ei_expect_celix_arrayList_create((void*)celix_resource_addCapability, 0, nullptr);
-    EXPECT_FALSE(celix_resource_addCapability(res, cap));
+    EXPECT_EQ(CELIX_ENOMEM, celix_resource_addCapability(res, cap));
     EXPECT_EQ(3, celix_rcmErr_getErrorCount());
 
     //inject error on first celix_arrayList_add call from celix_resource_addCapability
     celix_ei_expect_celix_arrayList_add((void*)celix_resource_addCapability, 0, CELIX_ENOMEM);
-    EXPECT_FALSE(celix_resource_addCapability(res, cap));
+    EXPECT_EQ(CELIX_ENOMEM, celix_resource_addCapability(res, cap));
     EXPECT_EQ(4, celix_rcmErr_getErrorCount());
 
     //inject error on second celix_arrayList_add call from celix_resource_addCapability
     celix_ei_expect_celix_arrayList_add((void*)celix_resource_addCapability, 0, CELIX_ENOMEM, 2);
-    EXPECT_FALSE(celix_resource_addCapability(res, cap));
+    EXPECT_EQ(CELIX_ENOMEM, celix_resource_addCapability(res, cap));
     EXPECT_EQ(5, celix_rcmErr_getErrorCount());
 
     //inject error on first celix_arrayList_create call from celix_resource_addRequirement
     celix_ei_expect_celix_arrayList_create((void*)celix_resource_addRequirement, 0, nullptr);
-    EXPECT_FALSE(celix_resource_addRequirement(res, req));
+    EXPECT_EQ(CELIX_ENOMEM, celix_resource_addRequirement(res, req));
     EXPECT_EQ(6, celix_rcmErr_getErrorCount());
 
     //inject error on first celix_arrayList_add call from celix_resource_addRequirement
     celix_ei_expect_celix_arrayList_add((void*)celix_resource_addRequirement, 0, CELIX_ENOMEM);
-    EXPECT_FALSE(celix_resource_addRequirement(res, req));
+    EXPECT_EQ(CELIX_ENOMEM, celix_resource_addRequirement(res, req));
     EXPECT_EQ(7, celix_rcmErr_getErrorCount());
 
     //inject error on second celix_arrayList_add call from celix_resource_addRequirement
     celix_ei_expect_celix_arrayList_add((void*)celix_resource_addRequirement, 0, CELIX_ENOMEM, 2);
-    EXPECT_FALSE(celix_resource_addRequirement(res, req));
+    EXPECT_EQ(CELIX_ENOMEM, celix_resource_addRequirement(res, req));
     EXPECT_EQ(8, celix_rcmErr_getErrorCount());
 
     celix_capability_destroy(cap);

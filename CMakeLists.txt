@@ -48,7 +48,7 @@ endif ()
 if (NOT TARGET CURL::libcurl)
     #Note more recent curl will create CURL::libcurl target
     message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
-    add_library(CURL::libcurl SHARED IMPORTED libs/rcm/include/celix_requirement.h libs/rcm/include/celix_capability.h)
+    add_library(CURL::libcurl SHARED IMPORTED)
     set_target_properties(CURL::libcurl PROPERTIES
             IMPORTED_LOCATION "${CURL_LIBRARIES}"
             INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"

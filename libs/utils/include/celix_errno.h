@@ -48,7 +48,13 @@ extern "C" {
  * Helper macro which check the current status and executes the provided expression if the
  * status is still CELIX_SUCCESS (0)
  */
-#define CELIX_DO_IF(status, expr) ((status) == CELIX_SUCCESS) ? (expr) : (status)
+#define CELIX_DO_IF(__status, __expr) ((__status) == CELIX_SUCCESS) ? (__expr) : (__status)
+
+/*!
+ * Helper macro which check the current status and executo goto the provided label if the
+ * status is not CELIX_SUCCESS (0)
+ */
+#define CELIX_GOTO_IF_ERR(__status, __label) if ((__status) != CELIX_SUCCESS) { goto __label; }
 
 /*!
  * \defgroup celix_errno Error Codes
