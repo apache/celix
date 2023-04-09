@@ -134,6 +134,14 @@ if (ENABLE_TESTING)
         target_include_directories(version_test PRIVATE include_deprecated)
         target_link_libraries(version_test CppUTest::CppUTest  Celix::utils pthread)
 
+
+        if (LINKER_WRAP_SUPPORTED)
+            add_executable(version_ei_test private/test/version_ei_test.cc)
+            target_include_directories(version_ei_test PRIVATE include_deprecated)
+            target_link_libraries(version_ei_test CppUTest::CppUTest Celix::utils_obj Celix::malloc_ei Celix::utils_ei pthread)
+            add_test(NAME version_ei_test COMMAND version_ei_test)
+        endif ()
+
         configure_file(private/resources-test/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
 
         add_test(NAME run_array_list_test COMMAND array_list_test)
