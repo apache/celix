@@ -110,7 +110,6 @@ unsigned int celix_capability_hashCode(const celix_capability_t* cap) {
     unsigned int hash = celix_utils_stringHash(cap->ns);
     const char* visit;
 
-    //FIXME order of attributes/directives is not taken into account
     CELIX_PROPERTIES_FOR_EACH(cap->attributes, visit) {
         const char* value = celix_properties_get(cap->attributes, visit, NULL);
         hash += celix_utils_stringHash(visit);

@@ -44,7 +44,7 @@ CELIX_EI_DECLARE(celix_arrayList_addFloat, celix_status_t);
 
 CELIX_EI_DECLARE(celix_arrayList_addDouble, celix_status_t);
 
-//CELIX_EI_DECLARE(celix_arrayList_addBool, celix_status_t);
+CELIX_EI_DECLARE(celix_arrayList_addBool, celix_status_t);
 
 CELIX_EI_DECLARE(celix_arrayList_addSize, celix_status_t);
 

@@ -31,6 +31,7 @@ if (LINKER_WRAP_SUPPORTED)
     )
     target_link_libraries(test_rcm_with_error_injection PRIVATE Celix::rcm GTest::gtest GTest::gtest_main)
     target_link_libraries(test_rcm_with_error_injection PRIVATE Celix::malloc_ei Celix::utils_ei Celix::array_list_ei)
+    target_include_directories(test_rcm_with_error_injection PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src) #private headers
     add_test(NAME test_rcm_with_error_injection COMMAND test_rcm_with_error_injection)
     setup_target_for_coverage(test_rcm_with_error_injection SCAN_DIR ..)
 endif ()

@@ -84,13 +84,12 @@ celix_status_t __wrap_celix_arrayList_addDouble(celix_array_list_t* list, double
     return __real_celix_arrayList_addDouble(list, value);
 }
 
-//TODO
-//celix_status_t __real_celix_arrayList_addBool(celix_array_list_t* list, bool value);
-//CELIX_EI_DEFINE(celix_arrayList_addBool, celix_status_t)
-//celix_status_t __wrap_celix_arrayList_addBool(celix_array_list_t* list, bool value)
-//    CELIX_EI_IMPL_POSITIVE(celix_arrayList_addBool);
-//    return __real_celix_arrayList_addBool(list, value);
-//}
+celix_status_t __real_celix_arrayList_addBool(celix_array_list_t* list, bool value);
+CELIX_EI_DEFINE(celix_arrayList_addBool, celix_status_t)
+celix_status_t __wrap_celix_arrayList_addBool(celix_array_list_t* list, bool value) {
+    CELIX_EI_IMPL_POSITIVE(celix_arrayList_addBool);
+    return __real_celix_arrayList_addBool(list, value);
+}
 
 celix_status_t __real_celix_arrayList_addSize(celix_array_list_t* list, size_t value);
 CELIX_EI_DEFINE(celix_arrayList_addSize, celix_status_t)

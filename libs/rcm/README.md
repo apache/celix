@@ -26,6 +26,17 @@ C library based on the OSGi Requirement-Capability-Model, part of
 and [Chapter 7](https://docs.osgi.org/specification/osgi.core/8.0.0/framework.wiring.html)
 in the OSGi Core Specification 8.
 
+Warning: This library is still under development and not yet ready for production use.
+
+## TODOs
+
+ - Replace pthread thread specific storage with a celix wrapper (e.g. `celixThread_keyCreate`, `celixThread_keySet`, `celixThread_keyGet`, `celixThread_keyDelete`)
+ - TBD use `__attribute__((constructor))`/`__attribute__((destructor))` for tss key creation/deletion or use `celix_rcm_init`/`celix_rcm_deinit` (with usage count)
+   - Note currently `__attribute__((constructor))` and `__attribute__((destructor))` are used for tss key creation/deletion
+ - Add missing ei functions for tss key creation, deletion and setting values
+ - Wiring
+ - Resolver
+
 ## Base Requirement-Capability-Model 
 
 The Requirement-Capability-Model (RCM) is a model for describing the capabilities and requirements for a resource.

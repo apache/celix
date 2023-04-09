@@ -25,11 +25,11 @@
 #include "celix_utils_ei.h"
 #include "celix_array_list_ei.h"
 
-#include "celix/Properties.h"
 #include "celix_capability.h"
 #include "celix_requirement.h"
 #include "celix_resource.h"
 #include "celix_rcm_err.h"
+#include "celix_rcm_err_private.h"
 
 class RequirementCapabilityModelWithErrorInjectionTestSuite : public ::testing::Test {
 public:
@@ -41,6 +41,7 @@ public:
         celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_create(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_add(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_rcmErr_resetErrors();
     }
 };
@@ -128,4 +129,28 @@ TEST_F(RequirementCapabilityModelWithErrorInjectionTestSuite, TestResourceErrorH
     celix_capability_destroy(cap);
     celix_requirement_destroy(req);
     celix_resource_destroy(res);
+}
+
+TEST_F(RequirementCapabilityModelWithErrorInjectionTestSuite, TestRcmErrErrorHandling) {
+    //inject error on first celix_utils_strdup call from celix_rcmErr_push
+    EXPECT_EQ(0, celix_rcmErr_getErrorCount());
+    celix_ei_expect_celix_utils_strdup((void*)celix_rcmErr_push, 0, nullptr);
+    celix_rcmErr_push("test");
+    EXPECT_EQ(0, celix_rcmErr_getErrorCount()); //error could not get pushed, so no error
+
+    celix_rcmErr_resetErrors();
+
+    //inject error on first celix_arrayList_create call from (indirect) celix_rcmErr_push
+    EXPECT_EQ(0, celix_rcmErr_getErrorCount());
+    celix_ei_expect_celix_arrayList_create((void*)celix_rcmErr_push, 1, nullptr);
+    celix_rcmErr_push("test");
+    EXPECT_EQ(0, celix_rcmErr_getErrorCount()); //error could not get pushed, so no error
+
+    celix_rcmErr_resetErrors();
+
+    //inject error on first celix_arrayList_add call from (indirect) celix_rcmErr_push
+    EXPECT_EQ(0, celix_rcmErr_getErrorCount());
+    celix_ei_expect_celix_arrayList_add((void*)celix_rcmErr_push, 1, CELIX_ENOMEM);
+    celix_rcmErr_push("test");
+    EXPECT_EQ(0, celix_rcmErr_getErrorCount()); //error could not get pushed, so no error
 }

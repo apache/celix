@@ -25,6 +25,7 @@ set_target_properties(rcm PROPERTIES OUTPUT_NAME "celix_rcm")
 target_include_directories(rcm PRIVATE src)
 target_include_directories(rcm PUBLIC include)
 target_link_libraries(rcm PUBLIC Celix::utils)
+set_target_properties(rcm PROPERTIES VERSION 0.0.1 SOVERSION 0)
 
 add_library(Celix::rcm ALIAS rcm)
 

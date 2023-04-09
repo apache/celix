@@ -20,7 +20,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
-//#include <threads.h>
 #include <pthread.h>
 
 #include "celix_array_list.h"
@@ -28,7 +27,6 @@
 #include "celix_rcm_err.h"
 #include "celix_utils.h"
 
-//static tss_t celix_rcm_tssErrorsKey;
 pthread_key_t celix_rcm_tssErrorsKey;
 
 static void celix_rcm_destroyTssErrors(void* data) {
@@ -43,18 +41,21 @@ static void celix_rcm_destroyTssErrors(void* data) {
 }
 
 __attribute__((constructor)) void celix_rcm_initThreadSpecificStorageKey() {
-    //tss_create(&celix_rcm_tssErrorsKey, celix_rcm_destroyTssErrors);
-    pthread_key_create(&celix_rcm_tssErrorsKey, celix_rcm_destroyTssErrors);
+    int rc = pthread_key_create(&celix_rcm_tssErrorsKey, celix_rcm_destroyTssErrors);
+    if (rc != 0) {
+        fprintf(stderr,"Failed to create thread specific storage key for Apache Celix rcm lib\n");
+    }
 }
 
 __attribute__((destructor)) void celix_rcm_deinitThreadSpecificStorageKey() {
-    //tss_delete(celix_rcm_tssErrorsKey);
-    pthread_key_delete(celix_rcm_tssErrorsKey);
+    int rc = pthread_key_delete(celix_rcm_tssErrorsKey);
+    if (rc != 0) {
+        fprintf(stderr,"Failed to delete thread specific storage key for Apache Celix rcm lib\n");
+    }
 }
 
 char* celix_rcmErr_popLastError() {
     char* result = NULL;
-    //celix_array_list_t* errors = tss_get(celix_rcm_tssErrorsKey);
     celix_array_list_t* errors = pthread_getspecific(celix_rcm_tssErrorsKey);
     if (errors != NULL && celix_arrayList_size(errors) > 0) {
         result = celix_arrayList_get(errors, 0);
@@ -65,7 +66,6 @@ char* celix_rcmErr_popLastError() {
 
 int celix_rcmErr_getErrorCount() {
     int result = 0;
-    //celix_array_list_t* errors = tss_get(celix_rcm_tssErrorsKey);
     celix_array_list_t* errors = pthread_getspecific(celix_rcm_tssErrorsKey);
     if (errors != NULL) {
         result = celix_arrayList_size(errors);
@@ -74,27 +74,37 @@ int celix_rcmErr_getErrorCount() {
 }
 
 void celix_rcmErr_resetErrors() {
-    //celix_array_list_t* errors = tss_get(celix_rcm_tssErrorsKey);
     celix_array_list_t* errors = pthread_getspecific(celix_rcm_tssErrorsKey);
     celix_rcm_destroyTssErrors(errors);
     pthread_setspecific(celix_rcm_tssErrorsKey, NULL);
 }
 
 static void celix_rcm_pushMsg(char* msg) {
-    //celix_array_list_t* errors = tss_get(celix_rcm_tssErrorsKey);
     celix_array_list_t* errors = pthread_getspecific(celix_rcm_tssErrorsKey);
     if (errors == NULL) {
         errors = celix_arrayList_create();
-        //tss_set(celix_rcm_tssErrorsKey, errors);
+        if (errors == NULL) {
+            fprintf(stderr, "Failed to create error list for Apache Celix rcm lib\n");
+            return;
+        }
         pthread_setspecific(celix_rcm_tssErrorsKey, errors);
     }
     if (errors != NULL) {
-        celix_arrayList_add(errors, msg);
+        celix_status_t rc = celix_arrayList_add(errors, msg);
+        if (rc != CELIX_SUCCESS) {
+            fprintf(stderr, "Failed to add error to error list for Apache Celix rcm lib\n");
+            free(msg);
+        }
     }
 }
 
 void celix_rcmErr_push(const char* msg) {
-    celix_rcm_pushMsg(celix_utils_strdup(msg));
+    char* msgCpy = celix_utils_strdup(msg);
+    if (msgCpy == NULL) {
+        fprintf(stderr, "Failed to copy error message for Apache Celix rcm lib\n");
+        return;
+    }
+    celix_rcm_pushMsg(msgCpy);
 }
 
 void celix_rcmErr_pushf(char* format, ...) {

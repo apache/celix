@@ -119,7 +119,6 @@ unsigned int celix_requirement_hashCode(const celix_requirement_t* req) {
     unsigned int hash = celix_utils_stringHash(req->ns);
     const char* visit;
 
-    //FIXME order of attributes/directives is not taken into account
     CELIX_PROPERTIES_FOR_EACH(req->attributes, visit) {
         const char* val = celix_properties_get(req->attributes, visit, NULL);
         hash += celix_utils_stringHash(visit);
