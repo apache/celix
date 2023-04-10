@@ -279,20 +279,16 @@ celix_status_t bundleContext_getBundles(bundle_context_pt context, array_list_pt
 }
 
 celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, bundle_pt *bundle) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context == NULL || *bundle != NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    } else {
-        *bundle = framework_getBundleById(context->framework, id);
-        if (*bundle == NULL) {
-            status = CELIX_BUNDLE_EXCEPTION;
-        }
+    if (context == NULL || bundle == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
+    celix_status_t status = CELIX_SUCCESS;
+    *bundle = framework_getBundleById(context->framework, id);
+    if (*bundle == NULL) {
+        status = CELIX_BUNDLE_EXCEPTION;
+    }
     framework_logIfError(context->framework->logger, status, NULL, "Failed to get bundle [id=%ld]", id);
-
-	return status;
+    return status;
 }
 
 celix_status_t bundleContext_addServiceListener(bundle_context_pt context, celix_service_listener_t *listener, const char* filter) {
