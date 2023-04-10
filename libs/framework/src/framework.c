@@ -79,7 +79,7 @@ static inline void fw_bundleEntry_waitTillUseCountIs(celix_framework_bundle_entr
         if (entry->useCount != desiredUseCount) {
             struct timespec now = celix_gettime(CLOCK_MONOTONIC);
             if (celix_difftime(&start, &now) > 5) {
-                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle '%s' (bnd id = %li) still in use. Use count is %zu, desired is %li", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
+                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle '%s' (bnd id = %li) still in use. Use count is %zu, desired is %zu", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
                 start = celix_gettime(CLOCK_MONOTONIC);
             }
         }
