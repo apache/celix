@@ -478,7 +478,12 @@ static int celix_filter_compareAttributeValue(const celix_filter_t* filter, cons
         bool propertyValueIsLong = false;
         long value = celix_utils_convertStringToLong(propertyValue, 0, &propertyValueIsLong);
         if (propertyValueIsLong) {
-            return (int) (value - filter->internal->longValue);
+            if (value < filter->internal->longValue)
+                return -1;
+            else if (value > filter->internal->longValue)
+                return 1;
+            else
+                return 0;
         }
     }
 
@@ -652,7 +657,11 @@ celix_filter_t* celix_filter_create(const char *filterString) {
         free(filterStr);
     } else {
         filter->filterStr = filterStr;
-        celix_filter_compile(filter);
+        celix_status_t status = celix_filter_compile(filter);
+        if (status != CELIX_SUCCESS) {
+            celix_filter_destroy(filter);
+            filter = NULL;
+        }
     }
 
     return filter;
