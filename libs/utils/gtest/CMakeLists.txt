@@ -80,6 +80,7 @@ setup_target_for_coverage(test_utils SCAN_DIR ..)
 if (LINKER_WRAP_SUPPORTED)
     add_executable(test_utils_with_ei
             src/FileUtilsErrorInjectionTestSuite.cc
+            src/ConvertUtilsErrorInjectionTestSuite.cc
             )
     target_link_libraries(test_utils_with_ei PRIVATE Celix::zip_ei Celix::stdio_ei Celix::stat_ei Celix::fts_ei Celix::utils_obj Celix::utils_ei GTest::gtest GTest::gtest_main)
     target_include_directories(test_utils_with_ei PRIVATE ../src) #for version_private (needs refactoring of test)
