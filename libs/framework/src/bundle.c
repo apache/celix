@@ -207,19 +207,17 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt* moduleOut) {
 
 
     const char * symName = NULL;
-    status = module_getSymbolicName(module, &symName);
-    if (status == CELIX_SUCCESS) {
-        /*
-         * NOTE only allowing a single bundle with a symbolic name.
-         * OSGi spec allows same symbolic name and different versions, but this is risky with
-         * the behaviour of dlopen when opening shared libraries with the same SONAME.
-         */
-        bool alreadyInstalled = celix_framework_isBundleAlreadyInstalled(bundle->framework, symName);
-        if (alreadyInstalled) {
-            status = CELIX_BUNDLE_EXCEPTION;
-            fw_logCode(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create module, bundle with symbolic name '%s' already installed.", symName);
-            return status;
-        }
+    (void)module_getSymbolicName(module, &symName); // it always succeeds
+    /*
+     * NOTE only allowing a single bundle with a symbolic name.
+     * OSGi spec allows same symbolic name and different versions, but this is risky with
+     * the behaviour of dlopen when opening shared libraries with the same SONAME.
+     */
+    bool alreadyInstalled = celix_framework_isBundleAlreadyInstalled(bundle->framework, symName);
+    if (alreadyInstalled) {
+        status = CELIX_BUNDLE_EXCEPTION;
+        fw_logCode(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create module, bundle with symbolic name '%s' already installed.", symName);
+        return status;
     }
 
     *moduleOut = module;
