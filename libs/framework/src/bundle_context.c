@@ -209,17 +209,10 @@ celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, c
 }
 
 celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, const char * filter, array_list_pt *service_references) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && *service_references == NULL) {
-        fw_getServiceReferences(context->framework, service_references, context->bundle, serviceName, filter);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || service_references == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to get service references");
-
-	return status;
+    return fw_getServiceReferences(context->framework, service_references, context->bundle, serviceName, filter);
 }
 
 celix_status_t bundleContext_getServiceReference(bundle_context_pt context, const char * serviceName, service_reference_pt *service_reference) {
