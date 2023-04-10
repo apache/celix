@@ -334,17 +334,10 @@ celix_status_t bundleContext_removeServiceListener(bundle_context_pt context, ce
 }
 
 celix_status_t bundleContext_addBundleListener(bundle_context_pt context, bundle_listener_pt listener) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && listener != NULL) {
-        fw_addBundleListener(context->framework, context->bundle, listener);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || listener == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to add bundle listener");
-
-    return status;
+    return fw_addBundleListener(context->framework, context->bundle, listener);
 }
 
 celix_status_t bundleContext_removeBundleListener(bundle_context_pt context, bundle_listener_pt listener) {
