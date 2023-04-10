@@ -87,7 +87,7 @@ celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *con
 
     int i;
     for (i = 0; i < celix_arrayList_size(act->registrationList); i++) {
-        service_registration_pt reg = arrayList_get(act->registrationList, i);
+        service_registration_pt reg = celix_arrayList_get(act->registrationList, i);
         serviceRegistration_unregister(reg);
 
     }
