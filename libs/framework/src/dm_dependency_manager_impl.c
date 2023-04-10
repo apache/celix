@@ -180,31 +180,30 @@ celix_status_t celix_dependencyManager_removeAllComponentsAsync(celix_dependency
 
 
 static void celix_dm_getInfoCallback(void *handle, const celix_bundle_t *bnd) {
-	celix_dependency_manager_info_t **out = handle;
+    celix_dependency_manager_info_t **out = handle;
 
-	celix_bundle_context_t *context = NULL;
-	bundle_getContext((celix_bundle_t*)bnd, &context);
-	celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
+    celix_bundle_context_t *context = NULL;
+    bundle_getContext((celix_bundle_t*)bnd, &context);
+    celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
 
-	celix_dependency_manager_info_t *info = calloc(1, sizeof(*info));
-    info->bndId = celix_bundle_getId(bnd);
-    info->bndSymbolicName = celix_utils_strdup(celix_bundle_getSymbolicName(bnd));
-	celixThreadMutex_lock(&mng->mutex);
-	if (info != NULL) {
+    celix_dependency_manager_info_t *info = calloc(1, sizeof(*info));
+    if (info != NULL) {
+        info->bndId = celix_bundle_getId(bnd);
+        info->bndSymbolicName = celix_utils_strdup(celix_bundle_getSymbolicName(bnd));
+        celixThreadMutex_lock(&mng->mutex);
         celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
         opts.simpleRemovedCallback = (void*)component_destroyComponentInfo;
-		info->components = celix_arrayList_createWithOptions(&opts);
-		int size = celix_arrayList_size(mng->components);
-		for (int i = 0; i < size; i += 1) {
-			celix_dm_component_t *cmp = celix_arrayList_get(mng->components, i);
-			celix_dm_component_info_t *cmpInfo = NULL;
-			component_getComponentInfo(cmp, &cmpInfo);
-			celix_arrayList_add(info->components, cmpInfo);
-		}
-	}
-	celixThreadMutex_unlock(&mng->mutex);
-
-	*out = info;
+        info->components = celix_arrayList_createWithOptions(&opts);
+        int size = celix_arrayList_size(mng->components);
+        for (int i = 0; i < size; i += 1) {
+            celix_dm_component_t *cmp = celix_arrayList_get(mng->components, i);
+            celix_dm_component_info_t *cmpInfo = NULL;
+            component_getComponentInfo(cmp, &cmpInfo);
+            celix_arrayList_add(info->components, cmpInfo);
+        }
+        celixThreadMutex_unlock(&mng->mutex);
+    }
+    *out = info;
 }
 
 celix_dependency_manager_info_t* celix_dependencyManager_createInfo(celix_dependency_manager_t *manager, long bndId) {

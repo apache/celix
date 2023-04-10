@@ -226,6 +226,7 @@ static void celix_bundleCache_updateIdForLocationLookupMap(celix_framework_t* fw
     DIR* dir = opendir(fw->cache->cacheDir);
     if (dir == NULL) {
         fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, CELIX_BUNDLE_EXCEPTION, "Cannot open bundle cache directory %s", fw->cache->cacheDir);
+        celixThreadMutex_unlock(&fw->cache->mutex);
         return;
     }
     char archiveRootBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
