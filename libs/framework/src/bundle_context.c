@@ -121,18 +121,11 @@ void celix_bundleContext_cleanup(celix_bundle_context_t *ctx) {
 }
 
 celix_status_t bundleContext_getBundle(bundle_context_pt context, bundle_pt *out) {
-	celix_status_t status = CELIX_SUCCESS;
-    celix_bundle_t *bnd = celix_bundleContext_getBundle(context);
-    if (context == NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || out == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-    if (out != NULL) {
-        *out = bnd;
-    }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to get bundle");
-
-	return status;
+    *out = celix_bundleContext_getBundle(context);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_pt *framework) {
