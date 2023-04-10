@@ -215,17 +215,10 @@ static bool bundleContext_IsServiceReferenceValid(bundle_context_pt context, ser
 }
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_retainServiceReference(bundle_context_pt context, service_reference_pt ref) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && ref != NULL && bundleContext_IsServiceReferenceValid(context, ref)) {
-        serviceReference_retain(ref);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || ref == NULL || !bundleContext_IsServiceReferenceValid(context, ref)) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to retain service references");
-
-    return status;
+    return serviceReference_retain(ref);
 }
 
 celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, service_reference_pt reference) {
