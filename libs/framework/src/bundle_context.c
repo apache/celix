@@ -136,17 +136,11 @@ celix_status_t bundleContext_getBundle(bundle_context_pt context, bundle_pt *out
 }
 
 celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_pt *framework) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (context == NULL) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	} else {
-		*framework = context->framework;
-	}
-
-	framework_logIfError(context->framework->logger, status, NULL, "Failed to get framework");
-
-	return status;
+    if (context == NULL || framework == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    *framework = context->framework;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleContext_installBundle(bundle_context_pt context, const char * location, bundle_pt *bundle) {
