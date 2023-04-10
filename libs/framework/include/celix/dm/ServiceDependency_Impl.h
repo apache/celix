@@ -510,9 +510,7 @@ int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)>
     const char* value {nullptr};
 
     if (props != nullptr) {
-        celix_properties_iterator_t iter = celix_propertiesIterator_construct(props);
-        while(celix_propertiesIterator_hasNext(&iter)) {
-            key = (const char*) celix_propertiesIterator_nextKey(&iter);
+        CELIX_PROPERTIES_FOR_EACH(props, key) {
             value = celix_properties_get(props, key, "");
             //std::cout << "got property " << key << "=" << value << "\n";
             properties[key] = value;
