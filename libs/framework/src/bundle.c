@@ -207,7 +207,8 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt* moduleOut) {
 
 
     const char * symName = NULL;
-    (void)module_getSymbolicName(module, &symName); // it always succeeds
+    status = module_getSymbolicName(module, &symName);
+    assert(status == CELIX_SUCCESS);
     /*
      * NOTE only allowing a single bundle with a symbolic name.
      * OSGi spec allows same symbolic name and different versions, but this is risky with
@@ -217,11 +218,14 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt* moduleOut) {
     if (alreadyInstalled) {
         status = CELIX_BUNDLE_EXCEPTION;
         fw_logCode(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create module, bundle with symbolic name '%s' already installed.", symName);
-        return status;
+    }
+    if (status == CELIX_SUCCESS) {
+        *moduleOut = module;
+    } else {
+        module_destroy(module);
     }
 
-    *moduleOut = module;
-	return status;
+    return status;
 }
 
 celix_status_t bundle_start(celix_bundle_t* bundle) {
