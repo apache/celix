@@ -355,6 +355,10 @@ function(add_celix_bundle)
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "$<TARGET_SONAME_FILE_NAME:${BUNDLE_TARGET_NAME}>")
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUILD_WITH_INSTALL_RPATH" true)
 
+        #TBD: The linker script ensures that only the activator symbols are exported, this can reduce the bundle size.
+        #     If this is done, there should also be an option to disable this behaviour.
+        target_link_libraries(${BUNDLE_TARGET_NAME} PRIVATE "-Wl,--version-script=${CELIX_CMAKE_DIRECTORY}/templates/make_only_activator_symbols_global.map")
+
         if(APPLE)
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path")
         else()

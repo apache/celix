@@ -1,0 +1,9 @@
+{
+    global:
+        celix_bundleActivator_create;
+        celix_bundleActivator_start;
+        celix_bundleActivator_stop;
+        celix_bundleActivator_destroy;
+    local:
+        *;
+};
