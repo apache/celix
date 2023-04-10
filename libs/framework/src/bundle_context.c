@@ -266,17 +266,13 @@ celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, se
 }
 
 celix_status_t bundleContext_getService(bundle_context_pt context, service_reference_pt reference, void** service_instance) {
-    celix_status_t status = CELIX_SUCCESS;
-    if (context != NULL && reference != NULL && service_instance != NULL && bundleContext_IsServiceReferenceValid(context, reference)) {
-        /*NOTE argument service_instance should be considered a 'const void**'.
-        To ensure backwards compatibility a cast is made instead.
-        */
-        status = serviceReference_getService(reference, (const void**) service_instance);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || reference == NULL || service_instance == NULL || !bundleContext_IsServiceReferenceValid(context, reference)) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to get service");
-    return status;
+    /*NOTE argument service_instance should be considered a 'const void**'.
+    To ensure backwards compatibility a cast is made instead.
+    */
+    return serviceReference_getService(reference, (const void**) service_instance);
 }
 
 celix_status_t bundleContext_ungetService(bundle_context_pt context, service_reference_pt reference, bool *result) {
