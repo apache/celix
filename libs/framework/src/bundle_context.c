@@ -344,17 +344,11 @@ celix_status_t bundleContext_addServiceListener(bundle_context_pt context, celix
 }
 
 celix_status_t bundleContext_removeServiceListener(bundle_context_pt context, celix_service_listener_t *listener) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && listener != NULL) {
-        fw_removeServiceListener(context->framework, context->bundle, listener);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || listener == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to remove service listener");
-
-    return status;
+    fw_removeServiceListener(context->framework, context->bundle, listener);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleContext_addBundleListener(bundle_context_pt context, bundle_listener_pt listener) {
