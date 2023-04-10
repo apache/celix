@@ -343,17 +343,11 @@ celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, b
 }
 
 celix_status_t bundleContext_addServiceListener(bundle_context_pt context, celix_service_listener_t *listener, const char* filter) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && listener != NULL) {
-        fw_addServiceListener(context->framework, context->bundle, listener, filter);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || listener == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to add service listener");
-
-    return status;
+    fw_addServiceListener(context->framework, context->bundle, listener, filter);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleContext_removeServiceListener(bundle_context_pt context, celix_service_listener_t *listener) {
