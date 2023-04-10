@@ -168,20 +168,11 @@ celix_status_t bundleContext_installBundle2(bundle_context_pt context, const cha
 
 celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, const void * svcObj,
         properties_pt properties, service_registration_pt *service_registration) {
-	service_registration_pt registration = NULL;
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (context != NULL) {
-	    long bndId = celix_bundle_getId(context->bundle);
-	    fw_registerService(context->framework, &registration, bndId, serviceName, svcObj, properties);
-	    *service_registration = registration;
-	} else {
-	    status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	framework_logIfError(context->framework->logger, status, NULL, "Failed to register service. serviceName '%s'", serviceName);
-
-	return status;
+    if (context == NULL || service_registration == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    long bndId = celix_bundle_getId(context->bundle);
+    return fw_registerService(context->framework, service_registration, bndId, serviceName, svcObj, properties);
 }
 
 celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, const char * serviceName, service_factory_pt factory,
