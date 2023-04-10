@@ -176,7 +176,7 @@ static celix::dm::DependencyManagerInfo createDepManInfoFromC(celix_dependency_m
             intInfo.serviceName = std::string{cIntInfo->name};
             const char* key;
             CELIX_PROPERTIES_FOR_EACH(cIntInfo->properties, key) {
-                const char* val =celix_properties_get(cIntInfo->properties, key, nullptr);
+                const char* val =celix_properties_get(cIntInfo->properties, key, "");
                 intInfo.properties[std::string{key}] = std::string{val};
             }
             cmpInfo.interfacesInfo.emplace_back(std::move(intInfo));
