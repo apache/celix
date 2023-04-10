@@ -442,17 +442,11 @@ celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_list_pt *list) {
 }
 
 celix_status_t bundle_getFramework(const_bundle_pt bundle, framework_pt *framework) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (bundle != NULL && *framework == NULL) {
-		*framework = bundle->framework;
-	} else {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get framework");
-
-	return status;
+    if (bundle == NULL || framework == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    *framework = bundle->framework;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_getBundleLocation(const_bundle_pt bundle, const char **location){
