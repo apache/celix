@@ -129,11 +129,10 @@ celix_status_t celix_utils_createDirectory(const char* path, bool failIfPresent,
         if (*p == '/') {
             /* Temporarily truncate */
             *p = '\0';
-            result = maybe_mkdir(_path, S_IRWXU);
-            *p = '/';
-            if (result != 0) {
+            if (maybe_mkdir(_path, S_IRWXU) != 0) {
                 goto out;
             }
+            *p = '/';
         }
     }
     if (maybe_mkdir(_path, S_IRWXU) != 0) {
