@@ -632,10 +632,7 @@ celix_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_cont
 static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_event_t *event) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_listener_t *listener = listenerSvc;
-    celix_bundle_context_bundle_tracker_entry_t *tracker = NULL;
-    if (listener != NULL) {
-        tracker = listener->handle;
-    }
+    celix_bundle_context_bundle_tracker_entry_t *tracker = listener->handle;
 
     bool handleEvent = true;
     long bndId = celix_bundle_getId(event->bnd);
@@ -643,7 +640,7 @@ static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_even
         handleEvent = tracker->opts.includeFrameworkBundle;
     }
 
-    if (tracker != NULL && handleEvent) {
+    if (handleEvent) {
         void *callbackHandle = tracker->opts.callbackHandle;
 
         if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED && tracker->opts.onInstalled != NULL) {
