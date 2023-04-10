@@ -186,20 +186,11 @@ celix_status_t bundleContext_registerService(bundle_context_pt context, const ch
 
 celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, const char * serviceName, service_factory_pt factory,
         properties_pt properties, service_registration_pt *service_registration) {
-    service_registration_pt registration = NULL;
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && *service_registration == NULL) {
-        long bndId = celix_bundle_getId(context->bundle);
-        fw_registerServiceFactory(context->framework, &registration, bndId, serviceName, factory, properties);
-        *service_registration = registration;
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || service_registration == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to register service factory");
-
-    return status;
+    long bndId = celix_bundle_getId(context->bundle);
+    return fw_registerServiceFactory(context->framework, service_registration, bndId, serviceName, factory, properties);
 }
 
 celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, const char * filter, array_list_pt *service_references) {

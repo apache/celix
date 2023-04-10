@@ -808,7 +808,7 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
 celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt *registration, long bndId, const char* serviceName, service_factory_pt factory, properties_pt properties) {
     celix_status_t status = CELIX_SUCCESS;
     char *error = NULL;
-	if (serviceName == NULL || factory == NULL) {
+    if (serviceName == NULL || factory == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
         error = "Service name and factory cannot be null";
     }
@@ -816,13 +816,13 @@ celix_status_t fw_registerServiceFactory(framework_pt framework, service_registr
     celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
                                                                                                           bndId);
 
-	status = CELIX_DO_IF(status, serviceRegistry_registerServiceFactory(framework->registry, entry->bnd, serviceName, factory, properties, registration));
+    status = CELIX_DO_IF(status, serviceRegistry_registerServiceFactory(framework->registry, entry->bnd, serviceName, factory, properties, registration));
 
     celix_framework_bundleEntry_decreaseUseCount(entry);
 
     framework_logIfError(framework->logger, status, error, "Cannot register service factory: %s", serviceName);
 
-    return CELIX_SUCCESS;
+    return status;
 }
 
 celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *references, bundle_pt bundle, const char * serviceName, const char * sfilter) {
