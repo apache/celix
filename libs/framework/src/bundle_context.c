@@ -144,26 +144,14 @@ celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_p
 }
 
 celix_status_t bundleContext_installBundle(bundle_context_pt context, const char * location, bundle_pt *bundle) {
-	return bundleContext_installBundle2(context, location, NULL, bundle);
+    return bundleContext_installBundle2(context, location, NULL, bundle);
 }
 
 celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char *location, const char *inputFile, bundle_pt *bundle) {
-	celix_status_t status = CELIX_SUCCESS;
-	bundle_pt b = NULL;
-
-	if (context != NULL) {
-		if (celix_framework_installBundleInternal(context->framework, location, &b) != CELIX_SUCCESS) {
-            status = CELIX_FRAMEWORK_EXCEPTION;
-		} else {
-			*bundle = b;
-		}
-	} else {
-        status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	framework_logIfError(context->framework->logger, status, NULL, "Failed to install bundle");
-
-	return status;
+    if (context == NULL || location == NULL || bundle == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    return celix_framework_installBundleInternal(context->framework, location, bundle);
 }
 
 celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, const void * svcObj,
