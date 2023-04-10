@@ -993,8 +993,6 @@ celix_status_t fw_addFrameworkListener(framework_pt framework, bundle_pt bundle,
 }
 
 celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener) {
-    celix_status_t status = CELIX_SUCCESS;
-
     unsigned int i;
     fw_framework_listener_pt frameworkListener;
 
@@ -1010,10 +1008,7 @@ celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bund
         }
     }
     celixThreadMutex_unlock(&framework->frameworkListenersLock);
-
-    framework_logIfError(framework->logger, status, NULL, "Failed to remove framework listener");
-
-    return status;
+    return CELIX_SUCCESS;
 }
 
 long framework_getNextBundleId(framework_pt framework) {

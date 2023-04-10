@@ -336,17 +336,10 @@ celix_status_t bundleContext_addFrameworkListener(bundle_context_pt context, fra
 }
 
 celix_status_t bundleContext_removeFrameworkListener(bundle_context_pt context, framework_listener_pt listener) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && listener != NULL) {
-        fw_removeFrameworkListener(context->framework, context->bundle, listener);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || listener == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to remove framework listener");
-
-    return status;
+    return fw_removeFrameworkListener(context->framework, context->bundle, listener);
 }
 
 celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, const char** value) {
