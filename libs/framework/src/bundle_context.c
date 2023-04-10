@@ -239,17 +239,11 @@ celix_status_t bundleContext_ungetService(bundle_context_pt context, service_ref
 }
 
 celix_status_t bundleContext_getBundles(bundle_context_pt context, array_list_pt *bundles) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (context == NULL || *bundles != NULL) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	} else {
-		*bundles = framework_getBundles(context->framework);
-	}
-
-	framework_logIfError(context->framework->logger, status, NULL, "Failed to get bundles");
-
-	return status;
+    if (context == NULL || bundles == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    *bundles = framework_getBundles(context->framework);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, bundle_pt *bundle) {
