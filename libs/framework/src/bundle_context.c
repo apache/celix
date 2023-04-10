@@ -936,10 +936,8 @@ static void celix_bundleContext_waitForTrackerInternal(celix_bundle_context_t* c
     }
 
     if (found) {
-        if (svcId >= 0 && waitForStart) {
+        if (svcId >= 0) {
             celix_framework_waitForAsyncRegistration(ctx->framework, svcId);
-        } else if (svcId >= 0) {
-            celix_framework_waitForAsyncUnregistration(ctx->framework, svcId);
         } else {
             celix_framework_waitForGenericEvent(ctx->framework, eventId);
         }
