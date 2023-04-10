@@ -17,6 +17,8 @@
   under the License.
  */
 
+#include <stdio.h>
+
 #ifndef CELIX_ERROR_INJECTOR_H
 #define CELIX_ERROR_INJECTOR_H
 #ifdef __cplusplus
@@ -58,8 +60,7 @@ void celix_ei_expect_##name(void *caller, unsigned int level, ret_type ret, size
     name ## _ordinal = (ordinal);                                                           \
 }
 
-
-#define CELIX_EI_IMPL0(name)                                                                             \
+#define CELIX_EI_IMPL(name)                                                                              \
 do {                                                                                                     \
     void *addr = CELIX_EI_UNKNOWN_CALLER;                                                                \
     if(name##_caller) {                                                                                  \
@@ -72,12 +73,21 @@ do {                                                                            
             case 1:                                                                                      \
                 CELIX_EI_GET_CALLER(addr, 1);                                                            \
                 break;                                                                                   \
+            case 2:                                                                                      \
+                CELIX_EI_GET_CALLER(addr, 2);                                                            \
+                break;                                                                                   \
+            case 3:                                                                                      \
+                CELIX_EI_GET_CALLER(addr, 3);                                                            \
+                break;                                                                                   \
+            case 4:                                                                                      \
+                CELIX_EI_GET_CALLER(addr, 4);                                                            \
+                break;                                                                                   \
             default:                                                                                     \
                 assert(0);                                                                               \
             }                                                                                            \
         }                                                                                                \
         if(name ## _caller == addr) {                                                                    \
-            if(__atomic_fetch_sub(&(name ## _ordinal), 1, __ATOMIC_RELAXED) == 1 && name ## _ret == 0)   \
+            if(__atomic_fetch_sub(&(name ## _ordinal), 1, __ATOMIC_RELAXED) == 1)                        \
                 return name ## _ret;                                                                     \
         }                                                                                                \
     }                                                                                                    \

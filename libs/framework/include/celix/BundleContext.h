@@ -333,6 +333,8 @@ namespace celix {
             return ServiceTrackerBuilder<void>{cCtx, {}};
         }
 
+        //TODO UseBundleBuilder useBundles()
+
         /**
          * @brief Track bundles in the Celix framework using a fluent builder API.
          *
@@ -429,8 +431,13 @@ namespace celix {
          *
          * Will silently ignore bundle ids < 0.
          *
+         * If this function is called on the Celix event thread, the actual starting of the bundle will be done async
+         * and on a separate thread.
+         * If this function is called from a different thread than the Celix event thread, then the function will
+         * return after the bundle start is completed.
+         *
          * @param bndId The bundle id to start.
-         * @return true if the bundle is found & correctly started. False if not.
+         * @return true if the bundle is found & correctly started or if the bundle is started async. False if not.
          */
         bool startBundle(long bndId) {
             return celix_bundleContext_startBundle(cCtx.get(), bndId);
@@ -441,12 +448,48 @@ namespace celix {
          *
          * Will silently ignore bundle ids < 0.
          *
+         * If this function is called on the Celix event thread, the actual stopping of the bundle will be done async
+         * and on a separate thread.
+         * If this function is called from a different thread than the Celix event thread, then the function will
+         * return after the bundle stop is completed.
+         *
          * @param bndId The bundle id to stop.
-         * @return true if the bundle is found & correctly stop. False if not.
+         * @return true if the bundle is found & correctly stop or if the bundle is stopped async. False if not.
          */
         bool stopBundle(long bndId) {
             return celix_bundleContext_stopBundle(cCtx.get(), bndId);
         }
+
+        /**
+         * @brief Update the bundle with the provided bundle id async.
+         *
+         * This will do the following:
+         *  - Stop the bundle (if needed);
+         *  - Update the bundle revision if a newer bundle zip if found;
+         *  - Start the bundle, if it was started.
+         *
+         * Will silently ignore bundle ids < 0.
+         *
+         * If this function is called on the Celix event thread, the actual updating of the bundle will be done async
+         * and on a separate thread.
+         * If this function is called from a different thread than the Celix event thread, then the function will
+         * return after the bundle update is completed.
+         *
+         * @param ctx The bundle context
+         * @param bndId The bundle id to start.
+         * @param updatedBundleUrl The optional updated bundle url to the bundle zip file. If empty, the existing
+         *                         bundle url from the bundle cache will be used.
+         * @return true if the bundle is found & correctly started or if the bundle is updated async. False if not.
+         */
+#if __cplusplus >= 201703L //C++17 or higher
+        bool updateBundle(long bndId, std::string_view updatedBundleUrl = {}) {
+            return celix_bundleContext_updateBundle(cCtx.get(), bndId, updatedBundleUrl.empty() ? nullptr : updatedBundleUrl.data());
+        }
+#else
+        bool updateBundle(long bndId, const std::string& updatedBundleUrl = {}) {
+            return celix_bundleContext_updateBundle(cCtx.get(), bndId, updatedBundleUrl.empty() ? nullptr : updatedBundleUrl.data());
+        }
+#endif
 
         /**
          * @brief List the installed and started bundle ids.
@@ -454,7 +497,7 @@ namespace celix {
          *
          * @return A vector with bundle ids.
          */
-        [[nodiscard]] std::vector<long> listBundleIds() const {
+        std::vector<long> listBundleIds() const {
             return listBundlesInternal(true);
         }
 
@@ -464,7 +507,7 @@ namespace celix {
          *
          * @return A vector with bundle ids.
          */
-        [[nodiscard]] std::vector<long> listInstalledBundleIds() {
+        std::vector<long> listInstalledBundleIds() {
             return listBundlesInternal(false);
         }
 
@@ -480,7 +523,7 @@ namespace celix {
          * @return The config property value for the provided key or the provided defaultValue is the name is not found.
          */
 #if __cplusplus >= 201703L //C++17 or higher
-        [[nodiscard]] std::string getConfigProperty(std::string_view name, std::string_view defaultValue) const {
+        std::string getConfigProperty(std::string_view name, std::string_view defaultValue) const {
             return std::string{celix_bundleContext_getProperty(cCtx.get(), name.data(), defaultValue.data())};
         }
 #else
@@ -502,7 +545,7 @@ namespace celix {
          * is not found or not a valid long.
          */
 #if __cplusplus >= 201703L //C++17 or higher
-        [[nodiscard]] long getConfigPropertyAsLong(std::string_view name, long defaultValue) const {
+        long getConfigPropertyAsLong(std::string_view name, long defaultValue) const {
             return celix_bundleContext_getPropertyAsLong(cCtx.get(), name.data(), defaultValue);
         }
 #else
@@ -524,7 +567,7 @@ namespace celix {
          * is not found or not a valid double.
          */
 #if __cplusplus >= 201703L //C++17 or higher
-        [[nodiscard]] double getConfigPropertyAsDouble(std::string_view name, double defaultValue) const {
+        double getConfigPropertyAsDouble(std::string_view name, double defaultValue) const {
             return celix_bundleContext_getPropertyAsDouble(cCtx.get(), name.data(), defaultValue);
         }
 #else
@@ -548,7 +591,7 @@ namespace celix {
          * is not found or not a valid boolean.
          */
 #if __cplusplus >= 201703L //C++17 or higher
-        [[nodiscard]] long getConfigPropertyAsBool(std::string_view name, bool defaultValue) const {
+        long getConfigPropertyAsBool(std::string_view name, bool defaultValue) const {
             return celix_bundleContext_getPropertyAsBool(cCtx.get(), name.data(), defaultValue);
         }
 #else
@@ -560,21 +603,21 @@ namespace celix {
         /**
          * @brief Get the bundle of this bundle context.
          */
-        [[nodiscard]] const Bundle& getBundle() const {
+        const Bundle& getBundle() const {
             return bnd;
         }
 
         /**
          * @brief Get the bundle id for the bundle of this bundle context
          */
-        [[nodiscard]] long getBundleId() const {
+        long getBundleId() const {
              return bnd.getId();
          }
 
         /**
          * @brief Get the Celix framework for this bundle context.
          */
-        [[nodiscard]] std::shared_ptr<Framework> getFramework() const {
+        std::shared_ptr<Framework> getFramework() const {
             auto* cFw = celix_bundleContext_getFramework(cCtx.get());
             auto fwCtx = std::make_shared<celix::BundleContext>(celix_framework_getFrameworkContext(cFw));
             return std::make_shared<Framework>(fwCtx, cFw);
@@ -583,17 +626,17 @@ namespace celix {
         /**
          * @brief Get the Celix dependency manager for this bundle context
          */
-        [[nodiscard]] std::shared_ptr<dm::DependencyManager> getDependencyManager() const {
+        std::shared_ptr<dm::DependencyManager> getDependencyManager() const {
             return dm;
         }
 
         /**
          * @brief Get the C bundle context.
          *
-         * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
-         * the C++ API.
+         * @warning Try not the depend on the C API from a C++ BundleContext.
+         * If features are missing these should be added to the C++ API.
          */
-        [[nodiscard]] celix_bundle_context_t* getCBundleContext() const {
+        celix_bundle_context_t* getCBundleContext() const {
             return cCtx.get();
         }
 
@@ -704,7 +747,7 @@ namespace celix {
             }
          }
     private:
-        [[nodiscard]] std::vector<long> listBundlesInternal(bool activeOnly) const {
+        std::vector<long> listBundlesInternal(bool activeOnly) const {
             std::vector<long> result{};
             auto* ids = activeOnly ?
                         celix_bundleContext_listBundles(getCBundleContext()) :

@@ -24,76 +24,62 @@
 #include <service_tracker.h>
 #include <celix_constants.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include "framework_private.h"
 #include "resolver.h"
 #include "utils.h"
+#include "celix_file_utils.h"
 #include "bundle_archive_private.h"
-
 #include "bundle_context_private.h"
 #include "service_tracker_private.h"
 
 
+static char* celix_bundle_getBundleOrPersistentStoreEntry(const celix_bundle_t* bnd, bool bundleEntry, const char* name);
 celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module);
 celix_status_t bundle_closeRevisions(const_bundle_pt bundle);
 
-celix_status_t bundle_create(celix_framework_t* fw, bundle_pt * bundle) {
-    celix_status_t status;
-    bundle_archive_pt archive = NULL;
+celix_status_t celix_bundle_createFromArchive(celix_framework_t *framework, bundle_archive_pt archive, celix_bundle_t **bundleOut) {
+    celix_status_t status = CELIX_SUCCESS;
+    celix_bundle_t* bundle = calloc(1, sizeof(*bundle));
 
-	*bundle = (bundle_pt) calloc(1, sizeof(**bundle));
-	if (*bundle == NULL) {
-		return CELIX_ENOMEM;
-	}
-	status = bundleArchive_createSystemBundleArchive(fw, &archive);
-	if (status == CELIX_SUCCESS) {
-        module_pt module;
+    if (!bundle) {
+        status = CELIX_ENOMEM;
+        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create bundle from archive, out of memory.");
+        return status;
+    }
 
-        (*bundle)->archive = archive;
-        (*bundle)->activator = NULL;
-        (*bundle)->context = NULL;
-        (*bundle)->framework = fw;
-        (*bundle)->state = CELIX_BUNDLE_STATE_INSTALLED;
-        (*bundle)->modules = NULL;
-        arrayList_create(&(*bundle)->modules);
-        (*bundle)->handle = NULL;
+    bundle->framework = framework;
+    bundle->archive = archive;
+    bundle->modules = celix_arrayList_create();
+    bundle->state = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
+    bundle->handle = NULL;
+    bundle->activator = NULL;
+    bundle->context = NULL;
+    bundle->symbolicName = NULL;
+    bundle->name = NULL;
+    bundle->group = NULL;
+    bundle->description = NULL;
 
-        module = module_createFrameworkModule((*bundle));
-        bundle_addModule(*bundle, module);
+    if (bundle->modules == NULL) {
+        status = CELIX_ENOMEM;
+        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create bundle from archive, out of memory.");
+        free(bundle);
+        return status;
+    }
 
-	}
-	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Failed to create bundle");
-
-	return status;
-}
-
-celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framework, bundle_archive_pt archive) {
     module_pt module;
-	
-	celix_status_t status;
+    status = bundle_createModule(bundle, &module);
+    if (status != CELIX_SUCCESS) {
+        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create bundle from archive, cannot create module.");
+        celix_arrayList_destroy(bundle->modules);
+        free(bundle);
+        return status;
+    } else {
+        bundle_addModule(bundle, module);
+    }
 
-	*bundle = (bundle_pt) calloc(1, (sizeof(**bundle)));
-	if (*bundle == NULL) {
-		return CELIX_ENOMEM;
-	}
-	(*bundle)->archive = archive;
-	(*bundle)->activator = NULL;
-	(*bundle)->context = NULL;
-	(*bundle)->handle = NULL;
-	(*bundle)->framework = framework;
-	(*bundle)->state = CELIX_BUNDLE_STATE_INSTALLED;
-	(*bundle)->modules = NULL;
-	arrayList_create(&(*bundle)->modules);
-	
-	status = bundle_createModule(*bundle, &module);
-	if (status == CELIX_SUCCESS) {
-		bundle_addModule(*bundle, module);
-	} else {
-	    status = CELIX_FILE_IO_EXCEPTION;
-	}
-
-	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Failed to create bundle");
-
+    *bundleOut = bundle;
 	return status;
 }
 
@@ -117,15 +103,11 @@ celix_status_t bundle_destroy(bundle_pt bundle) {
 
 celix_status_t bundle_getArchive(const_bundle_pt bundle, bundle_archive_pt *archive) {
 	celix_status_t status = CELIX_SUCCESS;
-
 	if (bundle != NULL && *archive == NULL) {
 		*archive = bundle->archive;
 	} else {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get bundle archive");
-
 	return status;
 }
 
@@ -173,7 +155,8 @@ celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context) {
 }
 
 celix_status_t bundle_getEntry(const_bundle_pt bundle, const char* name, char** entry) {
-	return framework_getBundleEntry(bundle->framework, bundle, name, entry);
+	*entry = celix_bundle_getBundleOrPersistentStoreEntry(bundle, true, name);
+    return *entry == NULL ? CELIX_ILLEGAL_ARGUMENT : CELIX_SUCCESS;
 }
 
 celix_status_t bundle_getState(const_bundle_pt bundle, bundle_state_e *state) {
@@ -190,47 +173,59 @@ celix_status_t bundle_setState(bundle_pt bundle, bundle_state_e state) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
+celix_status_t bundle_createModule(bundle_pt bundle, module_pt* moduleOut) {
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_archive_pt archive = NULL;
 	bundle_revision_pt revision = NULL;
 	manifest_pt headerMap = NULL;
+    long bundleId = 0;
 
 	status = CELIX_DO_IF(status, bundle_getArchive(bundle, &archive));
 	status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
 	status = CELIX_DO_IF(status, bundleRevision_getManifest(revision, &headerMap));
-	if (status == CELIX_SUCCESS) {
-		long bundleId = 0;
-        status = bundleArchive_getId(bundle->archive, &bundleId);
-        if (status == CELIX_SUCCESS) {
-			int revision_no = 0;
-			char moduleId[512];
+    status = bundleArchive_getId(bundle->archive, &bundleId);
 
-			snprintf(moduleId, sizeof(moduleId), "%ld.%d", bundleId, revision_no);
-			*module = module_create(headerMap, moduleId, bundle);
+    if (status != CELIX_SUCCESS) {
+        fw_logCode(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create module, cannot get bundle archive, revision, manifest or bundle id.");
+        return status;
+    }
 
-			if (*module != NULL) {
-				const char * symName = NULL;
-				status = module_getSymbolicName(*module, &symName);
-				if (status == CELIX_SUCCESS) {
-                    /*
-                     * NOTE only allowing a single bundle with a symbolic name.
-                     * OSGi spec allows same symbolic name and different versions, but this is risky with
-                     * the behaviour of dlopen when opening shared libraries with the same SONAME.
-                     */
-                    bool alreadyInstalled = celix_framework_isBundleAlreadyInstalled(bundle->framework, symName);
-                    if (alreadyInstalled) {
-                        fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot create bundle module. Bundle with symbolic name '%s' already exists", symName);
-                        status = CELIX_BUNDLE_EXCEPTION;
-                    }
-				}
-			}
-        }
-	}
+    module_pt module = NULL;
+    if (bundleId == CELIX_FRAMEWORK_BUNDLE_ID) {
+        module = module_createFrameworkModule(bundle->framework, bundle);
+    } else {
+        int revision_no = 0;
+        char moduleId[512];
+        snprintf(moduleId, sizeof(moduleId), "%ld.%d", bundleId, revision_no);
+        module = module_create(headerMap, moduleId, bundle);
+    }
+    if (!module) {
+        status = CELIX_BUNDLE_EXCEPTION;
+        fw_logCode(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create module.");
+        return status;
+    }
 
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to create bundle module");
 
-	return status;
+    const char * symName = NULL;
+    status = module_getSymbolicName(module, &symName);
+    assert(status == CELIX_SUCCESS);
+    /*
+     * NOTE only allowing a single bundle with a symbolic name.
+     * OSGi spec allows same symbolic name and different versions, but this is risky with
+     * the behaviour of dlopen when opening shared libraries with the same SONAME.
+     */
+    bool alreadyInstalled = celix_framework_isBundleAlreadyInstalled(bundle->framework, symName);
+    if (alreadyInstalled) {
+        status = CELIX_BUNDLE_EXCEPTION;
+        fw_logCode(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create module, bundle with symbolic name '%s' already installed.", symName);
+    }
+    if (status == CELIX_SUCCESS) {
+        *moduleOut = module;
+    } else {
+        module_destroy(module);
+    }
+
+    return status;
 }
 
 celix_status_t bundle_start(celix_bundle_t* bundle) {
@@ -238,27 +233,9 @@ celix_status_t bundle_start(celix_bundle_t* bundle) {
     return celix_framework_startBundle(bundle->framework, celix_bundle_getId(bundle));
 }
 
-celix_status_t bundle_update(bundle_pt bundle, const char *inputFile) {
-    fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_WARNING, "Bundle update functionality is deprecated. Do not use!");
-    assert(!celix_framework_isCurrentThreadTheEventLoop(bundle->framework));
-	celix_status_t status = CELIX_SUCCESS;
-	if (bundle != NULL) {
-		bool systemBundle = false;
-		status = bundle_isSystemBundle(bundle, &systemBundle);
-		if (status == CELIX_SUCCESS) {
-			if (systemBundle) {
-				status = CELIX_BUNDLE_EXCEPTION;
-			} else {
-				status = framework_updateBundle(bundle->framework, bundle, inputFile);
-			}
-		}
-	}
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to update bundle");
-
-	return status;
+celix_status_t bundle_update(bundle_pt bundle, const char* updatedBundleUrl) {
+    return celix_framework_updateBundle(bundle->framework, celix_bundle_getId(bundle), updatedBundleUrl);
 }
-
 
 celix_status_t bundle_stop(bundle_pt bundle) {
     //note deprecated call use celix_bundleContext_startBundle instead
@@ -329,30 +306,30 @@ celix_status_t bundle_revise(bundle_pt bundle, const char * location, const char
 	return status;
 }
 
-//bool bundle_rollbackRevise(bundle_pt bundle) {
-//	module_pt module = arrayList_remove(bundle->modules, arrayList_set(bundle->modules) - 1);
-//	return resolver_removeModule(module);
-//}
-
 celix_status_t bundle_addModule(bundle_pt bundle, module_pt module) {
-	arrayList_add(bundle->modules, module);
+	celix_arrayList_add(bundle->modules, module);
 	resolver_addModule(module);
-	if (bundle->symbolicName == NULL) {
-		const char *sn = NULL;
-        const char *n = NULL;
-        const char *g = NULL;
-        const char *d = NULL;
-		module_getSymbolicName(module, &sn);
-        module_getGroup(module, &g);
-        module_getName(module, &n);
-        module_getDescription(module, &d);
-		if (sn != NULL) {
-            bundle->symbolicName = celix_utils_strdup(sn);
-            bundle->name = celix_utils_strdup(n);
-            bundle->group = celix_utils_strdup(g);
-            bundle->description = celix_utils_strdup(d);
-        }
-	}
+
+    //free previous module info
+    free(bundle->symbolicName);
+    free(bundle->name);
+    free(bundle->group);
+    free(bundle->description);
+
+
+    //set new module info
+    const char *sn = NULL;
+    const char *n = NULL;
+    const char *g = NULL;
+    const char *d = NULL;
+    module_getSymbolicName(module, &sn);
+    module_getGroup(module, &g);
+    module_getName(module, &n);
+    module_getDescription(module, &d);
+    bundle->symbolicName = celix_utils_strdup(sn);
+    bundle->name = celix_utils_strdup(n);
+    bundle->group = celix_utils_strdup(g);
+    bundle->description = celix_utils_strdup(d);
 
 	return CELIX_SUCCESS;
 }
@@ -376,20 +353,8 @@ celix_status_t bundle_isSystemBundle(const_bundle_pt bundle, bool *systemBundle)
 }
 
 celix_status_t bundle_close(const_bundle_pt bundle) {
-	bundle_archive_pt archive = NULL;
-	
-	celix_status_t status;
-
-    bundle_closeModules(bundle);
-    bundle_closeRevisions(bundle);
-    status = bundle_getArchive(bundle, &archive);
-    if (status == CELIX_SUCCESS) {
-		bundleArchive_close(archive);
-    }
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to close bundle");
-
-    return status;
+    fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_DEBUG, "Usage of bundle_close is deprecated and no longer needed. Called for bundle %s", bundle->symbolicName);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_closeAndDelete(const_bundle_pt bundle) {
@@ -481,17 +446,11 @@ celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_list_pt *list) {
 }
 
 celix_status_t bundle_getFramework(const_bundle_pt bundle, framework_pt *framework) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (bundle != NULL && *framework == NULL) {
-		*framework = bundle->framework;
-	} else {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get framework");
-
-	return status;
+    if (bundle == NULL || framework == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    *framework = bundle->framework;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_getBundleLocation(const_bundle_pt bundle, const char **location){
@@ -540,16 +499,56 @@ long celix_bundle_getId(const bundle_t* bnd) {
 	return bndId;
 }
 
-celix_bundle_state_e celix_bundle_getState(const bundle_t *bnd) {
+celix_bundle_state_e celix_bundle_getState(const celix_bundle_t *bnd) {
     return __atomic_load_n(&bnd->state, __ATOMIC_ACQUIRE);
 }
 
-char* celix_bundle_getEntry(const bundle_t* bnd, const char *path) {
+static char* celix_bundle_getBundleOrPersistentStoreEntry(const celix_bundle_t* bnd, bool bundleEntry, const char* name) {
+    bundle_archive_pt archive = NULL;
+    celix_status_t status = bundle_getArchive(bnd, &archive);
+    if (status != CELIX_SUCCESS) {
+        fw_logCode(bnd->framework->logger, CELIX_BUNDLE_EXCEPTION, status, "Failed to get bundle archive");
+        return NULL;
+    }
+
+    const char *root;
+    if (bundleEntry) {
+        root = celix_bundleArchive_getCurrentRevisionRoot(archive);
+    } else {
+        root = celix_bundleArchive_getPersistentStoreRoot(archive);
+    }
+
+    char *entry = NULL;
+    if (name == NULL || strnlen(name, 1) == 0) { //NULL or ""
+        entry = celix_utils_strdup(root);
+    } else if ((strnlen(name, 1) > 0) && (name[0] == '/')) {
+        asprintf(&entry, "%s%s", root, name);
+    } else {
+        asprintf(&entry, "%s/%s", root, name);
+    }
+
+    if (celix_utils_fileExists(entry)) {
+        return entry;
+    } else {
+        free(entry);
+        return NULL;
+    }
+}
+
+char* celix_bundle_getEntry(const celix_bundle_t* bnd, const char *path) {
 	char *entry = NULL;
 	if (bnd != NULL && bnd->framework != NULL) {
-		framework_getBundleEntry(bnd->framework, (celix_bundle_t*)bnd, path, &entry);
+        entry = celix_bundle_getBundleOrPersistentStoreEntry(bnd, true, path);
 	}
 	return entry;
+}
+
+char* celix_bundle_getDataFile(const celix_bundle_t* bnd, const char *path) {
+    char *entry = NULL;
+    if (bnd != NULL && bnd->framework != NULL) {
+        entry = celix_bundle_getBundleOrPersistentStoreEntry(bnd, false, path);
+    }
+    return entry;
 }
 
 const char* celix_bundle_getManifestValue(const celix_bundle_t* bnd, const char* attribute) {
@@ -586,6 +585,24 @@ const char* celix_bundle_getName(const celix_bundle_t* bnd) {
 
 const char* celix_bundle_getDescription(const celix_bundle_t* bnd) {
     return bnd->description;
+}
+
+char* celix_bundle_getLocation(const celix_bundle_t *bnd) {
+    char* result = NULL;
+    if (bnd->archive != NULL) {
+        result = celix_bundleArchive_getLocation(bnd->archive);
+    }
+    return result;
+}
+
+const celix_version_t* celix_bundle_getVersion(const celix_bundle_t *bnd) {
+    celix_version_t* result = NULL;
+    celix_module_t* mod = NULL;
+    bundle_getCurrentModule(bnd, &mod);
+    if (mod != NULL) {
+        result = module_getVersion(mod);
+    }
+    return result;
 }
 
 bool celix_bundle_isSystemBundle(const celix_bundle_t *bnd) {
@@ -658,4 +675,10 @@ void celix_bundle_destroyServiceTrackerList(celix_array_list_t* list) {
         }
         celix_arrayList_destroy(list);
     }
+}
+
+bundle_archive_t* celix_bundle_getArchive(const celix_bundle_t *bundle) {
+    bundle_archive_t* archive = NULL;
+    bundle_getArchive(bundle, &archive);
+    return archive;
 }

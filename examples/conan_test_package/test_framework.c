@@ -34,6 +34,7 @@ int main() {
     ctx = framework_getContext(fw);
     long bndId = celix_bundleContext_installBundle(ctx, HELLO_TEST_BUNDLE_LOCATION, true);
     assert(bndId >= 0);
+    celix_framework_waitForStop(fw);
     celix_frameworkFactory_destroyFramework(fw);
     return 0;
 }

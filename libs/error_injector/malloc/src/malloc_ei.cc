@@ -18,26 +18,33 @@
  */
 
 #include "malloc_ei.h"
+#include <errno.h>
 
 extern "C" {
 void *__real_malloc(size_t);
 CELIX_EI_DEFINE(malloc, void *)
 void *__wrap_malloc(size_t size) {
-    CELIX_EI_IMPL0(malloc);
+    errno = ENOMEM;
+    CELIX_EI_IMPL(malloc);
+    errno = 0;
     return __real_malloc(size);
 }
 
 void *__real_realloc(void *__ptr, size_t __size);
 CELIX_EI_DEFINE(realloc, void *)
 void *__wrap_realloc(void *__ptr, size_t __size) {
-    CELIX_EI_IMPL0(realloc);
+    errno = ENOMEM;
+    CELIX_EI_IMPL(realloc);
+    errno = 0;
     return __real_realloc(__ptr, __size);
 }
 
 void *__real_calloc (size_t __nmemb, size_t __size);
 CELIX_EI_DEFINE(calloc, void *)
 void *__wrap_calloc (size_t __nmemb, size_t __size) {
-    CELIX_EI_IMPL0(calloc);
+    errno = ENOMEM;
+    CELIX_EI_IMPL(calloc);
+    errno = 0;
     return __real_calloc(__nmemb, __size);
 }
 }

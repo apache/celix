@@ -25,6 +25,7 @@ extern "C" {
 #endif
 
 #include <time.h>
+#include <stdarg.h>
 #include <stdbool.h>
 
 #define CELIX_UTILS_MAX_STRLEN      1024*1024*1024
@@ -47,9 +48,53 @@ char* celix_utils_strdup(const char *str);
 unsigned int celix_utils_stringHash(const char* string);
 
 /**
+ * The proposed buffer size to use for celix_utils_writeOrCreateString with a buffer on the stcck.
+ */
+#define CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE 512
+
+/**`
+ * @brief Format a string to the provided buffer or a newly allocated buffer if the provided buffer is to small.
+ * @param[in,out] buffer The buffer to write the formatted string to.
+ * @param[in] bufferSize The size of the buffer.
+ * @param[in] format The format string.
+ * @param[in] ... The arguments for the format string.
+ * @return The formatted string in the provided buffer or a newly allocated buffer if the provided buffer is to small.
+ * @retval NULL if a allocation was needed, but failed.
+ */
+char* celix_utils_writeOrCreateString(char* buffer, size_t bufferSize, const char* format, ...)
+    __attribute__((format(printf, 3, 4)));
+
+/**
+ * @brief Format a string to the provided buffer or a newly allocated buffer if the provided buffer is to small.
+ * @param[in,out] buffer The buffer to write the formatted string to.
+ * @param[in] bufferSize The size of the buffer.
+ * @param[in] format The format string.
+ * @param[in] formatArgs The arguments for the format string.
+ * @return The formatted string in the provided buffer or a newly allocated buffer if the provided buffer is to small.
+ * @retval NULL if a allocation was needed, but failed.
+ */
+char* celix_utils_writeOrCreateVString(char* buffer, size_t bufferSize, const char* format, va_list formatArgs)
+__attribute__((format(printf, 3, 0)));
+
+/**
+ * @brief Free the provided str if the str is not equal to the provided buffer.
+ * @note This function is useful combined with celix_utils_writeOrCreateString.
+ * @param buffer The buffer to compare the str to.
+ * @param str The string to free if it is not equal to the buffer.
+ */
+void celix_utils_freeStringIfNotEqual(const char* buffer, char* str);
+
+
+/**
  * @brief Compares two strings and returns true if the strings are equal.
  */
 bool celix_utils_stringEquals(const char* a, const char* b);
+
+/**
+ * Check if the provided string contains a whitespace (spaces, tabs, etc).
+ * The check is based on `isspace`.
+ */
+bool celix_utils_containsWhitespace(const char* s);
 
 /**
  * @brief Returns a trimmed string.
@@ -63,6 +108,17 @@ char* celix_utils_trim(const char* string);
  * @brief Check if a string is NULL or empty "".
  */
 bool celix_utils_isStringNullOrEmpty(const char* s);
+
+/** @brief create a C identifier from the provided string by replacing each non-alphanumeric character with a
+ * underscore.
+ *
+ * If the first character is a digit, a prefix underscore will also be added.
+ * Will return NULL if the input is NULL or an empty string.
+ *
+ * @param string the input string to make a C identifier for.
+ * @return new newly allocated string or NULL if the input was wrong. The caller is owner of the returned string.
+ */
+char* celix_utils_makeCIdentifier(const char* s);
 
 
 /**

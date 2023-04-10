@@ -109,7 +109,7 @@ jobs:
           -DRSA_SHM=ON
           -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON
           -DSHELL_BONJOUR=ON
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=Debug
       run: |
         mkdir build install
         cd build

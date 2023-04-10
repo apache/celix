@@ -69,6 +69,12 @@ celix_status_t celixThread_kill(celix_thread_t thread, int sig);
 
 celix_thread_t celixThread_self(void);
 
+/**
+ * Return true - as int - if the threads are equals
+ * @param[in] thread1
+ * @param[in] thread2
+ * @return non-zero if the thread IDs t1 and t2 correspond to the same thread, otherwise it will return zero.
+ */
 int celixThread_equals(celix_thread_t thread1, celix_thread_t thread2);
 
 bool celixThread_initialized(celix_thread_t thread);
