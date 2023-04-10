@@ -1943,12 +1943,8 @@ celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework
         celix_bundle_t *bnd = NULL;
         long bndId = -1L;
 
-        if (removedEntry == NULL) {
-            status = CELIX_ILLEGAL_ARGUMENT;
-        } else {
-            bnd = removedEntry->bnd;
-            bndId = removedEntry->bndId;
-        }
+        bnd = removedEntry->bnd;
+        bndId = removedEntry->bndId;
 
         if (status == CELIX_SUCCESS) {
             bundle_archive_t *archive = NULL;
