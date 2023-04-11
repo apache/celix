@@ -199,7 +199,8 @@ FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_referen
     celix_status_t status = CELIX_SUCCESS;
     properties_pt props = NULL;
 
-    serviceRegistration_getProperties(ref->registration, &props);
+    status = serviceRegistration_getProperties(ref->registration, &props);
+    assert(status == CELIX_SUCCESS);
     hash_map_iterator_pt it;
     int i = 0;
     int vsize = hashMap_size(props);

@@ -208,22 +208,24 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt* moduleOut) {
 
     const char * symName = NULL;
     status = module_getSymbolicName(module, &symName);
+    assert(status == CELIX_SUCCESS);
+    /*
+     * NOTE only allowing a single bundle with a symbolic name.
+     * OSGi spec allows same symbolic name and different versions, but this is risky with
+     * the behaviour of dlopen when opening shared libraries with the same SONAME.
+     */
+    bool alreadyInstalled = celix_framework_isBundleAlreadyInstalled(bundle->framework, symName);
+    if (alreadyInstalled) {
+        status = CELIX_BUNDLE_EXCEPTION;
+        fw_logCode(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create module, bundle with symbolic name '%s' already installed.", symName);
+    }
     if (status == CELIX_SUCCESS) {
-        /*
-         * NOTE only allowing a single bundle with a symbolic name.
-         * OSGi spec allows same symbolic name and different versions, but this is risky with
-         * the behaviour of dlopen when opening shared libraries with the same SONAME.
-         */
-        bool alreadyInstalled = celix_framework_isBundleAlreadyInstalled(bundle->framework, symName);
-        if (alreadyInstalled) {
-            status = CELIX_BUNDLE_EXCEPTION;
-            fw_logCode(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create module, bundle with symbolic name '%s' already installed.", symName);
-            return status;
-        }
+        *moduleOut = module;
+    } else {
+        module_destroy(module);
     }
 
-    *moduleOut = module;
-	return status;
+    return status;
 }
 
 celix_status_t bundle_start(celix_bundle_t* bundle) {
@@ -444,17 +446,11 @@ celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_list_pt *list) {
 }
 
 celix_status_t bundle_getFramework(const_bundle_pt bundle, framework_pt *framework) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (bundle != NULL && *framework == NULL) {
-		*framework = bundle->framework;
-	} else {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get framework");
-
-	return status;
+    if (bundle == NULL || framework == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    *framework = bundle->framework;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_getBundleLocation(const_bundle_pt bundle, const char **location){
