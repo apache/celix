@@ -27,7 +27,7 @@ extern "C" {
 /**
  * @brief Push an formatted error message to the thread specific storage rcm errors.
  */
-void celix_rcmErr_pushf(char* format, ...) __attribute__((format(printf, 1, 2)));
+void celix_rcmErr_pushf(const char* format, ...) __attribute__((format(printf, 1, 2)));
 
 /**
  * @brief Push an error message to the thread specific storage rcm errors.

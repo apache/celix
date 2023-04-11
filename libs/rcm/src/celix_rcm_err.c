@@ -108,13 +108,15 @@ void celix_rcmErr_push(const char* msg) {
     celix_rcm_pushMsg(msgCpy);
 }
 
-void celix_rcmErr_pushf(char* format, ...) {
+void celix_rcmErr_pushf(const char* format, ...) {
     va_list args;
     va_start(args, format);
     char* msg = NULL;
     int rc = vasprintf(&msg, format, args);
     if (rc >= 0) {
         celix_rcm_pushMsg(msg);
+    } else {
+        fprintf(stderr, "Failed to copy error message for Apache Celix rcm lib\n");
     }
     va_end(args);
 }

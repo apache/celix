@@ -38,63 +38,63 @@ void *__wrap_celix_arrayList_createWithOptions(const celix_array_list_create_opt
 celix_status_t __real_celix_arrayList_add(celix_array_list_t* list, void* value);
 CELIX_EI_DEFINE(celix_arrayList_add, celix_status_t)
 celix_status_t __wrap_celix_arrayList_add(celix_array_list_t* list, void* value) {
-    CELIX_EI_IMPL_POSITIVE(celix_arrayList_add);
+    CELIX_EI_IMPL(celix_arrayList_add);
     return __real_celix_arrayList_add(list, value);
 }
 
 celix_status_t __real_celix_arrayList_addInt(celix_array_list_t* list, int value);
 CELIX_EI_DEFINE(celix_arrayList_addInt, celix_status_t)
 celix_status_t __wrap_celix_arrayList_addInt(celix_array_list_t* list, int value) {
-    CELIX_EI_IMPL_POSITIVE(celix_arrayList_addInt);
+    CELIX_EI_IMPL(celix_arrayList_addInt);
     return __real_celix_arrayList_addInt(list, value);
 }
 
 celix_status_t __real_celix_arrayList_addLong(celix_array_list_t* list, long value);
 CELIX_EI_DEFINE(celix_arrayList_addLong, celix_status_t)
 celix_status_t __wrap_celix_arrayList_addLong(celix_array_list_t* list, long value) {
-    CELIX_EI_IMPL_POSITIVE(celix_arrayList_addLong);
+    CELIX_EI_IMPL(celix_arrayList_addLong);
     return __real_celix_arrayList_addLong(list, value);
 }
 
 celix_status_t __real_celix_arrayList_addUInt(celix_array_list_t* list, unsigned int value);
 CELIX_EI_DEFINE(celix_arrayList_addUInt, celix_status_t)
 celix_status_t __wrap_celix_arrayList_addUInt(celix_array_list_t* list, unsigned int value) {
-    CELIX_EI_IMPL_POSITIVE(celix_arrayList_addUInt);
+    CELIX_EI_IMPL(celix_arrayList_addUInt);
     return __real_celix_arrayList_addUInt(list, value);
 }
 
 celix_status_t __real_celix_arrayList_addULong(celix_array_list_t* list, unsigned long value);
 CELIX_EI_DEFINE(celix_arrayList_addULong, celix_status_t)
 celix_status_t __wrap_celix_arrayList_addULong(celix_array_list_t* list, unsigned long value) {
-    CELIX_EI_IMPL_POSITIVE(celix_arrayList_addULong);
+    CELIX_EI_IMPL(celix_arrayList_addULong);
     return __real_celix_arrayList_addULong(list, value);
 }
 
 celix_status_t __real_celix_arrayList_addFloat(celix_array_list_t* list, float value);
 CELIX_EI_DEFINE(celix_arrayList_addFloat, celix_status_t)
 celix_status_t __wrap_celix_arrayList_addFloat(celix_array_list_t* list, float value) {
-    CELIX_EI_IMPL_POSITIVE(celix_arrayList_addFloat);
+    CELIX_EI_IMPL(celix_arrayList_addFloat);
     return __real_celix_arrayList_addFloat(list, value);
 }
 
 celix_status_t __real_celix_arrayList_addDouble(celix_array_list_t* list, double value);
 CELIX_EI_DEFINE(celix_arrayList_addDouble, celix_status_t)
 celix_status_t __wrap_celix_arrayList_addDouble(celix_array_list_t* list, double value) {
-    CELIX_EI_IMPL_POSITIVE(celix_arrayList_addDouble);
+    CELIX_EI_IMPL(celix_arrayList_addDouble);
     return __real_celix_arrayList_addDouble(list, value);
 }
 
 celix_status_t __real_celix_arrayList_addBool(celix_array_list_t* list, bool value);
 CELIX_EI_DEFINE(celix_arrayList_addBool, celix_status_t)
 celix_status_t __wrap_celix_arrayList_addBool(celix_array_list_t* list, bool value) {
-    CELIX_EI_IMPL_POSITIVE(celix_arrayList_addBool);
+    CELIX_EI_IMPL(celix_arrayList_addBool);
     return __real_celix_arrayList_addBool(list, value);
 }
 
 celix_status_t __real_celix_arrayList_addSize(celix_array_list_t* list, size_t value);
 CELIX_EI_DEFINE(celix_arrayList_addSize, celix_status_t)
 celix_status_t __wrap_celix_arrayList_addSize(celix_array_list_t* list, size_t value) {
-    CELIX_EI_IMPL_POSITIVE(celix_arrayList_addSize);
+    CELIX_EI_IMPL(celix_arrayList_addSize);
     return __real_celix_arrayList_addSize(list, value);
 }
 

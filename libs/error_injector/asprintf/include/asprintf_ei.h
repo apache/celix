@@ -27,6 +27,9 @@ extern "C" {
 
 CELIX_EI_DECLARE(asprintf, int);
 
+CELIX_EI_DECLARE(vasprintf, int);
+
+
 #ifdef __cplusplus
 }
 #endif

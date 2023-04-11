@@ -24,6 +24,7 @@
 #include "malloc_ei.h"
 #include "celix_utils_ei.h"
 #include "celix_array_list_ei.h"
+#include "asprintf_ei.h"
 
 #include "celix_capability.h"
 #include "celix_requirement.h"
@@ -42,6 +43,7 @@ public:
         celix_ei_expect_celix_arrayList_create(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_add(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
+        celix_ei_expect_vasprintf(nullptr, 0, 0);
         celix_rcmErr_resetErrors();
     }
 };
@@ -152,5 +154,11 @@ TEST_F(RequirementCapabilityModelWithErrorInjectionTestSuite, TestRcmErrErrorHan
     EXPECT_EQ(0, celix_rcmErr_getErrorCount());
     celix_ei_expect_celix_arrayList_add((void*)celix_rcmErr_push, 1, CELIX_ENOMEM);
     celix_rcmErr_push("test");
+    EXPECT_EQ(0, celix_rcmErr_getErrorCount()); //error could not get pushed, so no error
+
+    //inject error on first vasprintf call from celix_rcmErr_pushf
+    EXPECT_EQ(0, celix_rcmErr_getErrorCount());
+    celix_ei_expect_vasprintf((void*)celix_rcmErr_pushf, 0, -1);
+    celix_rcmErr_pushf("test %s", "test");
     EXPECT_EQ(0, celix_rcmErr_getErrorCount()); //error could not get pushed, so no error
 }
