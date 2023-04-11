@@ -72,7 +72,8 @@ static celix_status_t dfi_findFileForBundle(const celix_bundle_t *bundle, const 
         } else {
             *out = df;
         }
-
+    } else {
+       status = CELIX_FILE_IO_EXCEPTION;
     }
 
     free(path);
@@ -98,6 +99,8 @@ static celix_status_t dfi_findAvprFileForBundle(const celix_bundle_t *bundle, co
         else {
             *out = df;
         }
+    } else {
+        status = CELIX_FILE_IO_EXCEPTION;
     }
 
     free(path);
