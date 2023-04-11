@@ -20,6 +20,8 @@
 #include <gtest/gtest.h>
 
 #include "celix_convert_utils.h"
+#include <string>
+#include <cmath>
 
 class ConvertUtilsTestSuite : public ::testing::Test {
 public:
@@ -48,6 +50,11 @@ TEST_F(ConvertUtilsTestSuite, ConvertToLongTest) {
     //test for an invalid string
     result = celix_utils_convertStringToLong("A", 0, &converted);
     EXPECT_EQ(0, result);
+    EXPECT_FALSE(converted);
+
+    //test for a string consisting of whitespaces
+    result = celix_utils_convertStringToLong("   ", 1, &converted);
+    EXPECT_EQ(1, result);
     EXPECT_FALSE(converted);
 
     //test for a string with a invalid number
@@ -97,6 +104,11 @@ TEST_F(ConvertUtilsTestSuite, ConvertToDoubleTest) {
     EXPECT_EQ(0, result);
     EXPECT_FALSE(converted);
 
+    //test for an string consisting of whitespaces
+    result = celix_utils_convertStringToDouble("  ", 1.0, &converted);
+    EXPECT_EQ(1.0, result);
+    EXPECT_FALSE(converted);
+
     //test for a string with a invalid number
     result = celix_utils_convertStringToDouble("10.5A", 0, &converted);
     EXPECT_FALSE(converted);
@@ -132,6 +144,21 @@ TEST_F(ConvertUtilsTestSuite, ConvertToDoubleTest) {
     //test for a convert with a double value with starting and trailing whitespaces
     result = celix_utils_convertStringToDouble("\t 12.2 \t\n", 0, &converted);
     EXPECT_EQ(12.2, result);
+    EXPECT_TRUE(converted);
+
+    //test for a convert with an INF value
+    result = celix_utils_convertStringToDouble("INF", 0, &converted);
+    EXPECT_EQ(std::numeric_limits<double>::infinity(), result);
+    EXPECT_TRUE(converted);
+
+    //test for a convert with an -INF value
+    result = celix_utils_convertStringToDouble(" -INF ", 0, &converted);
+    EXPECT_EQ(-std::numeric_limits<double>::infinity(), result);
+    EXPECT_TRUE(converted);
+
+    //test for a convert with an NAN value
+    result = celix_utils_convertStringToDouble(" NAN   ", 0, &converted);
+    EXPECT_TRUE(std::isnan(result));
     EXPECT_TRUE(converted);
 }
 
@@ -227,6 +254,15 @@ TEST_F(ConvertUtilsTestSuite, ConvertToVersionTest) {
     result = celix_utils_convertStringToVersion("\t 3.2.2 \t\n", nullptr, &converted);
     EXPECT_TRUE(converted);
     celix_version_destroy(result);
+
+    //test for a convert with a super long invalid version string
+    std::string longString = "1";
+    for (int i = 0; i < 128; ++i) {
+        longString += ".1";
+    }
+    result = celix_utils_convertStringToVersion(longString.c_str(), nullptr, &converted);
+    EXPECT_FALSE(converted);
+    EXPECT_EQ(nullptr, result);
 
     celix_version_destroy(defaultVersion);
 }

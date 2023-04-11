@@ -116,3 +116,57 @@ TEST_F(CxxFilterTestSuite, HasMandatoryNegatedPresenceAttribute) {
     EXPECT_TRUE(filter2.hasMandatoryNegatedPresenceAttribute("key2"));
     EXPECT_FALSE(filter2.hasMandatoryNegatedPresenceAttribute("key3"));
 }
+
+TEST_F(CxxFilterTestSuite, FilterForLongAttribute) {
+    celix::Filter filter1{"(key1>=10)"};
+    EXPECT_TRUE(filter1.match({{"key1", "12"}}));
+    EXPECT_TRUE(filter1.match({{"key1", "11.1"}}));
+    EXPECT_TRUE(filter1.match({{"key1", "10"}}));
+    EXPECT_FALSE(filter1.match({{"key1", "2"}}));
+    EXPECT_FALSE(filter1.match({{"key1", "1"}}));
+    EXPECT_FALSE(filter1.match({{"key1", "0.1"}}));
+
+    celix::Filter filter2{"(key1>20)"};
+    EXPECT_TRUE(filter2.match({{"key1", "21"}}));
+    EXPECT_TRUE(filter2.match({{"key1", "20.1"}}));
+    EXPECT_FALSE(filter2.match({{"key1", "20"}}));
+    EXPECT_FALSE(filter2.match({{"key1", "3"}}));
+    EXPECT_FALSE(filter2.match({{"key1", "2"}}));
+    EXPECT_FALSE(filter2.match({{"key1", "0.1"}}));
+}
+
+TEST_F(CxxFilterTestSuite, FilterForDoubleAttribute) {
+    celix::Filter filter1{"(key1>=10.5)"};
+    EXPECT_TRUE(filter1.match({{"key1", "12"}}));
+    EXPECT_TRUE(filter1.match({{"key1", "11.1"}}));
+    EXPECT_TRUE(filter1.match({{"key1", "10.5"}}));
+    EXPECT_FALSE(filter1.match({{"key1", "2"}}));
+    EXPECT_FALSE(filter1.match({{"key1", "1"}}));
+    EXPECT_FALSE(filter1.match({{"key1", "0.1"}}));
+
+    celix::Filter filter2{"(key1>20.5)"};
+    EXPECT_TRUE(filter2.match({{"key1", "21"}}));
+    EXPECT_TRUE(filter2.match({{"key1", "20.7"}}));
+    EXPECT_FALSE(filter2.match({{"key1", "20.5"}}));
+    EXPECT_FALSE(filter2.match({{"key1", "3"}}));
+    EXPECT_FALSE(filter2.match({{"key1", "2"}}));
+    EXPECT_FALSE(filter2.match({{"key1", "0.1"}}));
+}
+
+TEST_F(CxxFilterTestSuite, FilterForVersionAttribute) {
+    celix::Filter filter1{"(key1>=1.2.3.qualifier)"};
+    EXPECT_TRUE(filter1.match({{"key1", "1.2.3.qualifier"}}));
+    EXPECT_TRUE(filter1.match({{"key1", "2"}}));
+    EXPECT_TRUE(filter1.match({{"key1", "2.0.0"}}));
+    EXPECT_TRUE(filter1.match({{"key1", "1.2.4"}}));
+    EXPECT_FALSE(filter1.match({{"key1", "1.2.2"}}));
+    EXPECT_FALSE(filter1.match({{"key1", "1.0.0"}}));
+    EXPECT_FALSE(filter1.match({{"key1", "0.1"}}));
+
+    celix::Filter filter2{"(key1>2.3.4)"};
+    EXPECT_TRUE(filter2.match({{"key1", "3"}}));
+    EXPECT_TRUE(filter2.match({{"key1", "3.0.0"}}));
+    EXPECT_TRUE(filter2.match({{"key1", "2.3.5"}}));
+    EXPECT_FALSE(filter2.match({{"key1", "2.3.4"}}));
+    EXPECT_FALSE(filter2.match({{"key1", "0.0.3"}}));
+}

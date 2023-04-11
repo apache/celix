@@ -79,7 +79,7 @@ static inline void fw_bundleEntry_waitTillUseCountIs(celix_framework_bundle_entr
         if (entry->useCount != desiredUseCount) {
             struct timespec now = celix_gettime(CLOCK_MONOTONIC);
             if (celix_difftime(&start, &now) > 5) {
-                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle '%s' (bnd id = %li) still in use. Use count is %zu, desired is %li", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
+                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle '%s' (bnd id = %li) still in use. Use count is %zu, desired is %zu", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
                 start = celix_gettime(CLOCK_MONOTONIC);
             }
         }
@@ -808,7 +808,7 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
 celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt *registration, long bndId, const char* serviceName, service_factory_pt factory, properties_pt properties) {
     celix_status_t status = CELIX_SUCCESS;
     char *error = NULL;
-	if (serviceName == NULL || factory == NULL) {
+    if (serviceName == NULL || factory == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
         error = "Service name and factory cannot be null";
     }
@@ -816,13 +816,13 @@ celix_status_t fw_registerServiceFactory(framework_pt framework, service_registr
     celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
                                                                                                           bndId);
 
-	status = CELIX_DO_IF(status, serviceRegistry_registerServiceFactory(framework->registry, entry->bnd, serviceName, factory, properties, registration));
+    status = CELIX_DO_IF(status, serviceRegistry_registerServiceFactory(framework->registry, entry->bnd, serviceName, factory, properties, registration));
 
     celix_framework_bundleEntry_decreaseUseCount(entry);
 
     framework_logIfError(framework->logger, status, error, "Cannot register service factory: %s", serviceName);
 
-    return CELIX_SUCCESS;
+    return status;
 }
 
 celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *references, bundle_pt bundle, const char * serviceName, const char * sfilter) {
@@ -993,8 +993,6 @@ celix_status_t fw_addFrameworkListener(framework_pt framework, bundle_pt bundle,
 }
 
 celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener) {
-    celix_status_t status = CELIX_SUCCESS;
-
     unsigned int i;
     fw_framework_listener_pt frameworkListener;
 
@@ -1010,10 +1008,7 @@ celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bund
         }
     }
     celixThreadMutex_unlock(&framework->frameworkListenersLock);
-
-    framework_logIfError(framework->logger, status, NULL, "Failed to remove framework listener");
-
-    return status;
+    return CELIX_SUCCESS;
 }
 
 long framework_getNextBundleId(framework_pt framework) {
@@ -1948,12 +1943,8 @@ celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework
         celix_bundle_t *bnd = NULL;
         long bndId = -1L;
 
-        if (removedEntry == NULL) {
-            status = CELIX_ILLEGAL_ARGUMENT;
-        } else {
-            bnd = removedEntry->bnd;
-            bndId = removedEntry->bndId;
-        }
+        bnd = removedEntry->bnd;
+        bndId = removedEntry->bndId;
 
         if (status == CELIX_SUCCESS) {
             bundle_archive_t *archive = NULL;

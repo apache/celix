@@ -121,105 +121,55 @@ void celix_bundleContext_cleanup(celix_bundle_context_t *ctx) {
 }
 
 celix_status_t bundleContext_getBundle(bundle_context_pt context, bundle_pt *out) {
-	celix_status_t status = CELIX_SUCCESS;
-    celix_bundle_t *bnd = celix_bundleContext_getBundle(context);
-    if (context == NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || out == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-    if (out != NULL) {
-        *out = bnd;
-    }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to get bundle");
-
-	return status;
+    *out = celix_bundleContext_getBundle(context);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_pt *framework) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (context == NULL) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	} else {
-		*framework = context->framework;
-	}
-
-	framework_logIfError(context->framework->logger, status, NULL, "Failed to get framework");
-
-	return status;
+    if (context == NULL || framework == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    *framework = context->framework;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleContext_installBundle(bundle_context_pt context, const char * location, bundle_pt *bundle) {
-	return bundleContext_installBundle2(context, location, NULL, bundle);
+    return bundleContext_installBundle2(context, location, NULL, bundle);
 }
 
 celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char *location, const char *inputFile, bundle_pt *bundle) {
-	celix_status_t status = CELIX_SUCCESS;
-	bundle_pt b = NULL;
-
-	if (context != NULL) {
-		if (celix_framework_installBundleInternal(context->framework, location, &b) != CELIX_SUCCESS) {
-            status = CELIX_FRAMEWORK_EXCEPTION;
-		} else {
-			*bundle = b;
-		}
-	} else {
-        status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	framework_logIfError(context->framework->logger, status, NULL, "Failed to install bundle");
-
-	return status;
+    if (context == NULL || location == NULL || bundle == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    return celix_framework_installBundleInternal(context->framework, location, bundle);
 }
 
 celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, const void * svcObj,
         properties_pt properties, service_registration_pt *service_registration) {
-	service_registration_pt registration = NULL;
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (context != NULL) {
-	    long bndId = celix_bundle_getId(context->bundle);
-	    fw_registerService(context->framework, &registration, bndId, serviceName, svcObj, properties);
-	    *service_registration = registration;
-	} else {
-	    status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	framework_logIfError(context->framework->logger, status, NULL, "Failed to register service. serviceName '%s'", serviceName);
-
-	return status;
+    if (context == NULL || service_registration == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    long bndId = celix_bundle_getId(context->bundle);
+    return fw_registerService(context->framework, service_registration, bndId, serviceName, svcObj, properties);
 }
 
 celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, const char * serviceName, service_factory_pt factory,
         properties_pt properties, service_registration_pt *service_registration) {
-    service_registration_pt registration = NULL;
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && *service_registration == NULL) {
-        long bndId = celix_bundle_getId(context->bundle);
-        fw_registerServiceFactory(context->framework, &registration, bndId, serviceName, factory, properties);
-        *service_registration = registration;
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || service_registration == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to register service factory");
-
-    return status;
+    long bndId = celix_bundle_getId(context->bundle);
+    return fw_registerServiceFactory(context->framework, service_registration, bndId, serviceName, factory, properties);
 }
 
 celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, const char * filter, array_list_pt *service_references) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && *service_references == NULL) {
-        fw_getServiceReferences(context->framework, service_references, context->bundle, serviceName, filter);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || service_references == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to get service references");
-
-	return status;
+    return fw_getServiceReferences(context->framework, service_references, context->bundle, serviceName, filter);
 }
 
 celix_status_t bundleContext_getServiceReference(bundle_context_pt context, const char * serviceName, service_reference_pt *service_reference) {
@@ -258,172 +208,99 @@ static bool bundleContext_IsServiceReferenceValid(bundle_context_pt context, ser
 }
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_retainServiceReference(bundle_context_pt context, service_reference_pt ref) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && ref != NULL && bundleContext_IsServiceReferenceValid(context, ref)) {
-        serviceReference_retain(ref);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || ref == NULL || !bundleContext_IsServiceReferenceValid(context, ref)) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to retain service references");
-
-    return status;
+    return serviceReference_retain(ref);
 }
 
 celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, service_reference_pt reference) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && reference != NULL && bundleContext_IsServiceReferenceValid(context, reference)) {
-        serviceReference_release(reference, NULL);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || reference == NULL || !bundleContext_IsServiceReferenceValid(context, reference)) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to unget service_reference");
-
-    return status;
+    return serviceReference_release(reference, NULL);
 }
 
 celix_status_t bundleContext_getService(bundle_context_pt context, service_reference_pt reference, void** service_instance) {
-    celix_status_t status = CELIX_SUCCESS;
-    if (context != NULL && reference != NULL && service_instance != NULL && bundleContext_IsServiceReferenceValid(context, reference)) {
-        /*NOTE argument service_instance should be considered a 'const void**'.
-        To ensure backwards compatibility a cast is made instead.
-        */
-        status = serviceReference_getService(reference, (const void**) service_instance);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || reference == NULL || service_instance == NULL || !bundleContext_IsServiceReferenceValid(context, reference)) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to get service");
-    return status;
+    /*NOTE argument service_instance should be considered a 'const void**'.
+    To ensure backwards compatibility a cast is made instead.
+    */
+    return serviceReference_getService(reference, (const void**) service_instance);
 }
 
 celix_status_t bundleContext_ungetService(bundle_context_pt context, service_reference_pt reference, bool *result) {
-    celix_status_t status = CELIX_SUCCESS;
-    if (context != NULL && reference != NULL && bundleContext_IsServiceReferenceValid(context, reference)) {
-        status = serviceReference_ungetService(reference, result);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || reference == NULL || !bundleContext_IsServiceReferenceValid(context, reference)) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to unget service");
-
-    return status;
+    return serviceReference_ungetService(reference, result);
 }
 
 celix_status_t bundleContext_getBundles(bundle_context_pt context, array_list_pt *bundles) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (context == NULL || *bundles != NULL) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	} else {
-		*bundles = framework_getBundles(context->framework);
-	}
-
-	framework_logIfError(context->framework->logger, status, NULL, "Failed to get bundles");
-
-	return status;
+    if (context == NULL || bundles == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    *bundles = framework_getBundles(context->framework);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, bundle_pt *bundle) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context == NULL || *bundle != NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    } else {
-        *bundle = framework_getBundleById(context->framework, id);
-        if (*bundle == NULL) {
-            status = CELIX_BUNDLE_EXCEPTION;
-        }
+    if (context == NULL || bundle == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
+    celix_status_t status = CELIX_SUCCESS;
+    *bundle = framework_getBundleById(context->framework, id);
+    if (*bundle == NULL) {
+        status = CELIX_BUNDLE_EXCEPTION;
+    }
     framework_logIfError(context->framework->logger, status, NULL, "Failed to get bundle [id=%ld]", id);
-
-	return status;
+    return status;
 }
 
 celix_status_t bundleContext_addServiceListener(bundle_context_pt context, celix_service_listener_t *listener, const char* filter) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && listener != NULL) {
-        fw_addServiceListener(context->framework, context->bundle, listener, filter);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || listener == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to add service listener");
-
-    return status;
+    fw_addServiceListener(context->framework, context->bundle, listener, filter);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleContext_removeServiceListener(bundle_context_pt context, celix_service_listener_t *listener) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && listener != NULL) {
-        fw_removeServiceListener(context->framework, context->bundle, listener);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || listener == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to remove service listener");
-
-    return status;
+    fw_removeServiceListener(context->framework, context->bundle, listener);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleContext_addBundleListener(bundle_context_pt context, bundle_listener_pt listener) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && listener != NULL) {
-        fw_addBundleListener(context->framework, context->bundle, listener);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || listener == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to add bundle listener");
-
-    return status;
+    return fw_addBundleListener(context->framework, context->bundle, listener);
 }
 
 celix_status_t bundleContext_removeBundleListener(bundle_context_pt context, bundle_listener_pt listener) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && listener != NULL) {
-        fw_removeBundleListener(context->framework, context->bundle, listener);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || listener == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to remove bundle listener");
-
-    return status;
+    return fw_removeBundleListener(context->framework, context->bundle, listener);
 }
 
 celix_status_t bundleContext_addFrameworkListener(bundle_context_pt context, framework_listener_pt listener) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && listener != NULL) {
-        fw_addFrameworkListener(context->framework, context->bundle, listener);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || listener == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to add framework listener");
-
-    return status;
+    return fw_addFrameworkListener(context->framework, context->bundle, listener);
 }
 
 celix_status_t bundleContext_removeFrameworkListener(bundle_context_pt context, framework_listener_pt listener) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (context != NULL && listener != NULL) {
-        fw_removeFrameworkListener(context->framework, context->bundle, listener);
-    } else {
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (context == NULL || listener == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    framework_logIfError(context->framework->logger, status, NULL, "Failed to remove framework listener");
-
-    return status;
+    return fw_removeFrameworkListener(context->framework, context->bundle, listener);
 }
 
 celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, const char** value) {
@@ -632,10 +509,7 @@ celix_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_cont
 static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_event_t *event) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_listener_t *listener = listenerSvc;
-    celix_bundle_context_bundle_tracker_entry_t *tracker = NULL;
-    if (listener != NULL) {
-        tracker = listener->handle;
-    }
+    celix_bundle_context_bundle_tracker_entry_t *tracker = listener->handle;
 
     bool handleEvent = true;
     long bndId = celix_bundle_getId(event->bnd);
@@ -643,7 +517,7 @@ static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_even
         handleEvent = tracker->opts.includeFrameworkBundle;
     }
 
-    if (tracker != NULL && handleEvent) {
+    if (handleEvent) {
         void *callbackHandle = tracker->opts.callbackHandle;
 
         if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED && tracker->opts.onInstalled != NULL) {
@@ -1062,10 +936,8 @@ static void celix_bundleContext_waitForTrackerInternal(celix_bundle_context_t* c
     }
 
     if (found) {
-        if (svcId >= 0 && waitForStart) {
+        if (svcId >= 0) {
             celix_framework_waitForAsyncRegistration(ctx->framework, svcId);
-        } else if (svcId >= 0) {
-            celix_framework_waitForAsyncUnregistration(ctx->framework, svcId);
         } else {
             celix_framework_waitForGenericEvent(ctx->framework, eventId);
         }

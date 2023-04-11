@@ -25,16 +25,7 @@
 #include "celix_utils.h"
 #include "celix_version.h"
 
-const char* celix_utils_eatWhitespace(const char* str) {
-    if (str != NULL) {
-        while (isspace(*str)) {
-            str++;
-        }
-    }
-    return str;
-}
-
-bool celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(const char* endptr) {
+static bool celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(const char* endptr) {
     bool result = false;
     if (endptr != NULL) {
         while (*endptr != '\0') {
@@ -56,13 +47,16 @@ bool celix_utils_convertStringToBool(const char* val, bool defaultValue, bool* c
     if (val != NULL) {
         char buf[32];
         char* valCopy = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s", val);
+        if (valCopy == NULL) {
+            return result;
+        }
         char *trimmed = utils_stringTrim(valCopy);
-        if (strncasecmp("true", trimmed, 5) == 0) {
+        if (strcasecmp("true", trimmed) == 0) {
             result = true;
             if (converted) {
                 *converted = true;
             }
-        } else if (strncasecmp("false", trimmed, 6) == 0) {
+        } else if (strcasecmp("false", trimmed) == 0) {
             result = false;
             if (converted) {
                 *converted = true;
@@ -80,7 +74,7 @@ double celix_utils_convertStringToDouble(const char* val, double defaultValue, b
     }
     if (val != NULL) {
         char *endptr;
-        double d = strtod(celix_utils_eatWhitespace(val), &endptr);
+        double d = strtod(val, &endptr);
         if (endptr != val && celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(endptr)) {
             result = d;
             if (converted) {
@@ -98,7 +92,7 @@ long celix_utils_convertStringToLong(const char* val, long defaultValue, bool* c
     }
     if (val != NULL) {
         char *endptr;
-        long l = strtol(celix_utils_eatWhitespace(val), &endptr, 10);
+        long l = strtol(val, &endptr, 10);
         if (endptr != val && celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(endptr)) {
             result = l;
             if (converted) {
@@ -118,8 +112,8 @@ celix_version_t* celix_utils_convertStringToVersion(const char* val, const celix
         if (firstDot != NULL && lastDot != NULL && firstDot != lastDot) {
             char buf[64];
             char* valCopy = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s", val);
-            valCopy = celix_utils_trim(valCopy);
-            result = celix_version_createVersionFromString(valCopy);
+            char *trimmed = utils_stringTrim(valCopy);
+            result = celix_version_createVersionFromString(trimmed);
             celix_utils_freeStringIfNotEqual(buf, valCopy);
         }
     }

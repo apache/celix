@@ -126,13 +126,17 @@ if (ENABLE_TESTING)
         target_include_directories(ip_utils_test PRIVATE include_deprecated)
         target_link_libraries(ip_utils_test CppUTest::CppUTest  Celix::utils pthread)
 
-        add_executable(filter_test private/test/filter_test.cpp)
-        target_include_directories(filter_test PRIVATE include_deprecated)
-        target_link_libraries(filter_test CppUTest::CppUTest  Celix::utils pthread)
-
         add_executable(version_test private/test/version_test.cpp)
         target_include_directories(version_test PRIVATE include_deprecated)
         target_link_libraries(version_test CppUTest::CppUTest  Celix::utils pthread)
+
+
+        if (LINKER_WRAP_SUPPORTED)
+            add_executable(version_ei_test private/test/version_ei_test.cc)
+            target_include_directories(version_ei_test PRIVATE include_deprecated)
+            target_link_libraries(version_ei_test CppUTest::CppUTest Celix::utils_obj Celix::malloc_ei Celix::utils_ei pthread)
+            add_test(NAME version_ei_test COMMAND version_ei_test)
+        endif ()
 
         configure_file(private/resources-test/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
 
@@ -142,7 +146,6 @@ if (ENABLE_TESTING)
         add_test(NAME run_linked_list_test COMMAND linked_list_test)
         add_test(NAME run_properties_test COMMAND properties_test)
         add_test(NAME run_ip_utils_test COMMAND ip_utils_test)
-        add_test(NAME filter_test COMMAND filter_test)
         add_test(NAME version_test COMMAND version_test)
 
         setup_target_for_coverage(array_list_test)
@@ -151,7 +154,6 @@ if (ENABLE_TESTING)
         setup_target_for_coverage(linked_list_test)
         setup_target_for_coverage(properties_test)
         setup_target_for_coverage(ip_utils_test)
-        setup_target_for_coverage(filter_test)
         setup_target_for_coverage(version_test)
     else ()
         message(WARNING "Cannot find CppUTest, deprecated cpputest-based unit test will not be added")
