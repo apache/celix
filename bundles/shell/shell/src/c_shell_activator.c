@@ -28,10 +28,6 @@
 #include "celix_shell_command.h"
 #include "std_commands.h"
 
-//declaration of bundleArchive_create used for testing
-extern celix_status_t bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, bundle_archive_pt *bundle_archive);
-
-
 struct shell_bundle_activator {
     shell_t *shell;
     celix_shell_t shellService;

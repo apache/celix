@@ -106,8 +106,8 @@ celix_deprecated_utils_headers(<target_name>))
 ]]
 function(celix_deprecated_utils_headers)
     list(GET ARGN 0 TARGET_NAME)
-    get_target_property(UTILS_SOURCE__DIR Celix::utils "SOURCE_DIR")
-    target_include_directories(${TARGET_NAME} PRIVATE ${UTILS_SOURCE__DIR}/include_deprecated)
+    get_target_property(UTILS_SOURCE_DIR Celix::utils "SOURCE_DIR")
+    target_include_directories(${TARGET_NAME} PRIVATE ${UTILS_SOURCE_DIR}/include_deprecated)
     set_property(TARGET celix-deprecated APPEND PROPERTY "UTIL_TARGETS" "${TARGET_NAME}")
 endfunction()
 
@@ -121,8 +121,8 @@ celix_deprecated_framework_headers(<target_name>))
 ]]
 function(celix_deprecated_framework_headers)
     list(GET ARGN 0 TARGET_NAME)
-    get_target_property(UTILS_SOURCE__DIR Celix::framework "SOURCE_DIR")
-    target_include_directories(${TARGET_NAME} PRIVATE ${UTILS_SOURCE__DIR}/include_deprecated)
+    get_target_property(FRAMEWORK_SOURCE_DIR Celix::framework "SOURCE_DIR")
+    target_include_directories(${TARGET_NAME} PRIVATE ${FRAMEWORK_SOURCE_DIR}/include_deprecated)
     set_property(TARGET celix-deprecated APPEND PROPERTY "FRAMEWORK_TARGETS" "${TARGET_NAME}")
 endfunction()
 
