@@ -21,12 +21,11 @@
 #include <cerrno>
 
 extern "C" {
-int celix_ei_eventfd_errno = 0;
 int __real_eventfd(unsigned int __initval, int __flags);
 CELIX_EI_DEFINE(eventfd, int)
 int __wrap_eventfd(unsigned int __initval, int __flags) {
-    errno = celix_ei_eventfd_errno;
-    CELIX_EI_IMPL_NEGATIVE(eventfd);
+    errno = ENOMEM;
+    CELIX_EI_IMPL(eventfd);
     errno = 0;
     return __real_eventfd(__initval, __flags);
 }

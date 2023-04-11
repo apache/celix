@@ -41,7 +41,6 @@ public:
 
     ~DiscoveryZeroconfActivatorTestSuite() override {
         celix_ei_expect_eventfd(nullptr, 0, 0);
-        celix_ei_eventfd_errno = 0;
     }
 
     std::shared_ptr<celix_framework_t> fw{};
@@ -68,7 +67,6 @@ TEST_F(DiscoveryZeroconfActivatorTestSuite, DiscoveryZeroconfAnnouncerCreateFail
     auto status = celix_bundleActivator_create(ctx.get(), &act);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
-    celix_ei_eventfd_errno = ENOMEM;
     celix_ei_expect_eventfd((void*)&discoveryZeroconfAnnouncer_create, 0, -1);
     status = celix_bundleActivator_start(act, ctx.get());
     EXPECT_EQ(CELIX_ENOMEM, status);
@@ -82,7 +80,6 @@ TEST_F(DiscoveryZeroconfActivatorTestSuite, DiscoveryZeroconfWatcherCreateFailed
     auto status = celix_bundleActivator_create(ctx.get(), &act);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
-    celix_ei_eventfd_errno = ENOMEM;
     celix_ei_expect_eventfd((void *)&discoveryZeroconfWatcher_create, 0, -1);
     status = celix_bundleActivator_start(act, ctx.get());
     EXPECT_EQ(CELIX_ENOMEM, status);
