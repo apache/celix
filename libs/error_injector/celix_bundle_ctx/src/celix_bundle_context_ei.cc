@@ -39,7 +39,7 @@ long __wrap_celix_bundleContext_registerServiceWithOptionsAsync(celix_bundle_con
     // It should free '__opts->properties', whether failure or success.
     celix_properties_t __attribute__((cleanup(celix_properties_cleanup))) *props = celix_properties_copy(__opts->properties);
     celix_properties_destroy(__opts->properties);
-    CELIX_EI_IMPL_NEGATIVE(celix_bundleContext_registerServiceWithOptionsAsync);
+    CELIX_EI_IMPL(celix_bundleContext_registerServiceWithOptionsAsync);
     celix_service_registration_options_t opts;
     opts = *__opts;
     opts.properties = celix_properties_copy(props);
@@ -49,7 +49,7 @@ long __wrap_celix_bundleContext_registerServiceWithOptionsAsync(celix_bundle_con
 long __real_celix_bundleContext_trackServicesWithOptionsAsync(celix_bundle_context_t *__ctx, const celix_service_tracking_options_t *__opts);
 CELIX_EI_DEFINE(celix_bundleContext_trackServicesWithOptionsAsync, long)
 long __wrap_celix_bundleContext_trackServicesWithOptionsAsync(celix_bundle_context_t *__ctx, const celix_service_tracking_options_t *__opts) {
-    CELIX_EI_IMPL_NEGATIVE(celix_bundleContext_trackServicesWithOptionsAsync);
+    CELIX_EI_IMPL(celix_bundleContext_trackServicesWithOptionsAsync);
     return __real_celix_bundleContext_trackServicesWithOptionsAsync(__ctx, __opts);
 }
 }

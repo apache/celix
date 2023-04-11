@@ -26,14 +26,14 @@ extern "C" {
 celix_status_t __real_celixThreadMutex_create(celix_thread_mutex_t *__mutex, celix_thread_mutexattr_t *__attr);
 CELIX_EI_DEFINE(celixThreadMutex_create, celix_status_t)
 celix_status_t __wrap_celixThreadMutex_create(celix_thread_mutex_t *__mutex, celix_thread_mutexattr_t *__attr) {
-    CELIX_EI_IMPL_POSITIVE(celixThreadMutex_create);
+    CELIX_EI_IMPL(celixThreadMutex_create);
     return __real_celixThreadMutex_create(__mutex, __attr);
 }
 
 celix_status_t __real_celixThread_create(celix_thread_t *__new_thread, celix_thread_attr_t *__attr, celix_thread_start_t __func, void *__data);
 CELIX_EI_DEFINE(celixThread_create, celix_status_t)
 celix_status_t __wrap_celixThread_create(celix_thread_t *__new_thread, celix_thread_attr_t *__attr, celix_thread_start_t __func, void *__data) {
-    CELIX_EI_IMPL_POSITIVE(celixThread_create);
+    CELIX_EI_IMPL(celixThread_create);
     return __real_celixThread_create(__new_thread, __attr, __func, __data);
 }
 

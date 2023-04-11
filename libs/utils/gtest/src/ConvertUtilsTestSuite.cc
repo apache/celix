@@ -21,6 +21,7 @@
 
 #include "celix_convert_utils.h"
 #include <string>
+#include <cmath>
 
 class ConvertUtilsTestSuite : public ::testing::Test {
 public:
@@ -143,6 +144,21 @@ TEST_F(ConvertUtilsTestSuite, ConvertToDoubleTest) {
     //test for a convert with a double value with starting and trailing whitespaces
     result = celix_utils_convertStringToDouble("\t 12.2 \t\n", 0, &converted);
     EXPECT_EQ(12.2, result);
+    EXPECT_TRUE(converted);
+
+    //test for a convert with an INF value
+    result = celix_utils_convertStringToDouble("INF", 0, &converted);
+    EXPECT_EQ(std::numeric_limits<double>::infinity(), result);
+    EXPECT_TRUE(converted);
+
+    //test for a convert with an -INF value
+    result = celix_utils_convertStringToDouble(" -INF ", 0, &converted);
+    EXPECT_EQ(-std::numeric_limits<double>::infinity(), result);
+    EXPECT_TRUE(converted);
+
+    //test for a convert with an NAN value
+    result = celix_utils_convertStringToDouble(" NAN   ", 0, &converted);
+    EXPECT_TRUE(std::isnan(result));
     EXPECT_TRUE(converted);
 }
 
