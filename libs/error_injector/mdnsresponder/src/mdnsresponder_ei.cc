@@ -24,35 +24,35 @@ extern "C" {
 DNSServiceErrorType __real_DNSServiceCreateConnection(DNSServiceRef *__sdRef);
 CELIX_EI_DEFINE(DNSServiceCreateConnection, DNSServiceErrorType)
 DNSServiceErrorType __wrap_DNSServiceCreateConnection(DNSServiceRef *__sdRef) {
-    CELIX_EI_IMPL_NEGATIVE(DNSServiceCreateConnection);
+    CELIX_EI_IMPL(DNSServiceCreateConnection);
     return __real_DNSServiceCreateConnection(__sdRef);
 }
 
 DNSServiceErrorType __real_DNSServiceProcessResult(DNSServiceRef __sdRef);
 CELIX_EI_DEFINE(DNSServiceProcessResult, DNSServiceErrorType)
 DNSServiceErrorType __wrap_DNSServiceProcessResult(DNSServiceRef __sdRef) {
-    CELIX_EI_IMPL_NEGATIVE(DNSServiceProcessResult);
+    CELIX_EI_IMPL(DNSServiceProcessResult);
     return __real_DNSServiceProcessResult(__sdRef);
 }
 
 DNSServiceErrorType __real_DNSServiceRegister(DNSServiceRef *__sdRef, DNSServiceFlags __flags, uint32_t __interfaceIndex, const char *__name, const char *__regtype, const char *__domain, const char *__host, uint16_t __port, uint16_t __txtLen, const void *__txtRecord, DNSServiceRegisterReply __callBack, void *__context);
 CELIX_EI_DEFINE(DNSServiceRegister, DNSServiceErrorType)
 DNSServiceErrorType __wrap_DNSServiceRegister(DNSServiceRef *__sdRef, DNSServiceFlags __flags, uint32_t __interfaceIndex, const char *__name, const char *__regtype, const char *__domain, const char *__host, uint16_t __port, uint16_t __txtLen, const void *__txtRecord, DNSServiceRegisterReply __callBack, void *__context) {
-    CELIX_EI_IMPL_NEGATIVE(DNSServiceRegister);
+    CELIX_EI_IMPL(DNSServiceRegister);
     return __real_DNSServiceRegister(__sdRef, __flags, __interfaceIndex, __name, __regtype, __domain, __host, __port, __txtLen, __txtRecord, __callBack, __context);
 }
 
 DNSServiceErrorType __real_TXTRecordSetValue(TXTRecordRef *__txtRec, const char *__key, uint8_t __valSize, const void *__val);
 CELIX_EI_DEFINE(TXTRecordSetValue, DNSServiceErrorType)
 DNSServiceErrorType __wrap_TXTRecordSetValue(TXTRecordRef *__txtRec, const char *__key, uint8_t __valSize, const void *__val) {
-    CELIX_EI_IMPL_NEGATIVE(TXTRecordSetValue);
+    CELIX_EI_IMPL(TXTRecordSetValue);
     return __real_TXTRecordSetValue(__txtRec, __key, __valSize, __val);
 }
 
 DNSServiceErrorType __real_DNSServiceBrowse(DNSServiceRef *__sdRef, DNSServiceFlags __flags, uint32_t __interfaceIndex,  const char *__regtype, const char *__domain, DNSServiceBrowseReply __callBack, void *__context);
 CELIX_EI_DEFINE(DNSServiceBrowse, DNSServiceErrorType)
 DNSServiceErrorType __wrap_DNSServiceBrowse(DNSServiceRef *__sdRef, DNSServiceFlags __flags, uint32_t __interfaceIndex, const char *__regtype, const char *__domain, DNSServiceBrowseReply __callBack, void *__context) {
-    CELIX_EI_IMPL_NEGATIVE(DNSServiceBrowse);
+    CELIX_EI_IMPL(DNSServiceBrowse);
     return __real_DNSServiceBrowse(__sdRef, __flags, __interfaceIndex, __regtype, __domain, __callBack, __context);
 }
 }
