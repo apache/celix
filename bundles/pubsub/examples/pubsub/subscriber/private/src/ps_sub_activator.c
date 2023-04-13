@@ -27,7 +27,8 @@
 #include <stdlib.h>
 #include <pubsub/subscriber.h>
 
-#include "bundle_activator.h"
+#include "celix_bundle_activator.h"
+#include "bundle_context.h"
 
 #include "pubsub_subscriber_private.h"
 
@@ -39,14 +40,14 @@ static const char * SUB_TOPICS[] = {
 };
 
 struct subscriberActivator {
-    array_list_pt registrationList; //List<service_registration_pt>
+    celix_array_list_t* registrationList; //List<service_registration_pt>
     pubsub_subscriber_t *subsvc;
 };
 
 celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
     struct subscriberActivator * act = calloc(1,sizeof(struct subscriberActivator));
     *userData = act;
-    arrayList_create(&(act->registrationList));
+    act->registrationList = celix_arrayList_create();
     return CELIX_SUCCESS;
 }
 
@@ -73,7 +74,7 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
 #endif
         service_registration_pt reg = NULL;
         bundleContext_registerService(context, PUBSUB_SUBSCRIBER_SERVICE_NAME, subsvc, props, &reg);
-        arrayList_add(act->registrationList,reg);
+        celix_arrayList_add(act->registrationList,reg);
     }
 
     subscriber_start((pubsub_receiver_t *) act->subsvc->handle);
@@ -85,8 +86,8 @@ celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *con
     struct subscriberActivator * act = (struct subscriberActivator *) userData;
 
     int i;
-    for (i = 0; i < arrayList_size(act->registrationList); i++) {
-        service_registration_pt reg = arrayList_get(act->registrationList, i);
+    for (i = 0; i < celix_arrayList_size(act->registrationList); i++) {
+        service_registration_pt reg = celix_arrayList_get(act->registrationList, i);
         serviceRegistration_unregister(reg);
 
     }
@@ -105,8 +106,7 @@ celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *
     act->subsvc->handle = NULL;
     free(act->subsvc);
     act->subsvc = NULL;
-
-    arrayList_destroy(act->registrationList);
+    celix_arrayList_destroy(act->registrationList);
     free(act);
 
     return CELIX_SUCCESS;

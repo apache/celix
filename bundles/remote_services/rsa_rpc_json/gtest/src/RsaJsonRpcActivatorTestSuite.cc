@@ -16,7 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include <celix_api.h>
+
+#include "celix_constants.h"
+#include "celix_framework_factory.h"
+#include "celix_bundle_context.h"
+
 #include <gtest/gtest.h>
 #include <rsa_rpc_factory.h>
 

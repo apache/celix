@@ -21,11 +21,12 @@
 #include <rsa_request_sender_service.h>
 #include <celix_log_helper.h>
 #include <celix_long_hash_map.h>
-#include <celix_api.h>
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
 #include <assert.h>
+#include "celix_threads.h"
+#include "celix_constants.h"
 
 struct rsa_request_sender_tracker {
     celix_bundle_context_t *ctx;

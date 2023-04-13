@@ -34,6 +34,7 @@ set_target_properties(celix_pubsub_serializer_json PROPERTIES INSTALL_RPATH "$OR
 target_link_libraries(celix_pubsub_serializer_json PRIVATE Celix::framework Celix::dfi jansson::jansson Celix::log_helper)
 target_link_libraries(celix_pubsub_serializer_json PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
 celix_deprecated_utils_headers(celix_pubsub_serializer_json)
+celix_deprecated_framework_headers(celix_pubsub_serializer_json)
 
 install_celix_bundle(celix_pubsub_serializer_json EXPORT celix COMPONENT pubsub)
 

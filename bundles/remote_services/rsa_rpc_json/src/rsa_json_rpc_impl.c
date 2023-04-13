@@ -27,12 +27,15 @@
 #include <celix_log_helper.h>
 #include <dyn_interface.h>
 #include <version.h>
-#include <celix_api.h>
-#include <limits.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include "celix_threads.h"
+#include "celix_constants.h"
+#include "celix_utils.h"
+
 
 struct rsa_json_rpc {
     celix_bundle_context_t *ctx;

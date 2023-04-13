@@ -26,10 +26,9 @@
 
 #include "utils.h"
 #include "hash_map.h"
-#include "bundle_context.h"
 
 #include "celix_log_helper.h"
-
+#include "bundle_context.h"
 #include "json_serializer.h"
 
 #include "pubsub_serializer_impl.h"

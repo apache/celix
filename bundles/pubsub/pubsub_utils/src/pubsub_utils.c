@@ -26,6 +26,7 @@
 
 #include "pubsub/publisher.h"
 #include "pubsub_utils.h"
+#include "bundle_context.h"
 
 #include "array_list.h"
 #include "celix_bundle.h"

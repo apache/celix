@@ -40,6 +40,7 @@ install(TARGETS log_helper EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMP
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_helper COMPONENT logging)
 
 celix_deprecated_utils_headers(log_helper)
+celix_deprecated_framework_headers(log_helper)
 
 add_library(Celix::log_helper ALIAS log_helper)
 

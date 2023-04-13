@@ -37,8 +37,9 @@ set(SOURCES
         src/celix_module_private.h)
 add_library(framework_obj OBJECT ${SOURCES})
 target_include_directories(framework_obj PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        )
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+)
+target_include_directories(framework_obj PRIVATE ${CMAKE_CURRENT_LIST_DIR}/include_deprecated)
 target_compile_options(framework_obj PRIVATE -DUSE_FILE32API)
 target_compile_options(framework_obj PRIVATE -Wno-deprecated-declarations) #note part of the api is deprecated, ignore this warning on own api
 target_link_libraries(framework_obj PUBLIC Celix::utils ${CELIX_OPTIONAL_EXTRA_LIBS})
@@ -57,6 +58,7 @@ celix_deprecated_utils_headers(framework)
 install(TARGETS framework framework_obj EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework)
+install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework)
 
 #Alias setup to match external usage
 add_library(Celix::framework ALIAS framework)

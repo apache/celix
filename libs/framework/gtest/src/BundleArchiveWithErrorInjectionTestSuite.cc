@@ -26,9 +26,10 @@
 #include "celix_utils_ei.h"
 #include "asprintf_ei.h"
 
-//including private headers, which should only be used for testing
-#include "bundle_archive_private.h"
-#include "bundle_revision_private.h"
+//extern declarations for testing purposes. Note signatures are not correct, but that is not important for the test.
+extern "C" celix_status_t bundleArchive_create(void);
+extern "C" celix_status_t manifest_create(void);
+extern "C" celix_status_t bundleRevision_create(void);
 
 class BundleArchiveWithErrorInjectionTestSuite : public ::testing::Test {
 public:

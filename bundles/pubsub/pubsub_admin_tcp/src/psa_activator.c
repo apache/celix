@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 
-#include "celix_api.h"
+#include "celix_bundle_activator.h"
 #include "pubsub_protocol.h"
 #include "celix_log_helper.h"
 
