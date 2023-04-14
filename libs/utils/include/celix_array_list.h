@@ -17,10 +17,10 @@
  * under the License.
  */
 
-#include "celix_errno.h"
-#include "stdbool.h"
-
 #include <stdbool.h>
+
+#include "celix_errno.h"
+#include "celix_utils_export.h"
 
 #ifndef CELIX_ARRAY_LIST_H_
 #define CELIX_ARRAY_LIST_H_
@@ -117,6 +117,7 @@ typedef struct celix_array_list_create_options {
 /**
  * @brief Creates a new empty array list.
  */
+CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_create();
 
 /**
@@ -124,12 +125,14 @@ celix_array_list_t* celix_arrayList_create();
  * are equal.
  * @deprecated This functions is deprecated, use celix_arrayList_createWithOptions instead.
  */
+CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createWithEquals(celix_arrayList_equals_fp equals);
 
 /**
  * @brief Creates a new empty array listusing using the provided array list create options.
  * @param opts The create options, only used during the creation of the array list.
  */
+CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_create_options_t* opts);
 
 /**
@@ -137,11 +140,13 @@ celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_cre
  *
  * @note If a (simple) removed callback is configured, the callback will be called for every array list entry.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_destroy(celix_array_list_t *list);
 
 /**
  * @brief Returns the size of the array list.
  */
+CELIX_UTILS_EXPORT
 int celix_arrayList_size(const celix_array_list_t *list);
 
 /**
@@ -151,6 +156,7 @@ int celix_arrayList_size(const celix_array_list_t *list);
  * @param index The entry index to return.
  * @return Returns the pointer value for the index. Returns NULL if index is out of bound.
  */
+CELIX_UTILS_EXPORT
 void* celix_arrayList_get(const celix_array_list_t *list, int index);
 
 /**
@@ -160,6 +166,7 @@ void* celix_arrayList_get(const celix_array_list_t *list, int index);
  * @param index The entry index to return.
  * @return Returns the int value for the index. Returns 0 if index is out of bound.
  */
+CELIX_UTILS_EXPORT
 int celix_arrayList_getInt(const celix_array_list_t *list, int index);
 
 /**
@@ -169,6 +176,7 @@ int celix_arrayList_getInt(const celix_array_list_t *list, int index);
  * @param index The entry index to return.
  * @return Returns the long value for the index. Returns 0 if index is out of bound.
  */
+CELIX_UTILS_EXPORT
 long int celix_arrayList_getLong(const celix_array_list_t *list, int index);
 
 /**
@@ -178,6 +186,7 @@ long int celix_arrayList_getLong(const celix_array_list_t *list, int index);
  * @param index The entry index to return.
  * @return Returns the unsigned int value for the index. Returns 0 if index is out of bound.
  */
+CELIX_UTILS_EXPORT
 unsigned int celix_arrayList_getUInt(const celix_array_list_t *list, int index);
 
 /**
@@ -187,6 +196,7 @@ unsigned int celix_arrayList_getUInt(const celix_array_list_t *list, int index);
  * @param index The entry index to return.
  * @return Returns the unsigned long value for the index. Returns 0 if index is out of bound.
  */
+CELIX_UTILS_EXPORT
 unsigned long int celix_arrayList_getULong(const celix_array_list_t *list, int index);
 
 /**
@@ -196,6 +206,7 @@ unsigned long int celix_arrayList_getULong(const celix_array_list_t *list, int i
  * @param index The entry index to return.
  * @return Returns the float value for the index. Returns 0 if index is out of bound.
  */
+CELIX_UTILS_EXPORT
 float celix_arrayList_getFloat(const celix_array_list_t *list, int index);
 
 /**
@@ -205,6 +216,7 @@ float celix_arrayList_getFloat(const celix_array_list_t *list, int index);
  * @param index The entry index to return.
  * @return Returns the double value for the index. Returns 0 if index is out of bound.
  */
+CELIX_UTILS_EXPORT
 double celix_arrayList_getDouble(const celix_array_list_t *list, int index);
 
 /**
@@ -214,6 +226,7 @@ double celix_arrayList_getDouble(const celix_array_list_t *list, int index);
  * @param index The entry index to return.
  * @return Returns the bool value for the index. Returns false if index is out of bound.
  */
+CELIX_UTILS_EXPORT
 bool celix_arrayList_getBool(const celix_array_list_t *list, int index);
 
 /**
@@ -223,6 +236,7 @@ bool celix_arrayList_getBool(const celix_array_list_t *list, int index);
  * @param index The entry index to return.
  * @return Returns the size_t value for the index. Returns 0 if index is out of bound.
  */
+CELIX_UTILS_EXPORT
 size_t celix_arrayList_getSize(const celix_array_list_t *list, int index);
 
 /**
@@ -231,6 +245,7 @@ size_t celix_arrayList_getSize(const celix_array_list_t *list, int index);
  * @param map The array list.
  * @param value The pointer value to add to the array list.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_add(celix_array_list_t *list, void* value);
 
 /**
@@ -239,6 +254,7 @@ void celix_arrayList_add(celix_array_list_t *list, void* value);
  * @param map The array list.
  * @param value The int value to add to the array list.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_addInt(celix_array_list_t *list, int value);
 
 /**
@@ -247,6 +263,7 @@ void celix_arrayList_addInt(celix_array_list_t *list, int value);
  * @param map The array list.
  * @param value The long value to add to the array list.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_addLong(celix_array_list_t *list, long value);
 
 /**
@@ -255,6 +272,7 @@ void celix_arrayList_addLong(celix_array_list_t *list, long value);
  * @param map The array list.
  * @param value The unsigned int value to add to the array list.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_addUInt(celix_array_list_t *list, unsigned int value);
 
 /**
@@ -263,6 +281,7 @@ void celix_arrayList_addUInt(celix_array_list_t *list, unsigned int value);
  * @param map The array list.
  * @param value The unsigned long value to add to the array list.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_addULong(celix_array_list_t *list, unsigned long value);
 
 /**
@@ -271,6 +290,7 @@ void celix_arrayList_addULong(celix_array_list_t *list, unsigned long value);
  * @param map The array list.
  * @param value The float value to add to the array list.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_addFloat(celix_array_list_t *list, float value);
 
 /**
@@ -279,6 +299,7 @@ void celix_arrayList_addFloat(celix_array_list_t *list, float value);
  * @param map The array list.
  * @param value The double value to add to the array list.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_addDouble(celix_array_list_t *list, double value);
 
 /**
@@ -287,6 +308,7 @@ void celix_arrayList_addDouble(celix_array_list_t *list, double value);
  * @param map The array list.
  * @param value The bool value to add to the array list.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_addBool(celix_array_list_t *list, bool value);
 
 /**
@@ -295,6 +317,7 @@ void celix_arrayList_addBool(celix_array_list_t *list, bool value);
  * @param map The array list.
  * @param value The size_t value to add to the array list.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_addSize(celix_array_list_t *list, size_t value);
 
 /**
@@ -310,12 +333,14 @@ void celix_arrayList_addSize(celix_array_list_t *list, size_t value);
  * @param entry The entry to find.
  * @return The index of the entry or -1 if the entry is not found.
  */
+CELIX_UTILS_EXPORT
 int celix_arrayList_indexOf(celix_array_list_t *list, celix_array_list_entry_t entry);
 
 /**
  * @brief Removes an entry at the provided index.
  * If the provided index < 0 or out of bound, nothing will be removed.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_removeAt(celix_array_list_t *list, int index);
 
 /**
@@ -323,6 +348,7 @@ void celix_arrayList_removeAt(celix_array_list_t *list, int index);
  *
  * @note If a (simple) removed callback is configured, the callback will be called for every array list entry.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_clear(celix_array_list_t *list);
 
 /**
@@ -334,6 +360,7 @@ void celix_arrayList_clear(celix_array_list_t *list);
  * The equals callback provided when the array list was created will be used to find the entry.
  * If there was no equals callback provided a direct memory compare will be done.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_removeEntry(celix_array_list_t *list, celix_array_list_entry_t entry);
 
 /**
@@ -342,6 +369,7 @@ void celix_arrayList_removeEntry(celix_array_list_t *list, celix_array_list_entr
  * The equals callback provided when the array list was created will be used to find the entry.
  * If there was no equals callback provided a direct memory compare will be done.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_remove(celix_array_list_t *list, void *value);
 
 /**
@@ -350,6 +378,7 @@ void celix_arrayList_remove(celix_array_list_t *list, void *value);
  * The equals callback provided when the array list was created will be used to find the entry.
  * If there was no equals callback provided a direct memory compare will be done.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_removeInt(celix_array_list_t *list, int value);
 
 /**
@@ -358,6 +387,7 @@ void celix_arrayList_removeInt(celix_array_list_t *list, int value);
  * The equals callback provided when the array list was created will be used to find the entry.
  * If there was no equals callback provided a direct memory compare will be done.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_removeLong(celix_array_list_t *list, long value);
 
 /**
@@ -366,6 +396,7 @@ void celix_arrayList_removeLong(celix_array_list_t *list, long value);
  * The equals callback provided when the array list was created will be used to find the entry.
  * If there was no equals callback provided a direct memory compare will be done.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_removeUInt(celix_array_list_t *list, unsigned int value);
 
 /**
@@ -374,6 +405,7 @@ void celix_arrayList_removeUInt(celix_array_list_t *list, unsigned int value);
  * The equals callback provided when the array list was created will be used to find the entry.
  * If there was no equals callback provided a direct memory compare will be done.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_removeULong(celix_array_list_t *list, unsigned long value);
 
 /**
@@ -382,6 +414,7 @@ void celix_arrayList_removeULong(celix_array_list_t *list, unsigned long value);
  * The equals callback provided when the array list was created will be used to find the entry.
  * If there was no equals callback provided a direct memory compare will be done.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_removeFloat(celix_array_list_t *list, float value);
 
 /**
@@ -390,6 +423,7 @@ void celix_arrayList_removeFloat(celix_array_list_t *list, float value);
  * The equals callback provided when the array list was created will be used to find the entry.
  * If there was no equals callback provided a direct memory compare will be done.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_removeDouble(celix_array_list_t *list, double value);
 
 /**
@@ -398,6 +432,7 @@ void celix_arrayList_removeDouble(celix_array_list_t *list, double value);
  * The equals callback provided when the array list was created will be used to find the entry.
  * If there was no equals callback provided a direct memory compare will be done.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_removeBool(celix_array_list_t *list, bool value);
 
 /**
@@ -406,17 +441,20 @@ void celix_arrayList_removeBool(celix_array_list_t *list, bool value);
  * The equals callback provided when the array list was created will be used to find the entry.
  * If there was no equals callback provided a direct memory compare will be done.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_removeSize(celix_array_list_t *list, size_t value);
 
 /**
  * @brief Sort the array list using the provided sort function.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_sort_entries_fp sortFp);
 
 /**
  * @warning Never use this function with array of doubles, since on some 32-bit platform (sizeof(double)==8 && sizeof(void*)==4)
  * @deprecated This function is deprecated, use celix_arrayList_sortEntries instead.
  */
+CELIX_UTILS_EXPORT
 void celix_arrayList_sort(celix_array_list_t *list, celix_arrayList_sort_fp sortFp);
 
 #ifdef __cplusplus

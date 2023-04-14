@@ -30,21 +30,21 @@
 #include <ctype.h>
 
 #include "celix_errno.h"
-#include "exports.h"
+#include "celix_utils_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-UTILS_EXPORT unsigned int ipUtils_ipToUnsignedInt(char *ip);
+CELIX_UTILS_DEPRECATED_EXPORT unsigned int ipUtils_ipToUnsignedInt(char *ip);
 
-UTILS_EXPORT char *ipUtils_unsignedIntToIp(unsigned int ip);
+CELIX_UTILS_DEPRECATED_EXPORT char *ipUtils_unsignedIntToIp(unsigned int ip);
 
-UTILS_EXPORT unsigned int ipUtils_prefixToBitmask(unsigned int prefix);
+CELIX_UTILS_DEPRECATED_EXPORT unsigned int ipUtils_prefixToBitmask(unsigned int prefix);
 
-UTILS_EXPORT int ipUtils_netmaskToPrefix(const char *netmask);
+CELIX_UTILS_DEPRECATED_EXPORT int ipUtils_netmaskToPrefix(const char *netmask);
 
-UTILS_EXPORT char *ipUtils_findIpBySubnet(const char *ipWithPrefix);
+CELIX_UTILS_DEPRECATED_EXPORT char *ipUtils_findIpBySubnet(const char *ipWithPrefix);
 
 #ifdef __cplusplus
 }
