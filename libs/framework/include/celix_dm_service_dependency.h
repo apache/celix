@@ -70,7 +70,7 @@ typedef struct celix_dm_service_dependency_callback_options {
  * \warning The dmServiceDependency is not thread safe when constructing or modifying.
  *          The handling of service updates is thread safe.
  */
-celix_dm_service_dependency_t* celix_dmServiceDependency_create(void);
+CELIX_FRAMEWORK_EXPORT celix_dm_service_dependency_t* celix_dmServiceDependency_create(void);
 
 /**
  * Destroys a service dependency.
@@ -79,19 +79,18 @@ celix_dm_service_dependency_t* celix_dmServiceDependency_create(void);
  * Can only be called if the serviceDependency is disabled (note that a service dependency not added to a
  * component is disabled).
  */
-void celix_dmServiceDependency_destroy(celix_dm_service_dependency_t *dep);
+CELIX_FRAMEWORK_EXPORT void celix_dmServiceDependency_destroy(celix_dm_service_dependency_t *dep);
 
 /**
  * Specify if the service dependency is required. default is false
  */
-celix_status_t celix_dmServiceDependency_setRequired(celix_dm_service_dependency_t *dependency, bool required);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmServiceDependency_setRequired(celix_dm_service_dependency_t *dependency, bool required);
 
 /**
  * Specify if the service dependency should add a C language filter for this dependency if no "service.lang" part is found the in the provided filter.
  * Default is false
  */
-celix_status_t celix_dmServiceDependency_setAddCLanguageFilter(celix_dm_service_dependency_t *dependency, bool addCLangFilter);
-
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t celix_dmServiceDependency_setAddCLanguageFilter(celix_dm_service_dependency_t *dependency, bool addCLangFilter);
 
 /**
  * Specify if the service dependency update strategy.
@@ -106,12 +105,12 @@ celix_status_t celix_dmServiceDependency_setAddCLanguageFilter(celix_dm_service_
  *
  * Default strategy is DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND
  */
-celix_status_t celix_dmServiceDependency_setStrategy(celix_dm_service_dependency_t *dependency, celix_dm_service_dependency_strategy_t strategy);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmServiceDependency_setStrategy(celix_dm_service_dependency_t *dependency, celix_dm_service_dependency_strategy_t strategy);
 
 /**
  * Return the service dependency update strategy.
  */
-celix_dm_service_dependency_strategy_t celix_dmServiceDependency_getStrategy(celix_dm_service_dependency_t *dependency);
+CELIX_FRAMEWORK_EXPORT celix_dm_service_dependency_strategy_t celix_dmServiceDependency_getStrategy(celix_dm_service_dependency_t *dependency);
 
 /**
  * Set the service name, version range and filter.
@@ -120,19 +119,19 @@ celix_dm_service_dependency_strategy_t celix_dmServiceDependency_getStrategy(cel
  * @param serviceVersionRange The service version range, can be a NULL pointer.
  * @param filter The (additional) filter to use (e.g. "(location=front)"). Can be a NULL pointer.
  */
-celix_status_t celix_dmServiceDependency_setService(celix_dm_service_dependency_t *dependency, const char* serviceName, const char* serviceVersionRange, const char* filter);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmServiceDependency_setService(celix_dm_service_dependency_t *dependency, const char* serviceName, const char* serviceVersionRange, const char* filter);
 
 /**
  * Returns the service dependency filter.
  */
-const char* celix_dmServiceDependency_getFilter(celix_dm_service_dependency_t *dependency);
+CELIX_FRAMEWORK_EXPORT const char* celix_dmServiceDependency_getFilter(celix_dm_service_dependency_t *dependency);
 
 /**
  * Set the set callbacks when services specified by the service dependency
  * The first argument of the callbacks will be the component implement (@see component_getImplementation)
  * The second the argument a pointer to an instance of a service struct of the specified service dependency.
  */
-celix_status_t celix_dmServiceDependency_setCallback(celix_dm_service_dependency_t *dependency, celix_dm_service_update_fp set);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmServiceDependency_setCallback(celix_dm_service_dependency_t *dependency, celix_dm_service_update_fp set);
 
 /**
  * Set the set function callbacks when services specified by the service dependency
@@ -140,7 +139,7 @@ celix_status_t celix_dmServiceDependency_setCallback(celix_dm_service_dependency
  * The second argument of th callbacks will be a pointer to an instance of a service struct of the specified service dependency.
  * The third argument of th callbacks will be a pointer to a service properties of the a service instance of the specified service dependency.
  */
-celix_status_t celix_dmServiceDependency_setCallbackWithProperties(celix_dm_service_dependency_t *dependency, celix_dm_service_update_with_props_fp set);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmServiceDependency_setCallbackWithProperties(celix_dm_service_dependency_t *dependency, celix_dm_service_update_with_props_fp set);
 
 /**
  * Set the set, add, change, remove and swap function callbacks when services specified by the service dependency
@@ -148,25 +147,25 @@ celix_status_t celix_dmServiceDependency_setCallbackWithProperties(celix_dm_serv
  *
  * The version with the WithProps suffix will be called with as third argument the service properties.
  */
-celix_status_t celix_dmServiceDependency_setCallbacksWithOptions(celix_dm_service_dependency_t *dependency, const celix_dm_service_dependency_callback_options_t *opts);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmServiceDependency_setCallbacksWithOptions(celix_dm_service_dependency_t *dependency, const celix_dm_service_dependency_callback_options_t *opts);
 
 /**
  * Set the callback handle to be used in the callbacks. Note that this normally should not be set, because the
  * result of component_getImplementation() is used
  * This can be used in rare cases when the callbacks are actually interceptors. e.g. in the case of C++ support.
  */
-celix_status_t celix_dmServiceDependency_setCallbackHandle(celix_dm_service_dependency_t *dependency, void* handle);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmServiceDependency_setCallbackHandle(celix_dm_service_dependency_t *dependency, void* handle);
 
 /**
  * Creates a service dependency info. The service dependency info struct contains information about the service dependency.
  * The caller is the owner
  */
-dm_service_dependency_info_t* celix_dmServiceDependency_createInfo(celix_dm_service_dependency_t* dep);
+CELIX_FRAMEWORK_EXPORT dm_service_dependency_info_t* celix_dmServiceDependency_createInfo(celix_dm_service_dependency_t* dep);
 
 /**
  * Destroy a provided service dependency info struct.
  */
-void celix_dmServiceDependency_destroyInfo(celix_dm_service_dependency_t *dep, dm_service_dependency_info_t *info);
+CELIX_FRAMEWORK_EXPORT void celix_dmServiceDependency_destroyInfo(celix_dm_service_dependency_t *dep, dm_service_dependency_info_t *info);
 
 #ifdef __cplusplus
 }

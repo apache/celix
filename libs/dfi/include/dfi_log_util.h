@@ -20,7 +20,7 @@
 #ifndef _DFI_LOG_UTIL_H_
 #define _DFI_LOG_UTIL_H_
 
-#include "celix_df_export.h"
+#include "celix_dfi_export.h"
 
 #ifdef __cplusplus
 extern "C" {

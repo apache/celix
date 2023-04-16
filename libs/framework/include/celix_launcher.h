@@ -44,7 +44,7 @@ extern "C" {
  * @param embeddedConfig The optional embedded config, will be overridden with the config.properties if found.
  * @return 0 if successful.
  */
-int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], celix_properties_t *embeddedConfig);
+CELIX_FRAMEWORK_EXPORT int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], celix_properties_t *embeddedConfig);
 
 
 /**
@@ -58,7 +58,7 @@ int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], celix_propert
  * @param[out] framework The framework instance.
  * @return 0 if successful.
  */
-int celixLauncher_launchWithArgv(int argc, char *argv[], celix_properties_t* embeddedConfig, celix_framework_t** framework);
+CELIX_FRAMEWORK_EXPORT int celixLauncher_launchWithArgv(int argc, char *argv[], celix_properties_t* embeddedConfig, celix_framework_t** framework);
 
 /**
  * Launches the a celix framework and returns the framework.
@@ -71,7 +71,7 @@ int celixLauncher_launchWithArgv(int argc, char *argv[], celix_properties_t* emb
  * @param framework Output parameter for the framework.
  * @return 0 if successful.
  */
-int celixLauncher_launch(const char *configFile, celix_framework_t **framework);
+CELIX_FRAMEWORK_EXPORT int celixLauncher_launch(const char *configFile, celix_framework_t **framework);
 
 /**
  * Launches the a celix framework and returns the framework.
@@ -84,7 +84,7 @@ int celixLauncher_launch(const char *configFile, celix_framework_t **framework);
  * @param framework Output parameter for the framework.
  * @return 0 if successful.
  */
-int celixLauncher_launchWithStream(FILE *config, celix_framework_t **framework);
+CELIX_FRAMEWORK_EXPORT int celixLauncher_launchWithStream(FILE *config, celix_framework_t **framework);
 
 /**
  * Launches the a celix framework and returns the framework.
@@ -97,25 +97,25 @@ int celixLauncher_launchWithStream(FILE *config, celix_framework_t **framework);
  * @param framework Output parameter for the framework.
  * @return 0 if successful.
  */
-int celixLauncher_launchWithProperties(celix_properties_t *config, celix_framework_t **framework);
+CELIX_FRAMEWORK_EXPORT int celixLauncher_launchWithProperties(celix_properties_t *config, celix_framework_t **framework);
 
 /**
  * Wait (blocks) for the shutdown of the provided celix framework.
  * @param framework The framework to wait for.
  */
-void celixLauncher_waitForShutdown(celix_framework_t *framework);
+CELIX_FRAMEWORK_EXPORT void celixLauncher_waitForShutdown(celix_framework_t *framework);
 
 /**
  * Stop the provided celix framework.
  * @param framework The framework to stop.
  */
-void celixLauncher_stop(celix_framework_t *framework);
+CELIX_FRAMEWORK_EXPORT void celixLauncher_stop(celix_framework_t *framework);
 
 /**
  * Destroys the provided framework and if needed stops it first.
  * @param framework The framework to stop.
  */
-void celixLauncher_destroy(celix_framework_t *framework);
+CELIX_FRAMEWORK_EXPORT void celixLauncher_destroy(celix_framework_t *framework);
 
 #ifdef __cplusplus
 }

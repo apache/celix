@@ -36,14 +36,14 @@ extern "C" {
  * @param bnd The bundle
  * @return The bundle id or < 0 if something went wrong.
  */
-long celix_bundle_getId(const celix_bundle_t *bnd);
+CELIX_FRAMEWORK_EXPORT long celix_bundle_getId(const celix_bundle_t *bnd);
 
 /**
  * @brief Return the bundle state.
  * @param bnd The bundle
  * @return The bundle state or OSGI_FRAMEWORK_BUNDLE_UNKNOWN if something went wrong.
  */
-celix_bundle_state_e celix_bundle_getState(const celix_bundle_t *bnd);
+CELIX_FRAMEWORK_EXPORT celix_bundle_state_e celix_bundle_getState(const celix_bundle_t *bnd);
 
 /**
  * Return a use-able entry path for the provided relative path to a bundle resource cache.
@@ -64,7 +64,7 @@ celix_bundle_state_e celix_bundle_getState(const celix_bundle_t *bnd);
  * @param bnd The bundle.
  * @return A use-able path to the bundle resource entry or NULL if the entry is not found.
  */
-char* celix_bundle_getEntry(const celix_bundle_t* bnd, const char *path);
+CELIX_FRAMEWORK_EXPORT char* celix_bundle_getEntry(const celix_bundle_t* bnd, const char *path);
 
 /**
  * Return a use-able entry path for the provided relative path to a bundle persistent storage.
@@ -84,7 +84,7 @@ char* celix_bundle_getEntry(const celix_bundle_t* bnd, const char *path);
  * @param bnd The bundle.
  * @return A use-able path to the bundle resource entry or NULL if the entry is not found.
  */
-char* celix_bundle_getDataFile(const celix_bundle_t* bnd, const char *path);
+CELIX_FRAMEWORK_EXPORT char* celix_bundle_getDataFile(const celix_bundle_t* bnd, const char *path);
 
 /**
  * @brief Get a manifest attribute value from the bundle manifest.
@@ -93,31 +93,31 @@ char* celix_bundle_getDataFile(const celix_bundle_t* bnd, const char *path);
  * @return The attribute value or NULL if the attribute is not present in the bundle manifest.
  *         The returned value is valid as long as the bundle is not uninstalled.
  */
-const char* celix_bundle_getManifestValue(const celix_bundle_t* bnd, const char* attribute);
+CELIX_FRAMEWORK_EXPORT const char* celix_bundle_getManifestValue(const celix_bundle_t* bnd, const char* attribute);
 
 /**
  * @brief Return the group of the bundle. Groups are used to order bundles.
  * Note the return value is valid as long as the bundle is installed.
  */
-const char* celix_bundle_getGroup(const celix_bundle_t *bnd);
+CELIX_FRAMEWORK_EXPORT const char* celix_bundle_getGroup(const celix_bundle_t *bnd);
 
 /**
  * @brief Return the symbolic name of the bundle.
  * Note the return value is valid as long as the bundle is installed.
  */
-const char* celix_bundle_getSymbolicName(const celix_bundle_t *bnd);
+CELIX_FRAMEWORK_EXPORT const char* celix_bundle_getSymbolicName(const celix_bundle_t *bnd);
 
 /**
  * @brief Return the name of the bundle.
  * Note the return value is valid as long as the bundle is installed.
  */
-const char* celix_bundle_getName(const celix_bundle_t* bnd);
+CELIX_FRAMEWORK_EXPORT const char* celix_bundle_getName(const celix_bundle_t* bnd);
 
 /**
  * @brief Return the description of the bundle.
  * Note the return value is valid as long as the bundle is installed.
  */
-const char* celix_bundle_getDescription(const celix_bundle_t* bnd);
+CELIX_FRAMEWORK_EXPORT const char* celix_bundle_getDescription(const celix_bundle_t* bnd);
 
 /**
  * @brief Return the update location of the bundle.
@@ -127,18 +127,18 @@ const char* celix_bundle_getDescription(const celix_bundle_t* bnd);
  * @return The update location of the bundle or NULL if the bundle is the framework bundle.
  * The caller is responsible for freeing the returned string.
  */
-char* celix_bundle_getLocation(const celix_bundle_t *bnd);
+CELIX_FRAMEWORK_EXPORT char* celix_bundle_getLocation(const celix_bundle_t *bnd);
 
 /**
  * @brief Return the bundle version.
  * Note the return value is valid as long as the bundle is installed.
  */
-const celix_version_t* celix_bundle_getVersion(const celix_bundle_t *bnd);
+CELIX_FRAMEWORK_EXPORT const celix_version_t* celix_bundle_getVersion(const celix_bundle_t *bnd);
 
 /**
  * @brief Return whether the bundle is the system bundle.
  */
-bool celix_bundle_isSystemBundle(const celix_bundle_t *bnd);
+CELIX_FRAMEWORK_EXPORT bool celix_bundle_isSystemBundle(const celix_bundle_t *bnd);
 
 typedef struct celix_bundle_service_list_entry {
     long serviceId;
@@ -155,12 +155,12 @@ typedef struct celix_bundle_service_list_entry {
  * @param bndId     The bundle id for which the services should be listed
  * @return          A celix array list with celix_bundle_service_list_entry_t*. Caller is owner of the celix array.
  */
-celix_array_list_t* celix_bundle_listRegisteredServices(const celix_bundle_t *bnd);
+CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_bundle_listRegisteredServices(const celix_bundle_t *bnd);
 
 /**
  * Utils function to free memory for the return of a celix_bundle_listRegisteredServices call.
  */
-void celix_bundle_destroyRegisteredServicesList(celix_array_list_t* list);
+CELIX_FRAMEWORK_EXPORT void celix_bundle_destroyRegisteredServicesList(celix_array_list_t* list);
 
 
 /**
@@ -181,12 +181,12 @@ typedef struct celix_bundle_service_tracker_list_entry {
  * @param bndId     The bundle id for which the services should be listed
  * @return          A celix array list with celix_bundle_service_tracker_list_entry_t*. Caller is owner of the celix array.
  */
-celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t *bnd);
+CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t *bnd);
 
 /**
  * Utils function to free memory for the return of a celix_bundle_listServiceTrackers call.
  */
-void celix_bundle_destroyServiceTrackerList(celix_array_list_t* list);
+CELIX_FRAMEWORK_EXPORT void celix_bundle_destroyServiceTrackerList(celix_array_list_t* list);
 
 
 #ifdef __cplusplus

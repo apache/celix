@@ -47,10 +47,10 @@ if (CELIX_DFI)
 			"SOVERSION" 1
 			OUTPUT_NAME "celix_dfi")
 
-	generate_export_header(utils_obj
+	generate_export_header(dfi
 			BASE_NAME "CELIX_DFI"
 			EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/dfi/celix_dfi_export.h")
-	target_include_directories(utils_obj PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/dfi>)
+	target_include_directories(dfi PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/dfi>)
 
 	install(TARGETS dfi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dfi
 			INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_dfi)

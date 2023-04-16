@@ -44,7 +44,7 @@ extern "C" {
  *         This function will always return w new array list. If no embedded bundles are found the size of the array
  *         list will be 0.
  */
-celix_array_list_t* celix_framework_utils_listEmbeddedBundles();
+CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_framework_utils_listEmbeddedBundles();
 
 /**
  * @brief Install the embedded bundles in the executable.
@@ -58,7 +58,7 @@ celix_array_list_t* celix_framework_utils_listEmbeddedBundles();
  * @param autoStart Whether to also start the installed bundles.
  * @return The number of installed bundles.
  */
-size_t celix_framework_utils_installEmbeddedBundles(celix_framework_t* fw, bool autoStart);
+CELIX_FRAMEWORK_EXPORT size_t celix_framework_utils_installEmbeddedBundles(celix_framework_t* fw, bool autoStart);
 
 /**
  * @brief Install bundles to the provided framework using the provided bundle set.
@@ -79,7 +79,7 @@ size_t celix_framework_utils_installEmbeddedBundles(celix_framework_t* fw, bool 
  * @param autoStart Whether to also start the installed bundles.
  * @return The number of installed bundles.
  */
-size_t celix_framework_utils_installBundleSet(celix_framework_t* fw, const char* bundleSet, bool autoStart);
+CELIX_FRAMEWORK_EXPORT size_t celix_framework_utils_installBundleSet(celix_framework_t* fw, const char* bundleSet, bool autoStart);
 
 
 /**
@@ -90,7 +90,7 @@ size_t celix_framework_utils_installBundleSet(celix_framework_t* fw, const char*
  * @param fw The Celix framework used to create the bundle archives cache.
  * @return CELIX_SUCCESS if the bundle archives cache is created successfully.
  */
-celix_status_t celix_framework_utils_createBundleArchivesCache(celix_framework_t* fw);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_framework_utils_createBundleArchivesCache(celix_framework_t* fw);
 
 #ifdef __cplusplus
 }

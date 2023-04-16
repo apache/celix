@@ -23,7 +23,7 @@
 #include "dyn_type.h"
 #include "dyn_function.h"
 #include "dyn_interface.h"
-#include "celix_df_export.h"
+#include "celix_dfi_export.h"
 
 #ifdef __cplusplus
 extern "C" {

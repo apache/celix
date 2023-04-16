@@ -207,7 +207,7 @@ static bool bundleContext_IsServiceReferenceValid(bundle_context_pt context, ser
     return context->bundle == refBundle;
 }
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_retainServiceReference(bundle_context_pt context, service_reference_pt ref) {
+celix_status_t bundleContext_retainServiceReference(bundle_context_pt context, service_reference_pt ref) {
     if (context == NULL || ref == NULL || !bundleContext_IsServiceReferenceValid(context, ref)) {
         return CELIX_ILLEGAL_ARGUMENT;
     }

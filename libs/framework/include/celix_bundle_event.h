@@ -21,7 +21,6 @@
 #define CELIX_BUNDLE_EVENT_H_
 
 #include "celix_bundle.h"
-#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {

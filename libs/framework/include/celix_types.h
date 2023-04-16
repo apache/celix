@@ -34,6 +34,9 @@
 #define CELIX_DEPRECATED_ATTR_MSG(msg)
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct celix_framework celix_framework_t;
 typedef struct celix_bundle celix_bundle_t;
@@ -66,5 +69,11 @@ typedef struct bundleRevision *bundle_revision_pt;
 typedef struct bundleRevision bundle_revision_t;
 typedef struct service_factory *service_factory_pt;
 typedef struct serviceReference * service_reference_pt;
+typedef struct serviceRegistration service_registration_t;
+typedef struct serviceRegistration * service_registration_pt;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CELIX_CELIX_TYPES_H

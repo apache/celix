@@ -26,7 +26,7 @@
 #include <stdint.h>
 
 #include "dfi_log_util.h"
-#include "celix_df_export.h"
+#include "celix_dfi_export.h"
 
 #ifdef __cplusplus
 extern "C" {
