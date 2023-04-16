@@ -1553,7 +1553,8 @@ static celix_status_t frameworkActivator_destroy(void * userData, bundle_context
  **********************************************************************************************************************/
 
 
-void celix_framework_useBundles(framework_t *fw, bool includeFrameworkBundle, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
+size_t celix_framework_useBundles(framework_t *fw, bool includeFrameworkBundle, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
+    size_t count = 0;
     celix_array_list_t *bundleIds = celix_arrayList_create();
 
     celixThreadMutex_lock(&fw->installedBundles.mutex);
@@ -1561,22 +1562,25 @@ void celix_framework_useBundles(framework_t *fw, bool includeFrameworkBundle, vo
     for (int i = 0; i < size; ++i) {
         celix_framework_bundle_entry_t *entry = celix_arrayList_get(fw->installedBundles.entries, i);
         if (entry->bndId > 0 || includeFrameworkBundle) {
-            //NOTE bundle state is checked in celix_framework_useBundles
             celix_arrayList_addLong(bundleIds, entry->bndId);
         }
     }
     celixThreadMutex_unlock(&fw->installedBundles.mutex);
 
-    //note that stored bundle ids can now already be invalid (race cond),
-    //but the celix_framework_useBundle function should be able to handle this safely.
+    // note that stored bundle ids can now already be invalid, but the celix_framework_useBundle function should be
+    // able to handle this safely.
 
     size = celix_arrayList_size(bundleIds);
     for (int i = 0; i < size; ++i) {
         long bndId = celix_arrayList_getLong(bundleIds, i);
-        celix_framework_useBundle(fw, true, bndId, callbackHandle, use);
+        bool called = celix_framework_useBundle(fw, false, bndId, callbackHandle, use);
+        if (called) {
+            ++count;
+        }
     }
 
     celix_arrayList_destroy(bundleIds);
+    return count;
 }
 
 bool celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
