@@ -53,7 +53,6 @@ if (CELIX_UTILS_CMAKE_CONFIGURE_ALT_OPTION)
         list(GET ARGN 0 UTILS_TARGET_NAME)
 
         target_link_libraries(${UTILS_TARGET_NAME} PRIVATE libzip::libzip)
-        #TODO if hidden is set to default, we have no issues
         set_target_properties(${UTILS_TARGET_NAME} PROPERTIES C_VISIBILITY_PRESET hidden)
         if (NOT OPEN_MEMSTREAM_EXISTS)
             target_compile_definitions(${UTILS_TARGET_NAME} PUBLIC -DCELIX_UTILS_NO_MEMSTREAM_AVAILABLE)
