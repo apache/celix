@@ -23,10 +23,10 @@
 #include <stdio.h>
 #include <sys/queue.h>
 #include <stdbool.h>
-
 #include <stdint.h>
 
 #include "dfi_log_util.h"
+#include "celix_df_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -116,20 +116,20 @@ extern "C" {
 typedef struct _dyn_type dyn_type;
 
 TAILQ_HEAD(types_head, type_entry);
-struct type_entry {
+struct CELIX_DFI_EXPORT type_entry {
     dyn_type *type;
     TAILQ_ENTRY(type_entry) entries;
 };
 
 TAILQ_HEAD(complex_type_entries_head, complex_type_entry);
-struct complex_type_entry {
+struct CELIX_DFI_EXPORT complex_type_entry {
     dyn_type *type;
     char *name;
     TAILQ_ENTRY(complex_type_entry) entries;
 };
 
 TAILQ_HEAD(meta_properties_head, meta_entry);
-struct meta_entry {
+struct CELIX_DFI_EXPORT meta_entry {
     char *name;
     char *value;
     TAILQ_ENTRY(meta_entry) entries;
@@ -150,7 +150,7 @@ DFI_SETUP_LOG_HEADER(dynAvprType);
  * @param type              Output argument for the parsed dyn type.
  * @return                  0 if successful.
  */
-int dynType_parse(FILE *descriptorStream, const char *name, struct types_head *refTypes, dyn_type **type);
+CELIX_DFI_EXPORT int dynType_parse(FILE *descriptorStream, const char *name, struct types_head *refTypes, dyn_type **type);
 
 /**
  * Parses a descriptor string and creates a dyn_type (dynamic type).
@@ -163,13 +163,13 @@ int dynType_parse(FILE *descriptorStream, const char *name, struct types_head *r
  * @param type              Output argument for the parsed dyn type.
  * @return                  0 if successful.
  */
-int dynType_parseWithStr(const char *descriptor, const char *name, struct types_head *refTypes, dyn_type **type);
+CELIX_DFI_EXPORT int dynType_parseWithStr(const char *descriptor, const char *name, struct types_head *refTypes, dyn_type **type);
 
 /**
  * Destroy a dyn type and de-allocates the memory.
  * @param type      The dyn type to destroy.
  */
-void dynType_destroy(dyn_type *type);
+CELIX_DFI_EXPORT void dynType_destroy(dyn_type *type);
 
 /**
  * Allocates memory for a type instance described by a dyn type. The memory will be 0 allocated (calloc).
@@ -178,7 +178,7 @@ void dynType_destroy(dyn_type *type);
  * @param instance  The output argument for the allocated memory.
  * @return          0 on success.
  */
-int dynType_alloc(dyn_type *type, void **instance);
+CELIX_DFI_EXPORT int dynType_alloc(dyn_type *type, void **instance);
 
 /**
  * free the memory for a type instance described by a dyn type.
@@ -187,14 +187,14 @@ int dynType_alloc(dyn_type *type, void **instance);
  * @param type        The dyn type for which structure to allocate.
  * @param instance    The memory location of the type instance.
  */
-void dynType_free(dyn_type *type, void *instance);
+CELIX_DFI_EXPORT void dynType_free(dyn_type *type, void *instance);
 
 /**
  * Prints the dyn type information to the provided output stream.
  * @param type      The dyn type to print.
  * @param stream    The output stream (e.g. stdout).
  */
-void dynType_print(dyn_type *type, FILE *stream);
+CELIX_DFI_EXPORT void dynType_print(dyn_type *type, FILE *stream);
 
 /**
  * Return the size of the structure descripbed by the dyn type.
@@ -203,7 +203,7 @@ void dynType_print(dyn_type *type, FILE *stream);
  * @param type  The dyn type.
  * @return      The size of the type instance described by dyn type.
  */
-size_t dynType_size(dyn_type *type);
+CELIX_DFI_EXPORT size_t dynType_size(dyn_type *type);
 
 /**
  * The type of the dyn type
@@ -211,7 +211,7 @@ size_t dynType_size(dyn_type *type);
  * @param type  The dyn type
  * @return      The type of the dyn type.
  */
-int dynType_type(dyn_type *type);
+CELIX_DFI_EXPORT int dynType_type(dyn_type *type);
 
 /**
  * Returns the char identifier of the dyn type type.
@@ -219,7 +219,7 @@ int dynType_type(dyn_type *type);
  * @param type  The dyn type
  * @return      The descriptor of the dyn type.
  */
-char dynType_descriptorType(dyn_type *type);
+CELIX_DFI_EXPORT char dynType_descriptorType(dyn_type *type);
 
 /**
  * Get the dyn type meta information for the provided name.
@@ -227,7 +227,7 @@ char dynType_descriptorType(dyn_type *type);
  * @param name  The name of the requested meta information.
  * @return      The meta information or NULL if the meta information is not present.
  */
-const char * dynType_getMetaInfo(dyn_type *type, const char *name);
+CELIX_DFI_EXPORT const char * dynType_getMetaInfo(dyn_type *type, const char *name);
 
 /**
  * Returns a list of meta entries.
@@ -236,12 +236,12 @@ const char * dynType_getMetaInfo(dyn_type *type, const char *name);
  * @param entries   The output arguments for the meta entries.
  * @return          0 on success.
  */
-int dynType_metaEntries(dyn_type *type, struct meta_properties_head **entries);
+CELIX_DFI_EXPORT int dynType_metaEntries(dyn_type *type, struct meta_properties_head **entries);
 
 /**
  * Returns the name of the dyn type. Name can be NULL.
  */
-const char * dynType_getName(dyn_type *type);
+CELIX_DFI_EXPORT const char * dynType_getName(dyn_type *type);
 
 
 /**
@@ -252,7 +252,7 @@ const char * dynType_getName(dyn_type *type);
  * @param name  The field name.
  * @return      The field index or -1 if no field with the name was found.
  */
-int dynType_complex_indexForName(dyn_type *type, const char *name);
+CELIX_DFI_EXPORT int dynType_complex_indexForName(dyn_type *type, const char *name);
 
 /**
  * Returns the field dyn type for a given complex type and a field index.
@@ -263,26 +263,26 @@ int dynType_complex_indexForName(dyn_type *type, const char *name);
  *                  exists.
  * @return          0 if successful.
  */
-int dynType_complex_dynTypeAt(dyn_type *type, int index, dyn_type **subType);
+CELIX_DFI_EXPORT int dynType_complex_dynTypeAt(dyn_type *type, int index, dyn_type **subType);
 
-int dynType_complex_setValueAt(dyn_type *type, int index, void *inst, void *in);
-int dynType_complex_valLocAt(dyn_type *type, int index, void *inst, void **valLoc);
-int dynType_complex_entries(dyn_type *type, struct complex_type_entries_head **entries);
-size_t dynType_complex_nrOfEntries(dyn_type *type);
+CELIX_DFI_EXPORT int dynType_complex_setValueAt(dyn_type *type, int index, void *inst, void *in);
+CELIX_DFI_EXPORT int dynType_complex_valLocAt(dyn_type *type, int index, void *inst, void **valLoc);
+CELIX_DFI_EXPORT int dynType_complex_entries(dyn_type *type, struct complex_type_entries_head **entries);
+CELIX_DFI_EXPORT size_t dynType_complex_nrOfEntries(dyn_type *type);
 
 //sequence
 
 /**
  * Initialize a sequence struct with a cap & len of 0 and the buf to NULL.
  */
-void dynType_sequence_init(dyn_type *type, void *inst);
+CELIX_DFI_EXPORT void dynType_sequence_init(dyn_type *type, void *inst);
 
 /**
  * Allocates memory for a sequence with capacity cap.
  * Will not free if the existing buf.
  * Sets len to 0
  */
-int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap);
+CELIX_DFI_EXPORT int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap);
 
 /**
  * Reserve a sequence capacity of cap
@@ -290,25 +290,25 @@ int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap);
  * Keeps the len value.
  * Note will not decrease the allocated memory
  */
-int dynType_sequence_reserve(dyn_type *type, void *inst, uint32_t cap);
+CELIX_DFI_EXPORT int dynType_sequence_reserve(dyn_type *type, void *inst, uint32_t cap);
 
-int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void **valLoc);
-int dynType_sequence_increaseLengthAndReturnLastLoc(dyn_type *type, void *seqLoc, void **valLoc);
-dyn_type * dynType_sequence_itemType(dyn_type *type);
-uint32_t dynType_sequence_length(void *seqLoc);
+CELIX_DFI_EXPORT int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void **valLoc);
+CELIX_DFI_EXPORT int dynType_sequence_increaseLengthAndReturnLastLoc(dyn_type *type, void *seqLoc, void **valLoc);
+CELIX_DFI_EXPORT dyn_type * dynType_sequence_itemType(dyn_type *type);
+CELIX_DFI_EXPORT uint32_t dynType_sequence_length(void *seqLoc);
 
 //typed pointer
-int dynType_typedPointer_getTypedType(dyn_type *type, dyn_type **typedType);
+CELIX_DFI_EXPORT int dynType_typedPointer_getTypedType(dyn_type *type, dyn_type **typedType);
 
 //text
-int dynType_text_allocAndInit(dyn_type *type, void *textLoc, const char *value);
+CELIX_DFI_EXPORT int dynType_text_allocAndInit(dyn_type *type, void *textLoc, const char *value);
 
 //simple
-void dynType_simple_setValue(dyn_type *type, void *inst, void *in);
+CELIX_DFI_EXPORT void dynType_simple_setValue(dyn_type *type, void *inst, void *in);
 
 // avpr parsing
-dyn_type * dynType_parseAvpr(FILE *avprStream, const char *fqn);
-dyn_type * dynType_parseAvprWithStr(const char *avpr, const char *fqn);
+CELIX_DFI_DEPRECATED_EXPORT dyn_type * dynType_parseAvpr(FILE *avprStream, const char *fqn);
+CELIX_DFI_DEPRECATED_EXPORT dyn_type * dynType_parseAvprWithStr(const char *avpr, const char *fqn);
 
 
 #ifdef __cplusplus
