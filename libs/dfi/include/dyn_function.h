@@ -48,7 +48,7 @@ typedef struct _dyn_function_type dyn_function_type;
 DFI_SETUP_LOG_HEADER(dynFunction);
 DFI_SETUP_LOG_HEADER(dynAvprFunction);
 
-enum CELIX_DFI_EXPORT dyn_function_argument_meta {
+enum dyn_function_argument_meta {
     DYN_FUNCTION_ARGUMENT_META__STD = 0,
     DYN_FUNCTION_ARGUMENT_META__HANDLE = 1,
     DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT = 2,

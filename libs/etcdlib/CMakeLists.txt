@@ -76,6 +76,7 @@ if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
     add_library(etcdlib_static STATIC src/etcd.c)
     target_include_directories(etcdlib_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>)
     target_include_directories(etcdlib_static PRIVATE src)
+    target_include_directories(etcdlib_static PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/etcdlib>)
     set_target_properties(etcdlib_static
             PROPERTIES
                 POSITION_INDEPENDENT_CODE 1

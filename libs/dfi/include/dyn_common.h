@@ -37,7 +37,7 @@ DFI_SETUP_LOG_HEADER(dynCommon) ;
 
 TAILQ_HEAD(namvals_head, namval_entry);
 
-struct CELIX_DFI_EXPORT namval_entry {
+struct namval_entry {
     char *name;
     char *value;
     TAILQ_ENTRY(namval_entry) entries;

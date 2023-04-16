@@ -116,20 +116,20 @@ extern "C" {
 typedef struct _dyn_type dyn_type;
 
 TAILQ_HEAD(types_head, type_entry);
-struct CELIX_DFI_EXPORT type_entry {
+struct type_entry {
     dyn_type *type;
     TAILQ_ENTRY(type_entry) entries;
 };
 
 TAILQ_HEAD(complex_type_entries_head, complex_type_entry);
-struct CELIX_DFI_EXPORT complex_type_entry {
+struct complex_type_entry {
     dyn_type *type;
     char *name;
     TAILQ_ENTRY(complex_type_entry) entries;
 };
 
 TAILQ_HEAD(meta_properties_head, meta_entry);
-struct CELIX_DFI_EXPORT meta_entry {
+struct meta_entry {
     char *name;
     char *value;
     TAILQ_ENTRY(meta_entry) entries;
