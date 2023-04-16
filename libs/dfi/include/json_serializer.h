@@ -25,6 +25,7 @@
 #include "dyn_type.h"
 #include "dyn_function.h"
 #include "dyn_interface.h"
+#include "celix_df_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,11 +34,11 @@ extern "C" {
 //logging
 DFI_SETUP_LOG_HEADER(jsonSerializer);
 
-int jsonSerializer_deserialize(dyn_type *type, const char *input, size_t length, void **result);
-int jsonSerializer_deserializeJson(dyn_type *type, json_t *input, void **result);
+CELIX_DFI_EXPORT int jsonSerializer_deserialize(dyn_type *type, const char *input, size_t length, void **result);
+CELIX_DFI_EXPORT int jsonSerializer_deserializeJson(dyn_type *type, json_t *input, void **result);
 
-int jsonSerializer_serialize(dyn_type *type, const void* input, char **output);
-int jsonSerializer_serializeJson(dyn_type *type, const void* input, json_t **out);
+CELIX_DFI_EXPORT int jsonSerializer_serialize(dyn_type *type, const void* input, char **output);
+CELIX_DFI_EXPORT int jsonSerializer_serializeJson(dyn_type *type, const void* input, json_t **out);
 
 #ifdef __cplusplus
 }

@@ -54,32 +54,39 @@ endif ()
 
 if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
     find_package(jansson REQUIRED)
-    add_library(etcdlib SHARED
-            src/etcd.c
-            )
-    target_include_directories(etcdlib PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
-            )
-    target_include_directories(etcdlib PRIVATE src)
 
-    set_target_properties(etcdlib PROPERTIES SOVERSION 1)
-    set_target_properties(etcdlib PROPERTIES VERSION 1.0.0)
+    add_library(etcdlib SHARED src/etcd.c)
+    target_include_directories(etcdlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>)
+    target_include_directories(etcdlib PRIVATE src)
+    set_target_properties(etcdlib
+            PROPERTIES
+                VERSION 1.0.0
+                SOVERSION 1
+                C_VISIBILITY_PRESET hidden
+                VISIBILITY_INLINES_HIDDEN ON
+    )
     target_link_libraries(etcdlib PUBLIC CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
 
-    add_library(etcdlib_static STATIC
-            src/etcd.c
-            )
-    target_include_directories(etcdlib_static PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
-            )
+    generate_export_header(etcdlib
+            BASE_NAME "ETCDLIB"
+            EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/etcdlib/etcdlib_export.h")
+    target_include_directories(etcdlib PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/etcdlib>)
+
+
+    add_library(etcdlib_static STATIC src/etcd.c)
+    target_include_directories(etcdlib_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>)
     target_include_directories(etcdlib_static PRIVATE src)
-    set_target_properties(etcdlib_static PROPERTIES "SOVERSION" 1)
+    set_target_properties(etcdlib_static
+            PROPERTIES
+                POSITION_INDEPENDENT_CODE 1
+                OUTPUT_NAME "celix_etcdlib_static")
     target_link_libraries(etcdlib_static PUBLIC CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
 
     add_executable(etcdlib_test ${CMAKE_CURRENT_SOURCE_DIR}/test/etcdlib_test.c)
     target_link_libraries(etcdlib_test PRIVATE etcdlib_static CURL::libcurl jansson::jansson)
 
     install(DIRECTORY api/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/etcdlib COMPONENT ${ETCDLIB_CMP})
+    install(DIRECTORY ${CMAKE_BINARY_DIR}/celix/gen/includes/etcdlib/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/etcdlib COMPONENT ${ETCDLIB_CMP})
     if (NOT COMMAND celix_subproject)
         install(TARGETS etcdlib etcdlib_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${ETCDLIB_CMP}
                 INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/etcdlib)

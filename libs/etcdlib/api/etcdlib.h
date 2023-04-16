@@ -26,6 +26,7 @@ extern "C"
 #endif
 
 #include <stdbool.h>
+#include "etcdlib_export.h"
 
 /*
  * If set etcdlib will _not_ initialize curl
@@ -57,23 +58,23 @@ typedef void (*etcdlib_key_value_callback) (const char *key, const char *value, 
  * @param int flags. bitwise flags to control etcdlib initialization. 
  * @return Pointer to the etcdlib_t struct needed by subsequent api calls
  */
-etcdlib_t* etcdlib_create(const char* server, int port, int flags);
+ETCDLIB_EXPORT etcdlib_t* etcdlib_create(const char* server, int port, int flags);
 
 /**
  * @desc Destroys the ETCD-LIB.  with the server/port where Etcd can be reached.
  * @param etcdlib_t* The ETCD-LIB instance.
  */
-void etcdlib_destroy(etcdlib_t *etcdlib);
+ETCDLIB_EXPORT void etcdlib_destroy(etcdlib_t *etcdlib);
 
 /**
  * Returns the configured etcd host for etcdlib.
  */
-const char* etcdlib_host(etcdlib_t *etcdlib);
+ETCDLIB_EXPORT const char* etcdlib_host(etcdlib_t *etcdlib);
 
 /**
  * Returns the configured etcd port for etcdlib.
  */
-int etcdlib_port(etcdlib_t *etcdlib);
+ETCDLIB_EXPORT int etcdlib_port(etcdlib_t *etcdlib);
 
 /**
  * @desc Retrieve a single value from Etcd.
@@ -83,7 +84,7 @@ int etcdlib_port(etcdlib_t *etcdlib);
  * @param int* modifiedIndex. If not NULL the Etcd-index of the last modified value.
  * @return 0 on success, non zero otherwise
  */
-int etcdlib_get(etcdlib_t *etcdlib, const char* key, char** value, int* modifiedIndex);
+ETCDLIB_EXPORT int etcdlib_get(etcdlib_t *etcdlib, const char* key, char** value, int* modifiedIndex);
 
 /**
  * @desc Retrieve the contents of a directory. For every found key/value pair the given callback function is called.
@@ -94,7 +95,7 @@ int etcdlib_get(etcdlib_t *etcdlib, const char* key, char** value, int* modified
  * @param int* modifiedIndex. If not NULL the Etcd-index of the last modified value.
  * @return 0 on success, non zero otherwise
  */
-int etcdlib_get_directory(etcdlib_t *etcdlib, const char* directory, etcdlib_key_value_callback callback, void *arg, long long* modifiedIndex);
+ETCDLIB_EXPORT int etcdlib_get_directory(etcdlib_t *etcdlib, const char* directory, etcdlib_key_value_callback callback, void *arg, long long* modifiedIndex);
 
 /**
  * @desc Setting an Etcd-key/value
@@ -105,7 +106,7 @@ int etcdlib_get_directory(etcdlib_t *etcdlib, const char* directory, etcdlib_key
  * @param bool prevExist. If true the value is only set when the key already exists, if false it is always set
  * @return 0 on success, non zero otherwise
  */
-int etcdlib_set(etcdlib_t *etcdlib, const char* key, const char* value, int ttl, bool prevExist);
+ETCDLIB_EXPORT int etcdlib_set(etcdlib_t *etcdlib, const char* key, const char* value, int ttl, bool prevExist);
 
 /**
  * @desc Refresh the ttl of an existing key.
@@ -114,7 +115,7 @@ int etcdlib_set(etcdlib_t *etcdlib, const char* key, const char* value, int ttl,
  * @param ttl the ttl value to use.
  * @return 0 on success, non zero otherwise.
  */
-int etcdlib_refresh(etcdlib_t *etcdlib, const char *key, int ttl);
+ETCDLIB_EXPORT int etcdlib_refresh(etcdlib_t *etcdlib, const char *key, int ttl);
 
 /**
  * @desc Setting an Etcd-key/value and checks if there is a different previous value
@@ -125,7 +126,7 @@ int etcdlib_refresh(etcdlib_t *etcdlib, const char *key, int ttl);
  * @param bool always_write. If true the value is written, if false only when the given value is equal to the value in etcd.
  * @return 0 on success, non zero otherwise
  */
-int etcdlib_set_with_check(etcdlib_t *etcdlib, const char* key, const char* value, int ttl, bool always_write);
+ETCDLIB_EXPORT int etcdlib_set_with_check(etcdlib_t *etcdlib, const char* key, const char* value, int ttl, bool always_write);
 
 /**
  * @desc Deleting an Etcd-key
@@ -133,7 +134,7 @@ int etcdlib_set_with_check(etcdlib_t *etcdlib, const char* key, const char* valu
  * @param const char* key. The Etcd-key (Note: a leading '/' should be avoided)
  * @return 0 on success, non zero otherwise
  */
-int etcdlib_del(etcdlib_t *etcdlib, const char* key);
+ETCDLIB_EXPORT int etcdlib_del(etcdlib_t *etcdlib, const char* key);
 
 /**
  * @desc Watching an etcd directory for changes
@@ -147,7 +148,7 @@ int etcdlib_del(etcdlib_t *etcdlib, const char* key);
  * @param long long* modifiedIndex. If not NULL, the index of the modification is written.
  * @return ETCDLIB_RC_OK (0) on success, non zero otherwise. Note that a timeout is signified by a ETCDLIB_RC_TIMEOUT return code.
  */
-int etcdlib_watch(etcdlib_t *etcdlib, const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex);
+ETCDLIB_EXPORT int etcdlib_watch(etcdlib_t *etcdlib, const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex);
 
 #ifdef __cplusplus
 }

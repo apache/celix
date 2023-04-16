@@ -70,32 +70,29 @@ ELSEIF(ANDROID)
     target_link_libraries(utils_obj PRIVATE m)
 ENDIF()
 
-include(GenerateExportHeader)
 generate_export_header(utils_obj
     BASE_NAME "CELIX_UTILS"
-    EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/gen_include/celix_utils_export.h")
-target_include_directories(utils_obj PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/gen_include>)
+    EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/utils/celix_utils_export.h")
+target_include_directories(utils_obj PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/utils>)
 
 add_library(utils SHARED)
 target_link_libraries(utils PUBLIC utils_obj)
 
 set_target_properties(utils
     PROPERTIES
-        CXX_VISIBILITY_PRESET hidden
         C_VISIBILITY_PRESET hidden
         VISIBILITY_INLINES_HIDDEN true
         SOVERSION ${CELIX_MAJOR}
-        OUTPUT_NAME "celix_utils"
-)
+        OUTPUT_NAME "celix_utils")
 
 # By omitting OBJECTS DESTINATION, object files will NOT be installed.
 install(TARGETS utils utils_obj EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_utils)
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/$<TARGET_PROPERTY:utils,OUTPUT_NAME>)
 install(DIRECTORY include/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_utils
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_utils/
         COMPONENT framework PATTERN memstream* EXCLUDE)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/gen_include/celix_utils_export.h
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_utils
+install(DIRECTORY ${CMAKE_BINARY_DIR}/celix/gen/includes/utils/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_utils/
         COMPONENT framework)
 
 if (CELIX_INSTALL_DEPRECATED_API)
