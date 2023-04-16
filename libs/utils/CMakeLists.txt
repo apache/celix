@@ -81,7 +81,6 @@ target_link_libraries(utils PUBLIC utils_obj)
 set_target_properties(utils
     PROPERTIES
         C_VISIBILITY_PRESET hidden
-        VISIBILITY_INLINES_HIDDEN true
         SOVERSION ${CELIX_MAJOR}
         OUTPUT_NAME "celix_utils")
 

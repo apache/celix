@@ -43,7 +43,6 @@ if (CELIX_DFI)
 	target_link_libraries(dfi PUBLIC jansson::jansson)
 	set_target_properties(dfi PROPERTIES
 			C_VISIBILITY_PRESET hidden
-			VISIBILITY_INLINES_HIDDEN ON
 			VERSION "1.0.0"
 			"SOVERSION" 1
 			OUTPUT_NAME "celix_dfi")

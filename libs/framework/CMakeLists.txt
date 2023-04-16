@@ -47,18 +47,28 @@ target_link_libraries(framework_obj PUBLIC libuuid::libuuid CURL::libcurl ZLIB::
 target_link_libraries(framework_obj PRIVATE ${CMAKE_DL_LIBS})
 celix_deprecated_utils_headers(framework_obj)
 
+generate_export_header(framework_obj
+        BASE_NAME "CELIX_FRAMWORK"
+        EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/framework/celix_framework_export.h")
+target_include_directories(utils_obj PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/framework>)
+
 add_library(framework SHARED)
 target_link_libraries(framework PUBLIC framework_obj)
-set_target_properties(framework PROPERTIES OUTPUT_NAME "celix_framework")
-set_target_properties(framework PROPERTIES "SOVERSION" ${CELIX_MAJOR})
+set_target_properties(framework
+    PROPERTIES
+        C_VISIBILITY_PRESET hidden
+        "VERSION" "${CELIX_MAJOR}.${CELIX_MINOR}.${CELIX_MICRO}"
+        "SOVERSION" ${CELIX_MAJOR}
+        OUTPUT_NAME "celix_framework")
 
 celix_deprecated_utils_headers(framework)
 
 # By omitting OBJECTS DESTINATION, object files will NOT be installed.
 install(TARGETS framework framework_obj EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework)
-install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework)
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_framework)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_framework COMPONENT framework)
+install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_framework COMPONENT framework)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/celix/gen/includes/framework/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_framework COMPONENT framework)
 
 #Alias setup to match external usage
 add_library(Celix::framework ALIAS framework)

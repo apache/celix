@@ -63,7 +63,6 @@ if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
                 VERSION 1.0.0
                 SOVERSION 1
                 C_VISIBILITY_PRESET hidden
-                VISIBILITY_INLINES_HIDDEN ON
     )
     target_link_libraries(etcdlib PUBLIC CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
 
