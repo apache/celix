@@ -21,10 +21,11 @@
 #define CELIX_LOG_H_
 
 #include <stdio.h>
+#include <stdarg.h>
 
 #include "celix_log_level.h"
 #include "celix_errno.h"
-#include <stdarg.h>
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -20,12 +20,13 @@
 #ifndef CELIX_FRAMEWORK_H_
 #define CELIX_FRAMEWORK_H_
 
+#include <stdarg.h>
 
 #include "celix_types.h"
 #include "celix_properties.h"
 #include "celix_log_level.h"
 #include "celix_array_list.h"
-#include <stdarg.h>
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {

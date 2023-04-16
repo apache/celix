@@ -17,14 +17,15 @@
  * under the License.
  */
 
+#ifndef CELIX_BUNDLE_H_
+#define CELIX_BUNDLE_H_
+
 #include "celix_types.h"
 #include "celix_bundle_state.h"
 #include "celix_properties.h"
 #include "celix_array_list.h"
 #include "celix_version.h"
-
-#ifndef CELIX_BUNDLE_H_
-#define CELIX_BUNDLE_H_
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {

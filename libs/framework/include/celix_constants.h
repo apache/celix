@@ -22,6 +22,8 @@
 
 #include <stdbool.h>
 
+#include "celix_framework_export.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

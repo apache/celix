@@ -21,6 +21,7 @@
 #define CELIX_FRAMEWORK_FACTORY_H_
 
 #include "celix_framework.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {

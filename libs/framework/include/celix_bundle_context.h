@@ -17,6 +17,11 @@
  * under the License.
  */
 
+#ifndef CELIX_BUNDLE_CONTEXT_H_
+#define CELIX_BUNDLE_CONTEXT_H_
+
+#include <stdarg.h>
+
 #include "celix_types.h"
 #include "celix_service_factory.h"
 #include "celix_properties.h"
@@ -24,11 +29,7 @@
 #include "celix_filter.h"
 #include "celix_bundle_event.h"
 #include "celix_log_level.h"
-#include <stdarg.h>
-
-#ifndef CELIX_BUNDLE_CONTEXT_H_
-#define CELIX_BUNDLE_CONTEXT_H_
-
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {

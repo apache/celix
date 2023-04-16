@@ -20,9 +20,9 @@
 #ifndef CELIX_FRAMEWORK_UTILS_H_
 #define CELIX_FRAMEWORK_UTILS_H_
 
-
 #include "celix_framework.h"
 #include "celix_array_list.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {

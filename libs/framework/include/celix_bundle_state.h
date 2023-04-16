@@ -20,6 +20,8 @@
 #ifndef CELIX_BUNDLE_STATE_H_
 #define CELIX_BUNDLE_STATE_H_
 
+#include "celix_framework_export.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

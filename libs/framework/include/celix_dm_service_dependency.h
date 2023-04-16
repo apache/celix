@@ -23,8 +23,8 @@
 #include "celix_types.h"
 #include "celix_errno.h"
 #include "celix_threads.h"
-
 #include "celix_dm_info.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
