@@ -46,43 +46,92 @@ add_library(utils_obj OBJECT
         src/celix_convert_utils.c
         ${MEMSTREAM_SOURCES}
 )
-target_link_libraries(utils_obj PRIVATE libzip::libzip)
-if (NOT OPEN_MEMSTREAM_EXISTS)
-    target_compile_definitions(utils_obj PUBLIC -DCELIX_UTILS_NO_MEMSTREAM_AVAILABLE)
+
+set(CELIX_UTILS_CMAKE_CONFIGURE_ALT_OPTION ON)
+if (CELIX_UTILS_CMAKE_CONFIGURE_ALT_OPTION)
+    function (celix_configure_utils_target)
+        list(GET ARGN 0 UTILS_TARGET_NAME)
+
+        target_link_libraries(${UTILS_TARGET_NAME} PRIVATE libzip::libzip)
+        #TODO if hidden is set to default, we have no issues
+        set_target_properties(${UTILS_TARGET_NAME} PROPERTIES C_VISIBILITY_PRESET hidden)
+        if (NOT OPEN_MEMSTREAM_EXISTS)
+            target_compile_definitions(${UTILS_TARGET_NAME} PUBLIC -DCELIX_UTILS_NO_MEMSTREAM_AVAILABLE)
+        endif ()
+
+        if (ANDROID)
+            target_compile_definitions(${UTILS_TARGET_NAME} PRIVATE -DUSE_FILE32API)
+        endif ()
+
+        if (NOT APPLE)
+            target_link_libraries(${UTILS_TARGET_NAME} PUBLIC -lrt)
+        endif ()
+
+        target_include_directories(${UTILS_TARGET_NAME} PUBLIC
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+                $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
+                $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/${UTILS_TARGET_NAME}>)
+        target_include_directories(${UTILS_TARGET_NAME} PRIVATE src include_deprecated)
+        IF(UNIX AND NOT ANDROID)
+            target_link_libraries(${UTILS_TARGET_NAME} PRIVATE m pthread)
+        ELSEIF(ANDROID)
+            target_link_libraries(${UTILS_TARGET_NAME} PRIVATE m)
+        ENDIF()
+
+        generate_export_header(${UTILS_TARGET_NAME}
+                BASE_NAME "CELIX_UTILS"
+                EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/${UTILS_TARGET_NAME}/celix_utils_export.h")
+    endfunction ()
+
+    celix_configure_utils_target(utils_obj)
+
+    add_library(utils SHARED $<TARGET_OBJECTS:utils_obj>)
+    celix_configure_utils_target(utils)
+    set_target_properties(utils
+        PROPERTIES
+            VERSION "${CELIX_MAJOR}.${CELIX_MINOR}.${CELIX_MICRO}"
+            SOVERSION ${CELIX_MAJOR}
+            OUTPUT_NAME "celix_utils")
+else ()
+    target_link_libraries(utils_obj PRIVATE libzip::libzip)
+    #Note visibility preset is also needed on OBJECT libraries, to work correctly
+    set_target_properties(utils_obj PROPERTIES C_VISIBILITY_PRESET hidden)
+    if (NOT OPEN_MEMSTREAM_EXISTS)
+        target_compile_definitions(utils_obj PUBLIC -DCELIX_UTILS_NO_MEMSTREAM_AVAILABLE)
+    endif ()
+
+    if (ANDROID)
+        target_compile_definitions(utils_obj PRIVATE -DUSE_FILE32API)
+    endif ()
+
+    if (NOT APPLE)
+        target_link_libraries(utils_obj PUBLIC -lrt)
+    endif ()
+
+    target_include_directories(utils_obj PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+            $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
+            )
+    target_include_directories(utils_obj PRIVATE src include_deprecated)
+    IF(UNIX AND NOT ANDROID)
+        target_link_libraries(utils_obj PRIVATE m pthread)
+    ELSEIF(ANDROID)
+        target_link_libraries(utils_obj PRIVATE m)
+    ENDIF()
+
+    add_library(utils SHARED)
+    target_link_libraries(utils PUBLIC utils_obj)
+    generate_export_header(utils
+            BASE_NAME "CELIX_UTILS"
+            EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/utils/celix_utils_export.h")
+    target_include_directories(utils_obj PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/utils>)
+
+    set_target_properties(utils
+        PROPERTIES
+            C_VISIBILITY_PRESET hidden
+            SOVERSION ${CELIX_MAJOR}
+            OUTPUT_NAME "celix_utils")
 endif ()
-
-if (ANDROID)
-    target_compile_definitions(utils_obj PRIVATE -DUSE_FILE32API)
-endif ()
-
-if (NOT APPLE)
-    target_link_libraries(utils_obj PUBLIC -lrt)
-endif ()
-
-target_include_directories(utils_obj PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
-        )
-target_include_directories(utils_obj PRIVATE src include_deprecated)
-IF(UNIX AND NOT ANDROID)
-    target_link_libraries(utils_obj PRIVATE m pthread)
-ELSEIF(ANDROID)
-    target_link_libraries(utils_obj PRIVATE m)
-ENDIF()
-
-generate_export_header(utils_obj
-    BASE_NAME "CELIX_UTILS"
-    EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/utils/celix_utils_export.h")
-target_include_directories(utils_obj PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/utils>)
-
-add_library(utils SHARED)
-target_link_libraries(utils PUBLIC utils_obj)
-
-set_target_properties(utils
-    PROPERTIES
-        C_VISIBILITY_PRESET hidden
-        SOVERSION ${CELIX_MAJOR}
-        OUTPUT_NAME "celix_utils")
 
 # By omitting OBJECTS DESTINATION, object files will NOT be installed.
 install(TARGETS utils utils_obj EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
