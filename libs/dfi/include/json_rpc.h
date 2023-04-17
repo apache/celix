@@ -21,24 +21,29 @@
 #define __JSON_RPC_H_
 
 #include <jansson.h>
+
+#include "celix_dfi_export.h"
 #include "dfi_log_util.h"
-#include "dyn_type.h"
 #include "dyn_function.h"
 #include "dyn_interface.h"
-#include "celix_dfi_export.h"
+#include "dyn_type.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//logging
+// logging
 DFI_SETUP_LOG_HEADER(jsonRpc);
 
-CELIX_DFI_EXPORT int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, char **out);
+CELIX_DFI_EXPORT int jsonRpc_call(dyn_interface_type* intf, void* service,
+                                  const char* request, char** out);
 
-
-CELIX_DFI_EXPORT int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *args[], char **out);
-CELIX_DFI_EXPORT int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[], int *rsErrno);
+CELIX_DFI_EXPORT int jsonRpc_prepareInvokeRequest(dyn_function_type* func,
+                                                  const char* id, void* args[],
+                                                  char** out);
+CELIX_DFI_EXPORT int jsonRpc_handleReply(dyn_function_type* func,
+                                         const char* reply, void* args[],
+                                         int* rsErrno);
 
 #ifdef __cplusplus
 }

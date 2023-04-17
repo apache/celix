@@ -20,9 +20,9 @@
 #ifndef __DYN_FUNCTION_H_
 #define __DYN_FUNCTION_H_
 
-#include "dyn_type.h"
-#include "dfi_log_util.h"
 #include "celix_dfi_export.h"
+#include "dfi_log_util.h"
+#include "dyn_type.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,15 +32,15 @@ extern "C" {
  * Uses the following schema
  * (Name)([Type]*)Type
  *
- * Dyn function argument meta (am) as meta info, with the following possible values
- * am=handle #void pointer for the handle
- * am=pre #output pointer with memory pre-allocated
- * am=out #output pointer
+ * Dyn function argument meta (am) as meta info, with the following possible
+ * values am=handle #void pointer for the handle am=pre #output pointer with
+ * memory pre-allocated am=out #output pointer
  *
  * text argument (t) can also be annotated to be considered const string.
- * Normally a text argument will be handled as char*, meaning that the callee is expected to take of ownership.
- * If a const=true annotation is used the text argument will be handled as a const char*, meaning that the caller
- * keeps ownership of the string.
+ * Normally a text argument will be handled as char*, meaning that the callee is
+ * expected to take of ownership. If a const=true annotation is used the text
+ * argument will be handled as a const char*, meaning that the caller keeps
+ * ownership of the string.
  */
 
 typedef struct _dyn_function_type dyn_function_type;
@@ -55,29 +55,43 @@ enum dyn_function_argument_meta {
     DYN_FUNCTION_ARGUMENT_META__OUTPUT = 3
 };
 
-CELIX_DFI_EXPORT int dynFunction_parse(FILE *descriptorStream, struct types_head *refTypes, dyn_function_type **dynFunc);
-CELIX_DFI_EXPORT int dynFunction_parseWithStr(const char *descriptor, struct types_head *refTypes, dyn_function_type **dynFunc);
+CELIX_DFI_EXPORT int dynFunction_parse(FILE* descriptorStream,
+                                       struct types_head* refTypes,
+                                       dyn_function_type** dynFunc);
+CELIX_DFI_EXPORT int dynFunction_parseWithStr(const char* descriptor,
+                                              struct types_head* refTypes,
+                                              dyn_function_type** dynFunc);
 
-CELIX_DFI_EXPORT int dynFunction_nrOfArguments(dyn_function_type *dynFunc);
-CELIX_DFI_EXPORT dyn_type *dynFunction_argumentTypeForIndex(dyn_function_type *dynFunc, int argumentNr);
-CELIX_DFI_EXPORT enum dyn_function_argument_meta dynFunction_argumentMetaForIndex(dyn_function_type *dynFunc, int argumentNr);
-CELIX_DFI_EXPORT dyn_type * dynFunction_returnType(dyn_function_type *dynFunction);
+CELIX_DFI_EXPORT int dynFunction_nrOfArguments(dyn_function_type* dynFunc);
+CELIX_DFI_EXPORT dyn_type* dynFunction_argumentTypeForIndex(
+    dyn_function_type* dynFunc, int argumentNr);
+CELIX_DFI_EXPORT enum dyn_function_argument_meta
+dynFunction_argumentMetaForIndex(dyn_function_type* dynFunc, int argumentNr);
+CELIX_DFI_EXPORT dyn_type* dynFunction_returnType(
+    dyn_function_type* dynFunction);
 
-CELIX_DFI_EXPORT void dynFunction_destroy(dyn_function_type *dynFunc);
-CELIX_DFI_EXPORT int dynFunction_call(dyn_function_type *dynFunc, void(*fn)(void), void *returnValue, void **argValues);
+CELIX_DFI_EXPORT void dynFunction_destroy(dyn_function_type* dynFunc);
+CELIX_DFI_EXPORT int dynFunction_call(dyn_function_type* dynFunc,
+                                      void (*fn)(void), void* returnValue,
+                                      void** argValues);
 
-CELIX_DFI_EXPORT int dynFunction_createClosure(dyn_function_type *func, void (*bind)(void *, void **, void*), void *userData, void(**fn)(void));
-CELIX_DFI_EXPORT int dynFunction_getFnPointer(dyn_function_type *func, void (**fn)(void));
+CELIX_DFI_EXPORT int dynFunction_createClosure(
+    dyn_function_type* func, void (*bind)(void*, void**, void*), void* userData,
+    void (**fn)(void));
+CELIX_DFI_EXPORT int dynFunction_getFnPointer(dyn_function_type* func,
+                                              void (**fn)(void));
 
 /**
  * Returns whether the function has a return type.
  * Will return false if return is void.
  */
-CELIX_DFI_EXPORT bool dynFunction_hasReturn(dyn_function_type *dynFunction);
+CELIX_DFI_EXPORT bool dynFunction_hasReturn(dyn_function_type* dynFunction);
 
 // Avpr parsing
-CELIX_DFI_DEPRECATED_EXPORT dyn_function_type * dynFunction_parseAvprWithStr(const char * avpr, const char * fqn);
-CELIX_DFI_DEPRECATED_EXPORT dyn_function_type * dynFunction_parseAvpr(FILE * avprStream, const char * fqn);
+CELIX_DFI_DEPRECATED_EXPORT dyn_function_type* dynFunction_parseAvprWithStr(
+    const char* avpr, const char* fqn);
+CELIX_DFI_DEPRECATED_EXPORT dyn_function_type* dynFunction_parseAvpr(
+    FILE* avprStream, const char* fqn);
 
 #ifdef __cplusplus
 }

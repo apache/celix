@@ -19,26 +19,33 @@
 #ifndef __AVROBIN_SERIALIZER_H_
 #define __AVROBIN_SERIALIZER_H_
 
+#include "celix_dfi_export.h"
 #include "dfi_log_util.h"
-#include "dyn_type.h"
 #include "dyn_function.h"
 #include "dyn_interface.h"
-#include "celix_dfi_export.h"
+#include "dyn_type.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//logging
+// logging
 DFI_SETUP_LOG_HEADER(avrobinSerializer);
 
-CELIX_DFI_DEPRECATED_EXPORT int avrobinSerializer_deserialize(dyn_type *type, const uint8_t *input, size_t inlen, void **result);
+CELIX_DFI_DEPRECATED_EXPORT int avrobinSerializer_deserialize(
+    dyn_type* type, const uint8_t* input, size_t inlen, void** result);
 
-CELIX_DFI_DEPRECATED_EXPORT int avrobinSerializer_serialize(dyn_type *type, const void *input, uint8_t **output, size_t *outlen);
+CELIX_DFI_DEPRECATED_EXPORT int avrobinSerializer_serialize(dyn_type* type,
+                                                            const void* input,
+                                                            uint8_t** output,
+                                                            size_t* outlen);
 
-CELIX_DFI_DEPRECATED_EXPORT int avrobinSerializer_generateSchema(dyn_type *type, char **output);
+CELIX_DFI_DEPRECATED_EXPORT int avrobinSerializer_generateSchema(dyn_type* type,
+                                                                 char** output);
 
-CELIX_DFI_DEPRECATED_EXPORT int avrobinSerializer_saveFile(const char *filename, const char *schema, const uint8_t *serdata, size_t serdatalen);
+CELIX_DFI_DEPRECATED_EXPORT int avrobinSerializer_saveFile(
+    const char* filename, const char* schema, const uint8_t* serdata,
+    size_t serdatalen);
 
 #ifdef __cplusplus
 }
