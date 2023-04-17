@@ -69,7 +69,8 @@ if (CELIX_UTILS_CMAKE_CONFIGURE_ALT_OPTION)
         target_include_directories(${UTILS_TARGET_NAME} PUBLIC
                 $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
                 $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
-                $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/${UTILS_TARGET_NAME}>)
+                $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/${UTILS_TARGET_NAME}>
+                $<INSTALL_INTERFACE:include/celix/utils>)
         target_include_directories(${UTILS_TARGET_NAME} PRIVATE src include_deprecated)
         IF(UNIX AND NOT ANDROID)
             target_link_libraries(${UTILS_TARGET_NAME} PRIVATE m pthread)
@@ -110,7 +111,7 @@ else ()
     target_include_directories(utils_obj PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
             $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
-            )
+            $<INSTALL_INTERFACE:include/celix/utils>)
     target_include_directories(utils_obj PRIVATE src include_deprecated)
     IF(UNIX AND NOT ANDROID)
         target_link_libraries(utils_obj PRIVATE m pthread)
@@ -134,16 +135,16 @@ endif ()
 
 # By omitting OBJECTS DESTINATION, object files will NOT be installed.
 install(TARGETS utils utils_obj EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/$<TARGET_PROPERTY:utils,OUTPUT_NAME>)
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils)
 install(DIRECTORY include/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_utils/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils/
         COMPONENT framework PATTERN memstream* EXCLUDE)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/celix/gen/includes/utils/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_utils/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils/
         COMPONENT framework)
 
 if (CELIX_INSTALL_DEPRECATED_API)
-    install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_utils COMPONENT framework)
+    install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils COMPONENT framework)
 endif ()
 
 #Alias setup to match external usage

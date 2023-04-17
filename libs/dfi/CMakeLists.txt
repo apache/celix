@@ -53,9 +53,9 @@ if (CELIX_DFI)
 	target_include_directories(dfi PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/dfi>)
 
 	install(TARGETS dfi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dfi
-			INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_dfi)
-	install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_dfi COMPONENT dfi)
-	install(DIRECTORY ${CMAKE_BINARY_DIR}/celix/gen/includes/dfi/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_dfi COMPONENT dfi)
+			INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/dfi)
+	install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/dfi COMPONENT dfi)
+	install(DIRECTORY ${CMAKE_BINARY_DIR}/celix/gen/includes/dfi/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/dfi COMPONENT dfi)
 
 	#Alias setup to match external usage
 	add_library(Celix::dfi ALIAS dfi)
