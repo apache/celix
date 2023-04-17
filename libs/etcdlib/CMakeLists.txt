@@ -27,6 +27,7 @@ if (NOT COMMAND celix_subproject)
         LANGUAGES C CXX
     )
 
+    include(GenerateExportHeader)
     include(GNUInstallDirs)
 
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
