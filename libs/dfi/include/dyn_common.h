@@ -25,36 +25,33 @@
 #include <string.h>
 #include <sys/queue.h>
 
-#include "celix_dfi_export.h"
 #include "dfi_log_util.h"
+#include "celix_dfi_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// logging
-DFI_SETUP_LOG_HEADER(dynCommon);
+//logging
+DFI_SETUP_LOG_HEADER(dynCommon) ;
 
 TAILQ_HEAD(namvals_head, namval_entry);
 
 struct namval_entry {
-    char* name;
-    char* value;
+    char *name;
+    char *value;
     TAILQ_ENTRY(namval_entry) entries;
 };
 
-CELIX_DFI_EXPORT int dynCommon_parseName(FILE* stream, char** result);
-CELIX_DFI_EXPORT int dynCommon_parseNameAlsoAccept(FILE* stream,
-                                                   const char* acceptedChars,
-                                                   char** result);
-CELIX_DFI_EXPORT int dynCommon_parseNameValue(FILE* stream, char** name,
-                                              char** value);
-CELIX_DFI_EXPORT int dynCommon_eatChar(FILE* stream, int c);
+CELIX_DFI_EXPORT int dynCommon_parseName(FILE *stream, char **result);
+CELIX_DFI_EXPORT int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char **result);
+CELIX_DFI_EXPORT int dynCommon_parseNameValue(FILE *stream, char **name, char **value);
+CELIX_DFI_EXPORT int dynCommon_eatChar(FILE *stream, int c);
 
-CELIX_DFI_EXPORT void dynCommon_clearNamValHead(struct namvals_head* head);
+CELIX_DFI_EXPORT void dynCommon_clearNamValHead(struct namvals_head *head);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif 
