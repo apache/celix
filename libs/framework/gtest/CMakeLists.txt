@@ -41,11 +41,11 @@ endif()
 add_dependencies(unresolvable_bundle sublib)
 
 set(CELIX_FRAMEWORK_TEST_SOURCES
-    src/single_framework_test.cpp
+    src/CelixFrameworkTestSuite.cc
     src/CelixFrameworkUtilsTestSuite.cc
-    src/multiple_frameworks_test.cpp
-    src/bundle_context_bundles_tests.cpp
-    src/bundle_context_services_test.cpp
+    src/MultipleFrameworkTestSuite.cc
+    src/CelixBundleContextBundlesTestSuite.cc
+    src/CelixBundleContextServicesTestSuite.cc
     src/DependencyManagerTestSuite.cc
     src/CxxBundleContextTestSuite.cc
     src/HelloWorldCxxActivator.cc

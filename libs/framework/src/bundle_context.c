@@ -630,11 +630,11 @@ long celix_bundleContext_trackBundlesAsync(
     return celix_bundleContext_trackBundlesWithOptionsAsync(ctx, &opts);
 }
 
-void celix_bundleContext_useBundles(
+size_t celix_bundleContext_useBundles(
         bundle_context_t *ctx,
         void *callbackHandle,
         void (*use)(void *handle, const bundle_t *bundle)) {
-    celix_framework_useBundles(ctx->framework, false, callbackHandle, use);
+    return celix_framework_useBundles(ctx->framework, false, callbackHandle, use);
 }
 
 bool celix_bundleContext_useBundle(
@@ -642,7 +642,7 @@ bool celix_bundleContext_useBundle(
         long bundleId,
         void *callbackHandle,
         void (*use)(void *handle, const bundle_t *bundle)) {
-    return celix_framework_useBundle(ctx->framework, true, bundleId, callbackHandle, use);
+    return celix_framework_useBundle(ctx->framework, false, bundleId, callbackHandle, use);
 }
 
 static void bundleContext_cleanupBundleTrackers(bundle_context_t *ctx) {
@@ -1086,7 +1086,7 @@ bool celix_bundleContext_useServiceWithOptions(
 
     if(opts->flags & CELIX_SERVICE_USE_DIRECT) {
         if(opts->flags & CELIX_SERVICE_USE_SOD) {
-            // check CelixBundleContextServicesTests.UseServiceOnDemandDirectlyWithAsyncRegisterTest to see what is "service on demand".
+            // check CelixBundleContextServicesTestSuite.UseServiceOnDemandDirectlyWithAsyncRegisterTest to see what is "service on demand".
             celix_framework_waitUntilNoPendingRegistration(ctx->framework);
         }
         called = celix_serviceTracker_useHighestRankingService(data.svcTracker, NULL, opts->waitTimeoutInSeconds, opts->callbackHandle, opts->use, opts->useWithProperties, opts->useWithOwner);
@@ -1143,7 +1143,7 @@ size_t celix_bundleContext_useServicesWithOptions(
 
     if (opts->flags & CELIX_SERVICE_USE_DIRECT) {
         if(opts->flags & CELIX_SERVICE_USE_SOD) {
-            // check CelixBundleContextServicesTests.UseServicesOnDemandDirectlyWithAsyncRegisterTest to see what is "service on demand".
+            // check CelixBundleContextServicesTestSuite.UseServicesOnDemandDirectlyWithAsyncRegisterTest to see what is "service on demand".
             celix_framework_waitUntilNoPendingRegistration(ctx->framework);
         }
         celix_bundleContext_useServicesWithOptions_2_UseServiceTracker(&data);

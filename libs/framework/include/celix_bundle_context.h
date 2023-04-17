@@ -1117,9 +1117,10 @@ CELIX_FRAMEWORK_EXPORT long celix_bundleContext_trackBundlesWithOptions(
 );
 
 /**
- * @brief Use the bundle with the provided bundle id if it is in the active (started) state.
+ * @brief Use the bundle with the provided bundle id.
  *
- * The provided callback will be called if the bundle is found and in the active (started) state.
+ * The provided callback will be called if the bundle is found (installed).
+ * Call with CELIX_FRAMEWORK_BUNDLE_ID as bundleId to use the framework bundle.
  *
  * @param ctx               The bundle context.
  * @param bundleId          The bundle id.
@@ -1132,24 +1133,23 @@ CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_useBundle(
         celix_bundle_context_t *ctx,
         long bundleId,
         void *callbackHandle,
-        void (*use)(void *handle, const celix_bundle_t *bundle)
-);
+        void (*use)(void *handle, const celix_bundle_t *bundle));
 
 /**
- * @brief Use the currently active (started) bundles.
+ * @brief Use the currently installed bundles.
  *
- * The provided callback will be called for all the currently started bundles (excluding the framework bundle).
+ * The provided callback will be called for all the currently installed bundles, expect the framework bundle.
  *
  * @param ctx               The bundle context.
  * @param callbackHandle    The data pointer, which will be used in the callbacks
  * @param use               The callback which will be called for the currently started bundles.
  *                          The bundle pointers are only guaranteed to be valid during the callback.
+ * @return                  The number of times the use callback is called (nr of installed bundles).
  */
-CELIX_FRAMEWORK_EXPORT void celix_bundleContext_useBundles(
+CELIX_FRAMEWORK_EXPORT size_t celix_bundleContext_useBundles(
         celix_bundle_context_t *ctx,
         void *callbackHandle,
-        void (*use)(void *handle, const celix_bundle_t *bundle)
-);
+        void (*use)(void *handle, const celix_bundle_t *bundle));
 
 /**
  * @brief Service Tracker Info provided to the service tracker tracker callbacks.
