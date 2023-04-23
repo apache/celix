@@ -15,14 +15,19 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(threads_ei STATIC src/celix_threads_ei.cc)
+add_library(pthread_ei STATIC src/pthread_ei.cc)
 
-target_include_directories(threads_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(threads_ei PUBLIC Celix::error_injector Celix::utils)
+target_include_directories(pthread_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(pthread_ei PUBLIC Celix::error_injector)
 
-target_link_options(threads_ei INTERFACE
-        LINKER:--wrap,celixThreadMutex_create
-        LINKER:--wrap,celixThread_create
-        LINKER:--wrap,celixThreadCondition_init
-        LINKER:--wrap,celixThreadRwlock_create)
-add_library(Celix::threads_ei ALIAS threads_ei)
+target_link_options(pthread_ei INTERFACE
+        LINKER:--wrap,pthread_mutexattr_init
+        LINKER:--wrap,pthread_mutexattr_setpshared
+        LINKER:--wrap,pthread_mutex_init
+        LINKER:--wrap,pthread_condattr_init
+        LINKER:--wrap,pthread_condattr_setclock
+        LINKER:--wrap,pthread_condattr_setpshared
+        LINKER:--wrap,pthread_cond_init
+        LINKER:--wrap,pthread_cond_timedwait
+        )
+add_library(Celix::pthread_ei ALIAS pthread_ei)

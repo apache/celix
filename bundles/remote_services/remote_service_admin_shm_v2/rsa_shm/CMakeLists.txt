@@ -17,39 +17,48 @@
 
 find_package(libuuid REQUIRED)
 
+set(RSA_SHM_SRC
+        src/rsa_shm_impl.c
+        src/rsa_shm_activator.c
+        src/rsa_shm_server.c
+        src/rsa_shm_client.c
+        src/rsa_shm_export_registration.c
+        src/rsa_shm_import_registration.c
+        )
+
+set(RSA_SHM_DEPS
+        Celix::c_rsa_spi
+        Celix::rsa_common
+        Celix::log_helper
+        Celix::framework
+        Celix::thpool
+        Celix::shm_pool
+        libuuid::libuuid
+        )
+
 add_celix_bundle(rsa_shm
     VERSION 1.0.0
     SYMBOLIC_NAME "apache_celix_remote_service_admin_shm_v2"
     NAME "Apache Celix Remote Service Admin SHM V2"
     GROUP "Celix/RSA"
     SOURCES
-    src/rsa_shm_impl.c
-    src/rsa_shm_activator.c
-    src/rsa_shm_server.c
-    src/rsa_shm_client.c
-    src/rsa_shm_export_registration.c
-    src/rsa_shm_import_registration.c
+    ${RSA_SHM_SRC}
 )
 
 celix_deprecated_utils_headers(rsa_shm)
 
 target_include_directories(rsa_shm PRIVATE src)
 
-
-target_link_libraries(rsa_shm PRIVATE
-    Celix::c_rsa_spi
-    Celix::rsa_common
-    Celix::log_helper
-    Celix::framework
-    Celix::thpool
-    Celix::shm_pool
-    libuuid::libuuid
-)
+target_link_libraries(rsa_shm PRIVATE ${RSA_SHM_DEPS})
 
 install_celix_bundle(rsa_shm EXPORT celix COMPONENT rsa)
 add_library(Celix::rsa_shm ALIAS rsa_shm)
 
 if (ENABLE_TESTING)
+    add_library(rsa_shm_cut STATIC ${RSA_SHM_SRC})
+    celix_deprecated_utils_headers(rsa_shm_cut)
+    target_include_directories(rsa_shm_cut PUBLIC src)
+    target_link_libraries(rsa_shm_cut PUBLIC ${RSA_SHM_DEPS})
     add_subdirectory(gtest)
 endif()
 

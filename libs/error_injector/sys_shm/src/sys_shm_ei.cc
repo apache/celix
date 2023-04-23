@@ -24,14 +24,14 @@ extern "C" {
 int __real_shmget(key_t __key, size_t __size, int __shmflg);
 CELIX_EI_DEFINE(shmget, int)
 int __wrap_shmget(key_t __key, size_t __size, int __shmflg) {
-    CELIX_EI_IMPL_NEGATIVE(shmget);
+    CELIX_EI_IMPL(shmget);
     return __real_shmget(__key, __size, __shmflg);
 }
 
 void *__real_shmat(int __shmid, const void *__shmaddr, int __shmflg);
 CELIX_EI_DEFINE(shmat, void *)
 void *__wrap_shmat(int __shmid, const void *__shmaddr, int __shmflg) {
-    CELIX_EI_IMPL0(shmat);
+    CELIX_EI_IMPL(shmat);
     return __real_shmat(__shmid, __shmaddr, __shmflg);
 }
 

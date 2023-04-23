@@ -16,24 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+//TODO: Move it to libs/error_injector and use conan to import thpool
+#include "thpool_ei.h"
 
-
-#ifndef CELIX_CELIX_THREADS_EI_H
-#define CELIX_CELIX_THREADS_EI_H
-#ifdef __cplusplus
 extern "C" {
-#endif
-
-#include "celix_errno.h"
-#include "celix_error_injector.h"
-
-CELIX_EI_DECLARE(celixThreadMutex_create, celix_status_t);
-CELIX_EI_DECLARE(celixThread_create, celix_status_t);
-CELIX_EI_DECLARE(celixThreadCondition_init, celix_status_t);
-CELIX_EI_DECLARE(celixThreadRwlock_create, celix_status_t);
-
-#ifdef __cplusplus
+struct thpool_* __real_thpool_init(int num_threads);
+CELIX_EI_DEFINE(thpool_init, struct thpool_*)
+struct thpool_* __wrap_thpool_init(int num_threads) {
+    CELIX_EI_IMPL(thpool_init);
+    return __real_thpool_init(num_threads);
 }
-#endif
 
-#endif //CELIX_CELIX_THREADS_EI_H
+int __real_thpool_add_work(struct thpool_* thpool_p, void (*function_p)(void*), void* arg_p);
+CELIX_EI_DEFINE(thpool_add_work, int)
+int __wrap_thpool_add_work(struct thpool_* thpool_p, void (*function_p)(void*), void* arg_p) {
+    CELIX_EI_IMPL(thpool_add_work);
+    return __real_thpool_add_work(thpool_p, function_p, arg_p);
+}
+
+}

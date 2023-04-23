@@ -17,23 +17,15 @@
  * under the License.
  */
 
+#include "celix_log_helper_ei.h"
 
-#ifndef CELIX_CELIX_THREADS_EI_H
-#define CELIX_CELIX_THREADS_EI_H
-#ifdef __cplusplus
 extern "C" {
-#endif
 
-#include "celix_errno.h"
-#include "celix_error_injector.h"
-
-CELIX_EI_DECLARE(celixThreadMutex_create, celix_status_t);
-CELIX_EI_DECLARE(celixThread_create, celix_status_t);
-CELIX_EI_DECLARE(celixThreadCondition_init, celix_status_t);
-CELIX_EI_DECLARE(celixThreadRwlock_create, celix_status_t);
-
-#ifdef __cplusplus
+celix_log_helper_t* __real_celix_logHelper_create(celix_bundle_context_t* ctx, const char* serviceName);
+CELIX_EI_DEFINE(celix_logHelper_create, celix_log_helper_t*);
+celix_log_helper_t* __wrap_celix_logHelper_create(celix_bundle_context_t *ctx, const char *serviceName) {
+    CELIX_EI_IMPL(celix_logHelper_create);
+    return __real_celix_logHelper_create(ctx, serviceName);
 }
-#endif
 
-#endif //CELIX_CELIX_THREADS_EI_H
+}

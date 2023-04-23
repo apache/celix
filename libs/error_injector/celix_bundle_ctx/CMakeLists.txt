@@ -21,5 +21,13 @@ target_include_directories(bundle_ctx_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/includ
 target_link_libraries(bundle_ctx_ei PUBLIC Celix::error_injector)
 target_link_libraries(bundle_ctx_ei PRIVATE Celix::framework)
 
-target_link_options(bundle_ctx_ei INTERFACE LINKER:--wrap,celix_bundleContext_getProperty LINKER:--wrap,celix_bundleContext_registerServiceWithOptionsAsync LINKER:--wrap,celix_bundleContext_trackServicesWithOptionsAsync)
+target_link_options(bundle_ctx_ei INTERFACE
+        LINKER:--wrap,celix_bundleContext_getProperty
+        LINKER:--wrap,celix_bundleContext_registerServiceWithOptionsAsync
+        LINKER:--wrap,celix_bundleContext_trackServicesWithOptionsAsync
+        LINKER:--wrap,celix_bundleContext_getBundleId
+        LINKER:--wrap,bundleContext_getServiceReferences
+        LINKER:--wrap,bundleContext_retainServiceReference
+        LINKER:--wrap,celix_bundleContext_registerServiceAsync
+        )
 add_library(Celix::bundle_ctx_ei ALIAS bundle_ctx_ei)

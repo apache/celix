@@ -24,7 +24,9 @@
 extern "C" {
 #endif
 #include "celix_log_helper.h"
-#include "celix_api.h"
+#include "celix_types.h"
+#include "celix_properties.h"
+#include "celix_errno.h"
 #include <sys/uio.h>
 
 
@@ -34,7 +36,7 @@ typedef struct rsa_shm_client_manager rsa_shm_client_manager_t;
 celix_status_t rsaShmClientManager_create(celix_bundle_context_t *ctx,
         celix_log_helper_t *loghelper, rsa_shm_client_manager_t **clientManagerOut);
 
-void rsaShmClientManager_destory(rsa_shm_client_manager_t *clientManager);
+void rsaShmClientManager_destroy(rsa_shm_client_manager_t *clientManager);
 
 celix_status_t rsaShmClientManager_createOrAttachClient(rsa_shm_client_manager_t *clientManager,
         const char *peerServerName, long serviceId);

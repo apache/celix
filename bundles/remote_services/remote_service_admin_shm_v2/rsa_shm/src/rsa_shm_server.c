@@ -67,17 +67,23 @@ celix_status_t rsaShmServer_create(celix_bundle_context_t *ctx, const char *name
         rsaShmServer_receiveMsgCB receiveCB, void *revHandle, rsa_shm_server_t **shmServerOut) {
     int status = CELIX_SUCCESS;
     if (name == NULL || ctx == NULL || strlen(name) >= MAX_RSA_SHM_SERVER_NAME_SIZE
-            || loghelper == NULL || receiveCB == NULL) {
+            || loghelper == NULL || receiveCB == NULL || shmServerOut == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
     rsa_shm_server_t *server = (rsa_shm_server_t *)calloc(1, sizeof(rsa_shm_server_t));
-    assert(server != NULL);
+    if (server == NULL) {
+        return CELIX_ENOMEM;
+    }
+
     server->ctx = ctx;
     server->msgTimeOutInSec = celix_bundleContext_getPropertyAsLong(ctx,
             RSA_SHM_MSG_TIMEOUT_KEY, RSA_SHM_MSG_TIMEOUT_DEFAULT_IN_S);
-    server->name = strdup(name);
-    assert(server->name != NULL);
+    server->name = celix_utils_strdup(name);
+    if (server->name == NULL) {
+        status = CELIX_ENOMEM;
+        goto failed_to_dup_name;
+    }
     server->loghelper = loghelper;
     int sfd = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (sfd == -1) {
@@ -129,22 +135,23 @@ sfd_bind_err:
     close(sfd);
 sfd_err:
     free(server->name);
+failed_to_dup_name:
     free(server);
     return status;
 }
 
 void rsaShmServer_destroy(rsa_shm_server_t *server) {
-    if (server == NULL) {
-        return;
+    if (server != NULL) {
+        server->revMsgThreadActive = false;
+        shutdown(server->sfd,SHUT_RD);
+        celixThread_join(server->revMsgThread, NULL);
+        thpool_wait(server->threadPool);
+        thpool_destroy(server->threadPool);
+        shmCache_destroy(server->shmCache);
+        close(server->sfd);
+        free(server->name);
+        free(server);
     }
-    server->revMsgThreadActive = false;
-    shutdown(server->sfd,SHUT_RD);
-    celixThread_join(server->revMsgThread, NULL);
-    thpool_destroy(server->threadPool);
-    shmCache_destroy(server->shmCache);
-    close(server->sfd);
-    free(server->name);
-    free(server);
     return;
 }
 
@@ -193,43 +200,41 @@ static void rsaShmServer_msgHandlingWork(void *data) {
 
     char *src = reply.iov_base;
     size_t srcSize = reply.iov_len;
+    int waitRet = 0;
+    pthread_mutex_lock(&msgCtrl->lock);
     while (true) {
-        ssize_t destSize = workData->msgBodyTotalSize;
+        if (msgCtrl->msgState == REQ_CANCELLED || waitRet != 0) {
+            celix_logHelper_error(server->loghelper, "RsaShmServer: Client cancelled the request, or timeout. %d.", waitRet);
+            pthread_mutex_unlock(&msgCtrl->lock);
+            goto reply_err;
+        }
+        size_t destSize = workData->msgBodyTotalSize;
         char *dest = msgBuffer;
         size_t bytes = MIN(srcSize, destSize);
         memcpy(dest, src, bytes);
         src += bytes;
         srcSize -= bytes;
         if (srcSize == 0) {
-            pthread_mutex_lock(&msgCtrl->lock);
             msgCtrl->msgState = REPLIED;
             msgCtrl->actualReplyedSize = bytes;
             //Signaling the condition variable first, and then unlocking the mutex, because client will free ctrl when msgState is REPLIED.
             pthread_cond_signal(&msgCtrl->signal);
-            pthread_mutex_unlock(&msgCtrl->lock);
             break;
         } else {
-            pthread_mutex_lock(&msgCtrl->lock);
             msgCtrl->msgState = REPLYING;
             msgCtrl->actualReplyedSize = bytes;
-            pthread_mutex_unlock(&msgCtrl->lock);
             pthread_cond_signal(&msgCtrl->signal);
 
-            pthread_mutex_lock(&msgCtrl->lock);
-            int waitRet = 0;
             struct timespec timeout = celix_gettime(CLOCK_MONOTONIC);
             timeout.tv_sec += server->msgTimeOutInSec;
             while (msgCtrl->msgState == REPLYING && waitRet == 0) {
-                //pthread_cond_timedwait shall not return an error code of [EINTR]. @ref https://linux.die.net/man/3/pthread_cond_timedwait
+                //pthread_cond_timedwait shall not return an error code of [EINTR]. @ref https://man7.org/linux/man-pages/man3/pthread_cond_timedwait.3p.html
                 waitRet = pthread_cond_timedwait(&msgCtrl->signal, &msgCtrl->lock, &timeout);
-            }
-            pthread_mutex_unlock(&msgCtrl->lock);
-            if (waitRet != 0) {
-                celix_logHelper_error(server->loghelper, "RsaShmServer: Waiting client handle reply failed. Error code is %d" ,waitRet);
-                goto reply_err;
             }
         }
     }
+    pthread_mutex_unlock(&msgCtrl->lock);
+
 
     free(reply.iov_base);
     if (metadataProps != NULL) {
@@ -237,7 +242,6 @@ static void rsaShmServer_msgHandlingWork(void *data) {
     }
     shmCache_releaseMemoryPtr(server->shmCache, msgBuffer);
     shmCache_releaseMemoryPtr(server->shmCache, msgCtrl);
-
     free(data);
     return;
 
@@ -326,6 +330,7 @@ static void *rsaShmServer_receiveMsgThread(void *data) {
             rsaShmServer_terminateMsgHandling(msgCtrl);
             shmCache_releaseMemoryPtr(server->shmCache, msgBody);
             shmCache_releaseMemoryPtr(server->shmCache, msgCtrl);
+            free(workData);
             continue;
         }
     }

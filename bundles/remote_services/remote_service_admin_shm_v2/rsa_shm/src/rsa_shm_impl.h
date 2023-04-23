@@ -26,7 +26,9 @@ extern "C" {
 #include "rsa_shm_export_registration.h"
 #include "rsa_shm_import_registration.h"
 #include "endpoint_description.h"
-#include "celix_api.h"
+#include "celix_types.h"
+#include "celix_properties.h"
+#include "celix_errno.h"
 
 
 typedef struct rsa_shm rsa_shm_t;
@@ -35,8 +37,6 @@ celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t
         rsa_shm_t **admin);
 
 void rsaShm_destroy(rsa_shm_t *admin);
-
-void rsaShm_setRequestSenderSvcId(rsa_shm_t *admin, long reqSenderSvcId);
 
 celix_status_t rsaShm_send(rsa_shm_t *admin, endpoint_description_t *endpoint,
         celix_properties_t *metadata, const struct iovec *request, struct iovec *response);

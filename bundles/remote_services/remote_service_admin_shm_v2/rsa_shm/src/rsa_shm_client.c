@@ -42,7 +42,7 @@ struct rsa_shm_client_manager {
     long msgTimeOutInSec;
     long maxConcurrentNum;
     shm_pool_t *shmPool;
-    celix_thread_mutex_t cliensMutex;
+    celix_thread_mutex_t clientsMutex;
     celix_string_hash_map_t *clients;// Key: peer server name; value: client instance
     celix_thread_mutex_t exceptionMsgListMutex;
     pthread_cond_t exceptionMsgListNotEmpty;
@@ -105,7 +105,9 @@ celix_status_t rsaShmClientManager_create(celix_bundle_context_t *ctx,
         return CELIX_ILLEGAL_ARGUMENT;
     }
     rsa_shm_client_manager_t *clientManager = (rsa_shm_client_manager_t *)malloc(sizeof(*clientManager));
-    assert(clientManager != NULL);
+    if (clientManager == NULL) {
+        return CELIX_ENOMEM;
+    }
 
     clientManager->ctx = ctx;
     clientManager->logHelper = loghelper;
@@ -122,7 +124,7 @@ celix_status_t rsaShmClientManager_create(celix_bundle_context_t *ctx,
         goto shm_pool_err;
     }
 
-    status = celixThreadMutex_create(&clientManager->cliensMutex, NULL);
+    status = celixThreadMutex_create(&clientManager->clientsMutex, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(loghelper, "RsaShmClient: Error creating clients mutex.");
         goto client_list_lock_err;
@@ -162,7 +164,7 @@ msg_list_cond_err:
     (void)celixThreadMutex_destroy(&clientManager->exceptionMsgListMutex);
 msg_list_lock_err:
     celix_stringHashMap_destroy(clientManager->clients);
-    (void)celixThreadMutex_destroy(&clientManager->cliensMutex);
+    (void)celixThreadMutex_destroy(&clientManager->clientsMutex);
 client_list_lock_err:
     shmPool_destroy(clientManager->shmPool);
 shm_pool_err:
@@ -170,7 +172,7 @@ shm_pool_err:
     return status;
 }
 
-void rsaShmClientManager_destory(rsa_shm_client_manager_t *clientManager) {
+void rsaShmClientManager_destroy(rsa_shm_client_manager_t *clientManager) {
     celixThreadMutex_lock(&clientManager->exceptionMsgListMutex);
     clientManager->threadActive = false;
     celixThreadMutex_unlock(&clientManager->exceptionMsgListMutex);
@@ -179,8 +181,8 @@ void rsaShmClientManager_destory(rsa_shm_client_manager_t *clientManager) {
     size_t listSize = celix_arrayList_size(clientManager->exceptionMsgList);
     for (int i = 0; i < listSize; ++i) {
         rsa_shm_exception_msg_t *exceptionMsg = celix_arrayList_get(clientManager->exceptionMsgList, i);
-        shmPool_free(clientManager->shmPool, exceptionMsg->msgBuffer);
-        rsaShmClientManager_destroyMsgControl(clientManager, exceptionMsg->msgCtrl);
+        //Here，we should not free 'msgBuffer' and 'msgCtrl' by shmPool_free, because rsa_shm_server maybe using them, and tlsf_free will modify freed memory.
+        //The shared memory  of 'msgBuffer' and 'msgCtrl' will be freed automatically when nobody is using it.
         free(exceptionMsg->peerServerName);
         free(exceptionMsg);
     }
@@ -189,7 +191,7 @@ void rsaShmClientManager_destory(rsa_shm_client_manager_t *clientManager) {
     (void)celixThreadMutex_destroy(&clientManager->exceptionMsgListMutex);
     assert(celix_stringHashMap_size(clientManager->clients) == 0);
     celix_stringHashMap_destroy(clientManager->clients);
-    (void)celixThreadMutex_destroy(&clientManager->cliensMutex);
+    (void)celixThreadMutex_destroy(&clientManager->clientsMutex);
     shmPool_destroy(clientManager->shmPool);
     free(clientManager);
     return;
@@ -202,7 +204,7 @@ celix_status_t rsaShmClientManager_createOrAttachClient(rsa_shm_client_manager_t
     if (clientManager == NULL || peerServerName == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    celixThreadMutex_lock(&clientManager->cliensMutex);
+    celixThreadMutex_lock(&clientManager->clientsMutex);
     rsa_shm_client_t *client = (rsa_shm_client_t *)celix_stringHashMap_get(clientManager->clients, peerServerName);
     if (client == NULL) {
         status = rsaShmClientManager_createClient(clientManager, peerServerName, &client);
@@ -216,12 +218,12 @@ celix_status_t rsaShmClientManager_createOrAttachClient(rsa_shm_client_manager_t
 
     rsaShmClient_createOrAttachSvcDiagInfo(client, serviceId);
 
-    celixThreadMutex_unlock(&clientManager->cliensMutex);
+    celixThreadMutex_unlock(&clientManager->clientsMutex);
 
     return CELIX_SUCCESS;
 
 shm_client_err:
-    celixThreadMutex_unlock(&clientManager->cliensMutex);
+    celixThreadMutex_unlock(&clientManager->clientsMutex);
     return status;
 }
 
@@ -230,7 +232,7 @@ void rsaShmClientManager_destroyOrDetachClient(rsa_shm_client_manager_t *clientM
     if (clientManager == NULL || peerServerName == NULL) {
         return;
     }
-    celixThreadMutex_lock(&clientManager->cliensMutex);
+    celixThreadMutex_lock(&clientManager->clientsMutex);
     rsa_shm_client_t *client = (rsa_shm_client_t *)celix_stringHashMap_get(clientManager->clients, peerServerName);
     if (client != NULL) {
         rsaShmClient_destroyOrDetachSvcDiagInfo(client, serviceId);
@@ -240,7 +242,7 @@ void rsaShmClientManager_destroyOrDetachClient(rsa_shm_client_manager_t *clientM
             rsaShmClientManager_destroyClient(client);
         }
     }
-    celixThreadMutex_unlock(&clientManager->cliensMutex);
+    celixThreadMutex_unlock(&clientManager->clientsMutex);
     return;
 }
 
@@ -277,9 +279,11 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
         status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
         goto err_opening_metadata_mem;
     }
-    CELIX_PROPERTIES_FOR_EACH(metadata, key) {
-        const char * value = celix_properties_get(metadata, key,"");
-        fprintf(fp,"%s=%s\n", key, value);
+    if (metadata != NULL) {
+        CELIX_PROPERTIES_FOR_EACH(metadata, key) {
+            const char * value = celix_properties_get(metadata, key,"");
+            fprintf(fp,"%s=%s\n", key, value);
+        }
     }
     fclose(fp);
     // make the metadata include the terminating null byte ('\0')
@@ -295,7 +299,7 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
     if (msgBody == NULL) {
         status = CELIX_ENOMEM;
         celix_logHelper_error(clientManager->logHelper, "RsaShmClient: Error allocing msg buffer.");
-        goto err_allocing_msg_buf;
+        goto err_allocating_msg_buf;
     }
     if (metadataSize != 0) {
         memcpy(msgBody, metadataString, metadataSize);
@@ -317,22 +321,30 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
         celix_logHelper_error(clientManager->logHelper, "RsaShmClient: Illegal message info.");
         goto illegal_msg;
     }
-    if (sendto(client->cfd, &msgInfo, sizeof(msgInfo), 0, (struct sockaddr *) &client->serverAddr,
-            sizeof(struct sockaddr_un)) != sizeof(msgInfo)) {
-        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
-        celix_logHelper_error(clientManager->logHelper, "RsaShmClient: Error sending message to %s. %d",
-                peerServerName, errno);
-        goto err_sending_msg;
-    }
-    bool replyed = false;
+    while(1) {
+        if (sendto(client->cfd, &msgInfo, sizeof(msgInfo), 0, (struct sockaddr *) &client->serverAddr,
+                   sizeof(struct sockaddr_un)) == sizeof(msgInfo)) {
+            break;
+        } else if (errno != EINTR) {
+            status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
+            celix_logHelper_error(clientManager->logHelper, "RsaShmClient: Error sending message to %s. %d",
+                                  peerServerName, errno);
+            goto err_sending_msg;
+        } else {
+            celix_logHelper_warning(clientManager->logHelper, "RsaShmClient: Interrupted while sending message to %s, try again. %d",
+                                    peerServerName, errno);
+        }
+    };
+
+    bool replied = false;
     status = rsaShmClientManager_receiveResponse(clientManager, msgCtrl, msgBody,
-            msgBodySize, response, &replyed);
+            msgBodySize, response, &replied);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(clientManager->logHelper, "RsaShmClient: Error receiving response. %d.", status);
         rsaShmClientManager_markSvcCallFailed(clientManager, peerServerName, serviceId);
     }
 
-    if (replyed) {
+    if (replied) {
         rsaShmClientManager_markSvcCallFinished(clientManager, peerServerName, serviceId);
         shmPool_free(clientManager->shmPool, msgBody);
         rsaShmClientManager_destroyMsgControl(clientManager, msgCtrl);
@@ -358,7 +370,7 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
 err_sending_msg:
 illegal_msg:
     shmPool_free(clientManager->shmPool, msgBody);
-err_allocing_msg_buf:
+err_allocating_msg_buf:
     rsaShmClientManager_destroyMsgControl(clientManager, msgCtrl);
 err_creating_msgctrl:
     if (metadataString != NULL) {
@@ -380,7 +392,9 @@ static celix_status_t rsaShmClientManager_createClient(rsa_shm_client_manager_t 
     }
 
     client = (rsa_shm_client_t *)malloc(sizeof(rsa_shm_client_t));
-    assert(client != NULL);
+    if (client == NULL) {
+        return CELIX_ENOMEM;
+    }
 
     client->manager = clientManager;
     client->refCnt = 0;
@@ -389,9 +403,15 @@ static celix_status_t rsaShmClientManager_createClient(rsa_shm_client_manager_t 
         goto diag_info_mutex_err;
     }
     client->svcDiagInfo = celix_longHashMap_create();
-    assert(client->svcDiagInfo != NULL);
-    client->peerServerName = strdup(peerServerName);
-    assert(client->peerServerName != NULL);
+    if (client->svcDiagInfo == NULL) {
+        status = CELIX_ENOMEM;
+        goto svc_diag_info_err;
+    }
+    client->peerServerName = celix_utils_strdup(peerServerName);
+    if (client->peerServerName == NULL) {
+        status = CELIX_ENOMEM;
+        goto peer_server_name_err;
+    }
 
     //Create client socket, and bind to unique pathname(based on PID)
     client->cfd = socket(AF_UNIX, SOCK_DGRAM, 0);
@@ -431,7 +451,9 @@ client_pathname_invalid:
     close(client->cfd);
 cfd_err:
     free(client->peerServerName);
+peer_server_name_err:
     celix_longHashMap_destroy(client->svcDiagInfo);
+svc_diag_info_err:
     (void)celixThreadMutex_destroy(&client->diagInfoMutex);
 diag_info_mutex_err:
     free(client);
@@ -452,30 +474,30 @@ static void rsaShmClientManager_destroyClient(rsa_shm_client_t *client) {
 
 static rsa_shm_client_t * rsaShmClientManager_getClient(rsa_shm_client_manager_t *clientManager,
         const char *peerServerName) {
-    celixThreadMutex_lock(&clientManager->cliensMutex);
+    celixThreadMutex_lock(&clientManager->clientsMutex);
     rsa_shm_client_t *client = (rsa_shm_client_t *)celix_stringHashMap_get(clientManager->clients, peerServerName);
     if (client != NULL) {
         client->refCnt ++;
     }
-    celixThreadMutex_unlock(&clientManager->cliensMutex);
+    celixThreadMutex_unlock(&clientManager->clientsMutex);
     return client;
 }
 
 static void rsaShmClientManager_ungetClient(rsa_shm_client_manager_t *clientManager,
         rsa_shm_client_t *client) {
-    celixThreadMutex_lock(&clientManager->cliensMutex);
+    celixThreadMutex_lock(&clientManager->clientsMutex);
     client->refCnt--;
     if (client->refCnt == 0) {
         (void)celix_stringHashMap_remove(clientManager->clients, client->peerServerName);
         rsaShmClientManager_destroyClient(client);
     }
-    celixThreadMutex_unlock(&clientManager->cliensMutex);
+    celixThreadMutex_unlock(&clientManager->clientsMutex);
     return;
 }
 
 static void rsaShmClientManager_markSvcCallFailed(rsa_shm_client_manager_t *clientManager,
         const char *peerServerName, long serviceId) {
-    celixThreadMutex_lock(&clientManager->cliensMutex);
+    celixThreadMutex_lock(&clientManager->clientsMutex);
     rsa_shm_client_t *client = (rsa_shm_client_t *)celix_stringHashMap_get(clientManager->clients, peerServerName);
     if (client != NULL) {
         celixThreadMutex_lock(&client->diagInfoMutex);
@@ -486,12 +508,12 @@ static void rsaShmClientManager_markSvcCallFailed(rsa_shm_client_manager_t *clie
         }
         celixThreadMutex_unlock(&client->diagInfoMutex);
     }
-    celixThreadMutex_unlock(&clientManager->cliensMutex);
+    celixThreadMutex_unlock(&clientManager->clientsMutex);
 }
 
 static void rsaShmClientManager_markSvcCallFinished(rsa_shm_client_manager_t *clientManager,
         const char *peerServerName, long serviceId) {
-    celixThreadMutex_lock(&clientManager->cliensMutex);
+    celixThreadMutex_lock(&clientManager->clientsMutex);
     rsa_shm_client_t *client = (rsa_shm_client_t *)celix_stringHashMap_get(clientManager->clients, peerServerName);
     if (client != NULL) {
         celixThreadMutex_lock(&client->diagInfoMutex);
@@ -502,7 +524,7 @@ static void rsaShmClientManager_markSvcCallFinished(rsa_shm_client_manager_t *cl
         }
         celixThreadMutex_unlock(&client->diagInfoMutex);
     }
-    celixThreadMutex_unlock(&clientManager->cliensMutex);
+    celixThreadMutex_unlock(&clientManager->clientsMutex);
 }
 
 static celix_status_t rsaShmClientManager_createMsgControl(rsa_shm_client_manager_t *clientManager,
@@ -580,8 +602,9 @@ static bool rsaShmClientManager_handleMsgState(rsa_shm_client_manager_t *clientM
     rsa_shm_msg_control_t *ctrl = msgEntry->msgCtrl;
     pthread_mutex_lock(&ctrl->lock);
     switch (ctrl->msgState) {
+        case REQUESTING:
         case REPLYING:
-            ctrl->msgState = REQUESTING;
+            ctrl->msgState = REQ_CANCELLED;
             signal = true;
             break;
         case REPLIED:
@@ -639,7 +662,7 @@ static void *rsaShmClientManager_exceptionMsgHandlerThread(void *data) {
 
 static celix_status_t rsaShmClientManager_receiveResponse(rsa_shm_client_manager_t *clientManager,
         rsa_shm_msg_control_t *msgCtrl, char *msgBuffer, size_t bufSize,
-        struct iovec *response, bool *replyed) {
+        struct iovec *response, bool *replied) {
     celix_status_t status = CELIX_SUCCESS;
     char *reply = NULL;
     size_t replySize = 0;
@@ -647,7 +670,7 @@ static celix_status_t rsaShmClientManager_receiveResponse(rsa_shm_client_manager
     struct timespec timeout = celix_gettime(CLOCK_MONOTONIC);
     timeout.tv_sec += clientManager->msgTimeOutInSec;
     bool isStreamingReply = false;
-    *replyed = false;
+    *replied = false;
     do {
         isStreamingReply = false;
         pthread_mutex_lock(&msgCtrl->lock);
@@ -677,7 +700,7 @@ static celix_status_t rsaShmClientManager_receiveResponse(rsa_shm_client_manager
         }
 
         if (msgCtrl->msgState == ABEND || msgCtrl->msgState == REPLIED) {
-            *replyed = true;
+            *replied = true;
         }
         pthread_mutex_unlock(&msgCtrl->lock);
 

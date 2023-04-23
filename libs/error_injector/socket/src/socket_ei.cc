@@ -16,24 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include "socket_ei.h"
+#include <errno.h>
+#include <sys/socket.h>
 
-
-#ifndef CELIX_CELIX_THREADS_EI_H
-#define CELIX_CELIX_THREADS_EI_H
-#ifdef __cplusplus
 extern "C" {
-#endif
-
-#include "celix_errno.h"
-#include "celix_error_injector.h"
-
-CELIX_EI_DECLARE(celixThreadMutex_create, celix_status_t);
-CELIX_EI_DECLARE(celixThread_create, celix_status_t);
-CELIX_EI_DECLARE(celixThreadCondition_init, celix_status_t);
-CELIX_EI_DECLARE(celixThreadRwlock_create, celix_status_t);
-
-#ifdef __cplusplus
+int __real_socket (int __domain, int __type, int __protocol);
+CELIX_EI_DEFINE(socket, int)
+int __wrap_socket (int __domain, int __type, int __protocol) {
+    errno = ENOMEM;
+    CELIX_EI_IMPL(socket);
+    errno = 0;
+    return __real_socket(__domain, __type, __protocol);
 }
-#endif
 
-#endif //CELIX_CELIX_THREADS_EI_H
+int __real_bind (int __fd, const struct sockaddr * __addr, socklen_t __len);
+CELIX_EI_DEFINE(bind, int)
+int __wrap_bind (int __fd, const struct sockaddr * __addr, socklen_t __len) {
+    errno = EACCES;
+    CELIX_EI_IMPL(bind);
+    errno = 0;
+    return __real_bind(__fd, __addr, __len);
+}
+}

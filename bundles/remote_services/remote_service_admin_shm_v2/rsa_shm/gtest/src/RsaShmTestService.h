@@ -17,23 +17,32 @@
  * under the License.
  */
 
-
-#ifndef CELIX_CELIX_THREADS_EI_H
-#define CELIX_CELIX_THREADS_EI_H
+#ifndef CELIX_RSASHMTESTSERVICE_H
+#define CELIX_RSASHMTESTSERVICE_H
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "celix_errno.h"
-#include "celix_error_injector.h"
+#define RSA_SHM_CALCULATOR_SERVICE              "org.apache.celix.test.api.Calculator"
+#define RSA_SHM_CALCULATOR_SERVICE_VERSION      "1.0.0"
+#define RSA_SHM_CALCULATOR_CONFIGURATION_TYPE   "celix.remote.admin.shm"
 
-CELIX_EI_DECLARE(celixThreadMutex_create, celix_status_t);
-CELIX_EI_DECLARE(celixThread_create, celix_status_t);
-CELIX_EI_DECLARE(celixThreadCondition_init, celix_status_t);
-CELIX_EI_DECLARE(celixThreadRwlock_create, celix_status_t);
+typedef struct rsa_shm_calc_service rsa_shm_calc_service_t;
+
+/*
+ * The calculator service definition corresponds to the following Java interface:
+ *
+ * interface Calculator {
+ *      double add(double a, double b);
+ * }
+ */
+struct rsa_shm_calc_service {
+    void *handle;
+    int (*add)(void *handle, double a, double b, double *result);
+};
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //CELIX_CELIX_THREADS_EI_H
+#endif //CELIX_RSASHMTESTSERVICE_H

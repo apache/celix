@@ -75,7 +75,7 @@ celix_status_t shmPool_create(size_t size, shm_pool_t **pool) {
     }
     shmPool->shmStartAddr = shmat(shmPool->shmId, NULL, 0);
     if (shmPool->shmStartAddr == NULL) {
-        fprintf(stderr,"Shm pool: Error sttaching shm attach, %d.\n",errno);
+        fprintf(stderr,"Shm pool: Error attaching shm, %d.\n",errno);
         status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
         goto err_attaching_shm;
     }
