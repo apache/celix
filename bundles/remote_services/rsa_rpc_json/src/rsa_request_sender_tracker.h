@@ -23,9 +23,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <rsa_request_sender_service.h>
-#include <celix_types.h>
-#include <celix_errno.h>
+#include "rsa_request_sender_service.h"
+#include "celix_types.h"
+#include "celix_errno.h"
 
 typedef struct rsa_request_sender_tracker rsa_request_sender_tracker_t;
 

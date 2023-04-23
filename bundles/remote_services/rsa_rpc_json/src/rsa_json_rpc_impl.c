@@ -17,18 +17,17 @@
  * under the License.
  */
 
-#include <rsa_json_rpc_impl.h>
-#include <rsa_json_rpc_constants.h>
-#include <rsa_json_rpc_endpoint_impl.h>
-#include <rsa_json_rpc_proxy_impl.h>
-#include <remote_interceptors_handler.h>
-#include <endpoint_description.h>
-#include <celix_long_hash_map.h>
-#include <celix_log_helper.h>
-#include <dyn_interface.h>
-#include <version.h>
-#include <celix_api.h>
-#include <limits.h>
+#include "rsa_json_rpc_impl.h"
+#include "rsa_json_rpc_constants.h"
+#include "rsa_json_rpc_endpoint_impl.h"
+#include "rsa_json_rpc_proxy_impl.h"
+#include "remote_interceptors_handler.h"
+#include "endpoint_description.h"
+#include "celix_long_hash_map.h"
+#include "celix_log_helper.h"
+#include "dyn_interface.h"
+#include "celix_version.h"
+#include "celix_api.h"
 #include <stdio.h>
 #include <assert.h>
 #include <stdbool.h>
@@ -52,13 +51,11 @@ static unsigned int rsaJsonRpc_generateSerialProtoId(celix_bundle_t *bnd) {
     if (bundleSymName == NULL || bundleVer == NULL) {
         return 0;
     }
-    version_pt version = NULL;
-    celix_status_t status = version_createVersionFromString(bundleVer, &version);
-    if (status != CELIX_SUCCESS) {
+    celix_version_t *version = celix_version_createVersionFromString(bundleVer);
+    if (version == NULL) {
         return 0;
     }
-    int major = 0;
-    (void)version_getMajor(version, &major);
+    int major = celix_version_getMajor(version);
     celix_version_destroy(version);
     return celix_utils_stringHash(bundleSymName) + major;
 }

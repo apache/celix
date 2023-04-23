@@ -17,11 +17,11 @@
  * under the License.
  */
 
-#include <rsa_request_sender_tracker.h>
-#include <rsa_request_sender_service.h>
-#include <celix_log_helper.h>
-#include <celix_long_hash_map.h>
-#include <celix_api.h>
+#include "rsa_request_sender_tracker.h"
+#include "rsa_request_sender_service.h"
+#include "celix_log_helper.h"
+#include "celix_long_hash_map.h"
+#include "celix_api.h"
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
@@ -105,7 +105,7 @@ static void rsaRequestSenderTracker_removeServiceWithProperties(void *handle, vo
     assert(svc != NULL);
     assert(props != NULL);
     rsa_request_sender_tracker_t *tracker = (rsa_request_sender_tracker_t *)handle;
-    const char *serviceName = celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME, "unknow-service");
+    const char *serviceName = celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME, "unknown-service");
     long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (svcId < 0) {
         celix_logHelper_error(tracker->logHelper, "Error getting rsa request sender service id for %s.", serviceName);

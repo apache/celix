@@ -17,11 +17,11 @@
  * under the License.
  */
 
-#include <rsa_json_rpc_impl.h>
-#include <celix_log_helper.h>
-#include <celix_api.h>
+#include "rsa_json_rpc_impl.h"
+#include "celix_log_helper.h"
+#include "celix_api.h"
+#include "rsa_rpc_factory.h"
 #include <assert.h>
-#include <rsa_rpc_factory.h>
 
 
 typedef struct rsa_json_rpc_activator {

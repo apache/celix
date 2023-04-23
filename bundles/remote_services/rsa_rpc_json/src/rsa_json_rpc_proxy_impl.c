@@ -17,14 +17,13 @@
  * under the License.
  */
 
-#include <rsa_json_rpc_proxy_impl.h>
-#include <rsa_request_sender_tracker.h>
-#include <remote_constants.h>
-#include <json_rpc.h>
-#include <endpoint_description.h>
-#include <celix_log_helper.h>
-#include <dfi_utils.h>
-#include <celix_api.h>
+#include "rsa_json_rpc_proxy_impl.h"
+#include "rsa_request_sender_tracker.h"
+#include "json_rpc.h"
+#include "endpoint_description.h"
+#include "celix_log_helper.h"
+#include "dfi_utils.h"
+#include "celix_api.h"
 #include <sys/queue.h>
 #include <stdbool.h>
 #include <assert.h>

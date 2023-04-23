@@ -17,14 +17,15 @@
  * under the License.
  */
 
-#include <rsa_json_rpc_endpoint_impl.h>
-#include <rsa_request_handler_service.h>
-#include <remote_interceptors_handler.h>
-#include <endpoint_description.h>
-#include <remote_constants.h>
-#include <dfi_utils.h>
-#include <json_rpc.h>
-#include <celix_api.h>
+#include "rsa_json_rpc_endpoint_impl.h"
+#include "rsa_request_handler_service.h"
+#include "remote_interceptors_handler.h"
+#include "endpoint_description.h"
+#include "remote_constants.h"
+#include "dfi_utils.h"
+#include "json_rpc.h"
+#include "celix_api.h"
+#include <sys/uio.h>
 #include <jansson.h>
 #include <assert.h>
 

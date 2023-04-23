@@ -23,12 +23,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <endpoint_description.h>
-#include <remote_interceptors_handler.h>
-#include <celix_log_helper.h>
-#include <celix_api.h>
+#include "endpoint_description.h"
+#include "remote_interceptors_handler.h"
+#include "celix_log_helper.h"
+#include "celix_api.h"
 #include <stdio.h>
-#include <sys/uio.h>
 
 typedef struct rsa_json_rpc_endpoint rsa_json_rpc_endpoint_t;
 
