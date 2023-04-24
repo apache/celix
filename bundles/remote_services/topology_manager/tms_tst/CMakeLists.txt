@@ -41,7 +41,6 @@ target_link_libraries(test_tm_scoped PRIVATE
         jansson::jansson
         calculator_api
         Celix::rsa_common
-        civetweb::civetweb
 )
 
 add_celix_bundle_dependencies(test_tm_scoped Celix::rsa_dfi Celix::rsa_topology_manager calculator topology_manager_disc_mock_bundle topology_manager_test_bundle)
