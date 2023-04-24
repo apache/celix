@@ -37,72 +37,36 @@ set(SOURCES
         src/celix_module_private.h)
 add_library(framework_obj OBJECT ${SOURCES})
 
-set(CELIX_FRAMEWORK_CMAKE_CONFIGURE_ALT_OPTION ON)
-if (CELIX_FRAMEWORK_CMAKE_CONFIGURE_ALT_OPTION)
-    function (celix_configure_framework_target)
-        list(GET ARGN 0 FRAMEWORK_TARGET_NAME)
+target_include_directories(framework_obj PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+)
+target_include_directories(framework_obj PRIVATE ${CMAKE_CURRENT_LIST_DIR}/include_deprecated)
+target_compile_options(framework_obj PRIVATE -DUSE_FILE32API)
+target_compile_options(framework_obj PRIVATE -Wno-deprecated-declarations) #note part of the api is deprecated, ignore this warning on own api
+target_link_libraries(framework_obj PUBLIC Celix::utils ${CELIX_OPTIONAL_EXTRA_LIBS})
+target_link_libraries(framework_obj PUBLIC libuuid::libuuid CURL::libcurl ZLIB::ZLIB)
+target_link_libraries(framework_obj PRIVATE ${CMAKE_DL_LIBS})
+#Note visibility preset is also needed on OBJECT libraries, to work correctly
+set_target_properties(framework_obj PROPERTIES C_VISIBILITY_PRESET hidden)
+celix_deprecated_utils_headers(framework_obj)
 
-        target_include_directories(${FRAMEWORK_TARGET_NAME}
-            PRIVATE
-                ${CMAKE_CURRENT_LIST_DIR}/include_deprecated
-            PUBLIC
-                $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-                $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/${FRAMEWORK_TARGET_NAME}>
-                $<INSTALL_INTERFACE:include/celix/framework>)
-        target_compile_options(${FRAMEWORK_TARGET_NAME} PRIVATE -DUSE_FILE32API)
-        target_compile_options(${FRAMEWORK_TARGET_NAME} PRIVATE -Wno-deprecated-declarations) #note part of the api is deprecated, ignore this warning on own api
-        target_link_libraries(${FRAMEWORK_TARGET_NAME} PUBLIC Celix::utils ${CELIX_OPTIONAL_EXTRA_LIBS})
-        target_link_libraries(${FRAMEWORK_TARGET_NAME} PUBLIC libuuid::libuuid CURL::libcurl ZLIB::ZLIB)
-        target_link_libraries(${FRAMEWORK_TARGET_NAME} PRIVATE ${CMAKE_DL_LIBS})
-        set_target_properties(${FRAMEWORK_TARGET_NAME} PROPERTIES C_VISIBILITY_PRESET hidden)
-        celix_deprecated_utils_headers(${FRAMEWORK_TARGET_NAME})
+add_library(framework SHARED)
+generate_export_header(framework
+        BASE_NAME "CELIX_FRAMEWORK"
+        EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/framework/celix_framework_export.h")
+target_include_directories(framework_obj PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/framework>)
+# We are building this library
+target_compile_definitions(framework_obj PRIVATE framework_EXPORTS)
 
-        generate_export_header(${FRAMEWORK_TARGET_NAME}
-                BASE_NAME "CELIX_FRAMEWORK"
-                EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/${FRAMEWORK_TARGET_NAME}/celix_framework_export.h")
-    endfunction ()
+target_link_libraries(framework PUBLIC framework_obj)
+set_target_properties(framework
+    PROPERTIES
+        C_VISIBILITY_PRESET hidden
+        "VERSION" "${CELIX_MAJOR}.${CELIX_MINOR}.${CELIX_MICRO}"
+        "SOVERSION" ${CELIX_MAJOR}
+        OUTPUT_NAME "celix_framework")
 
-    celix_configure_framework_target(framework_obj)
-
-    add_library(framework SHARED $<TARGET_OBJECTS:framework_obj>)
-    celix_configure_framework_target(framework)
-    set_target_properties(framework
-        PROPERTIES
-            "VERSION" "${CELIX_MAJOR}.${CELIX_MINOR}.${CELIX_MICRO}"
-            "SOVERSION" ${CELIX_MAJOR}
-            OUTPUT_NAME "celix_framework")
-else ()
-    target_include_directories(framework_obj PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        $<INSTALL_INTERFACE:include/celix/framework>
-    )
-    target_include_directories(framework_obj PRIVATE ${CMAKE_CURRENT_LIST_DIR}/include_deprecated)
-    target_compile_options(framework_obj PRIVATE -DUSE_FILE32API)
-    target_compile_options(framework_obj PRIVATE -Wno-deprecated-declarations) #note part of the api is deprecated, ignore this warning on own api
-    target_link_libraries(framework_obj PUBLIC Celix::utils ${CELIX_OPTIONAL_EXTRA_LIBS})
-    target_link_libraries(framework_obj PUBLIC libuuid::libuuid CURL::libcurl ZLIB::ZLIB)
-    target_link_libraries(framework_obj PRIVATE ${CMAKE_DL_LIBS})
-    #Note visibility preset is also needed on OBJECT libraries, to work correctly
-    set_target_properties(framework_obj PROPERTIES C_VISIBILITY_PRESET hidden)
-    celix_deprecated_utils_headers(framework_obj)
-
-    generate_export_header(framework_obj
-            BASE_NAME "CELIX_FRAMEWORK"
-            EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/framework/celix_framework_export.h")
-    target_include_directories(utils_obj PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/framework>)
-
-    add_library(framework SHARED)
-    target_link_libraries(framework PUBLIC framework_obj)
-    set_target_properties(framework
-        PROPERTIES
-            C_VISIBILITY_PRESET hidden
-            "VERSION" "${CELIX_MAJOR}.${CELIX_MINOR}.${CELIX_MICRO}"
-            "SOVERSION" ${CELIX_MAJOR}
-            OUTPUT_NAME "celix_framework")
-
-    celix_deprecated_utils_headers(framework)
-endif ()
+celix_deprecated_utils_headers(framework)
 
 # By omitting OBJECTS DESTINATION, object files will NOT be installed.
 install(TARGETS framework framework_obj EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
