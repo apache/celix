@@ -293,6 +293,8 @@ char* celix_version_toString(const celix_version_t* version) {
 bool celix_version_isCompatible(const celix_version_t* user, const celix_version_t* provider) {
     if (user == NULL && provider == NULL) {
         return true;
+    } else if (user == NULL || provider == NULL) {
+        return false;
     } else {
         return celix_version_isUserCompatible(user, provider->major, provider->minor);
     }
