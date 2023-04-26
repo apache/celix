@@ -27,6 +27,7 @@
 #include "ip_utils.h"
 #include "celix_utils.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -74,8 +75,9 @@ int ipUtils_netmaskToPrefix(const char *netmask) {
     // Convert netmask to in_addr object
     struct in_addr in;
     int ret = inet_pton(AF_INET, netmask, &in);
-    if (ret == 0)
+    if (ret != 1) {
         return -1;
+    }
 
     // Now convert the mask to a prefix
     int prefix = 0;
