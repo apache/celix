@@ -225,6 +225,8 @@ celix_version_range_t* celix_versionRange_parse(const char *rangeString) {
                         versionHigh,
                         end ==']'
                 );
+            } else {
+                celix_version_destroy(versionLow);
             }
         }
         free(vhigh);

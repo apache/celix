@@ -169,16 +169,7 @@ TEST_F(VersionRangeTestSuite, isInRange) {
 
 TEST_F(VersionRangeTestSuite, parse) {
     version_range_pt range = nullptr;
-    version_pt low = (version_pt) calloc(1, sizeof(*low));
-    version_pt high = (version_pt) calloc(1, sizeof(*high));
     char * version = strdup("[1.2.3,7.8.9]");
-    low->major = 1;
-    low->minor = 2;
-    low->micro = 3;
-
-    high->major = 7;
-    high->minor = 8;
-    high->micro = 9;
 
     EXPECT_EQ(CELIX_SUCCESS, versionRange_parse(version, &range));
 
@@ -190,8 +181,7 @@ TEST_F(VersionRangeTestSuite, parse) {
 
     free(version);
 
-    free(high);
-    free(low);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, versionRange_parse("[2.2.3,a.b.c)", &range));
 }
 
 TEST_F(VersionRangeTestSuite, createLdapFilterInclusiveBoth) {

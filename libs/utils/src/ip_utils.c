@@ -25,7 +25,9 @@
  */
 
 #include "ip_utils.h"
+#include "celix_utils.h"
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -73,8 +75,9 @@ int ipUtils_netmaskToPrefix(const char *netmask) {
     // Convert netmask to in_addr object
     struct in_addr in;
     int ret = inet_pton(AF_INET, netmask, &in);
-    if (ret == 0)
+    if (ret != 1) {
         return -1;
+    }
 
     // Now convert the mask to a prefix
     int prefix = 0;
@@ -105,7 +108,10 @@ int ipUtils_netmaskToPrefix(const char *netmask) {
 char *ipUtils_findIpBySubnet(const char *ipWithPrefix) {
     char *ip = NULL;
 
-    char *input = strndup(ipWithPrefix, 19); // Make a copy as otherwise strtok_r manipulates the input string
+    char *input = celix_utils_strdup(ipWithPrefix); // Make a copy as otherwise strtok_r manipulates the input string
+    if (input == NULL) {
+        goto strdup_failed;
+    }
 
     char *savePtr;
     char *inputIp = strtok_r(input, "/", &savePtr);
@@ -121,7 +127,9 @@ char *ipUtils_findIpBySubnet(const char *ipWithPrefix) {
     // Requested IP range is known now, now loop through network interfaces
     struct ifaddrs *ifap, *ifa;
 
-    getifaddrs (&ifap);
+    if(getifaddrs (&ifap) == -1) {
+        goto getifaddrs_failed;
+    }
     for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
         if (ifa->ifa_addr == NULL)
             continue;
@@ -155,7 +163,8 @@ char *ipUtils_findIpBySubnet(const char *ipWithPrefix) {
         }
     }
     freeifaddrs(ifap);
+getifaddrs_failed:
     free(input);
-
+strdup_failed:
     return ip;
 }

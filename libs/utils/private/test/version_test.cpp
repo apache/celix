@@ -379,6 +379,13 @@ TEST(version,semanticCompatibility) {
     LONGS_EQUAL(CELIX_SUCCESS, status);
 
     version_createVersion(2, 3, 5, NULL, &provider);
+    status = version_isCompatible(NULL, provider, &isCompatible);
+    CHECK(isCompatible == false);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+    status = version_isCompatible(provider, NULL, &isCompatible);
+    CHECK(isCompatible == false);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+
     version_createVersion(2, 1, 9, NULL, &compatible_user);
     version_createVersion(1, 3, 5, NULL, &incompatible_user_by_major);
     version_createVersion(2, 5, 7, NULL, &incompatible_user_by_minor);
