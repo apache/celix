@@ -24,7 +24,8 @@
  *  \copyright  Apache License, Version 2.0
  */
 
-#include "string.h"
+#include <errno.h>
+#include <string.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -101,4 +102,7 @@ TEST(ip_utils, netmaskToPrefix){
     LONGS_EQUAL(expected, actual);
 
     free(netmask);
+
+    actual = ipUtils_netmaskToPrefix("a.b.c.d");
+    LONGS_EQUAL(-1, actual);
 }
