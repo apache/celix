@@ -20,7 +20,6 @@
 #ifndef SERVICE_LISTENER_H_
 #define SERVICE_LISTENER_H_
 
-
 #include "celix_service_listener.h"
 
 #ifdef __cplusplus

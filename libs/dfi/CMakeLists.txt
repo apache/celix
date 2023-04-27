@@ -36,19 +36,26 @@ if (CELIX_DFI)
 			)
 
 	add_library(dfi SHARED ${SOURCES})
-	set_target_properties(dfi PROPERTIES OUTPUT_NAME "celix_dfi")
 	target_include_directories(dfi PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-			$<INSTALL_INTERFACE:include/celix/dfi>
-			)
-	target_link_libraries(dfi PRIVATE libffi::libffi)
+			$<INSTALL_INTERFACE:include/celix/dfi>)
+	target_link_libraries(dfi PRIVATE libffi::libffi Celix::utils)
 	target_link_libraries(dfi PUBLIC jansson::jansson)
-	target_link_libraries(dfi PRIVATE Celix::utils)
-	set_target_properties(dfi PROPERTIES "SOVERSION" 1)
+	set_target_properties(dfi PROPERTIES
+			C_VISIBILITY_PRESET hidden
+			VERSION "1.0.0"
+			"SOVERSION" 1
+			OUTPUT_NAME "celix_dfi")
+
+	generate_export_header(dfi
+			BASE_NAME "CELIX_DFI"
+			EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/dfi/celix_dfi_export.h")
+	target_include_directories(dfi PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/dfi>)
 
 	install(TARGETS dfi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dfi
 			INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/dfi)
 	install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/dfi COMPONENT dfi)
+	install(DIRECTORY ${CMAKE_BINARY_DIR}/celix/gen/includes/dfi/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/dfi COMPONENT dfi)
 
 	#Alias setup to match external usage
 	add_library(Celix::dfi ALIAS dfi)

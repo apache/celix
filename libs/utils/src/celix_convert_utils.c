@@ -17,13 +17,15 @@
  * under the License.
  */
 
+#include "celix_convert_utils.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
-#include "utils.h"
 #include "celix_utils.h"
-#include "celix_version.h"
+#include "utils.h"
 
 static bool celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(const char* endptr) {
     bool result = false;

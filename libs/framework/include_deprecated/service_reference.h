@@ -26,43 +26,43 @@
 #include "array_list.h"
 #include "service_registration.h"
 #include "bundle.h"
-#include "framework_exports.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-FRAMEWORK_EXPORT celix_status_t serviceReference_getBundle(service_reference_pt reference, celix_bundle_t **bundle);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceReference_getBundle(service_reference_pt reference, celix_bundle_t **bundle);
 
-FRAMEWORK_EXPORT bool
+CELIX_FRAMEWORK_DEPRECATED_EXPORT bool
 serviceReference_isAssignableTo(service_reference_pt reference, celix_bundle_t *requester, const char *serviceName);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceReference_getProperty(service_reference_pt reference, const char *key, const char **value);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceReference_getPropertyWithDefault(service_reference_pt reference, const char *key, const char* def, const char **value);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceReference_getPropertyKeys(service_reference_pt reference, char **keys[], unsigned int *size);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceReference_getServiceRegistration(service_reference_pt reference, service_registration_pt *registration);
 
-FRAMEWORK_EXPORT
+CELIX_FRAMEWORK_DEPRECATED_EXPORT
 long serviceReference_getServiceId(service_reference_pt reference);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceReference_equals(service_reference_pt reference, service_reference_pt compareTo, bool *equal);
 
-FRAMEWORK_EXPORT unsigned int serviceReference_hashCode(const void *referenceP);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT unsigned int serviceReference_hashCode(const void *referenceP);
 
-FRAMEWORK_EXPORT int serviceReference_equals2(const void *reference1, const void *reference2);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT int serviceReference_equals2(const void *reference1, const void *reference2);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceReference_compareTo(service_reference_pt reference, service_reference_pt compareTo, int *compare);
 
-FRAMEWORK_EXPORT celix_status_t serviceReference_getUsingBundles(service_reference_pt ref, celix_array_list_t **out);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceReference_getUsingBundles(service_reference_pt ref, celix_array_list_t **out);
 
 #ifdef __cplusplus
 }

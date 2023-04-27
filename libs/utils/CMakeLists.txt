@@ -45,8 +45,11 @@ add_library(utils_obj OBJECT
         src/celix_file_utils.c
         src/celix_convert_utils.c
         ${MEMSTREAM_SOURCES}
-        )
+)
+
 target_link_libraries(utils_obj PRIVATE libzip::libzip)
+#Note visibility preset is also needed on OBJECT libraries, to work correctly
+set_target_properties(utils_obj PROPERTIES C_VISIBILITY_PRESET hidden)
 if (NOT OPEN_MEMSTREAM_EXISTS)
     target_compile_definitions(utils_obj PUBLIC -DCELIX_UTILS_NO_MEMSTREAM_AVAILABLE)
 endif ()
@@ -62,7 +65,7 @@ endif ()
 target_include_directories(utils_obj PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
-        )
+        $<INSTALL_INTERFACE:include/celix/utils>)
 target_include_directories(utils_obj PRIVATE src include_deprecated)
 IF(UNIX AND NOT ANDROID)
     target_link_libraries(utils_obj PRIVATE m pthread)
@@ -72,17 +75,31 @@ ENDIF()
 
 add_library(utils SHARED)
 target_link_libraries(utils PUBLIC utils_obj)
-set_target_properties(utils PROPERTIES OUTPUT_NAME "celix_utils")
-set_target_properties(utils PROPERTIES "SOVERSION" 2)
+generate_export_header(utils
+        BASE_NAME "CELIX_UTILS"
+        EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/utils/celix_utils_export.h")
+target_include_directories(utils_obj PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/utils>)
+# We are building this library
+target_compile_definitions(utils_obj PRIVATE utils_EXPORTS)
+
+set_target_properties(utils
+        PROPERTIES
+        C_VISIBILITY_PRESET hidden
+        SOVERSION ${CELIX_MAJOR}
+        OUTPUT_NAME "celix_utils")
 
 # By omitting OBJECTS DESTINATION, object files will NOT be installed.
 install(TARGETS utils utils_obj EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework
-        PATTERN memstream* EXCLUDE)
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils)
+install(DIRECTORY include/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils/
+        COMPONENT framework PATTERN memstream* EXCLUDE)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/celix/gen/includes/utils/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils/
+        COMPONENT framework)
 
 if (CELIX_INSTALL_DEPRECATED_API)
-    install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix COMPONENT framework)
+    install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils COMPONENT framework)
 endif ()
 
 #Alias setup to match external usage

@@ -38,31 +38,36 @@
 #include "celix_service_listener.h"
 
 #include "dm_dependency_manager.h"
+#include <stdlib.h>
+
+#include "bundle_context.h"
+#include "celix_bundle_context.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_create(celix_framework_t *framework, celix_framework_logger_t* logger, celix_bundle_t *bundle, celix_bundle_context_t **bundle_context);
 
-celix_status_t bundleContext_destroy(celix_bundle_context_t *context);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleContext_destroy(celix_bundle_context_t *context);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_getBundle(celix_bundle_context_t *context, celix_bundle_t **bundle);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleContext_getBundle(celix_bundle_context_t *context, celix_bundle_t **bundle);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_getFramework(celix_bundle_context_t *context, celix_framework_t **framework);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleContext_getFramework(celix_bundle_context_t *context, celix_framework_t **framework);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_installBundle(celix_bundle_context_t *context, const char *location, celix_bundle_t **bundle);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_installBundle2(celix_bundle_context_t *context, const char *location, const char *inputFile, celix_bundle_t **bundle);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_registerService(celix_bundle_context_t *context, const char *serviceName, const void *svcObj,
                               celix_properties_t *properties, service_registration_pt *service_registration);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_registerServiceFactory(celix_bundle_context_t *context, const char *serviceName, service_factory_pt factory,
                                      celix_properties_t *properties, service_registration_pt *service_registration);
 
@@ -75,7 +80,7 @@ bundleContext_registerServiceFactory(celix_bundle_context_t *context, const char
  * @param service_reference _output_ The found service reference, or NULL when no service is found.
  * @return CELIX_SUCCESS on success
  */
-FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReference(celix_bundle_context_t *context, const char *serviceName,
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleContext_getServiceReference(celix_bundle_context_t *context, const char *serviceName,
                                                                   service_reference_pt *service_reference);
 
 /** Same as bundleContext_getServiceReference, but than for a optional serviceName combined with a optional filter.
@@ -87,7 +92,7 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReference(celix_bundle_c
  * @param service_references _output_ a array list, can be size 0. 
  * @return CELIX_SUCCESS on success
  */
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_getServiceReferences(celix_bundle_context_t *context, const char *serviceName, const char *filter,
                                    celix_array_list_t **service_references);
 
@@ -99,7 +104,7 @@ bundleContext_getServiceReferences(celix_bundle_context_t *context, const char *
  * @param reference the service reference to retain
  * @return CELIX_SUCCES on success
  */
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_retainServiceReference(celix_bundle_context_t *context, service_reference_pt reference);
 
 /**
@@ -111,34 +116,34 @@ bundleContext_retainServiceReference(celix_bundle_context_t *context, service_re
  * @param reference the service reference to unget
  * @return CELIX_SUCCESS on success.
  */
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_ungetServiceReference(celix_bundle_context_t *context, service_reference_pt reference);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_getService(celix_bundle_context_t *context, service_reference_pt reference, void **service_instance);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_ungetService(celix_bundle_context_t *context, service_reference_pt reference, bool *result);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_getBundles(celix_bundle_context_t *context, celix_array_list_t **bundles);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleContext_getBundles(celix_bundle_context_t *context, celix_array_list_t **bundles);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_getBundleById(celix_bundle_context_t *context, long id, celix_bundle_t **bundle);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleContext_getBundleById(celix_bundle_context_t *context, long id, celix_bundle_t **bundle);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_addServiceListener(celix_bundle_context_t *context, celix_service_listener_t *listener, const char *filter) __attribute__((deprecated("using service listeners directly is deprecated, use a service tracker instead!")));
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_removeServiceListener(celix_bundle_context_t *context, celix_service_listener_t *listener);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_addBundleListener(celix_bundle_context_t *context, bundle_listener_pt listener);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleContext_addBundleListener(celix_bundle_context_t *context, bundle_listener_pt listener);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_removeBundleListener(celix_bundle_context_t *context, bundle_listener_pt listener);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_addFrameworkListener(celix_bundle_context_t *context, framework_listener_pt listener);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_removeFrameworkListener(celix_bundle_context_t *context, framework_listener_pt listener);
 
 /**
@@ -149,7 +154,7 @@ bundleContext_removeFrameworkListener(celix_bundle_context_t *context, framework
  * @param value A ptr to the output value. This will be set when a value is found or else will be set to NULL.
  * @return 0 if successful.
  */
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_getProperty(celix_bundle_context_t *context, const char *name, const char **value);
 
 /**
@@ -161,7 +166,7 @@ bundleContext_getProperty(celix_bundle_context_t *context, const char *name, con
  * @param value A ptr to the output value. This will be set when a value is found or else will be set to NULL.
  * @return 0 if successful.
  */
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_getPropertyWithDefault(celix_bundle_context_t *context, const char *name, const char *defaultValue, const char **value);
 
 

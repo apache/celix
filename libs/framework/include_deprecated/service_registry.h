@@ -17,12 +17,8 @@
  * under the License.
  */
 
-
 #ifndef SERVICE_REGISTRY_H_
 #define SERVICE_REGISTRY_H_
-
-typedef struct celix_serviceRegistry * service_registry_pt;
-typedef struct celix_serviceRegistry celix_service_registry_t;
 
 #include "properties.h"
 #include "filter.h"
@@ -31,54 +27,59 @@ typedef struct celix_serviceRegistry celix_service_registry_t;
 #include "array_list.h"
 #include "service_registration.h"
 #include "celix_service_factory.h"
+#include "celix_framework_export.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+typedef struct celix_serviceRegistry * service_registry_pt;
+typedef struct celix_serviceRegistry celix_service_registry_t;
+
 typedef void (*serviceChanged_function_pt)(celix_framework_t*, celix_service_event_type_t, service_registration_pt, celix_properties_t*);
 
-celix_service_registry_t* celix_serviceRegistry_create(celix_framework_t *framework);
+CELIX_FRAMEWORK_EXPORT celix_service_registry_t* celix_serviceRegistry_create(celix_framework_t *framework);
 
-void celix_serviceRegistry_destroy(celix_service_registry_t* registry);
+CELIX_FRAMEWORK_EXPORT void celix_serviceRegistry_destroy(celix_service_registry_t* registry);
 
-celix_status_t
+CELIX_FRAMEWORK_EXPORT celix_status_t
 serviceRegistry_getRegisteredServices(celix_service_registry_t* registry, celix_bundle_t *bundle, celix_array_list_t **services);
 
-celix_status_t
+CELIX_FRAMEWORK_EXPORT celix_status_t
 serviceRegistry_getServicesInUse(celix_service_registry_t* registry, celix_bundle_t *bundle, celix_array_list_t **services);
 
-celix_status_t serviceRegistry_registerService(celix_service_registry_t* registry, celix_bundle_t *bundle, const char *serviceName,
+CELIX_FRAMEWORK_EXPORT celix_status_t serviceRegistry_registerService(celix_service_registry_t* registry, celix_bundle_t *bundle, const char *serviceName,
                                                const void *serviceObject, celix_properties_t *dictionary,
                                                service_registration_pt *registration);
 
-celix_status_t
+CELIX_FRAMEWORK_EXPORT celix_status_t
 serviceRegistry_registerServiceFactory(celix_service_registry_t* registry, celix_bundle_t *bundle, const char *serviceName,
                                        service_factory_pt factory, celix_properties_t *dictionary,
                                        service_registration_pt *registration);
 
-celix_status_t serviceRegistry_getServiceReference(celix_service_registry_t* registry, celix_bundle_t *bundle,
+CELIX_FRAMEWORK_EXPORT celix_status_t serviceRegistry_getServiceReference(celix_service_registry_t* registry, celix_bundle_t *bundle,
                                                    service_registration_pt registration,
                                                    service_reference_pt *reference);
 
-celix_status_t
+CELIX_FRAMEWORK_EXPORT celix_status_t
 serviceRegistry_getServiceReferences(celix_service_registry_t* registry, celix_bundle_t *bundle, const char *serviceName,
                                      filter_pt filter, celix_array_list_t **references);
 
-celix_status_t serviceRegistry_clearReferencesFor(celix_service_registry_t* registry, celix_bundle_t *bundle);
+CELIX_FRAMEWORK_EXPORT celix_status_t serviceRegistry_clearReferencesFor(celix_service_registry_t* registry, celix_bundle_t *bundle);
 
-size_t serviceRegistry_nrOfHooks(celix_service_registry_t* registry);
+CELIX_FRAMEWORK_EXPORT size_t serviceRegistry_nrOfHooks(celix_service_registry_t* registry);
 
 /**
  * Register a service listener. Will also retroactively call the listener with register events for already registered services.
  */
-celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t *reg, celix_bundle_t *bundle, const char *filter, celix_service_listener_t *listener);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t *reg, celix_bundle_t *bundle, const char *filter, celix_service_listener_t *listener);
 
-celix_status_t celix_serviceRegistry_removeServiceListener(celix_service_registry_t *reg, celix_service_listener_t *listener);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_serviceRegistry_removeServiceListener(celix_service_registry_t *reg, celix_service_listener_t *listener);
 
-bool celix_serviceRegistry_isServiceRegistered(celix_service_registry_t* reg, long serviceId);
+CELIX_FRAMEWORK_EXPORT bool celix_serviceRegistry_isServiceRegistered(celix_service_registry_t* reg, long serviceId);
 
-celix_status_t
+CELIX_FRAMEWORK_EXPORT celix_status_t
 celix_serviceRegistry_registerService(
         celix_service_registry_t *reg,
         const celix_bundle_t *bnd,
@@ -88,7 +89,7 @@ celix_serviceRegistry_registerService(
         long reserveId,
         service_registration_t **registration);
 
-celix_status_t
+CELIX_FRAMEWORK_EXPORT celix_status_t
 celix_serviceRegistry_registerServiceFactory(
         celix_service_registry_t *reg,
         const celix_bundle_t *bnd,
@@ -102,7 +103,7 @@ celix_serviceRegistry_registerServiceFactory(
  * List the registered service for the provided bundle.
  * @return A list of service ids. Caller is owner of the array list.
  */
-celix_array_list_t* celix_serviceRegistry_listServiceIdsForOwner(celix_service_registry_t* registry, long bndId);
+CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_serviceRegistry_listServiceIdsForOwner(celix_service_registry_t* registry, long bndId);
 
 /**
  * Get service information for the provided svc id and bnd id.
@@ -112,7 +113,7 @@ celix_array_list_t* celix_serviceRegistry_listServiceIdsForOwner(celix_service_r
  *
  * Returns true if the bundle is found.
  */
-bool celix_serviceRegistry_getServiceInfo(
+CELIX_FRAMEWORK_EXPORT bool celix_serviceRegistry_getServiceInfo(
         celix_service_registry_t* registry,
         long svcId,
         long bndId,
@@ -124,14 +125,14 @@ bool celix_serviceRegistry_getServiceInfo(
 /**
  * Returns the next svc id.
  */
-long celix_serviceRegistry_nextSvcId(celix_service_registry_t* registry);
+CELIX_FRAMEWORK_EXPORT long celix_serviceRegistry_nextSvcId(celix_service_registry_t* registry);
 
 
 /**
  * Unregister service for the provided service id (owned by bnd).
  * Will print an error if the service id is invalid
  */
-void celix_serviceRegistry_unregisterService(celix_service_registry_t* registry, celix_bundle_t* bnd, long serviceId);
+CELIX_FRAMEWORK_EXPORT void celix_serviceRegistry_unregisterService(celix_service_registry_t* registry, celix_bundle_t* bnd, long serviceId);
 
 
 /**
@@ -143,7 +144,7 @@ void celix_serviceRegistry_unregisterService(celix_service_registry_t* registry,
  * @param ignoreServiceLanguage   The whether the service lang filter needs to be added to the filter.
  * @return a LDAP filter. Caller is responsible for freeing the filter.
  */
-char* celix_serviceRegistry_createFilterFor(
+CELIX_FRAMEWORK_EXPORT char* celix_serviceRegistry_createFilterFor(
         celix_service_registry_t* registry,
         const char* serviceName,
         const char* versionRange,
@@ -153,7 +154,7 @@ char* celix_serviceRegistry_createFilterFor(
  * Find services and return a array list of service ids (long).
  * Caller is responsible for freeing the returned array list.
  */
-celix_array_list_t* celix_serviceRegisrty_findServices(celix_service_registry_t* registry, const char* filter);
+CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_serviceRegisrty_findServices(celix_service_registry_t* registry, const char* filter);
 
 
 #ifdef __cplusplus

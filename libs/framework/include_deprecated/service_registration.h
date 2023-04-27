@@ -22,30 +22,27 @@
 
 #include <stdbool.h>
 
-typedef struct serviceRegistration service_registration_t;
-typedef struct serviceRegistration *service_registration_pt; // TODO: Deprecate
-
-
+#include "celix_types.h"
 #include "array_list.h"
 #include "bundle.h"
-#include "framework_exports.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_unregister(service_registration_t *registration);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceRegistration_unregister(service_registration_t *registration);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceRegistration_getProperties(service_registration_t *registration, celix_properties_t **properties);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceRegistration_getServiceName(service_registration_t *registration, const char **serviceName);
 
-FRAMEWORK_EXPORT long
+CELIX_FRAMEWORK_DEPRECATED_EXPORT long
 serviceRegistration_getServiceId(service_registration_t *registration);
 
-FRAMEWORK_EXPORT bool
+CELIX_FRAMEWORK_DEPRECATED_EXPORT bool
 serviceRegistration_isFactoryService(service_registration_t *registration);
 
 

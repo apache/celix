@@ -24,6 +24,7 @@
 #include "properties.h"
 #include "celix_properties.h"
 #include "celix_filter.h"
+#include "celix_utils_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,15 +34,18 @@ typedef struct celix_filter_struct filter_t __attribute__((deprecated("filter is
 typedef struct celix_filter_struct *filter_pt __attribute__((deprecated("filter is deprecated use celix_filter instead")));
 
 
-celix_filter_t* filter_create(const char *filterString);
+CELIX_UTILS_DEPRECATED_EXPORT celix_filter_t* filter_create(const char *filterString);
 
-void filter_destroy(celix_filter_t *filter);
+CELIX_UTILS_DEPRECATED_EXPORT void filter_destroy(celix_filter_t *filter);
 
-celix_status_t filter_match(celix_filter_t *filter, celix_properties_t *properties, bool *result);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t filter_match(
+        celix_filter_t *filter,
+        celix_properties_t *properties,
+        bool *result);
 
-celix_status_t filter_match_filter(celix_filter_t *src, filter_t *dest, bool *result);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t filter_match_filter(celix_filter_t *src, filter_t *dest, bool *result);
 
-celix_status_t filter_getString(celix_filter_t *filter, const char **filterStr);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t filter_getString(celix_filter_t *filter, const char **filterStr);
 
 
 #ifdef __cplusplus
