@@ -251,12 +251,12 @@ celix_status_t module_getGroup(module_pt module, const char **symbolicName) {
     return status;
 }
 
-celix_status_t module_getDescription(module_pt module, const char **symbolicName) {
+celix_status_t module_getDescription(module_pt module, const char **descriptoin) {
     celix_status_t status = CELIX_SUCCESS;
     if (module == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-        *symbolicName = module->description;
+        *descriptoin = module->description;
     }
     return status;
 }
@@ -454,10 +454,7 @@ static celix_status_t celix_module_loadLibrariesInManifestEntry(celix_module_t* 
 
         if ( (status == CELIX_SUCCESS) && (activator != NULL) && (strcmp(trimmedLib, activator) == 0) ) {
             *activatorHandle = handle;
-        } else if ((status != CELIX_SUCCESS) && (handle != NULL)) {
-            celix_libloader_close(fwCtx, handle);
         }
-
         token = strtok_r(NULL, ",", &last);
     }
 
@@ -501,8 +498,6 @@ celix_status_t celix_module_loadLibraries(celix_module_t* module) {
             celixThreadMutex_lock(&module->handlesLock);
             module->bundleActivatorHandle = activatorHandle;
             celixThreadMutex_unlock(&module->handlesLock);
-        } else if (activatorHandle != NULL) {
-            celix_libloader_close(fwCtx, activatorHandle);
         }
     }
 
