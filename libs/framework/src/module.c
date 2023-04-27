@@ -419,8 +419,6 @@ static celix_status_t celix_module_loadLibraryForManifestEntry(celix_module_t* m
 
 static celix_status_t celix_module_loadLibrariesInManifestEntry(celix_module_t* module, const char *librariesIn, const char *activator, bundle_archive_pt archive, void **activatorHandle) {
     celix_status_t status = CELIX_SUCCESS;
-    celix_bundle_context_t* fwCtx = celix_framework_getFrameworkContext(module->fw);
-
     char* last;
     char* libraries = strndup(librariesIn, 1024*10);
     char* token = strtok_r(libraries, ",", &last);
@@ -464,8 +462,6 @@ static celix_status_t celix_module_loadLibrariesInManifestEntry(celix_module_t* 
 
 celix_status_t celix_module_loadLibraries(celix_module_t* module) {
     celix_status_t status = CELIX_SUCCESS;
-    celix_bundle_context_t* fwCtx = celix_framework_getFrameworkContext(module->fw);
-
     celix_library_handle_t* activatorHandle = NULL;
     bundle_archive_pt archive = NULL;
     bundle_revision_pt revision = NULL;
