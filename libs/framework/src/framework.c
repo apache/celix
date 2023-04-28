@@ -2274,7 +2274,7 @@ celix_status_t celix_framework_startBundleEntry(celix_framework_t* framework, ce
                         bundle_setActivator(bndEntry->bnd, NULL);
                         bundleContext_destroy(context);
                         free(activator);
-                        status = bundle_setState(bndEntry->bnd, CELIX_BUNDLE_STATE_RESOLVED);
+                        (void)bundle_setState(bndEntry->bnd, CELIX_BUNDLE_STATE_RESOLVED);
                     }
                 }
             }
