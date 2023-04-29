@@ -22,7 +22,8 @@
 #include <memory>
 #include <cstdarg>
 
-#include "celix_api.h"
+#include "celix_constants.h"
+#include "celix_framework_factory.h"
 #include "pubsub_message_serialization_service.h"
 #include "dyn_message.h"
 #include "pubsub_protocol.h"

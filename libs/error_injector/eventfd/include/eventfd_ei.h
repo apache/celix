@@ -24,7 +24,6 @@ extern "C" {
 #endif
 #include "celix_error_injector.h"
 
-extern int celix_ei_eventfd_errno;
 CELIX_EI_DECLARE(eventfd, int);
 
 #ifdef __cplusplus

@@ -28,8 +28,8 @@
 
 #include <stdlib.h>
 
-#include "bundle_activator.h"
-#include "bundle_context.h"
+#include "celix_bundle_activator.h"
+#include "celix_bundle_context.h"
 
 #include "celix_log_helper.h"
 #include "connection_listener.h"
@@ -127,10 +127,8 @@ static int bundleActivator_getMaximumConnections(bundle_instance_pt bi, bundle_c
 }
 
 static int bundleActivator_getProperty(bundle_instance_pt bi, bundle_context_pt context, char* propertyName, int defaultValue) {
-	const char *strValue = NULL;
 	int value;
-
-	bundleContext_getProperty(context, propertyName, &strValue);
+	const char* strValue = celix_bundleContext_getProperty(context, propertyName, NULL);
 	if (strValue != NULL) {
 		char* endptr = (char*)strValue;
 

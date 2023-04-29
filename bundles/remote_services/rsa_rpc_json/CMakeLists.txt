@@ -34,6 +34,7 @@ if (RSA_JSON_RPC)
     )
 
     celix_deprecated_utils_headers(rsa_json_rpc)
+    celix_deprecated_framework_headers(rsa_json_rpc)
     target_include_directories(rsa_json_rpc PRIVATE src)
 
     target_link_libraries(rsa_json_rpc PRIVATE

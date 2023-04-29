@@ -40,6 +40,8 @@
 #include <stddef.h>
 #include <errno.h>
 
+#include "celix_utils_export.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -69,7 +71,7 @@ typedef int celix_status_t;
 /**
  * Return a readable string for the given status code.
  */
-const char* celix_strerror(celix_status_t status);
+CELIX_UTILS_EXPORT const char* celix_strerror(celix_status_t status);
 
 /*!
  * Customer error code mask

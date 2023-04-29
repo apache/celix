@@ -25,6 +25,7 @@
 #include <stdbool.h>
 
 #include "celix_log_level.h"
+#include "celix_utils_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,13 +34,13 @@ extern "C" {
 /**
  * Convert a celix log level enum to a const char* value.
  */
-const char* celix_logUtils_logLevelToString(celix_log_level_e level);
+CELIX_UTILS_EXPORT const char* celix_logUtils_logLevelToString(celix_log_level_e level);
 
 /**
  * Convert a const char* value to a celix log level
  * If the provided log level cannot be parsed or is NULL, the fallbackLogLevel is returned.
  */
-celix_log_level_e celix_logUtils_logLevelFromString(const char *level, celix_log_level_e fallbackLogLevel);
+CELIX_UTILS_EXPORT celix_log_level_e celix_logUtils_logLevelFromString(const char *level, celix_log_level_e fallbackLogLevel);
 
 /**
  * Convert a const char* value to a celix log level
@@ -47,7 +48,7 @@ celix_log_level_e celix_logUtils_logLevelFromString(const char *level, celix_log
  * if a convertedSuccessfully pointer is provided this will be set to false.
  * If converted successfully and the convertedSuccessfully pointer is provided. This will be set to true.
  */
-celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(
+CELIX_UTILS_EXPORT celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(
         const char *level,
         celix_log_level_e fallbackLogLevel,
         bool *convertedSuccessfully);
@@ -57,7 +58,7 @@ celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(
  * If the provided log level is higher than info, stderr will be used.
  *
  */
-void celix_logUtils_logToStdout(
+CELIX_UTILS_EXPORT void celix_logUtils_logToStdout(
         const char *logName,
         celix_log_level_e level,
         const char *format,
@@ -73,7 +74,7 @@ void celix_logUtils_logToStdout(
  * If the argument file or function is NULL, the arguments file, function and line are not used.
  *
  */
-void celix_logUtils_logToStdoutDetails(
+CELIX_UTILS_EXPORT void celix_logUtils_logToStdoutDetails(
         const char *logName,
         celix_log_level_e level,
         const char* file,
@@ -88,7 +89,7 @@ void celix_logUtils_logToStdoutDetails(
  * If the provided log level is higher than info, stderr will be used.
  *
  */
-void celix_logUtils_vLogToStdout(
+CELIX_UTILS_EXPORT void celix_logUtils_vLogToStdout(
         const char *logName,
         celix_log_level_e level,
         const char *format,
@@ -104,7 +105,7 @@ void celix_logUtils_vLogToStdout(
  * If the argument file or function is NULL, the arguments file, function and line are not used.
  *
  */
-void celix_logUtils_vLogToStdoutDetails(
+CELIX_UTILS_EXPORT void celix_logUtils_vLogToStdoutDetails(
         const char *logName,
         celix_log_level_e level,
         const char* file,
@@ -116,7 +117,7 @@ void celix_logUtils_vLogToStdoutDetails(
 /**
  * Print a backtrace to the provided output stream.
  */
-void celix_logUtils_printBacktrace(FILE* stream);
+CELIX_UTILS_EXPORT void celix_logUtils_printBacktrace(FILE* stream);
 
 #ifdef __cplusplus
 }

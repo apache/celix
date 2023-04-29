@@ -17,36 +17,37 @@
  * under the License.
  */
 
-#ifndef FRAMEWORK_H_
-#define FRAMEWORK_H_
+#ifndef SERVICE_REGISTRATION_H_
+#define SERVICE_REGISTRATION_H_
 
-#include "celix_errno.h"
-#include "framework_exports.h"
+#include <stdbool.h>
+
+#include "celix_types.h"
+#include "array_list.h"
 #include "bundle.h"
-#include "properties.h"
-#include "bundle_context.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// #TODO: Move to FrameworkFactory according the OSGi Spec
-FRAMEWORK_EXPORT celix_status_t framework_create(celix_framework_t **framework, celix_properties_t *config);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceRegistration_unregister(service_registration_t *registration);
 
-FRAMEWORK_EXPORT celix_status_t framework_start(celix_framework_t *framework);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
+serviceRegistration_getProperties(service_registration_t *registration, celix_properties_t **properties);
 
-FRAMEWORK_EXPORT celix_status_t framework_stop(celix_framework_t *framework);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
+serviceRegistration_getServiceName(service_registration_t *registration, const char **serviceName);
 
-FRAMEWORK_EXPORT celix_status_t framework_destroy(celix_framework_t *framework);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT long
+serviceRegistration_getServiceId(service_registration_t *registration);
 
-FRAMEWORK_EXPORT celix_status_t framework_waitForStop(celix_framework_t *framework);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT bool
+serviceRegistration_isFactoryService(service_registration_t *registration);
 
-FRAMEWORK_EXPORT celix_status_t framework_getFrameworkBundle(const celix_framework_t *framework, celix_bundle_t **bundle);
-
-celix_bundle_context_t* framework_getContext(const celix_framework_t *framework);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* FRAMEWORK_H_ */
+#endif /* SERVICE_REGISTRATION_H_ */

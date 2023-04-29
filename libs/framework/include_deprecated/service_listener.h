@@ -17,30 +17,22 @@
  * under the License.
  */
 
-#ifndef REQUIREMENT_H_
-#define REQUIREMENT_H_
+#ifndef SERVICE_LISTENER_H_
+#define SERVICE_LISTENER_H_
 
-typedef struct requirement *requirement_pt;
+#include "celix_service_listener.h"
 
-#include "capability.h"
-#include "hash_map.h"
-#include "celix_version_range.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement);
+//Deprecated use celix_service_listener_t instead
+typedef struct celix_service_listener *service_listener_pt;
 
-celix_status_t requirement_destroy(requirement_pt requirement);
-
-celix_status_t requirement_getVersionRange(requirement_pt requirement, celix_version_range_t **range);
-
-celix_status_t requirement_getTargetName(requirement_pt requirement, const char **targetName);
-
-celix_status_t requirement_isSatisfied(requirement_pt requirement, capability_pt capability, bool *inRange);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* REQUIREMENT_H_ */
+
+#endif /* SERVICE_LISTENER_H_ */

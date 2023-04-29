@@ -28,7 +28,6 @@
 
 #include "civetweb.h"
 
-#include "celix_api.h"
 #include "celix_utils_api.h"
 
 

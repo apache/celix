@@ -22,6 +22,7 @@
 
 #include <stdbool.h>
 #include "celix_version.h"
+#include "celix_utils_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,7 +41,7 @@ extern "C" {
  * @param[out] converted If not NULL, will be set to true if the string is a valid boolean, otherwise false.
  * @return The boolean value.
  */
-bool celix_utils_convertStringToBool(const char* val, bool defaultValue, bool* converted);
+CELIX_UTILS_EXPORT bool celix_utils_convertStringToBool(const char* val, bool defaultValue, bool* converted);
 
 /**
  * @brief Convert a string to a double.
@@ -50,7 +51,7 @@ bool celix_utils_convertStringToBool(const char* val, bool defaultValue, bool* c
  * @param[out] converted If not NULL, will be set to true if the string is a valid double, otherwise false.
  * @return The double value.
  */
-double celix_utils_convertStringToDouble(const char* val, double defaultValue, bool* converted);
+CELIX_UTILS_EXPORT double celix_utils_convertStringToDouble(const char* val, double defaultValue, bool* converted);
 
 /**
  * @brief Convert a string to a long.
@@ -60,7 +61,7 @@ double celix_utils_convertStringToDouble(const char* val, double defaultValue, b
  * @param[out] converted If not NULL, will be set to true if the string is a valid long, otherwise false.
  * @return The long value.
  */
-long celix_utils_convertStringToLong(const char* val, long defaultValue, bool* converted);
+CELIX_UTILS_EXPORT long celix_utils_convertStringToLong(const char* val, long defaultValue, bool* converted);
 
 /**
  * @brief Convert a string to a celix_version_t.
@@ -73,7 +74,7 @@ long celix_utils_convertStringToLong(const char* val, long defaultValue, bool* c
  * @param[out] converted If not NULL, will be set to true if the string is a valid celix_version_t, otherwise false.
  * @return A new celix_version_t* if the string is a valid version, otherwise NULL.
  */
-celix_version_t* celix_utils_convertStringToVersion(const char* val, const celix_version_t* defaultValue, bool* converted);
+CELIX_UTILS_EXPORT celix_version_t* celix_utils_convertStringToVersion(const char* val, const celix_version_t* defaultValue, bool* converted);
 
 #ifdef __cplusplus
 }

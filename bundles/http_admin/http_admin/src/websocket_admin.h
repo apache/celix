@@ -27,7 +27,7 @@
 #ifndef CELIX_WEBSOCKET_ADMIN_H
 #define CELIX_WEBSOCKET_ADMIN_H
 
-#include "bundle_context.h"
+#include "celix_bundle_context.h"
 #include "civetweb.h"
 
 typedef struct websocket_admin_manager websocket_admin_manager_t;

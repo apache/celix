@@ -38,6 +38,7 @@ if (PUBSUB_PSA_UDP_MC)
     target_link_libraries(celix_pubsub_admin_udp_multicast PRIVATE Celix::framework Celix::dfi Celix::log_helper Celix::utils Celix::shell_api)
     target_link_libraries(celix_pubsub_admin_udp_multicast PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
     celix_deprecated_utils_headers(celix_pubsub_admin_udp_multicast)
+    celix_deprecated_framework_headers(celix_pubsub_admin_udp_multicast)
     install_celix_bundle(celix_pubsub_admin_udp_multicast EXPORT celix COMPONENT pubsub)
 
     add_library(Celix::celix_pubsub_admin_udp_multicast ALIAS celix_pubsub_admin_udp_multicast)

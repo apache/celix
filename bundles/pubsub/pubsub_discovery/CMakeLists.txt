@@ -36,6 +36,7 @@ if (PUBSUB_DISCOVERY_ETCD)
             )
     target_link_libraries(celix_pubsub_discovery_etcd PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
     celix_deprecated_utils_headers(celix_pubsub_discovery_etcd)
+    celix_deprecated_framework_headers(celix_pubsub_discovery_etcd)
 
     install_celix_bundle(celix_pubsub_discovery_etcd EXPORT celix COMPONENT pubsub)
 

@@ -23,14 +23,16 @@
 #include <endpoint_description.h>
 #include <remote_constants.h>
 #include <celix_shell_command.h>
-#include <celix_api.h>
 #include <gtest/gtest.h>
-#include <stdio.h>
-#include <string.h>
 #include <uuid/uuid.h>
 #include <jansson.h>
 #include <sys/uio.h>
 #include <rsa_rpc_factory.h>
+#include "celix_bundle_context.h"
+#include "celix_constants.h"
+#include "celix_framework_factory.h"
+#include "celix_version.h"
+#include "celix_utils.h"
 
 static celix_status_t rsaJsonRpcTst_sendRequest(void *sendFnHandle, const endpoint_description_t *endpointDesciption,
         celix_properties_t *metadata, const struct iovec *request, struct iovec *response);
@@ -217,11 +219,9 @@ void rsaJsonRpcTestSuite_useEndpointService(void *handle, void *svc, const celix
 
     const char *bundleSymName = celix_bundle_getSymbolicName(svcOwner);
     const char *bundleVer = celix_bundle_getManifestValue(svcOwner, OSGI_FRAMEWORK_BUNDLE_VERSION);
-    version_pt version = NULL;
-    celix_status_t status = version_createVersionFromString(bundleVer, &version);
-    EXPECT_EQ(CELIX_SUCCESS, status);
-    int major = 0;
-    (void)version_getMajor(version, &major);
+    celix_version_t* version = celix_version_createVersionFromString(bundleVer);
+    EXPECT_NE(version, nullptr);
+    int major = celix_version_getMajor(version);
     celix_version_destroy(version);
     unsigned int serialProtoId =  celix_utils_stringHash(bundleSymName) + major;
     celix_properties_t *metadata = celix_properties_create();

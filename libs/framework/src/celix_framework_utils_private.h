@@ -20,10 +20,10 @@
 #ifndef CELIX_FRAMEWORK_UTILS_PRIVATE_H_
 #define CELIX_FRAMEWORK_UTILS_PRIVATE_H_
 
+#include <time.h>
 
 #include "celix_framework_utils.h"
-
-#include <time.h>
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,6 +31,9 @@ extern "C" {
 
 /**
  * @brief Checks whether the provided bundle url is newer than the provided time.
+ *
+ * @note Symbol export is required for unit testing.
+ *
  * @param fw Celix framework (used for logging).
  * @param bundleURL The bundle url. Which must be the following:
  * - prefixed with file:// -> url is a file path.
@@ -41,10 +44,13 @@ extern "C" {
  * @return Whether the bundle url is newer than the provided time. Will also be true if time is NULL or if the bundleUrl
  *         is an embedded:// url.
  */
-bool celix_framework_utils_isBundleUrlNewerThan(celix_framework_t* fw, const char* bundleURL, const struct timespec* time);
+CELIX_FRAMEWORK_EXPORT bool celix_framework_utils_isBundleUrlNewerThan(celix_framework_t* fw, const char* bundleURL, const struct timespec* time);
 
 /**
  * @brief extracts a bundle for the given cache.
+ *
+ * @note Symbol export is required for unit testing.
+ *
  * @param fw Optional Celix framework (used for logging).
  *           If NULL the result of celix_frameworkLogger_globalLogger() will be used for logging.
  * @param extractPath The path to extract the bundle to.
@@ -55,7 +61,7 @@ bool celix_framework_utils_isBundleUrlNewerThan(celix_framework_t* fw, const cha
  *  - no :// -> assuming that the url is a file path (same as with a file:// prefix)
  * @return CELIX_SUCCESS is the bundle was correctly extracted.
  */
-celix_status_t celix_framework_utils_extractBundle(celix_framework_t *fw, const char *bundleURL,  const char* extractPath);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_framework_utils_extractBundle(celix_framework_t *fw, const char *bundleURL,  const char* extractPath);
 
 /**
  * @brief Checks whether the provided bundle url is valid.
@@ -67,13 +73,15 @@ celix_status_t celix_framework_utils_extractBundle(celix_framework_t *fw, const 
  *
  *  If a bundle url is invalid, this function will print - on error level - why the url is invalid.
  *
+ *  @note Symbol export is required for unit testing.
+ *
  * @param fw Optional Celix framework (used for logging).
  *           If NULL the result of celix_frameworkLogger_globalLogger() will be used for logging.
  * @param bundleURL A bundle url to check.
  * @param silent If true, this function will not write error logs when the bundle url is not valid.
  * @return Whether the bundle url is valid.
  */
-bool celix_framework_utils_isBundleUrlValid(celix_framework_t *fw, const char *bundleURL, bool silent);
+CELIX_FRAMEWORK_EXPORT bool celix_framework_utils_isBundleUrlValid(celix_framework_t *fw, const char *bundleURL, bool silent);
 
 #ifdef __cplusplus
 }

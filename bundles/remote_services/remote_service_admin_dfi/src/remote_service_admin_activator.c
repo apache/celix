@@ -17,7 +17,7 @@
  * under the License.
  */
 
-#include "celix_api.h"
+#include "celix_bundle_activator.h"
 
 #include "remote_service_admin_dfi.h"
 #include "export_registration_dfi.h"

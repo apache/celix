@@ -34,6 +34,7 @@ target_include_directories(celix_pubsub_protocol_wire_v1 PRIVATE src)
 target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
 target_link_libraries(celix_pubsub_protocol_wire_v1 PRIVATE celix_wire_protocol_v1_impl)
 celix_deprecated_utils_headers(celix_pubsub_protocol_wire_v1)
+celix_deprecated_framework_headers(celix_pubsub_protocol_wire_v1)
 
 install_celix_bundle(celix_pubsub_protocol_wire_v1 EXPORT celix COMPONENT pubsub)
 

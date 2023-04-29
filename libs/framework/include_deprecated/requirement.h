@@ -16,39 +16,33 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * capability.h
- *
- *  \date       Jul 12, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
-#ifndef CAPABILITY_H_
-#define CAPABILITY_H_
+#ifndef REQUIREMENT_H_
+#define REQUIREMENT_H_
 
-typedef struct capability *capability_pt;
+typedef struct requirement *requirement_pt;
 
+#include "capability.h"
 #include "hash_map.h"
-#include "module.h"
+#include "celix_version_range.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-celix_status_t
-capability_create(module_pt module, hash_map_pt directives, hash_map_pt attributes, capability_pt *capability);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement);
 
-celix_status_t capability_destroy(capability_pt capability);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t requirement_destroy(requirement_pt requirement);
 
-celix_status_t capability_getServiceName(capability_pt capability, const char **serviceName);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t requirement_getVersionRange(requirement_pt requirement, celix_version_range_t **range);
 
-celix_status_t capability_getVersion(capability_pt capability, version_pt *version);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t requirement_getTargetName(requirement_pt requirement, const char **targetName);
 
-celix_status_t capability_getModule(capability_pt capability, module_pt *module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t requirement_isSatisfied(requirement_pt requirement, capability_pt capability, bool *inRange);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CAPABILITY_H_ */
+#endif /* REQUIREMENT_H_ */
