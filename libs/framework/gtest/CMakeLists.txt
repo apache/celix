@@ -26,6 +26,7 @@ add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(bundle_with_exception SOURCES src/nop_activator.c VERSION 1.0.0)
 add_celix_bundle(simple_cxx_bundle SOURCES src/HelloWorldCxxActivator.cc VERSION 1.0.0)
+celix_bundle_libs(simple_cxx_bundle "PRIVATE" TRUE Celix::framework)
 add_celix_bundle(simple_cxx_dep_man_bundle SOURCES src/HelloWorldCxxActivatorWithDepMan.cc VERSION 1.0.0)
 add_celix_bundle(cmp_test_bundle SOURCES src/CmpTestBundleActivator.cc)
 add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
@@ -119,12 +120,14 @@ if (LINKER_WRAP_SUPPORTED)
     add_executable(test_framework_with_ei
             src/BundleArchiveWithErrorInjectionTestSuite.cc
             src/CelixFrameworkUtilsErrorInjectionTestSuite.cc
+            src/CelixBundleContextBundlesWithErrorTestSuite.cc
     )
     target_compile_definitions(test_framework_with_ei PRIVATE
             SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
+            SIMPLE_CXX_BUNDLE_LOC="${SIMPLE_CXX_BUNDLE_LOC}"
     )
     target_include_directories(test_framework_with_ei PRIVATE ../src)
-    add_celix_bundle_dependencies(test_framework_with_ei simple_test_bundle1)
+    add_celix_bundle_dependencies(test_framework_with_ei simple_test_bundle1 simple_cxx_bundle)
     celix_target_embedded_bundles(test_framework_with_ei simple_test_bundle1)
     celix_deprecated_utils_headers(test_framework_with_ei)
     target_link_libraries(test_framework_with_ei PRIVATE

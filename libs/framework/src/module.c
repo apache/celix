@@ -422,7 +422,7 @@ static celix_status_t celix_module_loadLibrariesInManifestEntry(celix_module_t* 
     char* last;
     char* libraries = strndup(librariesIn, 1024*10);
     char* token = strtok_r(libraries, ",", &last);
-    while (token != NULL) {
+    while (token != NULL && status == CELIX_SUCCESS) {
         void *handle = NULL;
         char lib[128];
         lib[127] = '\0';
