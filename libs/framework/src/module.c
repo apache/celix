@@ -358,6 +358,7 @@ array_list_pt module_getDependents(module_pt module) {
 celix_status_t celix_module_closeLibraries(celix_module_t* module) {
     celix_status_t status = CELIX_SUCCESS;
     celix_bundle_context_t *fwCtx = celix_framework_getFrameworkContext(module->fw);
+    bundle_setHandle(module->bundle, NULL); //note deprecated
     celixThreadMutex_lock(&module->handlesLock);
     for (int i = 0; i < celix_arrayList_size(module->libraryHandles); i++) {
         void *handle = celix_arrayList_get(module->libraryHandles, i);
@@ -501,6 +502,7 @@ celix_status_t celix_module_loadLibraries(celix_module_t* module) {
     if (status != CELIX_SUCCESS) {
         fw_logCode(module->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not load libraries for bundle %s",
                    celix_bundle_getSymbolicName(module->bundle));
+        (void)celix_module_closeLibraries(module);
     }
 
     return status;
