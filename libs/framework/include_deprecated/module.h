@@ -93,7 +93,7 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t module_getGroup(module_pt modul
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t module_getName(module_pt module, const char **name);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t module_getDescription(module_pt module, const char **descriptoin);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t module_getDescription(module_pt module, const char **description);
 
 #ifdef __cplusplus
 }

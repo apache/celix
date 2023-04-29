@@ -251,12 +251,12 @@ celix_status_t module_getGroup(module_pt module, const char **symbolicName) {
     return status;
 }
 
-celix_status_t module_getDescription(module_pt module, const char **descriptoin) {
+celix_status_t module_getDescription(module_pt module, const char **description) {
     celix_status_t status = CELIX_SUCCESS;
     if (module == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-        *descriptoin = module->description;
+        *description = module->description;
     }
     return status;
 }
