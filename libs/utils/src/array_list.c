@@ -583,21 +583,21 @@ void celix_arrayList_clear(celix_array_list_t *list) {
 }
 
 #if defined(__APPLE__)
-static int celix_arrayList_compareEntries(void *arg, const void * voidA, const void *voidB) {
+static int celix_arrayList_compareEntries(void* arg, const void* voidA, const void* voidB) {
 #else
-static int celix_arrayList_compareEntries(const void* voidA, const void* voidB, void *arg) {
+static int celix_arrayList_compareEntries(const void* voidA, const void* voidB, void* arg) {
 #endif
-    celix_array_list_sort_entries_fp sort = arg;
+    celix_array_list_compare_entries_fp compare = arg;
     const celix_array_list_entry_t* a = voidA;
     const celix_array_list_entry_t* b = voidB;
-    return sort(*a, *b);
+    return compare(*a, *b);
 }
 
-void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_sort_entries_fp sortFp) {
+void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_compare_entries_fp compare) {
 #if defined(__APPLE__)
-    qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), sortFp, celix_arrayList_compareEntries);
+    qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), compare, celix_arrayList_compareEntries);
 #else
-    qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), celix_arrayList_compareEntries, sortFp);
+    qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), celix_arrayList_compareEntries, compare);
 #endif
 }
 
