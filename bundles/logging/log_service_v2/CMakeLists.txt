@@ -33,6 +33,7 @@ add_celix_bundle(log_service
 target_include_directories(log_service PRIVATE src)
 target_link_libraries(log_service PRIVATE Celix::log_service_api)
 celix_deprecated_utils_headers(log_service)
+celix_deprecated_framework_headers(log_service)
 install_celix_bundle(log_service EXPORT celix COMPONENT logging)
 
 add_celix_bundle(log_writer_stdout

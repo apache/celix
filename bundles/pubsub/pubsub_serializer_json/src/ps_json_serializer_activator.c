@@ -21,7 +21,7 @@
 #include <pubsub_constants.h>
 
 #include "pubsub_json_serialization_provider.h"
-#include "celix_api.h"
+#include "celix_bundle_activator.h"
 #include "pubsub_serializer_impl.h"
 
 typedef struct psjs_activator {

@@ -29,7 +29,6 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include "service_tracker.h"
 #include "celix_threads.h"
 
 #include "poi.h"
@@ -108,7 +107,7 @@ static void* send_thread(void* arg) {
     return NULL;
 }
 
-pubsub_sender_t* publisher_create(array_list_pt trackers,const char* ident,long bundleId) {
+pubsub_sender_t* publisher_create(celix_array_list_t* trackers,const char* ident,long bundleId) {
     pubsub_sender_t *publisher = malloc(sizeof(*publisher));
 
     publisher->trackers = trackers;

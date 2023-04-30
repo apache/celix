@@ -24,6 +24,7 @@ set_target_properties(rsa_common PROPERTIES OUTPUT_NAME "celix_rsa_common")
 target_include_directories(rsa_common PRIVATE src)
 target_link_libraries(rsa_common PUBLIC Celix::framework Celix::c_rsa_spi Celix::log_helper)
 celix_deprecated_utils_headers(rsa_common)
+celix_deprecated_framework_headers(rsa_common)
 
 install(TARGETS rsa_common EXPORT celix COMPONENT rsa DESTINATION ${CMAKE_INSTALL_LIBDIR})
 

@@ -25,7 +25,9 @@ extern "C" {
 }
 #include "endpoint_listener.h"
 #include "celix_log_helper.h"
-#include "celix_api.h"
+#include "celix_bundle_context.h"
+#include "celix_framework_factory.h"
+#include "celix_constants.h"
 #include "celix_errno.h"
 #include "eventfd_ei.h"
 #include "celix_threads_ei.h"
@@ -67,7 +69,6 @@ public:
 
     ~DiscoveryZeroconfAnnouncerTestSuite() override {
         celix_ei_expect_eventfd(nullptr, 0, 0);
-        celix_ei_eventfd_errno = 0;
         celix_ei_expect_celixThreadMutex_create(nullptr, 0, 0);
         celix_ei_expect_celix_bundleContext_getProperty(nullptr, 0, nullptr);
         celix_ei_expect_celix_bundleContext_registerServiceWithOptionsAsync(nullptr, 0, 0);
@@ -94,7 +95,6 @@ TEST_F(DiscoveryZeroconfAnnouncerTestSuite, CreateAndDestroyAnnouncer) {
 TEST_F(DiscoveryZeroconfAnnouncerTestSuite, CreateAnnouncerFailed1) {
     discovery_zeroconf_announcer_t *announcer{nullptr};
     celix_ei_expect_eventfd((void*)&discoveryZeroconfAnnouncer_create, 0, -1);
-    celix_ei_eventfd_errno = ENOMEM;
     auto status = discoveryZeroconfAnnouncer_create(ctx.get(), logHelper.get(), &announcer);
     EXPECT_EQ(status, CELIX_ENOMEM);
 }

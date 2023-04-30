@@ -37,6 +37,7 @@ target_include_directories(rsa_discovery_common PUBLIC
 		${CURL_INCLUDE_DIRS}
 		${LIBXML2_INCLUDE_DIR})
 celix_deprecated_utils_headers(rsa_discovery_common)
+celix_deprecated_framework_headers(rsa_discovery_common)
 target_link_libraries(rsa_discovery_common PUBLIC civetweb::civetweb)
 
 #Setup target aliases to match external usage

@@ -20,8 +20,7 @@
 #include <stdlib.h>
 #include <memory.h>
 
-#include "celix_api.h"
-#include "celix_types.h"
+#include "celix_bundle_activator.h"
 #include "http_admin.h"
 #include "websocket_admin.h"
 #include "http_admin/api.h"

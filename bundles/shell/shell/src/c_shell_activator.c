@@ -24,11 +24,9 @@
 #include "shell_private.h"
 #include "celix_bundle_activator.h"
 #include "std_commands.h"
-#include "service_tracker.h"
 #include "celix_constants.h"
 #include "celix_shell_command.h"
 #include "std_commands.h"
-
 
 struct shell_bundle_activator {
     shell_t *shell;

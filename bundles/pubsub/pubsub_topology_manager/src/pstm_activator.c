@@ -23,11 +23,8 @@
 #include <celix_bundle_activator.h>
 #include <pubsub_admin.h>
 #include <pubsub_admin_metrics.h>
-
-#include "celix_api.h"
-
 #include "celix_log_helper.h"
-
+#include "hash_map.h"
 #include "pubsub_topology_manager.h"
 #include "pubsub_listeners.h"
 

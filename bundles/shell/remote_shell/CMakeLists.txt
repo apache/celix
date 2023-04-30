@@ -38,6 +38,7 @@ if (REMOTE_SHELL)
 
 	target_link_libraries(remote_shell PRIVATE Celix::shell_api)
 	celix_deprecated_utils_headers(remote_shell)
+	celix_deprecated_framework_headers(remote_shell)
 
 	install_celix_bundle(remote_shell EXPORT celix COMPONENT remote_shell)
 	#Alias setup to match external usage

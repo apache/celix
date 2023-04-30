@@ -24,7 +24,6 @@
 
 #include "celix_log_level.h"
 #include "celix_errno.h"
-#include "framework_exports.h"
 #include <stdarg.h>
 
 #ifdef __cplusplus

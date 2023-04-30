@@ -32,3 +32,4 @@ celix_bundle_files(topology_manager_test_bundle
 
 target_link_libraries(topology_manager_test_bundle PRIVATE Celix::c_rsa_spi calculator_api)
 celix_deprecated_utils_headers(topology_manager_test_bundle)
+celix_deprecated_framework_headers(topology_manager_test_bundle)
