@@ -241,6 +241,7 @@ In Apache Celix symbols are kept private by loading bundle libraries locally (`d
 ## Symbol visibility for bundles
 Bundles cannot directly access the symbols of another bundle and therefore the symbols of the bundle activator library 
 can be hidden with exception of the bundle activator create, start, stop and destroy functions.
+The celix_bundle_activator.h header file ensures that the bundle activator symbols are exported.
 
 The benefits of hiding symbols for a bundle are:
  - Smaller bundle libraries;
@@ -255,23 +256,16 @@ For C++ this is only the case if the provided services is based on a C++ header-
 the case, because C service structs does not result in any symbols.
 
 By default, the symbol visibility preset of the bundle activator library is configured to hidden.
-This can be changed by providing the`DO_NOT_CONFIGURE_SYMBOL_VISIBILTY` option in the `add_celix_bundle` CMake 
+This can be changed by providing the`DO_NOT_CONFIGURE_SYMBOL_VISIBILITY` option in the `add_celix_bundle` CMake 
 function call.
 
-TODO
-The default symbol visibility configuration for bundles can be changed by setting 
-the `CELIX_CONFIGURE_BUNDLE_SYMBOL_VISIBILITY_TO_HIDDEN` CMake variable. The default value is `ON`.
-TODO
-
-The celix_bundle_activator.h header file ensures that the bundle activator symbols are exported.
-
-### Hiding symbols with celix_bundle_hide_symbols example
+### Example of disabling hiding of symbols for a bundle
 ```CMake
-add_celix_bundle(my_bundle_hide_symbols
+add_celix_bundle(my_bundle_do_not_hide_symbols
     VERSION 1.0.0
     SOURCES src/my_bundle_activator.c
+    DO_NOT_CONFIGURE_SYMBOL_VISIBILITY
 )
-celix_bundle_hide_symbols(my_bundle_hide_symbols)
 ```
 
 ## Installing bundles

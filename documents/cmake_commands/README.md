@@ -41,6 +41,7 @@ add_celix_bundle(<bundle_target_name>
         [FILENAME bundle_filename]
         [PRIVATE_LIBRARIES private_lib1 private_lib2 ...]
         [HEADERS "header1: header1_value" "header2: header2_value" ...]
+        [DO_NOT_CONFIGURE_SYMBOL_VISIBILITY]
 )
 ```
 
@@ -55,6 +56,7 @@ add_celix_bundle(<bundle_target_name>
         [FILENAME bundle_filename]
         [PRIVATE_LIBRARIES private_lib1 private_lib2 ...]
         [HEADERS "header1: header1_value" "header2: header2_value" ...]
+        [DO_NOT_CONFIGURE_SYMBOL_VISIBILITY]
 )
 ```
 
@@ -69,6 +71,7 @@ add_celix_bundle(<bundle_target_name>
         [FILENAME bundle_filename]
         [PRIVATE_LIBRARIES private_lib1 private_lib2 ...]
         [HEADERS "header1: header1_value" "header2: header2_value" ...]
+        [DO_NOT_CONFIGURE_SYMBOL_VISIBILITY]
 )
 ```
 
@@ -92,6 +95,7 @@ Optional arguments are:
 - FILENAME: The filename of the bundle file, without extension. Default is <bundle_target_name>. Together with the BUILD_TYPE, this will result in a filename like "bundle_target_name_Debug.zip
 - PRIVATE_LIBRARIES: private libraries to be included in the bundle. Specified libraries are added to the "Private-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.
 - HEADERS: Additional headers values that are appended to the bundle manifest.
+- DO_NOT_CONFIGURE_SYMBOL_VISIBILITY: By default the bundle library will be build with symbol visibility configuration preset set to hidden. This can be disabled by providing this option. 
 
 ## celix_bundle_private_libs
 Add libraries to a bundle.
@@ -273,29 +277,6 @@ celix_get_bundle_file(<bundle_target> VARIABLE_NAME)
 Example:
 ```CMake
 celix_get_bundle_file(Celix::shell SHELL_BUNDLE_FILE)
-```
-
-## celix_bundle_hide_symbols
-Configure the symbol visibility preset of the bundle library to hidden.
-
-This is done by setting the target properties C_VISIBILITY_PRESET to hidden, the CXX_VISIBILITY_PRESET to hidden and
-VISIBILITY_INLINES_HIDDEN to ON.
-
-```CMake
-celix_bundle_hide_symbols(<bundle_target> [RELEASE] [DEBUG] [RELWITHDEBINFO] [MINSIZEREL])
-```
-
-Optional arguments are:
-- RELEASE: hide symbols for the release build type
-- DEBUG: hide symbols for the debug build type
-- RELWITHDEBINFO: hide symbols for the relwithdebinfo build type
-- MINSIZEREL: hide symbols for the minsizerel build type
-
-If no optional arguments are provided, the symbols are hidden for all build types.
-
-Example:
-```CMake
-celix_bundle_hide_symbols(my_bundle RELEASE MINSIZEREL)
 ```
 
 ## install_celix_bundle
@@ -708,3 +689,26 @@ The bundle set can be installed using the Celix framework util function `celix_f
 or `celix::installBundleSet` (C++).
 
 Adding a compile-definition with a set of bundles can be useful for testing purpose.
+
+## celix_target_hide_symbols
+Configure the symbol visibility preset of the provided target to hidden.
+
+This is done by setting the target properties C_VISIBILITY_PRESET to hidden, the CXX_VISIBILITY_PRESET to hidden and
+VISIBILITY_INLINES_HIDDEN to ON.
+
+```CMake
+celix_target_hide_symbols(<cmake_target> [RELEASE] [DEBUG] [RELWITHDEBINFO] [MINSIZEREL])
+```
+
+Optional arguments are:
+- RELEASE: hide symbols for the release build type
+- DEBUG: hide symbols for the debug build type
+- RELWITHDEBINFO: hide symbols for the relwithdebinfo build type
+- MINSIZEREL: hide symbols for the minsizerel build type
+
+If no optional arguments are provided, the symbols are hidden for all build types.
+
+Example:
+```CMake
+celix_target_hide_symbols(my_bundle RELEASE MINSIZEREL)
+```

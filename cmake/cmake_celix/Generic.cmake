@@ -248,3 +248,60 @@ function(celix_target_bundle_set_definition)
 
     target_compile_definitions(${TARGET_NAME} PRIVATE ${BUNDLE_SET_NAME}=\"${BUNDLES}\")
 endfunction()
+
+#[[
+Configure the symbol visibility preset of the provided target to hidden.
+
+This is done by setting the target properties C_VISIBILITY_PRESET to hidden, the CXX_VISIBILITY_PRESET to hidden and
+VISIBILITY_INLINES_HIDDEN to ON.
+
+```CMake
+celix_target_hide_symbols(<cmake_target> [RELEASE] [DEBUG] [RELWITHDEBINFO] [MINSIZEREL])
+```
+
+Optional arguments are:
+- RELEASE: hide symbols for the release build type
+- DEBUG: hide symbols for the debug build type
+- RELWITHDEBINFO: hide symbols for the relwithdebinfo build type
+- MINSIZEREL: hide symbols for the minsizerel build type
+
+If no optional arguments are provided, the symbols are hidden for all build types.
+
+Example:
+```CMake
+celix_target_hide_symbols(my_bundle RELEASE MINSIZEREL)
+```
+]]
+function(celix_target_hide_symbols)
+    list(GET ARGN 0 BUNDLE_TARGET)
+    list(REMOVE_AT ARGN 0)
+
+    set(OPTIONS RELEASE DEBUG RELWITHDEBINFO MINSIZEREL)
+    cmake_parse_arguments(HIDE_SYMBOLS "${OPTIONS}" "" "" ${ARGN})
+
+    set(BUILD_TYPE "")
+    if (CMAKE_BUILD_TYPE)
+        string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
+    endif ()
+
+    set(HIDE_SYMBOLS FALSE)
+    if (NOT HIDE_SYMBOLS_RELEASE AND NOT HIDE_SYMBOLS_DEBUG AND NOT HIDE_SYMBOLS_RELWITHDEBINFO AND NOT HIDE_SYMBOLS_MINSIZEREL)
+        set(HIDE_SYMBOLS TRUE)
+    elseif (HIDE_SYMBOLS_RELEASE AND BUILD_TYPE STREQUAL "RELEASE")
+        set(HIDE_SYMBOLS TRUE)
+    elseif (HIDE_SYMBOLS_DEBUG AND BUILD_TYPE STREQUAL "DEBUG")
+        set(HIDE_SYMBOLS TRUE)
+    elseif (HIDE_SYMBOLS_RELWITHDEBINFO AND BUILD_TYPE STREQUAL "RELWITHDEBINFO")
+        set(HIDE_SYMBOLS TRUE)
+    elseif (HIDE_SYMBOLS_MINSIZEREL AND BUILD_TYPE STREQUAL "MINSIZEREL")
+        set(HIDE_SYMBOLS TRUE)
+    endif ()
+
+    if (HIDE_SYMBOLS)
+        set_target_properties(${BUNDLE_TARGET}
+                PROPERTIES
+                C_VISIBILITY_PRESET hidden
+                CXX_VISIBILITY_PRESET hidden
+                VISIBILITY_INLINES_HIDDEN ON)
+    endif ()
+endfunction()
