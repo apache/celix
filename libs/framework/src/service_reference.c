@@ -180,7 +180,7 @@ long serviceReference_getServiceId(service_reference_pt ref) {
 
 
 
-FRAMEWORK_EXPORT celix_status_t
+celix_status_t
 serviceReference_getPropertyWithDefault(service_reference_pt ref, const char *key, const char* def, const char **value) {
     celix_status_t status = CELIX_SUCCESS;
     properties_pt props = NULL;
@@ -195,7 +195,7 @@ celix_status_t serviceReference_getProperty(service_reference_pt ref, const char
     return serviceReference_getPropertyWithDefault(ref, key, NULL, value);
 }
 
-FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_reference_pt ref, char **keys[], unsigned int *size) {
+celix_status_t serviceReference_getPropertyKeys(service_reference_pt ref, char **keys[], unsigned int *size) {
     celix_status_t status = CELIX_SUCCESS;
     properties_pt props = NULL;
 

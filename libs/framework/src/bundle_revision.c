@@ -23,7 +23,7 @@
 #include "bundle_revision_private.h"
 #include "framework_private.h"
 
-celix_status_t bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, manifest_pt manifest, bundle_revision_pt *bundle_revision) {
+celix_status_t celix_bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, manifest_pt manifest, bundle_revision_pt *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_revision_pt revision = calloc(1, sizeof(*revision));
     if (revision != NULL) {
@@ -55,7 +55,7 @@ celix_status_t bundleRevision_create(celix_framework_t* fw, const char *root, co
 bundle_revision_t* bundleRevision_revise(const bundle_revision_t* rev, const char* updatedBundleUrl) {
     bundle_revision_pt newRev = NULL;
     manifest_pt clonedManifest = manifest_clone(rev->manifest);
-    bundleRevision_create(rev->fw, rev->root, updatedBundleUrl, clonedManifest, &newRev);
+    celix_bundleRevision_create(rev->fw, rev->root, updatedBundleUrl, clonedManifest, &newRev);
     return newRev;
 }
 

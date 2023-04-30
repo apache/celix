@@ -29,6 +29,7 @@
 
 #include <celix_errno.h>
 #include <service_reference.h>
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,28 +54,28 @@ struct serviceTrackerCustomizer {
 	celix_status_t (*removedService)(void * handle, service_reference_pt reference, void * service);
 };
 
-FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_create(void *handle,
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceTrackerCustomizer_create(void *handle,
 																adding_callback_pt addingFunction,
 																added_callback_pt addedFunction,
 																modified_callback_pt modifiedFunction,
 																removed_callback_pt removedFunction,
 																service_tracker_customizer_pt *customizer);
 
-FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_destroy(service_tracker_customizer_pt customizer);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceTrackerCustomizer_destroy(service_tracker_customizer_pt customizer);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceTrackerCustomizer_getHandle(service_tracker_customizer_pt customizer, void **handle);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceTrackerCustomizer_getAddingFunction(service_tracker_customizer_pt customizer, adding_callback_pt *function);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceTrackerCustomizer_getAddedFunction(service_tracker_customizer_pt customizer, added_callback_pt *function);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceTrackerCustomizer_getModifiedFunction(service_tracker_customizer_pt customizer, modified_callback_pt *function);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceTrackerCustomizer_getRemovedFunction(service_tracker_customizer_pt customizer, removed_callback_pt *function);
 
 #ifdef __cplusplus

@@ -17,13 +17,14 @@
  * under the License.
  */
 
+#ifndef CELIX_PROPERTIES_H_
+#define CELIX_PROPERTIES_H_
+
 #include <stdio.h>
 #include <stdbool.h>
 
 #include "celix_errno.h"
-
-#ifndef CELIX_PROPERTIES_H_
-#define CELIX_PROPERTIES_H_
+#include "celix_utils_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,45 +47,45 @@ typedef struct celix_properties_iterator {
  * Updated API
  **********************************************************************************************************************
  **********************************************************************************************************************/
- 
-celix_properties_t* celix_properties_create(void);
 
-void celix_properties_destroy(celix_properties_t *properties);
+CELIX_UTILS_EXPORT celix_properties_t* celix_properties_create(void);
 
-celix_properties_t* celix_properties_load(const char *filename);
+CELIX_UTILS_EXPORT void celix_properties_destroy(celix_properties_t *properties);
 
-celix_properties_t* celix_properties_loadWithStream(FILE *stream);
+CELIX_UTILS_EXPORT celix_properties_t* celix_properties_load(const char *filename);
 
-celix_properties_t* celix_properties_loadFromString(const char *input);
+CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadWithStream(FILE *stream);
 
-void celix_properties_store(celix_properties_t *properties, const char *file, const char *header);
+CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadFromString(const char *input);
 
-const char* celix_properties_get(const celix_properties_t *properties, const char *key, const char *defaultValue);
+CELIX_UTILS_EXPORT void celix_properties_store(celix_properties_t *properties, const char *file, const char *header);
 
-void celix_properties_set(celix_properties_t *properties, const char *key, const char *value);
+CELIX_UTILS_EXPORT const char* celix_properties_get(const celix_properties_t *properties, const char *key, const char *defaultValue);
 
-void celix_properties_setWithoutCopy(celix_properties_t *properties, char *key, char *value);
+CELIX_UTILS_EXPORT void celix_properties_set(celix_properties_t *properties, const char *key, const char *value);
 
-void celix_properties_unset(celix_properties_t *properties, const char *key);
+CELIX_UTILS_EXPORT void celix_properties_setWithoutCopy(celix_properties_t *properties, char *key, char *value);
 
-celix_properties_t* celix_properties_copy(const celix_properties_t *properties);
+CELIX_UTILS_EXPORT void celix_properties_unset(celix_properties_t *properties, const char *key);
 
-long celix_properties_getAsLong(const celix_properties_t *props, const char *key, long defaultValue);
-void celix_properties_setLong(celix_properties_t *props, const char *key, long value);
+CELIX_UTILS_EXPORT celix_properties_t* celix_properties_copy(const celix_properties_t *properties);
 
-bool celix_properties_getAsBool(const celix_properties_t *props, const char *key, bool defaultValue);
-void celix_properties_setBool(celix_properties_t *props, const char *key, bool val);
+CELIX_UTILS_EXPORT long celix_properties_getAsLong(const celix_properties_t *props, const char *key, long defaultValue);
+CELIX_UTILS_EXPORT void celix_properties_setLong(celix_properties_t *props, const char *key, long value);
+
+CELIX_UTILS_EXPORT bool celix_properties_getAsBool(const celix_properties_t *props, const char *key, bool defaultValue);
+CELIX_UTILS_EXPORT void celix_properties_setBool(celix_properties_t *props, const char *key, bool val);
 
 
-void celix_properties_setDouble(celix_properties_t *props, const char *key, double val);
-double celix_properties_getAsDouble(const celix_properties_t *props, const char *key, double defaultValue);
+CELIX_UTILS_EXPORT void celix_properties_setDouble(celix_properties_t *props, const char *key, double val);
+CELIX_UTILS_EXPORT double celix_properties_getAsDouble(const celix_properties_t *props, const char *key, double defaultValue);
 
-int celix_properties_size(const celix_properties_t *properties);
+CELIX_UTILS_EXPORT int celix_properties_size(const celix_properties_t *properties);
 
-celix_properties_iterator_t celix_propertiesIterator_construct(const celix_properties_t *properties);
-bool celix_propertiesIterator_hasNext(celix_properties_iterator_t *iter);
-const char* celix_propertiesIterator_nextKey(celix_properties_iterator_t *iter);
-celix_properties_t* celix_propertiesIterator_properties(celix_properties_iterator_t *iter);
+CELIX_UTILS_EXPORT celix_properties_iterator_t celix_propertiesIterator_construct(const celix_properties_t *properties);
+CELIX_UTILS_EXPORT bool celix_propertiesIterator_hasNext(celix_properties_iterator_t *iter);
+CELIX_UTILS_EXPORT const char* celix_propertiesIterator_nextKey(celix_properties_iterator_t *iter);
+CELIX_UTILS_EXPORT celix_properties_t* celix_propertiesIterator_properties(celix_properties_iterator_t *iter);
 
 #define CELIX_PROPERTIES_FOR_EACH(props, key) \
     for(celix_properties_iterator_t iter = celix_propertiesIterator_construct(props); \

@@ -359,7 +359,7 @@ hash_map_iterator_pt hashMapIterator_create(hash_map_pt map) {
     return iterator;
 }
 
-UTILS_EXPORT hash_map_iterator_t hashMapIterator_construct(hash_map_pt map) {
+hash_map_iterator_t hashMapIterator_construct(hash_map_pt map) {
     hash_map_iterator_t iter;
     memset(&iter, 0, sizeof(iter));
     hashMapIterator_init(map, &iter);

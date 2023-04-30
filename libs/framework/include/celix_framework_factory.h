@@ -21,6 +21,7 @@
 #define CELIX_FRAMEWORK_FACTORY_H_
 
 #include "celix_framework.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,13 +32,13 @@ extern "C" {
  * @param config The framework configuration. Can be NULL.
  * @return a started framework or NULL
  */
-celix_framework_t* celix_frameworkFactory_createFramework(celix_properties_t *config);
+CELIX_FRAMEWORK_EXPORT celix_framework_t* celix_frameworkFactory_createFramework(celix_properties_t *config);
 
 /**
  * Stop and destroys a Celix framework
  * Note that this call block till the Celix framework is stopped
  */
-void celix_frameworkFactory_destroyFramework(celix_framework_t *fw);
+CELIX_FRAMEWORK_EXPORT void celix_frameworkFactory_destroyFramework(celix_framework_t *fw);
 
 
 #ifdef __cplusplus

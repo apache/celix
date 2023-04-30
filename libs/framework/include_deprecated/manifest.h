@@ -29,7 +29,7 @@
 
 #include "properties.h"
 #include "celix_errno.h"
-#include "framework_exports.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,25 +42,25 @@ struct manifest {
 
 typedef struct manifest *manifest_pt;
 
-FRAMEWORK_EXPORT celix_status_t manifest_create(manifest_pt *manifest);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t manifest_create(manifest_pt *manifest);
 
-FRAMEWORK_EXPORT manifest_pt manifest_clone(manifest_pt manifest);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT manifest_pt manifest_clone(manifest_pt manifest);
 
-FRAMEWORK_EXPORT celix_status_t manifest_createFromFile(const char *filename, manifest_pt *manifest);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t manifest_createFromFile(const char *filename, manifest_pt *manifest);
 
-FRAMEWORK_EXPORT celix_status_t manifest_destroy(manifest_pt manifest);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t manifest_destroy(manifest_pt manifest);
 
-FRAMEWORK_EXPORT void manifest_clear(manifest_pt manifest);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT void manifest_clear(manifest_pt manifest);
 
-FRAMEWORK_EXPORT celix_properties_t *manifest_getMainAttributes(manifest_pt manifest);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_properties_t *manifest_getMainAttributes(manifest_pt manifest);
 
-FRAMEWORK_EXPORT celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map);
 
-FRAMEWORK_EXPORT celix_status_t manifest_read(manifest_pt manifest, const char *filename);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t manifest_read(manifest_pt manifest, const char *filename);
 
-FRAMEWORK_EXPORT void manifest_write(manifest_pt manifest, const char *filename);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT void manifest_write(manifest_pt manifest, const char *filename);
 
-FRAMEWORK_EXPORT const char *manifest_getValue(manifest_pt manifest, const char *name);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT const char *manifest_getValue(manifest_pt manifest, const char *name);
 
 #ifdef __cplusplus
 }

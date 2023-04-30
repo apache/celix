@@ -24,7 +24,7 @@
 #include <stdbool.h>
 
 #include "celix_errno.h"
-#include "exports.h"
+#include "celix_utils_export.h"
 #include "celix_threads.h"
 #include "celix_utils.h"
 
@@ -34,22 +34,22 @@ extern "C" {
 
 #define CELIX_UTILS_DEPRECATED_ATTR __attribute__((deprecated("functions in utils.h are deprecated use functions in celix_utils.h instead")))
 
-UTILS_EXPORT unsigned int utils_stringHash(const void *string) CELIX_UTILS_DEPRECATED_ATTR;
+CELIX_UTILS_DEPRECATED_EXPORT unsigned int utils_stringHash(const void *string) CELIX_UTILS_DEPRECATED_ATTR;
 
-UTILS_EXPORT int utils_stringEquals(const void *string, const void *toCompare) CELIX_UTILS_DEPRECATED_ATTR;
+CELIX_UTILS_DEPRECATED_EXPORT int utils_stringEquals(const void *string, const void *toCompare) CELIX_UTILS_DEPRECATED_ATTR;
 
-UTILS_EXPORT char *string_ndup(const char *s, size_t n) CELIX_UTILS_DEPRECATED_ATTR;
+CELIX_UTILS_DEPRECATED_EXPORT char *string_ndup(const char *s, size_t n) CELIX_UTILS_DEPRECATED_ATTR;
 
-UTILS_EXPORT char *utils_stringTrim(char *string) CELIX_UTILS_DEPRECATED_ATTR;
+CELIX_UTILS_DEPRECATED_EXPORT char *utils_stringTrim(char *string) CELIX_UTILS_DEPRECATED_ATTR;
 
-UTILS_EXPORT bool utils_isStringEmptyOrNull(const char *const str) CELIX_UTILS_DEPRECATED_ATTR;
+CELIX_UTILS_DEPRECATED_EXPORT bool utils_isStringEmptyOrNull(const char *const str) CELIX_UTILS_DEPRECATED_ATTR;
 
-UTILS_EXPORT int
+CELIX_UTILS_DEPRECATED_EXPORT int
 utils_compareServiceIdsAndRanking(long servId, long servRank, long otherServId, long otherServRank) CELIX_UTILS_DEPRECATED_ATTR;
 
-UTILS_EXPORT celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals) CELIX_UTILS_DEPRECATED_ATTR;
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals) CELIX_UTILS_DEPRECATED_ATTR;
 
-UTILS_EXPORT celix_status_t utils_isNumeric(const char *number, bool *ret) CELIX_UTILS_DEPRECATED_ATTR;
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t utils_isNumeric(const char *number, bool *ret) CELIX_UTILS_DEPRECATED_ATTR;
 
 #ifdef __cplusplus
 }

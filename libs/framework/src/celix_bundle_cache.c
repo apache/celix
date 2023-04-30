@@ -193,7 +193,7 @@ celix_status_t celix_bundleCache_createArchive(celix_framework_t* fw, long id, c
     char *archiveRoot = celix_utils_writeOrCreateString(archiveRootBuffer, sizeof(archiveRootBuffer), CELIX_BUNDLE_ARCHIVE_ROOT_FORMAT, fw->cache->cacheDir, id);
     if (archiveRoot) {
         celixThreadMutex_lock(&fw->cache->mutex);
-        status = bundleArchive_create(fw, archiveRoot, id, location, &archive);
+        status = celix_bundleArchive_create(fw, archiveRoot, id, location, &archive);
         celixThreadMutex_unlock(&fw->cache->mutex);
         celix_utils_freeStringIfNotEqual(archiveRootBuffer, archiveRoot);
     } else {

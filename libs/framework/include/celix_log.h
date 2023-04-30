@@ -21,10 +21,11 @@
 #define CELIX_LOG_H_
 
 #include <stdio.h>
+#include <stdarg.h>
 
 #include "celix_log_level.h"
 #include "celix_errno.h"
-#include <stdarg.h>
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,12 +43,12 @@ typedef struct celix_framework_logger celix_framework_logger_t; //opaque
     }
 
 
-celix_framework_logger_t* celix_frameworkLogger_create(celix_log_level_e activeLogLevel);
-void celix_frameworkLogger_destroy(celix_framework_logger_t* logger);
-void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs));
-celix_framework_logger_t* celix_frameworkLogger_globalLogger();
+CELIX_FRAMEWORK_EXPORT celix_framework_logger_t* celix_frameworkLogger_create(celix_log_level_e activeLogLevel);
+CELIX_FRAMEWORK_EXPORT void celix_frameworkLogger_destroy(celix_framework_logger_t* logger);
+CELIX_FRAMEWORK_EXPORT void celix_frameworkLogger_setLogCallback(celix_framework_logger_t* logger, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs));
+CELIX_FRAMEWORK_EXPORT celix_framework_logger_t* celix_frameworkLogger_globalLogger();
 
-void celix_framework_log(
+CELIX_FRAMEWORK_EXPORT void celix_framework_log(
         celix_framework_logger_t* logger,
         celix_log_level_e level,
         const char *func,
@@ -56,7 +57,7 @@ void celix_framework_log(
         const char *format,
         ...) __attribute__((format(printf,6,7)));
 
-void celix_framework_logCode(
+CELIX_FRAMEWORK_EXPORT void celix_framework_logCode(
         celix_framework_logger_t* logger,
         celix_log_level_e level,
         const char *func,
@@ -66,7 +67,7 @@ void celix_framework_logCode(
         const char *format,
         ...) __attribute__((format(printf,7,8)));
 
-void celix_framework_vlog(
+CELIX_FRAMEWORK_EXPORT void celix_framework_vlog(
         celix_framework_logger_t* logger,
         celix_log_level_e level,
         const char* file,

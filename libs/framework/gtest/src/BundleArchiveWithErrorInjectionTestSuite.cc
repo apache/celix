@@ -27,9 +27,9 @@
 #include "asprintf_ei.h"
 
 //extern declarations for testing purposes. Note signatures are not correct, but that is not important for the test.
-extern "C" celix_status_t bundleArchive_create(void);
+extern "C" celix_status_t celix_bundleArchive_create(void);
 extern "C" celix_status_t manifest_create(void);
-extern "C" celix_status_t bundleRevision_create(void);
+extern "C" celix_status_t celix_bundleRevision_create(void);
 
 class BundleArchiveWithErrorInjectionTestSuite : public ::testing::Test {
 public:
@@ -75,12 +75,12 @@ protected:
 TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreatedFailedTest) {
     teardownErrorInjectors();
     //Given a mocked calloc which returns NULL from a (indirect) call from bundleArchive_create
-    celix_ei_expect_calloc((void*)bundleArchive_create, 1, nullptr);
+    celix_ei_expect_calloc((void*)celix_bundleArchive_create, 1, nullptr);
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
     //Given a mocked celix_utils_strdup which returns NULL from a (indirect) call from bundleArchive_create
-    celix_ei_expect_celix_utils_strdup((void*)bundleArchive_create, 1, nullptr);
+    celix_ei_expect_celix_utils_strdup((void*)celix_bundleArchive_create, 1, nullptr);
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
@@ -90,15 +90,15 @@ TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreatedFailedTest)
 
     teardownErrorInjectors();
     //Given a mocked calloc which returns NULL from a call from bundleRevision_create
-    celix_ei_expect_calloc((void*)bundleRevision_create, 0, nullptr);
+    celix_ei_expect_calloc((void*)celix_bundleRevision_create, 0, nullptr);
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
     //Given a mocked celix_utils_strdup which returns NULL from a call from bundleRevision_create
-    celix_ei_expect_celix_utils_strdup((void*)bundleRevision_create, 0, nullptr);
+    celix_ei_expect_celix_utils_strdup((void*)celix_bundleRevision_create, 0, nullptr);
     installBundleAndExpectFailure();
 
-    celix_ei_expect_celix_utils_strdup((void*)bundleRevision_create, 0, nullptr, 2);
+    celix_ei_expect_celix_utils_strdup((void*)celix_bundleRevision_create, 0, nullptr, 2);
     installBundleAndExpectFailure();
 }
 
@@ -106,38 +106,38 @@ TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreateCacheDirecto
     teardownErrorInjectors();
     //Given a mocked celix_utils_createDirectory which returns CELIX_FILE_IO_EXCEPTION from a (indirect) call from
     //bundleArchive_create
-    celix_ei_expect_celix_utils_createDirectory((void*)bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION);
+    celix_ei_expect_celix_utils_createDirectory((void*)celix_bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION);
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
     //Given a mocked asprintf which returns -1 from a (indirect) call from bundleArchive_create
-    celix_ei_expect_asprintf((void*)bundleArchive_create, 2, -1);
+    celix_ei_expect_asprintf((void*)celix_bundleArchive_create, 2, -1);
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
     //Given a mocked celix_utils_createDirectory which returns CELIX_FILE_IO_EXCEPTION from a second (indirect) call
     // from bundleArchive_create
-    celix_ei_expect_celix_utils_createDirectory((void*)bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION, 2);
+    celix_ei_expect_celix_utils_createDirectory((void*)celix_bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION, 2);
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
     //Given a mocked asprintf which returns -1 from a (indirect) call from bundleArchive_create
-    celix_ei_expect_asprintf((void*)bundleArchive_create, 2, -1, 2);
+    celix_ei_expect_asprintf((void*)celix_bundleArchive_create, 2, -1, 2);
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
     //Given a mocked celix_utils_createDirectory which returns CELIX_FILE_IO_EXCEPTION from a third (indirect) call
     // from bundleArchive_create
-    celix_ei_expect_celix_utils_createDirectory((void*)bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION, 3);
+    celix_ei_expect_celix_utils_createDirectory((void*)celix_bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION, 3);
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
     //Given a mocked celix_utils_strdup which returns NULL from a (indirect) call from bundleArchive_create
-    celix_ei_expect_celix_utils_strdup((void*)bundleArchive_create, 2, nullptr);
+    celix_ei_expect_celix_utils_strdup((void*)celix_bundleArchive_create, 2, nullptr);
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
     //Given a mocked celix_utils_strdup which returns NULL from a second (indirect) call from bundleArchive_create
-    celix_ei_expect_celix_utils_strdup((void*)bundleArchive_create, 2, nullptr, 2);
+    celix_ei_expect_celix_utils_strdup((void*)celix_bundleArchive_create, 2, nullptr, 2);
     installBundleAndExpectFailure();
 }

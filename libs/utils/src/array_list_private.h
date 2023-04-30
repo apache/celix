@@ -28,6 +28,7 @@
 #define array_list_t_PRIVATE_H_
 
 #include "array_list.h"
+#include "celix_utils_export.h"
 
 struct celix_array_list {
     celix_array_list_entry_t* elementData;
@@ -50,8 +51,6 @@ struct celix_array_list_iterator {
     int lastReturned;
     unsigned int expectedModificationCount;
 };
-
-void * arrayList_remove(array_list_pt list, unsigned int index);
 
 
 #endif /* array_list_t_PRIVATE_H_ */

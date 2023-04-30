@@ -21,6 +21,7 @@
 #define CELIX_LONG_HASH_MAP_H_
 
 #include "celix_hash_map_value.h"
+#include "celix_utils_export.h"
 
 /**
  * @brief Init macro so that the opts are correctly initialized for C++ compilers
@@ -136,13 +137,13 @@ typedef struct celix_long_hash_map_create_options {
 /**
  * @brief Creates a new empty hash map with a long as key.
  */
-celix_long_hash_map_t* celix_longHashMap_create();
+CELIX_UTILS_EXPORT celix_long_hash_map_t* celix_longHashMap_create();
 
 /**
  * @brief Creates a new empty long hash map using using the provided hash map create options.
  * @param opts The create options, only used during the creation of the hash map.
  */
-celix_long_hash_map_t* celix_longHashMap_createWithOptions(const celix_long_hash_map_create_options_t* opts);
+CELIX_UTILS_EXPORT celix_long_hash_map_t* celix_longHashMap_createWithOptions(const celix_long_hash_map_create_options_t* opts);
 
 /**
  * @brief Clears and then deallocated the hash map.
@@ -151,12 +152,12 @@ celix_long_hash_map_t* celix_longHashMap_createWithOptions(const celix_long_hash
  *
  * @param map The hashmap
  */
-void celix_longHashMap_destroy(celix_long_hash_map_t* map);
+CELIX_UTILS_EXPORT void celix_longHashMap_destroy(celix_long_hash_map_t* map);
 
 /**
  * @brief Returns the size of the hashmap
  */
-size_t celix_longHashMap_size(const celix_long_hash_map_t* map);
+CELIX_UTILS_EXPORT size_t celix_longHashMap_size(const celix_long_hash_map_t* map);
 
 /**
  * @brief add pointer entry the string hash map.
@@ -166,7 +167,7 @@ size_t celix_longHashMap_size(const celix_long_hash_map_t* map);
  * @param value The value to store with the key
  * @return The previous key or NULL of no key was set. Note also returns NULL if the previous value for the key was NULL.
  */
-void* celix_longHashMap_put(celix_long_hash_map_t* map, long key, void* value);
+CELIX_UTILS_EXPORT void* celix_longHashMap_put(celix_long_hash_map_t* map, long key, void* value);
 
 /**
  * @brief add long entry the long hash map.
@@ -176,7 +177,7 @@ void* celix_longHashMap_put(celix_long_hash_map_t* map, long key, void* value);
  * @param value The value to store with the key.
  * @return True if a previous value with the provided has been replaced.
  */
-bool celix_longHashMap_putLong(celix_long_hash_map_t* map, long key, long value);
+CELIX_UTILS_EXPORT bool celix_longHashMap_putLong(celix_long_hash_map_t* map, long key, long value);
 
 /**
  * @brief add double entry the long hash map.
@@ -186,7 +187,7 @@ bool celix_longHashMap_putLong(celix_long_hash_map_t* map, long key, long value)
  * @param value The value to store with the key.
  * @return True if a previous value with the provided has been replaced.
  */
-bool celix_longHashMap_putDouble(celix_long_hash_map_t* map, long key, double value);
+CELIX_UTILS_EXPORT bool celix_longHashMap_putDouble(celix_long_hash_map_t* map, long key, double value);
 
 /**
  * @brief add bool entry the long hash map.
@@ -196,7 +197,7 @@ bool celix_longHashMap_putDouble(celix_long_hash_map_t* map, long key, double va
  * @param value The value to store with the key.
  * @return True if a previous value with the provided has been replaced.
  */
-bool celix_longHashMap_putBool(celix_long_hash_map_t* map, long key, bool value);
+CELIX_UTILS_EXPORT bool celix_longHashMap_putBool(celix_long_hash_map_t* map, long key, bool value);
 
 /**
  * @brief Returns the value for the provided key.
@@ -205,7 +206,7 @@ bool celix_longHashMap_putBool(celix_long_hash_map_t* map, long key, bool value)
  * @param key The key to lookup.
  * @return Return the pointer value for the key or NULL. Note will also return NULL if the pointer value for the provided key is NULL.
  */
-void* celix_longHashMap_get(const celix_long_hash_map_t* map, long key);
+CELIX_UTILS_EXPORT void* celix_longHashMap_get(const celix_long_hash_map_t* map, long key);
 
 /**
  * @brief Returns the long value for the provided key.
@@ -215,7 +216,7 @@ void* celix_longHashMap_get(const celix_long_hash_map_t* map, long key);
  * @param fallbackValue The fallback value to use if a value for the provided key was not found.
  * @return Return the value for the key or fallbackValue if the key is not present.
  */
-long celix_longHashMap_getLong(const celix_long_hash_map_t* map, long key, long fallbackValue);
+CELIX_UTILS_EXPORT long celix_longHashMap_getLong(const celix_long_hash_map_t* map, long key, long fallbackValue);
 
 /**
  * @brief Returns the long value for the provided key.
@@ -225,7 +226,7 @@ long celix_longHashMap_getLong(const celix_long_hash_map_t* map, long key, long 
  * @param fallbackValue The fallback value to use if a value for the provided key was not found.
  * @return Return the value for the key or fallbackValue if the key is not present.
  */
-double celix_longHashMap_getDouble(const celix_long_hash_map_t* map, long key, double fallbackValue);
+CELIX_UTILS_EXPORT double celix_longHashMap_getDouble(const celix_long_hash_map_t* map, long key, double fallbackValue);
 
 /**
  * @brief Returns the long value for the provided key.
@@ -235,12 +236,12 @@ double celix_longHashMap_getDouble(const celix_long_hash_map_t* map, long key, d
  * @param fallbackValue The fallback value to use if a value for the provided key was not found.
  * @return Return the value for the key or fallbackValue if the key is not present.
  */
-bool celix_longHashMap_getBool(const celix_long_hash_map_t* map, long key, bool fallbackValue);
+CELIX_UTILS_EXPORT bool celix_longHashMap_getBool(const celix_long_hash_map_t* map, long key, bool fallbackValue);
 
 /**
  * @brief Returns true if the map has the provided key.
  */
-bool celix_longHashMap_hasKey(const celix_long_hash_map_t* map, long key);
+CELIX_UTILS_EXPORT bool celix_longHashMap_hasKey(const celix_long_hash_map_t* map, long key);
 
 /**
  * @brief Remove a entry from the hashmap and silently ignore if the hash map does not have a entry with the provided
@@ -251,20 +252,20 @@ bool celix_longHashMap_hasKey(const celix_long_hash_map_t* map, long key);
  *
  * @return True is the value is found and removed.
  */
-bool celix_longHashMap_remove(celix_long_hash_map_t* map, long key);
+CELIX_UTILS_EXPORT bool celix_longHashMap_remove(celix_long_hash_map_t* map, long key);
 
 /**
  * @brief Clear all entries in the hash map.
  *
  * @note If a (simple) removed callback is configured, the callback will be called for every hash map entry.
  */
-void celix_longHashMap_clear(celix_long_hash_map_t* map);
+CELIX_UTILS_EXPORT void celix_longHashMap_clear(celix_long_hash_map_t* map);
 
 /**
  * @brief Create and return a hash map iterator for the beginning of the hash map.
  *
  */
-celix_long_hash_map_iterator_t celix_longHashMap_begin(const celix_long_hash_map_t* map);
+CELIX_UTILS_EXPORT celix_long_hash_map_iterator_t celix_longHashMap_begin(const celix_long_hash_map_t* map);
 
 /**
  * @brief Check if the iterator is the end of the hash map.
@@ -273,12 +274,12 @@ celix_long_hash_map_iterator_t celix_longHashMap_begin(const celix_long_hash_map
  *
  * @return true if the iterator is the end.
  */
-bool celix_longHashMapIterator_isEnd(const celix_long_hash_map_iterator_t* iter);
+CELIX_UTILS_EXPORT bool celix_longHashMapIterator_isEnd(const celix_long_hash_map_iterator_t* iter);
 
 /**
  * @brief Moves the provided iterator to the next entry in the hash map.
  */
-void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter);
+CELIX_UTILS_EXPORT void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter);
 
 /**
  * @brief Marco to loop over all the entries of a long hash map.
@@ -311,7 +312,7 @@ void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter);
  * }
  * @endcode
  */
-void celix_longHashMapIterator_remove(celix_long_hash_map_iterator_t* iter);
+CELIX_UTILS_EXPORT void celix_longHashMapIterator_remove(celix_long_hash_map_iterator_t* iter);
 
 #ifdef __cplusplus
 }

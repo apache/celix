@@ -20,9 +20,8 @@
 #ifndef CELIX_DM_INFO_H_
 #define CELIX_DM_INFO_H_
 
-
-
 #include <stdbool.h>
+
 #include "celix_array_list.h"
 #include "celix_properties.h"
 

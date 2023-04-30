@@ -17,7 +17,6 @@
  * under the License.
  */
 
-
 #ifndef CELIX_BUNDLE_EVENT_H_
 #define CELIX_BUNDLE_EVENT_H_
 

@@ -27,6 +27,7 @@
 #include "celix_properties.h"
 #include "celix_array_list.h"
 #include "celix_dm_info.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,36 +68,36 @@ typedef void (*celix_dm_cmp_impl_destroy_fpt)(void*);
  * Creates a DM Component with a random generated UUID.
  * Caller has ownership.
  */
-celix_dm_component_t* celix_dmComponent_create(celix_bundle_context_t *context, const char* name);
+CELIX_FRAMEWORK_EXPORT celix_dm_component_t* celix_dmComponent_create(celix_bundle_context_t *context, const char* name);
 
 /**
  * Creates a DM Component with a provided UUID.
  * Caller has ownership.
  */
-celix_dm_component_t* celix_dmComponent_createWithUUID(celix_bundle_context_t *context, const char* name, const char* UUID);
+CELIX_FRAMEWORK_EXPORT celix_dm_component_t* celix_dmComponent_createWithUUID(celix_bundle_context_t *context, const char* name, const char* UUID);
 
 /**
  * Get the UUID of the component.
  */
-const char* celix_dmComponent_getUUID(celix_dm_component_t* cmp);
+CELIX_FRAMEWORK_EXPORT const char* celix_dmComponent_getUUID(celix_dm_component_t* cmp);
 
 /**
  * Destroys a DM Component
  */
-void celix_dmComponent_destroy(celix_dm_component_t* cmp);
+CELIX_FRAMEWORK_EXPORT void celix_dmComponent_destroy(celix_dm_component_t* cmp);
 
 /**
  * Destroys a DM Component on the event thread.
  * Will call doneCallback (if not NULL) when done.
  *
  */
-void celix_dmComponent_destroyAsync(celix_dm_component_t* cmp, void *doneData, void (*doneCallback)(void*));
+CELIX_FRAMEWORK_EXPORT void celix_dmComponent_destroyAsync(celix_dm_component_t* cmp, void *doneData, void (*doneCallback)(void*));
 
 /**
  * Specify if a default 'service.lang=C' should be added to the properties of interfaces if no 'service.lang' has been
  * provided. Default is false. Note that this should be set before using component_addInterface.
  */
-celix_status_t celix_dmComponent_setCLanguageProperty(celix_dm_component_t *component, bool setCLangProp);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t celix_dmComponent_setCLanguageProperty(celix_dm_component_t *component, bool setCLangProp);
 
 
 /**
@@ -106,7 +107,7 @@ celix_status_t celix_dmComponent_setCLanguageProperty(celix_dm_component_t *comp
  * @param version The version of the interface (e.g. "1.0.0"), Can be a NULL pointer.
  * @param properties To (meta) properties to provide with the service. Can be a NULL pointer.
  */
-celix_status_t celix_dmComponent_addInterface(celix_dm_component_t *component, const char* serviceName, const char* serviceVersion, const void* service, celix_properties_t *properties);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmComponent_addInterface(celix_dm_component_t *component, const char* serviceName, const char* serviceVersion, const void* service, celix_properties_t *properties);
 
 /**
  * Removed  a C interface from a component the Celix framework.
@@ -114,11 +115,11 @@ celix_status_t celix_dmComponent_addInterface(celix_dm_component_t *component, c
  * @param serviceName the service name.
  * @return CELIX_SUCCESS when removed, CELIX_ILLEGAL_ARGUMENT when the component does not provide the interface
  */
-celix_status_t celix_dmComponent_removeInterface(celix_dm_component_t *component, const void* service);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmComponent_removeInterface(celix_dm_component_t *component, const void* service);
 /**
  * Sets the implementation of the component. e.g. the component handle/self/this pointer.
  */
-celix_status_t celix_dmComponent_setImplementation(celix_dm_component_t *component, void* implementation);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmComponent_setImplementation(celix_dm_component_t *component, void* implementation);
 
 /**
  * Configures the destroy function for the component implementation.
@@ -129,7 +130,7 @@ celix_status_t celix_dmComponent_setImplementation(celix_dm_component_t *compone
  * The destroy function will not be called if the component implementation is not set. e.g. if the
  * celix_dmComponent_setImplementation is not called with a non NULL value.
  */
-void celix_dmComponent_setImplementationDestroyFunction(celix_dm_component_t* cmp, celix_dm_cmp_impl_destroy_fpt destroyFn);
+CELIX_FRAMEWORK_EXPORT void celix_dmComponent_setImplementationDestroyFunction(celix_dm_component_t* cmp, celix_dm_cmp_impl_destroy_fpt destroyFn);
 
 /**
  * Configures the destroy function for the component implementation using a MACRO for improving the type safety.
@@ -143,48 +144,48 @@ void celix_dmComponent_setImplementationDestroyFunction(celix_dm_component_t* cm
 /**
  * Returns an arraylist of service names. The caller owns the arraylist and strings (char *)
  */
-celix_status_t celix_dmComponent_getInterfaces(celix_dm_component_t *component, celix_array_list_t **servicesNames);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmComponent_getInterfaces(celix_dm_component_t *component, celix_array_list_t **servicesNames);
 
 /**
  * Adds a C service dependency to the component
  */
-celix_status_t celix_dmComponent_addServiceDependency(celix_dm_component_t *component, celix_dm_service_dependency_t *dep);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmComponent_addServiceDependency(celix_dm_component_t *component, celix_dm_service_dependency_t *dep);
 
 /**
  * Removes a C service dependency to the component
  */
-celix_status_t celix_dmComponent_removeServiceDependency(celix_dm_component_t *component, celix_dm_service_dependency_t *dependency);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmComponent_removeServiceDependency(celix_dm_component_t *component, celix_dm_service_dependency_t *dependency);
 
 /**
  * Returns the current state of the component.
  */
-celix_dm_component_state_t celix_dmComponent_currentState(celix_dm_component_t* cmp);
+CELIX_FRAMEWORK_EXPORT celix_dm_component_state_t celix_dmComponent_currentState(celix_dm_component_t* cmp);
 
 /**
  * Returns the implementation of the component. e.g. the component handle/self/this pointer.
  */
-void * celix_dmComponent_getImplementation(celix_dm_component_t* cmp);
+CELIX_FRAMEWORK_EXPORT void * celix_dmComponent_getImplementation(celix_dm_component_t* cmp);
 
 /**
  * Returns the configured component implementation destroy function.
  */
-celix_dm_cmp_impl_destroy_fpt celix_dmComponent_getImplementationDestroyFunction(celix_dm_component_t* cmp);
+CELIX_FRAMEWORK_EXPORT celix_dm_cmp_impl_destroy_fpt celix_dmComponent_getImplementationDestroyFunction(celix_dm_component_t* cmp);
 
 /**
  * Returns the DM component name. This is used when printing information about the component.
  */
-const char* celix_dmComponent_getName(celix_dm_component_t* cmp);
+CELIX_FRAMEWORK_EXPORT const char* celix_dmComponent_getName(celix_dm_component_t* cmp);
 
 /**
  * Returns bundle context for the bundle where this DM component is part of.
  */
-celix_bundle_context_t* celix_dmComponent_getBundleContext(celix_dm_component_t *component);
+CELIX_FRAMEWORK_EXPORT celix_bundle_context_t* celix_dmComponent_getBundleContext(celix_dm_component_t *component);
 
 /**
  * Set the component life cycle callbacks.
  * The first argument will be the component implementation (@see component_getImplementation)
  */
-celix_status_t celix_dmComponent_setCallbacks(celix_dm_component_t *component, celix_dm_cmp_lifecycle_fpt init, celix_dm_cmp_lifecycle_fpt start, celix_dm_cmp_lifecycle_fpt stop, celix_dm_cmp_lifecycle_fpt deinit);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmComponent_setCallbacks(celix_dm_component_t *component, celix_dm_cmp_lifecycle_fpt init, celix_dm_cmp_lifecycle_fpt start, celix_dm_cmp_lifecycle_fpt stop, celix_dm_cmp_lifecycle_fpt deinit);
 
 /**
  * Set the component life cycle callbacks using a MACRO for improving the type safety.
@@ -199,12 +200,12 @@ celix_status_t celix_dmComponent_setCallbacks(celix_dm_component_t *component, c
     } while(0)
 
 
-bool celix_dmComponent_isActive(celix_dm_component_t *component);
+CELIX_FRAMEWORK_EXPORT bool celix_dmComponent_isActive(celix_dm_component_t *component);
 
 /**
  * Returns the string value of a provided state
  */
-const char* celix_dmComponent_stateToString(celix_dm_component_state_t state);
+CELIX_FRAMEWORK_EXPORT const char* celix_dmComponent_stateToString(celix_dm_component_state_t state);
 
 /**
  * Deprecated, use CELIX_DM_COMPONENT_SET_CALLBACKS instead.
@@ -217,7 +218,7 @@ const char* celix_dmComponent_stateToString(celix_dm_component_state_t state);
  * Create a DM Component info struct. Containing information about the component.
  * Caller has ownership.
  */
-celix_status_t celix_dmComponent_getComponentInfo(celix_dm_component_t *component, celix_dm_component_info_t** infoOut);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmComponent_getComponentInfo(celix_dm_component_t *component, celix_dm_component_info_t** infoOut);
 
 /**
  * Print the component info to the provided stream.
@@ -226,12 +227,12 @@ celix_status_t celix_dmComponent_getComponentInfo(celix_dm_component_t *componen
  * @param useAnsiColors Whether to use ansi colors when printing the component info.
  * @param stream The stream to print to (e..g stdout).
  */
-void celix_dmComponent_printComponentInfo(celix_dm_component_info_t* info, bool printFullInfo, bool useAnsiColors, FILE* stream);
+CELIX_FRAMEWORK_EXPORT void celix_dmComponent_printComponentInfo(celix_dm_component_info_t* info, bool printFullInfo, bool useAnsiColors, FILE* stream);
 
 /**
  * Destroys a DM Component info struct.
  */
-void celix_dmComponent_destroyComponentInfo(dm_component_info_pt info);
+CELIX_FRAMEWORK_EXPORT void celix_dmComponent_destroyComponentInfo(dm_component_info_pt info);
 
 
 #ifdef __cplusplus

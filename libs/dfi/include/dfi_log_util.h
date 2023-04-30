@@ -20,6 +20,8 @@
 #ifndef _DFI_LOG_UTIL_H_
 #define _DFI_LOG_UTIL_H_
 
+#include "celix_dfi_export.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -34,7 +36,7 @@ typedef void (*logf_ft)(void *handle, int level, const char *file, int line, con
     static void *g_logHandle = NULL; \
     static int g_currentLogLevel = 1; \
     \
-    void cmp ## _logSetup(logf_ft logf, void *handle, int currentLogLevel) { \
+    CELIX_DFI_EXPORT void cmp ## _logSetup(logf_ft logf, void *handle, int currentLogLevel) { \
         g_currentLogLevel = currentLogLevel; \
         g_logHandle = handle; \
         g_logf = logf; \

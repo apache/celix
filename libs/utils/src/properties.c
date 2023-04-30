@@ -245,7 +245,7 @@ celix_properties_t* celix_properties_loadWithStream(FILE *file) {
         char *saveptr;
         char *filebuffer = NULL;
         char *line = NULL;
-        size_t file_size = 0;
+        ssize_t file_size = 0;
 
         props = celix_properties_create();
         fseek(file, 0, SEEK_END);
