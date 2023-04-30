@@ -25,6 +25,12 @@ add_celix_bundle(my_bundle
     SOURCES src/my_bundle_activator.c
 )
 
+add_celix_bundle(my_bundle_hide_symbols
+    VERSION 1.0.0
+    SOURCES src/my_bundle_activator.c
+)
+celix_bundle_hide_symbols(my_bundle_hide_symbols)
+
 #With `make all`, `make celix-containers` or `make my_container` this Celix container executable will be created at:
 # ${CMAKE_BINARY_DIR}/deploy/my_container/my_container
 add_celix_container(my_container
@@ -33,6 +39,7 @@ add_celix_container(my_container
         Celix::shell
         Celix::shell_tui
         my_bundle
+        my_bundle_hide_symbols
 )
 
 add_celix_bundle(my_shell_command_provider_bundle

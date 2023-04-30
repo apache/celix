@@ -141,23 +141,32 @@ stop 0 #stop the Apache Celix framework
 ### C Example
 ```C
 //src/my_bundle_activator.c
+#include <stdio.h>
 #include <celix_bundle_activator.h>
 
 typedef struct my_bundle_activator_data {
     /*the hello world bundle activator struct is empty*/
 } my_bundle_activator_data_t;
 
-static celix_status_t my_bundle_start(my_bundle_activator_data_t *data, celix_bundle_context_t *ctx) {
+void myBundle_helloWorld(celix_bundle_context_t* ctx) {
     printf("Hello world from bundle with id %li\n", celix_bundleContext_getBundleId(ctx));
+}
+
+void myBundle_goodbyeWorld(celix_bundle_context_t* ctx) {
+    printf("Goodbye world from bundle with id %li\n", celix_bundleContext_getBundleId(ctx));
+}
+
+static celix_status_t myBundle_start(my_bundle_activator_data_t *data __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
+    myBundle_helloWorld(ctx);
     return CELIX_SUCCESS;
 }
 
-static celix_status_t my_bundle_stop(my_bundle_activator_data_t *data, celix_bundle_context_t *ctx) {
-    printf("Goodbye world\n");
+static celix_status_t myBundle_stop(my_bundle_activator_data_t *data __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
+    myBundle_goodbyeWorld(ctx);
     return CELIX_SUCCESS;
 }
 
-CELIX_GEN_BUNDLE_ACTIVATOR(my_bundle_activator_data_t, my_bundle_start, my_bundle_stop)
+CELIX_GEN_BUNDLE_ACTIVATOR(my_bundle_activator_data_t, myBundle_start, myBundle_stop)
 ```
 
 ```CMake
@@ -228,6 +237,42 @@ By design bundles cannot directly access the symbols of another bundle. Interact
 Apache Celix services. This means that unless functionality is provided by means of an Apache Celix service, 
 bundle functionality is private to the bundle.
 In Apache Celix symbols are kept private by loading bundle libraries locally (`dlopen` with `RTLD_LOCAL`). 
+
+## Symbol visibility for bundles
+Bundles cannot directly access the symbols of another bundle and therefore the symbols of the bundle activator library 
+can be hidden with exception of the bundle activator create, start, stop and destroy functions.
+
+The benefits of hiding symbols for a bundle are:
+ - Smaller bundle libraries;
+ - Faster link-time and load-time;
+ - Smaller memory footprint;
+ - Better optimization opportunities.
+
+A downside is that it is harder to debug a bundle, but this is mostly when not compiling with the `-g` compiler flag.
+
+Note that to use and invoke C and C++ services from another bundle, there is no need to export the service symbols.
+For C++ this is only the case if the provided services is based on a C++ header-only interface and for C this is always
+the case, because C service structs does not result in any symbols.
+
+By default, the symbol visibility preset of the bundle activator library is configured to hidden.
+This can be changed by providing the`DO_NOT_CONFIGURE_SYMBOL_VISIBILTY` option in the `add_celix_bundle` CMake 
+function call.
+
+TODO
+The default symbol visibility configuration for bundles can be changed by setting 
+the `CELIX_CONFIGURE_BUNDLE_SYMBOL_VISIBILITY_TO_HIDDEN` CMake variable. The default value is `ON`.
+TODO
+
+The celix_bundle_activator.h header file ensures that the bundle activator symbols are exported.
+
+### Hiding symbols with celix_bundle_hide_symbols example
+```CMake
+add_celix_bundle(my_bundle_hide_symbols
+    VERSION 1.0.0
+    SOURCES src/my_bundle_activator.c
+)
+celix_bundle_hide_symbols(my_bundle_hide_symbols)
+```
 
 ## Installing bundles
 Apache Celix bundles can be installed on the system with the Apache Celix CMake command `install_celix_bundle`.

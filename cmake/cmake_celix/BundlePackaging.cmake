@@ -355,10 +355,6 @@ function(add_celix_bundle)
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "$<TARGET_SONAME_FILE_NAME:${BUNDLE_TARGET_NAME}>")
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUILD_WITH_INSTALL_RPATH" true)
 
-        #TBD: The linker script ensures that only the activator symbols are exported, this can reduce the bundle size.
-        #     If this is done, there should also be an option to disable this behaviour.
-        target_link_libraries(${BUNDLE_TARGET_NAME} PRIVATE "-Wl,--version-script=${CELIX_CMAKE_DIRECTORY}/templates/make_only_activator_symbols_global.map")
-
         if(APPLE)
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path")
         else()
@@ -947,6 +943,74 @@ function(celix_get_bundle_file)
         message(FATAL_ERROR "Provided argument is not a CMake target: ${ARGV0}")
     endif ()
 endfunction ()
+
+#[[
+Configure the symbol visibility preset of the bundle library to hidden.
+
+This is done by setting the target properties C_VISIBILITY_PRESET to hidden, the CXX_VISIBILITY_PRESET to hidden and
+VISIBILITY_INLINES_HIDDEN to ON.
+
+```CMake
+celix_bundle_hide_symbols(<bundle_target> [RELEASE] [DEBUG] [RELWITHDEBINFO] [MINSIZEREL])
+```
+
+Optional arguments are:
+- RELEASE: hide symbols for the release build type
+- DEBUG: hide symbols for the debug build type
+- RELWITHDEBINFO: hide symbols for the relwithdebinfo build type
+- MINSIZEREL: hide symbols for the minsizerel build type
+
+If no optional arguments are provided, the symbols are hidden for all build types.
+
+Example:
+```CMake
+celix_bundle_hide_symbols(my_bundle RELEASE MINSIZEREL)
+```
+]]
+function(celix_bundle_hide_symbols)
+    list(GET ARGN 0 BUNDLE_TARGET)
+    list(REMOVE_AT ARGN 0)
+
+    set(OPTIONS RELEASE DEBUG RELWITHDEBINFO MINSIZEREL)
+    cmake_parse_arguments(HIDE_SYMBOLS "${OPTIONS}" "" "" ${ARGN})
+
+    set(BUILD_TYPE "")
+    if (CMAKE_BUILD_TYPE)
+        string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
+    endif ()
+
+    set(HIDE_SYMBOLS FALSE)
+    if (NOT HIDE_SYMBOLS_RELEASE AND NOT HIDE_SYMBOLS_DEBUG AND NOT HIDE_SYMBOLS_RELWITHDEBINFO AND NOT HIDE_SYMBOLS_MINSIZEREL)
+        set(HIDE_SYMBOLS TRUE)
+    elseif (HIDE_SYMBOLS_RELEASE AND BUILD_TYPE STREQUAL "RELEASE")
+        set(HIDE_SYMBOLS TRUE)
+    elseif (HIDE_SYMBOLS_DEBUG AND BUILD_TYPE STREQUAL "DEBUG")
+        set(HIDE_SYMBOLS TRUE)
+    elseif (HIDE_SYMBOLS_RELWITHDEBINFO AND BUILD_TYPE STREQUAL "RELWITHDEBINFO")
+        set(HIDE_SYMBOLS TRUE)
+    elseif (HIDE_SYMBOLS_MINSIZEREL AND BUILD_TYPE STREQUAL "MINSIZEREL")
+        set(HIDE_SYMBOLS TRUE)
+    endif ()
+
+    if (HIDE_SYMBOLS)
+        set_target_properties(${BUNDLE_TARGET}
+                PROPERTIES
+                C_VISIBILITY_PRESET hidden
+                CXX_VISIBILITY_PRESET hidden
+                VISIBILITY_INLINES_HIDDEN ON)
+#        if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+#            target_link_options(${BUNDLE_TARGET} PRIVATE "LINKER:-exported_symbols_list,${CELIX_CMAKE_DIRECTORY}/templates/make_only_activator_symbols_global.list")
+#            set_target_properties(${BUNDLE_TARGET}
+#                    PROPERTIES
+#                    C_VISIBILITY_PRESET hidden
+#                    CXX_VISIBILITY_PRESET hidden)
+#        elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+#            target_link_options(${BUNDLE_TARGET} PRIVATE "LINKER:--version-script=${CELIX_CMAKE_DIRECTORY}/templates/make_only_activator_symbols_global.map")
+#        else ()
+#            message(WARNING "Cannot hide symbols for bundle ${BUNDLE_TARGET}, unsupported linker")
+#        endif ()
+    endif ()
+endfunction()
 
 function(install_bundle)
     message(DEPRECATION "install_bundle is deprecated, use install_celix_bundle instead.")

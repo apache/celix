@@ -275,6 +275,29 @@ Example:
 celix_get_bundle_file(Celix::shell SHELL_BUNDLE_FILE)
 ```
 
+## celix_bundle_hide_symbols
+Configure the symbol visibility preset of the bundle library to hidden.
+
+This is done by setting the target properties C_VISIBILITY_PRESET to hidden, the CXX_VISIBILITY_PRESET to hidden and
+VISIBILITY_INLINES_HIDDEN to ON.
+
+```CMake
+celix_bundle_hide_symbols(<bundle_target> [RELEASE] [DEBUG] [RELWITHDEBINFO] [MINSIZEREL])
+```
+
+Optional arguments are:
+- RELEASE: hide symbols for the release build type
+- DEBUG: hide symbols for the debug build type
+- RELWITHDEBINFO: hide symbols for the relwithdebinfo build type
+- MINSIZEREL: hide symbols for the minsizerel build type
+
+If no optional arguments are provided, the symbols are hidden for all build types.
+
+Example:
+```CMake
+celix_bundle_hide_symbols(my_bundle RELEASE MINSIZEREL)
+```
+
 ## install_celix_bundle
 Install bundle when 'make install' is executed.
 
