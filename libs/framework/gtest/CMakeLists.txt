@@ -25,6 +25,8 @@ celix_bundle_description(simple_test_bundle1 "Test Description")
 add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(bundle_with_exception SOURCES src/nop_activator.c VERSION 1.0.0)
+add_celix_bundle(bundle_with_bad_export NO_ACTIVATOR VERSION 1.0.0)
+celix_bundle_headers(bundle_with_bad_export "Export-Library: $<SEMICOLON>")
 add_celix_bundle(simple_cxx_bundle SOURCES src/HelloWorldCxxActivator.cc VERSION 1.0.0)
 celix_bundle_libs(simple_cxx_bundle "PRIVATE" TRUE Celix::framework)
 add_celix_bundle(simple_cxx_dep_man_bundle SOURCES src/HelloWorldCxxActivatorWithDepMan.cc VERSION 1.0.0)
@@ -75,7 +77,7 @@ celix_target_bundle_set_definition(test_framework NAME BUNDLE_TEST_SET
 add_celix_bundle_dependencies(test_framework
         simple_test_bundle1
         simple_test_bundle2 simple_test_bundle3 simple_test_bundle4
-        simple_test_bundle5 bundle_with_exception unresolvable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle)
+        simple_test_bundle5 bundle_with_exception bundle_with_bad_export unresolvable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle)
 target_include_directories(test_framework PRIVATE ../src)
 celix_deprecated_utils_headers(test_framework)
 
@@ -88,6 +90,7 @@ celix_get_bundle_filename(simple_test_bundle4 SIMPLE_TEST_BUNDLE4_FILENAME)
 celix_get_bundle_filename(simple_test_bundle5 SIMPLE_TEST_BUNDLE5_FILENAME)
 
 celix_get_bundle_filename(bundle_with_exception BUNDLE_WITH_EXCEPTION)
+celix_get_bundle_file(bundle_with_bad_export BUNDLE_WITH_BAD_EXPORT)
 celix_get_bundle_filename(unresolvable_bundle UNRESOLVABLE_BUNDLE)
 
 celix_get_bundle_file(simple_cxx_bundle SIMPLE_CXX_BUNDLE_LOC)
@@ -106,6 +109,7 @@ target_compile_definitions(test_framework PRIVATE
         SIMPLE_TEST_BUNDLE4_LOCATION="${SIMPLE_TEST_BUNDLE4_FILENAME}"
         SIMPLE_TEST_BUNDLE5_LOCATION="${SIMPLE_TEST_BUNDLE5_FILENAME}"
         TEST_BUNDLE_WITH_EXCEPTION_LOCATION="${BUNDLE_WITH_EXCEPTION}"
+        BUNDLE_WITH_BAD_EXPORT_LOCATION="${BUNDLE_WITH_BAD_EXPORT}"
         TEST_BUNDLE_UNRESOLVABLE_LOCATION="${UNRESOLVABLE_BUNDLE}"
         SIMPLE_CXX_BUNDLE_LOC="${SIMPLE_CXX_BUNDLE_LOC}"
         CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"

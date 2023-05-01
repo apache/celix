@@ -420,43 +420,31 @@ static celix_status_t celix_module_loadLibraryForManifestEntry(celix_module_t* m
 
 static celix_status_t celix_module_loadLibrariesInManifestEntry(celix_module_t* module, const char *librariesIn, const char *activator, bundle_archive_pt archive, void **activatorHandle) {
     celix_status_t status = CELIX_SUCCESS;
-    char* last;
     char* libraries = strndup(librariesIn, 1024*10);
-    char* token = strtok_r(libraries, ",", &last);
-    while (token != NULL && status == CELIX_SUCCESS) {
+
+    char* saveptr1;
+    for (char* str1 = libraries; status == CELIX_SUCCESS; str1 = NULL) {
+        char* token = strtok_r(str1, ",", &saveptr1);
+        char* saveptr2;
+        if (token == NULL) {
+            break;
+        }
+        char *pathToken = strtok_r(token, ";", &saveptr2);
+        if (pathToken == NULL) {
+            continue;
+        }
+
         void *handle = NULL;
         char lib[128];
         lib[127] = '\0';
-
-        char *path = NULL;
-        char *pathToken = strtok_r(token, ";", &path);
         strncpy(lib, pathToken, 127);
-        pathToken = strtok_r(NULL, ";", &path);
-
-        while (pathToken != NULL) {
-
-            /*Disable version should be part of the lib name
-            if (strncmp(pathToken, "version", 7) == 0) {
-                char *ver = strdup(pathToken);
-                char version[strlen(ver) - 9];
-                strncpy(version, ver+9, strlen(ver) - 10);
-                version[strlen(ver) - 10] = '\0';
-
-                strcat(lib, "-");
-                strcat(lib, version);
-            }*/
-            pathToken = strtok_r(NULL, ";", &path);
-        }
-
         char *trimmedLib = utils_stringTrim(lib);
         status = celix_module_loadLibraryForManifestEntry(module, trimmedLib, archive, &handle);
 
         if ( (status == CELIX_SUCCESS) && (activator != NULL) && (strcmp(trimmedLib, activator) == 0) ) {
             *activatorHandle = handle;
         }
-        token = strtok_r(NULL, ",", &last);
     }
-
     free(libraries);
     return status;
 }
