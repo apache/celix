@@ -238,26 +238,28 @@ Apache Celix services. This means that unless functionality is provided by means
 bundle functionality is private to the bundle.
 In Apache Celix symbols are kept private by loading bundle libraries locally (`dlopen` with `RTLD_LOCAL`). 
 
-## Symbol visibility for bundles
-Bundles cannot directly access the symbols of another bundle and therefore the symbols of the bundle activator library 
-can be hidden with exception of the bundle activator create, start, stop and destroy functions.
-The celix_bundle_activator.h header file ensures that the bundle activator symbols are exported.
+## Bundle symbol visibility
+Since bundles are unable to directly access the symbols of another bundle, the default symbol visibility preset for the 
+bundle activator library is set to hidden. To modify this, supply the `DO_NOT_CONFIGURE_SYMBOL_VISIBILITY` option within the 
+`add_celix_bundle` CMake function call.
 
-The benefits of hiding symbols for a bundle are:
- - Smaller bundle libraries;
- - Faster link-time and load-time;
- - Smaller memory footprint;
- - Better optimization opportunities.
+Hiding symbols for a bundle offers several advantages, including:
 
-A downside is that it is harder to debug a bundle, but this is mostly when not compiling with the `-g` compiler flag.
+- Reduced bundle library size;
+- Faster link-time and load-time;
+- Lower memory usage;
+- Enhanced optimization possibilities.
 
-Note that to use and invoke C and C++ services from another bundle, there is no need to export the service symbols.
-For C++ this is only the case if the provided services is based on a C++ header-only interface and for C this is always
-the case, because C service structs does not result in any symbols.
+However, one drawback can be that debugging a bundle becomes more difficult, particularly when not using the -g 
+compiler flag.
 
-By default, the symbol visibility preset of the bundle activator library is configured to hidden.
-This can be changed by providing the`DO_NOT_CONFIGURE_SYMBOL_VISIBILITY` option in the `add_celix_bundle` CMake 
-function call.
+It's important to note that exporting service symbols isn't necessary when utilizing and invoking C and C++ services 
+from another bundle. For C++, this only applies when the provided services are based on a C++ header-only interface, 
+while for C, this is always the case since C service structs don't produce any symbols.
+
+The bundle activator symbols (create, start, stop, and destroy) must be exported as they are invoked by the 
+Apache Celix framework. For this reason, the bundle activator functions in `celix_bundle_activator.h` are marked for 
+export.
 
 ### Example of disabling hiding of symbols for a bundle
 ```CMake
