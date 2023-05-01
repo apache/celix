@@ -16,12 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-{
-    global:
-        celix_bundleActivator_create;
-        celix_bundleActivator_start;
-        celix_bundleActivator_stop;
-        celix_bundleActivator_destroy;
-    local:
-        *;
-};
+_celix_bundleActivator_create
+_celix_bundleActivator_destroy
+_celix_bundleActivator_start
+_celix_bundleActivator_stop

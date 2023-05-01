@@ -122,6 +122,7 @@ add_celix_bundle(<bundle_target_name>
         [FILENAME bundle_filename]
         [PRIVATE_LIBRARIES private_lib1 private_lib2 ...]
         [HEADERS "header1: header1_value" "header2: header2_value" ...]
+        [DO_NOT_CONFIGURE_SYMBOL_VISIBILITY]
 )
 ```
 
@@ -136,6 +137,7 @@ add_celix_bundle(<bundle_target_name>
         [FILENAME bundle_filename]
         [PRIVATE_LIBRARIES private_lib1 private_lib2 ...]
         [HEADERS "header1: header1_value" "header2: header2_value" ...]
+        [DO_NOT_CONFIGURE_SYMBOL_VISIBILITY]
 )
 ```
 
@@ -150,6 +152,7 @@ add_celix_bundle(<bundle_target_name>
         [FILENAME bundle_filename]
         [PRIVATE_LIBRARIES private_lib1 private_lib2 ...]
         [HEADERS "header1: header1_value" "header2: header2_value" ...]
+        [DO_NOT_CONFIGURE_SYMBOL_VISIBILITY]
 )
 ```
 
@@ -173,12 +176,13 @@ Optional arguments are:
 - FILENAME: The filename of the bundle file, without extension. Default is <bundle_target_name>. Together with the BUILD_TYPE, this will result in a filename like "bundle_target_name_Debug.zip
 - PRIVATE_LIBRARIES: private libraries to be included in the bundle. Specified libraries are added to the "Private-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.
 - HEADERS: Additional headers values that are appended to the bundle manifest.
+- DO_NOT_CONFIGURE_SYMBOL_VISIBILITY: By default the bundle library will be build with symbol visibility configuration preset set to hidden. This can be disabled by providing this option.
 ]]
 function(add_celix_bundle)
     list(GET ARGN 0 BUNDLE_TARGET_NAME)
     list(REMOVE_AT ARGN 0)
 
-    set(OPTIONS NO_ACTIVATOR)
+    set(OPTIONS NO_ACTIVATOR DO_NOT_CONFIGURE_SYMBOL_VISIBILITY)
     set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION FILENAME GROUP)
     set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES EXPORT_LIBRARIES IMPORT_LIBRARIES HEADERS)
     cmake_parse_arguments(BUNDLE "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
@@ -355,15 +359,15 @@ function(add_celix_bundle)
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "$<TARGET_SONAME_FILE_NAME:${BUNDLE_TARGET_NAME}>")
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUILD_WITH_INSTALL_RPATH" true)
 
-        #TBD: The linker script ensures that only the activator symbols are exported, this can reduce the bundle size.
-        #     If this is done, there should also be an option to disable this behaviour.
-        target_link_libraries(${BUNDLE_TARGET_NAME} PRIVATE "-Wl,--version-script=${CELIX_CMAKE_DIRECTORY}/templates/make_only_activator_symbols_global.map")
-
         if(APPLE)
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path")
         else()
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
         endif()
+
+        if (NOT BUNDLE_DO_NOT_CONFIGURE_SYMBOL_VISIBILITY)
+            celix_target_hide_symbols(${BUNDLE_TARGET_NAME})
+        endif ()
     elseif(BUNDLE_NO_ACTIVATOR)
         #do nothing
     else() #ACTIVATOR 
