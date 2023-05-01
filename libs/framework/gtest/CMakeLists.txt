@@ -75,7 +75,7 @@ celix_target_bundle_set_definition(test_framework NAME BUNDLE_TEST_SET
 add_celix_bundle_dependencies(test_framework
         simple_test_bundle1
         simple_test_bundle2 simple_test_bundle3 simple_test_bundle4
-        simple_test_bundle5 bundle_with_exception unresolveable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle)
+        simple_test_bundle5 bundle_with_exception unresolvable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle)
 target_include_directories(test_framework PRIVATE ../src)
 celix_deprecated_utils_headers(test_framework)
 
@@ -175,7 +175,7 @@ if (ENABLE_TESTING_FOR_CXX14)
     add_celix_bundle_dependencies(test_framework_with_cxx14
             simple_test_bundle1
             simple_test_bundle2 simple_test_bundle3 simple_test_bundle4
-            simple_test_bundle5 bundle_with_exception unresolveable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle)
+            simple_test_bundle5 bundle_with_exception unresolvable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle)
     target_include_directories(test_framework_with_cxx14 PRIVATE ../src)
 
     #Also to ensure that CELIX_GEN_CXX_BUNDLE_ACTIVATOR still for C++11.
