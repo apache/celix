@@ -32,13 +32,20 @@ extern "C" {
 * @thread_safety Thread safe.
 */
 
+//TODO make configurable with a cmake option
+/**
+ * @brief The error message buffer size per thread.
+ */
+#define CELIX_ERR_BUFFER_SIZE 512
+
+
 /**
  * @brief Returns the last error message from the current thread.
- * The error message must be freed by the caller.
+ * The error message is stored on a local thread storage and is valid until a new error message is pushed.
  * @returnval NULL if no error message is available.
  */
 CELIX_UTILS_EXPORT
-char* celix_err_popLastError(); //TODO update to return const char* and remove free
+const char* celix_err_popLastError();
 
 /**
  * @brief Push an formatted error message to the thread specific storage rcm errors.

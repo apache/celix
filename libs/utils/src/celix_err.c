@@ -23,102 +23,118 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <string.h>
 
-#include "celix_array_list.h"
-#include "celix_utils.h"
+pthread_key_t celix_err_tssKey; //TODO replace with celix_tss_key and celix_tss_* functions
 
-pthread_key_t celix_rcm_tssErrorsKey; //TODO replace with celix_tss_key and celix_tss_* functions
+typedef struct celix_err {
+    char buffer[CELIX_ERR_BUFFER_SIZE];
+    size_t pos;
+} celix_err_t;
 
-static void celix_err_destroyTssErrors(void* data) {
-    //TODO replace array list with some thread specific storage char buffer
-    celix_array_list_t* errors = data;
-    if (errors != NULL) {
-        for (int i = 0; i < celix_arrayList_size(errors); ++i) {
-            char* msg = celix_arrayList_get(errors, i);
-            free(msg);
-        }
+static void celix_err_destroyTssErr(void* data) {
+    celix_err_t* err = data;
+    if (err != NULL) {
+        free(err);
     }
-    celix_arrayList_destroy(errors);
+}
+
+static celix_err_t* celix_err_getTssErr() {
+    celix_err_t* err = pthread_getspecific(celix_err_tssKey);
+    if (err) {
+        return err;
+    }
+
+    err = malloc(sizeof(*err));
+    if (err) {
+        err->pos = 0; //no entry
+        int rc = pthread_setspecific(celix_err_tssKey, err);
+        if (rc != 0) {
+            fprintf(stderr, "Failed to set thread specific storage for celix_err: %s\n", strerror(rc));
+            free(err);
+            err = NULL;
+        }
+    } else {
+        fprintf(stderr, "Failed to allocate memory for celix_err\n");
+    }
+    return err;
 }
 
 __attribute__((constructor)) void celix_err_initThreadSpecificStorageKey() {
-    int rc = pthread_key_create(&celix_rcm_tssErrorsKey, celix_err_destroyTssErrors);
+    int rc = pthread_key_create(&celix_err_tssKey, celix_err_destroyTssErr);
     if (rc != 0) {
         fprintf(stderr,"Failed to create thread specific storage key for celix_err\n");
     }
 }
 
 __attribute__((destructor)) void celix_err_deinitThreadSpecificStorageKey() {
-    int rc = pthread_key_delete(celix_rcm_tssErrorsKey);
+    int rc = pthread_key_delete(celix_err_tssKey);
     if (rc != 0) {
         fprintf(stderr,"Failed to delete thread specific storage key for celix_err\n");
     }
 }
 
-char* celix_err_popLastError() {
-    char* result = NULL;
-    celix_array_list_t* errors = pthread_getspecific(celix_rcm_tssErrorsKey);
-    if (errors != NULL && celix_arrayList_size(errors) > 0) {
-        int last = celix_arrayList_size(errors) - 1;
-        result = celix_arrayList_get(errors, last);
-        celix_arrayList_removeAt(errors, last);
+const char* celix_err_popLastError() {
+    const char* result = NULL;
+    celix_err_t* err = celix_err_getTssErr();
+    if (err && err->pos > 0) {
+        //move back to start last error message
+        err->pos -= 1; //move before \0 in last error message
+        while (err->pos > 0 && err->buffer[err->pos-1] != '\0') {
+            err->pos -= 1;
+        }
+        result = err->buffer + err->pos;
     }
     return result;
 }
 
 int celix_err_getErrorCount() {
     int result = 0;
-    celix_array_list_t* errors = pthread_getspecific(celix_rcm_tssErrorsKey);
-    if (errors != NULL) {
-        result = celix_arrayList_size(errors);
+    celix_err_t* err = celix_err_getTssErr();
+    for (int i = 0; err && i < err->pos; ++i) {
+        if (err->buffer[i] == '\0') {
+            result += 1;
+        }
     }
     return result;
 }
 
 void celix_err_resetErrors() {
-    celix_array_list_t* errors = pthread_getspecific(celix_rcm_tssErrorsKey);
-    celix_err_destroyTssErrors(errors);
-    pthread_setspecific(celix_rcm_tssErrorsKey, NULL);
-}
-
-static void celix_err_pushMsg(char* msg) {
-    celix_array_list_t* errors = pthread_getspecific(celix_rcm_tssErrorsKey);
-    if (errors == NULL) {
-        errors = celix_arrayList_create();
-        if (errors == NULL) {
-            fprintf(stderr, "Failed to create error list for Apache Celix rcm lib\n");
-            free(msg);
-            return;
-        }
-        pthread_setspecific(celix_rcm_tssErrorsKey, errors);
-    }
-    if (errors != NULL) {
-        celix_status_t rc = celix_arrayList_add(errors, msg);
-        if (rc != CELIX_SUCCESS) {
-            fprintf(stderr, "Failed to add error to error list for Apache Celix rcm lib\n");
-            free(msg);
-        }
+    void* data = pthread_getspecific(celix_err_tssKey);
+    if (data != NULL) {
+        celix_err_t* err = data;
+        err->pos = 0; //no entry
     }
 }
 
 void celix_err_push(const char* msg) {
-    char* msgCpy = celix_utils_strdup(msg);
-    if (msgCpy == NULL) {
-        fprintf(stderr, "Failed to copy error message for Apache Celix rcm lib\n");
-        return;
+    celix_err_t* err = celix_err_getTssErr();
+    if (err) {
+        size_t len = strnlen(msg, CELIX_ERR_BUFFER_SIZE);
+        if (err->pos + len + 1 <= CELIX_ERR_BUFFER_SIZE) {
+            strcpy(err->buffer + err->pos, msg);
+            err->pos += len + 1;
+        } else {
+            fprintf(stderr, "Failed to add error message '%s' to celix_err\n", msg);
+        }
     }
-    celix_err_pushMsg(msgCpy);
 }
 
 void celix_err_pushf(const char* format, ...) {
     va_list args;
     va_start(args, format);
-    char* msg = NULL;
-    int rc = vasprintf(&msg, format, args);
-    if (rc >= 0) {
-        celix_err_pushMsg(msg);
-    } else {
-        fprintf(stderr, "Failed to copy error message for Apache Celix rcm lib\n");
+    celix_err_t* err = celix_err_getTssErr();
+    if (err) {
+        size_t len = vsnprintf(err->buffer + err->pos, CELIX_ERR_BUFFER_SIZE - err->pos, format, args);
+        if (err->pos + len + 1 <= CELIX_ERR_BUFFER_SIZE) {
+            err->pos += len;
+            err->buffer[err->pos++] = '\0';
+        } else {
+            fprintf(stderr, "Failed to add error message '");
+            vfprintf(stderr, format, args);
+            fprintf(stderr, "' to celix_err\n");
+
+        }
     }
     va_end(args);
 }

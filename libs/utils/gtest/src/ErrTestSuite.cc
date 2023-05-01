@@ -35,12 +35,10 @@ TEST_F(ErrTestSuite, AddAndPopErrorTest) {
 
     auto* m = celix_err_popLastError();
     EXPECT_STREQ("error message from test", m);
-    free(m);
     EXPECT_EQ(1, celix_err_getErrorCount());
 
     m = celix_err_popLastError();
     EXPECT_STREQ("error message", m);
-    free(m);
     EXPECT_EQ(0, celix_err_getErrorCount());
 }
 
@@ -53,4 +51,26 @@ TEST_F(ErrTestSuite, ResetErrorTest) {
     celix_err_resetErrors();
     EXPECT_EQ(0, celix_err_getErrorCount());
     EXPECT_EQ(nullptr, celix_err_popLastError());
+}
+
+TEST_F(ErrTestSuite, EdgeCaseTest) {
+    //test only "" error message, 1 char per message so max error count is CELIX_ERR_BUFFER_SIZE
+    for (int i = 0; i < CELIX_ERR_BUFFER_SIZE + 10; ++i) {
+        celix_err_push("");
+    }
+    EXPECT_EQ(CELIX_ERR_BUFFER_SIZE, celix_err_getErrorCount());
+    for (int i = 0; i < CELIX_ERR_BUFFER_SIZE; ++i) {
+        EXPECT_STREQ("", celix_err_popLastError());
+    }
+    EXPECT_EQ(0, celix_err_getErrorCount());
+
+    //test only "[0-9]" error message, 2 char per message so max error count is CELIX_ERR_BUFFER_SIZE/2
+    for (int i = 0; i < (CELIX_ERR_BUFFER_SIZE/2) + 10; ++i) {
+        celix_err_pushf("%i", i % 10);
+    }
+    EXPECT_EQ(CELIX_ERR_BUFFER_SIZE/2, celix_err_getErrorCount());
+    for (int i = (CELIX_ERR_BUFFER_SIZE/2) - 1; i >= 0; --i) {
+        EXPECT_STREQ(std::to_string(i % 10).c_str(), celix_err_popLastError());
+    }
+    EXPECT_EQ(0, celix_err_getErrorCount());
 }
