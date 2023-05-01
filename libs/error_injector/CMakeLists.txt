@@ -36,6 +36,7 @@ add_subdirectory(stat)
 add_subdirectory(fts)
 add_subdirectory(dlfcn)
 add_subdirectory(ifaddrs)
+add_subdirectory(celix_array_list)
 
 celix_subproject(ERROR_INJECTOR_MDNSRESPONDER "Option to enable building the mdnsresponder error injector" OFF)
 if (ERROR_INJECTOR_MDNSRESPONDER)
