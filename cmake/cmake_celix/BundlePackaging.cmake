@@ -1,4 +1,3 @@
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -1235,4 +1234,3 @@ function (_celix_extract_imported_bundle_info)
     set(BUNDLE_FILENAME ${BFN} PARENT_SCOPE)
     set(BUNDLE_SYMBOLIC_NAME ${BSN} PARENT_SCOPE)
 endfunction ()
-
