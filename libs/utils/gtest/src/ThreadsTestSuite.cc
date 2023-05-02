@@ -19,6 +19,8 @@
 
 #include <gtest/gtest.h>
 
+#include <csignal>
+
 #include "celix_threads.h"
 
 class ThreadsTestSuite : public ::testing::Test {
