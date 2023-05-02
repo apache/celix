@@ -58,7 +58,7 @@ extern "C" {
  * \{
  */
 
-struct celix_status {
+struct __attribute__((deprecated("use celix_status_t instead"))) celix_status {
     int code;
     char *error;
 };
@@ -178,6 +178,7 @@ CELIX_UTILS_EXPORT const char* celix_strerror(celix_status_t status);
  */
 
 #define CELIX_ENOMEM                    CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,ENOMEM)
+#define CELIX_EAGAIN                    CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EAGAIN)
 
 
 /*! @}*///C error map to celix
