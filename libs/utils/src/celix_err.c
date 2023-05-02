@@ -19,19 +19,23 @@
 
 #include "celix_err.h"
 
-#include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <pthread.h>
 #include <string.h>
 
-pthread_key_t celix_err_tssKey; //TODO replace with celix_tss_key and celix_tss_* functions
+#ifdef CELIX_ERR_USE_THREAD_LOCAL
+#include <stdlib.h>
+
+#include "celix_threads.h"
+#endif
 
 typedef struct celix_err {
     char buffer[CELIX_ERR_BUFFER_SIZE];
     size_t pos;
 } celix_err_t;
 
+#ifdef CELIX_ERR_USE_THREAD_LOCAL
+celix_tss_key_t celix_err_tssKey;
 static void celix_err_destroyTssErr(void* data) {
     celix_err_t* err = data;
     if (err != NULL) {
@@ -40,7 +44,7 @@ static void celix_err_destroyTssErr(void* data) {
 }
 
 static celix_err_t* celix_err_getTssErr() {
-    celix_err_t* err = pthread_getspecific(celix_err_tssKey);
+    celix_err_t* err = celix_tss_get(celix_err_tssKey);
     if (err) {
         return err;
     }
@@ -48,7 +52,7 @@ static celix_err_t* celix_err_getTssErr() {
     err = malloc(sizeof(*err));
     if (err) {
         err->pos = 0; //no entry
-        int rc = pthread_setspecific(celix_err_tssKey, err);
+        int rc = celix_tss_set(celix_err_tssKey, err);
         if (rc != 0) {
             fprintf(stderr, "Failed to set thread specific storage for celix_err: %s\n", strerror(rc));
             free(err);
@@ -61,18 +65,27 @@ static celix_err_t* celix_err_getTssErr() {
 }
 
 __attribute__((constructor)) void celix_err_initThreadSpecificStorageKey() {
-    int rc = pthread_key_create(&celix_err_tssKey, celix_err_destroyTssErr);
+    int rc = celix_tss_create(&celix_err_tssKey, celix_err_destroyTssErr);
     if (rc != 0) {
         fprintf(stderr,"Failed to create thread specific storage key for celix_err\n");
     }
 }
 
 __attribute__((destructor)) void celix_err_deinitThreadSpecificStorageKey() {
-    int rc = pthread_key_delete(celix_err_tssKey);
+    int rc = celix_tss_delete(celix_err_tssKey);
     if (rc != 0) {
         fprintf(stderr,"Failed to delete thread specific storage key for celix_err\n");
     }
 }
+#else //Use __thread static variable instead of thread specific storage functions
+
+__thread celix_err_t celix_err_tssErr = { .buffer = {0}, .pos = 0 };
+
+static celix_err_t* celix_err_getTssErr() {
+    return &celix_err_tssErr;
+}
+
+#endif
 
 const char* celix_err_popLastError() {
     const char* result = NULL;
@@ -100,9 +113,8 @@ int celix_err_getErrorCount() {
 }
 
 void celix_err_resetErrors() {
-    void* data = pthread_getspecific(celix_err_tssKey);
-    if (data != NULL) {
-        celix_err_t* err = data;
+    celix_err_t* err = celix_err_getTssErr();
+    if (err) {
         err->pos = 0; //no entry
     }
 }

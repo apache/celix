@@ -54,7 +54,7 @@ TEST_F(ErrTestSuite, ResetErrorTest) {
 }
 
 TEST_F(ErrTestSuite, EdgeCaseTest) {
-    //test only "" error message, 1 char per message so max error count is CELIX_ERR_BUFFER_SIZE
+    //test only "" error messages, 1 char per message so max error count is CELIX_ERR_BUFFER_SIZE
     for (int i = 0; i < CELIX_ERR_BUFFER_SIZE + 10; ++i) {
         celix_err_push("");
     }
@@ -64,7 +64,7 @@ TEST_F(ErrTestSuite, EdgeCaseTest) {
     }
     EXPECT_EQ(0, celix_err_getErrorCount());
 
-    //test only "[0-9]" error message, 2 char per message so max error count is CELIX_ERR_BUFFER_SIZE/2
+    //test only "[0-9]" error messages, 2 char per message so max error count is CELIX_ERR_BUFFER_SIZE/2
     for (int i = 0; i < (CELIX_ERR_BUFFER_SIZE/2) + 10; ++i) {
         celix_err_pushf("%i", i % 10);
     }
