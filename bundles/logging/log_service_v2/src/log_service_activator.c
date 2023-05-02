@@ -28,7 +28,7 @@
 #include <string.h>
 #include "celix_constants.h"
 
-#include "bundle_activator.h"
+#include "celix_bundle_activator.h"
 #include "log_service_impl.h"
 #include "service_factory.h"
 #include "log_factory.h"
@@ -59,7 +59,7 @@ struct logActivator {
 static celix_status_t bundleActivator_getMaxSize(struct logActivator *activator, int *max_size);
 static celix_status_t bundleActivator_getStoreDebug(struct logActivator *activator, bool *store_debug);
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
+celix_status_t celix_bundleActivator_create(celix_bundle_context_t *context, void **userData) {
     celix_status_t status = CELIX_SUCCESS;
 	struct logActivator * activator = NULL;
 
@@ -83,7 +83,7 @@ celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **us
     return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
+celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context_t *context) {
     struct logActivator * activator = (struct logActivator *) userData;
     celix_status_t status = CELIX_SUCCESS;
 
@@ -128,7 +128,7 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
     return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
+celix_status_t celix_bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
 	struct logActivator * activator = (struct logActivator *) userData;
 
 	serviceRegistration_unregister(activator->logReaderServiceReg);
@@ -152,7 +152,7 @@ celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *con
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
+celix_status_t celix_bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
 	struct logActivator * activator = (struct logActivator *) userData;
 
 	free(activator);

@@ -27,7 +27,13 @@
 #include "celix_dm_component.h"
 #include "celix_dm_service_dependency.h"
 #include "celix_constants.h"
-#include "celix_framework_export.h"
+
+#if defined(__linux__) || defined(__APPLE__)
+//always export bundle activator symbols
+#define CELIX_BUNDLE_ACTIVATOR_EXPORT __attribute__((visibility("default")))
+#else
+#define CELIX_BUNDLE_ACTIVATOR_EXPORT
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,7 +54,7 @@ extern "C" {
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx, void **userData);
+CELIX_BUNDLE_ACTIVATOR_EXPORT celix_status_t celix_bundleActivator_create(celix_bundle_context_t *ctx, void **userData);
 
 /**
  * @brief Called when this bundle is started so the Framework can perform the bundle-specific activities necessary
@@ -67,7 +73,7 @@ CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleActivator_create(celix_bundle_
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleActivator_start(void *userData, celix_bundle_context_t *ctx);
+CELIX_BUNDLE_ACTIVATOR_EXPORT celix_status_t celix_bundleActivator_start(void *userData, celix_bundle_context_t *ctx);
 
 /**
  * @brief Called when this bundle is stopped so the Framework can perform the bundle-specific activities necessary
@@ -88,7 +94,7 @@ CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleActivator_start(void *userData
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleActivator_stop(void *userData, celix_bundle_context_t *ctx);
+CELIX_BUNDLE_ACTIVATOR_EXPORT celix_status_t celix_bundleActivator_stop(void *userData, celix_bundle_context_t *ctx);
 
 /**
  * @brief Called when this bundle is stopped so the bundle can destroy the instance of its activator.
@@ -106,7 +112,7 @@ CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleActivator_stop(void *userData,
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_context_t* ctx);
+CELIX_BUNDLE_ACTIVATOR_EXPORT celix_status_t celix_bundleActivator_destroy(void *userData, celix_bundle_context_t* ctx);
 
 /**
  * @brief This macro generates the required bundle activator functions for C.
