@@ -23,6 +23,7 @@
 #include "celix_errno.h"
 
 extern "C" {
+
 celix_status_t __real_celixThreadMutex_create(celix_thread_mutex_t *__mutex, celix_thread_mutexattr_t *__attr);
 CELIX_EI_DEFINE(celixThreadMutex_create, celix_status_t)
 celix_status_t __wrap_celixThreadMutex_create(celix_thread_mutex_t *__mutex, celix_thread_mutexattr_t *__attr) {
@@ -36,4 +37,33 @@ celix_status_t __wrap_celixThread_create(celix_thread_t *__new_thread, celix_thr
     CELIX_EI_IMPL(celixThread_create);
     return __real_celixThread_create(__new_thread, __attr, __func, __data);
 }
+
+celix_status_t __real_celix_tss_create(celix_tss_key_t* __key, void (*__destroyFunction)(void*));
+CELIX_EI_DEFINE(celix_tss_create, celix_status_t)
+celix_status_t __wrap_celix_tss_create(celix_tss_key_t* __key, void (*__destroyFunction)(void*)) {
+    CELIX_EI_IMPL(celix_tss_create);
+    return __real_celix_tss_create(__key, __destroyFunction);
+}
+
+celix_status_t __real_celix_tss_delete(celix_tss_key_t __key);
+CELIX_EI_DEFINE(celix_tss_delete, celix_status_t)
+celix_status_t __wrap_celix_tss_delete(celix_tss_key_t __key) {
+    CELIX_EI_IMPL(celix_tss_delete);
+    return __real_celix_tss_delete(__key);
+}
+
+celix_status_t __real_celix_tss_set(celix_tss_key_t __key, void* __value);
+CELIX_EI_DEFINE(celix_tss_set, celix_status_t)
+celix_status_t __wrap_celix_tss_set(celix_tss_key_t __key, void* __value) {
+    CELIX_EI_IMPL(celix_tss_set);
+    return __real_celix_tss_set(__key, __value);
+}
+
+void* __real_celix_tss_get(celix_tss_key_t __key);
+CELIX_EI_DEFINE(celix_tss_get, void*)
+void* __wrap_celix_tss_get(celix_tss_key_t __key) {
+    CELIX_EI_IMPL(celix_tss_get);
+    return __real_celix_tss_get(__key);
+}
+
 }
