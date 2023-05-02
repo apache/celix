@@ -164,8 +164,7 @@ static celix_status_t framework_markBundleResolved(framework_pt framework, modul
 
 long framework_getNextBundleId(framework_pt framework);
 
-celix_status_t fw_refreshBundles(framework_pt framework, long bundleIds[], int size);
-celix_status_t fw_refreshBundle(framework_pt framework, long bndId);
+void fw_refreshBundle(framework_pt framework, long bndId);
 
 celix_status_t fw_populateDependentGraph(framework_pt framework, bundle_pt exporter, hash_map_pt *map);
 
@@ -692,11 +691,8 @@ celix_status_t celix_framework_installBundleInternal(celix_framework_t *framewor
   	return status;
 }
 
-celix_status_t fw_refreshBundle(framework_pt framework, long bndId) {
-    celix_status_t status = CELIX_SUCCESS;
+void fw_refreshBundle(framework_pt framework, long bndId) {
     bundle_state_e state;
-
-
     celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
                                                                                                           bndId);
     if (entry != NULL) {
@@ -712,11 +708,8 @@ celix_status_t fw_refreshBundle(framework_pt framework, long bndId) {
 
         celix_framework_bundleEntry_decreaseUseCount(entry);
     } else {
-        framework_logIfError(framework->logger, status, NULL, "Cannot refresh bundle");
+        fw_log(framework->logger, CELIX_LOG_LEVEL_WARNING, "Cannot refresh bundle %ld", bndId);
     }
-
-
-    return status;
 }
 
 bool celix_framework_isBundleAlreadyInstalled(celix_framework_t* fw, const char* bundleSymbolicName) {
@@ -1101,7 +1094,6 @@ static celix_status_t framework_markBundleResolved(framework_pt framework, modul
     celix_status_t status = CELIX_SUCCESS;
     bundle_pt bundle = module_getBundle(module);
     bundle_state_e state;
-    char *error = NULL;
 
     if (bundle != NULL) {
         long bndId = celix_bundle_getId(bundle);
@@ -1109,7 +1101,7 @@ static celix_status_t framework_markBundleResolved(framework_pt framework, modul
 
         bundle_getState(bundle, &state);
         if (state != CELIX_BUNDLE_STATE_INSTALLED) {
-            printf("Trying to resolve a resolved bundle");
+            fw_log(framework->logger, CELIX_LOG_LEVEL_WARNING, "Trying to resolve a resolved bundle");
             status = CELIX_ILLEGAL_STATE;
         } else {
             // Load libraries of this module
@@ -1128,11 +1120,7 @@ static celix_status_t framework_markBundleResolved(framework_pt framework, modul
             long id = 0;
             module_getSymbolicName(module, &symbolicName);
             bundle_getBundleId(bundle, &id);
-            if (error != NULL) {
-                fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not start bundle: %s [%ld]; cause: %s", symbolicName, id, error);
-            } else {
-                fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not start bundle: %s [%ld]", symbolicName, id);
-            }
+            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not resolve bundle: %s [%ld]", symbolicName, id);
         }
 
 
@@ -1973,23 +1961,14 @@ celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework
             fw_bundleEntry_destroy(removedEntry , true); //wait till use count is 0 -> e.g. not used
 
             if (status == CELIX_SUCCESS) {
-                celix_status_t refreshStatus = fw_refreshBundle(framework, bndId);
-                if (refreshStatus != CELIX_SUCCESS) {
-                    printf("Could not refresh bundle");
-                } else {
-                    celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
-                    bundleArchive_destroy(archive);
-                    status = CELIX_DO_IF(status, bundle_closeModules(bnd));
-                    status = CELIX_DO_IF(status, bundle_destroy(bnd));
-                }
+                fw_refreshBundle(framework, bndId);
+                celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
+                bundleArchive_destroy(archive);
+                status = CELIX_DO_IF(status, bundle_closeModules(bnd));
+                status = CELIX_DO_IF(status, bundle_destroy(bnd));
             }
         }
-
-
-        if (status != CELIX_SUCCESS) {
-            framework_logIfError(framework->logger, status, "", "Cannot uninstall bundle");
-        }
-
+        framework_logIfError(framework->logger, status, "", "Cannot uninstall bundle");
         return status;
 
     } else {
@@ -2274,7 +2253,7 @@ celix_status_t celix_framework_startBundleEntry(celix_framework_t* framework, ce
                         bundle_setActivator(bndEntry->bnd, NULL);
                         bundleContext_destroy(context);
                         free(activator);
-                        status = bundle_setState(bndEntry->bnd, CELIX_BUNDLE_STATE_RESOLVED);
+                        (void)bundle_setState(bndEntry->bnd, CELIX_BUNDLE_STATE_RESOLVED);
                     }
                 }
             }

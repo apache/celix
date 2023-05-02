@@ -72,6 +72,11 @@ TEST_F(CelixBundleContextBundlesTestSuite, InstallABundleTest) {
     ASSERT_TRUE(bndId >= 0);
 }
 
+//TEST_F(CelixBundleContextBundlesTestSuite, InstallBundleWithBadExport) {
+//    long bndId = celix_bundleContext_installBundle(ctx, BUNDLE_WITH_BAD_EXPORT_LOCATION, true);
+//    ASSERT_TRUE(bndId >= 0);
+//}
+
 TEST_F(CelixBundleContextBundlesTestSuite, InstallBundlesTest) {
     long bndId = celix_bundleContext_installBundle(ctx, "non-existing.zip", true);
     ASSERT_TRUE(bndId < 0);
