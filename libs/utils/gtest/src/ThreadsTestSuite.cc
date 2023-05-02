@@ -95,7 +95,7 @@ TEST_F(ThreadsTestSuite, SelfTest) {
 }
 
 TEST_F(ThreadsTestSuite, InitializedTest) {
-    celix_thread_t thread;
+    celix_thread_t thread{};
     EXPECT_FALSE(celixThread_initialized(thread));
 
     celixThread_create(&thread, nullptr, thread_test_func_detach, nullptr);
