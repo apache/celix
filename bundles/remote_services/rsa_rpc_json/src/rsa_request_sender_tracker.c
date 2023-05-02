@@ -48,10 +48,14 @@ celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, const
         return CELIX_ILLEGAL_ARGUMENT;
     }
     rsa_request_sender_tracker_t *tracker = calloc(1, sizeof(*tracker));
-    assert(tracker != NULL);
+    if (tracker == NULL) {
+        return CELIX_ENOMEM;
+    }
     tracker->ctx = ctx;
     tracker->logHelper = celix_logHelper_create(ctx, trackerName);
-    assert(tracker->logHelper != NULL);
+    if (tracker->logHelper == NULL) {
+        goto log_helper_err;
+    }
     status = celixThreadRwlock_create(&tracker->lock, NULL);
     if (status != CELIX_SUCCESS) {
         goto err_creating_lock;
@@ -77,6 +81,7 @@ err_tracking_svc:
     (void)celixThreadRwlock_destroy(&tracker->lock);
 err_creating_lock:
     celix_logHelper_destroy(tracker->logHelper);
+log_helper_err:
     free(tracker);
     return status;
 }
@@ -87,7 +92,7 @@ static void rsaRequestSenderTracker_addServiceWithProperties(void *handle, void 
     assert(svc != NULL);
     assert(props != NULL);
     rsa_request_sender_tracker_t *tracker = (rsa_request_sender_tracker_t *)handle;
-    const char *serviceName = celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME, "unknow-service");
+    const char *serviceName = celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME, "unknown-service");
     long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (svcId < 0) {
         celix_logHelper_error(tracker->logHelper, "Error getting rsa request sender service id for %s.", serviceName);

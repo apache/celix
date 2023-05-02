@@ -43,7 +43,7 @@ if (CELIX_DFI)
 			)
 	target_link_libraries(dfi PRIVATE libffi::libffi)
 	target_link_libraries(dfi PUBLIC jansson::jansson)
-	target_link_libraries(dfi PRIVATE Celix::utils)
+	target_link_libraries(dfi PUBLIC Celix::utils)##need for celix_version.h in public header
 	set_target_properties(dfi PROPERTIES "SOVERSION" 1)
 
 	install(TARGETS dfi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dfi

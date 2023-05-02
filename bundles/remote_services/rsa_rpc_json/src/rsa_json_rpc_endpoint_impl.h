@@ -26,7 +26,8 @@ extern "C" {
 #include "endpoint_description.h"
 #include "remote_interceptors_handler.h"
 #include "celix_log_helper.h"
-#include "celix_api.h"
+#include "celix_types.h"
+#include "celix_errno.h"
 #include <stdio.h>
 
 typedef struct rsa_json_rpc_endpoint rsa_json_rpc_endpoint_t;

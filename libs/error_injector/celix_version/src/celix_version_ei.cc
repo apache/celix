@@ -16,26 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include "celix_version_ei.h"
 
-#ifndef CELIX_BUNDLE_CONTEXT_EI_H
-#define CELIX_BUNDLE_CONTEXT_EI_H
-#ifdef __cplusplus
 extern "C" {
-#endif
-#include "celix_error_injector.h"
-#include "celix_errno.h"
-
-CELIX_EI_DECLARE(celix_bundleContext_getProperty, const char*);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_trackServicesWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_getBundleId, long);
-CELIX_EI_DECLARE(bundleContext_getServiceReferences, celix_status_t);
-CELIX_EI_DECLARE(bundleContext_retainServiceReference, celix_status_t);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceFactoryAsync, long);
-
-#ifdef __cplusplus
+celix_version_t *__real_celix_version_createVersionFromString(const char *versionStr);
+CELIX_EI_DEFINE(celix_version_createVersionFromString, celix_version_t*)
+celix_version_t *__wrap_celix_version_createVersionFromString(const char *versionStr) {
+    CELIX_EI_IMPL(celix_version_createVersionFromString);
+    return __real_celix_version_createVersionFromString(versionStr);
 }
-#endif
 
-#endif //CELIX_BUNDLE_CONTEXT_EI_H
+}

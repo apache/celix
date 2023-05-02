@@ -16,15 +16,16 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include <celix_api.h>
+#include "rsa_rpc_factory.h"
+#include "celix_api.h"
 #include <gtest/gtest.h>
-#include <rsa_rpc_factory.h>
 
-class RsaJsonRpcActivatorTestSuite : public ::testing::Test {
+class RsaJsonRpcIntegrationTestSuite : public ::testing::Test {
 public:
-    RsaJsonRpcActivatorTestSuite() {
+    RsaJsonRpcIntegrationTestSuite() {
         auto* props = celix_properties_create();
-        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_json_rpc_cache");
+        celix_properties_set(props, CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, "onFirstInit");
+        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_json_rpc_integration_cache");
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
         fw = std::shared_ptr<celix_framework_t>{fwPtr, [](auto* f) {celix_frameworkFactory_destroyFramework(f);}};
@@ -40,18 +41,8 @@ public:
     std::shared_ptr<celix_bundle_context_t> ctx{};
 };
 
-static void useRsaJsonRpcServiceCallback(void *handle __attribute__((__unused__)), void *svc __attribute__((__unused__)), const celix_properties_t *props) {
-    const char *rpcType = celix_properties_get(props, RSA_RPC_TYPE_KEY, NULL);
-    EXPECT_STREQ("celix.remote.admin.rpc_type.json", rpcType);
-}
-
-TEST_F(RsaJsonRpcActivatorTestSuite, UseService) {
-    celix_service_use_options_t opts{};
-    opts.filter.serviceName = RSA_RPC_FACTORY_NAME;
-    opts.callbackHandle = this;
-    opts.useWithProperties = useRsaJsonRpcServiceCallback;
-    opts.waitTimeoutInSeconds = 30;
-    opts.flags = CELIX_SERVICE_USE_DIRECT | CELIX_SERVICE_USE_SOD;
-    bool found = celix_bundleContext_useServiceWithOptions(ctx.get(), &opts);
-    EXPECT_TRUE(found);
+TEST_F(RsaJsonRpcIntegrationTestSuite, FindRsaJsonRpcService) {
+celix_bundleContext_waitForEvents(ctx.get());
+long found = celix_bundleContext_findService(ctx.get(), RSA_RPC_FACTORY_NAME);
+EXPECT_GE(found, 0);
 }

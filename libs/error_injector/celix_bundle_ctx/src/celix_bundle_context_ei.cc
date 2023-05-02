@@ -85,4 +85,14 @@ long __wrap_celix_bundleContext_registerServiceAsync(celix_bundle_context_t *__c
     return __real_celix_bundleContext_registerServiceAsync(__ctx, __serviceName, __service, __properties);
 }
 
+long __real_celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *__ctx, const char *__serviceName, service_factory_pt __factory, celix_properties_t *__properties);
+CELIX_EI_DEFINE(celix_bundleContext_registerServiceFactoryAsync, long)
+long __wrap_celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *__ctx, const char *__serviceName, service_factory_pt __factory, celix_properties_t *__properties) {
+    celix_properties_t __attribute__((cleanup(celix_properties_cleanup))) *props = celix_properties_copy(__properties);
+    celix_properties_destroy(__properties);
+    CELIX_EI_IMPL(celix_bundleContext_registerServiceFactoryAsync);
+    __properties = celix_properties_copy(props);
+    return __real_celix_bundleContext_registerServiceFactoryAsync(__ctx, __serviceName, __factory, __properties);
+}
+
 }

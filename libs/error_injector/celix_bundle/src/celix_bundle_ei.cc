@@ -16,26 +16,23 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include "celix_bundle_ei.h"
+#include "celix_bundle.h"
 
-#ifndef CELIX_BUNDLE_CONTEXT_EI_H
-#define CELIX_BUNDLE_CONTEXT_EI_H
-#ifdef __cplusplus
 extern "C" {
-#endif
-#include "celix_error_injector.h"
-#include "celix_errno.h"
 
-CELIX_EI_DECLARE(celix_bundleContext_getProperty, const char*);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_trackServicesWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_getBundleId, long);
-CELIX_EI_DECLARE(bundleContext_getServiceReferences, celix_status_t);
-CELIX_EI_DECLARE(bundleContext_retainServiceReference, celix_status_t);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceFactoryAsync, long);
-
-#ifdef __cplusplus
+const char *__real_celix_bundle_getSymbolicName(const celix_bundle_t *bnd);
+CELIX_EI_DEFINE(celix_bundle_getSymbolicName, const char*)
+const char *__wrap_celix_bundle_getSymbolicName(const celix_bundle_t *bnd) {
+    CELIX_EI_IMPL(celix_bundle_getSymbolicName);
+    return __real_celix_bundle_getSymbolicName(bnd);
 }
-#endif
 
-#endif //CELIX_BUNDLE_CONTEXT_EI_H
+const char *__real_celix_bundle_getManifestValue(const celix_bundle_t *bnd, const char *attribute);
+CELIX_EI_DEFINE(celix_bundle_getManifestValue, const char*)
+const char *__wrap_celix_bundle_getManifestValue(const celix_bundle_t *bnd, const char *attribute) {
+    CELIX_EI_IMPL(celix_bundle_getManifestValue);
+    return __real_celix_bundle_getManifestValue(bnd, attribute);
+}
+
+}

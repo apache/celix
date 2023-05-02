@@ -17,25 +17,32 @@
  * under the License.
  */
 
-#ifndef CELIX_BUNDLE_CONTEXT_EI_H
-#define CELIX_BUNDLE_CONTEXT_EI_H
+#ifndef CELIX_RSA_JSON_RPC_TEST_SERVICE_H
+#define CELIX_RSA_JSON_RPC_TEST_SERVICE_H
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "celix_error_injector.h"
-#include "celix_errno.h"
 
-CELIX_EI_DECLARE(celix_bundleContext_getProperty, const char*);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_trackServicesWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_getBundleId, long);
-CELIX_EI_DECLARE(bundleContext_getServiceReferences, celix_status_t);
-CELIX_EI_DECLARE(bundleContext_retainServiceReference, celix_status_t);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceFactoryAsync, long);
+#define RSA_RPC_JSON_TEST_SERVICE              "org.apache.celix.test.api.rpc_json"
+#define RSA_RPC_JSON_TEST_SERVICE_VERSION      "1.0.0"
+
+typedef struct rsa_rpc_json_test_service rsa_rpc_json_test_service_t;
+
+/*
+ * The service definition corresponds to the following Java interface:
+ *
+ * interface Calculator {
+ *      void test();
+ * }
+ */
+struct rsa_rpc_json_test_service {
+    void *handle;
+    int (*test)(void *handle);
+};
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //CELIX_BUNDLE_CONTEXT_EI_H
+#endif //CELIX_RSA_JSON_RPC_TEST_SERVICE_H

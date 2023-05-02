@@ -68,12 +68,16 @@ celix_status_t rsaJsonRpc_create(celix_bundle_context_t* ctx, celix_log_helper_t
     }
 
     rsa_json_rpc_t *rpc = calloc(1, sizeof(rsa_json_rpc_t));
-    assert(rpc != NULL);
+    if (rpc == NULL) {
+        celix_logHelper_error(logHelper, "Failed to allocate memory for rsa_json_rpc_t.");
+        return CELIX_ENOMEM;
+    }
     rpc->ctx = ctx;
     rpc->logHelper = logHelper;
     rpc->serialProtoId = rsaJsonRpc_generateSerialProtoId(celix_bundleContext_getBundle(ctx));
     if (rpc->serialProtoId == 0) {
         celix_logHelper_error(logHelper, "Error generating serialization protocol id.");
+        status = CELIX_BUNDLE_EXCEPTION;
         goto protocol_id_err;
     }
     status = celixThreadMutex_create(&rpc->mutex, NULL);
@@ -88,6 +92,7 @@ celix_status_t rsaJsonRpc_create(celix_bundle_context_t* ctx, celix_log_helper_t
 
     status = remoteInterceptorsHandler_create(ctx, &rpc->interceptorsHandler);
     if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(logHelper, "Error creating remote interceptors handler. %d.", status);
         goto interceptors_err;
     }
 

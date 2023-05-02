@@ -24,6 +24,7 @@
 #include "celix_log_helper.h"
 #include "dfi_utils.h"
 #include "celix_api.h"
+#include "celix_version.h"
 #include <sys/queue.h>
 #include <stdbool.h>
 #include <assert.h>
@@ -78,7 +79,9 @@ celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_
     assert(proxyFactoryOut != NULL);
     celix_status_t status = CELIX_SUCCESS;
     rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)calloc(1, sizeof(*proxyFactory));
-    assert(proxyFactory != NULL);
+    if (proxyFactory == NULL) {
+        return CELIX_ENOMEM;
+    }
     proxyFactory->ctx = ctx;
     proxyFactory->logHelper = logHelper;
     proxyFactory->callsLogFile = logFile;
@@ -276,7 +279,9 @@ static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxy
     celix_status_t status = CELIX_SUCCESS;
     dyn_interface_type *intfType = NULL;
     rsa_json_rpc_proxy_t *proxy = calloc(1, sizeof(*proxy));
-    assert(proxy != NULL);
+    if (proxy == NULL) {
+        return CELIX_ENOMEM;
+    }
     proxy->proxyFactory = proxyFactory;
     proxy->useCnt = 0;
     status = dfi_findAndParseInterfaceDescriptor(proxyFactory->logHelper,
@@ -293,19 +298,18 @@ static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxy
         celix_logHelper_error(proxyFactory->logHelper, "Proxy: Error getting provider service version.");
         goto err_getting_svc_ver;
     }
-    version_pt providerVersion;
-    status =version_createVersionFromString(providerVerStr,&providerVersion);
-    if (status != CELIX_SUCCESS) {
+    celix_version_t *providerVersion = celix_version_createVersionFromString(providerVerStr);
+    if (providerVersion == NULL) {
         celix_logHelper_error(proxyFactory->logHelper, "Proxy: Error converting service version type. %d.", status);
+        status = CELIX_ENOMEM;
         goto err_creating_provider_ver;
     }
-    version_pt consumerVersion = NULL;
+    celix_version_t *consumerVersion = NULL;
     bool isCompatible = false;
     dynInterface_getVersion(intfType,&consumerVersion);
-    version_isCompatible(consumerVersion, providerVersion,&isCompatible);
+    isCompatible = celix_version_isCompatible(consumerVersion, providerVersion);
     if(!isCompatible){
-        char* consumerVerStr = NULL;
-        version_toString(consumerVersion,&consumerVerStr);
+        char* consumerVerStr = celix_version_toString(consumerVersion);
         celix_logHelper_error(proxyFactory->logHelper, "Proxy: Service version mismatch, consumer has %s, provider has %s.", consumerVerStr, providerVerStr);
         free(consumerVerStr);
         status = CELIX_SERVICE_EXCEPTION;
@@ -314,7 +318,11 @@ static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxy
 
     size_t intfMethodNb = dynInterface_nrOfMethods(intfType);
     proxy->service = calloc(1 + intfMethodNb, sizeof(void *));//The interface includes 'void *handle' and its methods
-    assert(proxy->service != NULL);
+    if (proxy->service == NULL) {
+        status = CELIX_ENOMEM;
+        celix_logHelper_error(proxyFactory->logHelper, "Proxy: Failed to allocate memory for service.");
+        goto err_creating_service;
+    }
     void **service = (void **)proxy->service;
     service[0] = proxy;
     struct methods_head *list = NULL;
@@ -325,7 +333,8 @@ static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxy
     TAILQ_FOREACH(entry, list, entries) {
         int rc = dynFunction_createClosure(entry->dynFunc, rsaJsonRpcProxy_serviceFunc, entry, &fn);
         if (rc != 0) {
-            status = CELIX_BUNDLE_EXCEPTION;
+            status = CELIX_SERVICE_EXCEPTION;
+            celix_logHelper_error(proxyFactory->logHelper, "Proxy: Failed to create closure for service function %s.", entry->name);
             goto fn_closure_err;
         }
         service[++index] = fn;
@@ -333,14 +342,15 @@ static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxy
 
     *proxyOut = proxy;
 
-    version_destroy(providerVersion);
+    celix_version_destroy(providerVersion);
 
     return CELIX_SUCCESS;
 
 fn_closure_err:
     free(proxy->service);
+err_creating_service:
 svc_ver_mismatch:
-    version_destroy(providerVersion);
+    celix_version_destroy(providerVersion);
 err_creating_provider_ver:
 err_getting_svc_ver:
     dynInterface_destroy(intfType);
