@@ -23,9 +23,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef CELIX_ERR_USE_THREAD_LOCAL
+#ifndef CELIX_ERR_USE_THREAD_LOCAL
 #include <stdlib.h>
-
 #include "celix_threads.h"
 #endif
 
@@ -35,7 +34,18 @@ typedef struct celix_err {
 } celix_err_t;
 
 #ifdef CELIX_ERR_USE_THREAD_LOCAL
+
+__thread celix_err_t celix_err_tssErr = { .buffer = {0}, .pos = 0 };
+
+static celix_err_t* celix_err_getTssErr() {
+    return &celix_err_tssErr;
+}
+
+#else //Use TSS
+
 celix_tss_key_t celix_err_tssKey;
+bool celix_err_tssKeyInitialized = false;
+
 static void celix_err_destroyTssErr(void* data) {
     celix_err_t* err = data;
     if (err != NULL) {
@@ -43,7 +53,12 @@ static void celix_err_destroyTssErr(void* data) {
     }
 }
 
-static celix_err_t* celix_err_getTssErr() {
+celix_err_t* celix_err_getTssErr() {
+    if (!celix_err_tssKeyInitialized) {
+        fprintf(stderr, "celix_err_tssKey is not initialized\n");
+        return NULL;
+    }
+
     celix_err_t* err = celix_tss_get(celix_err_tssKey);
     if (err) {
         return err;
@@ -52,9 +67,9 @@ static celix_err_t* celix_err_getTssErr() {
     err = malloc(sizeof(*err));
     if (err) {
         err->pos = 0; //no entry
-        int rc = celix_tss_set(celix_err_tssKey, err);
-        if (rc != 0) {
-            fprintf(stderr, "Failed to set thread specific storage for celix_err: %s\n", strerror(rc));
+        celix_status_t status = celix_tss_set(celix_err_tssKey, err);
+        if (status != CELIX_SUCCESS) {
+            fprintf(stderr, "Failed to set thread specific storage for celix_err\n");
             free(err);
             err = NULL;
         }
@@ -65,24 +80,24 @@ static celix_err_t* celix_err_getTssErr() {
 }
 
 __attribute__((constructor)) void celix_err_initThreadSpecificStorageKey() {
-    int rc = celix_tss_create(&celix_err_tssKey, celix_err_destroyTssErr);
-    if (rc != 0) {
+    celix_status_t status = celix_tss_create(&celix_err_tssKey, celix_err_destroyTssErr);
+    if (status == CELIX_SUCCESS) {
+        celix_err_tssKeyInitialized = true;
+    } else {
         fprintf(stderr,"Failed to create thread specific storage key for celix_err\n");
     }
 }
 
 __attribute__((destructor)) void celix_err_deinitThreadSpecificStorageKey() {
-    int rc = celix_tss_delete(celix_err_tssKey);
-    if (rc != 0) {
+    if (!celix_err_tssKeyInitialized) {
+        fprintf(stderr, "celix_err_tssKey is not initialized\n");
+        return;
+    }
+
+    celix_status_t status = celix_tss_delete(celix_err_tssKey);
+    if (status != CELIX_SUCCESS) {
         fprintf(stderr,"Failed to delete thread specific storage key for celix_err\n");
     }
-}
-#else //Use __thread static variable instead of thread specific storage functions
-
-__thread celix_err_t celix_err_tssErr = { .buffer = {0}, .pos = 0 };
-
-static celix_err_t* celix_err_getTssErr() {
-    return &celix_err_tssErr;
 }
 
 #endif
@@ -145,7 +160,6 @@ void celix_err_pushf(const char* format, ...) {
             fprintf(stderr, "Failed to add error message '");
             vfprintf(stderr, format, args);
             fprintf(stderr, "' to celix_err\n");
-
         }
     }
     va_end(args);
