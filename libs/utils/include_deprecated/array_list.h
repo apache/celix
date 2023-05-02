@@ -47,7 +47,7 @@ CELIX_UTILS_DEPRECATED_EXPORT void arrayList_destroy(celix_array_list_t *list);
 
 CELIX_UTILS_DEPRECATED_EXPORT void arrayList_trimToSize(celix_array_list_t *list);
 
-CELIX_UTILS_DEPRECATED_EXPORT void arrayList_ensureCapacity(celix_array_list_t *list, int capacity);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t arrayList_ensureCapacity(celix_array_list_t *list, int capacity);
 
 CELIX_UTILS_DEPRECATED_EXPORT unsigned int arrayList_size(celix_array_list_t *list);
 

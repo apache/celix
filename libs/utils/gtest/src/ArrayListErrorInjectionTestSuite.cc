@@ -46,4 +46,6 @@ TEST_F(ArrayListErrorInjectionTestSuite, TestAddFunctions) {
     //Then adding an element should fail
     EXPECT_EQ(CELIX_ENOMEM, celix_arrayList_addInt(list, 10));
     EXPECT_EQ(10, celix_arrayList_size(list));
+
+    celix_arrayList_destroy(list);
 }
