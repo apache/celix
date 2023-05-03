@@ -230,3 +230,30 @@ TEST_F(ArrayListTestSuite, TestSortForArrayList) {
 
     celix_arrayList_destroy(list);
 }
+
+TEST_F(ArrayListTestSuite, TestReturnStatusAddFunctions) {
+    auto* list = celix_arrayList_create();
+    ASSERT_TRUE(list != nullptr);
+    EXPECT_EQ(0, celix_arrayList_size(list));
+
+    //no error, return status is CELIX_SUCCESS
+    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addInt(list, 1));
+    EXPECT_EQ(1, celix_arrayList_size(list));
+
+    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addLong(list, 2L));
+    EXPECT_EQ(2, celix_arrayList_size(list));
+
+    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addFloat(list, 3.0f));
+    EXPECT_EQ(3, celix_arrayList_size(list));
+
+    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addDouble(list, 4.0));
+    EXPECT_EQ(4, celix_arrayList_size(list));
+
+    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addBool(list, true));
+    EXPECT_EQ(5, celix_arrayList_size(list));
+
+    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_add(list, (void*)0x42));
+    EXPECT_EQ(6, celix_arrayList_size(list));
+
+    celix_arrayList_destroy(list);
+}

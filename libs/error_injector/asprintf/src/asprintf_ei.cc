@@ -24,6 +24,15 @@
 
 extern "C" {
 
+int __real_vasprintf(char** buf, const char* format, va_list args);
+CELIX_EI_DEFINE(vasprintf, int)
+int __wrap_vasprintf(char** buf, const char* format, va_list args) {
+    errno = ENOMEM;
+    CELIX_EI_IMPL(vasprintf);
+    errno = 0;
+    return __real_vasprintf(buf, format, args);
+}
+
 int __real_asprintf(char** buf, const char* format, ...);
 CELIX_EI_DEFINE(asprintf, int)
 int __wrap_asprintf(char** buf, const char* format, ...) {
@@ -32,7 +41,7 @@ int __wrap_asprintf(char** buf, const char* format, ...) {
     errno = 0;
     va_list args;
     va_start(args, format);
-    int rc = vasprintf(buf, format, args);
+    int rc = __real_vasprintf(buf, format, args);
     va_end(args);
     return rc;
 }
