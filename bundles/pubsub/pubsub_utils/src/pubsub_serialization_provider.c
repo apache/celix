@@ -35,6 +35,7 @@
 #include "celix_log_helper.h"
 #include "pubsub_message_serialization_service.h"
 #include "celix_shell_command.h"
+#include "celix_threads.h"
 
 #define MAX_PATH_LEN    1024
 

@@ -16,9 +16,13 @@
 # under the License.
 
 add_library(c_rsa_spi INTERFACE)
+
+get_target_property(FRAMEWORK_SOURCE_DIR Celix::framework "SOURCE_DIR")
 target_include_directories(c_rsa_spi INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+    $<BUILD_INTERFACE:${FRAMEWORK_SOURCE_DIR}/include_deprecated>##TODO remove when deprecated header service_reference.h is removed
     )
+set_property(TARGET celix-deprecated APPEND PROPERTY "FRAMEWORK_TARGETS" c_rsa_spi)
 target_link_libraries(c_rsa_spi INTERFACE Celix::framework)
 
 install(TARGETS c_rsa_spi EXPORT celix COMPONENT rsa

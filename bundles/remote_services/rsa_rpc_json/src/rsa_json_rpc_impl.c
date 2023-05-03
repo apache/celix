@@ -27,8 +27,11 @@
 #include "celix_log_helper.h"
 #include "dyn_interface.h"
 #include "celix_version.h"
-#include "celix_api.h"
+#include "celix_threads.h"
+#include "celix_constants.h"
+#include "celix_utils.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>

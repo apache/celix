@@ -21,6 +21,7 @@ add_executable(integration_test_rsa_shm
 )
 
 celix_deprecated_utils_headers(integration_test_rsa_shm)
+celix_deprecated_framework_headers(integration_test_rsa_shm)
 
 target_link_libraries(integration_test_rsa_shm PRIVATE
     Celix::c_rsa_spi

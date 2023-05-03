@@ -31,7 +31,7 @@
 
 #include "celix_properties.h"
 #include "hash_map.h"
-#include "exports.h"
+#include "celix_utils_export.h"
 #include "celix_errno.h"
 #ifdef __cplusplus
 extern "C" {
@@ -40,27 +40,27 @@ extern "C" {
 typedef hash_map_pt properties_pt __attribute__((deprecated("properties is deprecated use celix_properties instead")));
 typedef hash_map_t properties_t __attribute__((deprecated("properties is deprecated use celix_properties instead")));
 
-UTILS_EXPORT celix_properties_t* properties_create(void);
+CELIX_UTILS_DEPRECATED_EXPORT celix_properties_t* properties_create(void);
 
-UTILS_EXPORT void properties_destroy(celix_properties_t *properties);
+CELIX_UTILS_DEPRECATED_EXPORT void properties_destroy(celix_properties_t *properties);
 
-UTILS_EXPORT celix_properties_t* properties_load(const char *filename);
+CELIX_UTILS_DEPRECATED_EXPORT celix_properties_t* properties_load(const char *filename);
 
-UTILS_EXPORT celix_properties_t* properties_loadWithStream(FILE *stream);
+CELIX_UTILS_DEPRECATED_EXPORT celix_properties_t* properties_loadWithStream(FILE *stream);
 
-UTILS_EXPORT celix_properties_t* properties_loadFromString(const char *input);
+CELIX_UTILS_DEPRECATED_EXPORT celix_properties_t* properties_loadFromString(const char *input);
 
-UTILS_EXPORT void properties_store(celix_properties_t *properties, const char *file, const char *header);
+CELIX_UTILS_DEPRECATED_EXPORT void properties_store(celix_properties_t *properties, const char *file, const char *header);
 
-UTILS_EXPORT const char* properties_get(celix_properties_t *properties, const char *key);
+CELIX_UTILS_DEPRECATED_EXPORT const char* properties_get(celix_properties_t *properties, const char *key);
 
-UTILS_EXPORT const char* properties_getWithDefault(celix_properties_t *properties, const char *key, const char *defaultValue);
+CELIX_UTILS_DEPRECATED_EXPORT const char* properties_getWithDefault(celix_properties_t *properties, const char *key, const char *defaultValue);
 
-UTILS_EXPORT void properties_set(celix_properties_t *properties, const char *key, const char *value);
+CELIX_UTILS_DEPRECATED_EXPORT void properties_set(celix_properties_t *properties, const char *key, const char *value);
 
-UTILS_EXPORT void properties_unset(celix_properties_t *properties, const char *key);
+CELIX_UTILS_DEPRECATED_EXPORT void properties_unset(celix_properties_t *properties, const char *key);
 
-UTILS_EXPORT celix_status_t properties_copy(celix_properties_t *properties, celix_properties_t **copy);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t properties_copy(celix_properties_t *properties, celix_properties_t **copy);
 
 #define PROPERTIES_FOR_EACH(props, key) \
     for(hash_map_iterator_t iter = hashMapIterator_construct(props); \

@@ -1,4 +1,3 @@
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -122,6 +121,7 @@ add_celix_bundle(<bundle_target_name>
         [FILENAME bundle_filename]
         [PRIVATE_LIBRARIES private_lib1 private_lib2 ...]
         [HEADERS "header1: header1_value" "header2: header2_value" ...]
+        [DO_NOT_CONFIGURE_SYMBOL_VISIBILITY]
 )
 ```
 
@@ -136,6 +136,7 @@ add_celix_bundle(<bundle_target_name>
         [FILENAME bundle_filename]
         [PRIVATE_LIBRARIES private_lib1 private_lib2 ...]
         [HEADERS "header1: header1_value" "header2: header2_value" ...]
+        [DO_NOT_CONFIGURE_SYMBOL_VISIBILITY]
 )
 ```
 
@@ -150,6 +151,7 @@ add_celix_bundle(<bundle_target_name>
         [FILENAME bundle_filename]
         [PRIVATE_LIBRARIES private_lib1 private_lib2 ...]
         [HEADERS "header1: header1_value" "header2: header2_value" ...]
+        [DO_NOT_CONFIGURE_SYMBOL_VISIBILITY]
 )
 ```
 
@@ -173,12 +175,13 @@ Optional arguments are:
 - FILENAME: The filename of the bundle file, without extension. Default is <bundle_target_name>. Together with the BUILD_TYPE, this will result in a filename like "bundle_target_name_Debug.zip
 - PRIVATE_LIBRARIES: private libraries to be included in the bundle. Specified libraries are added to the "Private-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.
 - HEADERS: Additional headers values that are appended to the bundle manifest.
+- DO_NOT_CONFIGURE_SYMBOL_VISIBILITY: By default the bundle library will be build with symbol visibility configuration preset set to hidden. This can be disabled by providing this option.
 ]]
 function(add_celix_bundle)
     list(GET ARGN 0 BUNDLE_TARGET_NAME)
     list(REMOVE_AT ARGN 0)
 
-    set(OPTIONS NO_ACTIVATOR)
+    set(OPTIONS NO_ACTIVATOR DO_NOT_CONFIGURE_SYMBOL_VISIBILITY)
     set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION FILENAME GROUP)
     set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES EXPORT_LIBRARIES IMPORT_LIBRARIES HEADERS)
     cmake_parse_arguments(BUNDLE "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
@@ -360,6 +363,10 @@ function(add_celix_bundle)
         else()
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
         endif()
+
+        if (NOT BUNDLE_DO_NOT_CONFIGURE_SYMBOL_VISIBILITY)
+            celix_target_hide_symbols(${BUNDLE_TARGET_NAME})
+        endif ()
     elseif(BUNDLE_NO_ACTIVATOR)
         #do nothing
     else() #ACTIVATOR 
@@ -367,7 +374,7 @@ function(add_celix_bundle)
         
         if(TARGET ${BUNDLE_ACTIVATOR})
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "$<TARGET_SONAME_FILE_NAME:${BUNDLE_ACTIVATOR}>")
-        elseif(IS_ABSOLUTE ${BUNDLE_ACTIVATOR} AND EXISTS${BUNDLE_ACTIVATOR})
+        elseif(IS_ABSOLUTE ${BUNDLE_ACTIVATOR} AND EXISTS ${BUNDLE_ACTIVATOR})
             get_filename_component(ACT_NAME ${BUNDLE_ACTIVATOR} NAME)
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "${ACT_NAME}>")
         else()
@@ -1227,4 +1234,3 @@ function (_celix_extract_imported_bundle_info)
     set(BUNDLE_FILENAME ${BFN} PARENT_SCOPE)
     set(BUNDLE_SYMBOLIC_NAME ${BSN} PARENT_SCOPE)
 endfunction ()
-

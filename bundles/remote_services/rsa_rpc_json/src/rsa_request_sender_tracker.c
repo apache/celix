@@ -21,7 +21,8 @@
 #include "rsa_request_sender_service.h"
 #include "celix_log_helper.h"
 #include "celix_long_hash_map.h"
-#include "celix_api.h"
+#include "celix_threads.h"
+#include "celix_constants.h"
 #include <stdlib.h>
 #include <assert.h>
 

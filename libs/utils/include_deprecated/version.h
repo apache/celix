@@ -20,8 +20,10 @@
 #ifndef VERSION_H_
 #define VERSION_H_
 
-#include "celix_errno.h"
 #include <stdbool.h>
+
+#include "celix_errno.h"
+#include "celix_utils_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,9 +50,9 @@ typedef struct celix_version *version_pt __attribute__((deprecated("version is d
  *         - CELIX_ILLEGAL_ARGUMENT If the numerical components are negative
  *           or the qualifier string is invalid.
  */
-celix_status_t version_createVersion(int major, int minor, int micro, const char *qualifier, version_pt *version);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t version_createVersion(int major, int minor, int micro, const char *qualifier, version_pt *version);
 
-celix_status_t version_destroy(version_pt version);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t version_destroy(version_pt version);
 
 /**
  * Creates a clone of <code>version</code>.
@@ -63,7 +65,7 @@ celix_status_t version_destroy(version_pt version);
  *         - CELIX_ILLEGAL_ARGUMENT If the numerical components are negative
  *           or the qualifier string is invalid.
  */
-celix_status_t version_clone(version_pt version, version_pt *clone);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t version_clone(version_pt version, version_pt *clone);
 
 /**
  * Creates a version identifier from the specified string.
@@ -91,7 +93,7 @@ celix_status_t version_clone(version_pt version, version_pt *clone);
  *         - CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
  *               the qualifier string is invalid or <code>versionStr</code> is improperly formatted.
  */
-celix_status_t version_createVersionFromString(const char *versionStr, version_pt *version);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t version_createVersionFromString(const char *versionStr, version_pt *version);
 
 /**
  * The empty version "0.0.0".
@@ -103,15 +105,15 @@ celix_status_t version_createVersionFromString(const char *versionStr, version_p
  *         - CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
  *               the qualifier string is invalid or <code>versionStr</code> is improperly formatted.
  */
-celix_status_t version_createEmptyVersion(version_pt *version);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t version_createEmptyVersion(version_pt *version);
 
-celix_status_t version_getMajor(version_pt version, int *major);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t version_getMajor(version_pt version, int *major);
 
-celix_status_t version_getMinor(version_pt version, int *minor);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t version_getMinor(version_pt version, int *minor);
 
-celix_status_t version_getMicro(version_pt version, int *micro);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t version_getMicro(version_pt version, int *micro);
 
-celix_status_t version_getQualifier(version_pt version, const char **qualifier);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t version_getQualifier(version_pt version, const char **qualifier);
 
 /**
  * Compares this <code>Version</code> object to another object.
@@ -138,7 +140,7 @@ celix_status_t version_getQualifier(version_pt version, const char **qualifier);
  * @return Status code indication failure or success:
  *         - CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t version_compareTo(version_pt version, version_pt compare, int *result);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t version_compareTo(version_pt version, version_pt compare, int *result);
 
 /**
  * Returns the string representation of <code>version</code> identifier.
@@ -154,7 +156,7 @@ celix_status_t version_compareTo(version_pt version, version_pt compare, int *re
  * @return Status code indication failure or success:
  *         - CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t version_toString(version_pt version, char **string);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t version_toString(version_pt version, char **string);
 
 /**
  * Check if two versions are semantically compatible.
@@ -170,7 +172,7 @@ celix_status_t version_toString(version_pt version, char **string);
  * @return Status code indication failure or success:
  *         - CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t version_isCompatible(version_pt user, version_pt provider, bool *isCompatible);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t version_isCompatible(version_pt user, version_pt provider, bool *isCompatible);
 
 #ifdef __cplusplus
 }

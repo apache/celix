@@ -22,7 +22,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "celix_api.h"
+#include "celix_bundle_activator.h"
 #include "pubsub/api.h"
 
 #include "msg.h"

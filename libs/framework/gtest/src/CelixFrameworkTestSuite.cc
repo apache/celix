@@ -144,6 +144,43 @@ TEST_F(CelixFrameworkTestSuite, ListBundlesTest) {
     celix_arrayList_destroy(list);
 }
 
+TEST_F(CelixFrameworkTestSuite, UseBundlesAndUseBundleTest) {
+    celix_framework_t* fw = framework.get();
+
+    long bndId1 = celix_framework_installBundle(fw, SIMPLE_TEST_BUNDLE1_LOCATION, true);
+    EXPECT_GT(bndId1, CELIX_FRAMEWORK_BUNDLE_ID);
+    long bndId2 = celix_framework_installBundle(fw, SIMPLE_TEST_BUNDLE2_LOCATION, false);
+    EXPECT_GT(bndId2, CELIX_FRAMEWORK_BUNDLE_ID);
+
+    int callBackCount = 0;
+    auto callback = [](void* handle, const celix_bundle_t* bnd) {
+        auto* ct = static_cast<int*>(handle);
+        *ct += 1;
+        EXPECT_GE(celix_bundle_getId(bnd), CELIX_FRAMEWORK_BUNDLE_ID);
+    };
+
+    size_t useCount = celix_framework_useBundles(fw, true, &callBackCount, callback);
+    EXPECT_EQ(3, useCount); //2 bundles + framework
+
+    auto nop = [](void* /*handle*/, const celix_bundle_t* /*bnd*/) {};
+
+    //test use framework bundle
+    bool called = celix_framework_useBundle(fw, true, CELIX_FRAMEWORK_BUNDLE_ID, nullptr, nop);
+    EXPECT_TRUE(called);
+
+    //test use active bundle
+    called = celix_framework_useBundle(fw, true, bndId1, nullptr, nop);
+    EXPECT_TRUE(called);
+    called = celix_framework_useBundle(fw, false, bndId1, nullptr, nop);
+    EXPECT_TRUE(called);
+
+    //test use inactive bundle
+    called = celix_framework_useBundle(fw, true, bndId2, nullptr, nop);
+    EXPECT_FALSE(called); //note bnd2 is not active
+    called = celix_framework_useBundle(fw, false, bndId2, nullptr, nop);
+    EXPECT_TRUE(called);
+}
+
 class FrameworkFactoryTestSuite : public ::testing::Test {
 public:
     FrameworkFactoryTestSuite() = default;

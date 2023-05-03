@@ -46,7 +46,7 @@ add_celix_bundle(rsa_shm
 )
 
 celix_deprecated_utils_headers(rsa_shm)
-
+celix_deprecated_framework_headers(rsa_shm)
 target_include_directories(rsa_shm PRIVATE src)
 
 target_link_libraries(rsa_shm PRIVATE ${RSA_SHM_DEPS})

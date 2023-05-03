@@ -26,6 +26,7 @@
 #include <sys/queue.h>
 
 #include "dfi_log_util.h"
+#include "celix_dfi_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,12 +43,12 @@ struct namval_entry {
     TAILQ_ENTRY(namval_entry) entries;
 };
 
-int dynCommon_parseName(FILE *stream, char **result);
-int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char **result);
-int dynCommon_parseNameValue(FILE *stream, char **name, char **value);
-int dynCommon_eatChar(FILE *stream, int c);
+CELIX_DFI_EXPORT int dynCommon_parseName(FILE *stream, char **result);
+CELIX_DFI_EXPORT int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char **result);
+CELIX_DFI_EXPORT int dynCommon_parseNameValue(FILE *stream, char **name, char **value);
+CELIX_DFI_EXPORT int dynCommon_eatChar(FILE *stream, int c);
 
-void dynCommon_clearNamValHead(struct namvals_head *head);
+CELIX_DFI_EXPORT void dynCommon_clearNamValHead(struct namvals_head *head);
 
 #ifdef __cplusplus
 }

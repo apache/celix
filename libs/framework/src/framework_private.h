@@ -250,29 +250,29 @@ double celix_framework_getConfigPropertyAsDouble(celix_framework_t* framework, c
 bool celix_framework_getConfigPropertyAsBool(celix_framework_t* framework, const char* name, bool defaultValue, bool* found);
 
 
-FRAMEWORK_EXPORT celix_status_t celix_framework_installBundleInternal(celix_framework_t *framework, const char *bndLoc, celix_bundle_t **bundleOut);
+celix_status_t celix_framework_installBundleInternal(celix_framework_t *framework, const char *bndLoc, celix_bundle_t **bundleOut);
 
-FRAMEWORK_EXPORT celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, const void* svcObj, properties_pt properties);
-FRAMEWORK_EXPORT celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, service_factory_pt factory, properties_pt properties);
+celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, const void* svcObj, properties_pt properties);
+celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, service_factory_pt factory, properties_pt properties);
 
-FRAMEWORK_EXPORT celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *references, bundle_pt bundle, const char* serviceName, const char* filter);
-FRAMEWORK_EXPORT celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, array_list_pt *services);
-FRAMEWORK_EXPORT celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundle, array_list_pt *services);
+celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *references, bundle_pt bundle, const char* serviceName, const char* filter);
+celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, array_list_pt *services);
+celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundle, array_list_pt *services);
 
-FRAMEWORK_EXPORT void fw_addServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener, const char* filter);
-FRAMEWORK_EXPORT void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener);
+void fw_addServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener, const char* filter);
+void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener);
 
-FRAMEWORK_EXPORT celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bundle_listener_pt listener);
-FRAMEWORK_EXPORT celix_status_t fw_removeBundleListener(framework_pt framework, bundle_pt bundle, bundle_listener_pt listener);
+celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bundle_listener_pt listener);
+celix_status_t fw_removeBundleListener(framework_pt framework, bundle_pt bundle, bundle_listener_pt listener);
 
-FRAMEWORK_EXPORT celix_status_t fw_addFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener);
-FRAMEWORK_EXPORT celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener);
+celix_status_t fw_addFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener);
+celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener);
 
-FRAMEWORK_EXPORT celix_status_t framework_markResolvedModules(framework_pt framework, linked_list_pt wires);
+celix_status_t framework_markResolvedModules(framework_pt framework, linked_list_pt wires);
 
-FRAMEWORK_EXPORT array_list_pt framework_getBundles(framework_pt framework) __attribute__((deprecated("not thread safe, use celix_framework_useBundles instead")));
-FRAMEWORK_EXPORT bundle_pt framework_getBundle(framework_pt framework, const char* location);
-FRAMEWORK_EXPORT bundle_pt framework_getBundleById(framework_pt framework, long id);
+array_list_pt framework_getBundles(framework_pt framework) __attribute__((deprecated("not thread safe, use celix_framework_useBundles instead")));
+bundle_pt framework_getBundle(framework_pt framework, const char* location);
+bundle_pt framework_getBundleById(framework_pt framework, long id);
 
 
 

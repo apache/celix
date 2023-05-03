@@ -147,20 +147,20 @@ namespace impl {
  * argument of std::shared_ptr<celix::BundleContext> or std::shared_ptr<DependencyManager>.
  */
 #define CELIX_GEN_CXX_BUNDLE_ACTIVATOR(actType)                                                                        \
-extern "C" celix_status_t bundleActivator_create(celix_bundle_context_t *context, void** userData) {                   \
+extern "C" celix_status_t celix_bundleActivator_create(celix_bundle_context_t *context, void** userData) {             \
     return celix::impl::createActivator<actType>(context, userData);                                                   \
 }                                                                                                                      \
                                                                                                                        \
-extern "C" celix_status_t bundleActivator_start(void *, celix_bundle_context_t *) {                                    \
+extern "C" celix_status_t celix_bundleActivator_start(void *, celix_bundle_context_t *) {                              \
     /*nop*/                                                                                                            \
     return CELIX_SUCCESS;                                                                                              \
 }                                                                                                                      \
                                                                                                                        \
-extern "C" celix_status_t bundleActivator_stop(void *userData, celix_bundle_context_t*) {                              \
+extern "C" celix_status_t celix_bundleActivator_stop(void *userData, celix_bundle_context_t*) {                        \
     return celix::impl::destroyActivator<actType>(userData);                                                           \
 }                                                                                                                      \
                                                                                                                        \
-extern "C" celix_status_t bundleActivator_destroy(void *, celix_bundle_context_t*) {                                   \
+extern "C" celix_status_t celix_bundleActivator_destroy(void *, celix_bundle_context_t*) {                             \
     /*nop*/                                                                                                            \
     return CELIX_SUCCESS;                                                                                              \
 }

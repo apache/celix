@@ -23,8 +23,8 @@
 #include "endpoint_description.h"
 #include "celix_log_helper.h"
 #include "dfi_utils.h"
-#include "celix_api.h"
 #include "celix_version.h"
+#include "celix_constants.h"
 #include <sys/queue.h>
 #include <stdbool.h>
 #include <assert.h>

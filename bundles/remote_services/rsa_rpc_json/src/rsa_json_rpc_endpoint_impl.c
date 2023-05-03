@@ -23,7 +23,8 @@
 #include "endpoint_description.h"
 #include "dfi_utils.h"
 #include "json_rpc.h"
-#include "celix_api.h"
+#include "celix_threads.h"
+#include "celix_constants.h"
 #include <sys/uio.h>
 #include <jansson.h>
 #include <assert.h>

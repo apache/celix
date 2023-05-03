@@ -21,7 +21,8 @@
 
 #include <memory>
 
-#include "celix_api.h"
+#include "celix_framework_factory.h"
+#include "celix_constants.h"
 #include "pubsub_message_serialization_marker.h"
 #include "pubsub_serialization_provider.h"
 

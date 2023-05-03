@@ -48,6 +48,7 @@ if (DEPLOYMENT_ADMIN)
     target_compile_definitions(deployment_admin PRIVATE -DUSE_FILE32API)
     target_link_libraries(deployment_admin PRIVATE CURL::libcurl libuuid::libuuid ZLIB::ZLIB deployment_admin_api)
     celix_deprecated_utils_headers(deployment_admin)
+    celix_deprecated_framework_headers(deployment_admin)
 
     install(TARGETS deployment_admin_api EXPORT celix COMPONENT deployment_admin
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/deployment_admin)

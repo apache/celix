@@ -263,9 +263,9 @@ celix_status_t celix_bundleArchive_createArchiveInternal(celix_framework_t* fw, 
     }
 
     if (archive->isSystemBundle) {
-        status = bundleRevision_create(fw, archive->archiveRoot, NULL, manifest, &archive->revision);
+        status = celix_bundleRevision_create(fw, archive->archiveRoot, NULL, manifest, &archive->revision);
     } else {
-        status = bundleRevision_create(fw, archive->archiveRoot, archive->location, manifest, &archive->revision);
+        status = celix_bundleRevision_create(fw, archive->archiveRoot, archive->location, manifest, &archive->revision);
     }
     if (status != CELIX_SUCCESS) {
         fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create archive. Could not create bundle revision.");
@@ -281,7 +281,7 @@ celix_status_t celix_bundleArchive_createArchiveInternal(celix_framework_t* fw, 
     return status;
 }
 
-celix_status_t bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, bundle_archive_pt *bundle_archive) {
+celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, bundle_archive_pt *bundle_archive) {
     return celix_bundleArchive_createArchiveInternal(fw, archiveRoot, id, location, bundle_archive);
 }
 

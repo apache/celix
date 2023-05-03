@@ -196,6 +196,9 @@ include(CheckLinkerFlag)
 check_linker_flag(CXX LINKER:--wrap,celix_nonexistent_symbol LINKER_WRAP_SUPPORTED)
 cmake_pop_check_state()
 
+#Add generate_export_header to cmake
+include(GenerateExportHeader)
+
 #Libraries and Launcher
 add_subdirectory(libs)
 

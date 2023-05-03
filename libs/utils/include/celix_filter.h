@@ -22,6 +22,7 @@
 
 #include "celix_properties.h"
 #include "celix_array_list.h"
+#include "celix_utils_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,21 +61,21 @@ struct celix_filter_struct {
     celix_filter_internal_t* internal; //for internal use only
 };
 
-celix_filter_t* celix_filter_create(const char *filterStr);
+CELIX_UTILS_EXPORT celix_filter_t* celix_filter_create(const char *filterStr);
 
-void celix_filter_destroy(celix_filter_t *filter);
+CELIX_UTILS_EXPORT void celix_filter_destroy(celix_filter_t *filter);
 
-bool celix_filter_match(const celix_filter_t *filter, const celix_properties_t* props);
+CELIX_UTILS_EXPORT bool celix_filter_match(const celix_filter_t *filter, const celix_properties_t* props);
 
-bool celix_filter_matchFilter(const celix_filter_t *filter1, const celix_filter_t *filter2);
+CELIX_UTILS_EXPORT bool celix_filter_matchFilter(const celix_filter_t *filter1, const celix_filter_t *filter2);
 
-const char* celix_filter_getFilterString(const celix_filter_t *filter);
+CELIX_UTILS_EXPORT const char* celix_filter_getFilterString(const celix_filter_t *filter);
 
 /**
  * Find the filter attribute.
  * @return The attribute value or NULL if the attribute is not found.
  */
-const char* celix_filter_findAttribute(const celix_filter_t *filter, const char *attribute);
+CELIX_UTILS_EXPORT const char* celix_filter_findAttribute(const celix_filter_t *filter, const char *attribute);
 
 /**
  * Check whether the filter indicates the mandatory presence of an attribute with a specific value for the provided attribute key.
@@ -85,7 +86,7 @@ const char* celix_filter_findAttribute(const celix_filter_t *filter, const char 
  *   using this function for attribute key "key1" on filter "(key1>=value1)" yields false.
  *   using this function for attribute key "key1" on filter "(|(key1=value1)(key2=value2))" yields false.
 */
-bool celix_filter_hasMandatoryEqualsValueAttribute(const celix_filter_t *filter, const char *attribute);
+CELIX_UTILS_EXPORT bool celix_filter_hasMandatoryEqualsValueAttribute(const celix_filter_t *filter, const char *attribute);
 
 /**
  * Chek whether the filter indicates the mandatory absence of an attribute, regardless of its value, for the provided attribute key.
@@ -96,7 +97,7 @@ bool celix_filter_hasMandatoryEqualsValueAttribute(const celix_filter_t *filter,
  *   using this function for attribute key "key1" on the filter "(key1=value)" yields false.
  *   using this function for attribute key "key1" on the filter "(|(!(key1=*))(key2=value2))" yields false.
  */
-bool celix_filter_hasMandatoryNegatedPresenceAttribute(const celix_filter_t *filter, const char *attribute);
+CELIX_UTILS_EXPORT bool celix_filter_hasMandatoryNegatedPresenceAttribute(const celix_filter_t *filter, const char *attribute);
 
 #ifdef __cplusplus
 }

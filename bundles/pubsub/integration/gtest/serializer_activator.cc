@@ -22,7 +22,7 @@
 #include <pubsub_message_serialization_service.h>
 #include <pubsub_constants.h>
 
-#include "celix_api.h"
+#include "celix_bundle_activator.h"
 #include "msg.h"
 
 struct activator {

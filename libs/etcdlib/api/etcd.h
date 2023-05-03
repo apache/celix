@@ -26,8 +26,7 @@ extern "C"
 #endif
 
 #include "etcdlib.h"
-
-#define DEP_ATTRIBUTE __attribute__((deprecated("etcd_ call are placed by etcdlib_ calls, use etcdlib.h instead of etcd.h")))
+#include "etcdlib_export.h"
 
 /**
  * @desc Initialize the ETCD-LIB  with the server/port where Etcd can be reached.
@@ -36,7 +35,7 @@ extern "C"
  * @param int flags. bitwise flags to control etcdlib initialization. 
  * @return 0 on success, non zero otherwise.
  */
-int etcd_init(const char* server, int port, int flags) DEP_ATTRIBUTE;
+ETCDLIB_DEPRECATED_EXPORT int etcd_init(const char* server, int port, int flags);
 
 /**
  * @desc Retrieve a single value from Etcd.
@@ -45,7 +44,7 @@ int etcd_init(const char* server, int port, int flags) DEP_ATTRIBUTE;
  * @param int* modifiedIndex. If not NULL the Etcd-index of the last modified value.
  * @return 0 on success, non zero otherwise
  */
-int etcd_get(const char* key, char** value, int* modifiedIndex) DEP_ATTRIBUTE;
+ETCDLIB_DEPRECATED_EXPORT int etcd_get(const char* key, char** value, int* modifiedIndex);
 
 /**
  * @desc Retrieve the contents of a directory. For every found key/value pair the given callback function is called.
@@ -55,7 +54,11 @@ int etcd_get(const char* key, char** value, int* modifiedIndex) DEP_ATTRIBUTE;
  * @param int* modifiedIndex. If not NULL the Etcd-index of the last modified value.
  * @return 0 on success, non zero otherwise
  */
-int etcd_get_directory(const char* directory, etcdlib_key_value_callback callback, void *arg, long long* modifiedIndex) DEP_ATTRIBUTE;
+ETCDLIB_DEPRECATED_EXPORT int etcd_get_directory(
+        const char* directory,
+        etcdlib_key_value_callback callback,
+        void *arg,
+        long long* modifiedIndex);
 
 /**
  * @desc Setting an Etcd-key/value
@@ -65,7 +68,7 @@ int etcd_get_directory(const char* directory, etcdlib_key_value_callback callbac
  * @param bool prevExist. If true the value is only set when the key already exists, if false it is always set
  * @return 0 on success, non zero otherwise
  */
-int etcd_set(const char* key, const char* value, int ttl, bool prevExist) DEP_ATTRIBUTE;
+ETCDLIB_DEPRECATED_EXPORT int etcd_set(const char* key, const char* value, int ttl, bool prevExist);
 
 /**
  * @desc Refresh the ttl of an existing key.
@@ -73,7 +76,7 @@ int etcd_set(const char* key, const char* value, int ttl, bool prevExist) DEP_AT
  * @param ttl the ttl value to use.
  * @return 0 on success, non zero otherwise.
  */
-int etcd_refresh(const char *key, int ttl) DEP_ATTRIBUTE;
+ETCDLIB_DEPRECATED_EXPORT int etcd_refresh(const char *key, int ttl);
 
 /**
  * @desc Setting an Etcd-key/value and checks if there is a different previous value
@@ -83,14 +86,14 @@ int etcd_refresh(const char *key, int ttl) DEP_ATTRIBUTE;
  * @param bool always_write. If true the value is written, if false only when the given value is equal to the value in etcd.
  * @return 0 on success, non zero otherwise
  */
-int etcd_set_with_check(const char* key, const char* value, int ttl, bool always_write) DEP_ATTRIBUTE;
+ETCDLIB_DEPRECATED_EXPORT int etcd_set_with_check(const char* key, const char* value, int ttl, bool always_write);
 
 /**
  * @desc Deleting an Etcd-key
  * @param const char* key. The Etcd-key (Note: a leading '/' should be avoided)
  * @return 0 on success, non zero otherwise
  */
-int etcd_del(const char* key) DEP_ATTRIBUTE;
+ETCDLIB_DEPRECATED_EXPORT int etcd_del(const char* key);
 
 /**
  * @desc Watching an etcd directory for changes
@@ -103,9 +106,7 @@ int etcd_del(const char* key) DEP_ATTRIBUTE;
  * @param long long* modifiedIndex. If not NULL, the index of the modification is written.
  * @return ETCDLIB_RC_OK (0) on success, non zero otherwise. Note that a timeout is signified by a ETCDLIB_RC_TIMEOUT return code.
  */
-int etcd_watch(const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex) DEP_ATTRIBUTE;
-
-#undef DEP_ATTRIBUTE
+ETCDLIB_DEPRECATED_EXPORT int etcd_watch(const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex);
 
 #ifdef __cplusplus
 }
