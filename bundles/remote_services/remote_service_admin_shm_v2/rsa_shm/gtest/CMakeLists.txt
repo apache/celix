@@ -56,7 +56,6 @@ target_link_libraries(unit_test_rsa_shm PRIVATE
         Celix::framework
         Celix::threads_ei
         Celix::bundle_ctx_ei
-        Celix::mdnsresponder_ei
         Celix::malloc_ei
         Celix::asprintf_ei
         Celix::utils_ei
