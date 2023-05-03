@@ -96,7 +96,7 @@ celix_status_t rsaJsonRpc_create(celix_bundle_context_t* ctx, celix_log_helper_t
         goto interceptors_err;
     }
 
-    status = rsaRequestSenderTracker_create(ctx, "rsa_json_rpc_rst", &rpc->reqSenderTracker);
+    status = rsaRequestSenderTracker_create(ctx, logHelper, &rpc->reqSenderTracker);
     if (status != CELIX_SUCCESS) {
         goto rst_err;
     }

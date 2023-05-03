@@ -43,6 +43,8 @@ public:
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
         fw = std::shared_ptr<celix_framework_t>{fwPtr, [](auto* f) {celix_frameworkFactory_destroyFramework(f);}};
         ctx = std::shared_ptr<celix_bundle_context_t>{ctxPtr, [](auto*){/*nop*/}};
+        auto* logHelperPtr = celix_logHelper_create(ctxPtr,"RsaJsonRpc");
+        logHelper = std::shared_ptr<celix_log_helper_t>{logHelperPtr, [](auto*l){ celix_logHelper_destroy(l);}};
 
         static rsa_request_sender_service_t reqSenderSvc{};
         reqSenderSvc.handle = nullptr;
@@ -65,6 +67,7 @@ public:
 
     ~RsaRequestSenderTrackerUnitTestSuite() override {
         celix_bundleContext_unregisterServiceAsync(ctx.get(), reqSenderSvcId, nullptr, nullptr);
+        celix_bundleContext_waitForEvents(ctx.get());
 
         celix_ei_expect_celixThreadRwlock_create(nullptr, 0, 0);
         celix_ei_expect_celix_bundleContext_trackServicesWithOptionsAsync(nullptr, 0, 0);
@@ -72,45 +75,46 @@ public:
 
     std::shared_ptr<celix_framework_t> fw{};
     std::shared_ptr<celix_bundle_context_t> ctx{};
+    std::shared_ptr<celix_log_helper_t> logHelper{};
     long reqSenderSvcId{};
 };
 
 TEST_F(RsaRequestSenderTrackerUnitTestSuite, CreateRsaRequestSenderTracker) {
     rsa_request_sender_tracker_t *tracker = nullptr;
-    auto status = rsaRequestSenderTracker_create(ctx.get(), "rsa_json_rpc",&tracker);
+    auto status = rsaRequestSenderTracker_create(ctx.get(), logHelper.get(),&tracker);
     EXPECT_EQ(CELIX_SUCCESS, status);
     rsaRequestSenderTracker_destroy(tracker);
 }
 
 TEST_F(RsaRequestSenderTrackerUnitTestSuite, CreateRsaRequestSenderTrackerWithInvalidParams) {
     rsa_request_sender_tracker_t *tracker = nullptr;
-    auto status = rsaRequestSenderTracker_create(nullptr, "rsa_json_rpc",&tracker);
+    auto status = rsaRequestSenderTracker_create(nullptr, logHelper.get(),&tracker);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
     status = rsaRequestSenderTracker_create(ctx.get(), nullptr,&tracker);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
-    status = rsaRequestSenderTracker_create(ctx.get(), "rsa_json_rpc",nullptr);
+    status = rsaRequestSenderTracker_create(ctx.get(), logHelper.get(),nullptr);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 }
 
 TEST_F(RsaRequestSenderTrackerUnitTestSuite, FailedToCreateRsaRequestSenderTrackerLock) {
     rsa_request_sender_tracker_t *tracker = nullptr;
     celix_ei_expect_celixThreadRwlock_create((void*)&rsaRequestSenderTracker_create, 0, CELIX_ENOMEM);
-    auto status = rsaRequestSenderTracker_create(ctx.get(), "rsa_json_rpc", &tracker);
+    auto status = rsaRequestSenderTracker_create(ctx.get(), logHelper.get(), &tracker);
     EXPECT_EQ(CELIX_ENOMEM, status);
 }
 
 TEST_F(RsaRequestSenderTrackerUnitTestSuite, FailedToTrackRsaRequestSenderService) {
     rsa_request_sender_tracker_t *tracker = nullptr;
     celix_ei_expect_celix_bundleContext_trackServicesWithOptionsAsync((void*)&rsaRequestSenderTracker_create, 0, -1);
-    auto status = rsaRequestSenderTracker_create(ctx.get(), "rsa_json_rpc", &tracker);
+    auto status = rsaRequestSenderTracker_create(ctx.get(), logHelper.get(), &tracker);
     EXPECT_EQ(CELIX_SERVICE_EXCEPTION, status);
 }
 
 TEST_F(RsaRequestSenderTrackerUnitTestSuite, UseService) {
     rsa_request_sender_tracker_t *tracker = nullptr;
-    auto status = rsaRequestSenderTracker_create(ctx.get(), "rsa_json_rpc",&tracker);
+    auto status = rsaRequestSenderTracker_create(ctx.get(), logHelper.get(),&tracker);
     EXPECT_EQ(CELIX_SUCCESS, status);
     celix_bundleContext_waitForEvents(ctx.get());
 
@@ -126,7 +130,7 @@ TEST_F(RsaRequestSenderTrackerUnitTestSuite, UseService) {
 
 TEST_F(RsaRequestSenderTrackerUnitTestSuite, UseNoExistService) {
     rsa_request_sender_tracker_t *tracker = nullptr;
-    auto status = rsaRequestSenderTracker_create(ctx.get(), "rsa_json_rpc",&tracker);
+    auto status = rsaRequestSenderTracker_create(ctx.get(), logHelper.get(),&tracker);
     EXPECT_EQ(CELIX_SUCCESS, status);
     celix_bundleContext_waitForEvents(ctx.get());
 

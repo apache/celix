@@ -23,8 +23,6 @@
 #include "celix_long_hash_map.h"
 #include "celix_api.h"
 #include <stdlib.h>
-#include <limits.h>
-#include <string.h>
 #include <assert.h>
 
 struct rsa_request_sender_tracker {
@@ -40,11 +38,10 @@ static void rsaRequestSenderTracker_addServiceWithProperties(void *handle, void 
 static void rsaRequestSenderTracker_removeServiceWithProperties(void *handle, void *svc,
         const celix_properties_t *props);
 
-celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, const char *trackerName,
+celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
         rsa_request_sender_tracker_t **trackerOut) {
     celix_status_t status = CELIX_SUCCESS;
-    if (ctx == NULL || trackerName == NULL || strlen(trackerName) > NAME_MAX
-            || trackerOut == NULL) {
+    if (ctx == NULL || logHelper == NULL || trackerOut == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
     rsa_request_sender_tracker_t *tracker = calloc(1, sizeof(*tracker));
@@ -52,10 +49,7 @@ celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, const
         return CELIX_ENOMEM;
     }
     tracker->ctx = ctx;
-    tracker->logHelper = celix_logHelper_create(ctx, trackerName);
-    if (tracker->logHelper == NULL) {
-        goto log_helper_err;
-    }
+    tracker->logHelper = logHelper;
     status = celixThreadRwlock_create(&tracker->lock, NULL);
     if (status != CELIX_SUCCESS) {
         goto err_creating_lock;
@@ -80,8 +74,6 @@ err_tracking_svc:
     celix_longHashMap_destroy(tracker->requestSenderSvcs);
     (void)celixThreadRwlock_destroy(&tracker->lock);
 err_creating_lock:
-    celix_logHelper_destroy(tracker->logHelper);
-log_helper_err:
     free(tracker);
     return status;
 }
@@ -128,7 +120,6 @@ static void rsaRequestSenderTracker_stopDone(void *data) {
     assert(celix_longHashMap_size(tracker->requestSenderSvcs) == 0);
     celix_longHashMap_destroy(tracker->requestSenderSvcs);
     (void)celixThreadRwlock_destroy(&tracker->lock);
-    celix_logHelper_destroy(tracker->logHelper);
     free(tracker);
     return;
 }
