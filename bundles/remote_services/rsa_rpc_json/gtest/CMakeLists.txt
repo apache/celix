@@ -36,33 +36,34 @@ target_compile_definitions(integration_test_rsa_json_rpc PRIVATE -DRSA_JSON_RPC_
 add_test(NAME run_integration_test_rsa_json_rpc COMMAND integration_test_rsa_json_rpc)
 setup_target_for_coverage(integration_test_rsa_json_rpc SCAN_DIR ..)
 
+if (LINKER_WRAP_SUPPORTED)
+    ####unit test
+    add_executable(unit_test_rsa_json_rpc
+            src/RsaJsonRpcUnitTestSuite.cc
+            src/RsaRequestSenderTrackerUnitTestSuite.cc
+            src/RsaJsonRpcActivatorUnitTestSuite.cc
+            )
 
-####unit test
-add_executable(unit_test_rsa_json_rpc
-        src/RsaJsonRpcUnitTestSuite.cc
-        src/RsaRequestSenderTrackerUnitTestSuite.cc
-        src/RsaJsonRpcActivatorUnitTestSuite.cc
-        )
+    celix_deprecated_utils_headers(unit_test_rsa_json_rpc)
 
-celix_deprecated_utils_headers(unit_test_rsa_json_rpc)
+    target_link_libraries(unit_test_rsa_json_rpc PRIVATE
+            rsa_json_rpc_cut
+            Celix::c_rsa_spi
+            Celix::rsa_common
+            Celix::framework
+            Celix::bundle_ei
+            Celix::malloc_ei
+            Celix::threads_ei
+            Celix::bundle_ctx_ei
+            Celix::version_ei
+            Celix::dfi_ei
+            Celix::log_helper_ei
+            GTest::gtest
+            GTest::gtest_main
+            )
 
-target_link_libraries(unit_test_rsa_json_rpc PRIVATE
-        rsa_json_rpc_cut
-        Celix::c_rsa_spi
-        Celix::rsa_common
-        Celix::framework
-        Celix::bundle_ei
-        Celix::malloc_ei
-        Celix::threads_ei
-        Celix::bundle_ctx_ei
-        Celix::version_ei
-        Celix::dfi_ei
-        Celix::log_helper_ei
-        GTest::gtest
-        GTest::gtest_main
-        )
+    target_compile_definitions(unit_test_rsa_json_rpc PRIVATE -DRESOURCES_DIR="${CMAKE_CURRENT_LIST_DIR}/resources")
 
-target_compile_definitions(unit_test_rsa_json_rpc PRIVATE -DRESOURCES_DIR="${CMAKE_CURRENT_LIST_DIR}/resources")
-
-add_test(NAME run_unit_test_rsa_json_rpc COMMAND unit_test_rsa_json_rpc)
-setup_target_for_coverage(unit_test_rsa_json_rpc SCAN_DIR ..)
+    add_test(NAME run_unit_test_rsa_json_rpc COMMAND unit_test_rsa_json_rpc)
+    setup_target_for_coverage(unit_test_rsa_json_rpc SCAN_DIR ..)
+endif ()

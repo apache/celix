@@ -38,47 +38,49 @@ add_celix_bundle_dependencies(integration_test_rsa_shm Celix::rsa_shm)
 add_test(NAME run_integration_test_rsa_shm COMMAND integration_test_rsa_shm)
 setup_target_for_coverage(integration_test_rsa_shm SCAN_DIR ..)
 
-####unit test
-add_executable(unit_test_rsa_shm
-        src/RsaShmImplUnitTestSuite.cc
-        src/RsaShmExportRegistrationUnitTestSuite.cc
-        src/RsaShmImportRegistrationUnitTestSuite.cc
-        src/RsaShmClientServerUnitTestSuite.cc
-        src/RsaShmActivatorUnitTestSuite.cc
-        src/thpool_ei.cc
-        )
+if (LINKER_WRAP_SUPPORTED)
+    ####unit test
+    add_executable(unit_test_rsa_shm
+            src/RsaShmImplUnitTestSuite.cc
+            src/RsaShmExportRegistrationUnitTestSuite.cc
+            src/RsaShmImportRegistrationUnitTestSuite.cc
+            src/RsaShmClientServerUnitTestSuite.cc
+            src/RsaShmActivatorUnitTestSuite.cc
+            src/thpool_ei.cc
+            )
 
-target_link_libraries(unit_test_rsa_shm PRIVATE
-        rsa_shm_cut
-        Celix::c_rsa_spi
-        Celix::rsa_common
-        Celix::log_helper
-        Celix::framework
-        Celix::threads_ei
-        Celix::bundle_ctx_ei
-        Celix::malloc_ei
-        Celix::asprintf_ei
-        Celix::utils_ei
-        Celix::socket_ei
-        Celix::stdio_ei
-        Celix::pthread_ei
-        Celix::log_helper_ei
-        GTest::gtest
-        GTest::gtest_main
-        )
+    target_link_libraries(unit_test_rsa_shm PRIVATE
+            rsa_shm_cut
+            Celix::c_rsa_spi
+            Celix::rsa_common
+            Celix::log_helper
+            Celix::framework
+            Celix::threads_ei
+            Celix::bundle_ctx_ei
+            Celix::malloc_ei
+            Celix::asprintf_ei
+            Celix::utils_ei
+            Celix::socket_ei
+            Celix::stdio_ei
+            Celix::pthread_ei
+            Celix::log_helper_ei
+            GTest::gtest
+            GTest::gtest_main
+            )
 
-target_link_options(unit_test_rsa_shm PRIVATE
-        LINKER:--wrap,thpool_init
-        LINKER:--wrap,thpool_add_work
-        )
+    target_link_options(unit_test_rsa_shm PRIVATE
+            LINKER:--wrap,thpool_init
+            LINKER:--wrap,thpool_add_work
+            )
 
-target_compile_definitions(unit_test_rsa_shm PRIVATE -DRESOURCES_DIR="${CMAKE_CURRENT_LIST_DIR}/resources")
-celix_get_bundle_file(Celix::rsa_json_rpc RSA_JSON_RPC_BUNDLE_FILE)
-target_compile_definitions(unit_test_rsa_shm PRIVATE -DRSA_JSON_RPC_BUNDLE="${RSA_JSON_RPC_BUNDLE_FILE}")
+    target_compile_definitions(unit_test_rsa_shm PRIVATE -DRESOURCES_DIR="${CMAKE_CURRENT_LIST_DIR}/resources")
+    celix_get_bundle_file(Celix::rsa_json_rpc RSA_JSON_RPC_BUNDLE_FILE)
+    target_compile_definitions(unit_test_rsa_shm PRIVATE -DRSA_JSON_RPC_BUNDLE="${RSA_JSON_RPC_BUNDLE_FILE}")
 
-add_celix_bundle_dependencies(unit_test_rsa_shm Celix::rsa_json_rpc)
+    add_celix_bundle_dependencies(unit_test_rsa_shm Celix::rsa_json_rpc)
 
-celix_deprecated_utils_headers(unit_test_rsa_shm)
+    celix_deprecated_utils_headers(unit_test_rsa_shm)
 
-add_test(NAME run_unit_test_rsa_shm COMMAND unit_test_rsa_shm)
-setup_target_for_coverage(unit_test_rsa_shm SCAN_DIR ..)
+    add_test(NAME run_unit_test_rsa_shm COMMAND unit_test_rsa_shm)
+    setup_target_for_coverage(unit_test_rsa_shm SCAN_DIR ..)
+endif ()
