@@ -20,6 +20,7 @@
 #ifndef CELIX_CELIX_ERR_H
 #define CELIX_CELIX_ERR_H
 
+#include "celix_err_constants.h"
 #include "celix_utils_export.h"
 
 #ifdef __cplusplus
@@ -31,12 +32,6 @@ extern "C" {
 * @brief The celix error handling functions.
 * @thread_safety Thread safe.
 */
-
-/**
- * @brief The error message buffer size per thread.
- */
-#define CELIX_ERR_BUFFER_SIZE 512
-
 
 /**
  * @brief Returns the last error message from the current thread.

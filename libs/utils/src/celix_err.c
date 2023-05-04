@@ -33,15 +33,6 @@ typedef struct celix_err {
     size_t pos;
 } celix_err_t;
 
-#ifdef CELIX_ERR_USE_THREAD_LOCAL
-
-__thread celix_err_t celix_err_tssErr = { .buffer = {0}, .pos = 0 };
-
-static celix_err_t* celix_err_getTssErr() {
-    return &celix_err_tssErr;
-}
-
-#else //Use TSS
 
 celix_tss_key_t celix_err_tssKey;
 bool celix_err_tssKeyInitialized = false;
@@ -100,8 +91,6 @@ __attribute__((destructor)) void celix_err_deinitThreadSpecificStorageKey() {
     }
 }
 
-#endif
-
 const char* celix_err_popLastError() {
     const char* result = NULL;
     celix_err_t* err = celix_err_getTssErr();
@@ -149,7 +138,9 @@ void celix_err_push(const char* msg) {
 
 void celix_err_pushf(const char* format, ...) {
     va_list args;
+    va_list argsCopy;
     va_start(args, format);
+    va_copy(argsCopy, args);
     celix_err_t* err = celix_err_getTssErr();
     if (err) {
         size_t len = vsnprintf(err->buffer + err->pos, CELIX_ERR_BUFFER_SIZE - err->pos, format, args);
@@ -158,9 +149,10 @@ void celix_err_pushf(const char* format, ...) {
             err->buffer[err->pos++] = '\0';
         } else {
             fprintf(stderr, "Failed to add error message '");
-            vfprintf(stderr, format, args);
+            vfprintf(stderr, format, argsCopy);
             fprintf(stderr, "' to celix_err\n");
         }
     }
+    va_end(argsCopy);
     va_end(args);
 }

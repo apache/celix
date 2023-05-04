@@ -238,27 +238,15 @@ celix_status_t celixThread_once(celix_thread_once_t *once_control, void (*init_r
 }
 
 celix_status_t celix_tss_create(celix_tss_key_t* key, void (*destroyFunction)(void*)) {
-    int rc = pthread_key_create(key, destroyFunction);
-    if (rc == 0) {
-        return CELIX_SUCCESS;
-    }
-    return rc == ENOMEM ? CELIX_ENOMEM : CELIX_ILLEGAL_STATE;
+    return pthread_key_create(key, destroyFunction);
 }
 
 celix_status_t celix_tss_delete(celix_tss_key_t key) {
-    int rc = pthread_key_delete(key);
-    if (rc == 0) {
-        return CELIX_SUCCESS;
-    }
-    return rc == EINVAL ? CELIX_ILLEGAL_ARGUMENT : CELIX_ILLEGAL_STATE;
+    return pthread_key_delete(key);
 }
 
 celix_status_t celix_tss_set(celix_tss_key_t key, void* value) {
-    int rc = pthread_setspecific(key, value);
-    if (rc == 0) {
-        return CELIX_SUCCESS;
-    }
-    return rc == EINVAL ? CELIX_ILLEGAL_ARGUMENT : CELIX_ILLEGAL_STATE;
+    return pthread_setspecific(key, value);
 }
 
 void* celix_tss_get(celix_tss_key_t key) {
