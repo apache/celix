@@ -92,4 +92,18 @@ celix_status_t __wrap_celix_utils_extractZipFile(const char *zipFilePath, const 
     return __real_celix_utils_extractZipFile(zipFilePath, extractToDir, errorOut);
 }
 
+char* __real_celix_utils_trim(const char* string);
+CELIX_EI_DEFINE(celix_utils_trim, char*)
+char* __wrap_celix_utils_trim(const char* string) {
+    CELIX_EI_IMPL(celix_utils_trim);
+    return __real_celix_utils_trim(string);
+}
+
+struct timespec __real_celix_gettime(clockid_t clockId);
+CELIX_EI_DEFINE(celix_gettime, struct timespec)
+struct timespec __wrap_celix_gettime(clockid_t clockId) {
+    CELIX_EI_IMPL(celix_gettime);
+    return __real_celix_gettime(clockId);
+}
+
 }

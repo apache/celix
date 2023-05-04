@@ -23,8 +23,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <endpoint_description.h>
-#include <celix_log_helper.h>
+#include "endpoint_description.h"
+#include "celix_log_helper.h"
+#include "celix_types.h"
+#include "celix_errno.h"
 
 typedef struct rsa_json_rpc rsa_json_rpc_t;
 

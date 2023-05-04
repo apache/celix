@@ -17,14 +17,13 @@
  * under the License.
  */
 
-#include <rsa_shm_import_registration.h>
-#include <rsa_shm_constants.h>
-#include <remote_constants.h>
-#include <celix_log_helper.h>
-#include <celix_api.h>
+#include "rsa_shm_import_registration.h"
+#include "rsa_rpc_factory.h"
+#include "remote_constants.h"
+#include "celix_log_helper.h"
+#include "celix_api.h"
 #include <string.h>
 #include <assert.h>
-#include <rsa_rpc_factory.h>
 
 struct import_registration {
     celix_bundle_context_t *context;
@@ -48,12 +47,17 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
         return CELIX_ILLEGAL_ARGUMENT;
     }
     import_registration_t *import = (import_registration_t *)calloc(1, sizeof(*import));
-    assert(import != NULL);
+    if (import == NULL) {
+        return CELIX_ENOMEM;
+    }
     import->context = context;
     import->logHelper = logHelper;
 
     import->endpointDesc = endpointDescription_clone(endpointDesc);
-    assert(import->endpointDesc != NULL);
+    if (import->endpointDesc == NULL) {
+        status = CELIX_ENOMEM;
+        goto clone_ep_err;
+    }
 
     import->reqSenderSvcId = reqSenderSvcId;
     import->rpcFac = NULL;
@@ -63,6 +67,7 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
             OSGI_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
     if (serviceImportedConfigs == NULL) {
         celix_logHelper_error(logHelper,"RSA import reg: service.imported.configs property is not exist.");
+        status = CELIX_ILLEGAL_ARGUMENT;
         goto imported_configs_err;
     }
     char *rsaRpcType = NULL;
@@ -71,14 +76,17 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
     char *token, *savePtr;
     token = strtok_r(icCopy, delimiter, &savePtr);
     while (token != NULL) {
-        if (strncmp(utils_stringTrim(token), RSA_RPC_TYPE_PREFIX, sizeof(RSA_RPC_TYPE_PREFIX) - 1) == 0) {
-            rsaRpcType = token;
+        rsaRpcType = celix_utils_trim(token);
+        if (rsaRpcType != NULL && strncmp(rsaRpcType, RSA_RPC_TYPE_PREFIX, sizeof(RSA_RPC_TYPE_PREFIX) - 1) == 0) {
             break;
         }
+        free(rsaRpcType);
+        rsaRpcType = NULL;
         token = strtok_r(NULL, delimiter, &savePtr);
     }
     if (rsaRpcType == NULL) {
         celix_logHelper_error(logHelper,"RSA import reg: %s property is not exist.", RSA_RPC_TYPE_KEY);
+        status = CELIX_ILLEGAL_ARGUMENT;
         goto rpc_type_err;
     }
 
@@ -105,15 +113,18 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
 
     *importOut = import;
 
+    free(rsaRpcType);
     free(icCopy);
 
     return CELIX_SUCCESS;
 tracker_err:
 rpc_type_filter_err:
+    free(rsaRpcType);
 rpc_type_err:
     free(icCopy);
 imported_configs_err:
     endpointDescription_destroy(import->endpointDesc);
+clone_ep_err:
     free(import);
     return status;
 }
@@ -179,6 +190,8 @@ static void importRegistration_removeRpcFac(void *handle, void *svc) {
     return;
 }
 
+//LCOV_EXCL_START
+
 celix_status_t importRegistration_getException(import_registration_t *registration) {
     celix_status_t status = CELIX_SUCCESS;
     //It is stub and will not be called at present.
@@ -202,6 +215,8 @@ celix_status_t importReference_getImportedService(import_reference_t *reference)
     //It is stub and will not be called at present.
     return status;
 }
+
+//LCOV_EXCL_STOP
 
 celix_status_t importRegistration_getImportedEndpoint(import_registration_t *registration,
         endpoint_description_t **endpoint) {

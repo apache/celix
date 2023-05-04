@@ -16,10 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-#include <remote_service_admin.h>
-#include <remote_constants.h>
-#include <celix_api.h>
+#include "remote_service_admin.h"
+#include "celix_api.h"
 #include <gtest/gtest.h>
 
 class RsaShmActivatorTestSuite : public ::testing::Test {
@@ -44,7 +42,7 @@ public:
 };
 
 TEST_F(RsaShmActivatorTestSuite, FindRsaShmService) {
-    bool found = celix_bundleContext_findService(ctx.get(), OSGI_RSA_REMOTE_SERVICE_ADMIN);
-    EXPECT_TRUE(found);
+    celix_bundleContext_waitForEvents(ctx.get());
+    long found = celix_bundleContext_findService(ctx.get(), OSGI_RSA_REMOTE_SERVICE_ADMIN);
+    EXPECT_GE(found, 0);
 }
-

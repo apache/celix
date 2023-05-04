@@ -54,7 +54,10 @@ celix_status_t shmPool_create(size_t size, shm_pool_t **pool) {
     }
 
     shm_pool_t *shmPool = (shm_pool_t *)malloc(sizeof(*shmPool));
-    assert(shmPool != NULL);
+    if (shmPool == NULL) {
+        status = CELIX_ENOMEM;
+        goto alloc_failed;
+    }
 
     status = celixThreadMutex_create(&shmPool->mutex, NULL);
     if(status != CELIX_SUCCESS) {
@@ -72,7 +75,7 @@ celix_status_t shmPool_create(size_t size, shm_pool_t **pool) {
     }
     shmPool->shmStartAddr = shmat(shmPool->shmId, NULL, 0);
     if (shmPool->shmStartAddr == NULL) {
-        fprintf(stderr,"Shm pool: Error sttaching shm attach, %d.\n",errno);
+        fprintf(stderr,"Shm pool: Error attaching shm, %d.\n",errno);
         status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
         goto err_attaching_shm;
     }
@@ -92,7 +95,7 @@ celix_status_t shmPool_create(size_t size, shm_pool_t **pool) {
     status = celixThreadCondition_init(&shmPool->heartbeatThreadStoped, NULL);
     if (status != CELIX_SUCCESS) {
         fprintf(stderr,"Shm pool: Error creating stoped condition for heartbeat thread. %d.\n", status);
-        goto stoped_cond_err;
+        goto stopped_cond_err;
     }
     shmPool->heartbeatThreadActive = true;
     status = celixThread_create(&shmPool->shmHeartbeatThread, NULL,
@@ -109,7 +112,7 @@ celix_status_t shmPool_create(size_t size, shm_pool_t **pool) {
 
 heartbeat_thread_err:
     (void)celixThreadCondition_destroy(&shmPool->heartbeatThreadStoped);
-stoped_cond_err:
+stopped_cond_err:
     tlsf_destroy(shmPool->allocator);
 allocator_err:
     (void)shmdt(shmPool->shmStartAddr);
@@ -119,6 +122,7 @@ err_getting_shm:
     (void)celixThreadMutex_destroy(&shmPool->mutex);
 shm_pool_mutex_err:
     free(shmPool);
+alloc_failed:
 shm_size_invalid:
     return status;
 }
@@ -181,8 +185,8 @@ static void *shmPool_heartbeatThread(void *data){
         celixThreadMutex_lock(&pool->mutex);
         int waitRet = 0;
         while (pool->heartbeatThreadActive && waitRet != ETIMEDOUT) {
+            // pthread_cond_timedwait shall not return an error code of [EINTR]
             waitRet = celixThreadCondition_timedwaitRelative(&pool->heartbeatThreadStoped, &pool->mutex, SHM_HEART_BEAT_UPDATE_INTERVAL_IN_S, 0);
-            assert(waitRet == 0 || waitRet == ETIMEDOUT);// pthread_cond_timedwait shall not return an error code of [EINTR]
         }
         pool->sharedInfo->heartbeatCnt++;
         active = pool->heartbeatThreadActive ;

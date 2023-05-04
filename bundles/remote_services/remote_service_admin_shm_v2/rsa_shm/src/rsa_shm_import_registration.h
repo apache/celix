@@ -23,11 +23,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <import_registration.h>
-#include <endpoint_description.h>
-#include <rsa_rpc_factory.h>
-#include <celix_log_helper.h>
-#include <celix_api.h>
+#include "import_registration.h"
+#include "endpoint_description.h"
+#include "rsa_rpc_factory.h"
+#include "celix_log_helper.h"
+#include "celix_types.h"
+#include "celix_errno.h"
 
 
 celix_status_t importRegistration_create(celix_bundle_context_t *context,

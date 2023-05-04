@@ -15,45 +15,73 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(libuuid REQUIRED)
-
-add_executable(test_rsa_shm
-        src/RsaShmActivatorTestSuite.cc
-        src/RsaShmTestSuite.cc
-        src/RsaShmClientServerTestSuite.cc
+####integration test
+add_executable(integration_test_rsa_shm
+        src/RsaShmIntegrationTestSuite.cc
 )
 
-target_include_directories(test_rsa_shm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src)
-celix_deprecated_utils_headers(test_rsa_shm)
-celix_deprecated_framework_headers(test_rsa_shm)
+celix_deprecated_utils_headers(integration_test_rsa_shm)
+celix_deprecated_framework_headers(integration_test_rsa_shm)
 
-target_link_libraries(test_rsa_shm PRIVATE 
+target_link_libraries(integration_test_rsa_shm PRIVATE
     Celix::c_rsa_spi
-    calculator_api
-    Celix::shell_api
     Celix::framework
-    Celix::dfi
-    libuuid::libuuid
     GTest::gtest
     GTest::gtest_main
     )
 
 celix_get_bundle_file(Celix::rsa_shm RSA_SHM_BUNDLE_FILE)
-target_compile_definitions(test_rsa_shm PRIVATE -DRSA_SHM_BUNDLE="${RSA_SHM_BUNDLE_FILE}")
-celix_get_bundle_file(Celix::rsa_json_rpc RSA_RPC_BUNDLE_FILE)
-target_compile_definitions(test_rsa_shm PRIVATE -DRSA_RPC_BUNDLE="${RSA_RPC_BUNDLE_FILE}")
-celix_get_bundle_file(calculator_shell CONSUMER_BUNDLE_FILE)
-target_compile_definitions(test_rsa_shm PRIVATE -DCONSUMER_BUNDLE="${CONSUMER_BUNDLE_FILE}")
-celix_get_bundle_file(calculator PROVIDER_BUNDLE_FILE)
-target_compile_definitions(test_rsa_shm PRIVATE -DPROVIDER_BUNDLE="${PROVIDER_BUNDLE_FILE}")
-celix_get_bundle_file(Celix::rsa_topology_manager RSA_TOPOLOGY_MANAGER_BUNDLE_FILE)
-celix_get_bundle_file(Celix::rsa_discovery RSA_DISCOVERY_BUNDLE_FILE)
-
-configure_file(resources/client.properties.in client.properties)
-configure_file(resources/server.properties.in server.properties)
+target_compile_definitions(integration_test_rsa_shm PRIVATE -DRSA_SHM_BUNDLE="${RSA_SHM_BUNDLE_FILE}")
 
 
-add_celix_bundle_dependencies(test_rsa_shm Celix::rsa_shm Celix::rsa_json_rpc calculator_shell calculator)
+add_celix_bundle_dependencies(integration_test_rsa_shm Celix::rsa_shm)
 
-add_test(NAME run_test_rsa_shm COMMAND test_rsa_shm)
-setup_target_for_coverage(test_rsa_shm SCAN_DIR ..)
+add_test(NAME run_integration_test_rsa_shm COMMAND integration_test_rsa_shm)
+setup_target_for_coverage(integration_test_rsa_shm SCAN_DIR ..)
+
+if (LINKER_WRAP_SUPPORTED)
+    ####unit test
+    add_executable(unit_test_rsa_shm
+            src/RsaShmImplUnitTestSuite.cc
+            src/RsaShmExportRegistrationUnitTestSuite.cc
+            src/RsaShmImportRegistrationUnitTestSuite.cc
+            src/RsaShmClientServerUnitTestSuite.cc
+            src/RsaShmActivatorUnitTestSuite.cc
+            src/thpool_ei.cc
+            )
+
+    target_link_libraries(unit_test_rsa_shm PRIVATE
+            rsa_shm_cut
+            Celix::c_rsa_spi
+            Celix::rsa_common
+            Celix::log_helper
+            Celix::framework
+            Celix::threads_ei
+            Celix::bundle_ctx_ei
+            Celix::malloc_ei
+            Celix::asprintf_ei
+            Celix::utils_ei
+            Celix::socket_ei
+            Celix::stdio_ei
+            Celix::pthread_ei
+            Celix::log_helper_ei
+            GTest::gtest
+            GTest::gtest_main
+            )
+
+    target_link_options(unit_test_rsa_shm PRIVATE
+            LINKER:--wrap,thpool_init
+            LINKER:--wrap,thpool_add_work
+            )
+
+    target_compile_definitions(unit_test_rsa_shm PRIVATE -DRESOURCES_DIR="${CMAKE_CURRENT_LIST_DIR}/resources")
+    celix_get_bundle_file(Celix::rsa_json_rpc RSA_JSON_RPC_BUNDLE_FILE)
+    target_compile_definitions(unit_test_rsa_shm PRIVATE -DRSA_JSON_RPC_BUNDLE="${RSA_JSON_RPC_BUNDLE_FILE}")
+
+    add_celix_bundle_dependencies(unit_test_rsa_shm Celix::rsa_json_rpc)
+
+    celix_deprecated_utils_headers(unit_test_rsa_shm)
+
+    add_test(NAME run_unit_test_rsa_shm COMMAND unit_test_rsa_shm)
+    setup_target_for_coverage(unit_test_rsa_shm SCAN_DIR ..)
+endif ()
