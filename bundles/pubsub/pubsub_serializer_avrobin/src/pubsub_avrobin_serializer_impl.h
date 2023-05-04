@@ -34,7 +34,7 @@ typedef struct pubsub_avrobin_serializer pubsub_avrobin_serializer_t;
 celix_status_t pubsubAvrobinSerializer_create(celix_bundle_context_t *context, pubsub_avrobin_serializer_t **serializer);
 celix_status_t pubsubAvrobinSerializer_destroy(pubsub_avrobin_serializer_t *serializer);
 
-celix_status_t pubsubAvrobinSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, hash_map_pt *serializerMap);
-celix_status_t pubsubAvrobinSerializer_destroySerializerMap(void *handle, hash_map_pt serializerMap);
+celix_status_t pubsubAvrobinSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, celix_long_hash_map_t **serializerMap);
+celix_status_t pubsubAvrobinSerializer_destroySerializerMap(void *handle, celix_long_hash_map_t *serializerMap);
 
 #endif /* PUBSUB_SERIALIZER_AVROBIN_H_ */

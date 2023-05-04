@@ -16,7 +16,10 @@
  *  specific language governing permissions and limitations
  *  under the License.
  */
-#include <celix_api.h>
+#include <celix_bundle_context.h>
+#include <celix_framework.h>
+#include <celix_framework_factory.h>
+#include <celix_properties.h>
 #include <assert.h>
 #include <stddef.h>
 
@@ -25,13 +28,13 @@ int main() {
     celix_bundle_context_t *ctx = NULL;
     celix_properties_t *properties = NULL;
 
-    properties = properties_create();
-    properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
-    properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
-    properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
+    properties = celix_properties_create();
+    celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
+    celix_properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
+    celix_properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
 
     fw = celix_frameworkFactory_createFramework(properties);
-    ctx = framework_getContext(fw);
+    ctx = celix_framework_getFrameworkContext(fw);
     long bndId = celix_bundleContext_installBundle(ctx, HELLO_TEST_BUNDLE_LOCATION, true);
     assert(bndId >= 0);
     celix_framework_waitForStop(fw);

@@ -22,7 +22,7 @@
 
 #include <utils.h>
 
-#include "version.h"
+#include "celix_version.h"
 
 typedef struct pubsub_udp_msg_header {
     unsigned int type;
@@ -31,7 +31,7 @@ typedef struct pubsub_udp_msg_header {
 } pubsub_udp_msg_header_t;
 
 
-bool psa_udpmc_checkVersion(version_pt msgVersion, pubsub_udp_msg_header_t *hdr);
+bool psa_udpmc_checkVersion(celix_version_t *msgVersion, pubsub_udp_msg_header_t *hdr);
 
 
 #endif //CELIX_PUBSUB_UDPMC_COMMON_H

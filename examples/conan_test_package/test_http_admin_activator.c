@@ -18,7 +18,7 @@
  */
 #include <stdlib.h>
 
-#include "celix_api.h"
+#include <celix_bundle_activator.h>
 #include "http_admin/api.h"
 
 #include "civetweb.h"

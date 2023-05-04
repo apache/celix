@@ -34,8 +34,8 @@ typedef struct pubsub_json_serializer pubsub_json_serializer_t;
 celix_status_t pubsubSerializer_create(celix_bundle_context_t *context, pubsub_json_serializer_t **serializer);
 celix_status_t pubsubSerializer_destroy(pubsub_json_serializer_t* serializer);
 
-celix_status_t pubsubSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, hash_map_pt* serializerMap);
-celix_status_t pubsubSerializer_destroySerializerMap(void *handle, hash_map_pt serializerMap);
+celix_status_t pubsubSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, celix_long_hash_map_t **serializerMap);
+celix_status_t pubsubSerializer_destroySerializerMap(void *handle, celix_long_hash_map_t *serializerMap);
 
 void pubsubSerializer_onInstalled(void *handle, const celix_bundle_t *bundle);
 

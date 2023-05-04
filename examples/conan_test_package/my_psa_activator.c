@@ -17,7 +17,7 @@
   under the License.
  */
 
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 #include <pubsub_serializer.h>
 #include <celix_log_helper.h>
 #include <pubsub_admin.h>

@@ -96,7 +96,7 @@ typedef struct psa_udpmc_requested_connection_entry {
 } psa_udpmc_requested_connection_entry_t;
 
 typedef struct psa_udpmc_subscriber_entry {
-    hash_map_t *msgTypes; //map from serializer svc
+    celix_long_hash_map_t *msgTypes; //map from serializer svc
     hash_map_t *subscriberServices; //key = servide id, value = pubsub_subscriber_t*
     bool initialized; //true if the init function is called through the receive thread
 } psa_udpmc_subscriber_entry_t;
@@ -474,7 +474,7 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
 
         pubsub_msg_serializer_t *msgSer = NULL;
         if (entry->msgTypes != NULL) {
-            msgSer = hashMap_get(entry->msgTypes, (void *) (uintptr_t) msg->header.type);
+            msgSer = celix_longHashMap_get(entry->msgTypes, msg->header.type);
         }
         if (msgSer == NULL) {
             L_WARN("[PSA_UDPMC] Serializer not available for message %d.\n", msg->header.type);
@@ -513,9 +513,8 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
                 }
 
             } else {
-                int major = 0, minor = 0;
-                version_getMajor(msgSer->msgVersion, &major);
-                version_getMinor(msgSer->msgVersion, &minor);
+                int major = celix_version_getMajor(msgSer->msgVersion);
+                int minor = celix_version_getMinor(msgSer->msgVersion);
                 L_WARN("[PSA_UDPMC] Version mismatch for primary message '%s' (have %d.%d, received %u.%u). NOT sending any part of the whole message.\n",
                        msgSer->msgName,major,minor,msg->header.major,msg->header.minor);
             }

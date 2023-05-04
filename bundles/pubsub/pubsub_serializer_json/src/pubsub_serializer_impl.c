@@ -74,12 +74,12 @@ typedef struct pubsub_json_msg_serializer_impl {
 
     unsigned int msgId;
     const char* msgName;
-    version_pt msgVersion;
+    celix_version_t *msgVersion;
 } pubsub_json_msg_serializer_impl_t;
 
 static char* pubsubSerializer_getMsgDescriptionDir(const celix_bundle_t *bundle);
-static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t* serializer, const char *root, const celix_bundle_t *bundle, hash_map_pt msgSerializers);
-static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* serializer, hash_map_pt msgSerializers, const celix_bundle_t *bundle);
+static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t* serializer, const char *root, const celix_bundle_t *bundle, celix_long_hash_map_t *msgSerializers);
+static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* serializer, celix_long_hash_map_t *msgSerializers, const celix_bundle_t *bundle);
 
 static int pubsubMsgSerializer_convertDescriptor(pubsub_json_serializer_t* serializer, FILE* file_ptr, pubsub_msg_serializer_t* msgSerializer);
 static int pubsubMsgSerializer_convertAvpr(pubsub_json_serializer_t *serializer, FILE* file_ptr, pubsub_msg_serializer_t* msgSerializer, const char* fqn);
@@ -125,32 +125,31 @@ celix_status_t pubsubSerializer_destroy(pubsub_json_serializer_t* serializer) {
     return status;
 }
 
-celix_status_t pubsubSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, hash_map_pt* serializerMap) {
+celix_status_t pubsubSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, celix_long_hash_map_t **serializerMap) {
     pubsub_json_serializer_t *serializer = handle;
 
-    hash_map_pt map = hashMap_create(NULL, NULL, NULL, NULL);
+    celix_long_hash_map_t *map = celix_longHashMap_create();
     pubsubSerializer_fillMsgSerializerMap(serializer, map, bundle);
     *serializerMap = map;
     return CELIX_SUCCESS;
 }
 
-celix_status_t pubsubSerializer_destroySerializerMap(void* handle __attribute__((unused)), hash_map_pt serializerMap) {
+celix_status_t pubsubSerializer_destroySerializerMap(void* handle __attribute__((unused)), celix_long_hash_map_t *serializerMap) {
     celix_status_t status = CELIX_SUCCESS;
     //pubsub_json_serializer_t *serializer = handle;
     if (serializerMap == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    hash_map_iterator_t iter = hashMapIterator_construct(serializerMap);
-    while (hashMapIterator_hasNext(&iter)) {
-        pubsub_msg_serializer_t* msgSerializer = hashMapIterator_nextValue(&iter);
+    CELIX_LONG_HASH_MAP_ITERATE(serializerMap, iter){
+        pubsub_msg_serializer_t* msgSerializer = iter.value.ptrValue;
         pubsub_json_msg_serializer_impl_t *impl = msgSerializer->handle;
         dynMessage_destroy(impl->msgType);
         free(msgSerializer); //also contains the service struct.
         free(impl);
     }
 
-    hashMap_destroy(serializerMap, false, false);
+    celix_longHashMap_destroy(serializerMap);
 
     return status;
 }
@@ -227,7 +226,7 @@ void pubsubMsgSerializer_freeDeserializeMsg(void* handle, void *msg) {
 }
 
 
-static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* serializer, hash_map_pt msgSerializers, const celix_bundle_t *bundle) {
+static void pubsubSerializer_fillMsgSerializerMap(pubsub_json_serializer_t* serializer, celix_long_hash_map_t *msgSerializers, const celix_bundle_t *bundle) {
     char* root = NULL;
     char* metaInfPath = NULL;
 
@@ -270,7 +269,7 @@ static char* pubsubSerializer_getMsgDescriptionDir(const celix_bundle_t *bundle)
     return root;
 }
 
-static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t* serializer, const char *root, const celix_bundle_t *bundle, hash_map_pt msgSerializers) {
+static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t* serializer, const char *root, const celix_bundle_t *bundle, celix_long_hash_map_t *msgSerializers) {
     char fqn[MAX_PATH_LEN];
     char pathOrError[MAX_PATH_LEN];
     const char* entry_name = NULL;
@@ -319,7 +318,7 @@ static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t
         }
 
         // serializer has been constructed, try to put in the map
-        if (hashMap_containsKey(msgSerializers, (void *) (uintptr_t) msgSerializer->msgId)) {
+        if (celix_longHashMap_hasKey(msgSerializers, msgSerializer->msgId)) {
             L_WARN("Cannot add msg %s. Clash is msg id %d!\n", msgSerializer->msgName, msgSerializer->msgId);
             dynMessage_destroy(impl->msgType);
             free(msgSerializer);
@@ -331,7 +330,7 @@ static void pubsubSerializer_addMsgSerializerFromBundle(pubsub_json_serializer_t
             free(impl);
         }
         else {
-            hashMap_put(msgSerializers, (void *) (uintptr_t) msgSerializer->msgId, msgSerializer);
+            celix_longHashMap_put(msgSerializers, msgSerializer->msgId, msgSerializer);
         }
     }
 
@@ -425,7 +424,7 @@ static int pubsubMsgSerializer_convertDescriptor(pubsub_json_serializer_t* seria
     char *msgName = NULL;
     rc += dynMessage_getName(msgType, &msgName);
 
-    version_pt msgVersion = NULL;
+    celix_version_t *msgVersion = NULL;
     rc += dynMessage_getVersion(msgType, &msgVersion);
 
     if (rc != 0 || msgName == NULL || msgVersion == NULL) {
@@ -487,13 +486,12 @@ static int pubsubMsgSerializer_convertAvpr(pubsub_json_serializer_t *serializer,
 
     const char *msgName = dynType_getName(type);
 
-    version_pt msgVersion = NULL;
-    celix_status_t s = version_createVersionFromString(dynType_getMetaInfo(type, "version"), &msgVersion);
+    celix_version_t *msgVersion = celix_version_createVersionFromString(dynType_getMetaInfo(type, "version"));
 
-    if (s != CELIX_SUCCESS || !msgName) {
+    if (msgVersion == NULL || !msgName) {
         L_WARN("[json serializer] Cannot retrieve name and/or version from msg\n");
-        if (s == CELIX_SUCCESS) {
-            version_destroy(msgVersion);
+        if (msgVersion != NULL) {
+            celix_version_destroy(msgVersion);
         }
         return -1;
     }
