@@ -44,7 +44,7 @@ add_library(utils_obj OBJECT
         src/celix_hash_map.c
         src/celix_file_utils.c
         src/celix_convert_utils.c
-        src/celix_errorcodes.c
+        src/celix_errno.c
         src/celix_err.c
         ${MEMSTREAM_SOURCES}
 )
