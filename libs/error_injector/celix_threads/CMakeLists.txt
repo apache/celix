@@ -20,5 +20,9 @@ add_library(threads_ei STATIC src/celix_threads_ei.cc)
 target_include_directories(threads_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
 target_link_libraries(threads_ei PUBLIC Celix::error_injector Celix::utils)
 
-target_link_options(threads_ei INTERFACE LINKER:--wrap,celixThreadMutex_create LINKER:--wrap,celixThread_create)
+target_link_options(threads_ei INTERFACE
+        LINKER:--wrap,celixThreadMutex_create
+        LINKER:--wrap,celixThread_create
+        LINKER:--wrap,celixThreadCondition_init
+        LINKER:--wrap,celixThreadRwlock_create)
 add_library(Celix::threads_ei ALIAS threads_ei)

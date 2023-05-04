@@ -14,12 +14,11 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-cosgi.auto.start.1=@RSA_RPC_BUNDLE_FILE@ @RSA_SHM_BUNDLE_FILE@ @PROVIDER_BUNDLE_FILE@ @RSA_DISCOVERY_BUNDLE_FILE@ @RSA_TOPOLOGY_MANAGER_BUNDLE_FILE@ 
-LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-org.osgi.framework.storage.clean=onFirstInit
-org.osgi.framework.storage=.cacheServer
 
-DISCOVERY_CFG_POLL_INTERVAL=1
-DISCOVERY_CFG_POLL_TIMEOUT=5
-DISCOVERY_CFG_SERVER_PORT=61002
-DISCOVERY_CFG_POLL_ENDPOINTS=http://localhost:61001/org.apache.celix.discovery.configured
+add_library(sys_shm_ei STATIC src/sys_shm_ei.cc)
+
+target_include_directories(sys_shm_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(sys_shm_ei PUBLIC Celix::error_injector)
+
+target_link_options(sys_shm_ei INTERFACE LINKER:--wrap,shmget LINKER:--wrap,shmat)
+add_library(Celix::sys_shm_ei ALIAS sys_shm_ei)

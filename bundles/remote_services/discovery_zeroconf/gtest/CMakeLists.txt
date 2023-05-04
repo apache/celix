@@ -40,31 +40,33 @@ target_compile_definitions(integration_test_discovery_zeroconf PRIVATE -DDISCOVE
 add_test(NAME run_integration_test_discovery_zeroconf COMMAND integration_test_discovery_zeroconf)
 setup_target_for_coverage(integration_test_discovery_zeroconf SCAN_DIR ..)
 
-####unit test
-add_executable(unit_test_discovery_zeroconf
-        src/DiscoveryZeroconfAnnouncerTestSuite.cc
-        src/DiscoveryZeroconfWatcherTestSuite.cc
-        src/DiscoveryZeroconfActivatorTestSuite.cc
-        )
+if (LINKER_WRAP_SUPPORTED)
+    ####unit test
+    add_executable(unit_test_discovery_zeroconf
+            src/DiscoveryZeroconfAnnouncerTestSuite.cc
+            src/DiscoveryZeroconfWatcherTestSuite.cc
+            src/DiscoveryZeroconfActivatorTestSuite.cc
+            )
 
-celix_deprecated_utils_headers(unit_test_discovery_zeroconf)
+    celix_deprecated_utils_headers(unit_test_discovery_zeroconf)
 
-target_link_libraries(unit_test_discovery_zeroconf PRIVATE
-        rsa_discovery_zeroconf_cut
-        Celix::rsa_common
-        Celix::c_rsa_spi
-        Celix::framework
-        Celix::threads_ei
-        Celix::eventfd_ei
-        Celix::bundle_ctx_ei
-        Celix::mdnsresponder_ei
-        Celix::malloc_ei
-        GTest::gtest
-        GTest::gtest_main
-        )
+    target_link_libraries(unit_test_discovery_zeroconf PRIVATE
+            rsa_discovery_zeroconf_cut
+            Celix::rsa_common
+            Celix::c_rsa_spi
+            Celix::framework
+            Celix::threads_ei
+            Celix::eventfd_ei
+            Celix::bundle_ctx_ei
+            Celix::mdnsresponder_ei
+            Celix::malloc_ei
+            GTest::gtest
+            GTest::gtest_main
+            )
 
-target_compile_definitions(unit_test_discovery_zeroconf PRIVATE -DMDNSD="${DNSSD_LIB_DIRS}/../bin/mdnsd")
+    target_compile_definitions(unit_test_discovery_zeroconf PRIVATE -DMDNSD="${DNSSD_LIB_DIRS}/../bin/mdnsd")
 
 
-add_test(NAME run_unit_test_discovery_zeroconf COMMAND sudo $<TARGET_FILE:unit_test_discovery_zeroconf>)
-setup_target_for_coverage(unit_test_discovery_zeroconf SCAN_DIR ..)
+    add_test(NAME run_unit_test_discovery_zeroconf COMMAND sudo $<TARGET_FILE:unit_test_discovery_zeroconf>)
+    setup_target_for_coverage(unit_test_discovery_zeroconf SCAN_DIR ..)
+endif ()

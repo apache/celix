@@ -39,8 +39,8 @@ if (CELIX_DFI)
 	target_include_directories(dfi PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 			$<INSTALL_INTERFACE:include/celix/dfi>)
-	target_link_libraries(dfi PRIVATE libffi::libffi Celix::utils)
-	target_link_libraries(dfi PUBLIC jansson::jansson)
+	target_link_libraries(dfi PRIVATE libffi::libffi)
+	target_link_libraries(dfi PUBLIC jansson::jansson Celix::utils)##The public header file(dyn_interface.h) Celix::utils(celix_version.h)
 	set_target_properties(dfi PROPERTIES
 			C_VISIBILITY_PRESET hidden
 			VERSION "1.0.0"
