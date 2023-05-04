@@ -160,7 +160,7 @@ extern "C" {
         celix_array_list_t *bundles = NULL;
 
         bundles = celix_bundleContext_listBundles(context);
-        ASSERT_EQ(3, celix_arrayList_size(bundles)); //framework, rsa_dfi & calc
+        ASSERT_EQ(2, celix_arrayList_size(bundles)); //rsa_dfi & calc
 
         /*
         int size = arrayList_size(bundles);
