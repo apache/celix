@@ -44,6 +44,7 @@ add_library(utils_obj OBJECT
         src/celix_hash_map.c
         src/celix_file_utils.c
         src/celix_convert_utils.c
+        src/celix_errorcodes.c
         src/celix_err.c
         ${MEMSTREAM_SOURCES}
 )
@@ -76,10 +77,16 @@ ENDIF()
 
 add_library(utils SHARED)
 target_link_libraries(utils PUBLIC utils_obj)
+target_include_directories(utils_obj PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/utils>)
+
+#Configure celix_err_constant header file
+set(CELIX_ERR_BUFFER_SIZE 512 CACHE STRING "The size of the thread-specific buffer used for library error messages")
+configure_file("${CMAKE_CURRENT_LIST_DIR}/src/celix_err_constants.h.in" "${CMAKE_BINARY_DIR}/celix/gen/includes/utils/celix_err_constants.h" @ONLY)
+
+#Configure export header
 generate_export_header(utils
         BASE_NAME "CELIX_UTILS"
         EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/utils/celix_utils_export.h")
-target_include_directories(utils_obj PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/utils>)
 # We are building this library
 target_compile_definitions(utils_obj PRIVATE utils_EXPORTS)
 
