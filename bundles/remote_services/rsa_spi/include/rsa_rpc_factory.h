@@ -23,9 +23,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <endpoint_description.h>
-#include <celix_properties.h>
-#include <celix_errno.h>
+#include "endpoint_description.h"
+#include "celix_properties.h"
+#include "celix_errno.h"
 #include <sys/uio.h>
 
 /**

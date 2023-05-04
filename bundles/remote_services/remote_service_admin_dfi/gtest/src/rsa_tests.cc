@@ -24,11 +24,11 @@
 #include "celix_bundle_context.h"
 #include "celix_constants.h"
 #include "calculator_service.h"
+#include "celix_array_list.h"
 
 extern "C" {
 
 #include "remote_service_admin.h"
-#include "calculator_service.h"
 
 #define TST_CONFIGURATION_TYPE "org.amdatu.remote.admin.http"
 
@@ -93,7 +93,7 @@ extern "C" {
 
         ASSERT_EQ(1, celix_arrayList_size(svcRegistration));
 
-        rc = rsa->exportRegistration_close(rsa->admin,(export_registration_t *)(arrayList_get(svcRegistration,0)));
+        rc = rsa->exportRegistration_close(rsa->admin,(export_registration_t *)(celix_arrayList_get(svcRegistration,0)));
         ASSERT_EQ(CELIX_SUCCESS, rc);
         celix_arrayList_destroy(svcRegistration);
     }
@@ -157,11 +157,10 @@ extern "C" {
     }
 
     static void testBundles(void) {
-        array_list_pt bundles = NULL;
+        celix_array_list_t *bundles = NULL;
 
-        int rc = bundleContext_getBundles(context, &bundles);
-        ASSERT_EQ(0, rc);
-        ASSERT_EQ(3, arrayList_size(bundles)); //framework, rsa_dfi & calc
+        bundles = celix_bundleContext_listBundles(context);
+        ASSERT_EQ(3, celix_arrayList_size(bundles)); //framework, rsa_dfi & calc
 
         /*
         int size = arrayList_size(bundles);
@@ -177,7 +176,7 @@ extern "C" {
             printf("got bundle with symbolic name '%s'", name);
         }*/
 
-        arrayList_destroy(bundles);
+        celix_arrayList_destroy(bundles);
     }
 
 }

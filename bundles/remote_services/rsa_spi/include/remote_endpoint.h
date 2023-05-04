@@ -26,6 +26,7 @@
 
 #ifndef REMOTE_ENDPOINT_H_
 #define REMOTE_ENDPOINT_H_
+#include "celix_errno.h"
 
 #define OSGI_RSA_REMOTE_ENDPOINT "remote_endpoint"
 

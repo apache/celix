@@ -34,6 +34,7 @@
 #include "endpoint_description.h"
 #include "endpoint_descriptor_common.h"
 #include "endpoint_descriptor_writer.h"
+#include "hash_map.h"
 
 struct endpoint_descriptor_writer {
     xmlBufferPtr buffer;

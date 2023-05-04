@@ -29,6 +29,7 @@
 
 #include "endpoint_listener.h"
 #include "remote_service_admin.h"
+#include "celix_long_hash_map.h"
 
 #define OSGI_RSA_REMOTE_PROXY_FACTORY 	"remote_proxy_factory"
 #define OSGI_RSA_REMOTE_PROXY_TIMEOUT   "remote_proxy_timeout"
@@ -48,7 +49,7 @@ struct remote_proxy_factory {
 	celix_properties_t *properties;
 	service_registration_t *registration;
 
-	hash_map_pt proxy_instances;
+    celix_long_hash_map_t *proxy_instances;
 
 	void *handle;
 

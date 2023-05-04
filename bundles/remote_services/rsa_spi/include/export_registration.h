@@ -22,7 +22,7 @@
 
 #include "celix_errno.h"
 #include "endpoint_description.h"
-#include "service_reference.h"
+#include "celix_types.h"
 
 /**
  * This headers contains a opaque declaration of the export_registration type and declaration of some generic

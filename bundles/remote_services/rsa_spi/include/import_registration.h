@@ -21,8 +21,6 @@
 #define CELIX_IMPORT_REGISTRATION_H
 
 #include "celix_errno.h"
-#include "endpoint_description.h"
-#include "service_reference.h"
 
 /**
  * This headers contains a opaque declaration of the import_registration type and declaration of some generic
