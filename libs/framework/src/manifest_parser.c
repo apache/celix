@@ -389,11 +389,6 @@ static linked_list_pt manifestParser_parseImportHeader(const char * header) {
 
 	linkedList_destroy(clauses);
 
-	if(failure){
-		linkedList_destroy(requirements);
-		requirements = NULL;
-	}
-
 	return requirements;
 }
 
@@ -450,10 +445,6 @@ static linked_list_pt manifestParser_parseExportHeader(module_pt module, const c
 	}
 
 	linkedList_destroy(clauses);
-	if(failure){
-		linkedList_destroy(capabilities);
-		capabilities = NULL;
-	}
 
 	return capabilities;
 }

@@ -31,12 +31,31 @@ celix_status_t __wrap_celixThreadMutex_create(celix_thread_mutex_t *__mutex, cel
     return __real_celixThreadMutex_create(__mutex, __attr);
 }
 
-celix_status_t __real_celixThread_create(celix_thread_t *__new_thread, celix_thread_attr_t *__attr, celix_thread_start_t __func, void *__data);
+celix_status_t
+__real_celixThread_create(celix_thread_t *__new_thread, celix_thread_attr_t *__attr, celix_thread_start_t __func,
+                          void *__data);
 CELIX_EI_DEFINE(celixThread_create, celix_status_t)
-celix_status_t __wrap_celixThread_create(celix_thread_t *__new_thread, celix_thread_attr_t *__attr, celix_thread_start_t __func, void *__data) {
+celix_status_t
+__wrap_celixThread_create(celix_thread_t *__new_thread, celix_thread_attr_t *__attr, celix_thread_start_t __func,
+                          void *__data) {
     CELIX_EI_IMPL(celixThread_create);
     return __real_celixThread_create(__new_thread, __attr, __func, __data);
 }
+
+celix_status_t __real_celixThreadCondition_init(celix_thread_cond_t *__condition, celix_thread_condattr_t *__attr);
+CELIX_EI_DEFINE(celixThreadCondition_init, celix_status_t)
+celix_status_t __wrap_celixThreadCondition_init(celix_thread_cond_t *__condition, celix_thread_condattr_t *__attr) {
+    CELIX_EI_IMPL(celixThreadCondition_init);
+    return __real_celixThreadCondition_init(__condition, __attr);
+}
+
+celix_status_t __real_celixThreadRwlock_create(celix_thread_rwlock_t *__rwlock, celix_thread_rwlockattr_t *__attr);
+CELIX_EI_DEFINE(celixThreadRwlock_create, celix_status_t)
+celix_status_t __wrap_celixThreadRwlock_create(celix_thread_rwlock_t *__rwlock, celix_thread_rwlockattr_t *__attr) {
+    CELIX_EI_IMPL(celixThreadRwlock_create);
+    return __real_celixThreadRwlock_create(__rwlock, __attr);
+}
+
 
 celix_status_t __real_celix_tss_create(celix_tss_key_t* __key, void (*__destroyFunction)(void*));
 CELIX_EI_DEFINE(celix_tss_create, celix_status_t)

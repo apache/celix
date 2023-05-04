@@ -19,6 +19,7 @@
 
 #include "celix_bundle_context_ei.h"
 #include "celix_bundle_context.h"
+#include "celix_types.h"
 #include "celix_error_injector.h"
 #include "celix_properties.h"
 
@@ -52,4 +53,46 @@ long __wrap_celix_bundleContext_trackServicesWithOptionsAsync(celix_bundle_conte
     CELIX_EI_IMPL(celix_bundleContext_trackServicesWithOptionsAsync);
     return __real_celix_bundleContext_trackServicesWithOptionsAsync(__ctx, __opts);
 }
+
+long __real_celix_bundleContext_getBundleId(const celix_bundle_context_t *__ctx);
+CELIX_EI_DEFINE(celix_bundleContext_getBundleId, long)
+long __wrap_celix_bundleContext_getBundleId(const celix_bundle_context_t *__ctx) {
+    CELIX_EI_IMPL(celix_bundleContext_getBundleId);
+    return __real_celix_bundleContext_getBundleId(__ctx);
+}
+
+celix_status_t __real_bundleContext_getServiceReferences(celix_bundle_context_t *__ctx, const char *__serviceName, const char *__filter, celix_array_list_t **service_references);
+CELIX_EI_DEFINE(bundleContext_getServiceReferences, celix_status_t)
+celix_status_t __wrap_bundleContext_getServiceReferences(celix_bundle_context_t *__ctx, const char *__serviceName, const char *__filter, celix_array_list_t **service_references) {
+    CELIX_EI_IMPL(bundleContext_getServiceReferences);
+    return __real_bundleContext_getServiceReferences(__ctx, __serviceName, __filter, service_references);
+}
+
+celix_status_t __real_bundleContext_retainServiceReference(celix_bundle_context_t *__ctx, service_reference_pt __ref);
+CELIX_EI_DEFINE(bundleContext_retainServiceReference, celix_status_t)
+celix_status_t __wrap_bundleContext_retainServiceReference(celix_bundle_context_t *__ctx, service_reference_pt __ref) {
+    CELIX_EI_IMPL(bundleContext_retainServiceReference);
+    return __real_bundleContext_retainServiceReference(__ctx, __ref);
+}
+
+long __real_celix_bundleContext_registerServiceAsync(celix_bundle_context_t *__ctx, const char *__serviceName, void *__service, celix_properties_t *__properties);
+CELIX_EI_DEFINE(celix_bundleContext_registerServiceAsync, long)
+long __wrap_celix_bundleContext_registerServiceAsync(celix_bundle_context_t *__ctx, const char *__serviceName, void *__service, celix_properties_t *__properties) {
+    celix_properties_t __attribute__((cleanup(celix_properties_cleanup))) *props = celix_properties_copy(__properties);
+    celix_properties_destroy(__properties);
+    CELIX_EI_IMPL(celix_bundleContext_registerServiceAsync);
+    __properties = celix_properties_copy(props);
+    return __real_celix_bundleContext_registerServiceAsync(__ctx, __serviceName, __service, __properties);
+}
+
+long __real_celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *__ctx, const char *__serviceName, service_factory_pt __factory, celix_properties_t *__properties);
+CELIX_EI_DEFINE(celix_bundleContext_registerServiceFactoryAsync, long)
+long __wrap_celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context_t *__ctx, const char *__serviceName, service_factory_pt __factory, celix_properties_t *__properties) {
+    celix_properties_t __attribute__((cleanup(celix_properties_cleanup))) *props = celix_properties_copy(__properties);
+    celix_properties_destroy(__properties);
+    CELIX_EI_IMPL(celix_bundleContext_registerServiceFactoryAsync);
+    __properties = celix_properties_copy(props);
+    return __real_celix_bundleContext_registerServiceFactoryAsync(__ctx, __serviceName, __factory, __properties);
+}
+
 }

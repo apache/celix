@@ -23,8 +23,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <shm_pool.h>
-#include <celix_log_helper.h>
+#include "shm_pool.h"
+#include "celix_log_helper.h"
 #include <sys/uio.h>
 
 typedef struct rsa_shm_server rsa_shm_server_t;

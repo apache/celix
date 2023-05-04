@@ -27,3 +27,4 @@ celix_embedded_bundle_@EMBED_BUNDLE_NAME@_start:
 .balign 64
 celix_embedded_bundle_@EMBED_BUNDLE_NAME@_end:
 .byte 0
+.section .note.GNU-stack,"",%progbits

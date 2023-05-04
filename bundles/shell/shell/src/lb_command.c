@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "celix_constants.h"
 #include "celix_utils.h"
 #include "celix_bundle_context.h"
 #include "celix_bundle.h"
@@ -57,7 +58,15 @@ typedef struct lb_command_bundle_info {
 } lb_command_bundle_info_t;
 
 static int lbCommand_bundleInfoCmp(celix_array_list_entry_t a, celix_array_list_entry_t b) {
-    return (int)(a.intVal - b.intVal);
+    lb_command_bundle_info_t* infoA = a.voidPtrVal;
+    lb_command_bundle_info_t* infoB = b.voidPtrVal;
+    if (infoA->id < infoB->id) {
+        return -1;
+    } else if (infoA->id > infoB->id) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 static void lbCommand_collectBundleInfo_callback(void* data, const celix_bundle_t* bnd) {
@@ -91,6 +100,7 @@ static celix_array_list_t* lbCommand_collectBundleInfo(celix_bundle_context_t *c
     celix_array_list_t* infoEntries = celix_arrayList_createWithOptions(&opts);
     if (infoEntries != NULL) {
         celix_bundleContext_useBundles(ctx, (void*)infoEntries, lbCommand_collectBundleInfo_callback);
+        celix_bundleContext_useBundle(ctx, CELIX_FRAMEWORK_BUNDLE_ID, (void*)infoEntries, lbCommand_collectBundleInfo_callback);
         celix_arrayList_sortEntries(infoEntries, lbCommand_bundleInfoCmp);
     }
     return infoEntries;

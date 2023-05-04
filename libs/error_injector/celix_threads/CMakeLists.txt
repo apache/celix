@@ -23,6 +23,8 @@ target_link_libraries(threads_ei PUBLIC Celix::error_injector Celix::utils)
 target_link_options(threads_ei INTERFACE
         LINKER:--wrap,celixThreadMutex_create
         LINKER:--wrap,celixThread_create
+        LINKER:--wrap,celixThreadCondition_init
+        LINKER:--wrap,celixThreadRwlock_create
         LINKER:--wrap,celix_tss_create
         LINKER:--wrap,celix_tss_delete
         LINKER:--wrap,celix_tss_set

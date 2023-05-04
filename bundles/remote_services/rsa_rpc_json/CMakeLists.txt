@@ -20,38 +20,49 @@ if (RSA_JSON_RPC)
 
     find_package(jansson REQUIRED)
 
+    set(RSA_JSON_RPC_SRC
+            src/rsa_json_rpc_activator.c
+            src/rsa_json_rpc_endpoint_impl.c
+            src/rsa_json_rpc_impl.c
+            src/rsa_json_rpc_proxy_impl.c
+            src/rsa_request_sender_tracker.c
+            )
+
+    set(RSA_JSON_RPC_DEPS
+            Celix::rsa_common
+            Celix::rsa_dfi_utils
+            Celix::c_rsa_spi
+            Celix::dfi
+            Celix::log_helper
+            Celix::framework
+            Celix::utils
+            jansson::jansson
+            )
+
     add_celix_bundle(rsa_json_rpc
         VERSION 1.0.0
         SYMBOLIC_NAME "apache_celix_rsa_json_rpc"
         NAME "Apache Celix Remote Service Admin JSON RPC"
         GROUP "Celix/RSA"
         SOURCES
-        src/rsa_json_rpc_activator.c
-        src/rsa_json_rpc_endpoint_impl.c
-        src/rsa_json_rpc_impl.c
-        src/rsa_json_rpc_proxy_impl.c
-        src/rsa_request_sender_tracker.c
+        ${RSA_JSON_RPC_SRC}
     )
 
     celix_deprecated_utils_headers(rsa_json_rpc)
     celix_deprecated_framework_headers(rsa_json_rpc)
     target_include_directories(rsa_json_rpc PRIVATE src)
 
-    target_link_libraries(rsa_json_rpc PRIVATE
-        Celix::rsa_common
-        Celix::rsa_dfi_utils
-        Celix::c_rsa_spi
-        Celix::dfi
-        Celix::log_helper
-        Celix::framework
-        Celix::utils
-        jansson::jansson
-    )
+    target_link_libraries(rsa_json_rpc PRIVATE ${RSA_JSON_RPC_DEPS})
 
     install_celix_bundle(rsa_json_rpc EXPORT celix COMPONENT rsa)
     add_library(Celix::rsa_json_rpc ALIAS rsa_json_rpc)
 
     if (ENABLE_TESTING)
+        celix_bundle_private_libs(rsa_json_rpc Celix::dfi)
+        add_library(rsa_json_rpc_cut STATIC ${RSA_JSON_RPC_SRC})
+        celix_deprecated_utils_headers(rsa_json_rpc_cut)
+        target_include_directories(rsa_json_rpc_cut PUBLIC src)
+        target_link_libraries(rsa_json_rpc_cut PUBLIC ${RSA_JSON_RPC_DEPS})
         add_subdirectory(gtest)
     endif()
 

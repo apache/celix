@@ -57,7 +57,12 @@ typedef bool (*celix_arrayList_equals_fp)(celix_array_list_entry_t, celix_array_
 
 typedef int (*celix_arrayList_sort_fp)(const void *, const void *);
 
-typedef int (*celix_array_list_sort_entries_fp)(celix_array_list_entry_t a, celix_array_list_entry_t b);
+/**
+ * @brief Compare function for array list entries, which can be used to sort a array list.
+ */
+typedef int (*celix_array_list_compare_entries_fp)(celix_array_list_entry_t a, celix_array_list_entry_t b);
+
+typedef celix_array_list_compare_entries_fp celix_array_list_sort_entries_fp __attribute__((deprecated("Use celix_arrayList_compare_entries_fp instead")));
 
 
 /**
@@ -244,81 +249,90 @@ size_t celix_arrayList_getSize(const celix_array_list_t *list, int index);
  *
  * @param map The array list.
  * @param value The pointer value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_add(celix_array_list_t *list, void* value);
+celix_status_t celix_arrayList_add(celix_array_list_t *list, void* value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The int value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addInt(celix_array_list_t *list, int value);
+celix_status_t celix_arrayList_addInt(celix_array_list_t *list, int value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The long value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addLong(celix_array_list_t *list, long value);
+celix_status_t celix_arrayList_addLong(celix_array_list_t *list, long value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The unsigned int value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addUInt(celix_array_list_t *list, unsigned int value);
+celix_status_t celix_arrayList_addUInt(celix_array_list_t *list, unsigned int value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The unsigned long value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addULong(celix_array_list_t *list, unsigned long value);
+celix_status_t celix_arrayList_addULong(celix_array_list_t *list, unsigned long value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The float value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addFloat(celix_array_list_t *list, float value);
+celix_status_t celix_arrayList_addFloat(celix_array_list_t *list, float value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The double value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addDouble(celix_array_list_t *list, double value);
+celix_status_t celix_arrayList_addDouble(celix_array_list_t *list, double value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The bool value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addBool(celix_array_list_t *list, bool value);
+celix_status_t celix_arrayList_addBool(celix_array_list_t *list, bool value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The size_t value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addSize(celix_array_list_t *list, size_t value);
+celix_status_t celix_arrayList_addSize(celix_array_list_t *list, size_t value);
 
 /**
  * @brief Returns the index of the provided entry, if found.
@@ -448,13 +462,13 @@ void celix_arrayList_removeSize(celix_array_list_t *list, size_t value);
  * @brief Sort the array list using the provided sort function.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_sort_entries_fp sortFp);
+void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_compare_entries_fp compare);
 
 /**
  * @warning Never use this function with array of doubles, since on some 32-bit platform (sizeof(double)==8 && sizeof(void*)==4)
  * @deprecated This function is deprecated, use celix_arrayList_sortEntries instead.
  */
-CELIX_UTILS_EXPORT
+CELIX_UTILS_DEPRECATED_EXPORT
 void celix_arrayList_sort(celix_array_list_t *list, celix_arrayList_sort_fp sortFp);
 
 #ifdef __cplusplus

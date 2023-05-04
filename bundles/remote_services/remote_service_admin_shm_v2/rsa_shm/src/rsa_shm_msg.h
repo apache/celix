@@ -32,6 +32,7 @@ typedef enum {
     REPLYING = 1,
     REPLIED = 2,
     ABEND = 3,//abnormal end
+    REQ_CANCELLED = 4,
 }rsa_shm_msg_state;
 
 typedef struct rsa_shm_msg_control {

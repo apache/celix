@@ -32,6 +32,8 @@ CELIX_EI_DECLARE(fwrite, size_t);
 
 CELIX_EI_DECLARE(remove, int);
 
+CELIX_EI_DECLARE(open_memstream, FILE *);
+
 #ifdef __cplusplus
 }
 #endif

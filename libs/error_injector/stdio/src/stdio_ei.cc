@@ -49,4 +49,14 @@ int __wrap_remove (const char *__filename) {
     errno = 0;
     return __real_remove(__filename);
 }
+
+FILE *__real_open_memstream (char **__bufloc, size_t *__sizeloc);
+CELIX_EI_DEFINE(open_memstream, FILE *)
+FILE *__wrap_open_memstream (char **__bufloc, size_t *__sizeloc) {
+    errno = EMFILE;
+    CELIX_EI_IMPL(open_memstream);
+    errno = 0;
+    return __real_open_memstream(__bufloc, __sizeloc);
+}
+
 }

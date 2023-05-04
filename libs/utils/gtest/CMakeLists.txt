@@ -85,8 +85,9 @@ if (LINKER_WRAP_SUPPORTED)
             src/FileUtilsErrorInjectionTestSuite.cc
             src/ConvertUtilsErrorInjectionTestSuite.cc
             src/IpUtilsErrorInjectionTestSuite.cc
+            src/ArrayListErrorInjectionTestSuite.cc
             src/ErrErrorInjectionTestSuite.cc
-            )
+    )
     target_link_libraries(test_utils_with_ei PRIVATE
             Celix::zip_ei Celix::stdio_ei Celix::stat_ei Celix::fts_ei Celix::utils_obj Celix::utils_ei
             Celix::ifaddrs_ei Celix::threads_ei Celix::malloc_ei
