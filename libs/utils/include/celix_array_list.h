@@ -249,81 +249,90 @@ size_t celix_arrayList_getSize(const celix_array_list_t *list, int index);
  *
  * @param map The array list.
  * @param value The pointer value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_add(celix_array_list_t *list, void* value);
+celix_status_t celix_arrayList_add(celix_array_list_t *list, void* value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The int value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addInt(celix_array_list_t *list, int value);
+celix_status_t celix_arrayList_addInt(celix_array_list_t *list, int value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The long value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addLong(celix_array_list_t *list, long value);
+celix_status_t celix_arrayList_addLong(celix_array_list_t *list, long value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The unsigned int value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addUInt(celix_array_list_t *list, unsigned int value);
+celix_status_t celix_arrayList_addUInt(celix_array_list_t *list, unsigned int value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The unsigned long value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addULong(celix_array_list_t *list, unsigned long value);
+celix_status_t celix_arrayList_addULong(celix_array_list_t *list, unsigned long value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The float value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addFloat(celix_array_list_t *list, float value);
+celix_status_t celix_arrayList_addFloat(celix_array_list_t *list, float value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The double value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addDouble(celix_array_list_t *list, double value);
+celix_status_t celix_arrayList_addDouble(celix_array_list_t *list, double value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The bool value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addBool(celix_array_list_t *list, bool value);
+celix_status_t celix_arrayList_addBool(celix_array_list_t *list, bool value);
 
 /**
  * @brief add pointer entry to the back of the array list.
  *
  * @param map The array list.
  * @param value The size_t value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
-void celix_arrayList_addSize(celix_array_list_t *list, size_t value);
+celix_status_t celix_arrayList_addSize(celix_array_list_t *list, size_t value);
 
 /**
  * @brief Returns the index of the provided entry, if found.

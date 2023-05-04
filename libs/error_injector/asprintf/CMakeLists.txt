@@ -20,5 +20,7 @@ add_library(asprintf_ei STATIC src/asprintf_ei.cc)
 target_include_directories(asprintf_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
 target_link_libraries(asprintf_ei PUBLIC Celix::error_injector)
 # It plays nicely with address sanitizer this way.
-target_link_options(asprintf_ei INTERFACE LINKER:--wrap,asprintf)
+target_link_options(asprintf_ei INTERFACE
+        LINKER:--wrap,vasprintf
+        LINKER:--wrap,asprintf)
 add_library(Celix::asprintf_ei ALIAS asprintf_ei)
