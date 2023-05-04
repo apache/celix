@@ -25,6 +25,8 @@
 #include "dfi_utils.h"
 #include "celix_version.h"
 #include "celix_constants.h"
+#include "celix_long_hash_map.h"
+#include "celix_build_assert.h"
 #include <sys/queue.h>
 #include <stdbool.h>
 #include <assert.h>
@@ -37,7 +39,7 @@ struct rsa_json_rpc_proxy_factory {
     celix_service_factory_t factory;
     long factorySvcId;
     endpoint_description_t *endpointDesc;
-    hash_map_t *proxies;//Key:requestingBundle, Value: rsa_json_rpc_proxy_t *. Work on the celix_event thread , so locks are not required
+    celix_long_hash_map_t *proxies;//Key:requestingBundle, Value: rsa_json_rpc_proxy_t *. Work on the celix_event thread , so locks are not required
     remote_interceptors_handler_t *interceptorsHandler;
     rsa_request_sender_tracker_t *reqSenderTracker;
     long reqSenderSvcId;
@@ -90,7 +92,8 @@ celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_
     proxyFactory->reqSenderSvcId = requestSenderSvcId;
     proxyFactory->serialProtoId = serialProtoId;
 
-    proxyFactory->proxies = hashMap_create(NULL, NULL, NULL, NULL);
+    CELIX_BUILD_ASSERT(sizeof(long) >= sizeof(void*));//The celix_long_hash_map uses the long as key, but the key is a pointer, so long should be at least as big as void*.
+    proxyFactory->proxies = celix_longHashMap_create();
     assert(proxyFactory->proxies != NULL);
 
     proxyFactory->endpointDesc = endpointDescription_clone(endpointDesc);
@@ -114,7 +117,7 @@ celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_
 proxy_svc_fac_err:
     // props has been freed by framework
     endpointDescription_destroy(proxyFactory->endpointDesc);
-    hashMap_destroy(proxyFactory->proxies, false, false);
+    celix_longHashMap_destroy(proxyFactory->proxies);
     free(proxyFactory);
     return status;
 }
@@ -133,8 +136,8 @@ static void rsaJsonRpcProxy_unregisterFacSvcDone(void *data) {
     assert(data);
     rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)data;
     endpointDescription_destroy(proxyFactory->endpointDesc);
-    assert(hashMap_isEmpty(proxyFactory->proxies));
-    hashMap_destroy(proxyFactory->proxies, false, false);
+    assert(celix_longHashMap_size(proxyFactory->proxies) == 0);
+    celix_longHashMap_destroy(proxyFactory->proxies);
     free(proxyFactory);
     return;
 }
@@ -147,7 +150,7 @@ static void* rsaJsonRpcProxy_getService(void *handle, const celix_bundle_t *requ
     celix_status_t status = CELIX_SUCCESS;
     rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)handle;
 
-    rsa_json_rpc_proxy_t *proxy = hashMap_get(proxyFactory->proxies, requestingBundle);
+    rsa_json_rpc_proxy_t *proxy = celix_longHashMap_get(proxyFactory->proxies, (long)requestingBundle);
     if (proxy == NULL) {
         status = rsaJsonRpcProxy_create(proxyFactory, requestingBundle, &proxy);
         if (status != CELIX_SUCCESS) {
@@ -155,7 +158,7 @@ static void* rsaJsonRpcProxy_getService(void *handle, const celix_bundle_t *requ
                     proxyFactory->endpointDesc->serviceName, status);
             goto service_proxy_err;
         }
-        hashMap_put(proxyFactory->proxies, (void*)requestingBundle, proxy);
+        celix_longHashMap_put(proxyFactory->proxies, (long)requestingBundle, proxy);
     }
     proxy->useCnt += 1;
 
@@ -171,11 +174,11 @@ static void rsaJsonRpcProxy_ungetService(void *handle, const celix_bundle_t *req
     assert(requestingBundle != NULL);
     assert(svcProperties != NULL);
     rsa_json_rpc_proxy_factory_t *proxyFactory = (rsa_json_rpc_proxy_factory_t *)handle;
-    rsa_json_rpc_proxy_t *proxy = hashMap_get(proxyFactory->proxies, requestingBundle);
+    rsa_json_rpc_proxy_t *proxy = celix_longHashMap_get(proxyFactory->proxies, (long)requestingBundle);
     if (proxy != NULL) {
         proxy->useCnt -= 1;
         if (proxy->useCnt == 0) {
-            (void)hashMap_remove(proxyFactory->proxies, requestingBundle);
+            (void)celix_longHashMap_remove(proxyFactory->proxies, (long)requestingBundle);
             rsaJsonRpcProxy_destroy(proxy);
         }
     }
