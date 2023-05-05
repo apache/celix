@@ -109,7 +109,7 @@ if (ENABLE_TESTING)
     target_include_directories(utils_cut PUBLIC
             ${CMAKE_CURRENT_LIST_DIR}/include
             ${MEMSTREAM_INCLUDE_DIR}
-            ${CMAKE_BINARY_DIR}/celix/gen/includes/utils>
+            ${CMAKE_BINARY_DIR}/celix/gen/includes/utils
             src include_deprecated
             )
     target_link_libraries(utils_cut PUBLIC ${UTILS_PUBLIC_DEPS} ${UTILS_PRIVATE_DEPS})
