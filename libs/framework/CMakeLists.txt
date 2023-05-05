@@ -35,8 +35,9 @@ set(FRAMEWORK_SRC
         src/celix_bundle_state.c
         src/celix_framework_utils.c
         src/celix_module_private.h)
-add_library(framework SHARED ${FRAMEWORK_SRC})
 set(FRAMEWORK_DEPS libuuid::libuuid CURL::libcurl ZLIB::ZLIB ${CMAKE_DL_LIBS})
+
+add_library(framework SHARED ${FRAMEWORK_SRC})
 
 set_target_properties(framework
         PROPERTIES
