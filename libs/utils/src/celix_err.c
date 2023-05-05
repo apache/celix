@@ -156,3 +156,12 @@ void celix_err_pushf(const char* format, ...) {
     va_end(argsCopy);
     va_end(args);
 }
+
+void celix_err_printErrors(FILE* stream, const char* prefix, const char* postfix) {
+    const char* errMsg;
+    const char* pre = prefix == NULL ? "" : prefix;
+    const char* post = postfix == NULL ? "\n" : postfix;
+    while (errMsg = celix_err_popLastError(), errMsg != NULL) {
+        fprintf(stream, "%s%s%s", pre, errMsg, post);
+    }
+}

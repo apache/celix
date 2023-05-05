@@ -20,6 +20,8 @@
 #ifndef CELIX_CELIX_ERR_H
 #define CELIX_CELIX_ERR_H
 
+#include <stdio.h>
+
 #include "celix_err_constants.h"
 #include "celix_utils_export.h"
 
@@ -42,8 +44,7 @@ extern "C" {
  *
  * @retval NULL if no error message is available.
  */
-CELIX_UTILS_EXPORT
-const char* celix_err_popLastError();
+CELIX_UTILS_EXPORT const char* celix_err_popLastError();
 
 /**
  * @brief Push an formatted error message to the thread specific storage rcm errors.
@@ -51,30 +52,35 @@ const char* celix_err_popLastError();
  * @param format The format string for the error message.
  * @param ... The arguments for the format string.
  */
-CELIX_UTILS_EXPORT
-void celix_err_pushf(const char* format, ...) __attribute__((format(printf, 1, 2)));
+CELIX_UTILS_EXPORT void celix_err_pushf(const char* format, ...) __attribute__((format(printf, 1, 2)));
 
 /**
  * @brief Push an error message to the thread specific storage rcm errors.
  *
  * @param msg The error message to push.
  */
-CELIX_UTILS_EXPORT
-void celix_err_push(const char* msg);
+CELIX_UTILS_EXPORT void celix_err_push(const char* msg);
 
 /**
  * @brief Returns the number of error messages from the current thread.
  *
  * @return The number of error messages for the current thread.
  */
-CELIX_UTILS_EXPORT
-int celix_err_getErrorCount();
+CELIX_UTILS_EXPORT int celix_err_getErrorCount();
 
 /**
  * @brief Resets the error message for the current thread.
  */
-CELIX_UTILS_EXPORT
-void celix_err_resetErrors();
+CELIX_UTILS_EXPORT void celix_err_resetErrors();
+
+/**
+ * @brief Prints error messages from the current thread to the provided stream.
+ *
+ * @param[in] stream The stream to print the error messages to.
+ * @param[in] prefix The prefix to print before each error message. If NULL no prefix is printed.
+ * @param[in] postfix The postfix to print after each error message. If NULL, a '\n' postfix is printed.
+ */
+CELIX_UTILS_EXPORT void celix_err_printErrors(FILE* stream, const char* prefix, const char* postfix);
 
 #ifdef __cplusplus
 }

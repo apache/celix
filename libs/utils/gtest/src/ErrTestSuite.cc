@@ -74,3 +74,29 @@ TEST_F(ErrTestSuite, EdgeCaseTest) {
     }
     EXPECT_EQ(0, celix_err_getErrorCount());
 }
+
+TEST_F(ErrTestSuite, PrintErrorsTest) {
+    EXPECT_EQ(0, celix_err_getErrorCount());
+    celix_err_push("error message1");
+    celix_err_push("error message2");
+    EXPECT_EQ(2, celix_err_getErrorCount());
+
+    char* buf = NULL;
+    size_t bufLen = 0;
+    FILE* stream = open_memstream(&buf, &bufLen);
+    celix_err_printErrors(stream, nullptr, nullptr);
+    fclose(stream);
+    EXPECT_STREQ("error message2\nerror message1\n", buf);
+    EXPECT_EQ(0, celix_err_getErrorCount());
+
+
+    celix_err_push("error message1");
+    celix_err_push("error message2");
+    buf = NULL;
+    bufLen = 0;
+    stream = open_memstream(&buf, &bufLen);
+    celix_err_printErrors(stream, "PRE", "POST");
+    fclose(stream);
+    EXPECT_STREQ("PREerror message2POSTPREerror message1POST", buf);
+    EXPECT_EQ(0, celix_err_getErrorCount());
+}
