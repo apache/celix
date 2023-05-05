@@ -28,7 +28,6 @@
 #define array_list_t_PRIVATE_H_
 
 #include "array_list.h"
-#include "celix_utils_export.h"
 
 struct celix_array_list {
     celix_array_list_entry_t* elementData;

@@ -27,17 +27,15 @@
 #ifndef HASH_MAP_PRIVATE_H_
 #define HASH_MAP_PRIVATE_H_
 
-#include "celix_utils_export.h"
 #include "hash_map.h"
 
-//note functions used for testing, so export is needed
-CELIX_UTILS_EXPORT  unsigned int hashMap_hashCode(const void* toHash);
-CELIX_UTILS_EXPORT  int hashMap_equals(const void* toCompare, const void* compare);
+unsigned int hashMap_hashCode(const void* toHash);
+int hashMap_equals(const void* toCompare, const void* compare);
 
-CELIX_UTILS_EXPORT void hashMap_resize(hash_map_pt map, int newCapacity);
-CELIX_UTILS_EXPORT hash_map_entry_pt hashMap_removeEntryForKey(hash_map_pt map, const void* key);
-CELIX_UTILS_EXPORT  hash_map_entry_pt hashMap_removeMapping(hash_map_pt map, hash_map_entry_pt entry);
-CELIX_UTILS_EXPORT void hashMap_addEntry(hash_map_pt map, int hash, void* key, void* value, int bucketIndex);
+void hashMap_resize(hash_map_pt map, int newCapacity);
+hash_map_entry_pt hashMap_removeEntryForKey(hash_map_pt map, const void* key);
+hash_map_entry_pt hashMap_removeMapping(hash_map_pt map, hash_map_entry_pt entry);
+void hashMap_addEntry(hash_map_pt map, int hash, void* key, void* value, int bucketIndex);
 
 struct hashMapEntry {
     void* key;

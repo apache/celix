@@ -50,8 +50,6 @@ struct bundleRevision {
  * Creates a new revision for the given inputFile or location.
  * The location parameter is used to identify the bundle.
  *
- * @note Symbol exported for testing purposes.
- *
  * @param fw The Celix framework where to create the bundle revision.
  * @param root The root for this revision in which the bundle is extracted and state is stored.
  * @param location The location associated with the revision.
@@ -62,7 +60,7 @@ struct bundleRevision {
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_revision</code> failed.
  */
-CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, manifest_pt manifest, bundle_revision_pt *bundle_revision);
+celix_status_t celix_bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, manifest_pt manifest, bundle_revision_pt *bundle_revision);
 
 bundle_revision_t* bundleRevision_revise(const bundle_revision_t* revision, const char* updatedBundleUrl);
 
