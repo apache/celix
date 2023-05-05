@@ -83,6 +83,7 @@ class CelixConan(ConanFile):
         "celix_cxx17": [True, False],
         "celix_install_deprecated_api": [True, False],
         "celix_use_compression_for_bundle_zips": [True, False],
+        "celix_err_buffer_size": "ANY",
     }
     default_options = {
         "enable_testing": False,
@@ -130,6 +131,7 @@ class CelixConan(ConanFile):
         "celix_cxx17": True,
         "celix_install_deprecated_api": False,
         "celix_use_compression_for_bundle_zips": True,
+        "celix_err_buffer_size": 512,
     }
     _cmake = None
 
@@ -251,6 +253,7 @@ class CelixConan(ConanFile):
             self._cmake.definitions[opt.upper()] = self.options.get_safe(opt, False)
         if self.options.enable_testing:
             self._enable_error_injectors()
+        self._cmake.definitions["CELIX_ERR_BUFFER_SIZE"] = self.options.celix_err_buffer_size
         self._cmake.definitions["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":
