@@ -139,6 +139,13 @@ class CelixConan(ConanFile):
         if self.settings.os != "Linux" and self.settings.os != "Macos":
             raise ConanInvalidConfiguration("Celix is only supported for Linux/Macos")
 
+        try:
+            val = int(self.options.celix_err_buffer_size)
+            if val <= 0:
+                raise ValueError
+        except ValueError:
+            raise ConanInvalidConfiguration("celix_err_buffer_size must be a positive number")
+
     def package_id(self):
         del self.info.options.build_all
         # the followings are not installed
@@ -239,6 +246,7 @@ class CelixConan(ConanFile):
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
+        self.validate()
 
     def _enable_error_injectors(self):
         for k in self.deps_cpp_info.deps:
