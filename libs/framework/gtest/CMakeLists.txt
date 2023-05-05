@@ -59,7 +59,9 @@ set(CELIX_FRAMEWORK_TEST_SOURCES
 )
 
 add_executable(test_framework ${CELIX_FRAMEWORK_TEST_SOURCES})
-target_link_libraries(test_framework PRIVATE Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
+# framework_cut makes error injector work
+# Celix::framework makes bundles loadable (otherwise we need an copy of framework in each bundle, celix_bundle_private_libs)
+target_link_libraries(test_framework PRIVATE framework_cut Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
 celix_deprecated_framework_headers(test_framework)
 
 
@@ -130,12 +132,12 @@ if (LINKER_WRAP_SUPPORTED)
             SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
             SIMPLE_CXX_BUNDLE_LOC="${SIMPLE_CXX_BUNDLE_LOC}"
     )
-    target_include_directories(test_framework_with_ei PRIVATE ../src)
     add_celix_bundle_dependencies(test_framework_with_ei simple_test_bundle1 simple_cxx_bundle)
     celix_target_embedded_bundles(test_framework_with_ei simple_test_bundle1)
     celix_deprecated_utils_headers(test_framework_with_ei)
     target_link_libraries(test_framework_with_ei PRIVATE
-            Celix::framework_obj
+            framework_cut
+            Celix::framework
             Celix::malloc_ei
             Celix::utils_ei
             Celix::asprintf_ei
@@ -154,7 +156,7 @@ if (ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11)
     add_executable(test_dep_man_with_cxx11
             src/DependencyManagerTestSuite.cc
             )
-    target_link_libraries(test_dep_man_with_cxx11 PRIVATE Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
+    target_link_libraries(test_dep_man_with_cxx11 PRIVATE framework_cut Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
     target_compile_definitions(test_dep_man_with_cxx11 PRIVATE
             SIMPLE_CXX_DEP_MAN_BUNDLE_LOC="${SIMPLE_CXX_DEP_MAN_BUNDLE_LOC}"
             )
@@ -173,7 +175,7 @@ if (ENABLE_TESTING_FOR_CXX14)
     set(CMAKE_CXX_STANDARD 14)
 
     add_executable(test_framework_with_cxx14 ${CELIX_FRAMEWORK_TEST_SOURCES})
-    target_link_libraries(test_framework_with_cxx14 PRIVATE Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
+    target_link_libraries(test_framework_with_cxx14 PRIVATE framework_cut Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
     celix_deprecated_utils_headers(test_framework_with_cxx14)
     celix_deprecated_framework_headers(test_framework_with_cxx14)
     add_celix_bundle_dependencies(test_framework_with_cxx14

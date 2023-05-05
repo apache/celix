@@ -24,7 +24,9 @@
 extern "C" {
 #include "celix_libloader.h"
 }
+#include "celix_module_private.h"
 #include "celix_properties.h"
+#include "celix_utils_ei.h"
 #include "dlfcn_ei.h"
 
 class CelixBundleContextBundlesWithErrorTestSuite : public ::testing::Test {
@@ -46,6 +48,7 @@ public:
     ~CelixBundleContextBundlesWithErrorTestSuite() override {
         celix_frameworkFactory_destroyFramework(fw);
         celix_ei_expect_dlopen(nullptr, 0, nullptr);
+        celix_ei_expect_celix_utils_writeOrCreateString(nullptr, 0, nullptr);
     }
 
     CelixBundleContextBundlesWithErrorTestSuite(CelixBundleContextBundlesWithErrorTestSuite&&) = delete;
@@ -68,6 +71,18 @@ TEST_F(CelixBundleContextBundlesWithErrorTestSuite, activatorLoadErrorAbortBundl
 
 TEST_F(CelixBundleContextBundlesWithErrorTestSuite, privateLibraryLoadErrorAbortBundleResolution) {
     celix_ei_expect_dlopen(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 2);
+    long bndId = celix_bundleContext_installBundle(ctx, SIMPLE_CXX_BUNDLE_LOC, true);
+    ASSERT_TRUE(bndId > 0); //bundle is installed, but not started
+
+    bool called = celix_bundleContext_useBundle(ctx, bndId, nullptr, [](void */*handle*/, const celix_bundle_t *bnd) {
+        auto state = celix_bundle_getState(bnd);
+        ASSERT_EQ(state, CELIX_BUNDLE_STATE_INSTALLED);
+    });
+    ASSERT_TRUE(called);
+}
+
+TEST_F(CelixBundleContextBundlesWithErrorTestSuite, failedToGetLibraryPath) {
+    celix_ei_expect_celix_utils_writeOrCreateString((void *)celix_module_loadLibraries, 2, nullptr);
     long bndId = celix_bundleContext_installBundle(ctx, SIMPLE_CXX_BUNDLE_LOC, true);
     ASSERT_TRUE(bndId > 0); //bundle is installed, but not started
 

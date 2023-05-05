@@ -22,7 +22,6 @@
 
 #include "bundle.h"
 #include "celix_bundle.h"
-#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,12 +55,10 @@ celix_bundle_createFromArchive(celix_framework_t *framework, bundle_archive_pt a
 /**
  * @brief Get the bundle archive.
  *
- * @note Symbol export is needed for unit tests.
- *
  * @param[in] bundle The bundle.
  * @return The bundle archive.
  */
-CELIX_FRAMEWORK_EXPORT bundle_archive_t *celix_bundle_getArchive(const celix_bundle_t *bundle);
+bundle_archive_t *celix_bundle_getArchive(const celix_bundle_t *bundle);
 
 /**
  * Destroys the bundle.
