@@ -82,7 +82,7 @@ TEST_F(CelixBundleContextBundlesWithErrorTestSuite, privateLibraryLoadErrorAbort
 }
 
 TEST_F(CelixBundleContextBundlesWithErrorTestSuite, failedToGetLibraryPath) {
-    celix_ei_expect_celix_utils_writeOrCreateString((void *)celix_framework_installBundle, 8, nullptr, 2);
+    celix_ei_expect_celix_utils_writeOrCreateString((void *)celix_module_loadLibraries, 2, nullptr);
     long bndId = celix_bundleContext_installBundle(ctx, SIMPLE_CXX_BUNDLE_LOC, true);
     ASSERT_TRUE(bndId > 0); //bundle is installed, but not started
 

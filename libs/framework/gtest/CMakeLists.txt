@@ -59,7 +59,7 @@ set(CELIX_FRAMEWORK_TEST_SOURCES
 )
 
 add_executable(test_framework ${CELIX_FRAMEWORK_TEST_SOURCES})
-target_link_libraries(test_framework PRIVATE Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
+target_link_libraries(test_framework PRIVATE framework_cut CURL::libcurl GTest::gtest GTest::gtest_main)
 celix_deprecated_framework_headers(test_framework)
 
 
@@ -130,12 +130,11 @@ if (LINKER_WRAP_SUPPORTED)
             SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
             SIMPLE_CXX_BUNDLE_LOC="${SIMPLE_CXX_BUNDLE_LOC}"
     )
-    target_include_directories(test_framework_with_ei PRIVATE ../src ../include_deprecated)
     add_celix_bundle_dependencies(test_framework_with_ei simple_test_bundle1 simple_cxx_bundle)
     celix_target_embedded_bundles(test_framework_with_ei simple_test_bundle1)
     celix_deprecated_utils_headers(test_framework_with_ei)
     target_link_libraries(test_framework_with_ei PRIVATE
-            Celix::framework_obj
+            framework_cut
             Celix::malloc_ei
             Celix::utils_ei
             Celix::asprintf_ei
