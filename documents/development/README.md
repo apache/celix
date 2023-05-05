@@ -34,7 +34,7 @@ conventions.
 
 - Use `camelCase` for variable names.
 - Use descriptive names for variables.
-- Use `celix_` prefix for global variables.
+- Use `celix_` prefix or `celix::` (sub)namespace for global variables.
 - Asterisk `*` should be placed on the variable type name.
 
 ### C Structures
@@ -46,11 +46,10 @@ conventions.
 
 ### C Functions
 
-- Use `camelCase` for function names.
 - Use descriptive names for functions.
-- Use `celix_` prefix.
+- Use a `celix_` prefix.
 - Use a `_<obj>_` camelCase infix for the object/module name.
-- Use a postfix camelCase for the function name.
+- Use a postfix `camelCase` for the function name.
 - Asterisk `*` should be placed on the variable type name.
 - Use verb as function names when a function has a side effect.
 - Use nouns or getter/setter as function names when a function does not have a side effect.
@@ -69,7 +68,7 @@ Examples:
 
 ### C Enums
 
-- Use `camelCase` for enum type names.
+- Use `snake_case` for enum type names.
 - Use a `celix_` prefix for enum type names.
 - Use `SNAKE_CASE` for enum value names.
 - Use a `CELIX_` prefix for enum value names.
@@ -77,11 +76,10 @@ Examples:
 
 Example:
 ```c
-enum celix_bundleState {
-    CELIX_BUNDLE_STATE_UNKNOWN =        0x00000000,
-    CELIX_BUNDLE_STATE_UNINSTALLED =    0x00000001
-};
-typedef enum celix_bundleState celix_bundle_state_e;
+typedef enum celix_hash_map_key_type {
+    CELIX_HASH_MAP_STRING_KEY,
+    CELIX_HASH_MAP_LONG_KEY
+} celix_hash_map_key_type_e;
 ```
 
 ### Macros
@@ -100,44 +98,43 @@ typedef enum celix_bundleState celix_bundle_state_e;
 - Google test files should be placed in a `gtest` directory with its own `CMakeLists.txt` file and `src` directory.
 - Use `celix_` prefix for header file names.
 - Use a header guard.
-- Use a C++ "extern C" block.
+- Use a C++ "extern C" block in headers file to ensure C headers are usable in C++.
 
 ### C Libraries
 
-- Target name should be `snake_case`.
+- Target names should be `snake_case`.
 - There should be `celix::` prefixed aliases for the library.
 - C Shared libraries should configure an output name with a `celix_` prefix.
 
 ### C Services
 
 - Service headers should be made available through a CMake INTERFACE header-only api/spi library (i.e. `celix::shell_api`)
-- C service should be C struct, where the first member is the service handle (`void*`) and the rest of the members are
+- C service should be C struct, where the first member is the service handle (`void* handle;`) and the rest of the members are
   function pointers.
-- The first argument of a service function should be the service handle (`void*`).
+- The first argument of the service functions should be the service handle.
 - If memory allocation is needed or another error can occur in a service function, ensure that the return value can
   be used to check for errors. This can be done by:
   - Returning a `celix_status_t` and if needed using an out parameter.
-  - Returning a NULL pointer if the function returns a pointer.
+  - Returning a NULL pointer if the function returns a pointer type.
   - Returning a boolean value, where `true` indicates success and `false` indicates failure.
 - In the same header as the C service struct, there should be defines for the service name and version.
-- The service macro name should be all caps `SNAKE_CASE` and should be prefixed with `CELIX_`.
-- The service macro version should be all caps `SNAKE_CASE` and should be prefixed with `CELIX_`.
-- The value of the service macro name should be the service struct (so without a `_t` postfix
-- The value of the service macro version should be the version of the service.
+- The service name macro  should be all caps `SNAKE_CASE`, prefixed with `CELIX_` and postfixed with `_NAME`.
+- The service version macro should be all caps `SNAKE_CASE`, prefixed with `CELIX_` and postfixed with `_VERSION`.
+- The value of the service name macro should be the service struct (so without a `_t` postfix
+- The value of the service version macro should be the version of the service.
 
 Example:
 ```c
 //celix_foo.h
-
 #include "celix_errno.h"
 
-#define CELIX_FOO_SERVICE_NAME celix_foo_service
-#define CELIX_FOO_SERVICE_VERSION 1.0.0
+#define CELIX_FOO_NAME "celix_foo"
+#define CELIX_FOO_VERSION 1.0.0
 
-typedef struct celix_foo_service {
+typedef struct celix_foo {
     void* handle;
-    celix_status_t (*doFoo)(void* handle);
-} celix_foo_service_t;
+    celix_status_t (*doFoo)(void* handle, char** outMsg);
+} celix_foo_t;
 ```
 
 ### C Bundles
@@ -174,7 +171,7 @@ add_library(celix::my_bundle ALIAS my_bundle)
 ### C++ Functions
 
 - Use `camelCase` for function names.
-- If a function is part of a class, it should be part of a `celix::` namespace or sub `celix::` namespace.
+- If a function is not part of a class/struct, it should be part of a `celix::` namespace or sub `celix::` namespace.
 - Asterisk `*` should be placed on the variable type name.
 - Use verb as function names when a function has a side effect.
 - Use nouns or getter/setter as function names when a function does not have a side effect.
@@ -198,8 +195,9 @@ namespace celix {
 ### C++ Enums
 
 - Use `CamelCase` (starting with a capital) for enum types names.
-- For `enum class`, Use `SNAKE_CASE` for enum values without a celix/class prefix. Note that for values names
-  no prefix is required because enum class values are scoped.
+- Use `enum class` instead of `enum`.
+- Use `SNAKE_CASE` for enum values without a celix/class prefix. Note that for enum values no prefix is required 
+  because enum class values are scoped.
 
 Example:
 ```c++
@@ -245,7 +243,7 @@ namespace celix {
 - Add a 'I' prefix to the service interface name.
 - Place service classes in a `celix::` namespace or sub `celix::` namespace.
 - Add a `static constexpr const char * const NAME` to the service class, for the service name.
-- Add a `static constexpr const char * const SERVICE_VERSION` to the service class, for the service version.
+- Add a `static constexpr const char * const VERSION` to the service class, for the service version.
 
 ### C++ Bundles
 
