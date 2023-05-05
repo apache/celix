@@ -17,6 +17,7 @@
  *  under the License.
  */
 #include <celix_bundle_activator.h>
+#include <celix_framework.h>
 #include <celix_log_helper.h>
 #include <stdio.h>
 
