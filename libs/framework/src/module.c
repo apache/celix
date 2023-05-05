@@ -17,6 +17,7 @@
  * under the License.
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -409,7 +410,7 @@ static celix_status_t celix_module_loadLibraryForManifestEntry(celix_module_t* m
 
     if (!path) {
         fw_logCode(module->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create full library path");
-        return status;
+        return errno;
     }
 
     status = celix_module_loadLibrary(module, path, handle);

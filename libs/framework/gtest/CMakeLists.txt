@@ -130,7 +130,7 @@ if (LINKER_WRAP_SUPPORTED)
             SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
             SIMPLE_CXX_BUNDLE_LOC="${SIMPLE_CXX_BUNDLE_LOC}"
     )
-    target_include_directories(test_framework_with_ei PRIVATE ../src)
+    target_include_directories(test_framework_with_ei PRIVATE ../src ../include_deprecated)
     add_celix_bundle_dependencies(test_framework_with_ei simple_test_bundle1 simple_cxx_bundle)
     celix_target_embedded_bundles(test_framework_with_ei simple_test_bundle1)
     celix_deprecated_utils_headers(test_framework_with_ei)
