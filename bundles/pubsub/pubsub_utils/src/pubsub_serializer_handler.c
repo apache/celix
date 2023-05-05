@@ -30,6 +30,7 @@
 #include "celix_constants.h"
 #include "celix_threads.h"
 #include "celix_utils.h"
+#include "hash_map.h"
 
 #define L_DEBUG(...) \
     celix_logHelper_debug(handler->logHelper, __VA_ARGS__)
