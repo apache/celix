@@ -284,7 +284,7 @@ add_library(celix::MyBundle ALIAS MyBundle)
 ## Comments and Documentation
 
 - Use Doxygen for code documentation.
-- Write comments that explain the purpose of the code, focusing on the "why" rather than the "how."
+- Write comments that explain the purpose of the code, focusing on the "why" rather than the "how".
 - Apply doxygen documentation to all public API's.
 - Use the javadoc style for doxygen documentation.
 - Use `@` instead of `\` for doxygen commands.
@@ -294,11 +294,12 @@ add_library(celix::MyBundle ALIAS MyBundle)
 ## Formatting and Indentation
 
 - Use spaces for indentation and use 4 spaces per indentation level.
-- Keep line lengths under 80 characters, if possible, to enhance readability.
+- Keep line lengths under 120 characters, if possible, to enhance readability.
 - Place opening braces on the same line as the control statement or function definition,  
   and closing braces on a new line aligned with the control statement or function definition.
 - Use a single space before and after operators and around assignment statements.
-
+- For new files apply clang-format using the project .clang-format file.
+  - Note that this can be done using a plugin for your IDE or by running `clang-format -i <file>`.
 
 ## Control Structures
 
@@ -317,7 +318,14 @@ add_library(celix::MyBundle ALIAS MyBundle)
 - Limit functions to a single responsibility or purpose, following the Single Responsibility Principle (SRP).
 - Keep functions short and focused, aiming for a length of fewer than 50 lines.
 - Ensure const correctness.
-  
+- For C functions with a lot of different parameters, consider using an options struct.
+  - An options struct combined with a EMPTY_OPTIONS macro can be used to provide default values and a such
+    options struct can be updated backwards compatible.
+  - An options struct ensure that a lot of parameters can be configured, but also direct set on creation.
+- For C++ functions with a lot of different parameters, consider using a builder pattern.
+  - A builder pattern can be updated backwards compatible.
+  - A builder pattern ensure that a lot of parameters can be configured, but also direct set on construction.
+ 
 ## Error Handling and Logging
 
 - For C++, throw an exception when an error occurs.
@@ -348,6 +356,30 @@ add_library(celix::MyBundle ALIAS MyBundle)
 - Test bundles by installing them in a programmatically created framework.
 - Test bundles by using their provided services and used services.
 - In most cases, libraries can be tested using a white box approach and bundles can be tested using a black box approach.
+- For libraries that are tested with the Apache Celix error_injector libraries or require access to private/hidden 
+  functions, a separate "code under test" static library should be created. 
+  This library should not hide its symbols and should have a `_cut` postfix.
+
+ 
+```cmake
+set(MY_LIB_SOURCES ...)
+set(MY_LIB_PUBLIC_LIBS ...)
+set(MY_LIB_PRIVATE_LIBS ...)
+add_library(my_lib SHARED ${MY_LIB_SOURCES})
+target_link_libraries(my_lib PUBLIC ${MY_LIB_PUBLIC_LIBS} PRIVATE ${MY_LIB_PRIVATE_LIBS})
+celix_target_hide_symbols(my_lib)
+...
+
+if (ENABLE_TESTING)
+    add_library(my_lib_cut STATIC ${MY_LIB_SOURCES})
+    target_link_libraries(my_lib PUBLIC ${MY_LIB_PUBLIC_LIBS} PRIVATE ${MY_LIB_PRIVATE_LIBS})
+    target_include_directories(my_lib PUBLIC
+        ${CMAKE_CURRENT_LIST_DIR}/src
+        ${CMAKE_CURRENT_LIST_DIR}/include
+        ${CMAKE_BINARY_DIR}/celix/gen/includes/my_lib
+    )
+endif ()
+```
 
 ## Supported C and C++ Standards
 
@@ -389,10 +421,10 @@ set_target_properties(my_lib
 
 ## Symbol Visibility
 
-- C libraries should configure symbol visibility.
-- C++ header-only (INTERFACE) libraries should not configure symbol visibility.
-- C++ shared libraries (lib with C++ sources), should configure symbol visibility.
-- C and C++ Bundles should configure symbol visibility.
+- Header-only (INTERFACE) libraries should not configure symbol visibility.
+- Shared and static libraries should configure symbol visibility.
+  - Static library meant to be linked as PRIVATE should hide symbols.
+- Bundles should configure symbol visibility (this is done by default).
 
 ### Configuring Symbol Visibility for C/C++ Libraries
 
@@ -404,49 +436,49 @@ The `C_VISIBILITY_PRESET` and `CXX_VISIBILITY_PRESET` target properties can be u
 of symbols in C and C++ code. The `VISIBILITY_INLINES_HIDDEN` property can be used to configure the visibility of 
 inline functions. The `VISIBILITY_INLINES_HIDDEN` property is only supported for C++ code.
 
-The default visibility should be configured to hidden and symbols should be explictly exported using the export
+The default visibility should be configured to hidden and symbols should be explicitly exported using the export
 marcos from a generated export header. The export header can be generated using the CMake function 
 `generate_export_header`. Every library should have its own export header. 
 
 For shared libraries, this can be done using the following CMake code:
 
-TODO test if this works for C/C++ shared libraries
 ```cmake
 add_library(my_lib SHARED
         src/my_lib.c)
 set_target_properties(my_lib PROPERTIES
         C_VISIBILITY_PRESET hidden
         #For C++ shared libraries also configure CXX_VISIBILITY_PRESET
-        #CXX_VISIBILITY_PRESET hidden
+        CXX_VISIBILITY_PRESET hidden
         VISIBILITY_INLINES_HIDDEN ON
         OUTPUT_NAME celix_my_lib)
 target_include_directories(my_lib
-        PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include/$<TARGET_PROPERTY:my_lib,OUTPUT_NAME>>
-        PRIVATE
+      PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/my_lib>
+        $<INSTALL_INTERFACE:include/celix_my_lib>
+      PRIVATE
         src)
 
 #generate export header
 generate_export_header(my_lib
         BASE_NAME "CELIX_MY_LIB"
         EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/my_lib/celix_my_lib_export.h")
-target_include_directories(my_bundle PRIVATE $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/my_lib>)
 
 #install
 install(TARGETS my_lib EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/$<TARGET_PROPERTY:my_lib,OUTPUT_NAME>)
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_my_lib)
 install(DIRECTORY include/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/$<TARGET_PROPERTY:my_lib,OUTPUT_NAME>)
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_my_lib)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/celix/gen/includes/my_lib/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/$<TARGET_PROPERTY:my_lib,OUTPUT_NAME>)
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_my_lib)
 ```
 
-For bundle, symbol visibility can be configured the same way as a shared library or the `HIDE_SYMBOLS` option in the
-`add_celix_bundle` function can be used.
+### Configuring Symbol Visibility for C/C++ Bundles
 
-The `HIDE_SYMBOLS` option in the `add_celix_bundle` will add a linker script that hides all symbols, expect for 
-the bundle activator symbols. Note the bundle activator symbols are needed to start and stop the bundle.
+For bundle, symbol visibility will default be configured to hidden. This can be default by providing
+the `DO_NOT_CONFIGURE_SYMBOL_VISIBILITY` option to the CMake `add_celix_bundle` function.
+
+If symbol visibility is not configured in the `add_celix_bundle`, symbol visibility should be configured the same
+way as a shared library.
 
 ```cmake
 add_celix_bundle(my_bundle
