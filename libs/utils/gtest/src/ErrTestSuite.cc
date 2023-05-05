@@ -88,6 +88,7 @@ TEST_F(ErrTestSuite, PrintErrorsTest) {
     fclose(stream);
     EXPECT_STREQ("error message2\nerror message1\n", buf);
     EXPECT_EQ(0, celix_err_getErrorCount());
+    free(buf);
 
 
     celix_err_push("error message1");
@@ -99,4 +100,5 @@ TEST_F(ErrTestSuite, PrintErrorsTest) {
     fclose(stream);
     EXPECT_STREQ("PREerror message2POSTPREerror message1POST", buf);
     EXPECT_EQ(0, celix_err_getErrorCount());
+    free(buf);
 }
