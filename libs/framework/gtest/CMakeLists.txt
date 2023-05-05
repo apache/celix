@@ -153,7 +153,7 @@ if (ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11)
     add_executable(test_dep_man_with_cxx11
             src/DependencyManagerTestSuite.cc
             )
-    target_link_libraries(test_dep_man_with_cxx11 PRIVATE Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
+    target_link_libraries(test_dep_man_with_cxx11 PRIVATE framework_cut CURL::libcurl GTest::gtest GTest::gtest_main)
     target_compile_definitions(test_dep_man_with_cxx11 PRIVATE
             SIMPLE_CXX_DEP_MAN_BUNDLE_LOC="${SIMPLE_CXX_DEP_MAN_BUNDLE_LOC}"
             )
@@ -172,7 +172,7 @@ if (ENABLE_TESTING_FOR_CXX14)
     set(CMAKE_CXX_STANDARD 14)
 
     add_executable(test_framework_with_cxx14 ${CELIX_FRAMEWORK_TEST_SOURCES})
-    target_link_libraries(test_framework_with_cxx14 PRIVATE Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
+    target_link_libraries(test_framework_with_cxx14 PRIVATE framework_cut CURL::libcurl GTest::gtest GTest::gtest_main)
     celix_deprecated_utils_headers(test_framework_with_cxx14)
     celix_deprecated_framework_headers(test_framework_with_cxx14)
     add_celix_bundle_dependencies(test_framework_with_cxx14
