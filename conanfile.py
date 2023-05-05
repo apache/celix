@@ -83,6 +83,7 @@ class CelixConan(ConanFile):
         "celix_cxx17": [True, False],
         "celix_install_deprecated_api": [True, False],
         "celix_use_compression_for_bundle_zips": [True, False],
+        "celix_err_buffer_size": "ANY",
     }
     default_options = {
         "enable_testing": False,
@@ -130,12 +131,20 @@ class CelixConan(ConanFile):
         "celix_cxx17": True,
         "celix_install_deprecated_api": False,
         "celix_use_compression_for_bundle_zips": True,
+        "celix_err_buffer_size": 512,
     }
     _cmake = None
 
     def validate(self):
         if self.settings.os != "Linux" and self.settings.os != "Macos":
             raise ConanInvalidConfiguration("Celix is only supported for Linux/Macos")
+
+        try:
+            val = int(self.options.celix_err_buffer_size)
+            if val <= 0:
+                raise ValueError
+        except ValueError:
+            raise ConanInvalidConfiguration("celix_err_buffer_size must be a positive number")
 
     def package_id(self):
         del self.info.options.build_all
@@ -237,6 +246,7 @@ class CelixConan(ConanFile):
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
+        self.validate()
 
     def _enable_error_injectors(self):
         for k in self.deps_cpp_info.deps:
@@ -251,6 +261,7 @@ class CelixConan(ConanFile):
             self._cmake.definitions[opt.upper()] = self.options.get_safe(opt, False)
         if self.options.enable_testing:
             self._enable_error_injectors()
+        self._cmake.definitions["CELIX_ERR_BUFFER_SIZE"] = self.options.celix_err_buffer_size
         self._cmake.definitions["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":

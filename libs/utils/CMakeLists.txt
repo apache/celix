@@ -44,6 +44,8 @@ set(UTILS_SRC
         src/celix_hash_map.c
         src/celix_file_utils.c
         src/celix_convert_utils.c
+        src/celix_errno.c
+        src/celix_err.c
         ${MEMSTREAM_SOURCES}
         )
 set(UTILS_PRIVATE_DEPS libzip::libzip)
@@ -86,6 +88,10 @@ generate_export_header(utils
         BASE_NAME "CELIX_UTILS"
         EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/utils/celix_utils_export.h")
 target_include_directories(utils PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/utils>)
+
+#Configure celix_err_constant header file
+set(CELIX_ERR_BUFFER_SIZE 512 CACHE STRING "The size of the thread-specific buffer used for library error messages")
+configure_file("${CMAKE_CURRENT_LIST_DIR}/src/celix_err_constants.h.in" "${CMAKE_BINARY_DIR}/celix/gen/includes/utils/celix_err_constants.h" @ONLY)
 
 install(TARGETS utils EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils)
@@ -133,10 +139,6 @@ if (ENABLE_TESTING)
         target_include_directories(array_list_test PRIVATE include_deprecated)
         target_link_libraries(array_list_test utils_cut CppUTest::CppUTest pthread)
 
-        add_executable(celix_threads_test private/test/celix_threads_test.cpp)
-        target_include_directories(celix_threads_test PRIVATE include_deprecated)
-        target_link_libraries(celix_threads_test utils_cut CppUTest::CppUTest ${CppUTest_EXT_LIBRARIES} pthread)
-
         add_executable(linked_list_test private/test/linked_list_test.cpp)
         target_include_directories(linked_list_test PRIVATE include_deprecated)
         target_link_libraries(linked_list_test utils_cut CppUTest::CppUTest pthread)
@@ -165,7 +167,6 @@ if (ENABLE_TESTING)
 
         add_test(NAME run_array_list_test COMMAND array_list_test)
         add_test(NAME run_hash_map_test COMMAND hash_map_test)
-        add_test(NAME run_celix_threads_test COMMAND celix_threads_test)
         add_test(NAME run_linked_list_test COMMAND linked_list_test)
         add_test(NAME run_properties_test COMMAND properties_test)
         add_test(NAME run_ip_utils_test COMMAND ip_utils_test)
@@ -173,7 +174,6 @@ if (ENABLE_TESTING)
 
         setup_target_for_coverage(array_list_test)
         setup_target_for_coverage(hash_map_test)
-        setup_target_for_coverage(celix_threads_test)
         setup_target_for_coverage(linked_list_test)
         setup_target_for_coverage(properties_test)
         setup_target_for_coverage(ip_utils_test)

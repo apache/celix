@@ -33,12 +33,16 @@
  * - R : Reserved. It should be set to 0.
  * - Facility (11 bits): An indicator of the source of the error.
  * - Code (16bits): The remainder of error code.
+ *
+ * Errors from errno, such as ENOMEM, can be utilized as celix_status_t values and fall under to the
+ * CELIX_FACILITY_CERRNO (0) facility.
  */
 #ifndef CELIX_ERRNO_H_
 #define CELIX_ERRNO_H_
 
 #include <stddef.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #include "celix_utils_export.h"
 
@@ -64,7 +68,7 @@ extern "C" {
  * \{
  */
 
-struct celix_status {
+struct __attribute__((deprecated("use celix_status_t instead"))) celix_status {
     int code;
     char *error;
 };
@@ -78,6 +82,23 @@ typedef int celix_status_t;
  * Return a readable string for the given status code.
  */
 CELIX_UTILS_EXPORT const char* celix_strerror(celix_status_t status);
+
+/**
+ * @brief Check if a provided celix_status_t is from a specific facility.
+ * @param[in] code The status code to check.
+ * @param[in] fac The facility to check against.
+ * @return true if the status is from the provided facility, false otherwise.
+ */
+CELIX_UTILS_EXPORT bool celix_utils_isStatusCodeFromFacility(celix_status_t code, int fac);
+
+
+/**
+ * @brief Check if a provided celix_status_t is a customer error code.
+ * @param[in] code The status code to check.
+ * @return true if the status is a customer error code, false otherwise.
+ */
+CELIX_UTILS_EXPORT bool celix_utils_isCustomerStatusCode(celix_status_t code);
+
 
 /*!
  * Customer error code mask
@@ -180,9 +201,9 @@ CELIX_UTILS_EXPORT const char* celix_strerror(celix_status_t status);
 
 /*!
  * @name C error map to celix
+ * @deprecated It is recommended to use the C errno errors directly (e.g. ENOMEM instead of CELIX_ENOMEM)
  * @{
  */
-
 #define CELIX_ENOMEM                    CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,ENOMEM)
 
 

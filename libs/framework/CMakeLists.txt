@@ -21,7 +21,7 @@ find_package(CURL REQUIRED)
 
 set(FRAMEWORK_SRC
         src/attribute.c src/bundle.c src/bundle_archive.c src/celix_bundle_cache.c
-        src/bundle_context.c src/bundle_revision.c src/celix_errorcodes.c
+        src/bundle_context.c src/bundle_revision.c
         src/framework.c src/manifest.c
         src/manifest_parser.c src/module.c
         src/requirement.c src/capability.c src/resolver.c src/wire.c

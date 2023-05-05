@@ -24,5 +24,10 @@ target_link_options(threads_ei INTERFACE
         LINKER:--wrap,celixThreadMutex_create
         LINKER:--wrap,celixThread_create
         LINKER:--wrap,celixThreadCondition_init
-        LINKER:--wrap,celixThreadRwlock_create)
+        LINKER:--wrap,celixThreadRwlock_create
+        LINKER:--wrap,celix_tss_create
+        LINKER:--wrap,celix_tss_delete
+        LINKER:--wrap,celix_tss_set
+        LINKER:--wrap,celix_tss_get
+)
 add_library(Celix::threads_ei ALIAS threads_ei)
