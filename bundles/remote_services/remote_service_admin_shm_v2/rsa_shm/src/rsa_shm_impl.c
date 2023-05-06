@@ -293,14 +293,11 @@ static bool rsaShm_isConfigTypeMatched(celix_properties_t *properties) {
 
         token = strtok_r(ecCopy, delimiter, &savePtr);
         while (token != NULL) {
-            char *configType = celix_utils_trim(token);
-            if (configType != NULL && strncmp(configType, RSA_SHM_CONFIGURATION_TYPE, 1024) == 0) {
+            char *configType = celix_utils_trimInPlace(token);
+            if (strncmp(configType, RSA_SHM_CONFIGURATION_TYPE, 1024) == 0) {
                 matched = true;
-                free(configType);
                 break;
             }
-            free(configType);
-
             token = strtok_r(NULL, delimiter, &savePtr);
         }
 
@@ -657,17 +654,13 @@ celix_status_t rsaShm_importService(rsa_shm_t *admin, endpoint_description_t *en
 
         token = strtok_r(ecCopy, delimiter, &savePtr);
         while (token != NULL) {
-            char *trimmedToken = celix_utils_trim(token);
-            if (trimmedToken != NULL && strcmp(trimmedToken, RSA_SHM_CONFIGURATION_TYPE) == 0) {
+            char *trimmedToken = celix_utils_trimInPlace(token);
+            if (strcmp(trimmedToken, RSA_SHM_CONFIGURATION_TYPE) == 0) {
                 importService = true;
-                free(trimmedToken);
                 break;
             }
-            free(trimmedToken);
-
             token = strtok_r(NULL, delimiter, &savePtr);
         }
-
         free(ecCopy);
     } else {
         celix_logHelper_warning(admin->logHelper, "Mandatory %s element missing from endpoint description", OSGI_RSA_SERVICE_IMPORTED_CONFIGS);
