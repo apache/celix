@@ -381,37 +381,26 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
             char *provided_save_ptr = NULL;
             char *interface = strtok_r(provided, ",", &provided_save_ptr);
             while (interface != NULL) {
-                interface = celix_utils_trim(interface);
-                if (interface != NULL) {
-                    celix_arrayList_add(interfaces, interface);
-                }
+                celix_arrayList_add(interfaces, celix_utils_trimInPlace(interface));
                 interface = strtok_r(NULL, ",", &provided_save_ptr);
             }
         } else {
             char *provided_save_ptr = NULL;
             char *pinterface = strtok_r(provided, ",", &provided_save_ptr);
             while (pinterface != NULL) {
-                pinterface = celix_utils_trim(pinterface);
-                if (pinterface != NULL) {
-                    celix_arrayList_add(proInterfaces, pinterface);
-                }
+                celix_arrayList_add(proInterfaces, celix_utils_trimInPlace(pinterface));
                 pinterface = strtok_r(NULL, ",", &provided_save_ptr);
             }
 
             char *exports_save_ptr = NULL;
             char *einterface = strtok_r(exports, ",", &exports_save_ptr);
             while (einterface != NULL) {
-                einterface = celix_utils_trim(einterface);
-                bool matched = false;
-                for (int i = 0; einterface != NULL && i < celix_arrayList_size(proInterfaces); ++i) {
+                einterface = celix_utils_trimInPlace(einterface);
+                for (int i = 0; i < celix_arrayList_size(proInterfaces); ++i) {
                     if (strcmp(celix_arrayList_get(proInterfaces, i), einterface) == 0) {
                         celix_arrayList_add(interfaces, einterface);
-                        matched = true;
                         break;
                     }
-                }
-                if (!matched) {
-                    free(einterface);
                 }
                 einterface = strtok_r(NULL, ",", &exports_save_ptr);
             }
@@ -447,13 +436,7 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
             celix_arrayList_destroy(registrations);
             registrations = NULL;
         }
-        for (int i = 0; i < celix_arrayList_size(interfaces); ++i) {
-            free(celix_arrayList_get(interfaces, i));
-        }
         celix_arrayList_destroy(interfaces);
-        for (int i = 0; i < celix_arrayList_size(proInterfaces); ++i) {
-            free(celix_arrayList_get(proInterfaces, i));
-        }
         celix_arrayList_destroy(proInterfaces);
         free(exports);
         free(provided);
