@@ -296,19 +296,22 @@ add_library(celix::MyBundle ALIAS MyBundle)
 - Place opening braces on the same line as the control statement or function definition,  
   and closing braces on a new line aligned with the control statement or function definition.
 - Use a single space before and after operators and around assignment statements.
+- Add a space after control keywords (`if`, `for`, `while`, etc.) that are followed by a parenthesis.
+- Always use braces ({ }) for control structures, even for single-statement blocks, to prevent errors.
+- Add a space after control keywords (`else`, `do`, etc) that are followed by a brace.
+- Do not add a space after the function name and the opening parenthesis.
 - For new files apply clang-format using the project .clang-format file.
   - Note that this can be done using a plugin for your IDE or by running `clang-format -i <file>`.
 
 ## Control Structures
 
-- Always use braces ({ }) for control structures, even for single-statement blocks, to prevent errors.
 - Use `if`, `else if`, and `else` statements to handle multiple conditions.
 - Use `switch` statements for multiple conditions with a default case.
 - Use `while` statements for loops that may not execute.
 - Use `do`/`while` statements for loops that must execute at least once.
 - Use `for` statements for loops with a known number of iterations.
 - The use of `goto` is not allowed, except for error handling.
-- For C, try to prevent deeply nested control structures and prefer early returns or `goto` statements.
+- For C, try to prevent deeply nested control structures and prefer early returns or error handling `goto` statements.
   - To prevent deeply nested control structures, the `CELIX_DO_IF` and `CELIX_GOTO_IF_ERR` macros can also be used.
 
 ## Functions and Methods
@@ -491,6 +494,33 @@ add_celix_bundle(my_bundle
 add_library(celix::my_bundle ALIAS my_bundle)
 ```
 
+## Branch naming
+
+- Prefix feature branches with `feature/`, hotfix branches with `hotfix/`, bugfix branches with `bugfix/` 
+  and release branches with `release/`.
+- If you are working on an issue, prefix the branch name with the issue number. E.g., `feature/1234-add-feature`.
+- Hotfix branches are for urgent fixes that need to be applied as soon as possible.
+- Use short and descriptive branch names.
+
+## Commit Messages
+    
+- Utilize the imperative mood when writing commit messages (e.g., "Add feature" instead of "Adds feature" 
+  or "Added feature"). This style aligns with git's auto-generated messages for merge commits or revert actions.
+- Ensure that commit messages are descriptive and provide meaningful context. 
+- Keep the first line of the commit message concise, ideally under 50 characters. 
+  This summary line serves as a quick overview of the change and should be easy to read in git logs. 
+- If more context is needed, separate the summary line from the body with a blank line. 
+  The body can provide additional details, explanations, or reasoning behind the changes. 
+  Aim to keep each line of the commit message body wrapped at around 72 characters for optimal readability.
+- Use bullet points, numbered lists, or other formatting conventions when listing multiple changes or points in the 
+  commit message body to improve readability.
+- When applicable, reference related issues, bug reports, or pull requests in the commit message body to 
+  provide additional context and establish connections between the commit and the larger project.
+  - If your commit fixes, closes, or resolves an issue, use one of these keywords followed by the issue number 
+    (e.g., "fixes #42", "closes #42", or "resolves #42"). 
+  - If you want to reference an issue without closing it, simply mention the issue number 
+    (e.g., "related to #42" or "#42").
+
 ## Benchmarking
 
 - When needed, use benchmarking to measure performance.
@@ -501,9 +531,9 @@ add_library(celix::my_bundle ALIAS my_bundle)
 - New code should be reviewed through a pull request and no direct commits on the master branch are allowed.
   - At least 1 reviewer should review the code.
 - Hotfix pull request can be merged first and reviewed later, the rest is reviewed first and merged later.
-- Unit tests should be written for all code. 
-- Code coverage should be measured and should be at least 95% for new code.
-- For existing code, code coverage should be measured and should not decrease.
+- Unit tests should be written for all new code. 
+- Code coverage should be measured and strive for a minimum of 95% code coverage.
+- For existing code, maintain or increase the code coverage.
 - Code should be checked for memory leaks using AddressSanitizer.
 - Coverity scan are done on the master on a regular basis. Ideally new coverity issues should be fixed as soon as 
   possible.
