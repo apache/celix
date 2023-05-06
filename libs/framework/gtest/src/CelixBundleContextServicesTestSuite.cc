@@ -33,7 +33,7 @@
 #include "celix_service_factory.h"
 #include "service_tracker_private.h"
 
-class CelixBundleContextServicesTests : public ::testing::Test {
+class CelixBundleContextServicesTestSuite : public ::testing::Test {
 public:
     celix_framework_t* fw = nullptr;
     celix_bundle_context_t *ctx = nullptr;
@@ -41,7 +41,7 @@ public:
 
     const char * const CMP_TEST_BND_LOC = "" CMP_TEST_BUNDLE_LOC "";
 
-    CelixBundleContextServicesTests() {
+    CelixBundleContextServicesTestSuite() {
         properties = celix_properties_create();
         celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
         celix_properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
@@ -53,14 +53,14 @@ public:
         ctx = framework_getContext(fw);
     }
 
-    ~CelixBundleContextServicesTests() override {
+    ~CelixBundleContextServicesTestSuite() override {
         celix_frameworkFactory_destroyFramework(fw);
     }
 
-    CelixBundleContextServicesTests(CelixBundleContextServicesTests&&) = delete;
-    CelixBundleContextServicesTests(const CelixBundleContextServicesTests&) = delete;
-    CelixBundleContextServicesTests& operator=(CelixBundleContextServicesTests&&) = delete;
-    CelixBundleContextServicesTests& operator=(const CelixBundleContextServicesTests&) = delete;
+    CelixBundleContextServicesTestSuite(CelixBundleContextServicesTestSuite&&) = delete;
+    CelixBundleContextServicesTestSuite(const CelixBundleContextServicesTestSuite&) = delete;
+    CelixBundleContextServicesTestSuite& operator=(CelixBundleContextServicesTestSuite&&) = delete;
+    CelixBundleContextServicesTestSuite& operator=(const CelixBundleContextServicesTestSuite&) = delete;
 
     void registerAndUseServiceWithCorrectVersion(bool direct) {
         struct calc {
@@ -249,7 +249,7 @@ public:
     }
 };
 
-TEST_F(CelixBundleContextServicesTests, registerService) {
+TEST_F(CelixBundleContextServicesTestSuite, RegisterServiceTest) {
     struct calc {
         int (*calc)(int);
     };
@@ -265,7 +265,7 @@ TEST_F(CelixBundleContextServicesTests, registerService) {
     celix_bundleContext_unregisterService(ctx, svcId);
 };
 
-TEST_F(CelixBundleContextServicesTests, registerServiceAsync) {
+TEST_F(CelixBundleContextServicesTestSuite, TegisterServiceAsyncTest) {
     struct calc {
         int (*calc)(int);
     };
@@ -286,21 +286,21 @@ TEST_F(CelixBundleContextServicesTests, registerServiceAsync) {
     ASSERT_LT(celix_bundleContext_findService(ctx, calcName), 0L);
 };
 
-TEST_F(CelixBundleContextServicesTests, incorrectUnregisterCalls) {
+TEST_F(CelixBundleContextServicesTestSuite, IncorrectUnregisterCallsTest) {
     celix_bundleContext_unregisterService(ctx, 1);
     celix_bundleContext_unregisterService(ctx, 2);
     celix_bundleContext_unregisterService(ctx, -1);
     celix_bundleContext_unregisterService(ctx, -2);
 };
 
-TEST_F(CelixBundleContextServicesTests, incorrectAsyncUnregisterCalls) {
+TEST_F(CelixBundleContextServicesTestSuite, IncorrectAsyncUnregisterCallsTset) {
     celix_bundleContext_unregisterServiceAsync(ctx, 1, nullptr, nullptr);
     celix_bundleContext_unregisterServiceAsync(ctx, 2, nullptr, nullptr);
     celix_bundleContext_unregisterServiceAsync(ctx, -1, nullptr, nullptr);
     celix_bundleContext_unregisterServiceAsync(ctx, -2, nullptr, nullptr);
 };
 
-TEST_F(CelixBundleContextServicesTests, UseServicesWithoutName) {
+TEST_F(CelixBundleContextServicesTestSuite, UseServicesWithoutNameTest) {
     struct calc {
         int (*calc)(int);
     };
@@ -353,7 +353,7 @@ TEST_F(CelixBundleContextServicesTests, UseServicesWithoutName) {
     celix_bundleContext_unregisterService(ctx, svcId1);
 }
 
-TEST_F(CelixBundleContextServicesTests, registerMultipleAndUseServices) {
+TEST_F(CelixBundleContextServicesTestSuite, TegisterMultipleAndUseServicesTest) {
     struct calc {
         int (*calc)(int);
     };
@@ -434,7 +434,7 @@ TEST_F(CelixBundleContextServicesTests, registerMultipleAndUseServices) {
     celix_bundleContext_unregisterService(ctx, svcId2);
 };
 
-TEST_F(CelixBundleContextServicesTests, useServiceInUseCallback) {
+TEST_F(CelixBundleContextServicesTestSuite, UseServiceInUseCallbackTest) {
     struct calc {
         int (*calc)(int);
     };
@@ -477,7 +477,7 @@ TEST_F(CelixBundleContextServicesTests, useServiceInUseCallback) {
     celix_bundleContext_unregisterService(ctx, svcId3);
 }
 
-TEST_F(CelixBundleContextServicesTests, registerAndUseService) {
+TEST_F(CelixBundleContextServicesTestSuite, TegisterAndUseServiceTest) {
     struct calc {
         int (*calc)(int);
     };
@@ -516,39 +516,39 @@ TEST_F(CelixBundleContextServicesTests, registerAndUseService) {
     celix_bundleContext_unregisterService(ctx, svcId);
 };
 
-TEST_F(CelixBundleContextServicesTests, registerAndUseServiceWithTimeout) {
+TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceWithTimeoutTest) {
     registerAndUseServiceWithTimeout(false);
 }
 
-TEST_F(CelixBundleContextServicesTests, registerAndUseServiceDirectWithTimeout) {
+TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceDirectWithTimeoutTest) {
     registerAndUseServiceWithTimeout(true);
 }
 
-TEST_F(CelixBundleContextServicesTests, registerAsyncAndUseServiceWithTimeout) {
+TEST_F(CelixBundleContextServicesTestSuite, RegisterAsyncAndUseServiceWithTimeoutTest) {
     registerAsyncAndUseServiceWithTimeout(false);
 }
 
-TEST_F(CelixBundleContextServicesTests, registerAsyncAndUseServiceDirectWithTimeout) {
+TEST_F(CelixBundleContextServicesTestSuite, RegisterAsyncAndUseServiceDirectWithTimeoutTest) {
     registerAsyncAndUseServiceWithTimeout(true);
 }
 
-TEST_F(CelixBundleContextServicesTests, registerAndUseServiceWithCorrectVersion) {
+TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceWithCorrectVersionTest) {
     registerAndUseServiceWithCorrectVersion(false);
 }
 
-TEST_F(CelixBundleContextServicesTests, registerAndUseServiceDirectWithCorrectVersion) {
+TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceDirectWithCorrectVersionTest) {
     registerAndUseServiceWithCorrectVersion(true);
 }
 
-TEST_F(CelixBundleContextServicesTests, registerAndUseServiceWithIncorrectVersion) {
+TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceWithIncorrectVersionTest) {
     registerAndUseServiceWithIncorrectVersion(false);
 }
 
-TEST_F(CelixBundleContextServicesTests, registerAndUseServiceDirectWithIncorrectVersion) {
+TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceDirectWithIncorrectVersionTest) {
     registerAndUseServiceWithIncorrectVersion(true);
 }
 
-TEST_F(CelixBundleContextServicesTests, registerAndUseWithForcedRaceCondition) {
+TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseWithForcedRaceConditionTest) {
     struct calc {
         int (*calc)(int);
     };
@@ -628,7 +628,7 @@ TEST_F(CelixBundleContextServicesTests, registerAndUseWithForcedRaceCondition) {
 };
 
 
-TEST_F(CelixBundleContextServicesTests, servicesTrackerTest) {
+TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerTest) {
     int count = 0;
     auto add = [](void *handle, void *svc) {
         ASSERT_TRUE(svc != nullptr);
@@ -660,7 +660,7 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTest) {
     celix_bundleContext_unregisterService(ctx, svcId2);
 }
 
-TEST_F(CelixBundleContextServicesTests, servicesTrackerTestAsync) {
+TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerTestAsync) {
     std::atomic<int> count {0};
     auto add = [](void *handle, void *svc) {
         ASSERT_TRUE(svc != nullptr);
@@ -697,7 +697,7 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTestAsync) {
     celix_framework_waitForEmptyEventQueue(fw);
 }
 
-TEST_F(CelixBundleContextServicesTests, servicesTrackerInvalidArgsTest) {
+TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerInvalidArgsTest) {
     long trackerId = celix_bundleContext_trackServices(nullptr, nullptr, nullptr, nullptr, nullptr);
     ASSERT_TRUE(trackerId < 0); //required ctx missing
     trackerId = celix_bundleContext_trackServices(ctx, "calc", nullptr, nullptr, nullptr);
@@ -721,7 +721,7 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerInvalidArgsTest) {
     celix_bundleContext_stopTracker(ctx, trackerId);
 }
 
-TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithAlreadyRegisteredServices) {
+TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerTestWithAlreadyRegisteredServices) {
     int count = 0;
     auto add = [](void *handle, void *svc) {
         ASSERT_TRUE(svc != nullptr);
@@ -760,7 +760,7 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithAlreadyRegistered
     celix_bundleContext_unregisterService(ctx, svcId4);
 }
 
-TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithProperties) {
+TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerTestWithProperties) {
     int count = 0;
     int count2 = 0;
     auto add = [](void *handle, void *svc, const properties_t *props) {
@@ -810,7 +810,7 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithProperties) {
     celix_bundleContext_stopTracker(ctx, trackerId);
 }
 
-TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithOwner) {
+TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerTestWithOwner) {
     int count = 0;
     auto add = [](void *handle, void *svc, const properties_t *props, const bundle_t *svcOwner) {
         ASSERT_TRUE(svc != nullptr);
@@ -849,7 +849,7 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerTestWithOwner) {
     celix_bundleContext_stopTracker(ctx, trackerId);
 }
 
-TEST_F(CelixBundleContextServicesTests, serviceTrackerWithRaceConditionTest) {
+TEST_F(CelixBundleContextServicesTestSuite, ServiceTrackerWithRaceConditionTest) {
     struct calc {
         int (*calc)(int);
     };
@@ -952,7 +952,7 @@ TEST_F(CelixBundleContextServicesTests, serviceTrackerWithRaceConditionTest) {
     celix_bundleContext_stopTracker(ctx, trackerId);
 };
 
-TEST_F(CelixBundleContextServicesTests, useServiceDoesNotBlockInEventLoop) {
+TEST_F(CelixBundleContextServicesTestSuite, UseServiceDoesNotBlockInEventLoop) {
     void *svc1 = (void*)0x100;
 
     auto set = [](void *handle, void */*svc*/) {
@@ -990,7 +990,7 @@ TEST_F(CelixBundleContextServicesTests, useServiceDoesNotBlockInEventLoop) {
     celix_bundleContext_unregisterService(ctx, svcId1);
 }
 
-TEST_F(CelixBundleContextServicesTests, servicesTrackerSetTest) {
+TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerSetTest) {
     int count = 0;
 
     void *svc1 = (void*)0x100; //no ranking
@@ -1048,7 +1048,7 @@ TEST_F(CelixBundleContextServicesTests, servicesTrackerSetTest) {
     ASSERT_EQ(4, count); //check if the set is called the expected times
 }
 
-TEST_F(CelixBundleContextServicesTests, TrackerOfAllServicesSetTest) {
+TEST_F(CelixBundleContextServicesTestSuite, TrackerOfAllServicesSetTest) {
     int count = 0;
 
     void *svc1 = (void*)0x100; //no ranking
@@ -1106,7 +1106,7 @@ TEST_F(CelixBundleContextServicesTests, TrackerOfAllServicesSetTest) {
     ASSERT_EQ(4, count); //check if the set is called the expected times
 }
 
-TEST_F(CelixBundleContextServicesTests, trackAllServices) {
+TEST_F(CelixBundleContextServicesTestSuite, TrackAllServices) {
     std::atomic<size_t> count{0};
 
     void *svc1 = (void *) 0x100; //no ranking
@@ -1138,7 +1138,7 @@ TEST_F(CelixBundleContextServicesTests, trackAllServices) {
     celix_bundleContext_stopTracker(ctx, trackerId);
 }
 
-TEST_F(CelixBundleContextServicesTests, metaTrackAllServiceTrackers) {
+TEST_F(CelixBundleContextServicesTestSuite, MetaTrackAllServiceTrackers) {
     std::atomic<size_t> count{0};
     auto add = [](void *handle, const celix_service_tracker_info_t*) {
         auto *c = (std::atomic<size_t>*)handle;
@@ -1163,7 +1163,7 @@ TEST_F(CelixBundleContextServicesTests, metaTrackAllServiceTrackers) {
     celix_bundleContext_stopTracker(ctx, trkId3);
 }
 
-TEST_F(CelixBundleContextServicesTests, metaTrackServiceTrackersFromOtherBundle) {
+TEST_F(CelixBundleContextServicesTestSuite, MetaTrackServiceTrackersFromOtherBundle) {
     long bndId = celix_bundleContext_installBundle(ctx, CMP_TEST_BND_LOC, true);
     ASSERT_TRUE(bndId >= 0);
     long bndIdInAdd = -1;
@@ -1193,7 +1193,7 @@ TEST_F(CelixBundleContextServicesTests, metaTrackServiceTrackersFromOtherBundle)
     EXPECT_EQ(bndIdInRemove, bndId);
 }
 
-TEST_F(CelixBundleContextServicesTests, serviceFactoryTest) {
+TEST_F(CelixBundleContextServicesTestSuite, ServiceFactoryTest) {
     struct calc {
         int (*calc)(int);
     };
@@ -1234,7 +1234,7 @@ TEST_F(CelixBundleContextServicesTests, serviceFactoryTest) {
 }
 
 
-TEST_F(CelixBundleContextServicesTests, asyncServiceFactoryTest) {
+TEST_F(CelixBundleContextServicesTestSuite, AsyncServiceFactoryTest) {
     struct calc {
         int (*calc)(int);
     };
@@ -1275,7 +1275,7 @@ TEST_F(CelixBundleContextServicesTests, asyncServiceFactoryTest) {
     celix_bundleContext_unregisterServiceAsync(ctx, facId, nullptr, nullptr);
 }
 
-TEST_F(CelixBundleContextServicesTests, findServicesTest) {
+TEST_F(CelixBundleContextServicesTestSuite, FindServicesTest) {
     long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x100, "example", nullptr);
     long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x100, "example", nullptr);
     long svcId3 = celix_bundleContext_registerService(ctx, (void*)0x100, "example", nullptr);
@@ -1308,7 +1308,7 @@ TEST_F(CelixBundleContextServicesTests, findServicesTest) {
     celix_bundleContext_unregisterService(ctx, svcId2);
 }
 
-TEST_F(CelixBundleContextServicesTests, trackServiceTrackerTest) {
+TEST_F(CelixBundleContextServicesTestSuite, TrackServiceTrackerTest) {
 
     int count = 0;
 
@@ -1348,7 +1348,7 @@ TEST_F(CelixBundleContextServicesTests, trackServiceTrackerTest) {
     celix_bundleContext_stopTracker(ctx, tracker4);
 }
 
-TEST_F(CelixBundleContextServicesTests, floodEventLoopTest) {
+TEST_F(CelixBundleContextServicesTestSuite, FloodEventLoopTest) {
     struct callback_data {
         std::mutex mutex{};
         std::condition_variable cond{};
@@ -1406,7 +1406,7 @@ TEST_F(CelixBundleContextServicesTests, floodEventLoopTest) {
 }
 
 
-TEST_F(CelixBundleContextServicesTests, serviceOnDemandWithAsyncRegisterTest) {
+TEST_F(CelixBundleContextServicesTestSuite, ServiceOnDemandWithAsyncRegisterTest) {
     //NOTE that even though service are registered async, they should be found by a useService call.
 
     bool called = celix_bundleContext_useService(ctx, "test", nullptr, [](void*, void*){/*nop*/});
@@ -1435,7 +1435,7 @@ TEST_F(CelixBundleContextServicesTests, serviceOnDemandWithAsyncRegisterTest) {
     celix_bundleContext_stopTracker(ctx, trkId);
 }
 
-TEST_F(CelixBundleContextServicesTests, UseServiceOnDemandDirectlyWithAsyncRegisterTest) {
+TEST_F(CelixBundleContextServicesTestSuite, UseServiceOnDemandDirectlyWithAsyncRegisterTest) {
     //NOTE that even though service are registered async, they should be found by a useService call.
 
     bool called = celix_bundleContext_useService(ctx, "test", nullptr, [](void*, void*){/*nop*/});
@@ -1466,7 +1466,7 @@ TEST_F(CelixBundleContextServicesTests, UseServiceOnDemandDirectlyWithAsyncRegis
     celix_bundleContext_stopTracker(ctx, trkId);
 }
 
-TEST_F(CelixBundleContextServicesTests, UseServicesOnDemandDirectlyWithAsyncRegisterTest) {
+TEST_F(CelixBundleContextServicesTestSuite, UseServicesOnDemandDirectlyWithAsyncRegisterTest) {
     //NOTE that even though service are registered async, they should be found by a useService call.
 
     bool called = celix_bundleContext_useService(ctx, "test", nullptr, [](void*, void*){/*nop*/});
@@ -1506,7 +1506,7 @@ TEST_F(CelixBundleContextServicesTests, UseServicesOnDemandDirectlyWithAsyncRegi
     celix_bundleContext_stopTracker(ctx, trkId1);
 }
 
-TEST_F(CelixBundleContextServicesTests, startStopServiceTrackerAsync) {
+TEST_F(CelixBundleContextServicesTestSuite, StartStopServiceTrackerAsyncTest) {
     std::atomic<int> count{0};
 
     auto cb = [](void* data) {
@@ -1527,7 +1527,7 @@ TEST_F(CelixBundleContextServicesTests, startStopServiceTrackerAsync) {
     EXPECT_EQ(2, count.load()); //1x tracker started, 1x tracker stopped
 }
 
-TEST_F(CelixBundleContextServicesTests, startStopMetaServiceTrackerAsync) {
+TEST_F(CelixBundleContextServicesTestSuite, StartStopMetaServiceTrackerAsyncTest) {
     std::atomic<int> count{0};
 
     auto cb = [](void* data) {
@@ -1545,7 +1545,7 @@ TEST_F(CelixBundleContextServicesTests, startStopMetaServiceTrackerAsync) {
     EXPECT_EQ(2, count.load()); //1x tracker started, 1x tracker stopped
 }
 
-TEST_F(CelixBundleContextServicesTests, onlyCallAsyncCallbackWithAsyncApi) {
+TEST_F(CelixBundleContextServicesTestSuite, OnlyCallAsyncCallbackWithAsyncApiTest) {
     celix_service_tracking_options_t opts{};
     opts.trackerCreatedCallback = [](void *) {
         FAIL();
@@ -1574,7 +1574,7 @@ TEST_F(CelixBundleContextServicesTests, onlyCallAsyncCallbackWithAsyncApi) {
     celix_bundleContext_stopTracker(ctx, trkId);
 }
 
-TEST_F(CelixBundleContextServicesTests, unregisterSvcBeforeAsyncRegistration) {
+TEST_F(CelixBundleContextServicesTestSuite, UnregisterSvcBeforeAsyncRegistrationTest) {
     struct callback_data {
         std::atomic<int> count{};
         celix_bundle_context_t* ctx{nullptr};
@@ -1605,7 +1605,7 @@ TEST_F(CelixBundleContextServicesTests, unregisterSvcBeforeAsyncRegistration) {
     EXPECT_EQ(0, cbData.count.load()); //note create tracker canceled -> no callback
 }
 
-TEST_F(CelixBundleContextServicesTests, stopSvcTrackerBeforeAsyncTrackerIsCreated) {
+TEST_F(CelixBundleContextServicesTestSuite, StopSvcTrackerBeforeAsyncTrackerIsCreatedTest) {
     struct callback_data {
         std::atomic<int> count{};
         celix_bundle_context_t* ctx{nullptr};
@@ -1642,7 +1642,7 @@ TEST_F(CelixBundleContextServicesTests, stopSvcTrackerBeforeAsyncTrackerIsCreate
     EXPECT_EQ(0, cbData.count.load()); //note create tracker canceled -> no callback
 }
 
-TEST_F(CelixBundleContextServicesTests, stopBundleTrackerBeforeAsyncTrackerIsCreated) {
+TEST_F(CelixBundleContextServicesTestSuite, StopBundleTrackerBeforeAsyncTrackerIsCreatedTest) {
     struct callback_data {
         std::atomic<int> count{};
         celix_bundle_context_t* ctx{nullptr};
@@ -1678,7 +1678,7 @@ TEST_F(CelixBundleContextServicesTests, stopBundleTrackerBeforeAsyncTrackerIsCre
     EXPECT_EQ(0, cbData.count.load()); //note create tracker canceled -> no callback
 }
 
-TEST_F(CelixBundleContextServicesTests, stopMetaTrackerBeforeAsyncTrackerIsCreated) {
+TEST_F(CelixBundleContextServicesTestSuite, StopMetaTrackerBeforeAsyncTrackerIsCreatedTest) {
     struct callback_data {
         std::atomic<int> count{};
         celix_bundle_context_t* ctx{nullptr};
@@ -1711,7 +1711,7 @@ TEST_F(CelixBundleContextServicesTests, stopMetaTrackerBeforeAsyncTrackerIsCreat
 }
 
 
-TEST_F(CelixBundleContextServicesTests, setServicesWithTrackerWhenMultipleRegistrationAlreadyExists) {
+TEST_F(CelixBundleContextServicesTestSuite, SetServicesWithTrackerWhenMultipleRegistrationAlreadyExistsTest) {
     void* dummySvc = (void*)0x42;
     long svcId1 = celix_bundleContext_registerService(ctx, &dummySvc, "TestService", nullptr);
     long svcId2 = celix_bundleContext_registerService(ctx, &dummySvc, "TestService", nullptr);

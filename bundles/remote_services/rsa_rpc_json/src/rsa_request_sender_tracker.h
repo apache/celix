@@ -23,13 +23,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <rsa_request_sender_service.h>
-#include <celix_types.h>
-#include <celix_errno.h>
+#include "rsa_request_sender_service.h"
+#include "celix_log_helper.h"
+#include "celix_types.h"
+#include "celix_errno.h"
 
 typedef struct rsa_request_sender_tracker rsa_request_sender_tracker_t;
 
-celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, const char *trackerName,
+celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
         rsa_request_sender_tracker_t **trackerOut);
 
 void rsaRequestSenderTracker_destroy(rsa_request_sender_tracker_t *tracker);

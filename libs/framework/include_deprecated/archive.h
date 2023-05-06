@@ -31,6 +31,7 @@
 #define ARCHIVE_H_
 
 #include "celix_errno.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,7 +47,7 @@ extern "C" {
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_FILE_IO_EXCEPTION If the zip file cannot be extracted.
  */
-celix_status_t extractBundle(const char *bundleName, const char *revisionRoot);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t extractBundle(const char *bundleName, const char *revisionRoot);
 
 #ifdef __cplusplus
 }

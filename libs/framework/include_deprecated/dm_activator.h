@@ -35,6 +35,7 @@
 #include "dm_component.h"
 #include "dm_service_dependency.h"
 #include "celix_bundle_activator.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,20 +49,20 @@ extern "C" {
  * Should be implemented by a bundle specific DM activator.
  * Should allocate and initialize a bundle specific activator struct.
  */
-celix_status_t dm_create(bundle_context_pt context, void ** userData);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t dm_create(bundle_context_pt context, void ** userData);
 
 /**
  * Should be implemented by a bundle specific DM activator.
  * Will be called after the dm_create function.
  * Can be used to specify with use of the provided dependency manager the bundle specific components.
  */
-celix_status_t dm_init(void * userData, bundle_context_pt context, celix_dependency_manager_t *manager);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t dm_init(void * userData, bundle_context_pt context, celix_dependency_manager_t *manager);
 
 /**
  * Should be implemented by a bundle specific DM activator.
  * Should deinitialize and deallocate the bundle specific activator struct.
  */
-celix_status_t dm_destroy(void * userData, bundle_context_pt context, celix_dependency_manager_t *manager);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t dm_destroy(void * userData, bundle_context_pt context, celix_dependency_manager_t *manager);
 
 #ifdef __cplusplus
 }

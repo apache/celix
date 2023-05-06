@@ -23,10 +23,9 @@
 #include "celix_service_listener.h"
 #include "array_list.h"
 #include "service_tracker_customizer.h"
-#include "framework_exports.h"
 #include "bundle_context.h"
 #include "celix_bundle_context.h"
-
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,31 +36,31 @@ typedef struct celix_serviceTracker celix_service_tracker_t;
 typedef struct celix_serviceTracker *service_tracker_pt;
 typedef struct celix_serviceTracker service_tracker_t;
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceTracker_create(celix_bundle_context_t *ctx, const char *service, service_tracker_customizer_pt customizer,
                       service_tracker_t **tracker);
 
-FRAMEWORK_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 serviceTracker_createWithFilter(celix_bundle_context_t *ctx, const char *filter, service_tracker_customizer_pt customizer,
                                 service_tracker_t **tracker);
 
-FRAMEWORK_EXPORT celix_status_t serviceTracker_open(service_tracker_t *tracker);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceTracker_open(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT celix_status_t serviceTracker_close(service_tracker_t *tracker);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceTracker_close(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT celix_status_t serviceTracker_destroy(service_tracker_t *tracker);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceTracker_destroy(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT service_reference_pt serviceTracker_getServiceReference(service_tracker_t *tracker);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT service_reference_pt serviceTracker_getServiceReference(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT celix_array_list_t *serviceTracker_getServiceReferences(service_tracker_t *tracker);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_array_list_t *serviceTracker_getServiceReferences(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT void *serviceTracker_getService(service_tracker_t *tracker);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT void *serviceTracker_getService(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT celix_array_list_t *serviceTracker_getServices(service_tracker_t *tracker);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_array_list_t *serviceTracker_getServices(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT void *serviceTracker_getServiceByReference(service_tracker_t *tracker, service_reference_pt reference);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT void *serviceTracker_getServiceByReference(service_tracker_t *tracker, service_reference_pt reference);
 
-FRAMEWORK_EXPORT size_t serviceTracker_nrOfTrackedServices(service_tracker_t *tracker);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT size_t serviceTracker_nrOfTrackedServices(service_tracker_t *tracker);
 
 
 
@@ -76,7 +75,7 @@ FRAMEWORK_EXPORT size_t serviceTracker_nrOfTrackedServices(service_tracker_t *tr
  * Creates and starts (open) a service tracker.
  * Note that is different from the serviceTracker_create function, because is also starts the service tracker
  */
-celix_service_tracker_t* celix_serviceTracker_create(
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_service_tracker_t* celix_serviceTracker_create(
         celix_bundle_context_t *ctx,
         const char *serviceName,
         const char *versionRange,
@@ -88,7 +87,7 @@ celix_service_tracker_t* celix_serviceTracker_create(
  * Creates and starts (open) a service tracker.
  * Note that is different from the serviceTracker_create function, because is also starts the service tracker
  */
-celix_service_tracker_t* celix_serviceTracker_createWithOptions(
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_service_tracker_t* celix_serviceTracker_createWithOptions(
         celix_bundle_context_t *ctx,
         const celix_service_tracking_options_t *opts
 );
@@ -98,7 +97,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
  * Stops (close) and destroys a service tracker.
  * Note that is different from the serviceTracker_destroy function, because is also stops the service tracker
  */
-void celix_serviceTracker_destroy(celix_service_tracker_t *tracker);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT void celix_serviceTracker_destroy(celix_service_tracker_t *tracker);
 
 /**
  * Use the highest ranking service of the service tracker.
@@ -110,7 +109,7 @@ void celix_serviceTracker_destroy(celix_service_tracker_t *tracker);
  *
  * @return bool     if the service if found and use has been called.
  */
-bool celix_serviceTracker_useHighestRankingService(
+CELIX_FRAMEWORK_DEPRECATED_EXPORT bool celix_serviceTracker_useHighestRankingService(
         celix_service_tracker_t *tracker,
         const char *serviceName /*sanity*/,
         double waitTimeoutInSeconds /*0 -> do not wait */,
@@ -124,7 +123,7 @@ bool celix_serviceTracker_useHighestRankingService(
  * Calls the use callback for every services found by this tracker.
  * Returns the number of called services
  */
-size_t celix_serviceTracker_useServices(
+CELIX_FRAMEWORK_DEPRECATED_EXPORT size_t celix_serviceTracker_useServices(
         service_tracker_t *tracker,
         const char* serviceName /*sanity*/,
         void *callbackHandle,

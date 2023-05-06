@@ -29,7 +29,7 @@
 
 #include "celix_api.h"
 
-class CelixBundleContextBundlesTests : public ::testing::Test {
+class CelixBundleContextBundlesTestSuite : public ::testing::Test {
 public:
     celix_framework_t* fw = nullptr;
     celix_bundle_context_t *ctx = nullptr;
@@ -43,7 +43,7 @@ public:
     const char * const TEST_BND_WITH_EXCEPTION_LOC = "" TEST_BUNDLE_WITH_EXCEPTION_LOCATION "";
     const char * const TEST_BND_UNRESOLVABLE_LOC = "" TEST_BUNDLE_UNRESOLVABLE_LOCATION "";
 
-    CelixBundleContextBundlesTests() {
+    CelixBundleContextBundlesTestSuite() {
         properties = properties_create();
         properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
         properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
@@ -53,27 +53,31 @@ public:
         ctx = framework_getContext(fw);
     }
     
-    ~CelixBundleContextBundlesTests() override {
+    ~CelixBundleContextBundlesTestSuite() override {
         celix_frameworkFactory_destroyFramework(fw);
     }
 
-    CelixBundleContextBundlesTests(CelixBundleContextBundlesTests&&) = delete;
-    CelixBundleContextBundlesTests(const CelixBundleContextBundlesTests&) = delete;
-    CelixBundleContextBundlesTests& operator=(CelixBundleContextBundlesTests&&) = delete;
-    CelixBundleContextBundlesTests& operator=(const CelixBundleContextBundlesTests&) = delete;
+    CelixBundleContextBundlesTestSuite(CelixBundleContextBundlesTestSuite&&) = delete;
+    CelixBundleContextBundlesTestSuite(const CelixBundleContextBundlesTestSuite&) = delete;
+    CelixBundleContextBundlesTestSuite& operator=(CelixBundleContextBundlesTestSuite&&) = delete;
+    CelixBundleContextBundlesTestSuite& operator=(const CelixBundleContextBundlesTestSuite&) = delete;
 };
 
-
-TEST_F(CelixBundleContextBundlesTests, StartStopTest) {
+TEST_F(CelixBundleContextBundlesTestSuite, StartStopTest) {
     //nop
 }
 
-TEST_F(CelixBundleContextBundlesTests, installABundleTest) {
+TEST_F(CelixBundleContextBundlesTestSuite, InstallABundleTest) {
     long bndId = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
     ASSERT_TRUE(bndId >= 0);
 }
 
-TEST_F(CelixBundleContextBundlesTests, installBundlesTest) {
+//TEST_F(CelixBundleContextBundlesTestSuite, InstallBundleWithBadExport) {
+//    long bndId = celix_bundleContext_installBundle(ctx, BUNDLE_WITH_BAD_EXPORT_LOCATION, true);
+//    ASSERT_TRUE(bndId >= 0);
+//}
+
+TEST_F(CelixBundleContextBundlesTestSuite, InstallBundlesTest) {
     long bndId = celix_bundleContext_installBundle(ctx, "non-existing.zip", true);
     ASSERT_TRUE(bndId < 0);
 
@@ -89,7 +93,7 @@ TEST_F(CelixBundleContextBundlesTests, installBundlesTest) {
     ASSERT_TRUE(bndId >= 0);
 }
 
-TEST_F(CelixBundleContextBundlesTests, TestIsSystemBundle) {
+TEST_F(CelixBundleContextBundlesTestSuite, TestIsSystemBundle) {
     celix_bundle_t* fwBnd = celix_framework_getFrameworkBundle(fw);
     ASSERT_TRUE(celix_bundle_isSystemBundle(fwBnd));
 
@@ -101,8 +105,8 @@ TEST_F(CelixBundleContextBundlesTests, TestIsSystemBundle) {
     EXPECT_TRUE(called);
 }
 
-TEST_F(CelixBundleContextBundlesTests, useBundlesTest) {
-    int count = 0;
+TEST_F(CelixBundleContextBundlesTestSuite, UseBundlesTest) {
+    int callbackCount = 0;
 
     auto use = [](void *handle, const bundle_t *bnd) {
         int *c = (int*)handle;
@@ -115,15 +119,22 @@ TEST_F(CelixBundleContextBundlesTests, useBundlesTest) {
         ASSERT_EQ(celix_version_getMajor(v), 1);
     };
 
-    celix_bundleContext_useBundles(ctx, &count, use);
+    celix_bundleContext_useBundles(ctx, &callbackCount, use);
 
-    count = 0;
+    callbackCount = 0;
     celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
-    celix_bundleContext_useBundles(ctx, &count, use);
-    ASSERT_EQ(1, count);
+    size_t useCount = celix_bundleContext_useBundles(ctx, &callbackCount, use);
+    EXPECT_EQ(1, callbackCount);
+    EXPECT_EQ(1, useCount);
+
+    callbackCount = 0;
+    celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false); //note installed, but not started
+    useCount = celix_bundleContext_useBundles(ctx, &callbackCount, use);
+    EXPECT_EQ(2, callbackCount);
+    EXPECT_EQ(2, useCount);
 };
 
-TEST_F(CelixBundleContextBundlesTests, installAndUninstallBundlesTest) {
+TEST_F(CelixBundleContextBundlesTestSuite, InstallAndUninstallBundlesTest) {
     //install bundles
     long bndId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
     long bndId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false);
@@ -167,11 +178,11 @@ TEST_F(CelixBundleContextBundlesTests, installAndUninstallBundlesTest) {
     ASSERT_TRUE(bndId3 == bndId6); //bundle cache -> reuse of bundle id.
 }
 
-TEST_F(CelixBundleContextBundlesTests, startBundleWithException) {
+TEST_F(CelixBundleContextBundlesTestSuite, StartBundleWithException) {
     long bndId = celix_bundleContext_installBundle(ctx, TEST_BND_WITH_EXCEPTION_LOC, true);
     ASSERT_TRUE(bndId > 0); //bundle is installed, but not started
 
-    bool called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void */*handle*/, const celix_bundle_t *bnd) {
+    bool called = celix_bundleContext_useBundle(ctx, bndId, nullptr, [](void */*handle*/, const celix_bundle_t *bnd) {
         auto state = celix_bundle_getState(bnd);
         ASSERT_EQ(state, CELIX_BUNDLE_STATE_RESOLVED);
         ASSERT_EQ(state, OSGI_FRAMEWORK_BUNDLE_RESOLVED);
@@ -179,11 +190,11 @@ TEST_F(CelixBundleContextBundlesTests, startBundleWithException) {
     ASSERT_TRUE(called);
 }
 
-TEST_F(CelixBundleContextBundlesTests, startUnresolveableBundle) {
+TEST_F(CelixBundleContextBundlesTestSuite, StartUnresolveableBundle) {
     long bndId = celix_bundleContext_installBundle(ctx, TEST_BND_UNRESOLVABLE_LOC, true);
     ASSERT_TRUE(bndId > 0); //bundle is installed, but not resolved
 
-    bool called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
+    bool called = celix_bundleContext_useBundle(ctx, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
         auto state = celix_bundle_getState(bnd);
         ASSERT_EQ(CELIX_BUNDLE_STATE_INSTALLED, state);
         ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_INSTALLED, celix_bundle_getState(bnd)); //NOTE the OSGI_ variant is equivalent
@@ -192,7 +203,7 @@ TEST_F(CelixBundleContextBundlesTests, startUnresolveableBundle) {
 
     celix_bundleContext_startBundle(ctx, bndId);
 
-   called = celix_framework_useBundle(fw, false, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
+    called = celix_bundleContext_useBundle(ctx, bndId, nullptr, [](void *, const celix_bundle_t *bnd) {
         auto state = celix_bundle_getState(bnd);
         ASSERT_EQ(CELIX_BUNDLE_STATE_INSTALLED, state);
         ASSERT_EQ(OSGI_FRAMEWORK_BUNDLE_INSTALLED, state); //NOTE the OSGI_ variant is equivalent
@@ -201,7 +212,7 @@ TEST_F(CelixBundleContextBundlesTests, startUnresolveableBundle) {
 }
 
 
-TEST_F(CelixBundleContextBundlesTests, useBundleTest) {
+TEST_F(CelixBundleContextBundlesTestSuite, UseBundleTest) {
     int count = 0;
 
     bool called = celix_bundleContext_useBundle(ctx, 0, &count, [](void *handle, const bundle_t *bnd) {
@@ -215,7 +226,7 @@ TEST_F(CelixBundleContextBundlesTests, useBundleTest) {
     ASSERT_EQ(1, count);
 };
 
-TEST_F(CelixBundleContextBundlesTests, StopStartTest) {
+TEST_F(CelixBundleContextBundlesTestSuite, StopStartTest) {
     long bndId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
     long bndId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, true);
     long bndId3 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
@@ -272,7 +283,7 @@ TEST_F(CelixBundleContextBundlesTests, StopStartTest) {
     celix_arrayList_destroy(ids);
 }
 
-TEST_F(CelixBundleContextBundlesTests, DoubleStopTest) {
+TEST_F(CelixBundleContextBundlesTestSuite, DoubleStopTest) {
     long bndId = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
     ASSERT_TRUE(bndId > 0);
     ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId));
@@ -320,7 +331,7 @@ TEST_F(CelixBundleContextBundlesTests, DoubleStopTest) {
     ASSERT_TRUE(called);
 }
 
-TEST_F(CelixBundleContextBundlesTests, trackBundlesTest) {
+TEST_F(CelixBundleContextBundlesTestSuite, TrackBundlesTest) {
     struct data {
         std::atomic<int> installedCount{0};
         std::atomic<int> startedCount{0};
@@ -402,7 +413,7 @@ TEST_F(CelixBundleContextBundlesTests, trackBundlesTest) {
 };
 
 
-TEST_F(CelixBundleContextBundlesTests, trackBundlesTestAsync) {
+TEST_F(CelixBundleContextBundlesTestSuite, TrackBundlesTestAsync) {
     struct data {
         std::atomic<int> installedCount{0};
         std::atomic<int> startedCount{0};
@@ -485,7 +496,7 @@ TEST_F(CelixBundleContextBundlesTests, trackBundlesTestAsync) {
     celix_bundleContext_waitForAsyncStopTracker(ctx, trackerId);
 };
 
-TEST_F(CelixBundleContextBundlesTests, useBundlesConcurrentTest) {
+TEST_F(CelixBundleContextBundlesTestSuite, useBundlesConcurrentTest) {
 
     struct data {
         std::mutex mutex{};
@@ -544,7 +555,7 @@ TEST_F(CelixBundleContextBundlesTests, useBundlesConcurrentTest) {
     std::cout << "uninstall thread joined" << std::endl;
 };
 
-TEST_F(CelixBundleContextBundlesTests, bundleInfoTests) {
+TEST_F(CelixBundleContextBundlesTestSuite, BundleInfoTests) {
     struct data {
         int provideCount{0};
         int requestedCount{0};
@@ -579,7 +590,7 @@ TEST_F(CelixBundleContextBundlesTests, bundleInfoTests) {
     celix_bundleContext_stopTracker(ctx, trackerId);
 }
 
-TEST_F(CelixBundleContextBundlesTests, startStopBundleTrackerAsync) {
+TEST_F(CelixBundleContextBundlesTestSuite, StartStopBundleTrackerAsync) {
     std::atomic<int> count{0};
 
     auto cb = [](void* data) {
@@ -600,7 +611,7 @@ TEST_F(CelixBundleContextBundlesTests, startStopBundleTrackerAsync) {
     EXPECT_EQ(2, count.load()); //1x tracker started, 1x tracker stopped
 }
 
-TEST_F(CelixBundleContextBundlesTests, testBundleStateToString) {
+TEST_F(CelixBundleContextBundlesTestSuite, TestBundleStateToString) {
     const char* result = celix_bundleState_getName(CELIX_BUNDLE_STATE_UNKNOWN);
     EXPECT_STREQ(result, "UNKNOWN");
 
@@ -647,7 +658,7 @@ TEST_F(CelixBundleContextBundlesTests, testBundleStateToString) {
     EXPECT_STREQ(result, "UNKNOWN");
 }
 
-class CelixBundleContextTempBundlesTests : public ::testing::Test {
+class CelixBundleContextTempBundlesTestSuite : public ::testing::Test {
 public:
     celix_framework_t* fw = nullptr;
     celix_bundle_context_t *ctx = nullptr;
@@ -655,7 +666,7 @@ public:
 
     const char * const TEST_BND1_LOC = "" SIMPLE_TEST_BUNDLE1_LOCATION "";
 
-    CelixBundleContextTempBundlesTests() {
+    CelixBundleContextTempBundlesTestSuite() {
         properties = celix_properties_create();
         celix_properties_setBool(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", true);
         celix_properties_setBool(properties, CELIX_FRAMEWORK_CACHE_USE_TMP_DIR, true);
@@ -665,17 +676,17 @@ public:
         EXPECT_NE(ctx, nullptr);
     }
 
-    ~CelixBundleContextTempBundlesTests() override {
+    ~CelixBundleContextTempBundlesTestSuite() override {
         celix_frameworkFactory_destroyFramework(fw);
     }
 
-    CelixBundleContextTempBundlesTests(CelixBundleContextTempBundlesTests&&) = delete;
-    CelixBundleContextTempBundlesTests(const CelixBundleContextTempBundlesTests&) = delete;
-    CelixBundleContextTempBundlesTests& operator=(CelixBundleContextTempBundlesTests&&) = delete;
-    CelixBundleContextTempBundlesTests& operator=(const CelixBundleContextTempBundlesTests&) = delete;
+    CelixBundleContextTempBundlesTestSuite(CelixBundleContextTempBundlesTestSuite&&) = delete;
+    CelixBundleContextTempBundlesTestSuite(const CelixBundleContextTempBundlesTestSuite&) = delete;
+    CelixBundleContextTempBundlesTestSuite& operator=(CelixBundleContextTempBundlesTestSuite&&) = delete;
+    CelixBundleContextTempBundlesTestSuite& operator=(const CelixBundleContextTempBundlesTestSuite&) = delete;
 };
 
-TEST_F(CelixBundleContextTempBundlesTests, installABundleTest) {
+TEST_F(CelixBundleContextTempBundlesTestSuite, InstallABundleTest) {
     long bndId = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
     ASSERT_TRUE(bndId >= 0);
 }

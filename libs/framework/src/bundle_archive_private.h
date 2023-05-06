@@ -41,9 +41,8 @@ extern "C" {
 
 /**
  * @brief Create bundle archive.
- *
  */
-celix_status_t bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, bundle_archive_pt *bundle_archive);
+celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, bundle_archive_pt *bundle_archive);
 
 celix_status_t bundleArchive_destroy(bundle_archive_pt archive);
 

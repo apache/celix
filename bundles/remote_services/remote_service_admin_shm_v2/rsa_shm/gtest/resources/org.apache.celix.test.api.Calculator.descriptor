@@ -1,0 +1,9 @@
+:header
+type=interface
+name=calculator
+version=1.0.0
+:annotations
+classname=org.test.Calculator
+:types
+:methods
+add(DD)D=add(#am=handle;PDD#am=pre;*D)N

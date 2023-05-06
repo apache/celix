@@ -37,63 +37,63 @@ typedef struct module celix_module_t;
 #include "version.h"
 #include "array_list.h"
 #include "bundle.h"
-#include "framework_exports.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-module_pt module_create(manifest_pt headerMap, const char *moduleId, celix_bundle_t *bundle);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT module_pt module_create(manifest_pt headerMap, const char *moduleId, celix_bundle_t *bundle);
 
-module_pt module_createFrameworkModule(celix_framework_t* fw, celix_bundle_t *bundle);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT module_pt module_createFrameworkModule(celix_framework_t* fw, celix_bundle_t *bundle);
 
-void module_destroy(module_pt module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT void module_destroy(module_pt module);
 
-FRAMEWORK_EXPORT unsigned int module_hash(void *module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT unsigned int module_hash(void *module);
 
-FRAMEWORK_EXPORT int module_equals(void *module, void *compare);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT int module_equals(void *module, void *compare);
 
-FRAMEWORK_EXPORT wire_pt module_getWire(module_pt module, const char *serviceName);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT wire_pt module_getWire(module_pt module, const char *serviceName);
 
-FRAMEWORK_EXPORT version_pt module_getVersion(module_pt module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT version_pt module_getVersion(module_pt module);
 
-FRAMEWORK_EXPORT celix_status_t module_getSymbolicName(module_pt module, const char **symbolicName);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t module_getSymbolicName(module_pt module, const char **symbolicName);
 
-FRAMEWORK_EXPORT char *module_getId(module_pt module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT char *module_getId(module_pt module);
 
-FRAMEWORK_EXPORT linked_list_pt module_getWires(module_pt module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT linked_list_pt module_getWires(module_pt module);
 
-FRAMEWORK_EXPORT void module_setWires(module_pt module, linked_list_pt wires);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT void module_setWires(module_pt module, linked_list_pt wires);
 
-FRAMEWORK_EXPORT bool module_isResolved(module_pt module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT bool module_isResolved(module_pt module);
 
-FRAMEWORK_EXPORT void module_setResolved(module_pt module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT void module_setResolved(module_pt module);
 
-FRAMEWORK_EXPORT celix_bundle_t *module_getBundle(module_pt module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_bundle_t *module_getBundle(module_pt module);
 
-FRAMEWORK_EXPORT linked_list_pt module_getRequirements(module_pt module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT linked_list_pt module_getRequirements(module_pt module);
 
-FRAMEWORK_EXPORT linked_list_pt module_getCapabilities(module_pt module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT linked_list_pt module_getCapabilities(module_pt module);
 
-FRAMEWORK_EXPORT celix_array_list_t *module_getDependentImporters(module_pt module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_array_list_t *module_getDependentImporters(module_pt module);
 
-FRAMEWORK_EXPORT void module_addDependentImporter(module_pt module, module_pt importer);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT void module_addDependentImporter(module_pt module, module_pt importer);
 
-FRAMEWORK_EXPORT void module_removeDependentImporter(module_pt module, module_pt importer);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT void module_removeDependentImporter(module_pt module, module_pt importer);
 
-FRAMEWORK_EXPORT celix_array_list_t *module_getDependentRequirers(module_pt module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_array_list_t *module_getDependentRequirers(module_pt module);
 
-FRAMEWORK_EXPORT void module_addDependentRequirer(module_pt module, module_pt requirer);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT void module_addDependentRequirer(module_pt module, module_pt requirer);
 
-FRAMEWORK_EXPORT void module_removeDependentRequirer(module_pt module, module_pt requirer);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT void module_removeDependentRequirer(module_pt module, module_pt requirer);
 
-FRAMEWORK_EXPORT celix_array_list_t *module_getDependents(module_pt module);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_array_list_t *module_getDependents(module_pt module);
 
-FRAMEWORK_EXPORT celix_status_t module_getGroup(module_pt module, const char **group);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t module_getGroup(module_pt module, const char **group);
 
-FRAMEWORK_EXPORT celix_status_t module_getName(module_pt module, const char **name);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t module_getName(module_pt module, const char **name);
 
-FRAMEWORK_EXPORT celix_status_t module_getDescription(module_pt module, const char **descriptoin);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t module_getDescription(module_pt module, const char **description);
 
 #ifdef __cplusplus
 }

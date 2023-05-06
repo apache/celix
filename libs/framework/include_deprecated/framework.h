@@ -21,29 +21,28 @@
 #define FRAMEWORK_H_
 
 #include "celix_errno.h"
-#include "framework_exports.h"
 #include "bundle.h"
 #include "properties.h"
 #include "bundle_context.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// #TODO: Move to FrameworkFactory according the OSGi Spec
-FRAMEWORK_EXPORT celix_status_t framework_create(celix_framework_t **framework, celix_properties_t *config);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t framework_create(celix_framework_t **framework, celix_properties_t *config);
 
-FRAMEWORK_EXPORT celix_status_t framework_start(celix_framework_t *framework);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t framework_start(celix_framework_t *framework);
 
-FRAMEWORK_EXPORT celix_status_t framework_stop(celix_framework_t *framework);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t framework_stop(celix_framework_t *framework);
 
-FRAMEWORK_EXPORT celix_status_t framework_destroy(celix_framework_t *framework);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t framework_destroy(celix_framework_t *framework);
 
-FRAMEWORK_EXPORT celix_status_t framework_waitForStop(celix_framework_t *framework);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t framework_waitForStop(celix_framework_t *framework);
 
-FRAMEWORK_EXPORT celix_status_t framework_getFrameworkBundle(const celix_framework_t *framework, celix_bundle_t **bundle);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t framework_getFrameworkBundle(const celix_framework_t *framework, celix_bundle_t **bundle);
 
-celix_bundle_context_t* framework_getContext(const celix_framework_t *framework);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_bundle_context_t* framework_getContext(const celix_framework_t *framework);
 
 #ifdef __cplusplus
 }

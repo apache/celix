@@ -20,6 +20,8 @@
 #ifndef CELIX_BUNDLE_STATE_H_
 #define CELIX_BUNDLE_STATE_H_
 
+#include "celix_framework_export.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,7 +51,7 @@ enum celix_bundleState {
 typedef enum celix_bundleState bundle_state_e;
 typedef enum celix_bundleState celix_bundle_state_e;
 
-const char* celix_bundleState_getName(celix_bundle_state_e state);
+CELIX_FRAMEWORK_EXPORT const char* celix_bundleState_getName(celix_bundle_state_e state);
 
 #ifdef __cplusplus
 }

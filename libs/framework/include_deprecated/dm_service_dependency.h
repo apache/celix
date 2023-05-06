@@ -34,13 +34,14 @@
 
 #include "celix_dm_info.h"
 #include "celix_dm_service_dependency.h"
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-typedef enum celix_dm_service_dependency_strategy_enum dm_service_dependency_strategy_t CELIX_DEPRECATED_ATTR;
+typedef enum celix_dm_service_dependency_strategy_enum dm_service_dependency_strategy_t;
 
 typedef int (*service_set_fpt)(void *handle, const void* service);
 typedef int (*service_add_fpt)(void *handle, const void* service);
@@ -58,7 +59,7 @@ typedef celix_status_t (*service_swap_with_ref_fpt)(void *handle, service_refere
  * Create a service dependency.
  * Caller has ownership.
  */
-celix_status_t serviceDependency_create(celix_dm_service_dependency_t **dep) CELIX_DEPRECATED_ATTR;
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_create(celix_dm_service_dependency_t **dep);
 
 /**
  * Destroys a service dependency.
@@ -67,19 +68,18 @@ celix_status_t serviceDependency_create(celix_dm_service_dependency_t **dep) CEL
  * Can only be called if the serviceDependency is disabled (note that a service dependency not added to a
  * component is disabled).
  */
-celix_status_t serviceDependency_destroy(celix_dm_service_dependency_t **dep) CELIX_DEPRECATED_ATTR;
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_destroy(celix_dm_service_dependency_t **dep);
 
 /**
  * Specify if the service dependency is required. default is false
  */
-celix_status_t serviceDependency_setRequired(celix_dm_service_dependency_t *dependency, bool required) CELIX_DEPRECATED_ATTR;
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_setRequired(celix_dm_service_dependency_t *dependency, bool required);
 
 /**
  * Specify if the service dependency should add a C language filter for this dependency if no "service.lang" part is found the in the provided filter.
  * Default is false
  */
-celix_status_t serviceDependency_setAddCLanguageFilter(celix_dm_service_dependency_t *dependency, bool addCLangFilter) CELIX_DEPRECATED_ATTR;
-
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_setAddCLanguageFilter(celix_dm_service_dependency_t *dependency, bool addCLangFilter);
 
 /**
  * Specify if the service dependency update strategy.
@@ -94,12 +94,12 @@ celix_status_t serviceDependency_setAddCLanguageFilter(celix_dm_service_dependen
  *
  * Default strategy is DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND
  */
-celix_status_t serviceDependency_setStrategy(celix_dm_service_dependency_t *dependency, celix_dm_service_dependency_strategy_t strategy) CELIX_DEPRECATED_ATTR;
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_setStrategy(celix_dm_service_dependency_t *dependency, celix_dm_service_dependency_strategy_t strategy);
 
 /**
  * Return the service dependency update strategy.
  */
-celix_status_t serviceDependency_getStrategy(celix_dm_service_dependency_t *dependency, celix_dm_service_dependency_strategy_t* strategy) CELIX_DEPRECATED_ATTR;
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_getStrategy(celix_dm_service_dependency_t *dependency, celix_dm_service_dependency_strategy_t* strategy);
 
 /**
  * Set the service name, version range and filter.
@@ -108,12 +108,12 @@ celix_status_t serviceDependency_getStrategy(celix_dm_service_dependency_t *depe
  * @param serviceVersionRange The service version range, can be a NULL pointer.
  * @param filter The (additional) filter to use (e.g. "(location=front)"). Can be a NULL pointer.
  */
-celix_status_t serviceDependency_setService(celix_dm_service_dependency_t *dependency, const char* serviceName, const char* serviceVersionRange, const char* filter) CELIX_DEPRECATED_ATTR;
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_setService(celix_dm_service_dependency_t *dependency, const char* serviceName, const char* serviceVersionRange, const char* filter);
 
 /**
  * Returns the service dependency filter.
  */
-celix_status_t serviceDependency_getFilter(celix_dm_service_dependency_t *dependency, const char** filter) CELIX_DEPRECATED_ATTR;
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_getFilter(celix_dm_service_dependency_t *dependency, const char** filter);
 
 /**
  * Set the set, add, change, remove and swap function callbacks when services specified by the service dependency
@@ -121,7 +121,7 @@ celix_status_t serviceDependency_getFilter(celix_dm_service_dependency_t *depend
  * The first argument of the callbacks will be the component implement (@see component_getImplementation)
  * The second the argument a pointer to an instance of a service struct of the specified service dependency.
  */
-celix_status_t serviceDependency_setCallbacks(celix_dm_service_dependency_t *dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap) CELIX_DEPRECATED_ATTR;
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_setCallbacks(celix_dm_service_dependency_t *dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap);
 
 #define serviceDependency_setCallbacksSafe(dep, cmpType, servType, set, add, change, remove, swap) \
 	do { \
@@ -138,18 +138,18 @@ celix_status_t serviceDependency_setCallbacks(celix_dm_service_dependency_t *dep
  * result of component_getImplementation() is used
  * This can be used in rare cases when the callbacks are actually interceptors. e.g. in the case of C++ support.
  */
-celix_status_t serviceDependency_setCallbackHandle(celix_dm_service_dependency_t *dependency, void* handle) CELIX_DEPRECATED_ATTR;
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_setCallbackHandle(celix_dm_service_dependency_t *dependency, void* handle);
 
 /**
  * Creates a service dependency info. The service dependency info struct contains information about the service dependency.
  * The caller is the owner
  */
-celix_status_t serviceDependency_getServiceDependencyInfo(celix_dm_service_dependency_t* dep, dm_service_dependency_info_t **info) CELIX_DEPRECATED_ATTR;
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t serviceDependency_getServiceDependencyInfo(celix_dm_service_dependency_t* dep, dm_service_dependency_info_t **info);
 
 /**
  * Destroy a provided service dependency info struct.
  */
-void dependency_destroyDependencyInfo(dm_service_dependency_info_t *info) CELIX_DEPRECATED_ATTR;
+CELIX_FRAMEWORK_DEPRECATED_EXPORT void dependency_destroyDependencyInfo(dm_service_dependency_info_t *info);
 
 #ifdef __cplusplus
 }

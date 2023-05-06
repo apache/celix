@@ -17,11 +17,27 @@
  * under the License.
  */
 
-#include <shm_pool.h>
+#include "shm_pool.h"
+#include "malloc_ei.h"
+#include "celix_threads_ei.h"
+#include "sys_shm_ei.h"
+#include "celix_errno.h"
 #include <gtest/gtest.h>
 
 class ShmPoolTestSuite : public ::testing::Test {
 public:
+    ShmPoolTestSuite() {
+
+    }
+
+    ~ShmPoolTestSuite() override {
+        celix_ei_expect_malloc(nullptr, 0, nullptr);
+        celix_ei_expect_celixThreadMutex_create(nullptr, 0, 0);
+        celix_ei_expect_celixThread_create(nullptr, 0, 0);
+        celix_ei_expect_celixThreadCondition_init(nullptr, 0, 0);
+        celix_ei_expect_shmget(nullptr, 0, 0);
+        celix_ei_expect_shmat(nullptr, 0, nullptr);
+    }
 };
 
 TEST_F(ShmPoolTestSuite, CreateDestroyShmPool) {
@@ -41,6 +57,52 @@ TEST_F(ShmPoolTestSuite, CreationFailedDueToInvalidArgument) {
 
     status = shmPool_create(8192, NULL);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+}
+
+TEST_F(ShmPoolTestSuite, CreateShmPoolFailed1) {
+    shm_pool_t *shmPool = nullptr;
+    celix_ei_expect_malloc((void *)&shmPool_create, 0, nullptr);
+    celix_status_t status = shmPool_create(10240, &shmPool);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+}
+
+TEST_F(ShmPoolTestSuite, CreateShmPoolFailed2) {
+    shm_pool_t *shmPool = nullptr;
+    celix_ei_expect_celixThreadMutex_create((void *)&shmPool_create, 0, CELIX_ENOMEM);
+    celix_status_t status = shmPool_create(10240, &shmPool);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+}
+
+TEST_F(ShmPoolTestSuite, CreateShmPoolFailed3) {
+    shm_pool_t *shmPool = nullptr;
+    celix_ei_expect_shmget((void *)&shmPool_create, 0, -1);
+    errno = EACCES;
+    celix_status_t status = shmPool_create(10240, &shmPool);
+    EXPECT_EQ(CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno), status);
+    errno = 0;
+}
+
+TEST_F(ShmPoolTestSuite, CreateShmPoolFailed4) {
+    shm_pool_t *shmPool = nullptr;
+    celix_ei_expect_shmat((void *)&shmPool_create, 0, nullptr);
+    errno = ENOMEM;
+    celix_status_t status = shmPool_create(10240, &shmPool);
+    EXPECT_EQ(CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno), status);
+    errno = 0;
+}
+
+TEST_F(ShmPoolTestSuite, CreateShmPoolFailed5) {
+    shm_pool_t *shmPool = nullptr;
+    celix_ei_expect_celixThreadCondition_init((void *)&shmPool_create, 0, CELIX_ENOMEM);
+    celix_status_t status = shmPool_create(10240, &shmPool);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+}
+
+TEST_F(ShmPoolTestSuite, CreateShmPoolFailed6) {
+    shm_pool_t *shmPool = nullptr;
+    celix_ei_expect_celixThread_create((void *)&shmPool_create, 0, CELIX_BUNDLE_EXCEPTION);
+    celix_status_t status = shmPool_create(10240, &shmPool);
+    EXPECT_EQ(CELIX_BUNDLE_EXCEPTION, status);
 }
 
 TEST_F(ShmPoolTestSuite, DestroyForNullPool) {

@@ -20,10 +20,9 @@
 #ifndef CELIX_FRAMEWORK_UTILS_PRIVATE_H_
 #define CELIX_FRAMEWORK_UTILS_PRIVATE_H_
 
+#include <time.h>
 
 #include "celix_framework_utils.h"
-
-#include <time.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,6 +30,7 @@ extern "C" {
 
 /**
  * @brief Checks whether the provided bundle url is newer than the provided time.
+ *
  * @param fw Celix framework (used for logging).
  * @param bundleURL The bundle url. Which must be the following:
  * - prefixed with file:// -> url is a file path.
@@ -45,6 +45,7 @@ bool celix_framework_utils_isBundleUrlNewerThan(celix_framework_t* fw, const cha
 
 /**
  * @brief extracts a bundle for the given cache.
+ *
  * @param fw Optional Celix framework (used for logging).
  *           If NULL the result of celix_frameworkLogger_globalLogger() will be used for logging.
  * @param extractPath The path to extract the bundle to.

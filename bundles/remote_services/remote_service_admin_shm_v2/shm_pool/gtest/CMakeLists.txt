@@ -15,14 +15,21 @@
 # specific language governing permissions and limitations
 # under the License.
 
+if (LINKER_WRAP_SUPPORTED)
+    add_executable(test_shm_pool
+            src/ShmPoolTestSuite.cc
+            src/ShmCacheTestSuite.cc
+    )
 
-add_executable(test_shm_pool
-        src/ShmPoolTestSuite.cc
-        src/ShmCacheTestSuite.cc
-)
+    target_link_libraries(test_shm_pool PRIVATE
+            Celix::shm_pool
+            Celix::utils
+            Celix::malloc_ei
+            Celix::threads_ei
+            Celix::sys_shm_ei
+            GTest::gtest GTest::gtest_main)
 
-target_link_libraries(test_shm_pool PRIVATE Celix::shm_pool GTest::gtest GTest::gtest_main)
-
-add_test(NAME run_test_shm_pool COMMAND test_shm_pool)
-setup_target_for_coverage(test_shm_pool SCAN_DIR ..)
+    add_test(NAME run_test_shm_pool COMMAND test_shm_pool)
+    setup_target_for_coverage(test_shm_pool SCAN_DIR ..)
+endif ()
 

@@ -53,7 +53,8 @@ celix_status_t
 celix_bundle_createFromArchive(celix_framework_t *framework, bundle_archive_pt archive, celix_bundle_t **bundleOut);
 
 /**
- * Get the bundle archive.
+ * @brief Get the bundle archive.
+ *
  * @param[in] bundle The bundle.
  * @return The bundle archive.
  */

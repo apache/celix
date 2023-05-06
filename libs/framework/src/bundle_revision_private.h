@@ -60,7 +60,7 @@ struct bundleRevision {
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_revision</code> failed.
  */
-celix_status_t bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, manifest_pt manifest, bundle_revision_pt *bundle_revision);
+celix_status_t celix_bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, manifest_pt manifest, bundle_revision_pt *bundle_revision);
 
 bundle_revision_t* bundleRevision_revise(const bundle_revision_t* revision, const char* updatedBundleUrl);
 

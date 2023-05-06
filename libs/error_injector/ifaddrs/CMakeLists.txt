@@ -14,12 +14,13 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-cosgi.auto.start.1=@RSA_RPC_BUNDLE_FILE@ @RSA_SHM_BUNDLE_FILE@ @PROVIDER_BUNDLE_FILE@ @RSA_DISCOVERY_BUNDLE_FILE@ @RSA_TOPOLOGY_MANAGER_BUNDLE_FILE@ 
-LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-org.osgi.framework.storage.clean=onFirstInit
-org.osgi.framework.storage=.cacheServer
 
-DISCOVERY_CFG_POLL_INTERVAL=1
-DISCOVERY_CFG_POLL_TIMEOUT=5
-DISCOVERY_CFG_SERVER_PORT=61002
-DISCOVERY_CFG_POLL_ENDPOINTS=http://localhost:61001/org.apache.celix.discovery.configured
+add_library(ifaddrs_ei STATIC src/ifaddrs_ei.cc)
+
+target_include_directories(ifaddrs_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(ifaddrs_ei PUBLIC Celix::error_injector)
+
+target_link_options(ifaddrs_ei INTERFACE
+        LINKER:--wrap,getifaddrs
+        )
+add_library(Celix::ifaddrs_ei ALIAS ifaddrs_ei)

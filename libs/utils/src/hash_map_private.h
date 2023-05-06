@@ -27,15 +27,14 @@
 #ifndef HASH_MAP_PRIVATE_H_
 #define HASH_MAP_PRIVATE_H_
 
-#include "exports.h"
 #include "hash_map.h"
 
-UTILS_EXPORT unsigned int hashMap_hashCode(const void* toHash);
-UTILS_EXPORT int hashMap_equals(const void* toCompare, const void* compare);
+unsigned int hashMap_hashCode(const void* toHash);
+int hashMap_equals(const void* toCompare, const void* compare);
 
 void hashMap_resize(hash_map_pt map, int newCapacity);
 hash_map_entry_pt hashMap_removeEntryForKey(hash_map_pt map, const void* key);
-UTILS_EXPORT hash_map_entry_pt hashMap_removeMapping(hash_map_pt map, hash_map_entry_pt entry);
+hash_map_entry_pt hashMap_removeMapping(hash_map_pt map, hash_map_entry_pt entry);
 void hashMap_addEntry(hash_map_pt map, int hash, void* key, void* value, int bucketIndex);
 
 struct hashMapEntry {

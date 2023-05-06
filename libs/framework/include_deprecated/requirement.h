@@ -25,19 +25,21 @@ typedef struct requirement *requirement_pt;
 #include "capability.h"
 #include "hash_map.h"
 #include "celix_version_range.h"
+#include "celix_framework_export.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement);
 
-celix_status_t requirement_destroy(requirement_pt requirement);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t requirement_destroy(requirement_pt requirement);
 
-celix_status_t requirement_getVersionRange(requirement_pt requirement, celix_version_range_t **range);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t requirement_getVersionRange(requirement_pt requirement, celix_version_range_t **range);
 
-celix_status_t requirement_getTargetName(requirement_pt requirement, const char **targetName);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t requirement_getTargetName(requirement_pt requirement, const char **targetName);
 
-celix_status_t requirement_isSatisfied(requirement_pt requirement, capability_pt capability, bool *inRange);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t requirement_isSatisfied(requirement_pt requirement, capability_pt capability, bool *inRange);
 
 #ifdef __cplusplus
 }
