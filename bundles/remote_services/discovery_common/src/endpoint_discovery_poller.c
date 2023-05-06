@@ -34,6 +34,7 @@
 
 #include "bundle_context.h"
 #include "celix_log_helper.h"
+#include "celix_utils.h"
 #include "utils.h"
 
 #include "endpoint_descriptor_reader.h"
@@ -99,7 +100,7 @@ celix_status_t endpointDiscoveryPoller_create(discovery_t *discovery, celix_bund
 	char *save_ptr = NULL;
 	char* tok = strtok_r(endpoints, sep, &save_ptr);
 	while (tok) {
-		endpointDiscoveryPoller_addDiscoveryEndpoint(*poller, utils_stringTrim(tok));
+		endpointDiscoveryPoller_addDiscoveryEndpoint(*poller, celix_utils_trimInPlace(tok));
 		tok = strtok_r(NULL, sep, &save_ptr);
 	}
 	// Clean up after ourselves...

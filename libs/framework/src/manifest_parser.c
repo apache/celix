@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include "utils.h"
+#include "celix_utils.h"
 #include "celix_constants.h"
 #include "manifest_parser.h"
 #include "capability.h"
@@ -155,7 +156,7 @@ static linked_list_pt manifestParser_parseDelimitedString(const char * value, co
 			}
 
 			if (strlen(buffer) > 0) {
-				linkedList_addElement(list, strdup(utils_stringTrim(buffer)));
+				linkedList_addElement(list, celix_utils_trim(buffer));
 			}
 		}
 	}

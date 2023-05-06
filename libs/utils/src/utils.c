@@ -152,6 +152,9 @@ static char* celix_utilsTrimInternal(char *string) {
 char* celix_utils_trim(const char* string) {
     return celix_utilsTrimInternal(celix_utils_strdup(string));
 }
+char* celix_utils_trimInPlace(char* string) {
+    return celix_utilsTrimInternal(string);
+}
 
 char* utils_stringTrim(char* string) {
     return celix_utilsTrimInternal(string);
