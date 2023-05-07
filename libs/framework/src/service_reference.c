@@ -206,7 +206,8 @@ celix_status_t serviceReference_getPropertyKeys(service_reference_pt ref, char *
         return status;
     }
 
-    *keys = malloc(celix_properties_size(props) * sizeof(**keys));
+    *size = celix_properties_size(props);
+    *keys = malloc((*size) * sizeof(**keys));
     if (!*keys) {
         return ENOMEM;
     }
