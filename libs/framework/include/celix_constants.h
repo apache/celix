@@ -188,7 +188,7 @@ extern "C" {
  * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE") specifying
  * whether to delete the cache dir on framework creation.
  *
- * If not specified "true" is used.
+ * The default value is false
  */
 #define CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE "CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE"
 
