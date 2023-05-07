@@ -67,7 +67,7 @@ struct celix_serviceTracker {
     celix_thread_cond_t  condTracked;
     celix_thread_cond_t  condUntracking;
     celix_array_list_t *trackedServices;
-    celix_array_list_t *untrackingServices;
+    size_t untrackedServiceCount;
     enum celix_service_tracker_state state;
     long currentHighestServiceId;
 };
