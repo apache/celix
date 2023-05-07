@@ -147,13 +147,6 @@ if (ENABLE_TESTING)
         target_include_directories(ip_utils_test PRIVATE include_deprecated)
         target_link_libraries(ip_utils_test CppUTest::CppUTest  utils_cut pthread)
 
-        if (LINKER_WRAP_SUPPORTED)
-            add_executable(version_ei_test private/test/version_ei_test.cc)
-            target_include_directories(version_ei_test PRIVATE include_deprecated)
-            target_link_libraries(version_ei_test CppUTest::CppUTest utils_cut Celix::malloc_ei Celix::utils_ei pthread)
-            add_test(NAME version_ei_test COMMAND version_ei_test)
-        endif ()
-
         add_test(NAME run_array_list_test COMMAND array_list_test)
         add_test(NAME run_hash_map_test COMMAND hash_map_test)
         add_test(NAME run_linked_list_test COMMAND linked_list_test)
