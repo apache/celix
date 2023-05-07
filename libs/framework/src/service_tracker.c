@@ -539,6 +539,7 @@ static celix_status_t serviceTracker_untrack(service_tracker_t* tracker, service
         serviceTracker_untrackTracked(tracker, remove, size, true);
         celixThreadMutex_lock(&tracker->mutex);
         tracker->untrackedServiceCount--;
+        celixThreadCondition_broadcast(&tracker->condUntracking);
         celixThreadMutex_unlock(&tracker->mutex);
     } else {
         //ensure no untrack is still happening (to ensure it safe to unregister service)
