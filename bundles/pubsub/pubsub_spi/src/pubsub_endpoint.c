@@ -27,16 +27,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include <uuid/uuid.h>
-#include <celix_api.h>
 #include <assert.h>
 
 #include "celix_errno.h"
 #include "celix_log.h"
-
 #include "pubsub_endpoint.h"
 #include "celix_constants.h"
-
 #include "pubsub_utils.h"
+#include "celix_bundle_context.h"
 
 
 static void pubsubEndpoint_setFields(celix_properties_t *psEp, const char* fwUUID, const char* scope, const char* topic, const char *pubsubType, const char *adminType, const char *serType, const char *protType, const celix_properties_t *topic_props);
@@ -153,8 +151,7 @@ celix_properties_t* pubsubEndpoint_createFromSubscriberSvc(bundle_context_t* ctx
 celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context_t *ctx, long bundleId, const char *filter) {
     celix_properties_t *ep = celix_properties_create();
 
-    const char* fwUUID=NULL;
-    bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, &fwUUID);
+    const char* fwUUID= celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
     assert(fwUUID != NULL);
 
     char* topic = NULL;

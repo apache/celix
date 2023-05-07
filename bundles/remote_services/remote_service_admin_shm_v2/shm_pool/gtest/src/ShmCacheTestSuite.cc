@@ -17,12 +17,25 @@
  * under the License.
  */
 
-#include <shm_cache.h>
-#include <shm_pool.h>
+#include "shm_cache.h"
+#include "shm_pool.h"
+#include "malloc_ei.h"
+#include "celix_threads_ei.h"
 #include <gtest/gtest.h>
 #include <string.h>
 
 class ShmCacheTestSuite : public ::testing::Test {
+public:
+    ShmCacheTestSuite() {
+
+    }
+
+    ~ShmCacheTestSuite() override {
+        celix_ei_expect_malloc(nullptr, 0, nullptr);
+        celix_ei_expect_celixThreadMutex_create(nullptr, 0, 0);
+        celix_ei_expect_celixThread_create(nullptr, 0, 0);
+        celix_ei_expect_celixThreadCondition_init(nullptr, 0, 0);
+    }
 protected:
     static void SetUpTestSuite() {
       if (shmPool == nullptr) {
@@ -73,6 +86,34 @@ TEST_F(ShmCacheTestSuite, DestroyForNullShmCache) {
     shmCache_destroy(nullptr);
 }
 
+TEST_F(ShmCacheTestSuite, CreateShmCacheFailed1) {
+    shm_cache_t *shmCache = nullptr;
+    celix_ei_expect_malloc((void *)&shmCache_create, 0, nullptr);
+    celix_status_t status = shmCache_create(false, &shmCache);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+}
+
+TEST_F(ShmCacheTestSuite, CreateShmCacheFailed2) {
+    shm_cache_t *shmCache = nullptr;
+    celix_ei_expect_celixThreadMutex_create((void *)&shmCache_create, 0, CELIX_ENOMEM);
+    celix_status_t status = shmCache_create(false, &shmCache);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+}
+
+TEST_F(ShmCacheTestSuite, CreateShmCacheFailed3) {
+    shm_cache_t *shmCache = nullptr;
+    celix_ei_expect_celixThreadCondition_init((void *)&shmCache_create, 0, CELIX_ENOMEM);
+    celix_status_t status = shmCache_create(false, &shmCache);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+}
+
+TEST_F(ShmCacheTestSuite, CreateShmCacheFailed4) {
+    shm_cache_t *shmCache = nullptr;
+    celix_ei_expect_celixThread_create((void *)&shmCache_create, 0, CELIX_BUNDLE_EXCEPTION);
+    celix_status_t status = shmCache_create(false, &shmCache);
+    EXPECT_EQ(CELIX_BUNDLE_EXCEPTION, status);
+}
+
 TEST_F(ShmCacheTestSuite, GetMemoryPtr) {
     shm_cache_t *shmCache = nullptr;
     celix_status_t status = shmCache_create(false, &shmCache);
@@ -100,6 +141,28 @@ TEST_F(ShmCacheTestSuite, GetMemoryPtr) {
 
     shmPool_free(shmPool, mem2);
     shmPool_free(shmPool, mem1);
+
+    shmCache_destroy(shmCache);
+}
+
+TEST_F(ShmCacheTestSuite, GetReadOnlyMemoryPtr) {
+    shm_cache_t *shmCache = nullptr;
+    celix_status_t status = shmCache_create(true, &shmCache);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    void *mem = shmPool_malloc(shmPool, 128);
+    EXPECT_TRUE(mem != nullptr);
+    ssize_t memOffset1 = shmPool_getMemoryOffset(shmPool, mem);
+    EXPECT_LT(0, memOffset1);
+    strcpy((char *)mem, (const char*)"readonly");
+
+
+    void *addr1 = shmCache_getMemoryPtr(shmCache, shmId, memOffset1);
+    EXPECT_TRUE(addr1 != nullptr);
+    EXPECT_STREQ((const char*)"readonly", (const char*)addr1);
+    shmCache_releaseMemoryPtr(shmCache, addr1);
+
+    shmPool_free(shmPool, mem);
 
     shmCache_destroy(shmCache);
 }
@@ -148,11 +211,45 @@ TEST_F(ShmCacheTestSuite, EvictInactiveShmCacheBlock) {
 
     void *addr = shmCache_getMemoryPtr(shmCache, shmId, memOffset);
     EXPECT_TRUE(addr != nullptr);
-    shmCache_releaseMemoryPtr(shmCache, addr);
+
+    shmCache_releaseMemoryPtr(shmCache, addr);//Release before shmPool destroyed
+    shmPool_free(shmPool, mem);
+    shmPool_destroy(shmPool);
+
+    sleep(5);//wait for shm heart beat check
+
+    shmCache_destroy(shmCache);
+}
+
+TEST_F(ShmCacheTestSuite, PreEvictInactiveShmCacheBlock) {
+    shm_pool_t *shmPool = nullptr;
+    celix_status_t status = shmPool_create(8192, &shmPool);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_TRUE(shmPool != nullptr);
+    int shmId = shmPool_getShmId(shmPool);
+    EXPECT_TRUE(shmId > 0);
+
+    shm_cache_t *shmCache = nullptr;
+    status = shmCache_create(false, &shmCache);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_TRUE(shmCache != nullptr);
+    shmCache_setShmPeerClosedCB(shmCache, shmPeerClosedCallback, nullptr);
+
+    void *mem = shmPool_malloc(shmPool, 128);
+    EXPECT_TRUE(mem != nullptr);
+    ssize_t memOffset = shmPool_getMemoryOffset(shmPool, mem);
+    EXPECT_LT(0, memOffset);
+
+    void *addr = shmCache_getMemoryPtr(shmCache, shmId, memOffset);
+    EXPECT_TRUE(addr != nullptr);
+
 
     shmPool_free(shmPool, mem);
     shmPool_destroy(shmPool);
-    sleep(5);// TODO mock monitonic time
+
+    sleep(5);//wait for shm heart beat check
+
+    shmCache_releaseMemoryPtr(shmCache, addr);//Release after shmPool destroyed
 
     shmCache_destroy(shmCache);
 }

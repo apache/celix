@@ -22,13 +22,11 @@
 #include <string.h>
 
 #include "shell_private.h"
-#include "bundle_activator.h"
+#include "celix_bundle_activator.h"
 #include "std_commands.h"
-#include "service_tracker.h"
 #include "celix_constants.h"
 #include "celix_shell_command.h"
 #include "std_commands.h"
-
 
 struct shell_bundle_activator {
     shell_t *shell;
@@ -42,7 +40,7 @@ struct shell_bundle_activator {
 
 typedef struct shell_bundle_activator shell_bundle_activator_t;
 
-celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr) {
+celix_status_t celix_bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr) {
 	celix_status_t status = CELIX_SUCCESS;
 
     shell_bundle_activator_t* activator = NULL;
@@ -68,14 +66,14 @@ celix_status_t bundleActivator_create(celix_bundle_context_t* ctx, void **_pptr)
 
 
     if (status != CELIX_SUCCESS) {
-        bundleActivator_destroy(activator, ctx);
+        celix_bundleActivator_destroy(activator, ctx);
     }
 
 	return status;
 }
 
-celix_status_t bundleActivator_start(void *activatorData, celix_bundle_context_t* ctx) {
-	celix_status_t status = CELIX_SUCCESS;
+celix_status_t celix_bundleActivator_start(void *activatorData, celix_bundle_context_t* ctx) {
+    celix_status_t status = CELIX_SUCCESS;
 
     shell_bundle_activator_t* activator  = (shell_bundle_activator_t*) activatorData;
 
@@ -102,17 +100,17 @@ celix_status_t bundleActivator_start(void *activatorData, celix_bundle_context_t
         activator->shellSvcId = celix_bundleContext_registerServiceWithOptions(ctx, &opts);
     }
 
-	if (status == CELIX_SUCCESS) {
-	    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-	    opts.callbackHandle = activator->shell;
-	    opts.addWithProperties = (void*) shell_addCommand;
-	    opts.removeWithProperties = (void*) shell_removeCommand;
-	    opts.filter.ignoreServiceLanguage = true;
-	    opts.filter.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;
-	    activator->trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    if (status == CELIX_SUCCESS) {
+        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+        opts.callbackHandle = activator->shell;
+        opts.addWithProperties = (void*) shell_addCommand;
+        opts.removeWithProperties = (void*) shell_removeCommand;
+        opts.filter.ignoreServiceLanguage = true;
+        opts.filter.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;
+        activator->trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+        activator->legacyTrackerId = -1L;
     }
 
-    activator->legacyTrackerId = -1L;
 #ifdef CELIX_INSTALL_DEPRECATED_API
     if (status == CELIX_SUCCESS) {
         celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
@@ -125,10 +123,10 @@ celix_status_t bundleActivator_start(void *activatorData, celix_bundle_context_t
     }
 #endif
 
-	return status;
+    return status;
 }
 
-celix_status_t bundleActivator_stop(void *activatorData, celix_bundle_context_t* ctx) {
+celix_status_t celix_bundleActivator_stop(void *activatorData, celix_bundle_context_t* ctx) {
     celix_status_t status = CELIX_SUCCESS;
 
     shell_bundle_activator_t* activator = activatorData;
@@ -146,7 +144,7 @@ celix_status_t bundleActivator_stop(void *activatorData, celix_bundle_context_t*
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void *activatorData, celix_bundle_context_t* __attribute__((__unused__)) ctx) {
+celix_status_t celix_bundleActivator_destroy(void *activatorData, celix_bundle_context_t* __attribute__((__unused__)) ctx) {
     celix_status_t status = CELIX_SUCCESS;
     shell_bundle_activator_t* activator = activatorData;
 

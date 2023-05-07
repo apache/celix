@@ -17,19 +17,21 @@
  * under the License.
  */
 
-#include <rsa_json_rpc_impl.h>
-#include <rsa_json_rpc_constants.h>
-#include <rsa_json_rpc_endpoint_impl.h>
-#include <rsa_json_rpc_proxy_impl.h>
-#include <remote_interceptors_handler.h>
-#include <endpoint_description.h>
-#include <celix_long_hash_map.h>
-#include <celix_log_helper.h>
-#include <dyn_interface.h>
-#include <version.h>
-#include <celix_api.h>
-#include <limits.h>
+#include "rsa_json_rpc_impl.h"
+#include "rsa_json_rpc_constants.h"
+#include "rsa_json_rpc_endpoint_impl.h"
+#include "rsa_json_rpc_proxy_impl.h"
+#include "remote_interceptors_handler.h"
+#include "endpoint_description.h"
+#include "celix_long_hash_map.h"
+#include "celix_log_helper.h"
+#include "dyn_interface.h"
+#include "celix_version.h"
+#include "celix_threads.h"
+#include "celix_constants.h"
+#include "celix_utils.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -52,13 +54,11 @@ static unsigned int rsaJsonRpc_generateSerialProtoId(celix_bundle_t *bnd) {
     if (bundleSymName == NULL || bundleVer == NULL) {
         return 0;
     }
-    version_pt version = NULL;
-    celix_status_t status = version_createVersionFromString(bundleVer, &version);
-    if (status != CELIX_SUCCESS) {
+    celix_version_t *version = celix_version_createVersionFromString(bundleVer);
+    if (version == NULL) {
         return 0;
     }
-    int major = 0;
-    (void)version_getMajor(version, &major);
+    int major = celix_version_getMajor(version);
     celix_version_destroy(version);
     return celix_utils_stringHash(bundleSymName) + major;
 }
@@ -71,12 +71,16 @@ celix_status_t rsaJsonRpc_create(celix_bundle_context_t* ctx, celix_log_helper_t
     }
 
     rsa_json_rpc_t *rpc = calloc(1, sizeof(rsa_json_rpc_t));
-    assert(rpc != NULL);
+    if (rpc == NULL) {
+        celix_logHelper_error(logHelper, "Failed to allocate memory for rsa_json_rpc_t.");
+        return CELIX_ENOMEM;
+    }
     rpc->ctx = ctx;
     rpc->logHelper = logHelper;
     rpc->serialProtoId = rsaJsonRpc_generateSerialProtoId(celix_bundleContext_getBundle(ctx));
     if (rpc->serialProtoId == 0) {
         celix_logHelper_error(logHelper, "Error generating serialization protocol id.");
+        status = CELIX_BUNDLE_EXCEPTION;
         goto protocol_id_err;
     }
     status = celixThreadMutex_create(&rpc->mutex, NULL);
@@ -91,10 +95,11 @@ celix_status_t rsaJsonRpc_create(celix_bundle_context_t* ctx, celix_log_helper_t
 
     status = remoteInterceptorsHandler_create(ctx, &rpc->interceptorsHandler);
     if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(logHelper, "Error creating remote interceptors handler. %d.", status);
         goto interceptors_err;
     }
 
-    status = rsaRequestSenderTracker_create(ctx, "rsa_json_rpc_rst", &rpc->reqSenderTracker);
+    status = rsaRequestSenderTracker_create(ctx, logHelper, &rpc->reqSenderTracker);
     if (status != CELIX_SUCCESS) {
         goto rst_err;
     }

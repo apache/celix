@@ -32,6 +32,7 @@
 #include <curl/easy.h>
 #include <stdbool.h>
 #include <uuid/uuid.h>
+#include <celix_bundle_context.h>
 
 
 #include "deployment_admin.h"
@@ -177,9 +178,8 @@ static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, 
     curl = curl_easy_init();
 
     if (!curl) {
-        status = CELIX_BUNDLE_EXCEPTION;
-
         fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error initializing curl.");
+        return CELIX_BUNDLE_EXCEPTION;
     }
 
     char* url;
@@ -199,6 +199,8 @@ static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, 
     } else {
         fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "Error creating send url for audit log url: %s", admin->auditlogUrl);
     }
+    curl_easy_cleanup(curl);
+
 
     return status;
 }
@@ -580,10 +582,10 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_p
 		deploymentPackage_getBundle(source, info->symbolicName, &updateBundle);
 		if (updateBundle != NULL) {
 			//printf("Update bundle from: %s\n", bundlePath);
-			bundle_update(updateBundle, bundlePath);
+            celix_bundleContext_updateBundle(admin->context, celix_bundle_getId(updateBundle), bundlePath);
 		} else {
 			//printf("Install bundle from: %s\n", bundlePath);
-			bundleContext_installBundle2(admin->context, bsn, bundlePath, &updateBundle);
+            celix_bundleContext_installBundle(admin->context, bundlePath, false);
 		}
 
         free(entry);
@@ -673,7 +675,7 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 					bundle_getEntry(bundle, "/", &entry);
 					deploymentPackage_getName(source, &name);
 
-					int length = strlen(entry) + strlen(name) + strlen(info->path) + 7;
+					length = strlen(entry) + strlen(name) + strlen(info->path) + 7;
 					char resourcePath[length];
 					snprintf(resourcePath, length, "%srepo/%s/%s", entry, name, info->path);
 					deploymentPackage_getName(source, &packageName);

@@ -17,11 +17,11 @@
  * under the License.
  */
 
-#include <rsa_json_rpc_impl.h>
-#include <celix_log_helper.h>
-#include <celix_api.h>
+#include "rsa_json_rpc_impl.h"
+#include "celix_log_helper.h"
+#include "rsa_rpc_factory.h"
+#include "celix_bundle_activator.h"
 #include <assert.h>
-#include <rsa_rpc_factory.h>
 
 
 typedef struct rsa_json_rpc_activator {
@@ -40,7 +40,10 @@ static celix_status_t rsaJsonRpc_start(rsa_json_rpc_activator_t* activator, celi
     activator->ctx = ctx;
     activator->rpcSvcId = -1;
     activator->logHelper = celix_logHelper_create(ctx, "rsa_json_rpc");
-    assert(activator->logHelper != NULL);
+    if (activator->logHelper == NULL) {
+        status = CELIX_BUNDLE_EXCEPTION;
+        goto log_helper_err;
+    }
 
     status = rsaJsonRpc_create(ctx, activator->logHelper, &activator->jsonRpc);
     if (status != CELIX_SUCCESS) {
@@ -63,7 +66,7 @@ static celix_status_t rsaJsonRpc_start(rsa_json_rpc_activator_t* activator, celi
     activator->rpcSvcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx, &opts);
     if (activator->rpcSvcId < 0) {
         celix_logHelper_error(activator->logHelper, "Error registering json rpc service.");
-        status = CELIX_SERVICE_EXCEPTION;
+        status = CELIX_BUNDLE_EXCEPTION;
         goto rpc_svc_err;
     }
     return CELIX_SUCCESS;
@@ -72,6 +75,7 @@ rpc_svc_err:
     rsaJsonRpc_destroy(activator->jsonRpc);
 rpc_err:
     celix_logHelper_destroy(activator->logHelper);
+log_helper_err:
     return status;
 }
 

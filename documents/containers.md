@@ -110,8 +110,13 @@ reliable way to find bundles in a system. For this to work Apache Celix should s
 There is an exception when an installation of an Apache Celix containers works: If all used bundles are based on already
 installed bundles and are added to the Apache Celix container with an absolute path (default).
 
- 
+## Launching Apache Celix Containers
+Apache Celix containers can be launched in the same way as normal executables and also supports some command line
+options.
 
-
-
-
+### Command line options
+The following command line options are supported by Apache Celix containers:
+ - `--help` or `-h`: Print the help message, include the supported command line options.
+ - `--props` or `-p`: Show the embedded and runtime properties for the Celix container and exit.
+ - `--create-bundle-cache` or `-c`: Create the bundle cache for the Celix container and exit.
+ - `--embedded_bundles`: how the embedded bundles for the Celix container and exit.

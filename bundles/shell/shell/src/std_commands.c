@@ -53,8 +53,8 @@ celix_std_commands_t* celix_stdCommands_create(celix_bundle_context_t* ctx) {
                     .name = "celix::lb",
                     .description = "list bundles. Default all bundles are listed." \
                             "\nIf a group string is provided only bundles where the bundle group matching group string will be listed." \
-                            "\nUse -l to print the bundle locations.\nUse -s to print the bundle symbolic names\nUse -u to print the bundle update location.",
-                    .usage = "lb [-l | -s | -u] [group]"
+                            "\nUse -l to print the bundle locations.\nUse -s to print the bundle symbolic names.\n",
+                    .usage = "lb [-l | -s] [group]"
             };
     commands->std_commands[1] =
             (struct celix_shell_command_register_entry) {

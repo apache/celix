@@ -38,7 +38,7 @@ namespace celix {
         Exception& operator=(const Exception&) = default;
         Exception& operator=(Exception&&) = default;
 
-        [[nodiscard]] const char* what() const noexcept override {
+        const char* what() const noexcept override {
             return w.c_str();
         }
     private:

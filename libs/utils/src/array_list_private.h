@@ -51,7 +51,5 @@ struct celix_array_list_iterator {
     unsigned int expectedModificationCount;
 };
 
-void * arrayList_remove(array_list_pt list, unsigned int index);
-
 
 #endif /* array_list_t_PRIVATE_H_ */

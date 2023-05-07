@@ -488,7 +488,7 @@ celix_properties_t* celix_properties_loadWithStream(FILE *file) {
     }
 
     fseek(file, 0, SEEK_END);
-    size_t fileSize = ftell(file);
+    ssize_t fileSize = ftell(file);
     fseek(file, 0, SEEK_SET);
     if (fileSize == 0) {
         return props;

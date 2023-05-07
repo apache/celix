@@ -18,6 +18,7 @@
 add_library(dependency_manager_cxx_static STATIC
         src/dm_activator.cc
 )
+celix_deprecated_framework_headers(dependency_manager_cxx_static)
 set_target_properties(dependency_manager_cxx_static PROPERTIES OUTPUT_NAME "celix_dependency_manager_cxx_static")
 target_compile_options(dependency_manager_cxx_static PRIVATE -fPIC)
 target_compile_options(dependency_manager_cxx_static PRIVATE -Wno-deprecated-declarations)

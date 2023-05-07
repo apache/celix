@@ -78,10 +78,8 @@ include(CMakeFindDependencyMacro)
 
 find_dependency(ZLIB) #Needed by framework
 find_dependency(libuuid) #Needed by framework
-find_dependency(CURL) #Needed by framework (used for curl initialization)
+find_dependency(CURL) #Needed by framework (used for curl initialization), etcdlib
 find_dependency(libzip) #Needed by utils
-find_dependency(jansson) #Needed by dfi, etcdlib, remote services, pubsub
-find_dependency(libffi) #Needed by dfi
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_dependency(Threads)
 
@@ -105,6 +103,13 @@ if (NOT TARGET CURL::libcurl)
           )
 endif ()
 
+if (TARGET Celix::dfi)
+  find_dependency(libffi)
+  find_dependency(jansson)
+endif ()
+if (TARGET Celix::etcdlib)
+  find_dependency(jansson)
+endif ()
 if (TARGET Celix::RsaConfiguredDiscovery)
   find_dependency(RapidJSON)
 endif ()
@@ -118,3 +123,10 @@ endif ()
 if (TARGET Celix::pubsub_admin_nanomsg)
   find_dependency(NanoMsg)
 endif ()
+if (TARGET Celix::http_admin_api)
+  find_dependency(civetweb)
+endif ()
+if (TARGET Celix::rsa_discovery_zeroconf)
+  find_dependency(DNSSD)
+endif ()
+

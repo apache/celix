@@ -24,7 +24,7 @@
 
 #include "dyn_common.h"
 #include "dyn_function.h"
-
+#include <ffi.h>
 
 static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
     va_list ap;
@@ -62,7 +62,7 @@ extern "C" {
 
         rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, nullptr, &dynFunc);
 
-        int32_t rVal = 0;
+        ffi_sarg rVal = 0;
         int32_t a = 2;
         int32_t b = 4;
         int32_t c = 8;
@@ -156,14 +156,9 @@ TEST_F(DynFunctionTests, DynFuncAccTest) {
 }
 
 extern "C" {
-#ifdef __clang__
-[[clang::optnone]]
-#else
-__attribute__((optimize("0")))
-#endif
 static bool func_test3() {
     dyn_function_type *dynFunc = nullptr;
-    void (*fp)(void) = (void(*)(void)) testExample3;
+    void (*fp)(void) = (void (*)(void)) testExample3;
     int rc;
 
     rc = dynFunction_parseWithStr(EXAMPLE3_DESCRIPTOR, nullptr, &dynFunc);
@@ -178,11 +173,11 @@ static bool func_test3() {
         args[0] = &ptr;
         args[1] = &a;
         args[2] = &input;
-        int rVal = 0;
+        ffi_sarg rVal = 0;
 
         rc = dynFunction_call(dynFunc, fp, &rVal, args);
 
-        double *inMemResult = (double *)calloc(1, sizeof(double));
+        double *inMemResult = (double *) calloc(1, sizeof(double));
         a = 2.0;
         ptr = &a;
         args[0] = &ptr;
@@ -201,7 +196,6 @@ static bool func_test3() {
     return rc == 0 && result1 == 4.0 && result2 == 4.0;
 }
 }
-
 
 TEST_F(DynFunctionTests, DynFuncTest3) {
     //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to

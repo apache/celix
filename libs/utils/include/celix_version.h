@@ -26,6 +26,7 @@ extern "C" {
 
 #include <stdbool.h>
 
+#include "celix_utils_export.h"
 
 /**
  * @file celix_version.h
@@ -53,15 +54,9 @@ typedef struct celix_version celix_version_t;
  *        the empty string.
  * @return The created version or NULL if the input was incorrect
  */
-celix_version_t* celix_version_create(int major, int minor, int micro, const char* qualifier);
+CELIX_UTILS_EXPORT celix_version_t* celix_version_createVersion(int major, int minor, int micro, const char* qualifier);
 
-/**
- * @brief Same as celix_version_create, but deprecated
- */
-celix_version_t* celix_version_createVersion(int major, int minor, int micro, const char* qualifier)
-    __attribute__((deprecated(("celix_version_createVersion is deprecated use celix_version_create instead"))));
-
-void celix_version_destroy(celix_version_t* version);
+CELIX_UTILS_EXPORT void celix_version_destroy(celix_version_t* version);
 
 /**
  * @brief Create a copy of <code>version</code>.
@@ -69,7 +64,7 @@ void celix_version_destroy(celix_version_t* version);
  * @param[in] version The version to copy
  * @return the copied version
  */
-celix_version_t* celix_version_copy(const celix_version_t* version);
+CELIX_UTILS_EXPORT celix_version_t* celix_version_copy(const celix_version_t* version);
 
 /**
  * @brief Create a version identifier from the specified string.
@@ -92,12 +87,12 @@ celix_version_t* celix_version_copy(const celix_version_t* version);
  * @param[in] versionStr String representation of the version identifier.
  * @return The created version or NULL if the input was invalid.
  */
-celix_version_t* celix_version_createVersionFromString(const char *versionStr);
+CELIX_UTILS_EXPORT celix_version_t* celix_version_createVersionFromString(const char *versionStr);
 
 /**
  * @brief Create empty version "0.0.0".
  */
-celix_version_t* celix_version_createEmptyVersion();
+CELIX_UTILS_EXPORT celix_version_t* celix_version_createEmptyVersion();
 
 /**
  * @brief Gets the major version number of a celix version.
@@ -105,7 +100,7 @@ celix_version_t* celix_version_createEmptyVersion();
  * @param[in] version The celix version.
  * @return The major version number.
  */
-int celix_version_getMajor(const celix_version_t* version);
+CELIX_UTILS_EXPORT int celix_version_getMajor(const celix_version_t* version);
 
 /**
  * @brief Gets the minor version number of a celix version.
@@ -113,7 +108,7 @@ int celix_version_getMajor(const celix_version_t* version);
  * @param[in] version The celix version.
  * @return The minor version number.
  */
-int celix_version_getMinor(const celix_version_t* version);
+CELIX_UTILS_EXPORT int celix_version_getMinor(const celix_version_t* version);
 
 /**
  * @brief Gets the micro version number of a celix version.
@@ -121,7 +116,7 @@ int celix_version_getMinor(const celix_version_t* version);
  * @param[in] version The celix version.
  * @return The micro version number.
  */
-int celix_version_getMicro(const celix_version_t* version);
+CELIX_UTILS_EXPORT int celix_version_getMicro(const celix_version_t* version);
 
 /**
  * @brief Gets the version qualifier of a celix version.
@@ -129,7 +124,7 @@ int celix_version_getMicro(const celix_version_t* version);
  * @param[in] version The celix version.
  * @return The version qualifier, or NULL if no qualifier is present.
  */
-const char* celix_version_getQualifier(const celix_version_t* version);
+CELIX_UTILS_EXPORT const char* celix_version_getQualifier(const celix_version_t* version);
 
 /**
  * @brief Compare this <code>Version</code> object to another object.
@@ -154,12 +149,12 @@ const char* celix_version_getQualifier(const celix_version_t* version);
  * @return A negative integer, zero, or a positive integer if <code>version</code> is
  *         less than, equal to, or greater than the <code>compare</code>.
  */
-int celix_version_compareTo(const celix_version_t* version, const celix_version_t* compare);
+CELIX_UTILS_EXPORT int celix_version_compareTo(const celix_version_t* version, const celix_version_t* compare);
 
 /**
  * @brief Create a hash of the version
  */
-unsigned int celix_version_hash(const celix_version_t* version);
+CELIX_UTILS_EXPORT unsigned int celix_version_hash(const celix_version_t* version);
 
 /**
  * @brief Return the string representation of <code>version</code> identifier.
@@ -173,7 +168,7 @@ unsigned int celix_version_hash(const celix_version_t* version);
  * @param version The <code>celix_version_t*</code> to get the string representation from.
  * @return Pointer to the string (char *) in which the result will be placed. Caller is owner of the string.
  */
-char* celix_version_toString(const celix_version_t* version);
+CELIX_UTILS_EXPORT char* celix_version_toString(const celix_version_t* version);
 
 /**
  * @brief Fill a given string with the string representation of the given version.
@@ -183,7 +178,7 @@ char* celix_version_toString(const celix_version_t* version);
  * @param[in] strLen The length of the string.
  * @return true if the string was filled successfully, false otherwise.
  */
-bool celix_version_fillString(const celix_version_t* version, char *str, size_t strLen);
+CELIX_UTILS_EXPORT bool celix_version_fillString(const celix_version_t* version, char *str, size_t strLen);
 
 /**
  * @brief Check if two versions are semantically compatible.
@@ -196,7 +191,7 @@ bool celix_version_fillString(const celix_version_t* version, char *str, size_t 
  * @param version The reference provider <code>celix_version_t*</code> .
  * @return Boolean indicating if the versions are compatible
  */
-bool celix_version_isCompatible(const celix_version_t* user, const celix_version_t* provider);
+CELIX_UTILS_EXPORT bool celix_version_isCompatible(const celix_version_t* user, const celix_version_t* provider);
 
 /**
  * @brief Check if two versions are semantically compatible.
@@ -210,7 +205,7 @@ bool celix_version_isCompatible(const celix_version_t* user, const celix_version
  * @param provideMinorVersionPart The minor part of the provider version
  * @return Boolean indicating if the versions are compatible
  */
-bool celix_version_isUserCompatible(const celix_version_t* user, int providerMajorVersionPart, int provideMinorVersionPart);
+CELIX_UTILS_EXPORT bool celix_version_isUserCompatible(const celix_version_t* user, int providerMajorVersionPart, int provideMinorVersionPart);
 
 /**
  * @brief Compare a provider celix version is with a provided major and minor version. Ignoring the patch version part.
@@ -221,7 +216,7 @@ bool celix_version_isUserCompatible(const celix_version_t* user, int providerMaj
  * @return A negative integer, zero, or a positive integer if <code>version</code> is
  *         less than, equal to, or greater than the <code>majorVersionPart</code> and <code>minorVersionPart</code>.
  */
-int celix_version_compareToMajorMinor(const celix_version_t* version, int majorVersionPart, int minorVersionPart);
+CELIX_UTILS_EXPORT int celix_version_compareToMajorMinor(const celix_version_t* version, int majorVersionPart, int minorVersionPart);
 
 #ifdef __cplusplus
 }

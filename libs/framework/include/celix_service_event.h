@@ -17,10 +17,10 @@
  * under the License.
  */
 
-#include "celix_types.h"
-
 #ifndef CELIX_SERVICE_EVENT_H_
 #define CELIX_SERVICE_EVENT_H_
+
+#include "celix_types.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -41,6 +41,7 @@ if (PUBSUB_PSA_TCP)
         target_link_libraries(celix_pubsub_admin_tcp PRIVATE libuuid::libuuid)
     endif()
     celix_deprecated_utils_headers(celix_pubsub_admin_tcp)
+    celix_deprecated_framework_headers(celix_pubsub_admin_tcp)
 
     install_celix_bundle(celix_pubsub_admin_tcp EXPORT celix COMPONENT pubsub)
     add_library(Celix::celix_pubsub_admin_tcp ALIAS celix_pubsub_admin_tcp)

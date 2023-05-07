@@ -51,7 +51,7 @@ static void checkBundleCacheDir(const char* extractDir) {
     }
 }
 
-TEST_F(CelixFrameworkUtilsTestSuite, testIsBundleUrlValid) {
+TEST_F(CelixFrameworkUtilsTestSuite, IsBundleUrlValidTest) {
     auto valid = celix_framework_utils_isBundleUrlValid(framework->getCFramework(), "non-existing.zip", false);
     EXPECT_FALSE(valid);
 
@@ -72,7 +72,7 @@ TEST_F(CelixFrameworkUtilsTestSuite, testIsBundleUrlValid) {
     EXPECT_TRUE(valid);
 }
 
-TEST_F(CelixFrameworkUtilsTestSuite, testExtractBundlePath) {
+TEST_F(CelixFrameworkUtilsTestSuite, ExtractBundlePathTest) {
     const char* testExtractDir = "extractBundleTestDir";
     celix_utils_deleteDirectory(testExtractDir, nullptr);
 
@@ -82,6 +82,11 @@ TEST_F(CelixFrameworkUtilsTestSuite, testExtractBundlePath) {
 
     //invalid bundle path -> no extraction
     status = celix_framework_utils_extractBundle(framework->getCFramework(), "non-existing.zip", testExtractDir); //note nullptr framwork is allowed, fallback to global logger.
+    EXPECT_NE(status, CELIX_SUCCESS);
+
+
+    //invalid bundle path -> no extraction
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), "./", testExtractDir); //note nullptr framwork is allowed, fallback to global logger.
     EXPECT_NE(status, CELIX_SUCCESS);
 
     //invalid url prefix -> no extraction
@@ -113,7 +118,7 @@ TEST_F(CelixFrameworkUtilsTestSuite, testExtractBundlePath) {
     celix_utils_deleteDirectory(testExtractDir, nullptr);
 }
 
-TEST_F(CelixFrameworkUtilsTestSuite, testExtractEmbeddedBundle) {
+TEST_F(CelixFrameworkUtilsTestSuite, ExtractEmbeddedBundleTest) {
     const char* testExtractDir = "extractEmbeddedBundleTestDir";
     celix_utils_deleteDirectory(testExtractDir, nullptr);
 
@@ -128,6 +133,12 @@ TEST_F(CelixFrameworkUtilsTestSuite, testExtractEmbeddedBundle) {
     celix_utils_deleteDirectory(testExtractDir, nullptr);
 }
 
+TEST_F(CelixFrameworkUtilsTestSuite, CheckBundleAgeTest) {
+    struct timespec now = {0, 0};
+    EXPECT_TRUE(celix_framework_utils_isBundleUrlNewerThan(framework->getCFramework(), SIMPLE_TEST_BUNDLE1_LOCATION, &now));
+    EXPECT_TRUE(celix_framework_utils_isBundleUrlNewerThan(framework->getCFramework(), SIMPLE_TEST_BUNDLE1_LOCATION, nullptr));
+}
+
 TEST_F(CelixFrameworkUtilsTestSuite, testListEmbeddedBundles) {
     auto list = celix::listEmbeddedBundles();
     ASSERT_EQ(2, list.size());
@@ -135,7 +146,7 @@ TEST_F(CelixFrameworkUtilsTestSuite, testListEmbeddedBundles) {
     EXPECT_EQ("embedded://simple_test_bundle2", list[1]);
 }
 
-TEST_F(CelixFrameworkUtilsTestSuite, installEmbeddedBundles) {
+TEST_F(CelixFrameworkUtilsTestSuite, InstallEmbeddedBundlesTest) {
     auto ids = framework->getFrameworkBundleContext()->listBundleIds();
     EXPECT_EQ(0, ids.size());
 
@@ -144,7 +155,7 @@ TEST_F(CelixFrameworkUtilsTestSuite, installEmbeddedBundles) {
     EXPECT_EQ(2, ids.size());
 }
 
-TEST_F(CelixFrameworkUtilsTestSuite, installBundleSet) {
+TEST_F(CelixFrameworkUtilsTestSuite, InstallBundleSetTest) {
     auto ids = framework->getFrameworkBundleContext()->listBundleIds();
     EXPECT_EQ(0, ids.size());
 

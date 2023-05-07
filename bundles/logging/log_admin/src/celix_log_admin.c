@@ -96,7 +96,10 @@ static void celix_logAdmin_vlogDetails(void *handle, celix_log_level_e level, co
             celix_log_sink_entry_t *sinkEntry = hashMapIterator_nextValue(&iter);
             if (sinkEntry->enabled) {
                 celix_log_sink_t *sink = sinkEntry->sink;
-                sink->sinkLog(sink->handle, level, entry->logSvcId, entry->name, file, function, line, format, formatArgs);
+                va_list argCopy;
+                va_copy(argCopy, formatArgs);
+                sink->sinkLog(sink->handle, level, entry->logSvcId, entry->name, file, function, line, format, argCopy);
+                va_end(argCopy);
             }
         }
 

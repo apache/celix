@@ -337,7 +337,7 @@ pubsub_tcpHandler_createEntry(pubsub_tcpHandler_t *handle, int fd, char *url, ch
         entry->connected = false;
         unsigned minimalMsgSize = entry->writeHeaderBufferSize + entry->writeFooterBufferSize;
         if ((minimalMsgSize > handle->maxMsgSize) && (handle->maxMsgSize)) {
-            L_ERROR("[TCP Socket] maxMsgSize (%d) < headerSize + FooterSize (%d): %s\n", handle->maxMsgSize, minimalMsgSize);
+            L_ERROR("[TCP Socket] maxMsgSize (%d) < headerSize + FooterSize (%d)\n", handle->maxMsgSize, minimalMsgSize);
         } else {
             entry->maxMsgSize = (handle->maxMsgSize) ? handle->maxMsgSize : LONG_MAX;
         }
@@ -1192,7 +1192,7 @@ int pubsub_tcpHandler_write(pubsub_tcpHandler_t *handle, pubsub_protocol_message
                 } else if (msgPartSize) {
                     entry->retryCount = 0;
                     if (nbytes != msgPartSize) {
-                        L_ERROR("[TCP Socket] seq: %d MsgSize not correct: %d != %d (%s)\n", message->header.seqNr, msgPartSize, nbytes, strerror(errno));
+                        L_ERROR("[TCP Socket] seq: %d MsgSize not correct: %zu != %ld (%s)\n", message->header.seqNr, msgPartSize, nbytes, strerror(errno));
                     }
                 }
                 // Note: serialized Payload is deleted by serializer

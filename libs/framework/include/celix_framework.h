@@ -20,22 +20,42 @@
 #ifndef CELIX_FRAMEWORK_H_
 #define CELIX_FRAMEWORK_H_
 
+#include <stdarg.h>
 
 #include "celix_types.h"
 #include "celix_properties.h"
 #include "celix_log_level.h"
 #include "celix_array_list.h"
-#include <stdarg.h>
+#include "celix_framework_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /**
+ * @file
+ * @brief The Celix Framework API.
+ *
+ * The Celix Framework API provides the functionality to create and destroy a Celix framework instance.
+ *
+ * The Celix framework instance provides the following functionality:
+ *  - Bundle management
+ *  - Service management
+ *  - Event management
+ *  - Logging
+ *  - Framework config properties
+ *  - Framework events
+ *  - Framework shutdown
+ *
+ * @note The Celix framework instance is thread safe.
+ */
+
+
+/**
  * @brief Returns the framework UUID. This is unique for every created framework and will not be the same if the process is
  * restarted.
  */
-const char* celix_framework_getUUID(const celix_framework_t *fw);
+CELIX_FRAMEWORK_EXPORT const char* celix_framework_getUUID(const celix_framework_t *fw);
 
 /**
  * @brief Returns the framework bundle context. This is the same as a 'normal' bundle context and can be used to register, use
@@ -43,7 +63,7 @@ const char* celix_framework_getUUID(const celix_framework_t *fw);
  * @param fw The framework
  * @return A pointer to the bundle context of the framework or NULL if something went wrong.
  */
-celix_bundle_context_t* celix_framework_getFrameworkContext(const celix_framework_t *fw);
+CELIX_FRAMEWORK_EXPORT celix_bundle_context_t* celix_framework_getFrameworkContext(const celix_framework_t *fw);
 
 /**
  * @brief Returns the framework bundle. This is the same as a 'normal' bundle, expect that this bundle cannot be uninstalled
@@ -51,19 +71,20 @@ celix_bundle_context_t* celix_framework_getFrameworkContext(const celix_framewor
   * @param fw The framework
  * @return A pointer to the bundle of the framework or NULL if something went wrong.
  */
-celix_bundle_t* celix_framework_getFrameworkBundle(const celix_framework_t *fw);
+CELIX_FRAMEWORK_EXPORT celix_bundle_t* celix_framework_getFrameworkBundle(const celix_framework_t *fw);
 
 /**
- * @brief Use the currently active (started) bundles.
- * The provided callback will be called for all the currently started bundles.
+ * @brief * @brief Use the currently installed bundles.
+ * The provided callback will be called for all the currently installed bundles.
  *
  * @param ctx                       The bundle context.
  * @param includeFrameworkBundle    If true the callback will also be triggered for the framework bundle.
  * @param callbackHandle            The data pointer, which will be used in the callbacks
- * @param use                       The callback which will be called for the currently started bundles.
+ * @param use                       The callback which will be called for the currently installed bundles.
  *                                  The bundle pointers are only guaranteed to be valid during the callback.
+ * @return                          The number of times the use callback is called.
  */
-void celix_framework_useBundles(celix_framework_t *fw, bool includeFrameworkBundle, void *callbackHandle, void(*use)(void *handle, const celix_bundle_t *bnd));
+CELIX_FRAMEWORK_EXPORT size_t celix_framework_useBundles(celix_framework_t *fw, bool includeFrameworkBundle, void *callbackHandle, void(*use)(void *handle, const celix_bundle_t *bnd));
 
 /**
  * @brief Use the bundle with the provided bundle id
@@ -77,7 +98,7 @@ void celix_framework_useBundles(celix_framework_t *fw, bool includeFrameworkBund
  *                          The bundle pointers are only guaranteed to be valid during the callback.
  * @return                  Returns true if the bundle is found and the callback is called.
  */
-bool celix_framework_useBundle(celix_framework_t *fw, bool onlyActive, long bndId, void *callbackHandle, void(*use)(void *handle, const celix_bundle_t *bnd));
+CELIX_FRAMEWORK_EXPORT bool celix_framework_useBundle(celix_framework_t *fw, bool onlyActive, long bndId, void *callbackHandle, void(*use)(void *handle, const celix_bundle_t *bnd));
 
 /**
  * @brief Check whether a bundle is installed.
@@ -85,7 +106,7 @@ bool celix_framework_useBundle(celix_framework_t *fw, bool onlyActive, long bndI
  * @param bndId     The bundle id to check
  * @return          true if the bundle is installed.
  */
-bool celix_framework_isBundleInstalled(celix_framework_t *fw, long bndId);
+CELIX_FRAMEWORK_EXPORT bool celix_framework_isBundleInstalled(celix_framework_t *fw, long bndId);
 
 /**
  * @brief Check whether the bundle is active.
@@ -93,7 +114,7 @@ bool celix_framework_isBundleInstalled(celix_framework_t *fw, long bndId);
  * @param bndId     The bundle id to check
  * @return          true if the bundle is installed and active.
  */
-bool celix_framework_isBundleActive(celix_framework_t *fw, long bndId);
+CELIX_FRAMEWORK_EXPORT bool celix_framework_isBundleActive(celix_framework_t *fw, long bndId);
 
 
 /**
@@ -105,7 +126,7 @@ bool celix_framework_isBundleActive(celix_framework_t *fw, long bndId);
  * @param autoStart If the bundle should also be started.
  * @return the bundleId (>= 0) or < 0 if the bundle could not be installed and possibly started.
  */
-long celix_framework_installBundle(celix_framework_t *fw, const char *bundleLoc, bool autoStart);
+CELIX_FRAMEWORK_EXPORT long celix_framework_installBundle(celix_framework_t *fw, const char *bundleLoc, bool autoStart);
 
 /**
  * @brief Uninstall the bundle with the provided bundle id. If needed the bundle will be stopped first.
@@ -115,7 +136,27 @@ long celix_framework_installBundle(celix_framework_t *fw, const char *bundleLoc,
  * @param bndId The bundle id to uninstall.
  * @return true if the bundle is correctly uninstalled. False if not.
  */
-bool celix_framework_uninstallBundle(celix_framework_t *fw, long bndId);
+CELIX_FRAMEWORK_EXPORT bool celix_framework_uninstallBundle(celix_framework_t *fw, long bndId);
+
+/**
+ * @brief Update the bundle with the provided bundle id.
+ *
+ * This will do the following:
+ *  - stop the bundle (if needed);
+ *  - update the bundle revision if a newer bundle zip if found;
+ *  - start the bundle, if it was started.
+ *
+ *  Will silently ignore bundle ids < 0.
+ *
+ * @warning Update bundle is not yet fully supported. Use at your own risk.
+ *
+ * @param fw The Celix framework
+ * @parma bndId the bundle id to update.
+ * @param updatedBundleUrl The optional updated bundle url to the bundle zip file. If NULL, the existing bundle url
+ *                         from the bundle cache will be used.
+ * @return true if the bundle is correctly updated. False if not.
+ */
+CELIX_FRAMEWORK_EXPORT bool celix_framework_updateBundle(celix_framework_t *fw, long bndId, const char* updatedBundleUrl);
 
 /**
  * @brief Stop the bundle with the provided bundle id.
@@ -125,7 +166,7 @@ bool celix_framework_uninstallBundle(celix_framework_t *fw, long bndId);
  * @param bndId The bundle id to stop.
  * @return true if the bundle is found & correctly stop. False if not.
  */
-bool celix_framework_stopBundle(celix_framework_t *fw, long bndId);
+CELIX_FRAMEWORK_EXPORT bool celix_framework_stopBundle(celix_framework_t *fw, long bndId);
 
 /**
  * @brief Start the bundle with the provided bundle id.
@@ -135,7 +176,7 @@ bool celix_framework_stopBundle(celix_framework_t *fw, long bndId);
  * @param bndId The bundle id to start.
  * @return true if the bundle is found & correctly started. False if not.
  */
-bool celix_framework_startBundle(celix_framework_t *fw, long bndId);
+CELIX_FRAMEWORK_EXPORT bool celix_framework_startBundle(celix_framework_t *fw, long bndId);
 
 /**
  * @brief Install and optional start a bundle async.
@@ -148,7 +189,26 @@ bool celix_framework_startBundle(celix_framework_t *fw, long bndId);
  * @param autoStart If the bundle should also be started.
  * @return The bundle id of the installed bundle or -1 if the bundle could not be installed
  */
-long celix_framework_installBundleAsync(celix_framework_t *fw, const char *bundleLoc, bool autoStart);
+CELIX_FRAMEWORK_EXPORT long celix_framework_installBundleAsync(celix_framework_t *fw, const char *bundleLoc, bool autoStart);
+
+/**
+ * @brief Update the bundle with the provided bundle id async.
+ *
+ * This will do the following:
+ *  - stop the bundle (if needed);
+ *  - update the bundle revision if a newer bundle zip if found;
+ *  - start the bundle, if it was started.
+ *
+ *  Will silently ignore bundle ids < 0.
+ *
+ *  @warning Update bundle is not yet fully supported. Use at your own risk.
+ *
+ *  @param fw The Celix framework
+ *  @parma bndId the bundle id to update.
+ *  @param updatedBundleUrl The optional updated bundle url to the bundle zip file. If NULL, the existing bundle url
+ *                         from the bundle cache will be used.
+ */
+CELIX_FRAMEWORK_EXPORT void celix_framework_updateBundleAsync(celix_framework_t *fw, long bndId, const char* updatedBundleUrl);
 
 /**
  * @brief Uninstall the bundle with the provided bundle id async. If needed the bundle will be stopped first.
@@ -159,7 +219,7 @@ long celix_framework_installBundleAsync(celix_framework_t *fw, const char *bundl
  * @param fw The Celix framework
  * @param bndId The bundle id to uninstall.
  */
-void celix_framework_uninstallBundleAsync(celix_framework_t *fw, long bndId);
+CELIX_FRAMEWORK_EXPORT void celix_framework_uninstallBundleAsync(celix_framework_t *fw, long bndId);
 
 /**
  * @brief Stop the bundle with the provided bundle id async.
@@ -170,7 +230,7 @@ void celix_framework_uninstallBundleAsync(celix_framework_t *fw, long bndId);
  * @param fw The Celix framework
  * @param bndId The bundle id to stop.
  */
-void celix_framework_stopBundleAsync(celix_framework_t *fw, long bndId);
+CELIX_FRAMEWORK_EXPORT void celix_framework_stopBundleAsync(celix_framework_t *fw, long bndId);
 
 /**
  * @brief Start the bundle with the provided bundle id async.
@@ -181,7 +241,7 @@ void celix_framework_stopBundleAsync(celix_framework_t *fw, long bndId);
  * @param fw The Celix framework
  * @param bndId The bundle id to start.
  */
-void celix_framework_startBundleAsync(celix_framework_t *fw, long bndId);
+CELIX_FRAMEWORK_EXPORT void celix_framework_startBundleAsync(celix_framework_t *fw, long bndId);
 
 /**
  * @brief List the installed and started bundle ids.
@@ -190,7 +250,7 @@ void celix_framework_startBundleAsync(celix_framework_t *fw, long bndId);
  * @param framework The Celix framework.
  * @return A array with bundle ids (long). The caller is responsible for destroying the array.
  */
-celix_array_list_t* celix_framework_listBundles(celix_framework_t* framework);
+CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_framework_listBundles(celix_framework_t* framework);
 
 /**
  * @brief List the installed bundle ids.
@@ -199,7 +259,7 @@ celix_array_list_t* celix_framework_listBundles(celix_framework_t* framework);
  * @param framework The Celix framework.
  * @return A array with bundle ids (long). The caller is responsible for destroying the array.
  */
-celix_array_list_t* celix_framework_listInstalledBundles(celix_framework_t* framework);
+CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_framework_listInstalledBundles(celix_framework_t* framework);
 
 /**
  * @brief Wait until the framework event queue is empty.
@@ -210,7 +270,7 @@ celix_array_list_t* celix_framework_listInstalledBundles(celix_framework_t* fram
  *
  * @param fw The Celix Framework
  */
-void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw);
+CELIX_FRAMEWORK_EXPORT void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw);
 
 /**
  * @brief Sets the log function for this framework.
@@ -219,23 +279,23 @@ void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw);
  * A log function can be injected to change how the Celix framework logs.
  * Can be reset by setting the log function to NULL.
  */
-void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs));
+CELIX_FRAMEWORK_EXPORT void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs));
 
 
 /**
  * @brief wait until all events for the bundle identified by the bndId are processed.
  */
-void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId);
+CELIX_FRAMEWORK_EXPORT void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId);
 
 /**
  * @brief wait until all pending service registration  are processed.
  */
-void celix_framework_waitUntilNoPendingRegistration(celix_framework_t* fw);
+CELIX_FRAMEWORK_EXPORT void celix_framework_waitUntilNoPendingRegistration(celix_framework_t* fw);
 
 /**
  * @brief Returns whether the current thread is the Celix framework event loop thread.
  */
-bool celix_framework_isCurrentThreadTheEventLoop(celix_framework_t* fw);
+CELIX_FRAMEWORK_EXPORT bool celix_framework_isCurrentThreadTheEventLoop(celix_framework_t* fw);
 
 
 /**
@@ -247,7 +307,7 @@ bool celix_framework_isCurrentThreadTheEventLoop(celix_framework_t* fw);
  * if eventId >=0 this will be used, otherwise a new event id will be generated
  * return eventId
  */
-long celix_framework_fireGenericEvent(celix_framework_t* fw, long eventId, long bndId, const char *eventName, void* processData, void (*processCallback)(void *data), void* doneData, void (*doneCallback)(void* doneData));
+CELIX_FRAMEWORK_EXPORT long celix_framework_fireGenericEvent(celix_framework_t* fw, long eventId, long bndId, const char *eventName, void* processData, void (*processCallback)(void *data), void* doneData, void (*doneCallback)(void* doneData));
 
 /**
  * @brief Get the next event id.
@@ -256,18 +316,18 @@ long celix_framework_fireGenericEvent(celix_framework_t* fw, long eventId, long 
  * The returned event id will not be used by the framework itself unless followed up with a
  * celix_framework_fireGenericEvent call using the returned event id.
  */
-long celix_framework_nextEventId(celix_framework_t *fw);
+CELIX_FRAMEWORK_EXPORT long celix_framework_nextEventId(celix_framework_t *fw);
 
 /**
  * @brief Wait until a event with the provided event id is completely handled.
  * This function will directly return if the provided event id is not in the event loop (already done or never issued).
  */
-void celix_framework_waitForGenericEvent(celix_framework_t *fw, long eventId);
+CELIX_FRAMEWORK_EXPORT void celix_framework_waitForGenericEvent(celix_framework_t *fw, long eventId);
 
 /**
  * @brief Wait until the framework is stopped.
  */
-void celix_framework_waitForStop(celix_framework_t *framework);
+CELIX_FRAMEWORK_EXPORT void celix_framework_waitForStop(celix_framework_t *framework);
 
 #ifdef __cplusplus
 }

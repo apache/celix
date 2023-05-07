@@ -17,14 +17,13 @@
  * under the License.
  */
 
-#include <rsa_request_sender_tracker.h>
-#include <rsa_request_sender_service.h>
-#include <celix_log_helper.h>
-#include <celix_long_hash_map.h>
-#include <celix_api.h>
+#include "rsa_request_sender_tracker.h"
+#include "rsa_request_sender_service.h"
+#include "celix_log_helper.h"
+#include "celix_long_hash_map.h"
+#include "celix_threads.h"
+#include "celix_constants.h"
 #include <stdlib.h>
-#include <limits.h>
-#include <string.h>
 #include <assert.h>
 
 struct rsa_request_sender_tracker {
@@ -40,18 +39,18 @@ static void rsaRequestSenderTracker_addServiceWithProperties(void *handle, void 
 static void rsaRequestSenderTracker_removeServiceWithProperties(void *handle, void *svc,
         const celix_properties_t *props);
 
-celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, const char *trackerName,
+celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
         rsa_request_sender_tracker_t **trackerOut) {
     celix_status_t status = CELIX_SUCCESS;
-    if (ctx == NULL || trackerName == NULL || strlen(trackerName) > NAME_MAX
-            || trackerOut == NULL) {
+    if (ctx == NULL || logHelper == NULL || trackerOut == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
     rsa_request_sender_tracker_t *tracker = calloc(1, sizeof(*tracker));
-    assert(tracker != NULL);
+    if (tracker == NULL) {
+        return CELIX_ENOMEM;
+    }
     tracker->ctx = ctx;
-    tracker->logHelper = celix_logHelper_create(ctx, trackerName);
-    assert(tracker->logHelper != NULL);
+    tracker->logHelper = logHelper;
     status = celixThreadRwlock_create(&tracker->lock, NULL);
     if (status != CELIX_SUCCESS) {
         goto err_creating_lock;
@@ -76,7 +75,6 @@ err_tracking_svc:
     celix_longHashMap_destroy(tracker->requestSenderSvcs);
     (void)celixThreadRwlock_destroy(&tracker->lock);
 err_creating_lock:
-    celix_logHelper_destroy(tracker->logHelper);
     free(tracker);
     return status;
 }
@@ -87,7 +85,7 @@ static void rsaRequestSenderTracker_addServiceWithProperties(void *handle, void 
     assert(svc != NULL);
     assert(props != NULL);
     rsa_request_sender_tracker_t *tracker = (rsa_request_sender_tracker_t *)handle;
-    const char *serviceName = celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME, "unknow-service");
+    const char *serviceName = celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME, "unknown-service");
     long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (svcId < 0) {
         celix_logHelper_error(tracker->logHelper, "Error getting rsa request sender service id for %s.", serviceName);
@@ -105,7 +103,7 @@ static void rsaRequestSenderTracker_removeServiceWithProperties(void *handle, vo
     assert(svc != NULL);
     assert(props != NULL);
     rsa_request_sender_tracker_t *tracker = (rsa_request_sender_tracker_t *)handle;
-    const char *serviceName = celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME, "unknow-service");
+    const char *serviceName = celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME, "unknown-service");
     long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (svcId < 0) {
         celix_logHelper_error(tracker->logHelper, "Error getting rsa request sender service id for %s.", serviceName);
@@ -123,7 +121,6 @@ static void rsaRequestSenderTracker_stopDone(void *data) {
     assert(celix_longHashMap_size(tracker->requestSenderSvcs) == 0);
     celix_longHashMap_destroy(tracker->requestSenderSvcs);
     (void)celixThreadRwlock_destroy(&tracker->lock);
-    celix_logHelper_destroy(tracker->logHelper);
     free(tracker);
     return;
 }

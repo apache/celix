@@ -16,26 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * activator.c
- *
- *  \date       May 24, 2019
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <memory.h>
 
-#include "celix_api.h"
-#include "celix_types.h"
-
+#include "celix_bundle_activator.h"
 #include "http_admin.h"
 #include "websocket_admin.h"
-
 #include "http_admin/api.h"
 #include "http_admin_constants.h"
 #include "civetweb.h"
+#include "celix_file_utils.h"
 
 
 typedef struct http_admin_activator {
@@ -52,7 +43,28 @@ typedef struct http_admin_activator {
 
 static int http_admin_start(http_admin_activator_t *act, celix_bundle_context_t *ctx) {
     celix_bundle_t *bundle = celix_bundleContext_getBundle(ctx);
-    char* root = celix_bundle_getEntry(bundle, "root");
+    char* storeRoot = celix_bundle_getDataFile(bundle, "");
+    if (storeRoot == NULL) {
+        celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR, "Cannot get bundle store root for the http admin bundle.");
+        return CELIX_BUNDLE_EXCEPTION;
+    }
+
+    char* httpRoot = NULL;
+    int rc = asprintf(&httpRoot, "%s/root", storeRoot);
+    if (rc < 0) {
+        celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR, "Cannot create http root directory for the http admin bundle.");
+        free(storeRoot);
+        return CELIX_ENOMEM;
+    }
+    free(storeRoot);
+
+    celix_status_t status = celix_utils_createDirectory(httpRoot, false, NULL);
+    if (status != CELIX_SUCCESS) {
+        celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR, "Cannot create http root directory for the http admin bundle.");
+        free(httpRoot);
+        return status;
+    }
+    celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_DEBUG, "Using http root directory %s", httpRoot);
 
     bool prop_use_websockets = celix_bundleContext_getPropertyAsBool(ctx, HTTP_ADMIN_USE_WEBSOCKETS_KEY, HTTP_ADMIN_USE_WEBSOCKETS_DFT);
     long listPort = celix_bundleContext_getPropertyAsLong(ctx,    HTTP_ADMIN_LISTENING_PORTS_KEY, HTTP_ADMIN_LISTENING_PORTS_DFT);
@@ -72,22 +84,22 @@ static int http_admin_start(http_admin_activator_t *act, celix_bundle_context_t 
     act->useWebsockets = prop_use_websockets;
 
     const char *svr_opts[] = {
-            "document_root", root,
+            "document_root", httpRoot,
             "listening_ports", prop_port,
             "websocket_timeout_ms", prop_timeout,
-            "websocket_root", root,
+            "websocket_root", httpRoot,
             "num_threads", prop_num_threads,
             NULL
     };
 
     //Try the 'LISTENING_PORT' property first, if failing continue with the port range functionality
-    act->httpManager = httpAdmin_create(ctx, root, svr_opts);
+    act->httpManager = httpAdmin_create(ctx, httpRoot, svr_opts);
 
     for(long port = prop_port_min; act->httpManager == NULL && port <= prop_port_max; port++) {
         char *port_str;
         asprintf(&port_str, "%li", port);
         svr_opts[3] = port_str;
-        act->httpManager = httpAdmin_create(ctx, root, svr_opts);
+        act->httpManager = httpAdmin_create(ctx, httpRoot, svr_opts);
         free(port_str);
     }
 

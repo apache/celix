@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required (VERSION 3.14)
+cmake_minimum_required (VERSION 3.18)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
 cmake_policy(SET CMP0068 NEW)
@@ -25,13 +25,13 @@ project (Celix C CXX ASM)
 include(cmake/celix_project/CelixProject.cmake)
 include(cmake/cmake_celix/UseCelix.cmake)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 #find required packages
 find_package(ZLIB REQUIRED) #framework
 find_package(libuuid REQUIRED) #framework
 find_package(CURL REQUIRED) #framework, etcdlib
 find_package(libzip REQUIRED) #framework, etcdlib
-find_package(jansson REQUIRED) #etcdlib, dfi
-find_package(libffi REQUIRED) #dfi
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
@@ -55,15 +55,6 @@ if (NOT TARGET CURL::libcurl)
             )
 endif ()
 
-if (NOT TARGET jansson::jansson)
-    message("Note jansson::jansson target not created by find_package(jansson). Creating jansson::jansson Target.")
-    add_library(jansson::jansson SHARED IMPORTED)
-    set_target_properties(jansson::jansson PROPERTIES
-            IMPORTED_LOCATION "${JANSSON_LIBRARIES}"
-            INTERFACE_INCLUDE_DIRECTORIES "${JANSSON_INCLUDE_DIRS}"
-            )
-endif ()
-
 # see https://public.kitware.com/Bug/view.php?id=15696
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
     message( FATAL_ERROR "Building Celix using CMake 3.3 and makefiles is not supported due to a bug in the Makefile Generator (see Bug 15696). Please change the used CMake version - both, CMake 3.2 and CMake 3.4 are working fine. Or use a different generator (e.g. Ninja)." )
@@ -72,9 +63,9 @@ ENDIF()
 # Options
 option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 if (ENABLE_TESTING)
-    find_package(GTest CONFIG QUIET)
+    find_package(GTest QUIET)
     if (NOT GTest_FOUND)
-        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/AddGTest.cmake)
+        include(AddGTest)
     endif()
 endif ()
 
@@ -124,6 +115,10 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         set(CMAKE_C_FLAGS "-Wno-stringop-truncation ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-Wno-stringop-truncation ${CMAKE_CXX_FLAGS}")
     endif()
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0)
+        set(CMAKE_C_FLAGS "-Wno-error=stringop-overread ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-Wno-error=stringop-overread ${CMAKE_CXX_FLAGS}")
+    endif()
 endif()
 
 option(ENABLE_MORE_WARNINGS "whether to enable more compiler warnings." OFF)
@@ -154,8 +149,8 @@ endif()
 
 # Set build type specific flags
 # Debug
-set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS}")
+set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG -O0 ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG -O0 ${CMAKE_CXX_FLAGS}")
 set(CMAKE_DEBUG_POSTFIX "d")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -193,6 +188,16 @@ if (CELIX_INSTALL_DEPRECATED_API)
     set(CMAKE_C_FLAGS "-Wno-deprecated-declarations ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-Wno-deprecated-declarations ${CMAKE_CXX_FLAGS}")
 endif ()
+
+include(CMakePushCheckState)
+cmake_push_check_state()
+cmake_reset_check_state()
+include(CheckLinkerFlag)
+check_linker_flag(CXX LINKER:--wrap,celix_nonexistent_symbol LINKER_WRAP_SUPPORTED)
+cmake_pop_check_state()
+
+#Add generate_export_header to cmake
+include(GenerateExportHeader)
 
 #Libraries and Launcher
 add_subdirectory(libs)

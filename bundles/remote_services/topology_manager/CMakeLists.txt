@@ -29,6 +29,7 @@ target_include_directories(rsa_topology_manager PRIVATE src)
 target_include_directories(rsa_topology_manager PRIVATE include)
 target_link_libraries(rsa_topology_manager PRIVATE Celix::log_helper Celix::c_rsa_spi)
 celix_deprecated_utils_headers(rsa_topology_manager)
+celix_deprecated_framework_headers(rsa_topology_manager)
 
 install_celix_bundle(rsa_topology_manager EXPORT celix COMPONENT rsa)
 #Setup target aliases to match external usage

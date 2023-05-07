@@ -19,13 +19,12 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <celix_api.h>
 
 #include "celix_shell_constants.h"
 #include "celix_bundle_context.h"
 #include "std_commands.h"
 #include "celix_bundle.h"
-
+#include "celix_utils.h"
 
 
 struct query_options {
@@ -226,13 +225,13 @@ bool queryCommand_execute(void *_ptr, const char *command_line_str, FILE *sout, 
         queryCommand_listServices(ctx, &opts, sout, serr);
     }
 
-    for (int i = 0; i < arrayList_size(opts.nameQueries); ++i) {
+    for (int i = 0; i < celix_arrayList_size(opts.nameQueries); ++i) {
         char *name = celix_arrayList_get(opts.nameQueries, i);
         free(name);
     }
     celix_arrayList_destroy(opts.nameQueries);
 
-    for (int i = 0; i < arrayList_size(opts.filterQueries); ++i) {
+    for (int i = 0; i < celix_arrayList_size(opts.filterQueries); ++i) {
         celix_filter_t *filter = celix_arrayList_get(opts.filterQueries, i);
         celix_filter_destroy(filter);
     }

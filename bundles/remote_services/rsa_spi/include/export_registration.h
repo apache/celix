@@ -24,8 +24,17 @@
 #include "endpoint_description.h"
 #include "service_reference.h"
 
-typedef struct export_registration export_registration_t;
+/**
+ * This headers contains a opaque declaration of the export_registration type and declaration of some generic
+ * exportRegistration functions. The export_registration type and the generic exportRegistration functions are used
+ * the common remote service parts.
+ *
+ * Service providers (i.e. RSA implementations) must provide the definition of type export_registration and can
+ * must implement the exportRegistration functions. Service providers can add additional exportRegistration functions,
+ * if needed.
+ */
 
+typedef struct export_registration export_registration_t;
 typedef struct export_reference export_reference_t;
 
 celix_status_t exportRegistration_close(export_registration_t *registration);

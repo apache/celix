@@ -38,6 +38,7 @@ static celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *a
     (void)properties;
     (void)registrations;
     celix_logHelper_info(admin->loghelper, "%s called: serviceId=%s\n", __FUNCTION__, serviceId);
+    return CELIX_SUCCESS;
 }
 
 static celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t *admin, array_list_pt *services) {
@@ -70,6 +71,12 @@ static celix_status_t remoteServiceAdmin_removeImportedService(remote_service_ad
     (void)registration;
     celix_logHelper_info(admin->loghelper, "%s called\n", __FUNCTION__);
     return CELIX_SUCCESS;
+}
+
+celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_description_t **description)
+{
+    celix_status_t status = CELIX_SUCCESS;
+    return status;
 }
 
 static celix_status_t my_rsa_start(my_remote_service_admin_activator_t* activator, celix_bundle_context_t* ctx) {

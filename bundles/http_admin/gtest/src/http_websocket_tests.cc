@@ -76,7 +76,7 @@ static void checkHttpRequest(const char* req_str, int expectedReturnCode) {
     //If response is successful, check if the received response contains the info we expected
     auto response_info = mg_get_response_info(connection);
     EXPECT_TRUE(response_info != nullptr);
-    EXPECT_EQ(expectedReturnCode, response_info->status_code);
+    EXPECT_EQ(expectedReturnCode, response_info->status_code) << "Unexpected return code for request: " << req_str;
 
     mg_close_connection(connection);
 }

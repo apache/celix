@@ -33,6 +33,7 @@ add_executable(test_tm_scoped
         tms_tests.cpp
 )
 celix_deprecated_utils_headers(test_tm_scoped)
+celix_deprecated_framework_headers(test_tm_scoped)
 target_include_directories(test_tm_scoped PRIVATE ../src ../include)
 target_link_libraries(test_tm_scoped PRIVATE
         Celix::framework
@@ -42,7 +43,7 @@ target_link_libraries(test_tm_scoped PRIVATE
         Celix::rsa_common
 )
 
-add_celix_bundle_dependencies(test_tm_scoped Celix::rsa_dfi Celix::rsa_topology_manager)
+add_celix_bundle_dependencies(test_tm_scoped Celix::rsa_dfi Celix::rsa_topology_manager calculator topology_manager_disc_mock_bundle topology_manager_test_bundle)
 
 file(GENERATE 
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config.properties"

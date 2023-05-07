@@ -42,7 +42,7 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_RSA_DISCOVERY_ETCD"] = self.options["celix"].build_rsa_discovery_etcd
         cmake.definitions["TEST_SHELL"] = self.options["celix"].build_shell
         if self.options["celix"].build_shell:
-            cmake.definitions["TEST_CXX_SHELL"] = self.options["celix"].celix_cxx
+            cmake.definitions["TEST_CXX_SHELL"] = self.options["celix"].celix_cxx17 or self.options["celix"].celix_cxx14
         cmake.definitions["TEST_REMOTE_SHELL"] = self.options["celix"].build_remote_shell
         cmake.definitions["TEST_SHELL_TUI"] = self.options["celix"].build_shell_tui
         cmake.definitions["TEST_SHELL_WUI"] = self.options["celix"].build_shell_wui
@@ -95,7 +95,7 @@ class TestPackageConan(ConanFile):
                 self.run("./use_rsa_etcd", cwd=os.path.join("deploy", "use_rsa_etcd"), run_environment=True)
             if self.options["celix"].build_shell:
                 self.run("./use_shell", run_environment=True)
-                if self.options["celix"].celix_cxx:
+                if self.options["celix"].celix_cxx17 or self.options["celix"].celix_cxx14:
                     self.run("./use_cxx_shell", run_environment=True)
             if self.options["celix"].build_remote_shell:
                 self.run("./use_remote_shell", cwd=os.path.join("deploy", "use_remote_shell"), run_environment=True)

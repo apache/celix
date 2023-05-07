@@ -17,48 +17,8 @@
  * under the License.
  */
 
-#include <stdlib.h>
-#include <string.h>
+#include "bundle_command.h"
 
-#include "celix_api.h"
-#include "std_commands.h"
-
-bool stopCommand_execute(void *handle, const char *const_command, FILE *outStream, FILE *errStream) {
-    celix_bundle_context_t *ctx = handle;
-
-    char *sub_str = NULL;
-    char *save_ptr = NULL;
-    char *command = celix_utils_strdup(const_command);
-
-    strtok_r(command, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-    sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-
-    bool stoppedCalledAndSucceeded = false;
-    if (sub_str == NULL) {
-        fprintf(outStream, "Incorrect number of arguments.\n");
-    } else {
-        while (sub_str != NULL) {
-
-            char *end_str = NULL;
-            long bndId = strtol(sub_str, &end_str, 10);
-            if (*end_str) {
-                fprintf(errStream, "Bundle id '%s' is invalid, problem at %s\n", sub_str, end_str);
-            } else {
-                bool exists = celix_bundleContext_isBundleInstalled(ctx, bndId);
-                if (exists) {
-                    celix_framework_t* fw = celix_bundleContext_getFramework(ctx);
-                    celix_framework_stopBundleAsync(fw, bndId);
-                    stoppedCalledAndSucceeded = true;
-                } else {
-                    fprintf(outStream, "No bundle with id %li.\n", bndId);
-                }
-            }
-
-            sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-        }
-    }
-
-    free(command);
-
-    return stoppedCalledAndSucceeded;
+bool stopCommand_execute(void *handle, const char *constCommandLine, FILE *outStream, FILE *errStream) {
+    return bundleCommand_execute(handle, constCommandLine, outStream, errStream, celix_framework_stopBundleAsync);
 }

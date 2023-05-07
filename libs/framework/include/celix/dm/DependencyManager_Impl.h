@@ -174,8 +174,10 @@ static celix::dm::DependencyManagerInfo createDepManInfoFromC(celix_dependency_m
             auto* cIntInfo = static_cast<dm_interface_info_t*>(celix_arrayList_get(cCmpInfo->interfaces, k));
             celix::dm::InterfaceInfo intInfo{};
             intInfo.serviceName = std::string{cIntInfo->name};
-            CELIX_PROPERTIES_ITERATE(cIntInfo->properties, iter) {
-                intInfo.properties[std::string{iter.key}] = std::string{iter.entry.value};
+            const char* key;
+            CELIX_PROPERTIES_FOR_EACH(cIntInfo->properties, key) {
+                const char* val =celix_properties_get(cIntInfo->properties, key, "");
+                intInfo.properties[std::string{key}] = std::string{val};
             }
             cmpInfo.interfacesInfo.emplace_back(std::move(intInfo));
         }
@@ -199,9 +201,13 @@ static celix::dm::DependencyManagerInfo createDepManInfoFromC(celix_dependency_m
 
 inline celix::dm::DependencyManagerInfo DependencyManager::getInfo() const {
     auto* cInfo = celix_dependencyManager_createInfo(cDependencyManager(), celix_bundleContext_getBundleId(context.get()));
-    auto result = createDepManInfoFromC(cInfo);
-    celix_dependencyManager_destroyInfo(cDependencyManager(), cInfo);
-    return result;
+    if (cInfo) {
+        auto result = createDepManInfoFromC(cInfo);
+        celix_dependencyManager_destroyInfo(cDependencyManager(), cInfo);
+        return result;
+    } else {
+        return {};
+    }
 }
 
 inline std::vector<celix::dm::DependencyManagerInfo> DependencyManager::getInfos() const {

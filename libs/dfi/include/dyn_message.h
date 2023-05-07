@@ -23,8 +23,8 @@
 #include "dyn_common.h"
 #include "dyn_type.h"
 #include "dfi_log_util.h"
-
 #include "celix_version.h"
+#include "celix_dfi_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,19 +46,19 @@ DFI_SETUP_LOG_HEADER(dynMessage);
 typedef struct _dyn_message_type dyn_message_type;
 
 
-int dynMessage_parse(FILE *descriptor, dyn_message_type **out);
-void dynMessage_destroy(dyn_message_type *msg);
+CELIX_DFI_EXPORT int dynMessage_parse(FILE *descriptor, dyn_message_type **out);
+CELIX_DFI_EXPORT void dynMessage_destroy(dyn_message_type *msg);
 
-int dynMessage_getName(dyn_message_type *msg, char **name);
-int dynMessage_getVersion(dyn_message_type *msg, celix_version_t** version);
-int dynMessage_getVersionString(dyn_message_type *msg, char **version);
-int dynMessage_getHeaderEntry(dyn_message_type *msg, const char *name, char **value);
-int dynMessage_getAnnotationEntry(dyn_message_type *msg, const char *name, char **value);
-int dynMessage_getMessageType(dyn_message_type *msg, dyn_type **type);
+CELIX_DFI_EXPORT int dynMessage_getName(dyn_message_type *msg, char **name);
+CELIX_DFI_EXPORT int dynMessage_getVersion(dyn_message_type *msg, celix_version_t** version);
+CELIX_DFI_EXPORT int dynMessage_getVersionString(dyn_message_type *msg, char **version);
+CELIX_DFI_EXPORT int dynMessage_getHeaderEntry(dyn_message_type *msg, const char *name, char **value);
+CELIX_DFI_EXPORT int dynMessage_getAnnotationEntry(dyn_message_type *msg, const char *name, char **value);
+CELIX_DFI_EXPORT int dynMessage_getMessageType(dyn_message_type *msg, dyn_type **type);
 
 // avpr parsing
-dyn_message_type * dynMessage_parseAvpr(FILE *avprDescriptorStream, const char *fqn);
-dyn_message_type * dynMessage_parseAvprWithStr(const char *avprDescriptor, const char *fqn);
+CELIX_DFI_DEPRECATED_EXPORT dyn_message_type * dynMessage_parseAvpr(FILE *avprDescriptorStream, const char *fqn);
+CELIX_DFI_DEPRECATED_EXPORT dyn_message_type * dynMessage_parseAvprWithStr(const char *avprDescriptor, const char *fqn);
 
 #ifdef __cplusplus
 }

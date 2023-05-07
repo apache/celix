@@ -20,13 +20,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#include <celix_api.h>
-
+#include "celix_threads.h"
+#include "celix_bundle_context.h"
 #include "tst_service.h"
 #include "calculator_service.h"
 #include "remote_example.h"
 #include <unistd.h>
+#include "celix_utils.h"
+#include "celix_dm_component.h"
+#include "dm_dependency_manager.h"
+#include "celix_bundle_activator.h"
 
 //note exports double diff variable (time in ms)
 #define TIMED_EXPR(expr) \

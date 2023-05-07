@@ -33,12 +33,18 @@
  * - R : Reserved. It should be set to 0.
  * - Facility (11 bits): An indicator of the source of the error.
  * - Code (16bits): The remainder of error code.
+ *
+ * Errors from errno, such as ENOMEM, can be utilized as celix_status_t values and fall under to the
+ * CELIX_FACILITY_CERRNO (0) facility.
  */
 #ifndef CELIX_ERRNO_H_
 #define CELIX_ERRNO_H_
 
 #include <stddef.h>
 #include <errno.h>
+#include <stdbool.h>
+
+#include "celix_utils_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,12 +57,18 @@ extern "C" {
 #define CELIX_DO_IF(status, expr) ((status) == CELIX_SUCCESS) ? (expr) : (status)
 
 /*!
+ * Helper macro which check the current status and executes a goto the provided label if the
+ * status is not CELIX_SUCCESS (0)
+ */
+#define CELIX_GOTO_IF_ERR(status, label) if ((status) != CELIX_SUCCESS) { goto label; }
+
+/*!
  * \defgroup celix_errno Error Codes
  * \ingroup framework
  * \{
  */
 
-struct celix_status {
+struct __attribute__((deprecated("use celix_status_t instead"))) celix_status {
     int code;
     char *error;
 };
@@ -69,7 +81,24 @@ typedef int celix_status_t;
 /**
  * Return a readable string for the given status code.
  */
-const char* celix_strerror(celix_status_t status);
+CELIX_UTILS_EXPORT const char* celix_strerror(celix_status_t status);
+
+/**
+ * @brief Check if a provided celix_status_t is from a specific facility.
+ * @param[in] code The status code to check.
+ * @param[in] fac The facility to check against.
+ * @return true if the status is from the provided facility, false otherwise.
+ */
+CELIX_UTILS_EXPORT bool celix_utils_isStatusCodeFromFacility(celix_status_t code, int fac);
+
+
+/**
+ * @brief Check if a provided celix_status_t is a customer error code.
+ * @param[in] code The status code to check.
+ * @return true if the status is a customer error code, false otherwise.
+ */
+CELIX_UTILS_EXPORT bool celix_utils_isCustomerStatusCode(celix_status_t code);
+
 
 /*!
  * Customer error code mask
@@ -94,6 +123,12 @@ const char* celix_strerror(celix_status_t status);
  *
  */
 #define CELIX_FACILITY_HTTP 2
+
+/*!
+ * The facility of the libzip error code
+ *
+ */
+#define CELIX_FACILITY_ZIP 3
 
 /*!
  * Make the error code accroding to the specification
@@ -166,9 +201,9 @@ const char* celix_strerror(celix_status_t status);
 
 /*!
  * @name C error map to celix
+ * @deprecated It is recommended to use the C errno errors directly (e.g. ENOMEM instead of CELIX_ENOMEM)
  * @{
  */
-
 #define CELIX_ENOMEM                    CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,ENOMEM)
 
 

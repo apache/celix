@@ -106,11 +106,14 @@ namespace celix {
     constexpr const char * const SERVICE_VERSION = CELIX_FRAMEWORK_SERVICE_VERSION;
 
     /**
-     * @brief Celix framework environment property (named "org.osgi.framework.storage") specifying the cache
+     * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CACHE_DIR") specifying the cache
      * directory used for the bundle caches.
      *
      * If not specified ".cache" is used.
      */
+    constexpr const char * const FRAMEWORK_CACHE_DIR = CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR;
+
+    //@deprecated use FRAMEWORK_CACHE_DIR.
     constexpr const char * const FRAMEWORK_STORAGE = CELIX_FRAMEWORK_FRAMEWORK_STORAGE;
 
     /**
@@ -215,12 +218,4 @@ namespace celix {
      *
      */
     constexpr const char * const LOAD_BUNDLES_WITH_NODELETE = CELIX_LOAD_BUNDLES_WITH_NODELETE;
-
-    /**
-     * @brief Celix framework environment property (named "org.osgi.framework.storage") specifying the cache
-     * directory used for the bundle caches.
-     *
-     * If not specified ".cache" is used.
-     */
-    constexpr const char * const FRAMEWORK_CACHE_DIR = CELIX_FRAMEWORK_FRAMEWORK_STORAGE;
 }

@@ -25,6 +25,7 @@
 
 #include "celix_errno.h"
 #include "celix_version.h"
+#include "celix_utils_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,7 +46,7 @@ typedef struct celix_version_range celix_version_range_t;
  * @param versionRange The created range
  * @return The service range or NULL if the service range could not be created
  */
-celix_version_range_t*
+CELIX_UTILS_EXPORT celix_version_range_t*
 celix_versionRange_createVersionRange(celix_version_t* low, bool isLowInclusive, celix_version_t* high, bool isHighInclusive);
 
 /**
@@ -54,9 +55,9 @@ celix_versionRange_createVersionRange(celix_version_t* low, bool isLowInclusive,
  *
  * @return The created range
  */
-celix_version_range_t* celix_versionRange_createInfiniteVersionRange();
+CELIX_UTILS_EXPORT celix_version_range_t* celix_versionRange_createInfiniteVersionRange();
 
-void celix_versionRange_destroy(celix_version_range_t* range);
+CELIX_UTILS_EXPORT void celix_versionRange_destroy(celix_version_range_t* range);
 
 /**
  * Determine if the specified version is part of the version range or not.
@@ -65,7 +66,7 @@ void celix_versionRange_destroy(celix_version_range_t* range);
  * @param version The version to check.
  * @return  True if the specified version is included in this version range, false otherwise.
  */
-bool celix_versionRange_isInRange(const celix_version_range_t* versionRange, const celix_version_t* version);
+CELIX_UTILS_EXPORT bool celix_versionRange_isInRange(const celix_version_range_t* versionRange, const celix_version_t* version);
 
 /**
  * Determines whether the lower bound is included in the given range
@@ -73,7 +74,7 @@ bool celix_versionRange_isInRange(const celix_version_range_t* versionRange, con
  * @param versionRange The range to check
  * @return true in case, the lower bound the lower bound is included, otherwise false.
  */
-bool celix_versionRange_isLowInclusive(const celix_version_range_t* versionRange);
+CELIX_UTILS_EXPORT bool celix_versionRange_isLowInclusive(const celix_version_range_t* versionRange);
 
 /**
  * Determines whether the higher bound is included in the given range
@@ -81,7 +82,7 @@ bool celix_versionRange_isLowInclusive(const celix_version_range_t* versionRange
  * @param versionRange The range to check.
  * @return true in case, the lower bound the higher bound is included, otherwise false.
  */
-bool celix_versionRange_isHighInclusive(const celix_version_range_t* versionRange);
+CELIX_UTILS_EXPORT bool celix_versionRange_isHighInclusive(const celix_version_range_t* versionRange);
 
 /**
  * Retrieves whether the lower bound version from the given range
@@ -89,7 +90,7 @@ bool celix_versionRange_isHighInclusive(const celix_version_range_t* versionRang
  * @param versionRange The range
  * @param The lower bound version.
  */
-celix_version_t* celix_versionRange_getLowVersion(const celix_version_range_t* versionRange);
+CELIX_UTILS_EXPORT celix_version_t* celix_versionRange_getLowVersion(const celix_version_range_t* versionRange);
 
 /**
  * Retrieves whether the upper bound version from the given range
@@ -97,7 +98,7 @@ celix_version_t* celix_versionRange_getLowVersion(const celix_version_range_t* v
  * @param versionRange The range
  * @return The upper bound version.
  */
-celix_version_t* celix_versionRange_getHighVersion(const celix_version_range_t* versionRange);
+CELIX_UTILS_EXPORT celix_version_t* celix_versionRange_getHighVersion(const celix_version_range_t* versionRange);
 
 /**
  * Parses a version range from the specified string.
@@ -118,7 +119,7 @@ celix_version_t* celix_versionRange_getHighVersion(const celix_version_range_t* 
  * @param rangeString String representation of the version range.
  * @return The created celix_version_range_t or NULL if the range string was invalid.
  */
-celix_version_range_t* celix_versionRange_parse(const char *rangeString);
+CELIX_UTILS_EXPORT celix_version_range_t* celix_versionRange_parse(const char *rangeString);
 
 /**
  * Returns the LDAP filter for a version range. Caller is owner of the returned string.
@@ -127,7 +128,7 @@ celix_version_range_t* celix_versionRange_parse(const char *rangeString);
  * @param serviceVersionPropertyName    The service version name to be used in the filter (i.e. service.version)
  * @return LDAP filter string if valid, NULL otherwise
  */
-char* celix_versionRange_createLDAPFilter(const celix_version_range_t* range, const char *serviceVersionAttributeName);
+CELIX_UTILS_EXPORT char* celix_versionRange_createLDAPFilter(const celix_version_range_t* range, const char *serviceVersionAttributeName);
 
 /**
  * construct a LDAP filter for the provided version range.
@@ -135,7 +136,7 @@ char* celix_versionRange_createLDAPFilter(const celix_version_range_t* range, co
  *
  * @return True if parse successful, False otherwise.
  */
-bool celix_versionRange_createLDAPFilterInPlace(const celix_version_range_t* range, const char *serviceVersionAttributeName, char* buffer, size_t bufferLength);
+CELIX_UTILS_EXPORT bool celix_versionRange_createLDAPFilterInPlace(const celix_version_range_t* range, const char *serviceVersionAttributeName, char* buffer, size_t bufferLength);
 
 
 #ifdef __cplusplus

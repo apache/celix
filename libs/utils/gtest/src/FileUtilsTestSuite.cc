@@ -17,10 +17,18 @@
  * under the License.
  */
 
+#include <fstream>
 #include <gtest/gtest.h>
+#include <stdlib.h>
+#include <string>
+#include <thread>
+#include <unistd.h>
+#include <vector>
+#include <zip.h>
 
 #include "celix_file_utils.h"
 #include "celix_properties.h"
+#include "celix_utils.h"
 
 class FileUtilsTestSuite : public ::testing::Test {};
 
@@ -50,7 +58,6 @@ TEST_F(FileUtilsTestSuite, CreateAndDeleteDirectory) {
     EXPECT_TRUE(celix_utils_fileExists(testDir));
     EXPECT_TRUE(celix_utils_directoryExists(testDir));
 
-
     //Creating a directory if it already exists fails when using failIfPresent=true.
     status = celix_utils_createDirectory(testDir, true, &error);
     EXPECT_NE(status, CELIX_SUCCESS);
@@ -70,7 +77,7 @@ TEST_F(FileUtilsTestSuite, CreateAndDeleteDirectory) {
     status = celix_utils_deleteDirectory(testDir, nullptr);
     EXPECT_EQ(status, CELIX_SUCCESS);
 
-    //Can i create and delete a dir with ends with a /
+    //Can I create and delete a dir with ends with a /
     status = celix_utils_createDirectory(testDir2, true, nullptr);
     EXPECT_EQ(status, CELIX_SUCCESS);
     EXPECT_TRUE(celix_utils_fileExists(testDir2));
@@ -81,6 +88,81 @@ TEST_F(FileUtilsTestSuite, CreateAndDeleteDirectory) {
     EXPECT_EQ(status, CELIX_SUCCESS);
     status = celix_utils_deleteDirectory(testDir3, nullptr);
     EXPECT_EQ(status, CELIX_SUCCESS);
+
+    //Can I create and delete a dir that begins with a /
+    auto cwd = getcwd(nullptr, 0);
+    std::string testDir4 = cwd;
+    free(cwd);
+    testDir4 += "/";
+    testDir4 += testDir;
+    status = celix_utils_createDirectory(testDir4.c_str(), true, &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(error, nullptr);
+    status = celix_utils_deleteDirectory(testDir4.c_str(), nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    //Can I delete dir containing a dangling symbolic link, which will cause `stat` return ENOENT
+    status = celix_utils_createDirectory(testDir, true, &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(error, nullptr);
+    std::string symLink = testDir;
+    symLink += "/link";
+    status = symlink("non-existent", symLink.c_str());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    status = celix_utils_deleteDirectory(testDir, nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    //Can I delete a dir containing a symbolic link without touch the target
+    status = celix_utils_createDirectory(testDir, true, &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(error, nullptr);
+    status = celix_utils_createDirectory(testDir2, true, &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(error, nullptr);
+    std::string subDir = testDir2;
+    subDir += "sub";
+    status = celix_utils_createDirectory(subDir.c_str(), true, &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    status = symlink("../directory2", symLink.c_str()); // link -> ../directory2
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    status = celix_utils_deleteDirectory(testDir, nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_TRUE(celix_utils_fileExists(testDir2));
+    EXPECT_TRUE(celix_utils_fileExists(subDir.c_str()));
+    status = celix_utils_deleteDirectory(testDir2, nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+}
+
+TEST_F(FileUtilsTestSuite, DeleteFileAsDirectory) {
+    const std::string root = "celix_file_utils_test";
+    celix_utils_deleteDirectory(root.c_str(), nullptr);
+    const char* error = nullptr;
+    celix_utils_createDirectory(root.c_str(), true, nullptr);
+    const std::string filename = root + "/file";
+    std::fstream file(filename, std::ios::out);
+    file.close();
+    auto status = celix_utils_deleteDirectory(filename.c_str(), &error);
+    EXPECT_EQ(status, CELIX_FILE_IO_EXCEPTION);
+    EXPECT_NE(error, nullptr);
+    EXPECT_TRUE(celix_utils_fileExists(filename.c_str()));
+    celix_utils_deleteDirectory(root.c_str(), nullptr);
+}
+
+TEST_F(FileUtilsTestSuite, DeleteSymbolicLinkToDirectory) {
+    const std::string root = "celix_file_utils_test";
+    const std::string testDir = root + "/directory";
+    const std::string symLink = root + "/link";
+    celix_utils_deleteDirectory(root.c_str(), nullptr);
+    const char* error = nullptr;
+    celix_utils_createDirectory(testDir.c_str(), true, nullptr);
+    auto status = symlink("./directory", symLink.c_str()); // link -> ./directory
+    EXPECT_EQ(status, 0);
+    status = celix_utils_deleteDirectory(symLink.c_str(), &error);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_EQ(error, nullptr);
+    EXPECT_FALSE(celix_utils_fileExists(symLink.c_str()));
+    EXPECT_TRUE(celix_utils_directoryExists(testDir.c_str()));
+    celix_utils_deleteDirectory(root.c_str(), nullptr);
 }
 
 TEST_F(FileUtilsTestSuite, ExtractZipFileTest) {
@@ -184,4 +266,108 @@ TEST_F(FileUtilsTestSuite, ExtractZipDataTest) {
     EXPECT_EQ(celix_properties_getAsLong(props, "level", 0), 2);
     celix_properties_destroy(props);
 }
+
+TEST_F(FileUtilsTestSuite, ExtractBadZipDataTest) {
+    const char* extractLocation = "extract_location";
+    const char* file1 = "extract_location/top.properties";
+    const char* file2 = "extract_location/subdir/sub.properties";
+    celix_utils_deleteDirectory(extractLocation, nullptr);
+
+    EXPECT_FALSE(celix_utils_fileExists(extractLocation));
+    std::vector<uint8_t> zipData(test_data_start, test_data_start+(test_data_end-test_data_start)/2);
+    auto status = celix_utils_extractZipData(zipData.data(), zipData.size(), extractLocation, nullptr);
+    EXPECT_NE(status, CELIX_SUCCESS);
+    EXPECT_FALSE(celix_utils_fileExists(file1));
+    EXPECT_FALSE(celix_utils_fileExists(file2));
+}
 #endif
+
+TEST_F(FileUtilsTestSuite, ExtractNullZipDataTest) {
+    const char* extractLocation = "extract_location";
+    celix_utils_deleteDirectory(extractLocation, nullptr);
+
+    EXPECT_FALSE(celix_utils_fileExists(extractLocation));
+    const char* error = nullptr;
+    auto status = celix_utils_extractZipData(nullptr, 1, extractLocation, &error);
+    EXPECT_EQ(status, CELIX_ERROR_MAKE(CELIX_FACILITY_ZIP,ZIP_ER_INVAL));
+    EXPECT_NE(error, nullptr);
+}
+
+TEST_F(FileUtilsTestSuite, LastModifiedTest) {
+    //create test dir and test file
+    const char* testDir = "file_utils_test_dir";
+    const char* testFile = "file_utils_test_dir/test_file";
+    celix_utils_deleteDirectory(testDir, nullptr);
+    EXPECT_FALSE(celix_utils_fileExists(testDir));
+    EXPECT_FALSE(celix_utils_fileExists(testFile));
+    celix_utils_createDirectory(testDir, false, nullptr);
+    FILE* fp = fopen(testFile, "w");
+    EXPECT_NE(fp, nullptr);
+    fclose(fp);
+    EXPECT_TRUE(celix_utils_fileExists(testFile));
+
+
+    //Given a file, I can get the last modified time
+    struct timespec lastModified{};
+    auto status = celix_utils_getLastModified(testFile, &lastModified);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_NE(lastModified.tv_sec, 0);
+
+    //Given a directory, I can get the last modified time
+    status = celix_utils_getLastModified(testDir, &lastModified);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_NE(lastModified.tv_sec, 0);
+
+    //Given a non-existing file, I can get the last modified time
+    status = celix_utils_getLastModified("does-not-exists", &lastModified);
+    EXPECT_NE(status, CELIX_SUCCESS);
+    EXPECT_EQ(lastModified.tv_sec, 0);
+    EXPECT_EQ(lastModified.tv_nsec, 0);
+}
+
+TEST_F(FileUtilsTestSuite, TouchTest) {
+    //create test dir and test file
+    const char* testDir = "file_utils_test_dir";
+    const char* testFile = "file_utils_test_dir/test_file";
+    celix_utils_deleteDirectory(testDir, nullptr);
+    EXPECT_FALSE(celix_utils_fileExists(testDir));
+    EXPECT_FALSE(celix_utils_fileExists(testFile));
+    celix_utils_createDirectory(testDir, false, nullptr);
+    FILE* fp = fopen(testFile, "w");
+    EXPECT_NE(fp, nullptr);
+    fclose(fp);
+    EXPECT_TRUE(celix_utils_fileExists(testFile));
+
+    //Given a file, I can touch the file
+    struct timespec lastModified{};
+    auto status = celix_utils_getLastModified(testFile, &lastModified);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_NE(lastModified.tv_sec, 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    status = celix_utils_touch(testFile);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    struct timespec lastModified2{};
+    status = celix_utils_getLastModified(testFile, &lastModified2);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_NE(lastModified2.tv_sec, 0);
+    double diff = celix_difftime(&lastModified, &lastModified2);
+    EXPECT_LT(diff, 1.0); //should be less than 1 seconds
+    EXPECT_GT(diff, 0.0); //should be more than 0 seconds
+
+    //Given a directory, I can touch the directory
+    status = celix_utils_getLastModified(testDir, &lastModified);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_NE(lastModified.tv_sec, 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    status = celix_utils_touch(testDir);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    status = celix_utils_getLastModified(testDir, &lastModified2);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    diff = celix_difftime(&lastModified, &lastModified2);
+    EXPECT_LT(diff, 1.0); //should be less than 1 seconds
+    EXPECT_GT(diff, 0.0); //should be more than 0 seconds
+
+    //Given a non-existing file, I cannot touch the file
+    status = celix_utils_touch("does-not-exists");
+    EXPECT_NE(status, CELIX_SUCCESS);
+}

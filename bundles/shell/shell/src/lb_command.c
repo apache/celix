@@ -20,11 +20,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "utils.h"
+#include "celix_constants.h"
+#include "celix_utils.h"
 #include "celix_bundle_context.h"
 #include "celix_bundle.h"
-#include "array_list.h"
-#include "bundle_context.h"
 #include "std_commands.h"
 #include "celix_shell_constants.h"
 
@@ -40,7 +39,6 @@ typedef struct lb_options {
     //details
     bool show_location;
     bool show_symbolic_name;
-    bool show_update_location;
 
     //use color
     bool useColors;
@@ -49,16 +47,73 @@ typedef struct lb_options {
     char *listGroup;
 } lb_options_t;
 
-static char * psCommand_stateString(bundle_state_e state);
+typedef struct lb_command_bundle_info {
+    long id;
+    char* name;
+    char* symbolicName;
+    celix_version_t* version;
+    char* group;
+    char* location;
+    bundle_state_e state;
+} lb_command_bundle_info_t;
+
+static int lbCommand_bundleInfoCmp(celix_array_list_entry_t a, celix_array_list_entry_t b) {
+    lb_command_bundle_info_t* infoA = a.voidPtrVal;
+    lb_command_bundle_info_t* infoB = b.voidPtrVal;
+    if (infoA->id < infoB->id) {
+        return -1;
+    } else if (infoA->id > infoB->id) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+static void lbCommand_collectBundleInfo_callback(void* data, const celix_bundle_t* bnd) {
+    celix_array_list_t* infoEntries = data;
+    lb_command_bundle_info_t* info = malloc(sizeof(*info));
+    if (info != NULL) {
+        info->id = celix_bundle_getId(bnd);
+        info->name = celix_utils_strdup(celix_bundle_getName(bnd));
+        info->location = celix_bundle_getLocation(bnd);
+        info->symbolicName = celix_utils_strdup(celix_bundle_getSymbolicName(bnd));
+        info->version = celix_version_copy(celix_bundle_getVersion(bnd));
+        info->group = celix_utils_strdup(celix_bundle_getGroup(bnd));
+        info->state = celix_bundle_getState(bnd);
+        celix_arrayList_add(infoEntries, info);
+    }
+}
+
+static void lbCommand_freeBundleInfoEntry(void* entry) {
+    lb_command_bundle_info_t* info = entry;
+    free(info->name);
+    free(info->symbolicName);
+    free(info->location);
+    free(info->group);
+    celix_version_destroy(info->version);
+    free(info);
+}
+
+static celix_array_list_t* lbCommand_collectBundleInfo(celix_bundle_context_t *ctx) {
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    opts.simpleRemovedCallback = lbCommand_freeBundleInfoEntry;
+    celix_array_list_t* infoEntries = celix_arrayList_createWithOptions(&opts);
+    if (infoEntries != NULL) {
+        celix_bundleContext_useBundles(ctx, (void*)infoEntries, lbCommand_collectBundleInfo_callback);
+        celix_bundleContext_useBundle(ctx, CELIX_FRAMEWORK_BUNDLE_ID, (void*)infoEntries, lbCommand_collectBundleInfo_callback);
+        celix_arrayList_sortEntries(infoEntries, lbCommand_bundleInfoCmp);
+    }
+    return infoEntries;
+}
 
 static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_t *opts, FILE *out) {
-    const char *message_str = "Name";
+    celix_array_list_t* infoEntries = lbCommand_collectBundleInfo(ctx);
+
+    const char* messageStr = "Name";
     if (opts->show_location) {
-        message_str = "Location";
+        messageStr = "Location";
     } else if (opts->show_symbolic_name) {
-        message_str = "Symbolic name";
-    } else if (opts->show_update_location) {
-        message_str = "Update location";
+        messageStr = "Symbolic name";
     }
 
     const char* startColor = "";
@@ -68,115 +123,43 @@ static void lbCommand_listBundles(celix_bundle_context_t *ctx, const lb_options_
         endColor = END_COLOR;
     }
     fprintf(out, "%s  Bundles:%s\n", startColor, endColor);
-    fprintf(out, "%s  %-5s %-12s %-40s %-20s%s\n", startColor, "ID", "State", message_str, "Group", endColor);
+    fprintf(out, "%s  %-5s %-12s %-40s %-20s%s\n", startColor, "ID", "State", messageStr, "Group", endColor);
 
-    array_list_t *bundles_ptr = NULL;
-    bundleContext_getBundles(ctx, &bundles_ptr);
-    unsigned int size = arrayList_size(bundles_ptr);
+    for (int i = 0; infoEntries != NULL && i < celix_arrayList_size(infoEntries); i++) {
+        lb_command_bundle_info_t* info = celix_arrayList_get(infoEntries, i);
 
-    bundle_pt bundles_array_ptr[size];
-
-    for (unsigned int i = 0; i < size; i++) {
-        bundles_array_ptr[i] = arrayList_get(bundles_ptr, i);
-    }
-
-    for (unsigned int i = 0; i < size - 1; i++) {
-        for (unsigned int j = i + 1; j < size; j++) {
-            bundle_pt first_ptr = bundles_array_ptr[i];
-            bundle_pt second_ptr = bundles_array_ptr[j];
-
-            bundle_archive_pt first_archive_ptr = NULL;
-            bundle_archive_pt second_archive_ptr = NULL;
-
-            long first_id;
-            long second_id;
-
-            bundle_getArchive(first_ptr, &first_archive_ptr);
-            bundle_getArchive(second_ptr, &second_archive_ptr);
-
-            bundleArchive_getId(first_archive_ptr, &first_id);
-            bundleArchive_getId(second_archive_ptr, &second_id);
-
-            if (first_id > second_id) {
-                bundle_pt temp_ptr = bundles_array_ptr[i];
-                bundles_array_ptr[i] = bundles_array_ptr[j];
-                bundles_array_ptr[j] = temp_ptr;
-            }
-        }
-    }
-
-    for (unsigned int i = 0; i < size; i++) {
-        celix_status_t sub_status;
-
-        bundle_pt bundle_ptr = bundles_array_ptr[i];
-
-        bundle_archive_pt archive_ptr = NULL;
-        long id = 0;
-        bundle_state_e state = CELIX_BUNDLE_STATE_UNKNOWN;
-        const char *state_str = NULL;
-        module_pt module_ptr = NULL;
-        const char *name_str = NULL;
-        const char *group_str = NULL;
-
-        sub_status = bundle_getArchive(bundle_ptr, &archive_ptr);
-        if (sub_status == CELIX_SUCCESS) {
-            sub_status = bundleArchive_getId(archive_ptr, &id);
+        const char* printValue = info->name;
+        if (opts->show_location) {
+            printValue = info->location;
+        } else if (opts->show_symbolic_name) {
+            printValue = info->symbolicName;
         }
 
-        if (sub_status == CELIX_SUCCESS) {
-            sub_status = bundle_getState(bundle_ptr, &state);
+        startColor = "";
+        endColor = "";
+        if (opts->useColors) {
+            startColor = i % 2 == 0 ? EVEN_COLOR : ODD_COLOR;
+            endColor = END_COLOR;
+        }
+        bool print = true;
+        if (opts->listGroup != NULL) {
+            print = info->group != NULL && strstr(info->group, opts->listGroup) != NULL;
         }
 
-        if (sub_status == CELIX_SUCCESS) {
-            state_str = psCommand_stateString(state);
-
-            sub_status = bundle_getCurrentModule(bundle_ptr, &module_ptr);
-        }
-
-        if (sub_status == CELIX_SUCCESS) {
-            name_str = celix_bundle_getName(bundle_ptr);
-        }
-
-        if (sub_status == CELIX_SUCCESS) {
-            module_getGroup(module_ptr, &group_str);
-        }
-
-        if (sub_status == CELIX_SUCCESS) {
-            if (opts->show_location) {
-                sub_status = bundleArchive_getLocation(archive_ptr, &name_str);
-            } else if (opts->show_symbolic_name) {
-                sub_status = module_getSymbolicName(module_ptr, &name_str);
-            } else if (opts->show_update_location) {
-                sub_status = bundleArchive_getLocation(archive_ptr, &name_str);
-            }
-        }
-
-        if (sub_status == CELIX_SUCCESS) {
-            startColor = "";
-            endColor = "";
-            if (opts->useColors) {
-                startColor = i % 2 == 0 ? EVEN_COLOR : ODD_COLOR;
-                endColor = END_COLOR;
-            }
-            bool print = true;
-            if (opts->listGroup != NULL) {
-                print = group_str != NULL && strstr(group_str, opts->listGroup) != NULL;
-            }
-
-            if (print) {
-                group_str = group_str == NULL ? NONE_GROUP : group_str;
-                fprintf(out, "%s  %-5li %-12s %-40s %-20s%s\n", startColor, id, state_str, name_str, group_str, endColor);
-            }
-
-        }
-
-        if (sub_status != CELIX_SUCCESS) {
-            break;
+        if (print) {
+            const char* printGroup = celix_utils_isStringNullOrEmpty(info->group) ? NONE_GROUP : info->group;
+            fprintf(out, "%s  %-5li %-12s %-40s %-20s%s\n",
+                    startColor,
+                    info->id,
+                    celix_bundleState_getName(info->state),
+                    printValue,
+                    printGroup,
+                    endColor);
         }
     }
     fprintf(out, "\n\n");
 
-    arrayList_destroy(bundles_ptr);
+    celix_arrayList_destroy(infoEntries);
 }
 
 bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *out_ptr, FILE *err_ptr) {
@@ -190,7 +173,6 @@ bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *o
     opts.useColors = celix_bundleContext_getPropertyAsBool(ctx, CELIX_SHELL_USE_ANSI_COLORS, CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
     opts.show_location        = false;
     opts.show_symbolic_name   = false;
-    opts.show_update_location = false;
 
     char *sub_str = NULL;
     char *save_ptr = NULL;
@@ -202,8 +184,6 @@ bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *o
             opts.show_location = true;
         } else if (strcmp(sub_str, "-s") == 0) {
             opts.show_symbolic_name = true;
-        } else if (strcmp(sub_str, "-u") == 0) {
-            opts.show_update_location = true;
         } else if (strncmp(sub_str, "-", 1) == 0) {
             fprintf(out_ptr, "Ignoring unknown lb option '%s'\n", sub_str);
         } else {
@@ -218,21 +198,4 @@ bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *o
     free(command_line_str);
 
     return true;
-}
-
-static char * psCommand_stateString(bundle_state_e state) {
-    switch (state) {
-        case CELIX_BUNDLE_STATE_ACTIVE:
-            return "Active      ";
-        case CELIX_BUNDLE_STATE_INSTALLED:
-            return "Installed   ";
-        case CELIX_BUNDLE_STATE_RESOLVED:
-            return "Resolved    ";
-        case CELIX_BUNDLE_STATE_STARTING:
-            return "Starting    ";
-        case CELIX_BUNDLE_STATE_STOPPING:
-            return "Stopping    ";
-        default:
-            return "Unknown     ";
-    }
 }

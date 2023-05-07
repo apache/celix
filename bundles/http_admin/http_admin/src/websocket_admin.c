@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * websocket_admin.c
- *
- *  \date       May 24, 2019
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <memory.h>
@@ -31,12 +24,9 @@
 #include "http_admin/api.h"
 #include "http_admin.h"
 #include "service_tree.h"
-
 #include "civetweb.h"
 
-#include "celix_api.h"
 #include "celix_utils_api.h"
-#include "hash_map.h"
 
 
 struct websocket_admin_manager {
@@ -46,7 +36,6 @@ struct websocket_admin_manager {
 
     service_tree_t sock_svc_tree;
     celix_thread_mutex_t admin_lock;
-
 };
 
 websocket_admin_manager_t *websocketAdmin_create(celix_bundle_context_t *context, struct mg_context *svr_ctx) {

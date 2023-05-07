@@ -21,7 +21,7 @@
 
 #include "celix/Utils.h"
 
-class CxxUtilsTestSuite : public ::testing::Test {
+class UtilsTestSuite : public ::testing::Test {
 public:
 };
 
@@ -48,7 +48,7 @@ namespace example {
 }
 
 
-TEST_F(CxxUtilsTestSuite, testTypeName) {
+TEST_F(UtilsTestSuite, testTypeName) {
     //When inferring a type name with no provided name and the type does not have a NAME static member,
     //the call should return an inferred name based on __PRETTY__FUNCTION__ (see celix::impl::extractTypeName)
     auto name = celix::typeName<example::TestType>();
@@ -80,7 +80,7 @@ TEST_F(CxxUtilsTestSuite, testTypeName) {
     EXPECT_NE(std::string{"4"}, name);
 }
 
-TEST_F(CxxUtilsTestSuite, testTypeVersion) {
+TEST_F(UtilsTestSuite, testTypeVersion) {
     //When inferring a type version with no provided version and the type does not have a VERSION static member,
     //the call should return an empty version.
     auto version = celix::typeVersion<example::TestType>();
@@ -106,7 +106,7 @@ TEST_F(CxxUtilsTestSuite, testTypeVersion) {
 #endif
 }
 
-TEST_F(CxxUtilsTestSuite, testSplit) {
+TEST_F(UtilsTestSuite, testSplit) {
     auto tokens = celix::split("item1,item2,item3");
     ASSERT_EQ(tokens.size(), 3);
     EXPECT_EQ(tokens[0], "item1");

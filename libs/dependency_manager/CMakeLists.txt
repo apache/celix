@@ -17,6 +17,7 @@
 
 #dummy libaries to ensure backward compatability with projects using the dependency manager libs/shell
 add_library(dependency_manager_static STATIC src/dm_activator.c)
+celix_deprecated_framework_headers(dependency_manager_static)
 target_include_directories(dependency_manager_static PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
 )
@@ -27,6 +28,7 @@ else()
 endif()
 
 add_library(dependency_manager_so SHARED src/dm_activator.c)
+celix_deprecated_framework_headers(dependency_manager_so)
 target_include_directories(dependency_manager_so PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
 )

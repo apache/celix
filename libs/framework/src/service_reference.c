@@ -180,7 +180,7 @@ long serviceReference_getServiceId(service_reference_pt ref) {
 
 
 
-FRAMEWORK_EXPORT celix_status_t
+celix_status_t
 serviceReference_getPropertyWithDefault(service_reference_pt ref, const char *key, const char* def, const char **value) {
     celix_status_t status = CELIX_SUCCESS;
     properties_pt props = NULL;
@@ -195,18 +195,23 @@ celix_status_t serviceReference_getProperty(service_reference_pt ref, const char
     return serviceReference_getPropertyWithDefault(ref, key, NULL, value);
 }
 
-FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_reference_pt ref, char **keys[], unsigned int *size) {
+celix_status_t serviceReference_getPropertyKeys(service_reference_pt ref, char **keys[], unsigned int *size) {
     celix_status_t status = CELIX_SUCCESS;
     properties_pt props = NULL;
 
-    serviceRegistration_getProperties(ref->registration, &props);
+    status = serviceRegistration_getProperties(ref->registration, &props);
+    assert(status == CELIX_SUCCESS);
+    hash_map_iterator_pt it;
     int i = 0;
-    int vsize = celix_properties_size(props);
+    int vsize = hashMap_size(props);
     *size = (unsigned int)vsize;
     *keys = malloc(vsize * sizeof(**keys));
-    CELIX_PROPERTIES_ITERATE(props, iter) {
-        (*keys)[i++] = (char*)iter.key;
+    it = hashMapIterator_create(props);
+    while (hashMapIterator_hasNext(it)) {
+        (*keys)[i] = hashMapIterator_nextKey(it);
+        i++;
     }
+    hashMapIterator_destroy(it);
     return status;
 }
 

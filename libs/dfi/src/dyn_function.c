@@ -23,7 +23,7 @@
 #include <strings.h>
 #include <stdlib.h>
 #include <ffi.h>
-#include <dyn_type_common.h>
+#include "dyn_type_common.h"
 
 static const int OK = 0;
 static const int MEM_ERROR = 1;

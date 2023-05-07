@@ -33,7 +33,7 @@ celix_library_handle_t* celix_libloader_open(celix_bundle_context_t *ctx, const 
 /**
  * @brief Close the library
  */
-void celix_libloader_close(celix_library_handle_t *handle);
+void celix_libloader_close(celix_bundle_context_t *ctx, celix_library_handle_t *handle);
 
 /**
  * @brief Get the address of a symbol with the provided name.

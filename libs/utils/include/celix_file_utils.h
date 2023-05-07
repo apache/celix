@@ -21,7 +21,10 @@
 #define CELIX_FILE_UTILS_H
 
 #include <stdbool.h>
+#include <sys/time.h>
+
 #include "celix_errno.h"
+#include "celix_utils_export.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,12 +33,12 @@ extern "C" {
 /**
  * @brief Returns whether a file at path exists.
  */
-bool celix_utils_fileExists(const char* path);
+CELIX_UTILS_EXPORT bool celix_utils_fileExists(const char* path);
 
 /**
  * @brief Returns whether a file at path exists and is a directory.
  */
-bool celix_utils_directoryExists(const char* path);
+CELIX_UTILS_EXPORT bool celix_utils_directoryExists(const char* path);
 
 /**
  * @brief Create dir and if needed subdirs.
@@ -44,7 +47,7 @@ bool celix_utils_directoryExists(const char* path);
  * @param errorOut An optional error output argument. If an error occurs this will point to a (static) error message.
  * @return CELIX_SUCCESS if the directory was successfully created.
  */
-celix_status_t celix_utils_createDirectory(const char* path, bool failIfPresent, const char** errorOut);
+CELIX_UTILS_EXPORT celix_status_t celix_utils_createDirectory(const char* path, bool failIfPresent, const char** errorOut);
 
 /**
  * @brief Recursively delete the directory at path.
@@ -53,7 +56,7 @@ celix_status_t celix_utils_createDirectory(const char* path, bool failIfPresent,
  * @param errorOut An optional error output argument. If an error occurs this will point to a (static) error message.
  * @return CELIX_SUCCESS if the directory was found and successfully deleted.
  */
-celix_status_t celix_utils_deleteDirectory(const char* path, const char** errorOut);
+CELIX_UTILS_EXPORT celix_status_t celix_utils_deleteDirectory(const char* path, const char** errorOut);
 
 /**
  * @brief Extract the zip file to the target dir.
@@ -65,7 +68,7 @@ celix_status_t celix_utils_deleteDirectory(const char* path, const char** errorO
  * @param errorOut An optional error output argument. If an error occurs this will point to a (static) error message.
  * @return CELIX_SUCCESS if the zip file was extracted successfully.
  */
-celix_status_t celix_utils_extractZipFile(const char* zipPath, const char* extractToDir, const char** errorOut);
+CELIX_UTILS_EXPORT celix_status_t celix_utils_extractZipFile(const char* zipPath, const char* extractToDir, const char** errorOut);
 
 
 /**
@@ -79,7 +82,24 @@ celix_status_t celix_utils_extractZipFile(const char* zipPath, const char* extra
  * @param errorOut An optional error output argument. If an error occurs this will point to a (static) error message.
  * @return CELIX_SUCCESS if the zip data was extracted successfully.
  */
-celix_status_t celix_utils_extractZipData(const void *zipData, size_t zipDataSize, const char* extractToDir, const char** errorOut);
+CELIX_UTILS_EXPORT celix_status_t celix_utils_extractZipData(const void *zipData, size_t zipDataSize, const char* extractToDir, const char** errorOut);
+
+/**
+ * @brief Returns the last modified time of the file at path.
+ *
+ * @param[in] path The path to the file.
+ * @param[out] lastModified The last modified time of the file.
+ * @return CELIX_SUCCESS if the last modified time was successfully retrieved.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_utils_getLastModified(const char* path, struct timespec* lastModified);
+
+/**
+ * @brief Touch the file at path and thus update the last modified time.
+ * @param path The path to the file.
+ * @return CELIX_SUCCESS if the last modified time was successfully updated.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_utils_touch(const char* path);
+
 
 #ifdef __cplusplus
 }

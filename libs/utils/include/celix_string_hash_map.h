@@ -21,6 +21,7 @@
 #define CELIX_STRING_HASH_MAP_H_
 
 #include "celix_hash_map_value.h"
+#include "celix_utils_export.h"
 
 /**
  * @brief Init macro so that the opts are correctly initialized for C++ compilers
@@ -173,13 +174,13 @@ typedef struct celix_string_hash_map_create_options {
 /**
  * @brief Creates a new empty hash map with a 'const char*' as key.
  */
-celix_string_hash_map_t* celix_stringHashMap_create();
+CELIX_UTILS_EXPORT celix_string_hash_map_t* celix_stringHashMap_create();
 
 /**
  * @brief Creates a new empty string hash map using using the provided hash map create options.
  * @param opts The create options, only used during the creation of the hash map.
  */
-celix_string_hash_map_t* celix_stringHashMap_createWithOptions(const celix_string_hash_map_create_options_t* opts);
+CELIX_UTILS_EXPORT celix_string_hash_map_t* celix_stringHashMap_createWithOptions(const celix_string_hash_map_create_options_t* opts);
 
 /**
  * @brief Clears and then deallocated the hash map.
@@ -188,12 +189,12 @@ celix_string_hash_map_t* celix_stringHashMap_createWithOptions(const celix_strin
  *
  * @param map The hashmap
  */
-void celix_stringHashMap_destroy(celix_string_hash_map_t* map);
+CELIX_UTILS_EXPORT void celix_stringHashMap_destroy(celix_string_hash_map_t* map);
 
 /**
  * @brief Returns the size of the hashmap.
  */
-size_t celix_stringHashMap_size(const celix_string_hash_map_t* map);
+CELIX_UTILS_EXPORT size_t celix_stringHashMap_size(const celix_string_hash_map_t* map);
 
 /**
  * @brief Add pointer entry the string hash map.
@@ -206,7 +207,7 @@ size_t celix_stringHashMap_size(const celix_string_hash_map_t* map);
  * @return The previous value or NULL of no value was set for th provided key.
  *         Note also returns NULL if the previous value for the key was NULL.
  */
-void* celix_stringHashMap_put(celix_string_hash_map_t* map, const char* key, void* value);
+CELIX_UTILS_EXPORT void* celix_stringHashMap_put(celix_string_hash_map_t* map, const char* key, void* value);
 
 /**
  * @brief add long entry the string hash map.
@@ -216,7 +217,7 @@ void* celix_stringHashMap_put(celix_string_hash_map_t* map, const char* key, voi
  * @param value The value to store with the key.
  * @return True if a previous value with the provided has been replaced.
  */
-bool celix_stringHashMap_putLong(celix_string_hash_map_t* map, const char* key, long value);
+CELIX_UTILS_EXPORT bool celix_stringHashMap_putLong(celix_string_hash_map_t* map, const char* key, long value);
 
 /**
  * @brief add double entry the string hash map.
@@ -225,7 +226,7 @@ bool celix_stringHashMap_putLong(celix_string_hash_map_t* map, const char* key, 
  * @param key  The key to use. The hashmap will create a copy if needed.
  * @return True if a previous value with the provided has been replaced.
  */
-bool celix_stringHashMap_putDouble(celix_string_hash_map_t* map, const char* key, double value);
+CELIX_UTILS_EXPORT bool celix_stringHashMap_putDouble(celix_string_hash_map_t* map, const char* key, double value);
 
 /**
  * @brief add bool entry the string hash map.
@@ -235,7 +236,7 @@ bool celix_stringHashMap_putDouble(celix_string_hash_map_t* map, const char* key
  * @param value The value to store with the key.
  * @return True if a previous value with the provided has been replaced.
  */
-bool celix_stringHashMap_putBool(celix_string_hash_map_t* map, const char* key, bool value);
+CELIX_UTILS_EXPORT bool celix_stringHashMap_putBool(celix_string_hash_map_t* map, const char* key, bool value);
 
 /**
  * @brief Returns the value for the provided key.
@@ -244,7 +245,7 @@ bool celix_stringHashMap_putBool(celix_string_hash_map_t* map, const char* key, 
  * @param key The key to lookup.
  * @return Return the pointer value for the key or NULL. Note will also return NULL if the pointer value for the provided key is NULL.
  */
-void* celix_stringHashMap_get(const celix_string_hash_map_t* map, const char* key);
+CELIX_UTILS_EXPORT void* celix_stringHashMap_get(const celix_string_hash_map_t* map, const char* key);
 
 /**
  * @brief Returns the long value for the provided key.
@@ -254,7 +255,7 @@ void* celix_stringHashMap_get(const celix_string_hash_map_t* map, const char* ke
  * @param fallbackValue The fallback value to use if a value for the provided key was not found.
  * @return Return the value for the key or fallbackValue if the key is not present.
  */
-long celix_stringHashMap_getLong(const celix_string_hash_map_t* map, const char* key, long fallbackValue);
+CELIX_UTILS_EXPORT long celix_stringHashMap_getLong(const celix_string_hash_map_t* map, const char* key, long fallbackValue);
 
 /**
  * @brief Returns the double value for the provided key.
@@ -264,7 +265,7 @@ long celix_stringHashMap_getLong(const celix_string_hash_map_t* map, const char*
  * @param fallbackValue The fallback value to use if a value for the provided key was not found.
  * @return Return the value for the key or fallbackValue if the key is not present.
  */
-double celix_stringHashMap_getDouble(const celix_string_hash_map_t* map, const char* key, double fallbackValue);
+CELIX_UTILS_EXPORT double celix_stringHashMap_getDouble(const celix_string_hash_map_t* map, const char* key, double fallbackValue);
 
 /**
  * @brief Returns the bool value for the provided key.
@@ -274,12 +275,12 @@ double celix_stringHashMap_getDouble(const celix_string_hash_map_t* map, const c
  * @param fallbackValue The fallback value to use if a value for the provided key was not found.
  * @return Return the value for the key or fallbackValue if the key is not present.
  */
-bool celix_stringHashMap_getBool(const celix_string_hash_map_t* map, const char* key, bool fallbackValue);
+CELIX_UTILS_EXPORT bool celix_stringHashMap_getBool(const celix_string_hash_map_t* map, const char* key, bool fallbackValue);
 
 /**
  * @brief Returns true if the map has the provided key.
  */
-bool celix_stringHashMap_hasKey(const celix_string_hash_map_t* map, const char* key);
+CELIX_UTILS_EXPORT bool celix_stringHashMap_hasKey(const celix_string_hash_map_t* map, const char* key);
 
 /**
  * @brief Remove a entry from the hashmap and silently ignore if the hash map does not have a entry with the provided
@@ -290,14 +291,14 @@ bool celix_stringHashMap_hasKey(const celix_string_hash_map_t* map, const char* 
  *
  * @return True is the value is found and removed.
  */
-bool celix_stringHashMap_remove(celix_string_hash_map_t* map, const char* key);
+CELIX_UTILS_EXPORT bool celix_stringHashMap_remove(celix_string_hash_map_t* map, const char* key);
 
 /**
  * @brief Clear all entries in the hash map.
  *
  * @note If a (simple) removed callback is configured, the callback will be called for every hash map entry.
  */
-void celix_stringHashMap_clear(celix_string_hash_map_t* map);
+CELIX_UTILS_EXPORT void celix_stringHashMap_clear(celix_string_hash_map_t* map);
 
 /**
  * @brief Get an iterator pointing to the first element in the map.
@@ -305,7 +306,7 @@ void celix_stringHashMap_clear(celix_string_hash_map_t* map);
  * @param[in] map The map to get the iterator for.
  * @return An iterator pointing to the first element in the map.
  */
-celix_string_hash_map_iterator_t celix_stringHashMap_begin(const celix_string_hash_map_t* map);
+CELIX_UTILS_EXPORT celix_string_hash_map_iterator_t celix_stringHashMap_begin(const celix_string_hash_map_t* map);
 
 /**
  * @brief Get an iterator pointing to the element following the last element in the map.
@@ -322,13 +323,13 @@ celix_string_hash_map_iterator_t celix_stringHashMap_end(const celix_string_hash
  * @param[in] iter The iterator to check.
  * @return true if the iterator points to the element following the last element in the map, false otherwise.
  */
-bool celix_stringHashMapIterator_isEnd(const celix_string_hash_map_iterator_t* iter);
+CELIX_UTILS_EXPORT bool celix_stringHashMapIterator_isEnd(const celix_string_hash_map_iterator_t* iter);
 
 /**
  * @brief Advance the iterator to the next element in the map.
  * @param[in] iter The iterator to advance.
  */
-void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter);
+CELIX_UTILS_EXPORT void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter);
 
 /**
  * @brief Compares two celix_string_hash_map_iterator_t objects for equality.
@@ -357,7 +358,7 @@ bool celix_stringHashMapIterator_equals(
  * }
  * @endcode
  */
-void celix_stringHashMapIterator_remove(celix_string_hash_map_iterator_t* iter);
+CELIX_UTILS_EXPORT void celix_stringHashMapIterator_remove(celix_string_hash_map_iterator_t* iter);
 
 /**
  * @brief Marco to loop over all the entries of a string hash map.

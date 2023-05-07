@@ -30,9 +30,6 @@ add_celix_bundle(http_admin
 target_include_directories(http_admin PRIVATE src)
 
 target_link_libraries(http_admin PUBLIC Celix::http_admin_api)
-celix_bundle_private_libs(http_admin civetweb_shared)
-file(MAKE_DIRECTORY resources)
-celix_bundle_add_dir(http_admin resources/ DESTINATION root/)
 
 celix_deprecated_utils_headers(http_admin)
 

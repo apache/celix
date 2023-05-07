@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(jansson REQUIRED)
 
 add_celix_bundle(http_admin_sut
     #"Vanilla" bundle which is under test
@@ -42,6 +41,7 @@ target_compile_definitions(http_websocket_tests PRIVATE
         HTTP_ADMIN_SUT_BUNDLE="${HTTP_ADMIN_SUT_BUNDLE}"
 )
 target_link_libraries(http_websocket_tests PRIVATE Celix::framework Celix::http_admin_api GTest::gtest GTest::gtest_main)
+add_celix_bundle_dependencies(http_websocket_tests Celix::http_admin http_admin_sut)
 
 add_test(NAME http_websocket_tests COMMAND http_websocket_tests)
 setup_target_for_coverage(http_websocket_tests SCAN_DIR ../http_admin)

@@ -18,6 +18,7 @@
 
 find_package(CURL REQUIRED)
 find_package(LibXml2 REQUIRED)
+find_package(civetweb REQUIRED)
 
 add_library(rsa_discovery_common OBJECT
 		src/discovery.c
@@ -33,10 +34,11 @@ target_include_directories(rsa_discovery_common PUBLIC
 		$<TARGET_PROPERTY:Celix::utils,INTERFACE_INCLUDE_DIRECTORIES>
 		$<TARGET_PROPERTY:Celix::log_helper,INTERFACE_INCLUDE_DIRECTORIES>
 		$<TARGET_PROPERTY:Celix::c_rsa_spi,INTERFACE_INCLUDE_DIRECTORIES>
-		$<TARGET_PROPERTY:civetweb,INCLUDE_DIRECTORIES>
 		${CURL_INCLUDE_DIRS}
 		${LIBXML2_INCLUDE_DIR})
 celix_deprecated_utils_headers(rsa_discovery_common)
+celix_deprecated_framework_headers(rsa_discovery_common)
+target_link_libraries(rsa_discovery_common PUBLIC civetweb::civetweb)
 
 #Setup target aliases to match external usage
 add_library(Celix::rsa_discovery_common ALIAS rsa_discovery_common)

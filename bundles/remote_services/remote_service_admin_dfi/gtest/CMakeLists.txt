@@ -21,6 +21,7 @@ add_celix_bundle(rsa_dfi_tst_bundle
         src/tst_activator.c
 )
 celix_deprecated_utils_headers(rsa_dfi_tst_bundle)
+celix_deprecated_framework_headers(rsa_dfi_tst_bundle)
 
 #add calculator avpr
 get_target_property(DESCR calculator_api INTERFACE_DESCRIPTOR)
@@ -40,7 +41,9 @@ add_executable(test_rsa_dfi
 )
 target_include_directories(test_rsa_dfi PRIVATE src)
 celix_deprecated_utils_headers(test_rsa_dfi)
+celix_deprecated_framework_headers(test_rsa_dfi)
 target_link_libraries(test_rsa_dfi PRIVATE
+        civetweb::civetweb
         CURL::libcurl
         Celix::framework
         Celix::rsa_common
@@ -66,6 +69,10 @@ add_celix_bundle_dependencies(test_rsa_dfi
         rsa_dfi #note depend on the target creating the bundle zip not the lib target
         calculator
         remote_example_service
+        calculator_shell
+        rsa_discovery
+        Celix::rsa_topology_manager
+        rsa_dfi_tst_bundle
 )
 
 add_test(NAME run_test_rsa_dfi COMMAND test_rsa_dfi)

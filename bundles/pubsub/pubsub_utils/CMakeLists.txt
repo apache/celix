@@ -27,9 +27,10 @@ set_target_properties(pubsub_utils PROPERTIES OUTPUT_NAME "celix_pubsub_utils")
 target_include_directories(pubsub_utils PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 )
-target_link_libraries(pubsub_utils PUBLIC Celix::framework Celix::pubsub_api Celix::log_helper Celix::shell_api)
+target_link_libraries(pubsub_utils PUBLIC Celix::framework Celix::dfi Celix::pubsub_api Celix::log_helper Celix::shell_api)
 target_link_libraries(pubsub_utils PRIVATE Celix::pubsub_spi)
 celix_deprecated_utils_headers(pubsub_utils)
+celix_deprecated_framework_headers(pubsub_utils)
 
 add_library(Celix::pubsub_utils ALIAS pubsub_utils)
 

@@ -28,35 +28,46 @@
 #define BUNDLE_REVISION_PRIVATE_H_
 
 #include "bundle_revision.h"
+#include "celix_threads.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * The bundle revision structure represents a revision of a bundle.
+ * A bundle can have multiple revisions. A bundle revision is immutable.
+ */
+struct bundleRevision {
+    celix_framework_t *fw;
+    long revisionNr;
+    char *root;
+    char *location;
+    manifest_pt manifest;
+};
 
 /**
  * Creates a new revision for the given inputFile or location.
- * The location parameter is used to identify the bundle, in case of an update or download, the inputFile
- *  parameter can be used to point to the actual data. In the OSGi specification this is the inputstream.
+ * The location parameter is used to identify the bundle.
  *
  * @param fw The Celix framework where to create the bundle revision.
  * @param root The root for this revision in which the bundle is extracted and state is stored.
- * @param location The location associated with the revision
- * @param revisionNr The number of the revision
- * @param inputFile The (optional) location of the file to use as input for this revision
+ * @param location The location associated with the revision.
+ * @param manifest The manifest for the revision.
  * @param[out] bundle_revision The output parameter for the created revision.
  *
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_revision</code> failed.
  */
-celix_status_t bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, long revisionNr, const char *inputFile,
-                                     bundle_revision_pt *bundle_revision);
+celix_status_t celix_bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, manifest_pt manifest, bundle_revision_pt *bundle_revision);
+
+bundle_revision_t* bundleRevision_revise(const bundle_revision_t* revision, const char* updatedBundleUrl);
 
 celix_status_t bundleRevision_destroy(bundle_revision_pt revision);
 
-struct bundleRevision {
-	long revisionNr;
-	char *root;
-	char *location;
-	manifest_pt manifest;
-
-	array_list_pt libraryHandles;
-};
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUNDLE_REVISION_PRIVATE_H_ */

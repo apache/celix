@@ -20,8 +20,6 @@
 #ifndef PUBSUB_TOPOLOGY_MANAGER_H_
 #define PUBSUB_TOPOLOGY_MANAGER_H_
 
-#include "service_reference.h"
-#include "bundle_context.h"
 #include "celix_log_helper.h"
 #include "celix_shell_command.h"
 #include "celix_bundle_context.h"

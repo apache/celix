@@ -128,14 +128,17 @@ celix_version_t* celix_version_create(int major, int minor, int micro, const cha
         return NULL;
     }
 
-    celix_version_t* version = malloc(sizeof(*version));
-
-    version->major = major;
-    version->minor = minor;
-    version->micro = micro;
-    version->qualifier = qualifierLen == 0 ? (char*)CELIX_VERSION_EMPTY_QUALIFIER : celix_utils_strdup(qualifier);
-
-
+    celix_version_t* version = calloc(1, sizeof(*version));
+    if (version != NULL) {
+        version->major = major;
+        version->minor = minor;
+        version->micro = micro;
+        version->qualifier = qualifierLen == 0 ? (char*)CELIX_VERSION_EMPTY_QUALIFIER : celix_utils_strdup(qualifier);
+        if (version->qualifier == NULL) {
+            celix_version_destroy(version);
+            version = NULL;
+        }
+    }
     return version;
 }
 
@@ -311,6 +314,8 @@ bool celix_version_fillString(const celix_version_t* version, char *str, size_t 
 bool celix_version_isCompatible(const celix_version_t* user, const celix_version_t* provider) {
     if (user == NULL && provider == NULL) {
         return true;
+    } else if (user == NULL || provider == NULL) {
+        return false;
     } else {
         return celix_version_isUserCompatible(user, provider->major, provider->minor);
     }

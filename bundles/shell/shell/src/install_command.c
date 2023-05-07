@@ -19,7 +19,11 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "celix_api.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include "celix_bundle_context.h"
+#include "celix_utils.h"
+#include "celix_framework.h"
 
 bool installCommand_execute(void *handle, const char *const_line, FILE *outStream, FILE *errStream) {
 	celix_bundle_context_t *ctx = handle;
@@ -31,7 +35,7 @@ bool installCommand_execute(void *handle, const char *const_line, FILE *outStrea
 	char *line = celix_utils_strdup(const_line);
 
 	// ignore the command
-	sub = strtok_r(line, delims, &save_ptr);
+	strtok_r(line, delims, &save_ptr);
 	sub = strtok_r(NULL, delims, &save_ptr);
 
 	if (sub == NULL) {

@@ -18,6 +18,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <string>
 #include <thread>
 #include <celix_log_sink.h>
 #include <celix_log_control.h>
@@ -86,12 +87,8 @@ TEST_F(SyslogWriterTestSuite, LogToSysLog) {
             ls->error(ls->handle, "test %i %i %i", 1, 2, 3);
 
             //a very long log message
-            char buf[2048];
-            for (int i = 0; i <= 2046; ++i) {
-                buf[i] = 'A';
-            }
-            buf[2047] = '\0';
-            ls->fatal(ls->handle, "%s", buf);
+            std::string buf(2047, 'A');
+            ls->fatal(ls->handle, "%s", buf.c_str());
         };
         bool called = celix_bundleContext_useServiceWithOptions(ctx.get(), &opts);
         EXPECT_TRUE(called);
