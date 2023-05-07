@@ -30,7 +30,7 @@
 static const char* const CELIX_VERSION_EMPTY_QUALIFIER = "";
 
 celix_status_t version_createVersion(int major, int minor, int micro, const char * qualifier, version_pt *version) {
-    *version = celix_version_createVersion(major, minor, micro, qualifier);
+    *version = celix_version_create(major, minor, micro, qualifier);
     return *version == NULL ? CELIX_ILLEGAL_ARGUMENT : CELIX_SUCCESS;
 }
 
@@ -97,7 +97,7 @@ celix_status_t version_isCompatible(version_pt user, version_pt provider, bool* 
     return CELIX_SUCCESS;
 }
 
-celix_version_t* celix_version_createVersion(int major, int minor, int micro, const char* qualifier) {
+celix_version_t* celix_version_createVersion(int major, int minor, int micro, const char * qualifier) {
     return celix_version_create(major, minor, micro, qualifier);
 }
 
@@ -156,7 +156,7 @@ celix_version_t* celix_version_copy(const celix_version_t* version) {
     if (version == NULL) {
         return celix_version_createEmptyVersion();
     }
-    return celix_version_createVersion(version->major, version->minor, version->micro, version->qualifier);
+    return celix_version_create(version->major, version->minor, version->micro, version->qualifier);
 }
 
 
@@ -228,7 +228,7 @@ celix_version_t* celix_version_createVersionFromString(const char *versionStr) {
 
     celix_version_t* version = NULL;
     if (status == CELIX_SUCCESS) {
-        version = celix_version_createVersion(major, minor, micro, qualifier);
+        version = celix_version_create(major, minor, micro, qualifier);
     }
 
     if (qualifier != NULL) {
@@ -240,7 +240,7 @@ celix_version_t* celix_version_createVersionFromString(const char *versionStr) {
 
 
 celix_version_t* celix_version_createEmptyVersion() {
-    return celix_version_createVersion(0, 0, 0, NULL);
+    return celix_version_create(0, 0, 0, NULL);
 }
 
 int celix_version_getMajor(const celix_version_t* version) {

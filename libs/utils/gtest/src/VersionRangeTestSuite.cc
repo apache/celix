@@ -46,7 +46,7 @@ TEST_F(VersionRangeTestSuite, create) {
 TEST_F(VersionRangeTestSuite, createInfinite) {
     celix_status_t status = CELIX_SUCCESS;
     version_range_pt range = nullptr;
-    version_pt version = celix_version_createVersion(1,2, 3, nullptr);
+    version_pt version = celix_version_create(1,2, 3, nullptr);
 
     status = versionRange_createInfiniteVersionRange(&range);
     EXPECT_EQ(CELIX_SUCCESS, status);
@@ -65,7 +65,7 @@ TEST_F(VersionRangeTestSuite, createInfinite) {
 
 TEST_F(VersionRangeTestSuite, isInRange) {
     bool result;
-    version_pt version = celix_version_createVersion(1, 2, 3, nullptr);
+    version_pt version = celix_version_create(1, 2, 3, nullptr);
 
     {
         version_range_pt range = nullptr;

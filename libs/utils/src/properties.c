@@ -570,8 +570,8 @@ celix_status_t celix_properties_store(celix_properties_t *properties, const char
     }
 
     int rc = 0;
-    CELIX_STRING_HASH_MAP_ITERATE(properties->map, iter) {
-        const char* val = iter.value.ptrValue;
+    CELIX_PROPERTIES_ITERATE(properties, iter) {
+        const char* val = iter.entry.value;
         if (rc != EOF) {
             rc = celix_properties_storeEscapedString(file, iter.key);
         }

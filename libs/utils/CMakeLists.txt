@@ -143,18 +143,9 @@ if (ENABLE_TESTING)
         target_include_directories(linked_list_test PRIVATE include_deprecated)
         target_link_libraries(linked_list_test utils_cut CppUTest::CppUTest pthread)
 
-        add_executable(properties_test private/test/properties_test.cpp)
-        target_include_directories(properties_test PRIVATE include_deprecated)
-        target_link_libraries(properties_test CppUTest::CppUTest CppUTest::CppUTestExt utils_cut pthread)
-
         add_executable(ip_utils_test private/test/ip_utils_test.cpp)
         target_include_directories(ip_utils_test PRIVATE include_deprecated)
         target_link_libraries(ip_utils_test CppUTest::CppUTest  utils_cut pthread)
-
-        add_executable(version_test private/test/version_test.cpp)
-        target_include_directories(version_test PRIVATE include_deprecated)
-        target_link_libraries(version_test CppUTest::CppUTest utils_cut pthread)
-
 
         if (LINKER_WRAP_SUPPORTED)
             add_executable(version_ei_test private/test/version_ei_test.cc)
@@ -163,14 +154,10 @@ if (ENABLE_TESTING)
             add_test(NAME version_ei_test COMMAND version_ei_test)
         endif ()
 
-        configure_file(private/resources-test/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
-
         add_test(NAME run_array_list_test COMMAND array_list_test)
         add_test(NAME run_hash_map_test COMMAND hash_map_test)
         add_test(NAME run_linked_list_test COMMAND linked_list_test)
-        add_test(NAME run_properties_test COMMAND properties_test)
         add_test(NAME run_ip_utils_test COMMAND ip_utils_test)
-        add_test(NAME version_test COMMAND version_test)
 
         setup_target_for_coverage(array_list_test)
         setup_target_for_coverage(hash_map_test)

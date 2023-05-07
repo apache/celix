@@ -44,8 +44,8 @@ TEST_F(VersionTestSuite, CreateTest) {
     expectVersion(version, 1, 2, 3, "abc");
     celix_version_destroy(version);
 
-    EXPECT_EQ(nullptr, celix_version_createVersion(-1, -2, -3, "abc"));
-    EXPECT_EQ(nullptr, celix_version_createVersion(-1, -2, -3, "abc|xyz"));
+    EXPECT_EQ(nullptr, celix_version_create(-1, -2, -3, "abc"));
+    EXPECT_EQ(nullptr, celix_version_create(-1, -2, -3, "abc|xyz"));
 
 
     //Testing deprecated api

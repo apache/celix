@@ -20,13 +20,14 @@
 #ifndef CELIX_CELIX_VERSION_H
 #define CELIX_CELIX_VERSION_H
 
+#include <stdbool.h>
+#include <stdlib.h>
+
+#include "celix_utils_export.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdbool.h>
-
-#include "celix_utils_export.h"
 
 /**
  * @file celix_version.h
@@ -54,7 +55,12 @@ typedef struct celix_version celix_version_t;
  *        the empty string.
  * @return The created version or NULL if the input was incorrect
  */
-CELIX_UTILS_EXPORT celix_version_t* celix_version_createVersion(int major, int minor, int micro, const char* qualifier);
+CELIX_UTILS_EXPORT celix_version_t* celix_version_create(int major, int minor, int micro, const char* qualifier);
+
+/**
+ * @deprecated Use celix_version_create instead.
+ */
+CELIX_UTILS_DEPRECATED_EXPORT celix_version_t* celixversion_createVersion(int major, int minor, int micro, const char* qualifier);
 
 CELIX_UTILS_EXPORT void celix_version_destroy(celix_version_t* version);
 

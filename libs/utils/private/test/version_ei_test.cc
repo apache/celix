@@ -27,6 +27,8 @@
 
 #include "celix_version.h"
 
+//TODO move to gtest
+
 int main(int argc, char** argv) {
     MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
     return RUN_ALL_TESTS(argc, argv);
@@ -47,10 +49,10 @@ TEST_GROUP(version_ei) {
 
 TEST(version_ei, create) {
     celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
-    celix_version_t *version = celix_version_createVersion(2, 2, 0, nullptr);
+    celix_version_t *version = celix_version_create(2, 2, 0, nullptr);
     POINTERS_EQUAL(nullptr, version);
 
     celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
-    version = celix_version_createVersion(2, 2, 0, nullptr);
+    version = celix_version_create(2, 2, 0, nullptr);
     POINTERS_EQUAL(nullptr, version);
 }

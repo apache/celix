@@ -21,6 +21,7 @@ set(CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS
         src/CxxUtilsTestSuite.cc
         src/CxxPropertiesTestSuite.cc
         src/CxxFilterTestSuite.cc
+        src/CxxVersionTestSuite.cc
 )
 
 add_executable(test_utils
@@ -33,6 +34,8 @@ add_executable(test_utils
         src/FilterTestSuite.cc
         src/CelixUtilsTestSuite.cc
         src/ConvertUtilsTestSuite.cc
+        src/PropertiesTestSuite.cc
+        src/VersionTestSuite.cc
         src/ErrTestSuite.cc
         src/ThreadsTestSuite.cc
         src/CelixErrnoTestSuite.cc
@@ -42,6 +45,9 @@ add_executable(test_utils
 target_link_libraries(test_utils PRIVATE utils_cut GTest::gtest GTest::gtest_main libzip::libzip)
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
 celix_deprecated_utils_headers(test_utils)
+
+configure_file(resources/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
+
 
 ####### generating zip file used for testing ##########################################################################
 file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties" CONTENT "level=1\n")

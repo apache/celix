@@ -204,7 +204,7 @@ TEST_F(ConvertUtilsTestSuite, ConvertToBoolTest) {
 }
 
 TEST_F(ConvertUtilsTestSuite, ConvertToVersionTest) {
-    celix_version_t* defaultVersion = celix_version_createVersion(1, 2, 3, "B");
+    celix_version_t* defaultVersion = celix_version_create(1, 2, 3, "B");
 
     //test for a valid string
     celix_version_t* result = celix_utils_convertStringToVersion("1.2.3", nullptr, nullptr);
