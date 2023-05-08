@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "pubsub_tcp_common.h"
+#include "celix_utils.h"
 
 
 bool psa_tcp_isPassive(const char* buffer) {
@@ -27,7 +28,7 @@ bool psa_tcp_isPassive(const char* buffer) {
     if (buffer != NULL) {
         char buf[32];
         snprintf(buf, 32, "%s", buffer);
-        char *trimmed = utils_stringTrim(buf);
+        char *trimmed = celix_utils_trimInPlace(buf);
         if (strncasecmp("true", trimmed, strlen("true")) == 0) {
             isPassive = true;
         } else if (strncasecmp("false", trimmed, strlen("false")) == 0) {

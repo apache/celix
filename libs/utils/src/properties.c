@@ -26,6 +26,7 @@
 #include "properties.h"
 #include "celix_build_assert.h"
 #include "celix_properties.h"
+#include "celix_utils.h"
 #include "utils.h"
 #include "hash_map_private.h"
 #include <errno.h>
@@ -191,7 +192,7 @@ static void parseLine(const char* line, celix_properties_t *props) {
 
     if (!isComment) {
         //printf("putting 'key'/'value' '%s'/'%s' in properties\n", utils_stringTrim(key), utils_stringTrim(value));
-        celix_properties_set(props, utils_stringTrim(key), utils_stringTrim(value));
+        celix_properties_set(props, celix_utils_trimInPlace(key), celix_utils_trimInPlace(value));
     }
     if(key) {
         free(key);
@@ -451,7 +452,7 @@ bool celix_properties_getAsBool(const celix_properties_t *props, const char *key
     if (val != NULL) {
         char buf[32];
         snprintf(buf, 32, "%s", val);
-        char *trimmed = utils_stringTrim(buf);
+        char *trimmed = celix_utils_trimInPlace(buf);
         if (strncasecmp("true", trimmed, strlen("true")) == 0) {
             result = true;
         } else if (strncasecmp("false", trimmed, strlen("false")) == 0) {

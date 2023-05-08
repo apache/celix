@@ -113,11 +113,10 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
     char *token, *savePtr;
     token = strtok_r(icCopy, delimiter, &savePtr);
     while (token != NULL) {
-        rsaRpcType = celix_utils_trim(token);
-        if (rsaRpcType != NULL && strncmp(rsaRpcType, RSA_RPC_TYPE_PREFIX, sizeof(RSA_RPC_TYPE_PREFIX) - 1) == 0) {
+        rsaRpcType = celix_utils_trimInPlace(token);
+        if (strncmp(rsaRpcType, RSA_RPC_TYPE_PREFIX, sizeof(RSA_RPC_TYPE_PREFIX) - 1) == 0) {
             break;
         }
-        free(rsaRpcType);
         rsaRpcType = NULL;
         token = strtok_r(NULL, delimiter, &savePtr);
     }
@@ -151,14 +150,12 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
 
     *exportOut = export;
 
-    free(rsaRpcType);
     free(icCopy);
 
     return CELIX_SUCCESS;
 
 tracker_err:
 rpc_type_filter_err:
-    free(rsaRpcType);
 rpc_type_err:
     free(icCopy);
 imported_configs_err:
