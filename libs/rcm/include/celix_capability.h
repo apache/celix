@@ -113,7 +113,7 @@ const char* celix_capability_getDirective(const celix_capability_t* cap, const c
 /**
  * @brief Add a new attribute to the capability.
  *
- * Note replaces an existing attribute is the key is already set.
+ * Note it replaces an exisiting attribute if the key is already set.
  *
  * @param[in] cap The capability.
  * @param[in] key The key of the attribute.
@@ -124,7 +124,7 @@ void celix_capability_addAttribute(celix_capability_t* cap, const char* key, con
 /**
  * @brief Add a new attributes to the capability.
  *
- * Note replaces existing attributes is some of the provided keys are already set.
+ * Note it replaces existing attributes if some of the provided keys are already set.
  *
  * @param[in] cap The capability.
  * @param[in] attributes The attributes to add.
@@ -135,7 +135,7 @@ void celix_capability_addAttributes(celix_capability_t* cap, const celix_propert
 /**
  * @brief Add a new directive to the capability.
  *
- * Note replaces an existing directive is the key is already set.
+ * Note it replaces an existing directive if the key is already set.
  *
  * @param[in] cap The capability.
  * @param[in] key The key of the directive.
@@ -146,7 +146,7 @@ void celix_capability_addDirective(celix_capability_t* cap, const char* key, con
 /**
  * @brief Add a new directives to the capability.
  *
- * Note replaces existing directives is some of the provided keys are already set.
+ * Note it replaces existing directives if some of the provided keys are already set.
  *
  * @param[in] cap The capability.
  * @param[in] directives The directives to add.

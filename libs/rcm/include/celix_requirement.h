@@ -125,7 +125,7 @@ const char* celix_requirement_getAttribute(const celix_requirement_t* req, const
 /**
  * @brief Add a new directive to the requirement.
  *
- * Note replaces an existing directive is the key is already set.
+ * Note it replaces an existing directive if the key is already set.
  *
  * @param[in] req The requirement.
  * @param[in] key The key of the directive.
@@ -136,7 +136,7 @@ void celix_requirement_addDirective(celix_requirement_t* req, const char* key, c
 /**
  * @brief Add a new directives to the requirement.
  *
- * Note replaces existing directives is some of the provided keys are already set.
+ * Note it replaces existing directives if some of the provided keys are already set.
  *
  * @param[in] req The requirement.
  * @param[in] directives The directives to add.
@@ -147,7 +147,7 @@ void celix_requirement_addDirectives(celix_requirement_t* req, const celix_prope
 /**
  * @brief Add a new attribute to the requirement.
  *
- * Note replaces an existing attribute is the key is already set.
+ * Note it replaces an existing attribute if the key is already set.
  *
  * @param[in] req The requirement.
  * @param[in] key The key of the attribute.
@@ -158,7 +158,7 @@ void celix_requirement_addAttribute(celix_requirement_t* req, const char* key, c
 /**
  * @brief Add a new attributes to the requirement.
  *
- * Note replaces existing attributes is some of the provided keys are already set.
+ * Note it replaces existing attributes if some of the provided keys are already set.
  *
  * @param[in] req The requirement.
  * @param[in] attributes The attributes to add.
