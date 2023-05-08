@@ -283,7 +283,6 @@ static int jsonSerializer_parseSequence(dyn_type *seq, json_t *array, void *seqL
     int status = OK;
 
     size_t size = json_array_size(array);
-    //LOG_DEBUG("Allocating sequence with capacity %zu", size);
     status = dynType_sequence_alloc(seq, seqLoc, (int) size);
 
     if (status == OK) {
@@ -293,8 +292,6 @@ static int jsonSerializer_parseSequence(dyn_type *seq, json_t *array, void *seqL
         json_array_foreach(array, index, val) {
             void *valLoc = NULL;
             status = dynType_sequence_increaseLengthAndReturnLastLoc(seq, seqLoc, &valLoc);
-            //LOG_DEBUG("Got sequence loc %p for index %zu", valLoc, index);
-
             if (status == OK) {
                 status = jsonSerializer_parseAny(itemType, valLoc, val);
                 if (status != OK) {

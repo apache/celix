@@ -213,8 +213,8 @@ static int dynType_parseMetaInfo(FILE *stream, dyn_type *type) {
         entry->name = name;
         entry->value = value;
         TAILQ_INSERT_TAIL(&type->metaProperties, entry, entries);
-        LOG_DEBUG("Added meta properties '%s':'%s'", name, value)
     } else {
+        LOG_ERROR("Failed to parse meta properties");
         free(name);
         free(value);
         free(entry);
@@ -308,7 +308,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
             }
         } else {
             status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for elements")
+            LOG_ERROR("Error allocating memory for elements");
         }
     }
 
@@ -321,7 +321,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
             }
         } else {
             status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for type")
+            LOG_ERROR("Error allocating memory for type");
         }
     }
 
@@ -669,11 +669,11 @@ int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap) {
         } else {
             seq->cap = 0;
             status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for buf")
+            LOG_ERROR("Error allocating memory for buf");
         }
     } else {
             status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for seq")
+            LOG_ERROR("Error allocating memory for seq");
     }
     return status;
 }
@@ -690,11 +690,11 @@ int dynType_sequence_reserve(dyn_type *type, void *inst, uint32_t cap) {
         } else {
             seq->cap = 0;
             status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for buf")
+            LOG_ERROR("Error allocating memory for buf");
         }
     } else {
         status = MEM_ERROR;
-        LOG_ERROR("Error allocating memory for seq")
+        LOG_ERROR("Error allocating memory for seq");
     }
     return status;
 }
@@ -836,7 +836,6 @@ const char * dynType_getMetaInfo(dyn_type *type, const char *name) {
     const char *result = NULL;
     struct meta_entry *entry = NULL;
     TAILQ_FOREACH(entry, &type->metaProperties, entries) {
-        LOG_DEBUG("Checking '%s'", entry->name);
         if (strcmp(entry->name, name) == 0) {
             result = entry->value;
             break;

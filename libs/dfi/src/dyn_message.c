@@ -245,7 +245,6 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
         if (status == OK) {
             entry = calloc(1, sizeof(*entry));
             if (entry != NULL) {
-                LOG_DEBUG("Adding type '%s' with pointer %p to types", name, type);
                 entry->type = type;
                 TAILQ_INSERT_TAIL(&msg->types, entry, entries);
             } else {

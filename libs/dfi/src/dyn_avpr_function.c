@@ -106,9 +106,6 @@ dyn_function_type * dynAvprFunction_parseFromJson(json_t * const root, const cha
         dynFunction_destroy(func);
         func = NULL;
     }
-    else {
-        LOG_DEBUG("ParseFunction: Succesfully parsed \"%s\"", fqn)
-    }
 
     return func;
 }
@@ -122,13 +119,11 @@ static json_t const * const dynAvprFunction_findFunc(const char * fqn, json_t * 
         local_ns = json_object_get(func_entry, "namespace");
         dynAvprType_constructFqn(nameBuffer, FQN_SIZE, func_name, json_is_string(local_ns) ? json_string_value(local_ns) : parentNamespace);
 
-        LOG_DEBUG("FindFunc: Comparing: %s and %s", fqn, nameBuffer);
         if (strcmp(nameBuffer, fqn) == 0) {
-            LOG_DEBUG("FindFunc: Found function definition for %s", fqn);
             return func_entry;
         }
     }
-    LOG_INFO("FindFunc: Did not find function definition for %s", fqn);
+    LOG_ERROR("FindFunc: Not found function definition for %s", fqn);
     return NULL;
 }
 
@@ -167,10 +162,9 @@ static bool dynAvprFunction_parseFunc(dyn_function_type * func, json_t const * c
     json_t const * arg_entry;
     json_array_foreach(argument_list, index, arg_entry) {
         if (!dynAvprFunction_parseArgument(func, index+1, arg_entry, root, function_namespace, argBuffer, typeBuffer)) { /* Offset index to account for the handle */
-            LOG_ERROR("ParseFunc: Could not parse argument %d for %s", index, fqn);
+            LOG_ERROR("ParseFunc: Could not parse argument %zu for %s", index, fqn);
             return false;
         }
-        LOG_DEBUG("Added argument %d", index+1);
     }
     index++;
 
@@ -200,7 +194,6 @@ static bool dynAvprFunction_parseFunc(dyn_function_type * func, json_t const * c
 inline static bool dynAvprFunction_parseArgument(dyn_function_type * func, size_t index, json_t const * entry, json_t * const root, const char * namespace, char * argBuffer, char * typeBuffer) {
     const char * entry_name = json_string_value(json_object_get(entry, "name"));
     if (!entry_name)  {
-        LOG_INFO("ParseArgument: Could not find argument name for %d, using default", index);
         snprintf(argBuffer, ARG_SIZE, "arg%04lu", (long unsigned int) index);
         entry_name = argBuffer;
     }

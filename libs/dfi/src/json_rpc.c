@@ -45,7 +45,6 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 
 	dyn_type* returnType = NULL;
 
-	LOG_DEBUG("Parsing data: %s\n", request);
 	json_error_t error;
 	json_t *js_request = json_loads(request, 0, &error);
 	json_t *arguments = NULL;
@@ -61,7 +60,6 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 		return 0;
 	}
 
-	LOG_DEBUG("Looking for method %s\n", sig);
 	struct methods_head *methods = NULL;
 	dynInterface_methods(intf, &methods);
 	struct method_entry *entry = NULL;
@@ -78,7 +76,6 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 		LOG_ERROR("Cannot find method with sig '%s'", sig);
 	}
 	else if (status == OK) {
-		LOG_DEBUG("RSA: found method '%s'\n", entry->id);
 		returnType = dynFunction_returnType(method->dynFunc);
 	}
 
@@ -213,8 +210,6 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 					}
 				}
 
-			} else {
-				LOG_DEBUG("Output ptr is null");
 			}
 		}
 
@@ -225,22 +220,18 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 
 	char *response = NULL;
 	if (status == OK) {
-		LOG_DEBUG("creating payload\n");
 		json_t *payload = json_object();
 		if (funcCallStatus == 0) {
 			if (jsonResult == NULL) {
 				//ignore -> no result
 			} else {
-				LOG_DEBUG("Setting result payload");
                 json_object_set_new_nocheck(payload, "r", jsonResult);
 			}
 		} else {
-			LOG_DEBUG("Setting error payload");
             json_object_set_new_nocheck(payload, "e", json_integer(funcCallStatus));
 		}
 		response = json_dumps(payload, JSON_DECODE_ANY);
 		json_decref(payload);
-		LOG_DEBUG("status ptr is %p. response is '%s'\n", status, response);
 	}
 
 	if (status == OK) {
@@ -256,7 +247,6 @@ int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *
 	int status = OK;
 
 
-	LOG_DEBUG("Calling remote function '%s'\n", id);
 	json_t *invoke = json_object();
     json_object_set_new_nocheck(invoke, "m", json_string(id));
 
@@ -286,6 +276,7 @@ int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *
 			if (rc == 0) {
 				json_array_append_new(arguments, val);
 			} else {
+                LOG_ERROR("Failed to serialize args for function '%s'\n", id);
 				status = ERROR;
 				break;
 			}

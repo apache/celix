@@ -83,7 +83,7 @@ int avrobinSerializer_deserialize(dyn_type *type, const uint8_t *input, size_t i
         }
     } else {
         status = ERROR;
-        LOG_ERROR("Error initializing memory stream for reading. Length was %d.", inlen);
+        LOG_ERROR("Error initializing memory stream for reading. Length was %zu.", inlen);
     }
 
     return status;
@@ -473,7 +473,6 @@ static int avrobinSerializer_parseSequence(dyn_type *type, void *loc, FILE *stre
             }
         }
         if (blockCount > 0) {
-            LOG_DEBUG("Parsing block count of %li", blockCount);
             cap += blockCount;
             dynType_sequence_reserve(type, loc, cap);
             for (int64_t i = 0; i < blockCount; ++i) {

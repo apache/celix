@@ -35,7 +35,6 @@ dyn_type * dynType_findType(dyn_type *type, char *name) {
     struct type_entry *entry = NULL;
     if (type->referenceTypes != NULL) {
         TAILQ_FOREACH(entry, type->referenceTypes, entries) {
-            LOG_DEBUG("checking ref type '%s' with name '%s'", entry->type->name, name);
             if (strcmp(name, entry->type->name) == 0) {
                 result = entry->type;
                 break;
@@ -46,7 +45,6 @@ dyn_type * dynType_findType(dyn_type *type, char *name) {
     if (result == NULL) {
         struct type_entry *nEntry = NULL;
         TAILQ_FOREACH(nEntry, &type->nestedTypesHead, entries) {
-            LOG_DEBUG("checking nested type '%s' with name '%s'", nEntry->type->name, name);
             if (strcmp(name, nEntry->type->name) == 0) {
                 result = nEntry->type;
                 break;
