@@ -237,6 +237,18 @@ if (TEST_RSA_DISCOVERY_ETCD)
             )
 endif ()
 
+option(TEST_RSA_DISCOVERY_ZEROCONF "Test the Discovery (ZEROCONF) bundle" OFF)
+if (TEST_RSA_DISCOVERY_ZEROCONF)
+    add_celix_container(use_rsa_discovery_zeroconf
+            BUNDLES
+            Celix::rsa_discovery_zeroconf
+            Celix::rsa_topology_manager
+            my_rsa
+            hello
+            PROPERTIES
+            )
+endif ()
+
 option(TEST_SHELL "Test shell" OFF)
 if (TEST_SHELL)
     add_executable(use_shell test_shell.c)
