@@ -42,6 +42,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             CURL::libcurl
             civetweb::civetweb
             jansson::jansson
+            libuuid::libuuid
             )
     celix_deprecated_utils_headers(rsa_dfi)
     celix_deprecated_framework_headers(rsa_dfi)
