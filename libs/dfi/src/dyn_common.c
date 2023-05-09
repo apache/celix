@@ -18,6 +18,7 @@
  */
 
 #include "dyn_common.h"
+#include "celix_err.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -60,13 +61,13 @@ int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char 
         ungetc(c, stream);
     } else {
         status = ERROR;
-        LOG_ERROR("Error creating mem stream for name. %s", strerror(errno));
+        celix_err_pushf("Error creating mem stream for name. %s", strerror(errno));
     }
 
     if (status == OK) {
         if (strLen == 0) {
             status = ERROR;
-            LOG_ERROR("Parsed empty name");
+            celix_err_push("Parsed empty name");
         }
     }
 
@@ -114,7 +115,7 @@ int dynCommon_eatChar(FILE *stream, int expected) {
     int c = fgetc(stream);
     if (c != expected) {
         status = ERROR;
-        LOG_ERROR("Error parsing, expected token '%c' got '%c' at position %li", expected, c, loc);
+        celix_err_pushf("Error parsing, expected token '%c' got '%c' at position %li", expected, c, loc);
     }
     return status;
 }

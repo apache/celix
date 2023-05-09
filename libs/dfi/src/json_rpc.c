@@ -21,6 +21,7 @@
 #include "json_serializer.h"
 #include "dyn_type.h"
 #include "dyn_interface.h"
+#include "celix_err.h"
 #include <jansson.h>
 #include <assert.h>
 #include <stdint.h>
@@ -51,12 +52,12 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 	const char *sig;
 	if (js_request) {
 		if (json_unpack(js_request, "{s:s}", "m", &sig) != 0) {
-			LOG_ERROR("Got json error '%s'\n", error.text);
+			celix_err_pushf("Got json error '%s'\n", error.text);
 		} else {
 			arguments = json_object_get(js_request, "a");
 		}
 	} else {
-		LOG_ERROR("Got json error '%s' for '%s'\n", error.text, request);
+		celix_err_pushf("Got json error '%s' for '%s'\n", error.text, request);
 		return 0;
 	}
 
@@ -73,7 +74,7 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 
 	if (method == NULL) {
 		status = ERROR;
-		LOG_ERROR("Cannot find method with sig '%s'", sig);
+		celix_err_pushf("Cannot find method with sig '%s'", sig);
 	}
 	else if (status == OK) {
 		returnType = dynFunction_returnType(method->dynFunc);
@@ -136,7 +137,7 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 	if (status == OK) {
 		if (dynType_descriptorType(returnType) != 'N') {
 			//NOTE To be able to handle exception only N as returnType is supported
-			LOG_ERROR("Only interface methods with a native int are supported. Found type '%c'", (char)dynType_descriptorType(returnType));
+			celix_err_pushf("Only interface methods with a native int are supported. Found type '%c'", (char)dynType_descriptorType(returnType));
 			status = ERROR;
 		}
 	}
@@ -149,7 +150,7 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 
 	int funcCallStatus = (int)returnVal;
 	if (funcCallStatus != 0) {
-		LOG_WARNING("Error calling remote endpoint function, got error code %i", funcCallStatus);
+        celix_err_pushf("Error calling remote endpoint function, got error code %i", funcCallStatus);
 	}
 
     //free input args
@@ -276,7 +277,7 @@ int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *
 			if (rc == 0) {
 				json_array_append_new(arguments, val);
 			} else {
-                LOG_ERROR("Failed to serialize args for function '%s'\n", id);
+                celix_err_pushf("Failed to serialize args for function '%s'\n", id);
 				status = ERROR;
 				break;
 			}
@@ -302,7 +303,7 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 	json_t *replyJson = json_loads(reply, JSON_DECODE_ANY, &error);
 	if (replyJson == NULL) {
 		status = ERROR;
-		LOG_ERROR("Error parsing json '%s', got error '%s'", reply, error.text);
+		celix_err_pushf("Error parsing json '%s', got error '%s'", reply, error.text);
 	}
 
 	json_t *result = NULL;
@@ -336,7 +337,7 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 				size_t size = 0;
 
 				if (result == NULL) {
-                    LOG_WARNING("Expected result in reply. got '%s'", reply);
+                    celix_err_pushf("Expected result in reply. got '%s'", reply);
 				} else if (dynType_descriptorType(argType) == 't') {
 					status = jsonSerializer_deserializeJson(argType, result, &tmp);
 					if (tmp != NULL) {
@@ -361,7 +362,7 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 				dynType_typedPointer_getTypedType(argType, &subType);
 
                 if (result == NULL) {
-                    LOG_WARNING("Expected result in reply. got '%s'", reply);
+                    celix_err_pushf("Expected result in reply. got '%s'", reply);
                 } else if (dynType_descriptorType(subType) == 't') {
 				    char ***out = (char ***) args[i];
                     char **ptrToString = NULL;
@@ -384,7 +385,7 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 	}
 
 	if (replyHasResult && !replyHandled) {
-	    LOG_WARNING("Reply has a result output, but this is not handled by the remote function!. Reply: '%s'", reply);
+        celix_err_pushf("Reply has a result output, but this is not handled by the remote function!. Reply: '%s'", reply);
 	}
 
 	json_decref(replyJson);

@@ -18,6 +18,7 @@
  */
 
 #include "dyn_interface.h"
+#include "celix_err.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -79,12 +80,12 @@ int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
                 status = intf->version != NULL ? OK : ERROR;
             }
             if (status == ERROR) {
-            	LOG_ERROR("Invalid version (%s) in parsed descriptor\n",version);
+            	celix_err_pushf("Invalid version (%s) in parsed descriptor\n",version);
             }
         }
     } else {
         status = ERROR;
-        LOG_ERROR("Error allocating memory for dynamic interface\n");
+        celix_err_push("Error allocating memory for dynamic interface\n");
     }
 
     if (status == OK) {
@@ -116,7 +117,7 @@ int dynInterface_checkInterface(dyn_interface_type *intf) {
 
         if (!foundType || !foundVersion || !foundName) {
             status = ERROR;
-            LOG_ERROR("Parse Error. There must be a header section with a type, version and name entry");
+            celix_err_push("Parse Error. There must be a header section with a type, version and name entry");
         }
 
         struct method_entry *mEntry = NULL;
@@ -125,7 +126,7 @@ int dynInterface_checkInterface(dyn_interface_type *intf) {
             int descriptor = dynType_descriptorType(type);
             if (descriptor != 'N') {
                 status = ERROR;
-                LOG_ERROR("Parse Error. Only method with a return type 'N' (native int) are supported. Got return type '%c'\n", descriptor);
+                celix_err_pushf("Parse Error. Only method with a return type 'N' (native int) are supported. Got return type '%c'\n", descriptor);
                 break;
             }
         }
@@ -159,7 +160,7 @@ static int dynInterface_parseSection(dyn_interface_type *intf, FILE *stream) {
             status = dynInterface_parseMethods(intf, stream);
         } else {
             status = ERROR;
-            LOG_ERROR("unsupported section '%s'", sectionName);
+            celix_err_pushf("unsupported section '%s'", sectionName);
         }
     }
 
@@ -202,7 +203,7 @@ static int dynInterface_parseNameValueSection(dyn_interface_type *intf, FILE *st
                 TAILQ_INSERT_TAIL(head, entry, entries);
             } else {
                 status = ERROR;
-                LOG_ERROR("Error allocating memory for namval entry");
+                celix_err_push("Error allocating memory for namval entry");
             }
         }
 
@@ -257,7 +258,7 @@ static int dynInterface_parseTypes(dyn_interface_type *intf, FILE *stream) {
                 TAILQ_INSERT_TAIL(&intf->types, entry, entries);
             } else {
                 status = ERROR;
-                LOG_ERROR("Error allocating memory for type entry");
+                celix_err_push("Error allocating memory for type entry");
             }
         }
 
@@ -322,7 +323,7 @@ static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream) {
                 TAILQ_INSERT_TAIL(&intf->methods, entry, entries);
             } else {
                 status = ERROR;
-                LOG_ERROR("Error allocating memory for method entry");
+                celix_err_push("Error allocating memory for method entry");
             }
         }
 
@@ -419,7 +420,7 @@ static int dynInterface_getEntryForHead(struct namvals_head *head, const char *n
         *out = value;
     } else {
         status = ERROR;
-        LOG_WARNING("Cannot find '%s' in list", name);
+        celix_err_pushf("Cannot find '%s' in list", name);
     }
     return status;
 }

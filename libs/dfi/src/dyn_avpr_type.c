@@ -18,6 +18,7 @@
  */
 
 #include "dyn_type.h"
+#include "celix_err.h"
 
 #include "jansson.h"
 
@@ -91,7 +92,7 @@ dyn_type * dynType_parseAvpr(FILE* avprStream, const char *fqn) {
     json_error_t error;
     json_t *root = json_loadf(avprStream, JSON_REJECT_DUPLICATES, &error);
     if (!root) {
-        LOG_ERROR("parseAvpr: Error decoding json: line %d: %s", error.line, error.text);
+        celix_err_pushf("parseAvpr: Error decoding json: line %d: %s", error.line, error.text);
         return NULL;
     }
 
@@ -104,7 +105,7 @@ dyn_type * dynType_parseAvprWithStr(const char* avpr, const char *fqn) {
     FILE *avprStream = fmemopen((char*)avpr, strlen(avpr), "r");
 
     if (!avprStream) {
-        LOG_ERROR("parseAvprWithStr: Error creating mem stream for descriptor string. %s", strerror(errno)); 
+        celix_err_pushf("parseAvprWithStr: Error creating mem stream for descriptor string. %s", strerror(errno));
         return NULL;
     }
 
@@ -129,7 +130,7 @@ static json_t const * dynAvprType_findType(char const * const fqn, json_t const 
             }
         }
         else {
-            LOG_ERROR("FindType: found a type with no name, check your json configuration, skipping this entry for now...");
+            celix_err_push("FindType: found a type with no name, check your json configuration, skipping this entry for now...");
         }
     }
     return NULL; // Not found
@@ -139,21 +140,21 @@ dyn_type * dynAvprType_parseFromJson(json_t * const root, const char * fqn) {
     // Initialize type
     bool valid = true;
     if (!json_is_object(root)) {
-        LOG_ERROR("parseAvpr: Error decoding json, root should be an object");
+        celix_err_push("parseAvpr: Error decoding json, root should be an object");
         valid = false;
     }
 
     // Get base namespace
     const char *parent_ns = json_string_value(json_object_get(root, "namespace"));
     if (valid && !parent_ns) {
-        LOG_ERROR("parseAvpr: No namespace found in root, or it is null!");
+        celix_err_push("parseAvpr: No namespace found in root, or it is null!");
         valid = false;
     }
 
     // Get types array
     json_t* typesArrayObject = json_object_get(root, "types");
     if (valid && !json_is_array(typesArrayObject)) {
-        LOG_ERROR("parseAvpr: types should be an array!");
+        celix_err_push("parseAvpr: types should be an array!");
         valid = false;
     }
 
@@ -173,7 +174,7 @@ dyn_type * dynAvprType_parseFromJson(json_t * const root, const char * fqn) {
     }
 
     if (!valid) {
-        LOG_ERROR("Not found %s", fqn);
+        celix_err_pushf("Not found %s", fqn);
     }
 
     return type;
@@ -223,7 +224,7 @@ dyn_type * dynAvprType_createNestedForFunction(dyn_type * store_type, const char
 // To be used for dyn_function parsing of return and parameter arrays
 dyn_type * dynAvprType_parseFromTypedJson(json_t * const root, json_t const * const type_entry, const char * namespace) {
     if (!type_entry) {
-        LOG_ERROR("Need a type entry to parse, but got a NULL pointer");
+        celix_err_push("Need a type entry to parse, but got a NULL pointer");
         return NULL;
     }
 
@@ -244,7 +245,7 @@ dyn_type * dynAvprType_parseFromTypedJson(json_t * const root, json_t const * co
         case ARRAY:
             ret_type = dynAvprType_parseArray(ret_type, NULL, type_entry, json_object_get(root, "types"), name_buffer, namespace, namespace);
             if (!ret_type) {
-                LOG_ERROR("Error parsing array");
+                celix_err_push("Error parsing array");
                 return NULL;
             }
             break;
@@ -254,7 +255,7 @@ dyn_type * dynAvprType_parseFromTypedJson(json_t * const root, json_t const * co
         case REFERENCE:
             /* fall through */
         default:
-            LOG_ERROR("ParseFromTypedJson: Received illegal type : %d", elType);
+            celix_err_pushf("ParseFromTypedJson: Received illegal type : %d", elType);
             break;
     }
 
@@ -270,7 +271,7 @@ static dyn_type * dynAvprType_parseAny(dyn_type * root, dyn_type * parent, json_
     dyn_type * type = NULL;
 
     if (!jsonObject) {
-        LOG_WARNING("Any: Received NULL, type not found, nothing to parse");
+        celix_err_push("Any: Received NULL, type not found, nothing to parse");
         return NULL;
     }
 
@@ -294,7 +295,7 @@ static dyn_type * dynAvprType_parseAny(dyn_type * root, dyn_type * parent, json_
     // No (valid) alias, build type based on name
     const char* type_name = json_string_value(json_object_get(jsonObject, "type"));
     if (!type_name) {
-        LOG_ERROR("Any: \"type\" entry is not a string or does not exist");
+        celix_err_push("Any: \"type\" entry is not a string or does not exist");
         return NULL;
     }
 
@@ -311,7 +312,7 @@ static dyn_type * dynAvprType_parseAny(dyn_type * root, dyn_type * parent, json_
         type = dynAvprType_createSimpleTypeFromName(parent, type_name);
 
         if (!type) {
-            LOG_ERROR("Any: Unrecognized type: %s", type_name);
+            celix_err_pushf("Any: Unrecognized type: %s", type_name);
         }
     }
 
@@ -344,7 +345,7 @@ static dyn_type * dynAvprType_parseRecord(dyn_type * root, dyn_type * parent, js
     snprintf(fqn_buffer, FQN_SIZE, "%s.%s", record_ns, json_string_value(json_object_get(record_obj, "name")));
     type->name = strdup(fqn_buffer);
     if (!type->name) {
-        LOG_ERROR("Record: failed to allocate memory for type->name");
+        celix_err_push("Record: failed to allocate memory for type->name");
         dynType_destroy(type);
         return NULL;
     }
@@ -360,7 +361,7 @@ static dyn_type * dynAvprType_parseRecord(dyn_type * root, dyn_type * parent, js
     json_array_foreach(fields, counter, element) {
         struct complex_type_entry * entry = dynAvprType_parseRecordEntry(root, type, element, array_object, fqn_buffer, parent_ns, record_ns);
         if (!entry) {
-            LOG_ERROR("Record: Parsing record entry %zu failed", counter);
+            celix_err_pushf("Record: Parsing record entry %zu failed", counter);
             dynType_destroy(type);
             return NULL;
         }
@@ -375,13 +376,13 @@ static dyn_type * dynAvprType_parseRecord(dyn_type * root, dyn_type * parent, js
 static inline dyn_type * dynAvprType_prepareRecord(dyn_type * parent, json_t const ** fields, json_t const * const record_obj) {
     const char * name = json_string_value(json_object_get(record_obj, "name"));
     if (!name) {
-        LOG_ERROR("Record: \"name\" entry is missing");
+        celix_err_push("Record: \"name\" entry is missing");
         return NULL;
     }
 
     *fields = json_object_get(record_obj, "fields");
     if (!json_is_array(*fields)) {
-        LOG_WARNING("Record: \"fields\" is not an array or does not exist");
+        celix_err_push("Record: \"fields\" is not an array or does not exist");
         return NULL;
     }
 
@@ -450,7 +451,7 @@ static inline struct complex_type_entry *dynAvprType_parseRecordEntry(dyn_type *
             case INVALID:
                 /* fall through */
             default:
-                LOG_ERROR("RecordEntry: Illegal record entry for %s", json_string_value(json_object_get(entry_object, "name")));
+                celix_err_pushf("RecordEntry: Illegal record entry for %s", json_string_value(json_object_get(entry_object, "name")));
                 entry->type = NULL;
                 break;
         }
@@ -460,7 +461,7 @@ static inline struct complex_type_entry *dynAvprType_parseRecordEntry(dyn_type *
         return entry;
     }
     else {
-        LOG_ERROR("RecordEntry: Failed to create type for %s", json_string_value(json_object_get(entry_object, "type")));
+        celix_err_pushf("RecordEntry: Failed to create type for %s", json_string_value(json_object_get(entry_object, "type")));
         free(entry->name);
         free(entry);
         return NULL;
@@ -472,7 +473,7 @@ static inline struct complex_type_entry *dynAvprType_prepareRecordEntry(json_t c
 
     const char * entry_name = json_string_value(json_object_get(entry_object, "name"));
     if (!entry_name) {
-        LOG_ERROR("Could not find name in entry");
+        celix_err_push("Could not find name in entry");
         return NULL;
     }
 
@@ -485,7 +486,7 @@ static inline struct complex_type_entry *dynAvprType_prepareRecordEntry(json_t c
 static inline enum JsonTypeType dynAvprType_getRecordEntryType(json_t const * const entry_object, const char * fqn_parent, char * name_buffer, const char * namespace) {
     json_t const * const json_type = json_object_get(entry_object, "type");
     if (!json_type) {
-        LOG_WARNING("RecordEntry: No type entry");
+        celix_err_push("RecordEntry: No type entry");
         return INVALID;
     }
 
@@ -519,7 +520,7 @@ static dyn_type * dynAvprType_parseReference(dyn_type * root, const char * name_
     dyn_type *ref = dynType_findType(root, (char*) name_buffer);
     if (ref) {
         if (ref->type == DYN_TYPE_INVALID) {
-            LOG_ERROR("Reference: found incomplete type");
+            celix_err_push("Reference: found incomplete type");
             free(type);
             return NULL;
         }
@@ -532,7 +533,7 @@ static dyn_type * dynAvprType_parseReference(dyn_type * root, const char * name_
     // if not found, Generate the reference type in root
     json_t const * const refType = dynAvprType_findType(name_buffer, array_object, parent_ns);
     if (!refType) {
-        LOG_ERROR("ParseReference: Could not find %s", name_buffer);
+        celix_err_pushf("ParseReference: Could not find %s", name_buffer);
         free(subType);
         free(type);
         return NULL;
@@ -556,7 +557,7 @@ static dyn_type * dynAvprType_parseReference(dyn_type * root, const char * name_
         return type;
     }
     else {
-        LOG_ERROR("ParseReference: Failed to add new type to root:");
+        celix_err_push("ParseReference: Failed to add new type to root:");
         dynType_destroy(subType);
         dynType_destroy(type);
         return NULL;
@@ -587,7 +588,7 @@ static dyn_type * dynAvprType_initializeReferenceType(dyn_type * type_pointer) {
 
     dyn_type *sub_type = dynAvprType_initializeType(type_pointer);
     if (!sub_type) {
-        LOG_ERROR("Could not create reference type");
+        celix_err_push("Could not create reference type");
         return NULL;
     }
 
@@ -629,7 +630,7 @@ static dyn_type * dynAvprType_parseEnum(dyn_type * parent, json_t const * const 
 
     json_t * symbolArray = json_object_get(enum_obj, "symbols");
     if (!json_is_array(symbolArray)) {
-        LOG_WARNING("Expected \"symbols\" to be an array for enum %s", fqn);
+        celix_err_pushf("Expected \"symbols\" to be an array for enum %s", fqn);
         free(fqn);
         free(type);
         return NULL;
@@ -637,7 +638,7 @@ static dyn_type * dynAvprType_parseEnum(dyn_type * parent, json_t const * const 
 
     json_t * values_array = json_object_get(enum_obj, "EnumValues");
     if (json_is_array(values_array) && json_array_size(values_array) != json_array_size(symbolArray)) {
-        LOG_WARNING("Expected \"symbols\" and \"EnumValues\" arrays to be of the same size");
+        celix_err_push("Expected \"symbols\" and \"EnumValues\" arrays to be of the same size");
         free(fqn);
         free(type);
         return NULL;
@@ -665,7 +666,7 @@ static dyn_type * dynAvprType_parseEnum(dyn_type * parent, json_t const * const 
         return type;
     }
     else {
-        LOG_ERROR("ParseEnum: Failed to parse %s", fqn);
+        celix_err_pushf("ParseEnum: Failed to parse %s", fqn);
         free(fqn);
         dynType_destroy(type);
         return NULL;
@@ -674,7 +675,7 @@ static dyn_type * dynAvprType_parseEnum(dyn_type * parent, json_t const * const 
 
 static inline struct meta_entry * dynAvprType_createMetaEntry(const char* enum_entry_name) {
     if (!enum_entry_name) {
-        LOG_ERROR("CreateMetaEntry: passed null pointer, no name present?");
+        celix_err_push("CreateMetaEntry: passed null pointer, no name present?");
         return NULL;
     }
 
@@ -691,13 +692,13 @@ static inline bool dynAvprType_metaEntrySetValue(struct meta_entry * meta_entry_
     if (values_array) {
         const char* enumValue = json_string_value(json_array_get(values_array, index));
         if (!enumValue) {
-            LOG_WARNING("MetaEntrySetValue: could not get the enum value from the \"EnumValues\" list at index %lu", index);
+            celix_err_pushf("MetaEntrySetValue: could not get the enum value from the \"EnumValues\" list at index %lu", index);
             return false;
         }
 
         meta_entry_ptr->value = strdup(enumValue);
         if (!meta_entry_ptr->value) {
-            LOG_ERROR("MetaEntrySetValue: could not allocate memory for meta_entry->value");
+            celix_err_push("MetaEntrySetValue: could not allocate memory for meta_entry->value");
             return false;
         }
         dynAvprType_parseEnumValue(&meta_entry_ptr->value);
@@ -715,7 +716,7 @@ static inline bool dynAvprType_metaEntrySetValue(struct meta_entry * meta_entry_
 static inline void dynAvprType_parseEnumValue(char** enumvalue) {
     char* str = *enumvalue;
     if (!str) {
-        LOG_ERROR("Do not pass null pointer to this function");
+        celix_err_push("Do not pass null pointer to this function");
         return;
     }
 
@@ -766,7 +767,7 @@ static dyn_type* dynAvprType_parseArray(dyn_type * root, dyn_type * parent, json
 
     }
     else {
-        LOG_ERROR("ParseArray: Unrecognized array structure: \"items\" is neither a nested array nor a type");
+        celix_err_push("ParseArray: Unrecognized array structure: \"items\" is neither a nested array nor a type");
     }
 
     if (type->sequence.itemType) {
@@ -774,7 +775,7 @@ static dyn_type* dynAvprType_parseArray(dyn_type * root, dyn_type * parent, json
         dynType_prepCif(&type->sequence.seqType);
     }
     else {
-        LOG_ERROR("ParseArray: Failed to parse array item type");
+        celix_err_push("ParseArray: Failed to parse array item type");
         free(type);
         type = NULL;
     }
@@ -792,13 +793,13 @@ static dyn_type * dynAvprType_parseFixed(dyn_type * parent, json_t const * const
     char descriptor = dynAvprType_fixedTypeToFfi(fixed_object, &ffiType);
 
     if (!ffiType || descriptor == '0') {
-        LOG_ERROR("Invalid simple type, received wrong ffi type!");
+        celix_err_push("Invalid simple type, received wrong ffi type!");
         free(type);
         return NULL;
     }
 
     if (!json_is_string(json_object_get(fixed_object, "name"))) {
-        LOG_ERROR("Invalid simple type, need a name");
+        celix_err_push("Invalid simple type, need a name");
         free(type);
         return NULL;
     }
@@ -846,7 +847,7 @@ static inline char dynAvprType_fixedTypeToFfi(json_t const * const simple_obj, f
             *output_ffi_type = &ffi_type_uint64;
             return 'j';
         default:
-            LOG_ERROR("Unrecognized size = %lld", size);
+            celix_err_pushf("Unrecognized size = %lld", size);
             return '0';
     }
 }
@@ -855,7 +856,7 @@ static dyn_type * dynAvprType_createSimpleTypeFromName(dyn_type * parent, const 
     dyn_type * type = NULL;
 
     if (!type_name) {
-        LOG_ERROR("Simple Type, did not pass a valid name, returning NULL");
+        celix_err_push("Simple Type, did not pass a valid name, returning NULL");
     }
     else if (strcmp(type_name, "int") == 0) {
         type = dynAvprType_createSimpleType(parent, 'I', "int");
@@ -927,7 +928,7 @@ static dyn_type * dynAvprType_createSimpleType(dyn_type * parent, char kind, con
             ffiType = &ffi_type_sint;
             break;
         default:
-            LOG_ERROR("Unrecognized kind: '%c'.", kind);
+            celix_err_pushf("Unrecognized kind: '%c'.", kind);
             free(type);
             return NULL;
     }
@@ -942,14 +943,14 @@ static dyn_type * dynAvprType_createSimpleType(dyn_type * parent, char kind, con
 static char * dynAvprType_createFqnFromJson(json_t const * const jsonObject, const char * namespace) {
     const char *name = json_string_value(json_object_get(jsonObject, "name"));
     if (!name) {
-        LOG_ERROR("This object appears to not have a name!!");
+        celix_err_push("This object appears to not have a name!!");
         return NULL;
     }
 
     const bool local_ns = json_is_string(json_object_get(jsonObject, "namespace"));
     const char *ns =  local_ns ? json_string_value(json_object_get(jsonObject, "namespace")) : namespace;
     if (!ns) {
-        LOG_ERROR("Need a namespace because the jsonObject does not have a namespace!");
+        celix_err_push("Need a namespace because the jsonObject does not have a namespace!");
         return NULL;
     }
 
@@ -994,13 +995,13 @@ static inline void dynAvprType_createVersionMetaEntry(dyn_type * type, json_t co
         }
         else {
             m_entry->value = strdup("0.0.0");
-            LOG_WARNING("parseAvpr: Did not find valid version, set version to 0.0.0");
+            celix_err_push("parseAvpr: Did not find valid version, set version to 0.0.0");
         }
     }
     else {
         // If no version or an invalid version is available, default to 0.0.0
         m_entry->value = strdup("0.0.0");
-        LOG_WARNING("parseAvpr: Did not find version entry, set version to 0.0.0");
+        celix_err_push("parseAvpr: Did not find version entry, set version to 0.0.0");
     }
 
     // Insert into type
@@ -1045,7 +1046,7 @@ static inline void dynAvprType_createAnnotationEntries(dyn_type * type, json_t c
                 case JSON_ARRAY:
                     /* fall through */
                 default:
-                    LOG_WARNING("createAnnotationEntries: encountered an annotation of an unknown type : %s", key);
+                    celix_err_pushf("createAnnotationEntries: encountered an annotation of an unknown type : %s", key);
                     free(m_entry->name);
                     free(m_entry);
                     continue; // Do not add the invalid entry as a meta-entry
