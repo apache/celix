@@ -373,8 +373,8 @@ celix_target_hide_symbols(my_lib)
 
 if (ENABLE_TESTING)
     add_library(my_lib_cut STATIC ${MY_LIB_SOURCES})
-    target_link_libraries(my_lib PUBLIC ${MY_LIB_PUBLIC_LIBS} PRIVATE ${MY_LIB_PRIVATE_LIBS})
-    target_include_directories(my_lib PUBLIC
+    target_link_libraries(my_lib_cut PUBLIC ${MY_LIB_PUBLIC_LIBS} ${MY_LIB_PRIVATE_LIBS})
+    target_include_directories(my_lib_cut PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/src
         ${CMAKE_CURRENT_LIST_DIR}/include
         ${CMAKE_BINARY_DIR}/celix/gen/includes/my_lib
@@ -455,7 +455,6 @@ set_target_properties(my_lib PROPERTIES
 target_include_directories(my_lib
       PUBLIC
         $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/my_lib>
-        $<INSTALL_INTERFACE:include/celix_my_lib>
       PRIVATE
         src)
 
@@ -489,7 +488,6 @@ add_celix_bundle(my_bundle
     FILENAME "celix_my_bundle"
     VERSION "1.0.0"
     GROUP "celix/my_bundle_group"
-    HIDE_SYMBOLS
 )
 add_library(celix::my_bundle ALIAS my_bundle)
 ```
