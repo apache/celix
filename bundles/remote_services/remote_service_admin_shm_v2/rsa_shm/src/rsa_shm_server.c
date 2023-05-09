@@ -204,8 +204,8 @@ static void rsaShmServer_msgHandlingWork(void *data) {
     pthread_mutex_lock(&msgCtrl->lock);
     while (true) {
         if (msgCtrl->msgState == REQ_CANCELLED || waitRet != 0) {
-            celix_logHelper_error(server->loghelper, "RsaShmServer: Client cancelled the request, or timeout. %d.", waitRet);
             pthread_mutex_unlock(&msgCtrl->lock);
+            celix_logHelper_error(server->loghelper, "RsaShmServer: Client cancelled the request, or timeout. %d.", waitRet);
             goto reply_err;
         }
         size_t destSize = workData->msgBodyTotalSize;

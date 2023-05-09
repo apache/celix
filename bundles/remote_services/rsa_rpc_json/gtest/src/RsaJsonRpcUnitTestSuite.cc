@@ -41,6 +41,7 @@
 #include "celix_bundle_context_ei.h"
 #include "celix_version_ei.h"
 #include "dfi_ei.h"
+#include "celix_properties_ei.h"
 #include <gtest/gtest.h>
 #include <cstdlib>
 extern "C" {
@@ -75,6 +76,7 @@ public:
         celix_ei_expect_celixThreadRwlock_create(nullptr, 0, 0);
         celix_ei_expect_celix_bundleContext_trackServicesWithOptionsAsync(nullptr, 0, 0);
         celix_ei_expect_celix_bundleContext_registerServiceWithOptionsAsync(nullptr, 0, 0);
+        celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
     }
 
     endpoint_description_t *CreateEndpointDescription(long svcId = 100/*set a dummy service id*/) {
@@ -473,6 +475,17 @@ TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToPrepareInvokeRequest) {
         auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
         EXPECT_NE(nullptr, proxySvc);
         EXPECT_EQ(CELIX_SERVICE_EXCEPTION, proxySvc->test(proxySvc->handle));
+    });
+    EXPECT_TRUE(found);
+}
+
+TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToCreateMetadata) {
+    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void *handle, void *svc) {
+        (void)handle;//unused
+        auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
+        EXPECT_NE(nullptr, proxySvc);
+        celix_ei_expect_celix_properties_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+        EXPECT_EQ(CELIX_ENOMEM, proxySvc->test(proxySvc->handle));
     });
     EXPECT_TRUE(found);
 }

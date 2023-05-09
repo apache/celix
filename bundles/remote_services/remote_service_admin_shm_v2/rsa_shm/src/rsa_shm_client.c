@@ -675,7 +675,7 @@ static celix_status_t rsaShmClientManager_receiveResponse(rsa_shm_client_manager
         isStreamingReply = false;
         pthread_mutex_lock(&msgCtrl->lock);
         while (msgCtrl->msgState == REQUESTING && waitRet == 0) {
-            //pthread_cond_timedwait shall not return an error code of [EINTR].
+            //pthread_cond_timedwait shall not return an error code of [EINTR]. refer https://man7.org/linux/man-pages/man3/pthread_cond_timedwait.3p.html
             waitRet = pthread_cond_timedwait(&msgCtrl->signal, &msgCtrl->lock, &timeout);
         }
 

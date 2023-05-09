@@ -43,8 +43,12 @@ add_subdirectory(pthread)
 add_subdirectory(celix_log_helper)
 add_subdirectory(celix_bundle)
 add_subdirectory(celix_version)
-add_subdirectory(dfi)
 
+
+celix_subproject(ERROR_INJECTOR_DFI "Option to enable building the celix dfi error injector" OFF)
+if (ERROR_INJECTOR_DFI)
+    add_subdirectory(dfi)
+endif ()
 celix_subproject(ERROR_INJECTOR_MDNSRESPONDER "Option to enable building the mdnsresponder error injector" OFF)
 if (ERROR_INJECTOR_MDNSRESPONDER)
     add_subdirectory(mdnsresponder)

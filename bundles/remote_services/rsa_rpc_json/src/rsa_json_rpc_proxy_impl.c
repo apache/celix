@@ -208,12 +208,19 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
     char *invokeRequest = NULL;
     int rc = jsonRpc_prepareInvokeRequest(entry->dynFunc, entry->id, args, &invokeRequest);
     if (rc != 0) {
+        celix_logHelper_error(proxyFactory->logHelper, "Error preparing invoke request for %s", entry->name);
         *(celix_status_t *)returnVal = CELIX_SERVICE_EXCEPTION;
         return;
     }
 
     struct iovec replyIovec = {NULL,0};
     celix_properties_t *metadata = celix_properties_create();
+    if (metadata == NULL) {
+        celix_logHelper_error(proxyFactory->logHelper,"Error creating metadata for %s", entry->name);
+        free(invokeRequest);
+        *(celix_status_t *)returnVal = CELIX_ENOMEM;
+        return;
+    }
     celix_properties_setLong(metadata, "SerialProtocolId", proxyFactory->serialProtoId);
     bool cont = remoteInterceptorHandler_invokePreProxyCall(proxyFactory->interceptorsHandler,
             proxyFactory->endpointDesc->properties, entry->name, &metadata);
@@ -309,9 +316,9 @@ static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxy
     dynInterface_getVersion(intfType,&consumerVersion);
     isCompatible = celix_version_isCompatible(consumerVersion, providerVersion);
     if(!isCompatible){
-        char* consumerVerStr = celix_version_toString(consumerVersion);
-        celix_logHelper_error(proxyFactory->logHelper, "Proxy: Service version mismatch, consumer has %s, provider has %s.", consumerVerStr, providerVerStr);
-        free(consumerVerStr);
+        celix_logHelper_error(proxyFactory->logHelper, "Proxy: Service version mismatch, consumer has %d.%d.%d, provider has %s.",
+                              celix_version_getMajor(consumerVersion), celix_version_getMinor(consumerVersion),
+                              celix_version_getMicro(consumerVersion) , providerVerStr);
         status = CELIX_SERVICE_EXCEPTION;
         goto svc_ver_mismatch;
     }
