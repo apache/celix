@@ -20,6 +20,7 @@
 #ifndef CELIX_LOG_CONTROL_H
 #define CELIX_LOG_CONTROL_H
 
+#include <stdbool.h>
 #include "celix_log_level.h"
 #include "celix_array_list.h"
 
@@ -28,8 +29,8 @@ extern "C" {
 #endif
 
 #define CELIX_LOG_CONTROL_NAME      "celix_log_control"
-#define CELIX_LOG_CONTROL_VERSION   "1.0.0"
-#define CELIX_LOG_CONTROL_USE_RANGE "[1.0.0,2)"
+#define CELIX_LOG_CONTROL_VERSION   "1.1.0"
+#define CELIX_LOG_CONTROL_USE_RANGE "[1.1.0,2)"
 
 typedef struct celix_log_control {
     void *handle;
@@ -49,6 +50,25 @@ typedef struct celix_log_control {
     bool (*logServiceInfo)(void *handle, const char* loggerName, celix_log_level_e* outActiveLogLevel);
 
     bool (*sinkInfo)(void *handle, const char* sinkName, bool *outEnabled);
+
+    /**
+     * @brief Enable/disable verbose mode for selected loggers.
+     * @param[in] handle The service handle.
+     * @param[in] select The select string that specifies the case-insensitive name prefix of target loggers.
+     * @param[in] verbose True to enable verbose mode, false to disable verbose mode.
+     * @return Number of logger selected.
+     */
+    size_t (*setVerbose)(void *handle, const char* select, bool verbose);
+
+    /**
+     * @brief Get the active log level and the verbose mode for a selected logger.
+     * @param [in] handle The service handle.
+     * @param [in] loggerName The name of the target logger.
+     * @param [out] outActiveLogLevel The active log level of the target logger.
+     * @param [out] outVerbose The verbose mode of the target logger.
+     * @return True if the target logger is found, false otherwise.
+     */
+    bool (*logServiceInfoEx)(void *handle, const char* loggerName, celix_log_level_e* outActiveLogLevel, bool* outVerbose);
 
 } celix_log_control_t;
 

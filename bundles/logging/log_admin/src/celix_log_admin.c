@@ -473,7 +473,7 @@ static void celix_logAdmin_setLogLevelCmd(celix_log_admin_t* admin, const char* 
         size_t count = celix_logAdmin_setActiveLogLevels(admin, select, logLevel);
         fprintf(outStream, "Updated %lu log services to log level %s\n", (long unsigned int) count, celix_logUtils_logLevelToString(logLevel));
     } else {
-        fprintf(outStream, "Cannot convert '%s' to a valid celix log level.\n", level);
+        fprintf(errorStream, "Cannot convert '%s' to a valid celix log level.\n", level);
     }
 }
 
@@ -491,7 +491,7 @@ static void celix_logAdmin_setSinkEnabledCmd(celix_log_admin_t* admin, const cha
         size_t count = celix_logAdmin_setSinkEnabled(admin, select, enableSink);
         fprintf(outStream, "Updated %lu log sinks to %s.\n", (long unsigned int) count, enableSink ? "enabled" : "disabled");
     } else {
-        fprintf(outStream, "Cannot convert '%s' to a boolean value.\n", enabled);
+        fprintf(errorStream, "Cannot convert '%s' to a boolean value.\n", enabled);
     }
 }
 
