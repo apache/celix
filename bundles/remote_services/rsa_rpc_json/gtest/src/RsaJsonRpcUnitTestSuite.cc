@@ -42,6 +42,7 @@
 #include "celix_version_ei.h"
 #include "dfi_ei.h"
 #include "celix_properties_ei.h"
+#include "celix_long_hash_map_ei.h"
 #include <gtest/gtest.h>
 #include <cstdlib>
 extern "C" {
@@ -77,6 +78,7 @@ public:
         celix_ei_expect_celix_bundleContext_trackServicesWithOptionsAsync(nullptr, 0, 0);
         celix_ei_expect_celix_bundleContext_registerServiceWithOptionsAsync(nullptr, 0, 0);
         celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_longHashMap_create(nullptr, 0, nullptr);
     }
 
     endpoint_description_t *CreateEndpointDescription(long svcId = 100/*set a dummy service id*/) {
@@ -413,6 +415,16 @@ public:
     }
     long proxySvcId{-1};
 };
+
+TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToCreateProxiesHashMap) {
+    auto endpoint = CreateEndpointDescription();
+    long svcId = -1L;
+    celix_ei_expect_celix_longHashMap_create((void*)&rsaJsonRpc_createProxy, 1, nullptr);
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, reqSenderSvcId, &svcId);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    endpointDescription_destroy(endpoint);
+}
 
 TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToCloneEndpointDescription) {
     auto endpoint = CreateEndpointDescription();

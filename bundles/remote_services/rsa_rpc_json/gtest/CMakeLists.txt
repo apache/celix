@@ -59,6 +59,7 @@ if (LINKER_WRAP_SUPPORTED)
             Celix::dfi_ei
             Celix::log_helper_ei
             Celix::properties_ei
+            Celix::long_hash_map_ei
             GTest::gtest
             GTest::gtest_main
             )

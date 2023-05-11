@@ -43,6 +43,7 @@ add_subdirectory(pthread)
 add_subdirectory(celix_log_helper)
 add_subdirectory(celix_bundle)
 add_subdirectory(celix_version)
+add_subdirectory(celix_long_hash_map)
 
 
 celix_subproject(ERROR_INJECTOR_DFI "Option to enable building the celix dfi error injector" ON)
