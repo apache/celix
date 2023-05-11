@@ -103,6 +103,7 @@ celix_status_t celix_resource_addCapability(celix_resource_t* res, celix_capabil
         celix_err_pushf(
                 "Capability is not added to the correct resource. (Capability is added to resource %p, but resource %p is expected.)",
                 celix_capability_getResource(cap), res);
+        celix_capability_destroy(cap);
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
@@ -123,6 +124,7 @@ err_handling:
     if (caps != NULL) {
         celix_arrayList_remove(caps, cap);
     }
+    celix_capability_destroy(cap);
     return ENOMEM;
 }
 
@@ -131,6 +133,7 @@ celix_status_t celix_resource_addRequirement(celix_resource_t* res, celix_requir
         celix_err_pushf(
                 "Requirement is not added to the correct resource. (Requirement is added to resource %p, but resource %p is expected.)",
                 celix_requirement_getResource(req), res);
+        celix_requirement_destroy(req);
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
@@ -151,5 +154,6 @@ err_handling:
     if (reqs != NULL) {
         celix_arrayList_remove(reqs, req);
     }
+    celix_requirement_destroy(req);
     return ENOMEM;
 }

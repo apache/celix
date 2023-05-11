@@ -251,13 +251,11 @@ TEST_F(RequirementCapabilityModelTestSuite, TestCapabilityAndRequirementWithWron
     EXPECT_EQ(1, celix_err_getErrorCount());
     const char* err = celix_err_popLastError();
     EXPECT_TRUE(strcasestr(err, "capability") != nullptr) << "Error message should contain 'capability' but was: " << err;
-    celix_capability_destroy(cap);
 
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_resource_addRequirement(res, req));
     EXPECT_EQ(1, celix_err_getErrorCount());
     err = celix_err_popLastError();
     EXPECT_TRUE(strcasestr(err, "requirement") != nullptr) << "Error message should contain 'requirement' but was: " << err;
-    celix_requirement_destroy(req);
 
     celix_resource_destroy(res);
 }

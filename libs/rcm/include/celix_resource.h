@@ -84,10 +84,11 @@ const celix_array_list_t* celix_resource_getRequirements(const celix_resource_t*
  * In case of a error, an error message is added to celix_err.
  *
  * @param[in] res The resource.
- * @param[in] cap The capability to add.
+ * @param[in] cap The capability to add. The resource will take ownership of the capability.
  * @return CELIX_SUCCESS if the capability was added successfully.
  * @retval CELIX_ILLEGAL_ARGUMENT If the capability resource is not the same as this resource.
- * @retval ENOMEM If there is not enough memory to add the capability.
+ *         The provided capability is destroyed.
+ * @retval ENOMEM If there is not enough memory to add the capability. The provided capability is destroyed.
  */
 celix_status_t celix_resource_addCapability(celix_resource_t* res, celix_capability_t* cap);
 
@@ -97,10 +98,11 @@ celix_status_t celix_resource_addCapability(celix_resource_t* res, celix_capabil
  * In case of a error, an error message is added to celix_err.
  *
  * @param[in] res The resource.
- * @param[in] req The requirement to add.
+ * @param[in] req The requirement to add. The resource will take ownership of the requirement.
  * @return CELIX_SUCCESS if the requirement was added successfully.
  * @retval CELIX_ILLEGAL_ARGUMENT If the requirement resource is not the same as this resource.
- * @retval ENOMEM If there is not enough memory to add the requirement.
+ *         The provided requirement is destroyed.
+ * @retval ENOMEM If there is not enough memory to add the requirement. The provided requirement is destroyed.
  */
 celix_status_t celix_resource_addRequirement(celix_resource_t* res, celix_requirement_t* req);
 
