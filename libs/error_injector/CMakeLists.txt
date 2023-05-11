@@ -45,7 +45,7 @@ add_subdirectory(celix_bundle)
 add_subdirectory(celix_version)
 
 
-celix_subproject(ERROR_INJECTOR_DFI "Option to enable building the celix dfi error injector" OFF)
+celix_subproject(ERROR_INJECTOR_DFI "Option to enable building the celix dfi error injector" ON)
 if (ERROR_INJECTOR_DFI)
     add_subdirectory(dfi)
 endif ()
