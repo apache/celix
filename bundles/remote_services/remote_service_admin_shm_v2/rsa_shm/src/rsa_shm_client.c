@@ -73,6 +73,7 @@ typedef struct rsa_shm_exception_msg {
     void *msgBuffer;
     long serviceId;
     char *peerServerName;
+    struct sockaddr_un serverAddr;
 }rsa_shm_exception_msg_t;
 
 static celix_status_t rsaShmClientManager_createMsgControl(rsa_shm_client_manager_t *clientManager,
@@ -93,7 +94,7 @@ static void rsaShmClientManager_markSvcCallFinished(rsa_shm_client_manager_t *cl
         const char *peerServerName, long serviceId);
 static celix_status_t rsaShmClientManager_receiveResponse(rsa_shm_client_manager_t *clientManager,
         rsa_shm_msg_control_t *msgCtrl, char *msgBuffer, size_t bufSize,
-        struct iovec *response, bool *replyed);
+        struct iovec *response, bool *replied);
 static void rsaShmClient_destroyOrDetachSvcDiagInfo(rsa_shm_client_t *client, long serviceId);
 static void rsaShmClient_createOrAttachSvcDiagInfo(rsa_shm_client_t *client, long serviceId);
 static bool rsaShmClient_shouldBreakInvocation(rsa_shm_client_t *client, long serviceId);
@@ -178,14 +179,8 @@ void rsaShmClientManager_destroy(rsa_shm_client_manager_t *clientManager) {
     celixThreadMutex_unlock(&clientManager->exceptionMsgListMutex);
     (void)celixThreadCondition_signal(&clientManager->exceptionMsgListNotEmpty);
     celixThread_join(clientManager->msgExceptionHandlerThread, NULL);
-    size_t listSize = celix_arrayList_size(clientManager->exceptionMsgList);
-    for (int i = 0; i < listSize; ++i) {
-        rsa_shm_exception_msg_t *exceptionMsg = celix_arrayList_get(clientManager->exceptionMsgList, i);
-        //Here，we should not free 'msgBuffer' and 'msgCtrl' by shmPool_free, because rsa_shm_server maybe using them, and tlsf_free will modify freed memory.
-        //The shared memory  of 'msgBuffer' and 'msgCtrl' will be freed automatically when nobody is using it.
-        free(exceptionMsg->peerServerName);
-        free(exceptionMsg);
-    }
+    //Exception message list should be empty now. Exception message has been freed by msgExceptionHandlerThread.
+    assert(celix_arrayList_size(clientManager->exceptionMsgList) == 0);
     celix_arrayList_destroy(clientManager->exceptionMsgList);
     (void)celixThreadCondition_destroy(&clientManager->exceptionMsgListNotEmpty);
     (void)celixThreadMutex_destroy(&clientManager->exceptionMsgListMutex);
@@ -355,6 +350,7 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
         exceptionMsg->msgBuffer = msgBody;
         exceptionMsg->serviceId = serviceId;
         exceptionMsg->peerServerName = strdup(peerServerName);
+        exceptionMsg->serverAddr = client->serverAddr;
         // Let rsaShmClientManager_exceptionMsgHandlerThread free exception message
         celixThreadMutex_lock(&clientManager->exceptionMsgListMutex);
         celix_arrayList_add(clientManager->exceptionMsgList, exceptionMsg);
@@ -638,6 +634,16 @@ static void *rsaShmClientManager_exceptionMsgHandlerThread(void *data) {
             removed = rsaShmClientManager_handleMsgState(clientManager, exceptionMsg);
             if (removed) {
                 celix_arrayList_add(evictedMsgs, exceptionMsg);
+            } else if (clientManager->threadActive == false) {
+                int fd = socket(AF_UNIX, SOCK_DGRAM, 0);
+                if (fd >= 0) {
+                    if (bind(fd, (struct sockaddr *) &exceptionMsg->serverAddr, sizeof(struct sockaddr_un)) == 0) {
+                        //Peer server process has been terminated, so remove the exception message
+                        //If the peer server process is still running, the bind will fail, and errno will be set to EADDRINUSE
+                        celix_arrayList_add(evictedMsgs, exceptionMsg);
+                    }
+                    close(fd);
+                }
             }
         }
 
@@ -653,7 +659,7 @@ static void *rsaShmClientManager_exceptionMsgHandlerThread(void *data) {
         }
         celix_arrayList_clear(evictedMsgs);
 
-        active = clientManager->threadActive;
+        active = (clientManager->threadActive || (celix_arrayList_size(clientManager->exceptionMsgList) > 0));
         celixThreadMutex_unlock(&clientManager->exceptionMsgListMutex);
     }
     celix_arrayList_destroy(evictedMsgs);
