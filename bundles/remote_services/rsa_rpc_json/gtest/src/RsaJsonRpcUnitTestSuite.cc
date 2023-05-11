@@ -414,6 +414,16 @@ public:
     long proxySvcId{-1};
 };
 
+TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToCloneEndpointDescription) {
+    auto endpoint = CreateEndpointDescription();
+    long svcId = -1L;
+    celix_ei_expect_calloc((void*)&endpointDescription_clone, 0, nullptr);
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, reqSenderSvcId, &svcId);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    endpointDescription_destroy(endpoint);
+}
+
 TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToRegisterProxyService) {
     auto endpoint = CreateEndpointDescription();
     long svcId = -1L;
@@ -665,6 +675,16 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToCreateEndpointLock) {
     auto endpoint = CreateEndpointDescription(rpcTestSvcId);
 
     celix_ei_expect_celixThreadRwlock_create((void*)&rsaJsonRpcEndpoint_create, 0, CELIX_ENOMEM);
+    long svcId = -1L;
+    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    endpointDescription_destroy(endpoint);
+}
+
+TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToCloneEndpointDescription) {
+    auto endpoint = CreateEndpointDescription(rpcTestSvcId);
+    celix_ei_expect_calloc((void *)&endpointDescription_clone, 0, nullptr);
     long svcId = -1L;
     auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
     EXPECT_EQ(CELIX_ENOMEM, status);

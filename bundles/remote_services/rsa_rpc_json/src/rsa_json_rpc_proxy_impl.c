@@ -94,7 +94,11 @@ celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_
     assert(proxyFactory->proxies != NULL);
 
     proxyFactory->endpointDesc = endpointDescription_clone(endpointDesc);
-    assert(proxyFactory->endpointDesc != NULL);
+    if (proxyFactory->endpointDesc == NULL) {
+        celix_logHelper_error(logHelper, "Proxy: Failed to clone endpoint description.");
+        status = CELIX_ENOMEM;
+        goto failed_to_clone_endpoint_desc;
+    }
 
     proxyFactory->factory.handle = proxyFactory;
     proxyFactory->factory.getService = rsaJsonRpcProxy_getService;
@@ -114,6 +118,7 @@ celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_
 proxy_svc_fac_err:
     // props has been freed by framework
     endpointDescription_destroy(proxyFactory->endpointDesc);
+failed_to_clone_endpoint_desc:
     hashMap_destroy(proxyFactory->proxies, false, false);
     free(proxyFactory);
     return status;

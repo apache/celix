@@ -41,6 +41,9 @@ celix_status_t endpointDescription_create(celix_properties_t *properties, endpoi
 	celix_status_t status = CELIX_SUCCESS;
 
 	endpoint_description_t *ep = calloc(1,sizeof(*ep));
+    if (ep == NULL) {
+        return CELIX_ENOMEM;
+    }
     ep->properties = properties;
     ep->frameworkUUID = (char*)celix_properties_get(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
     ep->id = (char*)celix_properties_get(properties, OSGI_RSA_ENDPOINT_ID, NULL);
@@ -81,16 +84,26 @@ endpoint_description_t *endpointDescription_clone(const endpoint_description_t *
         return NULL;
     }
     endpoint_description_t *newDesc = (endpoint_description_t*)calloc(1, sizeof(endpoint_description_t));
-    assert(newDesc != NULL);
+    if (newDesc == NULL) {
+        goto failed_to_allocate_new_desc;
+    }
     newDesc->properties = celix_properties_copy(description->properties);
-    assert(newDesc->properties != NULL);
-    newDesc->frameworkUUID = (char*)celix_properties_get(newDesc->properties,
-            OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
+    if (newDesc->properties == NULL) {
+        goto failed_to_copy_properties;
+    }
+    newDesc->frameworkUUID = (char*)celix_properties_get(newDesc->properties,OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
     newDesc->serviceId = description->serviceId;
-    newDesc->id = (char*)celix_properties_get(newDesc->properties,
-            OSGI_RSA_ENDPOINT_ID, NULL);
-    newDesc->serviceName = strdup(description->serviceName);
-    assert(newDesc->serviceName != NULL);
+    newDesc->id = (char*)celix_properties_get(newDesc->properties, OSGI_RSA_ENDPOINT_ID, NULL);
+    newDesc->serviceName = celix_utils_strdup(description->serviceName);
+    if (newDesc->serviceName == NULL) {
+        goto failed_to_dup_service_name;
+    }
 
     return newDesc;
+failed_to_dup_service_name:
+    celix_properties_destroy(newDesc->properties);
+failed_to_copy_properties:
+    free(newDesc);
+failed_to_allocate_new_desc:
+    return NULL;
 }
