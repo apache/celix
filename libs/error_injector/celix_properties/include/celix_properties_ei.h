@@ -27,6 +27,7 @@ extern "C" {
 #include "celix_error_injector.h"
 
 CELIX_EI_DECLARE(celix_properties_create, celix_properties_t*);
+CELIX_EI_DECLARE(celix_properties_copy, celix_properties_t*);
 
 #ifdef __cplusplus
 }

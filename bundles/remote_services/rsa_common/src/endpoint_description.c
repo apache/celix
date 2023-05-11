@@ -38,7 +38,10 @@
 #include "celix_utils.h"
 
 celix_status_t endpointDescription_create(celix_properties_t *properties, endpoint_description_t **endpointDescription) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
+    if (properties == NULL || endpointDescription == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
 
 	endpoint_description_t *ep = calloc(1,sizeof(*ep));
     if (ep == NULL) {
