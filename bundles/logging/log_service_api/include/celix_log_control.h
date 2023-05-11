@@ -55,6 +55,7 @@ typedef struct celix_log_control {
      * @brief Switch between detailed and brief mode for selected loggers.
      * @details In detailed mode, details(if available) are attached to log messages from the select loggers.
      * For example, the file name, function name, and line number.
+     * @since 1.1.0
      * @param[in] handle The service handle.
      * @param[in] select The select string that specifies the case-insensitive name prefix of target loggers.
      * @param[in] detailed True to enable detailed mode, false to disable detailed mode(i.e. enable brief mode).
@@ -65,6 +66,7 @@ typedef struct celix_log_control {
     /**
      * @brief Get the active log level and the detailed mode for a selected logger.
      * @details If the logger is not found, the outActiveLogLevel and outDetailed are not changed.
+     * @since 1.1.0
      * @param [in] handle The service handle.
      * @param [in] loggerName The name of the target logger.
      * @param [out] outActiveLogLevel The active log level of the target logger.
