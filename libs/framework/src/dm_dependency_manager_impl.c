@@ -212,9 +212,14 @@ celix_dependency_manager_info_t* celix_dependencyManager_createInfo(celix_depend
 	return info;
 }
 
+typedef struct celix_dm_get_info_callback_data {
+    celix_array_list_t *infos;
+    celix_bundle_context_t* ctx;
+} celix_dm_get_info_callback_data_t;
+
 
 static void celix_dm_getInfosCallback(void *handle, const celix_bundle_t *bnd) {
-	celix_array_list_t *infos = handle;
+    celix_dm_get_info_callback_data_t *data = handle;
 
 	celix_bundle_context_t *context = NULL;
 	bundle_getContext((celix_bundle_t*)bnd, &context);
@@ -234,7 +239,7 @@ static void celix_dm_getInfosCallback(void *handle, const celix_bundle_t *bnd) {
         celix_dmComponent_getComponentInfo(cmp, &cmpInfo);
         celix_arrayList_add(info->components, cmpInfo);
     }
-    celix_arrayList_add(infos, info);
+    celix_arrayList_add(data->infos, info);
 	celixThreadMutex_unlock(&mng->mutex);
 }
 
@@ -245,13 +250,17 @@ static void celix_dependencyManager_destroyInfoCallback(void *data, celix_array_
 }
 
 celix_array_list_t * celix_dependencyManager_createInfos(celix_dependency_manager_t* manager) {
+    celix_dm_get_info_callback_data_t data;
+    data.ctx = manager->ctx;
+
 	celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
 	opts.removedCallbackData = manager;
 	opts.removedCallback = celix_dependencyManager_destroyInfoCallback;
-	celix_array_list_t *infos = celix_arrayList_createWithOptions(&opts);
+    data.infos = celix_arrayList_createWithOptions(&opts);
 	celix_framework_t* fw = celix_bundleContext_getFramework(manager->ctx);
-	celix_framework_useBundles(fw, true, infos, celix_dm_getInfosCallback);
-	return infos;
+
+	celix_framework_useBundles(fw, true, &data, celix_dm_getInfosCallback);
+	return data.infos;
 }
 
 static void celix_dm_allComponentsActiveCallback(void *handle, const celix_bundle_t *bnd) {
