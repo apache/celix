@@ -79,6 +79,7 @@ class CelixConan(ConanFile):
         "build_pushstreams": [True, False],
         "build_experimental": [True, False],
         "build_celix_dfi": [True, False],
+        "build_error_injector_mdnsresponder": [True, False],
         "celix_cxx14": [True, False],
         "celix_cxx17": [True, False],
         "celix_install_deprecated_api": [True, False],
@@ -127,6 +128,7 @@ class CelixConan(ConanFile):
         "build_pushstreams": False,
         "build_experimental": False,
         "build_celix_dfi": True,
+        "build_error_injector_mdnsresponder": False,
         "celix_cxx14": True,
         "celix_cxx17": True,
         "celix_install_deprecated_api": False,
@@ -203,6 +205,8 @@ class CelixConan(ConanFile):
             self.options.build_shell_wui = False
         if not self.options.celix_install_deprecated_api:
             self.options.build_shell_bonjour = False
+        if self.options.build_rsa_discovery_zeroconf and self.options.enable_testing:
+            self.options.build_error_injector_mdnsresponder = True
 
     def requirements(self):
         self.requires("libcurl/[>=7.64.1 <8.0.0]")
@@ -246,12 +250,9 @@ class CelixConan(ConanFile):
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
+        if self.options.build_error_injector_mdnsresponder:
+            self.requires("mdnsresponder/1310.140.1")
         self.validate()
-
-    def _enable_error_injectors(self):
-        for k in self.deps_cpp_info.deps:
-            if k == "mdnsresponder":
-                self._cmake.definitions["BUILD_ERROR_INJECTOR_MDNSRESPONDER"] = "ON"
 
     def _configure_cmake(self):
         if self._cmake:
@@ -259,8 +260,6 @@ class CelixConan(ConanFile):
         self._cmake = CMake(self)
         for opt, val in self.options.values.items():
             self._cmake.definitions[opt.upper()] = self.options.get_safe(opt, False)
-        if self.options.enable_testing:
-            self._enable_error_injectors()
         self._cmake.definitions["CELIX_ERR_BUFFER_SIZE"] = self.options.celix_err_buffer_size
         self._cmake.definitions["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
