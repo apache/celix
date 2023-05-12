@@ -626,9 +626,7 @@ static void *rsaShmClientManager_exceptionMsgHandlerThread(void *data) {
     celix_array_list_t *evictedMsgs = celix_arrayList_create();
     while (active) {
         celixThreadMutex_lock(&clientManager->exceptionMsgListMutex);
-        while (0 == (listSize = celix_arrayList_size(clientManager->exceptionMsgList)) && clientManager->threadActive == true) {
-            (void)celixThreadCondition_timedwaitRelative(&clientManager->exceptionMsgListNotEmpty, &clientManager->exceptionMsgListMutex, 0, 200*1000*1000);
-        }
+        listSize = celix_arrayList_size(clientManager->exceptionMsgList);
         for (int i = 0; i < listSize; ++i) {
             struct rsa_shm_exception_msg *exceptionMsg = celix_arrayList_get(clientManager->exceptionMsgList, i);
             removed = rsaShmClientManager_handleMsgState(clientManager, exceptionMsg);
@@ -660,6 +658,14 @@ static void *rsaShmClientManager_exceptionMsgHandlerThread(void *data) {
         celix_arrayList_clear(evictedMsgs);
 
         active = (clientManager->threadActive || (celix_arrayList_size(clientManager->exceptionMsgList) > 0));
+
+        if (active) {
+            do {
+                //If there are uncleared exception messages, they will be processed every 200ms, or when there are new exception messages.
+                (void)celixThreadCondition_timedwaitRelative(&clientManager->exceptionMsgListNotEmpty, &clientManager->exceptionMsgListMutex, 0, 200*1000*1000);
+            } while ((celix_arrayList_size(clientManager->exceptionMsgList) == 0) && clientManager->threadActive);
+        }
+
         celixThreadMutex_unlock(&clientManager->exceptionMsgListMutex);
     }
     celix_arrayList_destroy(evictedMsgs);
