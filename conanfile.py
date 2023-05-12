@@ -252,8 +252,6 @@ class CelixConan(ConanFile):
         for k in self.deps_cpp_info.deps:
             if k == "mdnsresponder":
                 self._cmake.definitions["BUILD_ERROR_INJECTOR_MDNSRESPONDER"] = "ON"
-        if self.options.build_celix_dfi:
-            self._cmake.definitions["BUILD_ERROR_INJECTOR_DFI"] = "ON"
 
     def _configure_cmake(self):
         if self._cmake:

@@ -46,8 +46,7 @@ add_subdirectory(celix_version)
 add_subdirectory(celix_long_hash_map)
 
 
-celix_subproject(ERROR_INJECTOR_DFI "Option to enable building the celix dfi error injector" ON)
-if (ERROR_INJECTOR_DFI)
+if (BUILD_CELIX_DFI)
     add_subdirectory(dfi)
 endif ()
 celix_subproject(ERROR_INJECTOR_MDNSRESPONDER "Option to enable building the mdnsresponder error injector" OFF)
