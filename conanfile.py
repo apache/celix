@@ -169,10 +169,6 @@ class CelixConan(ConanFile):
             for opt, val in self.options.values.items():
                 if opt.startswith('build_'):
                     setattr(self.options, opt, True)
-
-        if not self.options.enable_testing:
-            self.options.build_error_injector_mdnsresponder = False
-
         if not self.options.celix_cxx14:
             self.options.celix_cxx17 = False
         if not self.options.celix_cxx17:
@@ -211,8 +207,6 @@ class CelixConan(ConanFile):
             self.options.build_shell_bonjour = False
         if self.options.build_rsa_discovery_zeroconf and self.options.enable_testing:
             self.options.build_error_injector_mdnsresponder = True
-        if self.settings.os != "Linux":
-            self.options.build_error_injector_mdnsresponder = False
 
     def requirements(self):
         self.requires("libcurl/[>=7.64.1 <8.0.0]")
