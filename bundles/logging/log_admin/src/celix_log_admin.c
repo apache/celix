@@ -69,6 +69,7 @@ typedef struct celix_log_service_entry {
 
     //mutable and protected by admin->lock
     celix_log_level_e activeLogLevel;
+    bool detailed;
 } celix_log_service_entry_t;
 
 typedef struct celix_log_sink_entry {
@@ -98,13 +99,19 @@ static void celix_logAdmin_vlogDetails(void *handle, celix_log_level_e level, co
                 celix_log_sink_t *sink = sinkEntry->sink;
                 va_list argCopy;
                 va_copy(argCopy, formatArgs);
-                sink->sinkLog(sink->handle, level, entry->logSvcId, entry->name, file, function, line, format, argCopy);
+                sink->sinkLog(sink->handle, level, entry->logSvcId, entry->name,
+                              entry->detailed ? file : NULL, entry->detailed ? function : NULL, entry->detailed ? line : 0,
+                              format, argCopy);
                 va_end(argCopy);
             }
         }
 
         if (entry->admin->alwaysLogToStdOut || (nrOfLogWriters == 0 && entry->admin->fallbackToStdOut)) {
-            celix_logUtils_vLogToStdoutDetails(entry->name, level, file, function, line, format, formatArgs);
+            celix_logUtils_vLogToStdoutDetails(entry->name, level,
+                                               entry->detailed ? file : NULL,
+                                               entry->detailed? function : NULL,
+                                               entry->detailed ? line : 0,
+                                               format, formatArgs);
         }
     }
     celixThreadRwlock_unlock(&entry->admin->lock);
@@ -117,7 +124,7 @@ static void celix_logAdmin_vlog(void *handle, celix_log_level_e level, const cha
 static void celix_logAdmin_logDetails(void *handle, celix_log_level_e level, const char* file, const char* function, int line, const char *format, ...) {
     va_list args;
     va_start(args, format);
-    celix_logAdmin_vlogDetails(handle, level, file, function, 0, format, args);
+    celix_logAdmin_vlogDetails(handle, level, file, function, line, format, args);
     va_end(args);
 }
 
@@ -188,6 +195,7 @@ static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char
         newEntry->name = celix_utils_strdup(name);
         newEntry->count = 1;
         newEntry->activeLogLevel = admin->logServicesDefaultActiveLogLevel;
+        newEntry->detailed = true;
         newEntry->logSvc.handle = newEntry;
         newEntry->logSvc.trace = celix_logAdmin_trace;
         newEntry->logSvc.debug = celix_logAdmin_debug;
@@ -444,17 +452,6 @@ static celix_array_list_t* celix_logAdmin_currentSinks(void *handle) {
     return sinks;
 }
 
-static bool celix_logAdmin_logServiceInfo(void *handle, const char* logServiceName, celix_log_level_e* outActiveLogLevel) {
-    celix_log_admin_t* admin = handle;
-    celixThreadRwlock_readLock(&admin->lock);
-    celix_log_service_entry_t* found = hashMap_get(admin->loggers, logServiceName);
-    if (found != NULL && outActiveLogLevel != NULL) {
-        *outActiveLogLevel = found->activeLogLevel;
-    }
-    celixThreadRwlock_unlock(&admin->lock);
-    return found != NULL;
-}
-
 static bool celix_logAdmin_sinkInfo(void *handle, const char* sinkName, bool* outEnabled) {
     celix_log_admin_t* admin = handle;
     celixThreadRwlock_readLock(&admin->lock);
@@ -466,14 +463,57 @@ static bool celix_logAdmin_sinkInfo(void *handle, const char* sinkName, bool* ou
     return found != NULL;
 }
 
+static size_t celix_logAdmin_setDetailed(void *handle, const char* select, bool detailed) {
+    celix_log_admin_t* admin = handle;
+    size_t count = 0;
+    celixThreadRwlock_writeLock(&admin->lock);
+    hash_map_iterator_t iter = hashMapIterator_construct(admin->loggers);
+    while (hashMapIterator_hasNext(&iter)) {
+        celix_log_service_entry_t* visit = hashMapIterator_nextValue(&iter);
+        if (select == NULL) {
+            visit->detailed = detailed;
+            count += 1;
+        } else {
+            char *match = strcasestr(visit->name, select);
+            if (match != NULL && match == visit->name) {
+                //note if select is found in visit->name and visit->name start with select
+                visit->detailed = detailed;
+                count += 1;
+            }
+        }
+    }
+    celixThreadRwlock_unlock(&admin->lock);
+    return count;
+}
+
+static bool celix_logAdmin_logServiceInfoEx(void* handle, const char* logServiceName, celix_log_level_e* outActiveLogLevel, bool* outDetailed) {
+    celix_log_admin_t* admin = handle;
+    celixThreadRwlock_readLock(&admin->lock);
+    celix_log_service_entry_t* found = hashMap_get(admin->loggers, logServiceName);
+    if (found != NULL) {
+        if (outActiveLogLevel != NULL) {
+            *outActiveLogLevel = found->activeLogLevel;
+        }
+        if (outDetailed != NULL) {
+            *outDetailed = found->detailed;
+        }
+    }
+    celixThreadRwlock_unlock(&admin->lock);
+    return found != NULL;
+}
+
+static bool celix_logAdmin_logServiceInfo(void *handle, const char* logServiceName, celix_log_level_e* outActiveLogLevel) {
+    return celix_logAdmin_logServiceInfoEx(handle, logServiceName, outActiveLogLevel, NULL);
+}
+
 static void celix_logAdmin_setLogLevelCmd(celix_log_admin_t* admin, const char* select, const char* level, FILE* outStream, FILE* errorStream) {
     bool converted;
     celix_log_level_e logLevel = celix_logUtils_logLevelFromStringWithCheck(level, CELIX_LOG_LEVEL_TRACE, &converted);
     if (converted) {
         size_t count = celix_logAdmin_setActiveLogLevels(admin, select, logLevel);
-        fprintf(outStream, "Updated %lu log services to log level %s\n", (long unsigned int) count, celix_logUtils_logLevelToString(logLevel));
+        fprintf(outStream, "Updated %zu log services to log level %s\n", count, celix_logUtils_logLevelToString(logLevel));
     } else {
-        fprintf(outStream, "Cannot convert '%s' to a valid celix log level.\n", level);
+        fprintf(errorStream, "Cannot convert '%s' to a valid celix log level.\n", level);
     }
 }
 
@@ -489,9 +529,9 @@ static void celix_logAdmin_setSinkEnabledCmd(celix_log_admin_t* admin, const cha
     }
     if (valid) {
         size_t count = celix_logAdmin_setSinkEnabled(admin, select, enableSink);
-        fprintf(outStream, "Updated %lu log sinks to %s.\n", (long unsigned int) count, enableSink ? "enabled" : "disabled");
+        fprintf(outStream, "Updated %zu log sinks to %s.\n", count, enableSink ? "enabled" : "disabled");
     } else {
-        fprintf(outStream, "Cannot convert '%s' to a boolean value.\n", enabled);
+        fprintf(errorStream, "Cannot convert '%s' to a boolean value.\n", enabled);
     }
 }
 
@@ -505,9 +545,11 @@ static void celix_logAdmin_InfoCmd(celix_log_admin_t* admin, FILE* outStream, FI
     for (int i = 0 ; i < celix_arrayList_size(logServices); ++i) {
         char *name = celix_arrayList_get(logServices, i);
         celix_log_level_e level;
-        bool found = celix_logAdmin_logServiceInfo(admin, name, &level);
+        bool detailed;
+        bool found = celix_logAdmin_logServiceInfoEx(admin, name, &level, &detailed);
         if (found) {
-            fprintf(outStream, " |- %i) Log Service %20s, active log level %s\n", i+1, name, celix_logUtils_logLevelToString(level));
+            fprintf(outStream, " |- %i) Log Service %20s, active log level %s, %s\n",
+                    i+1, name, celix_logUtils_logLevelToString(level), detailed ? "detailed" : "brief");
         }
         free(name);
     }
@@ -528,6 +570,24 @@ static void celix_logAdmin_InfoCmd(celix_log_admin_t* admin, FILE* outStream, FI
         fprintf(outStream, "Log Admin has found 0 log sinks\n");
     }
     celix_arrayList_destroy(sinks);
+}
+
+static void celix_logAdmin_setLogDetailedCmd(celix_log_admin_t* admin, const char* select, const char* detailed, FILE* outStream, FILE* errorStream) {
+    bool enableDetailed;
+    bool valid = false;
+    if (strncasecmp("true", detailed, 16) == 0) {
+        enableDetailed = true;
+        valid = true;
+    } else if (strncasecmp("false", detailed, 16) == 0) {
+        enableDetailed = false;
+        valid = true;
+    }
+    if (valid) {
+        size_t count = celix_logAdmin_setDetailed(admin, select, enableDetailed);
+        fprintf(outStream, "Updated %zu log services to %s.\n", count, enableDetailed ? "detailed" : "brief");
+    } else {
+        fprintf(errorStream, "Cannot convert '%s' to a boolean value.\n", detailed);
+    }
 }
 
 static bool celix_logAdmin_executeCommand(void *handle, const char *commandLine, FILE *outStream, FILE *errorStream) {
@@ -558,6 +618,16 @@ static bool celix_logAdmin_executeCommand(void *handle, const char *commandLine,
                 celix_logAdmin_setSinkEnabledCmd(admin, arg1, arg2, outStream, errorStream);
             } else if (arg1 != NULL) {
                 celix_logAdmin_setSinkEnabledCmd(admin, NULL, arg1, outStream, errorStream);
+            } else {
+                fprintf(errorStream, "Invalid arguments. For log command expected 1 or 2 args. (<true|false> or <log_service_selection> <true|false>");
+            }
+        } else if (strncmp("detail", subCmd, 64) == 0) {
+            const char* arg1 = strtok_r(NULL, " ", &savePtr);
+            const char* arg2 = strtok_r(NULL, " ", &savePtr);
+            if (arg1 != NULL && arg2 != NULL) {
+                celix_logAdmin_setLogDetailedCmd(admin, arg1, arg2, outStream, errorStream);
+            } else if (arg1 != NULL) {
+                celix_logAdmin_setLogDetailedCmd(admin, NULL, arg1, outStream, errorStream);
             } else {
                 fprintf(errorStream, "Invalid arguments. For log command expected 1 or 2 args. (<true|false> or <log_service_selection> <true|false>");
             }
@@ -609,7 +679,8 @@ celix_log_admin_t* celix_logAdmin_create(celix_bundle_context_t *ctx) {
         admin->controlSvc.sinkInfo = celix_logAdmin_sinkInfo;
         admin->controlSvc.setActiveLogLevels = celix_logAdmin_setActiveLogLevels;
         admin->controlSvc.setSinkEnabled = celix_logAdmin_setSinkEnabled;
-
+        admin->controlSvc.setDetailed = celix_logAdmin_setDetailed;
+        admin->controlSvc.logServiceInfoEx = celix_logAdmin_logServiceInfoEx;
 
         celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
         opts.serviceName = CELIX_LOG_CONTROL_NAME;
@@ -624,8 +695,15 @@ celix_log_admin_t* celix_logAdmin_create(celix_bundle_context_t *ctx) {
 
         celix_properties_t* props = celix_properties_create();
         celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::log_admin");
-        celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "celix::log_admin [log <log_level> | log <log_service_selection> <log_level> | sink <log_sink_selection> (true|false)]");
-        celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "Show available log service and log sink, allows changing active log levels and enableling/disabling log sinks.");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "celix::log_admin ["
+                                                               "log <log_level> | log <log_service_selection> <log_level> | "
+                                                               "sink <log_sink_selection> (true|false) | "
+                                                               "detail (true|false) | detail <log_service_selection> (true|false)"
+                                                               "]");
+        celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "Show available log service and log sink, "
+                                                                     "allows changing active log levels, "
+                                                                     "switching between detailed and brief mode, "
+                                                                     "and enabling/disabling log sinks.");
 
         celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
         opts.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;
