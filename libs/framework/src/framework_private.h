@@ -41,6 +41,10 @@
 #include "celix_threads.h"
 #include "service_registry.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE
 #define CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE 1024
 #endif
@@ -487,9 +491,8 @@ bool celix_framework_removeScheduledEvent(celix_framework_t* fw, long scheduledE
  */
 void celix_framework_cleanupScheduledEvents(celix_framework_t* fw, long bndId);
 
-/**
- * @brief Return the framework logger. Note logger lifetime is the same as the framework.
- */
-celix_framework_logger_t* celix_framework_getLogger(celix_framework_t* fw);
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* FRAMEWORK_PRIVATE_H_ */

@@ -30,11 +30,6 @@ celix_scheduled_event_t* celix_scheduledEvent_create(celix_framework_logger_t* l
                                                      double intervalInSeconds,
                                                      void* eventData,
                                                      void (*eventCallback)(void* eventData)) {
-    if (eventCallback == NULL) {
-        fw_log(logger, CELIX_LOG_LEVEL_ERROR, "Cannot add scheduled event for bundle id %li. No event callback provided", bndEntry->bndId);
-        return  NULL;
-    }
-
     celix_scheduled_event_t* event = malloc(sizeof(*event));
     char* eventName = providedEventName == NULL ? (char*)CELIX_SCHEDULED_EVENT_DEFAULT_NAME
                                                  : celix_utils_strdup(providedEventName);

@@ -2697,6 +2697,3 @@ void celix_framework_waitForStop(celix_framework_t *framework) {
     celixThreadMutex_unlock(&framework->shutdown.mutex);
 }
 
-celix_framework_logger_t* celix_framework_getLogger(celix_framework_t* fw) {
-    return fw->logger;
-}

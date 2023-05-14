@@ -22,7 +22,6 @@
 #include "celix/FrameworkFactory.h"
 #include "celix_bundle_context.h"
 #include "celix_scheduled_event.h"
-#include "framework_private.h"
 
 class ScheduledEventTestSuite : public ::testing::Test {
 public:
@@ -184,4 +183,13 @@ TEST_F(ScheduledEventTestSuite, InvalidOptionsAndArgumentsTest) {
     //celix_scheduleEvent_destroy and celix_scheduledEvent_waitAndDestroy can be called with NULL
     celix_scheduledEvent_destroy(nullptr);
     celix_scheduledEvent_waitAndDestroy(nullptr);
+
+    //celix_bundleContext_removeScheduledEvent can handle invalid eventIds
+    celix_bundleContext_removeScheduledEvent(ctx->getCBundleContext(), -1);
+    celix_bundleContext_removeScheduledEvent(ctx->getCBundleContext(), 404);
+
+    //celix_framework_addScheduledEvent with an invalid bndId should return -1
+    scheduledEventId = celix_framework_addScheduledEvent(
+        ctx->getFramework()->getCFramework(), 404, nullptr, 0.0, 0.0, nullptr, [](void*) { /*nop*/ });
+    EXPECT_EQ(scheduledEventId, -1);
 }
