@@ -47,7 +47,7 @@ static void* celix_framework_BundleLifecycleHandlingThread(void *data) {
             break;
         case CELIX_BUNDLE_LIFECYCLE_UNINSTALL:
             celix_framework_bundleEntry_decreaseUseCount(handler->bndEntry);
-            celix_framework_uninstallBundleEntry(handler->framework, handler->bndEntry, true);
+            celix_framework_uninstallBundleEntry(handler->framework, handler->bndEntry);
             break;
         default: //update
             celix_framework_updateBundleEntry(handler->framework, handler->bndEntry, handler->updatedBundleUrl);
@@ -143,7 +143,7 @@ celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_frame
         celix_framework_createAndStartBundleLifecycleHandler(fw, bndEntry, CELIX_BUNDLE_LIFECYCLE_UNINSTALL, NULL);
         return CELIX_SUCCESS;
     } else {
-        return celix_framework_uninstallBundleEntry(fw, bndEntry, true);
+        return celix_framework_uninstallBundleEntry(fw, bndEntry);
     }
 }
 

@@ -28,7 +28,6 @@
 #include <celix_log_utils.h>
 
 #include "celix_api.h"
-#include "celix_file_utils.h"
 
 class CelixBundleContextBundlesTestSuite : public ::testing::Test {
 public:
@@ -153,29 +152,6 @@ TEST_F(CelixBundleContextBundlesTestSuite, InstallAndUninstallBundlesTest) {
     ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId2)); //not auto started
     ASSERT_TRUE(celix_bundleContext_isBundleActive(ctx, bndId3));
 
-    char *bndRoot1 = nullptr;
-    ASSERT_TRUE(celix_bundleContext_useBundle(ctx, bndId1, &bndRoot1, [](void* handle, const celix_bundle_t* bnd) {
-        char **root = static_cast<char **>(handle);
-        *root = celix_bundle_getEntry(bnd, "/");
-    }));
-    ASSERT_TRUE(bndRoot1 != nullptr);
-    char* bndRoot2 = nullptr;
-    ASSERT_TRUE(celix_bundleContext_useBundle(ctx, bndId2, &bndRoot2, [](void* handle, const celix_bundle_t* bnd) {
-        char **root = static_cast<char **>(handle);
-        *root = celix_bundle_getEntry(bnd, "/");
-    }));
-    ASSERT_TRUE(bndRoot2 != nullptr);
-    char* bndRoot3 = nullptr;
-    ASSERT_TRUE(celix_bundleContext_useBundle(ctx, bndId3, &bndRoot3, [](void* handle, const celix_bundle_t* bnd) {
-        char **root = static_cast<char **>(handle);
-        *root = celix_bundle_getEntry(bnd, "/");
-    }));
-    ASSERT_TRUE(bndRoot3 != nullptr);
-
-    ASSERT_TRUE(celix_utils_directoryExists(bndRoot1));
-    ASSERT_TRUE(celix_utils_directoryExists(bndRoot2));
-    ASSERT_TRUE(celix_utils_directoryExists(bndRoot3));
-
     //uninstall bundles
     ASSERT_TRUE(celix_bundleContext_uninstallBundle(ctx, bndId1));
     ASSERT_TRUE(celix_bundleContext_uninstallBundle(ctx, bndId2));
@@ -188,14 +164,6 @@ TEST_F(CelixBundleContextBundlesTestSuite, InstallAndUninstallBundlesTest) {
     ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId1)); //not uninstall -> not active
     ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId2));
     ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId3));
-
-    ASSERT_FALSE(celix_utils_directoryExists(bndRoot1));
-    ASSERT_FALSE(celix_utils_directoryExists(bndRoot2));
-    ASSERT_FALSE(celix_utils_directoryExists(bndRoot3));
-
-    free(bndRoot1);
-    free(bndRoot2);
-    free(bndRoot3);
 
     //reinstall bundles
     long bndId4 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
