@@ -50,7 +50,6 @@ extern "C" {
  * @note The Celix framework instance is thread safe.
  */
 
-
 /**
  * @brief Returns the framework UUID. This is unique for every created framework and will not be the same if the process is
  * restarted.
@@ -262,17 +261,6 @@ CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_framework_listBundles(celix_fra
 CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_framework_listInstalledBundles(celix_framework_t* framework);
 
 /**
- * @brief Wait until the framework event queue is empty.
- *
- * The Celix framework has an event queue which (among others) handles bundle events.
- * This function can be used to ensure that all queue event are handled, mainly useful
- * for testing.
- *
- * @param fw The Celix Framework
- */
-CELIX_FRAMEWORK_EXPORT void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw);
-
-/**
  * @brief Sets the log function for this framework.
  * Default the celix framework will log to stdout/stderr.
  *
@@ -281,6 +269,27 @@ CELIX_FRAMEWORK_EXPORT void celix_framework_waitForEmptyEventQueue(celix_framewo
  */
 CELIX_FRAMEWORK_EXPORT void celix_framework_setLogCallback(celix_framework_t* fw, void* logHandle, void (*logFunction)(void* handle, celix_log_level_e level, const char* file, const char *function, int line, const char *format, va_list formatArgs));
 
+/**
+ * @brief Wait until the framework event queue is empty.
+ *
+ * The Celix framework has an event queue which (among others) handles bundle events.
+ * This function can be used to ensure that all queue event are handled.
+ *
+ * @param fw The Celix Framework
+ */
+CELIX_FRAMEWORK_EXPORT void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw);
+
+/**
+ * @brief Wait until the framework event queue is empty or the provided period is reached.
+ *
+ * The Celix framework has an event queue which (among others) handles bundle events.
+ * This function can be used to ensure that all queue event are handled.
+ *
+ * @param[in] fw The Celix Framework.
+ * @param[in] timeoutInSeconds The period in seconds to wait for the event queue to be empty. 0 means wait forever.
+ * @return CELIX_SUCCESS if the event queue is empty or CELIX_TIMEOUT if the timeoutInSeconds is reached.
+ */
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_framework_timedWaitForEmptyEventQueue(celix_framework_t *fw, double timeoutInSeconds);
 
 /**
  * @brief wait until all events for the bundle identified by the bndId are processed.
@@ -300,6 +309,9 @@ CELIX_FRAMEWORK_EXPORT bool celix_framework_isCurrentThreadTheEventLoop(celix_fr
 
 /**
  * @brief Fire a generic event. The event will be added to the event loop and handled on the event loop thread.
+ *
+ * The process callback should be fast and non-blocking, otherwise
+ * the framework event queue will be blocked and framework will not function properly.
  *
  * if bndId >=0 the bundle usage count will be increased while the event is not yet processed or finished processing.
  * The eventName is expected to be const char* valid during til the event is finished processing.

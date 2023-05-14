@@ -186,7 +186,7 @@ celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond,
     seconds = seconds >= 0 ? seconds : 0;
     time = celix_gettime(CLOCK_MONOTONIC);
     time.tv_sec += seconds;
-    if(nanoseconds > 0) {
+    if (nanoseconds > 0) {
         time.tv_nsec += nanoseconds;
         while (time.tv_nsec > CELIX_NS_IN_SEC) {
             time.tv_sec++;

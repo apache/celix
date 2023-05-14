@@ -112,6 +112,7 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 }
 
 void celix_bundleContext_cleanup(celix_bundle_context_t *ctx) {
+    celix_framework_cleanupScheduledEvents(ctx->framework, celix_bundle_getId(ctx->bundle));
     //NOTE not perfect, because stopping of registrations/tracker when the activator is destroyed can lead to segfault.
     //but at least we can try to warn the bundle implementer that some cleanup is missing.
     bundleContext_cleanupBundleTrackers(ctx);
@@ -1480,6 +1481,21 @@ long celix_bundleContext_trackServiceTrackersAsync(
 
 void celix_bundleContext_waitForEvents(celix_bundle_context_t* ctx) {
     celix_framework_waitUntilNoEventsForBnd(ctx->framework, celix_bundle_getId(ctx->bundle));
+}
+
+long celix_bundleContext_addScheduledEvent(celix_bundle_context_t* ctx,
+                                           const celix_scheduled_event_options_t* options) {
+    return celix_framework_addScheduledEvent(ctx->framework,
+                                             celix_bundle_getId(ctx->bundle),
+                                             options->eventName,
+                                             options->initialDelayInSeconds,
+                                             options->intervalInSeconds,
+                                             options->eventData,
+                                             options->eventCallback);
+}
+
+bool celix_bundleContext_removeScheduledEvent(celix_bundle_context_t* ctx, long scheduledEventId) {
+    return celix_framework_removeScheduledEvent(ctx->framework, scheduledEventId);
 }
 
 celix_bundle_t* celix_bundleContext_getBundle(const celix_bundle_context_t *ctx) {

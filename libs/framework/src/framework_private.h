@@ -20,9 +20,10 @@
 #ifndef FRAMEWORK_PRIVATE_H_
 #define FRAMEWORK_PRIVATE_H_
 
+#include <stdbool.h>
+
 #include "celix_framework.h"
 #include "framework.h"
-
 #include "manifest.h"
 #include "wire.h"
 #include "hash_map.h"
@@ -37,14 +38,14 @@
 #include "bundle_context.h"
 #include "celix_bundle_cache.h"
 #include "celix_log.h"
-
 #include "celix_threads.h"
 #include "service_registry.h"
-#include <stdbool.h>
 
 #ifndef CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE
 #define CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE 1024
 #endif
+
+#define CELIX_FRAMEWORK_DEFAULT_MAX_TIMEDWAIT_EVENT_HANDLER_IN_SECONDS 1
 
 #define CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE_DEFAULT false
 #define CELIX_FRAMEWORK_CACHE_USE_TMP_DIR_DEFAULT false
@@ -158,10 +159,15 @@ struct celix_framework {
 
 
     struct {
+        long nextEventId; //atomic
+        long nextScheduledEventId; //atomic
+
         celix_thread_cond_t cond;
         celix_thread_t thread;
         celix_thread_mutex_t mutex; //protects below
         bool active;
+
+        //normal event queue
         celix_framework_event_t* eventQueue; //ring buffer
         int eventQueueCap;
         int eventQueueSize;
@@ -174,11 +180,10 @@ struct celix_framework {
             int nbUnregister; // number of pending async de-registration
             int nbEvent; // number of pending generic events
         } stats;
+        celix_array_list_t *scheduledEventQueue; //entry = celix_framework_scheduled_event_t*. Used for scheduled events
     } dispatcher;
 
     celix_framework_logger_t* logger;
-
-    long nextGenericEventId;
 
     struct {
         celix_thread_cond_t cond;
@@ -433,5 +438,58 @@ celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix
  * Uninstall a bundle. Cannot be called on the Celix event thread.
  */
 celix_status_t celix_framework_updateBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, const char* updatedBundleUrl);
+
+
+/** @brief Return the next scheduled event id.
+ * @param[in] fw The Celix framework
+ * @return The next scheduled event id.
+ */
+long celix_framework_nextScheduledEventId(framework_t *fw);
+
+/**
+ * @brief Add a scheduled event to the Celix framework.
+ *
+ *
+ * @param[in] fw The Celix framework
+ * @param[in] bndId The bundle id to add the scheduled event for. If < 0 the framework bundle is used.
+ * @param[in] eventName The event name to use for the scheduled event. If NULL, a default event name is used.
+ * @param[in] initialDelayInSeconds The initial delay in seconds before the first event callback is called.
+ * @param[in] intervalInSeconds The interval in seconds between event callbacks.
+ * @param[in] eventData The event data to pass to the event callback.
+ * @param[in] eventCallback The event callback to call when the scheduled event is triggered.
+ * @return The scheduled event id of the scheduled event. Can be used to cancel the event.
+ * @retval <0 If the event could not be added.
+ */
+long celix_framework_addScheduledEvent(celix_framework_t* fw,
+                                       long bndId,
+                                       const char* eventName,
+                                       double initialDelayInSeconds,
+                                       double intervalInSeconds,
+                                       void* eventData,
+                                       void (*eventCallback)(void* eventData));
+
+/**
+ * @brief Cancel a scheduled event.
+ *
+ * When this function returns, no more scheduled event callbacks will be called.
+ *
+ * @param[in] fw The Celix framework
+ * @param[in] scheduledEventId The scheduled event id to cancel.
+ * @return true if a scheduled event is cancelled, false if the scheduled event id is not known.
+ */
+bool celix_framework_removeScheduledEvent(celix_framework_t* fw, long scheduledEventId);
+
+/**
+ * Remove all scheduled events for the provided bundle id and logs warning if there are still un-removed scheduled
+ * events that are not a one time event.
+ * @param[in] fw The Celix framework.
+ * @param[in] bndId The bundle id to remove the scheduled events for.
+ */
+void celix_framework_cleanupScheduledEvents(celix_framework_t* fw, long bndId);
+
+/**
+ * @brief Return the framework logger. Note logger lifetime is the same as the framework.
+ */
+celix_framework_logger_t* celix_framework_getLogger(celix_framework_t* fw);
 
 #endif /* FRAMEWORK_PRIVATE_H_ */
