@@ -152,10 +152,10 @@ void celix_logHelper_vlogDetails(celix_log_helper_t* logHelper, celix_log_level_
         celixThreadMutex_lock(&logHelper->mutex);
         celix_log_service_t* ls = logHelper->logService;
         if (ls != NULL) {
-            ls->vlog(ls->handle, level, format, formatArgs);
+            ls->vlogDetails(ls->handle, level, file, function, line, format, formatArgs);
         } else {
             //falling back on stdout/stderr
-            celix_logUtils_vLogToStdout(logHelper->logServiceName, level, format, formatArgs);
+            celix_logUtils_vLogToStdoutDetails(logHelper->logServiceName, level, file, function, line, format, formatArgs);
         }
         logHelper->logCount += 1;
         celixThreadMutex_unlock(&logHelper->mutex);

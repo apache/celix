@@ -72,7 +72,7 @@ TEST_F(LogHelperTestSuite, LogToLogSvc) {
     std::atomic<size_t> logCount{0};
     celix_log_service_t logSvc;
     logSvc.handle = (void*)&logCount;
-    logSvc.vlog = [](void *handle, celix_log_level_e, const char *format, va_list formatArgs) {
+    logSvc.vlogDetails= [](void *handle, celix_log_level_e, const char*, const char*, int, const char *format, va_list formatArgs) {
         auto* c = static_cast<std::atomic<size_t>*>(handle);
         c->fetch_add(1);
         vfprintf(stderr, format, formatArgs);

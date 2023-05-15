@@ -159,8 +159,6 @@ static celix_status_t framework_markBundleResolved(framework_pt framework, modul
 
 long framework_getNextBundleId(framework_pt framework);
 
-void fw_refreshBundle(framework_pt framework, long bndId);
-
 celix_status_t fw_populateDependentGraph(framework_pt framework, bundle_pt exporter, hash_map_pt *map);
 
 void fw_fireBundleEvent(framework_pt framework, bundle_event_type_e, celix_framework_bundle_entry_t* entry);
@@ -684,27 +682,6 @@ celix_status_t celix_framework_installBundleInternal(celix_framework_t *framewor
     celix_framework_bundleEntry_decreaseUseCount(fwBundleEntry);
 
   	return status;
-}
-
-void fw_refreshBundle(framework_pt framework, long bndId) {
-    bundle_state_e state;
-    celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
-                                                                                                          bndId);
-    if (entry != NULL) {
-        bool fire;
-        bundle_getState(entry->bnd, &state);
-        fire = (state != CELIX_BUNDLE_STATE_INSTALLED);
-        bundle_refresh(entry->bnd);
-
-        if (fire) {
-            bundle_setState(entry->bnd, CELIX_BUNDLE_STATE_INSTALLED);
-            fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, entry);
-        }
-
-        celix_framework_bundleEntry_decreaseUseCount(entry);
-    } else {
-        fw_log(framework->logger, CELIX_LOG_LEVEL_WARNING, "Cannot refresh bundle %ld", bndId);
-    }
 }
 
 bool celix_framework_isBundleAlreadyInstalled(celix_framework_t* fw, const char* bundleSymbolicName) {
@@ -1926,12 +1903,7 @@ celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework
     celix_framework_bundleEntry_decreaseUseCount(bndEntry);
     if (removedEntry != NULL) {
         celix_status_t status = CELIX_SUCCESS;
-
-        celix_bundle_t *bnd = NULL;
-        long bndId = -1L;
-
-        bnd = removedEntry->bnd;
-        bndId = removedEntry->bndId;
+        celix_bundle_t *bnd = removedEntry->bnd;
 
         if (status == CELIX_SUCCESS) {
             bundle_archive_t *archive = NULL;
@@ -1956,7 +1928,6 @@ celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework
             fw_bundleEntry_destroy(removedEntry , true); //wait till use count is 0 -> e.g. not used
 
             if (status == CELIX_SUCCESS) {
-                fw_refreshBundle(framework, bndId);
                 celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
                 bundleArchive_destroy(archive);
                 status = CELIX_DO_IF(status, bundle_closeModules(bnd));

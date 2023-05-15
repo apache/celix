@@ -26,6 +26,7 @@
 
 #include "celix_array_list.h"
 #include "celix_shell.h"
+#include "celix_utils.h"
 #include "shell_tui.h"
 #include "utils.h"
 #include <signal.h>
@@ -277,7 +278,7 @@ static int shellTui_parseInputPlain(shell_tui_t* shellTui, shell_context_t* ctx)
     int nr_chars = read(shellTui->inputFd, buffer, LINE_SIZE-pos-1);
     for(int bufpos = 0; bufpos < nr_chars; bufpos++) {
         if (buffer[bufpos] == KEY_ENTER) { //end of line -> forward command
-            line = utils_stringTrim(in);
+            line = celix_utils_trimInPlace(in);
             celixThreadMutex_lock(&shellTui->mutex);
             if (shellTui->shell != NULL) {
                 shellTui->shell->executeCommand(shellTui->shell->handle, line, shellTui->output, shellTui->error);
@@ -392,7 +393,7 @@ static int shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t*
         pos = 0;
         in[pos] = '\0';
 
-        line = utils_stringTrim(dline);
+        line = celix_utils_trimInPlace(dline);
         if ((strlen(line) == 0)) {
             continue;
         }

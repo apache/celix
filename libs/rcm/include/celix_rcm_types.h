@@ -16,24 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#include <stdio.h>
-#include <string.h>
-#include "pubsub_tcp_common.h"
-#include "celix_utils.h"
+
+#ifndef CELIX_CELIX_RCM_TYPES_H
+#define CELIX_CELIX_RCM_TYPES_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+* @file celix_rcm_types.h
+* @brief The celix_rcm_types.h header file contains the forward declarations of the celix_resource_t, celix_capability_t and celix_requirement_t types.
+*/
+
+//forward declarations of opaque types
+typedef struct celix_resource celix_resource_t;
+typedef struct celix_capability celix_capability_t;
+typedef struct celix_requirement celix_requirement_t;
 
 
-bool psa_tcp_isPassive(const char* buffer) {
-    bool isPassive = false;
-    // Parse Properties
-    if (buffer != NULL) {
-        char buf[32];
-        snprintf(buf, 32, "%s", buffer);
-        char *trimmed = celix_utils_trimInPlace(buf);
-        if (strncasecmp("true", trimmed, strlen("true")) == 0) {
-            isPassive = true;
-        } else if (strncasecmp("false", trimmed, strlen("false")) == 0) {
-            isPassive = false;
-        }
-    }
-    return isPassive;
+#ifdef __cplusplus
 }
+#endif
+
+#endif //CELIX_CELIX_RCM_TYPES_H

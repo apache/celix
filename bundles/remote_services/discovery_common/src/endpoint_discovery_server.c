@@ -26,6 +26,7 @@
 #endif
 #include "civetweb.h"
 #include "celix_errno.h"
+#include "celix_utils.h"
 #include "utils.h"
 #include "celix_log_helper.h"
 #include "discovery.h"
@@ -293,8 +294,7 @@ celix_status_t endpointDiscoveryServer_removeEndpoint(endpoint_discovery_server_
 }
 
 static char* format_path(const char* path) {
-    char* result = strdup(path);
-    result = utils_stringTrim(result);
+    char* result = celix_utils_trim(path);
     // check whether the path starts with a leading slash...
     if (result[0] != '/') {
         size_t len = strlen(result);
