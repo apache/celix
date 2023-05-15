@@ -24,6 +24,7 @@
 #include <string.h>
 #include <assert.h>
 #include <jansson.h>
+#include <inttypes.h>
 
 #define MAX_VARINT_BUF_SIZE 10
 
@@ -468,7 +469,7 @@ static int avrobinSerializer_parseSequence(dyn_type *type, void *loc, FILE *stre
             blockCount = blockSize / itemSize;
             int64_t rest = blockSize % itemSize;
             if (rest != 0) {
-                celix_err_pushf("Found block size (%li) is not a multitude of the item size (%li)", blockSize, itemSize);
+                celix_err_pushf("Found block size (%"PRId64") is not a multitude of the item size (%"PRId64")", blockSize, itemSize);
                 status = ERROR;
                 break;
             }
