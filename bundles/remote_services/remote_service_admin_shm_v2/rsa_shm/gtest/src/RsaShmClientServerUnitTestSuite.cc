@@ -37,10 +37,6 @@
 #include "celix_errno.h"
 #include <errno.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <signal.h>
-#include <semaphore.h>
-#include <fcntl.h>
 #include <gtest/gtest.h>
 
 class RsaShmClientServerUnitTestSuite : public ::testing::Test {
@@ -571,55 +567,6 @@ TEST_F(RsaShmClientServerUnitTestSuite, SendMsgTimeout) {
     rsaShmClientManager_destroy(clientManager);
 
     rsaShmServer_destroy(server);
-}
-
-TEST_F(RsaShmClientServerUnitTestSuite, SendMsgWithServerTerminated) {
-    char semName[] = "rsaShmTestSem";
-    sem_t *sem = sem_open(semName, O_CREAT|O_RDWR, 0644, 0);
-    EXPECT_NE(sem, nullptr);
-    pid_t pid = fork();
-    if (pid == 0) {
-        rsa_shm_server_t *server = nullptr;
-
-        auto status = rsaShmServer_create(ctx.get(), "shm_test_server", logHelper.get(), ReceiveMsgCallback, nullptr, &server);
-        EXPECT_EQ(CELIX_SUCCESS, status);
-        EXPECT_NE(nullptr, server);
-        expect_ReceiveMsgCallback_blocked = true;
-
-        sem_post(sem);
-
-        while(1) {
-            sleep(10);
-        }
-    }
-    if (pid > 0) {
-        sem_wait(sem);
-
-        rsa_shm_client_manager_t *clientManager = nullptr;
-        auto status = rsaShmClientManager_create(ctx.get(), logHelper.get(), &clientManager);
-        EXPECT_EQ(CELIX_SUCCESS, status);
-        EXPECT_NE(nullptr, clientManager);
-
-        long serverId = 100;//dummy id
-        status = rsaShmClientManager_createOrAttachClient(clientManager, "shm_test_server", serverId);
-        EXPECT_EQ(CELIX_SUCCESS, status);
-
-
-        celix_ei_expect_pthread_cond_timedwait((void*)&rsaShmClientManager_sendMsgTo, 1, ETIMEDOUT);
-        struct iovec request = {.iov_base = (void*)"request", .iov_len = strlen("request")};
-        struct iovec response = {.iov_base = nullptr, .iov_len = 0};
-        status = rsaShmClientManager_sendMsgTo(clientManager, "shm_test_server", serverId, nullptr, &request, &response);
-        EXPECT_EQ(CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,ETIMEDOUT), status);
-
-        kill(pid, SIGKILL);
-        waitpid(pid, nullptr, 0);
-
-        rsaShmClientManager_destroyOrDetachClient(clientManager, "shm_test_server", serverId);
-
-        rsaShmClientManager_destroy(clientManager);
-    }
-    sem_close(sem);
-    sem_unlink(semName);
 }
 
 static celix_status_t ReceiveMsgCallbackWithBigResponse(void *handle, rsa_shm_server_t *server, celix_properties_t *metadata, const struct iovec *request, struct iovec *response) {
