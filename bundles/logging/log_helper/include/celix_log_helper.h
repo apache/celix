@@ -91,6 +91,13 @@ void celix_logHelper_logDetails(celix_log_helper_t* logHelper,
                                 const char *format, ...) __attribute__((format(printf,6,7)));
 
 /**
+ * @brief Logs a message using the provided celix log level to the log_helper, and it will print celix thread-specific storage error messages, printf style.
+ *
+ * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
+ */
+void celix_logHelper_logWithTssErrors(celix_log_helper_t* logHelper, celix_log_level_e level, const char *format, ...) __attribute__((format(printf,3,4)));
+
+/**
  * @brief Logs a message to the log_helper using a format string and a va_list argument (vprintf style).
  *
  * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
@@ -118,6 +125,25 @@ void celix_logHelper_vlogDetails(celix_log_helper_t* logHelper,
                                  int line,
                                  const char *format,
                                  va_list formatArgs) __attribute__((format(printf,6,0)));
+
+/**
+ * @brief Logs a message to the log_helper using a format string and a va_list argument (vprintf style).
+ *        It will also print celix thread-specific storage error messages.
+ *
+ * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
+ *
+ * The file, function and line arguments are expected to be called with the values:
+ * __FILE__, __FUNCTION__ and __LINE__.
+ *
+ * If the argument file or function is NULL, the arguments file, function and line are not used.
+ */
+void celix_logHelper_vlogDetailsWithTssErrors(celix_log_helper_t* logHelper,
+                                                celix_log_level_e level,
+                                                const char* file,
+                                                const char* function,
+                                                int line,
+                                                const char *format,
+                                                va_list formatArgs) __attribute__((format(printf,6,0)));
 
 /**
  * @brief nr of times a helper log function has been called.

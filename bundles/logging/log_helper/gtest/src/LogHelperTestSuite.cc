@@ -26,6 +26,7 @@
 #include "celix_log_constants.h"
 #include "celix_log_helper.h"
 #include "celix/LogHelper.h"
+#include "celix_err.h"
 
 class LogHelperTestSuite : public ::testing::Test {
 public:
@@ -53,7 +54,13 @@ TEST_F(LogHelperTestSuite, LogToStdOut) {
     celix_logHelper_warning(helper, "testing %i", 3);
     celix_logHelper_error(helper, "testing %i", 4);
     celix_logHelper_fatal(helper, "testing %i", 5);
-    EXPECT_EQ(5, celix_logHelper_logCount(helper));
+    celix_logHelper_logWithTssErrors(helper, CELIX_LOG_LEVEL_ERROR, "testing %i", 6);
+    for (int i = 0; i < 32; ++i) {
+        celix_err_pushf("celix error message%d", i);
+    }
+    celix_logHelper_logWithTssErrors(helper, CELIX_LOG_LEVEL_ERROR, "testing %i", 7);
+    celix_logHelper_logWithTssErrors(helper, CELIX_LOG_LEVEL_ERROR, "testing %i", 8);
+    EXPECT_EQ(8, celix_logHelper_logCount(helper));
 
     celix_logHelper_destroy(helper);
 }

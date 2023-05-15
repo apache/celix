@@ -25,6 +25,7 @@
 #include "celix_log_helper.h"
 #include "celix_log_service.h"
 #include "celix_threads.h"
+#include "celix_err.h"
 
 struct celix_log_helper {
     celix_bundle_context_t *ctx;
@@ -159,6 +160,35 @@ void celix_logHelper_vlogDetails(celix_log_helper_t* logHelper, celix_log_level_
         logHelper->logCount += 1;
         celixThreadMutex_unlock(&logHelper->mutex);
     }
+}
+
+void celix_logHelper_logWithTssErrors(celix_log_helper_t* logHelper, celix_log_level_e level, const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    celix_logHelper_vlogDetailsWithTssErrors(logHelper, level, NULL, NULL, 0, format, args);
+    va_end(args);
+}
+
+void celix_logHelper_vlogDetailsWithTssErrors(celix_log_helper_t* logHelper, celix_log_level_e level, const char* file, const char* function, int line, const char *format, va_list formatArgs) {
+    if (celix_err_getErrorCount() == 0) {
+        celix_logHelper_vlogDetails(logHelper, level, file, function, line, format, formatArgs);
+        return;
+    }
+    char buf[512] = {0};
+    int ret;
+    int bytes = vsnprintf(buf, sizeof(buf), format, formatArgs);
+    if (bytes < 0) {
+        bytes = 0;
+    }
+    for (const char *errMsg = celix_err_popLastError(); errMsg != NULL && bytes < sizeof(buf); errMsg = celix_err_popLastError()) {
+        ret = snprintf(buf + bytes, sizeof(buf) - bytes, "\n%s", errMsg);
+        if (ret > 0) {
+            bytes += ret;
+        }
+    }
+    celix_err_resetErrors();
+    //celix_logHelper_logDetails will add '\n' at the end of the message, so no need to add it here.
+    celix_logHelper_logDetails(logHelper, level, file, function, line, "%s", buf);
 }
 
 size_t celix_logHelper_logCount(celix_log_helper_t* logHelper) {

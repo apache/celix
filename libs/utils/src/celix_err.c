@@ -107,7 +107,11 @@ const char* celix_err_popLastError() {
 
 int celix_err_getErrorCount() {
     int result = 0;
-    celix_err_t* err = celix_err_getTssErr();
+    if (!celix_err_tssKeyInitialized) {
+        fprintf(stderr, "celix_err_tssKey is not initialized\n");
+        return 0;
+    }
+    celix_err_t* err = celix_tss_get(celix_err_tssKey);
     for (int i = 0; err && i < err->pos; ++i) {
         if (err->buffer[i] == '\0') {
             result += 1;
