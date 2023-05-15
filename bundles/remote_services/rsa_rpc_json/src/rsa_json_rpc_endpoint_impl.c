@@ -179,7 +179,7 @@ static void rsaJsonRpcEndpoint_addSvcWithOwner(void *handle, void *service,
     char *intfVersion = NULL;
     int ret = dynInterface_getVersionString(intfType, &intfVersion);
     if (ret != 0) {
-        celix_logHelper_error(endpoint->logHelper, "Endpoint: Error getting interface version from the descriptor for %s.", serviceName);
+        celix_logHelper_logWithTssErrors(endpoint->logHelper, CELIX_LOG_LEVEL_ERROR, "Endpoint: Error getting interface version from the descriptor for %s.", serviceName);
         goto err_getting_intf_ver;
     }
     const char *serviceVersion = celix_properties_get(endpoint->endpointDesc->properties,CELIX_FRAMEWORK_SERVICE_VERSION, NULL);
@@ -263,6 +263,9 @@ static celix_status_t rsaJsonRpcEndpoint_handleRequest(void *handle, celix_prope
         if (endpoint->service != NULL) {
             int rc1 = jsonRpc_call(endpoint->intfType, endpoint->service, (char *)request->iov_base, &szResponse);
             status = (rc1 != 0) ? CELIX_SERVICE_EXCEPTION : CELIX_SUCCESS;
+            if (rc1 != 0) {
+                celix_logHelper_logWithTssErrors(endpoint->logHelper, CELIX_LOG_LEVEL_ERROR, "Error calling remote service. Got error code %d", rc1);
+            }
         } else {
             status = CELIX_ILLEGAL_STATE;
             celix_logHelper_error(endpoint->logHelper, "%s is null, please try again.", endpoint->endpointDesc->serviceName);

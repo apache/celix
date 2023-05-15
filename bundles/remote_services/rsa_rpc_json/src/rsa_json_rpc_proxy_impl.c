@@ -209,6 +209,7 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
     int rc = jsonRpc_prepareInvokeRequest(entry->dynFunc, entry->id, args, &invokeRequest);
     if (rc != 0) {
         *(celix_status_t *)returnVal = CELIX_SERVICE_EXCEPTION;
+        celix_logHelper_logWithTssErrors(proxyFactory->logHelper, CELIX_LOG_LEVEL_ERROR, "Error preparing invoke request for %s", entry->name);
         return;
     }
 
@@ -234,6 +235,7 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
                         (const char *)replyIovec.iov_base , args, &rsErrno);
                 if(retVal != 0) {
                     status = CELIX_SERVICE_EXCEPTION;
+                    celix_logHelper_logWithTssErrors(proxyFactory->logHelper, CELIX_LOG_LEVEL_ERROR, "Error handling reply for %s", entry->name);
                 } else if (rsErrno != CELIX_SUCCESS) {
                     //return the invocation error of remote service function
                     status = rsErrno;

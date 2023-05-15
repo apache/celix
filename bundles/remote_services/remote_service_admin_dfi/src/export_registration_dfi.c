@@ -169,7 +169,10 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
                 celixThreadMutex_lock(&export->mutex);
                 if (export->active && export->service != NULL) {
                     int rc = jsonRpc_call(export->intf, export->service, data, &response);
-                    status = (rc != 0) ? CELIX_BUNDLE_EXCEPTION : CELIX_SUCCESS;
+                    status = (rc != 0) ? CELIX_SERVICE_EXCEPTION : CELIX_SUCCESS;
+                    if (rc != 0) {
+                        celix_logHelper_logWithTssErrors(export->helper, CELIX_LOG_LEVEL_ERROR, "Error calling remote service. Got error code %d", rc);
+                    }
                 } else if (!export->active) {
                     status = CELIX_ILLEGAL_STATE;
                     celix_logHelper_warning(export->helper, "Cannot call an inactive service export");
@@ -210,7 +213,7 @@ static celix_status_t exportRegistration_findAndParseInterfaceDescriptor(celix_l
         int rc = dynInterface_parse(descriptor, out);
         fclose(descriptor);
         if (rc != 0) {
-            celix_logHelper_log(helper, CELIX_LOG_LEVEL_WARNING, "RSA_DFI: Error parsing service descriptor for \"%s\", return code is %d.", name, rc);
+            celix_logHelper_logWithTssErrors(helper, CELIX_LOG_LEVEL_WARNING, "RSA_DFI: Error parsing service descriptor for \"%s\", return code is %d.", name, rc);
             status = CELIX_BUNDLE_EXCEPTION;
         }
         return status;
@@ -220,7 +223,7 @@ static celix_status_t exportRegistration_findAndParseInterfaceDescriptor(celix_l
     if (status == CELIX_SUCCESS && descriptor != NULL) {
         *out = dynInterface_parseAvpr(descriptor);
         if (*out == NULL) {
-            celix_logHelper_log(helper, CELIX_LOG_LEVEL_WARNING, "RSA_AVPR: Error parsing avpr service descriptor for '%s'", name);
+            celix_logHelper_logWithTssErrors(helper, CELIX_LOG_LEVEL_WARNING, "RSA_AVPR: Error parsing avpr service descriptor for '%s'", name);
             status = CELIX_BUNDLE_EXCEPTION;
         }
         return status;
