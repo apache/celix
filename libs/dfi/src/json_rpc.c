@@ -53,12 +53,14 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 	if (js_request) {
 		if (json_unpack(js_request, "{s:s}", "m", &sig) != 0) {
 			celix_err_pushf("Got json error '%s'\n", error.text);
+            json_decref(js_request);
+            return ERROR;
 		} else {
 			arguments = json_object_get(js_request, "a");
 		}
 	} else {
 		celix_err_pushf("Got json error '%s' for '%s'\n", error.text, request);
-		return 0;
+		return ERROR;
 	}
 
 	struct methods_head *methods = NULL;

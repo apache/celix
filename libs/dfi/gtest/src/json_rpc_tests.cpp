@@ -243,6 +243,26 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         dynInterface_destroy(intf);
     }
 
+    void callTestInvalidRequest(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/example1.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        char *result = nullptr;
+        tst_serv serv {nullptr, addFailed, nullptr, nullptr, nullptr};
+
+        rc = jsonRpc_call(intf, &serv, R"({)", &result);
+        ASSERT_EQ(1, rc);
+
+        rc = jsonRpc_call(intf, &serv, R"({"a": [1.0,2.0]})", &result);
+        ASSERT_EQ(1, rc);
+
+        dynInterface_destroy(intf);
+    }
+
     void handleTestOut(void) {
         dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example1.descriptor", "r");
@@ -483,6 +503,10 @@ TEST_F(JsonRpcTests, callFailedPre) {
 
 TEST_F(JsonRpcTests, callOut) {
     callTestOutput();
+}
+
+TEST_F(JsonRpcTests, callTestInvalidRequest) {
+    callTestInvalidRequest();
 }
 
 TEST_F(JsonRpcTests, handleOutSeq) {
