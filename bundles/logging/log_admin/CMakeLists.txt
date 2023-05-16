@@ -19,7 +19,7 @@ add_celix_bundle(log_admin
 	SYMBOLIC_NAME "apache_celix_log_admin"
 	NAME "Apache Celix Log Admin"
 	GROUP "Celix/Logging"
-	VERSION "1.0.0"
+	VERSION "1.1.0"
 	SOURCES
 		src/celix_log_admin.c
 		src/celix_log_admin_activator.c

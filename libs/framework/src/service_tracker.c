@@ -122,7 +122,7 @@ celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, const 
     celixThreadCondition_init(&tracker->condTracked, NULL);
     celixThreadCondition_init(&tracker->condUntracking, NULL);
     tracker->trackedServices = celix_arrayList_create();
-    tracker->untrackingServices = celix_arrayList_create();
+    tracker->untrackedServiceCount = 0;
 
     tracker->currentHighestServiceId = -1;
 
@@ -141,7 +141,6 @@ celix_status_t serviceTracker_destroy(service_tracker_pt tracker) {
     celixThreadCondition_destroy(&tracker->condTracked);
     celixThreadCondition_destroy(&tracker->condUntracking);
     celix_arrayList_destroy(tracker->trackedServices);
-    celix_arrayList_destroy(tracker->untrackingServices);
     free(tracker);
 	return CELIX_SUCCESS;
 }
@@ -223,7 +222,7 @@ celix_status_t serviceTracker_close(service_tracker_t* tracker) {
             if (nrOfTrackedEntries > 0) {
                 tracked = celix_arrayList_get(tracker->trackedServices, 0);
                 celix_arrayList_removeAt(tracker->trackedServices, 0);
-                celix_arrayList_add(tracker->untrackingServices, tracked);
+                tracker->untrackedServiceCount++;
             }
             celixThreadMutex_unlock(&tracker->mutex);
 
@@ -231,7 +230,7 @@ celix_status_t serviceTracker_close(service_tracker_t* tracker) {
                 int currentSize = nrOfTrackedEntries - 1;
                 serviceTracker_untrackTracked(tracker, tracked, currentSize, currentSize == 0);
                 celixThreadMutex_lock(&tracker->mutex);
-                celix_arrayList_remove(tracker->untrackingServices, tracked);
+                tracker->untrackedServiceCount--;
                 celixThreadCondition_broadcast(&tracker->condUntracking);
                 celixThreadMutex_unlock(&tracker->mutex);
             }
@@ -528,7 +527,7 @@ static celix_status_t serviceTracker_untrack(service_tracker_t* tracker, service
             remove = tracked;
             //remove from trackedServices to prevent getting this service, but don't destroy yet, can be in use
             celix_arrayList_removeAt(tracker->trackedServices, i);
-            celix_arrayList_add(tracker->untrackingServices, remove);
+            tracker->untrackedServiceCount++;
             break;
         }
     }
@@ -539,12 +538,13 @@ static celix_status_t serviceTracker_untrack(service_tracker_t* tracker, service
     if (remove != NULL) {
         serviceTracker_untrackTracked(tracker, remove, size, true);
         celixThreadMutex_lock(&tracker->mutex);
-        celix_arrayList_remove(tracker->untrackingServices, remove);
+        tracker->untrackedServiceCount--;
+        celixThreadCondition_broadcast(&tracker->condUntracking);
         celixThreadMutex_unlock(&tracker->mutex);
     } else {
         //ensure no untrack is still happening (to ensure it safe to unregister service)
         celixThreadMutex_lock(&tracker->mutex);
-        while (celix_arrayList_size(tracker->untrackingServices) > 0) {
+        while (tracker->untrackedServiceCount > 0) {
             celixThreadCondition_wait(&tracker->condUntracking, &tracker->mutex);
         }
         celixThreadMutex_unlock(&tracker->mutex);
@@ -680,7 +680,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
     celixThreadCondition_init(&tracker->condTracked, NULL);
     celixThreadCondition_init(&tracker->condUntracking, NULL);
     tracker->trackedServices = celix_arrayList_create();
-    tracker->untrackingServices = celix_arrayList_create();
+    tracker->untrackedServiceCount = 0;
     tracker->currentHighestServiceId = -1;
 
     tracker->listener.handle = tracker;

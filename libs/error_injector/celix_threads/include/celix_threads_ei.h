@@ -29,8 +29,14 @@ extern "C" {
 
 CELIX_EI_DECLARE(celixThreadMutex_create, celix_status_t);
 CELIX_EI_DECLARE(celixThread_create, celix_status_t);
+
 CELIX_EI_DECLARE(celixThreadCondition_init, celix_status_t);
 CELIX_EI_DECLARE(celixThreadRwlock_create, celix_status_t);
+
+CELIX_EI_DECLARE(celix_tss_create, celix_status_t);
+CELIX_EI_DECLARE(celix_tss_delete, celix_status_t);
+CELIX_EI_DECLARE(celix_tss_set, celix_status_t);
+CELIX_EI_DECLARE(celix_tss_get, void*);
 
 #ifdef __cplusplus
 }

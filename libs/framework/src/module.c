@@ -439,7 +439,7 @@ static celix_status_t celix_module_loadLibrariesInManifestEntry(celix_module_t* 
         char lib[128];
         lib[127] = '\0';
         strncpy(lib, pathToken, 127);
-        char *trimmedLib = utils_stringTrim(lib);
+        char *trimmedLib = celix_utils_trimInPlace(lib);
         status = celix_module_loadLibraryForManifestEntry(module, trimmedLib, archive, &handle);
 
         if ( (status == CELIX_SUCCESS) && (activator != NULL) && (strcmp(trimmedLib, activator) == 0) ) {

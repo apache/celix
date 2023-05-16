@@ -52,7 +52,7 @@ bool celix_utils_convertStringToBool(const char* val, bool defaultValue, bool* c
         if (valCopy == NULL) {
             return result;
         }
-        char *trimmed = utils_stringTrim(valCopy);
+        char *trimmed = celix_utils_trimInPlace(valCopy);
         if (strcasecmp("true", trimmed) == 0) {
             result = true;
             if (converted) {
@@ -114,7 +114,7 @@ celix_version_t* celix_utils_convertStringToVersion(const char* val, const celix
         if (firstDot != NULL && lastDot != NULL && firstDot != lastDot) {
             char buf[64];
             char* valCopy = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s", val);
-            char *trimmed = utils_stringTrim(valCopy);
+            char *trimmed = celix_utils_trimInPlace(valCopy);
             result = celix_version_createVersionFromString(trimmed);
             celix_utils_freeStringIfNotEqual(buf, valCopy);
         }

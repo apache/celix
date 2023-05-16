@@ -18,6 +18,7 @@
 #utils, dfi and etcdlib are standalone
 #(e.g. no dependency on celix framework
 add_subdirectory(utils)
+add_subdirectory(rcm)
 add_subdirectory(dfi)
 add_subdirectory(etcdlib)
 add_subdirectory(promises)

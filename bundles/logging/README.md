@@ -16,11 +16,14 @@ The `Celix::log_admin` bundle facilitates the `celix_log_service_t` services and
 printed on stdout/stderr.
 
 The Celix shell command `celix::log_admin` can be used to view the existing log services and sinks,
-changed the active log level per log services and enable/disable log sinks.
+change the active log level per logger, switch loggers between detailed and brief mode, and enable/disable log sinks.
+
 For example:
 - `celix::log_admin` list the available log services and log sinks.
 - `celix::log_admin log error` Set the active log level for all log services to `error`.
 - `celix::log_admin log celix_ trace` Set the active log level for all log services starting with 'celix_' to `trace`.
+- `celix::log_admin detail false` Set all log services to brief mode.
+- `celix::log_admin detail celix_ true` Set all log services starting with 'celix_' to detailed mode.
 - `celix::log_admin sink false` Disables all available log sinks.
 - `celix::log_admin sink celix_syslog true` Enables all log sinks starting with 'celix_syslog'.
 

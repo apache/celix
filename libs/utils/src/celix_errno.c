@@ -17,13 +17,20 @@
  * under the License.
  */
 
-#include <stdio.h>
-#include <string.h>
-
 #include "celix_errno.h"
 
-const char* celix_strerror(celix_status_t status) {
-	switch (status) {
+#include <string.h>
+
+bool celix_utils_isStatusCodeFromFacility(celix_status_t code, int fac) {
+    return ((code >> 16) & 0x7FF) == fac;
+}
+
+bool celix_utils_isCustomerStatusCode(celix_status_t code) {
+    return (code & CELIX_CUSTOMER_ERR_MASK) != 0;
+}
+
+static const char* celix_framework_strerror(celix_status_t status) {
+    switch (status) {
         case CELIX_BUNDLE_EXCEPTION:
             return "Bundle exception";
         case CELIX_INVALID_BUNDLE_CONTEXT:
@@ -42,9 +49,35 @@ const char* celix_strerror(celix_status_t status) {
             return "File I/O exception";
         case CELIX_SERVICE_EXCEPTION:
             return "Service exception";
-        case CELIX_ENOMEM:
-            return "Out of memory";
+        case CELIX_INTERCEPTOR_EXCEPTION:
+            return "Interceptor exception";
         default:
-            return "Unknown code";
-	}
+            return "Unknown framework error code";
+    }
+}
+
+static const char* celix_http_strerror(celix_status_t status) {
+    return "HTTP error";
+}
+
+static const char* celix_zip_strerror(celix_status_t status) {
+    return "ZIP error";
+}
+
+const char* celix_strerror(celix_status_t status) {
+    if (status == CELIX_SUCCESS) {
+        return "Success";
+    } else if (celix_utils_isCustomerStatusCode(status)) {
+        return "Customer error";
+    } else if (celix_utils_isStatusCodeFromFacility(status, CELIX_FACILITY_CERRNO)) {
+        return strerror(status);
+    } else if (celix_utils_isStatusCodeFromFacility(status, CELIX_FACILITY_FRAMEWORK)) {
+        return celix_framework_strerror(status);
+    } else if (celix_utils_isStatusCodeFromFacility(status, CELIX_FACILITY_HTTP)) {
+        return celix_http_strerror(status);
+    } else if (celix_utils_isStatusCodeFromFacility(status, CELIX_FACILITY_ZIP)) {
+        return celix_zip_strerror(status);
+    } else {
+        return "Unknown facility";
+    }
 }

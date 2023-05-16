@@ -32,6 +32,7 @@
 #include <sys/socket.h>
 
 #include "celix_log_helper.h"
+#include "celix_utils.h"
 
 #include "remote_shell.h"
 
@@ -215,8 +216,7 @@ static celix_status_t remoteShell_connection_execute(connection_pt connection, c
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (status == CELIX_SUCCESS) {
-		char *dline = strdup(command);
-		char *line = utils_stringTrim(dline);
+		char *line = celix_utils_trim(command);
 		int len = strlen(line);
 
 		if (len == 0) {
@@ -228,7 +228,7 @@ static celix_status_t remoteShell_connection_execute(connection_pt connection, c
             fflush(connection->socketStream);
 		}
 
-		free(dline);
+		free(line);
 	}
 
 	return status;

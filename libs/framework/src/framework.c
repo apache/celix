@@ -45,18 +45,13 @@
 #include "celix_convert_utils.h"
 #include "celix_build_assert.h"
 
-typedef celix_status_t (*create_function_fp)(bundle_context_t *context, void **userData);
-typedef celix_status_t (*start_function_fp)(void *userData, bundle_context_t *context);
-typedef celix_status_t (*stop_function_fp)(void *userData, bundle_context_t *context);
-typedef celix_status_t (*destroy_function_fp)(void *userData, bundle_context_t *context);
-
 struct celix_bundle_activator {
     void * userData;
 
-    create_function_fp create;
-    start_function_fp start;
-    stop_function_fp stop;
-    destroy_function_fp destroy;
+    celix_bundle_activator_create_fp create;
+    celix_bundle_activator_start_fp start;
+    celix_bundle_activator_stop_fp stop;
+    celix_bundle_activator_destroy_fp destroy;
 };
 
 static inline celix_framework_bundle_entry_t* fw_bundleEntry_create(celix_bundle_t *bnd) {
@@ -163,8 +158,6 @@ static inline celix_framework_bundle_entry_t* fw_bundleEntry_removeBundleEntryAn
 static celix_status_t framework_markBundleResolved(framework_pt framework, module_pt module);
 
 long framework_getNextBundleId(framework_pt framework);
-
-void fw_refreshBundle(framework_pt framework, long bndId);
 
 celix_status_t fw_populateDependentGraph(framework_pt framework, bundle_pt exporter, hash_map_pt *map);
 
@@ -427,9 +420,9 @@ celix_status_t fw_init(framework_pt framework) {
             void * userData = NULL;
 
 			//create_function_pt create = NULL;
-			start_function_fp start = (start_function_fp) frameworkActivator_start;
-			stop_function_fp stop = (stop_function_fp) frameworkActivator_stop;
-			destroy_function_fp destroy = (destroy_function_fp) frameworkActivator_destroy;
+            celix_bundle_activator_start_fp start = frameworkActivator_start;
+            celix_bundle_activator_stop_fp stop = frameworkActivator_stop;
+            celix_bundle_activator_destroy_fp destroy = frameworkActivator_destroy;
 
             activator->start = start;
             activator->stop = stop;
@@ -689,27 +682,6 @@ celix_status_t celix_framework_installBundleInternal(celix_framework_t *framewor
     celix_framework_bundleEntry_decreaseUseCount(fwBundleEntry);
 
   	return status;
-}
-
-void fw_refreshBundle(framework_pt framework, long bndId) {
-    bundle_state_e state;
-    celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
-                                                                                                          bndId);
-    if (entry != NULL) {
-        bool fire;
-        bundle_getState(entry->bnd, &state);
-        fire = (state != CELIX_BUNDLE_STATE_INSTALLED);
-        bundle_refresh(entry->bnd);
-
-        if (fire) {
-            bundle_setState(entry->bnd, CELIX_BUNDLE_STATE_INSTALLED);
-            fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, entry);
-        }
-
-        celix_framework_bundleEntry_decreaseUseCount(entry);
-    } else {
-        fw_log(framework->logger, CELIX_LOG_LEVEL_WARNING, "Cannot refresh bundle %ld", bndId);
-    }
 }
 
 bool celix_framework_isBundleAlreadyInstalled(celix_framework_t* fw, const char* bundleSymbolicName) {
@@ -1931,12 +1903,7 @@ celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework
     celix_framework_bundleEntry_decreaseUseCount(bndEntry);
     if (removedEntry != NULL) {
         celix_status_t status = CELIX_SUCCESS;
-
-        celix_bundle_t *bnd = NULL;
-        long bndId = -1L;
-
-        bnd = removedEntry->bnd;
-        bndId = removedEntry->bndId;
+        celix_bundle_t *bnd = removedEntry->bnd;
 
         if (status == CELIX_SUCCESS) {
             bundle_archive_t *archive = NULL;
@@ -1961,7 +1928,6 @@ celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework
             fw_bundleEntry_destroy(removedEntry , true); //wait till use count is 0 -> e.g. not used
 
             if (status == CELIX_SUCCESS) {
-                fw_refreshBundle(framework, bndId);
                 celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
                 bundleArchive_destroy(archive);
                 status = CELIX_DO_IF(status, bundle_closeModules(bnd));
@@ -2196,28 +2162,13 @@ celix_status_t celix_framework_startBundleEntry(celix_framework_t* framework, ce
                 if (activator == NULL) {
                     status = CELIX_ENOMEM;
                 } else {
-                    void * userData = NULL;
-                    create_function_fp create = (create_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE);
-                    if (create == NULL) {
-                        create = celix_libloader_getSymbol(bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_CREATE);
-                    }
-                    start_function_fp start = (start_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START);
-                    if (start == NULL) {
-                        start = (start_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_START);
-                    }
-                    stop_function_fp stop = (stop_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP);
-                    if (stop == NULL) {
-                        stop = (stop_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_STOP);
-                    }
-                    destroy_function_fp destroy = (destroy_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY);
-                    if (destroy == NULL) {
-                        destroy = (destroy_function_fp) celix_libloader_getSymbol((celix_library_handle_t*) bundle_getHandle(bndEntry->bnd), OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_DESTROY);
-                    }
+                    void* userData = NULL;
+                    void* bundleHandle = bundle_getHandle(bndEntry->bnd);
 
-                    activator->create = create;
-                    activator->start = start;
-                    activator->stop = stop;
-                    activator->destroy = destroy;
+                    activator->create = celix_libloader_findBundleActivatorCreate(bundleHandle);
+                    activator->start = celix_libloader_findBundleActivatorStart(bundleHandle);
+                    activator->stop = celix_libloader_findBundleActivatorStop(bundleHandle);
+                    activator->destroy = celix_libloader_findBundleActivatorDestroy(bundleHandle);
 
                     status = CELIX_DO_IF(status, bundle_setActivator(bndEntry->bnd, activator));
 
@@ -2227,16 +2178,16 @@ celix_status_t celix_framework_startBundleEntry(celix_framework_t* framework, ce
                     status = CELIX_DO_IF(status, bundle_getContext(bndEntry->bnd, &context));
 
                     if (status == CELIX_SUCCESS) {
-                        if (create != NULL) {
-                            status = CELIX_DO_IF(status, create(context, &userData));
+                        if (activator->create != NULL) {
+                            status = CELIX_DO_IF(status, activator->create(context, &userData));
                             if (status == CELIX_SUCCESS) {
                                 activator->userData = userData;
                             }
                         }
                     }
                     if (status == CELIX_SUCCESS) {
-                        if (start != NULL) {
-                            status = CELIX_DO_IF(status, start(userData, context));
+                        if (activator->start != NULL) {
+                            status = CELIX_DO_IF(status, activator->start(userData, context));
                         }
                     }
 
@@ -2246,8 +2197,8 @@ celix_status_t celix_framework_startBundleEntry(celix_framework_t* framework, ce
                     if (status != CELIX_SUCCESS) {
                         //state is still STARTING, back to resolved
                         bool createCalled = activator != NULL && activator->userData != NULL;
-                        if (createCalled) {
-                            destroy(activator->userData, context);
+                        if (createCalled && activator->destroy) {
+                            activator->destroy(activator->userData, context);
                         }
                         bundle_setContext(bndEntry->bnd, NULL);
                         bundle_setActivator(bndEntry->bnd, NULL);

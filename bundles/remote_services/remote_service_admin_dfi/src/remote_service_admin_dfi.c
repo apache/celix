@@ -33,6 +33,7 @@
 #include <jansson.h>
 #include "json_serializer.h"
 #include "utils.h"
+#include "celix_utils.h"
 
 #include "import_registration_dfi.h"
 #include "export_registration_dfi.h"
@@ -597,7 +598,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
 
         token = strtok_r(ecCopy, delimiter, &savePtr);
         while (token != NULL) {
-            if (strncmp(utils_stringTrim(token), RSA_DFI_CONFIGURATION_TYPE, 1024) == 0) {
+            if (strncmp(celix_utils_trimInPlace(token), RSA_DFI_CONFIGURATION_TYPE, 1024) == 0) {
                 export = true;
                 break;
             }
@@ -897,7 +898,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
 
         token = strtok_r(ecCopy, delimiter, &savePtr);
         while (token != NULL) {
-            if (strncmp(utils_stringTrim(token), RSA_DFI_CONFIGURATION_TYPE, 1024) == 0) {
+            if (strncmp(celix_utils_trimInPlace(token), RSA_DFI_CONFIGURATION_TYPE, 1024) == 0) {
                 importService = true;
                 break;
             }
