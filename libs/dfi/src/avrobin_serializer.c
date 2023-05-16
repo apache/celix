@@ -469,7 +469,7 @@ static int avrobinSerializer_parseSequence(dyn_type *type, void *loc, FILE *stre
             blockCount = blockSize / itemSize;
             int64_t rest = blockSize % itemSize;
             if (rest != 0) {
-                celix_err_pushf("Found block size (%"PRId64") is not a multitude of the item size (%"PRId64")", blockSize, itemSize);
+                celix_err_pushf("Found block size (%"PRId64") is not a multitude of the item size (%zu)", blockSize, itemSize);
                 status = ERROR;
                 break;
             }
