@@ -17,27 +17,26 @@
  * under the License.
  */
 
-#include "bundle_archive_private.h"
+#include "bundle_archive.h"
 
-#include <string.h>
+#include <assert.h>
+#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <unistd.h>
 #include <string.h>
-#include <assert.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "celix_constants.h"
-#include "celix_utils_api.h"
-#include "linked_list_iterator.h"
-#include "framework_private.h"
 #include "celix_file_utils.h"
-#include "bundle_revision_private.h"
 #include "celix_framework_utils_private.h"
+#include "celix_utils_api.h"
 
+#include "bundle_archive_private.h"
+#include "bundle_revision_private.h"
+#include "framework_private.h"
+#include "linked_list_iterator.h"
 
 celix_status_t celix_bundleArchive_getLastModifiedInternal(bundle_archive_pt archive, struct timespec *lastModified);
 

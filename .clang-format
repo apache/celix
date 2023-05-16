@@ -10,12 +10,10 @@ ColumnLimit: 120
 ConstructorInitializerIndentWidth: 4
 Cpp11BracedListStyle: true
 DerivePointerAlignment: false
-IncludeBlocks: Regroup
 KeepEmptyLinesAtTheStartOfBlocks: false
 NamespaceIndentation: None
 PointerAlignment: Left
 ReflowComments: true
-SortIncludes: false
 SpaceAfterCStyleCast: false
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: ControlStatements
@@ -26,3 +24,21 @@ SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
 AlignEscapedNewlines: Right
+SortIncludes: true
+IncludeBlocks: Regroup
+IncludeCategories:
+#gtest headers
+  - Regex:            '^((<|")gtest/)'
+    Priority:         1
+#stdlib C++ headers
+  - Regex:            '^<([^.])*>'
+    Priority:         2
+#external headers
+  - Regex:            '^<([^.])*\.h>'
+    Priority:         3
+#celix C API
+  - Regex:            '^(<|")celix_.*'
+    Priority:         4
+#celix C++ API
+  - Regex:            '^(<|")celix/.*'
+    Priority:         5

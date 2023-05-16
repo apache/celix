@@ -55,7 +55,9 @@ conventions.
 - Asterisks `*` should be placed on the variable type name.
 - Use verb as function names when a function has a side effect.
 - Use nouns or getter/setter as function names when a function does not have a side effect.
-- Use getters/setters naming convention for functions which get/set a value.
+- Use getters/setters naming convention for functions which get/set a value:
+  - `celix_<obj>_is<Value>` and `celix_<obj>_set<Value>` for boolean values
+  - `celix_<obj>_get<Value>` and `celix_<obj>_set<Value>` for other values
 - For C objects:
   - Use a (opaque) object pointer as the first argument of the function.
   - Ensure that object can be created using a `celix_<obj>_create` function and destroyed using 
@@ -237,8 +239,6 @@ namespace celix {
   - Public headers files in a `include`, `api` or `spi` directory.
   - Private header files in a `private` and `src` directory.
   - Source files in a `src` directory.
-- For the Apache Celix framework and utils lib only header-only C++ files are allowed.
-- Prefer header-only C++ files for the Apache Celix libraries
 - Use a `#pragma once` header guard.
 
 ### C++ Libraries
@@ -247,8 +247,10 @@ namespace celix {
 - There should be `celix::` prefixed aliases for the library.
 - C++ Libraries should support C++14.
   - Exception are `celix::Promises` and `celix::PushStreams` which requires C++17.
-- C++ Libraries should prefer to be header-only.
-- C++ support for `celix::framework` and `celix::utils` must be header-only.
+- The Apache Celix framework library (`Celix::framework`) and the Apache Celix utils library (`Celix::utils`) can only
+  use header-only C++ files. This ensure that the framework and utils library can be used in C only projects and do
+  not introduce a C++ ABI.
+- For other libraries, header-only C++ libraries are preferred but not required.
 - Header-only C++ libraries do not need an export header and do not need to configure symbol visibility.
 - C++ shared libraries (lib with C++ sources), should configure an output name with a `celix_` prefix.
 - C++ shared libraries (lib with C++ sources), should use an export header and configure symbol visibility.
@@ -434,7 +436,7 @@ void celix_foo_destroy(celix_foo_t* foo) {
 - Test bundles by using their provided services and used services.
 - In most cases, libraries can be tested using a white box approach and bundles can be tested using a black box approach.
 - For libraries that are tested with the Apache Celix error_injector libraries or require access to private/hidden 
-  functions, a separate "code under test" static library should be created. 
+  functions (white-box testing), a separate "code under test" static library should be created. 
   This library should not hide its symbols and should have a `_cut` postfix.
 
  
