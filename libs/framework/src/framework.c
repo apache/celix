@@ -654,14 +654,7 @@ celix_status_t celix_framework_installBundleInternal(celix_framework_t *framewor
         long id = alreadyExistingBndId == -1 ? framework_getNextBundleId(framework) : alreadyExistingBndId;
         bundle_archive_t* archive = NULL;
         status = CELIX_DO_IF(status, celix_bundleCache_createArchive(framework, id, bndLoc, &archive));
-        if (status != CELIX_SUCCESS) {
-            bundleArchive_destroy(archive);
-        }
-
-        if (status == CELIX_SUCCESS) {
-            status = celix_bundle_createFromArchive(framework, archive, &bundle);
-        }
-
+        status = CELIX_DO_IF(status, celix_bundle_createFromArchive(framework, archive, &bundle));
         if (status == CELIX_SUCCESS) {
             celix_framework_bundle_entry_t *bEntry = fw_bundleEntry_create(bundle);
             celix_framework_bundleEntry_increaseUseCount(bEntry);

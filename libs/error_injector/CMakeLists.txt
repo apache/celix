@@ -44,6 +44,7 @@ add_subdirectory(celix_log_helper)
 add_subdirectory(celix_bundle)
 add_subdirectory(celix_version)
 add_subdirectory(dfi)
+add_subdirectory(celix_hash_map)
 
 celix_subproject(ERROR_INJECTOR_MDNSRESPONDER "Option to enable building the mdnsresponder error injector" OFF)
 if (ERROR_INJECTOR_MDNSRESPONDER)

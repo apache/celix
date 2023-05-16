@@ -461,18 +461,12 @@ celix_status_t bundleArchive_close(bundle_archive_pt archive) {
 }
 
 celix_status_t bundleArchive_closeAndDelete(bundle_archive_pt archive) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
 
-	status = bundleArchive_close(archive);
-	if (status == CELIX_SUCCESS) {
-		const char* err = NULL;
-		status = celix_utils_deleteDirectory(archive->archiveRoot, &err);
-		framework_logIfError(archive->fw->logger, status, NULL, "Failed to delete archive root '%s': %s", archive->archiveRoot, err);
-	}
-
-	framework_logIfError(archive->fw->logger, status, NULL, "Failed to close and delete archive");
-
-	return status;
+    const char* err = NULL;
+    status = celix_utils_deleteDirectory(archive->archiveRoot, &err);
+    framework_logIfError(archive->fw->logger, status, NULL, "Failed to delete archive root '%s': %s", archive->archiveRoot, err);
+    return status;
 }
 
 const char* celix_bundleArchive_getPersistentStoreRoot(bundle_archive_t* archive) {
