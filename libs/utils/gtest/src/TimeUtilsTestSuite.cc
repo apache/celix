@@ -55,3 +55,51 @@ TEST_F(TimeUtilsTestSuite, ElapsedTimeTest) {
     EXPECT_GE(diff, 0.00001 /*10 us*/);
     EXPECT_LT(diff, 0.1 /*1/10 s, note do want to rely on accuracy of sleep_for*/);
 }
+
+TEST_F(TimeUtilsTestSuite, AddDelayInSecondsToTimeTest) {
+    //Test with NULL time and delayInSeconds = 0
+    struct timespec delayedTime = celix_addDelayInSecondsToTime(NULL, 0);
+    ASSERT_EQ(delayedTime.tv_sec, 0);
+    ASSERT_EQ(delayedTime.tv_nsec, 0);
+
+    //Test with NULL time and delayInSeconds = 1.5
+    delayedTime = celix_addDelayInSecondsToTime(NULL, 1.5);
+    struct timespec expectedTime = {1, 500000000};
+    ASSERT_EQ(delayedTime.tv_sec, expectedTime.tv_sec);
+    ASSERT_EQ(delayedTime.tv_nsec, expectedTime.tv_nsec);
+
+    //Test with time.tv_nsec + nanoseconds > CELIX_NS_IN_SEC
+    struct timespec time = {0, 500000000};
+    delayedTime = celix_addDelayInSecondsToTime(&time, 0.6);
+    expectedTime = {1, 100000000};
+    ASSERT_EQ(delayedTime.tv_sec, expectedTime.tv_sec);
+    ASSERT_EQ(delayedTime.tv_nsec, expectedTime.tv_nsec);
+
+    //Test with time.tv_nsec + nanoseconds < 0
+    time = {1, 500000000};
+    delayedTime = celix_addDelayInSecondsToTime(&time, -0.6);
+    expectedTime = {0, 900000000};
+    ASSERT_EQ(delayedTime.tv_sec, expectedTime.tv_sec);
+    ASSERT_EQ(delayedTime.tv_nsec, expectedTime.tv_nsec);
+
+    //Test with time.tv_nsec + nanoseconds = CELIX_NS_IN_SEC
+    time = {1, 500000000};
+    delayedTime = celix_addDelayInSecondsToTime(&time, 0.5);
+    expectedTime = {2, 0};
+    ASSERT_EQ(delayedTime.tv_sec, expectedTime.tv_sec);
+    ASSERT_EQ(delayedTime.tv_nsec, expectedTime.tv_nsec);
+
+    //Test with time.tv_nsec + nanoseconds < CELIX_NS_IN_SEC
+    time = {1, 500000000};
+    delayedTime = celix_addDelayInSecondsToTime(&time, 0.4);
+    expectedTime = {1, 900000000};
+    ASSERT_EQ(delayedTime.tv_sec, expectedTime.tv_sec);
+    ASSERT_EQ(delayedTime.tv_nsec, expectedTime.tv_nsec);
+
+    //Test if time becomes negative
+    time = {0, 500000000};
+    delayedTime = celix_addDelayInSecondsToTime(&time, -1.5);
+    expectedTime = {-1, 0};
+    ASSERT_EQ(delayedTime.tv_sec, expectedTime.tv_sec);
+    ASSERT_EQ(delayedTime.tv_nsec, expectedTime.tv_nsec);
+}

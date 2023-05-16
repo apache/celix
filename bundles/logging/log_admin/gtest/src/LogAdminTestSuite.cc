@@ -83,11 +83,11 @@ TEST_F(LogBundleTestSuite, NrOfLogServices) {
     EXPECT_EQ(1, control->nrOfLogServices(control->handle, nullptr)); //default the framework log services is available
 
     //request "default" log service
-    long trkId1 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, NULL, NULL);
+    long trkId1 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, nullptr, nullptr);
     EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 
     //request "default" log service -> already created
-    long trkId2 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, NULL, NULL);
+    long trkId2 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, nullptr, nullptr);
     EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 
     //request a 'logger1' log service
@@ -224,7 +224,7 @@ TEST_F(LogBundleTestSuite, SinkLogControl) {
 
 TEST_F(LogBundleTestSuite, LogServiceControl) {
     //request "default" log service
-    long trkId1 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, NULL, NULL);
+    long trkId1 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, nullptr, nullptr);
     celix_framework_waitForEmptyEventQueue(fw.get());
     EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 
@@ -328,7 +328,7 @@ TEST_F(LogBundleTestSuite, LogServiceAndSink) {
 
     //request a 'logger1' log service
     long trkId;
-    std::atomic<celix_log_service_t*> logSvc;
+    std::atomic<celix_log_service_t*> logSvc{};
     {
         celix_service_tracking_options_t opts{};
         opts.filter.serviceName = CELIX_LOG_SERVICE_NAME;
@@ -341,6 +341,10 @@ TEST_F(LogBundleTestSuite, LogServiceAndSink) {
         trkId = celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
     }
     celix_framework_waitForEmptyEventQueue(fw.get());
+
+    //TODO fixme, apparently this is needed, because the celix_framework_waitForEmptyEventQueue for does not work
+    //this is probably due to the moved broadcast in the framework event handle, check this
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
     ASSERT_TRUE(logSvc.load() != nullptr);
     auto initial = count.load();
@@ -471,7 +475,7 @@ TEST_F(LogBundleTestSuite, LogAdminCmd) {
     opts.filter.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;
     opts.use = [](void*, void *svc) {
         auto* cmd = static_cast<celix_shell_command_t*>(svc);
-        char *cmdResult = NULL;
+        char *cmdResult = nullptr;
         size_t cmdResultLen;
         FILE *ss = open_memstream(&cmdResult, &cmdResultLen);
         cmd->executeCommand(cmd->handle, "celix::log_admin", ss, ss); //overview
@@ -487,7 +491,7 @@ TEST_F(LogBundleTestSuite, LogAdminCmd) {
 
     opts.use = [](void*, void *svc) {
         auto* cmd = static_cast<celix_shell_command_t*>(svc);
-        char *cmdResult = NULL;
+        char *cmdResult = nullptr;
         size_t cmdResultLen;
         FILE *ss = open_memstream(&cmdResult, &cmdResultLen);
         cmd->executeCommand(cmd->handle, "celix::log_admin log fatal", ss, ss); //all
@@ -504,7 +508,7 @@ TEST_F(LogBundleTestSuite, LogAdminCmd) {
 
     opts.use = [](void*, void *svc) {
         auto* cmd = static_cast<celix_shell_command_t*>(svc);
-        char *cmdResult = NULL;
+        char *cmdResult = nullptr;
         size_t cmdResultLen;
         FILE *ss = open_memstream(&cmdResult, &cmdResultLen);
         cmd->executeCommand(cmd->handle, "celix::log_admin sink false", ss, ss); //all
@@ -523,9 +527,9 @@ TEST_F(LogBundleTestSuite, LogAdminCmd) {
 
     opts.use = [](void*, void *svc) {
         auto* cmd = static_cast<celix_shell_command_t*>(svc);
-        char *cmdResult = NULL;
+        char *cmdResult = nullptr;
         size_t cmdResultLen;
-        char *errResult = NULL;
+        char *errResult = nullptr;
         size_t errResultLen;
         FILE *ss = open_memstream(&cmdResult, &cmdResultLen);
         FILE *es = open_memstream(&errResult, &errResultLen);
@@ -586,7 +590,7 @@ TEST_F(LogBundleTestSuite, LogAdminCmd) {
 
     opts.use = [](void*, void *svc) {
         auto* cmd = static_cast<celix_shell_command_t*>(svc);
-        char *cmdResult = NULL;
+        char *cmdResult = nullptr;
         size_t cmdResultLen;
         FILE *ss = open_memstream(&cmdResult, &cmdResultLen);
         cmd->executeCommand(cmd->handle, "celix::log_admin", ss, ss);

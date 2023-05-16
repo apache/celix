@@ -21,6 +21,7 @@
 
 #include <csignal>
 
+#include "celix_utils.h"
 #include "celix_threads.h"
 
 class ThreadsTestSuite : public ::testing::Test {
@@ -277,6 +278,64 @@ TEST_F(ThreadsTestSuite, CondBroadcastTest) {
     celixThread_join(thread2, nullptr);
     free(param);
 }
+
+TEST_F(ThreadsTestSuite, CondTimedWaitTest) {
+    celix_thread_mutex_t mutex;
+    celix_thread_cond_t cond;
+
+    auto status = celixThreadMutex_create(&mutex, NULL);
+    ASSERT_EQ(status, CELIX_SUCCESS);
+    status = celixThreadCondition_init(&cond, NULL);
+    ASSERT_EQ(status, CELIX_SUCCESS);
+
+    //Test with NULL abstime
+    status = celixThreadCondition_waitUntil(&cond, &mutex, NULL);
+    ASSERT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+
+    //: Test with negative tv_sec
+    struct timespec abstime = {-1, 0};
+    status = celixThreadCondition_waitUntil(&cond, &mutex, &abstime);
+    ASSERT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+
+    //Test with negative tv_nsec
+    abstime = {0, -1};
+    status = celixThreadCondition_waitUntil(&cond, &mutex, &abstime);
+    ASSERT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+
+    //Test with valid abstime
+    auto start = celix_gettime(CLOCK_MONOTONIC);
+    auto targetEnd = celix_addDelayInSecondsToTime(&start, 0.001);
+    pthread_mutex_lock(&mutex);
+    status = celixThreadCondition_waitUntil(&cond, &mutex, &targetEnd);
+    ASSERT_EQ(status, ETIMEDOUT);
+    pthread_mutex_unlock(&mutex);
+    auto end = celix_gettime(CLOCK_MONOTONIC);
+    EXPECT_NEAR(celix_difftime(&end, &start), 0.001, 0.01);
+}
+
+TEST_F(ThreadsTestSuite, CondWaitForTest) {
+    celix_thread_mutex_t mutex;
+    celix_thread_cond_t cond;
+
+    auto status = celixThreadMutex_create(&mutex, NULL);
+    ASSERT_EQ(status, CELIX_SUCCESS);
+    status = celixThreadCondition_init(&cond, NULL);
+    ASSERT_EQ(status, CELIX_SUCCESS);
+
+    //Test with negative timeout
+    status = celixThreadCondition_waitFor(&cond, &mutex, -1);
+    ASSERT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+
+    //Test with valid delay
+    auto start = celix_gettime(CLOCK_MONOTONIC);
+    pthread_mutex_lock(&mutex);
+    status = celixThreadCondition_waitFor(&cond, &mutex, 0.001);
+    ASSERT_EQ(status, ETIMEDOUT);
+    pthread_mutex_unlock(&mutex);
+    auto end = celix_gettime(CLOCK_MONOTONIC);
+    EXPECT_NEAR(celix_difftime(&end, &start), 0.001, 0.01);
+}
+
 
 //----------------------CELIX READ-WRITE LOCK TESTS----------------------
 

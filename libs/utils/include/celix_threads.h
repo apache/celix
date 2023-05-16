@@ -130,6 +130,43 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_wait(celix_thread_cond_t 
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds);
 
+/**
+ * @brief Wait for the condition to be signaled or until the given delayInSeconds is reached.
+ * 
+ * @section Errors
+ * - CELIX_SUCCESS if the condition is signaled before the delayInSeconds is reached.
+ * - CELIX_ILLEGAL_ARGUMENT if the delayInSeconds is negative.
+ * - ENOTRECOVERABLE if the state protected by the mutex is not recoverable.
+ * - ETIMEDOUT If the delayInSeconds has passed.
+ * 
+ * 
+ * @param[in] cond The condition to wait for.
+ * @param[in] mutex The (locked) mutex to use.
+ * @param[in] delayInSeconds The delay in seconds to wait for the condition to be signaled.
+ * @return CELIX_SUCCESS if the condition is signaled before the delayInSeconds is reached.
+ */
+CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitFor(celix_thread_cond_t* cond, 
+                                                               celix_thread_mutex_t* mutex, 
+                                                               double delayInSeconds);
+
+/**
+ * @brief Wait for the condition to be signaled or until the given absolute time is reached.
+ * 
+ * @section Errors
+ * - CELIX_SUCCESS if the condition is signaled before the delayInSeconds is reached.
+ * - CELIX_ILLEGAL_ARGUMENT if the abstime is negative.
+ * - ENOTRECOVERABLE if the state protected by the mutex is not recoverable.
+ * - ETIMEDOUT If the abstime has passed.
+ * 
+ * @param[in] cond The condition to wait for.
+ * @param[in] mutex The (locked) mutex to use.
+ * @param[in] abstime The absolute time to wait for the condition to be signaled.
+ * @return CELIX_SUCCESS if the condition is signaled before the delayInSeconds is reached.
+ */
+CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitUntil(celix_thread_cond_t* cond, 
+                                                                 celix_thread_mutex_t* mutex, 
+                                                                 const struct timespec* abstime);
+
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond);
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_signal(celix_thread_cond_t *cond);

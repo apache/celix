@@ -24,7 +24,6 @@
 #include "celix_scheduled_event.h"
 #include "framework_private.h"
 
-#include "celix_array_list_ei.h"
 #include "malloc_ei.h"
 
 class ScheduledEventWithErrorInjectionTestSuite : public ::testing::Test {
@@ -34,25 +33,12 @@ public:
     }
 
     ~ScheduledEventWithErrorInjectionTestSuite() noexcept override {
-        celix_ei_expect_celix_arrayList_add(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_malloc(nullptr, 0, nullptr);
     }
 
     std::shared_ptr<celix::Framework> fw{};
 };
 
-TEST_F(ScheduledEventWithErrorInjectionTestSuite, ArrayListAddFailsTest) {
-    //Given celix_arrayList_add is primed to fail on the first call from addScheduledEvent (whitebox knowledge)
-    celix_ei_expect_celix_arrayList_add((void*)celix_bundleContext_addScheduledEvent, 1, CELIX_ENOMEM);
-
-    //When a scheduled event is added
-    celix_scheduled_event_options_t opts{};
-    opts.eventCallback = [](void*){/*nop*/};
-    long scheduledEventId = celix_bundleContext_addScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), &opts);
-
-    //Then the scheduled event id is -1 (error)
-    EXPECT_EQ(-1L, scheduledEventId);
-}
 
 TEST_F(ScheduledEventWithErrorInjectionTestSuite, MallocFailsTest) {
     //Given malloc is primed to fail on the first call from celix_scheduledEvent_create (whitebox knowledge)

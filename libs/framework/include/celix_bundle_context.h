@@ -1268,7 +1268,7 @@ typedef struct celix_scheduled_event_options {
     double initialDelayInSeconds CELIX_OPTS_INIT; /**< @brief Initial delay in seconds before the event is processed.*/
 
     double intervalInSeconds CELIX_OPTS_INIT; /**< @brief Schedule interval in seconds.
-                                               *  0 means one shot scheduled event.
+                                               *  0 means one-shot scheduled event.
                                                */
 
     void* eventData CELIX_OPTS_INIT; /**< @brief Data passed to the eventCallback function when a event is scheduled.*/
@@ -1287,15 +1287,15 @@ typedef struct celix_scheduled_event_options {
  * after other events in the Celix event thread.
  * The target - but not guaranteed - precision of the scheduled event trigger is 1 microsecond.
  *
- * If the provided interval is 0, the scheduled event will a one short scheduled event and will be called once
- * after the provided initial delay. If a bundle stops before the one short scheduled event is called, the scheduled
+ * If the provided interval is 0, the scheduled event will a one-shot scheduled event and will be called once
+ * after the provided initial delay. If a bundle stops before the one-shot scheduled event is called, the scheduled
  * event will be removed and not called.
  *
- * Scheduled events should be removed by the caller when not needed anymore.
- * Exception are the one shot scheduled events, these are automatically removed after the event callback is called.
+ * Scheduled events should be removed by the caller when not needed anymore, except for one-shot scheduled events.
+ * one-shot are automatically removed after the event callback is called.
  *
- * Note during bundle stop the framework will check if  all scheduled events for the bundle are removed.
- * For every not removed scheduled event, which is not a one short event, a warning will be logged and the
+ * Note during bundle stop the framework will check if all scheduled events for the bundle are removed.
+ * For every not removed scheduled event that is not a one-shot event, a warning will be logged and the
  * scheduled event will be removed.
  *
  * @param[in] ctx The bundle context.
@@ -1305,6 +1305,24 @@ typedef struct celix_scheduled_event_options {
  */
 CELIX_FRAMEWORK_EXPORT long celix_bundleContext_addScheduledEvent(celix_bundle_context_t* ctx,
                                                                   const celix_scheduled_event_options_t* options);
+
+/**
+ * @brief Wakeup a scheduled event.
+ *
+ * If waitTimeInSeconds is not 0, this function will block until the scheduled event callback is called.
+ * If waitTimeInSeconds is 0, this function will return immediately.
+ *
+ * @param[in] ctx The bundle context.
+ * @param[in] scheduledEventId The scheduled event id to wakeup.
+ * @param[in] waitTimeInSeconds If not 0, this function will block until the scheduled event callback 
+ *                              is called or the provided timeout is reached.
+ * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not 
+ *         known and CELIX_TIMEOUT if the waitTimeInSeconds is reached.
+ */
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleContext_wakeupScheduledEvent(
+        celix_bundle_context_t* ctx, 
+        long scheduledEventId, 
+        double waitTimeInSeconds);
 
 /**
  * @brief Cancel and remove a scheduled event.

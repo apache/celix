@@ -1494,6 +1494,13 @@ long celix_bundleContext_addScheduledEvent(celix_bundle_context_t* ctx,
                                              options->eventCallback);
 }
 
+celix_status_t celix_bundleContext_wakeupScheduledEvent(
+        celix_bundle_context_t* ctx, 
+        long scheduledEventId, 
+        double waitTimeInSeconds) {
+    return celix_framework_wakeupScheduledEvent(ctx->framework, scheduledEventId, waitTimeInSeconds);
+}
+
 bool celix_bundleContext_removeScheduledEvent(celix_bundle_context_t* ctx, long scheduledEventId) {
     return celix_framework_removeScheduledEvent(ctx->framework, scheduledEventId);
 }

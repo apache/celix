@@ -197,6 +197,26 @@ celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond,
 }
 #endif
 
+CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitFor(celix_thread_cond_t* cond, 
+                                                               celix_thread_mutex_t* mutex, 
+                                                               double delayInSeconds) {
+    if (delayInSeconds < 0) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    struct timespec now = celix_gettime(CLOCK_MONOTONIC);
+    struct timespec abstime = celix_addDelayInSecondsToTime(&now, delayInSeconds);
+    return celixThreadCondition_waitUntil(cond, mutex, &abstime);
+}
+
+CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitUntil(celix_thread_cond_t* cond, 
+                                                                 celix_thread_mutex_t* mutex, 
+                                                                 const struct timespec* abstime) {
+    if (abstime == NULL || abstime->tv_sec < 0 || abstime->tv_nsec < 0) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    return pthread_cond_timedwait(cond, mutex, abstime);
+}
+
 celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond) {
     return pthread_cond_broadcast(cond);
 }

@@ -184,7 +184,7 @@ struct celix_framework {
             int nbUnregister; // number of pending async de-registration
             int nbEvent; // number of pending generic events
         } stats;
-        celix_array_list_t *scheduledEventQueue; //entry = celix_framework_scheduled_event_t*. Used for scheduled events
+        celix_long_hash_map_t *scheduledEvents; //key = scheduled event id, entry = celix_framework_scheduled_event_t*. Used for scheduled events
     } dispatcher;
 
     celix_framework_logger_t* logger;
@@ -471,6 +471,22 @@ long celix_framework_addScheduledEvent(celix_framework_t* fw,
                                        double intervalInSeconds,
                                        void* eventData,
                                        void (*eventCallback)(void* eventData));
+                                       
+/**
+ * @brief Wakeup a scheduled event.
+ *
+ * If waitTimeInSeconds is not 0, this function will block until the scheduled event callback is called.
+ * If waitTimeInSeconds is 0, this function will return immediately.
+ *
+ * @param[in] ctx The bundle context.
+ * @param[in] scheduledEventId The scheduled event id to wakeup.
+ * @param[in] waitTimeInSeconds If not 0, this function will block until the scheduled event callback 
+ *                              is called or the provided timeout is reached.
+ * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not 
+ */  
+celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw, 
+                                                    long scheduledEventId, 
+                                                    double waitTimeInSeconds);
 
 /**
  * @brief Cancel a scheduled event.

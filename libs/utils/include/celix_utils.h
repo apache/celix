@@ -159,6 +159,14 @@ CELIX_UTILS_EXPORT double celix_difftime(const struct timespec *tBegin, const st
 CELIX_UTILS_EXPORT struct timespec celix_gettime(clockid_t clockId);
 
 /**
+ * @brief Returns the absolute time for the provided delay in seconds.
+ * @param[in] time The time to add the delay to. Can be NULL, in which case the time is 0.
+ * @param[in] delayInSeconds The delay in seconds.
+ * @return A new time with the delay added.
+*/
+CELIX_UTILS_EXPORT struct timespec celix_addDelayInSecondsToTime(const struct timespec* time, double delayInSeconds);
+
+/**
  * @brief Returns the elapsed time - in seconds - relative to the startTime
  * using the clock for the provided clockid.
  */

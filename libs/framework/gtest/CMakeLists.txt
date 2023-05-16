@@ -144,7 +144,6 @@ if (LINKER_WRAP_SUPPORTED)
             Celix::utils_ei
             Celix::asprintf_ei
             Celix::dlfcn_ei
-            Celix::array_list_ei
             GTest::gtest GTest::gtest_main
     )
 

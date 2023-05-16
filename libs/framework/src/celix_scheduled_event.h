@@ -27,31 +27,13 @@
 extern "C" {
 #endif
 
-//Allow, 1 microsecond error in interval to ensure pthread cond wakeups result in a call.
-#define CELIX_SCHEDULED_EVENT_INTERVAL_ALLOW_ERROR_IN_SECONDS 0.000001
-
-static const char* const CELIX_SCHEDULED_EVENT_DEFAULT_NAME = "unnamed";
-
-typedef struct celix_scheduled_event {
-    long scheduledEventId;
-    celix_framework_logger_t* logger;
-    celix_framework_bundle_entry_t* bndEntry;
-
-    char* eventName;
-    double initialDelayInSeconds;
-    double intervalInSeconds;
-    void* eventCallbackData;
-    void (*eventCallback)(void* eventData);
-
-    celix_thread_mutex_t mutex; //protects below
-    celix_thread_cond_t cond;
-    size_t useCount; //use count, how many times the event is used to process a eventCallback or doneCallback.
-    size_t callCount; //nr of times the eventCallback is called
-    struct timespec lastScheduledEventTime;
-} celix_scheduled_event_t;
+typedef struct celix_scheduled_event celix_scheduled_event_t;
 
 /**
  * @brief Create a scheduled event for the given bundle.
+ *
+ * The scheduled event will be created with a use count of 1.
+ *
  * @param[in] bndEntry The bundle entry for which the scheduled event is created.
  * @param[in] scheduledEventId The id of the scheduled event.
  * @param[in] eventName The name of the event. If NULL, CELIX_SCHEDULED_EVENT_DEFAULT_NAME is used.
@@ -71,14 +53,41 @@ celix_scheduled_event_t* celix_scheduledEvent_create(celix_framework_logger_t* l
                                                      void (*eventCallback)(void* eventData));
 
 /**
- * @brief Destroy the event.
+ * @brief Retain the scheduled event by increasing the use count.
+ * Will silently ignore a NULL event.
  */
-void celix_scheduledEvent_destroy(celix_scheduled_event_t* event);
+void celix_scheduledEvent_retain(celix_scheduled_event_t* event);
 
 /**
- * @brief Wait until the useCount is 0 and destroy the event.
+ * @brief Release the scheduled event by decreasing the use count. If the use count is 0,
+ * the scheduled event is destroyed. Will silently ignore a NULL event.
  */
-void celix_scheduledEvent_waitAndDestroy(celix_scheduled_event_t* event);
+void celix_scheduledEvent_release(celix_scheduled_event_t* event);
+
+/**
+ * @brief Returns the scheduled event id.
+ */
+const char* celix_scheduledEvent_getName(const celix_scheduled_event_t* event);
+
+/**
+ * @brief Returns the scheduled event ID.
+ */
+long celix_scheduledEvent_getId(const celix_scheduled_event_t* event);
+
+/**
+ * @brief Returns the initial delay of the scheduled event in seconds.
+ */
+double celix_scheduledEvent_getInitialDelayInSeconds(const celix_scheduled_event_t* event);
+
+/**
+ * @brief Returns the interval of the scheduled event in seconds.
+ */
+double celix_scheduledEvent_getIntervalInSeconds(const celix_scheduled_event_t* event);
+
+/**
+ * @brief Returns the framework bundle entry for this scheduled event.
+ */
+celix_framework_bundle_entry_t* celix_scheduledEvent_getBundleEntry(const celix_scheduled_event_t* event);
 
 /**
  * @brief Returns whether the event deadline is reached and the event should be processed.
@@ -111,18 +120,28 @@ void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct t
 bool celix_scheduleEvent_isDone(celix_scheduled_event_t* event);
 
 /**
+ * @brief Configure a scheduled event for a wakeup, so celix_scheduledEvent_deadlineReached will return true until
+ * the event is processed.
+ * 
+ * @param[in] event The event to configure for wakeup.
+ * @return The future call count of the event after the next processing is done.
+ */
+size_t celix_scheduledEvent_configureWakeup(celix_scheduled_event_t* event);
+
+/**
  * @brief Wait for a scheduled event to reach at least the provided call count.
+ * Will directly (non blocking) return if the call count is already reached or waitTimeInSeconds is <= 0
  * @param[in] event The event to wait for.
  * @param[in] callCount The call count to wait for.
  * @param[in] timeout The max time to wait in seconds.
  * @return CELIX_SUCCESS if the scheduled event reached the call count, CELIX_TIMEOUT if the scheduled event
- *                       did not reach the call count within the timeout.
  */
-celix_status_t
-celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_event_t* event, size_t useCount, double timeout);
+celix_status_t celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_event_t* event,
+                                                            size_t targetCallCount,
+                                                            double waitTimeInSeconds);
 
 #ifdef __cplusplus
 };
 #endif
 
-#endif //CELIX_CELIX_SCHEDULED_EVENT_H
+#endif // CELIX_CELIX_SCHEDULED_EVENT_H
