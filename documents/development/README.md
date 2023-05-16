@@ -35,7 +35,7 @@ conventions.
 - Use `camelCase` for variable names.
 - Use descriptive names for variables.
 - Use `celix_` prefix or `celix::` (sub)namespace for global variables.
-- Asterisk `*` should be placed on the variable type name.
+- Asterisks `*` and ampersands `&` should be placed on the variable type name.
 
 ### C Structures
 
@@ -43,6 +43,8 @@ conventions.
 - Add a typedef for the structure.
 - Use a `_t` postfix for structure typedef.
 - Use `celix_` prefix for structure names.
+- For C objects, use typedef of an opaque struct. E.g. `typedef struct celix_<obj> celix_<obj>_t;`
+  - This way the implementation details can be hidden from the user.
 
 ### C Functions
 
@@ -50,10 +52,18 @@ conventions.
 - Use a `celix_` prefix.
 - Use a `_<obj>_` camelCase infix for the object/module name.
 - Use a postfix `camelCase` for the function name.
-- Asterisk `*` should be placed on the variable type name.
+- Asterisks `*` should be placed on the variable type name.
 - Use verb as function names when a function has a side effect.
 - Use nouns or getter/setter as function names when a function does not have a side effect.
 - Use getters/setters naming convention for functions which get/set a value.
+- For C objects:
+  - Use a (opaque) object pointer as the first argument of the function.
+  - Ensure that object can be created using a `celix_<obj>_create` function and destroyed using 
+    a `celix_<obj>_destroy` function.
+  - The `celix_<obj>_create` function should return a pointer to the object.
+  - The `celix_<obj>_destroy` function should return a `void` and should be able to handle a NULL pointer.
+    - By being able to handle a NULL pointer, the `celix_<obj>_destroy` function can be more easily used in
+      error handling code.
 
 Examples:
 - `long celix_bundleContext_installBundle(celix_bundle_context_t* ctx, const char* bundleUrl, bool autoStart)`
@@ -162,6 +172,13 @@ add_celix_bundle(my_bundle
 add_library(celix::my_bundle ALIAS my_bundle)
 ```
 
+### C++ Namespaces
+
+- Use `snake_case` for namespace names.
+- All namespaces should be part of the `celix` namespace.
+- Aim for a max of 3 levels of namespaces.
+- Use a namespace ending with `impl` for implementation details.
+
 ### C++ Classes
 
 - Use `CamelCase` (starting with a capital) for class names.
@@ -172,7 +189,7 @@ add_library(celix::my_bundle ALIAS my_bundle)
 
 - Use `camelCase` for function names.
 - If a function is not part of a class/struct, it should be part of a `celix::` namespace or sub `celix::` namespace.
-- Asterisk `*` should be placed on the variable type name.
+- Asterisks `*` and ampersands `&` should be placed on the variable type name.
 - Use verb as function names when a function has a side effect.
 - Use nouns or getter/setter as function names when a function does not have a side effect.
 - Use getters/setters naming convention for functions which get/set a value.
@@ -188,7 +205,7 @@ example:
 ```c++
 namespace celix {
     constexpr long FRAMEWORK_BUNDLE_ID = 0;
-    constexpr const char * const SERVICE_ID = "service.id";
+    constexpr const char* const SERVICE_ID = "service.id";
 }
 ```
 
@@ -242,8 +259,8 @@ namespace celix {
 - Use `CamelCase` (starting with a capital) for service names.
 - Add a 'I' prefix to the service interface name.
 - Place service classes in a `celix::` namespace or sub `celix::` namespace.
-- Add a `static constexpr const char * const NAME` to the service class, for the service name.
-- Add a `static constexpr const char * const VERSION` to the service class, for the service version.
+- Add a `static constexpr const char* const NAME` to the service class, for the service name.
+- Add a `static constexpr const char* const VERSION` to the service class, for the service version.
 
 ### C++ Bundles
 
@@ -281,14 +298,18 @@ add_library(celix::MyBundle ALIAS MyBundle)
 
 ## Comments and Documentation
 
-- Use Doxygen for code documentation.
+- Use Doxygen documentation, except for inline comments.
 - Write comments that explain the purpose of the code, focusing on the "why" rather than the "how".
 - Apply doxygen documentation to all public API's.
 - Use the javadoc style for doxygen documentation.
 - Use `@` instead of `\` for doxygen commands.
 - Start with a `@brief` command and a short description.
 - For `@param` commands also provide in, out, or in/out information.
+- For `@return` commands also provide a description of the return value.
+- If a function can return multiple error codes, use a errors section (`@section errors_section Errors`) to document the 
+  possible errors. Use `man 2 write` as an example for a good errors section.
 
+  
 ## Formatting and Indentation
 
 - Use spaces for indentation and use 4 spaces per indentation level.
@@ -310,9 +331,10 @@ add_library(celix::MyBundle ALIAS MyBundle)
 - Use `while` statements for loops that may not execute.
 - Use `do`/`while` statements for loops that must execute at least once.
 - Use `for` statements for loops with a known number of iterations.
-- The use of `goto` is not allowed, except for error handling.
+- The use of `goto` is not allowed, except for error handling in C (for C++ use RAII).
 - For C, try to prevent deeply nested control structures and prefer early returns or error handling `goto` statements.
-  - To prevent deeply nested control structures, the `CELIX_DO_IF` and `CELIX_GOTO_IF_ERR` macros can also be used.
+  - To prevent deeply nested control structures, the `CELIX_DO_IF`, `CELIX_GOTO_IF_NULL` and `CELIX_GOTO_IF_ERR` 
+    macros can also be used.
 
 ## Functions and Methods
 
@@ -329,7 +351,7 @@ add_library(celix::MyBundle ALIAS MyBundle)
  
 ## Error Handling and Logging
 
-- For C++, throw an exception when an error occurs.
+- For C++, throw an exception when an error occurs and use RAII to ensure that resources are freed.
 - For C, if memory allocation is needed or another error can occur, ensure that a function returns a value 
   than can be used to check for errors. This can be done by:
   - Returning a `celix_status_t` and if needed using an out parameter.
@@ -337,14 +359,68 @@ add_library(celix::MyBundle ALIAS MyBundle)
   - Returning a boolean value, where `true` indicates success and `false` indicates failure.
 - Use consistent error handling techniques, such as returning error codes or using designated error handling functions.
 - Log errors, warnings, and other important events using the Apache Celix log helper functions or - for libraries - 
-  the `celix_err` (TBD) functionality. 
+  the `celix_err` functionality. 
 - Always check for errors and log them. 
+- Error handling should free resources in the reverse order of their allocation/creation.
 - Ensure error handling is correct, using test suite with error injection.
+
+For log levels use the following guidelines:
+- trace: Use this level for very detailed that you would only want to have while diagnosing problems. 
+- debug: This level should be used for information that might be helpful in diagnosing problems or understanding 
+  what's going on, but is too verbose to be enabled by default. 
+- info: Use this level for general operational messages that aren't tied to any specific problem or error condition. 
+  They provide insight into the normal behavior of the system. Examples include startup/shutdown messages, 
+  configuration assumptions, etc.
+- warning: Use this level to report an issue from which the system can recover, but which might indicate a potential 
+  problem.
+- error: This level should be used to report issues that need immediate attention and might prevent the system from 
+  functioning correctly. These are problems that are unexpected and affect functionality, but not so severe that the 
+  process needs to stop. Examples include runtime errors, inability to connect to a service, etc.
+- fatal: Use this level to report severe errors that prevent the program from continuing to run. 
+  After logging a fatal error, the program will typically terminate.
+
+Example of error handling and logging:
+```c
+celix_foo_t* celix_foo_create(celix_log_helper_t* logHelper) {
+    celix_foo_t* foo = calloc(1, sizeof(*foo));
+    if (!foo) {
+        goto create_enomem_err;
+    }
+    
+    CELIX_GOTO_IF_ERR(create_mutex_err, celixThreadMutex_create(&foo->mutex, NULL));
+    
+    foo->list = celix_arrayList_create();
+    foo->map = celix_longHashMap_create();
+    if (!foo->list ||  !foo->map) {
+        goto create_enomem_err;
+    }
+    
+  return foo;
+create_mutex_err:
+  celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Error creating mutex");
+  free(foo); //mutex not created, do not use celix_foo_destroy to prevent mutex destroy
+  return NULL;
+create_enomem_err:
+  celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Error creating foo, out of memory");
+  celix_foo_destroy(foo); //note celix_foo_destroy can handle NULL
+  return NULL;
+}
+
+void celix_foo_destroy(celix_foo_t* foo) {
+    if (foo != NULL) {
+        //note reverse order of creation
+        celixThreadMutex_destroy(&foo->mutex);
+        celix_arrayList_destroy(foo->list);
+        celix_longHashMap_destroy(foo->map);
+        free(foo);
+    }
+}
+```
 
 ## Error Injection
 
 - Use the Apache Celix error_injector libraries to inject errors in unit tests in a controlled way.
-- Create a separate test suite for error injection tests.
+- Create a separate test suite for error injection tests and place them under a `LINKER_WRAP_SUPPORTED` cmake condition.
 - Reset error injection setup on the `TearDown` function or destructor of the test fixture.
 - If an - internal or external - function is missing error injection support, add it to the error_injector library.
   - Try to create small error injector libraries for specific functionality.
@@ -384,7 +460,7 @@ endif ()
 
 ## Supported C and C++ Standards
 
-- C libraries should support C99. (TBD or C11))
+- C libraries should support C99.
 - C++ libraries should support C++14.
   - Exception are `celix::Promises` and `celix::PushStreams` which requires C++17.
 - C++ support for `celix::framework` and `celix::utils` must be header-only. 

@@ -1,4 +1,5 @@
 BasedOnStyle: LLVM
+Language: Cpp
 IndentWidth: 4
 AllowShortIfStatementsOnASingleLine: false
 AlwaysBreakTemplateDeclarations: Yes
@@ -12,7 +13,7 @@ DerivePointerAlignment: false
 IncludeBlocks: Regroup
 KeepEmptyLinesAtTheStartOfBlocks: false
 NamespaceIndentation: None
-PointerAlignment: Right
+PointerAlignment: Left
 ReflowComments: true
 SortIncludes: false
 SpaceAfterCStyleCast: false
