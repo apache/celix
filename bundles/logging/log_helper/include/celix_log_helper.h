@@ -91,7 +91,8 @@ void celix_logHelper_logDetails(celix_log_helper_t* logHelper,
                                 const char *format, ...) __attribute__((format(printf,6,7)));
 
 /**
- * @brief Logs a message using the provided celix log level to the log_helper, and it will print celix thread-specific storage error messages, printf style.
+ * @brief Logs a message using the provided celix log level to the log_helper, printf style.
+ *        It will also print celix thread-specific storage error messages(celix_err).
  *
  * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
  */
@@ -128,7 +129,7 @@ void celix_logHelper_vlogDetails(celix_log_helper_t* logHelper,
 
 /**
  * @brief Logs a message to the log_helper using a format string and a va_list argument (vprintf style).
- *        It will also print celix thread-specific storage error messages.
+ *        It will also print celix thread-specific storage error messages(celix_err).
  *
  * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
  *
