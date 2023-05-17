@@ -56,26 +56,26 @@ struct celix_bundle_cache {
 
 static const char* bundleCache_progamName() {
 #if defined(__APPLE__) || defined(__FreeBSD__)
-	return getprogname();
+    return getprogname();
 #elif defined(_GNU_SOURCE)
-	return program_invocation_short_name;
+    return program_invocation_short_name;
 #else
-	return "";
+    return "";
 #endif
 }
 
 static const char* celix_bundleCache_cacheDirPath(celix_framework_t* fw) {
     bool found = false;
     const char* cacheDir = celix_framework_getConfigProperty(fw,
-        CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR,
-        CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR_DEFAULT,
-        &found);
+                                                             CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR,
+                                                             CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR_DEFAULT,
+                                                             &found);
     if (!found) {
         //falling back to old property
         cacheDir = celix_framework_getConfigProperty(fw,
-            OSGI_FRAMEWORK_FRAMEWORK_STORAGE,
-            CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR_DEFAULT,
-            NULL);
+                                                     OSGI_FRAMEWORK_FRAMEWORK_STORAGE,
+                                                     CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR_DEFAULT,
+                                                     NULL);
     }
     return cacheDir;
 }
@@ -83,15 +83,15 @@ static const char* celix_bundleCache_cacheDirPath(celix_framework_t* fw) {
 static bool celix_bundleCache_useTmpDir(celix_framework_t* fw) {
     bool converted = false;
     bool useTmp = celix_framework_getConfigPropertyAsBool(fw,
-        CELIX_FRAMEWORK_CACHE_USE_TMP_DIR,
-        CELIX_FRAMEWORK_CACHE_USE_TMP_DIR_DEFAULT,
-        &converted);
+                                                          CELIX_FRAMEWORK_CACHE_USE_TMP_DIR,
+                                                          CELIX_FRAMEWORK_CACHE_USE_TMP_DIR_DEFAULT,
+                                                          &converted);
     if (!converted) {
         //falling back to old property
         useTmp = celix_framework_getConfigPropertyAsBool(fw,
-            CELIX_FRAMEWORK_STORAGE_USE_TMP_DIR,
-            CELIX_FRAMEWORK_CACHE_USE_TMP_DIR_DEFAULT,
-            NULL);
+                                                         CELIX_FRAMEWORK_STORAGE_USE_TMP_DIR,
+                                                         CELIX_FRAMEWORK_CACHE_USE_TMP_DIR_DEFAULT,
+                                                         NULL);
     }
     return useTmp;
 }
@@ -99,23 +99,23 @@ static bool celix_bundleCache_useTmpDir(celix_framework_t* fw) {
 static bool celix_bundleCache_cleanOnCreate(celix_framework_t* fw) {
     bool converted = false;
     bool cleanOnCreate = celix_framework_getConfigPropertyAsBool(fw,
-            CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE,
-            CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE_DEFAULT,
-            &converted);
+                                                                 CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE,
+                                                                 CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE_DEFAULT,
+                                                                 &converted);
     if (!converted) {
         //falling back to old property
         cleanOnCreate = celix_framework_getConfigPropertyAsBool(fw,
-                CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME,
-                CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE_DEFAULT,
-                NULL);
+                                                                CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME,
+                                                                CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE_DEFAULT,
+                                                                NULL);
     }
     return cleanOnCreate;
 }
 
-celix_status_t celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cache_t **out) {
+celix_status_t celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cache_t** out) {
     celix_status_t status = CELIX_SUCCESS;
 
-    celix_bundle_cache_t *cache = calloc(1, sizeof(*cache));
+    celix_bundle_cache_t* cache = calloc(1, sizeof(*cache));
     if (!cache) {
         status = CELIX_ENOMEM;
         goto cache_calloc_failure;
@@ -135,7 +135,7 @@ celix_status_t celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cach
     if (useTmpDir) {
         //Using /tmp dir for cache, so that multiple frameworks can be launched
         //instead of cacheDir = ".cache";
-        const char *pg = bundleCache_progamName();
+        const char* pg = bundleCache_progamName();
         if (pg == NULL) {
             pg = "";
         }
@@ -155,32 +155,33 @@ celix_status_t celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cach
     const char* errorStr;
     status = celix_utils_createDirectory(cache->cacheDir, false, &errorStr);
     if (status != CELIX_SUCCESS) {
-        fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create bundle cache directory %s, error %s", cache->cacheDir, errorStr);
+        fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create bundle cache directory %s, error %s",
+                   cache->cacheDir, errorStr);
         goto manipulate_dir_failure;
     }
     *out = cache;
     return CELIX_SUCCESS;
-manipulate_dir_failure:
+    manipulate_dir_failure:
     free(cache->cacheDir);
-cache_dir_failure:
+    cache_dir_failure:
     celixThreadMutex_destroy(&cache->mutex);
     celix_stringHashMap_destroy(cache->locationToBundleIdLookupMap);
-cache_map_failure:
+    cache_map_failure:
     free(cache);
-cache_calloc_failure:
+    cache_calloc_failure:
     return status;
 }
 
 celix_status_t celix_bundleCache_destroy(celix_bundle_cache_t* cache) {
     celix_status_t status = CELIX_SUCCESS;
-	if (cache->deleteOnDestroy) {
+    if (cache->deleteOnDestroy) {
         status = celix_bundleCache_deleteCacheDir(cache);
-	}
-	free(cache->cacheDir);
+    }
+    free(cache->cacheDir);
     celix_stringHashMap_destroy(cache->locationToBundleIdLookupMap);
     celixThreadMutex_destroy(&cache->mutex);
-	free(cache);
-	return status;
+    free(cache);
+    return status;
 }
 
 celix_status_t celix_bundleCache_deleteCacheDir(celix_bundle_cache_t* cache) {
@@ -192,30 +193,33 @@ celix_status_t celix_bundleCache_deleteCacheDir(celix_bundle_cache_t* cache) {
     }
     celixThreadMutex_unlock(&cache->mutex);
     if (status != CELIX_SUCCESS) {
-        fw_logCode(cache->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot delete bundle cache directory %s: %s", cache->cacheDir, err);
+        fw_logCode(cache->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot delete bundle cache directory %s: %s",
+                   cache->cacheDir, err);
     }
     return status;
 }
 
-celix_status_t celix_bundleCache_createArchive(celix_framework_t* fw, long id, const char *location, bundle_archive_t** archiveOut) {
+celix_status_t
+celix_bundleCache_createArchive(celix_bundle_cache_t* cache, long id, const char* location, bundle_archive_t** archiveOut) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_archive_t* archive = NULL;
 
     char archiveRootBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
-    char *archiveRoot = celix_utils_writeOrCreateString(archiveRootBuffer, sizeof(archiveRootBuffer), CELIX_BUNDLE_ARCHIVE_ROOT_FORMAT, fw->cache->cacheDir, id);
+    char* archiveRoot = celix_utils_writeOrCreateString(archiveRootBuffer, sizeof(archiveRootBuffer),
+                                                        CELIX_BUNDLE_ARCHIVE_ROOT_FORMAT, cache->cacheDir, id);
     if (archiveRoot) {
-        celixThreadMutex_lock(&fw->cache->mutex);
-        status = celix_bundleArchive_create(fw, archiveRoot, id, location, &archive);
+        celixThreadMutex_lock(&cache->mutex);
+        status = celix_bundleArchive_create(cache->fw, archiveRoot, id, location, &archive);
         if (status == CELIX_SUCCESS) {
-            celix_stringHashMap_put(fw->cache->locationToBundleIdLookupMap, location, (void*)id);
+            celix_stringHashMap_put(cache->locationToBundleIdLookupMap, location, (void*) id);
         }
-        celixThreadMutex_unlock(&fw->cache->mutex);
+        celixThreadMutex_unlock(&cache->mutex);
         celix_utils_freeStringIfNotEqual(archiveRootBuffer, archiveRoot);
     } else {
         status = CELIX_ENOMEM;
     }
     if (status != CELIX_SUCCESS) {
-        fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to create archive.");
+        fw_logCode(cache->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to create archive.");
         return status;
     }
     *archiveOut = archive;
@@ -223,18 +227,18 @@ celix_status_t celix_bundleCache_createArchive(celix_framework_t* fw, long id, c
 }
 
 celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, bundle_archive_pt* archive) {
-    return celix_bundleCache_createArchive(fw, CELIX_FRAMEWORK_BUNDLE_ID, NULL, archive);
+    return celix_bundleCache_createArchive(fw->cache, CELIX_FRAMEWORK_BUNDLE_ID, NULL, archive);
 }
 
-celix_status_t  celix_bundleCache_destroyArchive(celix_bundle_cache_t *cache, bundle_archive_pt archive) {
-    celix_status_t  status = CELIX_SUCCESS;
+celix_status_t celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, bundle_archive_pt archive) {
+    celix_status_t status = CELIX_SUCCESS;
     const char* loc = NULL;
     celixThreadMutex_lock(&cache->mutex);
-    (void)bundleArchive_getLocation(archive, &loc);
-    (void)celix_stringHashMap_remove(cache->locationToBundleIdLookupMap, loc);
+    (void) bundleArchive_getLocation(archive, &loc);
+    (void) celix_stringHashMap_remove(cache->locationToBundleIdLookupMap, loc);
     status = bundleArchive_closeAndDelete(archive);
     celixThreadMutex_unlock(&cache->mutex);
-    (void)bundleArchive_destroy(archive);
+    (void) bundleArchive_destroy(archive);
     return status;
 }
 
@@ -245,7 +249,8 @@ static void celix_bundleCache_updateIdForLocationLookupMap(celix_bundle_cache_t*
     celixThreadMutex_lock(&cache->mutex);
     DIR* dir = opendir(cache->cacheDir);
     if (dir == NULL) {
-        fw_logCode(cache->fw->logger, CELIX_LOG_LEVEL_ERROR, CELIX_BUNDLE_EXCEPTION, "Cannot open bundle cache directory %s", cache->cacheDir);
+        fw_logCode(cache->fw->logger, CELIX_LOG_LEVEL_ERROR, CELIX_BUNDLE_EXCEPTION,
+                   "Cannot open bundle cache directory %s", cache->cacheDir);
         celixThreadMutex_unlock(&cache->mutex);
         return;
     }
@@ -255,12 +260,12 @@ static void celix_bundleCache_updateIdForLocationLookupMap(celix_bundle_cache_t*
         if (strncmp(dent->d_name, "bundle", 6) != 0) {
             continue;
         }
-        char *bundleStateProperties = celix_utils_writeOrCreateString(archiveRootBuffer, sizeof(archiveRootBuffer),
+        char* bundleStateProperties = celix_utils_writeOrCreateString(archiveRootBuffer, sizeof(archiveRootBuffer),
                                                                       "%s/%s/%s", cache->cacheDir, dent->d_name,
                                                                       CELIX_BUNDLE_ARCHIVE_STATE_PROPERTIES_FILE_NAME);
         if (celix_utils_fileExists(bundleStateProperties)) {
-            celix_properties_t *props = celix_properties_load(bundleStateProperties);
-            const char *visitLoc = celix_properties_get(props, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, NULL);
+            celix_properties_t* props = celix_properties_load(bundleStateProperties);
+            const char* visitLoc = celix_properties_get(props, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, NULL);
             long bndId = celix_properties_getAsLong(props, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, -1);
             if (visitLoc != NULL && bndId >= 0) {
                 fw_log(cache->fw->logger, CELIX_LOG_LEVEL_TRACE, "Adding location %s -> bnd id %li to lookup map",
@@ -274,49 +279,52 @@ static void celix_bundleCache_updateIdForLocationLookupMap(celix_bundle_cache_t*
     celixThreadMutex_unlock(&cache->mutex);
 }
 
-long celix_bundleCache_findBundleIdForLocation(celix_framework_t *fw, const char *location) {
+long celix_bundleCache_findBundleIdForLocation(celix_bundle_cache_t* cache, const char* location) {
     long bndId = -1;
-    celixThreadMutex_lock(&fw->cache->mutex);
-    if (celix_stringHashMap_hasKey(fw->cache->locationToBundleIdLookupMap, location)) {
-        bndId = celix_stringHashMap_getLong(fw->cache->locationToBundleIdLookupMap, location, -1);
+    celixThreadMutex_lock(&cache->mutex);
+    if (celix_stringHashMap_hasKey(cache->locationToBundleIdLookupMap, location)) {
+        bndId = celix_stringHashMap_getLong(cache->locationToBundleIdLookupMap, location, -1);
     }
-    celixThreadMutex_unlock(&fw->cache->mutex);
+    celixThreadMutex_unlock(&cache->mutex);
     if (bndId == -1) {
-        celix_bundleCache_updateIdForLocationLookupMap(fw->cache);
-        celixThreadMutex_lock(&fw->cache->mutex);
-        bndId = celix_stringHashMap_getLong(fw->cache->locationToBundleIdLookupMap, location, -1);
-        celixThreadMutex_unlock(&fw->cache->mutex);
+        celix_bundleCache_updateIdForLocationLookupMap(cache);
+        celixThreadMutex_lock(&cache->mutex);
+        bndId = celix_stringHashMap_getLong(cache->locationToBundleIdLookupMap, location, -1);
+        celixThreadMutex_unlock(&cache->mutex);
     }
     return bndId;
 }
 
-bool celix_bundleCache_isBundleIdAlreadyUsed(celix_framework_t *fw, long bndId) {
+bool celix_bundleCache_isBundleIdAlreadyUsed(celix_bundle_cache_t* cache, long bndId) {
     bool found = false;
-    celixThreadMutex_lock(&fw->cache->mutex);
-    CELIX_STRING_HASH_MAP_ITERATE(fw->cache->locationToBundleIdLookupMap, iter) {
+    celixThreadMutex_lock(&cache->mutex);
+    CELIX_STRING_HASH_MAP_ITERATE(cache->locationToBundleIdLookupMap, iter) {
         if (iter.value.longValue == bndId) {
             found = true;
             break;
         }
     }
-    celixThreadMutex_unlock(&fw->cache->mutex);
+    celixThreadMutex_unlock(&cache->mutex);
     return found;
 }
 
 
-static celix_status_t celix_bundleCache_createBundleArchivesForSpaceSeparatedList(celix_framework_t *fw, long* bndId, const char* list, bool logProgress) {
+static celix_status_t
+celix_bundleCache_createBundleArchivesForSpaceSeparatedList(celix_framework_t* fw, long* bndId, const char* list,
+                                                            bool logProgress) {
     celix_status_t status = CELIX_SUCCESS;
     char delims[] = " ";
-    char *savePtr = NULL;
+    char* savePtr = NULL;
     char zipFileListBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
     char* zipFileList = celix_utils_writeOrCreateString(zipFileListBuffer, sizeof(zipFileListBuffer), "%s", list);
     if (zipFileList) {
-        char *location = strtok_r(zipFileList, delims, &savePtr);
+        char* location = strtok_r(zipFileList, delims, &savePtr);
         while (location != NULL) {
             bundle_archive_t* archive = NULL;
-            status = celix_bundleCache_createArchive(fw, (*bndId)++, location, &archive);
+            status = celix_bundleCache_createArchive(fw->cache, (*bndId)++, location, &archive);
             if (status != CELIX_SUCCESS) {
-                fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, CELIX_BUNDLE_EXCEPTION, "Cannot create bundle archive for %s", location);
+                fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status,
+                           "Cannot create bundle archive for %s", location);
                 break;
             } else {
                 celix_log_level_e lvl = logProgress ? CELIX_LOG_LEVEL_INFO : CELIX_LOG_LEVEL_DEBUG;
@@ -335,18 +343,22 @@ static celix_status_t celix_bundleCache_createBundleArchivesForSpaceSeparatedLis
     return status;
 }
 
-celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t *fw, bool logProgress) {
+celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t* fw, bool logProgress) {
     celix_status_t status = CELIX_SUCCESS;
 
-    const char* const cosgiKeys[] = {"cosgi.auto.start.0","cosgi.auto.start.1","cosgi.auto.start.2","cosgi.auto.start.3","cosgi.auto.start.4","cosgi.auto.start.5","cosgi.auto.start.6", NULL};
-    const char* const celixKeys[] = {CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3, CELIX_AUTO_START_4, CELIX_AUTO_START_5, CELIX_AUTO_START_6, NULL};
+    const char* const cosgiKeys[] = {"cosgi.auto.start.0", "cosgi.auto.start.1", "cosgi.auto.start.2",
+                                     "cosgi.auto.start.3", "cosgi.auto.start.4", "cosgi.auto.start.5",
+                                     "cosgi.auto.start.6", NULL};
+    const char* const celixKeys[] = {CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3,
+                                     CELIX_AUTO_START_4, CELIX_AUTO_START_5, CELIX_AUTO_START_6, NULL};
     CELIX_BUILD_ASSERT(sizeof(*cosgiKeys) == sizeof(*celixKeys));
-    long bndId = CELIX_FRAMEWORK_BUNDLE_ID+1; //note cleaning cache, so starting bundle id at 1
+    long bndId = CELIX_FRAMEWORK_BUNDLE_ID + 1; //note cleaning cache, so starting bundle id at 1
 
     const char* errorStr = NULL;
     status = celix_utils_deleteDirectory(fw->cache->cacheDir, &errorStr);
     if (status != CELIX_SUCCESS) {
-        fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to delete bundle cache directory %s: %s", fw->cache->cacheDir, errorStr);
+        fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to delete bundle cache directory %s: %s",
+                   fw->cache->cacheDir, errorStr);
         return status;
     } else {
         celix_log_level_e lvl = logProgress ? CELIX_LOG_LEVEL_INFO : CELIX_LOG_LEVEL_DEBUG;
@@ -354,14 +366,15 @@ celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t *fw
     }
 
     for (int i = 0; celixKeys[i] != NULL; ++i) {
-        const char *autoStart = celix_framework_getConfigProperty(fw, celixKeys[i], NULL, NULL);
+        const char* autoStart = celix_framework_getConfigProperty(fw, celixKeys[i], NULL, NULL);
         if (autoStart == NULL) {
             autoStart = celix_framework_getConfigProperty(fw, cosgiKeys[i], NULL, NULL);
         }
         if (autoStart) {
             status = celix_bundleCache_createBundleArchivesForSpaceSeparatedList(fw, &bndId, autoStart, logProgress);
             if (status != CELIX_SUCCESS) {
-                fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to create bundle archives for auto start list %s", autoStart);
+                fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status,
+                           "Failed to create bundle archives for auto start list %s", autoStart);
                 return status;
             }
         }
@@ -370,7 +383,8 @@ celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t *fw
     if (autoInstall) {
         status = celix_bundleCache_createBundleArchivesForSpaceSeparatedList(fw, &bndId, autoInstall, logProgress);
         if (status != CELIX_SUCCESS) {
-            fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to create bundle archives for auto start list %s", autoInstall);
+            fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status,
+                       "Failed to create bundle archives for auto install list %s", autoInstall);
             return status;
         }
     }

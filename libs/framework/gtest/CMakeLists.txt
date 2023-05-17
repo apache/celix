@@ -56,6 +56,7 @@ set(CELIX_FRAMEWORK_TEST_SOURCES
     src/CxxBundleActivatorTestSuite.cc
     src/BundleArchiveTestSuite.cc
     src/CelixLauncherTestSuite.cc
+    src/CelixBundleCacheTestSuite.cc
 )
 
 add_executable(test_framework ${CELIX_FRAMEWORK_TEST_SOURCES})

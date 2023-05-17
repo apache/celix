@@ -207,13 +207,8 @@ celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archiv
 
     return status;
 }
-/**
- * Create a bundle archive for the given root, id, location and revision nr.
- *
- * Also create the bundle cache dir and if will reuse a existing bundle resource cache dir if the provided
- * bundle zip location is older then the existing bundle resource cache dir.
- */
-celix_status_t celix_bundleArchive_createArchiveInternal(celix_framework_t* fw, const char* archiveRoot, long id, const char *location, bundle_archive_pt* bundle_archive) {
+
+celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, bundle_archive_pt *bundle_archive) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_archive_pt archive = calloc(1, sizeof(*archive));
 
@@ -242,7 +237,7 @@ celix_status_t celix_bundleArchive_createArchiveInternal(celix_framework_t* fw, 
         rc = asprintf(&archive->savedBundleStatePropertiesPath, "%s/%s", archiveRoot,
                       CELIX_BUNDLE_ARCHIVE_STATE_PROPERTIES_FILE_NAME);
         if (rc < 0 || archive->location == NULL || archive->savedBundleStatePropertiesPath == NULL
-                || archive->archiveRoot == NULL) {
+            || archive->archiveRoot == NULL) {
             status = CELIX_ENOMEM;
             fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create archive. Out of memory.");
             bundleArchive_destroy(archive);
@@ -279,10 +274,6 @@ celix_status_t celix_bundleArchive_createArchiveInternal(celix_framework_t* fw, 
 
     *bundle_archive = archive;
     return status;
-}
-
-celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, bundle_archive_pt *bundle_archive) {
-    return celix_bundleArchive_createArchiveInternal(fw, archiveRoot, id, location, bundle_archive);
 }
 
 celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
@@ -462,10 +453,11 @@ celix_status_t bundleArchive_close(bundle_archive_pt archive) {
 
 celix_status_t bundleArchive_closeAndDelete(bundle_archive_pt archive) {
     celix_status_t status = CELIX_SUCCESS;
-
-    const char* err = NULL;
-    status = celix_utils_deleteDirectory(archive->archiveRoot, &err);
-    framework_logIfError(archive->fw->logger, status, NULL, "Failed to delete archive root '%s': %s", archive->archiveRoot, err);
+    if (!archive->isSystemBundle) {
+        const char* err = NULL;
+        status = celix_utils_deleteDirectory(archive->archiveRoot, &err);
+        framework_logIfError(archive->fw->logger, status, NULL, "Failed to delete archive root '%s': %s", archive->archiveRoot, err);
+    }
     return status;
 }
 
