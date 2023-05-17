@@ -43,11 +43,65 @@ struct namval_entry {
     TAILQ_ENTRY(namval_entry) entries;
 };
 
+/**
+ * @brief Parse the name of dynamic type from the given stream. The name is only allowed to contain [a-zA-Z0-9_].
+ *
+ * The caller is the owner of the dynamic type name and use `free` deallocate the memory.
+ *
+ * In case of a error, an error message is added to celix_err.
+ *
+ * @param[in] stream The input stream.
+ * @param[out] result The name of the Dynamic Type.
+ * @return 0 if successful, otherwise 1.
+ * @alsoseee dynCommon_parseNameAlsoAccept
+ */
 CELIX_DFI_EXPORT int dynCommon_parseName(FILE *stream, char **result);
+
+/**
+ * @brief Parse the name of dynamic type from the given stream.
+ *
+ * The caller is the owner of the dynamic type name and use `free` deallocate the memory.
+ *
+ * In case of a error, an error message is added to celix_err.
+ *
+ * @param[in] stream The input stream.
+ * @param[in] acceptedChars The extra accepted characters for the name. If NULL, only [a-zA-Z0-9_] are accepted.
+ * @param[out] result The name of the Dynamic Type.
+ * @return 0 if successful, otherwise 1.
+ * @alsoseee dynCommon_parseName
+ */
 CELIX_DFI_EXPORT int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char **result);
+
+/**
+ * @brief Parse the name and value of a name-value pair from the given stream. The name is only allowed to contain [a-zA-Z0-9_].
+ *
+ * The caller is the owner of the name and value and use `free` deallocate the memory.
+ *
+ * In case of a error, an error message is added to celix_err.
+ *
+ * @param[in] stream The input stream.
+ * @param[out] name The name of the name-value pair.
+ * @param[out] value The value of the name-value pair.
+ * @return 0 if successful, otherwise 1.
+ */
 CELIX_DFI_EXPORT int dynCommon_parseNameValue(FILE *stream, char **name, char **value);
+
+/**
+ * @brief Eat the given character from the given stream.
+ *
+ * In case of a error, an error message is added to celix_err.
+ *
+ * @param[in] stream The input stream.
+ * @param[in] c The character to be eaten.
+ * @return 0 if successful, otherwise 1.
+ */
 CELIX_DFI_EXPORT int dynCommon_eatChar(FILE *stream, int c);
 
+/**
+ * @brief Clear the given name-value pairs.
+ *
+ * @param[in] head The name-value pairs to be cleared.
+ */
 CELIX_DFI_EXPORT void dynCommon_clearNamValHead(struct namvals_head *head);
 
 #ifdef __cplusplus

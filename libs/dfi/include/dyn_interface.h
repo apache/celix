@@ -57,19 +57,129 @@ struct method_entry {
     TAILQ_ENTRY(method_entry) entries; 
 };
 
+/**
+ * @brief Creates a dynamic interface type instance according to the given interface descriptor stream.
+ *
+ * The caller is the owner of the dyn_interface_type and the dyn_interface_type should be freed using dynInterface_destroy.
+ *
+ * In case of a error, an error message is added to celix_err.
+ *
+ * @param[in] descriptor The interface descriptor file stream.
+ * @param[out] out The created dynamic interface type instance.
+ * @return 0 if successful, 1 otherwise.
+ */
 CELIX_DFI_EXPORT int dynInterface_parse(FILE *descriptor, dyn_interface_type **out);
+
+/**
+ * @brief Destroys the given dynamic interface type instance.
+ * @param[in] intf The dynamic interface type instance to destroy.
+ */
 CELIX_DFI_EXPORT void dynInterface_destroy(dyn_interface_type *intf);
 
+/**
+ * @brief Gets the name of the given dynamic interface type instance.
+ *
+ * The dynamic interface type instance is the owner of the returned string and the string should not be freed.
+ *
+ * In case of a error, an error message is added to celix_err.
+ *
+ * @param[in] intf The dynamic interface type instance.
+ * @param[out] name The name of the dynamic interface type instance.
+ * @return 0 if successful, 1 otherwise.
+ */
 CELIX_DFI_EXPORT int dynInterface_getName(dyn_interface_type *intf, char **name);
+
+/**
+ * @brief Gets the version of the given dynamic interface type instance.
+ *
+ * The dynamic interface type instance is the owner of the version and the version should not be freed.
+ *
+ * @param[in] intf The dynamic interface type instance.
+ * @param[out] version The version of the dynamic interface type instance.
+ * @return 0 if successful, 1 otherwise.
+ */
 CELIX_DFI_EXPORT int dynInterface_getVersion(dyn_interface_type *intf, celix_version_t** version);
+
+/**
+ * @brief Gets the version string of the given dynamic interface type instance.
+ *
+ * The dynamic interface type instance is the owner of the version string and the version string should not be freed.
+ *
+ * In case of a error, an error message is added to celix_err.
+ *
+ * @param[in] intf The dynamic interface type instance.
+ * @param[out] version The version string of the dynamic interface type instance.
+ * @return 0 if successful, 1 otherwise.
+ */
 CELIX_DFI_EXPORT int dynInterface_getVersionString(dyn_interface_type *intf, char **version);
+
+/**
+ * @brief Gets the value corresponding to the specified name, which comes from the header section of the given dynamic interface type instance.
+ *
+ * The dynamic interface type instance is the owner of the value and the value should not be freed.
+ *
+ * In case of a error, an error message is added to celix_err.
+ *
+ * @param[in] intf The dynamic interface type instance.
+ * @param[in] name The name of the value to return.
+ * @param[out] value The value corresponding to the specified name.
+ * @return 0 if successful, 1 otherwise.
+ */
 CELIX_DFI_EXPORT int dynInterface_getHeaderEntry(dyn_interface_type *intf, const char *name, char **value);
+
+/**
+ * @brief Gets the value corresponding to the specified name, which comes from the annotation section of the given dynamic interface type instance.
+ *
+ * The dynamic interface type instance is the owner of the value and the value should not be freed.
+ *
+ * In case of a error, an error message is added to celix_err.
+ *
+ * @param[in] intf The dynamic interface type instance.
+ * @param[in] name The name of the value to return.
+ * @param[out] value The value corresponding to the specified name.
+ * @return 0 if successful, 1 otherwise.
+ */
 CELIX_DFI_EXPORT int dynInterface_getAnnotationEntry(dyn_interface_type *intf, const char *name, char **value);
+
+/**
+ * @brief Gets the methods of the given dynamic interface type instance.
+ *
+ * The dynamic interface type instance is the owner of the list and the list should not be freed.
+ *
+ * @param[in] intf The dynamic interface type instance.
+ * @param[out] list The method list of the dynamic interface type instance.
+ * @return 0.
+ */
 CELIX_DFI_EXPORT int dynInterface_methods(dyn_interface_type *intf, struct methods_head **list);
+
+/**
+ * @brief Returns the number of methods for the given dynamic interface type instance.
+ * @param[in] intf The dynamic interface type instance.
+ * @return The number of methods for the given dynamic interface type instance.
+ */
 CELIX_DFI_EXPORT int dynInterface_nrOfMethods(dyn_interface_type *intf);
 
-// Avpr parsing
+
+/**
+ * @brief Creates a dynamic interface type instance according to the given avpr interface descriptor string.
+ *
+ * In case of a error, an error message is added to celix_err.
+ *
+ * @param[in] avpr The avpr interface descriptor string.
+ * @return The dynamic interface type instance or NULL if the avpr could not be parsed.
+ * @deprecated AVRO is deprecated and will be removed in the future.
+ */
 CELIX_DFI_DEPRECATED_EXPORT dyn_interface_type * dynInterface_parseAvprWithStr(const char * avpr);
+
+/**
+ * @brief Creates a dynamic interface type instance according to the given avpr interface descriptor stream.
+ *
+ * In case of a error, an error message is added to celix_err.
+ *
+ * @param[in] avprStream The avpr interface descriptor stream.
+ * @return The dynamic interface type instance or NULL if the avpr could not be parsed.
+ * @deprecated AVRO is deprecated and will be removed in the future.
+ */
 CELIX_DFI_DEPRECATED_EXPORT dyn_interface_type * dynInterface_parseAvpr(FILE * avprStream);
 
 #ifdef __cplusplus
