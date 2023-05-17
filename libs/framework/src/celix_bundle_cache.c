@@ -54,8 +54,6 @@ struct celix_bundle_cache {
     celix_string_hash_map_t* locationToBundleIdLookupMap; //key = location, value = bundle id.
 };
 
-static void celix_bundleCache_updateIdForLocationLookupMap(celix_bundle_cache_t* cache);
-
 static const char* bundleCache_progamName() {
 #if defined(__APPLE__) || defined(__FreeBSD__)
 	return getprogname();
@@ -152,23 +150,18 @@ celix_status_t celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cach
     }
 
     if (cache->deleteOnCreate) {
-        status = celix_bundleCache_deleteCacheDir(cache);
-        if (status != CELIX_SUCCESS) {
-            celix_bundleCache_destroy(cache);
-            return status;
-        }
+        CELIX_GOTO_IF_ERR(status = celix_bundleCache_deleteCacheDir(cache), manipulate_dir_failure);
     }
-
     const char* errorStr;
     status = celix_utils_createDirectory(cache->cacheDir, false, &errorStr);
     if (status != CELIX_SUCCESS) {
         fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create bundle cache directory %s, error %s", cache->cacheDir, errorStr);
-        celix_bundleCache_destroy(cache);
-        return status;
+        goto manipulate_dir_failure;
     }
-    celix_bundleCache_updateIdForLocationLookupMap(cache);
     *out = cache;
     return CELIX_SUCCESS;
+manipulate_dir_failure:
+    free(cache->cacheDir);
 cache_dir_failure:
     celixThreadMutex_destroy(&cache->mutex);
     celix_stringHashMap_destroy(cache->locationToBundleIdLookupMap);
@@ -247,7 +240,6 @@ celix_status_t  celix_bundleCache_destroyArchive(celix_bundle_cache_t *cache, bu
 
 /**
  * Update location->bundle id lookup map.
- * Assumes that bundle cache dir are not removed, so only adding not removing entries.
  */
 static void celix_bundleCache_updateIdForLocationLookupMap(celix_bundle_cache_t* cache) {
     celixThreadMutex_lock(&cache->mutex);
@@ -289,6 +281,12 @@ long celix_bundleCache_findBundleIdForLocation(celix_framework_t *fw, const char
         bndId = celix_stringHashMap_getLong(fw->cache->locationToBundleIdLookupMap, location, -1);
     }
     celixThreadMutex_unlock(&fw->cache->mutex);
+    if (bndId == -1) {
+        celix_bundleCache_updateIdForLocationLookupMap(fw->cache);
+        celixThreadMutex_lock(&fw->cache->mutex);
+        bndId = celix_stringHashMap_getLong(fw->cache->locationToBundleIdLookupMap, location, -1);
+        celixThreadMutex_unlock(&fw->cache->mutex);
+    }
     return bndId;
 }
 

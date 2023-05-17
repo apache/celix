@@ -18,14 +18,15 @@
  */
 
 #include "asprintf_ei.h"
-#include "celix_constants.h"
 #include "celix_bundle_cache.h"
-#include "celix_properties.h"
-#include "celix_log.h"
-#include "framework_private.h"
-#include "gtest/gtest.h"
+#include "celix_constants.h"
 #include "celix_hash_map_ei.h"
+#include "celix_log.h"
+#include "celix_properties.h"
+#include "celix_utils_ei.h"
+#include "framework_private.h"
 #include "malloc_ei.h"
+#include "gtest/gtest.h"
 
 class CelixBundleCacheErrorInjectionTestSuite : public ::testing::Test {
 public:
@@ -35,13 +36,17 @@ public:
     }
 
     ~CelixBundleCacheErrorInjectionTestSuite() override {
+        celix_ei_expect_celix_utils_createDirectory(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_utils_deleteDirectory(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_asprintf(nullptr, 0, -1);
         celix_ei_expect_celix_stringHashMap_create(nullptr, 0, nullptr);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_frameworkLogger_destroy(fw.logger);
         celix_properties_destroy(fw.configurationMap);
     }
-    struct celix_framework fw{};
+
+    struct celix_framework fw {};
 };
 
 TEST_F(CelixBundleCacheErrorInjectionTestSuite, CacheCreateErrorTest) {
@@ -57,4 +62,15 @@ TEST_F(CelixBundleCacheErrorInjectionTestSuite, CacheCreateErrorTest) {
     EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_create(&fw, &cache));
     EXPECT_EQ(nullptr, cache);
     celix_properties_setBool(fw.configurationMap, CELIX_FRAMEWORK_CACHE_USE_TMP_DIR, false);
+    celix_ei_expect_celix_utils_strdup((void *) celix_bundleCache_create, 0, nullptr);
+    EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_create(&fw, &cache));
+    EXPECT_EQ(nullptr, cache);
+    celix_properties_setBool(fw.configurationMap, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, true);
+    celix_ei_expect_celix_utils_deleteDirectory((void *) celix_bundleCache_create, 1, CELIX_FILE_IO_EXCEPTION);
+    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION, celix_bundleCache_create(&fw, &cache));
+    EXPECT_EQ(nullptr, cache);
+    celix_properties_setBool(fw.configurationMap, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, false);
+    celix_ei_expect_celix_utils_createDirectory((void *) celix_bundleCache_create, 0, CELIX_FILE_IO_EXCEPTION);
+    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION, celix_bundleCache_create(&fw, &cache));
+    EXPECT_EQ(nullptr, cache);
 }
