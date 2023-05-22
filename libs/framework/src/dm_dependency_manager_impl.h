@@ -31,7 +31,7 @@ extern "C" {
 struct celix_dependency_manager {
     celix_bundle_context_t *ctx;
     celix_array_list_t *components;
-    pthread_mutex_t mutex;
+    celix_thread_mutex_t mutex;
 };
 
 celix_dependency_manager_t* celix_private_dependencyManager_create(celix_bundle_context_t *context);

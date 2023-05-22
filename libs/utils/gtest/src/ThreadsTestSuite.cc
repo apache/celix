@@ -339,15 +339,47 @@ TEST_F(ThreadsTestSuite, TssTest) {
 
     int* value = (int*)malloc(sizeof(int));
     *value = 123;
-    status = celix_tss_set(key, value);
+    status = celix_tss_set(&key, value);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
-    value = (int*)celix_tss_get(key);
+    value = (int*)celix_tss_get(&key);
     EXPECT_EQ(123, *value);
 
-    status = celix_tss_delete(key);
+    status = celix_tss_delete(&key);
     EXPECT_EQ(CELIX_SUCCESS, status);
 }
+
+TEST_F(ThreadsTestSuite, UninitializedTssTest) {
+    celix_tss_key_t key;
+    key.initialized = false;
+    
+    EXPECT_EQ(CELIX_ILLEGAL_STATE, celix_tss_set(&key, (void*)0x42));
+    EXPECT_EQ(nullptr, celix_tss_get(&key));
+    
+    //nothing happens when deleting an uninitialized key
+    EXPECT_EQ(CELIX_SUCCESS, celix_tss_delete(&key));
+}
+
+TEST_F(ThreadsTestSuite, UninitializedThreadTest) {
+    celix_thread_t thread;
+    thread.threadInitialized = false;
+    EXPECT_EQ(CELIX_SUCCESS, celixThread_join(thread, nullptr)); //ignore join on uninitialized thread
+    EXPECT_EQ(CELIX_SUCCESS, celixThread_detach(thread)); //ignore join on uninitialized thread
+    EXPECT_EQ(CELIX_SUCCESS, celixThread_kill(thread, SIGINT)); //ignore join on uninitialized thread
+
+    celix_thread_mutex_t mutex;
+    mutex.initialized = false;
+    EXPECT_EQ(CELIX_SUCCESS, celixThreadMutex_destroy(&mutex)); //ignore destroy on uninitialized mutex
+
+    celix_thread_cond_t cond;
+    cond.initialized = false;
+    EXPECT_EQ(CELIX_SUCCESS, celixThreadCondition_destroy(&cond)); //ignore destroy on uninitialized cond
+
+    celix_thread_rwlock_t rwlock;
+    rwlock.initialized = false;
+    EXPECT_EQ(CELIX_SUCCESS, celixThreadRwlock_destroy(&rwlock)); //ignore destroy on uninitialized rwlock
+}
+
 
 static void * thread_test_func_create(void * arg) {
     char ** test_str = (char**) arg;

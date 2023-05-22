@@ -35,7 +35,7 @@ celix_dependency_manager_t* celix_private_dependencyManager_create(celix_bundle_
 	if (manager != NULL) {
 		manager->ctx = context;
 		manager->components = celix_arrayList_create();
-		pthread_mutex_init(&manager->mutex, NULL);
+        celixThreadMutex_create(&manager->mutex, NULL);
 	}
 	return manager;
 }
@@ -46,7 +46,7 @@ void celix_private_dependencyManager_destroy(celix_dependency_manager_t *manager
 		celix_arrayList_destroy(manager->components);
         celixThreadMutex_unlock(&manager->mutex);
 
-		pthread_mutex_destroy(&manager->mutex);
+		celixThreadMutex_destroy(&manager->mutex);
 		free(manager);
 	}
 }

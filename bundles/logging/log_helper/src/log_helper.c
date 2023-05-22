@@ -107,7 +107,7 @@ celix_status_t logHelper_create(bundle_context_pt context, log_helper_t **loghel
 		(*loghelper)->stdOutFallback = celix_bundleContext_getPropertyAsBool(context, LOGHELPER_ENABLE_STDOUT_FALLBACK_NAME, LOGHELPER_ENABLE_STDOUT_FALLBACK_DEFAULT);
 		(*loghelper)->stdOutFallbackIncludeDebug = celix_bundleContext_getPropertyAsBool(context, LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG_NAME, LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG_DEFAULT);
 
-		pthread_mutex_init(&(*loghelper)->logListLock, NULL);
+		celixThreadMutex_create(&(*loghelper)->logListLock, NULL);
         arrayList_create(&(*loghelper)->logServices);
 	}
 
@@ -139,9 +139,9 @@ celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt refe
 {
 	log_helper_t *loghelper = handle;
 
-	pthread_mutex_lock(&loghelper->logListLock);
+	celixThreadMutex_lock(&loghelper->logListLock);
 	arrayList_add(loghelper->logServices, service);
-	pthread_mutex_unlock(&loghelper->logListLock);
+	celixThreadMutex_unlock(&loghelper->logListLock);
 
 	return CELIX_SUCCESS;
 }
@@ -150,9 +150,9 @@ celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt re
 {
 	log_helper_t *loghelper = handle;
 
-	pthread_mutex_lock(&loghelper->logListLock);
+	celixThreadMutex_lock(&loghelper->logListLock);
 	arrayList_removeElement(loghelper->logServices, service);
-	pthread_mutex_unlock(&loghelper->logListLock);
+	celixThreadMutex_unlock(&loghelper->logListLock);
 
 	return CELIX_SUCCESS;
 }
@@ -173,11 +173,11 @@ celix_status_t logHelper_destroy(log_helper_t **loghelper) {
       		serviceTracker_destroy((*loghelper)->logServiceTracker);
         }
 
-        pthread_mutex_lock(&(*loghelper)->logListLock);
+        celixThreadMutex_lock(&(*loghelper)->logListLock);
         arrayList_destroy((*loghelper)->logServices);
-    	pthread_mutex_unlock(&(*loghelper)->logListLock);
+    	celixThreadMutex_unlock(&(*loghelper)->logListLock);
 
-        pthread_mutex_destroy(&(*loghelper)->logListLock);
+        celixThreadMutex_destroy(&(*loghelper)->logListLock);
 
         free(*loghelper);
         *loghelper = NULL;
@@ -202,7 +202,7 @@ celix_status_t logHelper_log(log_helper_t *loghelper, log_level_t level, const c
 	va_start(listPointer, message);
 	vsnprintf(msg, 1024, message, listPointer);
 
-	pthread_mutex_lock(&loghelper->logListLock);
+	celixThreadMutex_lock(&loghelper->logListLock);
 
 	int i = 0;
 	for (; i < arrayList_size(loghelper->logServices); i++) {
@@ -218,7 +218,7 @@ celix_status_t logHelper_log(log_helper_t *loghelper, log_level_t level, const c
 		}
 	}
 
-	pthread_mutex_unlock(&loghelper->logListLock);
+	celixThreadMutex_unlock(&loghelper->logListLock);
 
     if (!logged && loghelper->stdOutFallback) {
         char *levelStr = NULL;

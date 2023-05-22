@@ -50,7 +50,7 @@ celix_err_t* celix_err_getTssErr() {
         return NULL;
     }
 
-    celix_err_t* err = celix_tss_get(celix_err_tssKey);
+    celix_err_t* err = celix_tss_get(&celix_err_tssKey);
     if (err) {
         return err;
     }
@@ -58,7 +58,7 @@ celix_err_t* celix_err_getTssErr() {
     err = malloc(sizeof(*err));
     if (err) {
         err->pos = 0; //no entry
-        celix_status_t status = celix_tss_set(celix_err_tssKey, err);
+        celix_status_t status = celix_tss_set(&celix_err_tssKey, err);
         if (status != CELIX_SUCCESS) {
             fprintf(stderr, "Failed to set thread specific storage for celix_err\n");
             free(err);
@@ -85,7 +85,7 @@ __attribute__((destructor)) void celix_err_deinitThreadSpecificStorageKey() {
         return;
     }
 
-    celix_status_t status = celix_tss_delete(celix_err_tssKey);
+    celix_status_t status = celix_tss_delete(&celix_err_tssKey);
     if (status != CELIX_SUCCESS) {
         fprintf(stderr,"Failed to delete thread specific storage key for celix_err\n");
     }

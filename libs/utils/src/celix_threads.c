@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * celix_threads.c
- *
- *  \date       4 Jun 2014
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <sys/time.h>
@@ -32,16 +25,9 @@
 #include "celix_utils.h"
 
 
-celix_status_t celixThread_create(celix_thread_t *new_thread, const celix_thread_attr_t *attr, celix_thread_start_t func, void *data) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (pthread_create(&(*new_thread).thread, attr, func, data) != 0) {
-        status = CELIX_BUNDLE_EXCEPTION;
-    }
-    else {
-        __atomic_store_n(&(*new_thread).threadInitialized, true, __ATOMIC_RELEASE);
-    }
-
+celix_status_t celixThread_create(celix_thread_t *thread, const celix_thread_attr_t *attr, celix_thread_start_t func, void *data) {
+    celix_status_t status = pthread_create(&thread->thread, attr, func, data);
+    thread->threadInitialized = (status == CELIX_SUCCESS);
     return status;
 }
 
@@ -61,24 +47,24 @@ void celixThread_exit(void *exitStatus) {
 }
 
 celix_status_t celixThread_detach(celix_thread_t thread) {
-    return pthread_detach(thread.thread);
+    if (celixThread_initialized(thread)) {
+        return pthread_detach(thread.thread);
+    }
+    return CELIX_SUCCESS;
 }
 
-celix_status_t celixThread_join(celix_thread_t thread, void **retVal) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (pthread_join(thread.thread, retVal) != 0) {
-        status = CELIX_BUNDLE_EXCEPTION;
+celix_status_t celixThread_join(celix_thread_t thread, void** retVal) {
+    if (celixThread_initialized(thread)) {
+        return pthread_join(thread.thread, retVal);   
     }
-
-    // #TODO make thread a pointer? Now this statement has no effect
-    // thread.threadInitialized = false;
-
-    return status;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t celixThread_kill(celix_thread_t thread, int sig) {
-    return pthread_kill(thread.thread, sig);
+    if (celixThread_initialized(thread)) {
+        return pthread_kill(thread.thread, sig);
+    }
+    return CELIX_SUCCESS;
 }
 
 celix_thread_t celixThread_self() {
@@ -100,19 +86,30 @@ bool celixThread_initialized(celix_thread_t thread) {
 
 
 celix_status_t celixThreadMutex_create(celix_thread_mutex_t *mutex, celix_thread_mutexattr_t *attr) {
-    return pthread_mutex_init(mutex, attr);
+    celix_status_t status = pthread_mutex_init(&mutex->pthreadMutex, attr);
+    if (status != CELIX_SUCCESS) {
+        __atomic_store_n(&mutex->initialized, false, __ATOMIC_RELEASE);
+    }
+    return status;
 }
 
 celix_status_t celixThreadMutex_destroy(celix_thread_mutex_t *mutex) {
-    return pthread_mutex_destroy(mutex);
+    if (celixThreadMutex_isInitialized(mutex)) {
+        return pthread_mutex_destroy(&mutex->pthreadMutex);
+    } 
+    return CELIX_SUCCESS; 
+}
+
+bool celixThreadMutex_isInitialized(const celix_thread_mutex_t *mutex) {
+    return __atomic_load_n(&mutex->initialized, __ATOMIC_ACQUIRE);
 }
 
 celix_status_t celixThreadMutex_lock(celix_thread_mutex_t *mutex) {
-    return pthread_mutex_lock(mutex);
+    return pthread_mutex_lock(&mutex->pthreadMutex);
 }
 
 celix_status_t celixThreadMutex_unlock(celix_thread_mutex_t *mutex) {
-    return pthread_mutex_unlock(mutex);
+    return pthread_mutex_unlock(&mutex->pthreadMutex);
 }
 
 celix_status_t celixThreadMutexAttr_create(celix_thread_mutexattr_t *attr) {
@@ -146,31 +143,38 @@ celix_status_t celixThreadMutexAttr_settype(celix_thread_mutexattr_t *attr, int 
 }
 
 celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_thread_condattr_t *attr) {
-#ifdef __APPLE__
-    return pthread_cond_init(condition, attr);
-#else
     celix_status_t status = CELIX_SUCCESS;
-    if(attr) {
+#ifdef __APPLE__
+    status = pthread_cond_init(condition, attr);
+#else
+    if (attr) {
         status = pthread_condattr_setclock(attr, CLOCK_MONOTONIC);
-        status = CELIX_DO_IF(status, pthread_cond_init(condition, attr));
-    }
-    else {
+        status = CELIX_DO_IF(status, pthread_cond_init(&condition->pthreadCond, attr));
+    } else {
         celix_thread_condattr_t condattr;
         (void)pthread_condattr_init(&condattr); // always return 0
         status = pthread_condattr_setclock(&condattr, CLOCK_MONOTONIC);
-        status = CELIX_DO_IF(status, pthread_cond_init(condition, &condattr));
+        status = CELIX_DO_IF(status, pthread_cond_init(&condition->pthreadCond, &condattr));
         (void)pthread_condattr_destroy(&condattr); // always return 0
     }
-    return status;
 #endif
+    condition->initialized = (status == CELIX_SUCCESS);
+    return status;
 }
 
-celix_status_t celixThreadCondition_destroy(celix_thread_cond_t *condition) {
-    return pthread_cond_destroy(condition);
+celix_status_t celixThreadCondition_destroy(celix_thread_cond_t* cond) {
+    if (celixThreadCondition_isInitialized(cond)) {
+        return pthread_cond_destroy(&cond->pthreadCond);
+    }
+    return CELIX_SUCCESS;
+}        
+
+bool celixThreadCondition_isInitialized(const celix_thread_cond_t* cond) {
+    return __atomic_load_n(&cond->initialized, __ATOMIC_ACQUIRE);
 }
 
-celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex) {
-    return pthread_cond_wait(cond, mutex);
+celix_status_t celixThreadCondition_wait(celix_thread_cond_t* cond, celix_thread_mutex_t* mutex) {
+    return pthread_cond_wait(&cond->pthreadCond, &mutex->pthreadMutex);
 }
 
 #ifdef __APPLE__
@@ -193,36 +197,45 @@ celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond,
             time.tv_nsec -= CELIX_NS_IN_SEC;
         }
     }
-    return pthread_cond_timedwait(cond, mutex, &time);
+    return pthread_cond_timedwait(&cond->pthreadCond, &mutex->pthreadMutex, &time);
 }
 #endif
 
 celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond) {
-    return pthread_cond_broadcast(cond);
+    return pthread_cond_broadcast(&cond->pthreadCond);
 }
 
 celix_status_t celixThreadCondition_signal(celix_thread_cond_t *cond) {
-    return pthread_cond_signal(cond);
+    return pthread_cond_signal(&cond->pthreadCond);
 }
 
 celix_status_t celixThreadRwlock_create(celix_thread_rwlock_t *lock, celix_thread_rwlockattr_t *attr) {
-    return pthread_rwlock_init(lock, attr);
+    celix_status_t status = pthread_rwlock_init(&lock->pthreadRwLock, attr);
+    lock->initialized = (status == CELIX_SUCCESS);
+    return status;
 }
 
 celix_status_t celixThreadRwlock_destroy(celix_thread_rwlock_t *lock) {
-    return pthread_rwlock_destroy(lock);
+    if (!celixThreadRwlock_isInitialized(lock)) {
+        return pthread_rwlock_destroy(&lock->pthreadRwLock);
+    }
+    return CELIX_SUCCESS;
+}
+
+bool celixThreadRwlock_isInitialized(const celix_thread_rwlock_t *lock) {
+    return __atomic_load_n(&lock->initialized, __ATOMIC_ACQUIRE);
 }
 
 celix_status_t celixThreadRwlock_readLock(celix_thread_rwlock_t *lock) {
-    return pthread_rwlock_rdlock(lock);
+    return pthread_rwlock_rdlock(&lock->pthreadRwLock);
 }
 
 celix_status_t celixThreadRwlock_writeLock(celix_thread_rwlock_t *lock) {
-    return pthread_rwlock_wrlock(lock);
+    return pthread_rwlock_wrlock(&lock->pthreadRwLock);
 }
 
 celix_status_t celixThreadRwlock_unlock(celix_thread_rwlock_t *lock) {
-    return pthread_rwlock_unlock(lock);
+    return pthread_rwlock_unlock(&lock->pthreadRwLock);
 }
 
 celix_status_t celixThreadRwlockAttr_create(celix_thread_rwlockattr_t *attr) {
@@ -238,17 +251,32 @@ celix_status_t celixThread_once(celix_thread_once_t *once_control, void (*init_r
 }
 
 celix_status_t celix_tss_create(celix_tss_key_t* key, void (*destroyFunction)(void*)) {
-    return pthread_key_create(key, destroyFunction);
+    celix_status_t status = pthread_key_create(&key->pthreadKey, destroyFunction);
+    key->initialized = (status == CELIX_SUCCESS);
+    return status;
 }
 
-celix_status_t celix_tss_delete(celix_tss_key_t key) {
-    return pthread_key_delete(key);
+bool celix_tss_isInitialized(const celix_tss_key_t* key) {
+    return __atomic_load_n(&key->initialized, __ATOMIC_ACQUIRE);
 }
 
-celix_status_t celix_tss_set(celix_tss_key_t key, void* value) {
-    return pthread_setspecific(key, value);
+celix_status_t celix_tss_delete(celix_tss_key_t* key) {
+    if (key && celix_tss_isInitialized(key)) {
+        return pthread_key_delete(key->pthreadKey); 
+    }
+    return CELIX_SUCCESS;
 }
 
-void* celix_tss_get(celix_tss_key_t key) {
-    return pthread_getspecific(key);
+celix_status_t celix_tss_set(const celix_tss_key_t* key, void* value) {
+    if (!celix_tss_isInitialized(key)) {
+        return CELIX_ILLEGAL_STATE;
+    }
+    return pthread_setspecific(key->pthreadKey, value);
+}
+
+void* celix_tss_get(const celix_tss_key_t* key) {
+    if (!celix_tss_isInitialized(key)) {
+        return NULL;
+    }
+    return pthread_getspecific(key->pthreadKey);
 }
