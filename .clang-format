@@ -5,25 +5,11 @@ AllowShortIfStatementsOnASingleLine: false
 AlwaysBreakTemplateDeclarations: Yes
 BinPackArguments: false
 BinPackParameters: false
-BreakBeforeBraces: Attach
 ColumnLimit: 120
-ConstructorInitializerIndentWidth: 4
-Cpp11BracedListStyle: true
 DerivePointerAlignment: false
 KeepEmptyLinesAtTheStartOfBlocks: false
-NamespaceIndentation: None
 PointerAlignment: Left
-ReflowComments: true
-SpaceAfterCStyleCast: false
-SpaceBeforeAssignmentOperators: true
-SpaceBeforeParens: ControlStatements
-SpaceInEmptyParentheses: false
 SpacesBeforeTrailingComments: 1
-SpacesInAngles: Never
-SpacesInCStyleCastParentheses: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-AlignEscapedNewlines: Right
 SortIncludes: true
 IncludeBlocks: Regroup
 IncludeCategories:
