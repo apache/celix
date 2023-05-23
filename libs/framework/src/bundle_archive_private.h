@@ -41,6 +41,9 @@ extern "C" {
 
 /**
  * @brief Create bundle archive.
+ * Create a bundle archive for the given root, id, location and revision nr.
+ * Also create the bundle cache dir and if will reuse a existing bundle resource cache dir if the provided
+ * bundle zip location is older then the existing bundle resource cache dir.
  */
 celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, bundle_archive_pt *bundle_archive);
 
