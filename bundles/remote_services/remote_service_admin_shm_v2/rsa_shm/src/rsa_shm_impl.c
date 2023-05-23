@@ -26,7 +26,10 @@
 #include "rsa_request_sender_service.h"
 #include "endpoint_description.h"
 #include "remote_constants.h"
-#include "celix_api.h"
+#include "bundle_context.h"
+#include "celix_threads.h"
+#include "celix_constants.h"
+#include "celix_properties.h"
 #include "celix_long_hash_map.h"
 #include "celix_array_list.h"
 #include "celix_utils.h"
@@ -605,13 +608,13 @@ get_framework_uuid_failed:
 }
 
 //LCOV_EXCL_START
-celix_status_t rsaShm_getExportedServices(rsa_shm_t *admin, array_list_pt *services) {
+celix_status_t rsaShm_getExportedServices(rsa_shm_t *admin, celix_array_list_t **services) {
     celix_status_t status = CELIX_SUCCESS;
     //It is stub and will not be called at present.
     return status;
 }
 
-celix_status_t rsaShm_getImportedEndpoints(rsa_shm_t *admin, array_list_pt *services) {
+celix_status_t rsaShm_getImportedEndpoints(rsa_shm_t *admin, celix_array_list_t **services) {
     celix_status_t status = CELIX_SUCCESS;
     //It is stub and will not be called at present.
     return status;

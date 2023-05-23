@@ -24,10 +24,10 @@
 extern "C" {
 #endif
 
-#include "hash_map.h"
-#include "version.h"
 #include "celix_bundle.h"
+#include "celix_errno.h"
 #include "sys/uio.h"
+#include <stddef.h>
 
 #define PUBSUB_MESSAGE_SERIALIZATION_SERVICE_NAME      "pubsub_message_serialization_service"
 #define PUBSUB_MESSAGE_SERIALIZATION_SERVICE_VERSION   "1.0.0"

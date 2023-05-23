@@ -61,12 +61,12 @@ typedef struct pubsub_avrobin_msg_serializer_impl {
     dyn_message_type *msgType;
     unsigned int msgId;
     const char *msgName;
-    version_pt msgVersion;
+    celix_version_t *msgVersion;
 } pubsub_avrobin_msg_serializer_impl_t;
 
 static char *pubsubAvrobinSerializer_getMsgDescriptionDir(const celix_bundle_t *bundle);
-static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root, const celix_bundle_t *bundle, hash_map_pt msgTypesMap);
-static void pubsubAvrobinSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap, const celix_bundle_t *bundle);
+static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root, const celix_bundle_t *bundle, celix_long_hash_map_t *msgTypesMap);
+static void pubsubAvrobinSerializer_fillMsgSerializerMap(celix_long_hash_map_t *msgTypesMap, const celix_bundle_t *bundle);
 
 static int pubsubMsgAvrobinSerializer_convertDescriptor(FILE* file_ptr, pubsub_msg_serializer_t* serializer);
 static int pubsubMsgAvrobinSerializer_convertAvpr(FILE* file_ptr, pubsub_msg_serializer_t* serializer, const char* fqn);
@@ -114,11 +114,11 @@ celix_status_t pubsubAvrobinSerializer_destroy(pubsub_avrobin_serializer_t *seri
     return status;
 }
 
-celix_status_t pubsubAvrobinSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, hash_map_pt *serializerMap) {
+celix_status_t pubsubAvrobinSerializer_createSerializerMap(void *handle, const celix_bundle_t *bundle, celix_long_hash_map_t **serializerMap) {
     celix_status_t status = CELIX_SUCCESS;
     pubsub_avrobin_serializer_t *serializer = handle;
 
-    hash_map_pt map = hashMap_create(NULL, NULL, NULL, NULL);
+    celix_long_hash_map_t *map = celix_longHashMap_create();
 
     if (map != NULL) {
         pubsubAvrobinSerializer_fillMsgSerializerMap(map, bundle);
@@ -134,23 +134,22 @@ celix_status_t pubsubAvrobinSerializer_createSerializerMap(void *handle, const c
     return status;
 }
 
-celix_status_t pubsubAvrobinSerializer_destroySerializerMap(void *handle, hash_map_pt serializerMap) {
+celix_status_t pubsubAvrobinSerializer_destroySerializerMap(void *handle, celix_long_hash_map_t *serializerMap) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (serializerMap == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    hash_map_iterator_t iter = hashMapIterator_construct(serializerMap);
-    while (hashMapIterator_hasNext(&iter)) {
-        pubsub_msg_serializer_t* msgSerializer = hashMapIterator_nextValue(&iter);
+    CELIX_LONG_HASH_MAP_ITERATE(serializerMap, iter){
+        pubsub_msg_serializer_t* msgSerializer = iter.value.ptrValue;
         pubsub_avrobin_msg_serializer_impl_t *impl = msgSerializer->handle;
         dynMessage_destroy(impl->msgType);
         free(msgSerializer); //also contains the service struct.
         free(impl);
     }
 
-    hashMap_destroy(serializerMap, false, false);
+    celix_longHashMap_destroy(serializerMap);
 
     return status;
 }
@@ -260,7 +259,7 @@ static char *pubsubAvrobinSerializer_getMsgDescriptionDir(const celix_bundle_t *
     return root;
 }
 
-static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root, const celix_bundle_t *bundle, hash_map_pt msgTypesMap) {
+static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root, const celix_bundle_t *bundle, celix_long_hash_map_t *msgTypesMap) {
     char fqn[MAX_PATH_LEN];
     char path[MAX_PATH_LEN];
     const char* entry_name = NULL;
@@ -304,7 +303,7 @@ static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root,
         }
 
         // serializer has been constructed, try to put in the map
-        if (hashMap_containsKey(msgTypesMap, (void *) (uintptr_t) msgSerializer->msgId)) {
+        if (celix_longHashMap_hasKey(msgTypesMap, msgSerializer->msgId)) {
             printf("Cannot add msg %s. clash in msg id %d!!\n", msgSerializer->msgName, msgSerializer->msgId);
             dynMessage_destroy(impl->msgType);
             free(msgSerializer);
@@ -316,7 +315,7 @@ static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root,
             free(impl);
         }
         else {
-            hashMap_put(msgTypesMap, (void *) (uintptr_t) msgSerializer->msgId, msgSerializer);
+            celix_longHashMap_put(msgTypesMap, msgSerializer->msgId, msgSerializer);
         }
     }
 
@@ -325,7 +324,7 @@ static void pubsubAvrobinSerializer_addMsgSerializerFromBundle(const char *root,
     }
 }
 
-static void pubsubAvrobinSerializer_fillMsgSerializerMap(hash_map_pt msgTypesMap, const celix_bundle_t *bundle) {
+static void pubsubAvrobinSerializer_fillMsgSerializerMap(celix_long_hash_map_t *msgTypesMap, const celix_bundle_t *bundle) {
     char *root = NULL;
     char *metaInfPath = NULL;
 
@@ -430,7 +429,7 @@ static int pubsubMsgAvrobinSerializer_convertDescriptor(FILE* file_ptr, pubsub_m
     char* msgName = NULL;
     rc += dynMessage_getName(msgType, &msgName);
 
-    version_pt msgVersion = NULL;
+    celix_version_t *msgVersion = NULL;
     rc += dynMessage_getVersion(msgType, &msgVersion);
 
     if (rc != 0 || msgName == NULL || msgVersion == NULL) {
@@ -490,13 +489,13 @@ static int pubsubMsgAvrobinSerializer_convertAvpr(FILE* file_ptr, pubsub_msg_ser
 
     const char* msgName = dynType_getName(type);
 
-    version_pt msgVersion = NULL;
-    celix_status_t s = version_createVersionFromString(dynType_getMetaInfo(type, "version"), &msgVersion);
+    celix_version_t *msgVersion = NULL;
+    msgVersion = celix_version_createVersionFromString(dynType_getMetaInfo(type, "version"));
 
-    if (s != CELIX_SUCCESS || !msgName) {
+    if (msgVersion == NULL || !msgName) {
         printf("DMU: cannot retrieve name and/or version from msg\n");
-        if (s == CELIX_SUCCESS) {
-            version_destroy(msgVersion);
+        if (msgVersion != NULL) {
+            celix_version_destroy(msgVersion);
         }
         return -1;
     }

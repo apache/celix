@@ -19,7 +19,7 @@
 
 #define _GNU_SOURCE
 #include <stdio.h>
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 #include <celix_log_sink.h>
 
 typedef struct my_log_writer_activator {

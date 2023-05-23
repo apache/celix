@@ -24,11 +24,6 @@
 extern "C" {
 #endif
 
-#include "hash_map.h"
-#include "version.h"
-#include "celix_bundle.h"
-#include "sys/uio.h"
-
 #define PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME      "pubsub_message_serialization_marker"
 #define PUBSUB_MESSAGE_SERIALIZATION_MARKER_VERSION   "1.0.0"
 #define PUBSUB_MESSAGE_SERIALIZATION_MARKER_RANGE     "[1,2)"

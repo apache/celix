@@ -162,7 +162,7 @@ celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_t *poll
 }
 
 
-celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_poller_t *poller, array_list_pt urls) {
+celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_poller_t *poller, celix_array_list_t *urls) {
 	celixThreadMutex_lock(&(poller)->pollerLock);
 
 	hash_map_iterator_pt iterator = hashMapIterator_create(poller->entries);
@@ -170,7 +170,7 @@ celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_
 	while(hashMapIterator_hasNext(iterator))  {
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
 		char* toAdd = strdup((char*) hashMapEntry_getKey(entry));
-		arrayList_add(urls, toAdd);
+		celix_arrayList_add(urls, toAdd);
 	}
 
 	hashMapIterator_destroy(iterator);

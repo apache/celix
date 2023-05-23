@@ -23,9 +23,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <endpoint_description.h>
-#include <celix_properties.h>
-#include <celix_errno.h>
+#include "endpoint_description.h"
+#include "celix_properties.h"
+#include "celix_errno.h"
 #include <sys/uio.h>
 
 #define RSA_REQUEST_SENDER_SERVICE_NAME "rsa_request_sender_service"

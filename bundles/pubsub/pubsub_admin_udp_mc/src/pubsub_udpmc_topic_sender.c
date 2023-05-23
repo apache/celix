@@ -31,6 +31,7 @@
 #include "pubsub_psa_udpmc_constants.h"
 #include "large_udp.h"
 #include "pubsub_udpmc_common.h"
+#include "hash_map.h"
 
 #define FIRST_SEND_DELAY_IN_SECONDS     2
 
@@ -67,7 +68,7 @@ typedef struct psa_udpmc_bounded_service_entry {
     pubsub_udpmc_topic_sender_t *parent;
     pubsub_publisher_t service;
     long bndId;
-    hash_map_t *msgTypes;
+    celix_long_hash_map_t *msgTypes;
     hash_map_t *msgTypeIds;
     int getCount;
     largeUdp_t *largeUdpHandle;
@@ -240,9 +241,8 @@ static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *r
 
         int rc = sender->serializer->createSerializerMap(sender->serializer->handle, (celix_bundle_t*)requestingBundle, &entry->msgTypes);
         if (rc == 0) {
-            hash_map_iterator_t iter = hashMapIterator_construct(entry->msgTypes);
-            while (hashMapIterator_hasNext(&iter)) {
-                pubsub_msg_serializer_t *msgSer  = hashMapIterator_nextValue(&iter);
+            CELIX_LONG_HASH_MAP_ITERATE(entry->msgTypes, iter) {
+                pubsub_msg_serializer_t *msgSer  = iter.value.ptrValue;
                 hashMap_put(entry->msgTypeIds, strndup(msgSer->msgName, 1024), (void *)(uintptr_t) msgSer->msgId);
             }
 
@@ -292,7 +292,7 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
 
     pubsub_msg_serializer_t* msgSer = NULL;
     if (entry->msgTypes != NULL) {
-        msgSer = hashMap_get(entry->msgTypes, (void*)(intptr_t)(msgTypeId));
+        msgSer = celix_longHashMap_get(entry->msgTypes, msgTypeId);
     }
 
     if (msgSer != NULL) {
@@ -303,11 +303,8 @@ static int psa_udpmc_topicPublicationSend(void* handle, unsigned int msgTypeId, 
             msg_hdr->type = msgTypeId;
 
             if (msgSer->msgVersion != NULL) {
-                int major = 0, minor = 0;
-                version_getMajor(msgSer->msgVersion, &major);
-                version_getMinor(msgSer->msgVersion, &minor);
-                msg_hdr->major = (unsigned char) major;
-                msg_hdr->minor = (unsigned char) minor;
+                msg_hdr->major = (unsigned char) celix_version_getMajor(msgSer->msgVersion);
+                msg_hdr->minor = (unsigned char) celix_version_getMinor(msgSer->msgVersion);
             }
 
             pubsub_udp_msg_t *msg = calloc(1, sizeof(*msg));

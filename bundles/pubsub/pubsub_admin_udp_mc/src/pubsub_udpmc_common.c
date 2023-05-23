@@ -19,13 +19,12 @@
 
 #include "pubsub_udpmc_common.h"
 
-bool psa_udpmc_checkVersion(version_pt msgVersion, pubsub_udp_msg_header_t *hdr) {
+bool psa_udpmc_checkVersion(celix_version_t *msgVersion, pubsub_udp_msg_header_t *hdr) {
     bool check = false;
 
     if (msgVersion != NULL) {
-        int major = 0, minor = 0;
-        version_getMajor(msgVersion,&major);
-        version_getMinor(msgVersion,&minor);
+        int major = celix_version_getMajor(msgVersion);
+        int minor = celix_version_getMinor(msgVersion);
 
         if (hdr->major == ((unsigned char) major)) { /* Different major means incompatible */
             check = (hdr->minor >= ((unsigned char) minor)); /* Compatible only if the provider has a minor equals or greater (means compatible update) */

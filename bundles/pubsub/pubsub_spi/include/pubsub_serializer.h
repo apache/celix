@@ -24,8 +24,8 @@
 extern "C" {
 #endif
 
-#include "hash_map.h"
-#include "version.h"
+#include "celix_long_hash_map.h"
+#include "celix_version.h"
 #include "celix_bundle.h"
 #include "sys/uio.h"
 
@@ -48,7 +48,7 @@ typedef struct pubsub_msg_serializer {
 
     unsigned int msgId;
     const char* msgName;
-    version_pt msgVersion;
+    celix_version_t *msgVersion;
 
     celix_status_t (*serialize)(void* handle, const void* input, struct iovec** output, size_t* outputIovLen);
     void (*freeSerializeMsg)(void* handle, const struct iovec* input, size_t inputIovLen);
@@ -60,8 +60,8 @@ typedef struct pubsub_msg_serializer {
 typedef struct pubsub_serializer_service {
     void* handle;
 
-    celix_status_t (*createSerializerMap)(void* handle, const celix_bundle_t *bundle, hash_map_pt* serializerMap);
-    celix_status_t (*destroySerializerMap)(void* handle, hash_map_pt serializerMap);
+    celix_status_t (*createSerializerMap)(void* handle, const celix_bundle_t *bundle, celix_long_hash_map_t **serializerMap);
+    celix_status_t (*destroySerializerMap)(void* handle, celix_long_hash_map_t *serializerMap);
 
 } pubsub_serializer_service_t;
 

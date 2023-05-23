@@ -23,8 +23,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <celix_properties.h>
-#include <celix_errno.h>
+#include "celix_properties.h"
+#include "celix_errno.h"
 #include <sys/uio.h>
 
 #define RSA_REQUEST_HANDLER_SERVICE_NAME "rsa_request_handler_service"

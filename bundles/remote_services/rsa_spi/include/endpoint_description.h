@@ -27,8 +27,7 @@
 #ifndef ENDPOINT_DESCRIPTION_H_
 #define ENDPOINT_DESCRIPTION_H_
 
-#include "properties.h"
-#include "array_list.h"
+#include "celix_properties.h"
 #include <stdbool.h>
 
 struct endpoint_description {
