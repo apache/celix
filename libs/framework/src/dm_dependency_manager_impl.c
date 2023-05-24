@@ -182,6 +182,10 @@ celix_status_t celix_dependencyManager_removeAllComponentsAsync(celix_dependency
 static void celix_dm_getInfoCallback(void *handle, const celix_bundle_t *bnd) {
     celix_dependency_manager_info_t **out = handle;
 
+    if (celix_bundle_getState(bnd) != CELIX_BUNDLE_STATE_ACTIVE) {
+        return;
+    }
+
     celix_bundle_context_t *context = NULL;
     bundle_getContext((celix_bundle_t*)bnd, &context);
     celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
@@ -212,30 +216,34 @@ celix_dependency_manager_info_t* celix_dependencyManager_createInfo(celix_depend
 	return info;
 }
 
+static void celix_dm_getInfosCallback(void* handle, const celix_bundle_t* bnd) {
+    celix_array_list_t* infos = handle;
 
-static void celix_dm_getInfosCallback(void *handle, const celix_bundle_t *bnd) {
-	celix_array_list_t *infos = handle;
+    if (celix_bundle_getState(bnd) != CELIX_BUNDLE_STATE_ACTIVE) {
+        return;
+    }
 
-	celix_bundle_context_t *context = NULL;
-	bundle_getContext((celix_bundle_t*)bnd, &context);
-	celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
+    celix_bundle_context_t* context = NULL;
+    bundle_getContext((celix_bundle_t*)bnd, &context);
+    celix_dependency_manager_t* mng = celix_bundleContext_getDependencyManager(context);
 
-	celix_dependency_manager_info_t *info = calloc(1, sizeof(*info));
-	celixThreadMutex_lock(&mng->mutex);
+    celix_dependency_manager_info_t* info = calloc(1, sizeof(*info));
     info->bndId = celix_bundle_getId(bnd);
     info->bndSymbolicName = celix_utils_strdup(celix_bundle_getSymbolicName(bnd));
-	celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-	opts.simpleRemovedCallback = (void*)component_destroyComponentInfo;
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    opts.simpleRemovedCallback = (void*)component_destroyComponentInfo;
     info->components = celix_arrayList_createWithOptions(&opts);
+
+    celixThreadMutex_lock(&mng->mutex);
     int size = celix_arrayList_size(mng->components);
     for (int i = 0; i < size; i += 1) {
-        celix_dm_component_t *cmp = celix_arrayList_get(mng->components, i);
-        celix_dm_component_info_t *cmpInfo = NULL;
+        celix_dm_component_t* cmp = celix_arrayList_get(mng->components, i);
+        celix_dm_component_info_t* cmpInfo = NULL;
         celix_dmComponent_getComponentInfo(cmp, &cmpInfo);
         celix_arrayList_add(info->components, cmpInfo);
     }
     celix_arrayList_add(infos, info);
-	celixThreadMutex_unlock(&mng->mutex);
+    celixThreadMutex_unlock(&mng->mutex);
 }
 
 static void celix_dependencyManager_destroyInfoCallback(void *data, celix_array_list_entry_t entry) {
@@ -248,7 +256,8 @@ celix_array_list_t * celix_dependencyManager_createInfos(celix_dependency_manage
 	celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
 	opts.removedCallbackData = manager;
 	opts.removedCallback = celix_dependencyManager_destroyInfoCallback;
-	celix_array_list_t *infos = celix_arrayList_createWithOptions(&opts);
+    celix_array_list_t* infos = celix_arrayList_createWithOptions(&opts);
+
 	celix_framework_t* fw = celix_bundleContext_getFramework(manager->ctx);
 	celix_framework_useBundles(fw, true, infos, celix_dm_getInfosCallback);
 	return infos;
@@ -256,6 +265,11 @@ celix_array_list_t * celix_dependencyManager_createInfos(celix_dependency_manage
 
 static void celix_dm_allComponentsActiveCallback(void *handle, const celix_bundle_t *bnd) {
 	bool *allActivePtr = handle;
+
+    if (celix_bundle_getState(bnd) != CELIX_BUNDLE_STATE_ACTIVE) {
+        return;
+    }
+
 	celix_bundle_context_t *context = NULL;
 	bundle_getContext((celix_bundle_t*)bnd, &context);
 	celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
@@ -305,9 +319,11 @@ bool celix_dependencyManager_areComponentsActive(celix_dependency_manager_t *mng
 }
 
 void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager __attribute__((unused)), celix_dependency_manager_info_t *info) {
-	celix_arrayList_destroy(info->components);
-	free(info->bndSymbolicName);
-	free(info);
+    if (info != NULL) {
+        celix_arrayList_destroy(info->components);
+        free(info->bndSymbolicName);
+        free(info);
+    }
 }
 
 

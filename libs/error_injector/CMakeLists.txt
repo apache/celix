@@ -43,8 +43,8 @@ add_subdirectory(pthread)
 add_subdirectory(celix_log_helper)
 add_subdirectory(celix_bundle)
 add_subdirectory(celix_version)
+add_subdirectory(celix_hash_map)
 add_subdirectory(celix_long_hash_map)
-
 
 if (BUILD_CELIX_DFI)
     add_subdirectory(dfi)

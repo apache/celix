@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,24 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(log_admin
-	SYMBOLIC_NAME "apache_celix_log_admin"
-	NAME "Apache Celix Log Admin"
-	GROUP "Celix/Logging"
-	VERSION "1.1.0"
-	SOURCES
-		src/celix_log_admin.c
-		src/celix_log_admin_activator.c
-	FILENAME celix_log_admin
+add_library(hash_map_ei STATIC src/celix_hash_map_ei.cc)
+
+target_include_directories(hash_map_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(hash_map_ei PUBLIC Celix::error_injector Celix::utils)
+target_link_options(hash_map_ei INTERFACE
+        LINKER:--wrap,celix_stringHashMap_create
 )
-target_link_libraries(log_admin PRIVATE Celix::log_helper Celix::shell_api)
-target_include_directories(log_admin PRIVATE src)
-celix_deprecated_utils_headers(log_admin)
-install_celix_bundle(log_admin EXPORT celix COMPONENT logging)
-
-#Setup target aliases to match external usage
-add_library(Celix::log_admin ALIAS log_admin)
-
-if (ENABLE_TESTING)
-	add_subdirectory(gtest)
-endif()
+add_library(Celix::hash_map_ei ALIAS hash_map_ei)

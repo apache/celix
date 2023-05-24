@@ -15,24 +15,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(log_admin
-	SYMBOLIC_NAME "apache_celix_log_admin"
-	NAME "Apache Celix Log Admin"
-	GROUP "Celix/Logging"
-	VERSION "1.1.0"
-	SOURCES
-		src/celix_log_admin.c
-		src/celix_log_admin_activator.c
-	FILENAME celix_log_admin
-)
-target_link_libraries(log_admin PRIVATE Celix::log_helper Celix::shell_api)
-target_include_directories(log_admin PRIVATE src)
-celix_deprecated_utils_headers(log_admin)
-install_celix_bundle(log_admin EXPORT celix COMPONENT logging)
+set(RCM_SOURCES src/celix_resource.c src/celix_capability.c src/celix_requirement.c)
+set(RCM_PUBLIC_LIBS Celix::utils)
+SET(RCM_PRIVATE_LIBS )
 
-#Setup target aliases to match external usage
-add_library(Celix::log_admin ALIAS log_admin)
+add_library(rcm STATIC ${RCM_SOURCES})
+set_target_properties(rcm PROPERTIES
+        OUTPUT_NAME "celix_rcm"
+        VERSION 0.0.1
+        SOVERSION 0)
+target_link_libraries(rcm PUBLIC ${RCM_PUBLIC_LIBS} PRIVATE ${RCM_PRIVATE_LIBS})
+target_include_directories(rcm PRIVATE src PUBLIC include)
+celix_target_hide_symbols(rcm)
+add_library(Celix::rcm ALIAS rcm)
 
 if (ENABLE_TESTING)
-	add_subdirectory(gtest)
-endif()
+    add_library(rcm_cut STATIC ${RCM_SOURCES})
+    target_link_libraries(rcm_cut PUBLIC ${RCM_PUBLIC_LIBS} PRIVATE ${RCM_PRIVATE_LIBS})
+    target_include_directories(rcm_cut PRIVATE src PUBLIC include)
+
+    add_subdirectory(gtest)
+endif ()
