@@ -80,7 +80,11 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
     export->logHelper = logHelper;
 
     export->endpointDesc = endpointDescription_clone(endpointDesc);
-    assert(export->endpointDesc != NULL);
+    if (export->endpointDesc == NULL) {
+        celix_logHelper_error(logHelper,"RSA export reg: Error cloning endpoint desc.");
+        status = CELIX_ENOMEM;
+        goto endpoint_desc_err;
+    }
 
     export->rpcFac = NULL;
     export->reqHandlerSvcTrkId = -1;
@@ -164,6 +168,7 @@ ep_svc_entry_err:
     bundleContext_ungetServiceReference(context, reference);
 err_retaining_service_ref:
     endpointDescription_destroy(export->endpointDesc);
+endpoint_desc_err:
     free(export);
     return status;
 }

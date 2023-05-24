@@ -14,14 +14,26 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+if (LINKER_WRAP_SUPPORTED)
+    ####unit test
+    add_executable(unit_test_rsa_common
+            src/EndpointDescriptionUnitTestSuite.cc
+            )
 
-add_library(properties_ei STATIC src/celix_properties_ei.cc)
+    target_link_libraries(unit_test_rsa_common PRIVATE
+            Celix::rsa_common
+            Celix::rsa_spi
+            Celix::framework
+            Celix::utils
+            Celix::malloc_ei
+            Celix::utils_ei
+            Celix::properties_ei
+            GTest::gtest
+            GTest::gtest_main
+            )
 
-target_include_directories(properties_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(properties_ei PUBLIC Celix::error_injector Celix::utils)
-# It plays nicely with address sanitizer this way.
-target_link_options(properties_ei INTERFACE
-        LINKER:--wrap,celix_properties_create
-        LINKER:--wrap,celix_properties_copy
-        )
-add_library(Celix::properties_ei ALIAS properties_ei)
+    celix_deprecated_utils_headers(unit_test_rsa_common)
+
+    add_test(NAME run_unit_test_rsa_common COMMAND unit_test_rsa_common)
+    setup_target_for_coverage(unit_test_rsa_common SCAN_DIR ..)
+endif ()

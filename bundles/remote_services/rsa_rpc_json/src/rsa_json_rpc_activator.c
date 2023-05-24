@@ -51,7 +51,11 @@ static celix_status_t rsaJsonRpc_start(rsa_json_rpc_activator_t* activator, celi
         goto rpc_err;
     }
     celix_properties_t *props = celix_properties_create();
-    assert(props != NULL);
+    if (props == NULL) {
+        celix_logHelper_error(activator->logHelper, "Error creating properties for json rpc.");
+        status = CELIX_ENOMEM;
+        goto rpc_fac_props_err;
+    }
     celix_properties_set(props, RSA_RPC_TYPE_KEY, "celix.remote.admin.rpc_type.json");
     activator->rpcFac.handle = activator->jsonRpc;
     activator->rpcFac.createProxy = rsaJsonRpc_createProxy;
@@ -72,6 +76,7 @@ static celix_status_t rsaJsonRpc_start(rsa_json_rpc_activator_t* activator, celi
     return CELIX_SUCCESS;
 rpc_svc_err:
     //props is freed by framework;
+rpc_fac_props_err:
     rsaJsonRpc_destroy(activator->jsonRpc);
 rpc_err:
     celix_logHelper_destroy(activator->logHelper);

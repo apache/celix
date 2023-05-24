@@ -71,7 +71,12 @@ celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_
     endpoint->callsLogFile = logFile;
     endpoint->serialProtoId = serialProtoId;
     endpoint->endpointDesc = endpointDescription_clone(endpointDesc);
-    assert(endpoint->endpointDesc != NULL);
+    if (endpoint->endpointDesc == NULL) {
+        celix_logHelper_error(logHelper, "RSA json rpc endpoint: Error cloning endpoint description for %s.",
+                endpointDesc->serviceName);
+        status = CELIX_ENOMEM;
+        goto endpoint_desc_err;
+    }
 
     endpoint->interceptorsHandler = interceptorsHandler;
     endpoint->service = NULL;
@@ -122,6 +127,7 @@ service_tracker_err:
     (void)celixThreadRwlock_destroy(&endpoint->lock);
 mutex_err:
     endpointDescription_destroy(endpoint->endpointDesc);
+endpoint_desc_err:
     free(endpoint);
     return status;
 }

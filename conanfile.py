@@ -139,6 +139,12 @@ class CelixConan(ConanFile):
         if self.settings.os != "Linux" and self.settings.os != "Macos":
             raise ConanInvalidConfiguration("Celix is only supported for Linux/Macos")
 
+        if self.options.build_rsa_remote_service_admin_shm_v2 and self.settings.os != "Linux":
+            raise ConanInvalidConfiguration("Celix build_rsa_remote_service_admin_shm_v2 is only supported for Linux")
+
+        if self.options.build_rsa_discovery_zeroconf and self.settings.os != "Linux":
+            raise ConanInvalidConfiguration("Celix build_rsa_discovery_zeroconf is only supported for Linux")
+
         try:
             val = int(self.options.celix_err_buffer_size)
             if val <= 0:
@@ -167,6 +173,10 @@ class CelixConan(ConanFile):
             for opt, val in self.options.values.items():
                 if opt.startswith('build_'):
                     setattr(self.options, opt, True)
+            if self.settings.os != "Linux":
+                self.options.build_rsa_remote_service_admin_shm_v2 = False
+                self.options.build_rsa_discovery_zeroconf = False
+
         if not self.options.celix_cxx14:
             self.options.celix_cxx17 = False
         if not self.options.celix_cxx17:
@@ -193,7 +203,6 @@ class CelixConan(ConanFile):
             self.options.build_rsa_discovery_configured = False
             self.options.build_rsa_discovery_etcd = False
             self.options.build_rsa_json_rpc = False
-        if (not self.options.build_remote_service_admin) or (self.settings.os != "Linux"):
             self.options.build_rsa_remote_service_admin_shm_v2 = False
             self.options.build_rsa_discovery_zeroconf = False
         if not self.options.build_shell:

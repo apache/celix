@@ -30,3 +30,7 @@ install(TARGETS rsa_common EXPORT celix COMPONENT rsa DESTINATION ${CMAKE_INSTAL
 
 #Setup target aliases to match external usage
 add_library(Celix::rsa_common ALIAS rsa_common)
+
+if (ENABLE_TESTING)
+    add_subdirectory(gtest)
+endif()

@@ -26,4 +26,12 @@ void *__wrap_celix_properties_create(void) {
     CELIX_EI_IMPL(celix_properties_create);
     return __real_celix_properties_create();
 }
+
+celix_properties_t *__real_celix_properties_copy(const celix_properties_t *properties);
+CELIX_EI_DEFINE(celix_properties_copy, celix_properties_t*)
+celix_properties_t *__wrap_celix_properties_copy(const celix_properties_t *properties) {
+    CELIX_EI_IMPL(celix_properties_copy);
+    return __real_celix_properties_copy(properties);
+}
+
 }
