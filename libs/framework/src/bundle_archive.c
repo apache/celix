@@ -17,27 +17,25 @@
  * under the License.
  */
 
-#include "bundle_archive_private.h"
-
-#include <string.h>
+#include <assert.h>
+#include <dirent.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <unistd.h>
 #include <string.h>
-#include <assert.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "celix_constants.h"
-#include "celix_utils_api.h"
-#include "linked_list_iterator.h"
-#include "framework_private.h"
 #include "celix_file_utils.h"
-#include "bundle_revision_private.h"
 #include "celix_framework_utils_private.h"
+#include "celix_utils_api.h"
 
+#include "bundle_archive_private.h"
+#include "bundle_revision_private.h"
+#include "framework_private.h"
+#include "linked_list_iterator.h"
 
 celix_status_t celix_bundleArchive_getLastModifiedInternal(bundle_archive_pt archive, struct timespec *lastModified);
 
@@ -55,7 +53,6 @@ struct bundleArchive {
     char *savedBundleStatePropertiesPath;
     char* storeRoot;
     char* resourceCacheRoot;
-    bool isSystemBundle;
     char* bundleSymbolicName; //read from the manifest
     char* bundleVersion; //read from the manifest
 
@@ -210,28 +207,27 @@ celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archiv
 
 celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, bundle_archive_pt *bundle_archive) {
     celix_status_t status = CELIX_SUCCESS;
+    const char* error = NULL;
     bundle_archive_pt archive = calloc(1, sizeof(*archive));
-
-    if (archive) {
-        archive->fw = fw;
-        archive->id = id;
-        archive->isSystemBundle = id == CELIX_FRAMEWORK_BUNDLE_ID;
-        celixThreadMutex_create(&archive->lock, NULL);
-    }
+    bool isSystemBundle = id == CELIX_FRAMEWORK_BUNDLE_ID;
 
     if (archive == NULL) {
         status = CELIX_ENOMEM;
-        fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create archive. Out of memory.");
-        bundleArchive_destroy(archive);
-        return status;
+        goto calloc_failed;
     }
 
-    int rc;
-    if (archive->isSystemBundle) {
+    archive->fw = fw;
+    archive->id = id;
+    celixThreadMutex_create(&archive->lock, NULL);
+
+    if (isSystemBundle) {
         archive->resourceCacheRoot = getcwd(NULL, 0);
         archive->storeRoot = getcwd(NULL, 0);
+        if (archive->resourceCacheRoot == NULL || archive->storeRoot == NULL) {
+            status = CELIX_ENOMEM;
+        }
     } else {
-        // assert(location != NULL)
+        int rc;
         archive->location = celix_utils_strdup(location);
         archive->archiveRoot = celix_utils_strdup(archiveRoot);
         rc = asprintf(&archive->savedBundleStatePropertiesPath, "%s/%s", archiveRoot,
@@ -239,45 +235,45 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
         if (rc < 0 || archive->location == NULL || archive->savedBundleStatePropertiesPath == NULL
             || archive->archiveRoot == NULL) {
             status = CELIX_ENOMEM;
-            fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create archive. Out of memory.");
-            bundleArchive_destroy(archive);
-            return status;
         }
+    }
+    if (status != CELIX_SUCCESS) {
+        error = "Failed to setup archive paths.";
+        goto init_failed;
     }
 
     manifest_pt manifest = NULL;
-    if (archive->isSystemBundle) {
+    if (isSystemBundle) {
         status = manifest_create(&manifest);
     } else {
         status = celix_bundleArchive_createCacheDirectory(archive, &manifest);
     }
     if (status != CELIX_SUCCESS) {
-        fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create archive. Failed to initialize archive or create manifest.");
-        bundleArchive_destroy(archive);
-        return status;
+        error = "Failed to initialize archive or create manifest.";
+        goto init_failed;
     }
 
-    if (archive->isSystemBundle) {
-        status = celix_bundleRevision_create(fw, archive->archiveRoot, NULL, manifest, &archive->revision);
-    } else {
-        status = celix_bundleRevision_create(fw, archive->archiveRoot, archive->location, manifest, &archive->revision);
-    }
+    status = celix_bundleRevision_create(fw, archive->archiveRoot, archive->location, manifest, &archive->revision);
     if (status != CELIX_SUCCESS) {
-        fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not create archive. Could not create bundle revision.");
-        bundleArchive_destroy(archive);
-        return status;
+        error = "Could not create bundle revision.";
+        goto init_failed;
     }
 
-    if (!archive->isSystemBundle) {
+    if (!isSystemBundle) {
         celix_bundleArchive_storeBundleStateProperties(archive);
     }
 
     *bundle_archive = archive;
+    return CELIX_SUCCESS;
+init_failed:
+    bundleArchive_destroy(archive);
+calloc_failed:
+    framework_logIfError(fw->logger, status, error, "Could not create archive.");
     return status;
 }
 
 celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
-	if (archive != NULL) {
+    if (archive != NULL) {
         free(archive->location);
         free(archive->savedBundleStatePropertiesPath);
         free(archive->archiveRoot);
@@ -288,13 +284,13 @@ celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
         bundleRevision_destroy(archive->revision);
         celixThreadMutex_destroy(&archive->lock);
         free(archive);
-	}
-	return CELIX_SUCCESS;
+    }
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id) {
-     *id = archive->id;
-	return CELIX_SUCCESS;
+    *id = archive->id;
+    return CELIX_SUCCESS;
 }
 
 long celix_bundleArchive_getId(bundle_archive_pt archive) {
@@ -453,7 +449,7 @@ celix_status_t bundleArchive_close(bundle_archive_pt archive) {
 
 celix_status_t bundleArchive_closeAndDelete(bundle_archive_pt archive) {
     celix_status_t status = CELIX_SUCCESS;
-    if (!archive->isSystemBundle) {
+    if (archive->id != CELIX_FRAMEWORK_BUNDLE_ID) {
         const char* err = NULL;
         status = celix_utils_deleteDirectory(archive->archiveRoot, &err);
         framework_logIfError(archive->fw->logger, status, NULL, "Failed to delete archive root '%s': %s", archive->archiveRoot, err);
