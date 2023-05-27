@@ -146,6 +146,7 @@ if (LINKER_WRAP_SUPPORTED)
             Celix::dlfcn_ei
             Celix::unistd_ei
             Celix::hash_map_ei
+            Celix::properties_ei
             GTest::gtest GTest::gtest_main
     )
 

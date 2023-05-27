@@ -109,15 +109,13 @@ TEST_F(CelixBundleCacheErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     EXPECT_EQ(nullptr, archive);
     EXPECT_EQ(-1, celix_bundleCache_findBundleIdForLocation(cache, SIMPLE_TEST_BUNDLE1_LOCATION));
     EXPECT_FALSE(celix_bundleCache_isBundleIdAlreadyUsed(cache, 1));
-    EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_destroy(cache));
 
-    EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_create(&fw, &cache));
-    fw.cache = cache;
     celix_ei_expect_calloc((void*)celix_bundleArchive_create, 0, nullptr);
     EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_createArchive(cache, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_EQ(nullptr, archive);
     EXPECT_EQ(-1, celix_bundleCache_findBundleIdForLocation(cache, SIMPLE_TEST_BUNDLE1_LOCATION));
     EXPECT_FALSE(celix_bundleCache_isBundleIdAlreadyUsed(cache, 1));
+
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_destroy(cache));
 }
 

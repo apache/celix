@@ -61,23 +61,25 @@ struct bundleArchive {
     char* location;
 };
 
-static void celix_bundleArchive_storeBundleStateProperties(bundle_archive_pt archive) {
+static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_archive_pt archive) {
     celix_properties_t* bundleStateProperties = celix_properties_create();
-    if (bundleStateProperties != NULL) {
-        celixThreadMutex_lock(&archive->lock);
-        //set/update bundle cache state properties
-        celix_properties_setLong(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, archive->id);
-        celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, archive->location);
-        celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME,
-                             archive->bundleSymbolicName);
-        celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME, archive->bundleVersion);
-
-        //save bundle cache state properties
-        celix_properties_store(bundleStateProperties, archive->savedBundleStatePropertiesPath,
-                               "Bundle State Properties");
-        celixThreadMutex_unlock(&archive->lock);
+    if (bundleStateProperties == NULL) {
+        return CELIX_ENOMEM;
     }
+    celixThreadMutex_lock(&archive->lock);
+    //set/update bundle cache state properties
+    celix_properties_setLong(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, archive->id);
+    celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, archive->location);
+    celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME,
+                         archive->bundleSymbolicName);
+    celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME, archive->bundleVersion);
+
+    //save bundle cache state properties
+    celix_properties_store(bundleStateProperties, archive->savedBundleStatePropertiesPath,
+                           "Bundle State Properties");
+    celixThreadMutex_unlock(&archive->lock);
     celix_properties_destroy(bundleStateProperties);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t celix_bundleArchive_extractBundle(
@@ -256,15 +258,24 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
     status = celix_bundleRevision_create(fw, archive->archiveRoot, archive->location, manifest, &archive->revision);
     if (status != CELIX_SUCCESS) {
         error = "Could not create bundle revision.";
-        goto init_failed;
+        goto revision_failed;
     }
 
     if (!isSystemBundle) {
-        celix_bundleArchive_storeBundleStateProperties(archive);
+        status = celix_bundleArchive_storeBundleStateProperties(archive);
+        if (status != CELIX_SUCCESS) {
+            error = "Could not store properties.";
+            goto store_prop_failed;
+        }
     }
 
     *bundle_archive = archive;
     return CELIX_SUCCESS;
+store_prop_failed:
+revision_failed:
+    if (!isSystemBundle) {
+        celix_utils_deleteDirectory(archive->archiveRoot, NULL);
+    }
 init_failed:
     bundleArchive_destroy(archive);
 calloc_failed:
@@ -436,9 +447,9 @@ revise_finished:
 
 
 celix_status_t bundleArchive_rollbackRevise(bundle_archive_pt archive, bool *rolledback) {
-	*rolledback = true;
+    *rolledback = true;
     fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Revise rollback not supported.");
-	return CELIX_BUNDLE_EXCEPTION;
+    return CELIX_BUNDLE_EXCEPTION;
 }
 
 celix_status_t bundleArchive_close(bundle_archive_pt archive) {
