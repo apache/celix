@@ -92,6 +92,14 @@ TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreatedFailedTest)
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
+    celix_ei_expect_asprintf((void*)celix_bundleArchive_create, 0, -1, 2);
+    installBundleAndExpectFailure();
+
+    teardownErrorInjectors();
+    celix_ei_expect_asprintf((void*)celix_bundleArchive_create, 0, -1, 3);
+    installBundleAndExpectFailure();
+
+    teardownErrorInjectors();
     // Given a mocked malloc which returns NULL from a call from manifest_create
     celix_ei_expect_malloc((void*)manifest_create, 0, nullptr);
     installBundleAndExpectFailure();
@@ -118,19 +126,9 @@ TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreateCacheDirecto
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
-    // Given a mocked asprintf which returns -1 from a (indirect) call from bundleArchive_create
-    celix_ei_expect_asprintf((void*)celix_bundleArchive_create, 1, -1);
-    installBundleAndExpectFailure();
-
-    teardownErrorInjectors();
     // Given a mocked celix_utils_createDirectory which returns CELIX_FILE_IO_EXCEPTION from a second (indirect) call
     //  from bundleArchive_create
     celix_ei_expect_celix_utils_createDirectory((void*)celix_bundleArchive_create, 1, CELIX_FILE_IO_EXCEPTION, 2);
-    installBundleAndExpectFailure();
-
-    teardownErrorInjectors();
-    // Given a mocked asprintf which returns -1 from a (indirect) call from bundleArchive_create
-    celix_ei_expect_asprintf((void*)celix_bundleArchive_create, 1, -1, 2);
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
@@ -159,6 +157,7 @@ class CelixBundleArchiveErrorInjectionTestSuite : public ::testing::Test {
         fw.logger = celix_frameworkLogger_create(CELIX_LOG_LEVEL_TRACE);
     }
     ~CelixBundleArchiveErrorInjectionTestSuite() override {
+        celix_utils_deleteDirectory(TEST_ARCHIVE_ROOT, nullptr);
         celix_frameworkLogger_destroy(fw.logger);
         celix_properties_destroy(fw.configurationMap);
     }
@@ -167,25 +166,63 @@ class CelixBundleArchiveErrorInjectionTestSuite : public ::testing::Test {
         EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_create(&fw, &fw.cache));
         *cache = fw.cache;
     }
+    void teardownErrorInjectors() {
+        celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
+        celix_ei_expect_asprintf(nullptr, 0, 0);
+        celix_ei_expect_calloc(nullptr, 0, nullptr);
+        celix_ei_expect_malloc(nullptr, 0, nullptr);
+        celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
+        celix_ei_expect_celix_utils_createDirectory(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_utils_getLastModified(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_utils_deleteDirectory(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_utils_writeOrCreateString(nullptr, 0, nullptr);
+        celix_ei_expect_celix_utils_extractZipData(nullptr, 0, CELIX_SUCCESS);
+    }
     struct celix_framework fw {};
 };
 
 TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     celix_bundle_cache_t* cache = nullptr;
     createCache(&cache);
-
     bundle_archive_t* archive = nullptr;
+
+    // archive directory creation failures not covered by other tests
+    celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_bundleArchive_getLastModifiedInternal, 0, nullptr);
+    EXPECT_EQ(CELIX_ENOMEM,
+              celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
+    EXPECT_EQ(nullptr, archive);
+    EXPECT_FALSE(celix_utils_directoryExists(TEST_ARCHIVE_ROOT));
+    teardownErrorInjectors();
+
+    celix_ei_expect_celix_utils_deleteDirectory((void*)celix_bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION);
+    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION,
+              celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
+    EXPECT_EQ(nullptr, archive);
+    EXPECT_FALSE(celix_utils_directoryExists(TEST_ARCHIVE_ROOT));
+    teardownErrorInjectors();
+
+    celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_bundleArchive_create, 1, nullptr);
+    EXPECT_EQ(CELIX_ENOMEM,
+              celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
+    EXPECT_EQ(nullptr, archive);
+    EXPECT_FALSE(celix_utils_directoryExists(TEST_ARCHIVE_ROOT));
+    teardownErrorInjectors();
+
+    // revision creation failure
     celix_ei_expect_calloc((void*)celix_bundleRevision_create, 0, nullptr);
     EXPECT_EQ(CELIX_ENOMEM,
               celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_EQ(nullptr, archive);
     EXPECT_FALSE(celix_utils_directoryExists(TEST_ARCHIVE_ROOT));
+    teardownErrorInjectors();
 
+    // bundle state persistence failure
     celix_ei_expect_celix_properties_create((void*)celix_bundleArchive_create, 1, nullptr);
     EXPECT_EQ(CELIX_ENOMEM,
               celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_EQ(nullptr, archive);
     EXPECT_FALSE(celix_utils_directoryExists(TEST_ARCHIVE_ROOT));
+    teardownErrorInjectors();
 
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_destroy(cache));
 }

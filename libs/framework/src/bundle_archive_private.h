@@ -21,6 +21,8 @@
 #ifndef BUNDLE_ARCHIVE_PRIVATE_H_
 #define BUNDLE_ARCHIVE_PRIVATE_H_
 
+#include <time.h>
+
 #include "bundle_archive.h"
 
 #ifdef __cplusplus
@@ -72,6 +74,11 @@ const char* celix_bundleArchive_getPersistentStoreRoot(bundle_archive_t *archive
   * Returns the root of the current revision.
   */
 const char* celix_bundleArchive_getCurrentRevisionRoot(bundle_archive_pt archive);
+
+/**
+ * Return the last modified time of the bundle archive.
+ */
+celix_status_t celix_bundleArchive_getLastModifiedInternal(bundle_archive_pt archive, struct timespec* lastModified);
 
 #ifdef __cplusplus
 }
