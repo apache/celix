@@ -93,7 +93,7 @@ static void rsaShmClientManager_markSvcCallFinished(rsa_shm_client_manager_t *cl
         const char *peerServerName, long serviceId);
 static celix_status_t rsaShmClientManager_receiveResponse(rsa_shm_client_manager_t *clientManager,
         rsa_shm_msg_control_t *msgCtrl, char *msgBuffer, size_t bufSize,
-        struct iovec *response, bool *replyed);
+        struct iovec *response, bool *replied);
 static void rsaShmClient_destroyOrDetachSvcDiagInfo(rsa_shm_client_t *client, long serviceId);
 static void rsaShmClient_createOrAttachSvcDiagInfo(rsa_shm_client_t *client, long serviceId);
 static bool rsaShmClient_shouldBreakInvocation(rsa_shm_client_t *client, long serviceId);
@@ -630,9 +630,7 @@ static void *rsaShmClientManager_exceptionMsgHandlerThread(void *data) {
     celix_array_list_t *evictedMsgs = celix_arrayList_create();
     while (active) {
         celixThreadMutex_lock(&clientManager->exceptionMsgListMutex);
-        while (0 == (listSize = celix_arrayList_size(clientManager->exceptionMsgList)) && clientManager->threadActive == true) {
-            (void)celixThreadCondition_timedwaitRelative(&clientManager->exceptionMsgListNotEmpty, &clientManager->exceptionMsgListMutex, 0, 200*1000*1000);
-        }
+        listSize = celix_arrayList_size(clientManager->exceptionMsgList);
         for (int i = 0; i < listSize; ++i) {
             struct rsa_shm_exception_msg *exceptionMsg = celix_arrayList_get(clientManager->exceptionMsgList, i);
             removed = rsaShmClientManager_handleMsgState(clientManager, exceptionMsg);
@@ -654,6 +652,14 @@ static void *rsaShmClientManager_exceptionMsgHandlerThread(void *data) {
         celix_arrayList_clear(evictedMsgs);
 
         active = clientManager->threadActive;
+
+        if (active) {
+            do {
+                //If there are uncleared exception messages, they will be processed every 200ms, or when there are new exception messages.
+                (void)celixThreadCondition_timedwaitRelative(&clientManager->exceptionMsgListNotEmpty, &clientManager->exceptionMsgListMutex, 0, 200*1000*1000);
+            } while ((celix_arrayList_size(clientManager->exceptionMsgList) == 0) && clientManager->threadActive);
+        }
+
         celixThreadMutex_unlock(&clientManager->exceptionMsgListMutex);
     }
     celix_arrayList_destroy(evictedMsgs);
@@ -675,7 +681,7 @@ static celix_status_t rsaShmClientManager_receiveResponse(rsa_shm_client_manager
         isStreamingReply = false;
         pthread_mutex_lock(&msgCtrl->lock);
         while (msgCtrl->msgState == REQUESTING && waitRet == 0) {
-            //pthread_cond_timedwait shall not return an error code of [EINTR].
+            //pthread_cond_timedwait shall not return an error code of [EINTR]. refer https://man7.org/linux/man-pages/man3/pthread_cond_timedwait.3p.html
             waitRet = pthread_cond_timedwait(&msgCtrl->signal, &msgCtrl->lock, &timeout);
         }
 

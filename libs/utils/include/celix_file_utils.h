@@ -41,7 +41,7 @@ CELIX_UTILS_EXPORT bool celix_utils_fileExists(const char* path);
 CELIX_UTILS_EXPORT bool celix_utils_directoryExists(const char* path);
 
 /**
- * @brief Create dir and if needed subdirs.
+ * @brief Create dir and if needed parent direcotries.
  * @param path The directory to create.
  * @param failIfPresent Whether to fail if the directory already exists.
  * @param errorOut An optional error output argument. If an error occurs this will point to a (static) error message.

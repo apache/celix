@@ -15,13 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(properties_ei STATIC src/celix_properties_ei.cc)
+add_library(hash_map_ei STATIC src/celix_hash_map_ei.cc)
 
-target_include_directories(properties_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(properties_ei PUBLIC Celix::error_injector Celix::utils)
-# It plays nicely with address sanitizer this way.
-target_link_options(properties_ei INTERFACE
-        LINKER:--wrap,celix_properties_create
-        LINKER:--wrap,celix_properties_copy
-        )
-add_library(Celix::properties_ei ALIAS properties_ei)
+target_include_directories(hash_map_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(hash_map_ei PUBLIC Celix::error_injector Celix::utils)
+target_link_options(hash_map_ei INTERFACE
+        LINKER:--wrap,celix_stringHashMap_create
+)
+add_library(Celix::hash_map_ei ALIAS hash_map_ei)

@@ -332,8 +332,12 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
         goto get_reference_failed;
     }
 
-   celix_properties_t *exportedProperties = celix_properties_create();
-
+    celix_properties_t *exportedProperties = celix_properties_create();
+    if (exportedProperties == NULL) {
+        status = CELIX_ENOMEM;
+        celix_logHelper_error(admin->logHelper, "Error creating exported properties.");
+        goto failed_to_create_exported_properties;
+    }
     unsigned int propertySize = 0;
     char **keys = NULL;
     serviceReference_getPropertyKeys(reference, &keys, &propertySize);
@@ -462,6 +466,7 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
 trim_props_error:
 exported_props_error:
     celix_properties_destroy(exportedProperties);
+failed_to_create_exported_properties:
     bundleContext_ungetServiceReference(admin->context, reference);
 get_reference_failed:
 references_err:

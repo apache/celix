@@ -41,6 +41,8 @@
 #include "celix_bundle_context_ei.h"
 #include "celix_version_ei.h"
 #include "dfi_ei.h"
+#include "celix_properties_ei.h"
+#include "celix_long_hash_map_ei.h"
 #include <gtest/gtest.h>
 #include <cstdlib>
 extern "C" {
@@ -75,6 +77,8 @@ public:
         celix_ei_expect_celixThreadRwlock_create(nullptr, 0, 0);
         celix_ei_expect_celix_bundleContext_trackServicesWithOptionsAsync(nullptr, 0, 0);
         celix_ei_expect_celix_bundleContext_registerServiceWithOptionsAsync(nullptr, 0, 0);
+        celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_longHashMap_create(nullptr, 0, nullptr);
     }
 
     endpoint_description_t *CreateEndpointDescription(long svcId = 100/*set a dummy service id*/) {
@@ -412,6 +416,26 @@ public:
     long proxySvcId{-1};
 };
 
+TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToCreateProxiesHashMap) {
+    auto endpoint = CreateEndpointDescription();
+    long svcId = -1L;
+    celix_ei_expect_celix_longHashMap_create((void*)&rsaJsonRpc_createProxy, 1, nullptr);
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, reqSenderSvcId, &svcId);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    endpointDescription_destroy(endpoint);
+}
+
+TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToCloneEndpointDescription) {
+    auto endpoint = CreateEndpointDescription();
+    long svcId = -1L;
+    celix_ei_expect_calloc((void*)&endpointDescription_clone, 0, nullptr);
+    auto status = rsaJsonRpc_createProxy(jsonRpc.get(), endpoint, reqSenderSvcId, &svcId);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    endpointDescription_destroy(endpoint);
+}
+
 TEST_F(RsaJsonRpcProxyUnitTestSuite, FailedToRegisterProxyService) {
     auto endpoint = CreateEndpointDescription();
     long svcId = -1L;
@@ -473,6 +497,17 @@ TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToPrepareInvokeRequest) {
         auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
         EXPECT_NE(nullptr, proxySvc);
         EXPECT_EQ(CELIX_SERVICE_EXCEPTION, proxySvc->test(proxySvc->handle));
+    });
+    EXPECT_TRUE(found);
+}
+
+TEST_F(RsaJsonRpcProxyUnitTestSuite2, FailedToCreateMetadata) {
+    auto found = celix_bundleContext_useService(ctx.get(), RSA_RPC_JSON_TEST_SERVICE, nullptr, [](void *handle, void *svc) {
+        (void)handle;//unused
+        auto proxySvc = static_cast<rsa_rpc_json_test_service_t*>(svc);
+        EXPECT_NE(nullptr, proxySvc);
+        celix_ei_expect_celix_properties_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+        EXPECT_EQ(CELIX_ENOMEM, proxySvc->test(proxySvc->handle));
     });
     EXPECT_TRUE(found);
 }
@@ -652,6 +687,16 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToCreateEndpointLock) {
     auto endpoint = CreateEndpointDescription(rpcTestSvcId);
 
     celix_ei_expect_celixThreadRwlock_create((void*)&rsaJsonRpcEndpoint_create, 0, CELIX_ENOMEM);
+    long svcId = -1L;
+    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    endpointDescription_destroy(endpoint);
+}
+
+TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToCloneEndpointDescription) {
+    auto endpoint = CreateEndpointDescription(rpcTestSvcId);
+    celix_ei_expect_calloc((void *)&endpointDescription_clone, 0, nullptr);
     long svcId = -1L;
     auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
     EXPECT_EQ(CELIX_ENOMEM, status);

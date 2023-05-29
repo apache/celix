@@ -36,6 +36,7 @@
 #include "celix_bundle_context_ei.h"
 #include "asprintf_ei.h"
 #include "celix_utils_ei.h"
+#include "celix_properties_ei.h"
 #include <string>
 #include <gtest/gtest.h>
 
@@ -72,6 +73,7 @@ public:
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_trim(nullptr, 2, nullptr);
         celix_ei_expect_celix_bundleContext_registerServiceWithOptionsAsync(nullptr, 0, 0);
+        celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
     }
 
     void RegisterCalculatorService() {
@@ -259,6 +261,24 @@ TEST_F(RsaShmUnitTestSuite, ExportServiceWithObjectClass) {
     rsaShm_destroy(admin);
 }
 
+TEST_F(RsaShmUnitTestSuite, FailedToCreateExportedServiceProperties) {
+    rsa_shm_t *admin = nullptr;
+    auto status = rsaShm_create(ctx.get(), logHelper.get(), &admin);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_NE(nullptr, admin);
+
+    RegisterCalculatorService();
+
+    celix_array_list_t *regs = nullptr;
+    celix_ei_expect_celix_properties_create((void*)&rsaShm_exportService, 0, nullptr);
+    status = rsaShm_exportService(admin, const_cast<char *>(std::to_string(calcSvcId).c_str()), nullptr, &regs);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    UnregisterCalculatorService();
+
+    rsaShm_destroy(admin);
+}
+
 TEST_F(RsaShmUnitTestSuite, ExportedInterfaceNotMatchObjectClass) {
     rsa_shm_t *admin = nullptr;
     auto status = rsaShm_create(ctx.get(), logHelper.get(), &admin);
@@ -373,6 +393,7 @@ TEST_F(RsaShmUnitTestSuite, CreateEndpointFailed2) {
 
     RegisterCalculatorService();
 
+    //Failed to get rpc type
     celix_ei_expect_celix_utils_strdup((void*)&rsaShm_exportService, 2, nullptr);
     celix_array_list_t *regs = nullptr;
     status = rsaShm_exportService(admin, const_cast<char *>(std::to_string(calcSvcId).c_str()), nullptr, &regs);
@@ -380,6 +401,7 @@ TEST_F(RsaShmUnitTestSuite, CreateEndpointFailed2) {
     EXPECT_EQ(0, celix_arrayList_size(regs));
     celix_arrayList_destroy(regs);
 
+    //Failed to dup default rpc type
     celix_ei_expect_celix_utils_trim((void*)&rsaShm_exportService, 2, nullptr);
     celix_ei_expect_celix_utils_strdup((void*)&rsaShm_exportService, 2, nullptr, 2);
     status = rsaShm_exportService(admin, const_cast<char *>(std::to_string(calcSvcId).c_str()), nullptr, &regs);

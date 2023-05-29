@@ -17,21 +17,13 @@
   under the License.
  */
 
-#include "celix_properties_ei.h"
+#include "celix_hash_map_ei.h"
 
 extern "C" {
-void *__real_celix_properties_create(void);
-CELIX_EI_DEFINE(celix_properties_create, celix_properties_t*)
-void *__wrap_celix_properties_create(void) {
-    CELIX_EI_IMPL(celix_properties_create);
-    return __real_celix_properties_create();
+celix_string_hash_map_t* __real_celix_stringHashMap_create();
+CELIX_EI_DEFINE(celix_stringHashMap_create, celix_string_hash_map_t*);
+celix_string_hash_map_t* __wrap_celix_stringHashMap_create() {
+    CELIX_EI_IMPL(celix_stringHashMap_create);
+    return __real_celix_stringHashMap_create();
 }
-
-celix_properties_t *__real_celix_properties_copy(const celix_properties_t *properties);
-CELIX_EI_DEFINE(celix_properties_copy, celix_properties_t*)
-celix_properties_t *__wrap_celix_properties_copy(const celix_properties_t *properties) {
-    CELIX_EI_IMPL(celix_properties_copy);
-    return __real_celix_properties_copy(properties);
-}
-
 }

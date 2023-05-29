@@ -185,7 +185,7 @@ static void *shmPool_heartbeatThread(void *data){
         celixThreadMutex_lock(&pool->mutex);
         int waitRet = 0;
         while (pool->heartbeatThreadActive && waitRet != ETIMEDOUT) {
-            // pthread_cond_timedwait shall not return an error code of [EINTR]
+            // pthread_cond_timedwait shall not return an error code of [EINTR], refer https://man7.org/linux/man-pages/man3/pthread_cond_timedwait.3p.html
             waitRet = celixThreadCondition_timedwaitRelative(&pool->heartbeatThreadStoped, &pool->mutex, SHM_HEART_BEAT_UPDATE_INTERVAL_IN_S, 0);
         }
         pool->sharedInfo->heartbeatCnt++;
