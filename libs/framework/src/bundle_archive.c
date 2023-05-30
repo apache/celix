@@ -60,22 +60,38 @@ struct bundleArchive {
 };
 
 static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_archive_pt archive) {
-    celix_properties_t* bundleStateProperties = celix_properties_create();
+    bool needUpdate = false;
+    celix_properties_t* bundleStateProperties = NULL;
+    bundleStateProperties = celix_properties_load(archive->savedBundleStatePropertiesPath);
+    if (bundleStateProperties == NULL) {
+        bundleStateProperties = celix_properties_create();
+    }
     if (bundleStateProperties == NULL) {
         return CELIX_ENOMEM;
     }
-    celixThreadMutex_lock(&archive->lock);
     //set/update bundle cache state properties
-    celix_properties_setLong(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, archive->id);
-    celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, archive->location);
-    celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME,
-                         archive->bundleSymbolicName);
-    celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME, archive->bundleVersion);
+    if (celix_properties_getAsLong(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, 0) != archive->id) {
+        celix_properties_setLong(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, archive->id);
+        needUpdate = true;
+    }
+    if (strcmp(celix_properties_get(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, ""), archive->location) != 0) {
+        celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, archive->location);
+        needUpdate = true;
+    }
+    if (strcmp(celix_properties_get(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME, ""), archive->bundleSymbolicName) != 0) {
+        celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME, archive->bundleSymbolicName);
+        needUpdate = true;
+    }
+    if (strcmp(celix_properties_get(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME, ""), archive->bundleVersion) != 0) {
+        celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME, archive->bundleVersion);
+        needUpdate = true;
+    }
 
     //save bundle cache state properties
-    celix_properties_store(bundleStateProperties, archive->savedBundleStatePropertiesPath,
-                           "Bundle State Properties");
-    celixThreadMutex_unlock(&archive->lock);
+    if (needUpdate) {
+        celix_properties_store(bundleStateProperties, archive->savedBundleStatePropertiesPath,
+                               "Bundle State Properties");
+    }
     celix_properties_destroy(bundleStateProperties);
     return CELIX_SUCCESS;
 }
