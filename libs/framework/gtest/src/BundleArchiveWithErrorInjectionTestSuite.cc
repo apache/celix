@@ -226,3 +226,20 @@ TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveCreateErrorTest) {
 
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_destroy(cache));
 }
+
+TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveReviseErrorTest) {
+    celix_bundle_cache_t* cache = nullptr;
+    createCache(&cache);
+    bundle_archive_t* archive = nullptr;
+
+    // revision creation failure
+    EXPECT_EQ(CELIX_SUCCESS,
+              celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
+    EXPECT_NE(nullptr, archive);
+    celix_ei_expect_calloc((void*)celix_bundleRevision_create, 0, nullptr);
+    EXPECT_EQ(CELIX_ENOMEM, bundleArchive_revise(archive, SIMPLE_TEST_BUNDLE1_LOCATION, nullptr));
+    EXPECT_EQ(CELIX_SUCCESS, bundleArchive_destroy(archive));
+    EXPECT_EQ(CELIX_SUCCESS, celix_utils_deleteDirectory(TEST_ARCHIVE_ROOT, nullptr));
+
+    EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_destroy(cache));
+}

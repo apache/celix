@@ -437,7 +437,7 @@ celix_status_t bundleArchive_revise(bundle_archive_pt archive, const char * loca
             archive->revision = revised;
             bundleRevision_destroy(current);
         } else {
-            status = CELIX_BUNDLE_EXCEPTION;
+            status = CELIX_ENOMEM;
             reason = "bundle revision creation";
         }
     } else {
@@ -452,7 +452,7 @@ celix_status_t bundleArchive_revise(bundle_archive_pt archive, const char * loca
     }
 revise_finished:
     celixThreadMutex_unlock(&archive->lock);
-    framework_logIfError(archive->fw->logger, status, reason, "Cannot update bundle archive %s", updatedBundleUrl);
+    framework_logIfError(archive->fw->logger, status, reason, "Cannot update bundle archive %s", updateUrl);
     return status;
 }
 
