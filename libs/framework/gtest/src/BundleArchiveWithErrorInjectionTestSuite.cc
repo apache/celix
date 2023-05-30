@@ -19,9 +19,11 @@
 
 #include <gtest/gtest.h>
 
+#include <unistd.h>
+
 #include "celix_constants.h"
 #include "celix_file_utils.h"
-#include "celix_framework_utils.h"
+#include "celix_framework_utils_private.h"
 #include "celix_log.h"
 #include "celix_properties_ei.h"
 #include "celix_utils_ei.h"
@@ -33,6 +35,7 @@
 #include "bundle_revision_private.h"
 #include "framework_private.h"
 #include "malloc_ei.h"
+#include "manifest.h"
 
 class BundleArchiveWithErrorInjectionTestSuite : public ::testing::Test {
   public:
@@ -177,6 +180,7 @@ class CelixBundleArchiveErrorInjectionTestSuite : public ::testing::Test {
         celix_ei_expect_celix_utils_deleteDirectory(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_celix_utils_writeOrCreateString(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_extractZipData(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_utils_extractZipFile(nullptr, 0, CELIX_SUCCESS);
     }
     struct celix_framework fw {};
 };
@@ -240,6 +244,29 @@ TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveReviseErrorTest) {
     EXPECT_EQ(CELIX_ENOMEM, bundleArchive_revise(archive, SIMPLE_TEST_BUNDLE1_LOCATION, nullptr));
     EXPECT_EQ(CELIX_SUCCESS, bundleArchive_destroy(archive));
     EXPECT_EQ(CELIX_SUCCESS, celix_utils_deleteDirectory(TEST_ARCHIVE_ROOT, nullptr));
+    teardownErrorInjectors();
+
+    // manifest clone failure
+    EXPECT_EQ(CELIX_SUCCESS,
+              celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
+    EXPECT_NE(nullptr, archive);
+    celix_ei_expect_malloc((void*)manifest_clone, 1, nullptr);
+    EXPECT_EQ(CELIX_ENOMEM, bundleArchive_revise(archive, SIMPLE_TEST_BUNDLE1_LOCATION, nullptr));
+    EXPECT_EQ(CELIX_SUCCESS, bundleArchive_destroy(archive));
+    EXPECT_EQ(CELIX_SUCCESS, celix_utils_deleteDirectory(TEST_ARCHIVE_ROOT, nullptr));
+    teardownErrorInjectors();
+
+    // extract zip data failure
+    EXPECT_EQ(CELIX_SUCCESS,
+              celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
+    EXPECT_NE(nullptr, archive);
+    celix_ei_expect_celix_utils_extractZipFile((void*)celix_framework_utils_extractBundle, 1, CELIX_FILE_IO_EXCEPTION);
+    usleep(10000); // sleep to ensure that the last modified time is different (otherwise the revision is not updated
+    celix_utils_touch(SIMPLE_TEST_BUNDLE1_LOCATION);
+    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION, bundleArchive_revise(archive, SIMPLE_TEST_BUNDLE1_LOCATION, nullptr));
+    EXPECT_EQ(CELIX_SUCCESS, bundleArchive_destroy(archive));
+    EXPECT_EQ(CELIX_SUCCESS, celix_utils_deleteDirectory(TEST_ARCHIVE_ROOT, nullptr));
+    teardownErrorInjectors();
 
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_destroy(cache));
 }
