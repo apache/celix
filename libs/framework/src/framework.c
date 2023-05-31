@@ -525,10 +525,10 @@ static void framework_autoInstallConfiguredBundlesForList(celix_framework_t* fw,
         char *location = strtok_r(autoStart, delims, &save_ptr);
         while (location != NULL) {
             //first install
-            bundle_t *bnd = NULL;
-            if (celix_framework_installBundleInternal(fw, location, &bnd) == CELIX_SUCCESS) {
+            long id = -1L;
+            if (celix_framework_installBundleInternal(fw, location, &id) == CELIX_SUCCESS) {
                 if (installedBundles) {
-                    celix_arrayList_add(installedBundles, bnd);
+                    celix_arrayList_addLong(installedBundles, id);
                 }
             } else {
                 fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Could not install bundle from location '%s'.", location);
@@ -544,8 +544,8 @@ static void framework_autoInstallConfiguredBundlesForList(celix_framework_t* fw,
 static void framework_autoStartConfiguredBundlesForList(celix_framework_t* fw, const celix_array_list_t *installedBundles) {
     assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
     for (int i = 0; i < celix_arrayList_size(installedBundles); ++i) {
-        bundle_t *bnd = celix_arrayList_get(installedBundles, i);
-        long bndId = celix_bundle_getId(bnd);
+        long bndId = celix_arrayList_getLong(installedBundles, i);
+        bundle_t* bnd = framework_getBundleById(fw, bndId);
         if (celix_bundle_getState(bnd) != OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
             bool started = celix_framework_startBundle(fw, bndId);
             if (!started) {
@@ -620,9 +620,11 @@ bool celix_framework_getConfigPropertyAsBool(celix_framework_t* framework, const
     return result;
 }
 
-celix_status_t celix_framework_installBundleInternal(celix_framework_t *framework, const char *bndLoc, celix_bundle_t **bundleOut) {
+celix_status_t
+celix_framework_installBundleInternal(celix_framework_t* framework, const char* bndLoc, long* bundleOut) {
     celix_status_t status = CELIX_SUCCESS;
     celix_bundle_t* bundle = NULL;
+    long id = -1L;
 
     bundle_state_e state = CELIX_BUNDLE_STATE_UNKNOWN;
 
@@ -634,24 +636,24 @@ celix_status_t celix_framework_installBundleInternal(celix_framework_t *framewor
     //increase use count of framework bundle to prevent a stop.
     celix_framework_bundle_entry_t *fwBundleEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
                                                                                                           framework->bundleId);
-  	status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
-  	if (status == CELIX_SUCCESS) {
+    status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
+    if (status == CELIX_SUCCESS) {
         if (state == CELIX_BUNDLE_STATE_STOPPING || state == CELIX_BUNDLE_STATE_UNINSTALLED) {
             fw_log(framework->logger, CELIX_LOG_LEVEL_INFO,  "The framework is being shutdown");
             status = CELIX_FRAMEWORK_SHUTDOWN;
         }
-  	}
+    }
 
     if (status == CELIX_SUCCESS) {
-        bundle = framework_getBundle(framework, bndLoc);
-        if (bundle != NULL) {
+        id = framework_getBundle(framework, bndLoc);
+        if (id != -1L) {
             celix_framework_bundleEntry_decreaseUseCount(fwBundleEntry);
-            *bundleOut = bundle;
+            *bundleOut = id;
             return CELIX_SUCCESS;
         }
 
         long alreadyExistingBndId = celix_bundleCache_findBundleIdForLocation(framework->cache, bndLoc);
-        long id = alreadyExistingBndId == -1 ? framework_getNextBundleId(framework) : alreadyExistingBndId;
+        id = alreadyExistingBndId == -1 ? framework_getNextBundleId(framework) : alreadyExistingBndId;
         bundle_archive_t* archive = NULL;
         status = CELIX_DO_IF(status, celix_bundleCache_createArchive(framework->cache, id, bndLoc, &archive));
         status = CELIX_DO_IF(status, celix_bundle_createFromArchive(framework, archive, &bundle));
@@ -667,14 +669,14 @@ celix_status_t celix_framework_installBundleInternal(celix_framework_t *framewor
     }
 
     if (status == CELIX_SUCCESS) {
-        *bundleOut = bundle;
+        *bundleOut = id;
     } else {
         fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not install bundle");
     }
 
     celix_framework_bundleEntry_decreaseUseCount(fwBundleEntry);
 
-  	return status;
+    return status;
 }
 
 bool celix_framework_isBundleAlreadyInstalled(celix_framework_t* fw, const char* bundleSymbolicName) {
@@ -1112,8 +1114,8 @@ array_list_pt framework_getBundles(framework_pt framework) {
     return bundles;
 }
 
-bundle_pt framework_getBundle(framework_pt framework, const char* location) {
-    bundle_t *bnd = NULL;
+long framework_getBundle(framework_pt framework, const char* location) {
+    long id = -1L;
 
     celixThreadMutex_lock(&framework->installedBundles.mutex);
     int size = celix_arrayList_size(framework->installedBundles.entries);
@@ -1122,13 +1124,13 @@ bundle_pt framework_getBundle(framework_pt framework, const char* location) {
         const char *loc = NULL;
         bundle_getBundleLocation(entry->bnd, &loc);
         if (loc != NULL && location != NULL && strncmp(loc, location, strlen(loc)) == 0) {
-            bnd = entry->bnd;
+            id = entry->bndId;
             break;
         }
     }
     celixThreadMutex_unlock(&framework->installedBundles.mutex);
 
-    return bnd;
+    return id;
 }
 
 celix_status_t framework_waitForStop(framework_pt framework) {
@@ -1833,12 +1835,10 @@ static void celix_framework_waitForBundleEvents(celix_framework_t *fw, long bndI
 
 static long celix_framework_installAndStartBundleInternal(celix_framework_t *fw, const char *bundleLoc, bool autoStart, bool forcedAsync) {
     long bundleId = -1;
-    bundle_t *bnd = NULL;
     celix_status_t status = CELIX_SUCCESS;
 
-    if (celix_framework_installBundleInternal(fw, bundleLoc, &bnd) == CELIX_SUCCESS) {
-        status = bundle_getBundleId(bnd, &bundleId);
-        if (status == CELIX_SUCCESS && autoStart) {
+    if (celix_framework_installBundleInternal(fw, bundleLoc, &bundleId) == CELIX_SUCCESS) {
+        if (autoStart) {
             celix_framework_bundle_entry_t* bndEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw,
                                                                                                                      bundleId);
             if (bndEntry != NULL) {

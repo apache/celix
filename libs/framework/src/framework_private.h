@@ -249,8 +249,7 @@ double celix_framework_getConfigPropertyAsDouble(celix_framework_t* framework, c
  */
 bool celix_framework_getConfigPropertyAsBool(celix_framework_t* framework, const char* name, bool defaultValue, bool* found);
 
-
-celix_status_t celix_framework_installBundleInternal(celix_framework_t *framework, const char *bndLoc, celix_bundle_t **bundleOut);
+celix_status_t celix_framework_installBundleInternal(celix_framework_t* framework, const char* bndLoc, long* bundleOut);
 
 celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, const void* svcObj, properties_pt properties);
 celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, service_factory_pt factory, properties_pt properties);
@@ -271,7 +270,7 @@ celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bund
 celix_status_t framework_markResolvedModules(framework_pt framework, linked_list_pt wires);
 
 array_list_pt framework_getBundles(framework_pt framework) __attribute__((deprecated("not thread safe, use celix_framework_useBundles instead")));
-bundle_pt framework_getBundle(framework_pt framework, const char* location);
+long framework_getBundle(framework_pt framework, const char* location);
 bundle_pt framework_getBundleById(framework_pt framework, long id);
 
 
