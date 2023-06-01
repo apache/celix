@@ -40,6 +40,7 @@
 
 #include "celix_threads.h"
 #include "service_registry.h"
+#include <stdbool.h>
 
 #ifndef CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE
 #define CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE 1024
@@ -147,6 +148,7 @@ struct celix_framework {
         celix_thread_t thread;
     } shutdown;
 
+    celix_thread_mutex_t installLock; // serialize install/uninstall
     struct {
         celix_array_list_t *entries; //value = celix_framework_bundle_entry_t*. Note ordered by installed bundle time
                                      //i.e. later installed bundle are last
@@ -426,7 +428,7 @@ celix_status_t celix_framework_stopBundleEntry(celix_framework_t* fw, celix_fram
 /**
  * Uninstall a bundle. Cannot be called on the Celix event thread.
  */
-celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool permanent);
 
 /**
  * Uninstall a bundle. Cannot be called on the Celix event thread.

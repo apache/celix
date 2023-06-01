@@ -239,6 +239,7 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     celixThreadMutex_create(&framework->dispatcher.mutex, NULL);
     celixThreadMutex_create(&framework->frameworkListenersLock, NULL);
     celixThreadMutex_create(&framework->bundleListenerLock, NULL);
+    celixThreadMutex_create(&framework->installLock, NULL);
     celixThreadMutex_create(&framework->installedBundles.mutex, NULL);
     celixThreadCondition_init(&framework->dispatcher.cond, NULL);
     framework->dispatcher.active = true;
@@ -359,6 +360,7 @@ celix_status_t framework_destroy(framework_pt framework) {
     celixThreadMutex_unlock(&framework->installedBundles.mutex);
     celix_arrayList_destroy(framework->installedBundles.entries);
     celixThreadMutex_destroy(&framework->installedBundles.mutex);
+    celixThreadMutex_destroy(&framework->installLock);
 
     //teardown framework bundle lifecycle handling
     assert(celix_arrayList_size(framework->bundleLifecycleHandling.bundleLifecycleHandlers) == 0);
@@ -646,11 +648,13 @@ celix_framework_installBundleInternal(celix_framework_t* framework, const char* 
         }
     }
 
+    celixThreadMutex_lock(&framework->installLock);
     if (status == CELIX_SUCCESS) {
         id = framework_getBundle(framework, bndLoc);
         if (id != -1L) {
             celix_framework_bundleEntry_decreaseUseCount(fwBundleEntry);
             *bundleOut = id;
+            celixThreadMutex_unlock(&framework->installLock);
             return CELIX_SUCCESS;
         }
 
@@ -677,7 +681,7 @@ celix_framework_installBundleInternal(celix_framework_t* framework, const char* 
     }
 
     celix_framework_bundleEntry_decreaseUseCount(fwBundleEntry);
-
+    celixThreadMutex_unlock(&framework->installLock);
     return status;
 }
 
@@ -1177,7 +1181,7 @@ static void* framework_shutdown(void *framework) {
     }
     for (int i = size-1; i >= 0; --i) { //note loop in reverse order -> uninstall later installed bundle first
         celix_framework_bundle_entry_t *entry = celix_arrayList_get(stopEntries, i);
-        celix_framework_uninstallBundleEntry(fw, entry);
+        celix_framework_uninstallBundleEntry(fw, entry, false);
     }
     celix_arrayList_destroy(stopEntries);
 
@@ -1888,10 +1892,11 @@ void celix_framework_uninstallBundleAsync(celix_framework_t *fw, long bndId) {
     celix_framework_uninstallBundleInternal(fw, bndId, true);
 }
 
-celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework, celix_framework_bundle_entry_t* bndEntry) {
+celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework, celix_framework_bundle_entry_t* bndEntry, bool permanent) {
     assert(!celix_framework_isCurrentThreadTheEventLoop(framework));
-    celixThreadRwlock_writeLock(&bndEntry->fsmMutex);
 
+    celixThreadMutex_lock(&framework->installLock);
+    celixThreadRwlock_writeLock(&bndEntry->fsmMutex);
     celix_bundle_state_e bndState = celix_bundle_getState(bndEntry->bnd);
     if (bndState == CELIX_BUNDLE_STATE_ACTIVE) {
         celix_framework_stopBundleEntryInternal(framework, bndEntry);
@@ -1900,6 +1905,7 @@ celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework
     if (!fw_bundleEntry_removeBundleEntry(framework, bndEntry)) {
         celixThreadRwlock_unlock(&bndEntry->fsmMutex);
         celix_framework_bundleEntry_decreaseUseCount(bndEntry);
+        celixThreadMutex_unlock(&framework->installLock);
         return CELIX_ILLEGAL_STATE;
     }
 
@@ -1932,8 +1938,13 @@ celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework
         celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
         (void)bundle_closeModules(bnd);
         (void)bundle_destroy(bnd);
-        (void)bundleArchive_destroy(archive);
+        if(permanent) {
+            (void)celix_bundleCache_destroyArchive(framework->cache, archive);
+        } else {
+            (void)bundleArchive_destroy(archive);
+        }
     }
+    celixThreadMutex_unlock(&framework->installLock);
     framework_logIfError(framework->logger, status, "", "Cannot uninstall bundle");
     return status;
 }
