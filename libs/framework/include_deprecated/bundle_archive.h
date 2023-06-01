@@ -96,8 +96,11 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_getPersistentStat
  *
  * @param[in] archive The bundle archive.
  * @param[out] lastModified The last modified time of the bundle archive.
- * @return CELIX_SUCCESS if the last modified time could be retrieved, CELIX_FILE_IO_EXCEPTION if the last modified
- * time could not be retrieved. Check errno for more specific error information.
+ * @return Status code indication failure or success:
+ *      - CELIX_SUCCESS when no errors are encountered.
+ *      - CELIX_FILE_IO_EXCEPTION if the last modified time could not be retrieved.
+ *        Check errno for more specific error information.when root of the archive is not a directory.
+ *      - CELIX_ENOMEM not enough memory for manifest file path.
  */
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, struct timespec* lastModified);
 

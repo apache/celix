@@ -51,6 +51,9 @@ TEST_F(CelixBundleCacheTestSuite, ArchiveCreateDestroyTest) {
     bundle_archive_t* archive = nullptr;
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_createArchive(fw.cache, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_NE(nullptr, archive);
+    auto location = celix_bundleArchive_getLocation(archive);
+    EXPECT_STREQ(SIMPLE_TEST_BUNDLE1_LOCATION, location);
+    free(location);
     EXPECT_EQ(1, celix_bundleCache_findBundleIdForLocation(fw.cache, SIMPLE_TEST_BUNDLE1_LOCATION));
     EXPECT_TRUE(celix_bundleCache_isBundleIdAlreadyUsed(fw.cache, 1));
     std::string loc = celix_bundleArchive_getPersistentStoreRoot(archive);
@@ -69,6 +72,7 @@ TEST_F(CelixBundleCacheTestSuite, SystemArchiveCreateDestroyTest) {
     EXPECT_EQ(0, celix_bundleArchive_getId(archive));
     EXPECT_EQ(CELIX_SUCCESS, bundleArchive_getArchiveRoot(archive, &archiveRoot));
     EXPECT_EQ(nullptr, archiveRoot);
+    EXPECT_EQ(nullptr, celix_bundleArchive_getLocation(archive));
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_destroyArchive(fw.cache, archive));
 }
 
