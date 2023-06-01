@@ -51,6 +51,7 @@
 
 typedef struct celix_framework_bundle_entry {
     celix_bundle_t *bnd;
+    celix_thread_rwlock_t fsmMutex; //protects bundle state transition
     long bndId;
 
     celix_thread_mutex_t useMutex; //protects useCount
