@@ -1872,11 +1872,11 @@ long celix_framework_installBundleAsync(celix_framework_t *fw, const char *bundl
     return celix_framework_installAndStartBundleInternal(fw, bundleLoc, autoStart, true);
 }
 
-static bool celix_framework_uninstallBundleInternal(celix_framework_t *fw, long bndId, bool forcedAsync) {
+static bool celix_framework_uninstallBundleInternal(celix_framework_t *fw, long bndId, bool forcedAsync, bool permanent) {
     bool uninstalled = false;
     celix_framework_bundle_entry_t *bndEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
     if (bndEntry != NULL) {
-        celix_status_t status = celix_framework_uninstallBundleOnANonCelixEventThread(fw, bndEntry, forcedAsync);
+        celix_status_t status = celix_framework_uninstallBundleOnANonCelixEventThread(fw, bndEntry, forcedAsync, permanent);
         celix_framework_waitForBundleEvents(fw, bndId);
         //note not decreasing bndEntry, because this entry should now be deleted (uninstalled)
         uninstalled = status == CELIX_SUCCESS;
@@ -1885,11 +1885,19 @@ static bool celix_framework_uninstallBundleInternal(celix_framework_t *fw, long 
 }
 
 bool celix_framework_uninstallBundle(celix_framework_t *fw, long bndId) {
-    return celix_framework_uninstallBundleInternal(fw, bndId, false);
+    return celix_framework_uninstallBundleInternal(fw, bndId, false, true);
 }
 
 void celix_framework_uninstallBundleAsync(celix_framework_t *fw, long bndId) {
-    celix_framework_uninstallBundleInternal(fw, bndId, true);
+    celix_framework_uninstallBundleInternal(fw, bndId, true, true);
+}
+
+bool celix_framework_unloadBundle(celix_framework_t *fw, long bndId) {
+    return celix_framework_uninstallBundleInternal(fw, bndId, false, false);
+}
+
+void celix_framework_unloadBundleAsync(celix_framework_t *fw, long bndId) {
+    celix_framework_uninstallBundleInternal(fw, bndId, true, false);
 }
 
 celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework, celix_framework_bundle_entry_t* bndEntry, bool permanent) {

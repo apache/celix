@@ -113,7 +113,8 @@ enum celix_bundle_lifecycle_command {
     CELIX_BUNDLE_LIFECYCLE_START,
     CELIX_BUNDLE_LIFECYCLE_STOP,
     CELIX_BUNDLE_LIFECYCLE_UNINSTALL,
-    CELIX_BUNDLE_LIFECYCLE_UPDATE
+    CELIX_BUNDLE_LIFECYCLE_UPDATE,
+    CELIX_BUNDLE_LIFECYCLE_UNLOAD
 };
 
 typedef struct celix_framework_bundle_lifecycle_handler {
@@ -396,9 +397,10 @@ celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_
  * @param fw The Celix framework
  * @param bndEntry A bnd entry
  * @param forceSpawnThread If the true, the start bundle will always be done on a spawn thread
+ * @param permanent If true, the bundle will be permanently uninstalled (e.g. the bundle archive will be removed).
  * @return CELIX_SUCCESS of the call went alright.
  */
-celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread);
+celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread, bool permanent);
 
 /**
  * Update (and if needed stop and start) a bundle and ensure that this is not done on the Celix event thread.

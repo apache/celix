@@ -906,6 +906,22 @@ CELIX_FRAMEWORK_EXPORT long celix_bundleContext_installBundle(celix_bundle_conte
 CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_uninstallBundle(celix_bundle_context_t *ctx, long bndId);
 
 /**
+ * @brief Unload the bundle with the provided bundle id. If needed the bundle will be stopped first.
+ * Will silently ignore bundle ids < 0.
+ * Note that unloaded bundle is kept in bundle cache and can be reloaded with the celix_bundleContext_installBundle function.
+ *
+ * If this function is called on the Celix event thread, the actual stopping of the bundle will be done async and
+ * on a separate thread.
+ * If this function is called from a different thread than the Celix event thread, then the function will return after
+ * the bundle is stopped.
+ *
+ * @param ctx The bundle context
+ * @param bndId The bundle id to unload.
+ * @return true if the bundle is correctly unloaded. False if not.
+ */
+CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_unloadBundle(celix_bundle_context_t *ctx, long bndId);
+
+/**
  * @brief Stop the bundle with the provided bundle id.
  * Will silently ignore bundle ids < 0.
  *

@@ -238,8 +238,8 @@ celix_status_t bundle_update(bundle_pt bundle, const char* updatedBundleUrl) {
 }
 
 celix_status_t bundle_stop(bundle_pt bundle) {
-    //note deprecated call use celix_bundleContext_startBundle instead
-    return celix_framework_startBundle(bundle->framework, celix_bundle_getId(bundle));
+    //note deprecated call use celix_bundleContext_stopBundle instead
+    return celix_framework_stopBundle(bundle->framework, celix_bundle_getId(bundle));
 }
 
 celix_status_t bundle_uninstall(bundle_pt bundle) {

@@ -203,11 +203,87 @@ TEST_F(CelixBundleContextBundlesTestSuite, InstallAndUninstallBundlesTest) {
     long bndId6 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
 
     ASSERT_TRUE(bndId4 >= 0L);
-    ASSERT_FALSE(bndId1 == bndId4); //bundle cache -> reuse of bundle id.
+    ASSERT_FALSE(bndId1 == bndId4);
     ASSERT_TRUE(bndId5 >= 0L);
-    ASSERT_FALSE(bndId2 == bndId5); //bundle cache -> reuse of bundle id.
+    ASSERT_FALSE(bndId2 == bndId5);
     ASSERT_TRUE(bndId6 >= 0L);
-    ASSERT_FALSE(bndId3 == bndId6); //bundle cache -> reuse of bundle id.
+    ASSERT_FALSE(bndId3 == bndId6);
+}
+
+TEST_F(CelixBundleContextBundlesTestSuite, InstallAndUnloadBundlesTest) {
+    //install bundles
+    long bndId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    long bndId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false);
+    long bndId3 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
+
+    ASSERT_TRUE(bndId1 >= 0L);
+    ASSERT_TRUE(bndId2 >= 0L);
+    ASSERT_TRUE(bndId3 >= 0L);
+
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId2));
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId3));
+
+    ASSERT_TRUE(celix_bundleContext_isBundleActive(ctx, bndId1));
+    ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId2)); //not auto started
+    ASSERT_TRUE(celix_bundleContext_isBundleActive(ctx, bndId3));
+
+    char *bndRoot1 = nullptr;
+    ASSERT_TRUE(celix_bundleContext_useBundle(ctx, bndId1, &bndRoot1, [](void* handle, const celix_bundle_t* bnd) {
+      char **root = static_cast<char **>(handle);
+      *root = celix_bundle_getEntry(bnd, "/");
+    }));
+    ASSERT_TRUE(bndRoot1 != nullptr);
+    char* bndRoot2 = nullptr;
+    ASSERT_TRUE(celix_bundleContext_useBundle(ctx, bndId2, &bndRoot2, [](void* handle, const celix_bundle_t* bnd) {
+      char **root = static_cast<char **>(handle);
+      *root = celix_bundle_getEntry(bnd, "/");
+    }));
+    ASSERT_TRUE(bndRoot2 != nullptr);
+    char* bndRoot3 = nullptr;
+    ASSERT_TRUE(celix_bundleContext_useBundle(ctx, bndId3, &bndRoot3, [](void* handle, const celix_bundle_t* bnd) {
+      char **root = static_cast<char **>(handle);
+      *root = celix_bundle_getEntry(bnd, "/");
+    }));
+    ASSERT_TRUE(bndRoot3 != nullptr);
+
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot1));
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot2));
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot3));
+
+    //unload bundles
+    ASSERT_TRUE(celix_bundleContext_unloadBundle(ctx, bndId1));
+    ASSERT_TRUE(celix_bundleContext_unloadBundle(ctx, bndId2));
+    ASSERT_TRUE(celix_bundleContext_unloadBundle(ctx, bndId3));
+
+    ASSERT_FALSE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    ASSERT_FALSE(celix_bundleContext_isBundleInstalled(ctx, bndId2));
+    ASSERT_FALSE(celix_bundleContext_isBundleInstalled(ctx, bndId3));
+
+    ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId1)); //not uninstall -> not active
+    ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId2));
+    ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId3));
+
+    // bundle cache is NOT cleaned up
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot1));
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot2));
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot3));
+
+    free(bndRoot1);
+    free(bndRoot2);
+    free(bndRoot3);
+
+    //reinstall bundles
+    long bndId4 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    long bndId5 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false);
+    long bndId6 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
+
+    ASSERT_TRUE(bndId4 >= 0L);
+    ASSERT_TRUE(bndId1 == bndId4); //bundle cache -> reuse of bundle id.
+    ASSERT_TRUE(bndId5 >= 0L);
+    ASSERT_TRUE(bndId2 == bndId5); //bundle cache -> reuse of bundle id.
+    ASSERT_TRUE(bndId6 >= 0L);
+    ASSERT_TRUE(bndId3 == bndId6); //bundle cache -> reuse of bundle id.
 }
 
 TEST_F(CelixBundleContextBundlesTestSuite, StartBundleWithException) {

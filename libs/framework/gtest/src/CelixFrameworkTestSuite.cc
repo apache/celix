@@ -93,6 +93,15 @@ TEST_F(CelixFrameworkTestSuite, AsyncInstallStartStopAndUninstallBundleTest) {
     std::this_thread::sleep_for(std::chrono::milliseconds{100});
     EXPECT_FALSE(celix_framework_isBundleActive(framework.get(), bndId));
 
+    celix_framework_unloadBundleAsync(framework.get(), bndId);
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    EXPECT_FALSE(celix_framework_isBundleInstalled(framework.get(), bndId));
+
+    // reloaded bundle should reuse the same bundle id
+    EXPECT_EQ(bndId, celix_framework_installBundleAsync(framework.get(), SIMPLE_TEST_BUNDLE1_LOCATION, false));
+    EXPECT_TRUE(celix_framework_isBundleInstalled(framework.get(), bndId));
+    EXPECT_FALSE(celix_framework_isBundleActive(framework.get(), bndId));
+
     celix_framework_uninstallBundleAsync(framework.get(), bndId);
     std::this_thread::sleep_for(std::chrono::milliseconds{100});
     EXPECT_FALSE(celix_framework_isBundleInstalled(framework.get(), bndId));

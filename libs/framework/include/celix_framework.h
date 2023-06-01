@@ -139,6 +139,17 @@ CELIX_FRAMEWORK_EXPORT long celix_framework_installBundle(celix_framework_t *fw,
 CELIX_FRAMEWORK_EXPORT bool celix_framework_uninstallBundle(celix_framework_t *fw, long bndId);
 
 /**
+ * @brief Unload the bundle with the provided bundle id. If needed the bundle will be stopped first.
+ * Will silently ignore bundle ids < 0.
+ * Note that unloaded bundle is kept in bundle cache and can be reloaded with the celix_framework_installBundle function.
+ *
+ * @param fw The Celix framework
+ * @param bndId The bundle id to unload.
+ * @return true if the bundle is correctly unloaded. False if not.
+ */
+CELIX_FRAMEWORK_EXPORT bool celix_framework_unloadBundle(celix_framework_t *fw, long bndId);
+
+/**
  * @brief Update the bundle with the provided bundle id.
  *
  * This will do the following:
@@ -220,6 +231,17 @@ CELIX_FRAMEWORK_EXPORT void celix_framework_updateBundleAsync(celix_framework_t 
  * @param bndId The bundle id to uninstall.
  */
 CELIX_FRAMEWORK_EXPORT void celix_framework_uninstallBundleAsync(celix_framework_t *fw, long bndId);
+
+/**
+ * @brief Unload the bundle with the provided bundle id async. If needed the bundle will be stopped first.
+ * Will silently ignore bundle ids < 0.
+ * Note that unloaded bundle is kept in bundle cache and can be reloaded with the celix_framework_installBundle function.
+ * The bundle will be unloaded on a separate spawned thread.
+ *
+ * @param fw The Celix framework
+ * @param bndId The bundle id to unload.
+ */
+CELIX_FRAMEWORK_EXPORT void celix_framework_unloadBundleAsync(celix_framework_t *fw, long bndId);
 
 /**
  * @brief Stop the bundle with the provided bundle id async.

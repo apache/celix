@@ -995,6 +995,10 @@ bool celix_bundleContext_uninstallBundle(bundle_context_t *ctx, long bndId) {
     return celix_framework_uninstallBundle(ctx->framework, bndId);
 }
 
+bool celix_bundleContext_unloadBundle(celix_bundle_context_t *ctx, long bndId) {
+    return celix_framework_unloadBundle(ctx->framework, bndId);
+}
+
 bool celix_bundleContext_useServiceWithId(
         bundle_context_t *ctx,
         long serviceId,
