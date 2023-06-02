@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "celix_framework.h"
 #include "celix_shell_constants.h"
 #include "celix_bundle_context.h"
 #include "std_commands.h"
@@ -129,7 +130,7 @@ static void queryCommand_callback(void *handle, const celix_bundle_t *bnd) {
 
 
 static void queryCommand_listServicesForBundle(celix_bundle_context_t *ctx, long bndId, struct bundle_callback_data *data, const struct query_options *opts, FILE *sout, FILE *serr) {
-    bool called = celix_bundleContext_useBundle(ctx, bndId, data, queryCommand_callback);
+    bool called = celix_framework_useBundle(celix_bundleContext_getFramework(ctx), true, bndId, data, queryCommand_callback);
     if (!called) {
         fprintf(serr, "Bundle %li not installed!", bndId);
     }

@@ -1513,8 +1513,7 @@ static celix_status_t frameworkActivator_destroy(void * userData, bundle_context
  **********************************************************************************************************************
  **********************************************************************************************************************/
 
-
-size_t celix_framework_useBundles(framework_t *fw, bool includeFrameworkBundle, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
+static size_t celix_framework_useBundlesInternal(framework_t *fw, bool includeFrameworkBundle, bool onlyActive, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
     size_t count = 0;
     celix_array_list_t *bundleIds = celix_arrayList_create();
 
@@ -1534,7 +1533,7 @@ size_t celix_framework_useBundles(framework_t *fw, bool includeFrameworkBundle, 
     size = celix_arrayList_size(bundleIds);
     for (int i = 0; i < size; ++i) {
         long bndId = celix_arrayList_getLong(bundleIds, i);
-        bool called = celix_framework_useBundle(fw, false, bndId, callbackHandle, use);
+        bool called = celix_framework_useBundle(fw, onlyActive, bndId, callbackHandle, use);
         if (called) {
             ++count;
         }
@@ -1542,6 +1541,15 @@ size_t celix_framework_useBundles(framework_t *fw, bool includeFrameworkBundle, 
 
     celix_arrayList_destroy(bundleIds);
     return count;
+
+}
+
+size_t celix_framework_useBundles(framework_t *fw, bool includeFrameworkBundle, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
+    return celix_framework_useBundlesInternal(fw, includeFrameworkBundle, false, callbackHandle, use);
+}
+
+size_t celix_framework_useActiveBundles(framework_t *fw, bool includeFrameworkBundle, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
+    return celix_framework_useBundlesInternal(fw, includeFrameworkBundle, true, callbackHandle, use);
 }
 
 bool celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
@@ -1551,7 +1559,9 @@ bool celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, 
                                                                                                               bundleId);
 
         if (entry != NULL) {
-            celixThreadRwlock_readLock(&entry->fsmMutex);
+            if (onlyActive) {
+                celixThreadRwlock_readLock(&entry->fsmMutex);
+            }
             celix_bundle_state_e bndState = celix_bundle_getState(entry->bnd);
             if (onlyActive && (bndState == CELIX_BUNDLE_STATE_ACTIVE || bndState == CELIX_BUNDLE_STATE_STARTING)) {
                 use(callbackHandle, entry->bnd);
@@ -1560,7 +1570,9 @@ bool celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, 
                 use(callbackHandle, entry->bnd);
                 called = true;
             }
-            celixThreadRwlock_unlock(&entry->fsmMutex);
+            if (onlyActive) {
+                celixThreadRwlock_unlock(&entry->fsmMutex);
+            }
             celix_framework_bundleEntry_decreaseUseCount(entry);
         } else {
             framework_logIfError(fw->logger, CELIX_FRAMEWORK_EXCEPTION, NULL, "Bundle with id %li is not installed", bundleId);

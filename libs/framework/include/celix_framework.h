@@ -74,21 +74,50 @@ CELIX_FRAMEWORK_EXPORT celix_bundle_context_t* celix_framework_getFrameworkConte
 CELIX_FRAMEWORK_EXPORT celix_bundle_t* celix_framework_getFrameworkBundle(const celix_framework_t *fw);
 
 /**
- * @brief * @brief Use the currently installed bundles.
+ * @brief Use the currently installed bundles.
  * The provided callback will be called for all the currently installed bundles.
  *
- * @param ctx                       The bundle context.
+ * @warning It is dangerous to use the provided bundle's context from the callback, since it may be invalid for an inactive bundle.
+ *
+ * @param fw                        The framework.
  * @param includeFrameworkBundle    If true the callback will also be triggered for the framework bundle.
  * @param callbackHandle            The data pointer, which will be used in the callbacks
  * @param use                       The callback which will be called for the currently installed bundles.
  *                                  The bundle pointers are only guaranteed to be valid during the callback.
  * @return                          The number of times the use callback is called.
  */
-CELIX_FRAMEWORK_EXPORT size_t celix_framework_useBundles(celix_framework_t *fw, bool includeFrameworkBundle, void *callbackHandle, void(*use)(void *handle, const celix_bundle_t *bnd));
+CELIX_FRAMEWORK_EXPORT size_t celix_framework_useBundles(celix_framework_t* fw,
+                                                         bool includeFrameworkBundle,
+                                                         void* callbackHandle,
+                                                         void (*use)(void* handle, const celix_bundle_t* bnd));
+
+/**
+ * @brief Use the currently active bundles.
+ * The provided callback will be called for all the currently active bundles.
+ *
+ * @warning Calling synchronous bundle-state changing functions (e.g. celix_bundleContext_stopBundle) from the callback
+ * will lead to deadlocks.
+ *
+ * @param fw                        The framework.
+ * @param includeFrameworkBundle    If true the callback will also be triggered for the framework bundle.
+ * @param callbackHandle            The data pointer, which will be used in the callbacks
+ * @param use                       The callback which will be called for the currently active bundles.
+ *                                  The bundle state is guaranteed to be active during the callback.
+ * @return                          The number of times the use callback is called.
+ */
+CELIX_FRAMEWORK_EXPORT size_t celix_framework_useActiveBundles(celix_framework_t* fw,
+                                                               bool includeFrameworkBundle,
+                                                               void* callbackHandle,
+                                                               void (*use)(void* handle, const celix_bundle_t* bnd));
 
 /**
  * @brief Use the bundle with the provided bundle id
  * The provided callback will be called if the bundle is found.
+ *
+ * @warning Calling synchronous bundle-state changing functions (e.g. celix_bundleContext_stopBundle) with onlyActive=true
+ * from the callback will lead to deadlocks. Using a bundle's context, e.g. calling celix_bundle_listServiceTrackers,
+ * with onlyActive=false from the callback is generally dangerous. However, in some cases, the target bundle's context is guaranteed to be valid,
+ * e.g. the bundle is providing a service protected by a service tracker.
  *
  * @param fw                The framework.
  * @param onlyActive        If true only starting and active bundles will trigger the callback.
@@ -98,7 +127,11 @@ CELIX_FRAMEWORK_EXPORT size_t celix_framework_useBundles(celix_framework_t *fw, 
  *                          The bundle pointers are only guaranteed to be valid during the callback.
  * @return                  Returns true if the bundle is found and the callback is called.
  */
-CELIX_FRAMEWORK_EXPORT bool celix_framework_useBundle(celix_framework_t *fw, bool onlyActive, long bndId, void *callbackHandle, void(*use)(void *handle, const celix_bundle_t *bnd));
+CELIX_FRAMEWORK_EXPORT bool celix_framework_useBundle(celix_framework_t* fw,
+                                                      bool onlyActive,
+                                                      long bndId,
+                                                      void* callbackHandle,
+                                                      void (*use)(void* handle, const celix_bundle_t* bnd));
 
 /**
  * @brief Check whether a bundle is installed.
