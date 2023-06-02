@@ -76,11 +76,11 @@ static celix_status_t psd_start(psd_activator_t *act, celix_bundle_context_t *ct
         celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::psd_etcd");
         celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "psd_etcd");
         celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "Overview of discovered/announced endpoints from/to ETCD");
-        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
+        act->cmdSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->cmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
     }
 
     if (status == CELIX_SUCCESS) {
-        act->listenerSvcId = celix_bundleContext_registerService(ctx, &act->listenerSvc, PUBSUB_ANNOUNCE_ENDPOINT_LISTENER_SERVICE, NULL);
+        act->listenerSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->listenerSvc, PUBSUB_ANNOUNCE_ENDPOINT_LISTENER_SERVICE, NULL);
     } else {
         act->listenerSvcId = -1L;
     }

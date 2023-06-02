@@ -40,7 +40,7 @@ static celix_status_t activator_start(activator_data_t *data, celix_bundle_conte
     data->seed = 42;
     data->svcId = -1L;
 
-    data->svcId = celix_bundleContext_registerService(ctx, &data->svc, EXAMPLE_CALC_NAME, NULL);
+    data->svcId = celix_bundleContext_registerServiceAsync(ctx, &data->svc, EXAMPLE_CALC_NAME, NULL);
     printf("Registered calc service with service id %li\n", data->svcId);
 
     return CELIX_SUCCESS;

@@ -47,7 +47,7 @@ static celix_status_t httpExample_activator_start(http_example_activator_data_t 
     celix_properties_set(props, WEBSOCKET_ADMIN_URI, "/hello/socket");
     data->sockSvc.handle = data;
     data->sockSvc.ready = websocket_ready_handler;
-    data->sockSvcId = celix_bundleContext_registerService(ctx, &data->sockSvc, WEBSOCKET_ADMIN_SERVICE_NAME, props);
+    data->sockSvcId = celix_bundleContext_registerServiceAsync(ctx, &data->sockSvc, WEBSOCKET_ADMIN_SERVICE_NAME, props);
 
     return CELIX_SUCCESS;
 }

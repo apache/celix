@@ -118,7 +118,7 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
         act->discListenerSvc.handle = act->manager;
         act->discListenerSvc.addDiscoveredEndpoint = pubsub_topologyManager_addDiscoveredEndpoint;
         act->discListenerSvc.removeDiscoveredEndpoint = pubsub_topologyManager_removeDiscoveredEndpoint;
-        act->discListenerSvcId = celix_bundleContext_registerService(ctx, &act->discListenerSvc, PUBSUB_DISCOVERED_ENDPOINT_LISTENER_SERVICE, NULL);
+        act->discListenerSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->discListenerSvc, PUBSUB_DISCOVERED_ENDPOINT_LISTENER_SERVICE, NULL);
     }
 
     //register shell command
@@ -129,7 +129,7 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
         celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::pstm");
         celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "pstm [topology|metrics]"); //TODO add search topic/scope option
         celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "pubsub_topology_info: Overview of Topology information for PubSub");
-        act->shellCmdSvcId = celix_bundleContext_registerService(ctx, &act->shellCmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
+        act->shellCmdSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->shellCmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
     }
 
     //TODO add tracker for pubsub_serializer and

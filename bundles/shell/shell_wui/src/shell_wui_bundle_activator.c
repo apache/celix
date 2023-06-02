@@ -77,7 +77,7 @@ static celix_status_t shellWui_activator_start(shell_wui_activator_data_t *data,
     celix_properties_set(props, WEBSOCKET_ADMIN_URI, "/shell/socket");
     data->sockSvc.handle = data;
     data->sockSvc.data = websocket_data_handler;
-    data->sockSvcId = celix_bundleContext_registerService(ctx, &data->sockSvc, WEBSOCKET_ADMIN_SERVICE_NAME, props);
+    data->sockSvcId = celix_bundleContext_registerServiceAsync(ctx, &data->sockSvc, WEBSOCKET_ADMIN_SERVICE_NAME, props);
 
     return CELIX_SUCCESS;
 }

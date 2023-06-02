@@ -360,7 +360,7 @@ static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ct
     }
 
     //register test service
-    act->svcId = celix_bundleContext_registerService(ctx, &act->testSvc, TST_SERVICE_NAME, NULL);
+    act->svcId = celix_bundleContext_registerServiceAsync(ctx, &act->testSvc, TST_SERVICE_NAME, NULL);
     return CELIX_SUCCESS;
 }
 

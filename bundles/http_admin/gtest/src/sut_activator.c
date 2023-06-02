@@ -45,23 +45,23 @@ celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
     celix_properties_set(props, HTTP_ADMIN_URI, "/alias");
     act->httpSvc.handle = act;
     act->httpSvc.doPut = alias_test_put;
-    act->httpSvcId = celix_bundleContext_registerService(ctx, &act->httpSvc, HTTP_ADMIN_SERVICE_NAME, props);
+    act->httpSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->httpSvc, HTTP_ADMIN_SERVICE_NAME, props);
 
     celix_properties_t *props2 = celix_properties_create();
     celix_properties_set(props2, HTTP_ADMIN_URI, "/foo/bar");
     act->httpSvc2.handle = act;
-    act->httpSvcId2 = celix_bundleContext_registerService(ctx, &act->httpSvc2, HTTP_ADMIN_SERVICE_NAME, props2);
+    act->httpSvcId2 = celix_bundleContext_registerServiceAsync(ctx, &act->httpSvc2, HTTP_ADMIN_SERVICE_NAME, props2);
 
     celix_properties_t *props3 = celix_properties_create();
     celix_properties_set(props3, HTTP_ADMIN_URI, "/");
     act->httpSvc3.handle = act;
-    act->httpSvcId3 = celix_bundleContext_registerService(ctx, &act->httpSvc3, HTTP_ADMIN_SERVICE_NAME, props3);
+    act->httpSvcId3 = celix_bundleContext_registerServiceAsync(ctx, &act->httpSvc3, HTTP_ADMIN_SERVICE_NAME, props3);
 
     celix_properties_t *props4 = celix_properties_create();
     celix_properties_set(props4, WEBSOCKET_ADMIN_URI, "/");
     act->sockSvc.handle = act;
     act->sockSvc.data = websocket_data_echo;
-    act->sockSvcId = celix_bundleContext_registerService(ctx, &act->sockSvc, WEBSOCKET_ADMIN_SERVICE_NAME, props4);
+    act->sockSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->sockSvc, WEBSOCKET_ADMIN_SERVICE_NAME, props4);
 
     return CELIX_SUCCESS;
 }

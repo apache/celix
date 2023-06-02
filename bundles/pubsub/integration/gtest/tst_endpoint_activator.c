@@ -51,14 +51,14 @@ celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
         celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, "pong3");
         act->subSvc.handle = act;
         act->subSvc.receive = tst_receive;
-        act->subSvcId = celix_bundleContext_registerService(ctx, &act->subSvc, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
+        act->subSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->subSvc, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
     }
 
 
     {
         act->countSvc.handle = act;
         act->countSvc.receiveCount = tst_count;
-        act->countSvcId = celix_bundleContext_registerService(ctx, &act->countSvc, CELIX_RECEIVE_COUNT_SERVICE_NAME, NULL);
+        act->countSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->countSvc, CELIX_RECEIVE_COUNT_SERVICE_NAME, NULL);
     }
 
 

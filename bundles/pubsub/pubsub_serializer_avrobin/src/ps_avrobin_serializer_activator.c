@@ -46,7 +46,7 @@ static int psav_start(psav_activator_t *act, celix_bundle_context_t *ctx) {
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, PUBSUB_SERIALIZER_TYPE_KEY, PUBSUB_AVROBIN_SERIALIZER_TYPE);
 
-        act->serializerSvcId = celix_bundleContext_registerService(ctx, &act->serializerSvc, PUBSUB_SERIALIZER_SERVICE_NAME, props);
+        act->serializerSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->serializerSvc, PUBSUB_SERIALIZER_SERVICE_NAME, props);
     }
     return status;
 }

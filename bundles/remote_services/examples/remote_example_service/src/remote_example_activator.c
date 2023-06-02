@@ -46,7 +46,7 @@ celix_status_t remoteExampleBndStart(struct activator *act, celix_bundle_context
 
         celix_properties_t *properties = celix_properties_create();
         celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, REMOTE_EXAMPLE_NAME);
-        act->svcId = celix_bundleContext_registerService(ctx, &act->service, REMOTE_EXAMPLE_NAME, properties);
+        act->svcId = celix_bundleContext_registerServiceAsync(ctx, &act->service, REMOTE_EXAMPLE_NAME, properties);
     }
     return CELIX_SUCCESS;
 }
