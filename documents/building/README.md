@@ -88,7 +88,7 @@ snap install cmake
 For OSX systems with brew installed, use the following commands:
 ```bash
     brew update && \
-    brew install lcov libffi libzip czmq rapidjson libxml2 cmake && \
+    brew install lcov libffi libzip czmq rapidjson libxml2 cmake jansson && \
     brew link --force libffi
 ``` 
 
