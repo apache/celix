@@ -952,21 +952,22 @@ CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_stopBundle(celix_bundle_context_
 CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bndId);
 
 /**
- * @brief Update the bundle with the provided bundle id async.
+ * @brief Update the bundle with the provided bundle id.
  *
  * This will do the following:
- *  - stop the bundle (if needed);
- *  - update the bundle revision if a newer bundle zip if found;
- *  - start the bundle, if it was started before the update.
+ *  - uninstall the bundle with the specified bundle id;
+ *  - reinstall the bundle from the specified location with the specified bundle id;
+ *  - start the bundle, if it was previously active.
  *
  * Will silently ignore bundle ids < 0.
+ *
+ * Note if specified bundle location already exists in the bundle cache but with a different bundle id, the bundle
+ * will NOT be reinstalled, and the update is cancelled.
  *
  * If this function is called on the Celix event thread, the actual updating of the bundle will be done async and
  * on a separate thread.
  * If this function is called from a different thread than the Celix event thread, then the function will
  * return after the bundle update is completed.
- *
- * @warning Update bundle is not yet fully supported. Use at your own risk.
  *
  * @param ctx The bundle context
  * @param bndId The bundle id to update.
@@ -985,7 +986,6 @@ CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_updateBundle(celix_bundle_contex
  * @return The bundle symbolic name or NULL if the bundle for the provided bundle id does not exist.
  */
 CELIX_FRAMEWORK_EXPORT char* celix_bundleContext_getBundleSymbolicName(celix_bundle_context_t *ctx, long bndId);
-
 
 /**
  * @brief Track bundles.

@@ -253,7 +253,7 @@ double celix_framework_getConfigPropertyAsDouble(celix_framework_t* framework, c
  */
 bool celix_framework_getConfigPropertyAsBool(celix_framework_t* framework, const char* name, bool defaultValue, bool* found);
 
-celix_status_t celix_framework_installBundleInternal(celix_framework_t* framework, const char* bndLoc, long* bundleOut);
+celix_status_t celix_framework_installBundleInternal(celix_framework_t* framework, const char* bndLoc, long* bndId);
 
 celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, const void* svcObj, properties_pt properties);
 celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, service_factory_pt factory, properties_pt properties);
@@ -433,7 +433,7 @@ celix_status_t celix_framework_stopBundleEntry(celix_framework_t* fw, celix_fram
 celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool permanent);
 
 /**
- * Uninstall a bundle. Cannot be called on the Celix event thread.
+ * Update a bundle. Cannot be called on the Celix event thread.
  */
 celix_status_t celix_framework_updateBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, const char* updatedBundleUrl);
 

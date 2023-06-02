@@ -286,6 +286,39 @@ TEST_F(CelixBundleContextBundlesTestSuite, InstallAndUnloadBundlesTest) {
     ASSERT_TRUE(bndId3 == bndId6); //bundle cache -> reuse of bundle id.
 }
 
+TEST_F(CelixBundleContextBundlesTestSuite, UpdateBundlesTest) {
+    long bndId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    ASSERT_TRUE(bndId1 >= 0L);
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    ASSERT_TRUE(celix_bundleContext_isBundleActive(ctx, bndId1));
+
+    ASSERT_TRUE(celix_bundleContext_updateBundle(ctx, bndId1, NULL));
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    ASSERT_TRUE(celix_bundleContext_isBundleActive(ctx, bndId1));
+
+    ASSERT_TRUE(celix_bundleContext_stopBundle(ctx, bndId1));
+    ASSERT_TRUE(celix_bundleContext_updateBundle(ctx, bndId1, NULL));
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId1));
+
+    long bndId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false);
+    ASSERT_TRUE(bndId2 >= 0L);
+    ASSERT_FALSE(celix_bundleContext_updateBundle(ctx, bndId1, TEST_BND2_LOC));
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    ASSERT_EQ(bndId2, celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false));
+    ASSERT_TRUE(celix_bundleContext_uninstallBundle(ctx, bndId2));
+
+    auto sn1 = celix_bundleContext_getBundleSymbolicName(ctx, bndId1);
+    ASSERT_TRUE(celix_bundleContext_updateBundle(ctx, bndId1, TEST_BND2_LOC));
+    auto sn2 = celix_bundleContext_getBundleSymbolicName(ctx, bndId1);
+    ASSERT_STRNE(sn1, sn2);
+    free(sn2);
+    free(sn1);
+
+    ASSERT_TRUE(celix_bundleContext_unloadBundle(ctx, bndId1));
+    ASSERT_FALSE(celix_bundleContext_updateBundle(ctx, bndId1, NULL));
+}
+
 TEST_F(CelixBundleContextBundlesTestSuite, StartBundleWithException) {
     long bndId = celix_bundleContext_installBundle(ctx, TEST_BND_WITH_EXCEPTION_LOC, true);
     ASSERT_TRUE(bndId > 0); //bundle is installed, but not started
