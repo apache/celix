@@ -955,8 +955,8 @@ CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_startBundle(celix_bundle_context
  * @brief Update the bundle with the provided bundle id.
  *
  * This will do the following:
- *  - uninstall the bundle with the specified bundle id;
- *  - reinstall the bundle from the specified location with the specified bundle id;
+ *  - unload the bundle with the specified bundle id;
+ *  - reload the bundle from the specified location with the specified bundle id;
  *  - start the bundle, if it was previously active.
  *
  * Will silently ignore bundle ids < 0.
@@ -971,8 +971,8 @@ CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_startBundle(celix_bundle_context
  *
  * @param ctx The bundle context
  * @param bndId The bundle id to update.
- * @param updatedBundleUrl The optional updated bundle url to the bundle zip file. If NULL, the existing bundle url
- *                         from the bundle cache will be used.
+ * @param updatedBundleUrl The optional updated bundle url to the bundle zip file.
+ * If NULL, the existing bundle url from the bundle cache will be used, and the cache will only be updated if the zip file is newer.
  * @return true if the bundle is found & correctly started. False if not.
  */
 CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_updateBundle(celix_bundle_context_t *ctx, long bndId, const char* updatedBundleUrl);

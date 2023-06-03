@@ -17,33 +17,35 @@
  * under the License.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdbool.h>
-#include <uuid/uuid.h>
 #include <assert.h>
 #include <celix_log_utils.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <uuid/uuid.h>
 
-#include "celix_dependency_manager.h"
-#include "framework_private.h"
-#include "celix_constants.h"
-#include "resolver.h"
-#include "utils.h"
-#include "linked_list_iterator.h"
-#include "service_reference_private.h"
-#include "service_registration_private.h"
-#include "bundle_private.h"
+#include "celix_build_assert.h"
 #include "celix_bundle_context.h"
-#include "bundle_context_private.h"
+#include "celix_constants.h"
+#include "celix_convert_utils.h"
+#include "celix_dependency_manager.h"
+#include "celix_file_utils.h"
+#include "celix_framework_utils_private.h"
 #include "celix_libloader.h"
 #include "celix_log_constants.h"
-#include "celix_framework_utils_private.h"
-#include "bundle_archive_private.h"
 #include "celix_module_private.h"
-#include "celix_convert_utils.h"
-#include "celix_build_assert.h"
+
+#include "bundle_archive_private.h"
+#include "bundle_context_private.h"
+#include "bundle_private.h"
+#include "framework_private.h"
+#include "linked_list_iterator.h"
+#include "resolver.h"
+#include "service_reference_private.h"
+#include "service_registration_private.h"
+#include "utils.h"
 
 struct celix_bundle_activator {
     void * userData;
@@ -1965,11 +1967,7 @@ celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework
         celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
         (void)bundle_closeModules(bnd);
         (void)bundle_destroy(bnd);
-        if(permanent) {
-            (void)celix_bundleCache_destroyArchive(framework->cache, archive);
-        } else {
-            (void)bundleArchive_destroy(archive);
-        }
+        (void)celix_bundleCache_destroyArchive(framework->cache, archive, permanent);
     }
     celixThreadMutex_unlock(&framework->installLock);
     framework_logIfError(framework->logger, status, "", "Cannot uninstall bundle");
@@ -2291,6 +2289,7 @@ celix_status_t celix_framework_updateBundleEntry(celix_framework_t* framework,
     celix_status_t status = CELIX_SUCCESS;
     long bundleId = bndEntry->bndId;
     const char* errMsg;
+    char *bndRoot = NULL;
     fw_log(framework->logger, CELIX_LOG_LEVEL_DEBUG, "Updating bundle %s", celix_bundle_getSymbolicName(bndEntry->bnd));
     celix_bundle_state_e bndState = celix_bundle_getState(bndEntry->bnd);
     char *location = celix_bundle_getLocation(bndEntry->bnd);
@@ -2308,14 +2307,19 @@ celix_status_t celix_framework_updateBundleEntry(celix_framework_t* framework,
                 status = CELIX_ILLEGAL_STATE;
                 break;
             }
+            bndRoot = celix_bundle_getEntry(bndEntry->bnd, NULL);
         }
-        status = celix_framework_uninstallBundleEntry(framework, bndEntry, true);
+        status = celix_framework_uninstallBundleEntry(framework, bndEntry, false);
         if (status != CELIX_SUCCESS) {
             errMsg = "uninstall failure";
             celixThreadMutex_unlock(&framework->installLock);
             break;
         }
         // bndEntry is now invalid
+        if (bndRoot) {
+            // the bundle is updated with a new location, so the old bundle root can be removed
+            celix_utils_deleteDirectory(bndRoot, NULL);
+        }
         status = celix_framework_installBundleInternal(framework, updatedBundleUrl, &bundleId);
         if (status != CELIX_SUCCESS) {
             errMsg = "reinstall failure";
@@ -2338,6 +2342,7 @@ celix_status_t celix_framework_updateBundleEntry(celix_framework_t* framework,
         }
     } while(0);
     framework_logIfError(framework->logger, status, errMsg, "Could not update bundle from %s", updatedBundleUrl);
+    free(bndRoot);
     free(location);
     return status;
 }

@@ -154,7 +154,7 @@ TEST_F(CelixBundleCacheErrorInjectionTestSuite, ArchiveDestroyErrorTest) {
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_createArchive(cache, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     celix_ei_expect_celix_utils_deleteDirectory((void*)celix_bundleCache_destroyArchive, 1, CELIX_FILE_IO_EXCEPTION);
     std::string storeRoot = celix_bundleArchive_getPersistentStoreRoot(archive);
-    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION, celix_bundleCache_destroyArchive(cache, archive));
+    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION, celix_bundleCache_destroyArchive(cache, archive, true));
     EXPECT_TRUE(celix_utils_directoryExists(storeRoot.c_str()));
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_destroy(cache));
 }

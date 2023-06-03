@@ -305,9 +305,10 @@ TEST_F(CelixBundleContextBundlesTestSuite, UpdateBundlesTest) {
     ASSERT_TRUE(bndId2 >= 0L);
     ASSERT_FALSE(celix_bundleContext_updateBundle(ctx, bndId1, TEST_BND2_LOC));
     ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+
+    // remove it from cache before updating
     ASSERT_EQ(bndId2, celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false));
     ASSERT_TRUE(celix_bundleContext_uninstallBundle(ctx, bndId2));
-
     auto sn1 = celix_bundleContext_getBundleSymbolicName(ctx, bndId1);
     ASSERT_TRUE(celix_bundleContext_updateBundle(ctx, bndId1, TEST_BND2_LOC));
     auto sn2 = celix_bundleContext_getBundleSymbolicName(ctx, bndId1);

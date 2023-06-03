@@ -186,19 +186,19 @@ CELIX_FRAMEWORK_EXPORT bool celix_framework_unloadBundle(celix_framework_t *fw, 
  * @brief Update the bundle with the provided bundle id.
  *
  * This will do the following:
- *  - uninstall the bundle with the specified bundle id;
- *  - reinstall the bundle from the specified location with the specified bundle id;
+ *  - unload the bundle with the specified bundle id;
+ *  - reload the bundle from the specified location with the specified bundle id;
  *  - start the bundle, if it was previously active.
  *
  *  Will silently ignore bundle ids < 0.
  *
  *  Note if specified bundle location already exists in the bundle cache but with a different bundle id, the bundle
- *  will NOT be reinstalled, and the update is cancelled.
+ *  will NOT be reloaded, and the update is cancelled.
  *
  * @param [in] fw The Celix framework
  * @param [in] bndId the bundle id to update.
  * @param [in] updatedBundleUrl The optional updated bundle url to the bundle zip file.
- * If NULL, the existing bundle url from the bundle cache will be used.
+ * If NULL, the existing bundle url from the bundle cache will be used, and the cache will only be updated if the zip file is newer.
  * @return true if the bundle is correctly updated. False if not.
  */
 CELIX_FRAMEWORK_EXPORT bool celix_framework_updateBundle(celix_framework_t *fw, long bndId, const char* updatedBundleUrl);
@@ -240,8 +240,8 @@ CELIX_FRAMEWORK_EXPORT long celix_framework_installBundleAsync(celix_framework_t
  * @brief Update the bundle with the provided bundle id async.
  *
  * This will do the following:
- *  - uninstall the bundle with the specified bundle id;
- *  - reinstall the bundle from the specified location with the specified bundle id;
+ *  - unload the bundle with the specified bundle id;
+ *  - reload the bundle from the specified location with the specified bundle id;
  *  - start the bundle, if it was previously active.
  *
  *  Will silently ignore bundle ids < 0.
@@ -251,8 +251,8 @@ CELIX_FRAMEWORK_EXPORT long celix_framework_installBundleAsync(celix_framework_t
  *
  * @param [in] fw The Celix framework
  * @param [in] bndId the bundle id to update.
- * @param [in] updatedBundleUrl The optional updated bundle url to the bundle zip file. If NULL, the existing bundle url
- *                         from the bundle cache will be used.
+ * @param [in] updatedBundleUrl The optional updated bundle url to the bundle zip file.
+ * If NULL, the existing bundle url from the bundle cache will be used, and the cache will only be updated if the zip file is newer.
  */
 CELIX_FRAMEWORK_EXPORT void celix_framework_updateBundleAsync(celix_framework_t *fw, long bndId, const char* updatedBundleUrl);
 
