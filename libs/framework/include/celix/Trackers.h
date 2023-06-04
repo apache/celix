@@ -45,7 +45,7 @@ namespace celix {
     /**
      * @brief The tracker state.
      */
-    enum class TrackerState {
+    enum class TrackerState : std::uint8_t {
         OPENING,
         OPEN,
         CLOSING,
