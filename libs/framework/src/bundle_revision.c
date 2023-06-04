@@ -55,7 +55,9 @@ celix_status_t celix_bundleRevision_create(celix_framework_t* fw, const char *ro
 bundle_revision_t* bundleRevision_revise(const bundle_revision_t* rev, const char* updatedBundleUrl) {
     bundle_revision_pt newRev = NULL;
     manifest_pt clonedManifest = manifest_clone(rev->manifest);
-    celix_bundleRevision_create(rev->fw, rev->root, updatedBundleUrl, clonedManifest, &newRev);
+    if (clonedManifest) {
+        celix_bundleRevision_create(rev->fw, rev->root, updatedBundleUrl, clonedManifest, &newRev);
+    }
     return newRev;
 }
 

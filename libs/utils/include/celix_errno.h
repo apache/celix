@@ -140,7 +140,7 @@ CELIX_UTILS_EXPORT bool celix_utils_isCustomerStatusCode(celix_status_t code);
  * \param fac Facility
  * \param code Code
  */
-#define CELIX_ERROR_MAKE(fac,code) (((unsigned int)(fac)<<16) | ((code)&0xFFFF))
+#define CELIX_ERROR_MAKE(fac,code) (((fac)<<16) | ((code)&0xFFFF))
 
 /*!
  * Make the customer error code

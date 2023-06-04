@@ -175,6 +175,18 @@ TEST_F(RsaShmImportRegUnitTestSuite, CreateImportRegistrationWithNoMemory) {
     endpointDescription_destroy(endpoint);
 }
 
+TEST_F(RsaShmImportRegUnitTestSuite, FailedToCloneEndpointDescription) {
+    auto* endpoint = CreateEndpointDescription();
+
+    import_registration_t *importRegistration = nullptr;
+    long reqSenderSvcId = 123;//set dummy service id
+    celix_ei_expect_calloc((void*)&endpointDescription_clone, 0, nullptr);
+    auto status = importRegistration_create(ctx.get(), logHelper.get(), endpoint, reqSenderSvcId, &importRegistration);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    endpointDescription_destroy(endpoint);
+}
+
 TEST_F(RsaShmImportRegUnitTestSuite, CreateImportRegistrationWithInvalidRpcType) {
     auto* endpoint = CreateEndpointDescription();
 

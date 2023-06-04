@@ -650,18 +650,11 @@ celix_status_t celix_framework_installBundleInternal(celix_framework_t *framewor
             return CELIX_SUCCESS;
         }
 
-        long alreadyExistingBndId = celix_bundleCache_findBundleIdForLocation(framework, bndLoc);
+        long alreadyExistingBndId = celix_bundleCache_findBundleIdForLocation(framework->cache, bndLoc);
         long id = alreadyExistingBndId == -1 ? framework_getNextBundleId(framework) : alreadyExistingBndId;
         bundle_archive_t* archive = NULL;
-        status = CELIX_DO_IF(status, celix_bundleCache_createArchive(framework, id, bndLoc, &archive));
-        if (status != CELIX_SUCCESS) {
-            bundleArchive_destroy(archive);
-        }
-
-        if (status == CELIX_SUCCESS) {
-            status = celix_bundle_createFromArchive(framework, archive, &bundle);
-        }
-
+        status = CELIX_DO_IF(status, celix_bundleCache_createArchive(framework->cache, id, bndLoc, &archive));
+        status = CELIX_DO_IF(status, celix_bundle_createFromArchive(framework, archive, &bundle));
         if (status == CELIX_SUCCESS) {
             celix_framework_bundle_entry_t *bEntry = fw_bundleEntry_create(bundle);
             celix_framework_bundleEntry_increaseUseCount(bEntry);
@@ -978,7 +971,7 @@ celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bund
 
 long framework_getNextBundleId(framework_pt framework) {
     long nextId = __atomic_fetch_add(&framework->currentBundleId, 1, __ATOMIC_SEQ_CST);
-    while ( celix_bundleCache_isBundleIdAlreadyUsed(framework, nextId) ||
+    while ( celix_bundleCache_isBundleIdAlreadyUsed(framework->cache, nextId) ||
             celix_framework_isBundleIdAlreadyUsed(framework, nextId)) {
         nextId = __atomic_fetch_add(&framework->currentBundleId, 1, __ATOMIC_SEQ_CST);
     }

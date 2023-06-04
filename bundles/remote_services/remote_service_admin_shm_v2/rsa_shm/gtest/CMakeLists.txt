@@ -65,6 +65,7 @@ if (LINKER_WRAP_SUPPORTED)
             Celix::stdio_ei
             Celix::pthread_ei
             Celix::log_helper_ei
+            Celix::properties_ei
             GTest::gtest
             GTest::gtest_main
             )

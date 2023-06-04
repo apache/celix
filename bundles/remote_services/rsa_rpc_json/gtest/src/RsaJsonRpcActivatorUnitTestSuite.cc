@@ -30,6 +30,7 @@
 #include "celix_threads_ei.h"
 #include "celix_bundle_context_ei.h"
 #include "celix_log_helper_ei.h"
+#include "celix_properties_ei.h"
 #include <gtest/gtest.h>
 
 class RsaJsonRpcActivatorUnitTestSuite : public ::testing::Test {
@@ -53,6 +54,7 @@ public:
         celix_ei_expect_celixThreadRwlock_create(nullptr, 0, 0);
         celix_ei_expect_celix_bundleContext_registerServiceWithOptionsAsync(nullptr, 0, 0);
         celix_ei_expect_celix_logHelper_create(nullptr, 0, 0);
+        celix_ei_expect_celix_properties_create(nullptr, 0, 0);
     }
 
     std::shared_ptr<celix_framework_t> fw{};
@@ -91,6 +93,19 @@ TEST_F(RsaJsonRpcActivatorUnitTestSuite, FailedToCreateRsaJsonRpc) {
     auto status = celix_bundleActivator_create(ctx.get(), &userData);
     EXPECT_EQ(CELIX_SUCCESS, status);
     celix_ei_expect_calloc((void*)&rsaJsonRpc_create, 0, nullptr);
+    status = celix_bundleActivator_start(userData, ctx.get());
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    status = celix_bundleActivator_destroy(userData, ctx.get());
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(RsaJsonRpcActivatorUnitTestSuite, FailedToCreateRpcFactoryServiceProperties) {
+    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
+    void *userData = nullptr;
+    auto status = celix_bundleActivator_create(ctx.get(), &userData);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    celix_ei_expect_celix_properties_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
     status = celix_bundleActivator_start(userData, ctx.get());
     EXPECT_EQ(CELIX_ENOMEM, status);
 
