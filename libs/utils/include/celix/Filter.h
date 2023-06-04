@@ -23,6 +23,7 @@
 #include <cstring>
 
 #include "celix_filter.h"
+#include "celix/Exception.h"
 #include "celix/Properties.h"
 
 namespace celix {
@@ -30,20 +31,9 @@ namespace celix {
     /**
      * @brief FilterException
      */
-    class FilterException : public std::exception {
+    class FilterException : public ::celix::Exception {
     public:
-        explicit FilterException(std::string msg) : w{std::move(msg)} {}
-
-        FilterException(const FilterException&) = default;
-        FilterException(FilterException&&) = default;
-        FilterException& operator=(const FilterException&) = default;
-        FilterException& operator=(FilterException&&) = default;
-
-        const char* what() const noexcept override {
-            return w.c_str();
-        }
-    private:
-        std::string w;
+        using celix::Exception::Exception;
     };
 
     /**
