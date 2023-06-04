@@ -179,7 +179,7 @@ add_library(celix::my_bundle ALIAS my_bundle)
 - Use `snake_case` for namespace names.
 - All namespaces should be part of the `celix` namespace.
 - Aim for a max of 3 levels of namespaces.
-- Use a namespace ending with `impl` for implementation details.
+- Use a namespace ending with `detail` for implementation details.
 
 ### C++ Classes
 
@@ -214,7 +214,7 @@ namespace celix {
 ### C++ Enums
 
 - Use `CamelCase` (starting with a capital) for enum types names.
-- Use `enum class` instead of `enum`.
+- Use `enum class` instead of `enum` and if possible use `std::int8_t` as base type.
 - Use `SNAKE_CASE` for enum values without a celix/class prefix. Note that for enum values no prefix is required 
   because enum class values are scoped.
 
