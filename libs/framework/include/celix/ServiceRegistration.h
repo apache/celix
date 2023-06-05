@@ -24,9 +24,9 @@
 #include <vector>
 #include <functional>
 
+#include "celix/FrameworkExceptions.h"
 #include "celix/Constants.h"
 #include "celix/Properties.h"
-#include "celix/Exception.h"
 #include "celix_bundle_context.h"
 #include "celix_bundle.h"
 #include "celix_framework.h"
@@ -338,12 +338,12 @@ namespace celix {
                 std::lock_guard<std::mutex> lck{mutex};
                 svcId = celix_bundleContext_registerServiceWithOptionsAsync(cCtx.get(), &opts);
                 if (svcId < 0) {
-                    throw celix::Exception{"Cannot register service"};
+                    throw celix::ServiceRegistrationException{"Cannot register service"};
                 }
             } else /*sync*/ {
                 long localSvcId = celix_bundleContext_registerServiceWithOptions(cCtx.get(), &opts);
                 if (localSvcId < 0) {
-                    throw celix::Exception{"Cannot register service"};
+                    throw celix::ServiceRegistrationException{"Cannot register service"};
                 }
                 {
                     std::lock_guard<std::mutex> lck{mutex};
