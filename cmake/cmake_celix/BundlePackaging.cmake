@@ -266,8 +266,9 @@ function(add_celix_bundle)
         )
     endif()
     add_custom_target(${BUNDLE_TARGET_NAME}_bundle
-        DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_FILE>"
+        DEPENDS "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_FILE>"
     )
+    add_dependencies(${BUNDLE_TARGET_NAME}_bundle ${BUNDLE_TARGET_NAME})
     add_dependencies(celix-bundles ${BUNDLE_TARGET_NAME}_bundle)
     #######################################################################
    
