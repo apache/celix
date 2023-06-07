@@ -318,7 +318,7 @@ function(add_celix_bundle)
     ###################################
     ##### Additional Cleanup info #####
     ###################################
-    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_GEN_DIR>;$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_CONTENT_DIR>")
+    set_target_properties(${BUNDLE_TARGET_NAME}_bundle PROPERTIES "ADDITIONAL_CLEAN_FILES" "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_GEN_DIR>;$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_CONTENT_DIR>")
 
     #############################
     ### BUNDLE TARGET PROPERTIES
