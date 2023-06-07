@@ -324,7 +324,7 @@ function(add_celix_bundle)
     ### BUNDLE TARGET PROPERTIES
     #############################
     #already set
-    #   BUNDLE_TARGET_IS_LIB -> true (can be use to test if target is bundle target
+    #   BUNDLE_TARGET_IS_LIB -> true (can be use to test if target is library target
     #   BUNDLE_TARGET -> refers to the _bundle target which is responsible for building the zip file
     #internal use
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IS_BUNDLE_TARGET" TRUE) #indicate that this is a bundle target
@@ -836,7 +836,7 @@ endfunction()
 
 function(bundle_name)
     message(DEPRECATION "bundle_name is deprecated, use celix_bundle_name instead.")
-    celix_bundle_symbolic_name(${ARGN})
+    celix_bundle_name(${ARGN})
 endfunction()
 
 #[[
@@ -852,7 +852,7 @@ endfunction()
 
 function(bundle_version)
     message(DEPRECATION "bundle_version is deprecated, use celix_bundle_version instead.")
-    celix_bundle_symbolic_name(${ARGN})
+    celix_bundle_version(${ARGN})
 endfunction()
 
 #[[
@@ -868,7 +868,7 @@ endfunction()
 
 function(bundle_description)
     message(DEPRECATION "bundle_description is deprecated, use celix_bundle_description instead.")
-    celix_bundle_symbolic_name(${ARGN})
+    celix_bundle_description(${ARGN})
 endfunction()
 
 #[[
@@ -1162,7 +1162,7 @@ endfunction()
 
 
 #[[
-extract the BUNDLE_FILENAME and BUNDLE_FILE from a imported bundle target taking into account the used CMAKE_BUILD_TYPE
+extract the BUNDLE_FILENAME, BUNDLE_FILE, and BUNDLE_SYMBOLIC_NAME from a imported bundle target taking into account the used CMAKE_BUILD_TYPE
 and if configured the MAP_IMPORTED_CONFIG_* or CMAKE_MAP_IMPORTED_CONFIG_*
 
 ```CMake
