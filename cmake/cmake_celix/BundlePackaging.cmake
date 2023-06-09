@@ -459,7 +459,7 @@ function(celix_bundle_libs)
     #0 is bundle TARGET
     #1 is TYPE, e.g PRIVATE,EXPORT or IMPORT
     #2 is ADD_TO_MANIFEST 
-    #2..n is libs
+    #3..n is libs
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
 
@@ -484,7 +484,8 @@ function(celix_bundle_libs)
             get_filename_component(LIB_NAME ${LIB} NAME) 
             set(OUT "${BUNDLE_DIR}/${LIB_NAME}") 
             add_custom_command(OUTPUT ${OUT} 
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIB} ${OUT} 
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIB} ${OUT}
+                DEPENDS ${LIB}
             )
             if (ADD_TO_MANIFEST)
                 list(APPEND LIBS ${LIB_NAME})
@@ -520,7 +521,7 @@ function(celix_bundle_libs)
 
         get_target_property(IS_LIB ${BUNDLE} "BUNDLE_TARGET_IS_LIB")
         if ("${LIB}" STREQUAL "${BUNDLE}")
-            #ignore. Do not have to link agaist own lib
+            #ignore. Do not have to link against itself
         elseif(IS_LIB)
             target_link_libraries(${BUNDLE} PRIVATE ${LIB})
         endif()
@@ -551,7 +552,6 @@ function(celix_bundle_import_libs)
     check_bundle(${BUNDLE})
 
     get_target_property(LIBS ${BUNDLE} "BUNDLE_IMPORT_LIBS")
-    set(LIBS )
 
     foreach(LIB IN ITEMS ${ARGN})
         message(WARNING "Bundle with import libs in Celix is not complete and still experimental.")
