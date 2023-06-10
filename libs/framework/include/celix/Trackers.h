@@ -29,15 +29,14 @@
 #include <thread>
 
 #include "celix_utils.h"
+#include "celix_bundle_context.h"
+#include "celix_framework.h"
+#include "celix/FrameworkExceptions.h"
 #include "celix/Properties.h"
 #include "celix/Utils.h"
 #include "celix/Bundle.h"
 #include "celix/Constants.h"
 #include "celix/Filter.h"
-#include "celix/Exception.h"
-#include "celix_bundle_context.h"
-#include "celix_framework.h"
-
 
 namespace celix {
 
@@ -244,7 +243,7 @@ namespace celix {
                 //NOTE assuming the opts already configured the callbacks
                 trkId = celix_bundleContext_trackServicesWithOptionsAsync(cCtx.get(), &opts);
                 if (trkId < 0) {
-                    throw celix::Exception{"Cannot open service tracker"};
+                    throw celix::TrackerException{"Cannot open service tracker"};
                 }
             }
         }
@@ -654,7 +653,7 @@ namespace celix {
                 //NOTE the opts already configured the callbacks
                 trkId = celix_bundleContext_trackBundlesWithOptionsAsync(cCtx.get(), &opts);
                 if (trkId < 0) {
-                    throw celix::Exception{"Cannot open bundle tracker"};
+                    throw celix::TrackerException{"Cannot open bundle tracker"};
                 }
             }
         }
@@ -821,7 +820,7 @@ namespace celix {
                             trk->state = TrackerState::OPEN;
                         });
                 if (trkId < 0) {
-                    throw celix::Exception{"Cannot open meta tracker"};
+                    throw celix::TrackerException{"Cannot open meta tracker"};
                 }
             }
         }
