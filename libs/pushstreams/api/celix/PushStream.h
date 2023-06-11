@@ -114,7 +114,7 @@ namespace celix {
     protected:
         explicit PushStream(std::shared_ptr<PromiseFactory>& promiseFactory);
 
-        enum class State {
+        enum class State : std::uint8_t {
             BUILDING,
             STARTED,
             CLOSED

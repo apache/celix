@@ -19,10 +19,11 @@
 
 #pragma once
 
-#include <memory>
 #include <cstring>
+#include <memory>
 
 #include "celix_filter.h"
+
 #include "celix/Exception.h"
 #include "celix/Properties.h"
 

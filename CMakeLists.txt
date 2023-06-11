@@ -70,7 +70,7 @@ if (ENABLE_TESTING)
 endif ()
 
 # Set C specific flags
-set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=c99 -fPIC ${CMAKE_C_FLAGS}")
 set(CMAKE_C_FLAGS "-Wall -Werror -Wformat -Wno-error=deprecated-declarations ${CMAKE_C_FLAGS}")
 
 # Set C++ specific flags

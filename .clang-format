@@ -1,0 +1,32 @@
+BasedOnStyle: LLVM
+Language: Cpp
+IndentWidth: 4
+AllowShortIfStatementsOnASingleLine: false
+AlwaysBreakTemplateDeclarations: Yes
+BinPackArguments: false
+BinPackParameters: false
+ColumnLimit: 120
+DerivePointerAlignment: false
+KeepEmptyLinesAtTheStartOfBlocks: false
+PointerAlignment: Left
+SpacesBeforeTrailingComments: 1
+SortIncludes: true
+---
+#Include regroup disabled by default. 
+#IncludeBlocks: Regroup
+#IncludeCategories:
+##gtest headers
+#  - Regex:            '^((<|")gtest/)'
+#    Priority:         1
+##stdlib C++ headers
+#  - Regex:            '^<([^.])*>'
+#    Priority:         2
+##external headers
+#  - Regex:            '^<([^.])*\.h>'
+#    Priority:         3
+##celix C API
+#  - Regex:            '^(<|")celix_.*'
+#    Priority:         4
+##celix C++ API
+#  - Regex:            '^(<|")celix/.*'
+#    Priority:         5

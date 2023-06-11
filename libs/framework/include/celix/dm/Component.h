@@ -40,7 +40,7 @@
 
 namespace celix { namespace dm {
 
-    enum class ComponentState {
+    enum class ComponentState : std::uint8_t {
         INACTIVE =                              1,
         WAITING_FOR_REQUIRED =                  2,
         INITIALIZING =                          3,

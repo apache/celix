@@ -33,7 +33,7 @@
 
 namespace celix {
 
-    enum class ServiceRegistrationState {
+    enum class ServiceRegistrationState : std::uint8_t {
         REGISTERING,
         REGISTERED,
         UNREGISTERING,
