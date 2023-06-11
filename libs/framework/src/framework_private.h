@@ -464,13 +464,15 @@ long celix_framework_nextScheduledEventId(framework_t *fw);
  * @return The scheduled event id of the scheduled event. Can be used to cancel the event.
  * @retval <0 If the event could not be added.
  */
-long celix_framework_addScheduledEvent(celix_framework_t* fw,
-                                       long bndId,
-                                       const char* eventName,
-                                       double initialDelayInSeconds,
-                                       double intervalInSeconds,
-                                       void* eventData,
-                                       void (*eventCallback)(void* eventData));
+long celix_framework_scheduleEvent(celix_framework_t* fw,
+                                    long bndId,
+                                    const char* eventName,
+                                    double initialDelayInSeconds,
+                                    double intervalInSeconds,
+                                    void* callbackData,
+                                    void (*callback)(void*),
+                                    void* removeCallbackData,
+                                    void (*removeCallback)(void*));
                                        
 /**
  * @brief Wakeup a scheduled event.
@@ -494,10 +496,11 @@ celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw,
  * When this function returns, no more scheduled event callbacks will be called.
  *
  * @param[in] fw The Celix framework
+ * @param[in] errorIfNotFound If true, removal of a non existing scheduled event id will not be logged.
  * @param[in] scheduledEventId The scheduled event id to cancel.
  * @return true if a scheduled event is cancelled, false if the scheduled event id is not known.
  */
-bool celix_framework_removeScheduledEvent(celix_framework_t* fw, long scheduledEventId);
+bool celix_framework_removeScheduledEvent(celix_framework_t* fw, bool errorIfNotFound, long scheduledEventId);
 
 /**
  * Remove all scheduled events for the provided bundle id and logs warning if there are still un-removed scheduled

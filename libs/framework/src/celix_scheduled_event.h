@@ -34,23 +34,27 @@ typedef struct celix_scheduled_event celix_scheduled_event_t;
  *
  * The scheduled event will be created with a use count of 1.
  *
- * @param[in] bndEntry The bundle entry for which the scheduled event is created.
+ * @param[in] bndId The bundle id for the bundle which the scheduled event is created.
  * @param[in] scheduledEventId The id of the scheduled event.
  * @param[in] eventName The name of the event. If NULL, CELIX_SCHEDULED_EVENT_DEFAULT_NAME is used.
  * @param[in] initialDelayInSeconds The initial delay in seconds.
  * @param[in] intervalInSeconds The interval in seconds.
- * @param[in] eventData The event data.
- * @param[in] eventCallback The event callback.
+ * @param[in] callbackData The event data.
+ * @param[in] callback The event callback.
+ * @param[in] removedCallbackData The removed callback data.
+ * @param[in] removedCallback The removed callback.
  * @return A new scheduled event or NULL if failed.
  */
 celix_scheduled_event_t* celix_scheduledEvent_create(celix_framework_logger_t* logger,
-                                                     celix_framework_bundle_entry_t* bndEntry,
+                                                     long bndId,
                                                      long scheduledEventId,
-                                                     const char* eventName,
+                                                     const char* providedEventName,
                                                      double initialDelayInSeconds,
                                                      double intervalInSeconds,
-                                                     void* eventData,
-                                                     void (*eventCallback)(void* eventData));
+                                                     void* callbackData,
+                                                     void (*callback)(void* callbackData),
+                                                     void* removedCallbackData,
+                                                     void (*removedCallback)(void* removedCallbackData));
 
 /**
  * @brief Retain the scheduled event by increasing the use count.
@@ -75,19 +79,14 @@ const char* celix_scheduledEvent_getName(const celix_scheduled_event_t* event);
 long celix_scheduledEvent_getId(const celix_scheduled_event_t* event);
 
 /**
- * @brief Returns the initial delay of the scheduled event in seconds.
- */
-double celix_scheduledEvent_getInitialDelayInSeconds(const celix_scheduled_event_t* event);
-
-/**
  * @brief Returns the interval of the scheduled event in seconds.
  */
 double celix_scheduledEvent_getIntervalInSeconds(const celix_scheduled_event_t* event);
 
 /**
- * @brief Returns the framework bundle entry for this scheduled event.
+ * @brief Returns the bundle id of the bundle which created the scheduled event.
  */
-celix_framework_bundle_entry_t* celix_scheduledEvent_getBundleEntry(const celix_scheduled_event_t* event);
+long celix_scheduledEvent_getBundleId(const celix_scheduled_event_t* event);
 
 /**
  * @brief Returns whether the event deadline is reached and the event should be processed.

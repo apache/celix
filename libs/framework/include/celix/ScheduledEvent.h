@@ -18,3 +18,146 @@
  */
 
 #pragma once
+
+#include "celix_bundle_context.h"
+
+namespace celix {
+
+/**
+ * @brief A C++ abstraction for a scheduled event in Celix.
+ *
+ * A scheduled event is an event that is scheduled to be executed at a certain initial delay and/or interval.
+ * A new scheduld event should be created using celix::BundleContext::createScheduledEvent.
+ *
+ * This class uses RAII to automatically remove the (non one-shot) scheduled event from the bundle context
+ * when it is destroyed. For one-shot scheduled events, the destructor will not remove the scheduled event.
+ */
+class ScheduledEvent final {
+  public:
+    friend class ScheduledEventBuilder;
+
+    /**
+     * @brief Constructs a empty / not-active scheduled event.
+     */
+    ScheduledEvent() = default;
+
+    /**
+     * @brief Destroys the scheduled event by removes it from the bundle context if it is not a one-short event.
+     */
+    ~ScheduledEvent() noexcept {
+        if (!isOneShot) {
+            cancel();
+        }
+    }
+
+    ScheduledEvent(const ScheduledEvent&) = delete;
+    ScheduledEvent& operator=(const ScheduledEvent&) = delete;
+
+    ScheduledEvent(ScheduledEvent&&) noexcept = default;
+    ScheduledEvent& operator=(ScheduledEvent&&) noexcept = default;
+
+    /**
+     * @brief Cancels the scheduled event. Can be called multiple times. When this function returns, no more scheduled
+     * event callbacks will be called and, if configured, the remove callback is called.
+     *
+     */
+    void cancel() {
+        if (ctx) {
+            celix_bundleContext_tryRemoveScheduledEvent(ctx.get(), eventId);
+        }
+    }
+
+    /**
+     * @brief Wakes up the scheduled event and returns immediately, not waiting for the scheduled event callback to be
+     * called.
+     */
+    void wakeup() { wakeup(std::chrono::duration<double>{0}); }
+
+    /**
+     * @brief Wakes up the scheduled event with an optional wait time.
+     *
+     * If `waitTime` is not zero, this function will block until the scheduled event callback is called or the
+     * `waitTime` duration has elapsed. If `waitTime` is zero, this function will return immediately.
+     *
+     * @tparam Rep The representation type of the duration.
+     * @tparam Period The period type of the duration.
+     * @param[in] waitTime The wait time duration (default is zero).
+     * @return true if the scheduled event was woken up, false if a timeout occurred.
+     */
+    template <typename Rep, typename Period>
+    bool wakeup(std::chrono::duration<Rep, Period> waitTime) {
+        double waitTimeInSeconds = std::chrono::duration_cast<std::chrono::duration<double>>(waitTime).count();
+        celix_status_t status = CELIX_SUCCESS;
+        if (ctx) {
+            status = celix_bundleContext_wakeupScheduledEvent(ctx.get(), eventId, waitTimeInSeconds);
+        }
+        return status == CELIX_SUCCESS;
+    }
+
+  private:
+    /**
+     * @brief Constructs a scheduled event using the given bundle context and options.
+     *
+     * @param[in] ctx The bundle context to use.
+     * @param[in] options The options for the scheduled event.
+     */
+    ScheduledEvent(std::shared_ptr<celix_bundle_context_t> _cCtx,
+                   const std::string& _name,
+                   std::function<void()> _callback,
+                   std::function<void()> _removeCallback,
+                   celix_scheduled_event_options_t& options) {
+        ctx = std::move(_cCtx);
+        options.name = _name.c_str();
+        configureCallbacks(options, std::move(_callback), std::move(_removeCallback));
+        eventId = celix_bundleContext_scheduleEvent(ctx.get(), &options);
+    }
+
+    /**
+     * @brief Configure the callbacks for the scheduled event, ensuring the callbacks outlive the scheduled event.
+     */
+    void configureCallbacks(celix_scheduled_event_options_t& options,
+                            std::function<void()> _callback,
+                            std::function<void()> _removeCallback) {
+        isOneShot = options.intervalInSeconds == 0;
+        if (isOneShot) {
+            options.callbackData = new std::function<void()>{
+                std::move(_callback)}; // to ensure callback outlives the scheduled event object
+            options.callback = [](void* data) {
+                auto* cb = static_cast<std::function<void()>*>(data);
+                (*cb)();
+                delete cb;
+            };
+            if (_removeCallback) {
+                options.removeCallbackData = new std::function<void()>{std::move(_removeCallback)};
+                options.removeCallback = [](void* data) {
+                    auto* cb = static_cast<std::function<void()>*>(data);
+                    (*cb)();
+                    delete cb;
+                };
+            }
+        } else {
+            callback = std::move(_callback);
+            removeCallback = std::move(_removeCallback);
+            options.callbackData = &callback;
+            options.callback = [](void* data) {
+                auto* cb = static_cast<std::function<void()>*>(data);
+                (*cb)();
+            };
+            if (removeCallback) {
+                options.removeCallbackData = &removeCallback;
+                options.removeCallback = [](void* data) {
+                    auto* cb = static_cast<std::function<void()>*>(data);
+                    (*cb)();
+                };
+            }
+        }
+    }
+
+    std::shared_ptr<celix_bundle_context_t> ctx{}; /**< The bundle context for the scheduled event. */
+    std::function<void()> callback{};              /**< The callback for the scheduled event. */
+    std::function<void()> removeCallback{};        /**< The remove callback for the scheduled event. */
+    long eventId{-1};                              /**< The ID of the scheduled event. */
+    bool isOneShot{false};                         /**< Whether the scheduled event is a one-shot event. */
+};
+
+} // end namespace celix

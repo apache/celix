@@ -1181,6 +1181,9 @@ static void* framework_shutdown(void *framework) {
         //NOTE possible starvation.
         fw_bundleEntry_waitTillUseCountIs(entry, 1);  //note this function has 1 use count.
 
+        //note race between condition (use count == 1) and bundle stop, meaning use count can be > 1 when
+        //celix_framework_stopBundleEntry is called.
+
         bundle_state_e state = celix_bundle_getState(entry->bnd);
         if (state == CELIX_BUNDLE_STATE_ACTIVE || state == CELIX_BUNDLE_STATE_STARTING) {
             celix_framework_stopBundleEntry(fw, entry);
@@ -1458,11 +1461,10 @@ static double celix_framework_processScheduledEvents(celix_framework_t* fw) {
                 celixThreadMutex_lock(&fw->dispatcher.mutex);
                 fw_log(fw->logger,
                        CELIX_LOG_LEVEL_DEBUG,
-                       "Removing processed one-shot scheduled event '%s' (id=%li) for bundle '%s' (id=%li)",
+                       "Removing processed one-shot scheduled event '%s' (id=%li) for bundle if %li.",
                        celix_scheduledEvent_getName(callEvent),
                        celix_scheduledEvent_getId(callEvent),
-                       celix_bundle_getSymbolicName(celix_scheduledEvent_getBundleEntry(callEvent)->bnd),
-                       celix_scheduledEvent_getBundleEntry(callEvent)->bndId);
+                       celix_scheduledEvent_getBundleId(callEvent));
                 celix_longHashMap_remove(fw->dispatcher.scheduledEvents, celix_scheduledEvent_getId(callEvent));
                 celix_scheduledEvent_release(callEvent);
                 celixThreadMutex_unlock(&fw->dispatcher.mutex);
@@ -1480,8 +1482,7 @@ void celix_framework_cleanupScheduledEvents(celix_framework_t* fw, long bndId) {
         celixThreadMutex_lock(&fw->dispatcher.mutex);
         CELIX_LONG_HASH_MAP_ITERATE(fw->dispatcher.scheduledEvents, entry) {
             celix_scheduled_event_t* visit = entry.value.ptrValue;
-            celix_framework_bundle_entry_t* bndEntry = celix_scheduledEvent_getBundleEntry(visit);
-            if (bndEntry->bndId == bndId) {
+            if (bndId == celix_scheduledEvent_getBundleId(visit)) {
                 celix_longHashMap_remove(fw->dispatcher.scheduledEvents, celix_scheduledEvent_getId(visit));
                 removedEvent = visit;
                 break;
@@ -1490,26 +1491,24 @@ void celix_framework_cleanupScheduledEvents(celix_framework_t* fw, long bndId) {
         celixThreadMutex_unlock(&fw->dispatcher.mutex);
 
         if (removedEvent) {
-            celix_framework_bundle_entry_t* bndEntry = celix_scheduledEvent_getBundleEntry(removedEvent);
             const char* eventName = celix_scheduledEvent_getName(removedEvent);
             double interval = celix_scheduledEvent_getIntervalInSeconds(removedEvent);
             long eventId = celix_scheduledEvent_getId(removedEvent);
+            long eventBndId = celix_scheduledEvent_getBundleId(removedEvent);
             if (interval > 0) {
                 fw_log(fw->logger,
                        CELIX_LOG_LEVEL_WARNING,
-                       "Removing dangling scheduled event '%s' (id=%li) for bundle '%s' (id=%li). This should have been cleaned up by the bundle.",
+                       "Removing dangling scheduled event '%s' (id=%li) for bundle id %li. This should have been cleaned up by the bundle.",
                        eventName,
                        eventId,
-                       celix_bundle_getSymbolicName(bndEntry->bnd),
-                       bndEntry->bndId);
+                       eventBndId);
             } else {
                 fw_log(fw->logger,
                        CELIX_LOG_LEVEL_DEBUG,
-                       "Removing unprocessed one-shot scheduled event '%s' (id=%li) for bundle '%s' (id=%li)",
+                       "Removing unprocessed one-shot scheduled event '%s' (id=%li) for bundle id %li.",
                        eventName,
                        eventId,
-                       celix_bundle_getSymbolicName(bndEntry->bnd),
-                       bndEntry->bndId);
+                       eventBndId);
             } 
             celix_scheduledEvent_release(removedEvent);
         }
@@ -2528,35 +2527,39 @@ void celix_framework_waitUntilNoPendingRegistration(celix_framework_t* fw)
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 }
 
-long celix_framework_addScheduledEvent(celix_framework_t* fw,
-                                       long bndId,
-                                       const char* eventName,
-                                       double initialDelayInSeconds,
-                                       double intervalInSeconds,
-                                       void* eventData,
-                                       void (*eventCallback)(void* eventData)) {
-    if (eventCallback == NULL) {
+long celix_framework_scheduleEvent(celix_framework_t* fw,
+                                    long bndId,
+                                    const char* eventName,
+                                    double initialDelayInSeconds,
+                                    double intervalInSeconds,
+                                    void* callbackData,
+                                    void (*callback)(void*),
+                                    void* removeCallbackData,
+                                    void (*removeCallback)(void*)) {
+    if (callback == NULL) {
         fw_log(fw->logger,
                CELIX_LOG_LEVEL_ERROR,
-               "Cannot add scheduled event for bundle id %li. Invalid NULL event callback",
+               "Cannot add scheduled event for bundle id %li. Invalid NULL event callback.",
                bndId);
         return -1;
     }
 
     celix_framework_bundle_entry_t* bndEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
     if (bndEntry == NULL) {
-        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Cannot add scheduled event for non existing bundle id %li", bndId);
+        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Cannot add scheduled event for non existing bundle id %li.", bndId);
         return -1;
     }
-
     celix_scheduled_event_t* event = celix_scheduledEvent_create(fw->logger,
-                                                                 bndEntry,
+                                                                 bndEntry->bndId,
                                                                  celix_framework_nextScheduledEventId(fw),
                                                                  eventName,
                                                                  initialDelayInSeconds,
                                                                  intervalInSeconds,
-                                                                 eventData,
-                                                                 eventCallback);
+                                                                 callbackData,
+                                                                 callback,
+                                                                 removeCallbackData,
+                                                                 removeCallback);
+    celix_framework_bundleEntry_decreaseUseCount(bndEntry);
 
     if (event == NULL) {
         return -1L; //error logged by celix_scheduledEvent_create
@@ -2564,7 +2567,7 @@ long celix_framework_addScheduledEvent(celix_framework_t* fw,
 
     fw_log(fw->logger,
            CELIX_LOG_LEVEL_DEBUG,
-           "Added scheduled event '%s' (id=%li) for bundle '%s' (id=%li)",
+           "Added scheduled event '%s' (id=%li) for bundle '%s' (id=%li).",
            celix_scheduledEvent_getName(event),
            celix_scheduledEvent_getId(event),
            celix_bundle_getSymbolicName(bndEntry->bnd),
@@ -2591,13 +2594,13 @@ celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw,
     if (event == NULL) {
         fw_log(fw->logger,
                CELIX_LOG_LEVEL_WARNING,
-               "celix_framework_wakeupScheduledEvent called with unknown scheduled event id %li",
+               "celix_framework_wakeupScheduledEvent called with unknown scheduled event id %li.",
                scheduledEventId);
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
     
-    size_t callCountAfterWakup = celix_scheduledEvent_configureWakeup(event);
+    size_t callCountAfterWakeup = celix_scheduledEvent_configureWakeup(event);
     celixThreadMutex_lock(&fw->dispatcher.mutex);
     celixThreadCondition_broadcast(&fw->dispatcher.cond); //notify dispatcher thread for configured wakeup
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
@@ -2608,15 +2611,14 @@ celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw,
             fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "celix_framework_wakeupScheduledEvent called from the "
                 "event loop thread. This can result in a deadlock!");
         }
-        status = celix_scheduledEvent_waitForAtLeastCallCount(event, callCountAfterWakup, waitTimeInSeconds);
+        status = celix_scheduledEvent_waitForAtLeastCallCount(event, callCountAfterWakeup, waitTimeInSeconds);
     } 
     celix_scheduledEvent_release(event);
-    
 
     return status;
 }
 
-bool celix_framework_removeScheduledEvent(celix_framework_t* fw, long scheduledEventId) {
+bool celix_framework_removeScheduledEvent(celix_framework_t* fw, bool errorIfNotFound, long scheduledEventId) {
     if (scheduledEventId < 0) {
         return false; //silently ignore
     }
@@ -2627,19 +2629,18 @@ bool celix_framework_removeScheduledEvent(celix_framework_t* fw, long scheduledE
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 
     if (event == NULL) {
-        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Cannot remove scheduled event with id %li. Not found",
+        celix_log_level_e level = errorIfNotFound ? CELIX_LOG_LEVEL_TRACE : CELIX_LOG_LEVEL_ERROR;
+        fw_log(fw->logger, level, "Cannot remove scheduled event with id %li. Not found.",
                scheduledEventId);
         return false;
     }
 
-    celix_framework_bundle_entry_t* bndEntry = celix_scheduledEvent_getBundleEntry(event);
     fw_log(fw->logger,
            CELIX_LOG_LEVEL_DEBUG,
-           "Removing scheduled event '%s' (id=%li) for bundle '%s' (id=%li)",
+           "Removing scheduled event '%s' (id=%li) for bundle id %li.",
            celix_scheduledEvent_getName(event),
            celix_scheduledEvent_getId(event),
-           celix_bundle_getSymbolicName(bndEntry->bnd),
-           bndEntry->bndId);
+           celix_scheduledEvent_getBundleId(event));
     celix_scheduledEvent_release(event);
     return true;
 }
@@ -2653,7 +2654,7 @@ long celix_framework_fireGenericEvent(framework_t* fw, long eventId, long bndId,
     if (bndId >=0) {
         bndEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
         if (bndEntry == NULL) {
-            fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Cannot find bundle for id %li", bndId);
+            fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Cannot find bundle for id %li.", bndId);
             return -1L;
         }
     }

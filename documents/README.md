@@ -86,5 +86,6 @@ bundles contains binaries depending on the stdlibc++ library.
   * [Apache Celix Framework](framework.md)
   * [Apache Celix Containers](containers.md)
   * [Apache Celix Patterns](patterns.md)
+  * [Apache Celix Scheduled Events](scheduled_events.md)
 * [Apache Celix CMake Commands](cmake_commands)
 * [Apache Celix Sub Projects](subprojects.md)

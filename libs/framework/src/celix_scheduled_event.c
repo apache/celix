@@ -37,29 +37,29 @@ static const char* const CELIX_SCHEDULED_EVENT_DEFAULT_NAME = "unnamed";
  * @brief Struct representing a scheduled event.
  *
  * A scheduled event is an event that is scheduled to be executed at a certain ititial delay and/or interval.
- * It is created using the `celix_bundleContext_addScheduledEvent` function and can be woken up
+ * It is created using the `celix_bundleContext_scheduleEvent` function and can be woken up
  * using the `celix_bundleContext_wakeupScheduledEvent` function.
  *
  * The struct contains information about the scheduled event, such as the event name, initial delay,
  * interval, and callback function. It also contains synchronization primitives to protect the use
  * count and call count of the event.
  *
- * @see celix_bundleContext_addScheduledEvent
+ * @see celix_bundleContext_scheduleEvent
  * @see celix_bundleContext_wakeupScheduledEvent
  */
 struct celix_scheduled_event {
     long scheduledEventId;            /**< The ID of the scheduled event. */
     celix_framework_logger_t* logger; /**< The framework logger used to log information */
-    celix_framework_bundle_entry_t*
-        bndEntry; /**< The bundle entry for the scheduled event. Note the scheduled event keeps a use count on the
-                     bundle entry and decreased this during the destruction of the scheduled event. */
-
+    long bndId;                       /**< The bundle id for the bundle that owns the scheduled event. */
     char* eventName; /**< The name of the scheduled event. Will be CELIX_SCHEDULED_EVENT_DEFAULT_NAME if no name is
                         provided during creation. */
-    double initialDelayInSeconds;           /**< The initial delay of the scheduled event in seconds. */
-    double intervalInSeconds;               /**< The interval of the scheduled event in seconds. */
-    void* eventCallbackData;                /**< The data for the scheduled event callback. */
-    void (*eventCallback)(void* eventData); /**< The callback function for the scheduled event. */
+    double initialDelayInSeconds;                       /**< The initial delay of the scheduled event in seconds. */
+    double intervalInSeconds;                           /**< The interval of the scheduled event in seconds. */
+    void* callbackData;                                 /**< The data for the scheduled event callback. */
+    void (*callback)(void* callbackData);               /**< The callback function for the scheduled event. */
+    void* removedCallbackData;                          /**< The data for the scheduled event removed callback. */
+    void (*removedCallback)(void* removedCallbackData); /**< The callback function for the scheduled event removed
+                                                            callback. */
 
     celix_thread_mutex_t mutex; /**< The mutex to protect the data below. */
     celix_thread_cond_t cond;   /**< The condition variable to signal the scheduled event for a changed callCount. */
@@ -71,13 +71,15 @@ struct celix_scheduled_event {
 };
 
 celix_scheduled_event_t* celix_scheduledEvent_create(celix_framework_logger_t* logger,
-                                                     celix_framework_bundle_entry_t* bndEntry,
+                                                     long bndId,
                                                      long scheduledEventId,
                                                      const char* providedEventName,
                                                      double initialDelayInSeconds,
                                                      double intervalInSeconds,
-                                                     void* eventData,
-                                                     void (*eventCallback)(void* eventData)) {
+                                                     void* callbackData,
+                                                     void (*callback)(void* callbackData),
+                                                     void* removedCallbackData,
+                                                     void (*removedCallback)(void* removedCallbackData)) {
     celix_scheduled_event_t* event = malloc(sizeof(*event));
     char* eventName =
         providedEventName == NULL ? (char*)CELIX_SCHEDULED_EVENT_DEFAULT_NAME : celix_utils_strdup(providedEventName);
@@ -85,24 +87,25 @@ celix_scheduled_event_t* celix_scheduledEvent_create(celix_framework_logger_t* l
         fw_log(logger,
                CELIX_LOG_LEVEL_ERROR,
                "Cannot add scheduled event for bundle id %li. Out of memory",
-               bndEntry->bndId);
+               bndId);
         free(event);
         if (eventName != CELIX_SCHEDULED_EVENT_DEFAULT_NAME) {
             free(eventName);
         }
-        celix_framework_bundleEntry_decreaseUseCount(bndEntry);
         return NULL;
     }
 
     event->scheduledEventId = scheduledEventId;
     event->logger = logger;
-    event->bndEntry = bndEntry;
+    event->bndId = bndId;
 
     event->eventName = eventName;
     event->initialDelayInSeconds = initialDelayInSeconds;
     event->intervalInSeconds = intervalInSeconds;
-    event->eventCallbackData = eventData;
-    event->eventCallback = eventCallback;
+    event->callbackData = callbackData;
+    event->callback = callback;
+    event->removedCallbackData = removedCallbackData;
+    event->removedCallback = removedCallback;
     event->useCount = 1;
     event->callCount = 0;
     clock_gettime(CLOCK_MONOTONIC, &event->lastScheduledEventTime);
@@ -115,7 +118,6 @@ celix_scheduled_event_t* celix_scheduledEvent_create(celix_framework_logger_t* l
 }
 
 static void celix_scheduledEvent_destroy(celix_scheduled_event_t* event) {
-    celix_framework_bundleEntry_decreaseUseCount(event->bndEntry);
     celixThreadMutex_destroy(&event->mutex);
     celixThreadCondition_destroy(&event->cond);
     if (event->eventName != CELIX_SCHEDULED_EVENT_DEFAULT_NAME) {
@@ -145,6 +147,9 @@ void celix_scheduledEvent_release(celix_scheduled_event_t* event) {
     celixThreadMutex_unlock(&event->mutex);
 
     if (unused) {
+        if (event->removedCallback) {
+            event->removedCallback(event->removedCallbackData);
+        }
         celix_scheduledEvent_destroy(event);
     }
 }
@@ -153,16 +158,12 @@ const char* celix_scheduledEvent_getName(const celix_scheduled_event_t* event) {
 
 long celix_scheduledEvent_getId(const celix_scheduled_event_t* event) { return event->scheduledEventId; }
 
-double celix_scheduledEvent_getInitialDelayInSeconds(const celix_scheduled_event_t* event) {
-    return event->initialDelayInSeconds;
-}
-
 double celix_scheduledEvent_getIntervalInSeconds(const celix_scheduled_event_t* event) {
     return event->intervalInSeconds;
 }
 
-celix_framework_bundle_entry_t* celix_scheduledEvent_getBundleEntry(const celix_scheduled_event_t* event) {
-    return event->bndEntry;
+long celix_scheduledEvent_getBundleId(const celix_scheduled_event_t* event) {
+    return event->bndId;
 }
 
 bool celix_scheduledEvent_deadlineReached(celix_scheduled_event_t* event,
@@ -193,19 +194,14 @@ void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct t
            CELIX_LOG_LEVEL_TRACE,
            "Processing scheduled event %s for bundle id %li",
            event->eventName,
-           event->bndEntry->bndId);
-
-    void (*callback)(void*) = NULL;
-    void* callbackData = NULL;
+           event->bndId);
 
     celixThreadMutex_lock(&event->mutex);
-    callback = event->eventCallback;
-    callbackData = event->eventCallbackData;
     event->useCount += 1;
     celixThreadMutex_unlock(&event->mutex);
-    assert(callback != NULL);
+    assert(event->callback != NULL);
 
-    callback(callbackData); // note called outside of lock
+    event->callback(event->callbackData); // note called outside of lock
 
     celixThreadMutex_lock(&event->mutex);
     event->lastScheduledEventTime = *currentTime;
@@ -232,11 +228,10 @@ size_t celix_scheduledEvent_configureWakeup(celix_scheduled_event_t* event) {
 
     fw_log(event->logger,
            CELIX_LOG_LEVEL_DEBUG,
-           "Wakeup scheduled event '%s' (id=%li) for bundle '%s' (id=%li)",
+           "Wakeup scheduled event '%s' (id=%li) for bundle id %li",
            event->eventName,
            event->scheduledEventId,
-           celix_bundle_getSymbolicName(event->bndEntry->bnd),
-           event->bndEntry->bndId);
+           event->bndId);
 
     return currentCallCount + 1;
 }

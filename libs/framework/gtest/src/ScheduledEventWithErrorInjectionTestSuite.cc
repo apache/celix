@@ -46,9 +46,10 @@ TEST_F(ScheduledEventWithErrorInjectionTestSuite, MallocFailsTest) {
 
     //When a scheduled event is added
     celix_scheduled_event_options_t opts{};
-    opts.eventName = "malloc fail test";
-    opts.eventCallback = [](void*){/*nop*/};
-    long scheduledEventId = celix_bundleContext_addScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), &opts);
+    opts.name = "malloc fail test";
+    opts.callback = [](void*){/*nop*/};
+    long scheduledEventId = celix_bundleContext_scheduleEvent(fw->getFrameworkBundleContext()->getCBundleContext(),
+                                                              &opts);
 
     //Then the scheduled event id is -1 (error)
     EXPECT_EQ(-1L, scheduledEventId);
