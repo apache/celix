@@ -29,6 +29,8 @@ extern "C" {
 
 typedef struct celix_scheduled_event celix_scheduled_event_t;
 
+#define CELIX_SCHEDULED_EVENT_TIMEOUT_WAIT_FOR_PROCESSING_IN_SECONDS 30.0
+
 /**
  * @brief Create a scheduled event for the given bundle.
  *
@@ -116,7 +118,7 @@ void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct t
  * @param[in] event The event to check.
  * @return  true if the event is a one-shot event and is done.
  */
-bool celix_scheduleEvent_isDone(celix_scheduled_event_t* event);
+bool celix_scheduleEvent_isSingleShotDone(celix_scheduled_event_t* event);
 
 /**
  * @brief Configure a scheduled event for a wakeup, so celix_scheduledEvent_deadlineReached will return true until
@@ -138,6 +140,16 @@ size_t celix_scheduledEvent_configureWakeup(celix_scheduled_event_t* event);
 celix_status_t celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_event_t* event,
                                                             size_t targetCallCount,
                                                             double waitTimeInSeconds);
+
+
+/**
+ * @brief Wait for a scheduled event to be done with processing.
+ * @param[in] event The event to wait for.
+ * @param[in] waitTimeInSeconds The max time to wait in seconds. Must be > 0.
+ * @return CELIX_SUCCESS if the scheduled event is done with processing, CELIX_TIMEOUT if the scheduled event
+ *         is not done with processing within the waitTimeInSeconds.
+ */
+celix_status_t celix_scheduledEvent_waitForProcessing(celix_scheduled_event_t* event);
 
 #ifdef __cplusplus
 };

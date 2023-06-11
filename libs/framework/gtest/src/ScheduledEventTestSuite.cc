@@ -501,9 +501,22 @@ TEST_F(ScheduledEventTestSuite, TimeoutOnWakeupTest) {
 
     auto status =
         celix_bundleContext_wakeupScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId, 0.001);
-    EXPECT_EQ(CELIX_TIMEOUT, status);
+    EXPECT_EQ(CELIX_TIMEOUT, status);;
+}
 
-    //sleep to ensure the event is processed
-    //TODO fixme, if removed the tests leaks
-    std::this_thread::sleep_for(std::chrono::milliseconds{10});
+TEST_F(ScheduledEventTestSuite, CxxCancelOneShotEventBeforeFiredTest) {
+    auto callback = []() {
+        FAIL() << "Should not be called";
+    };
+
+    //Given a one shot scheduled event with a initial delay of 1s
+    auto event = fw->getFrameworkBundleContext()->scheduledEvent()
+                     .withInitialDelay(std::chrono::seconds{1})
+                     .withCallback(callback)
+                     .build();
+
+    //When the event is cancelled before the initial delay
+    event.cancel();
+
+    //Then the event is not fired and does not leak
 }

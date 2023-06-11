@@ -1450,7 +1450,7 @@ static double celix_framework_processScheduledEvents(celix_framework_t* fw) {
 
         if (callEvent != NULL) {
             celix_scheduledEvent_process(callEvent, &ts);
-            if (celix_scheduleEvent_isDone(callEvent)) {
+            if (celix_scheduleEvent_isSingleShotDone(callEvent)) {
                 celixThreadMutex_lock(&fw->dispatcher.mutex);
                 fw_log(fw->logger,
                        CELIX_LOG_LEVEL_DEBUG,
@@ -1502,7 +1502,8 @@ void celix_framework_cleanupScheduledEvents(celix_framework_t* fw, long bndId) {
                        eventName,
                        eventId,
                        eventBndId);
-            } 
+            }
+            celix_scheduledEvent_waitForProcessing(removedEvent);
             celix_scheduledEvent_release(removedEvent);
         }
     } while (removedEvent != NULL);
@@ -2637,6 +2638,7 @@ bool celix_framework_removeScheduledEvent(celix_framework_t* fw, bool errorIfNot
            celix_scheduledEvent_getName(event),
            celix_scheduledEvent_getId(event),
            celix_scheduledEvent_getBundleId(event));
+    celix_scheduledEvent_waitForProcessing(event);
     celix_scheduledEvent_release(event);
     return true;
 }
