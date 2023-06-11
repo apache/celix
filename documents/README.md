@@ -89,3 +89,4 @@ bundles contains binaries depending on the stdlibc++ library.
   * [Apache Celix Scheduled Events](scheduled_events.md)
 * [Apache Celix CMake Commands](cmake_commands)
 * [Apache Celix Sub Projects](subprojects.md)
+* [Apache Celix Coding Conventions Guide](development/README.md)

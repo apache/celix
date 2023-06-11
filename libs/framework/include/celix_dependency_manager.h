@@ -31,6 +31,8 @@ extern "C" {
 #endif
 
 /**
+ * @file celix_dependency_manager.h
+ *
  * The `celix_dependencyManager_add`, `celix_dependencyManager_remove` and `celix_dependencyManager_removeAllComponents`
  * funcions for celix_dependency_manager_t should be called outside the Celix event thread.
  * Note that bundle activators are started and stopped outside the Celix event thread and thus these
@@ -43,7 +45,7 @@ extern "C" {
 
 
 /**
- * Adds a DM component to the dependency manager
+ * @brief Add a DM component to the dependency manager
  *
  * After this call the components will be build and if the components can be started, they
  * will be started and the services will be registered.
@@ -56,14 +58,14 @@ extern "C" {
 CELIX_FRAMEWORK_EXPORT celix_status_t celix_dependencyManager_add(celix_dependency_manager_t *manager, celix_dm_component_t *component);
 
 /**
- * Same as celix_dependencyManager_add, but this call will not wait until all service registrations and
+ * @brief Same as celix_dependencyManager_add, but this call will not wait until all service registrations and
  * tracker are registered/opened on the Celix event thread.
  * Can be called on the Celix event thread.
  */
 CELIX_FRAMEWORK_EXPORT celix_status_t celix_dependencyManager_addAsync(celix_dependency_manager_t *manager, celix_dm_component_t *component);
 
 /**
- * Removes a DM component from the dependency manager and destroys it
+ * @brief Remove a DM component from the dependency manager and destroys it
  *
  * After this call - and if the component was found - the component will be destroyed and if the component was started,
  * the component will have been stopped and de-initialized.
@@ -73,7 +75,7 @@ CELIX_FRAMEWORK_EXPORT celix_status_t celix_dependencyManager_addAsync(celix_dep
 CELIX_FRAMEWORK_EXPORT celix_status_t celix_dependencyManager_remove(celix_dependency_manager_t *manager, celix_dm_component_t *component);
 
 /**
- * Same as celix_dependencyManager_remove, but this call will not wait until component is deactivated.
+ * @brief Same as celix_dependencyManager_remove, but this call will not wait until component is deactivated.
  * Can be called on the Celix event thread.
  *
  * The doneCallback will be called (if not NULL) with doneData as argument when the component is removed
@@ -87,14 +89,14 @@ CELIX_FRAMEWORK_EXPORT celix_status_t celix_dependencyManager_removeAsync(
         void (*doneCallback)(void* data));
 
 /**
- * Removes all DM components from the dependency manager.
+ * @brief Remove all DM components from the dependency manager.
  *
  * Should not be called from the Celix event thread.
  */
 CELIX_FRAMEWORK_EXPORT celix_status_t celix_dependencyManager_removeAllComponents(celix_dependency_manager_t *manager);
 
 /**
- * Same as celix_dependencyManager_removeAllComponents, but this call will not wait til all
+ * @brief Same as celix_dependencyManager_removeAllComponents, but this call will not wait til all
  * service registration and service trackers are unregistered/closed.
  *
  * The doneCallback will be called (if not NULL) with doneData as argument when the all component are removed
@@ -105,23 +107,23 @@ CELIX_FRAMEWORK_EXPORT celix_status_t celix_dependencyManager_removeAllComponent
 CELIX_FRAMEWORK_EXPORT celix_status_t celix_dependencyManager_removeAllComponentsAsync(celix_dependency_manager_t *manager, void *doneData, void (*doneCallback)(void *data));
 
 /**
- * Check if all components for the bundle of the dependency manager are active (all required dependencies resolved).
+ * @brief Check if all components for the bundle of the dependency manager are active (all required dependencies resolved).
  */
 CELIX_FRAMEWORK_EXPORT bool celix_dependencyManager_areComponentsActive(celix_dependency_manager_t *manager);
 
 /**
- * Check if all components - for all bundles - are active (all required dependencies resolved).
+ * @brief Check if all components - for all bundles - are active (all required dependencies resolved).
  */
 CELIX_FRAMEWORK_EXPORT bool celix_dependencyManager_allComponentsActive(celix_dependency_manager_t *manager);
 
 /**
- * Return the nr of components for this dependency manager
+ * @brief Return the nr of components for this dependency manager
  */
 CELIX_FRAMEWORK_EXPORT size_t celix_dependencyManager_nrOfComponents(celix_dependency_manager_t *manager);
 
 /**
- * Wait for an empty Celix event queue.
- * 
+ * @brief Wait for an empty Celix event queue.
+ *
  * Should not be called on the Celix event queue thread.
  * Note scheduled events are not part of the event queue.
  *
@@ -131,19 +133,22 @@ CELIX_FRAMEWORK_EXPORT size_t celix_dependencyManager_nrOfComponents(celix_depen
 CELIX_FRAMEWORK_EXPORT void celix_dependencyManager_wait(celix_dependency_manager_t* manager);
 
 /**
- * Create and returns a dependency manager info struct for the specified bundle.
+ * @brief Create and returns a dependency manager info struct for the specified bundle.
+ *
  * The dependency manager info contains information about the state of the dependency manager components
  *
  * Caller has ownership of the return value (use celix_dependencyManager_destroyInfo to free the memory).
  *
  * @param manager The dependency manager
  * @param bndId The bundle id to get the info from.
- * @returns The dependency manager info for the provided bundle id or NULL if the bundle id is invalid.
+ * @returns The dependency manager info for the provided bundle id or NULL if the bundle id is invalid or the bundle of
+ *          the provided bundle id is not started.
  */
 CELIX_FRAMEWORK_EXPORT celix_dependency_manager_info_t* celix_dependencyManager_createInfo(celix_dependency_manager_t *manager, long bndId);
 
 /**
- * Create and returns a dependency manager info struct for all started bundles.
+ * @brief Create and returns a dependency manager info struct for all started bundles.
+ *
  * The dependency manager info contains information about the state of the dependency manager components
  *
  * Caller has ownership of the return values (use celix_arrayList_destroy to free the memory).
@@ -154,18 +159,19 @@ CELIX_FRAMEWORK_EXPORT celix_dependency_manager_info_t* celix_dependencyManager_
 CELIX_FRAMEWORK_EXPORT celix_array_list_t * /*celix_dependency_manager_info_t* entries*/ celix_dependencyManager_createInfos(celix_dependency_manager_t *manager);
 
 /**
- * Destroys a DM info struct.
+ * @brief Destroy a DM info struct.
  */
 CELIX_FRAMEWORK_EXPORT void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager, celix_dependency_manager_info_t *info);
 
 /**
- * Destroys a celix array list of  DM info structs.
+ * @brief Destroy a celix array list of  DM info structs.
  * @deprecated use celix_arrayList_destroy instead.
  */
 CELIX_FRAMEWORK_EXPORT void celix_dependencyManager_destroyInfos(celix_dependency_manager_t *manager, celix_array_list_t * infos /*entries celix_dependency_manager_info_t*/);
 
 /**
- * Print the dependency manager info for all bundles to the provided output stream.
+ * @brief Print the dependency manager info for all bundles to the provided output stream.
+ *
  * @param manager The dependency manager.
  * @param fullInfo Whether to print the full info or summary.
  * @param useAnsiColors Whether to use ansi colors when printing info.
@@ -174,7 +180,8 @@ CELIX_FRAMEWORK_EXPORT void celix_dependencyManager_destroyInfos(celix_dependenc
 CELIX_FRAMEWORK_EXPORT void celix_dependencyManager_printInfo(celix_dependency_manager_t* manager, bool fullInfo, bool useAnsiColors, FILE* stream);
 
 /**
- * Print the dependency manager info for the provided bundle id to the provided output stream.
+ * @brief Print the dependency manager info for the provided bundle id to the provided output stream.
+ *
  * @param manager The dependency manager.
  * @param fullInfo whether to print the full info or summary.
  * @param useAnsiColors Whether to use ansi colors when printing info.

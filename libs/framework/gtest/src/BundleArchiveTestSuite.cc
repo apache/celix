@@ -74,18 +74,8 @@ TEST_F(CxxBundleArchiveTestSuite, BundleArchiveReusedTest) {
     auto firstBundleRevisionTime = installTime;
     lock.unlock();
 
-    tracker.reset();
-    fw = celix::createFramework({
-                                        {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"},
-                                        {CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "false"}
-                                });
-    ctx = fw->getFrameworkBundleContext();
-    tracker = ctx->trackBundles()
-            .addOnInstallCallback([&](const celix::Bundle& b) {
-                std::lock_guard<std::mutex> lock{m};
-                auto *archive = celix_bundle_getArchive(b.getCBundle());
-                EXPECT_EQ(CELIX_SUCCESS, celix_bundleArchive_getLastModified(archive, &installTime));
-            }).build();
+    //uninstall and reinstall
+    ctx->uninstallBundle(bndId1);
     std::this_thread::sleep_for(std::chrono::milliseconds{100}); //wait so that the zip <-> archive dir modification time is different
     long bndId2 = ctx->installBundle(SIMPLE_TEST_BUNDLE1_LOCATION);
     EXPECT_GT(bndId2, -1);
@@ -99,18 +89,7 @@ TEST_F(CxxBundleArchiveTestSuite, BundleArchiveReusedTest) {
 
 
     auto secondBundleRevisionTime = installTime;
-    tracker.reset();
-    fw = celix::createFramework({
-                                        {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"},
-                                        {CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "false"}
-                                });
-    ctx = fw->getFrameworkBundleContext();
-    tracker = ctx->trackBundles()
-            .addOnInstallCallback([&](const celix::Bundle& b) {
-                std::lock_guard<std::mutex> lock{m};
-                auto *archive = celix_bundle_getArchive(b.getCBundle());
-                EXPECT_EQ(CELIX_SUCCESS, celix_bundleArchive_getLastModified(archive, &installTime));
-            }).build();
+    ctx->uninstallBundle(bndId1);
     std::this_thread::sleep_for(std::chrono::milliseconds{100}); //wait so that the zip <-> archive dir modification time is different
     celix_utils_touch(SIMPLE_TEST_BUNDLE1_LOCATION); //touch the bundle zip file to force an update
     long bndId3 = ctx->installBundle(SIMPLE_TEST_BUNDLE1_LOCATION);

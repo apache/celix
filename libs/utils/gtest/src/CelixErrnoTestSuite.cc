@@ -93,3 +93,64 @@ TEST_F(CelixErrnoTestSuite, TestZipFacility) {
 
     EXPECT_STREQ("ZIP error", celix_strerror(CELIX_ERROR_MAKE(CELIX_FACILITY_ZIP, 1)));
 }
+
+TEST_F(CelixErrnoTestSuite, DoIfTest) {
+    // Given a count of 0
+    int count = 0;
+    // And a CELIX_SUCCESS status
+    celix_status_t status = CELIX_SUCCESS;
+    // And a function that increments the count and returns CELIX_SUCCESS
+    auto incrementAndReturnSuccess = [&count]() -> celix_status_t {
+        count++;
+        return CELIX_SUCCESS;
+    };
+    // And a function that increments the count and returns a error (CELIX_BUNDLE_EXCEPTION)
+    auto incrementAndReturnError = [&count]() -> celix_status_t {
+        count++;
+        return CELIX_BUNDLE_EXCEPTION;
+    };
+
+    // When CELIX_DO_IF is called with a success status
+    status = CELIX_DO_IF(CELIX_SUCCESS, incrementAndReturnSuccess());
+
+    //Then the count is 1 and the status is CELIX_SUCCESS
+    EXPECT_EQ(1, count);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    //When CELIX_DO_IF is called with a error status
+    status = CELIX_DO_IF(status, incrementAndReturnError());
+
+    //Then the count is still 2 and the status is CELIX_BUNDLE_EXCEPTION
+    EXPECT_EQ(2, count);
+    EXPECT_EQ(CELIX_BUNDLE_EXCEPTION, status);
+
+    //When CELIX_DO_IF is called with a error status
+    status = CELIX_DO_IF(status, incrementAndReturnSuccess());
+
+    //Then the count is still 2 and the status is still CELIX_BUNDLE_EXCEPTION (last incrementAndReturnSuccess not called)
+    EXPECT_EQ(2, count);
+    EXPECT_EQ(CELIX_BUNDLE_EXCEPTION, status);
+}
+
+TEST_F(CelixErrnoTestSuite, GotoIfErrMacroTest) {
+    // Given a count of 0
+    int count = 0;
+    // And a label exit_checkt with a count check (see end of test)
+
+
+    //When CELIX_GOTO_IF_ERR is called with CELIX_SUCCESS 
+    CELIX_GOTO_IF_ERR(CELIX_SUCCESS, exit_check);
+    //Then the count is still 0
+    EXPECT_EQ(count, 0);
+
+    //When the count is increased
+    count++;
+    //And CELIX_GOTO_IF_ERR is called with a error (ENOMEM)
+    CELIX_GOTO_IF_ERR(ENOMEM, exit_check);
+    //Then this will not be reached
+    FAIL() << "Shold not be reached";
+
+    return;
+exit_check:
+    EXPECT_EQ(count, 1);
+}

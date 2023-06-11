@@ -436,7 +436,7 @@ celix_status_t celix_framework_stopBundleEntry(celix_framework_t* fw, celix_fram
 /**
  * Uninstall a bundle. Cannot be called on the Celix event thread.
  */
-celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool permanent);
+celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
 
 /**
  * Uninstall a bundle. Cannot be called on the Celix event thread.
@@ -473,7 +473,7 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
                                     void (*callback)(void*),
                                     void* removeCallbackData,
                                     void (*removeCallback)(void*));
-                                       
+
 /**
  * @brief Wakeup a scheduled event.
  *
@@ -482,12 +482,12 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
  *
  * @param[in] ctx The bundle context.
  * @param[in] scheduledEventId The scheduled event id to wakeup.
- * @param[in] waitTimeInSeconds If not 0, this function will block until the scheduled event callback 
+ * @param[in] waitTimeInSeconds If not 0, this function will block until the scheduled event callback
  *                              is called or the provided timeout is reached.
- * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not 
- */  
-celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw, 
-                                                    long scheduledEventId, 
+ * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not
+ */
+celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw,
+                                                    long scheduledEventId,
                                                     double waitTimeInSeconds);
 
 /**

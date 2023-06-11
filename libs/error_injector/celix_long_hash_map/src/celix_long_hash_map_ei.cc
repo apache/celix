@@ -16,29 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-#pragma once
+#include "celix_long_hash_map_ei.h"
 
-#include <exception>
+extern "C" {
 
-namespace celix {
-
-    /**
-     * @brief Celix runtime Exception
-     */
-    class Exception : public std::exception {
-    public:
-        explicit Exception(std::string msg) : w{std::move(msg)} {}
-
-        Exception(const Exception&) = default;
-        Exception(Exception&&) = default;
-        Exception& operator=(const Exception&) = default;
-        Exception& operator=(Exception&&) = default;
-
-        const char* what() const noexcept override {
-            return w.c_str();
-        }
-    private:
-        std::string w;
-    };
+celix_long_hash_map_t* __real_celix_longHashMap_create(void);
+CELIX_EI_DEFINE(celix_longHashMap_create, celix_long_hash_map_t*)
+celix_long_hash_map_t* __wrap_celix_longHashMap_create(void) {
+    CELIX_EI_IMPL(celix_longHashMap_create);
+    return __real_celix_longHashMap_create();
+}
 
 }

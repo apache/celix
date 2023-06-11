@@ -56,6 +56,7 @@ set(CELIX_FRAMEWORK_TEST_SOURCES
     src/CxxBundleActivatorTestSuite.cc
     src/BundleArchiveTestSuite.cc
     src/CelixLauncherTestSuite.cc
+    src/CelixBundleCacheTestSuite.cc
     src/ScheduledEventTestSuite.cc
 )
 
@@ -128,6 +129,7 @@ if (LINKER_WRAP_SUPPORTED)
             src/BundleArchiveWithErrorInjectionTestSuite.cc
             src/CelixFrameworkUtilsErrorInjectionTestSuite.cc
             src/CelixBundleContextBundlesWithErrorTestSuite.cc
+            src/CelixBundleCacheErrorInjectionTestSuite.cc
             src/ScheduledEventWithErrorInjectionTestSuite.cc
     )
     target_compile_definitions(test_framework_with_ei PRIVATE
@@ -144,6 +146,9 @@ if (LINKER_WRAP_SUPPORTED)
             Celix::utils_ei
             Celix::asprintf_ei
             Celix::dlfcn_ei
+            Celix::unistd_ei
+            Celix::hash_map_ei
+            Celix::properties_ei
             GTest::gtest GTest::gtest_main
     )
 

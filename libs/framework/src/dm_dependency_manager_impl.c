@@ -182,6 +182,10 @@ celix_status_t celix_dependencyManager_removeAllComponentsAsync(celix_dependency
 static void celix_dm_getInfoCallback(void *handle, const celix_bundle_t *bnd) {
     celix_dependency_manager_info_t **out = handle;
 
+    if (celix_bundle_getState(bnd) != CELIX_BUNDLE_STATE_ACTIVE) {
+        return;
+    }
+
     celix_bundle_context_t *context = NULL;
     bundle_getContext((celix_bundle_t*)bnd, &context);
     celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
@@ -261,6 +265,11 @@ celix_array_list_t * celix_dependencyManager_createInfos(celix_dependency_manage
 
 static void celix_dm_allComponentsActiveCallback(void *handle, const celix_bundle_t *bnd) {
 	bool *allActivePtr = handle;
+
+    if (celix_bundle_getState(bnd) != CELIX_BUNDLE_STATE_ACTIVE) {
+        return;
+    }
+
 	celix_bundle_context_t *context = NULL;
 	bundle_getContext((celix_bundle_t*)bnd, &context);
 	celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
@@ -310,9 +319,11 @@ bool celix_dependencyManager_areComponentsActive(celix_dependency_manager_t *mng
 }
 
 void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager __attribute__((unused)), celix_dependency_manager_info_t *info) {
-	celix_arrayList_destroy(info->components);
-	free(info->bndSymbolicName);
-	free(info);
+    if (info != NULL) {
+        celix_arrayList_destroy(info->components);
+        free(info->bndSymbolicName);
+        free(info);
+    }
 }
 
 

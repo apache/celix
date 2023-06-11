@@ -1,27 +1,32 @@
 BasedOnStyle: LLVM
+Language: Cpp
 IndentWidth: 4
 AllowShortIfStatementsOnASingleLine: false
 AlwaysBreakTemplateDeclarations: Yes
 BinPackArguments: false
 BinPackParameters: false
-BreakBeforeBraces: Attach
 ColumnLimit: 120
-ConstructorInitializerIndentWidth: 4
-Cpp11BracedListStyle: true
 DerivePointerAlignment: false
-IncludeBlocks: Regroup
 KeepEmptyLinesAtTheStartOfBlocks: false
-NamespaceIndentation: None
 PointerAlignment: Left
-ReflowComments: true
-SortIncludes: false
-SpaceAfterCStyleCast: false
-SpaceBeforeAssignmentOperators: true
-SpaceBeforeParens: ControlStatements
-SpaceInEmptyParentheses: false
 SpacesBeforeTrailingComments: 1
-SpacesInAngles: Never
-SpacesInCStyleCastParentheses: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-AlignEscapedNewlines: Right
+SortIncludes: true
+---
+#Include regroup disabled by default.
+#IncludeBlocks: Regroup
+#IncludeCategories:
+##gtest headers
+#  - Regex:            '^((<|")gtest/)'
+#    Priority:         1
+##stdlib C++ headers
+#  - Regex:            '^<([^.])*>'
+#    Priority:         2
+##external headers
+#  - Regex:            '^<([^.])*\.h>'
+#    Priority:         3
+##celix C API
+#  - Regex:            '^(<|")celix_.*'
+#    Priority:         4
+##celix C++ API
+#  - Regex:            '^(<|")celix/.*'
+#    Priority:         5

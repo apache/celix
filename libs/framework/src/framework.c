@@ -658,18 +658,11 @@ celix_status_t celix_framework_installBundleInternal(celix_framework_t *framewor
             return CELIX_SUCCESS;
         }
 
-        long alreadyExistingBndId = celix_bundleCache_findBundleIdForLocation(framework, bndLoc);
+        long alreadyExistingBndId = celix_bundleCache_findBundleIdForLocation(framework->cache, bndLoc);
         long id = alreadyExistingBndId == -1 ? framework_getNextBundleId(framework) : alreadyExistingBndId;
         bundle_archive_t* archive = NULL;
-        status = CELIX_DO_IF(status, celix_bundleCache_createArchive(framework, id, bndLoc, &archive));
-        if (status != CELIX_SUCCESS) {
-            bundleArchive_destroy(archive);
-        }
-
-        if (status == CELIX_SUCCESS) {
-            status = celix_bundle_createFromArchive(framework, archive, &bundle);
-        }
-
+        status = CELIX_DO_IF(status, celix_bundleCache_createArchive(framework->cache, id, bndLoc, &archive));
+        status = CELIX_DO_IF(status, celix_bundle_createFromArchive(framework, archive, &bundle));
         if (status == CELIX_SUCCESS) {
             celix_framework_bundle_entry_t *bEntry = fw_bundleEntry_create(bundle);
             celix_framework_bundleEntry_increaseUseCount(bEntry);
@@ -986,7 +979,7 @@ celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bund
 
 long framework_getNextBundleId(framework_pt framework) {
     long nextId = __atomic_fetch_add(&framework->currentBundleId, 1, __ATOMIC_SEQ_CST);
-    while ( celix_bundleCache_isBundleIdAlreadyUsed(framework, nextId) ||
+    while ( celix_bundleCache_isBundleIdAlreadyUsed(framework->cache, nextId) ||
             celix_framework_isBundleIdAlreadyUsed(framework, nextId)) {
         nextId = __atomic_fetch_add(&framework->currentBundleId, 1, __ATOMIC_SEQ_CST);
     }
@@ -1191,7 +1184,7 @@ static void* framework_shutdown(void *framework) {
     }
     for (int i = size-1; i >= 0; --i) { //note loop in reverse order -> uninstall later installed bundle first
         celix_framework_bundle_entry_t *entry = celix_arrayList_get(stopEntries, i);
-        celix_framework_uninstallBundleEntry(fw, entry, false);
+        celix_framework_uninstallBundleEntry(fw, entry);
     }
     celix_arrayList_destroy(stopEntries);
 
@@ -2002,14 +1995,14 @@ void celix_framework_uninstallBundleAsync(celix_framework_t *fw, long bndId) {
     celix_framework_uninstallBundleInternal(fw, bndId, true);
 }
 
-celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool permanent) {
-    assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
+celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* framework, celix_framework_bundle_entry_t* bndEntry) {
+    assert(!celix_framework_isCurrentThreadTheEventLoop(framework));
     celix_bundle_state_e bndState = celix_bundle_getState(bndEntry->bnd);
     if (bndState == CELIX_BUNDLE_STATE_ACTIVE) {
-        celix_framework_stopBundleEntry(fw, bndEntry);
+        celix_framework_stopBundleEntry(framework, bndEntry);
     }
 
-    celix_framework_bundle_entry_t* removedEntry = fw_bundleEntry_removeBundleEntryAndIncreaseUseCount(fw, bndEntry->bndId);
+    celix_framework_bundle_entry_t* removedEntry = fw_bundleEntry_removeBundleEntryAndIncreaseUseCount(framework, bndEntry->bndId);
 
     celix_framework_bundleEntry_decreaseUseCount(bndEntry);
     if (removedEntry != NULL) {
@@ -2017,32 +2010,35 @@ celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix
         celix_bundle_t *bnd = removedEntry->bnd;
 
         if (status == CELIX_SUCCESS) {
+            bundle_archive_t *archive = NULL;
+            bundle_revision_t *revision = NULL;
             celix_module_t* module = NULL;
+            status = CELIX_DO_IF(status, bundle_getArchive(bnd, &archive));
+            status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
             status = CELIX_DO_IF(status, bundle_getCurrentModule(bnd, &module));
+
             if (module) {
                 celix_module_closeLibraries(module);
             }
-            CELIX_DO_IF(status, fw_fireBundleEvent(fw, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, removedEntry));
+
+            CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, removedEntry));
+
             status = CELIX_DO_IF(status, bundle_setState(bnd, CELIX_BUNDLE_STATE_UNINSTALLED));
-            CELIX_DO_IF(status, fw_fireBundleEvent(fw, OSGI_FRAMEWORK_BUNDLE_EVENT_UNINSTALLED, removedEntry));
+
+            CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNINSTALLED, removedEntry));
+
             //NOTE wait outside installedBundles.mutex
             celix_framework_bundleEntry_decreaseUseCount(removedEntry);
             fw_bundleEntry_destroy(removedEntry , true); //wait till use count is 0 -> e.g. not used
 
             if (status == CELIX_SUCCESS) {
-                celix_framework_waitForEmptyEventQueue(fw); //to ensure that the uninstall event is triggered and handled
-                if (permanent) {
-                    status = CELIX_DO_IF(status, bundle_closeAndDelete(bnd));
-                } else {
-                    status = CELIX_DO_IF(status, bundle_closeModules(bnd));
-                }
-                bundle_archive_t *archive = NULL;
-                status = CELIX_DO_IF(status, bundle_getArchive(bnd, &archive));
-                status = CELIX_DO_IF(status, bundleArchive_destroy(archive));
+                celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
+                bundleArchive_destroy(archive);
+                status = CELIX_DO_IF(status, bundle_closeModules(bnd));
                 status = CELIX_DO_IF(status, bundle_destroy(bnd));
             }
         }
-        framework_logIfError(fw->logger, status, "", "Cannot uninstall bundle");
+        framework_logIfError(framework->logger, status, "", "Cannot uninstall bundle");
         return status;
 
     } else {
