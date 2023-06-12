@@ -662,18 +662,18 @@ function(celix_bundle_add_dir)
     if (NOT DEFINED COPY_DESTINATION)
         set(DESTINATION "${BUNDLE_DIR}")
     else()
-	set(DESTINATION "${BUNDLE_DIR}/${COPY_DESTINATION}")
+        set(DESTINATION "${BUNDLE_DIR}/${COPY_DESTINATION}")
     endif()
 
     string(UUID COPY_ID NAMESPACE "661ee07c-842d-11e8-adfc-80fa5b02e11b" NAME "${INPUT_DIR}" TYPE MD5)
 
     set(COPY_CMAKE_SCRIPT "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-dir-${COPY_ID}.cmake")
     if (IS_ABSOLUTE ${INPUT_DIR})
-	    file(WRITE ${COPY_CMAKE_SCRIPT}
-		    "file(COPY ${INPUT_DIR} DESTINATION ${DESTINATION})")
+        file(WRITE ${COPY_CMAKE_SCRIPT}
+                "file(COPY ${INPUT_DIR} DESTINATION ${DESTINATION})")
     else()
-	    file(WRITE ${COPY_CMAKE_SCRIPT}
-		    "file(COPY ${CMAKE_CURRENT_LIST_DIR}/${INPUT_DIR} DESTINATION ${DESTINATION})")
+        file(WRITE ${COPY_CMAKE_SCRIPT}
+                "file(COPY ${CMAKE_CURRENT_LIST_DIR}/${INPUT_DIR} DESTINATION ${DESTINATION})")
     endif()
 
     set(TIMESTAMP "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-dir-${COPY_ID}.timestamp")
@@ -683,7 +683,7 @@ function(celix_bundle_add_dir)
             COMMAND ${CMAKE_COMMAND} -P ${COPY_CMAKE_SCRIPT}
             DEPENDS ${DIR_FILES}
             COMMENT "Copying dir ${INPUT_DIR} to ${DESTINATION}"
-    )
+            )
 
     get_target_property(DEPS ${BUNDLE} "BUNDLE_DEPEND_TARGETS")
     list(APPEND DEPS "${TIMESTAMP}")
@@ -691,7 +691,7 @@ function(celix_bundle_add_dir)
 endfunction()
 
 #[[
-Copy to the content of a directory to a bundle.
+Copy specified files to a bundle.
 
 ```CMake
 celix_bundle_add_files(<bundle_target>
@@ -725,7 +725,7 @@ function(celix_bundle_add_files)
     if (NOT DEFINED COPY_DESTINATION)
         set(DESTINATION "${BUNDLE_DIR}")
     else()
-	set(DESTINATION "${BUNDLE_DIR}/${COPY_DESTINATION}")
+        set(DESTINATION "${BUNDLE_DIR}/${COPY_DESTINATION}")
     endif()
 
     string(UUID COPY_ID NAMESPACE "661ee07c-842d-11e8-adfc-80fa5b02e11b" NAME "${COPY_FILES}" TYPE MD5)
@@ -733,21 +733,21 @@ function(celix_bundle_add_files)
     set(TIMESTAMP "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-files-${COPY_ID}.timestamp")
     set(COPY_CMAKE_SCRIPT "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-files-${COPY_ID}.cmake")
     file(WRITE ${COPY_CMAKE_SCRIPT}
-	    "#Copy script, copies the file on a file per file base\n")
+            "#Copy script, copies the file on a file per file base\n")
     foreach(FILE IN ITEMS ${COPY_FILES})
-	    if (IS_ABSOLUTE ${FILE})
-	    	file(APPEND ${COPY_CMAKE_SCRIPT}
-			"file(COPY ${FILE} DESTINATION ${DESTINATION})\n")
-	    else()
-	    	file(APPEND ${COPY_CMAKE_SCRIPT}
-			"file(COPY ${CMAKE_CURRENT_LIST_DIR}/${FILE} DESTINATION ${DESTINATION})\n")
-	    endif()
+        if (IS_ABSOLUTE ${FILE})
+            file(APPEND ${COPY_CMAKE_SCRIPT}
+                    "file(COPY ${FILE} DESTINATION ${DESTINATION})\n")
+        else()
+            file(APPEND ${COPY_CMAKE_SCRIPT}
+                    "file(COPY ${CMAKE_CURRENT_LIST_DIR}/${FILE} DESTINATION ${DESTINATION})\n")
+        endif()
     endforeach()
     add_custom_command(OUTPUT ${TIMESTAMP}
             COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP}
             COMMAND ${CMAKE_COMMAND} -P ${COPY_CMAKE_SCRIPT}
-	        DEPENDS ${COPY_FILES}
-	        COMMENT "Copying files to ${DESTINATION}"
+            DEPENDS ${COPY_FILES}
+            COMMENT "Copying files to ${DESTINATION}"
     )
 
     get_target_property(DEPS ${BUNDLE} "BUNDLE_DEPEND_TARGETS")
@@ -911,6 +911,9 @@ function(celix_get_bundle_filename)
         if (_IMP)
             _celix_extract_imported_bundle_info(${ARGV0})
             set(${ARGV1} ${BUNDLE_FILENAME} PARENT_SCOPE)
+            unset(BUNDLE_FILE)
+            unset(BUNDLE_FILENAME)
+            unset(BUNDLE_SYMBOLIC_NAME)
         else ()
             get_target_property(BF ${ARGV0} BUNDLE_FILENAME)
             set(${ARGV1} ${BF} PARENT_SCOPE)
@@ -942,6 +945,7 @@ function(celix_get_bundle_file)
             set(${ARGV1} ${BUNDLE_FILE} PARENT_SCOPE)
             unset(BUNDLE_FILE)
             unset(BUNDLE_FILENAME)
+            unset(BUNDLE_SYMBOLIC_NAME)
         else ()
             get_target_property(BF ${ARGV0} BUNDLE_FILE)
             set(${ARGV1} ${BF} PARENT_SCOPE)
