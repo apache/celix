@@ -26,7 +26,7 @@
 
 namespace celix {
 
-    enum class BundleState {
+    enum class BundleState : std::uint8_t {
         UNKNOWN,
         UNINSTALLED,
         INSTALLED,

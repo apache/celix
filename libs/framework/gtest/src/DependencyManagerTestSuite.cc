@@ -650,7 +650,7 @@ TEST_F(DependencyManagerTestSuite, IntermediateStatesDuringInitDeinitStartingAnd
     //and a required service dependency on "RequiredTestService" with a locking-strategy.
     class LifecycleComponent {
     public:
-        enum class LifecycleMethod {
+        enum class LifecycleMethod : std::int8_t {
             None =      0,
             Init =      1,
             Start =     2,
@@ -1010,7 +1010,7 @@ TEST_F(DependencyManagerTestSuite, UnneededSuspendIsPrevented) {
 TEST_F(DependencyManagerTestSuite, ExceptionsInLifecycle) {
     class ExceptionComponent {
     public:
-        enum class LifecycleMethod {
+        enum class LifecycleMethod : std::uint8_t {
             INIT,
             START,
             STOP,

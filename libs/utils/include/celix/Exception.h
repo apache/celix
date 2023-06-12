@@ -18,27 +18,16 @@
  */
 #pragma once
 
-#include <exception>
+#include <stdexcept>
 
 namespace celix {
 
     /**
      * @brief Celix runtime Exception
      */
-    class Exception : public std::exception {
+    class Exception : public std::runtime_error {
     public:
-        explicit Exception(std::string msg) : w{std::move(msg)} {}
-
-        Exception(const Exception&) = default;
-        Exception(Exception&&) = default;
-        Exception& operator=(const Exception&) = default;
-        Exception& operator=(Exception&&) = default;
-
-        const char* what() const noexcept override {
-            return w.c_str();
-        }
-    private:
-        std::string w;
+        using std::runtime_error::runtime_error;
     };
 
 }
