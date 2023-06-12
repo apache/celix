@@ -29,6 +29,12 @@
 #define CELIX_SCHEDULED_EVENT_INTERVAL_ALLOW_ERROR_IN_SECONDS 0.000001
 
 /**
+ * @brief The timeout in seconds, before a log message is printed while waiting for a scheduled event to be processed.
+ */
+#define CELIX_SCHEDULED_EVENT_ERROR_LOG_TIMEOUT_IN_SECONDS 10.0
+
+
+/**
  * @brief Default name for a scheduled event.
  */
 static const char* const CELIX_SCHEDULED_EVENT_DEFAULT_NAME = "unnamed";
@@ -63,10 +69,11 @@ struct celix_scheduled_event {
 
     celix_thread_mutex_t mutex; /**< The mutex to protect the data below. */
     celix_thread_cond_t cond;   /**< The condition variable to signal the scheduled event for a changed callCount and
-                                   isProcessing. */
+                                   isRemoved. */
     size_t useCount;            /**< The use count of the scheduled event. */
     size_t callCount;           /**< The call count of the scheduled event. */
-    bool isProcessing;          /**< Whether the scheduled event is currently being processed. */
+    bool isMarkedForRemoval;    /**< Whether the scheduled event is marked for removal. */
+    bool isRemoved;             /**< Whether the scheduled event is removed. */
     struct timespec lastScheduledEventTime; /**< The last scheduled event time of the scheduled event. */
     bool processForWakeup; /**< Whether the scheduled event should be processed directly due to a wakeupScheduledEvent
                               call. */
@@ -108,9 +115,10 @@ celix_scheduled_event_t* celix_scheduledEvent_create(celix_framework_logger_t* l
     event->callback = callback;
     event->removedCallbackData = removedCallbackData;
     event->removedCallback = removedCallback;
+    event->isMarkedForRemoval = false;
     event->useCount = 1;
     event->callCount = 0;
-    event->isProcessing = false;
+    event->isRemoved = false;
     clock_gettime(CLOCK_MONOTONIC, &event->lastScheduledEventTime);
     event->processForWakeup = false;
 
@@ -150,9 +158,6 @@ void celix_scheduledEvent_release(celix_scheduled_event_t* event) {
     celixThreadMutex_unlock(&event->mutex);
 
     if (unused) {
-        if (event->removedCallback) {
-            event->removedCallback(event->removedCallbackData);
-        }
         celix_scheduledEvent_destroy(event);
     }
 }
@@ -160,10 +165,6 @@ void celix_scheduledEvent_release(celix_scheduled_event_t* event) {
 const char* celix_scheduledEvent_getName(const celix_scheduled_event_t* event) { return event->eventName; }
 
 long celix_scheduledEvent_getId(const celix_scheduled_event_t* event) { return event->scheduledEventId; }
-
-double celix_scheduledEvent_getIntervalInSeconds(const celix_scheduled_event_t* event) {
-    return event->intervalInSeconds;
-}
 
 long celix_scheduledEvent_getBundleId(const celix_scheduled_event_t* event) {
     return event->bndId;
@@ -198,27 +199,22 @@ void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct t
            "Processing scheduled event %s for bundle id %li",
            event->eventName,
            event->bndId);
-
-    celixThreadMutex_lock(&event->mutex);
-    event->isProcessing = true;
-    celixThreadMutex_unlock(&event->mutex);
     assert(event->callback != NULL);
 
     event->callback(event->callbackData); // note called outside of lock
 
     celixThreadMutex_lock(&event->mutex);
     event->lastScheduledEventTime = *currentTime;
-    event->isProcessing = false;
     event->callCount += 1;
     event->processForWakeup = false;
-    celixThreadCondition_broadcast(&event->cond); // broadcast for changed callCount and isProcessing
+    celixThreadCondition_broadcast(&event->cond); //for changed callCount
     celixThreadMutex_unlock(&event->mutex);
 }
 
-bool celix_scheduleEvent_isSingleShotDone(celix_scheduled_event_t* event) {
+bool celix_scheduledEvent_isSingleShot(celix_scheduled_event_t* event) {
     bool isDone = false;
     celixThreadMutex_lock(&event->mutex);
-    isDone = event->intervalInSeconds == 0 && event->callCount > 0;
+    isDone = event->intervalInSeconds == 0;
     celixThreadMutex_unlock(&event->mutex);
     return isDone;
 }
@@ -260,27 +256,62 @@ celix_status_t celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_even
     return status;
 }
 
-celix_status_t celix_scheduledEvent_waitForProcessing(celix_scheduled_event_t* event) {
-    celix_status_t status = CELIX_SUCCESS;
+void celix_scheduledEvent_waitForRemoved(celix_scheduled_event_t* event) {
     struct timespec start = celix_gettime(CLOCK_MONOTONIC);
-    struct timespec absTimeoutTime = celix_addDelayInSecondsToTime(&start, CELIX_SCHEDULED_EVENT_TIMEOUT_WAIT_FOR_PROCESSING_IN_SECONDS);
+    struct timespec absLogTimeout = celix_addDelayInSecondsToTime(&start, CELIX_SCHEDULED_EVENT_ERROR_LOG_TIMEOUT_IN_SECONDS);
     celixThreadMutex_lock(&event->mutex);
-    while (event->isProcessing) {
-        celixThreadCondition_waitUntil(&event->cond, &event->mutex, &absTimeoutTime);
-        struct timespec now = celix_gettime(CLOCK_MONOTONIC);
-        if (celix_difftime(&start, &now) > CELIX_SCHEDULED_EVENT_TIMEOUT_WAIT_FOR_PROCESSING_IN_SECONDS) {
+    while (!event->isRemoved) {
+        celix_status_t waitStatus = celixThreadCondition_waitUntil(&event->cond, &event->mutex, &absLogTimeout);
+        if (waitStatus == ETIMEDOUT) {
+            fw_log(event->logger,
+                   CELIX_LOG_LEVEL_WARNING,
+                   "Timeout while waiting for removal of scheduled event '%s' (id=%li) for bundle id %li.",
+                   event->eventName,
+                   event->scheduledEventId,
+                   event->bndId);
+            start = celix_gettime(CLOCK_MONOTONIC);
+            absLogTimeout = celix_addDelayInSecondsToTime(&start, CELIX_SCHEDULED_EVENT_ERROR_LOG_TIMEOUT_IN_SECONDS);
+        }
+    }
+    celixThreadMutex_unlock(&event->mutex);
+}
+
+celix_status_t celix_scheduledEvent_wait(celix_scheduled_event_t* event, double timeoutInSeconds) {
+    celix_status_t status = CELIX_SUCCESS;
+    celixThreadMutex_lock(&event->mutex);
+    size_t targetCallCount = event->callCount + 1;
+    struct timespec start = celix_gettime(CLOCK_MONOTONIC);
+    struct timespec absTimeoutTime = celix_addDelayInSecondsToTime(&start, timeoutInSeconds);
+    while (event->callCount < targetCallCount) {
+        celix_status_t waitStatus = celixThreadCondition_waitUntil(&event->cond, &event->mutex, &absTimeoutTime);
+        if (waitStatus == ETIMEDOUT) {
             status = CELIX_TIMEOUT;
             break;
         }
     }
     celixThreadMutex_unlock(&event->mutex);
-    if (status == CELIX_TIMEOUT) {
-        fw_log(event->logger,
-               CELIX_LOG_LEVEL_WARNING,
-               "Timeout while waiting for scheduled event '%s' (id=%li) for bundle id %li to finish processing",
-               event->eventName,
-               event->scheduledEventId,
-               event->bndId);
-    }
     return status;
+}
+
+void celix_scheduledEvent_setRemoved(celix_scheduled_event_t* event) {
+    if (event->removedCallback) {
+        event->removedCallback(event->removedCallbackData);
+    }
+    celixThreadMutex_lock(&event->mutex);
+    event->isRemoved = true;
+    celixThreadCondition_broadcast(&event->cond); //for changed isRemoved
+    celixThreadMutex_unlock(&event->mutex);
+}
+
+void celix_scheduledEvent_markForRemoval(celix_scheduled_event_t* event) {
+    celixThreadMutex_lock(&event->mutex);
+    event->isMarkedForRemoval = true;
+    celixThreadMutex_unlock(&event->mutex);
+}
+
+bool celix_scheduledEvent_isMarkedForRemoval(celix_scheduled_event_t* event) {
+    celixThreadMutex_lock(&event->mutex);
+    bool isMarkedForRemoval = event->isMarkedForRemoval;
+    celixThreadMutex_unlock(&event->mutex);
+    return isMarkedForRemoval;
 }

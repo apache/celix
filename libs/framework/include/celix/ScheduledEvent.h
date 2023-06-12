@@ -32,6 +32,7 @@ namespace celix {
  * This class uses RAII to automatically remove the (non one-shot) scheduled event from the bundle context
  * when it is destroyed. For one-shot scheduled events, the destructor will not remove the scheduled event.
  */
+ //TODO update blocking calls with a timeout exception
 class ScheduledEvent final {
   public:
     friend class ScheduledEventBuilder;
@@ -46,7 +47,7 @@ class ScheduledEvent final {
      */
     ~ScheduledEvent() noexcept {
         if (!isOneShot) {
-            cancel();
+            celix_bundleContext_tryRemoveScheduledEventAsync(ctx.get(), eventId);
         }
     }
 
@@ -57,13 +58,15 @@ class ScheduledEvent final {
     ScheduledEvent& operator=(ScheduledEvent&&) noexcept = default;
 
     /**
-     * @brief Cancels the scheduled event. Can be called multiple times. When this function returns, no more scheduled
-     * event callbacks will be called and, if configured, the remove callback is called.
+     * @brief Cancels the scheduled event.
      *
+     * This method will block until a possible in-progress scheduled event callback is finished, the scheduled event
+     * is removed and, if configured, the remove callback is called.
+     * Should not be called multiple times.
      */
     void cancel() {
         if (ctx) {
-            celix_bundleContext_tryRemoveScheduledEvent(ctx.get(), eventId);
+            celix_bundleContext_removeScheduledEvent(ctx.get(), eventId);
         }
     }
 
@@ -72,6 +75,25 @@ class ScheduledEvent final {
      * called.
      */
     void wakeup() { wakeup(std::chrono::duration<double>{0}); }
+
+    /**
+     * @brief Wait until the next scheduled event is processed.
+     *
+     * @tparam Rep The representation type of the duration.
+     * @tparam Period The period type of the duration.
+     * @param[in] waitTime The maximum time to wait for the next scheduled event. If <= 0 the function will return
+     *                     immediately.
+     * @return true if the next scheduled event was processed, false if a timeout occurred.
+     */
+    template <typename Rep, typename Period>
+    bool waitFor(std::chrono::duration<Rep, Period> waitTime) {
+        double waitTimeInSeconds = std::chrono::duration_cast<std::chrono::duration<double>>(waitTime).count();
+        celix_status_t status = CELIX_SUCCESS;
+        if (ctx) {
+            status = celix_bundleContext_waitForScheduledEvent(ctx.get(), eventId, waitTimeInSeconds);
+        }
+        return status == CELIX_SUCCESS;
+    }
 
     /**
      * @brief Wakes up the scheduled event with an optional wait time.

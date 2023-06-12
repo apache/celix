@@ -491,16 +491,30 @@ celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw,
                                                     double waitTimeInSeconds);
 
 /**
+ * @brief Wait for the next scheduled event to be processed.
+ * @param[in] fw The Celix framework
+ * @param[in] scheduledEventId The scheduled event id to wait for.
+ * @param[in] waitTimeInSeconds The maximum time to wait for the next scheduled event. If <= 0 the function will return
+ *                             immediately.
+ * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not
+ *         known and CELIX_TIMEOUT if the waitTimeInSeconds is reached.
+ */
+celix_status_t celix_framework_waitForScheduledEvent(celix_framework_t* fw,
+                                                     long scheduledEventId,
+                                                     double waitTimeInSeconds);
+
+/**
  * @brief Cancel a scheduled event.
  *
  * When this function returns, no more scheduled event callbacks will be called.
  *
  * @param[in] fw The Celix framework
+ * @param[in] async If true, the scheduled event will be cancelled asynchronously and the function will not block.
  * @param[in] errorIfNotFound If true, removal of a non existing scheduled event id will not be logged.
  * @param[in] scheduledEventId The scheduled event id to cancel.
  * @return true if a scheduled event is cancelled, false if the scheduled event id is not known.
  */
-bool celix_framework_removeScheduledEvent(celix_framework_t* fw, bool errorIfNotFound, long scheduledEventId);
+bool celix_framework_removeScheduledEvent(celix_framework_t* fw, bool async, bool errorIfNotFound, long scheduledEventId);
 
 /**
  * Remove all scheduled events for the provided bundle id and logs warning if there are still un-removed scheduled

@@ -29,8 +29,6 @@ extern "C" {
 
 typedef struct celix_scheduled_event celix_scheduled_event_t;
 
-#define CELIX_SCHEDULED_EVENT_TIMEOUT_WAIT_FOR_PROCESSING_IN_SECONDS 30.0
-
 /**
  * @brief Create a scheduled event for the given bundle.
  *
@@ -81,11 +79,6 @@ const char* celix_scheduledEvent_getName(const celix_scheduled_event_t* event);
 long celix_scheduledEvent_getId(const celix_scheduled_event_t* event);
 
 /**
- * @brief Returns the interval of the scheduled event in seconds.
- */
-double celix_scheduledEvent_getIntervalInSeconds(const celix_scheduled_event_t* event);
-
-/**
  * @brief Returns the bundle id of the bundle which created the scheduled event.
  */
 long celix_scheduledEvent_getBundleId(const celix_scheduled_event_t* event);
@@ -114,11 +107,29 @@ bool celix_scheduledEvent_deadlineReached(celix_scheduled_event_t* event,
 void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct timespec* currentTime);
 
 /**
- * @brief Returns true if the event is a one-shot event and is done.
- * @param[in] event The event to check.
- * @return  true if the event is a one-shot event and is done.
+ * @brief Call the removed callback of the event and set the removed flag.
  */
-bool celix_scheduleEvent_isSingleShotDone(celix_scheduled_event_t* event);
+void celix_scheduledEvent_setRemoved(celix_scheduled_event_t* event);
+
+/**
+ * @brief Wait indefinitely until the event is removed.
+ */
+void celix_scheduledEvent_waitForRemoved(celix_scheduled_event_t* event);
+
+/**
+ * @brief Returns true if the event is a one-shot event.
+ */
+bool celix_scheduledEvent_isSingleShot(celix_scheduled_event_t* event);
+
+/**
+ * @brief Mark the event for removal. The event will be removed on the event thread, after the next processing.
+ */
+void celix_scheduledEvent_markForRemoval(celix_scheduled_event_t* event);
+
+/**
+ * @brief Returns true if the event is marked for removal.
+ */
+bool celix_scheduledEvent_isMarkedForRemoval(celix_scheduled_event_t* event);
 
 /**
  * @brief Configure a scheduled event for a wakeup, so celix_scheduledEvent_deadlineReached will return true until
@@ -141,15 +152,13 @@ celix_status_t celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_even
                                                             size_t targetCallCount,
                                                             double waitTimeInSeconds);
 
-
 /**
- * @brief Wait for a scheduled event to be done with processing.
+ * @brief Wait for a scheduled event to be done with the next scheduled processing.
  * @param[in] event The event to wait for.
- * @param[in] waitTimeInSeconds The max time to wait in seconds. Must be > 0.
- * @return CELIX_SUCCESS if the scheduled event is done with processing, CELIX_TIMEOUT if the scheduled event
- *         is not done with processing within the waitTimeInSeconds.
+ * @param[in] timeoutInSeconds The max time to wait in seconds. Must be > 0.
+ * @return CELIX_SUCCESS if the scheduled event is done with processing, CELIX_TIMEOUT if the scheduled event.
  */
-celix_status_t celix_scheduledEvent_waitForProcessing(celix_scheduled_event_t* event);
+celix_status_t celix_scheduledEvent_wait(celix_scheduled_event_t* event, double timeoutInSeconds);
 
 #ifdef __cplusplus
 };

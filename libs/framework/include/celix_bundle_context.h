@@ -1280,8 +1280,8 @@ typedef struct celix_scheduled_event_options {
         CELIX_OPTS_INIT; /**< @brief Data passed to the done callback function when a scheduled event is removed.*/
 
     void (*removeCallback)(void* removeCallbackData)
-        CELIX_OPTS_INIT; /**< @brief Callback function called when a scheduled event is removed. Can called from the
-                            event thread or another thread.*/
+        CELIX_OPTS_INIT; /**< @brief Callback function called when a scheduled event is removed. Will be called on
+                                     the event thread.*/
 } celix_scheduled_event_options_t;
 
 #define CELIX_EMPTY_SCHEDULED_EVENT_OPTIONS {NULL, 0.0, 0.0, NULL, NULL, NULL, NULL}
@@ -1336,30 +1336,56 @@ CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleContext_wakeupScheduledEvent(
         double waitTimeInSeconds);
 
 /**
+ * @brief Wait until the next scheduled event is processed.
+ * @param[in] ctx The bundle context.
+ * @param[in] scheduledEventId The scheduled event id to wait for.
+ * @param[in] waitTimeInSeconds The maximum time to wait for the next scheduled event. If <= 0 the function will return
+ *                             immediately.
+ * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not
+ *         known and CELIX_TIMEOUT if the waitTimeInSeconds is reached.
+ */
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleContext_waitForScheduledEvent(celix_bundle_context_t* ctx,
+                                                                                long scheduledEventId,
+                                                                                double waitTimeInSeconds);
+
+/**
  * @brief Cancel and remove a scheduled event.
  *
- * When this function returns, no more scheduled event callbacks will be called amd, if configured, the remove callback
- * is called.
+ * This function will block until a possible in-progress scheduled event callback is finished, the scheduled event
+ * is removed and, if configured, the remove callback is called.
  *
  * @param[in] ctx The bundle context.
- * @param[in] scheduledEventId The scheduled event id to cancel.
+ * @param[in] scheduledEventId The scheduled event id to cancel and remove.
  * @return true if a scheduled event is cancelled, false if the scheduled event id is not known.
  */
 CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_removeScheduledEvent(celix_bundle_context_t* ctx,
                                                                       long scheduledEventId);
 
 /**
- * @brief Try to cancel and remove a scheduled event.
+ * @brief Cancel and remove a scheduled event asynchronously.
  *
- * When this function returns, no more scheduled event callbacks will be called amd, if configured, the remove callback
- * is called.
+ * When this function returns, no new scheduled event callbacks will be called, but it is not guaranteed that there
+ * is still a scheduled event callback in progress and that the remove callback is called.
+ *
+ * @param[in] ctx The bundle context.
+ * @param[in] scheduledEventId The scheduled event id to cancel and remove.
+ * @return true if a scheduled event is cancelled, false if the scheduled event id is not known.
+ */
+CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_removeScheduledEventAsync(celix_bundle_context_t* ctx,
+                                                                     long scheduledEventId);
+
+/**
+ * @brief Try to cancel and remove a scheduled event asynchronously.
+ *
+ * When this function returns, no new scheduled event callbacks will be called, but it is not guaranteed that there
+ * is still a scheduled event callback in progress and that the remove callback is called.
  * Will not log an error if the scheduled event id is not known.
  *
  * @param[in] ctx The bundle context.
  * @param[in] scheduledEventId The scheduled event id to cancel.
  * @return true if a scheduled event is cancelled, false if the scheduled event id is not known.
  */
-CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_tryRemoveScheduledEvent(celix_bundle_context_t* ctx,
+CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_tryRemoveScheduledEventAsync(celix_bundle_context_t* ctx,
                                                                         long scheduledEventId);
 
 /**

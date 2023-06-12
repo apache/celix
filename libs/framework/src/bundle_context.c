@@ -1509,13 +1509,22 @@ celix_status_t celix_bundleContext_wakeupScheduledEvent(
     return celix_framework_wakeupScheduledEvent(ctx->framework, scheduledEventId, waitTimeInSeconds);
 }
 
-bool celix_bundleContext_removeScheduledEvent(celix_bundle_context_t* ctx, long scheduledEventId) {
-    return celix_framework_removeScheduledEvent(ctx->framework, false, scheduledEventId);
+celix_status_t celix_bundleContext_waitForScheduledEvent(celix_bundle_context_t* ctx,
+                                                         long scheduledEventId,
+                                                         double waitTimeInSeconds) {
+    return celix_framework_waitForScheduledEvent(ctx->framework, scheduledEventId, waitTimeInSeconds);
 }
 
-CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_tryRemoveScheduledEvent(celix_bundle_context_t* ctx,
-                                                                        long scheduledEventId) {
-    return celix_framework_removeScheduledEvent(ctx->framework, true, scheduledEventId);
+bool celix_bundleContext_removeScheduledEvent(celix_bundle_context_t* ctx, long scheduledEventId) {
+    return celix_framework_removeScheduledEvent(ctx->framework, false, true, scheduledEventId);
+}
+
+bool celix_bundleContext_removeScheduledEventAsync(celix_bundle_context_t* ctx, long scheduledEventId) {
+    return celix_framework_removeScheduledEvent(ctx->framework, true, true, scheduledEventId);
+}
+
+bool celix_bundleContext_tryRemoveScheduledEventAsync(celix_bundle_context_t* ctx, long scheduledEventId) {
+    return celix_framework_removeScheduledEvent(ctx->framework, true, false, scheduledEventId);
 }
 
 celix_bundle_t* celix_bundleContext_getBundle(const celix_bundle_context_t *ctx) {

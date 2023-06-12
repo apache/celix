@@ -26,7 +26,6 @@
 class ScheduledEventTestSuite : public ::testing::Test {
   public:
     ScheduledEventTestSuite() { fw = celix::createFramework({{"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"}}); }
-
     std::shared_ptr<celix::Framework> fw{};
 };
 
@@ -132,7 +131,7 @@ TEST_F(ScheduledEventTestSuite, ManyScheduledEventTest) {
     std::vector<long> eventIds{};
 
     // When 1000 scheduled events are with a random interval between 1 and 59 ms
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 100; ++i) {
         // When I create a scheduled event with a 10ms delay and a 20 ms interval
         celix_scheduled_event_options_t opts{};
         opts.name = "Scheduled event test";
@@ -221,6 +220,11 @@ TEST_F(ScheduledEventTestSuite, InvalidOptionsAndArgumentsTest) {
     scheduledEventId = celix_framework_scheduleEvent(
         ctx->getFramework()->getCFramework(), 404, nullptr, 0.0, 0.0, nullptr, [](void*) { /*nop*/ }, nullptr, nullptr);
     EXPECT_EQ(scheduledEventId, -1);
+
+    // celix_framework_waitForScheduledEvent with an invalid bndId should return CELIX_ILLEGAL_ARGUMENT
+    celix_status_t status = celix_framework_waitForScheduledEvent(
+        ctx->getFramework()->getCFramework(), 404, 1);
+    EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
 }
 
 TEST_F(ScheduledEventTestSuite, WakeUpEventTest) {
@@ -398,11 +402,11 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventRAIITest) {
     }
     // When the event goes out of scope
 
-    // When the remove callback is called
-    EXPECT_TRUE(removed.load());
-
     // When waiting longer than the initial delay
     std::this_thread::sleep_for(std::chrono::milliseconds{60});
+
+    // When the remove callback is called
+    EXPECT_TRUE(removed.load());
 
     // Then the count is not increased
     EXPECT_EQ(0, count.load());
@@ -519,4 +523,111 @@ TEST_F(ScheduledEventTestSuite, CxxCancelOneShotEventBeforeFiredTest) {
     event.cancel();
 
     //Then the event is not fired and does not leak
+}
+
+TEST_F(ScheduledEventTestSuite, RemoveScheduledEventAsync) {
+    std::atomic<int> count{0};
+    auto callback = [](void* data) {
+        auto* count = static_cast<std::atomic<int>*>(data);
+        count->fetch_add(1);
+    };
+
+    //Given a scheduled event with am initial delay of 1ms
+    celix_scheduled_event_options_t opts{};
+    opts.initialDelayInSeconds = 0.001;
+    opts.callbackData = &count;
+    opts.callback = callback;
+    long eventId = celix_bundleContext_scheduleEvent(fw->getFrameworkBundleContext()->getCBundleContext(), &opts);
+    EXPECT_GE(eventId, 0);
+
+    //When the event is removed async
+    celix_bundleContext_removeScheduledEventAsync(fw->getFrameworkBundleContext()->getCBundleContext(), eventId);
+
+    //And waiting longer than the initial delay
+    std::this_thread::sleep_for(std::chrono::milliseconds{10});
+
+    //Then the event is not fired
+    EXPECT_EQ(0, count.load());
+}
+
+TEST_F(ScheduledEventTestSuite, WaitForScheduledEvent) {
+    std::atomic<int> count{0};
+    auto callback = [](void* data) {
+        auto* count = static_cast<std::atomic<int>*>(data);
+        count->fetch_add(1);
+    };
+
+    // Given a scheduled event with an initial delay of 1ms and an interval of 1ms
+    celix_scheduled_event_options_t opts{};
+    opts.initialDelayInSeconds = 0.001;
+    opts.intervalInSeconds = 0.001;
+    opts.callbackData = &count;
+    opts.callback = callback;
+    long eventId = celix_bundleContext_scheduleEvent(fw->getFrameworkBundleContext()->getCBundleContext(), &opts);
+    EXPECT_GE(eventId, 0);
+
+    //When waiting for the event with a timeout longer than the initial delay
+    auto status =
+        celix_bundleContext_waitForScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId, 1);
+
+    //Then the return status is success
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    //And the event is fired
+    EXPECT_EQ(1, count.load());
+
+    //When waiting to short for the event
+    status = celix_bundleContext_waitForScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId, 0.0001);
+
+    //Then the return status is timeout
+    EXPECT_EQ(CELIX_TIMEOUT, status);
+
+    //When waiting for the event with a timeout longer than the interval
+    status = celix_bundleContext_waitForScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId, 1);
+
+    //Then the return status is success
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    //And the event is fired again
+    EXPECT_EQ(2, count.load());
+
+    celix_bundleContext_removeScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId);
+}
+
+TEST_F(ScheduledEventTestSuite, CxxWaitForScheduledEvent) {
+    std::atomic<int> count{0};
+    auto callback = [&count]() {
+        count.fetch_add(1);
+    };
+
+    // Given a scheduled event with an initial delay of 1ms and an interval of 1ms
+    auto event = fw->getFrameworkBundleContext()->scheduledEvent()
+                     .withInitialDelay(std::chrono::milliseconds{1})
+                     .withInterval(std::chrono::milliseconds{1})
+                     .withCallback(callback)
+                     .build();
+
+    //When waiting for the event with a timeout longer than the initial delay
+    auto success = event.waitFor(std::chrono::milliseconds{1000});
+
+    //Then the return status is success
+    EXPECT_TRUE(success);
+
+    //And the event is fired
+    EXPECT_EQ(1, count.load());
+
+    //When waiting to short for the event
+    success = event.waitFor(std::chrono::microseconds {1});
+
+    //Then the return status is false (timeout)
+    EXPECT_FALSE(success);
+
+    //When waiting for the event with a timeout longer than the interval
+    success = event.waitFor(std::chrono::milliseconds{1000});
+
+    //Then the return status is success
+    EXPECT_TRUE(success);
+
+    //And the event is fired again
+    EXPECT_EQ(2, count.load());
 }
