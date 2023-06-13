@@ -1032,7 +1032,7 @@ endfunction()
 
 #[[
 Generate and install a Celix Targets cmake file which contains CMake commands to create imported targets for the bundles
-install using the provided <export_name>. These imported CMake targets can be used in in CMake project using the installed
+install using the provided <export_name>. These imported CMake targets can be used in CMake project using the installed
 bundles.
 
 ```CMake
@@ -1041,6 +1041,7 @@ install_celix_targets(<export_name>
     [FILE <celix_target_filename>]
     [PROJECT_NAME <project_name>]
     [DESTINATION <celix_targets_destination>]
+    [COMPONENT <component>]
 )
 ```
 
@@ -1053,6 +1054,7 @@ Optional Arguments:
 - FILE: The Celix Targets cmake filename to used, without the cmake extension. Default is <export_name>BundleTargets
 - PROJECT_NAME: The project name to used for the share location. Default is the cmake project name.
 - DESTINATION: The (relative) location to install the Celix Targets cmake file to. Default is share/<PROJECT_NAME>/cmake.
+- COMPONENT: Specify an installation component name with which the install rule is associated.
 ]]
 
 function(install_celix_bundle_targets)
@@ -1140,7 +1142,7 @@ set_target_properties(${TN} PROPERTIES
     file(GENERATE OUTPUT "${CONF_FILE}" INPUT "${CONF_IN_FILE}")
 
 
-    #Generate not build type specific targets file
+    #Generate build-type independent targets file
     set(GENERIC_CONF_FILE "${CMAKE_BINARY_DIR}/celix/gen/cmake/${EXPORT_NAME}-BundleTargets.cmake")
     file(GENERATE OUTPUT ${GENERIC_CONF_FILE} CONTENT "
 # Load bundle information for each installed configuration.
