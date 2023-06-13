@@ -48,7 +48,7 @@ struct namval_entry {
  *
  * The caller is the owner of the dynamic type name and use `free` deallocate the memory.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] stream The input stream.
  * @param[out] result The name of the Dynamic Type.
@@ -62,7 +62,7 @@ CELIX_DFI_EXPORT int dynCommon_parseName(FILE *stream, char **result);
  *
  * The caller is the owner of the dynamic type name and use `free` deallocate the memory.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] stream The input stream.
  * @param[in] acceptedChars The extra accepted characters for the name. If NULL, only [a-zA-Z0-9_] are accepted.
@@ -77,7 +77,7 @@ CELIX_DFI_EXPORT int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acc
  *
  * The caller is the owner of the name and value and use `free` deallocate the memory.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] stream The input stream.
  * @param[out] name The name of the name-value pair.
@@ -89,7 +89,7 @@ CELIX_DFI_EXPORT int dynCommon_parseNameValue(FILE *stream, char **name, char **
 /**
  * @brief Eat the given character from the given stream.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] stream The input stream.
  * @param[in] c The character to be eaten.

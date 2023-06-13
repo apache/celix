@@ -33,7 +33,7 @@ typedef struct shm_pool shm_pool_t;
 /**
  * @brief Create a shared memory pool
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] size Shared memory size, it should be greater than or equal to 8192
  * @param[out] pool The shared memory pool instance

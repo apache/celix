@@ -144,7 +144,7 @@ DFI_SETUP_LOG_HEADER(dynAvprType);
  * If successful the type output argument points to the newly created dyn type.
  * The caller is the owner of the dyn type and use dynType_destroy deallocate the memory.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param descriptorStream  Stream to the descriptor.
  * @param name              name for the dyn_type. This can be used in references to dyn types.
@@ -159,7 +159,7 @@ CELIX_DFI_EXPORT int dynType_parse(FILE *descriptorStream, const char *name, str
  * If successful the type output argument points to the newly created dyn type.
  * The caller is the owner of the dyn type and use dynType_destroy deallocate the memory.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param descriptor        The descriptor.
  * @param name              name for the dyn_type. This can be used in references to dyn types.
@@ -178,7 +178,7 @@ CELIX_DFI_EXPORT void dynType_destroy(dyn_type *type);
 /**
  * Allocates memory for a type instance described by a dyn type. The memory will be 0 allocated (calloc).
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param type      The dyn type for which structure to allocate.
  * @param instance  The output argument for the allocated memory.
@@ -288,7 +288,7 @@ CELIX_DFI_EXPORT void dynType_sequence_init(dyn_type *type, void *inst);
  * Will not free if the existing buf.
  * Sets len to 0
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  */
 CELIX_DFI_EXPORT int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap);
@@ -299,7 +299,7 @@ CELIX_DFI_EXPORT int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t
  * Keeps the len value.
  * Note will not decrease the allocated memory
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  */
 CELIX_DFI_EXPORT int dynType_sequence_reserve(dyn_type *type, void *inst, uint32_t cap);
@@ -307,7 +307,7 @@ CELIX_DFI_EXPORT int dynType_sequence_reserve(dyn_type *type, void *inst, uint32
 /**
  * @brief Gets the value location for a specific sequence index from a sequence instance.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] type The dyn type. Must be a sequence type.
  * @param[in] seqLoc The sequence instance.
@@ -321,7 +321,7 @@ CELIX_DFI_EXPORT int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, 
 /**
  * @brief Increase the length of the sequence by one and return the value location for the last element.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] type The dyn type. Must be a sequence type.
  * @param[in] seqLoc The sequence instance.
@@ -356,7 +356,7 @@ CELIX_DFI_EXPORT int dynType_typedPointer_getTypedType(dyn_type *type, dyn_type 
 /**
  * @brief Allocates and initializes a string type.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] type The dyn type. Must be a string type.
  * @param[out] textLoc The string instance.
@@ -377,7 +377,7 @@ CELIX_DFI_EXPORT void dynType_simple_setValue(dyn_type *type, void *inst, void *
 /**
  * @brief Creates a dyn type for a given avpr stream.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] avprStream The avpr stream.
  * @param[in] fqn The fully qualified name of the type.
@@ -389,7 +389,7 @@ CELIX_DFI_DEPRECATED_EXPORT dyn_type * dynType_parseAvpr(FILE *avprStream, const
 /**
  * @brief Creates a dyn type for a given avpr string.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] avpr The avpr string.
  * @param[in] fqn The fully qualified name of the type.

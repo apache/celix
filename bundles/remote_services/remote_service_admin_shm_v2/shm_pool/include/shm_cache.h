@@ -33,7 +33,7 @@ typedef struct shm_cache shm_cache_t;
 /**
  * @brief Create shared memory cache
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] shmRdOnly Only read shared memory
  * @param[out] shmCache The shared memory cache instance
@@ -69,7 +69,7 @@ void shmCache_setShmPeerClosedCB(shm_cache_t *shmCache, shmCache_shmPeerClosedCB
 /**
  * @brief Get shared memory address from shared memory cache.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param shmCache The shared memory cache instance
  * @param shmId Shared memory id

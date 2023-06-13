@@ -39,7 +39,7 @@ DFI_SETUP_LOG_HEADER(jsonSerializer);
  *
  * Caller is the owner of the out parameter and should release it using dynType_free.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] type The type to deserialize to.
  * @param[in] input The JSON string to deserialize.
@@ -54,7 +54,7 @@ CELIX_DFI_EXPORT int jsonSerializer_deserialize(dyn_type *type, const char *inpu
  *
  * Caller is the owner of the out parameter and should release it using dynType_free.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] type The type to deserialize to.
  * @param[in] input The JSON object to deserialize.
@@ -69,7 +69,7 @@ CELIX_DFI_EXPORT int jsonSerializer_deserializeJson(dyn_type *type, json_t *inpu
  *
  * Caller is the owner of the out parameter and should release it using free.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] type The type to serialize.
  * @param[in] input The input to serialize.
@@ -84,7 +84,7 @@ CELIX_DFI_EXPORT int jsonSerializer_serialize(dyn_type *type, const void* input,
  *
  * Caller is the owner of the out parameter and should release it using json_decref.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] type The type to serialize.
  * @param[in] input The input to serialize.

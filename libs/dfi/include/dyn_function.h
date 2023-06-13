@@ -60,7 +60,7 @@ enum dyn_function_argument_meta {
  *
  * The caller is the owner of the dynFunc and the dynFunc should be freed using dynFunction_destroy.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] descriptorStream The stream containing the function descriptor.
  * @param[in] refTypes A list if reference-able dyn types.
@@ -76,7 +76,7 @@ CELIX_DFI_EXPORT int dynFunction_parse(FILE *descriptorStream, struct types_head
  *
  * The caller is the owner of the dynFunc and the dynFunc should be freed using dynFunction_destroy.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] descriptor The string containing the function descriptor.
  * @param[in] refTypes A list if reference-able dyn types.
@@ -164,7 +164,7 @@ CELIX_DFI_EXPORT bool dynFunction_hasReturn(dyn_function_type *dynFunction);
  *
  * The caller is the owner of the dynFunc and the dynFunc should be freed using dynFunction_destroy.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] avpr The string containing the avpr descriptor.
  * @param[in] fqn The fully qualified name of the function.
@@ -178,7 +178,7 @@ CELIX_DFI_DEPRECATED_EXPORT dyn_function_type * dynFunction_parseAvprWithStr(con
  *
  * The caller is the owner of the dynFunc and the dynFunc should be freed using dynFunction_destroy.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] avprStream The stream containing the avpr descriptor.
  * @param[in] fqn The fully qualified name of the function.

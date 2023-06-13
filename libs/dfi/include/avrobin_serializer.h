@@ -37,7 +37,7 @@ DFI_SETUP_LOG_HEADER(avrobinSerializer);
  *
  * The caller is the owner of the deserialized data and use `dynType_free` deallocate the memory.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] type The dynamic type for the input data.
  * @param[in] input The input data in AVRO format.
@@ -53,7 +53,7 @@ CELIX_DFI_DEPRECATED_EXPORT int avrobinSerializer_deserialize(dyn_type *type, co
  *
  * The caller is the owner of the serialized data and use `free` deallocate the memory.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] type The dynamic type for the input data.
  * @param[in] input The input data.
@@ -70,7 +70,7 @@ CELIX_DFI_DEPRECATED_EXPORT int avrobinSerializer_serialize(dyn_type *type, cons
  *
  * The caller is the owner of the generated schema and use `free` deallocate the memory.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] type The dynamic type for which a schema should be generated.
  * @param[out] output The generated schema.
@@ -82,7 +82,7 @@ CELIX_DFI_DEPRECATED_EXPORT int avrobinSerializer_generateSchema(dyn_type *type,
 /**
  * @brief Save a serialized data to a file.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] filename The name of the file.
  * @param[in] schema The schema of the serialized data.
