@@ -133,7 +133,3 @@ CELIX_GEN_CXX_BUNDLE_ACTIVATOR(ScheduleEventsBundleActivator)
 
 To process a scheduled event directly, you can use the `celix_bundleContext_wakeupScheduledEvent` C function or 
 `celix::ScheduledEvent::wakup` C++ method. This will wake up the scheduled event and call its callback function.
-
-An optional wait time can be provided to block until the event is done. 
-If the wait time is not zero, the function will block until the scheduled event callback is called or the wait time 
-duration has elapsed. If the wait time is zero, the function will return immediately.

@@ -2584,15 +2584,12 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
     return celix_scheduledEvent_getId(event);
 }
 
-celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw, 
-                                                    long scheduledEventId, 
-                                                    double waitTimeInSeconds) {
-    size_t callCountAfterWakeup;
+celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw, long scheduledEventId) {
     celixThreadMutex_lock(&fw->dispatcher.mutex);
     celix_scheduled_event_t* event = celix_longHashMap_get(fw->dispatcher.scheduledEvents, scheduledEventId);
     if (event != NULL) {
-        celix_scheduledEvent_retain(event);
-        callCountAfterWakeup = celix_scheduledEvent_configureWakeup(event);
+        celix_scheduledEvent_markForWakeup(event);
+        celixThreadCondition_broadcast(&fw->dispatcher.cond); //notify dispatcher thread for configured wakeup
     }
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 
@@ -2604,21 +2601,7 @@ celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw,
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    celixThreadMutex_lock(&fw->dispatcher.mutex);
-    celixThreadCondition_broadcast(&fw->dispatcher.cond); //notify dispatcher thread for configured wakeup
-    celixThreadMutex_unlock(&fw->dispatcher.mutex);
-
-    celix_status_t status = CELIX_SUCCESS;
-    if (waitTimeInSeconds > 0) {
-        if (celix_framework_isCurrentThreadTheEventLoop(fw)) {
-            fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "celix_framework_wakeupScheduledEvent called from the "
-                "event loop thread. This can result in a deadlock!");
-        }
-        status = celix_scheduledEvent_waitForAtLeastCallCount(event, callCountAfterWakeup, waitTimeInSeconds);
-    } 
-    celix_scheduledEvent_release(event);
-
-    return status;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t

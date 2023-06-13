@@ -232,8 +232,8 @@ TEST_F(ScheduledEventTestSuite, WakeUpEventTest) {
     std::atomic<int> count{0};
     celix_scheduled_event_options_t opts{};
     opts.name = "test wakeup";
-    opts.initialDelayInSeconds = 0.1;
-    opts.intervalInSeconds = 0.1;
+    opts.initialDelayInSeconds = 0.01;
+    opts.intervalInSeconds = 0.01;
     opts.callbackData = static_cast<void*>(&count);
     opts.callback = [](void* countPtr) {
         auto* count = static_cast<std::atomic<int>*>(countPtr);
@@ -245,43 +245,34 @@ TEST_F(ScheduledEventTestSuite, WakeUpEventTest) {
     EXPECT_EQ(0, count.load());
 
     // When the scheduled event is woken up
-    celix_status_t status = celix_bundleContext_wakeupScheduledEvent(
-        fw->getFrameworkBundleContext()->getCBundleContext(), scheduledEventId, 1);
+    celix_status_t status = celix_bundleContext_wakeupScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), scheduledEventId);
 
     // Then the status is CELIX_SUCCESS
     ASSERT_EQ(CELIX_SUCCESS, status);
 
-    // And the count is increased
+    // When waiting a bit to let the scheduled event trigger
+    std::this_thread::sleep_for(std::chrono::milliseconds{2});
+
+    // Then the count is increased
     EXPECT_EQ(1, count.load());
 
     // When waiting longer than the interval
-    std::this_thread::sleep_for(std::chrono::milliseconds{110});
+    std::this_thread::sleep_for(std::chrono::milliseconds{11});
 
     // Then the count is increased
     EXPECT_EQ(2, count.load());
 
-    // When the scheduled event is woken up again without waiting (waitTimeInSec = 0)
-    status = celix_bundleContext_wakeupScheduledEvent(
-        fw->getFrameworkBundleContext()->getCBundleContext(), scheduledEventId, 0);
-
-    // And the process is delayed to ensure the event is called
-    std::this_thread::sleep_for(std::chrono::milliseconds{10});
+    // When waking up the scheduled event again
+    status = celix_bundleContext_wakeupScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), scheduledEventId);
 
     // Then the status is CELIX_SUCCESS
     ASSERT_EQ(CELIX_SUCCESS, status);
 
-    // And the count is increased
+    // When waiting a bit to let the scheduled event trigger
+    std::this_thread::sleep_for(std::chrono::milliseconds{2});
+
+    // Then the count is increased
     EXPECT_EQ(3, count.load());
-
-    // When the scheduled event is woken up again
-    status = celix_bundleContext_wakeupScheduledEvent(
-        fw->getFrameworkBundleContext()->getCBundleContext(), scheduledEventId, 1);
-
-    // Then the status is CELIX_SUCCESS
-    ASSERT_EQ(CELIX_SUCCESS, status);
-
-    // And the count is increased
-    EXPECT_EQ(4, count.load());
 
     celix_bundleContext_removeScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), scheduledEventId);
 }
@@ -304,19 +295,22 @@ TEST_F(ScheduledEventTestSuite, WakeUpOneShotEventTest) {
 
     // When the scheduled event is woken up
     celix_status_t status = celix_bundleContext_wakeupScheduledEvent(
-        fw->getFrameworkBundleContext()->getCBundleContext(), scheduledEventId, 1);
+        fw->getFrameworkBundleContext()->getCBundleContext(), scheduledEventId);
 
     // Then the status is CELIX_SUCCESS
     ASSERT_EQ(CELIX_SUCCESS, status);
+
+    // When waiting a bit to ensure the scheduled event is woken up
+    std::this_thread::sleep_for(std::chrono::milliseconds{2});
 
     // And the count is increased
     EXPECT_EQ(1, count.load());
 
     // And when the scheduled event is woken up again
-    status = celix_bundleContext_wakeupScheduledEvent(
-        fw->getFrameworkBundleContext()->getCBundleContext(), scheduledEventId, 0);
+    status = celix_bundleContext_wakeupScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(),
+                                                      scheduledEventId);
 
-    // Then the status is ILLEGAL_ARGUMENT, becuase the scheduled event is already woken up and a one-shot event
+    // Then the status is ILLEGAL_ARGUMENT, because the scheduled event is already woken up and a one-shot event
     ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 }
 
@@ -347,8 +341,11 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventTest) {
     // Then the count is increased
     EXPECT_EQ(1, count.load());
 
-    // When waking up the event with a wait time of 1s
-    event.wakeup(std::chrono::seconds{1});
+    // When waking up the event
+    event.wakeup();
+
+    // And waiting a bit to ensure the event is called
+    std::this_thread::sleep_for(std::chrono::milliseconds{2});
 
     // Then the count is increased
     EXPECT_EQ(2, count.load());
@@ -356,8 +353,8 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventTest) {
     // When waking up the event without waiting
     event.wakeup();
 
-    // And the process is delayed to ensure the event is called
-    std::this_thread::sleep_for(std::chrono::milliseconds{10});
+    // And waiting a bit to ensure the event is called
+    std::this_thread::sleep_for(std::chrono::milliseconds{2});
 
     // Then the count is increased
     EXPECT_EQ(3, count.load());
@@ -445,7 +442,10 @@ TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventTest) {
     EXPECT_TRUE(removed.load());
 
     // When waking up the event with a wait time of 1s
-    event.wakeup(std::chrono::seconds{1});
+    event.wakeup();
+
+    // And waiting a bit to ensure the event is called
+    std::this_thread::sleep_for(std::chrono::milliseconds{2});
 
     // Then the count is not increased, because the event is a one-shot event
     EXPECT_EQ(1, count.load());
@@ -489,23 +489,6 @@ TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventRAIITest) {
 
 TEST_F(ScheduledEventTestSuite, CxxCreateScheduledEventWithNoCallbackTest) {
     EXPECT_ANY_THROW(fw->getFrameworkBundleContext()->scheduledEvent().build()); // Note no callback
-}
-
-TEST_F(ScheduledEventTestSuite, TimeoutOnWakeupTest) {
-    auto callback = [](void*) {
-        // delay process to check if wakeup timeout works
-        std::this_thread::sleep_for(std::chrono::milliseconds{10});
-    };
-
-    celix_scheduled_event_options_t opts{};
-    opts.callback = callback;
-    opts.initialDelayInSeconds = 1;
-    long eventId = celix_bundleContext_scheduleEvent(fw->getFrameworkBundleContext()->getCBundleContext(), &opts);
-    EXPECT_GE(eventId, 0);
-
-    auto status =
-        celix_bundleContext_wakeupScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId, 0.001);
-    EXPECT_EQ(CELIX_TIMEOUT, status);;
 }
 
 TEST_F(ScheduledEventTestSuite, CxxCancelOneShotEventBeforeFiredTest) {

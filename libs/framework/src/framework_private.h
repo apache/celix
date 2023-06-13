@@ -475,20 +475,14 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
                                     void (*removeCallback)(void*));
 
 /**
- * @brief Wakeup a scheduled event.
- *
- * If waitTimeInSeconds is not 0, this function will block until the scheduled event callback is called.
- * If waitTimeInSeconds is 0, this function will return immediately.
+ * @brief Wakeup a scheduled event and returns immediately, not waiting for the scheduled event callback to be
+ * called.
  *
  * @param[in] ctx The bundle context.
  * @param[in] scheduledEventId The scheduled event id to wakeup.
- * @param[in] waitTimeInSeconds If not 0, this function will block until the scheduled event callback
- *                              is called or the provided timeout is reached.
  * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not
  */
-celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw,
-                                                    long scheduledEventId,
-                                                    double waitTimeInSeconds);
+celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw, long scheduledEventId);
 
 /**
  * @brief Wait for the next scheduled event to be processed.

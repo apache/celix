@@ -1502,11 +1502,8 @@ long celix_bundleContext_scheduleEvent(celix_bundle_context_t* ctx,
                                           options->removeCallback);
 }
 
-celix_status_t celix_bundleContext_wakeupScheduledEvent(
-        celix_bundle_context_t* ctx, 
-        long scheduledEventId, 
-        double waitTimeInSeconds) {
-    return celix_framework_wakeupScheduledEvent(ctx->framework, scheduledEventId, waitTimeInSeconds);
+celix_status_t celix_bundleContext_wakeupScheduledEvent(celix_bundle_context_t* ctx, long scheduledEventId) {
+    return celix_framework_wakeupScheduledEvent(ctx->framework, scheduledEventId);
 }
 
 celix_status_t celix_bundleContext_waitForScheduledEvent(celix_bundle_context_t* ctx,

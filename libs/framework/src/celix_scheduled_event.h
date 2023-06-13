@@ -138,7 +138,7 @@ bool celix_scheduledEvent_isMarkedForRemoval(celix_scheduled_event_t* event);
  * @param[in] event The event to configure for wakeup.
  * @return The future call count of the event after the next processing is done.
  */
-size_t celix_scheduledEvent_configureWakeup(celix_scheduled_event_t* event);
+size_t celix_scheduledEvent_markForWakeup(celix_scheduled_event_t* event);
 
 /**
  * @brief Wait for a scheduled event to reach at least the provided call count.

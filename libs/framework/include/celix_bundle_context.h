@@ -1318,22 +1318,15 @@ CELIX_FRAMEWORK_EXPORT long celix_bundleContext_scheduleEvent(celix_bundle_conte
                                                               const celix_scheduled_event_options_t* options);
 
 /**
- * @brief Wakeup a scheduled event.
- *
- * If waitTimeInSeconds is not 0, this function will block until the scheduled event callback is called.
- * If waitTimeInSeconds is 0, this function will return immediately.
+ * @brief Wakeup a scheduled event and returns immediately, not waiting for the scheduled event callback to be
+ * called.
  *
  * @param[in] ctx The bundle context.
  * @param[in] scheduledEventId The scheduled event id to wakeup.
- * @param[in] waitTimeInSeconds If not 0, this function will block until the scheduled event callback 
- *                              is called or the provided timeout is reached.
- * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not 
- *         known and CELIX_TIMEOUT if the waitTimeInSeconds is reached.
+ * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not
  */
-CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleContext_wakeupScheduledEvent(
-        celix_bundle_context_t* ctx, 
-        long scheduledEventId, 
-        double waitTimeInSeconds);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleContext_wakeupScheduledEvent(celix_bundle_context_t* ctx,
+                                                                               long scheduledEventId);
 
 /**
  * @brief Wait until the next scheduled event is processed.

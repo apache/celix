@@ -32,13 +32,14 @@ namespace celix {
  * This class uses RAII to automatically remove the (non one-shot) scheduled event from the bundle context
  * when it is destroyed. For one-shot scheduled events, the destructor will not remove the scheduled event.
  */
- //TODO update blocking calls with a timeout exception
 class ScheduledEvent final {
   public:
     friend class ScheduledEventBuilder;
 
     /**
      * @brief Constructs a empty / not-active scheduled event.
+     *
+     * During destruction the scheduled event will be removed asynchronously from the bundle context.
      */
     ScheduledEvent() = default;
 
@@ -71,10 +72,10 @@ class ScheduledEvent final {
     }
 
     /**
-     * @brief Wakes up the scheduled event and returns immediately, not waiting for the scheduled event callback to be
+     * @brief Wakeup a scheduled event and returns immediately, not waiting for the scheduled event callback to be
      * called.
      */
-    void wakeup() { wakeup(std::chrono::duration<double>{0}); }
+    void wakeup() { celix_bundleContext_wakeupScheduledEvent(ctx.get(), eventId); }
 
     /**
      * @brief Wait until the next scheduled event is processed.
@@ -91,27 +92,6 @@ class ScheduledEvent final {
         celix_status_t status = CELIX_SUCCESS;
         if (ctx) {
             status = celix_bundleContext_waitForScheduledEvent(ctx.get(), eventId, waitTimeInSeconds);
-        }
-        return status == CELIX_SUCCESS;
-    }
-
-    /**
-     * @brief Wakes up the scheduled event with an optional wait time.
-     *
-     * If `waitTime` is not zero, this function will block until the scheduled event callback is called or the
-     * `waitTime` duration has elapsed. If `waitTime` is zero, this function will return immediately.
-     *
-     * @tparam Rep The representation type of the duration.
-     * @tparam Period The period type of the duration.
-     * @param[in] waitTime The wait time duration (default is zero).
-     * @return true if the scheduled event was woken up, false if a timeout occurred.
-     */
-    template <typename Rep, typename Period>
-    bool wakeup(std::chrono::duration<Rep, Period> waitTime) {
-        double waitTimeInSeconds = std::chrono::duration_cast<std::chrono::duration<double>>(waitTime).count();
-        celix_status_t status = CELIX_SUCCESS;
-        if (ctx) {
-            status = celix_bundleContext_wakeupScheduledEvent(ctx.get(), eventId, waitTimeInSeconds);
         }
         return status == CELIX_SUCCESS;
     }

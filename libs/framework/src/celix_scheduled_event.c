@@ -219,7 +219,7 @@ bool celix_scheduledEvent_isSingleShot(celix_scheduled_event_t* event) {
     return isDone;
 }
 
-size_t celix_scheduledEvent_configureWakeup(celix_scheduled_event_t* event) {
+size_t celix_scheduledEvent_markForWakeup(celix_scheduled_event_t* event) {
     celixThreadMutex_lock(&event->mutex);
     event->processForWakeup = true;
     size_t currentCallCount = event->callCount;
