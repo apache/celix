@@ -19,7 +19,6 @@
 
 #include "dyn_interface.h"
 #include "dyn_interface_common.h"
-#include "celix_err.h"
 
 #include "jansson.h"
 
@@ -57,7 +56,7 @@ dyn_interface_type * dynInterface_parseAvprWithStr(const char * avpr) {
     FILE *avprStream = fmemopen((char*)avpr, strlen(avpr), "r");
 
     if (!avprStream) {
-        celix_err_pushf("interface_parseAvprWithStr: Error creating mem stream for descriptor string. %s", strerror(errno));
+        LOG_ERROR("interface_parseAvprWithStr: Error creating mem stream for descriptor string. %s", strerror(errno)); 
         return NULL;
     }
 
@@ -72,24 +71,24 @@ dyn_interface_type * dynInterface_parseAvpr(FILE * avprStream) {
     json_error_t error;
     json_t *root = json_loadf(avprStream, JSON_REJECT_DUPLICATES, &error);
     if (!root) {
-        celix_err_pushf("interface_parseAvpr: Error decoding json: line %d: %s", error.line, error.text);
+        LOG_ERROR("interface_parseAvpr: Error decoding json: line %d: %s", error.line, error.text);
         valid = false;
     }
 
     if (valid && !json_is_object(root)) {
-        celix_err_push("interface_parseAvpr: Error decoding json, root should be an object");
+        LOG_ERROR("interface_parseAvpr: Error decoding json, root should be an object");
         valid = false;
     }
 
     const char *parent_ns = json_string_value(json_object_get(root, "namespace"));
     if (valid && !parent_ns) {
-        celix_err_push("interface_parseAvpr: No namespace found in root, or it is null!");
+        LOG_ERROR("interface_parseAvpr: No namespace found in root, or it is null!");
         valid = false;
     }
 
     json_t * const messagesObject = json_object_get(root, "messages");
     if (valid && !json_is_object(messagesObject)) {
-        celix_err_push("interface_parseAvpr: No messages, or it is not an object");
+        LOG_ERROR("interface_parseAvpr: No messages, or it is not an object");
         valid = false;
     }
 
@@ -110,7 +109,7 @@ dyn_interface_type * dynInterface_parseAvpr(FILE * avprStream) {
         return intf;
     }
     else {
-        celix_err_push("Parsing of avpr interface failed");
+        LOG_ERROR("Parsing of avpr interface failed");
         dynInterface_destroy(intf);
         return NULL;
     }
@@ -147,13 +146,13 @@ inline static bool dynAvprInterface_createHeader(dyn_interface_type* intf, json_
     char* version = NULL;
     dynInterface_getVersionString(intf, &version);
     if (!version) {
-        celix_err_push("No version string in header");
+        LOG_ERROR("No version string in header");
         return false;
     }
 
     intf->version = celix_version_createVersionFromString(version);
     if (intf->version == NULL) {
-        celix_err_pushf("Invalid version (%s) in parsed descriptor\n", version);
+        LOG_ERROR("Invalid version (%s) in parsed descriptor\n", version);
         return false;
     }
 
@@ -174,7 +173,7 @@ inline static bool dynAvprInterface_createAnnotations(dyn_interface_type* intf, 
 inline static bool dynAvprInterface_createTypes(dyn_interface_type* intf, json_t * const root, const char* parent_ns) {
     json_t const * const types_array = json_object_get(root, "types");
     if (!types_array || !json_is_array(types_array)) {
-        celix_err_push("json: types is not an array or it does not exists!");
+        LOG_ERROR("json: types is not an array or it does not exists!");
         return false;
     }
 
@@ -188,7 +187,7 @@ inline static bool dynAvprInterface_createTypes(dyn_interface_type* intf, json_t
         local_ns = json_object_get(entry, "namespace");
         name = json_string_value(json_object_get(entry, "name"));
         if (!name) {
-            celix_err_pushf("Type entry %zu has no name", index);
+            LOG_ERROR("Type entry %zu has no name", index);
             return false;
         }
         dynAvprType_constructFqn(name_buffer, FQN_SIZE, name, json_is_string(local_ns) ? json_string_value(local_ns) : parent_ns);
@@ -209,7 +208,7 @@ inline static bool dynAvprInterface_createTypes(dyn_interface_type* intf, json_t
 inline static bool dynAvprInterface_createMethods(dyn_interface_type* intf, json_t * const root, const char* parent_ns) {
     json_t * const messages_object = json_object_get(root, "messages");
     if (!messages_object || !json_is_object(messages_object)) {
-        celix_err_push("json: messages is not an object or it does not exist!");
+        LOG_ERROR("json: messages is not an object or it does not exist!");
         return false;
     }
 
@@ -232,7 +231,7 @@ inline static bool dynAvprInterface_createMethods(dyn_interface_type* intf, json
 
         j_index = json_object_get(func_entry, "index");
         if (!json_is_integer(j_index)) {
-            celix_err_push("For parsing an interface annotate all functions with an integer index");
+            LOG_ERROR("For parsing an interface annotate all functions with an integer index");
             dynFunction_destroy(m_entry->dynFunc);
             free(m_entry);
             return false;
@@ -241,7 +240,7 @@ inline static bool dynAvprInterface_createMethods(dyn_interface_type* intf, json
         m_entry->index = json_integer_value(j_index);
         m_entry->id = strndup(func_name, STR_LENGTH);
         if (!m_entry->id) {
-            celix_err_pushf("Could not allocate memory for method entry name %s", func_name);
+            LOG_ERROR("Could not allocate memory for method entry name %s", func_name);
             dynFunction_destroy(m_entry->dynFunc);
             free(m_entry);
             return false;
@@ -249,7 +248,7 @@ inline static bool dynAvprInterface_createMethods(dyn_interface_type* intf, json
 
         m_entry->name = strndup(func_name, STR_LENGTH); // For avpr these are the same
         if (!m_entry->id) {
-            celix_err_pushf("Could not allocate memory for method entry id %s", func_name);
+            LOG_ERROR("Could not allocate memory for method entry id %s", func_name);
             dynFunction_destroy(m_entry->dynFunc);
             free(m_entry);
             return false;
@@ -274,12 +273,12 @@ static bool dynAvprInterface_insertNamValEntry(struct namvals_head *head, const 
 
 static struct namval_entry * dynAvprInterface_createNamValEntry(const char* name, const char* value) {
     if (!name) {
-        celix_err_push("Passed null-ptr to name of name-value entry creation function, unknown what type to create");
+        LOG_ERROR("Passed null-ptr to name of name-value entry creation function, unknown what type to create");
         return NULL;
     }
 
     if (!value) {
-        celix_err_pushf("Received a name (%s) but no value, did the look-up for a value fail?", name);
+        LOG_ERROR("Received a name (%s) but no value, did the look-up for a value fail?", name);
         return NULL;
     }
 

@@ -19,7 +19,6 @@
 
 #include "dyn_function.h"
 #include "dyn_function_common.h"
-#include "celix_err.h"
 
 #include "jansson.h"
 
@@ -57,7 +56,7 @@ dyn_function_type * dynFunction_parseAvpr(FILE * avprStream, const char * fqn) {
     json_error_t error;
     json_t *root = json_loadf(avprStream, JSON_REJECT_DUPLICATES, &error);
     if (!root) {
-        celix_err_pushf("function_parseAvpr: Error decoding json: line %d: %s", error.line, error.text);
+        LOG_ERROR("function_parseAvpr: Error decoding json: line %d: %s", error.line, error.text);
         return NULL;
     }
 
@@ -70,7 +69,7 @@ dyn_function_type * dynFunction_parseAvprWithStr(const char * avpr, const char *
     FILE *avprStream = fmemopen((char*)avpr, strlen(avpr), "r");
 
     if (!avprStream) {
-        celix_err_pushf("function_parseAvprWithStr: Error creating mem stream for descriptor string. %s", strerror(errno));
+        LOG_ERROR("function_parseAvprWithStr: Error creating mem stream for descriptor string. %s", strerror(errno)); 
         return NULL;
     }
 
@@ -84,26 +83,26 @@ dyn_function_type * dynAvprFunction_parseFromJson(json_t * const root, const cha
     dyn_function_type *func = calloc(1, sizeof(*func));
 
     if (!json_is_object(root)) {
-        celix_err_push("ParseFunction: Error decoding json, root should be an object");
+        LOG_ERROR("ParseFunction: Error decoding json, root should be an object");
         valid = false;
     }
 
     // Get base namespace
     const char *parentNamespace = json_string_value(json_object_get(root, "namespace"));
     if (valid && !parentNamespace) {
-        celix_err_push("ParseFunction: No namespace found in root, or it is null!");
+        LOG_ERROR("ParseFunction: No namespace found in root, or it is null!");
         valid = false;
     }
 
     // Get messages array
     json_t * const messagesObject = json_object_get(root, "messages");
     if (valid && !json_is_object(messagesObject)) {
-        celix_err_push("ParseFunction: No messages, or it is not an object");
+        LOG_ERROR("ParseFunction: No messages, or it is not an object");
         valid = false;
     }
 
     if (valid && !dynAvprFunction_parseFunc(func, dynAvprFunction_findFunc(fqn, messagesObject, parentNamespace), root, fqn, parentNamespace)) {
-        celix_err_push("parseAvpr: Destroying incorrect result");
+        LOG_ERROR("parseAvpr: Destroying incorrect result");
         dynFunction_destroy(func);
         func = NULL;
     }
@@ -124,25 +123,25 @@ static json_t const * const dynAvprFunction_findFunc(const char * fqn, json_t * 
             return func_entry;
         }
     }
-    celix_err_pushf("FindFunc: Not found function definition for %s", fqn);
+    LOG_ERROR("FindFunc: Not found function definition for %s", fqn);
     return NULL;
 }
 
 static bool dynAvprFunction_parseFunc(dyn_function_type * func, json_t const * const jsonFuncObject, json_t * const root, const char * fqn, const char * parentNamespace) {
     if (!jsonFuncObject) {
-        celix_err_push("ParseFunc: Received NULL, function not found, nothing to parse");
+        LOG_WARNING("ParseFunc: Received NULL, function not found, nothing to parse");
         return false;
     }
 
     func->name = strdup(fqn);
     if (!func->name) {
-        celix_err_pushf("ParseFunc: Error allocating memory for function name %s", fqn);
+        LOG_ERROR("ParseFunc: Error allocating memory for function name %s", fqn);
         return false;
     }
 
     json_t const * const argument_list = json_object_get(jsonFuncObject, "request");
     if (!json_is_array(argument_list)) {
-        celix_err_push("ParseFunc: Request is not an array");
+        LOG_ERROR("ParseFunc: Request is not an array");
         free(func->name);
         return false;
     }
@@ -153,7 +152,7 @@ static bool dynAvprFunction_parseFunc(dyn_function_type * func, json_t const * c
     // Parse requests argument array
     TAILQ_INIT(&func->arguments);
     if (!dynAvprFunction_createHandle(func)) {
-        celix_err_pushf("ParseFunc: Could not creat handle for %s", fqn);
+        LOG_ERROR("ParseFunc: Could not creat handle for %s", fqn);
         free(func->name);
         return false;
     }
@@ -163,7 +162,7 @@ static bool dynAvprFunction_parseFunc(dyn_function_type * func, json_t const * c
     json_t const * arg_entry;
     json_array_foreach(argument_list, index, arg_entry) {
         if (!dynAvprFunction_parseArgument(func, index+1, arg_entry, root, function_namespace, argBuffer, typeBuffer)) { /* Offset index to account for the handle */
-            celix_err_pushf("ParseFunc: Could not parse argument %zu for %s", index, fqn);
+            LOG_ERROR("ParseFunc: Could not parse argument %zu for %s", index, fqn);
             return false;
         }
     }
@@ -171,7 +170,7 @@ static bool dynAvprFunction_parseFunc(dyn_function_type * func, json_t const * c
 
     json_t const * const response_type = json_object_get(jsonFuncObject, "response");
     if (!dynAvprFunction_parseReturn(func, index, response_type, root, function_namespace, typeBuffer)) {
-        celix_err_pushf("ParseFunc: Could not parse return type for %s", fqn);
+        LOG_ERROR("ParseFunc: Could not parse return type for %s", fqn);
         free(func->name);
         return false;
     }
@@ -179,12 +178,12 @@ static bool dynAvprFunction_parseFunc(dyn_function_type * func, json_t const * c
 
     func->funcReturn = dynAvprFunction_createNativeType();
     if (!func->funcReturn) {
-        celix_err_pushf("ParseFunc: Could not create error indicator for %s", fqn);
+        LOG_ERROR("ParseFunc: Could not create error indicator for %s", fqn);
         return false;
     }
 
     if (!dynAvprFunction_initCif(func, index)) {
-        celix_err_push("ParseFunc: Could not prepare cif information");
+        LOG_ERROR("ParseFunc: Could not prepare cif information");
         return false;
     }
 
@@ -201,14 +200,14 @@ inline static bool dynAvprFunction_parseArgument(dyn_function_type * func, size_
 
     dyn_type * entry_dyn_type = dynAvprType_parseFromTypedJson(root, json_object_get(entry, "type"), namespace);
     if (!entry_dyn_type) {
-        celix_err_push("ParseArgument: Could not parse type for argument");
+        LOG_ERROR("ParseArgument: Could not parse type for argument");
         return false;
     }
 
     if (json_is_true(json_object_get(entry, "ptr"))) {
         entry_dyn_type = dynAvprType_createNestedForFunction(entry_dyn_type, entry_name);
         if (!entry_dyn_type) {
-            celix_err_pushf("ParseArgument: Could not create pointer argument for %s", entry_name);
+            LOG_ERROR("ParseArgument: Could not create pointer argument for %s", entry_name);
             dynType_destroy(entry_dyn_type);
             return false;
         }
@@ -231,20 +230,20 @@ inline static bool dynAvprFunction_parseArgument(dyn_function_type * func, size_
 inline static bool dynAvprFunction_parseReturn(dyn_function_type * func, size_t index, json_t const * const response_type, json_t * const root, const char * namespace, char * typeBuffer) {
     dyn_type * return_dyn_type = dynAvprType_parseFromTypedJson(root, response_type, namespace);
     if (!return_dyn_type) {
-        celix_err_push("ParseReturn: Could not parse return argument");
+        LOG_ERROR("ParseReturn: Could not parse return argument");
         return false;
     }
 
     dyn_type * out_dyn_type = dynAvprType_createNestedForFunction(return_dyn_type, "out");
     if (!out_dyn_type) {
-        celix_err_push("ParseReturn: Could not create pointer for return type");
+        LOG_ERROR("ParseReturn: Could not create pointer for return type");
         dynType_destroy(return_dyn_type);
         return false;
     }
 
     dyn_function_argument_type *arg = dynAvprFunction_prepareArgumentEntry("out");
     if (!arg) {
-        celix_err_push("ParseReturn: Could not create nested type for return type");
+        LOG_ERROR("ParseReturn: Could not create nested type for return type");
         dynType_destroy(out_dyn_type);
         return false;
     }
@@ -256,7 +255,7 @@ inline static bool dynAvprFunction_parseReturn(dyn_function_type * func, size_t 
     if (descriptor == '{' || descriptor == '[') {
         out_dyn_type = dynAvprType_createNestedForFunction(out_dyn_type, "out");
         if (!out_dyn_type) {
-            celix_err_push("ParseReturn: Could not create nested type for return complex type");
+            LOG_ERROR("ParseReturn: Could not create nested type for return complex type");
             dynType_destroy(out_dyn_type);
             return false;
         }
@@ -291,7 +290,7 @@ inline static bool dynAvprFunction_createHandle(dyn_function_type * func) {
 
 inline static dyn_function_argument_type * dynAvprFunction_prepareArgumentEntry(const char * name) {
     if (!name) {
-        celix_err_push("PrepareArgumentEntry: Need name to create argument entry");
+        LOG_ERROR("PrepareArgumentEntry: Need name to create argument entry");
         return NULL;
     }
 

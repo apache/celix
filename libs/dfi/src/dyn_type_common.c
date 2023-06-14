@@ -18,7 +18,6 @@
  */
 
 #include "dyn_type.h"
-#include "celix_err.h"
 
 #include "dyn_type_common.h"
 
@@ -63,7 +62,7 @@ dyn_type * dynType_findType(dyn_type *type, char *name) {
 ffi_type * dynType_ffiType(dyn_type * type) {
     if (type->type == DYN_TYPE_REF) {
         if (type->ref.ref == NULL) {
-            celix_err_pushf("Error. Ref for %s is not (yet) initialized", type->name);
+            LOG_ERROR("Error. Ref for %s is not (yet) initialized", type->name);
             return NULL;
         }
         return type->ref.ref->ffiType;

@@ -81,11 +81,11 @@ int avrobinSerializer_deserialize(dyn_type *type, const uint8_t *input, size_t i
         fclose(stream);
 
         if (status != OK) {
-            celix_err_push("Error cannot deserialize avrobin.");
+            LOG_ERROR("Error cannot deserialize avrobin.");
         }
     } else {
         status = ERROR;
-        celix_err_pushf("Error initializing memory stream for reading. Length was %zu.", inlen);
+        LOG_ERROR("Error initializing memory stream for reading. Length was %zu.", inlen);
     }
 
     return status;
@@ -104,11 +104,11 @@ int avrobinSerializer_serialize(dyn_type *type, const void *input, uint8_t **out
         if (status != OK) {
             free(*output);
 
-            celix_err_push("Error cannot serialize avrobin.");
+            LOG_ERROR("Error cannot serialize avrobin.");
         }
     } else {
         status = ERROR;
-        celix_err_push("Error initializing memory stream for writing.");
+        LOG_ERROR("Error initializing memory stream for writing.");
     }
 
     return status;
@@ -387,11 +387,11 @@ static int avrobinSerializer_parseAny(dyn_type *type, void *loc, FILE *stream) {
             break;
         case 'P' :
             status = ERROR;
-            celix_err_push("Untyped pointers are not supported for serialization.");
+            LOG_ERROR("Untyped pointers are not supported for serialization.");
             break;
         default :
             status = ERROR;
-            celix_err_pushf("Error provided type '%c' not supported for AVRO.", dynType_descriptorType(type));
+            LOG_ERROR("Error provided type '%c' not supported for AVRO.", dynType_descriptorType(type));
             break;
     }
 
@@ -415,7 +415,7 @@ static int avrobinSerializer_parseComplex(dyn_type *type, void *loc, FILE *strea
 
             if (index < 0) {
                 status = ERROR;
-                celix_err_pushf("Cannot find index for member '%s'.", entry->name);
+                LOG_ERROR("Cannot find index for member '%s'.", entry->name);
             }
 
             if (status == OK) {
@@ -469,7 +469,7 @@ static int avrobinSerializer_parseSequence(dyn_type *type, void *loc, FILE *stre
             blockCount = blockSize / itemSize;
             int64_t rest = blockSize % itemSize;
             if (rest != 0) {
-                celix_err_pushf("Found block size (%"PRId64") is not a multitude of the item size (%zu)", blockSize, itemSize);
+                LOG_ERROR("Found block size (%"PRId64") is not a multitude of the item size (%zu)", blockSize, itemSize);
                 status = ERROR;
                 break;
             }
@@ -611,11 +611,11 @@ static int avrobinSerializer_writeAny(dyn_type *type, void *loc, FILE *stream) {
             break;
         case 'P' :
             status = ERROR;
-            celix_err_push("Untyped pointers are not supported for serialization.");
+            LOG_WARNING("Untyped pointers are not supported for serialization.");
             break;
         default :
             status = ERROR;
-            celix_err_pushf("Unsupported descriptor '%c'.", descriptor);
+            LOG_ERROR("Unsupported descriptor '%c'.", descriptor);
             break;
     }
 
@@ -639,7 +639,7 @@ static int avrobinSerializer_writeComplex(dyn_type *type, void *loc, FILE *strea
 
             if (index < 0) {
                 status = ERROR;
-                celix_err_pushf("Cannot find index for member '%s'.", entry->name);
+                LOG_ERROR("Cannot find index for member '%s'.", entry->name);
             }
 
             if (status == OK) {
@@ -670,7 +670,7 @@ static int avrobinSerializer_writeSequence(dyn_type *type, void *loc, FILE *stre
     void *itemLoc = NULL;
 
     if (avrobin_write_long(stream, arrayLen) != OK) {
-        celix_err_push("Failed to write array block count.");
+        LOG_ERROR("Failed to write array block count.");
         return ERROR;
     }
 
@@ -684,7 +684,7 @@ static int avrobinSerializer_writeSequence(dyn_type *type, void *loc, FILE *stre
     }
 
     if (avrobin_write_long(stream, 0) != OK) {
-        celix_err_push("Failed to write array block count.");
+        LOG_ERROR("Failed to write array block count.");
         return ERROR;
     }
 
@@ -708,7 +708,7 @@ static int avrobinSerializer_writeEnum(dyn_type *type, void *loc, FILE *stream) 
         index++;
     }
 
-    celix_err_pushf("Could not find Enum value %s in enum type.", enum_value_str);
+    LOG_ERROR("Could not find Enum value %s in enum type.", enum_value_str);
     return ERROR;
 }
 
@@ -776,11 +776,11 @@ static int avrobinSerializer_generateAny(dyn_type *type, json_t **output) {
             break;
         case 'P' :
             status = ERROR;
-            celix_err_push("Untyped pointers are not supported for serialization.");
+            LOG_ERROR("Untyped pointers are not supported for serialization.");
             break;
         default :
             status = ERROR;
-            celix_err_pushf("Unsupported descriptor '%c'.", descriptor);
+            LOG_ERROR("Unsupported descriptor '%c'.", descriptor);
             break;
     }
 
@@ -845,7 +845,7 @@ static int avrobinSerializer_generateComplex(dyn_type *type, json_t **output) {
 
             if (index < 0) {
                 status = ERROR;
-                celix_err_pushf("Cannot find index for member '%s'.", entry->name);
+                LOG_ERROR("Cannot find index for member '%s'.", entry->name);
             }
 
             if (status == OK) {
@@ -1123,11 +1123,11 @@ static int generate_record_name(char **result) {
 static int avrobin_read_boolean(FILE *stream,bool *val) {
     int c = fgetc(stream);
     if (c == EOF) {
-        celix_err_push("Unexpected end of file.");
+        LOG_ERROR("Unexpected end of file.");
         return ERROR;
     }
     if (c!=0 && c!=1) {
-        celix_err_push("Unexpected value for boolean.");
+        LOG_ERROR("Unexpected value for boolean.");
         return ERROR;
     }
     if (c == 0) {
@@ -1153,12 +1153,12 @@ static int avrobin_read_long(FILE *stream,int64_t *val) {
     int offset = 0;
     do {
         if (offset == MAX_VARINT_BUF_SIZE) {
-            celix_err_push("Varint too long.");
+            LOG_ERROR("Varint too long.");
             return ERROR;
         }
         c = fgetc(stream);
         if (c == EOF) {
-            celix_err_push("Unexpected end of file.");
+            LOG_ERROR("Unexpected end of file.");
             return ERROR;
         }
         b = (uint8_t)c;
@@ -1176,7 +1176,7 @@ static int avrobin_read_float(FILE *stream,float *val) {
     for (int i=0;i<4;i++) {
         c = fgetc(stream);
         if (c == EOF) {
-            celix_err_push("Unexpected end of file.");
+            LOG_ERROR("Unexpected end of file.");
             return ERROR;
         }
         b[i] = (uint8_t)c;
@@ -1200,7 +1200,7 @@ static int avrobin_read_double(FILE *stream,double *val) {
     for (int i=0;i<8;i++) {
         c = fgetc(stream);
         if (c == EOF) {
-            celix_err_push("Unexpected end of file.");
+            LOG_ERROR("Unexpected end of file.");
             return ERROR;
         }
         b[i] = (uint8_t)c;
@@ -1225,23 +1225,23 @@ static int avrobin_read_double(FILE *stream,double *val) {
 static int avrobin_read_string(FILE *stream,char **val) {
     int64_t len;
     if (avrobin_read_long(stream,&len) != OK) {
-        celix_err_push("Failed to read string length.");
+        LOG_ERROR("Failed to read string length.");
         return ERROR;
     }
     if (len < 0) {
-        celix_err_push("Negative string length.");
+        LOG_ERROR("Negative string length.");
         return ERROR;
     }
     *val = (char*)malloc(sizeof(char) * (len+1));
     if (*val == NULL) {
-        celix_err_push("Failed to allocate memory for avro string.");
+        LOG_ERROR("Failed to allocate memory for avro string.");
         return ERROR;
     }
     int c;
     for (int64_t i=0;i<len;i++) {
         c = fgetc(stream);
         if (c == EOF) {
-            celix_err_push("Unexpected end of file.");
+            LOG_ERROR("Unexpected end of file.");
             free(*val);
             return ERROR;
         }
@@ -1259,7 +1259,7 @@ static int avrobin_write_boolean(FILE *stream,bool val) {
         r = fputc(0, stream);
     }
     if (r == EOF) {
-        celix_err_push("Write error.");
+        LOG_ERROR("Write error.");
         return ERROR;
     }
     return OK;
@@ -1281,7 +1281,7 @@ static int avrobin_write_long(FILE *stream,int64_t val) {
     b[bytes_written++] = (uint8_t)uval;
     for (int i=0;i<bytes_written;i++) {
         if (fputc(b[i],stream) == EOF) {
-            celix_err_push("Write error.");
+            LOG_ERROR("Write error.");
             return ERROR;
         }
     }
@@ -1301,7 +1301,7 @@ static int avrobin_write_float(FILE *stream,float val) {
     b[3] = (uint8_t)((v.i & 0xFF000000) >> 24);
     for (int i=0;i<4;i++) {
         if (fputc(b[i],stream) == EOF) {
-            celix_err_push("Write error.");
+            LOG_ERROR("Write error.");
             return ERROR;
         }
     }
@@ -1325,7 +1325,7 @@ static int avrobin_write_double(FILE *stream,double val) {
     b[7] = (uint8_t)((v.i & 0xFF00000000000000) >> 56);
     for (int i=0;i<8;i++) {
         if (fputc(b[i],stream) == EOF) {
-            celix_err_push("Write error.");
+            LOG_ERROR("Write error.");
             return ERROR;
         }
     }
@@ -1336,12 +1336,12 @@ static int avrobin_write_string(FILE *stream,const char *val) {
     assert(val != NULL);
     size_t len = strlen(val);
     if (avrobin_write_long(stream, (int64_t)len) != OK) {
-        celix_err_push("Failed to write string length.");
+        LOG_ERROR("Failed to write string length.");
         return ERROR;
     }
     for (size_t i=0;i<len;i++) {
         if (fputc((unsigned char)(val[i]),stream) == EOF) {
-            celix_err_push("Write error.");
+            LOG_ERROR("Write error.");
             return ERROR;
         }
     }
