@@ -150,9 +150,6 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 	}
 
 	int funcCallStatus = (int)returnVal;
-	if (funcCallStatus != 0) {
-		LOG_WARNING("Error calling remote endpoint function, got error code %i", funcCallStatus);
-	}
 
     //free input args
 	json_t *jsonResult = NULL;
@@ -309,23 +306,22 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 
 	json_t *result = NULL;
 	json_t *rsError = NULL;
-	bool replyHasResult = false;
 	if (status == OK) {
 		*rsErrno = 0;
 		result = json_object_get(replyJson, "r");
-		if (result != NULL) {
-		    replyHasResult = true;
-		} else {
+		if (result == NULL) {
 			rsError = json_object_get(replyJson, "e");
 			if(rsError != NULL) {
 				//get the invocation error of remote service function
 				*rsErrno = json_integer_value(rsError);
-			}
+			} else {
+                status = ERROR;
+                LOG_ERROR("Invalid reply, no result or error found. Reply: '%s'", reply);
+            }
 		}
 	}
 
-	bool replyHandled = false;
-	if (status == OK) {
+	if (status == OK && result != NULL) {
 		int nrOfArgs = dynFunction_nrOfArguments(func);
 		int i;
 		for (i = 0; i < nrOfArgs; i += 1) {
@@ -334,18 +330,14 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 			if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
 				void *tmp = NULL;
 				void **out = (void **) args[i];
-
 				size_t size = 0;
 
-				if (result == NULL) {
-                    LOG_WARNING("Expected result in reply. got '%s'", reply);
-				} else if (dynType_descriptorType(argType) == 't') {
+                if (dynType_descriptorType(argType) == 't') {
 					status = jsonSerializer_deserializeJson(argType, result, &tmp);
 					if (tmp != NULL) {
 						size = strnlen(((char *) *(char**) tmp), 1024 * 1024);
 						memcpy(*out, *(void**) tmp, size);
 					}
-                    replyHandled = true;
 				} else {
 					dynType_typedPointer_getTypedType(argType, &argType);
 					status = jsonSerializer_deserializeJson(argType, result, &tmp);
@@ -353,7 +345,6 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 						size = dynType_size(argType);
 						memcpy(*out, tmp, size);
 					}
-                    replyHandled = true;
 				}
 
 				dynType_free(argType, tmp);
@@ -362,22 +353,18 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 
 				dynType_typedPointer_getTypedType(argType, &subType);
 
-                if (result == NULL) {
-                    LOG_WARNING("Expected result in reply. got '%s'", reply);
-                } else if (dynType_descriptorType(subType) == 't') {
+                if (dynType_descriptorType(subType) == 't') {
 				    char ***out = (char ***) args[i];
                     char **ptrToString = NULL;
                     status = jsonSerializer_deserializeJson(subType, result, (void**)&ptrToString);
                     char *s __attribute__((unused)) = *ptrToString; //note for debug
                     free(ptrToString);
                     **out = (void*)s;
-                    replyHandled = true;
                 } else {
 					dyn_type *subSubType = NULL;
 					dynType_typedPointer_getTypedType(subType, &subSubType);
 					void ***out = (void ***) args[i];
 					status = jsonSerializer_deserializeJson(subSubType, result, *out);
-                    replyHandled = true;
 				}
 			} else {
 				//skip
@@ -385,9 +372,6 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 		}
 	}
 
-	if (replyHasResult && !replyHandled) {
-	    LOG_WARNING("Reply has a result output, but this is not handled by the remote function!. Reply: '%s'", reply);
-	}
 
 	json_decref(replyJson);
 

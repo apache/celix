@@ -129,7 +129,7 @@ static json_t const * const dynAvprFunction_findFunc(const char * fqn, json_t * 
 
 static bool dynAvprFunction_parseFunc(dyn_function_type * func, json_t const * const jsonFuncObject, json_t * const root, const char * fqn, const char * parentNamespace) {
     if (!jsonFuncObject) {
-        LOG_WARNING("ParseFunc: Received NULL, function not found, nothing to parse");
+        LOG_ERROR("ParseFunc: Received NULL, function not found, nothing to parse");
         return false;
     }
 

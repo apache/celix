@@ -270,7 +270,7 @@ static dyn_type * dynAvprType_parseAny(dyn_type * root, dyn_type * parent, json_
     dyn_type * type = NULL;
 
     if (!jsonObject) {
-        LOG_WARNING("Any: Received NULL, type not found, nothing to parse");
+        LOG_ERROR("Any: Received NULL, type not found, nothing to parse");
         return NULL;
     }
 
@@ -381,7 +381,7 @@ static inline dyn_type * dynAvprType_prepareRecord(dyn_type * parent, json_t con
 
     *fields = json_object_get(record_obj, "fields");
     if (!json_is_array(*fields)) {
-        LOG_WARNING("Record: \"fields\" is not an array or does not exist");
+        LOG_ERROR("Record: \"fields\" is not an array or does not exist");
         return NULL;
     }
 
@@ -485,7 +485,7 @@ static inline struct complex_type_entry *dynAvprType_prepareRecordEntry(json_t c
 static inline enum JsonTypeType dynAvprType_getRecordEntryType(json_t const * const entry_object, const char * fqn_parent, char * name_buffer, const char * namespace) {
     json_t const * const json_type = json_object_get(entry_object, "type");
     if (!json_type) {
-        LOG_WARNING("RecordEntry: No type entry");
+        LOG_ERROR("RecordEntry: No type entry");
         return INVALID;
     }
 
@@ -629,7 +629,7 @@ static dyn_type * dynAvprType_parseEnum(dyn_type * parent, json_t const * const 
 
     json_t * symbolArray = json_object_get(enum_obj, "symbols");
     if (!json_is_array(symbolArray)) {
-        LOG_WARNING("Expected \"symbols\" to be an array for enum %s", fqn);
+        LOG_ERROR("Expected \"symbols\" to be an array for enum %s", fqn);
         free(fqn);
         free(type);
         return NULL;
@@ -637,7 +637,7 @@ static dyn_type * dynAvprType_parseEnum(dyn_type * parent, json_t const * const 
 
     json_t * values_array = json_object_get(enum_obj, "EnumValues");
     if (json_is_array(values_array) && json_array_size(values_array) != json_array_size(symbolArray)) {
-        LOG_WARNING("Expected \"symbols\" and \"EnumValues\" arrays to be of the same size");
+        LOG_ERROR("Expected \"symbols\" and \"EnumValues\" arrays to be of the same size");
         free(fqn);
         free(type);
         return NULL;
@@ -691,7 +691,7 @@ static inline bool dynAvprType_metaEntrySetValue(struct meta_entry * meta_entry_
     if (values_array) {
         const char* enumValue = json_string_value(json_array_get(values_array, index));
         if (!enumValue) {
-            LOG_WARNING("MetaEntrySetValue: could not get the enum value from the \"EnumValues\" list at index %lu", index);
+            LOG_ERROR("MetaEntrySetValue: could not get the enum value from the \"EnumValues\" list at index %lu", index);
             return false;
         }
 
@@ -994,13 +994,11 @@ static inline void dynAvprType_createVersionMetaEntry(dyn_type * type, json_t co
         }
         else {
             m_entry->value = strdup("0.0.0");
-            LOG_WARNING("parseAvpr: Did not find valid version, set version to 0.0.0");
         }
     }
     else {
         // If no version or an invalid version is available, default to 0.0.0
         m_entry->value = strdup("0.0.0");
-        LOG_WARNING("parseAvpr: Did not find version entry, set version to 0.0.0");
     }
 
     // Insert into type
@@ -1045,7 +1043,6 @@ static inline void dynAvprType_createAnnotationEntries(dyn_type * type, json_t c
                 case JSON_ARRAY:
                     /* fall through */
                 default:
-                    LOG_WARNING("createAnnotationEntries: encountered an annotation of an unknown type : %s", key);
                     free(m_entry->name);
                     free(m_entry);
                     continue; // Do not add the invalid entry as a meta-entry

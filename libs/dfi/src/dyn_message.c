@@ -347,7 +347,7 @@ static int dynMessage_getEntryForHead(struct namvals_head *head, const char *nam
         *out = value;
     } else {
         status = ERROR;
-        LOG_WARNING("Cannot find '%s' in list", name);
+        LOG_ERROR("Cannot find '%s' in list", name);
     }
     return status;
 }

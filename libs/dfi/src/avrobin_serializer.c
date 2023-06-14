@@ -611,7 +611,7 @@ static int avrobinSerializer_writeAny(dyn_type *type, void *loc, FILE *stream) {
             break;
         case 'P' :
             status = ERROR;
-            LOG_WARNING("Untyped pointers are not supported for serialization.");
+            LOG_ERROR("Untyped pointers are not supported for serialization.");
             break;
         default :
             status = ERROR;

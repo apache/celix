@@ -783,7 +783,8 @@ int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void *
     }
 
     if (index >= seq->len) {
-        LOG_WARNING("Requesting index (%i) outsize defined length (%u) but within capacity", index, seq->len);
+        status = ERROR;
+        LOG_ERROR("Requesting index (%i) outsize defined length (%u) but within capacity", index, seq->len);
     }
 
     if (status == OK) {

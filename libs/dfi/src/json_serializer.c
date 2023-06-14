@@ -264,7 +264,7 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
             break;
         case 'P' :
             status = ERROR;
-            LOG_WARNING("Untyped pointer are not supported for serialization");
+            LOG_ERROR("Untyped pointer are not supported for serialization");
             break;
         case 'l':
             status = jsonSerializer_parseAny(type->ref.ref, loc, val);
@@ -426,7 +426,8 @@ static int jsonSerializer_writeAny(dyn_type *type, void* input, json_t **out) {
             status = jsonSerializer_writeSequence(type, input, &val);
             break;
         case 'P' :
-            LOG_WARNING("Untyped pointer not supported for serialization. ignoring");
+            status = ERROR;
+            LOG_ERROR("Untyped pointer not supported for serialization.");
             break;
         case 'l':
             status = jsonSerializer_writeAny(type->ref.ref, input, out);
