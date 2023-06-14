@@ -20,6 +20,10 @@
 #ifndef _DFI_LOG_UTIL_H_
 #define _DFI_LOG_UTIL_H_
 
+/**
+ * @deprecated The header will be remove, Use celix_err.h instead.
+ */
+
 #include "celix_dfi_export.h"
 #include "celix_err.h"
 
