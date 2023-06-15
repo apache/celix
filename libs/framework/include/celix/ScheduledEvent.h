@@ -102,6 +102,8 @@ class ScheduledEvent final {
         std::function<void()> removeCallback{};        /**< The remove callback for the scheduled event. */
     };
 
+    static void (*callback)(void*);
+
     /**
      * @brief Constructs a scheduled event using the given bundle context and options.
      *
@@ -113,24 +115,25 @@ class ScheduledEvent final {
                    std::function<void()> _callback,
                    std::function<void()> _removeCallback,
                    celix_scheduled_event_options_t& options) {
+        static auto callback = [](void* data) {
+            auto* callbacks = static_cast<Callbacks*>(data);
+            (callbacks->callback)();
+        };
+        static auto removeCallback = [](void* data) {
+            auto* callbacks = static_cast<Callbacks*>(data);
+            if (callbacks->removeCallback) {
+                (callbacks->removeCallback)();
+            }
+        };
+
         ctx = std::move(_cCtx);
         isOneShot = options.intervalInSeconds == 0;
         options.name = _name.c_str();
         auto* callbacks = new Callbacks{std::move(_callback), std::move(_removeCallback)};
         options.callbackData = callbacks;
-        options.callback = [](void* data) {
-            auto* callbacks = static_cast<Callbacks*>(data);
-            (callbacks->callback)();
-        };
+        options.callback = callback;
         options.removeCallbackData = callbacks;
-        options.removeCallback = [](void* data) {
-            auto* callbacks = static_cast<Callbacks*>(data);
-            if (callbacks->removeCallback) {
-                (callbacks->removeCallback)();
-            }
-            delete callbacks;
-        };
-
+        options.removeCallback = removeCallback;
         eventId = celix_bundleContext_scheduleEvent(ctx.get(), &options);
     }
 
