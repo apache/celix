@@ -111,12 +111,13 @@ celix_status_t endpointDiscoveryPoller_create(discovery_t *discovery, celix_bund
 	}
 
     double intervalInSeconds = (double)(*poller)->poll_interval;
-    celix_scheduled_event_options_t opts = CELIX_EMPTY_SCHEDULED_EVENT_OPTIONS;
-    opts.callback = endpointDiscoveryPoller_performPeriodicPoll;
-    opts.callbackData = *poller;
-    opts.initialDelayInSeconds = intervalInSeconds;
-    opts.intervalInSeconds = intervalInSeconds;
-    (*poller)->pollEventId = celix_bundleContext_scheduleEvent(context, &opts);
+    celix_scheduled_event_options_t schedOpts = CELIX_EMPTY_SCHEDULED_EVENT_OPTIONS;
+    schedOpts.name = "Remote Services Endpoint Discovery Poller";
+    schedOpts.callback = endpointDiscoveryPoller_performPeriodicPoll;
+    schedOpts.callbackData = *poller;
+    schedOpts.initialDelayInSeconds = intervalInSeconds;
+    schedOpts.intervalInSeconds = intervalInSeconds;
+    (*poller)->pollEventId = celix_bundleContext_scheduleEvent(context, &schedOpts);
 	status += celixThreadMutex_unlock(&(*poller)->pollerLock);
 
 	if(status != CELIX_SUCCESS){
