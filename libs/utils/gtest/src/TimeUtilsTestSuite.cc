@@ -102,4 +102,11 @@ TEST_F(TimeUtilsTestSuite, AddDelayInSecondsToTimeTest) {
     expectedTime = {-1, 0};
     ASSERT_EQ(delayedTime.tv_sec, expectedTime.tv_sec);
     ASSERT_EQ(delayedTime.tv_nsec, expectedTime.tv_nsec);
+
+    //Test delay <= -2 seconds
+    time = {3, 0};
+    delayedTime = celix_addDelayInSecondsToTime(&time, -2.6);
+    expectedTime = {0, 400000000};
+    ASSERT_EQ(delayedTime.tv_sec, expectedTime.tv_sec);
+    ASSERT_EQ(delayedTime.tv_nsec, expectedTime.tv_nsec);
 }

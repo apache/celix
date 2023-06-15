@@ -276,9 +276,9 @@ struct timespec celix_addDelayInSecondsToTime(const struct timespec* time, doubl
     }
 
     long seconds = (long)delayInSeconds;
-    long nanoseconds = (long)((delayInSeconds - floor(delayInSeconds)) * CELIX_NS_IN_SEC);
+    double nanoseconds = (delayInSeconds - (double)seconds) * CELIX_NS_IN_SEC;
     delayedTime.tv_sec += seconds;
-    delayedTime.tv_nsec += nanoseconds;
+    delayedTime.tv_nsec += (long)nanoseconds;
 
     if (delayedTime.tv_nsec >= CELIX_NS_IN_SEC) {
         delayedTime.tv_sec += 1;
