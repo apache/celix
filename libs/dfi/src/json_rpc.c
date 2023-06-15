@@ -306,6 +306,7 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 
 	json_t *result = NULL;
 	json_t *rsError = NULL;
+    bool replyHasError = false;
 	if (status == OK) {
 		*rsErrno = 0;
 		result = json_object_get(replyJson, "r");
@@ -314,16 +315,32 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 			if(rsError != NULL) {
 				//get the invocation error of remote service function
 				*rsErrno = json_integer_value(rsError);
-			} else {
-                status = ERROR;
-                LOG_ERROR("Invalid reply, no result or error found. Reply: '%s'", reply);
-            }
+                replyHasError = true;
+			}
 		}
 	}
 
-	if (status == OK && result != NULL) {
-		int nrOfArgs = dynFunction_nrOfArguments(func);
-		int i;
+    int nrOfOutputArgs = 0;
+    int nrOfArgs = dynFunction_nrOfArguments(func);
+    for (int j = 0; j < nrOfArgs; ++j) {
+        enum dyn_function_argument_meta meta = dynFunction_argumentMetaForIndex(func, j);
+        if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT || meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
+            nrOfOutputArgs += 1;
+            if (nrOfOutputArgs > 1) {
+                status = ERROR;
+                LOG_ERROR("Only one output argument is supported");
+                break;
+            }
+            if (result == NULL && !replyHasError) {
+                status = ERROR;
+                LOG_ERROR("Expected result in reply. got '%s'", reply);
+                break;
+            }
+        }
+    }
+
+	if (status == OK && !replyHasError) {
+        int i;
 		for (i = 0; i < nrOfArgs; i += 1) {
 			dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
 			enum dyn_function_argument_meta meta = dynFunction_argumentMetaForIndex(func, i);

@@ -20,7 +20,8 @@
 #include "gtest/gtest.h"
 
 #include <float.h>
-#include <assert.h> 
+#include <assert.h>
+#include "celix_err.h"
 
 extern "C" {
 #include <stdio.h>
@@ -36,16 +37,6 @@ extern "C" {
 #include "json_serializer.h"
 #include "json_rpc.h"
 #include "celix_errno.h"
-
-static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
-    va_list ap;
-    const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-    fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-    va_start(ap, msg);
-    vfprintf(stderr, msg, ap);
-    fprintf(stderr, "\n");
-    va_end(ap);
-}
 
 
     void prepareTest(void) {
@@ -305,6 +296,45 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         dynInterface_destroy(intf);
     }
 
+    void handleTestOutWithEmptyReply(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/example1.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        struct methods_head *head;
+        dynInterface_methods(intf, &head);
+        dyn_function_type *func = nullptr;
+        struct method_entry *entry = nullptr;
+        TAILQ_FOREACH(entry, head, entries) {
+            if (strcmp(entry->name, "stats") == 0) {
+                func = entry->dynFunc;
+                break;
+            }
+        }
+        ASSERT_TRUE(func != nullptr);
+
+        const char *reply = R"({})";
+
+        void *args[3];
+        args[0] = nullptr;
+        args[1] = nullptr;
+        args[2] = nullptr;
+
+        struct tst_StatsResult *result = nullptr;
+        void *out = &result;
+        args[2] = &out;
+
+        int rsErrno = 0;
+        rc = jsonRpc_handleReply(func, reply, args, &rsErrno);
+        ASSERT_NE(0, rc);
+        celix_err_printErrors(stderr, nullptr, nullptr);
+
+        dynInterface_destroy(intf);
+    }
+
     void handleTestReplyError(void) {
         dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example1.descriptor", "r");
@@ -399,6 +429,124 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
         dynInterface_destroy(intf);
     }
 
+    void handleTestAction(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/example5.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        struct methods_head *head;
+        dynInterface_methods(intf, &head);
+        dyn_function_type *func = nullptr;
+        struct method_entry *entry = nullptr;
+        TAILQ_FOREACH(entry, head, entries) {
+            if (strcmp(entry->name, "action") == 0) {
+                func = entry->dynFunc;
+                break;
+            }
+        }
+        ASSERT_TRUE(func != nullptr);
+
+        const char *reply = R"({})";
+
+        void *args[1];
+        args[0] = nullptr;
+
+        int rsErrno = 0;
+        rc = jsonRpc_handleReply(func, reply, args, &rsErrno);
+        ASSERT_EQ(0, rc);
+
+        dynInterface_destroy(intf);
+    }
+
+    //Current only support one out argument
+    void handleTestMultiPreOut(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/invalids/multiOutArgs.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        struct methods_head *head;
+        dynInterface_methods(intf, &head);
+        dyn_function_type *func = nullptr;
+        struct method_entry *entry = nullptr;
+        TAILQ_FOREACH(entry, head, entries) {
+            if (strcmp(entry->name, "multiPreOut") == 0) {
+                func = entry->dynFunc;
+                break;
+            }
+        }
+        ASSERT_TRUE(func != nullptr);
+
+        const char *reply = R"({"r":2.0})";
+
+        void *args[3];
+        args[0] = nullptr;
+        args[1] = nullptr;
+        args[2] = nullptr;
+
+        double result1 = 0;
+        void *out = &result1;
+        args[1] = &out;
+        int result2 = 0;
+        void *out2 = &result2;
+        args[2] = &out2;
+
+        int rsErrno = 0;
+        rc = jsonRpc_handleReply(func, reply, args, &rsErrno);
+        ASSERT_NE(0, rc);
+        celix_err_printErrors(stderr, nullptr, nullptr);
+
+        dynInterface_destroy(intf);
+    }
+
+    //Current only support one out argument
+    void handleTestMultiOut(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/invalids/multiOutArgs.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        struct methods_head *head;
+        dynInterface_methods(intf, &head);
+        dyn_function_type *func = nullptr;
+        struct method_entry *entry = nullptr;
+        TAILQ_FOREACH(entry, head, entries) {
+            if (strcmp(entry->name, "multiOut") == 0) {
+                func = entry->dynFunc;
+                break;
+            }
+        }
+        ASSERT_TRUE(func != nullptr);
+
+        const char *reply = R"({"r":2.0})";
+
+        void *args[3];
+        args[0] = nullptr;
+        args[1] = nullptr;
+        args[2] = nullptr;
+
+        double *result1 = nullptr;
+        void *out = &result1;
+        args[1] = &out;
+        int *result2 = nullptr;
+        void *out2 = &result2;
+        args[2] = &out2;
+
+        int rsErrno = 0;
+        rc = jsonRpc_handleReply(func, reply, args, &rsErrno);
+        ASSERT_NE(0, rc);
+        celix_err_printErrors(stderr, nullptr, nullptr);
+
+        dynInterface_destroy(intf);
+    }
+
 
 
 
@@ -468,13 +616,7 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
 class JsonRpcTests : public ::testing::Test {
 public:
     JsonRpcTests() {
-        int lvl = 1;
-        dynCommon_logSetup(stdLog, nullptr, lvl);
-        dynType_logSetup(stdLog, nullptr,lvl);
-        dynFunction_logSetup(stdLog, nullptr,lvl);
-        dynInterface_logSetup(stdLog, nullptr,lvl);
-        jsonSerializer_logSetup(stdLog, nullptr, lvl);
-        jsonRpc_logSetup(stdLog, nullptr, lvl);
+
     }
     ~JsonRpcTests() override {
     }
@@ -523,4 +665,20 @@ TEST_F(JsonRpcTests, handleOutChar) {
 
 TEST_F(JsonRpcTests, handleReplyError) {
     handleTestReplyError();
+}
+
+TEST_F(JsonRpcTests, handleTestOutWithEmptyReply) {
+    handleTestOutWithEmptyReply();
+}
+
+TEST_F(JsonRpcTests, handleTestAction) {
+    handleTestAction();
+}
+
+TEST_F(JsonRpcTests, handleTestMultiPreOut) {
+    handleTestMultiPreOut();
+}
+
+TEST_F(JsonRpcTests, handleTestMultiOut) {
+    handleTestMultiOut();
 }
