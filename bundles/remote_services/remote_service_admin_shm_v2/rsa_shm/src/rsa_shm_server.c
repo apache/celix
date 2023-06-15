@@ -105,7 +105,8 @@ celix_status_t rsaShmServer_create(celix_bundle_context_t *ctx, const char *name
     shm_cache_t *shmCache = NULL;
     status = shmCache_create(false, &shmCache);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_logWithTssErrors(loghelper, CELIX_LOG_LEVEL_ERROR, "RsaShmServer: create shm cache err; error code is %d.", status);
+        celix_logHelper_logTssErrors(loghelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(loghelper, "RsaShmServer: create shm cache err; error code is %d.", status);
         goto create_shm_cache_err;
     }
     server->shmCache = shmCache;
@@ -305,7 +306,8 @@ static void *rsaShmServer_receiveMsgThread(void *data) {
         rsa_shm_msg_control_t *msgCtrl = shmCache_getMemoryPtr(server->shmCache,
                 msgInfo.shmId, msgInfo.ctrlDataOffset);
         if (rsaShmServer_msgCtrlInvalid(server, msgCtrl)) {
-            celix_logHelper_logWithTssErrors(server->loghelper, CELIX_LOG_LEVEL_ERROR, "RsaShmServer: Get msg ctrl cache failed. It maybe cause memory leak!");
+            celix_logHelper_logTssErrors(server->loghelper, CELIX_LOG_LEVEL_ERROR);
+            celix_logHelper_error(server->loghelper, "RsaShmServer: Get msg ctrl cache failed. It maybe cause memory leak!");
             continue;
         }
         char *msgBody = shmCache_getMemoryPtr(server->shmCache, msgInfo.shmId,
