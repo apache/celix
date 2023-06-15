@@ -303,13 +303,13 @@ TEST_F(ThreadsTestSuite, CondTimedWaitTest) {
     ASSERT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
 
     //Test with valid abstime
-    auto start = celix_gettime(CLOCK_MONOTONIC);
+    auto start = celix_gettime(CLOCK_REALTIME);
     auto targetEnd = celix_addDelayInSecondsToTime(&start, 0.001);
     pthread_mutex_lock(&mutex);
     status = celixThreadCondition_waitUntil(&cond, &mutex, &targetEnd);
     ASSERT_EQ(status, ETIMEDOUT);
     pthread_mutex_unlock(&mutex);
-    auto end = celix_gettime(CLOCK_MONOTONIC);
+    auto end = celix_gettime(CLOCK_REALTIME);
     EXPECT_NEAR(celix_difftime(&end, &start), 0.001, 0.01);
 }
 

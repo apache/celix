@@ -240,12 +240,12 @@ celix_status_t celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_even
                                                             double waitTimeInSeconds) {
     celix_status_t status = CELIX_SUCCESS;
     if (waitTimeInSeconds > 0) {
-        struct timespec start = celix_gettime(CLOCK_MONOTONIC);
+        struct timespec start = celix_gettime(CLOCK_REALTIME);
         struct timespec absTimeoutTime = celix_addDelayInSecondsToTime(&start, waitTimeInSeconds);
         celixThreadMutex_lock(&event->mutex);
         while (event->callCount < targetCallCount) {
             celixThreadCondition_waitUntil(&event->cond, &event->mutex, &absTimeoutTime);
-            struct timespec now = celix_gettime(CLOCK_MONOTONIC);
+            struct timespec now = celix_gettime(CLOCK_REALTIME);
             if (celix_difftime(&start, &now) > waitTimeInSeconds) {
                 status = CELIX_TIMEOUT;
                 break;
@@ -257,7 +257,7 @@ celix_status_t celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_even
 }
 
 void celix_scheduledEvent_waitForRemoved(celix_scheduled_event_t* event) {
-    struct timespec start = celix_gettime(CLOCK_MONOTONIC);
+    struct timespec start = celix_gettime(CLOCK_REALTIME);
     struct timespec absLogTimeout = celix_addDelayInSecondsToTime(&start, CELIX_SCHEDULED_EVENT_ERROR_LOG_TIMEOUT_IN_SECONDS);
     celixThreadMutex_lock(&event->mutex);
     while (!event->isRemoved) {
@@ -269,7 +269,7 @@ void celix_scheduledEvent_waitForRemoved(celix_scheduled_event_t* event) {
                    event->eventName,
                    event->scheduledEventId,
                    event->bndId);
-            start = celix_gettime(CLOCK_MONOTONIC);
+            start = celix_gettime(CLOCK_REALTIME);
             absLogTimeout = celix_addDelayInSecondsToTime(&start, CELIX_SCHEDULED_EVENT_ERROR_LOG_TIMEOUT_IN_SECONDS);
         }
     }
@@ -280,7 +280,7 @@ celix_status_t celix_scheduledEvent_wait(celix_scheduled_event_t* event, double 
     celix_status_t status = CELIX_SUCCESS;
     celixThreadMutex_lock(&event->mutex);
     size_t targetCallCount = event->callCount + 1;
-    struct timespec start = celix_gettime(CLOCK_MONOTONIC);
+    struct timespec start = celix_gettime(CLOCK_REALTIME);
     struct timespec absTimeoutTime = celix_addDelayInSecondsToTime(&start, timeoutInSeconds);
     while (event->callCount < targetCallCount) {
         celix_status_t waitStatus = celixThreadCondition_waitUntil(&event->cond, &event->mutex, &absTimeoutTime);

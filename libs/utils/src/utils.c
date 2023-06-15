@@ -22,6 +22,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <math.h>
 
 #include "utils.h"
 #include "celix_utils.h"
@@ -267,14 +268,15 @@ struct timespec celix_gettime(clockid_t clockId) {
 
 struct timespec celix_addDelayInSecondsToTime(const struct timespec* time, double delayInSeconds) {
     struct timespec delayedTime;
-    memset(&delayedTime, 0, sizeof(delayedTime));
-    memset(&delayedTime, 0, sizeof(delayedTime));
     if (time != NULL) {
         delayedTime = *time;
+    } else {
+        delayedTime.tv_nsec = 0;
+        delayedTime.tv_sec = 0;
     }
 
     long seconds = (long)delayInSeconds;
-    long nanoseconds = (delayInSeconds - seconds) * CELIX_NS_IN_SEC;
+    long nanoseconds = (long)((delayInSeconds - floor(delayInSeconds)) * CELIX_NS_IN_SEC);
     delayedTime.tv_sec += seconds;
     delayedTime.tv_nsec += nanoseconds;
 

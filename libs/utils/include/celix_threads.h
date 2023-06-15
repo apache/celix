@@ -157,6 +157,8 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitFor(celix_thread_cond
  * - CELIX_ILLEGAL_ARGUMENT if the abstime is negative.
  * - ENOTRECOVERABLE if the state protected by the mutex is not recoverable.
  * - ETIMEDOUT If the abstime has passed.
+ *
+ *  Values for abstime can be obtained by adding a delay to the current time obtained using gettimeofday(2)
  * 
  * @param[in] cond The condition to wait for.
  * @param[in] mutex The (locked) mutex to use.

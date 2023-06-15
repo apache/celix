@@ -559,14 +559,14 @@ TEST_F(ScheduledEventTestSuite, WaitForScheduledEvent) {
     //And the event is fired
     EXPECT_EQ(1, count.load());
 
-    //When waiting to short for the event
+    //When waiting too short for the event
     status = celix_bundleContext_waitForScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId, 0.0001);
 
     //Then the return status is timeout
     EXPECT_EQ(CELIX_TIMEOUT, status);
 
     //When waiting for the event with a timeout longer than the interval
-    status = celix_bundleContext_waitForScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId, 1);
+    status = celix_bundleContext_waitForScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId, 0.0012);
 
     //Then the return status is success
     EXPECT_EQ(CELIX_SUCCESS, status);
