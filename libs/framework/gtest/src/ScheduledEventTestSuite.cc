@@ -232,8 +232,8 @@ TEST_F(ScheduledEventTestSuite, WakeUpEventTest) {
     std::atomic<int> count{0};
     celix_scheduled_event_options_t opts{};
     opts.name = "test wakeup";
-    opts.initialDelayInSeconds = 0.01;
-    opts.intervalInSeconds = 0.01;
+    opts.initialDelayInSeconds = 0.05;
+    opts.intervalInSeconds = 0.05;
     opts.callbackData = static_cast<void*>(&count);
     opts.callback = [](void* countPtr) {
         auto* count = static_cast<std::atomic<int>*>(countPtr);
@@ -251,13 +251,13 @@ TEST_F(ScheduledEventTestSuite, WakeUpEventTest) {
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     // When waiting a bit to let the scheduled event trigger
-    std::this_thread::sleep_for(std::chrono::milliseconds{2});
+    std::this_thread::sleep_for(std::chrono::milliseconds{5});
 
     // Then the count is increased
     EXPECT_EQ(1, count.load());
 
     // When waiting longer than the interval
-    std::this_thread::sleep_for(std::chrono::milliseconds{11});
+    std::this_thread::sleep_for(std::chrono::milliseconds{55});
 
     // Then the count is increased
     EXPECT_EQ(2, count.load());
@@ -269,7 +269,7 @@ TEST_F(ScheduledEventTestSuite, WakeUpEventTest) {
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     // When waiting a bit to let the scheduled event trigger
-    std::this_thread::sleep_for(std::chrono::milliseconds{2});
+    std::this_thread::sleep_for(std::chrono::milliseconds{5});
 
     // Then the count is increased
     EXPECT_EQ(3, count.load());
@@ -301,7 +301,7 @@ TEST_F(ScheduledEventTestSuite, WakeUpOneShotEventTest) {
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     // When waiting a bit to ensure the scheduled event is woken up
-    std::this_thread::sleep_for(std::chrono::milliseconds{2});
+    std::this_thread::sleep_for(std::chrono::milliseconds{5});
 
     // And the count is increased
     EXPECT_EQ(1, count.load());
@@ -336,7 +336,7 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventTest) {
     ASSERT_EQ(0, count.load());
 
     // When waiting longer than the initial delay
-    std::this_thread::sleep_for(std::chrono::milliseconds{60});
+    std::this_thread::sleep_for(std::chrono::milliseconds{55});
 
     // Then the count is increased
     EXPECT_EQ(1, count.load());
@@ -345,7 +345,7 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventTest) {
     event.wakeup();
 
     // And waiting a bit to ensure the event is called
-    std::this_thread::sleep_for(std::chrono::milliseconds{2});
+    std::this_thread::sleep_for(std::chrono::milliseconds{5});
 
     // Then the count is increased
     EXPECT_EQ(2, count.load());
@@ -354,7 +354,7 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventTest) {
     event.wakeup();
 
     // And waiting a bit to ensure the event is called
-    std::this_thread::sleep_for(std::chrono::milliseconds{2});
+    std::this_thread::sleep_for(std::chrono::milliseconds{5});
 
     // Then the count is increased
     EXPECT_EQ(3, count.load());
@@ -366,7 +366,7 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventTest) {
     event.cancel();
 
     // And waiting longer than the interval
-    std::this_thread::sleep_for(std::chrono::milliseconds{60});
+    std::this_thread::sleep_for(std::chrono::milliseconds{55});
 
     // Then the count is not increased
     EXPECT_EQ(3, count.load());

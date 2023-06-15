@@ -119,7 +119,7 @@ celix_scheduled_event_t* celix_scheduledEvent_create(celix_framework_logger_t* l
     event->useCount = 1;
     event->callCount = 0;
     event->isRemoved = false;
-    clock_gettime(CLOCK_MONOTONIC, &event->lastScheduledEventTime);
+    event->lastScheduledEventTime = celix_gettime(CLOCK_REALTIME);
     event->processForWakeup = false;
 
     celixThreadMutex_create(&event->mutex, NULL);

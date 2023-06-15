@@ -1426,8 +1426,7 @@ static inline void fw_handleEvents(celix_framework_t* framework) {
  * @brief Process all scheduled events.
  */
 static double celix_framework_processScheduledEvents(celix_framework_t* fw) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
+    struct timespec ts = celix_gettime(CLOCK_REALTIME);
 
     double nextClosestScheduledEvent;
     celix_scheduled_event_t* callEvent;
