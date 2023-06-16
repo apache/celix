@@ -94,6 +94,7 @@ CELIX_FRAMEWORK_EXPORT size_t celix_framework_useBundles(celix_framework_t* fw,
 /**
  * @brief Use the currently active bundles.
  * The provided callback will be called for all the currently active bundles.
+ * The bundle state is guaranteed to be active during the callback.
  *
  * @warning Calling synchronous bundle-state changing functions (e.g. celix_bundleContext_stopBundle) from the callback
  * will lead to deadlocks.
@@ -102,7 +103,6 @@ CELIX_FRAMEWORK_EXPORT size_t celix_framework_useBundles(celix_framework_t* fw,
  * @param includeFrameworkBundle    If true the callback will also be triggered for the framework bundle.
  * @param callbackHandle            The data pointer, which will be used in the callbacks
  * @param use                       The callback which will be called for the currently active bundles.
- *                                  The bundle state is guaranteed to be active during the callback.
  * @return                          The number of times the use callback is called.
  */
 CELIX_FRAMEWORK_EXPORT size_t celix_framework_useActiveBundles(celix_framework_t* fw,
