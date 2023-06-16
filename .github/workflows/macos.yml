@@ -42,7 +42,7 @@ jobs:
         run: |
           cd build
           source activate_run.sh
-          ctest --verbose
+          ctest --output-on-failure
           source deactivate_run.sh
       - name: Test Installed Celix
         run: |
@@ -75,5 +75,4 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/build
           export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:$(pwd)/utils:$(pwd)/framework:$(pwd)/dfi
-          make test ARGS="-V"
-
+          ctest --output-on-failure
