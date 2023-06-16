@@ -272,15 +272,15 @@ class CelixConan(ConanFile):
             self._enable_error_injectors()
         self._cmake.definitions["CELIX_ERR_BUFFER_SIZE"] = self.options.celix_err_buffer_size
         self._cmake.definitions["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
-        # the following is workaround for https://github.com/conan-io/conan/issues/7192
-        if self.settings.os == "Linux":
-            self._cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
-        elif self.settings.os == "Macos":
-            self._cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
+        # the following together with the imports method is a workaround https://github.com/conan-io/conan/issues/7192
+        self._cmake.definitions["CMAKE_BUILD_RPATH"] = os.path.join(self.build_folder, "lib")
         self.output.info(self._cmake.definitions)
         v = tools.Version(self.version)
         self._cmake.configure(defs={'CELIX_MAJOR': v.major, 'CELIX_MINOR': v.minor, 'CELIX_MICRO': v.patch})
         return self._cmake
+
+    def imports(self):
+        self.copy("*.so*", "lib", "lib")
 
     def build(self):
         # self._patch_sources()

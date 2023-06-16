@@ -266,8 +266,9 @@ function(add_celix_bundle)
         )
     endif()
     add_custom_target(${BUNDLE_TARGET_NAME}_bundle
-        DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_FILE>"
+        DEPENDS "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_FILE>"
     )
+    add_dependencies(${BUNDLE_TARGET_NAME}_bundle ${BUNDLE_TARGET_NAME})
     add_dependencies(celix-bundles ${BUNDLE_TARGET_NAME}_bundle)
     #######################################################################
    
@@ -317,13 +318,13 @@ function(add_celix_bundle)
     ###################################
     ##### Additional Cleanup info #####
     ###################################
-    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_GEN_DIR>;$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_CONTENT_DIR>")
+    set_target_properties(${BUNDLE_TARGET_NAME}_bundle PROPERTIES "ADDITIONAL_CLEAN_FILES" "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_GEN_DIR>;$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_CONTENT_DIR>")
 
     #############################
     ### BUNDLE TARGET PROPERTIES
     #############################
     #already set
-    #   BUNDLE_TARGET_IS_LIB -> true (can be use to test if target is bundle target
+    #   BUNDLE_TARGET_IS_LIB -> true (can be use to test if target is library target
     #   BUNDLE_TARGET -> refers to the _bundle target which is responsible for building the zip file
     #internal use
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IS_BUNDLE_TARGET" TRUE) #indicate that this is a bundle target
@@ -356,7 +357,6 @@ function(add_celix_bundle)
     if(BUNDLE_SOURCES) 
         celix_bundle_libs(${BUNDLE_TARGET_NAME} "PRIVATE" TRUE ${BUNDLE_TARGET_NAME})
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "$<TARGET_SONAME_FILE_NAME:${BUNDLE_TARGET_NAME}>")
-        set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUILD_WITH_INSTALL_RPATH" true)
 
         if(APPLE)
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path")
@@ -459,7 +459,7 @@ function(celix_bundle_libs)
     #0 is bundle TARGET
     #1 is TYPE, e.g PRIVATE,EXPORT or IMPORT
     #2 is ADD_TO_MANIFEST 
-    #2..n is libs
+    #3..n is libs
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
 
@@ -484,7 +484,8 @@ function(celix_bundle_libs)
             get_filename_component(LIB_NAME ${LIB} NAME) 
             set(OUT "${BUNDLE_DIR}/${LIB_NAME}") 
             add_custom_command(OUTPUT ${OUT} 
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIB} ${OUT} 
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIB} ${OUT}
+                DEPENDS ${LIB}
             )
             if (ADD_TO_MANIFEST)
                 list(APPEND LIBS ${LIB_NAME})
@@ -520,7 +521,7 @@ function(celix_bundle_libs)
 
         get_target_property(IS_LIB ${BUNDLE} "BUNDLE_TARGET_IS_LIB")
         if ("${LIB}" STREQUAL "${BUNDLE}")
-            #ignore. Do not have to link agaist own lib
+            #ignore. Do not have to link against itself
         elseif(IS_LIB)
             target_link_libraries(${BUNDLE} PRIVATE ${LIB})
         endif()
@@ -551,7 +552,6 @@ function(celix_bundle_import_libs)
     check_bundle(${BUNDLE})
 
     get_target_property(LIBS ${BUNDLE} "BUNDLE_IMPORT_LIBS")
-    set(LIBS )
 
     foreach(LIB IN ITEMS ${ARGN})
         message(WARNING "Bundle with import libs in Celix is not complete and still experimental.")
@@ -662,18 +662,18 @@ function(celix_bundle_add_dir)
     if (NOT DEFINED COPY_DESTINATION)
         set(DESTINATION "${BUNDLE_DIR}")
     else()
-	set(DESTINATION "${BUNDLE_DIR}/${COPY_DESTINATION}")
+        set(DESTINATION "${BUNDLE_DIR}/${COPY_DESTINATION}")
     endif()
 
     string(UUID COPY_ID NAMESPACE "661ee07c-842d-11e8-adfc-80fa5b02e11b" NAME "${INPUT_DIR}" TYPE MD5)
 
     set(COPY_CMAKE_SCRIPT "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-dir-${COPY_ID}.cmake")
     if (IS_ABSOLUTE ${INPUT_DIR})
-	    file(WRITE ${COPY_CMAKE_SCRIPT}
-		    "file(COPY ${INPUT_DIR} DESTINATION ${DESTINATION})")
+        file(WRITE ${COPY_CMAKE_SCRIPT}
+                "file(COPY ${INPUT_DIR} DESTINATION ${DESTINATION})")
     else()
-	    file(WRITE ${COPY_CMAKE_SCRIPT}
-		    "file(COPY ${CMAKE_CURRENT_LIST_DIR}/${INPUT_DIR} DESTINATION ${DESTINATION})")
+        file(WRITE ${COPY_CMAKE_SCRIPT}
+                "file(COPY ${CMAKE_CURRENT_LIST_DIR}/${INPUT_DIR} DESTINATION ${DESTINATION})")
     endif()
 
     set(TIMESTAMP "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-dir-${COPY_ID}.timestamp")
@@ -683,7 +683,7 @@ function(celix_bundle_add_dir)
             COMMAND ${CMAKE_COMMAND} -P ${COPY_CMAKE_SCRIPT}
             DEPENDS ${DIR_FILES}
             COMMENT "Copying dir ${INPUT_DIR} to ${DESTINATION}"
-    )
+            )
 
     get_target_property(DEPS ${BUNDLE} "BUNDLE_DEPEND_TARGETS")
     list(APPEND DEPS "${TIMESTAMP}")
@@ -691,7 +691,7 @@ function(celix_bundle_add_dir)
 endfunction()
 
 #[[
-Copy to the content of a directory to a bundle.
+Copy specified files to a bundle.
 
 ```CMake
 celix_bundle_add_files(<bundle_target>
@@ -725,7 +725,7 @@ function(celix_bundle_add_files)
     if (NOT DEFINED COPY_DESTINATION)
         set(DESTINATION "${BUNDLE_DIR}")
     else()
-	set(DESTINATION "${BUNDLE_DIR}/${COPY_DESTINATION}")
+        set(DESTINATION "${BUNDLE_DIR}/${COPY_DESTINATION}")
     endif()
 
     string(UUID COPY_ID NAMESPACE "661ee07c-842d-11e8-adfc-80fa5b02e11b" NAME "${COPY_FILES}" TYPE MD5)
@@ -733,21 +733,21 @@ function(celix_bundle_add_files)
     set(TIMESTAMP "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-files-${COPY_ID}.timestamp")
     set(COPY_CMAKE_SCRIPT "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-files-${COPY_ID}.cmake")
     file(WRITE ${COPY_CMAKE_SCRIPT}
-	    "#Copy script, copies the file on a file per file base\n")
+            "#Copy script, copies the file on a file per file base\n")
     foreach(FILE IN ITEMS ${COPY_FILES})
-	    if (IS_ABSOLUTE ${FILE})
-	    	file(APPEND ${COPY_CMAKE_SCRIPT}
-			"file(COPY ${FILE} DESTINATION ${DESTINATION})\n")
-	    else()
-	    	file(APPEND ${COPY_CMAKE_SCRIPT}
-			"file(COPY ${CMAKE_CURRENT_LIST_DIR}/${FILE} DESTINATION ${DESTINATION})\n")
-	    endif()
+        if (IS_ABSOLUTE ${FILE})
+            file(APPEND ${COPY_CMAKE_SCRIPT}
+                    "file(COPY ${FILE} DESTINATION ${DESTINATION})\n")
+        else()
+            file(APPEND ${COPY_CMAKE_SCRIPT}
+                    "file(COPY ${CMAKE_CURRENT_LIST_DIR}/${FILE} DESTINATION ${DESTINATION})\n")
+        endif()
     endforeach()
     add_custom_command(OUTPUT ${TIMESTAMP}
             COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP}
             COMMAND ${CMAKE_COMMAND} -P ${COPY_CMAKE_SCRIPT}
-	        DEPENDS ${COPY_FILES}
-	        COMMENT "Copying files to ${DESTINATION}"
+            DEPENDS ${COPY_FILES}
+            COMMENT "Copying files to ${DESTINATION}"
     )
 
     get_target_property(DEPS ${BUNDLE} "BUNDLE_DEPEND_TARGETS")
@@ -835,7 +835,7 @@ endfunction()
 
 function(bundle_name)
     message(DEPRECATION "bundle_name is deprecated, use celix_bundle_name instead.")
-    celix_bundle_symbolic_name(${ARGN})
+    celix_bundle_name(${ARGN})
 endfunction()
 
 #[[
@@ -851,7 +851,7 @@ endfunction()
 
 function(bundle_version)
     message(DEPRECATION "bundle_version is deprecated, use celix_bundle_version instead.")
-    celix_bundle_symbolic_name(${ARGN})
+    celix_bundle_version(${ARGN})
 endfunction()
 
 #[[
@@ -867,7 +867,7 @@ endfunction()
 
 function(bundle_description)
     message(DEPRECATION "bundle_description is deprecated, use celix_bundle_description instead.")
-    celix_bundle_symbolic_name(${ARGN})
+    celix_bundle_description(${ARGN})
 endfunction()
 
 #[[
@@ -911,6 +911,9 @@ function(celix_get_bundle_filename)
         if (_IMP)
             _celix_extract_imported_bundle_info(${ARGV0})
             set(${ARGV1} ${BUNDLE_FILENAME} PARENT_SCOPE)
+            unset(BUNDLE_FILE)
+            unset(BUNDLE_FILENAME)
+            unset(BUNDLE_SYMBOLIC_NAME)
         else ()
             get_target_property(BF ${ARGV0} BUNDLE_FILENAME)
             set(${ARGV1} ${BF} PARENT_SCOPE)
@@ -942,6 +945,7 @@ function(celix_get_bundle_file)
             set(${ARGV1} ${BUNDLE_FILE} PARENT_SCOPE)
             unset(BUNDLE_FILE)
             unset(BUNDLE_FILENAME)
+            unset(BUNDLE_SYMBOLIC_NAME)
         else ()
             get_target_property(BF ${ARGV0} BUNDLE_FILE)
             set(${ARGV1} ${BF} PARENT_SCOPE)
@@ -1028,7 +1032,7 @@ endfunction()
 
 #[[
 Generate and install a Celix Targets cmake file which contains CMake commands to create imported targets for the bundles
-install using the provided <export_name>. These imported CMake targets can be used in in CMake project using the installed
+install using the provided <export_name>. These imported CMake targets can be used in CMake project using the installed
 bundles.
 
 ```CMake
@@ -1037,6 +1041,7 @@ install_celix_targets(<export_name>
     [FILE <celix_target_filename>]
     [PROJECT_NAME <project_name>]
     [DESTINATION <celix_targets_destination>]
+    [COMPONENT <component>]
 )
 ```
 
@@ -1049,6 +1054,7 @@ Optional Arguments:
 - FILE: The Celix Targets cmake filename to used, without the cmake extension. Default is <export_name>BundleTargets
 - PROJECT_NAME: The project name to used for the share location. Default is the cmake project name.
 - DESTINATION: The (relative) location to install the Celix Targets cmake file to. Default is share/<PROJECT_NAME>/cmake.
+- COMPONENT: Specify an installation component name with which the install rule is associated.
 ]]
 
 function(install_celix_bundle_targets)
@@ -1136,7 +1142,7 @@ set_target_properties(${TN} PROPERTIES
     file(GENERATE OUTPUT "${CONF_FILE}" INPUT "${CONF_IN_FILE}")
 
 
-    #Generate not build type specific targets file
+    #Generate build-type independent targets file
     set(GENERIC_CONF_FILE "${CMAKE_BINARY_DIR}/celix/gen/cmake/${EXPORT_NAME}-BundleTargets.cmake")
     file(GENERATE OUTPUT ${GENERIC_CONF_FILE} CONTENT "
 # Load bundle information for each installed configuration.
@@ -1161,7 +1167,7 @@ endfunction()
 
 
 #[[
-extract the BUNDLE_FILENAME and BUNDLE_FILE from a imported bundle target taking into account the used CMAKE_BUILD_TYPE
+extract the BUNDLE_FILENAME, BUNDLE_FILE, and BUNDLE_SYMBOLIC_NAME from a imported bundle target taking into account the used CMAKE_BUILD_TYPE
 and if configured the MAP_IMPORTED_CONFIG_* or CMAKE_MAP_IMPORTED_CONFIG_*
 
 ```CMake

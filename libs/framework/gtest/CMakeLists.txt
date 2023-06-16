@@ -62,8 +62,7 @@ set(CELIX_FRAMEWORK_TEST_SOURCES
 
 add_executable(test_framework ${CELIX_FRAMEWORK_TEST_SOURCES})
 # framework_cut makes error injector work
-# Celix::framework makes bundles loadable (otherwise we need an copy of framework in each bundle, celix_bundle_private_libs)
-target_link_libraries(test_framework PRIVATE framework_cut Celix::framework CURL::libcurl GTest::gtest GTest::gtest_main)
+target_link_libraries(test_framework PRIVATE framework_cut CURL::libcurl GTest::gtest GTest::gtest_main)
 celix_deprecated_framework_headers(test_framework)
 
 

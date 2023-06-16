@@ -40,6 +40,7 @@
 #include "celix_log.h"
 #include "celix_threads.h"
 #include "service_registry.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -57,6 +58,7 @@ extern "C" {
 
 typedef struct celix_framework_bundle_entry {
     celix_bundle_t *bnd;
+    celix_thread_rwlock_t fsmMutex; //protects bundle state transition
     long bndId;
 
     celix_thread_mutex_t useMutex; //protects useCount
@@ -117,7 +119,8 @@ enum celix_bundle_lifecycle_command {
     CELIX_BUNDLE_LIFECYCLE_START,
     CELIX_BUNDLE_LIFECYCLE_STOP,
     CELIX_BUNDLE_LIFECYCLE_UNINSTALL,
-    CELIX_BUNDLE_LIFECYCLE_UPDATE
+    CELIX_BUNDLE_LIFECYCLE_UPDATE,
+    CELIX_BUNDLE_LIFECYCLE_UNLOAD
 };
 
 typedef struct celix_framework_bundle_lifecycle_handler {
@@ -152,6 +155,7 @@ struct celix_framework {
         celix_thread_t thread;
     } shutdown;
 
+    celix_thread_mutex_t installLock; // serialize install/uninstall
     struct {
         celix_array_list_t *entries; //value = celix_framework_bundle_entry_t*. Note ordered by installed bundle time
                                      //i.e. later installed bundle are last
@@ -259,8 +263,7 @@ double celix_framework_getConfigPropertyAsDouble(celix_framework_t* framework, c
  */
 bool celix_framework_getConfigPropertyAsBool(celix_framework_t* framework, const char* name, bool defaultValue, bool* found);
 
-
-celix_status_t celix_framework_installBundleInternal(celix_framework_t *framework, const char *bndLoc, celix_bundle_t **bundleOut);
+celix_status_t celix_framework_installBundleInternal(celix_framework_t* framework, const char* bndLoc, long* bndId);
 
 celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, const void* svcObj, properties_pt properties);
 celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, service_factory_pt factory, properties_pt properties);
@@ -281,7 +284,7 @@ celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bund
 celix_status_t framework_markResolvedModules(framework_pt framework, linked_list_pt wires);
 
 array_list_pt framework_getBundles(framework_pt framework) __attribute__((deprecated("not thread safe, use celix_framework_useBundles instead")));
-bundle_pt framework_getBundle(framework_pt framework, const char* location);
+long framework_getBundle(framework_pt framework, const char* location);
 bundle_pt framework_getBundleById(framework_pt framework, long id);
 
 
@@ -404,9 +407,10 @@ celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_
  * @param fw The Celix framework
  * @param bndEntry A bnd entry
  * @param forceSpawnThread If the true, the start bundle will always be done on a spawn thread
+ * @param permanent If true, the bundle will be permanently uninstalled (e.g. the bundle archive will be removed).
  * @return CELIX_SUCCESS of the call went alright.
  */
-celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread);
+celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread, bool permanent);
 
 /**
  * Update (and if needed stop and start) a bundle and ensure that this is not done on the Celix event thread.
@@ -436,10 +440,10 @@ celix_status_t celix_framework_stopBundleEntry(celix_framework_t* fw, celix_fram
 /**
  * Uninstall a bundle. Cannot be called on the Celix event thread.
  */
-celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool permanent);
 
 /**
- * Uninstall a bundle. Cannot be called on the Celix event thread.
+ * Update a bundle. Cannot be called on the Celix event thread.
  */
 celix_status_t celix_framework_updateBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, const char* updatedBundleUrl);
 
