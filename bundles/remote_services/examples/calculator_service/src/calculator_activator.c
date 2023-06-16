@@ -44,7 +44,7 @@ celix_status_t calculatorBndStart(struct activator *act, celix_bundle_context_t 
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, CALCULATOR_SERVICE_VERSION);
         celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, CALCULATOR_CONFIGURATION_TYPE);
 
-        act->svcId = celix_bundleContext_registerServiceAsync(ctx, &act->service, CALCULATOR_SERVICE, properties);
+        act->svcId = celix_bundleContext_registerService(ctx, &act->service, CALCULATOR_SERVICE, properties);
     }
     return CELIX_SUCCESS;
 }

@@ -374,7 +374,7 @@ static void httpAdmin_updateInfoSvc(http_admin_manager_t *admin) {
     if (resources_urls_size > 1) {
         celix_properties_set(properties, HTTP_ADMIN_INFO_RESOURCE_URLS, resources_urls);
     }
-    admin->infoSvcId = celix_bundleContext_registerServiceAsync(admin->context, &admin->infoSvc, HTTP_ADMIN_INFO_SERVICE_NAME, properties);
+    admin->infoSvcId = celix_bundleContext_registerService(admin->context, &admin->infoSvc, HTTP_ADMIN_INFO_SERVICE_NAME, properties);
 
     celixThreadMutex_unlock(&admin->admin_lock);
 

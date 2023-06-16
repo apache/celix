@@ -115,8 +115,8 @@ pubsub_websocket_topic_sender_t* pubsub_websocketTopicSender_create(
         sender->websockSvc.handle = sender;
         sender->websockSvc.ready = psa_websocketTopicSender_ready;
         sender->websockSvc.close = psa_websocketTopicSender_close;
-        sender->websockSvcId = celix_bundleContext_registerServiceAsync(ctx, &sender->websockSvc,
-                                                                        WEBSOCKET_ADMIN_SERVICE_NAME, props);
+        sender->websockSvcId = celix_bundleContext_registerService(ctx, &sender->websockSvc,
+                                                                   WEBSOCKET_ADMIN_SERVICE_NAME, props);
     } else {
         sender->websockSvcId = -1;
     }

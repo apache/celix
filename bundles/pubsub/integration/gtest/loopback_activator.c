@@ -58,7 +58,7 @@ celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
   celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, "pong2");
   act->subSvc.handle = act;
   act->subSvc.receive = tst_receive;
-  act->subSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->subSvc, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
+  act->subSvcId = celix_bundleContext_registerService(ctx, &act->subSvc, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
 
 
 	return CELIX_SUCCESS;

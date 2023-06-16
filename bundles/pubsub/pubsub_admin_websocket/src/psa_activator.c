@@ -70,7 +70,7 @@ int psa_websocket_start(psa_websocket_activator_t *act, celix_bundle_context_t *
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, PUBSUB_ADMIN_SERVICE_TYPE, PUBSUB_WEBSOCKET_ADMIN_TYPE);
 
-        act->adminSvcId = celix_bundleContext_registerServiceAsync(ctx, psaSvc, PUBSUB_ADMIN_SERVICE_NAME, props);
+        act->adminSvcId = celix_bundleContext_registerService(ctx, psaSvc, PUBSUB_ADMIN_SERVICE_NAME, props);
     }
 
     //register shell command service
@@ -81,7 +81,7 @@ int psa_websocket_start(psa_websocket_activator_t *act, celix_bundle_context_t *
         celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::psa_websocket");
         celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "psa_websocket");
         celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the websocket PSA");
-        act->cmdSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->cmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
+        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
     }
 
     return status;

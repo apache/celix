@@ -84,7 +84,7 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, PUBSUB_ADMIN_SERVICE_TYPE, PUBSUB_ZMQ_ADMIN_TYPE);
 
-        act->adminSvcId = celix_bundleContext_registerServiceAsync(ctx, psaSvc, PUBSUB_ADMIN_SERVICE_NAME, props);
+        act->adminSvcId = celix_bundleContext_registerService(ctx, psaSvc, PUBSUB_ADMIN_SERVICE_NAME, props);
     }
 
     //register shell command service
@@ -95,7 +95,7 @@ int psa_zmq_start(psa_zmq_activator_t *act, celix_bundle_context_t *ctx) {
         celix_properties_set(props, CELIX_SHELL_COMMAND_NAME, "celix::psa_zmq");
         celix_properties_set(props, CELIX_SHELL_COMMAND_USAGE, "psa_zmq");
         celix_properties_set(props, CELIX_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the ZMQ PSA");
-        act->cmdSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->cmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
+        act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, CELIX_SHELL_COMMAND_SERVICE_NAME, props);
     }
 
     return status;

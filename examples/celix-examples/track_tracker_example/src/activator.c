@@ -86,7 +86,7 @@ celix_status_t activator_start(activator_data_t* act, celix_bundle_context_t *ct
     act->svc.handle = act;
     act->svc.calc = calc;
     //note only triggers on calcTrk1, because of filter restrictions
-    act->svcId = celix_bundleContext_registerServiceAsync(ctx, &act->svc, CALC_SERVICE_NAME, NULL);
+    act->svcId = celix_bundleContext_registerService(ctx, &act->svc, CALC_SERVICE_NAME, NULL);
 
     return CELIX_SUCCESS;
 }

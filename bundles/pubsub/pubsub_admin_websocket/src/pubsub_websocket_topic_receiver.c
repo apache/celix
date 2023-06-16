@@ -193,8 +193,8 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
         receiver->sockSvc.ready = psa_websocketTopicReceiver_ready;
         receiver->sockSvc.data = psa_websocketTopicReceiver_data;
         receiver->sockSvc.close = psa_websocketTopicReceiver_close;
-        receiver->svcId = celix_bundleContext_registerServiceAsync(receiver->ctx, &receiver->sockSvc,
-                                                                   WEBSOCKET_ADMIN_SERVICE_NAME, props);
+        receiver->svcId = celix_bundleContext_registerService(receiver->ctx, &receiver->sockSvc,
+                                                           WEBSOCKET_ADMIN_SERVICE_NAME, props);
     }
 
     const char *staticConnects = pubsub_getEnvironmentVariableWithScopeTopic(ctx, PUBSUB_WEBSOCKET_STATIC_CONNECT_SOCKET_ADDRESSES_FOR, topic, scope);

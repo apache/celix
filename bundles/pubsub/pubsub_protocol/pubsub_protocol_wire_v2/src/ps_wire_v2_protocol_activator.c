@@ -58,7 +58,7 @@ static int ps_wp_start(ps_wp_activator_t *act, celix_bundle_context_t *ctx) {
         act->protocolSvc.decodeMetadata = pubsubProtocol_wire_v2_decodeMetadata;
         act->protocolSvc.decodeFooter = pubsubProtocol_wire_v2_decodeFooter;
 
-        act->wireProtocolSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->protocolSvc, PUBSUB_PROTOCOL_SERVICE_NAME, props);
+        act->wireProtocolSvcId = celix_bundleContext_registerService(ctx, &act->protocolSvc, PUBSUB_PROTOCOL_SERVICE_NAME, props);
     }
     return status;
 }
