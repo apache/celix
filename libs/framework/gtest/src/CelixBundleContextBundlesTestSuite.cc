@@ -19,14 +19,15 @@
 
 #include <gtest/gtest.h>
 
-#include <thread>
-#include <chrono>
-#include <iostream>
-#include <mutex>
-#include <condition_variable>
 #include <atomic>
 #include <celix_log_utils.h>
+#include <chrono>
+#include <condition_variable>
+#include <iostream>
+#include <mutex>
+#include <thread>
 
+#include "bundle_context_private.h"
 #include "celix_api.h"
 #include "celix_file_utils.h"
 
