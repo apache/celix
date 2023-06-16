@@ -304,7 +304,7 @@ TEST_F(ThreadsTestSuite, CondTimedWaitTest) {
 
     //Test with valid abstime
     auto start = celix_gettime(CLOCK_REALTIME);
-    auto targetEnd = celix_addDelayInSecondsToTime(&start, 0.001);
+    auto targetEnd = celix_delayedTimespec(&start, 0.001);
     pthread_mutex_lock(&mutex);
     status = celixThreadCondition_waitUntil(&cond, &mutex, &targetEnd);
     ASSERT_EQ(status, ETIMEDOUT);

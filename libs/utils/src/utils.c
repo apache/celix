@@ -266,7 +266,7 @@ struct timespec celix_gettime(clockid_t clockId) {
     return t;
 }
 
-struct timespec celix_addDelayInSecondsToTime(const struct timespec* time, double delayInSeconds) {
+struct timespec celix_delayedTimespec(const struct timespec* time, double delayInSeconds) {
     struct timespec delayedTime;
     if (time != NULL) {
         delayedTime = *time;

@@ -163,8 +163,8 @@ CELIX_UTILS_EXPORT struct timespec celix_gettime(clockid_t clockId);
  * @param[in] time The time to add the delay to. Can be NULL, in which case the time is 0.
  * @param[in] delayInSeconds The delay in seconds.
  * @return A new time with the delay added.
-*/
-CELIX_UTILS_EXPORT struct timespec celix_addDelayInSecondsToTime(const struct timespec* time, double delayInSeconds);
+ */
+CELIX_UTILS_EXPORT struct timespec celix_delayedTimespec(const struct timespec* time, double delayInSeconds);
 
 /**
  * @brief Returns the elapsed time - in seconds - relative to the startTime

@@ -204,7 +204,7 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitFor(celix_thread_cond
         return CELIX_ILLEGAL_ARGUMENT;
     }
     struct timespec now = celix_gettime(CLOCK_MONOTONIC);
-    struct timespec abstime = celix_addDelayInSecondsToTime(&now, delayInSeconds);
+    struct timespec abstime = celix_delayedTimespec(&now, delayInSeconds);
     return celixThreadCondition_waitUntil(cond, mutex, &abstime);
 }
 
