@@ -21,11 +21,16 @@
 #define BUNDLE_CONTEXT_PRIVATE_H_
 
 #include "bundle_context.h"
-#include "celix_log.h"
 #include "bundle_listener.h"
 #include "celix_bundle_context.h"
+#include "celix_log.h"
 #include "listener_hook_service.h"
 #include "service_tracker.h"
+#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct celix_bundle_context_bundle_tracker_entry {
 	celix_bundle_context_t *ctx;
@@ -84,8 +89,26 @@ struct celix_bundle_context {
     hash_map_t *stoppingTrackerEventIds; //key = trackerId, value = eventId for stopping the tracker. Note id are only present if the stop tracking is queued.
 };
 
+/**
+ * @brief Unload the bundle with the provided bundle id. If needed the bundle will be stopped first.
+ * Will silently ignore bundle ids < 0.
+ * Note that unloaded bundle is kept in bundle cache and can be reloaded with the celix_bundleContext_installBundle function.
+ *
+ * If this function is called on the Celix event thread, the actual stopping of the bundle will be done async and
+ * on a separate thread.
+ * If this function is called from a different thread than the Celix event thread, then the function will return after
+ * the bundle is stopped.
+ *
+ * @param ctx The bundle context
+ * @param bndId The bundle id to unload.
+ * @return true if the bundle is correctly unloaded. False if not.
+ */
+bool celix_bundleContext_unloadBundle(celix_bundle_context_t* ctx, long bndId);
 
-void celix_bundleContext_cleanup(celix_bundle_context_t *ctx);
+void celix_bundleContext_cleanup(celix_bundle_context_t* ctx);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUNDLE_CONTEXT_PRIVATE_H_ */

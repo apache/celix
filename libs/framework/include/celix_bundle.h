@@ -177,6 +177,8 @@ typedef struct celix_bundle_service_tracker_list_entry {
 /**
  * Returns a array list of service tracker info entries for this bundle.
  *
+ * @warning It requires a valid bundle context. Calling it for an inactive bundle will lead to crash.
+ *
  * @param ctx       The bundle context
  * @param bndId     The bundle id for which the services should be listed
  * @return          A celix array list with celix_bundle_service_tracker_list_entry_t*. Caller is owner of the celix array.

@@ -433,46 +433,11 @@ celix_status_t bundleArchive_setLastModified(bundle_archive_pt archive __attribu
     celix_utils_freeStringIfNotEqual(manifestPathBuffer, manifestPath);
     return status;
 }
-//LCOV_EXCL_STOP
 
 celix_status_t bundleArchive_revise(bundle_archive_pt archive, const char * location __attribute__((unused)), const char *updatedBundleUrl) {
-    celixThreadMutex_lock(&archive->lock);
-
-    const char* updateUrl = archive->location;
-    if (updatedBundleUrl != NULL && strcmp(updateUrl, updatedBundleUrl) != 0) {
-        fw_log(archive->fw->logger, CELIX_LOG_LEVEL_INFO, "Updating bundle archive bundle url location to %s", updatedBundleUrl);
-        updateUrl = updatedBundleUrl;
-    }
-
-    const char* reason = NULL;
-    celix_status_t status = celix_bundleArchive_extractBundle(archive, updateUrl);
-    if (status == CELIX_SUCCESS) {
-        bundle_revision_t* current = archive->revision;
-        bundle_revision_t* revised = bundleRevision_revise(current, updateUrl);
-        if (revised != NULL) {
-            archive->revision = revised;
-            bundleRevision_destroy(current);
-        } else {
-            status = CELIX_ENOMEM;
-            reason = "bundle revision creation";
-        }
-    } else {
-        reason = "bundle extraction";
-    }
-    if (status != CELIX_SUCCESS) {
-        goto revise_finished;
-    }
-    if (archive->location != updateUrl) {
-        free(archive->location);
-        archive->location = celix_utils_strdup(updateUrl);
-    }
-revise_finished:
-    celixThreadMutex_unlock(&archive->lock);
-    framework_logIfError(archive->fw->logger, status, reason, "Cannot update bundle archive %s", updateUrl);
-    return status;
+    fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Revise not supported.");
+    return CELIX_BUNDLE_EXCEPTION;
 }
-
-//LCOV_EXCL_START
 celix_status_t bundleArchive_rollbackRevise(bundle_archive_pt archive, bool* rolledback) {
     *rolledback = true;
     fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Revise rollback not supported.");

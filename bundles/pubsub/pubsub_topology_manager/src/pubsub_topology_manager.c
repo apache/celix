@@ -1344,7 +1344,7 @@ static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *
                 if (sm->msgMetrics[j].nrOfMessagesSend == 0 && sm->msgMetrics[j].nrOfMessagesSendFailed == 0 && sm->msgMetrics[j].nrOfSerializationErrors == 0) {
                     continue;
                 }
-                const char *bndName = NULL;
+                const char *bndName = "inactive";
                 celix_bundleContext_useBundle(manager->context, sm->msgMetrics->bndId, &bndName, fetchBundleName);
                 fprintf(os, "   |- Message '%s' from bundle '%s' (%li):\n", sm->msgMetrics[j].typeFqn, bndName, sm->msgMetrics->bndId);
                 fprintf(os, "      |- msg type = 0x%X\n", sm->msgMetrics[j].typeId);

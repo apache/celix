@@ -74,21 +74,50 @@ CELIX_FRAMEWORK_EXPORT celix_bundle_context_t* celix_framework_getFrameworkConte
 CELIX_FRAMEWORK_EXPORT celix_bundle_t* celix_framework_getFrameworkBundle(const celix_framework_t *fw);
 
 /**
- * @brief * @brief Use the currently installed bundles.
+ * @brief Use the currently installed bundles.
  * The provided callback will be called for all the currently installed bundles.
  *
- * @param ctx                       The bundle context.
+ * @warning It is dangerous to use the provided bundle's context from the callback, since it may be invalid for an inactive bundle.
+ *
+ * @param fw                        The framework.
  * @param includeFrameworkBundle    If true the callback will also be triggered for the framework bundle.
  * @param callbackHandle            The data pointer, which will be used in the callbacks
  * @param use                       The callback which will be called for the currently installed bundles.
  *                                  The bundle pointers are only guaranteed to be valid during the callback.
  * @return                          The number of times the use callback is called.
  */
-CELIX_FRAMEWORK_EXPORT size_t celix_framework_useBundles(celix_framework_t *fw, bool includeFrameworkBundle, void *callbackHandle, void(*use)(void *handle, const celix_bundle_t *bnd));
+CELIX_FRAMEWORK_EXPORT size_t celix_framework_useBundles(celix_framework_t* fw,
+                                                         bool includeFrameworkBundle,
+                                                         void* callbackHandle,
+                                                         void (*use)(void* handle, const celix_bundle_t* bnd));
+
+/**
+ * @brief Use the currently active bundles.
+ * The provided callback will be called for all the currently active bundles.
+ * The bundle state is guaranteed to be active during the callback.
+ *
+ * @warning Calling synchronous bundle-state changing functions (e.g. celix_bundleContext_stopBundle) from the callback
+ * will lead to deadlocks.
+ *
+ * @param fw                        The framework.
+ * @param includeFrameworkBundle    If true the callback will also be triggered for the framework bundle.
+ * @param callbackHandle            The data pointer, which will be used in the callbacks
+ * @param use                       The callback which will be called for the currently active bundles.
+ * @return                          The number of times the use callback is called.
+ */
+CELIX_FRAMEWORK_EXPORT size_t celix_framework_useActiveBundles(celix_framework_t* fw,
+                                                               bool includeFrameworkBundle,
+                                                               void* callbackHandle,
+                                                               void (*use)(void* handle, const celix_bundle_t* bnd));
 
 /**
  * @brief Use the bundle with the provided bundle id
  * The provided callback will be called if the bundle is found.
+ *
+ * @warning Calling synchronous bundle-state changing functions (e.g. celix_bundleContext_stopBundle) with onlyActive=true
+ * from the callback will lead to deadlocks. Using a bundle's context, e.g. calling celix_bundle_listServiceTrackers,
+ * with onlyActive=false from the callback is generally dangerous. However, in some cases, the target bundle's context is guaranteed to be valid,
+ * e.g. the bundle is providing a service protected by a service tracker.
  *
  * @param fw                The framework.
  * @param onlyActive        If true only starting and active bundles will trigger the callback.
@@ -98,7 +127,11 @@ CELIX_FRAMEWORK_EXPORT size_t celix_framework_useBundles(celix_framework_t *fw, 
  *                          The bundle pointers are only guaranteed to be valid during the callback.
  * @return                  Returns true if the bundle is found and the callback is called.
  */
-CELIX_FRAMEWORK_EXPORT bool celix_framework_useBundle(celix_framework_t *fw, bool onlyActive, long bndId, void *callbackHandle, void(*use)(void *handle, const celix_bundle_t *bnd));
+CELIX_FRAMEWORK_EXPORT bool celix_framework_useBundle(celix_framework_t* fw,
+                                                      bool onlyActive,
+                                                      long bndId,
+                                                      void* callbackHandle,
+                                                      void (*use)(void* handle, const celix_bundle_t* bnd));
 
 /**
  * @brief Check whether a bundle is installed.
@@ -139,21 +172,33 @@ CELIX_FRAMEWORK_EXPORT long celix_framework_installBundle(celix_framework_t *fw,
 CELIX_FRAMEWORK_EXPORT bool celix_framework_uninstallBundle(celix_framework_t *fw, long bndId);
 
 /**
+ * @brief Unload the bundle with the provided bundle id. If needed the bundle will be stopped first.
+ * Will silently ignore bundle ids < 0.
+ * Note that unloaded bundle is kept in bundle cache and can be reloaded with the celix_framework_installBundle function.
+ *
+ * @param fw The Celix framework
+ * @param bndId The bundle id to unload.
+ * @return true if the bundle is correctly unloaded. False if not.
+ */
+CELIX_FRAMEWORK_EXPORT bool celix_framework_unloadBundle(celix_framework_t *fw, long bndId);
+
+/**
  * @brief Update the bundle with the provided bundle id.
  *
  * This will do the following:
- *  - stop the bundle (if needed);
- *  - update the bundle revision if a newer bundle zip if found;
- *  - start the bundle, if it was started.
+ *  - unload the bundle with the specified bundle id;
+ *  - reload the bundle from the specified location with the specified bundle id;
+ *  - start the bundle, if it was previously active.
  *
  *  Will silently ignore bundle ids < 0.
  *
- * @warning Update bundle is not yet fully supported. Use at your own risk.
+ *  Note if specified bundle location already exists in the bundle cache but with a different bundle id, the bundle
+ *  will NOT be reloaded, and the update is cancelled.
  *
- * @param fw The Celix framework
- * @parma bndId the bundle id to update.
- * @param updatedBundleUrl The optional updated bundle url to the bundle zip file. If NULL, the existing bundle url
- *                         from the bundle cache will be used.
+ * @param [in] fw The Celix framework
+ * @param [in] bndId the bundle id to update.
+ * @param [in] updatedBundleUrl The optional updated bundle url to the bundle zip file.
+ * If NULL, the existing bundle url from the bundle cache will be used, and the cache will only be updated if the zip file is newer.
  * @return true if the bundle is correctly updated. False if not.
  */
 CELIX_FRAMEWORK_EXPORT bool celix_framework_updateBundle(celix_framework_t *fw, long bndId, const char* updatedBundleUrl);
@@ -195,18 +240,19 @@ CELIX_FRAMEWORK_EXPORT long celix_framework_installBundleAsync(celix_framework_t
  * @brief Update the bundle with the provided bundle id async.
  *
  * This will do the following:
- *  - stop the bundle (if needed);
- *  - update the bundle revision if a newer bundle zip if found;
- *  - start the bundle, if it was started.
+ *  - unload the bundle with the specified bundle id;
+ *  - reload the bundle from the specified location with the specified bundle id;
+ *  - start the bundle, if it was previously active.
  *
  *  Will silently ignore bundle ids < 0.
  *
- *  @warning Update bundle is not yet fully supported. Use at your own risk.
+ *  Note if specified bundle location already exists in the bundle cache but with a different bundle id, the bundle
+ *  will NOT be reinstalled, and the update is cancelled.
  *
- *  @param fw The Celix framework
- *  @parma bndId the bundle id to update.
- *  @param updatedBundleUrl The optional updated bundle url to the bundle zip file. If NULL, the existing bundle url
- *                         from the bundle cache will be used.
+ * @param [in] fw The Celix framework
+ * @param [in] bndId the bundle id to update.
+ * @param [in] updatedBundleUrl The optional updated bundle url to the bundle zip file.
+ * If NULL, the existing bundle url from the bundle cache will be used, and the cache will only be updated if the zip file is newer.
  */
 CELIX_FRAMEWORK_EXPORT void celix_framework_updateBundleAsync(celix_framework_t *fw, long bndId, const char* updatedBundleUrl);
 
@@ -220,6 +266,17 @@ CELIX_FRAMEWORK_EXPORT void celix_framework_updateBundleAsync(celix_framework_t 
  * @param bndId The bundle id to uninstall.
  */
 CELIX_FRAMEWORK_EXPORT void celix_framework_uninstallBundleAsync(celix_framework_t *fw, long bndId);
+
+/**
+ * @brief Unload the bundle with the provided bundle id async. If needed the bundle will be stopped first.
+ * Will silently ignore bundle ids < 0.
+ * Note that unloaded bundle is kept in bundle cache and can be reloaded with the celix_framework_installBundle function.
+ * The bundle will be unloaded on a separate spawned thread.
+ *
+ * @param fw The Celix framework
+ * @param bndId The bundle id to unload.
+ */
+CELIX_FRAMEWORK_EXPORT void celix_framework_unloadBundleAsync(celix_framework_t *fw, long bndId);
 
 /**
  * @brief Stop the bundle with the provided bundle id async.

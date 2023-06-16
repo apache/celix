@@ -58,7 +58,6 @@ if (RSA_JSON_RPC)
     add_library(Celix::rsa_json_rpc ALIAS rsa_json_rpc)
 
     if (ENABLE_TESTING)
-        celix_bundle_private_libs(rsa_json_rpc Celix::dfi)
         add_library(rsa_json_rpc_cut STATIC ${RSA_JSON_RPC_SRC})
         celix_deprecated_utils_headers(rsa_json_rpc_cut)
         target_include_directories(rsa_json_rpc_cut PUBLIC src)

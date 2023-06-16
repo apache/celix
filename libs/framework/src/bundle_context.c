@@ -141,10 +141,16 @@ celix_status_t bundleContext_installBundle(bundle_context_pt context, const char
 }
 
 celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char *location, const char *inputFile, bundle_pt *bundle) {
+    celix_status_t status = CELIX_SUCCESS;
+    long id = -1L;
     if (context == NULL || location == NULL || bundle == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    return celix_framework_installBundleInternal(context->framework, location, bundle);
+    status = celix_framework_installBundleInternal(context->framework, location, &id);
+    if (status == CELIX_SUCCESS) {
+        *bundle = framework_getBundleById(context->framework, id);
+    }
+    return status;
 }
 
 celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, const void * svcObj,
@@ -987,6 +993,10 @@ bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bndId) {
 
 bool celix_bundleContext_uninstallBundle(bundle_context_t *ctx, long bndId) {
     return celix_framework_uninstallBundle(ctx->framework, bndId);
+}
+
+bool celix_bundleContext_unloadBundle(celix_bundle_context_t *ctx, long bndId) {
+    return celix_framework_unloadBundle(ctx->framework, bndId);
 }
 
 bool celix_bundleContext_useServiceWithId(

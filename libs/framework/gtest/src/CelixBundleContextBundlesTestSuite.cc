@@ -19,15 +19,17 @@
 
 #include <gtest/gtest.h>
 
-#include <thread>
-#include <chrono>
-#include <iostream>
-#include <mutex>
-#include <condition_variable>
 #include <atomic>
 #include <celix_log_utils.h>
+#include <chrono>
+#include <condition_variable>
+#include <iostream>
+#include <mutex>
+#include <thread>
 
+#include "bundle_context_private.h"
 #include "celix_api.h"
+#include "celix_file_utils.h"
 
 class CelixBundleContextBundlesTestSuite : public ::testing::Test {
 public:
@@ -46,7 +48,7 @@ public:
     CelixBundleContextBundlesTestSuite() {
         properties = properties_create();
         properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
-        properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
+        properties_set(properties, "org.osgi.framework.storage.clean", "true");
         properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
 
         fw = celix_frameworkFactory_createFramework(properties);
@@ -152,6 +154,29 @@ TEST_F(CelixBundleContextBundlesTestSuite, InstallAndUninstallBundlesTest) {
     ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId2)); //not auto started
     ASSERT_TRUE(celix_bundleContext_isBundleActive(ctx, bndId3));
 
+    char *bndRoot1 = nullptr;
+    ASSERT_TRUE(celix_bundleContext_useBundle(ctx, bndId1, &bndRoot1, [](void* handle, const celix_bundle_t* bnd) {
+        char **root = static_cast<char **>(handle);
+        *root = celix_bundle_getEntry(bnd, "/");
+    }));
+    ASSERT_TRUE(bndRoot1 != nullptr);
+    char* bndRoot2 = nullptr;
+    ASSERT_TRUE(celix_bundleContext_useBundle(ctx, bndId2, &bndRoot2, [](void* handle, const celix_bundle_t* bnd) {
+        char **root = static_cast<char **>(handle);
+        *root = celix_bundle_getEntry(bnd, "/");
+    }));
+    ASSERT_TRUE(bndRoot2 != nullptr);
+    char* bndRoot3 = nullptr;
+    ASSERT_TRUE(celix_bundleContext_useBundle(ctx, bndId3, &bndRoot3, [](void* handle, const celix_bundle_t* bnd) {
+        char **root = static_cast<char **>(handle);
+        *root = celix_bundle_getEntry(bnd, "/");
+    }));
+    ASSERT_TRUE(bndRoot3 != nullptr);
+
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot1));
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot2));
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot3));
+
     //uninstall bundles
     ASSERT_TRUE(celix_bundleContext_uninstallBundle(ctx, bndId1));
     ASSERT_TRUE(celix_bundleContext_uninstallBundle(ctx, bndId2));
@@ -165,6 +190,90 @@ TEST_F(CelixBundleContextBundlesTestSuite, InstallAndUninstallBundlesTest) {
     ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId2));
     ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId3));
 
+    ASSERT_FALSE(celix_utils_directoryExists(bndRoot1));
+    ASSERT_FALSE(celix_utils_directoryExists(bndRoot2));
+    ASSERT_FALSE(celix_utils_directoryExists(bndRoot3));
+
+    free(bndRoot1);
+    free(bndRoot2);
+    free(bndRoot3);
+
+    //reinstall bundles
+    long bndId4 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    long bndId5 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false);
+    long bndId6 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
+
+    ASSERT_TRUE(bndId4 >= 0L);
+    ASSERT_FALSE(bndId1 == bndId4);
+    ASSERT_TRUE(bndId5 >= 0L);
+    ASSERT_FALSE(bndId2 == bndId5);
+    ASSERT_TRUE(bndId6 >= 0L);
+    ASSERT_FALSE(bndId3 == bndId6);
+}
+
+TEST_F(CelixBundleContextBundlesTestSuite, InstallAndUnloadBundlesTest) {
+    //install bundles
+    long bndId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    long bndId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false);
+    long bndId3 = celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
+
+    ASSERT_TRUE(bndId1 >= 0L);
+    ASSERT_TRUE(bndId2 >= 0L);
+    ASSERT_TRUE(bndId3 >= 0L);
+
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId2));
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId3));
+
+    ASSERT_TRUE(celix_bundleContext_isBundleActive(ctx, bndId1));
+    ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId2)); //not auto started
+    ASSERT_TRUE(celix_bundleContext_isBundleActive(ctx, bndId3));
+
+    char *bndRoot1 = nullptr;
+    ASSERT_TRUE(celix_bundleContext_useBundle(ctx, bndId1, &bndRoot1, [](void* handle, const celix_bundle_t* bnd) {
+      char **root = static_cast<char **>(handle);
+      *root = celix_bundle_getEntry(bnd, "/");
+    }));
+    ASSERT_TRUE(bndRoot1 != nullptr);
+    char* bndRoot2 = nullptr;
+    ASSERT_TRUE(celix_bundleContext_useBundle(ctx, bndId2, &bndRoot2, [](void* handle, const celix_bundle_t* bnd) {
+      char **root = static_cast<char **>(handle);
+      *root = celix_bundle_getEntry(bnd, "/");
+    }));
+    ASSERT_TRUE(bndRoot2 != nullptr);
+    char* bndRoot3 = nullptr;
+    ASSERT_TRUE(celix_bundleContext_useBundle(ctx, bndId3, &bndRoot3, [](void* handle, const celix_bundle_t* bnd) {
+      char **root = static_cast<char **>(handle);
+      *root = celix_bundle_getEntry(bnd, "/");
+    }));
+    ASSERT_TRUE(bndRoot3 != nullptr);
+
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot1));
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot2));
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot3));
+
+    //unload bundles
+    ASSERT_TRUE(celix_bundleContext_unloadBundle(ctx, bndId1));
+    ASSERT_TRUE(celix_bundleContext_unloadBundle(ctx, bndId2));
+    ASSERT_TRUE(celix_bundleContext_unloadBundle(ctx, bndId3));
+
+    ASSERT_FALSE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    ASSERT_FALSE(celix_bundleContext_isBundleInstalled(ctx, bndId2));
+    ASSERT_FALSE(celix_bundleContext_isBundleInstalled(ctx, bndId3));
+
+    ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId1)); //not uninstall -> not active
+    ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId2));
+    ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId3));
+
+    // bundle cache is NOT cleaned up
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot1));
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot2));
+    ASSERT_TRUE(celix_utils_directoryExists(bndRoot3));
+
+    free(bndRoot1);
+    free(bndRoot2);
+    free(bndRoot3);
+
     //reinstall bundles
     long bndId4 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
     long bndId5 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false);
@@ -176,6 +285,40 @@ TEST_F(CelixBundleContextBundlesTestSuite, InstallAndUninstallBundlesTest) {
     ASSERT_TRUE(bndId2 == bndId5); //bundle cache -> reuse of bundle id.
     ASSERT_TRUE(bndId6 >= 0L);
     ASSERT_TRUE(bndId3 == bndId6); //bundle cache -> reuse of bundle id.
+}
+
+TEST_F(CelixBundleContextBundlesTestSuite, UpdateBundlesTest) {
+    long bndId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    ASSERT_TRUE(bndId1 >= 0L);
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    ASSERT_TRUE(celix_bundleContext_isBundleActive(ctx, bndId1));
+
+    ASSERT_TRUE(celix_bundleContext_updateBundle(ctx, bndId1, NULL));
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    ASSERT_TRUE(celix_bundleContext_isBundleActive(ctx, bndId1));
+
+    ASSERT_TRUE(celix_bundleContext_stopBundle(ctx, bndId1));
+    ASSERT_TRUE(celix_bundleContext_updateBundle(ctx, bndId1, NULL));
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    ASSERT_FALSE(celix_bundleContext_isBundleActive(ctx, bndId1));
+
+    long bndId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false);
+    ASSERT_TRUE(bndId2 >= 0L);
+    ASSERT_FALSE(celix_bundleContext_updateBundle(ctx, bndId1, TEST_BND2_LOC));
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+
+    // remove it from cache before updating
+    ASSERT_EQ(bndId2, celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false));
+    ASSERT_TRUE(celix_bundleContext_uninstallBundle(ctx, bndId2));
+    auto sn1 = celix_bundleContext_getBundleSymbolicName(ctx, bndId1);
+    ASSERT_TRUE(celix_bundleContext_updateBundle(ctx, bndId1, TEST_BND2_LOC));
+    auto sn2 = celix_bundleContext_getBundleSymbolicName(ctx, bndId1);
+    ASSERT_STRNE(sn1, sn2);
+    free(sn2);
+    free(sn1);
+
+    ASSERT_TRUE(celix_bundleContext_unloadBundle(ctx, bndId1));
+    ASSERT_FALSE(celix_bundleContext_updateBundle(ctx, bndId1, NULL));
 }
 
 TEST_F(CelixBundleContextBundlesTestSuite, StartBundleWithException) {
