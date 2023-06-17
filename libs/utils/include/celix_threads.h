@@ -150,6 +150,29 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitFor(celix_thread_cond
                                                                double delayInSeconds);
 
 /**
+ * @brief Returns the current time.
+ *
+ * The returned timespec can be used in celixThreadCondition_waitUntil and
+ * will use a different clock depending on the OS (e.g. CLOCK_MONOTONIC or CLOCK_REALTIME).
+ * The returned time is not meant to be used in logging the current time.
+ *
+ * @return The current time.
+ */
+CELIX_UTILS_EXPORT struct timespec celix_threadCondition_getTime();
+
+/**
+ * @brief Returns the current time plus the given delayInSeconds.
+ *
+ * The returned timespec can be used in celixThreadCondition_waitUntil and
+ * will use a different clock depending on the OS (e.g. CLOCK_MONOTONIC or CLOCK_REALTIME).
+ * The returned time is not meant to be used in logging the current time.
+ *
+ * @param delayInSeconds The delay in seconds to add to the current time.
+ * @return The current time plus the given delayInSeconds.
+ */
+CELIX_UTILS_EXPORT struct timespec celix_threadCondition_getDelayedTime(double delayInSeconds);
+
+/**
  * @brief Wait for the condition to be signaled or until the given absolute time is reached.
  * 
  * @section Errors
