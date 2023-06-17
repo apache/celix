@@ -195,8 +195,8 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitFor(celix_thread_cond
         return CELIX_ILLEGAL_ARGUMENT;
     }
     struct timespec now = celix_gettime(CLOCK_MONOTONIC);
-    struct timespec abstime = celix_delayedTimespec(&now, delayInSeconds);
-    return celixThreadCondition_waitUntil(cond, mutex, &abstime);
+    struct timespec absTime = celix_delayedTimespec(&now, delayInSeconds);
+    return celixThreadCondition_waitUntil(cond, mutex, &absTime);
 }
 
 struct timespec celixThreadCondition_getTime() {
@@ -220,11 +220,11 @@ struct timespec celixThreadCondition_getDelayedTime(double delayInSeconds) {
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitUntil(celix_thread_cond_t* cond, 
                                                                  celix_thread_mutex_t* mutex, 
-                                                                 const struct timespec* abstime) {
-    if (abstime == NULL || abstime->tv_sec < 0 || abstime->tv_nsec < 0) {
+                                                                 const struct timespec* absTime) {
+    if (absTime == NULL || absTime->tv_sec < 0 || absTime->tv_nsec < 0) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    return pthread_cond_timedwait(cond, mutex, abstime);
+    return pthread_cond_timedwait(cond, mutex, absTime);
 }
 
 celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond) {

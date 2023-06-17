@@ -177,21 +177,21 @@ CELIX_UTILS_EXPORT struct timespec celixThreadCondition_getDelayedTime(double de
  * 
  * @section Errors
  * - CELIX_SUCCESS if the condition is signaled before the delayInSeconds is reached.
- * - CELIX_ILLEGAL_ARGUMENT if the abstime is negative.
+ * - CELIX_ILLEGAL_ARGUMENT if the absTime is negative.
  * - ENOTRECOVERABLE if the state protected by the mutex is not recoverable.
- * - ETIMEDOUT If the abstime has passed.
+ * - ETIMEDOUT If the absTime has passed.
  *
- *  Values for abstime should be obtained by celixThreadCondition_getTime, celixThreadCondition_getDelayedTime or
+ *  Values for absTime should be obtained by celixThreadCondition_getTime, celixThreadCondition_getDelayedTime or
  *  a modified timespec based on celixThreadCondition_getTime/celixThreadCondition_getDelayedTime.
  * 
  * @param[in] cond The condition to wait for.
  * @param[in] mutex The (locked) mutex to use.
- * @param[in] abstime The absolute time to wait for the condition to be signaled.
+ * @param[in] absTime The absolute time to wait for the condition to be signaled.
  * @return CELIX_SUCCESS if the condition is signaled before the delayInSeconds is reached.
  */
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitUntil(celix_thread_cond_t* cond, 
                                                                  celix_thread_mutex_t* mutex, 
-                                                                 const struct timespec* abstime);
+                                                                 const struct timespec* absTime);
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond);
 
