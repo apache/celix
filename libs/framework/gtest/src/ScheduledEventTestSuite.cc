@@ -27,6 +27,24 @@ class ScheduledEventTestSuite : public ::testing::Test {
   public:
     ScheduledEventTestSuite() { fw = celix::createFramework({{"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"}}); }
     std::shared_ptr<celix::Framework> fw{};
+
+    /**
+     * Wait for the given predicate to become true or the given time has elapsed.
+     * @param predicate predicate to check.
+     * @param within maximum time to wait.
+     */
+    template <typename Rep, typename Period>
+    void waitFor(const std::function<bool()>& predicate, std::chrono::duration<Rep, Period> within) {
+        auto start = std::chrono::steady_clock::now();
+        while (!predicate()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds{1});
+            auto now = std::chrono::steady_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
+            if (elapsed > within) {
+                break;
+            }
+        }
+    }
 };
 
 TEST_F(ScheduledEventTestSuite, OnceShotEventTest) {
@@ -432,13 +450,12 @@ TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventTest) {
     // And the remove callback is not yet called
     EXPECT_FALSE(removed.load());
 
-    // When waiting longer than the initial delay
-    std::this_thread::sleep_for(std::chrono::milliseconds{60});
-
-    // Then the count is increased
+    // And count will be increased within the initial delay (including some error margin)
+    waitFor([&]{return count.load() == 1;}, std::chrono::milliseconds{60});
     EXPECT_EQ(1, count.load());
 
-    // And the remove callback is called
+    // And the remove callback is called shortly after the initial delay
+    waitFor([&]{return removed.load();}, std::chrono::milliseconds{10});
     EXPECT_TRUE(removed.load());
 
     // When waking up the event with a wait time of 1s
@@ -476,16 +493,15 @@ TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventRAIITest) {
     }
     // When the event is out of scope
 
-    // Then the remove callback is not yet called
+    // Then the remove callback is not yet called, because a one-shot event is not canceled when out of scope
     EXPECT_FALSE(removed.load());
 
-    // And waiting longer than the initial delay
-    std::this_thread::sleep_for(std::chrono::milliseconds{60});
-
-    // Then the count is increased, because one-shot events are not canceled when out of scope
+    // And count will be increased within the initial delay (including some error margin)
+    waitFor([&]{return count.load() == 1;}, std::chrono::milliseconds{60});
     EXPECT_EQ(1, count.load());
 
-    // And the remove callback is called
+    // And the remove callback is called shortly after the initial delay
+    waitFor([&]{return removed.load();}, std::chrono::milliseconds{10});
     EXPECT_TRUE(removed.load());
 }
 
