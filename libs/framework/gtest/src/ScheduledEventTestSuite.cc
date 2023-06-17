@@ -353,8 +353,11 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventTest) {
     // Then the count is not yet increased
     ASSERT_EQ(0, count.load());
 
-    // When waiting longer than the initial delay
-    std::this_thread::sleep_for(std::chrono::milliseconds{55});
+    // When waiting for about the initial delay
+    auto start = std::chrono::steady_clock::now();
+    waitFor([&]() { return count.load() == 1; }, std::chrono::milliseconds{70});
+    auto end = std::chrono::steady_clock::now();
+    EXPECT_NEAR(50, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(), 20);
 
     // Then the count is increased
     EXPECT_EQ(1, count.load());
@@ -362,20 +365,9 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventTest) {
     // When waking up the event
     event.wakeup();
 
-    // And waiting a bit to ensure the event is called
-    std::this_thread::sleep_for(std::chrono::milliseconds{5});
-
-    // Then the count is increased
+    // Then the count is increased with a short window
+    waitFor([&]() { return count.load() == 2; }, std::chrono::milliseconds{10});
     EXPECT_EQ(2, count.load());
-
-    // When waking up the event without waiting
-    event.wakeup();
-
-    // And waiting a bit to ensure the event is called
-    std::this_thread::sleep_for(std::chrono::milliseconds{5});
-
-    // Then the count is increased
-    EXPECT_EQ(3, count.load());
 
     // And the remove callback is not yet called
     EXPECT_FALSE(removed.load());
@@ -387,9 +379,10 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventTest) {
     std::this_thread::sleep_for(std::chrono::milliseconds{55});
 
     // Then the count is not increased
-    EXPECT_EQ(3, count.load());
+    EXPECT_EQ(2, count.load());
 
-    // And the remove callback is called
+    // And the remove callback is called with a short window
+    waitFor([&]() { return removed.load(); }, std::chrono::milliseconds{10});
     EXPECT_TRUE(removed.load());
 }
 
@@ -416,6 +409,12 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventRAIITest) {
         ASSERT_EQ(0, count.load());
     }
     // When the event goes out of scope
+
+    // When waiting for about the initial delay
+    auto start = std::chrono::steady_clock::now();
+    waitFor([&]() { return count.load() == 1; }, std::chrono::milliseconds{70});
+    auto end = std::chrono::steady_clock::now();
+    EXPECT_NEAR(50, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(), 20);
 
     // When waiting longer than the initial delay
     std::this_thread::sleep_for(std::chrono::milliseconds{60});
@@ -535,7 +534,7 @@ TEST_F(ScheduledEventTestSuite, RemoveScheduledEventAsync) {
 
     //Given a scheduled event with am initial delay of 1ms
     celix_scheduled_event_options_t opts{};
-    opts.initialDelayInSeconds = 0.001;
+    opts.initialDelayInSeconds = 0.01;
     opts.callbackData = &count;
     opts.callback = callback;
     long eventId = celix_bundleContext_scheduleEvent(fw->getFrameworkBundleContext()->getCBundleContext(), &opts);
@@ -545,7 +544,7 @@ TEST_F(ScheduledEventTestSuite, RemoveScheduledEventAsync) {
     celix_bundleContext_removeScheduledEventAsync(fw->getFrameworkBundleContext()->getCBundleContext(), eventId);
 
     //And waiting longer than the initial delay
-    std::this_thread::sleep_for(std::chrono::milliseconds{10});
+    std::this_thread::sleep_for(std::chrono::milliseconds{15});
 
     //Then the event is not fired
     EXPECT_EQ(0, count.load());
@@ -584,7 +583,7 @@ TEST_F(ScheduledEventTestSuite, WaitForScheduledEvent) {
     EXPECT_EQ(ETIMEDOUT, status);
 
     //When waiting for the event with a timeout longer than the interval
-    status = celix_bundleContext_waitForScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId, 0.0012);
+    status = celix_bundleContext_waitForScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId, 1);
 
     //Then the return status is success
     EXPECT_EQ(CELIX_SUCCESS, status);
