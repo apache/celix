@@ -495,7 +495,7 @@ celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw, long 
  * @param[in] waitTimeInSeconds The maximum time to wait for the next scheduled event. If <= 0 the function will return
  *                             immediately.
  * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not
- *         known and CELIX_TIMEOUT if the waitTimeInSeconds is reached.
+ *         known and ETIMEDOUT if the waitTimeInSeconds is reached.
  */
 celix_status_t celix_framework_waitForScheduledEvent(celix_framework_t* fw,
                                                      long scheduledEventId,

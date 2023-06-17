@@ -146,7 +146,7 @@ size_t celix_scheduledEvent_markForWakeup(celix_scheduled_event_t* event);
  * @param[in] event The event to wait for.
  * @param[in] callCount The call count to wait for.
  * @param[in] timeout The max time to wait in seconds.
- * @return CELIX_SUCCESS if the scheduled event reached the call count, CELIX_TIMEOUT if the scheduled event
+ * @return CELIX_SUCCESS if the scheduled event reached the call count, ETIMEDOUT if the scheduled event
  */
 celix_status_t celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_event_t* event,
                                                             size_t targetCallCount,
@@ -156,7 +156,8 @@ celix_status_t celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_even
  * @brief Wait for a scheduled event to be done with the next scheduled processing.
  * @param[in] event The event to wait for.
  * @param[in] timeoutInSeconds The max time to wait in seconds. Must be > 0.
- * @return CELIX_SUCCESS if the scheduled event is done with processing, CELIX_TIMEOUT if the scheduled event.
+ * @return CELIX_SUCCESS if the scheduled event is done with processing, ETIMEDOUT if the scheduled event is not
+ *        done with processing within the timeout.
  */
 celix_status_t celix_scheduledEvent_wait(celix_scheduled_event_t* event, double timeoutInSeconds);
 

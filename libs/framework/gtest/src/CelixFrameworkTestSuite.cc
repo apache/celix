@@ -91,7 +91,7 @@ TEST_F(CelixFrameworkTestSuite, TimedWaitEventQueueTest) {
 
     //Then a wait for empty event queue for max 5ms will return a timeout
     celix_status_t status = celix_framework_timedWaitForEmptyEventQueue(framework.get(), 0.005);
-    EXPECT_EQ(CELIX_TIMEOUT, status);
+    EXPECT_EQ(ETIMEDOUT, status);
 
     //And a wait for empty event queue for max 30ms will return success
     status = celix_framework_timedWaitForEmptyEventQueue(framework.get(), 0.03);

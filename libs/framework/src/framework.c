@@ -73,15 +73,18 @@ static inline celix_framework_bundle_entry_t* fw_bundleEntry_create(celix_bundle
 
 static inline void fw_bundleEntry_waitTillUseCountIs(celix_framework_bundle_entry_t *entry, size_t desiredUseCount) {
     celixThreadMutex_lock(&entry->useMutex);
-    struct timespec start = celix_gettime(CLOCK_MONOTONIC);
+    struct timespec logTimeout = celixThreadCondition_getDelayedTime(5);
     while (entry->useCount != desiredUseCount) {
-        celixThreadCondition_timedwaitRelative(&entry->useCond, &entry->useMutex, 5, 0);
-        if (entry->useCount != desiredUseCount) {
-            struct timespec now = celix_gettime(CLOCK_MONOTONIC);
-            if (celix_difftime(&start, &now) > 5) {
-                fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_WARNING, "Bundle '%s' (bnd id = %li) still in use. Use count is %zu, desired is %zu", celix_bundle_getSymbolicName(entry->bnd), entry->bndId, entry->useCount, desiredUseCount);
-                start = celix_gettime(CLOCK_MONOTONIC);
-            }
+        celix_status_t waitStatus = celixThreadCondition_waitUntil(&entry->useCond, &entry->useMutex, &logTimeout);
+        if (waitStatus == ETIMEDOUT) {
+            fw_log(celix_frameworkLogger_globalLogger(),
+                   CELIX_LOG_LEVEL_WARNING,
+                   "Bundle '%s' (bnd id = %li) still in use. Use count is %zu, desired is %zu",
+                   celix_bundle_getSymbolicName(entry->bnd),
+                   entry->bndId,
+                   entry->useCount,
+                   desiredUseCount);
+            logTimeout = celixThreadCondition_getDelayedTime(5);
         }
     }
     celixThreadMutex_unlock(&entry->useMutex);
@@ -1447,7 +1450,7 @@ static inline void fw_handleEvents(celix_framework_t* framework) {
  * @brief Process all scheduled events.
  */
 static double celix_framework_processScheduledEvents(celix_framework_t* fw) {
-    struct timespec ts = celix_gettime(CLOCK_REALTIME);
+    struct timespec ts = celixThreadCondition_getTime();
 
     double nextClosestScheduledEvent;
     celix_scheduled_event_t* callEvent;
@@ -2521,8 +2524,7 @@ celix_status_t celix_framework_timedWaitForEmptyEventQueue(celix_framework_t *fw
     while (fw->dispatcher.eventQueueSize > 0 || celix_arrayList_size(fw->dispatcher.dynamicEventQueue) > 0) {
         if (periodInSeconds > 0) {
             status = celixThreadCondition_timedwaitRelative(&fw->dispatcher.cond, &fw->dispatcher.mutex, seconds, nanoseconds);
-            if (status != CELIX_SUCCESS) {
-                status = CELIX_TIMEOUT;
+            if (status == ETIMEDOUT) {
                 break;
             }
         } else {
@@ -2744,30 +2746,37 @@ long celix_framework_nextScheduledEventId(framework_t *fw) {
     return __atomic_fetch_add(&fw->dispatcher.nextScheduledEventId, 1, __ATOMIC_RELAXED);
 }
 
-void celix_framework_waitForGenericEvent(framework_t *fw, long eventId) {
-    assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
+/**
+ * @brief Checks if a generic event with the provided eventId is in progress.
+ */
+static bool celix_framework_isGenericEventInProgress(celix_framework_t* fw, long eventId) {
+    // precondition fw->dispatcher.mutex locked)
+    for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
+        int index = (fw->dispatcher.eventQueueFirstEntry + i) % fw->dispatcher.eventQueueCap;
+        celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
+        if (e->type == CELIX_GENERIC_EVENT && e->genericEventId == eventId) {
+            return true;;
+        }
+    }
+    for (int i = 0; i < celix_arrayList_size(fw->dispatcher.dynamicEventQueue); ++i) {
+        celix_framework_event_t* e = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, i);
+        if (e->type == CELIX_GENERIC_EVENT && e->genericEventId == eventId) {
+            return true;
+        }
+    }
+    return false;
+}
 
+void celix_framework_waitForGenericEvent(celix_framework_t* fw, long eventId) {
+    assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
+    struct timespec logAbsTime = celixThreadCondition_getDelayedTime(5);
     celixThreadMutex_lock(&fw->dispatcher.mutex);
-    bool eventInProgress = true;
-    while (eventInProgress) {
-        eventInProgress = false;
-        for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
-            int index = (fw->dispatcher.eventQueueFirstEntry + i) % fw->dispatcher.eventQueueCap;
-            celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
-            if (e->type == CELIX_GENERIC_EVENT && e->genericEventId == eventId) {
-                eventInProgress = true;
-                break;
-            }
-        }
-        for (int i = 0; !eventInProgress && i < celix_arrayList_size(fw->dispatcher.dynamicEventQueue); ++i) {
-            celix_framework_event_t* e = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, i);
-            if (e->type == CELIX_GENERIC_EVENT && e->genericEventId == eventId) {
-                eventInProgress = true;
-                break;
-            }
-        }
-        if (eventInProgress) {
-            celixThreadCondition_timedwaitRelative(&fw->dispatcher.cond, &fw->dispatcher.mutex, 5, 0);
+    while (celix_framework_isGenericEventInProgress(fw, eventId)) {
+        celix_status_t waitStatus =
+            celixThreadCondition_waitUntil(&fw->dispatcher.cond, &fw->dispatcher.mutex, &logAbsTime);
+        if (waitStatus == ETIMEDOUT) {
+            fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "Generic event with id %li not finished.", eventId);
+            logAbsTime = celixThreadCondition_getDelayedTime(5);
         }
     }
     celixThreadMutex_unlock(&fw->dispatcher.mutex);

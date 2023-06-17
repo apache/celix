@@ -1334,7 +1334,7 @@ CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleContext_wakeupScheduledEvent(c
  * @param[in] waitTimeInSeconds The maximum time to wait for the next scheduled event. If <= 0 the function will return
  *                             immediately.
  * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not
- *         known and CELIX_TIMEOUT if the waitTimeInSeconds is reached.
+ *         known and ETIMEDOUT if the waitTimeInSeconds is reached.
  */
 CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleContext_waitForScheduledEvent(celix_bundle_context_t* ctx,
                                                                                 long scheduledEventId,

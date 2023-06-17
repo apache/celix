@@ -119,7 +119,7 @@ celix_scheduled_event_t* celix_scheduledEvent_create(celix_framework_logger_t* l
     event->useCount = 1;
     event->callCount = 0;
     event->isRemoved = false;
-    event->lastScheduledEventTime = celix_gettime(CLOCK_REALTIME);
+    event->lastScheduledEventTime = celixThreadCondition_getTime();
     event->processForWakeup = false;
 
     celixThreadMutex_create(&event->mutex, NULL);
@@ -240,14 +240,11 @@ celix_status_t celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_even
                                                             double waitTimeInSeconds) {
     celix_status_t status = CELIX_SUCCESS;
     if (waitTimeInSeconds > 0) {
-        struct timespec start = celix_gettime(CLOCK_REALTIME);
-        struct timespec absTimeoutTime = celix_delayedTimespec(&start, waitTimeInSeconds);
+        struct timespec absTime= celixThreadCondition_getDelayedTime(waitTimeInSeconds);
         celixThreadMutex_lock(&event->mutex);
         while (event->callCount < targetCallCount) {
-            celixThreadCondition_waitUntil(&event->cond, &event->mutex, &absTimeoutTime);
-            struct timespec now = celix_gettime(CLOCK_REALTIME);
-            if (celix_difftime(&start, &now) > waitTimeInSeconds) {
-                status = CELIX_TIMEOUT;
+            status = celixThreadCondition_waitUntil(&event->cond, &event->mutex, &absTime);
+            if (status == ETIMEDOUT) {
                 break;
             }
         }
@@ -257,8 +254,7 @@ celix_status_t celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_even
 }
 
 void celix_scheduledEvent_waitForRemoved(celix_scheduled_event_t* event) {
-    struct timespec start = celix_gettime(CLOCK_REALTIME);
-    struct timespec absLogTimeout = celix_delayedTimespec(&start, CELIX_SCHEDULED_EVENT_ERROR_LOG_TIMEOUT_IN_SECONDS);
+    struct timespec absLogTimeout = celixThreadCondition_getDelayedTime(CELIX_SCHEDULED_EVENT_ERROR_LOG_TIMEOUT_IN_SECONDS);
     celixThreadMutex_lock(&event->mutex);
     while (!event->isRemoved) {
         celix_status_t waitStatus = celixThreadCondition_waitUntil(&event->cond, &event->mutex, &absLogTimeout);
@@ -269,8 +265,7 @@ void celix_scheduledEvent_waitForRemoved(celix_scheduled_event_t* event) {
                    event->eventName,
                    event->scheduledEventId,
                    event->bndId);
-            start = celix_gettime(CLOCK_REALTIME);
-            absLogTimeout = celix_delayedTimespec(&start, CELIX_SCHEDULED_EVENT_ERROR_LOG_TIMEOUT_IN_SECONDS);
+            absLogTimeout = celixThreadCondition_getDelayedTime(CELIX_SCHEDULED_EVENT_ERROR_LOG_TIMEOUT_IN_SECONDS);
         }
     }
     celixThreadMutex_unlock(&event->mutex);
@@ -280,12 +275,10 @@ celix_status_t celix_scheduledEvent_wait(celix_scheduled_event_t* event, double 
     celix_status_t status = CELIX_SUCCESS;
     celixThreadMutex_lock(&event->mutex);
     size_t targetCallCount = event->callCount + 1;
-    struct timespec start = celix_gettime(CLOCK_REALTIME);
-    struct timespec absTimeoutTime = celix_delayedTimespec(&start, timeoutInSeconds);
+    struct timespec absTimeoutTime = celixThreadCondition_getDelayedTime(timeoutInSeconds);
     while (event->callCount < targetCallCount) {
-        celix_status_t waitStatus = celixThreadCondition_waitUntil(&event->cond, &event->mutex, &absTimeoutTime);
-        if (waitStatus == ETIMEDOUT) {
-            status = CELIX_TIMEOUT;
+        status = celixThreadCondition_waitUntil(&event->cond, &event->mutex, &absTimeoutTime);
+        if (status == ETIMEDOUT) {
             break;
         }
     }

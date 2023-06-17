@@ -384,7 +384,7 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventRAIITest) {
     auto removeCallback = [&removed]() { removed.store(true); };
 
     {
-        // And a scoped scheduled event with a initial delay and interval of 100ms
+        // And a scoped scheduled event with an initial delay and interval of 50ms
         auto event = fw->getFrameworkBundleContext()
                          ->scheduledEvent()
                          .withName("test cxx")
@@ -402,10 +402,10 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventRAIITest) {
     // When waiting longer than the initial delay
     std::this_thread::sleep_for(std::chrono::milliseconds{60});
 
-    // When the remove callback is called
+    // Then the remove callback is called
     EXPECT_TRUE(removed.load());
 
-    // Then the count is not increased
+    // And the count is not increased
     EXPECT_EQ(0, count.load());
 }
 
@@ -449,6 +449,8 @@ TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventTest) {
 
     // Then the count is not increased, because the event is a one-shot event
     EXPECT_EQ(1, count.load());
+
+    // When the event goes out of scope, it does not leak
 }
 
 TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventRAIITest) {
@@ -563,7 +565,7 @@ TEST_F(ScheduledEventTestSuite, WaitForScheduledEvent) {
     status = celix_bundleContext_waitForScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId, 0.0001);
 
     //Then the return status is timeout
-    EXPECT_EQ(CELIX_TIMEOUT, status);
+    EXPECT_EQ(ETIMEDOUT, status);
 
     //When waiting for the event with a timeout longer than the interval
     status = celix_bundleContext_waitForScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId, 0.0012);

@@ -158,7 +158,7 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitFor(celix_thread_cond
  *
  * @return The current time.
  */
-CELIX_UTILS_EXPORT struct timespec celix_threadCondition_getTime();
+CELIX_UTILS_EXPORT struct timespec celixThreadCondition_getTime();
 
 /**
  * @brief Returns the current time plus the given delayInSeconds.
@@ -170,7 +170,7 @@ CELIX_UTILS_EXPORT struct timespec celix_threadCondition_getTime();
  * @param delayInSeconds The delay in seconds to add to the current time.
  * @return The current time plus the given delayInSeconds.
  */
-CELIX_UTILS_EXPORT struct timespec celix_threadCondition_getDelayedTime(double delayInSeconds);
+CELIX_UTILS_EXPORT struct timespec celixThreadCondition_getDelayedTime(double delayInSeconds);
 
 /**
  * @brief Wait for the condition to be signaled or until the given absolute time is reached.
@@ -181,7 +181,8 @@ CELIX_UTILS_EXPORT struct timespec celix_threadCondition_getDelayedTime(double d
  * - ENOTRECOVERABLE if the state protected by the mutex is not recoverable.
  * - ETIMEDOUT If the abstime has passed.
  *
- *  Values for abstime can be obtained by adding a delay to the current time obtained using gettimeofday(2)
+ *  Values for abstime should be obtained by celixThreadCondition_getTime, celixThreadCondition_getDelayedTime or
+ *  a modified timespec based on celixThreadCondition_getTime/celixThreadCondition_getDelayedTime.
  * 
  * @param[in] cond The condition to wait for.
  * @param[in] mutex The (locked) mutex to use.

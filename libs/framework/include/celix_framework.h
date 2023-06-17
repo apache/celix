@@ -348,7 +348,7 @@ CELIX_FRAMEWORK_EXPORT void celix_framework_waitForEmptyEventQueue(celix_framewo
  *
  * @param[in] fw The Celix Framework.
  * @param[in] timeoutInSeconds The period in seconds to wait for the event queue to be empty. 0 means wait forever.
- * @return CELIX_SUCCESS if the event queue is empty or CELIX_TIMEOUT if the timeoutInSeconds is reached.
+ * @return CELIX_SUCCESS if the event queue is empty or ETIMEDOUT if the timeoutInSeconds is reached.
  */
 CELIX_FRAMEWORK_EXPORT celix_status_t celix_framework_timedWaitForEmptyEventQueue(celix_framework_t *fw, double timeoutInSeconds);
 

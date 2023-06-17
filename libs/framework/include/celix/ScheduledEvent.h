@@ -124,6 +124,7 @@ class ScheduledEvent final {
             if (callbacks->removeCallback) {
                 (callbacks->removeCallback)();
             }
+            delete callbacks;
         };
 
         ctx = std::move(_cCtx);

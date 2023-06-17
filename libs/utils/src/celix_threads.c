@@ -182,7 +182,8 @@ celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond,
 }
 #else
 celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds) {
-    struct timespec time = celix_threadCondition_getTime();
+    double delay = (double)seconds + ((double)nanoseconds / 1000000000);
+    struct timespec time = celixThreadCondition_getDelayedTime(delay);
     return pthread_cond_timedwait(cond, mutex, &time);
 }
 #endif
@@ -198,18 +199,18 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitFor(celix_thread_cond
     return celixThreadCondition_waitUntil(cond, mutex, &abstime);
 }
 
-struct timespec celix_threadCondition_getTime() {
-    return celix_threadCondition_getDelayedTime(0);
+struct timespec celixThreadCondition_getTime() {
+    return celixThreadCondition_getDelayedTime(0);
 }
 
-struct timespec celix_threadCondition_getDelayedTime(double delayInSeconds) {
+struct timespec celixThreadCondition_getDelayedTime(double delayInSeconds) {
 #if __APPLE__
     struct timeval tv;
     struct timespec now;
     gettimeofday(&tv, NULL);
     TIMEVAL_TO_TIMESPEC(&tv, &now);
 #else
-    struct timespec new = celix_gettime(CLOCK_MONOTONIC);
+    struct timespec now = celix_gettime(CLOCK_MONOTONIC);
 #endif
     if (delayInSeconds == 0) {
         return now;
