@@ -48,13 +48,15 @@
 #define MAX_ROOTNODE_LENGTH		 64
 #define MAX_LOCALNODE_LENGTH	256
 
+/**
+ * @brief Poll the shared memory for changes.
+ */
+static void discoveryShmWatcher_poll(void* data);
 
 struct shm_watcher {
     shmData_t *shmData;
-    celix_thread_t watcherThread;
     celix_thread_mutex_t watcherLock;
-
-    volatile bool running;
+    long scheduledEventId;
 };
 
 // note that the rootNode shouldn't have a leading slash
@@ -154,7 +156,7 @@ static celix_status_t discoveryShmWatcher_syncEndpoints(discovery_t *discovery) 
     return status;
 }
 
-static void* discoveryShmWatcher_run(void* data) {
+static void discoveryShmWatcher_poll(void* data) {
     discovery_t *discovery = (discovery_t *) data;
     shm_watcher_t *watcher = discovery->pImpl->watcher;
     char localNodePath[MAX_LOCALNODE_LENGTH];
@@ -165,20 +167,15 @@ static void* discoveryShmWatcher_run(void* data) {
     }
 
     if (endpointDiscoveryServer_getUrl(discovery->server, &url[0], MAX_LOCALNODE_LENGTH) != CELIX_SUCCESS) {
-        snprintf(url, MAX_LOCALNODE_LENGTH, "http://%s:%s/%s", DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT, DEFAULT_SERVER_PATH);
+        snprintf(url, MAX_LOCALNODE_LENGTH, "http://%s:%s/%s", DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT,
+                 DEFAULT_SERVER_PATH);
     }
 
-    while (watcher->running) {
-        // register own framework
-        if (discoveryShm_set(watcher->shmData, localNodePath, url) != CELIX_SUCCESS) {
-            celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot set local discovery registration.");
-        }
-
-        discoveryShmWatcher_syncEndpoints(discovery);
-        sleep(5);
+    if (discoveryShm_set(watcher->shmData, localNodePath, url) != CELIX_SUCCESS) {
+        celix_logHelper_log(discovery->loghelper, CELIX_LOG_LEVEL_WARNING, "Cannot set local discovery registration.");
     }
 
-    return NULL;
+    discoveryShmWatcher_syncEndpoints(discovery);
 }
 
 celix_status_t discoveryShmWatcher_create(discovery_t *discovery) {
@@ -190,6 +187,7 @@ celix_status_t discoveryShmWatcher_create(discovery_t *discovery) {
     if (!watcher) {
         status = CELIX_ENOMEM;
     } else {
+        watcher->scheduledEventId = -1;
         status = discoveryShm_attach(&(watcher->shmData));
 
         if (status != CELIX_SUCCESS) {
@@ -204,20 +202,17 @@ celix_status_t discoveryShmWatcher_create(discovery_t *discovery) {
 
         if (status == CELIX_SUCCESS) {
             discovery->pImpl->watcher = watcher;
-        }
-        else{
+
+            celix_scheduled_event_options_t schedOpts = CELIX_EMPTY_SCHEDULED_EVENT_OPTIONS;
+            schedOpts.intervalInSeconds = 5;
+            schedOpts.name = "DISCOVERY_SHM_POLLER";
+            schedOpts.callbackData = discovery;
+            schedOpts.callback = discoveryShmWatcher_poll;
+            watcher->scheduledEventId = celix_bundleContext_scheduleEvent(discovery->context, &schedOpts);
+        } else {
         	discovery->pImpl->watcher = NULL;
         	free(watcher);
         }
-
-    }
-
-    if (status == CELIX_SUCCESS) {
-        status += celixThreadMutex_create(&watcher->watcherLock, NULL);
-        status += celixThreadMutex_lock(&watcher->watcherLock);
-        watcher->running = true;
-        status += celixThread_create(&watcher->watcherThread, NULL, discoveryShmWatcher_run, discovery);
-        status += celixThreadMutex_unlock(&watcher->watcherLock);
     }
 
     return status;
@@ -228,11 +223,7 @@ celix_status_t discoveryShmWatcher_destroy(discovery_t *discovery) {
     shm_watcher_t *watcher = discovery->pImpl->watcher;
     char localNodePath[MAX_LOCALNODE_LENGTH];
 
-    celixThreadMutex_lock(&watcher->watcherLock);
-    watcher->running = false;
-    celixThreadMutex_unlock(&watcher->watcherLock);
-
-    celixThread_join(watcher->watcherThread, NULL);
+    celix_bundleContext_removeScheduledEvent(discovery->context, watcher->scheduledEventId);
 
     // remove own framework
     status = discoveryShmWatcher_getLocalNodePath(discovery->context, &localNodePath[0]);
