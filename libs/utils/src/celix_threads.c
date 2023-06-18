@@ -192,7 +192,7 @@ struct timespec celixThreadCondition_getDelayedTime(double delayInSeconds) {
     gettimeofday(&tv, NULL);
     TIMEVAL_TO_TIMESPEC(&tv, &now);
 #else
-    struct timespec now = celix_gettime(CLOCK_REALTIME);
+    struct timespec now = celix_gettime(CLOCK_MONOTONIC);
 #endif
     if (delayInSeconds == 0) {
         return now;
