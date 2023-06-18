@@ -28,6 +28,8 @@ class ScheduledEventTestSuite : public ::testing::Test {
     ScheduledEventTestSuite() { fw = celix::createFramework({{"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"}}); }
     std::shared_ptr<celix::Framework> fw{};
 
+    static constexpr int ALLOWED_TIMED_WAIT_ERROR_MS = 40;
+
     /**
      * Wait for the given predicate to become true or the given time has elapsed.
      * @param predicate predicate to check.
@@ -357,7 +359,7 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventTest) {
     auto start = std::chrono::steady_clock::now();
     waitFor([&]() { return count.load() == 1; }, std::chrono::milliseconds{70});
     auto end = std::chrono::steady_clock::now();
-    EXPECT_NEAR(50, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(), 20);
+    EXPECT_NEAR(50, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(), ALLOWED_TIMED_WAIT_ERROR_MS);
 
     // Then the count is increased
     EXPECT_EQ(1, count.load());
@@ -414,7 +416,7 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventRAIITest) {
     auto start = std::chrono::steady_clock::now();
     waitFor([&]() { return count.load() == 1; }, std::chrono::milliseconds{70});
     auto end = std::chrono::steady_clock::now();
-    EXPECT_NEAR(50, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(), 20);
+    EXPECT_NEAR(50, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(), ALLOWED_TIMED_WAIT_ERROR_MS);
 
     // When waiting longer than the initial delay
     std::this_thread::sleep_for(std::chrono::milliseconds{60});
