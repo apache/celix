@@ -1116,32 +1116,6 @@ static void pstm_psaHandlingEvent(void* data) {
     pstm_findPsaForEndpoints(manager); //trying to find psa and possible set for endpoints with no psa
 }
 
-//static void *pstm_psaHandlingThread(void *data) {
-//    pubsub_topology_manager_t *manager = data;
-//
-//    celixThreadMutex_lock(&manager->psaHandling.mutex);
-//    bool running = manager->psaHandling.running;
-//    celixThreadMutex_unlock(&manager->psaHandling.mutex);
-//
-//    while (running) {
-//        //first teardown -> also if rematch is needed
-//        pstm_teardownTopicSenders(manager);
-//        pstm_teardownTopicReceivers(manager);
-//
-//        //then see if any topic sender/receiver are needed
-//        pstm_setupTopicSenders(manager);
-//        pstm_setupTopicReceivers(manager);
-//
-//        pstm_findPsaForEndpoints(manager); //trying to find psa and possible set for endpoints with no psa
-//
-//        celixThreadMutex_lock(&manager->psaHandling.mutex);
-//        celixThreadCondition_timedwaitRelative(&manager->psaHandling.cond, &manager->psaHandling.mutex, manager->handlingThreadSleepTime  / 1000, (manager->handlingThreadSleepTime  % 1000) * 1000000);
-//        running = manager->psaHandling.running;
-//        celixThreadMutex_unlock(&manager->psaHandling.mutex);
-//    }
-//    return NULL;
-//}
-
 void pubsub_topologyManager_addMetricsService(void * handle, void *svc, const celix_properties_t *props) {
     pubsub_topology_manager_t *manager = handle;
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
@@ -1157,7 +1131,6 @@ void pubsub_topologyManager_removeMetricsService(void * handle, void *svc, const
     hashMap_remove(manager->psaMetrics.map, (void*)svcId);
     celixThreadMutex_unlock(&manager->psaMetrics.mutex);
 }
-
 
 static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t *manager, const char *commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
     fprintf(os, "\n");

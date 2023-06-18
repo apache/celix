@@ -67,12 +67,6 @@ typedef struct pubsub_topology_manager {
         hash_map_t *map; //key = svcId, value = pubsub_admin_metrics_service_t*
     } psaMetrics;
 
-//    struct {
-//        celix_thread_t thread;
-//        celix_thread_mutex_t mutex; //protect running and condition
-//        celix_thread_cond_t cond;
-//        bool running;
-//    } psaHandling;
     long scheduledEventId;
 
     celix_log_helper_t *loghelper;
