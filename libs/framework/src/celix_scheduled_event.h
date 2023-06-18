@@ -119,7 +119,7 @@ void celix_scheduledEvent_waitForRemoved(celix_scheduled_event_t* event);
 /**
  * @brief Returns true if the event is a one-shot event.
  */
-bool celix_scheduledEvent_isSingleShot(celix_scheduled_event_t* event);
+bool celix_scheduledEvent_isSingleShot(const celix_scheduled_event_t* event);
 
 /**
  * @brief Mark the event for removal. The event will be removed on the event thread, after the next processing.
@@ -141,18 +141,6 @@ bool celix_scheduledEvent_isMarkedForRemoval(celix_scheduled_event_t* event);
 size_t celix_scheduledEvent_markForWakeup(celix_scheduled_event_t* event);
 
 /**
- * @brief Wait for a scheduled event to reach at least the provided call count.
- * Will directly (non blocking) return if the call count is already reached or waitTimeInSeconds is <= 0
- * @param[in] event The event to wait for.
- * @param[in] callCount The call count to wait for.
- * @param[in] timeout The max time to wait in seconds.
- * @return CELIX_SUCCESS if the scheduled event reached the call count, ETIMEDOUT if the scheduled event
- */
-celix_status_t celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_event_t* event,
-                                                            size_t targetCallCount,
-                                                            double waitTimeInSeconds);
-
-/**
  * @brief Wait for a scheduled event to be done with the next scheduled processing.
  * @param[in] event The event to wait for.
  * @param[in] timeoutInSeconds The max time to wait in seconds. Must be > 0.
@@ -160,6 +148,13 @@ celix_status_t celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_even
  *        done with processing within the timeout.
  */
 celix_status_t celix_scheduledEvent_wait(celix_scheduled_event_t* event, double timeoutInSeconds);
+
+
+/**
+ * @brief Returns true if the event is marked for wakeup, the initial delay or interval deadline is reached or the
+ * event is marked for removal for the given time.
+ */
+bool celix_scheduledEvent_requiresProcessing(celix_scheduled_event_t* event, const struct timespec* currentTime);
 
 #ifdef __cplusplus
 };

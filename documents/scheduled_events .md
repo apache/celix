@@ -103,7 +103,7 @@ public:
     explicit ScheduleEventsBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
         //schedule recurring event
         event = ctx->scheduledEvent()
-                .withInitialDelay(std::chrono::milliseconds {10})
+                .withInitialDelay(std::chrono::milliseconds{10})
                 .withInterval(std::chrono::seconds{1})
                 .withCallback([ctx] {
                     ctx->logInfo("Recurring scheduled event fired");
@@ -112,7 +112,7 @@ public:
 
         //schedule one time event
         ctx->scheduledEvent()
-                .withInitialDelay(std::chrono::milliseconds {10})
+                .withInitialDelay(std::chrono::milliseconds{10})
                 .withCallback([ctx] {
                     ctx->logInfo("One shot scheduled event fired");
                 })

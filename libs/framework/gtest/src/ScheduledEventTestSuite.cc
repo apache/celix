@@ -28,7 +28,7 @@ class ScheduledEventTestSuite : public ::testing::Test {
     ScheduledEventTestSuite() { fw = celix::createFramework({{"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"}}); }
     std::shared_ptr<celix::Framework> fw{};
 
-    static constexpr int ALLOWED_TIMED_WAIT_ERROR_MS = 40;
+    const int ALLOWED_TIMED_WAIT_ERROR_MS = 40;
 
     /**
      * Wait for the given predicate to become true or the given time has elapsed.
@@ -79,12 +79,15 @@ TEST_F(ScheduledEventTestSuite, OnceShotEventTest) {
     long eventId = celix_bundleContext_scheduleEvent(ctx->getCBundleContext(), &opts);
     EXPECT_GE(eventId, 0);
 
-    // Then the event is called once
-    std::this_thread::sleep_for(std::chrono::milliseconds{10});
+    // Then the event is called once within the error margin
+    waitFor([&]() { return info.count.load() == 1; }, std::chrono::milliseconds{ALLOWED_TIMED_WAIT_ERROR_MS});
     EXPECT_EQ(1, info.count.load());
 
-    // And the event remove callback is called
+    // And the event remove callback is called  within the error margin
+    waitFor([&]() { return info.removed.load(); }, std::chrono::milliseconds{ALLOWED_TIMED_WAIT_ERROR_MS});
     EXPECT_TRUE(info.removed.load());
+
+    celix_bundleContext_removeScheduledEvent(ctx->getCBundleContext(), eventId);
 }
 
 TEST_F(ScheduledEventTestSuite, ScheduledEventTest) {
@@ -120,10 +123,9 @@ TEST_F(ScheduledEventTestSuite, ScheduledEventTest) {
     long eventId = celix_bundleContext_scheduleEvent(ctx->getCBundleContext(), &opts);
     EXPECT_GE(eventId, 0);
 
-    // And wait more than 10 ms + 2x 20ms + 10ms error margin
-    std::this_thread::sleep_for(std::chrono::milliseconds{60});
-
-    // Then the event is called at least 3 times
+    // Then count becomes 3 or more within the initial delay + 2 x internal and an allowed error margin
+    int allowedTimeInMs = 10 + (2 * 20) + ALLOWED_TIMED_WAIT_ERROR_MS;
+    waitFor([&]() { return info.count.load() >= 3; }, std::chrono::milliseconds{allowedTimeInMs});
     EXPECT_GE(info.count.load(), 3);
 
     // And the event remove callback is not called
@@ -452,7 +454,7 @@ TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventTest) {
     EXPECT_FALSE(removed.load());
 
     // And count will be increased within the initial delay (including some error margin)
-    waitFor([&]{return count.load() == 1;}, std::chrono::milliseconds{60});
+    waitFor([&]{return count.load() == 1;}, std::chrono::milliseconds{50 + ALLOWED_TIMED_WAIT_ERROR_MS});
     EXPECT_EQ(1, count.load());
 
     // And the remove callback is called shortly after the initial delay
@@ -498,7 +500,7 @@ TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventRAIITest) {
     EXPECT_FALSE(removed.load());
 
     // And count will be increased within the initial delay (including some error margin)
-    waitFor([&]{return count.load() == 1;}, std::chrono::milliseconds{60});
+    waitFor([&]{return count.load() == 1;}, std::chrono::milliseconds{50 + ALLOWED_TIMED_WAIT_ERROR_MS});
     EXPECT_EQ(1, count.load());
 
     // And the remove callback is called shortly after the initial delay

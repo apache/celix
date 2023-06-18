@@ -350,11 +350,12 @@ CELIX_FRAMEWORK_EXPORT void celix_framework_waitForEmptyEventQueue(celix_framewo
  * @param[in] timeoutInSeconds The period in seconds to wait for the event queue to be empty. 0 means wait forever.
  * @return CELIX_SUCCESS if the event queue is empty or ETIMEDOUT if the timeoutInSeconds is reached.
  */
-CELIX_FRAMEWORK_EXPORT celix_status_t celix_framework_timedWaitForEmptyEventQueue(celix_framework_t *fw, double timeoutInSeconds);
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_framework_waitForEmptyEventQueueFor(celix_framework_t *fw, double timeoutInSeconds);
 
 /**
  * @brief wait until all events from the event queue for the bundle identified by the bndId are processed.
- * 
+ *
+ * If bndId < 0, wait until all events from the event queue are processed.
  * Note scheduled events are not part of the event queue.
  * 
  */

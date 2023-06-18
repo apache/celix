@@ -16,18 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * celix_threads.c
- *
- *  \date       4 Jun 2014
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <sys/time.h>
 #include <time.h>
-#include "signal.h"
+#include <signal.h>
+
 #include "celix_threads.h"
 #include "celix_utils.h"
 
@@ -150,11 +144,10 @@ celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_t
     return pthread_cond_init(condition, attr);
 #else
     celix_status_t status = CELIX_SUCCESS;
-    if(attr) {
+    if (attr) {
         status = pthread_condattr_setclock(attr, CLOCK_MONOTONIC);
         status = CELIX_DO_IF(status, pthread_cond_init(condition, attr));
-    }
-    else {
+    } else {
         celix_thread_condattr_t condattr;
         (void)pthread_condattr_init(&condattr); // always return 0
         status = pthread_condattr_setclock(&condattr, CLOCK_MONOTONIC);
@@ -188,17 +181,6 @@ celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond,
 }
 #endif
 
-CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitFor(celix_thread_cond_t* cond, 
-                                                               celix_thread_mutex_t* mutex, 
-                                                               double delayInSeconds) {
-    if (delayInSeconds < 0) {
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
-    struct timespec now = celix_gettime(CLOCK_MONOTONIC);
-    struct timespec absTime = celix_delayedTimespec(&now, delayInSeconds);
-    return celixThreadCondition_waitUntil(cond, mutex, &absTime);
-}
-
 struct timespec celixThreadCondition_getTime() {
     return celixThreadCondition_getDelayedTime(0);
 }
@@ -210,7 +192,7 @@ struct timespec celixThreadCondition_getDelayedTime(double delayInSeconds) {
     gettimeofday(&tv, NULL);
     TIMEVAL_TO_TIMESPEC(&tv, &now);
 #else
-    struct timespec now = celix_gettime(CLOCK_MONOTONIC);
+    struct timespec now = celix_gettime(CLOCK_REALTIME);
 #endif
     if (delayInSeconds == 0) {
         return now;
@@ -218,10 +200,9 @@ struct timespec celixThreadCondition_getDelayedTime(double delayInSeconds) {
     return celix_delayedTimespec(&now, delayInSeconds);
 }
 
-CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitUntil(celix_thread_cond_t* cond, 
-                                                                 celix_thread_mutex_t* mutex, 
-                                                                 const struct timespec* absTime) {
-    if (absTime == NULL || absTime->tv_sec < 0 || absTime->tv_nsec < 0) {
+celix_status_t
+celixThreadCondition_waitUntil(celix_thread_cond_t* cond, celix_thread_mutex_t* mutex, const struct timespec* absTime) {
+    if (absTime == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
     return pthread_cond_timedwait(cond, mutex, absTime);

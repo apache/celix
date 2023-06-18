@@ -342,10 +342,6 @@ TEST_F(LogBundleTestSuite, LogServiceAndSink) {
     }
     celix_framework_waitForEmptyEventQueue(fw.get());
 
-    //TODO fixme, apparently this is needed, because the celix_framework_waitForEmptyEventQueue for does not work
-    //this is probably due to the moved broadcast in the framework event handle, check this
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
     ASSERT_TRUE(logSvc.load() != nullptr);
     auto initial = count.load();
     celix_log_service_t *ls = logSvc.load();

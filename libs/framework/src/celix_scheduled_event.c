@@ -182,11 +182,11 @@ bool celix_scheduledEvent_deadlineReached(celix_scheduled_event_t* event,
         deadlineReached = true;
     }
 
-    if (deadlineReached) {
+    if (deadlineReached && nextProcessTimeInSeconds) {
         *nextProcessTimeInSeconds =
             event->intervalInSeconds == 0 /*one shot*/ ? CELIX_FRAMEWORK_DEFAULT_MAX_TIMEDWAIT_EVENT_HANDLER_IN_SECONDS
                                                        : event->intervalInSeconds;
-    } else {
+    } else if (nextProcessTimeInSeconds) {
         *nextProcessTimeInSeconds = event->callCount == 0 ? event->initialDelayInSeconds : event->intervalInSeconds;
     }
     celixThreadMutex_unlock(&event->mutex);
@@ -211,11 +211,9 @@ void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct t
     celixThreadMutex_unlock(&event->mutex);
 }
 
-bool celix_scheduledEvent_isSingleShot(celix_scheduled_event_t* event) {
+bool celix_scheduledEvent_isSingleShot(const celix_scheduled_event_t* event) {
     bool isDone = false;
-    celixThreadMutex_lock(&event->mutex);
     isDone = event->intervalInSeconds == 0;
-    celixThreadMutex_unlock(&event->mutex);
     return isDone;
 }
 
@@ -233,24 +231,6 @@ size_t celix_scheduledEvent_markForWakeup(celix_scheduled_event_t* event) {
            event->bndId);
 
     return currentCallCount + 1;
-}
-
-celix_status_t celix_scheduledEvent_waitForAtLeastCallCount(celix_scheduled_event_t* event,
-                                                            size_t targetCallCount,
-                                                            double waitTimeInSeconds) {
-    celix_status_t status = CELIX_SUCCESS;
-    if (waitTimeInSeconds > 0) {
-        struct timespec absTime= celixThreadCondition_getDelayedTime(waitTimeInSeconds);
-        celixThreadMutex_lock(&event->mutex);
-        while (event->callCount < targetCallCount) {
-            status = celixThreadCondition_waitUntil(&event->cond, &event->mutex, &absTime);
-            if (status == ETIMEDOUT) {
-                break;
-            }
-        }
-        celixThreadMutex_unlock(&event->mutex);
-    }
-    return status;
 }
 
 void celix_scheduledEvent_waitForRemoved(celix_scheduled_event_t* event) {
@@ -307,4 +287,9 @@ bool celix_scheduledEvent_isMarkedForRemoval(celix_scheduled_event_t* event) {
     bool isMarkedForRemoval = event->isMarkedForRemoval;
     celixThreadMutex_unlock(&event->mutex);
     return isMarkedForRemoval;
+}
+
+bool celix_scheduledEvent_requiresProcessing(celix_scheduled_event_t* event, const struct timespec* currentTime) {
+    return celix_scheduledEvent_deadlineReached(event, currentTime, NULL) ||
+           celix_scheduledEvent_isMarkedForRemoval(event);
 }

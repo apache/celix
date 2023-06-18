@@ -57,6 +57,7 @@ struct celix_bundle_activator {
     celix_bundle_activator_destroy_fp destroy;
 };
 
+static int celix_framework_eventQueueSize(celix_framework_t* fw);
 static celix_status_t celix_framework_stopBundleEntryInternal(celix_framework_t* framework, celix_framework_bundle_entry_t* bndEntry);
 
 static inline celix_framework_bundle_entry_t* fw_bundleEntry_create(celix_bundle_t *bnd) {
@@ -1500,7 +1501,7 @@ static double celix_framework_processScheduledEvents(celix_framework_t* fw) {
             celix_scheduledEvent_setRemoved(removeEvent);
             celix_scheduledEvent_release(removeEvent);
         }
-    } while (callEvent != NULL && removeEvent != NULL);
+    } while (callEvent || removeEvent);
 
     return nextClosestScheduledEvent;
 }
@@ -1538,18 +1539,36 @@ void celix_framework_cleanupScheduledEvents(celix_framework_t* fw, long bndId) {
     } while (removeEvent != NULL);
 }
 
-static void celix_framework_waitForNextEvent(celix_framework_t* fw, double nextScheduledEvent) {
-    long seconds = CELIX_FRAMEWORK_DEFAULT_MAX_TIMEDWAIT_EVENT_HANDLER_IN_SECONDS;
-    long nanoseconds = 0;
-    if (nextScheduledEvent > 0) {
-        seconds = (long) nextScheduledEvent;
-        nanoseconds = ((long)(nextScheduledEvent * 1000000000L)) - seconds;
+static int celix_framework_eventQueueSize(celix_framework_t* fw) {
+    //precondition fw->dispatcher.mutex lockedx);
+    return fw->dispatcher.eventQueueSize + celix_arrayList_size(fw->dispatcher.dynamicEventQueue);
+}
+
+static bool requiresScheduledEventsProcessing(celix_framework_t* framework) {
+    // precondition framework->dispatcher.mutex locked
+    struct timespec currentTime = celixThreadCondition_getTime();
+    bool eventProcessingRequired = false;
+    CELIX_LONG_HASH_MAP_ITERATE(framework->dispatcher.scheduledEvents, mapEntry) {
+        celix_scheduled_event_t* visit = mapEntry.value.ptrValue;
+        if (celix_scheduledEvent_requiresProcessing(visit, &currentTime)) {
+            eventProcessingRequired = true;
+            break;
+        }
     }
+    return eventProcessingRequired;
+}
+
+static void celix_framework_waitForNextEvent(celix_framework_t* fw, double nextScheduledEvent) {
+    if (nextScheduledEvent < 0 || nextScheduledEvent > CELIX_FRAMEWORK_DEFAULT_MAX_TIMEDWAIT_EVENT_HANDLER_IN_SECONDS) {
+        nextScheduledEvent = CELIX_FRAMEWORK_DEFAULT_MAX_TIMEDWAIT_EVENT_HANDLER_IN_SECONDS;
+    }
+    struct timespec absTimeout = celixThreadCondition_getDelayedTime(nextScheduledEvent);
 
     celixThreadMutex_lock(&fw->dispatcher.mutex);
-    int size = fw->dispatcher.eventQueueSize + celix_arrayList_size(fw->dispatcher.dynamicEventQueue);
-    if (size == 0 && fw->dispatcher.active) {
-        celixThreadCondition_timedwaitRelative(&fw->dispatcher.cond, &fw->dispatcher.mutex, seconds, nanoseconds);
+    if (celix_framework_eventQueueSize(fw) == 0 && !requiresScheduledEventsProcessing(fw) && fw->dispatcher.active) {
+        celixThreadCondition_waitUntil(&fw->dispatcher.cond, &fw->dispatcher.mutex, &absTimeout);
+        // note failing through to fw_eventDispatcher even if timeout is not reached, the fw_eventDispatcher
+        // will call this again after processing the events and scheduled events.
     }
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 }
@@ -1571,12 +1590,15 @@ static void *fw_eventDispatcher(void *fw) {
         celixThreadMutex_unlock(&framework->dispatcher.mutex);
     }
 
-    //not active any more, last run for possible request leftovers
+    //not active anymore, extra runs for possible request leftovers
     celixThreadMutex_lock(&framework->dispatcher.mutex);
-    bool needLastRun = framework->dispatcher.eventQueueSize > 0 || celix_arrayList_size(framework->dispatcher.dynamicEventQueue) > 0;
+    bool needExtraRun = celix_framework_eventQueueSize(fw) > 0;
     celixThreadMutex_unlock(&framework->dispatcher.mutex);
-    if (needLastRun) {
+    while (needExtraRun) {
         fw_handleEvents(framework);
+        celixThreadMutex_lock(&framework->dispatcher.mutex);
+        needExtraRun = celix_framework_eventQueueSize(fw) > 0;
+        celixThreadMutex_unlock(&framework->dispatcher.mutex);
     }
 
     celixThread_exit(NULL);
@@ -2513,30 +2535,29 @@ celix_array_list_t* celix_framework_listInstalledBundles(celix_framework_t* fram
     return celix_framework_listBundlesInternal(framework, false);
 }
 
-celix_status_t celix_framework_timedWaitForEmptyEventQueue(celix_framework_t *fw, double periodInSeconds) {
+celix_status_t celix_framework_waitForEmptyEventQueueFor(celix_framework_t *fw, double periodInSeconds) {
     assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
-
     celix_status_t status = CELIX_SUCCESS;
-    long seconds = (long) periodInSeconds;
-    long nanoseconds = (long) ((periodInSeconds - (double)seconds) * 1000000000L);
 
+    struct timespec absTimeout = celixThreadCondition_getDelayedTime(periodInSeconds);
     celixThreadMutex_lock(&fw->dispatcher.mutex);
-    while (fw->dispatcher.eventQueueSize > 0 || celix_arrayList_size(fw->dispatcher.dynamicEventQueue) > 0) {
-        if (periodInSeconds > 0) {
-            status = celixThreadCondition_timedwaitRelative(&fw->dispatcher.cond, &fw->dispatcher.mutex, seconds, nanoseconds);
+    while (celix_framework_eventQueueSize(fw) > 0) {
+        if (periodInSeconds == 0) {
+            celixThreadCondition_wait(&fw->dispatcher.cond, &fw->dispatcher.mutex);
+        } else {
+            status = celixThreadCondition_waitUntil(&fw->dispatcher.cond, &fw->dispatcher.mutex, &absTimeout);
             if (status == ETIMEDOUT) {
                 break;
             }
-        } else {
-            celixThreadCondition_wait(&fw->dispatcher.cond, &fw->dispatcher.mutex);
         }
+
     }
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
     return status;
 }
 
 void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw) {
-    celix_framework_waitUntilNoEventsForBnd(fw, 0);
+    celix_framework_waitUntilNoEventsForBnd(fw, -1);
 }
 
 void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId) {
@@ -2549,14 +2570,14 @@ void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId) 
         for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
             int index = (fw->dispatcher.eventQueueFirstEntry + i) % fw->dispatcher.eventQueueCap;
             celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
-            if (e->bndEntry != NULL && e->bndEntry->bndId == bndId) {
+            if (e->bndEntry != NULL && (bndId < 0 || e->bndEntry->bndId == bndId)) {
                 eventInProgress = true;
                 break;
             }
         }
         for (int i = 0; !eventInProgress && i < celix_arrayList_size(fw->dispatcher.dynamicEventQueue); ++i) {
             celix_framework_event_t* e = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, i);
-            if (e->bndEntry != NULL && e->bndEntry->bndId == bndId) {
+            if (e->bndEntry != NULL && (bndId < 0 || e->bndEntry->bndId == bndId)) {
                 eventInProgress = true;
                 break;
             }

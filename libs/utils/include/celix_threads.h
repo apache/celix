@@ -122,55 +122,57 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadRwlockAttr_destroy(celix_thread_rwl
 typedef pthread_cond_t celix_thread_cond_t;
 typedef pthread_condattr_t celix_thread_condattr_t;
 
+/**
+ * @brief Initialize the given condition variable.
+ *
+ * For Linux the condition clock is set to CLOCK_MONOTONIC whether or not the attr is NULL.
+ *
+ * @param[in] condition The condition variable to initialize.
+ * @param[in] attr The condition variable attributes to use. Can be NULL for default attributes.
+ * @return CELIX_SUCCESS if the condition variable is initialized successfully.
+ */
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_thread_condattr_t *attr);
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_destroy(celix_thread_cond_t *condition);
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex);
 
-CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds);
-
 /**
- * @brief Wait for the condition to be signaled or until the given delayInSeconds is reached.
- * 
- * @section Errors
- * - CELIX_SUCCESS if the condition is signaled before the delayInSeconds is reached.
- * - CELIX_ILLEGAL_ARGUMENT if the delayInSeconds is negative.
- * - ENOTRECOVERABLE if the state protected by the mutex is not recoverable.
- * - ETIMEDOUT If the delayInSeconds has passed.
- * 
- * 
- * @param[in] cond The condition to wait for.
- * @param[in] mutex The (locked) mutex to use.
- * @param[in] delayInSeconds The delay in seconds to wait for the condition to be signaled.
- * @return CELIX_SUCCESS if the condition is signaled before the delayInSeconds is reached.
+ * @brief Wait until the given time.
+ * @deprecated use celixThreadCondition_waitUntil.
  */
-CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitFor(celix_thread_cond_t* cond, 
-                                                               celix_thread_mutex_t* mutex, 
-                                                               double delayInSeconds);
+CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds) CELIX_UTILS_DEPRECATED;
+
 
 /**
- * @brief Returns the current time.
+ * @brief Get the current time suitable for Celix thread conditions.
  *
- * The returned timespec can be used in celixThreadCondition_waitUntil and
- * will use a different clock depending on the OS (e.g. CLOCK_MONOTONIC or CLOCK_REALTIME).
- * The returned time is not meant to be used in logging the current time.
+ * This function returns the current time compatible with the Celix thread conditions, specifically for
+ * the function celixThreadCondition_waitUntil, as long as the condition is initialized with
+ * celixThreadCondition_init.
  *
- * @return The current time.
+ * Note: Do not use the returned time for logging or displaying the current time as the choice of clock
+ * varies based on the operating system.
+ *
+ * @return A struct timespec denoting the current time.
  */
 CELIX_UTILS_EXPORT struct timespec celixThreadCondition_getTime();
 
 /**
- * @brief Returns the current time plus the given delayInSeconds.
+ * @brief Calculate the current time incremented by a given delay, suitable for Celix thread conditions.
  *
- * The returned timespec can be used in celixThreadCondition_waitUntil and
- * will use a different clock depending on the OS (e.g. CLOCK_MONOTONIC or CLOCK_REALTIME).
- * The returned time is not meant to be used in logging the current time.
+ * This function provides the current time, increased by a specified delay (in seconds), compatible
+ * with Celix thread conditions. The resulting struct timespec can be used with the function
+ * celixThreadCondition_waitUntil, as long as the condition is initialized with celixThreadCondition_init.
  *
- * @param delayInSeconds The delay in seconds to add to the current time.
- * @return The current time plus the given delayInSeconds.
+ * Note: Do not use the returned time for logging or displaying the current time as the choice of clock
+ * varies based on the operating system.
+ *
+ * @param[in] delayInSeconds The desired delay in seconds to be added to the current time.
+ * @return A struct timespec denoting the current time plus the provided delay.
  */
 CELIX_UTILS_EXPORT struct timespec celixThreadCondition_getDelayedTime(double delayInSeconds);
+
 
 /**
  * @brief Wait for the condition to be signaled or until the given absolute time is reached.
