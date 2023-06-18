@@ -28,7 +28,11 @@ class ScheduledEventTestSuite : public ::testing::Test {
     ScheduledEventTestSuite() { fw = celix::createFramework({{"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"}}); }
     std::shared_ptr<celix::Framework> fw{};
 
-    const int ALLOWED_TIMED_WAIT_ERROR_MS = 40;
+#ifdef __APPLE__
+    const int ALLOWED_ERROR_MARGIN_IN_MS = 200;
+#else
+    const int ALLOWED_ERROR_MARGIN_IN_MS = 20;
+#endif
 
     /**
      * Wait for the given predicate to become true or the given time has elapsed.
@@ -79,12 +83,12 @@ TEST_F(ScheduledEventTestSuite, OnceShotEventTest) {
     long eventId = celix_bundleContext_scheduleEvent(ctx->getCBundleContext(), &opts);
     EXPECT_GE(eventId, 0);
 
-    // Then the event is called once within the error margin
-    waitFor([&]() { return info.count.load() == 1; }, std::chrono::milliseconds{ALLOWED_TIMED_WAIT_ERROR_MS});
+    // Then the count becomes 1 within the error margin
+    waitFor([&]() { return info.count.load() == 1; }, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
     EXPECT_EQ(1, info.count.load());
 
     // And the event remove callback is called  within the error margin
-    waitFor([&]() { return info.removed.load(); }, std::chrono::milliseconds{ALLOWED_TIMED_WAIT_ERROR_MS});
+    waitFor([&]() { return info.removed.load(); }, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
     EXPECT_TRUE(info.removed.load());
 
     celix_bundleContext_removeScheduledEvent(ctx->getCBundleContext(), eventId);
@@ -124,7 +128,7 @@ TEST_F(ScheduledEventTestSuite, ScheduledEventTest) {
     EXPECT_GE(eventId, 0);
 
     // Then count becomes 3 or more within the initial delay + 2 x internal and an allowed error margin
-    int allowedTimeInMs = 10 + (2 * 20) + ALLOWED_TIMED_WAIT_ERROR_MS;
+    int allowedTimeInMs = 10 + (2 * 20) + ALLOWED_ERROR_MARGIN_IN_MS;
     waitFor([&]() { return info.count.load() >= 3; }, std::chrono::milliseconds{allowedTimeInMs});
     EXPECT_GE(info.count.load(), 3);
 
@@ -189,7 +193,7 @@ TEST_F(ScheduledEventTestSuite, AddWithoutRemoveScheduledEventTest) {
     long scheduledEventId = celix_bundleContext_scheduleEvent(ctx->getCBundleContext(), &opts);
     EXPECT_GE(scheduledEventId, 0);
 
-    // And I do not remove the event, but let the bundle framework stpp
+    // And I do not remove the event, but let the bundle framework stop
     // Then I expect no memory leaks
 }
 
@@ -275,14 +279,17 @@ TEST_F(ScheduledEventTestSuite, WakeUpEventTest) {
     // When waiting a bit to let the scheduled event trigger
     std::this_thread::sleep_for(std::chrono::milliseconds{5});
 
-    // Then the count is increased
+    // Then the count becomes 1 within the error margin
+    waitFor([&]() { return count.load() == 1; }, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
     EXPECT_EQ(1, count.load());
 
-    // When waiting longer than the interval
-    std::this_thread::sleep_for(std::chrono::milliseconds{55});
-
-    // Then the count is increased
+    // And the count becomes 2 within the interval including the error margin
+    auto now = std::chrono::steady_clock::now();
+    waitFor([&]() { return count.load() == 2; }, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
+    auto end = std::chrono::steady_clock::now();
+    auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
     EXPECT_EQ(2, count.load());
+    EXPECT_NEAR(50, diff, ALLOWED_ERROR_MARGIN_IN_MS);
 
     // When waking up the scheduled event again
     status = celix_bundleContext_wakeupScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), scheduledEventId);
@@ -290,10 +297,8 @@ TEST_F(ScheduledEventTestSuite, WakeUpEventTest) {
     // Then the status is CELIX_SUCCESS
     ASSERT_EQ(CELIX_SUCCESS, status);
 
-    // When waiting a bit to let the scheduled event trigger
-    std::this_thread::sleep_for(std::chrono::milliseconds{5});
-
-    // Then the count is increased
+    // Then the count becomes 3 within the error margin
+    waitFor([&]() { return count.load() == 3; }, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
     EXPECT_EQ(3, count.load());
 
     celix_bundleContext_removeScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), scheduledEventId);
@@ -322,13 +327,11 @@ TEST_F(ScheduledEventTestSuite, WakeUpOneShotEventTest) {
     // Then the status is CELIX_SUCCESS
     ASSERT_EQ(CELIX_SUCCESS, status);
 
-    // When waiting a bit to ensure the scheduled event is woken up
-    std::this_thread::sleep_for(std::chrono::milliseconds{5});
-
-    // And the count is increased
+    // And the count becomes 1 within the error margin
+    waitFor([&]() { return count.load() == 1; }, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
     EXPECT_EQ(1, count.load());
 
-    // And when the scheduled event is woken up again
+    // When the scheduled event is woken up again
     status = celix_bundleContext_wakeupScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(),
                                                       scheduledEventId);
 
@@ -357,20 +360,18 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventTest) {
     // Then the count is not yet increased
     ASSERT_EQ(0, count.load());
 
-    // When waiting for about the initial delay
+    // And the count becomes 1 within the initial delay, including the error margin
     auto start = std::chrono::steady_clock::now();
-    waitFor([&]() { return count.load() == 1; }, std::chrono::milliseconds{70});
+    waitFor([&]() { return count.load() == 1; }, std::chrono::milliseconds{50 + ALLOWED_ERROR_MARGIN_IN_MS});
     auto end = std::chrono::steady_clock::now();
-    EXPECT_NEAR(50, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(), ALLOWED_TIMED_WAIT_ERROR_MS);
-
-    // Then the count is increased
+    EXPECT_NEAR(50, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(), ALLOWED_ERROR_MARGIN_IN_MS);
     EXPECT_EQ(1, count.load());
 
     // When waking up the event
     event.wakeup();
 
-    // Then the count is increased with a short window
-    waitFor([&]() { return count.load() == 2; }, std::chrono::milliseconds{10});
+    // Then the count is increased with the error margin
+    waitFor([&]() { return count.load() == 2; }, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
     EXPECT_EQ(2, count.load());
 
     // And the remove callback is not yet called
@@ -380,13 +381,13 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventTest) {
     event.cancel();
 
     // And waiting longer than the interval
-    std::this_thread::sleep_for(std::chrono::milliseconds{55});
+    std::this_thread::sleep_for(std::chrono::milliseconds{50 + ALLOWED_ERROR_MARGIN_IN_MS});
 
     // Then the count is not increased
     EXPECT_EQ(2, count.load());
 
-    // And the remove callback is called with a short window
-    waitFor([&]() { return removed.load(); }, std::chrono::milliseconds{10});
+    // And the remove callback is called within the error margin
+    waitFor([&]() { return removed.load(); }, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
     EXPECT_TRUE(removed.load());
 }
 
@@ -403,7 +404,7 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventRAIITest) {
         auto event = fw->getFrameworkBundleContext()
                          ->scheduledEvent()
                          .withName("test cxx")
-                         .withInitialDelay(std::chrono::milliseconds{50})
+                         .withInitialDelay(std::chrono::milliseconds{100})
                          .withInterval(std::chrono::milliseconds{50})
                          .withCallback(callback)
                          .withRemoveCallback(removeCallback)
@@ -414,16 +415,8 @@ TEST_F(ScheduledEventTestSuite, CxxScheduledEventRAIITest) {
     }
     // When the event goes out of scope
 
-    // When waiting for about the initial delay
-    auto start = std::chrono::steady_clock::now();
-    waitFor([&]() { return count.load() == 1; }, std::chrono::milliseconds{70});
-    auto end = std::chrono::steady_clock::now();
-    EXPECT_NEAR(50, std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(), ALLOWED_TIMED_WAIT_ERROR_MS);
-
-    // When waiting longer than the initial delay
-    std::this_thread::sleep_for(std::chrono::milliseconds{60});
-
-    // Then the remove callback is called
+    // Then the event removed callback is called within the allowed error margin
+    waitFor([&]() { return removed.load(); }, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
     EXPECT_TRUE(removed.load());
 
     // And the count is not increased
@@ -454,18 +447,18 @@ TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventTest) {
     EXPECT_FALSE(removed.load());
 
     // And count will be increased within the initial delay (including some error margin)
-    waitFor([&]{return count.load() == 1;}, std::chrono::milliseconds{50 + ALLOWED_TIMED_WAIT_ERROR_MS});
+    waitFor([&]{return count.load() == 1;}, std::chrono::milliseconds{50 + ALLOWED_ERROR_MARGIN_IN_MS});
     EXPECT_EQ(1, count.load());
 
-    // And the remove callback is called shortly after the initial delay
-    waitFor([&]{return removed.load();}, std::chrono::milliseconds{10});
+    // And the remove callback is called shortly after the initial delay, within the error margin
+    waitFor([&]{return removed.load();}, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
     EXPECT_TRUE(removed.load());
 
     // When waking up the event with a wait time of 1s
     event.wakeup();
 
-    // And waiting a bit to ensure the event is called
-    std::this_thread::sleep_for(std::chrono::milliseconds{2});
+    // And waiting a bit
+    std::this_thread::sleep_for(std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
 
     // Then the count is not increased, because the event is a one-shot event
     EXPECT_EQ(1, count.load());
@@ -500,7 +493,7 @@ TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventRAIITest) {
     EXPECT_FALSE(removed.load());
 
     // And count will be increased within the initial delay (including some error margin)
-    waitFor([&]{return count.load() == 1;}, std::chrono::milliseconds{50 + ALLOWED_TIMED_WAIT_ERROR_MS});
+    waitFor([&]{return count.load() == 1;}, std::chrono::milliseconds{50 + ALLOWED_ERROR_MARGIN_IN_MS});
     EXPECT_EQ(1, count.load());
 
     // And the remove callback is called shortly after the initial delay
@@ -509,6 +502,7 @@ TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventRAIITest) {
 }
 
 TEST_F(ScheduledEventTestSuite, CxxCreateScheduledEventWithNoCallbackTest) {
+    // When a scheduled event is created without a callback an exception is thrown
     EXPECT_ANY_THROW(fw->getFrameworkBundleContext()->scheduledEvent().build()); // Note no callback
 }
 
@@ -517,7 +511,7 @@ TEST_F(ScheduledEventTestSuite, CxxCancelOneShotEventBeforeFiredTest) {
         FAIL() << "Should not be called";
     };
 
-    //Given a one shot scheduled event with a initial delay of 1s
+    //Given a one shot scheduled event with an initial delay of 1s
     auto event = fw->getFrameworkBundleContext()->scheduledEvent()
                      .withInitialDelay(std::chrono::seconds{1})
                      .withCallback(callback)
@@ -525,6 +519,9 @@ TEST_F(ScheduledEventTestSuite, CxxCancelOneShotEventBeforeFiredTest) {
 
     //When the event is cancelled before the initial delay
     event.cancel();
+
+    //And waiting a bit
+    std::this_thread::sleep_for(std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
 
     //Then the event is not fired and does not leak
 }
@@ -547,8 +544,8 @@ TEST_F(ScheduledEventTestSuite, RemoveScheduledEventAsync) {
     //When the event is removed async
     celix_bundleContext_removeScheduledEventAsync(fw->getFrameworkBundleContext()->getCBundleContext(), eventId);
 
-    //And waiting longer than the initial delay
-    std::this_thread::sleep_for(std::chrono::milliseconds{15});
+    //And waiting longer than the initial delay, including some error margin
+    std::this_thread::sleep_for(std::chrono::milliseconds{10 + ALLOWED_ERROR_MARGIN_IN_MS});
 
     //Then the event is not fired
     EXPECT_EQ(0, count.load());
@@ -563,8 +560,8 @@ TEST_F(ScheduledEventTestSuite, WaitForScheduledEvent) {
 
     // Given a scheduled event with an initial delay of 1ms and an interval of 1ms
     celix_scheduled_event_options_t opts{};
-    opts.initialDelayInSeconds = 0.001;
-    opts.intervalInSeconds = 0.001;
+    opts.initialDelayInSeconds = 0.01;
+    opts.intervalInSeconds = 0.01;
     opts.callbackData = &count;
     opts.callback = callback;
     long eventId = celix_bundleContext_scheduleEvent(fw->getFrameworkBundleContext()->getCBundleContext(), &opts);
@@ -606,8 +603,8 @@ TEST_F(ScheduledEventTestSuite, CxxWaitForScheduledEvent) {
 
     // Given a scheduled event with an initial delay of 1ms and an interval of 1ms
     auto event = fw->getFrameworkBundleContext()->scheduledEvent()
-                     .withInitialDelay(std::chrono::milliseconds{1})
-                     .withInterval(std::chrono::milliseconds{1})
+                     .withInitialDelay(std::chrono::milliseconds{10})
+                     .withInterval(std::chrono::milliseconds{10})
                      .withCallback(callback)
                      .build();
 

@@ -42,7 +42,7 @@ static const char* const CELIX_SCHEDULED_EVENT_DEFAULT_NAME = "unnamed";
 /**
  * @brief Struct representing a scheduled event.
  *
- * A scheduled event is an event that is scheduled to be executed at a certain ititial delay and/or interval.
+ * A scheduled event is an event that is scheduled to be executed at a certain initial delay and/or interval.
  * It is created using the `celix_bundleContext_scheduleEvent` function and can be woken up
  * using the `celix_bundleContext_wakeupScheduledEvent` function.
  *
