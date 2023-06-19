@@ -52,13 +52,13 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_PROMISES"] = self.options["celix"].build_promises
         cmake.definitions["TEST_PUSHSTREAMS"] = self.options["celix"].build_pushstreams
         cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
-        # the following together with the imports method is a workaround https://github.com/conan-io/conan/issues/7192
-        cmake.definitions["CMAKE_BUILD_RPATH"] = os.path.join(self.build_folder, "lib")
+        # the following is workaround https://github.com/conan-io/conan/issues/7192
+        if self.settings.os == "Linux":
+            cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
+        elif self.settings.os == "Macos":
+            cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
         cmake.configure()
         cmake.build()
-
-    def imports(self):
-        self.copy("*.so*", "lib", "lib")
 
     def test(self):
         if not tools.cross_building(self, skip_x64_x86=True):
