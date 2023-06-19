@@ -245,7 +245,6 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
         if (status == OK) {
             entry = calloc(1, sizeof(*entry));
             if (entry != NULL) {
-                LOG_DEBUG("Adding type '%s' with pointer %p to types", name, type);
                 entry->type = type;
                 TAILQ_INSERT_TAIL(&msg->types, entry, entries);
             } else {
@@ -348,7 +347,7 @@ static int dynMessage_getEntryForHead(struct namvals_head *head, const char *nam
         *out = value;
     } else {
         status = ERROR;
-        LOG_WARNING("Cannot find '%s' in list", name);
+        LOG_ERROR("Cannot find '%s' in list", name);
     }
     return status;
 }

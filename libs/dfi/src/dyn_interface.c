@@ -419,7 +419,7 @@ static int dynInterface_getEntryForHead(struct namvals_head *head, const char *n
         *out = value;
     } else {
         status = ERROR;
-        LOG_WARNING("Cannot find '%s' in list", name);
+        LOG_ERROR("Cannot find '%s' in list", name);
     }
     return status;
 }

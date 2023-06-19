@@ -20,10 +20,10 @@
 #include <shm_pool.h>
 #include <shm_pool_private.h>
 #include <celix_threads.h>
+#include "celix_err.h"
 #include <tlsf.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <errno.h>
@@ -48,7 +48,7 @@ celix_status_t shmPool_create(size_t size, shm_pool_t **pool) {
     size_t normalizedSharedInfoSize = (sizeof(struct shm_pool_shared_info) % sizeof(void *) == 0) ?
             sizeof(struct shm_pool_shared_info) : (sizeof(struct shm_pool_shared_info)+sizeof(void *))/sizeof(void *) * sizeof(void *);
     if (size <= tlsf_size() + normalizedSharedInfoSize || pool == NULL) {
-        fprintf(stderr,"Shm pool: Shm size should be greater than %zu.\n", tlsf_size());
+        celix_err_pushf("Shm pool: Shm size should be greater than %zu.\n", tlsf_size());
         status = CELIX_ILLEGAL_ARGUMENT;
         goto shm_size_invalid;
     }
@@ -69,13 +69,13 @@ celix_status_t shmPool_create(size_t size, shm_pool_t **pool) {
      */
     shmPool->shmId = shmget(IPC_PRIVATE, size, SHM_R | SHM_W);
     if (shmPool->shmId  == -1) {
-        fprintf(stderr,"Shm pool: Error getting shm. %d.\n",errno);
+        celix_err_pushf("Shm pool: Error getting shm. %d.\n",errno);
         status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
         goto err_getting_shm;
     }
     shmPool->shmStartAddr = shmat(shmPool->shmId, NULL, 0);
     if (shmPool->shmStartAddr == NULL) {
-        fprintf(stderr,"Shm pool: Error attaching shm, %d.\n",errno);
+        celix_err_pushf("Shm pool: Error attaching shm, %d.\n",errno);
         status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
         goto err_attaching_shm;
     }
@@ -87,21 +87,21 @@ celix_status_t shmPool_create(size_t size, shm_pool_t **pool) {
     void *poolMem = shmPool->shmStartAddr + normalizedSharedInfoSize;
     shmPool->allocator = tlsf_create_with_pool(poolMem, size - normalizedSharedInfoSize);
     if (shmPool->allocator == NULL) {
-        fprintf(stderr,"Shm pool: Error creating shm pool allocator.\n");
+        celix_err_pushf("Shm pool: Error creating shm pool allocator.\n");
         status = CELIX_ILLEGAL_STATE;
         goto allocator_err;
     }
 
     status = celixThreadCondition_init(&shmPool->heartbeatThreadStoped, NULL);
     if (status != CELIX_SUCCESS) {
-        fprintf(stderr,"Shm pool: Error creating stoped condition for heartbeat thread. %d.\n", status);
+        celix_err_pushf("Shm pool: Error creating stoped condition for heartbeat thread. %d.\n", status);
         goto stopped_cond_err;
     }
     shmPool->heartbeatThreadActive = true;
     status = celixThread_create(&shmPool->shmHeartbeatThread, NULL,
             shmPool_heartbeatThread, shmPool);
     if (status != CELIX_SUCCESS) {
-        fprintf(stderr,"Shm pool: Error creating heartbeat thread. %d.\n", status);
+        celix_err_pushf("Shm pool: Error creating heartbeat thread. %d.\n", status);
         goto heartbeat_thread_err;
     }
 

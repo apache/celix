@@ -156,6 +156,7 @@ celix_status_t dfi_findAndParseInterfaceDescriptor(celix_log_helper_t *logHelper
         int rc = dynInterface_parse(descriptor, intfOut);
         fclose(descriptor);
         if (rc != 0) {
+            celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
             celix_logHelper_error(logHelper, "Cannot parse dfi descriptor for '%s'", name);
             status = CELIX_BUNDLE_EXCEPTION;
         }
@@ -167,6 +168,7 @@ celix_status_t dfi_findAndParseInterfaceDescriptor(celix_log_helper_t *logHelper
         *intfOut = dynInterface_parseAvpr(descriptor);
         fclose(descriptor);
         if (*intfOut == NULL) {
+            celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
             celix_logHelper_error(logHelper, "Cannot parse avpr descriptor for '%s'", name);
             status = CELIX_BUNDLE_EXCEPTION;
         }

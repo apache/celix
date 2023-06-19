@@ -1,0 +1,9 @@
+:header
+type=interface
+name=example5
+version=1.0.0
+:annotations
+:types
+:methods
+multiPreOut(V)Di=multiPreOut(#am=handle;P#am=pre;*D#am=pre;*i)N
+multiOut(V)Di=multiOut(#am=handle;P#am=out;**D#am=out;**i)N

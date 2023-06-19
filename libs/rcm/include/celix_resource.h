@@ -39,7 +39,7 @@ extern "C" {
 /**
  * @brief Creates a new resource.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @return A new resource.
  * @retval NULL If the resource could not be created.
@@ -81,7 +81,7 @@ const celix_array_list_t* celix_resource_getRequirements(const celix_resource_t*
  *
  * The capability resource must be the same as this resource or a CELIX_ILLEGAL_ARGUMENT error is returned.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] res The resource.
  * @param[in] cap The capability to add. The resource will take ownership of the capability.
@@ -95,7 +95,7 @@ celix_status_t celix_resource_addCapability(celix_resource_t* res, celix_capabil
 /**
  * @brief Adds a requirement to the resource.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] res The resource.
  * @param[in] req The requirement to add. The resource will take ownership of the requirement.

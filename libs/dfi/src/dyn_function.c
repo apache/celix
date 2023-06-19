@@ -41,7 +41,6 @@ ffi_type * dynType_ffiType(dyn_type *type);
 int dynFunction_parse(FILE *descriptor, struct types_head *refTypes, dyn_function_type **out) {
     int status = OK;
     dyn_function_type *dynFunc = NULL;
-    LOG_DEBUG("Creating dyn function", descriptor);
     
     dynFunc = calloc(1, sizeof(*dynFunc));
 
@@ -74,7 +73,6 @@ int dynFunction_parse(FILE *descriptor, struct types_head *refTypes, dyn_functio
             } else if (strcmp(meta, "out") == 0) {
                 arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__OUTPUT;
             } else {
-                LOG_WARNING("unknown argument meta '%s' encountered", meta);
                 arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__STD;
             }
         }
@@ -83,6 +81,7 @@ int dynFunction_parse(FILE *descriptor, struct types_head *refTypes, dyn_functio
     if (status == OK) {
         *out = dynFunc;
     }    else {
+        LOG_ERROR("Failed to Create dyn function");
         if (dynFunc != NULL) {
             dynFunction_destroy(dynFunc);
         }
