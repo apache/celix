@@ -276,10 +276,7 @@ TEST_F(ScheduledEventTestSuite, WakeUpEventTest) {
     // Then the status is CELIX_SUCCESS
     ASSERT_EQ(CELIX_SUCCESS, status);
 
-    // When waiting a bit to let the scheduled event trigger
-    std::this_thread::sleep_for(std::chrono::milliseconds{5});
-
-    // Then the count becomes 1 within the error margin
+    // And the count becomes 1 within the error margin
     waitFor([&]() { return count.load() == 1; }, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
     EXPECT_EQ(1, count.load());
 
