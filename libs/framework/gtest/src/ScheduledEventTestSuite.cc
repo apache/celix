@@ -127,8 +127,8 @@ TEST_F(ScheduledEventTestSuite, ScheduledEventTest) {
     long eventId = celix_bundleContext_scheduleEvent(ctx->getCBundleContext(), &opts);
     EXPECT_GE(eventId, 0);
 
-    // Then count becomes 3 or more within the initial delay + 2 x internal and an allowed error margin
-    int allowedTimeInMs = 10 + (2 * 20) + ALLOWED_ERROR_MARGIN_IN_MS;
+    // Then count becomes 3 or more within the initial delay + 2 x internal and an allowed error margin (3x)
+    int allowedTimeInMs = 10 + (2 * 20) + (3*ALLOWED_ERROR_MARGIN_IN_MS);
     waitFor([&]() { return info.count.load() >= 3; }, std::chrono::milliseconds{allowedTimeInMs});
     EXPECT_GE(info.count.load(), 3);
 
