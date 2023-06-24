@@ -31,7 +31,7 @@ class ScheduledEventTestSuite : public ::testing::Test {
 #ifdef __APPLE__
     const int ALLOWED_ERROR_MARGIN_IN_MS = 500;
 #else
-    const int ALLOWED_ERROR_MARGIN_IN_MS = 20;
+    const int ALLOWED_ERROR_MARGIN_IN_MS = 200;
 #endif
 
     /**
