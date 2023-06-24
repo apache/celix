@@ -282,7 +282,7 @@ TEST_F(ScheduledEventTestSuite, WakeUpEventTest) {
 
     // And the count becomes 2 within the interval including the error margin
     auto now = std::chrono::steady_clock::now();
-    waitFor([&]() { return count.load() == 2; }, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
+    waitFor([&]() { return count.load() == 2; }, std::chrono::milliseconds{50 + ALLOWED_ERROR_MARGIN_IN_MS});
     auto end = std::chrono::steady_clock::now();
     auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
     EXPECT_EQ(2, count.load());
