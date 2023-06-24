@@ -18,7 +18,7 @@
 add_library(thpool STATIC
         src/thpool.c
         )
-
+celix_target_hide_symbols(thpool)
 target_include_directories(thpool PUBLIC include)
 
 add_library(Celix::thpool ALIAS thpool)
