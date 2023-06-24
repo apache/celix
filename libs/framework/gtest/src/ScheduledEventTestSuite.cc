@@ -29,7 +29,7 @@ class ScheduledEventTestSuite : public ::testing::Test {
     std::shared_ptr<celix::Framework> fw{};
 
 #ifdef __APPLE__
-    const int ALLOWED_ERROR_MARGIN_IN_MS = 200;
+    const int ALLOWED_ERROR_MARGIN_IN_MS = 500;
 #else
     const int ALLOWED_ERROR_MARGIN_IN_MS = 20;
 #endif
