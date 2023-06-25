@@ -18,7 +18,7 @@
  */
 
 #include "celix_log_utils.h"
-#include <strings.h>
+#include <string.h>
 
 static const char* const CELIX_STRING_VALUE_DISABLED = "disabled";
 static const char* const CELIX_STRING_VALUE_FATAL = "fatal";
