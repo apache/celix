@@ -165,13 +165,6 @@ static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt
         return status;
     }
 
-    //create bundle revision directory
-    status = celix_utils_createDirectory(archive->resourceCacheRoot, false, &errorStr);
-    if (status != CELIX_SUCCESS) {
-        fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Failed to create bundle revision dir: %s", errorStr);
-        return status;
-    }
-
     //extract bundle zip to revision directory
     status = celix_bundleArchive_extractBundle(archive, archive->location);
     if (status != CELIX_SUCCESS) {

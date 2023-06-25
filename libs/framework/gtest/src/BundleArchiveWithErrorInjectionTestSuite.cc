@@ -135,12 +135,6 @@ TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreateCacheDirecto
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
-    // Given a mocked celix_utils_createDirectory which returns CELIX_FILE_IO_EXCEPTION from a third (indirect) call
-    //  from bundleArchive_create
-    celix_ei_expect_celix_utils_createDirectory((void*)celix_bundleArchive_create, 1, CELIX_FILE_IO_EXCEPTION, 3);
-    installBundleAndExpectFailure();
-
-    teardownErrorInjectors();
     // Given a mocked celix_utils_strdup which returns NULL from a (indirect) call from bundleArchive_create
     celix_ei_expect_celix_utils_strdup((void*)celix_bundleArchive_create, 1, nullptr);
     installBundleAndExpectFailure();
