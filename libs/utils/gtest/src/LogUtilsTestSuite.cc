@@ -25,34 +25,12 @@ class LogUtilsTestSuite : public ::testing::Test {};
 
 TEST_F(LogUtilsTestSuite, LogLevelToString) {
     EXPECT_STREQ("trace", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_TRACE));
-    EXPECT_STREQ("debug", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_DEBUG));
-    EXPECT_STREQ("info", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_INFO));
-    EXPECT_STREQ("warning", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_WARNING));
-    EXPECT_STREQ("error", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_ERROR));
-    EXPECT_STREQ("fatal", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_FATAL));
-    EXPECT_STREQ("disabled", celix_logUtils_logLevelToString(CELIX_LOG_LEVEL_DISABLED));
+    //note rest is tested in LogTestSuite
 }
 
 TEST_F(LogUtilsTestSuite, LogLevelFromString) {
     EXPECT_EQ(CELIX_LOG_LEVEL_TRACE, celix_logUtils_logLevelFromString("trace", CELIX_LOG_LEVEL_DISABLED));
-    EXPECT_EQ(CELIX_LOG_LEVEL_DEBUG, celix_logUtils_logLevelFromString("debug", CELIX_LOG_LEVEL_DISABLED));
-    EXPECT_EQ(CELIX_LOG_LEVEL_INFO, celix_logUtils_logLevelFromString("info", CELIX_LOG_LEVEL_DISABLED));
-    EXPECT_EQ(CELIX_LOG_LEVEL_WARNING, celix_logUtils_logLevelFromString("warning", CELIX_LOG_LEVEL_DISABLED));
-    EXPECT_EQ(CELIX_LOG_LEVEL_ERROR, celix_logUtils_logLevelFromString("error", CELIX_LOG_LEVEL_DISABLED));
-    EXPECT_EQ(CELIX_LOG_LEVEL_FATAL, celix_logUtils_logLevelFromString("fatal", CELIX_LOG_LEVEL_DISABLED));
-    EXPECT_EQ(CELIX_LOG_LEVEL_DISABLED, celix_logUtils_logLevelFromString("disabled", CELIX_LOG_LEVEL_DISABLED));
-
-
-    EXPECT_EQ(CELIX_LOG_LEVEL_DISABLED, celix_logUtils_logLevelFromString(nullptr, CELIX_LOG_LEVEL_DISABLED));
-    EXPECT_EQ(CELIX_LOG_LEVEL_DISABLED, celix_logUtils_logLevelFromString("garbage", CELIX_LOG_LEVEL_DISABLED));
-
-    bool converted;
-    EXPECT_EQ(CELIX_LOG_LEVEL_FATAL, celix_logUtils_logLevelFromStringWithCheck("fatal", CELIX_LOG_LEVEL_DISABLED, &converted));
-    EXPECT_TRUE(converted);
-    EXPECT_EQ(CELIX_LOG_LEVEL_DISABLED, celix_logUtils_logLevelFromStringWithCheck(nullptr, CELIX_LOG_LEVEL_DISABLED, &converted));
-    EXPECT_FALSE(converted);
-    EXPECT_EQ(CELIX_LOG_LEVEL_DISABLED, celix_logUtils_logLevelFromStringWithCheck("garbage", CELIX_LOG_LEVEL_DISABLED, &converted));
-    EXPECT_FALSE(converted);
+    //note rest is tested in LogTestSuite
 }
 
 TEST_F(LogUtilsTestSuite, LogToStdout) {

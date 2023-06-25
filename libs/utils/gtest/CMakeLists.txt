@@ -24,6 +24,7 @@ set(CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS
 )
 
 add_executable(test_utils
+        src/LogTestSuite.cc
         src/LogUtilsTestSuite.cc
         src/VersionRangeTestSuite.cc
         src/TimeUtilsTestSuite.cc
