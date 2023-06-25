@@ -137,14 +137,15 @@ static void celix_scheduledEvent_destroy(celix_scheduled_event_t* event) {
     free(event);
 }
 
-void celix_scheduledEvent_retain(celix_scheduled_event_t* event) {
+celix_scheduled_event_t* celix_scheduledEvent_retain(celix_scheduled_event_t* event) {
     if (event == NULL) {
-        return;
+        return NULL;
     }
 
     celixThreadMutex_lock(&event->mutex);
     event->useCount += 1;
     celixThreadMutex_unlock(&event->mutex);
+    return event;
 }
 
 void celix_scheduledEvent_release(celix_scheduled_event_t* event) {
@@ -159,6 +160,12 @@ void celix_scheduledEvent_release(celix_scheduled_event_t* event) {
 
     if (unused) {
         celix_scheduledEvent_destroy(event);
+    }
+}
+
+void celix_ScheduledEvent_cleanup(celix_scheduled_event_t** event) {
+    if (event) {
+        celix_scheduledEvent_release(*event);
     }
 }
 
