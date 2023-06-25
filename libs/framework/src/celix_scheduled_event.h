@@ -27,6 +27,9 @@
 extern "C" {
 #endif
 
+/**
+ * @brief A scheduled event is an event which is scheduled to be processed at a given initial delay and interval.
+ */
 typedef struct celix_scheduled_event celix_scheduled_event_t;
 
 /**
@@ -34,6 +37,7 @@ typedef struct celix_scheduled_event celix_scheduled_event_t;
  *
  * The scheduled event will be created with a use count of 1.
  *
+ * @param[in] fw The framework.
  * @param[in] bndId The bundle id for the bundle which the scheduled event is created.
  * @param[in] scheduledEventId The id of the scheduled event.
  * @param[in] eventName The name of the event. If NULL, CELIX_SCHEDULED_EVENT_DEFAULT_NAME is used.
@@ -45,7 +49,7 @@ typedef struct celix_scheduled_event celix_scheduled_event_t;
  * @param[in] removedCallback The removed callback.
  * @return A new scheduled event or NULL if failed.
  */
-celix_scheduled_event_t* celix_scheduledEvent_create(celix_framework_logger_t* logger,
+celix_scheduled_event_t* celix_scheduledEvent_create(celix_framework_t* fw,
                                                      long bndId,
                                                      long scheduledEventId,
                                                      const char* providedEventName,
@@ -134,7 +138,7 @@ bool celix_scheduledEvent_isMarkedForRemoval(celix_scheduled_event_t* event);
 /**
  * @brief Configure a scheduled event for a wakeup, so celix_scheduledEvent_deadlineReached will return true until
  * the event is processed.
- * 
+ *
  * @param[in] event The event to configure for wakeup.
  * @return The future call count of the event after the next processing is done.
  */
@@ -148,7 +152,6 @@ size_t celix_scheduledEvent_markForWakeup(celix_scheduled_event_t* event);
  *        done with processing within the timeout.
  */
 celix_status_t celix_scheduledEvent_wait(celix_scheduled_event_t* event, double timeoutInSeconds);
-
 
 /**
  * @brief Returns true if the event is marked for wakeup, the initial delay or interval deadline is reached or the

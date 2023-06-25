@@ -2621,7 +2621,7 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
         fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Cannot add scheduled event for non existing bundle id %li.", bndId);
         return -1;
     }
-    celix_scheduled_event_t* event = celix_scheduledEvent_create(fw->logger,
+    celix_scheduled_event_t* event = celix_scheduledEvent_create(fw,
                                                                  bndEntry->bndId,
                                                                  celix_framework_nextScheduledEventId(fw),
                                                                  eventName,
@@ -2637,11 +2637,12 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
         return -1L; //error logged by celix_scheduledEvent_create
     }
 
+    long eventId = celix_scheduledEvent_getId(event);
     fw_log(fw->logger,
            CELIX_LOG_LEVEL_DEBUG,
            "Added scheduled event '%s' (id=%li) for bundle '%s' (id=%li).",
            celix_scheduledEvent_getName(event),
-           celix_scheduledEvent_getId(event),
+           eventId,
            celix_bundle_getSymbolicName(bndEntry->bnd),
            bndId);
 
@@ -2650,7 +2651,7 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
     celixThreadCondition_broadcast(&fw->dispatcher.cond); //notify dispatcher thread for newly added scheduled event
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 
-    return celix_scheduledEvent_getId(event);
+    return eventId;
 }
 
 celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw, long scheduledEventId) {
