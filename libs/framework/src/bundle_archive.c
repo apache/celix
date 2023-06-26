@@ -103,7 +103,7 @@ celix_bundleArchive_extractBundle(bundle_archive_t* archive, const char* bundleU
 
     //get revision mod time;
     struct timespec revisionMod;
-    status = celix_bundleArchive_getLastModifiedInternal(archive, &revisionMod);
+    status = celix_utils_getLastModified(archive->resourceCacheRoot, &revisionMod);
     if (status != CELIX_SUCCESS && errno != ENOENT) {
         fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to get last modified time for bundle archive revision directory '%s'", archive->resourceCacheRoot);
         return status;
@@ -396,23 +396,10 @@ celix_status_t bundleArchive_getLastModified(bundle_archive_pt archive, time_t* 
 }
 //LCOV_EXCL_STOP
 
-celix_status_t celix_bundleArchive_getLastModifiedInternal(bundle_archive_pt archive, struct timespec* lastModified) {
-    // precondition: archive->lock is locked
-    celix_status_t status = CELIX_SUCCESS;
-    char manifestPathBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
-    char* manifestPath = celix_utils_writeOrCreateString(manifestPathBuffer, sizeof(manifestPathBuffer), "%s/%s", archive->resourceCacheRoot, CELIX_BUNDLE_MANIFEST_REL_PATH);
-    if (manifestPath == NULL) {
-        status = CELIX_ENOMEM;
-    }
-    status = CELIX_DO_IF(status, celix_utils_getLastModified(manifestPath, lastModified));
-    celix_utils_freeStringIfNotEqual(manifestPathBuffer, manifestPath);
-    return status;
-}
-
 celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, struct timespec* lastModified) {
     celix_status_t status;
     celixThreadMutex_lock(&archive->lock);
-    status = celix_bundleArchive_getLastModifiedInternal(archive, lastModified);
+    status = celix_utils_getLastModified(archive->resourceCacheRoot, lastModified);
     celixThreadMutex_unlock(&archive->lock);
     return status;
 }

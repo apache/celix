@@ -185,8 +185,8 @@ TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     bundle_archive_t* archive = nullptr;
 
     // archive directory creation failures not covered by other tests
-    celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_bundleArchive_getLastModifiedInternal, 0, nullptr);
-    EXPECT_EQ(CELIX_ENOMEM,
+    celix_ei_expect_celix_utils_getLastModified((void*)celix_bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION);
+    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION,
               celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_EQ(nullptr, archive);
     EXPECT_FALSE(celix_utils_directoryExists(TEST_ARCHIVE_ROOT));
