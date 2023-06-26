@@ -85,7 +85,7 @@ TEST_F(CelixFrameworkTestSuite, TimedWaitEventQueueTest) {
 
     //And a generic event is fired, that block the queue for 20ms
     auto callback = [](void* /*data*/) {
-        std::this_thread::sleep_for(std::chrono::milliseconds{20});
+        std::this_thread::sleep_for(std::chrono::milliseconds{200});
     };
     celix_framework_fireGenericEvent(framework.get(), -1L, -1L, "test", nullptr, callback, nullptr, nullptr);
 
