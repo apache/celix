@@ -20,12 +20,16 @@
 #include <gtest/gtest.h>
 
 #include <dirent.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "celix/FrameworkFactory.h"
 #include "celix/FrameworkUtils.h"
 
-#include "celix_framework_utils_private.h"
 #include "celix_file_utils.h"
+#include "celix_framework_utils_private.h"
 
 /**
  * Tests for the C and C++ framework utils functions which can be found in
@@ -84,11 +88,6 @@ TEST_F(CelixFrameworkUtilsTestSuite, ExtractBundlePathTest) {
     status = celix_framework_utils_extractBundle(framework->getCFramework(), "non-existing.zip", testExtractDir); //note nullptr framwork is allowed, fallback to global logger.
     EXPECT_NE(status, CELIX_SUCCESS);
 
-
-    //invalid bundle path -> no extraction
-    status = celix_framework_utils_extractBundle(framework->getCFramework(), "./", testExtractDir); //note nullptr framwork is allowed, fallback to global logger.
-    EXPECT_NE(status, CELIX_SUCCESS);
-
     //invalid url prefix -> no extraction
     std::string path = std::string{"bla://"} + SIMPLE_TEST_BUNDLE1_LOCATION;
     status = celix_framework_utils_extractBundle(framework->getCFramework(), path.c_str(), testExtractDir);
@@ -116,6 +115,27 @@ TEST_F(CelixFrameworkUtilsTestSuite, ExtractBundlePathTest) {
     EXPECT_EQ(status, CELIX_SUCCESS);
     checkBundleCacheDir(testExtractDir);
     celix_utils_deleteDirectory(testExtractDir, nullptr);
+}
+
+TEST_F(CelixFrameworkUtilsTestSuite, ExtractUncompressedBundleTest) {
+    const char* testExtractDir = "extractBundleTestDir";
+    const char* testLinkDir = "linkBundleTestDir";
+    celix_utils_deleteDirectory(testExtractDir, nullptr);
+    celix_utils_deleteDirectory(testLinkDir, nullptr);
+    EXPECT_EQ(CELIX_SUCCESS, celix_utils_extractZipFile(SIMPLE_TEST_BUNDLE1_LOCATION, testExtractDir, nullptr));
+
+    //valid bundle path -> install a symbolic link
+    auto status = celix_framework_utils_extractBundle(framework->getCFramework(), testExtractDir, testLinkDir);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    struct stat st1, st2, st3;
+    EXPECT_EQ(0, lstat(testLinkDir, &st1));
+    EXPECT_TRUE(S_ISLNK(st1.st_mode));
+    EXPECT_EQ(0, stat(testLinkDir, &st2));
+    EXPECT_EQ(0, stat(testExtractDir, &st3));
+    EXPECT_EQ(0, memcmp(&st2, &st3, sizeof(struct stat)));
+
+    celix_utils_deleteDirectory(testExtractDir, nullptr);
+    celix_utils_deleteDirectory(testLinkDir, nullptr);
 }
 
 TEST_F(CelixFrameworkUtilsTestSuite, ExtractEmbeddedBundleTest) {
