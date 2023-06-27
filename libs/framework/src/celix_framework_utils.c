@@ -199,10 +199,17 @@ static celix_status_t celix_framework_utils_extractBundlePath(celix_framework_t 
     }
     celix_status_t status = CELIX_SUCCESS;
     if (celix_utils_directoryExists(resolvedPath)) {
-        //TODO: add tests
         char *abs = realpath(resolvedPath, NULL);
-        assert(abs != NULL);
-        symlink(abs, extractPath);
+        if (abs == NULL) {
+            status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+            err = "Could not get real path for bundle";
+        }
+        if (status == CELIX_SUCCESS) {
+            if(symlink(abs, extractPath) == -1) {
+                status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+                err = "Could not add symbolic link";
+            }
+        }
         free(abs);
     } else {
         status = celix_utils_extractZipFile(resolvedPath, extractPath, &err);

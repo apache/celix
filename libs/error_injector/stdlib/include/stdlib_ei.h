@@ -17,26 +17,18 @@
   under the License.
  */
 
-#include "unistd_ei.h"
-
-#include <errno.h>
-
+#ifndef CELIX_STDLIB_EI_H
+#define CELIX_STDLIB_EI_H
+#ifdef __cplusplus
 extern "C" {
-char *__real_getcwd(char *buf, size_t size);
-CELIX_EI_DEFINE(getcwd, char*)
-char *__wrap_getcwd(char *buf, size_t size) {
-    errno = ENOMEM;
-    CELIX_EI_IMPL(getcwd);
-    errno = 0;
-    return __real_getcwd(buf, size);
-}
+#endif
 
-int __real_symlink(const char *target, const char *linkpath);
-CELIX_EI_DEFINE(symlink, int)
-int __wrap_symlink(const char *target, const char *linkpath) {
-    errno = EIO;
-    CELIX_EI_IMPL(symlink);
-    errno = 0;
-    return __real_symlink(target, linkpath);
+#include "celix_error_injector.h"
+#include <stdlib.h>
+
+CELIX_EI_DECLARE(realpath, char*);
+
+#ifdef __cplusplus
 }
-}
+#endif
+#endif //CELIX_STDLIB_EI_H

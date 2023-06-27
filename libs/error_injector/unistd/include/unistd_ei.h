@@ -29,6 +29,8 @@ extern "C" {
 
 CELIX_EI_DECLARE(getcwd, char*);
 
+CELIX_EI_DECLARE(symlink, int);
+
 #ifdef __cplusplus
 }
 #endif

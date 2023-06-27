@@ -17,26 +17,18 @@
   under the License.
  */
 
-#include "unistd_ei.h"
-
+#include "stdlib_ei.h"
 #include <errno.h>
 
 extern "C" {
-char *__real_getcwd(char *buf, size_t size);
-CELIX_EI_DEFINE(getcwd, char*)
-char *__wrap_getcwd(char *buf, size_t size) {
-    errno = ENOMEM;
-    CELIX_EI_IMPL(getcwd);
+
+char *__real_realpath(const char *__restrict __name, char *__restrict __resolved);
+CELIX_EI_DEFINE(realpath, char*)
+char *__wrap_realpath(const char *__restrict __name, char *__restrict __resolved) {
+    errno = EACCES;
+    CELIX_EI_IMPL(realpath);
     errno = 0;
-    return __real_getcwd(buf, size);
+    return __real_realpath(__name, __resolved);
 }
 
-int __real_symlink(const char *target, const char *linkpath);
-CELIX_EI_DEFINE(symlink, int)
-int __wrap_symlink(const char *target, const char *linkpath) {
-    errno = EIO;
-    CELIX_EI_IMPL(symlink);
-    errno = 0;
-    return __real_symlink(target, linkpath);
-}
 }

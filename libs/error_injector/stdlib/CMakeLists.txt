@@ -15,13 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(unistd_ei STATIC src/unistd_ei.cc)
+add_library(stdlib_ei STATIC src/stdlib_ei.cc)
 
-target_include_directories(unistd_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(unistd_ei PUBLIC Celix::error_injector)
+target_include_directories(stdlib_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(stdlib_ei PUBLIC Celix::error_injector)
 
-target_link_options(unistd_ei INTERFACE
-        LINKER:--wrap,getcwd
-        LINKER:--wrap,symlink
+target_link_options(stdlib_ei INTERFACE
+        LINKER:--wrap,realpath
         )
-add_library(Celix::unistd_ei ALIAS unistd_ei)
+add_library(Celix::stdlib_ei ALIAS stdlib_ei)
