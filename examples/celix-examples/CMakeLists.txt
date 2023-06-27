@@ -21,7 +21,6 @@ else ()
     set(EXAMPLES true) #celix_subproject is only available in the celix project -> using examples dir in other project is also supported
     option(CELIX_CXX14 ON)
     option(CELIX_CXX17 ON)
-    find_package(Celix REQUIRED)
 endif ()
 if (EXAMPLES)
     add_definitions(-DADD_CELIX_DEPRECATED_WARNING) #ensure that no deprecated api is used in the examples
