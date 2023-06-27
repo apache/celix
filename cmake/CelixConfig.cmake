@@ -29,6 +29,18 @@ get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
 get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
 
 include("${REL_INSTALL_DIR}/share/celix/cmake/cmake_celix/UseCelix.cmake") #adds celix commands (e.g. add_celix_bundle)
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(ZLIB) #Needed by framework
+find_dependency(libuuid) #Needed by framework
+find_dependency(CURL) #Needed by framework (used for curl initialization), etcdlib
+find_dependency(libzip) #Needed by utils
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_dependency(Threads)
+
+include("${REL_INSTALL_DIR}/share/celix/cmake/CelixDeps.cmake") #adds celix optional dependencies
+
 include("${REL_INSTALL_DIR}/share/celix/cmake/Targets.cmake") #imports lib and exe targets (e.g. Celix::framework)
 
 include("${REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake")
@@ -74,15 +86,6 @@ set(CELIX_BUNDLES_DIR ${REL_INSTALL_DIR}/share/celix/bundles)
 set(CELIX_SHELL_BUNDLE ${CELIX_BUNDLES_DIR}/shell.zip)
 set(CELIX_SHELL_TUI_BUNDLE ${CELIX_BUNDLES_DIR}/shell_tui.zip)
 
-include(CMakeFindDependencyMacro)
-
-find_dependency(ZLIB) #Needed by framework
-find_dependency(libuuid) #Needed by framework
-find_dependency(CURL) #Needed by framework (used for curl initialization), etcdlib
-find_dependency(libzip) #Needed by utils
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_dependency(Threads)
-
 if (NOT TARGET ZLIB::ZLIB)
   #Note more recent zlib will create ZLIB::ZLIB target
   message("Note ZLIB::ZLIB target not created by find_package(ZLIB). Creating ZLIB::ZLIB Target.")
@@ -102,31 +105,3 @@ if (NOT TARGET CURL::libcurl)
           INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
           )
 endif ()
-
-if (TARGET Celix::dfi)
-  find_dependency(libffi)
-  find_dependency(jansson)
-endif ()
-if (TARGET Celix::etcdlib)
-  find_dependency(jansson)
-endif ()
-if (TARGET Celix::RsaConfiguredDiscovery)
-  find_dependency(RapidJSON)
-endif ()
-if (TARGET Celix::rsa_discovery_common OR TARGET Celix::bonjour_shell)
-  find_dependency(LibXml2)
-endif ()
-if (TARGET  Celix::celix_pubsub_admin_zmq OR TARGET Celix::celix_pubsub_admin_zmq_v2)
-  find_dependency(ZeroMQ)
-  find_dependency(czmq)
-endif ()
-if (TARGET Celix::pubsub_admin_nanomsg)
-  find_dependency(NanoMsg)
-endif ()
-if (TARGET Celix::http_admin_api)
-  find_dependency(civetweb)
-endif ()
-if (TARGET Celix::rsa_discovery_zeroconf)
-  find_dependency(DNSSD)
-endif ()
-
