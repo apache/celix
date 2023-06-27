@@ -23,5 +23,6 @@ target_link_libraries(unistd_ei PUBLIC Celix::error_injector)
 target_link_options(unistd_ei INTERFACE
         LINKER:--wrap,getcwd
         LINKER:--wrap,symlink
+        LINKER:--wrap,unlink
         )
 add_library(Celix::unistd_ei ALIAS unistd_ei)

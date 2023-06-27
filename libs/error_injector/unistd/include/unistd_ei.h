@@ -31,6 +31,8 @@ CELIX_EI_DECLARE(getcwd, char*);
 
 CELIX_EI_DECLARE(symlink, int);
 
+CELIX_EI_DECLARE(unlink, int);
+
 #ifdef __cplusplus
 }
 #endif

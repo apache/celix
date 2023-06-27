@@ -125,13 +125,30 @@ celix_bundleArchive_extractBundle(bundle_archive_t* archive, const char* bundleU
      * If dlopen/dlsym is used with newer files, but with the same inode already used in dlopen/dlsym this leads to
      * segfaults.
      */
-    const char* error;
-    status = celix_utils_deleteDirectory(archive->resourceCacheRoot, &error);
-    if (status != CELIX_SUCCESS) {
-        fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to remove existing bundle archive revision directory '%s': %s", archive->resourceCacheRoot, error);
+    const char* error = NULL;
+    struct stat st;
+    status = lstat(archive->resourceCacheRoot, &st);
+    if(status == -1 && errno != ENOENT) {
+        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+        fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to stat bundle archive directory '%s'", archive->resourceCacheRoot);
         return status;
     }
-
+    if (status == 0) {
+        // celix_utils_deleteDirectory does not work for dangling symlinks, so handle this case separately
+        if (S_ISLNK(st.st_mode)) {
+            status = unlink(archive->resourceCacheRoot);
+            if (status == -1) {
+                status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+                error = "Failed to remove existing bundle symlink";
+            }
+        } else {
+            status = celix_utils_deleteDirectory(archive->resourceCacheRoot, &error);
+        }
+        if (status != CELIX_SUCCESS) {
+            fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to remove existing bundle archive revision directory '%s': %s", archive->resourceCacheRoot, error);
+            return status;
+        }
+    }
     status = celix_framework_utils_extractBundle(archive->fw, bundleUrl, archive->resourceCacheRoot);
     if (status != CELIX_SUCCESS) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Failed to extract bundle zip to revision directory.");

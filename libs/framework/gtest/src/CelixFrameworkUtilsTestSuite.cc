@@ -121,7 +121,7 @@ TEST_F(CelixFrameworkUtilsTestSuite, ExtractUncompressedBundleTest) {
     const char* testExtractDir = "extractBundleTestDir";
     const char* testLinkDir = "linkBundleTestDir";
     celix_utils_deleteDirectory(testExtractDir, nullptr);
-    celix_utils_deleteDirectory(testLinkDir, nullptr);
+    unlink(testLinkDir);
     EXPECT_EQ(CELIX_SUCCESS, celix_utils_extractZipFile(SIMPLE_TEST_BUNDLE1_LOCATION, testExtractDir, nullptr));
 
     //valid bundle path -> install a symbolic link
@@ -135,7 +135,7 @@ TEST_F(CelixFrameworkUtilsTestSuite, ExtractUncompressedBundleTest) {
     EXPECT_EQ(0, memcmp(&st2, &st3, sizeof(struct stat)));
 
     celix_utils_deleteDirectory(testExtractDir, nullptr);
-    celix_utils_deleteDirectory(testLinkDir, nullptr);
+    unlink(testLinkDir);
 }
 
 TEST_F(CelixFrameworkUtilsTestSuite, ExtractEmbeddedBundleTest) {

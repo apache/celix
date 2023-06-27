@@ -39,4 +39,14 @@ int __wrap_symlink(const char *target, const char *linkpath) {
     errno = 0;
     return __real_symlink(target, linkpath);
 }
+
+int __real_unlink(const char *pathname);
+CELIX_EI_DEFINE(unlink, int)
+int __wrap_unlink(const char *pathname) {
+    errno = EACCES;
+    CELIX_EI_IMPL(unlink);
+    errno = 0;
+    return __real_unlink(pathname);
+}
+
 }

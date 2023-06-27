@@ -21,6 +21,7 @@
 
 #include <dirent.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "celix/FrameworkFactory.h"
 #include "celix/FrameworkUtils.h"
@@ -95,7 +96,7 @@ TEST_F(CelixFrameworkUtilsErrorInjectionTestSuite, ExtractUncompressedBundleTest
     const char* testExtractDir = "extractBundleTestDir";
     const char* testLinkDir = "linkBundleTestDir";
     celix_utils_deleteDirectory(testExtractDir, nullptr);
-    celix_utils_deleteDirectory(testLinkDir, nullptr);
+    unlink(testLinkDir);
     EXPECT_EQ(CELIX_SUCCESS, celix_utils_extractZipFile(SIMPLE_TEST_BUNDLE1_LOCATION, testExtractDir, nullptr));
 
     // failed to get realpath of bundle
@@ -109,7 +110,7 @@ TEST_F(CelixFrameworkUtilsErrorInjectionTestSuite, ExtractUncompressedBundleTest
     EXPECT_EQ(status, CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EIO));
 
     celix_utils_deleteDirectory(testExtractDir, nullptr);
-    celix_utils_deleteDirectory(testLinkDir, nullptr);
+    unlink(testLinkDir);
 }
 
 TEST_F(CelixFrameworkUtilsErrorInjectionTestSuite, CheckBundleAge) {
