@@ -265,6 +265,31 @@ struct timespec celix_gettime(clockid_t clockId) {
     return t;
 }
 
+struct timespec celix_delayedTimespec(const struct timespec* time, double delayInSeconds) {
+    struct timespec delayedTime;
+    if (time != NULL) {
+        delayedTime = *time;
+    } else {
+        delayedTime.tv_nsec = 0;
+        delayedTime.tv_sec = 0;
+    }
+
+    long seconds = (long)delayInSeconds;
+    double nanoseconds = (delayInSeconds - (double)seconds) * CELIX_NS_IN_SEC;
+    delayedTime.tv_sec += seconds;
+    delayedTime.tv_nsec += (long)nanoseconds;
+
+    if (delayedTime.tv_nsec >= CELIX_NS_IN_SEC) {
+        delayedTime.tv_sec += 1;
+        delayedTime.tv_nsec -= CELIX_NS_IN_SEC;
+    } else if (delayedTime.tv_nsec < 0) {
+        delayedTime.tv_sec -= 1;
+        delayedTime.tv_nsec += CELIX_NS_IN_SEC;
+    }
+    
+    return delayedTime;
+}
+
 double celix_elapsedtime(clockid_t clockId, struct timespec startTime) {
     struct timespec now = celix_gettime(clockId);
     return celix_difftime(&startTime, &now);

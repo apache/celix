@@ -32,7 +32,7 @@ extern "C" {
 
 /**
  * @file celix_dependency_manager.h
- * 
+ *
  * The `celix_dependencyManager_add`, `celix_dependencyManager_remove` and `celix_dependencyManager_removeAllComponents`
  * funcions for celix_dependency_manager_t should be called outside the Celix event thread.
  * Note that bundle activators are started and stopped outside the Celix event thread and thus these
@@ -123,8 +123,9 @@ CELIX_FRAMEWORK_EXPORT size_t celix_dependencyManager_nrOfComponents(celix_depen
 
 /**
  * @brief Wait for an empty Celix event queue.
- * 
+ *
  * Should not be called on the Celix event queue thread.
+ * Note scheduled events are not part of the event queue.
  *
  * Can be used to ensure that all created/updated components are completely processed (services registered
  * and/or service trackers are created).
@@ -133,7 +134,7 @@ CELIX_FRAMEWORK_EXPORT void celix_dependencyManager_wait(celix_dependency_manage
 
 /**
  * @brief Create and returns a dependency manager info struct for the specified bundle.
- * 
+ *
  * The dependency manager info contains information about the state of the dependency manager components
  *
  * Caller has ownership of the return value (use celix_dependencyManager_destroyInfo to free the memory).
@@ -147,7 +148,7 @@ CELIX_FRAMEWORK_EXPORT celix_dependency_manager_info_t* celix_dependencyManager_
 
 /**
  * @brief Create and returns a dependency manager info struct for all started bundles.
- * 
+ *
  * The dependency manager info contains information about the state of the dependency manager components
  *
  * Caller has ownership of the return values (use celix_arrayList_destroy to free the memory).
@@ -170,7 +171,7 @@ CELIX_FRAMEWORK_EXPORT void celix_dependencyManager_destroyInfos(celix_dependenc
 
 /**
  * @brief Print the dependency manager info for all bundles to the provided output stream.
- * 
+ *
  * @param manager The dependency manager.
  * @param fullInfo Whether to print the full info or summary.
  * @param useAnsiColors Whether to use ansi colors when printing info.
@@ -180,7 +181,7 @@ CELIX_FRAMEWORK_EXPORT void celix_dependencyManager_printInfo(celix_dependency_m
 
 /**
  * @brief Print the dependency manager info for the provided bundle id to the provided output stream.
- * 
+ *
  * @param manager The dependency manager.
  * @param fullInfo whether to print the full info or summary.
  * @param useAnsiColors Whether to use ansi colors when printing info.

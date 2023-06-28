@@ -30,70 +30,16 @@
 #include <string.h>
 #include <pthread.h>
 
-static const char * const CELIX_STRING_VALUE_DISABLED  = "disabled";
-static const char * const CELIX_STRING_VALUE_FATAL     = "fatal";
-static const char * const CELIX_STRING_VALUE_ERROR     = "error";
-static const char * const CELIX_STRING_VALUE_WARNING   = "warning";
-static const char * const CELIX_STRING_VALUE_INFO      = "info";
-static const char * const CELIX_STRING_VALUE_DEBUG     = "debug";
-static const char * const CELIX_STRING_VALUE_TRACE     = "trace";
+const char* celix_logUtils_logLevelToString(celix_log_level_e level) { return celix_logLevel_toString(level); }
 
-const char* celix_logUtils_logLevelToString(celix_log_level_e level) {
-    switch(level) {
-        case CELIX_LOG_LEVEL_DISABLED:
-            return CELIX_STRING_VALUE_DISABLED;
-        case CELIX_LOG_LEVEL_FATAL:
-            return CELIX_STRING_VALUE_FATAL;
-        case CELIX_LOG_LEVEL_ERROR:
-            return CELIX_STRING_VALUE_ERROR;
-        case CELIX_LOG_LEVEL_WARNING:
-            return CELIX_STRING_VALUE_WARNING;
-        case CELIX_LOG_LEVEL_INFO:
-            return CELIX_STRING_VALUE_INFO;
-        case CELIX_LOG_LEVEL_DEBUG:
-            return CELIX_STRING_VALUE_DEBUG;
-        default: //only trace left
-            return CELIX_STRING_VALUE_TRACE;
-    }
+celix_log_level_e celix_logUtils_logLevelFromString(const char* str, celix_log_level_e fallbackLogLevel) {
+    return celix_logLevel_fromString(str, fallbackLogLevel);
 }
 
-celix_log_level_e celix_logUtils_logLevelFromString(const char *str, celix_log_level_e fallbackLogLevel) {
-    return celix_logUtils_logLevelFromStringWithCheck(str, fallbackLogLevel, NULL);
-}
-
-celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(const char *str, celix_log_level_e fallbackLogLevel, bool *convertedSuccessfully) {
-    celix_log_level_e level = fallbackLogLevel;
-    if (convertedSuccessfully != NULL) {
-        *convertedSuccessfully = true;
-    }
-    if (str != NULL) {
-        if (strncasecmp(CELIX_STRING_VALUE_DISABLED, str, strlen(CELIX_STRING_VALUE_DISABLED)) == 0) {
-            level = CELIX_LOG_LEVEL_DISABLED;
-        } else if (strncasecmp(CELIX_STRING_VALUE_FATAL, str, strlen(CELIX_STRING_VALUE_FATAL)) == 0) {
-            level = CELIX_LOG_LEVEL_FATAL;
-        } else if (strncasecmp(CELIX_STRING_VALUE_ERROR, str, strlen(CELIX_STRING_VALUE_ERROR)) == 0) {
-            level = CELIX_LOG_LEVEL_ERROR;
-        } else if (strncasecmp(CELIX_STRING_VALUE_WARNING, str, strlen(CELIX_STRING_VALUE_WARNING)) == 0) {
-            level = CELIX_LOG_LEVEL_WARNING;
-        } else if (strncasecmp(CELIX_STRING_VALUE_INFO, str, strlen(CELIX_STRING_VALUE_INFO)) == 0) {
-            level = CELIX_LOG_LEVEL_INFO;
-        } else if (strncasecmp(CELIX_STRING_VALUE_DEBUG, str, strlen(CELIX_STRING_VALUE_DEBUG)) == 0) {
-            level = CELIX_LOG_LEVEL_DEBUG;
-        } else if (strncasecmp(CELIX_STRING_VALUE_TRACE, str, strlen(CELIX_STRING_VALUE_TRACE)) == 0) {
-            level = CELIX_LOG_LEVEL_TRACE;
-        } else {
-            celix_logUtils_logToStdout("logUtils", CELIX_LOG_LEVEL_ERROR, "Cannot match log level str '%s' to an existing log level. Falling back to log level %s", str, celix_logUtils_logLevelToString(fallbackLogLevel));
-            if (convertedSuccessfully != NULL) {
-                *convertedSuccessfully = false;
-            }
-        }
-    } else {
-        celix_logUtils_logToStdout("logUtils", CELIX_LOG_LEVEL_ERROR, "Cannot match NULL log level str to an existing log level. Falling back to log level %s",  celix_logUtils_logLevelToString(fallbackLogLevel));
-        if (convertedSuccessfully != NULL) {
-            *convertedSuccessfully = false;
-        }
-    }
-    return level;
+celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(const char* str,
+                                                             celix_log_level_e fallbackLogLevel,
+                                                             bool* convertedSuccessfully) {
+    return celix_logLevel_fromStringWithCheck(str, fallbackLogLevel, convertedSuccessfully);
 }
 
 #ifndef __UCLIBC__

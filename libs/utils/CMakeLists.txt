@@ -40,6 +40,7 @@ set(UTILS_SRC
         src/utils.c
         src/ip_utils.c
         src/filter.c
+        src/celix_log_level.c
         src/celix_log_utils.c
         src/celix_hash_map.c
         src/celix_file_utils.c
@@ -51,7 +52,7 @@ set(UTILS_SRC
 set(UTILS_PRIVATE_DEPS libzip::libzip)
 set(UTILS_PUBLIC_DEPS)
 
-add_library(utils SHARED ${UTILS_SRC})
+add_library(utils SHARED ${UTILS_SRC} src/celix_log_level.c)
 
 target_link_libraries(utils PRIVATE libzip::libzip)
 set_target_properties(utils

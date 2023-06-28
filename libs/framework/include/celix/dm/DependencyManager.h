@@ -131,6 +131,7 @@ namespace celix { namespace dm {
          * @brief Wait for an empty Celix event queue.
          *
          * Should not be called on the Celix event queue thread.
+         * Note scheduled events are not part of the event queue.
          *
          * Can be used to ensure that all created/updated components are completely processed (services registered
          * and/or service trackers are created).
@@ -140,6 +141,8 @@ namespace celix { namespace dm {
         /**
          * @brief Wait (if not called on the Celix event thread) for an empty Celix event queue
          *
+         * Note scheduled events are not part of the event queue.
+         * 
          * Can be used to ensure that all created/updated components are completely processed (services registered
          * and/or service trackers are created).
          */
