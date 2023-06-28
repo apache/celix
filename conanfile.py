@@ -179,7 +179,7 @@ class CelixConan(ConanFile):
             if self.settings.os != "Linux":
                 self.options.build_rsa_remote_service_admin_shm_v2 = False
                 self.options.build_rsa_discovery_zeroconf = False
-                self.options.self.options.build_shell_bonjour = False
+                self.options.build_shell_bonjour = False
 
         if not self.options.celix_cxx14:
             self.options.celix_cxx17 = False
