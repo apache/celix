@@ -34,7 +34,6 @@ set(FRAMEWORK_SRC
         src/framework_bundle_lifecycle_handler.c
         src/celix_bundle_state.c
         src/celix_framework_utils.c
-        src/celix_framework_conditions.c
         src/celix_module_private.h)
 set(FRAMEWORK_DEPS libuuid::libuuid CURL::libcurl ZLIB::ZLIB ${CMAKE_DL_LIBS})
 

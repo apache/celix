@@ -36,7 +36,6 @@
 #include "celix_libloader.h"
 #include "celix_log_constants.h"
 #include "celix_module_private.h"
-#include "celix_framework_conditions.h"
 
 #include "bundle_archive_private.h"
 #include "bundle_context_private.h"
@@ -255,10 +254,6 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     framework->dispatcher.eventQueueCap = (int)celix_framework_getConfigPropertyAsLong(framework, CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE, CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE, NULL);
     framework->dispatcher.eventQueue = malloc(sizeof(celix_framework_event_t) * framework->dispatcher.eventQueueCap);
     framework->dispatcher.dynamicEventQueue = celix_arrayList_create();
-
-    celixThreadMutex_create(&framework->conditions.mutex, NULL);
-    framework->conditions.initialConditionSvcIds = celix_arrayList_create();
-    framework->conditions.frameworkReadyConditionSvcIds = celix_arrayList_create();
 
     //create and store framework uuid
     char uuid[37];
@@ -482,9 +477,6 @@ celix_status_t framework_start(celix_framework_t* framework) {
     CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED, entry));
     celix_framework_bundleEntry_decreaseUseCount(entry);
 
-    celix_frameworkConditions_registerInitialConditions(framework);
-    CELIX_DO_IF(status, fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_STARTED, framework->bundleId));
-
     if (status != CELIX_SUCCESS) {
         status = CELIX_BUNDLE_EXCEPTION;
         fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not start framework");
@@ -494,7 +486,7 @@ celix_status_t framework_start(celix_framework_t* framework) {
     celix_status_t startStatus = framework_autoStartConfiguredBundles(framework);
     celix_status_t installStatus = framework_autoInstallConfiguredBundles(framework);
     if (startStatus == CELIX_SUCCESS && installStatus == CELIX_SUCCESS) {
-        celix_frameworkConditions_registerFrameworkReadyConditions(framework);
+        fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_STARTED, framework->bundleId); //TODO maybe register framwork.ready on this event and only keep the condition true service?
     } else {
         status = CELIX_BUNDLE_EXCEPTION; //error already logged
     }
@@ -1227,11 +1219,10 @@ static void* framework_shutdown(void *framework) {
 
     // 'stop' framework bundle
     if (fwEntry != NULL) {
-        bundle_t *bnd = fwEntry->bnd;
         fw_bundleEntry_waitTillUseCountIs(fwEntry, 1); //note this function has 1 use count.
 
         bundle_state_e state;
-        bundle_getState(bnd, &state);
+        bundle_getState(fwEntry->bnd, &state);
         if (state == CELIX_BUNDLE_STATE_ACTIVE || state == CELIX_BUNDLE_STATE_STARTING) {
             celix_framework_stopBundleEntry(fw, fwEntry);
         }
@@ -1520,11 +1511,8 @@ static celix_status_t frameworkActivator_stop(void * userData, bundle_context_t 
     celix_status_t status = CELIX_SUCCESS;
     framework_pt framework;
 
+
     if (bundleContext_getFramework(context, &framework) == CELIX_SUCCESS) {
-
-        celix_frameworkConditions_unregisterFrameworkReadyConditions(framework);
-        celix_frameworkConditions_unregisterInitialConditions(framework);
-
         fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Start shutdown thread for framework %s", celix_framework_getUUID(framework));
         celixThreadMutex_lock(&framework->shutdown.mutex);
         bool alreadyInitialized = framework->shutdown.initialized;

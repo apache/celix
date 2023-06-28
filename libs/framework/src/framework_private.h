@@ -188,12 +188,6 @@ struct celix_framework {
         celix_thread_mutex_t mutex; //protects below
         celix_array_list_t* bundleLifecycleHandlers; //entry = celix_framework_bundle_lifecycle_handler_t*
     } bundleLifecycleHandling;
-
-    struct {
-        celix_thread_mutex_t mutex; /**< protects below*/
-        celix_array_list_t* initialConditionSvcIds; /**< entry = long (service id) */
-        celix_array_list_t* frameworkReadyConditionSvcIds; /**< entry = long (service id) */
-    } conditions; /**< Struct to store the framework celix_conditions admin */
 };
 
 /**
