@@ -145,6 +145,9 @@ class CelixConan(ConanFile):
         if self.options.build_rsa_discovery_zeroconf and self.settings.os != "Linux":
             raise ConanInvalidConfiguration("Celix build_rsa_discovery_zeroconf is only supported for Linux")
 
+        if self.options.build_shell_bonjour and self.settings.os != "Linux":
+            raise ConanInvalidConfiguration("Celix build_shell_bonjour is only supported for Linux")
+
         try:
             val = int(self.options.celix_err_buffer_size)
             if val <= 0:
@@ -176,6 +179,7 @@ class CelixConan(ConanFile):
             if self.settings.os != "Linux":
                 self.options.build_rsa_remote_service_admin_shm_v2 = False
                 self.options.build_rsa_discovery_zeroconf = False
+                self.options.self.options.build_shell_bonjour = False
 
         if not self.options.celix_cxx14:
             self.options.celix_cxx17 = False
