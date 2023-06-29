@@ -71,7 +71,6 @@ if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
             BASE_NAME "ETCDLIB"
             EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/etcdlib/etcdlib_export.h")
     target_include_directories(etcdlib PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/etcdlib>)
-    celix_target_hide_symbols(etcdlib)
 
 
     add_library(etcdlib_static STATIC src/etcd.c)

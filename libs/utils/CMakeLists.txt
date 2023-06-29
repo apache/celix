@@ -106,7 +106,6 @@ if (CELIX_INSTALL_DEPRECATED_API)
     install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils COMPONENT framework)
 endif ()
 
-celix_target_hide_symbols(utils)
 #Alias setup to match external usage
 add_library(Celix::utils ALIAS utils)
 

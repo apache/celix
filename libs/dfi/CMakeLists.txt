@@ -57,7 +57,6 @@ if (CELIX_DFI)
 	install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/dfi COMPONENT dfi)
 	install(DIRECTORY ${CMAKE_BINARY_DIR}/celix/gen/includes/dfi/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/dfi COMPONENT dfi)
 
-	celix_target_hide_symbols(dfi)
 	#Alias setup to match external usage
 	add_library(Celix::dfi ALIAS dfi)
 
