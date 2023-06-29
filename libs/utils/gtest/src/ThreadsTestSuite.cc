@@ -306,6 +306,14 @@ TEST_F(ThreadsTestSuite, CondTimedWaitTest) {
     celixThreadMutex_unlock(&mutex);
     auto end = celixThreadCondition_getTime();
     EXPECT_NEAR(celix_difftime(&start, &end), 0.01, ALLOWED_ERROR_MARGIN);
+
+    start = celixThreadCondition_getTime();
+    celixThreadMutex_lock(&mutex);
+    status = celixThreadCondition_waitUntil(&cond, &mutex, &start);
+    ASSERT_EQ(status, ETIMEDOUT);
+    celixThreadMutex_unlock(&mutex);
+    end = celixThreadCondition_getTime();
+    EXPECT_NEAR(celix_difftime(&start, &end), 0.0, ALLOWED_ERROR_MARGIN);
 }
 
 //----------------------CELIX READ-WRITE LOCK TESTS----------------------
