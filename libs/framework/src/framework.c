@@ -1880,8 +1880,9 @@ static long celix_framework_installAndStartBundleInternal(celix_framework_t *fw,
             }
         }
     }
-
-    celix_framework_waitForBundleEvents(fw, bundleId);
+    if (!forcedAsync) {
+        celix_framework_waitForBundleEvents(fw, bundleId);
+    }
     framework_logIfError(fw->logger, status, NULL, "Failed to install bundle '%s'", bundleLoc);
 
     return bundleId;
@@ -1900,7 +1901,9 @@ static bool celix_framework_uninstallBundleInternal(celix_framework_t *fw, long 
     celix_framework_bundle_entry_t *bndEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
     if (bndEntry != NULL) {
         celix_status_t status = celix_framework_uninstallBundleOnANonCelixEventThread(fw, bndEntry, forcedAsync, permanent);
-        celix_framework_waitForBundleEvents(fw, bndId);
+        if (!forcedAsync) {
+            celix_framework_waitForBundleEvents(fw, bndId);
+        }
         //note not decreasing bndEntry, because this entry should now be deleted (uninstalled)
         uninstalled = status == CELIX_SUCCESS;
     }
@@ -1998,7 +2001,9 @@ static bool celix_framework_stopBundleInternal(celix_framework_t* fw, long bndId
             fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "Cannot stop bundle, bundle state is %s", celix_bundleState_getName(state));
         }
         celix_framework_bundleEntry_decreaseUseCount(bndEntry);
-        celix_framework_waitForBundleEvents(fw, bndId);
+        if (!forcedAsync) {
+            celix_framework_waitForBundleEvents(fw, bndId);
+        }
     }
     return stopped;
 }
@@ -2138,7 +2143,9 @@ bool celix_framework_startBundleInternal(celix_framework_t *fw, long bndId, bool
             started = rc == CELIX_SUCCESS;
         }
         celix_framework_bundleEntry_decreaseUseCount(bndEntry);
-        celix_framework_waitForBundleEvents(fw, bndId);
+        if (!forcedAsync) {
+            celix_framework_waitForBundleEvents(fw, bndId);
+        }
     }
     return started;
 }
@@ -2288,7 +2295,9 @@ static bool celix_framework_updateBundleInternal(celix_framework_t *fw, long bnd
         celix_status_t rc = celix_framework_updateBundleOnANonCelixEventThread(fw, bndEntry, updatedBundleUrl, forcedAsync);
         //note not decreasing bndEntry, because this entry should now be deleted (uninstalled)
         updated = rc == CELIX_SUCCESS;
-        celix_framework_waitForBundleEvents(fw, bndId);
+        if (!forcedAsync) {
+            celix_framework_waitForBundleEvents(fw, bndId);
+        }
     }
     return updated;
 }
@@ -2299,7 +2308,6 @@ celix_status_t celix_framework_updateBundleEntry(celix_framework_t* framework,
     celix_status_t status = CELIX_SUCCESS;
     long bundleId = bndEntry->bndId;
     const char* errMsg;
-    char *bndRoot = NULL;
     fw_log(framework->logger, CELIX_LOG_LEVEL_DEBUG, "Updating bundle %s", celix_bundle_getSymbolicName(bndEntry->bnd));
     celix_bundle_state_e bndState = celix_bundle_getState(bndEntry->bnd);
     char *location = celix_bundle_getLocation(bndEntry->bnd);
@@ -2317,7 +2325,6 @@ celix_status_t celix_framework_updateBundleEntry(celix_framework_t* framework,
                 status = CELIX_ILLEGAL_STATE;
                 break;
             }
-            bndRoot = celix_bundle_getEntry(bndEntry->bnd, NULL);
         }
         status = celix_framework_uninstallBundleEntryImpl(framework, bndEntry, false);
         if (status != CELIX_SUCCESS) {
@@ -2326,10 +2333,6 @@ celix_status_t celix_framework_updateBundleEntry(celix_framework_t* framework,
             break;
         }
         // bndEntry is now invalid
-        if (bndRoot) {
-            // the bundle is updated with a new location, so the old bundle root can be removed
-            celix_utils_deleteDirectory(bndRoot, NULL);
-        }
         status = celix_framework_installBundleInternalImpl(framework, updatedBundleUrl, &bundleId);
         if (status != CELIX_SUCCESS) {
             errMsg = "reinstall failure";
@@ -2352,7 +2355,6 @@ celix_status_t celix_framework_updateBundleEntry(celix_framework_t* framework,
         }
     } while(0);
     framework_logIfError(framework->logger, status, errMsg, "Could not update bundle from %s", updatedBundleUrl);
-    free(bndRoot);
     free(location);
     return status;
 }
