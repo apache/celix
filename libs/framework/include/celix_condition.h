@@ -20,8 +20,6 @@
 #ifndef CELIX_CONDITION_H_
 #define CELIX_CONDITION_H_
 
-#include "celix_framework_export.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,7 +38,7 @@ extern "C" {
  * @brief The property key used to specify the condition id.
  * A condition id can only identify a single condition.
  */
-#define CELIX_CONDITION_ID "celix.condition.id"
+#define CELIX_CONDITION_ID "condition.id"
 
 /*!
  * @brief The unique identifier for the default True condition.
@@ -78,12 +76,6 @@ typedef struct celix_condition {
     void* handle; /**< private dummy handle, note not used in marker service struct, but added to ensure
                      sizeof(celix_condition_t) != 0  */
 } celix_condition_t;
-
-/**
- * @brief A condition service struct instance that can be used to register celix_condition services.
- * This can be helpful to avoid a bundle having to implement this service to register a celix_condition service.
- */
-CELIX_FRAMEWORK_EXPORT celix_condition_t CELIX_CONDITION_INSTANCE;
 
 #ifdef __cplusplus
 }

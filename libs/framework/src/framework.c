@@ -36,6 +36,7 @@
 #include "celix_libloader.h"
 #include "celix_log_constants.h"
 #include "celix_module_private.h"
+#include "celix_framework_bundle.h"
 
 #include "bundle_archive_private.h"
 #include "bundle_context_private.h"
@@ -176,10 +177,6 @@ static void *fw_eventDispatcher(void *fw);
 
 celix_status_t fw_invokeBundleListener(framework_pt framework, bundle_listener_pt listener, bundle_event_pt event, bundle_pt bundle);
 celix_status_t fw_invokeFrameworkListener(framework_pt framework, framework_listener_pt listener, framework_event_pt event, bundle_pt bundle);
-
-static celix_status_t frameworkActivator_start(void * userData, bundle_context_t *context);
-static celix_status_t frameworkActivator_stop(void * userData, bundle_context_t *context);
-static celix_status_t frameworkActivator_destroy(void * userData, bundle_context_t *context);
 
 static celix_status_t framework_autoStartConfiguredBundles(celix_framework_t *fw);
 static celix_status_t framework_autoInstallConfiguredBundles(celix_framework_t *fw);
@@ -435,27 +432,19 @@ celix_status_t fw_init(framework_pt framework) {
     celix_status_t status = bundle_setState(framework->bundle, CELIX_BUNDLE_STATE_STARTING);
     if (status == CELIX_SUCCESS) {
         celix_bundle_activator_t *activator = calloc(1,(sizeof(*activator)));
-        if (activator != NULL) {
+        if (activator) {
             bundle_context_t *validateContext = NULL;
-            void * userData = NULL;
 
-			//create_function_pt create = NULL;
-            celix_bundle_activator_start_fp start = frameworkActivator_start;
-            celix_bundle_activator_stop_fp stop = frameworkActivator_stop;
-            celix_bundle_activator_destroy_fp destroy = frameworkActivator_destroy;
-
-            activator->start = start;
-            activator->stop = stop;
-            activator->destroy = destroy;
+            activator->create = celix_frameworkBundle_create;
+            activator->start = celix_frameworkBundle_start;
+            activator->stop = celix_frameworkBundle_stop;
+            activator->destroy = celix_frameworkBundle_destroy;
             status = CELIX_DO_IF(status, bundle_setActivator(framework->bundle, activator));
             status = CELIX_DO_IF(status, bundle_getContext(framework->bundle, &validateContext));
+            status = CELIX_DO_IF(status, activator->create(validateContext, &activator->userData));
+            status = CELIX_DO_IF(status, activator->start(activator->userData, validateContext));
 
-            if (status == CELIX_SUCCESS) {
-                activator->userData = userData;
-                if (start != NULL) {
-                    start(userData, validateContext);
-                }
-            } else {
+            if (status != CELIX_SUCCESS) {
             	free(activator);
             }
         } else {
@@ -500,9 +489,11 @@ celix_status_t framework_start(celix_framework_t* framework) {
     celix_status_t startStatus = framework_autoStartConfiguredBundles(framework);
     celix_status_t installStatus = framework_autoInstallConfiguredBundles(framework);
     if (startStatus == CELIX_SUCCESS && installStatus == CELIX_SUCCESS) {
-        fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_STARTED, framework->bundleId); //TODO maybe register framwork.ready on this event and only keep the condition true service?
+        fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_STARTED, framework->bundleId); 
     } else {
-        status = CELIX_BUNDLE_EXCEPTION; //error already logged
+        //note not returning a error, because the framework is started, but not all bundles are started/installed
+        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not auto start or install all configured bundles");
+        fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_ERROR, framework->bundleId);
     }
 
     if (status == CELIX_SUCCESS) {
@@ -1015,8 +1006,7 @@ celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bund
         if (frameworkListener->listener == listener && frameworkListener->bundle == bundle) {
             arrayList_remove(framework->frameworkListeners, i);
 
-            frameworkListener->bundle = NULL;
-            frameworkListener->listener = NULL;
+            
             free(frameworkListener);
         }
     }
@@ -1262,6 +1252,21 @@ static void* framework_shutdown(void *framework) {
 
     celixThread_exit(NULL);
     return NULL;
+}
+
+void celix_framework_shutdownAsync(celix_framework_t* framework) {
+    fw_log(framework->logger,
+           CELIX_LOG_LEVEL_TRACE,
+           "Start shutdown thread for framework %s",
+           celix_framework_getUUID(framework));
+    celixThreadMutex_lock(&framework->shutdown.mutex);
+    bool alreadyInitialized = framework->shutdown.initialized;
+    framework->shutdown.initialized = true;
+    celixThreadMutex_unlock(&framework->shutdown.mutex);
+
+    if (!alreadyInitialized) {
+        celixThread_create(&framework->shutdown.thread, NULL, framework_shutdown, framework);
+    }
 }
 
 celix_status_t framework_getFrameworkBundle(const_framework_pt framework, bundle_pt *bundle) {
@@ -1563,6 +1568,13 @@ static int celix_framework_eventQueueSize(celix_framework_t* fw) {
     return fw->dispatcher.eventQueueSize + celix_arrayList_size(fw->dispatcher.dynamicEventQueue);
 }
 
+bool celix_framework_isEventQueueEmpty(celix_framework_t* fw) {
+    celixThreadMutex_lock(&fw->dispatcher.mutex);
+    bool empty = celix_framework_eventQueueSize(fw) == 0;
+    celixThreadMutex_unlock(&fw->dispatcher.mutex);
+    return empty;
+}
+
 static bool requiresScheduledEventsProcessing(celix_framework_t* framework) {
     // precondition framework->dispatcher.mutex locked
     struct timespec currentTime = celixThreadCondition_getTime();
@@ -1646,40 +1658,6 @@ celix_status_t fw_invokeFrameworkListener(framework_pt framework, framework_list
 
     return ret;
 }
-
-static celix_status_t frameworkActivator_start(void * userData, bundle_context_t *context) {
-    // nothing to do
-    return CELIX_SUCCESS;
-}
-
-static celix_status_t frameworkActivator_stop(void * userData, bundle_context_t *context) {
-    celix_status_t status = CELIX_SUCCESS;
-    framework_pt framework;
-
-
-    if (bundleContext_getFramework(context, &framework) == CELIX_SUCCESS) {
-        fw_log(framework->logger, CELIX_LOG_LEVEL_TRACE, "Start shutdown thread for framework %s", celix_framework_getUUID(framework));
-        celixThreadMutex_lock(&framework->shutdown.mutex);
-        bool alreadyInitialized = framework->shutdown.initialized;
-        framework->shutdown.initialized = true;
-        celixThreadMutex_unlock(&framework->shutdown.mutex);
-
-        if (!alreadyInitialized) {
-            celixThread_create(&framework->shutdown.thread, NULL, framework_shutdown, framework);
-        }
-    } else {
-        status = CELIX_FRAMEWORK_EXCEPTION;
-    }
-
-    framework_logIfError(framework->logger, status, NULL, "Failed to stop framework activator");
-
-    return status;
-}
-
-static celix_status_t frameworkActivator_destroy(void * userData, bundle_context_t *context) {
-    return CELIX_SUCCESS;
-}
-
 
 /**********************************************************************************************************************
  **********************************************************************************************************************

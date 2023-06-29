@@ -522,6 +522,12 @@ bool celix_framework_removeScheduledEvent(celix_framework_t* fw, bool async, boo
  */
 void celix_framework_cleanupScheduledEvents(celix_framework_t* fw, long bndId);
 
+
+/**
+ * @brief Start the celix framework shutdown sequence on a separate thread and return immediately.
+ */
+void celix_framework_shutdownAsync(celix_framework_t* framework);
+
 #ifdef __cplusplus
 }
 #endif

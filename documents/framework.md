@@ -206,6 +206,10 @@ add_executable(create_framework_with_celix_launcher src/launcher.c)
 target_link_libraries(create_framework_with_celix_launcher PRIVATE Celix::framework)
 ```
 
+## Framework Conditions
+
+TODO
+
 ## Framework bundle cache
 The Apache Celix framework uses a bundle cache directory to store the installed bundles, their state and for a 
 persistent bundle storage. The bundle cache directory is created in the directory configured in the framework 
