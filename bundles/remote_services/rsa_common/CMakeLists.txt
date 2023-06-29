@@ -15,11 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(rsa_common STATIC
-    src/endpoint_description.c
-    src/export_registration_impl.c
-    src/import_registration_impl.c
-    src/remote_interceptors_handler.c)
+set(RSA_COMMON_SRC
+        src/endpoint_description.c
+        src/export_registration_impl.c
+        src/import_registration_impl.c
+        src/remote_interceptors_handler.c
+        )
+
+add_library(rsa_common STATIC ${RSA_COMMON_SRC})
 set_target_properties(rsa_common PROPERTIES OUTPUT_NAME "celix_rsa_common")
 target_include_directories(rsa_common PRIVATE src)
 target_link_libraries(rsa_common PUBLIC Celix::framework Celix::c_rsa_spi Celix::log_helper)
@@ -33,5 +36,10 @@ install(TARGETS rsa_common EXPORT celix COMPONENT rsa DESTINATION ${CMAKE_INSTAL
 add_library(Celix::rsa_common ALIAS rsa_common)
 
 if (ENABLE_TESTING)
+    add_library(rsa_common_cut STATIC ${RSA_COMMON_SRC})
+    target_include_directories(rsa_common_cut PUBLIC src)
+    target_link_libraries(rsa_common_cut PUBLIC Celix::framework Celix::c_rsa_spi Celix::log_helper)
+    celix_deprecated_utils_headers(rsa_common_cut)
+    celix_deprecated_framework_headers(rsa_common_cut)
     add_subdirectory(gtest)
 endif()

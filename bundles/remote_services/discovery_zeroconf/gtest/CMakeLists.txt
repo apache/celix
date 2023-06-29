@@ -52,7 +52,7 @@ if (LINKER_WRAP_SUPPORTED)
 
     target_link_libraries(unit_test_discovery_zeroconf PRIVATE
             rsa_discovery_zeroconf_cut
-            Celix::rsa_common
+            rsa_common_cut
             Celix::c_rsa_spi
             Celix::framework
             Celix::threads_ei
