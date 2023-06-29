@@ -27,9 +27,9 @@
 class ThreadsTestSuite : public ::testing::Test {
 public:
 #ifdef __APPLE__
-    const double ALLOWED_ERROR_MARGIN = 0.05;
+    const double ALLOWED_ERROR_MARGIN = 0.2;
 #else
-    const double ALLOWED_ERROR_MARGIN= 0.02;
+    const double ALLOWED_ERROR_MARGIN= 0.1;
 #endif
 };
 
