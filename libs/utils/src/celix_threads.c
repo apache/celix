@@ -186,14 +186,7 @@ struct timespec celixThreadCondition_getTime() {
 }
 
 struct timespec celixThreadCondition_getDelayedTime(double delayInSeconds) {
-#if __APPLE__
-    struct timeval tv;
-    struct timespec now;
-    gettimeofday(&tv, NULL);
-    TIMEVAL_TO_TIMESPEC(&tv, &now);
-#else
     struct timespec now = celix_gettime(CLOCK_MONOTONIC);
-#endif
     if (delayInSeconds == 0) {
         return now;
     }
@@ -205,7 +198,18 @@ celixThreadCondition_waitUntil(celix_thread_cond_t* cond, celix_thread_mutex_t* 
     if (absTime == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
+#if __APPLE__
+    struct timespec now = celix_gettime(CLOCK_MONOTONIC);
+    double diff = celix_difftime(&now, absTime);
+    if (diff <= 0) {
+        return ETIMEDOUT;
+    }
+    long seconds = diff;
+    long nanoseconds = (diff - seconds) * CELIX_NS_IN_SEC;
+    return celixThreadCondition_timedwaitRelative(cond, mutex, seconds, nanoseconds);
+#else
     return pthread_cond_timedwait(cond, mutex, absTime);
+#endif
 }
 
 celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond) {
