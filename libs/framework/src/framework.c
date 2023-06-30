@@ -1193,20 +1193,6 @@ static void* framework_shutdown(void *framework) {
 
 
     size = celix_arrayList_size(stopEntries);
-    for (int i = size-1; i >= 0; --i) { //note loop in reverse order -> stop later installed bundle first
-        celix_framework_bundle_entry_t *entry = celix_arrayList_get(stopEntries, i);
-
-        //NOTE possible starvation.
-        fw_bundleEntry_waitTillUseCountIs(entry, 1);  //note this function has 1 use count.
-
-        //note race between condition (use count == 1) and bundle stop, meaning use count can be > 1 when
-        //celix_framework_stopBundleEntry is called.
-
-        bundle_state_e state = celix_bundle_getState(entry->bnd);
-        if (state == CELIX_BUNDLE_STATE_ACTIVE || state == CELIX_BUNDLE_STATE_STARTING) {
-            celix_framework_stopBundleEntry(fw, entry);
-        }
-    }
     for (int i = size-1; i >= 0; --i) { //note loop in reverse order -> uninstall later installed bundle first
         celix_framework_bundle_entry_t *entry = celix_arrayList_get(stopEntries, i);
         celix_framework_uninstallBundleEntry(fw, entry, false);
