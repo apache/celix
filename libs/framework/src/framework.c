@@ -1489,12 +1489,10 @@ static double celix_framework_processScheduledEvents(celix_framework_t* fw) {
             celix_scheduledEvent_process(callEvent, &ts);
         }
         if (removeEvent != NULL) {
-            const char* formatStr = celix_scheduledEvent_isSingleShot(removeEvent) ?
-                    "Removing processed one-shot scheduled event '%s' (id=%li) for bundle if %li.":
-                    "Removing processed scheduled event '%s' (id=%li) for bundle if %li.";
             fw_log(fw->logger,
                    CELIX_LOG_LEVEL_DEBUG,
-                   formatStr,
+                   "Removing processed %s""scheduled event '%s' (id=%li) for bundle if %li.",
+                   celix_scheduledEvent_isSingleShot(removeEvent) ? "one-shot " : "",
                    celix_scheduledEvent_getName(removeEvent),
                    celix_scheduledEvent_getId(removeEvent),
                    celix_scheduledEvent_getBundleId(removeEvent));
