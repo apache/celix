@@ -273,7 +273,7 @@ celix_status_t celix_scheduledEvent_wait(celix_scheduled_event_t* event, double 
     celixThreadMutex_lock(&event->mutex);
     size_t targetCallCount = event->callCount + 1;
     struct timespec absTimeoutTime = celixThreadCondition_getDelayedTime(timeoutInSeconds);
-    while (event->callCount < targetCallCount) {
+    while (event->callCount < targetCallCount && !event->isRemoved) {
         status = celixThreadCondition_waitUntil(&event->cond, &event->mutex, &absTimeoutTime);
         if (status == ETIMEDOUT) {
             break;
