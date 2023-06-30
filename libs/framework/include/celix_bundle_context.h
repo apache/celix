@@ -1261,7 +1261,7 @@ typedef struct celix_scheduled_event_options {
     const char* name CELIX_OPTS_INIT; /**<
                                        * @brief The name of the event, used for logging and debugging.
                                        *
-                                       * Expected to be const char* that is valid during the addScheduledEvent
+                                       * Expected to be const char* that is valid during the celix_bundleContext_scheduleEvent
                                        * call. Can be NULL. */
 
     double initialDelayInSeconds CELIX_OPTS_INIT; /**< @brief Initial delay in seconds before the event is processed.*/
@@ -1322,7 +1322,7 @@ CELIX_FRAMEWORK_EXPORT long celix_bundleContext_scheduleEvent(celix_bundle_conte
  *
  * @param[in] ctx The bundle context.
  * @param[in] scheduledEventId The scheduled event id to wakeup.
- * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not
+ * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not known.
  */
 CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleContext_wakeupScheduledEvent(celix_bundle_context_t* ctx,
                                                                                long scheduledEventId);
