@@ -2708,7 +2708,7 @@ bool celix_framework_removeScheduledEvent(celix_framework_t* fw,
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 
     if (!event) {
-        celix_log_level_e level = errorIfNotFound ? CELIX_LOG_LEVEL_TRACE : CELIX_LOG_LEVEL_ERROR;
+        celix_log_level_e level = errorIfNotFound ? CELIX_LOG_LEVEL_ERROR : CELIX_LOG_LEVEL_TRACE;
         fw_log(fw->logger, level, "Cannot remove scheduled event with id %li. Not found.", scheduledEventId);
         return false;
     }
