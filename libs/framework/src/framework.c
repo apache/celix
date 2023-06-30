@@ -489,11 +489,11 @@ celix_status_t framework_start(celix_framework_t* framework) {
     celix_status_t startStatus = framework_autoStartConfiguredBundles(framework);
     celix_status_t installStatus = framework_autoInstallConfiguredBundles(framework);
     if (startStatus == CELIX_SUCCESS && installStatus == CELIX_SUCCESS) {
-        fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_STARTED, framework->bundleId); 
+        fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_STARTED, CELIX_SUCCESS);
     } else {
         //note not returning a error, because the framework is started, but not all bundles are started/installed
         fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not auto start or install all configured bundles");
-        fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_ERROR, framework->bundleId);
+        fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_ERROR, CELIX_BUNDLE_EXCEPTION);
     }
 
     if (status == CELIX_SUCCESS) {

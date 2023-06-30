@@ -40,23 +40,6 @@ extern "C" {
  */
 #define CELIX_CONDITION_ID "condition.id"
 
-/*!
- * @brief The unique identifier for the default True condition.
- * The default True condition is registered by the framework during framework initialization and therefore
- * can always be relied upon.
- */
-#define CELIX_CONDITION_ID_TRUE "true"
-
-/*!
- * @brief The unique identifier for the framework ready condition.
- * The framework ready condition is registered by the framework after all install configured bundles are installed,
- * all start configured bundles are started and after the Apache Celix Event Queue becomes empty.
- *
- * Note that after the framework ready condition is registered, the event queue can become non-empty again.
- * For example if a component depends on the "framework.ready" condition.
- */
-#define CELIX_CONDITION_ID_FRAMEWORK_READY "framework.ready"
-
 /**
  * @brief Celix condition service struct.
  *
@@ -76,6 +59,35 @@ typedef struct celix_condition {
     void* handle; /**< private dummy handle, note not used in marker service struct, but added to ensure
                      sizeof(celix_condition_t) != 0  */
 } celix_condition_t;
+
+/*!
+ * @brief The unique identifier for the default framework true condition.
+ * The default True condition is registered by the framework during framework initialization and therefore
+ * can always be relied upon.
+ */
+#define CELIX_CONDITION_ID_TRUE "true"
+
+/*!
+ * @brief The unique identifier for the framework.ready condition.
+ * The framework ready condition is registered by the framework after all configured bundles are installed - and
+ * if configured - started and after the Apache Celix Event Queue becomes empty.
+ *
+ * Note that after the framework ready condition is registered, the event queue can become non-empty again.
+ * For example if a component depends on the "framework.ready" condition.
+ *
+ * Either a framework.ready or framework.error condition is registered.
+ */
+#define CELIX_CONDITION_ID_FRAMEWORK_READY "framework.ready"
+
+/*!
+ * @brief The unique identifier for the framework.error condition.
+
+ * The framework error condition is registered by the framework after all configured bundles are processed,
+ * but an error occurred while installing or starting a bundle.
+ *
+ * Either a framework.ready or framework.error condition is registered.
+ */
+#define CELIX_CONDITION_ID_FRAMEWORK_ERROR "framework.error"
 
 #ifdef __cplusplus
 }
