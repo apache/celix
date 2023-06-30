@@ -329,8 +329,8 @@ CELIX_FRAMEWORK_EXPORT void celix_framework_setLogCallback(celix_framework_t* fw
 /**
  * @brief Wait until the framework event queue is empty.
  *
- * The Celix framework has an event queue which (among others) handles bundle events.
- * This function can be used to ensure that all queue event are handled.
+ * The Celix framework has an event queue which (among others) handles various events.
+ * This function can be used to ensure that all queue events are handled.
  * 
  * Note scheduled events are not part of the event queue.
  *
@@ -341,8 +341,8 @@ CELIX_FRAMEWORK_EXPORT void celix_framework_waitForEmptyEventQueue(celix_framewo
 /**
  * @brief Wait until the framework event queue is empty or the provided period is reached.
  *
- * The Celix framework has an event queue which (among others) handles bundle events.
- * This function can be used to ensure that all queue event are handled.
+ * The Celix framework has an event queue which (among others) handles various events.
+ * This function can be used to ensure that all queue events are handled.
  * 
  * Note scheduled events are not part of the event queue.
  *
@@ -355,7 +355,7 @@ CELIX_FRAMEWORK_EXPORT celix_status_t celix_framework_waitForEmptyEventQueueFor(
 /**
  * @brief wait until all events from the event queue for the bundle identified by the bndId are processed.
  *
- * If bndId < 0, wait until all events from the event queue are processed.
+ * If bndId < 0, wait until all bundle events (events associated with a bundle) from the event queue are processed.
  * Note scheduled events are not part of the event queue.
  * 
  */
@@ -368,9 +368,7 @@ CELIX_FRAMEWORK_EXPORT void celix_framework_waitUntilNoPendingRegistration(celix
 
 /**
  * @brief Returns whether the current thread is the Celix framework event loop thread.
- * 
- * Note scheduled events are not part of the event queue.
- * 
+ *
  */
 CELIX_FRAMEWORK_EXPORT bool celix_framework_isCurrentThreadTheEventLoop(celix_framework_t* fw);
 

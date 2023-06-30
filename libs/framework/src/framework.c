@@ -2537,7 +2537,8 @@ celix_status_t celix_framework_waitForEmptyEventQueueFor(celix_framework_t *fw, 
     assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
     celix_status_t status = CELIX_SUCCESS;
 
-    struct timespec absTimeout = celixThreadCondition_getDelayedTime(periodInSeconds);
+    struct timespec absTimeout = {0, 0};
+    absTimeout = (periodInSeconds == 0) ? absTimeout : celixThreadCondition_getDelayedTime(periodInSeconds);
     celixThreadMutex_lock(&fw->dispatcher.mutex);
     while (celix_framework_eventQueueSize(fw) > 0) {
         if (periodInSeconds == 0) {
@@ -2555,7 +2556,7 @@ celix_status_t celix_framework_waitForEmptyEventQueueFor(celix_framework_t *fw, 
 }
 
 void celix_framework_waitForEmptyEventQueue(celix_framework_t *fw) {
-    celix_framework_waitUntilNoEventsForBnd(fw, -1);
+    celix_framework_waitForEmptyEventQueueFor(fw, 0.0);
 }
 
 void celix_framework_waitUntilNoEventsForBnd(celix_framework_t* fw, long bndId) {
