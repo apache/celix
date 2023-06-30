@@ -53,7 +53,7 @@ if (LINKER_WRAP_SUPPORTED)
     target_link_libraries(unit_test_rsa_shm PRIVATE
             rsa_shm_cut
             Celix::c_rsa_spi
-            Celix::rsa_common
+            rsa_common_cut
             Celix::log_helper
             Celix::framework
             Celix::threads_ei

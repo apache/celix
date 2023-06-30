@@ -21,7 +21,7 @@ if (LINKER_WRAP_SUPPORTED)
             )
 
     target_link_libraries(unit_test_rsa_common PRIVATE
-            Celix::rsa_common
+            rsa_common_cut
             Celix::rsa_spi
             Celix::framework
             Celix::utils
