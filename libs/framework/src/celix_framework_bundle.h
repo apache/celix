@@ -47,6 +47,13 @@ celix_status_t celix_frameworkBundle_stop(void* userData, celix_bundle_context_t
  */
 celix_status_t celix_frameworkBundle_destroy(void* userData, celix_bundle_context_t* ctx);
 
+/**
+ * @brief The scheduled event callback for the framework bundle bundle ready check.
+ * @note Part of the header for testing purposes.
+ * @param[in] data The framework bundle bundle activator.
+ */
+void celix_frameworkBundle_readyCheck(void* data);
+
 #ifdef __cplusplus
 }
 #endif

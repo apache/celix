@@ -62,20 +62,28 @@ static celix_status_t celix_frameworkBundle_frameworkEvent(void* handle, framewo
 celix_status_t celix_frameworkBundle_create(celix_bundle_context_t* ctx, void** userData) {
     *userData = NULL;
     celix_framework_bundle_activator_t* act = calloc(1, sizeof(*act));
-    if (act) {
-        act->ctx = ctx;
-        act->trueConditionSvcId = -1L;
-        act->listener.handle = act;
-        act->listener.frameworkEvent = celix_frameworkBundle_frameworkEvent;
-        act->frameworkStartedEventReceived = false;
-        act->frameworkErrorEventReceived = false;
-        act->frameworkReadyOrErrorConditionSvcId = -1L;
-        act->checkFrameworkScheduledEventId = -1L;
-        act->conditionInstance.handle = act;
-        celixThreadMutex_create(&act->mutex, NULL);
-        *userData = act;
+    if (!act) {
+        return ENOMEM;
     }
-    return act != NULL ? CELIX_SUCCESS : CELIX_ENOMEM;
+
+    celix_status_t status = celixThreadMutex_create(&act->mutex, NULL);
+    if (status != CELIX_SUCCESS) {
+        free(act);
+        return status;
+    }
+
+    act->ctx = ctx;
+    act->trueConditionSvcId = -1L;
+    act->listener.handle = act;
+    act->listener.frameworkEvent = celix_frameworkBundle_frameworkEvent;
+    act->frameworkStartedEventReceived = false;
+    act->frameworkErrorEventReceived = false;
+    act->frameworkReadyOrErrorConditionSvcId = -1L;
+    act->checkFrameworkScheduledEventId = -1L;
+    act->conditionInstance.handle = act;
+    *userData = act;
+
+    return CELIX_SUCCESS;
 }
 
 static void celix_frameworkBundle_registerTrueCondition(celix_framework_bundle_activator_t* act) {
@@ -92,7 +100,7 @@ static void celix_frameworkBundle_registerTrueCondition(celix_framework_bundle_a
     }
 }
 
-static void celix_frameworkBundle_readyCheck(void* data) {
+void celix_frameworkBundle_readyCheck(void* data) {
     celix_framework_bundle_activator_t* act = data;
     celixThreadMutex_lock(&act->mutex);
     
@@ -141,13 +149,18 @@ celix_status_t celix_frameworkBundle_start(void* userData, celix_bundle_context_
 
     bool conditionsEnabled = celix_bundleContext_getPropertyAsBool(
         ctx, CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED, CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED_DEFAULT);
-    if (conditionsEnabled) {
-        celix_frameworkBundle_registerTrueCondition(act);
-        fw_addFrameworkListener(
-            celix_bundleContext_getFramework(ctx), celix_bundleContext_getBundle(ctx), &act->listener);
-        celix_frameworkBundle_startReadyCheck(act);
-        return act->trueConditionSvcId >= 0 ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
+    if (!conditionsEnabled) {
+        return CELIX_SUCCESS;
     }
+
+    celix_frameworkBundle_registerTrueCondition(act);
+    if (act->trueConditionSvcId < 0) {
+        return CELIX_BUNDLE_EXCEPTION;
+    }
+
+    fw_addFrameworkListener(
+        celix_bundleContext_getFramework(ctx), celix_bundleContext_getBundle(ctx), &act->listener);
+    celix_frameworkBundle_startReadyCheck(act);
 
     return CELIX_SUCCESS;
 }
@@ -155,7 +168,6 @@ celix_status_t celix_frameworkBundle_start(void* userData, celix_bundle_context_
 celix_status_t celix_frameworkBundle_stop(void* userData, celix_bundle_context_t* ctx) {
     celix_framework_bundle_activator_t* act = userData;
     celix_framework_t* framework = celix_bundleContext_getFramework(ctx);
-    celix_status_t status = CELIX_SUCCESS;
 
     // remove framework listener
     fw_removeFrameworkListener(framework, celix_bundleContext_getBundle(ctx), &act->listener);
@@ -179,7 +191,7 @@ celix_status_t celix_frameworkBundle_stop(void* userData, celix_bundle_context_t
 
     // framework shutdown
     celix_framework_shutdownAsync(framework);
-    return status;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t celix_frameworkBundle_destroy(void* userData, celix_bundle_context_t* ctx __attribute__((unused))) {

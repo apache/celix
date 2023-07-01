@@ -53,13 +53,13 @@ set(CELIX_FRAMEWORK_TEST_SOURCES
     src/DependencyManagerTestSuite.cc
     src/CxxBundleContextTestSuite.cc
     src/HelloWorldCxxActivator.cc
-    src/CxxFrameworkFactoryTestSuite.cc
+    src/FrameworkFactoryTestSuite.cc
     src/CxxBundleActivatorTestSuite.cc
     src/BundleArchiveTestSuite.cc
     src/CelixLauncherTestSuite.cc
     src/CelixBundleCacheTestSuite.cc
     src/ScheduledEventTestSuite.cc
-    src/FrameworkConditionsTestSuite.cc
+    src/FrameworkBundleTestSuite.cc
 )
 
 add_executable(test_framework ${CELIX_FRAMEWORK_TEST_SOURCES})
@@ -134,6 +134,8 @@ if (LINKER_WRAP_SUPPORTED)
             src/CelixBundleContextBundlesWithErrorTestSuite.cc
             src/CelixBundleCacheErrorInjectionTestSuite.cc
             src/ScheduledEventWithErrorInjectionTestSuite.cc
+            src/FrameworkBundleWithErrorInjectionTestSuite.cc
+            src/FrameworkFactoryWithErrorInjectionTestSuite.cc
     )
     target_compile_definitions(test_framework_with_ei PRIVATE
             SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
@@ -152,6 +154,7 @@ if (LINKER_WRAP_SUPPORTED)
             Celix::unistd_ei
             Celix::hash_map_ei
             Celix::properties_ei
+            Celix::threads_ei
             GTest::gtest GTest::gtest_main
     )
 

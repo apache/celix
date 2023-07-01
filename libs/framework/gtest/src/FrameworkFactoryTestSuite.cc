@@ -23,18 +23,17 @@
 
 #include "celix/FrameworkFactory.h"
 
-class CxxFrameworkFactoryTestSuite : public ::testing::Test {
+class FrameworkFactoryTestSuite : public ::testing::Test {
 public:
-    std::shared_ptr<celix::Framework> framework{};
-    std::vector<std::shared_ptr<celix::ServiceRegistration>> registrations{};
+    FrameworkFactoryTestSuite() = default;
 };
 
-TEST_F(CxxFrameworkFactoryTestSuite, CreateDestroy) {
-    auto fw = celix::createFramework();
-    EXPECT_TRUE(fw->getFrameworkBundleContext()->getBundle().isSystemBundle());
+TEST_F(FrameworkFactoryTestSuite, CreateDestroy) {
+    auto framework = celix::createFramework();
+    EXPECT_TRUE(framework->getFrameworkBundleContext()->getBundle().isSystemBundle());
 }
 
-TEST_F(CxxFrameworkFactoryTestSuite, WaitForStop) {
+TEST_F(FrameworkFactoryTestSuite, WaitForStop) {
     auto fw = celix::createFramework();
     std::future<void> sync;
     std::thread wait{[fw] {
@@ -46,9 +45,10 @@ TEST_F(CxxFrameworkFactoryTestSuite, WaitForStop) {
 
 struct cService{};
 
-TEST_F(CxxFrameworkFactoryTestSuite, DestroyFrameworkAndUnregisterServices) {
-    framework = celix::createFramework();
+TEST_F(FrameworkFactoryTestSuite, DestroyFrameworkAndUnregisterServices) {
+    auto framework = celix::createFramework();
     auto ctx = framework->getFrameworkBundleContext();
+    std::vector<std::shared_ptr<celix::ServiceRegistration>> registrations{};
     for (int i = 0; i < 10; ++i) {
         auto reg = ctx->registerService<cService>(std::make_shared<cService>())
                 .build();

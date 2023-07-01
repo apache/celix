@@ -20,6 +20,7 @@
 #pragma once
 
 #include <memory>
+#include <functional>
 
 #include "celix_framework.h"
 
@@ -105,7 +106,7 @@ namespace celix {
          * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
          * the C++ API.
          */
-        celix_framework_t * getCFramework() const {
+        celix_framework_t* getCFramework() const {
             return cFw.get();
         }
     private:
