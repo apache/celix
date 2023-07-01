@@ -40,7 +40,7 @@ typedef struct celix_scheduled_event celix_scheduled_event_t;
  * @param[in] fw The framework.
  * @param[in] bndId The bundle id for the bundle which the scheduled event is created.
  * @param[in] scheduledEventId The id of the scheduled event.
- * @param[in] eventName The name of the event. If NULL, CELIX_SCHEDULED_EVENT_DEFAULT_NAME is used.
+ * @param[in] providedEventName The name of the event. If NULL, CELIX_SCHEDULED_EVENT_DEFAULT_NAME is used.
  * @param[in] initialDelayInSeconds The initial delay in seconds.
  * @param[in] intervalInSeconds The interval in seconds.
  * @param[in] callbackData The event data.
@@ -96,7 +96,7 @@ void celix_ScheduledEvent_cleanup(celix_scheduled_event_t** event);
         celix_scheduledEvent_retain(__scheduled_event__)
 
 /**
- * @brief Returns the scheduled event id.
+ * @brief Returns the scheduled event name.
  */
 const char* celix_scheduledEvent_getName(const celix_scheduled_event_t* event);
 
@@ -129,7 +129,6 @@ bool celix_scheduledEvent_deadlineReached(celix_scheduled_event_t* event,
  *
  * @param[in] event The event to process.
  * @param[in] currentTime The current time.
- * @return The time in seconds until the next event should be processed.
  */
 void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct timespec* currentTime);
 
