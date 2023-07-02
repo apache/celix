@@ -304,11 +304,6 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
 }
 
 celix_status_t framework_destroy(framework_pt framework) {
-    if (framework == NULL) {
-        //nop
-        return CELIX_SUCCESS;
-    }
-
     celix_status_t status = CELIX_SUCCESS;
 
     celixThreadMutex_lock(&framework->shutdown.mutex);
