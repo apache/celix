@@ -26,7 +26,7 @@
 
 /*!
  * @brief Allow error in seconds for the interval. This ensure pthread cond wakeups result in a call even if
- * the exact wakeupt time is a bit off.
+ * the exact wakeup time is a bit off.
  */
 #define CELIX_SCHEDULED_EVENT_INTERVAL_ALLOW_ERROR_IN_SECONDS 0.000001
 
@@ -228,9 +228,7 @@ void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct t
 }
 
 bool celix_scheduledEvent_isSingleShot(const celix_scheduled_event_t* event) {
-    bool isDone = false;
-    isDone = event->intervalInSeconds == 0;
-    return isDone;
+    return event->intervalInSeconds == 0;
 }
 
 size_t celix_scheduledEvent_markForWakeup(celix_scheduled_event_t* event) {
@@ -278,6 +276,7 @@ celix_status_t celix_scheduledEvent_wait(celix_scheduled_event_t* event, double 
         if (status == ETIMEDOUT) {
             break;
         }
+        status = CELIX_SUCCESS;
     }
     celixThreadMutex_unlock(&event->mutex);
     return status;
