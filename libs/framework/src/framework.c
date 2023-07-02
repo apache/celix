@@ -71,6 +71,26 @@ static inline celix_framework_bundle_entry_t* fw_bundleEntry_create(celix_bundle
     return entry;
 }
 
+
+static inline void fw_bundleEntry_waitTillUseCountIs(celix_framework_bundle_entry_t *entry, size_t desiredUseCount) {
+    celixThreadMutex_lock(&entry->useMutex);
+    struct timespec logTimeout = celixThreadCondition_getDelayedTime(5);
+    while (entry->useCount != desiredUseCount) {
+        celix_status_t waitStatus = celixThreadCondition_waitUntil(&entry->useCond, &entry->useMutex, &logTimeout);
+        if (waitStatus == ETIMEDOUT) {
+            fw_log(celix_frameworkLogger_globalLogger(),
+                   CELIX_LOG_LEVEL_WARNING,
+                   "Bundle '%s' (bnd id = %li) still in use. Use count is %zu, desired is %zu",
+                   celix_bundle_getSymbolicName(entry->bnd),
+                   entry->bndId,
+                   entry->useCount,
+                   desiredUseCount);
+            logTimeout = celixThreadCondition_getDelayedTime(5);
+        }
+    }
+    celixThreadMutex_unlock(&entry->useMutex);
+}
+
 static inline void fw_bundleEntry_destroy(celix_framework_bundle_entry_t *entry, bool wait) {
     celixThreadMutex_lock(&entry->useMutex);
     while (wait && entry->useCount != 0) {
