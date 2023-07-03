@@ -185,7 +185,7 @@ bool celix_scheduledEvent_deadlineReached(celix_scheduled_event_t* event,
         deadlineReached = true;
     }
     celixThreadMutex_unlock(&event->mutex);
-    return deadlineReached || event->processForWakeup;
+    return deadlineReached;
 }
 
 void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct timespec* currentTime) {
