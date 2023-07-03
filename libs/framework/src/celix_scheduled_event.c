@@ -184,6 +184,10 @@ bool celix_scheduledEvent_deadlineReached(celix_scheduled_event_t* event,
     if (event->processForWakeup) {
         deadlineReached = true;
     }
+    if (nextDeadline) {
+        *nextDeadline =
+            deadlineReached ? celix_delayedTimespec(currentTime, event->intervalInSeconds) : event->nextDeadline;
+    }
     celixThreadMutex_unlock(&event->mutex);
     return deadlineReached;
 }
