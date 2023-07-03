@@ -1195,19 +1195,15 @@ static void* framework_shutdown(void *framework) {
     celix_arrayList_destroy(stopEntries);
 
 
-    // 'stop' framework bundle
+    // make sure the framework has been stopped
     if (fwEntry != NULL) {
-        bundle_t *bnd = fwEntry->bnd;
-        fw_bundleEntry_waitTillUseCountIs(fwEntry, 1); //note this function has 1 use count.
-
-        bundle_state_e state;
-        bundle_getState(bnd, &state);
-        if (state == CELIX_BUNDLE_STATE_ACTIVE || state == CELIX_BUNDLE_STATE_STARTING) {
-            celix_framework_stopBundleEntry(fw, fwEntry);
-        }
+        // Lock the mutex to make sure that `celix_framework_stopBundleEntryInternal` on the framework has finished.
+        celixThreadRwlock_readLock(&fwEntry->fsmMutex);
+        celixThreadRwlock_unlock(&fwEntry->fsmMutex);
         celix_framework_bundleEntry_decreaseUseCount(fwEntry);
     }
 
+    //Now that all bundled has been stopped, no more events will be sent, we can safely stop the event dispatcher.
     //join dispatcher thread
     celixThreadMutex_lock(&fw->dispatcher.mutex);
     fw->dispatcher.active = false;
