@@ -55,8 +55,20 @@ class ScheduledEvent final {
     ScheduledEvent(const ScheduledEvent&) = delete;
     ScheduledEvent& operator=(const ScheduledEvent&) = delete;
 
-    ScheduledEvent(ScheduledEvent&&) noexcept = default;
-    ScheduledEvent& operator=(ScheduledEvent&&) noexcept = default;
+    ScheduledEvent(ScheduledEvent&& rhs) noexcept
+        : ctx{std::move(rhs.ctx)}, eventId{rhs.eventId}, isOneShot{rhs.isOneShot} {
+        rhs.eventId = -1;
+    }
+
+    ScheduledEvent& operator=(ScheduledEvent&& rhs) noexcept {
+        if (this != &rhs) {
+            ctx = std::move(rhs.ctx);
+            eventId = rhs.eventId;
+            isOneShot = rhs.isOneShot;
+            rhs.eventId = -1;
+        }
+        return *this;
+    }
 
     /**
      * @brief Cancels the scheduled event.
