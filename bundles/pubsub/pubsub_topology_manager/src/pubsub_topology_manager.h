@@ -67,7 +67,12 @@ typedef struct pubsub_topology_manager {
         hash_map_t *map; //key = svcId, value = pubsub_admin_metrics_service_t*
     } psaMetrics;
 
-    long scheduledEventId;
+    struct {
+        celix_thread_t thread;
+        celix_thread_mutex_t mutex; //protect running and condition
+        celix_thread_cond_t cond;
+        bool running;
+    } psaHandling;
 
     celix_log_helper_t *loghelper;
 
@@ -106,7 +111,7 @@ typedef struct pstm_topic_receiver_or_sender_entry {
 } pstm_topic_receiver_or_sender_entry_t;
 
 celix_status_t pubsub_topologyManager_create(celix_bundle_context_t *context, celix_log_helper_t *logHelper, pubsub_topology_manager_t **manager);
-void pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager);
+celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager);
 
 void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_properties_t *props);
 void pubsub_topologyManager_psaRemoved(void *handle, void *svc, const celix_properties_t *props);
