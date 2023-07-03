@@ -176,23 +176,25 @@ long celix_scheduledEvent_getId(const celix_scheduled_event_t* event) { return e
 long celix_scheduledEvent_getBundleId(const celix_scheduled_event_t* event) { return event->bndId; }
 
 bool celix_scheduledEvent_deadlineReached(celix_scheduled_event_t* event,
-                                          const struct timespec* currentTime,
-                                          struct timespec* nextDeadline) {
+                                          const struct timespec* scheduleTime) {
     celixThreadMutex_lock(&event->mutex);
-    double timeLeft = celix_difftime(currentTime, &event->nextDeadline);
+    double timeLeft = celix_difftime(scheduleTime, &event->nextDeadline);
     bool deadlineReached = timeLeft - CELIX_SCHEDULED_EVENT_INTERVAL_ALLOW_ERROR_IN_SECONDS <= 0;
     if (event->processForWakeup) {
         deadlineReached = true;
-    }
-    if (nextDeadline) {
-        *nextDeadline =
-            deadlineReached ? celix_delayedTimespec(currentTime, event->intervalInSeconds) : event->nextDeadline;
     }
     celixThreadMutex_unlock(&event->mutex);
     return deadlineReached;
 }
 
-void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct timespec* currentTime) {
+struct timespec celix_scheduledEvent_getNextDeadline(celix_scheduled_event_t* event) {
+    celixThreadMutex_lock(&event->mutex);
+    struct timespec nextDeadline = event->nextDeadline;
+    celixThreadMutex_unlock(&event->mutex);
+    return nextDeadline;
+}
+
+void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct timespec* scheduleTime) {
     fw_log(event->logger,
            CELIX_LOG_LEVEL_TRACE,
            "Processing scheduled event %s for bundle id %li",
@@ -205,7 +207,7 @@ void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct t
     struct timespec end = celix_gettime(CLOCK_MONOTONIC);
 
     celixThreadMutex_lock(&event->mutex);
-    event->nextDeadline = celix_delayedTimespec(currentTime, event->intervalInSeconds);
+    event->nextDeadline = celix_delayedTimespec(scheduleTime, event->intervalInSeconds);
     event->callCount += 1;
     event->processForWakeup = false;
     celixThreadCondition_broadcast(&event->cond); // for changed callCount
@@ -299,7 +301,7 @@ bool celix_scheduledEvent_isMarkedForRemoval(celix_scheduled_event_t* event) {
     return isMarkedForRemoval;
 }
 
-bool celix_scheduledEvent_requiresProcessing(celix_scheduled_event_t* event, const struct timespec* currentTime) {
-    return celix_scheduledEvent_deadlineReached(event, currentTime, NULL) ||
+bool celix_scheduledEvent_requiresProcessing(celix_scheduled_event_t* event, const struct timespec* scheduleTime) {
+    return celix_scheduledEvent_deadlineReached(event, scheduleTime) ||
            celix_scheduledEvent_isMarkedForRemoval(event);
 }
