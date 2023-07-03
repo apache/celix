@@ -114,13 +114,12 @@ long celix_scheduledEvent_getBundleId(const celix_scheduled_event_t* event);
  * @brief Returns whether the event deadline is reached and the event should be processed.
  * @param[in] event The event to check.
  * @param[in] currentTime The current time.
- * @param[out] nextProcessTimeInSeconds The time in seconds until the next event should be processed.
- *                                      if the deadline is reached, this is the next interval.
+ * @param[out] nextDeadline The next deadline. Can be NULL.
  * @return true if the event deadline is reached and the event should be processed.
  */
 bool celix_scheduledEvent_deadlineReached(celix_scheduled_event_t* event,
                                           const struct timespec* currentTime,
-                                          double* nextProcessTimeInSeconds);
+                                          struct timespec* nextDeadline);
 
 /**
  * @brief Process the event by calling the event callback.

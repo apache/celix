@@ -110,3 +110,27 @@ TEST_F(TimeUtilsTestSuite, DelayedTimespecTest) {
     ASSERT_EQ(delayedTime.tv_sec, expectedTime.tv_sec);
     ASSERT_EQ(delayedTime.tv_nsec, expectedTime.tv_nsec);
 }
+
+TEST_F(TimeUtilsTestSuite, CompareTimeTest) {
+    struct timespec time1 = {0, 500000000};
+    struct timespec time2 = {0, 500000000};
+    ASSERT_EQ(celix_compareTime(&time1, &time2), 0);
+
+    time1 = {0, 500000000};
+    time2 = {0, 600000000};
+    ASSERT_EQ(celix_compareTime(&time1, &time2), -1); //time1 is before time2
+
+    time1 = {0, 600000000};
+    time2 = {0, 500000000};
+    ASSERT_EQ(celix_compareTime(&time1, &time2), 1); //time1 is after time2
+
+    time1 = {1, 500000000};
+    time2 = {0, 500000000};
+    ASSERT_EQ(celix_compareTime(&time1, &time2), 1); //time1 is after time2
+
+    time1 = {0, 500000000};
+    time2 = {1, 500000000};
+    ASSERT_EQ(celix_compareTime(&time1, &time2), -1); //time1 is before time2
+}
+
+

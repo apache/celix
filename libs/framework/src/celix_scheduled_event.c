@@ -72,7 +72,7 @@ struct celix_scheduled_event {
     size_t callCount;           /**< The call count of the scheduled event. */
     bool isMarkedForRemoval;    /**< Whether the scheduled event is marked for removal. */
     bool isRemoved;             /**< Whether the scheduled event is removed. */
-    struct timespec lastScheduledEventTime; /**< The last scheduled event time of the scheduled event. */
+    struct timespec nextDeadline; /**< The next deadline of the scheduled event. */
     bool processForWakeup; /**< Whether the scheduled event should be processed directly due to a wakeupScheduledEvent
                               call. */
 };
@@ -119,7 +119,7 @@ celix_scheduled_event_t* celix_scheduledEvent_create(celix_framework_t* fw,
     event->useCount = 1;
     event->callCount = 0;
     event->isRemoved = false;
-    event->lastScheduledEventTime = celixThreadCondition_getTime();
+    event->nextDeadline = celixThreadCondition_getDelayedTime(event->initialDelayInSeconds);
     event->processForWakeup = false;
 
     celixThreadMutex_create(&event->mutex, NULL);
@@ -177,25 +177,15 @@ long celix_scheduledEvent_getBundleId(const celix_scheduled_event_t* event) { re
 
 bool celix_scheduledEvent_deadlineReached(celix_scheduled_event_t* event,
                                           const struct timespec* currentTime,
-                                          double* nextProcessTimeInSeconds) {
+                                          struct timespec* nextDeadline) {
     celixThreadMutex_lock(&event->mutex);
-    double elapsed = celix_difftime(&event->lastScheduledEventTime, currentTime);
-    double deadline = event->callCount == 0 ? event->initialDelayInSeconds : event->intervalInSeconds;
-    deadline -= CELIX_SCHEDULED_EVENT_INTERVAL_ALLOW_ERROR_IN_SECONDS;
-    bool deadlineReached = elapsed >= deadline;
+    double timeLeft = celix_difftime(currentTime, &event->nextDeadline);
+    bool deadlineReached = timeLeft - CELIX_SCHEDULED_EVENT_INTERVAL_ALLOW_ERROR_IN_SECONDS <= 0;
     if (event->processForWakeup) {
         deadlineReached = true;
     }
-
-    if (deadlineReached && nextProcessTimeInSeconds) {
-        *nextProcessTimeInSeconds =
-            event->intervalInSeconds == 0 /*one shot*/ ? CELIX_FRAMEWORK_DEFAULT_MAX_TIMEDWAIT_EVENT_HANDLER_IN_SECONDS
-                                                       : event->intervalInSeconds;
-    } else if (nextProcessTimeInSeconds) {
-        *nextProcessTimeInSeconds = event->callCount == 0 ? event->initialDelayInSeconds : event->intervalInSeconds;
-    }
     celixThreadMutex_unlock(&event->mutex);
-    return deadlineReached;
+    return deadlineReached || event->processForWakeup;
 }
 
 void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct timespec* currentTime) {
@@ -211,7 +201,7 @@ void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct t
     struct timespec end = celix_gettime(CLOCK_MONOTONIC);
 
     celixThreadMutex_lock(&event->mutex);
-    event->lastScheduledEventTime = *currentTime;
+    event->nextDeadline = celix_delayedTimespec(currentTime, event->intervalInSeconds);
     event->callCount += 1;
     event->processForWakeup = false;
     celixThreadCondition_broadcast(&event->cond); // for changed callCount
