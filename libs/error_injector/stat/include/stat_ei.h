@@ -31,6 +31,8 @@ CELIX_EI_DECLARE(mkdir, int);
 
 CELIX_EI_DECLARE(stat, int);
 
+CELIX_EI_DECLARE(lstat, int);
+
 #ifdef __cplusplus
 }
 #endif

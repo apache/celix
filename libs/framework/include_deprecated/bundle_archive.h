@@ -90,7 +90,7 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_getPersistentStat
 /**
  * @brief Return the last modified time of the bundle archive.
  *
- * The last modified time is based on the last modified time of the bundle archives MANIFEST.MF file.
+ * The last modified time is based on the last modified time of the bundle archive cache directory.
  *
  * If the bundle archive cache directory does not exist, lastModified will be set to 0.
  *

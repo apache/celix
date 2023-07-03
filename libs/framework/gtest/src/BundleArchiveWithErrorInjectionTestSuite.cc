@@ -19,6 +19,7 @@
 
 #include <gtest/gtest.h>
 
+#include <thread>
 #include <unistd.h>
 
 #include "celix_constants.h"
@@ -36,6 +37,8 @@
 #include "framework_private.h"
 #include "malloc_ei.h"
 #include "manifest.h"
+#include "stat_ei.h"
+#include "unistd_ei.h"
 
 class BundleArchiveWithErrorInjectionTestSuite : public ::testing::Test {
   public:
@@ -62,6 +65,8 @@ class BundleArchiveWithErrorInjectionTestSuite : public ::testing::Test {
         celix_ei_expect_celix_utils_deleteDirectory(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_celix_utils_writeOrCreateString(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_extractZipData(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_lstat(nullptr, 0, 0);
+        celix_ei_expect_unlink(nullptr, 0, 0);
     }
 
     void installBundleAndExpectFailure() {
@@ -135,12 +140,6 @@ TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreateCacheDirecto
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
-    // Given a mocked celix_utils_createDirectory which returns CELIX_FILE_IO_EXCEPTION from a third (indirect) call
-    //  from bundleArchive_create
-    celix_ei_expect_celix_utils_createDirectory((void*)celix_bundleArchive_create, 1, CELIX_FILE_IO_EXCEPTION, 3);
-    installBundleAndExpectFailure();
-
-    teardownErrorInjectors();
     // Given a mocked celix_utils_strdup which returns NULL from a (indirect) call from bundleArchive_create
     celix_ei_expect_celix_utils_strdup((void*)celix_bundleArchive_create, 1, nullptr);
     installBundleAndExpectFailure();
@@ -191,13 +190,41 @@ TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     bundle_archive_t* archive = nullptr;
 
     // archive directory creation failures not covered by other tests
-    celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_bundleArchive_getLastModifiedInternal, 0, nullptr);
-    EXPECT_EQ(CELIX_ENOMEM,
+    celix_ei_expect_celix_utils_getLastModified((void*)celix_bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION);
+    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION,
               celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_EQ(nullptr, archive);
     EXPECT_FALSE(celix_utils_directoryExists(TEST_ARCHIVE_ROOT));
     teardownErrorInjectors();
 
+    celix_ei_expect_lstat((void*) celix_bundleArchive_create, 2, -1);
+    EXPECT_EQ(CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EACCES),
+              celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
+    EXPECT_EQ(nullptr, archive);
+    EXPECT_FALSE(celix_utils_directoryExists(TEST_ARCHIVE_ROOT));
+    teardownErrorInjectors();
+
+    const char* testExtractDir = "extractBundleTestDir";
+    EXPECT_EQ(CELIX_SUCCESS, celix_utils_extractZipFile(SIMPLE_TEST_BUNDLE1_LOCATION, testExtractDir, nullptr));
+    EXPECT_EQ(CELIX_SUCCESS,
+              celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 2, testExtractDir, &archive));
+    bundleArchive_destroy(archive);
+    archive = nullptr;
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    celix_utils_touch(SIMPLE_TEST_BUNDLE1_LOCATION);
+    celix_ei_expect_unlink((void*)celix_bundleArchive_create, 2, -1);
+    EXPECT_EQ(CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EACCES),
+              celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 2, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
+    EXPECT_EQ(nullptr, archive);
+    celix_utils_deleteDirectory(testExtractDir, nullptr);
+    teardownErrorInjectors();
+
+    EXPECT_EQ(CELIX_SUCCESS,
+              celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
+    bundleArchive_destroy(archive);
+    archive = nullptr;
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    celix_utils_touch(SIMPLE_TEST_BUNDLE1_LOCATION);
     celix_ei_expect_celix_utils_deleteDirectory((void*)celix_bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION);
     EXPECT_EQ(CELIX_FILE_IO_EXCEPTION,
               celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
