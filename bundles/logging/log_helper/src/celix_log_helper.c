@@ -25,6 +25,7 @@
 #include "celix_log_helper.h"
 #include "celix_log_service.h"
 #include "celix_threads.h"
+#include "celix_err.h"
 
 struct celix_log_helper {
     celix_bundle_context_t *ctx;
@@ -159,6 +160,23 @@ void celix_logHelper_vlogDetails(celix_log_helper_t* logHelper, celix_log_level_
         logHelper->logCount += 1;
         celixThreadMutex_unlock(&logHelper->mutex);
     }
+}
+
+void celix_logHelper_logTssErrors(celix_log_helper_t* logHelper, celix_log_level_e level) {
+    if (celix_err_getErrorCount() == 0) {
+        return;
+    }
+    char buf[512] = {0};
+    int ret;
+    int bytes = 0;
+    for (const char *errMsg = celix_err_popLastError(); errMsg != NULL && bytes < sizeof(buf); errMsg = celix_err_popLastError()) {
+        ret = snprintf(buf + bytes, sizeof(buf) - bytes, "[TssErr] %s\n", errMsg);
+        if (ret > 0) {
+            bytes += ret;
+        }
+    }
+    celix_err_resetErrors();
+    celix_logHelper_logDetails(logHelper, level, NULL, NULL, 0, "Detected tss errors:\n%s", buf);
 }
 
 size_t celix_logHelper_logCount(celix_log_helper_t* logHelper) {

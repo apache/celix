@@ -25,6 +25,7 @@ target_include_directories(rsa_dfi_utils PUBLIC
 target_include_directories(rsa_dfi_utils PRIVATE src)
 target_link_libraries(rsa_dfi_utils PUBLIC Celix::framework  Celix::log_helper Celix::dfi)
 celix_deprecated_utils_headers(rsa_dfi_utils)
+celix_target_hide_symbols(rsa_dfi_utils)
 
 #Setup target aliases to match external usage
 add_library(Celix::rsa_dfi_utils ALIAS rsa_dfi_utils)

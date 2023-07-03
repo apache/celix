@@ -106,7 +106,6 @@ dyn_interface_type * dynInterface_parseAvpr(FILE * avprStream) {
 
     json_decref(root);
     if (valid) {
-        LOG_DEBUG("Parsing of avpr interface successful");
         return intf;
     }
     else {
@@ -188,7 +187,7 @@ inline static bool dynAvprInterface_createTypes(dyn_interface_type* intf, json_t
         local_ns = json_object_get(entry, "namespace");
         name = json_string_value(json_object_get(entry, "name"));
         if (!name) {
-            LOG_ERROR("Type entry %llu has no name", index);
+            LOG_ERROR("Type entry %zu has no name", index);
             return false;
         }
         dynAvprType_constructFqn(name_buffer, FQN_SIZE, name, json_is_string(local_ns) ? json_string_value(local_ns) : parent_ns);

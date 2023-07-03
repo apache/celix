@@ -41,7 +41,7 @@ extern "C" {
 /**
  * @brief Creates a new requirement.
  *
- * In case of a error, an error message is added to celix_err.
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] resource The resource which contains the requirement. Can be NULL.
  * @param[in] ns The namespace of the requirement.

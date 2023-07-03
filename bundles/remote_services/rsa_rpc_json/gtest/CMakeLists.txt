@@ -49,7 +49,7 @@ if (LINKER_WRAP_SUPPORTED)
     target_link_libraries(unit_test_rsa_json_rpc PRIVATE
             rsa_json_rpc_cut
             Celix::c_rsa_spi
-            Celix::rsa_common
+            rsa_common_cut
             Celix::framework
             Celix::bundle_ei
             Celix::malloc_ei

@@ -17,36 +17,18 @@
   under the License.
  */
 
-#include "stat_ei.h"
+#include "stdlib_ei.h"
 #include <errno.h>
 
 extern "C" {
 
-int __real_mkdir(const char *__path, __mode_t __mode);
-CELIX_EI_DEFINE(mkdir, int)
-int __wrap_mkdir(const char *__path, __mode_t __mode) {
+char *__real_realpath(const char *__restrict __name, char *__restrict __resolved);
+CELIX_EI_DEFINE(realpath, char*)
+char *__wrap_realpath(const char *__restrict __name, char *__restrict __resolved) {
     errno = EACCES;
-    CELIX_EI_IMPL(mkdir);
+    CELIX_EI_IMPL(realpath);
     errno = 0;
-    return __real_mkdir(__path, __mode);
+    return __real_realpath(__name, __resolved);
 }
 
-
-int __real_stat(const char *__restrict __file, struct stat *__restrict __buf);
-CELIX_EI_DEFINE(stat, int)
-int __wrap_stat(const char *__restrict __file, struct stat *__restrict __buf) {
-    errno = EOVERFLOW;
-    CELIX_EI_IMPL(stat);
-    errno = 0;
-    return __real_stat(__file, __buf);
-}
-
-int __real_lstat(const char *__restrict __file, struct stat *__restrict __buf);
-CELIX_EI_DEFINE(lstat, int)
-int __wrap_lstat(const char *__restrict __file, struct stat *__restrict __buf) {
-    errno = EACCES;
-    CELIX_EI_IMPL(lstat);
-    errno = 0;
-    return __real_lstat(__file, __buf);
-}
 }

@@ -307,18 +307,29 @@ TEST_F(CelixBundleContextBundlesTestSuite, UpdateBundlesTest) {
     ASSERT_FALSE(celix_bundleContext_updateBundle(ctx, bndId1, TEST_BND2_LOC));
     ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
 
-    // remove it from cache before updating
-    ASSERT_EQ(bndId2, celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, false));
-    ASSERT_TRUE(celix_bundleContext_uninstallBundle(ctx, bndId2));
-    auto sn1 = celix_bundleContext_getBundleSymbolicName(ctx, bndId1);
-    ASSERT_TRUE(celix_bundleContext_updateBundle(ctx, bndId1, TEST_BND2_LOC));
-    auto sn2 = celix_bundleContext_getBundleSymbolicName(ctx, bndId1);
-    ASSERT_STRNE(sn1, sn2);
-    free(sn2);
-    free(sn1);
-
     ASSERT_TRUE(celix_bundleContext_unloadBundle(ctx, bndId1));
     ASSERT_FALSE(celix_bundleContext_updateBundle(ctx, bndId1, NULL));
+}
+
+TEST_F(CelixBundleContextBundlesTestSuite, UpdateCorruptUncompressedBundlesTest) {
+    const char* testExtractDir1 = "extractBundleTestDir1";
+    const char* testExtractDir2 = "extractBundleTestDir2";
+    celix_utils_deleteDirectory(testExtractDir1, nullptr);
+    EXPECT_EQ(CELIX_SUCCESS, celix_utils_extractZipFile(TEST_BND1_LOC, testExtractDir1, nullptr));
+    long bndId1 = celix_bundleContext_installBundle(ctx, testExtractDir1, true);
+    ASSERT_TRUE(bndId1 >= 0L);
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    ASSERT_TRUE(celix_bundleContext_isBundleActive(ctx, bndId1));
+
+    // make the symbolic link in cache dangling
+    celix_utils_deleteDirectory(testExtractDir1, nullptr);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds{10});
+    EXPECT_EQ(CELIX_SUCCESS, celix_utils_extractZipFile(TEST_BND2_LOC, testExtractDir2, nullptr));
+    ASSERT_TRUE(celix_bundleContext_updateBundle(ctx, bndId1, testExtractDir2));
+
+    celix_utils_deleteDirectory(testExtractDir1, nullptr);
+    celix_utils_deleteDirectory(testExtractDir2, nullptr);
 }
 
 TEST_F(CelixBundleContextBundlesTestSuite, StartBundleWithException) {

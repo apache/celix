@@ -18,11 +18,13 @@
  */
 #include "avrobin_serializer.h"
 #include "dyn_type_common.h"
+#include "celix_err.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <jansson.h>
+#include <inttypes.h>
 
 #define MAX_VARINT_BUF_SIZE 10
 
@@ -83,7 +85,7 @@ int avrobinSerializer_deserialize(dyn_type *type, const uint8_t *input, size_t i
         }
     } else {
         status = ERROR;
-        LOG_ERROR("Error initializing memory stream for reading. Length was %d.", inlen);
+        LOG_ERROR("Error initializing memory stream for reading. Length was %zu.", inlen);
     }
 
     return status;
@@ -385,7 +387,7 @@ static int avrobinSerializer_parseAny(dyn_type *type, void *loc, FILE *stream) {
             break;
         case 'P' :
             status = ERROR;
-            LOG_WARNING("Untyped pointers are not supported for serialization.");
+            LOG_ERROR("Untyped pointers are not supported for serialization.");
             break;
         default :
             status = ERROR;
@@ -467,13 +469,12 @@ static int avrobinSerializer_parseSequence(dyn_type *type, void *loc, FILE *stre
             blockCount = blockSize / itemSize;
             int64_t rest = blockSize % itemSize;
             if (rest != 0) {
-                LOG_ERROR("Found block size (%li) is not a multitude of the item size (%li)", blockSize, itemSize);
+                LOG_ERROR("Found block size (%"PRId64") is not a multitude of the item size (%zu)", blockSize, itemSize);
                 status = ERROR;
                 break;
             }
         }
         if (blockCount > 0) {
-            LOG_DEBUG("Parsing block count of %li", blockCount);
             cap += blockCount;
             dynType_sequence_reserve(type, loc, cap);
             for (int64_t i = 0; i < blockCount; ++i) {
@@ -610,7 +611,7 @@ static int avrobinSerializer_writeAny(dyn_type *type, void *loc, FILE *stream) {
             break;
         case 'P' :
             status = ERROR;
-            LOG_WARNING("Untyped pointers are not supported for serialization.");
+            LOG_ERROR("Untyped pointers are not supported for serialization.");
             break;
         default :
             status = ERROR;
@@ -775,7 +776,7 @@ static int avrobinSerializer_generateAny(dyn_type *type, json_t **output) {
             break;
         case 'P' :
             status = ERROR;
-            LOG_WARNING("Untyped pointers are not supported for serialization.");
+            LOG_ERROR("Untyped pointers are not supported for serialization.");
             break;
         default :
             status = ERROR;

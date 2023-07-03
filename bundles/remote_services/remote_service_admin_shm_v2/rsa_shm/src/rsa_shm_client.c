@@ -120,7 +120,8 @@ celix_status_t rsaShmClientManager_create(celix_bundle_context_t *ctx,
             RSA_SHM_MEMORY_POOL_SIZE_DEFAULT);
     status = shmPool_create(shmPoolSize, &clientManager->shmPool);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error(loghelper,"RsaShmClient: Error Creating shared memory pool.");
+        celix_logHelper_logTssErrors(loghelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(loghelper, "RsaShmClient: Error Creating shared memory pool.");
         goto shm_pool_err;
     }
 
