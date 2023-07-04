@@ -1407,7 +1407,8 @@ static inline void fw_handleEvents(celix_framework_t* framework) {
 /**
  * @brief Process all scheduled events.
  */
-static void celix_framework_processScheduledEvents(celix_framework_t* fw, const struct timespec* scheduleTime) {
+static void celix_framework_processScheduledEvents(celix_framework_t* fw) {
+    struct timespec scheduleTime = celixThreadCondition_getTime();
     celix_scheduled_event_t* callEvent;
     celix_scheduled_event_t* removeEvent;
     do {
@@ -1422,7 +1423,7 @@ static void celix_framework_processScheduledEvents(celix_framework_t* fw, const 
                 break;
             }
 
-            bool call = celix_scheduledEvent_deadlineReached(visit, scheduleTime);
+            bool call = celix_scheduledEvent_deadlineReached(visit, &scheduleTime);
             if (call) {
                 callEvent = visit;
                 if (celix_scheduledEvent_isSingleShot(visit)) {
@@ -1435,7 +1436,7 @@ static void celix_framework_processScheduledEvents(celix_framework_t* fw, const 
         celixThreadMutex_unlock(&fw->dispatcher.mutex);
 
         if (callEvent != NULL) {
-            celix_scheduledEvent_process(callEvent, scheduleTime);
+            celix_scheduledEvent_process(callEvent);
         }
         if (removeEvent != NULL) {
             fw_log(fw->logger,
@@ -1545,8 +1546,7 @@ static void *fw_eventDispatcher(void *fw) {
 
     while (active) {
         fw_handleEvents(framework);
-        struct timespec scheduleTime = celixThreadCondition_getTime();
-        celix_framework_processScheduledEvents(framework, &scheduleTime);
+        celix_framework_processScheduledEvents(framework);
         struct timespec nextDeadline = celix_framework_nextDeadlineForScheduledEvents(framework);
         celix_framework_waitForNextEvent(framework, nextDeadline);
 

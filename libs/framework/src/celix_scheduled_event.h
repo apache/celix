@@ -132,9 +132,8 @@ struct timespec celix_scheduledEvent_getNextDeadline(celix_scheduled_event_t* ev
  * Must be called on the Celix event thread.
  *
  * @param[in] event The event to process.
- * @param[in] scheduleTime The schedule time.
  */
-void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct timespec* scheduleTime);
+void celix_scheduledEvent_process(celix_scheduled_event_t* event);
 
 /**
  * @brief Call the removed callback of the event and set the removed flag.
