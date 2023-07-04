@@ -28,7 +28,8 @@ Scheduled events will be called repeatedly using a provided interval or once if
 only an initial delay is provided. For the interval time, a monotonic clock is used.
 
 The event callback should be relatively fast, and the scheduled event interval should be relatively high; otherwise, 
-the framework event queue will be blocked, and the framework will not function properly.
+the framework event queue will be blocked, and the framework will not function properly. 
+Network IO should not be done in the event callback, but instead, a separate thread should be used for this.
 
 ## Scheduling an Event
 

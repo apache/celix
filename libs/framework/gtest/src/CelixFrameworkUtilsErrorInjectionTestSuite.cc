@@ -21,6 +21,7 @@
 
 #include <dirent.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "celix/FrameworkFactory.h"
 #include "celix/FrameworkUtils.h"
@@ -30,6 +31,8 @@
 #include "asprintf_ei.h"
 #include "celix_utils_ei.h"
 #include "dlfcn_ei.h"
+#include "stdlib_ei.h"
+#include "unistd_ei.h"
 
 class CelixFrameworkUtilsErrorInjectionTestSuite : public ::testing::Test {
 public:
@@ -45,6 +48,8 @@ public:
         celix_ei_expect_dlopen(nullptr, 0, nullptr);
         celix_ei_expect_dlerror(nullptr, 0, nullptr);
         celix_ei_expect_asprintf(nullptr, 0, 0);
+        celix_ei_expect_realpath(nullptr, 0, nullptr);
+        celix_ei_expect_symlink(nullptr, 0, 0);
     }
     std::shared_ptr<celix::Framework> framework{};
 };
@@ -85,6 +90,27 @@ TEST_F(CelixFrameworkUtilsErrorInjectionTestSuite, testExtractFileBundle) {
     status = celix_framework_utils_extractBundle(framework->getCFramework(), SIMPLE_TEST_BUNDLE1_LOCATION, testExtractDir);
     EXPECT_EQ(status, CELIX_ENOMEM);
     celix_utils_deleteDirectory(testExtractDir, nullptr);
+}
+
+TEST_F(CelixFrameworkUtilsErrorInjectionTestSuite, ExtractUncompressedBundleTest) {
+    const char* testExtractDir = "extractBundleTestDir";
+    const char* testLinkDir = "linkBundleTestDir";
+    celix_utils_deleteDirectory(testExtractDir, nullptr);
+    unlink(testLinkDir);
+    EXPECT_EQ(CELIX_SUCCESS, celix_utils_extractZipFile(SIMPLE_TEST_BUNDLE1_LOCATION, testExtractDir, nullptr));
+
+    // failed to get realpath of bundle
+    celix_ei_expect_realpath((void*)celix_framework_utils_extractBundle, 1, nullptr);
+    auto status = celix_framework_utils_extractBundle(framework->getCFramework(), testExtractDir, testLinkDir);
+    EXPECT_EQ(status, CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EACCES));
+
+    // failed to install symbolic link
+    celix_ei_expect_symlink((void*) celix_framework_utils_extractBundle, 1, -1);
+    status = celix_framework_utils_extractBundle(framework->getCFramework(), testExtractDir, testLinkDir);
+    EXPECT_EQ(status, CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EIO));
+
+    celix_utils_deleteDirectory(testExtractDir, nullptr);
+    unlink(testLinkDir);
 }
 
 TEST_F(CelixFrameworkUtilsErrorInjectionTestSuite, CheckBundleAge) {

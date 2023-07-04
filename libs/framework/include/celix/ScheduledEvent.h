@@ -47,7 +47,7 @@ class ScheduledEvent final {
      * @brief Destroys the scheduled event by removes it from the bundle context if it is not a one-short event.
      */
     ~ScheduledEvent() noexcept {
-        if (!isOneShot) {
+        if (!isOneShot && ctx) {
             celix_bundleContext_tryRemoveScheduledEventAsync(ctx.get(), eventId);
         }
     }
@@ -55,8 +55,20 @@ class ScheduledEvent final {
     ScheduledEvent(const ScheduledEvent&) = delete;
     ScheduledEvent& operator=(const ScheduledEvent&) = delete;
 
-    ScheduledEvent(ScheduledEvent&&) noexcept = default;
-    ScheduledEvent& operator=(ScheduledEvent&&) noexcept = default;
+    ScheduledEvent(ScheduledEvent&& rhs) noexcept
+        : ctx{std::move(rhs.ctx)}, eventId{rhs.eventId}, isOneShot{rhs.isOneShot} {
+        rhs.eventId = -1;
+    }
+
+    ScheduledEvent& operator=(ScheduledEvent&& rhs) noexcept {
+        if (this != &rhs) {
+            ctx = std::move(rhs.ctx);
+            eventId = rhs.eventId;
+            isOneShot = rhs.isOneShot;
+            rhs.eventId = -1;
+        }
+        return *this;
+    }
 
     /**
      * @brief Cancels the scheduled event.
@@ -75,7 +87,11 @@ class ScheduledEvent final {
      * @brief Wakeup a scheduled event and returns immediately, not waiting for the scheduled event callback to be
      * called.
      */
-    void wakeup() { celix_bundleContext_wakeupScheduledEvent(ctx.get(), eventId); }
+    void wakeup() {
+        if (ctx) {
+            celix_bundleContext_wakeupScheduledEvent(ctx.get(), eventId);
+        }
+    }
 
     /**
      * @brief Wait until the next scheduled event is processed.

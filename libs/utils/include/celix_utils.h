@@ -173,6 +173,14 @@ CELIX_UTILS_EXPORT struct timespec celix_delayedTimespec(const struct timespec* 
 CELIX_UTILS_EXPORT double celix_elapsedtime(clockid_t clockId, struct timespec startTime);
 
 /**
+ * @brief Compare two time arguments.
+ * @param[in] a The first timespec.
+ * @param[in] b The second timespec.
+ * @return 0 if equal, -1 if a is before b and 1 if a is after b.
+ */
+CELIX_UTILS_EXPORT int celix_compareTime(const struct timespec* a, const struct timespec* b);
+
+/**
  * @brief Creates a hash from a string
  */
 CELIX_UTILS_EXPORT unsigned int celix_utils_stringHash(const char* string);

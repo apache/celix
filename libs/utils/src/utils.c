@@ -295,6 +295,17 @@ double celix_elapsedtime(clockid_t clockId, struct timespec startTime) {
     return celix_difftime(&startTime, &now);
 }
 
+int celix_compareTime(const struct timespec *a, const struct timespec *b) {
+    if (a->tv_sec == b->tv_sec && a->tv_nsec == b->tv_nsec) {
+        return 0;
+    }
+    double diff = celix_difftime(a, b);
+    if (diff < 0) {
+        return 1;
+    }
+    return -1;
+}
+
 char* celix_utils_strdup(const char *str) {
     if (str != NULL) {
         return strndup(str, CELIX_UTILS_MAX_STRLEN);

@@ -103,7 +103,7 @@ celix_bundleArchive_extractBundle(bundle_archive_t* archive, const char* bundleU
 
     //get revision mod time;
     struct timespec revisionMod;
-    status = celix_bundleArchive_getLastModifiedInternal(archive, &revisionMod);
+    status = celix_utils_getLastModified(archive->resourceCacheRoot, &revisionMod);
     if (status != CELIX_SUCCESS && errno != ENOENT) {
         fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to get last modified time for bundle archive revision directory '%s'", archive->resourceCacheRoot);
         return status;
@@ -125,13 +125,30 @@ celix_bundleArchive_extractBundle(bundle_archive_t* archive, const char* bundleU
      * If dlopen/dlsym is used with newer files, but with the same inode already used in dlopen/dlsym this leads to
      * segfaults.
      */
-    const char* error;
-    status = celix_utils_deleteDirectory(archive->resourceCacheRoot, &error);
-    if (status != CELIX_SUCCESS) {
-        fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to remove existing bundle archive revision directory '%s': %s", archive->resourceCacheRoot, error);
+    const char* error = NULL;
+    struct stat st;
+    status = lstat(archive->resourceCacheRoot, &st);
+    if(status == -1 && errno != ENOENT) {
+        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+        fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to stat bundle archive directory '%s'", archive->resourceCacheRoot);
         return status;
     }
-
+    if (status == 0) {
+        // celix_utils_deleteDirectory does not work for dangling symlinks, so handle this case separately
+        if (S_ISLNK(st.st_mode)) {
+            status = unlink(archive->resourceCacheRoot);
+            if (status == -1) {
+                status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+                error = "Failed to remove existing bundle symlink";
+            }
+        } else {
+            status = celix_utils_deleteDirectory(archive->resourceCacheRoot, &error);
+        }
+        if (status != CELIX_SUCCESS) {
+            fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to remove existing bundle archive revision directory '%s': %s", archive->resourceCacheRoot, error);
+            return status;
+        }
+    }
     status = celix_framework_utils_extractBundle(archive->fw, bundleUrl, archive->resourceCacheRoot);
     if (status != CELIX_SUCCESS) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Failed to extract bundle zip to revision directory.");
@@ -162,13 +179,6 @@ static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt
     status = celix_utils_createDirectory(archive->storeRoot, false, &errorStr);
     if (status != CELIX_SUCCESS) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Failed to create bundle store dir: %s", errorStr);
-        return status;
-    }
-
-    //create bundle revision directory
-    status = celix_utils_createDirectory(archive->resourceCacheRoot, false, &errorStr);
-    if (status != CELIX_SUCCESS) {
-        fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Failed to create bundle revision dir: %s", errorStr);
         return status;
     }
 
@@ -403,23 +413,10 @@ celix_status_t bundleArchive_getLastModified(bundle_archive_pt archive, time_t* 
 }
 //LCOV_EXCL_STOP
 
-celix_status_t celix_bundleArchive_getLastModifiedInternal(bundle_archive_pt archive, struct timespec* lastModified) {
-    // precondition: archive->lock is locked
-    celix_status_t status = CELIX_SUCCESS;
-    char manifestPathBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
-    char* manifestPath = celix_utils_writeOrCreateString(manifestPathBuffer, sizeof(manifestPathBuffer), "%s/%s", archive->resourceCacheRoot, CELIX_BUNDLE_MANIFEST_REL_PATH);
-    if (manifestPath == NULL) {
-        status = CELIX_ENOMEM;
-    }
-    status = CELIX_DO_IF(status, celix_utils_getLastModified(manifestPath, lastModified));
-    celix_utils_freeStringIfNotEqual(manifestPathBuffer, manifestPath);
-    return status;
-}
-
 celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, struct timespec* lastModified) {
     celix_status_t status;
     celixThreadMutex_lock(&archive->lock);
-    status = celix_bundleArchive_getLastModifiedInternal(archive, lastModified);
+    status = celix_utils_getLastModified(archive->resourceCacheRoot, lastModified);
     celixThreadMutex_unlock(&archive->lock);
     return status;
 }

@@ -137,12 +137,7 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_destroy(celix_thread_cond
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex);
 
-/**
- * @brief Wait until the given time.
- * @deprecated use celixThreadCondition_waitUntil.
- */
-CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds) CELIX_UTILS_DEPRECATED;
-
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds);
 
 /**
  * @brief Get the current time suitable for Celix thread conditions.
@@ -179,9 +174,9 @@ CELIX_UTILS_EXPORT struct timespec celixThreadCondition_getDelayedTime(double de
  * 
  * @section Errors
  * - CELIX_SUCCESS if the condition is signaled before the delayInSeconds is reached.
- * - CELIX_ILLEGAL_ARGUMENT if the absTime is negative.
- * - ENOTRECOVERABLE if the state protected by the mutex is not recoverable.
+ * - CELIX_ILLEGAL_ARGUMENT if the absTime is null.
  * - ETIMEDOUT If the absTime has passed.
+ * - EINTR Wait was interrupted by a signal.
  *
  *  Values for absTime should be obtained by celixThreadCondition_getTime, celixThreadCondition_getDelayedTime or
  *  a modified timespec based on celixThreadCondition_getTime/celixThreadCondition_getDelayedTime.

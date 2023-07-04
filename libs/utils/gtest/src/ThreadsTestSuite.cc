@@ -27,9 +27,9 @@
 class ThreadsTestSuite : public ::testing::Test {
 public:
 #ifdef __APPLE__
-    const int ALLOWED_ERROR_MARGIN_IN_MS = 200;
+    const double ALLOWED_ERROR_MARGIN = 0.2;
 #else
-    const int ALLOWED_ERROR_MARGIN_IN_MS = 20;
+    const double ALLOWED_ERROR_MARGIN= 0.1;
 #endif
 };
 
@@ -305,7 +305,15 @@ TEST_F(ThreadsTestSuite, CondTimedWaitTest) {
     ASSERT_EQ(status, ETIMEDOUT);
     celixThreadMutex_unlock(&mutex);
     auto end = celixThreadCondition_getTime();
-    EXPECT_NEAR(celix_difftime(&end, &start), 0.001, ALLOWED_ERROR_MARGIN_IN_MS);
+    EXPECT_NEAR(celix_difftime(&start, &end), 0.01, ALLOWED_ERROR_MARGIN);
+
+    start = celixThreadCondition_getTime();
+    celixThreadMutex_lock(&mutex);
+    status = celixThreadCondition_waitUntil(&cond, &mutex, &start);
+    ASSERT_EQ(status, ETIMEDOUT);
+    celixThreadMutex_unlock(&mutex);
+    end = celixThreadCondition_getTime();
+    EXPECT_NEAR(celix_difftime(&start, &end), 0.0, ALLOWED_ERROR_MARGIN);
 }
 
 //----------------------CELIX READ-WRITE LOCK TESTS----------------------

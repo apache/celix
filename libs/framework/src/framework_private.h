@@ -459,12 +459,14 @@ long celix_framework_nextScheduledEventId(framework_t *fw);
  *
  *
  * @param[in] fw The Celix framework
- * @param[in] bndId The bundle id to add the scheduled event for. If < 0 the framework bundle is used.
+ * @param[in] bndId The bundle id to add the scheduled event for.
  * @param[in] eventName The event name to use for the scheduled event. If NULL, a default event name is used.
  * @param[in] initialDelayInSeconds The initial delay in seconds before the first event callback is called.
  * @param[in] intervalInSeconds The interval in seconds between event callbacks.
- * @param[in] eventData The event data to pass to the event callback.
- * @param[in] eventCallback The event callback to call when the scheduled event is triggered.
+ * @param[in] callbackData The event data to pass to the event callback.
+ * @param[in] callback The event callback to call when the scheduled event is triggered.
+ * @param[in] removeCallbackData The removed callback data.
+ * @param[in] removeCallback The removed callback.
  * @return The scheduled event id of the scheduled event. Can be used to cancel the event.
  * @retval <0 If the event could not be added.
  */
@@ -482,9 +484,9 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
  * @brief Wakeup a scheduled event and returns immediately, not waiting for the scheduled event callback to be
  * called.
  *
- * @param[in] ctx The bundle context.
+ * @param[in] fw The Celix framework
  * @param[in] scheduledEventId The scheduled event id to wakeup.
- * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not
+ * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not known.
  */
 celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw, long scheduledEventId);
 
@@ -494,7 +496,7 @@ celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw, long 
  * @param[in] scheduledEventId The scheduled event id to wait for.
  * @param[in] waitTimeInSeconds The maximum time to wait for the next scheduled event. If <= 0 the function will return
  *                             immediately.
- * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not
+ * @return CELIX_SUCCESS if the scheduled event is done with processing, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not
  *         known and ETIMEDOUT if the waitTimeInSeconds is reached.
  */
 celix_status_t celix_framework_waitForScheduledEvent(celix_framework_t* fw,
@@ -508,7 +510,7 @@ celix_status_t celix_framework_waitForScheduledEvent(celix_framework_t* fw,
  *
  * @param[in] fw The Celix framework
  * @param[in] async If true, the scheduled event will be cancelled asynchronously and the function will not block.
- * @param[in] errorIfNotFound If true, removal of a non existing scheduled event id will not be logged.
+ * @param[in] errorIfNotFound If true, removal of a non existing scheduled event id will be logged.
  * @param[in] scheduledEventId The scheduled event id to cancel.
  * @return true if a scheduled event is cancelled, false if the scheduled event id is not known.
  */

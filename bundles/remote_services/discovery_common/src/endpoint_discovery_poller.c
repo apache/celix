@@ -47,7 +47,7 @@
 #define DISCOVERY_POLL_TIMEOUT "DISCOVERY_CFG_POLL_TIMEOUT"
 #define DEFAULT_POLL_TIMEOUT "10" // seconds
 
-static void endpointDiscoveryPoller_performPeriodicPoll(void *data);
+static void *endpointDiscoveryPoller_performPeriodicPoll(void *data);
 celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_t *poller, char *url, array_list_pt currentEndpoints);
 static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_poller_t *poller, char *url, array_list_pt *updatedEndpoints);
 static celix_status_t endpointDiscoveryPoller_endpointDescriptionEquals(const void *endpointPtr, const void *comparePtr, bool *equals);
@@ -93,6 +93,7 @@ celix_status_t endpointDiscoveryPoller_create(discovery_t *discovery, celix_bund
 	(*poller)->poll_interval = atoi(interval);
 	(*poller)->poll_timeout = atoi(timeout);
 	(*poller)->discovery = discovery;
+	(*poller)->running = false;
 	(*poller)->entries = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
 	const char* sep = ",";
@@ -110,14 +111,9 @@ celix_status_t endpointDiscoveryPoller_create(discovery_t *discovery, celix_bund
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-    double intervalInSeconds = (double)(*poller)->poll_interval;
-    celix_scheduled_event_options_t schedOpts = CELIX_EMPTY_SCHEDULED_EVENT_OPTIONS;
-    schedOpts.name = "Remote Services Endpoint Discovery Poller";
-    schedOpts.callback = endpointDiscoveryPoller_performPeriodicPoll;
-    schedOpts.callbackData = *poller;
-    schedOpts.initialDelayInSeconds = intervalInSeconds;
-    schedOpts.intervalInSeconds = intervalInSeconds;
-    (*poller)->pollEventId = celix_bundleContext_scheduleEvent(context, &schedOpts);
+	(*poller)->running = true;
+
+	status += celixThread_create(&(*poller)->pollerThread, NULL, endpointDiscoveryPoller_performPeriodicPoll, *poller);
 	status += celixThreadMutex_unlock(&(*poller)->pollerLock);
 
 	if(status != CELIX_SUCCESS){
@@ -133,7 +129,9 @@ celix_status_t endpointDiscoveryPoller_create(discovery_t *discovery, celix_bund
 celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_t *poller) {
 	celix_status_t status;
 
-    celix_bundleContext_removeScheduledEvent(poller->discovery->context, poller->pollEventId);
+	poller->running = false;
+
+	celixThread_join(poller->pollerThread, NULL);
 
 	hash_map_iterator_pt iterator = hashMapIterator_create(poller->entries);
 	while (hashMapIterator_hasNext(iterator)) {
@@ -292,31 +290,42 @@ celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_t *poller,
 	return status;
 }
 
-static void endpointDiscoveryPoller_performPeriodicPoll(void *data) {
-    endpoint_discovery_poller_t *poller = (endpoint_discovery_poller_t *) data;
-    celix_status_t status = celixThreadMutex_lock(&poller->pollerLock);
-    if (status != CELIX_SUCCESS) {
-        celix_logHelper_warning(*poller->loghelper, "ENDPOINT_POLLER: failed to obtain lock; retrying...");
-    } else {
-        hash_map_iterator_pt iterator = hashMapIterator_create(poller->entries);
+static void *endpointDiscoveryPoller_performPeriodicPoll(void *data) {
+	endpoint_discovery_poller_t *poller = (endpoint_discovery_poller_t *) data;
 
-        while (hashMapIterator_hasNext(iterator)) {
-            hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
+	useconds_t interval = (useconds_t) (poller->poll_interval * 1000000L);
 
-            char *url = hashMapEntry_getKey(entry);
-            array_list_pt currentEndpoints = hashMapEntry_getValue(entry);
+	while (poller->running) {
+		usleep(interval);
+		celix_status_t status = celixThreadMutex_lock(&poller->pollerLock);
 
-            endpointDiscoveryPoller_poll(poller, url, currentEndpoints);
-        }
+		if (status != CELIX_SUCCESS) {
+            celix_logHelper_warning(*poller->loghelper, "ENDPOINT_POLLER: failed to obtain lock; retrying...");
+		} else {
+			hash_map_iterator_pt iterator = hashMapIterator_create(poller->entries);
 
-        hashMapIterator_destroy(iterator);
-    }
+			while (hashMapIterator_hasNext(iterator)) {
+				hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
 
-    status = celixThreadMutex_unlock(&poller->pollerLock);
-    if (status != CELIX_SUCCESS) {
-        celix_logHelper_warning(*poller->loghelper, "ENDPOINT_POLLER: failed to release lock; retrying...");
-    }
+				char *url = hashMapEntry_getKey(entry);
+				array_list_pt currentEndpoints = hashMapEntry_getValue(entry);
+
+				endpointDiscoveryPoller_poll(poller, url, currentEndpoints);
+			}
+
+			hashMapIterator_destroy(iterator);
+		}
+
+		status = celixThreadMutex_unlock(&poller->pollerLock);
+		if (status != CELIX_SUCCESS) {
+            celix_logHelper_warning(*poller->loghelper, "ENDPOINT_POLLER: failed to release lock; retrying...");
+		}
+	}
+
+	return NULL;
 }
+
+
 
 struct MemoryStruct {
 	char *memory;

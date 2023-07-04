@@ -40,7 +40,7 @@ typedef struct celix_scheduled_event celix_scheduled_event_t;
  * @param[in] fw The framework.
  * @param[in] bndId The bundle id for the bundle which the scheduled event is created.
  * @param[in] scheduledEventId The id of the scheduled event.
- * @param[in] eventName The name of the event. If NULL, CELIX_SCHEDULED_EVENT_DEFAULT_NAME is used.
+ * @param[in] providedEventName The name of the event. If NULL, CELIX_SCHEDULED_EVENT_DEFAULT_NAME is used.
  * @param[in] initialDelayInSeconds The initial delay in seconds.
  * @param[in] intervalInSeconds The interval in seconds.
  * @param[in] callbackData The event data.
@@ -96,7 +96,7 @@ void celix_ScheduledEvent_cleanup(celix_scheduled_event_t** event);
         celix_scheduledEvent_retain(__scheduled_event__)
 
 /**
- * @brief Returns the scheduled event id.
+ * @brief Returns the scheduled event name.
  */
 const char* celix_scheduledEvent_getName(const celix_scheduled_event_t* event);
 
@@ -113,14 +113,18 @@ long celix_scheduledEvent_getBundleId(const celix_scheduled_event_t* event);
 /**
  * @brief Returns whether the event deadline is reached and the event should be processed.
  * @param[in] event The event to check.
- * @param[in] currentTime The current time.
- * @param[out] nextProcessTimeInSeconds The time in seconds until the next event should be processed.
- *                                      if the deadline is reached, this is the next interval.
+ * @param[in] scheduleTime The schedule time.
  * @return true if the event deadline is reached and the event should be processed.
  */
 bool celix_scheduledEvent_deadlineReached(celix_scheduled_event_t* event,
-                                          const struct timespec* currentTime,
-                                          double* nextProcessTimeInSeconds);
+                                          const struct timespec* scheduleTime);
+
+/**
+ * @brief Get the next deadline for the scheduled event.
+ * @param[in] event The event to get the next deadline for.
+ * @return The next deadline for the scheduled event.
+ */
+struct timespec celix_scheduledEvent_getNextDeadline(celix_scheduled_event_t* event);
 
 /**
  * @brief Process the event by calling the event callback.
@@ -128,10 +132,8 @@ bool celix_scheduledEvent_deadlineReached(celix_scheduled_event_t* event,
  * Must be called on the Celix event thread.
  *
  * @param[in] event The event to process.
- * @param[in] currentTime The current time.
- * @return The time in seconds until the next event should be processed.
  */
-void celix_scheduledEvent_process(celix_scheduled_event_t* event, const struct timespec* currentTime);
+void celix_scheduledEvent_process(celix_scheduled_event_t* event);
 
 /**
  * @brief Call the removed callback of the event and set the removed flag.
@@ -180,7 +182,7 @@ celix_status_t celix_scheduledEvent_wait(celix_scheduled_event_t* event, double 
  * @brief Returns true if the event is marked for wakeup, the initial delay or interval deadline is reached or the
  * event is marked for removal for the given time.
  */
-bool celix_scheduledEvent_requiresProcessing(celix_scheduled_event_t* event, const struct timespec* currentTime);
+bool celix_scheduledEvent_requiresProcessing(celix_scheduled_event_t* event, const struct timespec* scheduleTime);
 
 #ifdef __cplusplus
 };
