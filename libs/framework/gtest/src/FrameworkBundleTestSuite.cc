@@ -27,15 +27,17 @@ class FrameworkBundleTestSuite : public ::testing::Test {
   public:
     const int USE_SERVICE_TIMEOUT_IN_MS = 500;
     const std::string trueFilter = std::string{"("} + CELIX_CONDITION_ID + "=" + CELIX_CONDITION_ID_TRUE + ")";
-    const std::string readyFilter =
+    const std::string frameworkReadyFilter =
         std::string{"("} + CELIX_CONDITION_ID + "=" + CELIX_CONDITION_ID_FRAMEWORK_READY + ")";
-    const std::string errorFilter =
+    const std::string frameworkErrorFilter =
         std::string{"("} + CELIX_CONDITION_ID + "=" + CELIX_CONDITION_ID_FRAMEWORK_ERROR + ")";
+    const std::string componentsReadyFilter =
+        std::string{"("} + CELIX_CONDITION_ID + "=" + CELIX_CONDITION_ID_COMPONENTS_READY + ")";
 
     FrameworkBundleTestSuite() = default;
 };
 
-TEST_F(FrameworkBundleTestSuite, ConditionTrueAndFrameworkReadyTest) {
+TEST_F(FrameworkBundleTestSuite, ConditionTrueFrameworkReadyAndComponentsReadyTest) {
     // Given a Celix framework (with conditions enabled (default))
     auto fw = celix::createFramework();
     auto ctx = fw->getFrameworkBundleContext();
@@ -46,14 +48,21 @@ TEST_F(FrameworkBundleTestSuite, ConditionTrueAndFrameworkReadyTest) {
 
     // And the condition service with id "framework.error" will not become available
     count = ctx->useService<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
-                .setFilter(errorFilter)
+                .setFilter(frameworkErrorFilter)
                 .setTimeout(std::chrono::milliseconds{USE_SERVICE_TIMEOUT_IN_MS})
                 .build();
     EXPECT_EQ(0, count);
 
     // But the condition service with id "framework.ready" will become available
     count = ctx->useService<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
-                .setFilter(readyFilter)
+                .setFilter(frameworkReadyFilter)
+                .setTimeout(std::chrono::milliseconds{USE_SERVICE_TIMEOUT_IN_MS})
+                .build();
+    EXPECT_EQ(1, count);
+    
+    // And the condition service with id "components.ready" will become available
+    count = ctx->useService<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
+                .setFilter(componentsReadyFilter)
                 .setTimeout(std::chrono::milliseconds{USE_SERVICE_TIMEOUT_IN_MS})
                 .build();
     EXPECT_EQ(1, count);
@@ -70,20 +79,20 @@ TEST_F(FrameworkBundleTestSuite, ConditionTrueAndFrameworkErrorTest) {
 
     // And the condition service with id "framework.ready" does not become available (framework startup error)
     count = ctx->useService<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
-                .setFilter(readyFilter)
+                .setFilter(frameworkReadyFilter)
                 .setTimeout(std::chrono::milliseconds{USE_SERVICE_TIMEOUT_IN_MS})
                 .build();
     EXPECT_EQ(0, count);
 
     // But the condition service with id "framework.error" will become available
     count = ctx->useService<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
-                .setFilter(errorFilter)
+                .setFilter(frameworkErrorFilter)
                 .setTimeout(std::chrono::milliseconds{USE_SERVICE_TIMEOUT_IN_MS})
                 .build();
     EXPECT_EQ(1, count);
 }
 
-TEST_F(FrameworkBundleTestSuite, FrameworkReadyRegisteredLastTest) {
+TEST_F(FrameworkBundleTestSuite, FrameworkReadyRegisteredLaterTest) {
     // Given a Celix framework which is configured to start a bundle with a condition test service
     auto fw = celix::createFramework({{celix::AUTO_START_0, COND_TEST_BUNDLE_LOC}});
     auto ctx = fw->getFrameworkBundleContext();
@@ -94,14 +103,14 @@ TEST_F(FrameworkBundleTestSuite, FrameworkReadyRegisteredLastTest) {
 
     // And the condition service with id "framework.error" will not become available
     count = ctx->useService<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
-                .setFilter(errorFilter)
+                .setFilter(frameworkErrorFilter)
                 .setTimeout(std::chrono::milliseconds{USE_SERVICE_TIMEOUT_IN_MS})
                 .build();
     EXPECT_EQ(0, count);
 
     // But the condition service with id "framework.ready" will become available
     count = ctx->useService<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
-                .setFilter(readyFilter)
+                .setFilter(frameworkReadyFilter)
                 .setTimeout(std::chrono::milliseconds{USE_SERVICE_TIMEOUT_IN_MS})
                 .build();
     EXPECT_EQ(1, count);
@@ -116,7 +125,16 @@ TEST_F(FrameworkBundleTestSuite, FrameworkReadyRegisteredLastTest) {
 
     // And the service.id of the framework.ready condition is higher than the service.id of the test condition
     //(white-box test, framework.ready condition is registered last)
-    long readySvcId = ctx->findServiceWithName(CELIX_CONDITION_SERVICE_NAME, readyFilter);
+    long readySvcId = ctx->findServiceWithName(CELIX_CONDITION_SERVICE_NAME, frameworkReadyFilter);
     long testySvcId = ctx->findServiceWithName(CELIX_CONDITION_SERVICE_NAME, testFilter);
     EXPECT_GT(readySvcId, testySvcId);
+
+    // And the "components.ready" condition is not available, because the test bundle contains a component which will
+    // not become active
+    count = ctx->useService<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
+                .setFilter(componentsReadyFilter)
+                .setTimeout(std::chrono::milliseconds{USE_SERVICE_TIMEOUT_IN_MS})
+                .build();
+    EXPECT_EQ(0, count);
 }
+

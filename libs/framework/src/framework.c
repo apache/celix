@@ -480,6 +480,8 @@ celix_status_t framework_start(celix_framework_t* framework) {
     celix_status_t startStatus = framework_autoStartConfiguredBundles(framework);
     celix_status_t installStatus = framework_autoInstallConfiguredBundles(framework);
     if (startStatus == CELIX_SUCCESS && installStatus == CELIX_SUCCESS) {
+        //fire started event if all bundles are started/installed and the event queue is empty
+        celix_framework_waitForEmptyEventQueue(framework);
         fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_STARTED, CELIX_SUCCESS);
     } else {
         //note not returning a error, because the framework is started, but not all bundles are started/installed

@@ -20,12 +20,27 @@
 #include "celix/BundleActivator.h"
 #include "celix_condition.h"
 
-class CndTestBundleActivator {
+/**
+ * @brief Empty Test Component for testing the condition service
+ */
+class CondComponent {
+public:
+    CondComponent() = default;
+};
+
+class CondTestBundleActivator {
   public:
-    explicit CndTestBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
+    explicit CondTestBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
         registration = ctx->registerUnmanagedService<celix_condition>(&condition, CELIX_CONDITION_SERVICE_NAME)
                 .addProperty(CELIX_CONDITION_ID, "test")
                 .build();
+
+        auto& cmp = ctx->getDependencyManager()->createComponent<CondComponent>();
+        cmp.createServiceDependency<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
+                .setFilter("(condition.id=does-not-exists)")
+                .setRequired(true);
+
+        cmp.build();
     }
 
   private:
@@ -33,4 +48,4 @@ class CndTestBundleActivator {
     celix_condition condition{};
 };
 
-CELIX_GEN_CXX_BUNDLE_ACTIVATOR(CndTestBundleActivator)
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(CondTestBundleActivator)

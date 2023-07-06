@@ -22,6 +22,7 @@
 
 #include "celix_errno.h"
 #include "celix_bundle_context.h"
+#include "framework_event.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -48,11 +49,16 @@ celix_status_t celix_frameworkBundle_stop(void* userData, celix_bundle_context_t
 celix_status_t celix_frameworkBundle_destroy(void* userData, celix_bundle_context_t* ctx);
 
 /**
- * @brief The scheduled event callback for the framework bundle bundle ready check.
+ * @brief The framework bundle framework event handler.
  * @note Part of the header for testing purposes.
- * @param[in] data The framework bundle bundle activator.
  */
-void celix_frameworkBundle_readyCheck(void* data);
+celix_status_t celix_frameworkBundle_handleFrameworkEvent(void* handle, framework_event_t* event);
+
+/**
+ * @brief The scheduled event callback for the framework components.ready check.
+ * @note Part of the header for testing purposes.
+ */
+void celix_frameworkBundle_componentsCheck(void* data);
 
 #ifdef __cplusplus
 }

@@ -89,6 +89,14 @@ typedef struct celix_condition {
  */
 #define CELIX_CONDITION_ID_FRAMEWORK_ERROR "framework.error"
 
+/*!
+ * @brief The unique identifier for the components.ready condition.
+ *
+ * The components ready condition is registered by the framework if the framework.ready condition is registered
+ * and all components active.
+ */
+#define CELIX_CONDITION_ID_COMPONENTS_READY "components.ready"
+
 #ifdef __cplusplus
 }
 #endif
