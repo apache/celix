@@ -2623,6 +2623,9 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
 }
 
 celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw, long scheduledEventId) {
+    if (scheduledEventId < 0) {
+        return CELIX_SUCCESS; // silently ignore
+    }
     celixThreadMutex_lock(&fw->dispatcher.mutex);
     celix_scheduled_event_t* event = celix_longHashMap_get(fw->dispatcher.scheduledEvents, scheduledEventId);
     if (event != NULL) {
@@ -2644,6 +2647,10 @@ celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw, long 
 
 celix_status_t
 celix_framework_waitForScheduledEvent(celix_framework_t* fw, long scheduledEventId, double waitTimeInSeconds) {
+    if (scheduledEventId < 0) {
+        return CELIX_SUCCESS; // silently ignore
+    }
+
     celixThreadMutex_lock(&fw->dispatcher.mutex);
     CELIX_SCHEDULED_EVENT_RETAIN_GUARD(event, celix_longHashMap_get(fw->dispatcher.scheduledEvents, scheduledEventId));
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
