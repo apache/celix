@@ -84,6 +84,9 @@ class CelixConan(ConanFile):
         "build_framework": [True, False],
         "build_rcm": [True, False],
         "build_utils": [True, False],
+        "build_log_helper": [True, False],
+        "build_log_service_api": [True, False],
+        "build_shell_api": [True, False],
         "celix_cxx14": [True, False],
         "celix_cxx17": [True, False],
         "celix_install_deprecated_api": [True, False],
@@ -137,6 +140,9 @@ class CelixConan(ConanFile):
         "build_framework": False,
         "build_rcm": False,
         "build_utils": False,
+        "build_log_helper": False,
+        "build_log_service_api": False,
+        "build_shell_api": False,
         "celix_cxx14": True,
         "celix_cxx17": True,
         "celix_install_deprecated_api": False,
@@ -191,14 +197,6 @@ class CelixConan(ConanFile):
                 self.options.build_rsa_discovery_zeroconf = False
                 self.options.build_shell_bonjour = False
 
-        if not self.options.celix_cxx14:
-            self.options.celix_cxx17 = False
-        if not self.options.celix_cxx17:
-            self.options.build_cxx_remote_service_admin = False
-            self.options.build_promises = False
-            self.options.build_pushstreams = False
-        if not self.options.build_cxx_remote_service_admin:
-            self.options.build_cxx_rsa_integration = False
         if not self.options.enable_testing:
             self.options.build_pubsub_integration = False
             self.options.enable_code_coverage = False
@@ -226,6 +224,31 @@ class CelixConan(ConanFile):
             self.options.build_shell_wui = False
         if not self.options.celix_install_deprecated_api:
             self.options.build_shell_bonjour = False
+
+        if self.options.build_cxx_rsa_integration:
+            self.options.build_cxx_remote_service_admin = True
+            self.options.build_pubsub = True
+            self.options.build_pushstreams = True
+            self.options.build_promises = True
+            self.options.build_log_helper = True
+            self.options.build_shell = True
+            self.options.build_shell_tui = True
+            self.options.build_shell_api = True
+            self.options.build_pubsub_psa_zmq = True
+            self.options.build_pubsub_discovery_etcd = True
+
+        if self.options.build_cxx_remote_service_admin:
+            self.options.build_framework = True
+            self.options.celix_cxx17 = True
+
+        if self.options.build_pushstreams:
+            self.options.build_promises = True
+
+        if self.options.build_promises:
+            self.options.celix_cxx17 = True
+
+        if self.options.celix_cxx17:
+            self.options.celix_cxx14 = True
 
     def requirements(self):
         self.requires("libcurl/[>=7.64.1 <8.0.0]")

@@ -15,82 +15,86 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(shell_api INTERFACE)
-target_include_directories(shell_api INTERFACE
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
-		)
+celix_subproject(SHELL_API "Option to enable building the Shell API" ON)
+if (SHELL_API)
+    add_library(shell_api INTERFACE)
+    target_include_directories(shell_api INTERFACE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
+            )
+    target_link_libraries(shell_api INTERFACE Celix::utils)
 
-if (CELIX_INSTALL_DEPRECATED_API)
-	target_include_directories(shell_api INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/deprecated_api>)
-	install(DIRECTORY deprecated_api/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/shell COMPONENT shell)
+    if (CELIX_INSTALL_DEPRECATED_API)
+        target_include_directories(shell_api INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/deprecated_api>)
+        install(DIRECTORY deprecated_api/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/shell COMPONENT shell)
+    endif ()
+
+    install(TARGETS shell_api EXPORT celix COMPONENT shell
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/shell)
+    install(DIRECTORY api/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/shell COMPONENT shell)
+
+    add_library(Celix::shell_api ALIAS shell_api)
 endif ()
-
-install(TARGETS shell_api EXPORT celix COMPONENT shell
-		INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/shell)
-install(DIRECTORY api/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/shell COMPONENT shell)
-
-add_library(Celix::shell_api ALIAS shell_api)
 
 celix_subproject(SHELL "Option to enable building the Shell bundles" ON)
 if (SHELL)
 
-	add_library(shell_commands STATIC
-			src/lb_command.c
-			src/start_command.c
-			src/stop_command.c
-			src/install_command.c
-			src/update_command.c
-			src/uninstall_command.c
-			src/unload_command.c
-			src/help_command.c
-			src/dm_shell_list_command.c
-			src/query_command.c
-			src/quit_command.c
-			src/std_commands.c
-			src/bundle_command.c)
-	target_include_directories(shell_commands PRIVATE src)
-	target_link_libraries(shell_commands PRIVATE Celix::shell_api Celix::log_helper)
-	celix_deprecated_utils_headers(shell_commands)
+    add_library(shell_commands STATIC
+            src/lb_command.c
+            src/start_command.c
+            src/stop_command.c
+            src/install_command.c
+            src/update_command.c
+            src/uninstall_command.c
+            src/unload_command.c
+            src/help_command.c
+            src/dm_shell_list_command.c
+            src/query_command.c
+            src/quit_command.c
+            src/std_commands.c
+            src/bundle_command.c)
+    target_include_directories(shell_commands PRIVATE src)
+    target_link_libraries(shell_commands PRIVATE Celix::shell_api Celix::log_helper)
+    celix_deprecated_utils_headers(shell_commands)
 
     add_celix_bundle(shell
-        SYMBOLIC_NAME "apache_celix_c_shell"
-        VERSION "2.1.0"
-        NAME "Apache Celix C Shell"
-		FILENAME celix_shell
-		GROUP "Celix/Shell"
-        SOURCES
-			src/c_shell_activator.c
-			src/c_shell.c
-	)
-	target_include_directories(shell PRIVATE src)
-	target_link_libraries(shell PRIVATE shell_commands Celix::shell_api Celix::log_helper)
-	target_compile_options(shell PRIVATE -Wno-deprecated-declarations)
-	celix_deprecated_utils_headers(shell)
-	if (CELIX_INSTALL_DEPRECATED_API)
-		target_compile_definitions(shell PRIVATE CELIX_INSTALL_DEPRECATED_API)
-	endif ()
-	install_celix_bundle(shell EXPORT celix COMPONENT shell)
+            SYMBOLIC_NAME "apache_celix_c_shell"
+            VERSION "2.1.0"
+            NAME "Apache Celix C Shell"
+            FILENAME celix_shell
+            GROUP "Celix/Shell"
+            SOURCES
+            src/c_shell_activator.c
+            src/c_shell.c
+            )
+    target_include_directories(shell PRIVATE src)
+    target_link_libraries(shell PRIVATE shell_commands Celix::shell_api Celix::log_helper)
+    target_compile_options(shell PRIVATE -Wno-deprecated-declarations)
+    celix_deprecated_utils_headers(shell)
+    if (CELIX_INSTALL_DEPRECATED_API)
+        target_compile_definitions(shell PRIVATE CELIX_INSTALL_DEPRECATED_API)
+    endif ()
+    install_celix_bundle(shell EXPORT celix COMPONENT shell)
 
-	#Setup target aliases to match external usage
-	add_library(Celix::shell ALIAS shell)
+    #Setup target aliases to match external usage
+    add_library(Celix::shell ALIAS shell)
 
-	if (CELIX_CXX14)
-		add_celix_bundle(ShellCxx
-			SYMBOLIC_NAME "Apache_Celix_CxxShell"
-			VERSION "2.1.0"
-			NAME "Apache Celix CXX Shell"
-			FILENAME celix_ShellCxx
-			GROUP "Celix/Shell"
-			SOURCES
-				src/Shell.cc
-		)
-		target_include_directories(ShellCxx PRIVATE src)
-		target_link_libraries(ShellCxx PRIVATE shell_commands Celix::shell_api Celix::log_service_api Celix::log_helper)
-		install_celix_bundle(ShellCxx EXPORT celix COMPONENT shell)
-		add_library(Celix::ShellCxx ALIAS ShellCxx)
-	endif ()
+    if (CELIX_CXX14)
+        add_celix_bundle(ShellCxx
+                SYMBOLIC_NAME "Apache_Celix_CxxShell"
+                VERSION "2.1.0"
+                NAME "Apache Celix CXX Shell"
+                FILENAME celix_ShellCxx
+                GROUP "Celix/Shell"
+                SOURCES
+                src/Shell.cc
+                )
+        target_include_directories(ShellCxx PRIVATE src)
+        target_link_libraries(ShellCxx PRIVATE shell_commands Celix::shell_api Celix::log_service_api Celix::log_helper)
+        install_celix_bundle(ShellCxx EXPORT celix COMPONENT shell)
+        add_library(Celix::ShellCxx ALIAS ShellCxx)
+    endif ()
 
-	if (ENABLE_TESTING)
-		add_subdirectory(gtest)
-	endif()
+    if (ENABLE_TESTING)
+        add_subdirectory(gtest)
+    endif ()
 endif (SHELL)

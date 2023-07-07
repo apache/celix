@@ -15,36 +15,39 @@
 # specific language governing permissions and limitations
 # under the License.
 
-if (CELIX_INSTALL_DEPRECATED_API)
-	set(SOURCES src/celix_log_helper.c src/log_helper.c)
-else ()
-	set(SOURCES src/celix_log_helper.c)
+celix_subproject(LOG_HELPER "Option to enable building the log helper library" ON)
+if (LOG_HELPER)
+    if (CELIX_INSTALL_DEPRECATED_API)
+        set(SOURCES src/celix_log_helper.c src/log_helper.c)
+    else ()
+        set(SOURCES src/celix_log_helper.c)
+    endif ()
+
+    add_library(log_helper STATIC ${SOURCES})
+    set_target_properties(log_helper PROPERTIES OUTPUT_NAME "celix_log_utils")
+    target_include_directories(log_helper PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+            )
+    target_link_libraries(log_helper PUBLIC Celix::log_service_api Celix::framework PRIVATE Celix::utils)
+
+    if (CELIX_INSTALL_DEPRECATED_API)
+        target_include_directories(log_helper PUBLIC
+                $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include_v1>
+                )
+        install(DIRECTORY include_v1/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_helper)
+    endif ()
+
+    install(TARGETS log_helper EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT logging
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_helper)
+    install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_helper COMPONENT logging)
+
+    celix_target_hide_symbols(log_helper)
+    celix_deprecated_utils_headers(log_helper)
+    celix_deprecated_framework_headers(log_helper)
+
+    add_library(Celix::log_helper ALIAS log_helper)
+
+    if (ENABLE_TESTING)
+        add_subdirectory(gtest)
+    endif ()
 endif ()
-
-add_library(log_helper STATIC ${SOURCES})
-set_target_properties(log_helper PROPERTIES OUTPUT_NAME "celix_log_utils")
-target_include_directories(log_helper PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-)
-target_link_libraries(log_helper PUBLIC Celix::log_service_api Celix::framework PRIVATE Celix::utils)
-
-if (CELIX_INSTALL_DEPRECATED_API)
-	target_include_directories(log_helper PUBLIC
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include_v1>
-	)
-	install(DIRECTORY include_v1/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_helper)
-endif ()
-
-install(TARGETS log_helper EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT logging
-		INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_helper)
-install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_helper COMPONENT logging)
-
-celix_target_hide_symbols(log_helper)
-celix_deprecated_utils_headers(log_helper)
-celix_deprecated_framework_headers(log_helper)
-
-add_library(Celix::log_helper ALIAS log_helper)
-
-if (ENABLE_TESTING)
-	add_subdirectory(gtest)
-endif()
