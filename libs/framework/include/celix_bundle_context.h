@@ -1320,6 +1320,8 @@ CELIX_FRAMEWORK_EXPORT long celix_bundleContext_scheduleEvent(celix_bundle_conte
  * @brief Wakeup a scheduled event and returns immediately, not waiting for the scheduled event callback to be
  * called.
  *
+ * Silently ignored if the scheduled event ids < 0.
+ *
  * @param[in] ctx The bundle context.
  * @param[in] scheduledEventId The scheduled event id to wakeup.
  * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not known.
@@ -1329,6 +1331,9 @@ CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleContext_wakeupScheduledEvent(c
 
 /**
  * @brief Wait until the next scheduled event is processed.
+ *
+ * Silently ignored if the scheduled event ids < 0.
+ *
  * @param[in] ctx The bundle context.
  * @param[in] scheduledEventId The scheduled event id to wait for.
  * @param[in] waitTimeInSeconds The maximum time to wait for the next scheduled event. If <= 0 the function will return
@@ -1342,6 +1347,8 @@ CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleContext_waitForScheduledEvent(
 
 /**
  * @brief Cancel and remove a scheduled event.
+ *
+ * Silently ignored if the scheduled event ids < 0.
  *
  * This function will block until a possible in-progress scheduled event callback is finished, the scheduled event
  * is removed and, if configured, the remove callback is called.
@@ -1359,6 +1366,8 @@ CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_removeScheduledEvent(celix_bundl
  * When this function returns, no new scheduled event callbacks will be called, but it is not guaranteed that there
  * is still a scheduled event callback in progress and that the remove callback is called.
  *
+ * Silently ignored if the scheduled event ids < 0.
+ *
  * @param[in] ctx The bundle context.
  * @param[in] scheduledEventId The scheduled event id to cancel and remove.
  * @return true if a scheduled event is cancelled, false if the scheduled event id is not known.
@@ -1368,6 +1377,8 @@ CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_removeScheduledEventAsync(celix_
 
 /**
  * @brief Try to cancel and remove a scheduled event asynchronously.
+ *
+ * Silently ignored if the scheduled event ids < 0.
  *
  * When this function returns, no new scheduled event callbacks will be called, but it is not guaranteed that there
  * is still a scheduled event callback in progress and that the remove callback is called.

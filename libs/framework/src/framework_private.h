@@ -484,6 +484,8 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
  * @brief Wakeup a scheduled event and returns immediately, not waiting for the scheduled event callback to be
  * called.
  *
+ * Silently ignored if the scheduled event ids < 0.
+ *
  * @param[in] fw The Celix framework
  * @param[in] scheduledEventId The scheduled event id to wakeup.
  * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not known.
@@ -492,6 +494,9 @@ celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw, long 
 
 /**
  * @brief Wait for the next scheduled event to be processed.
+ *
+ * Silently ignored if the scheduled event ids < 0.
+ *
  * @param[in] fw The Celix framework
  * @param[in] scheduledEventId The scheduled event id to wait for.
  * @param[in] waitTimeInSeconds The maximum time to wait for the next scheduled event. If <= 0 the function will return
@@ -507,6 +512,8 @@ celix_status_t celix_framework_waitForScheduledEvent(celix_framework_t* fw,
  * @brief Cancel a scheduled event.
  *
  * When this function returns, no more scheduled event callbacks will be called.
+ *
+ * Silently ignored if the scheduled event ids < 0.
  *
  * @param[in] fw The Celix framework
  * @param[in] async If true, the scheduled event will be cancelled asynchronously and the function will not block.

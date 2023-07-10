@@ -147,6 +147,14 @@ TEST_F(ScheduledEventTestSuite, ScheduledEventTest) {
     EXPECT_TRUE(info.removed.load());
 }
 
+TEST_F(ScheduledEventTestSuite, IgnoreNegativeScheduledIdsTest) {
+    // Scheduled event wakeup, remove functions will ignore negative ids
+    EXPECT_EQ(CELIX_SUCCESS,
+              celix_bundleContext_wakeupScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), -1));
+    EXPECT_EQ(CELIX_SUCCESS,
+              celix_bundleContext_removeScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), -1));
+}
+
 TEST_F(ScheduledEventTestSuite, ManyScheduledEventTest) {
     auto ctx = fw->getFrameworkBundleContext();
 
@@ -192,7 +200,7 @@ TEST_F(ScheduledEventTestSuite, AddWithoutRemoveScheduledEventTest) {
 
     auto callback = [](void* /*data*/) { fprintf(stdout, "Scheduled event called\n"); };
     celix_scheduled_event_options_t opts{};
-    opts.name = "Unremoved scheduled event test";
+    opts.name = "Un-removed scheduled event test";
     opts.intervalInSeconds = 0.02;
     opts.callback = callback;
     long scheduledEventId = celix_bundleContext_scheduleEvent(ctx->getCBundleContext(), &opts);
@@ -208,7 +216,7 @@ TEST_F(ScheduledEventTestSuite, AddWithoutRemoveOneShotEventTest) {
 
     auto callback = [](void* /*data*/) { FAIL() << "Scheduled event called, but should not be called"; };
     celix_scheduled_event_options_t opts{};
-    opts.name = "Unremoved one-shot scheduled event test";
+    opts.name = "Un-removed one-shot scheduled event test";
     opts.initialDelayInSeconds = 100;
     opts.callback = callback;
     long scheduledEventId = celix_bundleContext_scheduleEvent(ctx->getCBundleContext(), &opts);
@@ -673,8 +681,9 @@ TEST_F(ScheduledEventTestSuite, ScheduledEventTimeoutLogTest) {
     //When the event is woken up
     celix_bundleContext_wakeupScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId);
 
-    //Then the log callback is called with a warning log message within a error margin, because callback took too long
-    waitFor([&]{return logCount.load() == 1;}, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
+    // Then the log callback is called with a warning log message within an error margin, because callback took too long
+    waitFor([&] { return logCount.load() == 1; },
+            std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS + 200});
     EXPECT_EQ(1, logCount.load());
 
     //When removing the event
