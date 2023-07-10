@@ -683,7 +683,7 @@ TEST_F(ScheduledEventTestSuite, ScheduledEventTimeoutLogTest) {
 
     // Then the log callback is called with a warning log message within an error margin, because callback took too long
     waitFor([&] { return logCount.load() == 1; },
-            std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS + (int)(ALLOWED_PROCESSING_TIME_IN_SECONDS * 1000)});
+            std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS + 200});
     EXPECT_EQ(1, logCount.load());
 
     //When removing the event
