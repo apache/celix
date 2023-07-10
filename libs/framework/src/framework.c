@@ -446,19 +446,18 @@ celix_status_t fw_init(framework_pt framework) {
 
 celix_status_t framework_start(celix_framework_t* framework) {
     celix_status_t status = CELIX_SUCCESS;
-    bundle_state_e state = CELIX_BUNDLE_STATE_UNKNOWN;
+    bundle_state_e state = celix_bundle_getState(framework->bundle);
 
-    status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
-    if (status == CELIX_SUCCESS) {
-        if ((state == CELIX_BUNDLE_STATE_INSTALLED) || (state == CELIX_BUNDLE_STATE_RESOLVED)) {
-            status = CELIX_DO_IF(status, fw_init(framework));
-        }
+    //framework_start should be called when state is INSTALLED or RESOLVED
+    bool expectedState = state == CELIX_BUNDLE_STATE_INSTALLED || state == CELIX_BUNDLE_STATE_RESOLVED;
+
+    if (!expectedState) {
+        fw_log(framework->logger, CELIX_LOG_LEVEL_ERROR, "Could not start framework, unexpected state %i", state);
+        return CELIX_ILLEGAL_STATE;
     }
 
-    status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
-    if (status == CELIX_SUCCESS && state == CELIX_BUNDLE_STATE_STARTING) {
-        bundle_setState(framework->bundle, CELIX_BUNDLE_STATE_ACTIVE);
-    }
+    status = CELIX_DO_IF(status, fw_init(framework));
+    status = CELIX_DO_IF(status, bundle_setState(framework->bundle, CELIX_BUNDLE_STATE_ACTIVE));
 
     if (status != CELIX_SUCCESS) {
         fw_log(framework->logger, CELIX_LOG_LEVEL_ERROR, "Could not initialize framework");
@@ -467,24 +466,18 @@ celix_status_t framework_start(celix_framework_t* framework) {
 
     celix_framework_bundle_entry_t* entry =
         celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, framework->bundleId);
-    CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED, entry));
+    fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED, entry);
     celix_framework_bundleEntry_decreaseUseCount(entry);
-
-    if (status != CELIX_SUCCESS) {
-        status = CELIX_BUNDLE_EXCEPTION;
-        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not start framework bundle");
-        fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_ERROR, status);
-        return status;
-    }
 
     celix_status_t startStatus = framework_autoStartConfiguredBundles(framework);
     celix_status_t installStatus = framework_autoInstallConfiguredBundles(framework);
+
     if (startStatus == CELIX_SUCCESS && installStatus == CELIX_SUCCESS) {
         //fire started event if all bundles are started/installed and the event queue is empty
         celix_framework_waitForEmptyEventQueue(framework);
         fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_STARTED, CELIX_SUCCESS);
     } else {
-        //note not returning a error, because the framework is started, but not all bundles are started/installed
+        //note not returning an error, because the framework is started, but not all bundles are started/installed
         fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not auto start or install all configured bundles");
         fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_ERROR, CELIX_BUNDLE_EXCEPTION);
     }

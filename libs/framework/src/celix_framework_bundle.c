@@ -30,7 +30,7 @@
 /**
  * @brief Celix framework bundle activator struct.
  */
-typedef struct celix_framework_bundle_activator {
+typedef struct celix_framework_bundle {
     celix_bundle_context_t* ctx;
     celix_condition_t conditionInstance; /**< condition instance which can be used for multiple condition services.*/
     framework_listener_t listener;       /**< framework listener to check if the framework is ready. */
@@ -42,11 +42,11 @@ typedef struct celix_framework_bundle_activator {
     long checkComponentsScheduledEventId; /**< event id of the scheduled event to check if the framework is ready. */
     long componentsReadyConditionSvcId;   /**< service id of the condition service which is set when all components are
                                             ready. */
-} celix_framework_bundle_activator_t;
+} celix_framework_bundle_t;
 
 celix_status_t celix_frameworkBundle_create(celix_bundle_context_t* ctx, void** userData) {
     *userData = NULL;
-    celix_framework_bundle_activator_t* act = calloc(1, sizeof(*act));
+    celix_framework_bundle_t* act = calloc(1, sizeof(*act));
     if (!act) {
         return ENOMEM;
     }
@@ -70,7 +70,7 @@ celix_status_t celix_frameworkBundle_create(celix_bundle_context_t* ctx, void** 
     return CELIX_SUCCESS;
 }
 
-static void celix_frameworkBundle_registerTrueCondition(celix_framework_bundle_activator_t* act) {
+static void celix_frameworkBundle_registerTrueCondition(celix_framework_bundle_t* act) {
     celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
     opts.serviceName = CELIX_CONDITION_SERVICE_NAME;
     opts.serviceVersion = CELIX_CONDITION_SERVICE_VERSION;
@@ -86,7 +86,7 @@ static void celix_frameworkBundle_registerTrueCondition(celix_framework_bundle_a
 
 celix_status_t celix_frameworkBundle_handleFrameworkEvent(void* handle, framework_event_t* event) {
     framework_listener_t* listener = handle;
-    celix_framework_bundle_activator_t* act = listener->handle;
+    celix_framework_bundle_t* act = listener->handle;
     if (event->type == OSGI_FRAMEWORK_EVENT_STARTED || event->type == OSGI_FRAMEWORK_EVENT_ERROR) {
         celixThreadMutex_lock(&act->mutex);
 
@@ -123,7 +123,7 @@ celix_status_t celix_frameworkBundle_handleFrameworkEvent(void* handle, framewor
 }
 
 void celix_frameworkBundle_componentsCheck(void* data) {
-    celix_framework_bundle_activator_t* act = data;
+    celix_framework_bundle_t* act = data;
     celix_dependency_manager_t* mng = celix_bundleContext_getDependencyManager(act->ctx);
 
     celixThreadMutex_lock(&act->mutex);
@@ -149,7 +149,7 @@ void celix_frameworkBundle_componentsCheck(void* data) {
     celixThreadMutex_unlock(&act->mutex);
 }
 
-static void celix_frameworkBundle_startComponentsCheck(celix_framework_bundle_activator_t* act) {
+static void celix_frameworkBundle_startComponentsCheck(celix_framework_bundle_t* act) {
     celix_scheduled_event_options_t opts = CELIX_EMPTY_SCHEDULED_EVENT_OPTIONS;
     opts.name = "celix_frameworkBundle_componentsCheck";
     opts.callback = celix_frameworkBundle_componentsCheck;
@@ -160,7 +160,7 @@ static void celix_frameworkBundle_startComponentsCheck(celix_framework_bundle_ac
 }
 
 celix_status_t celix_frameworkBundle_start(void* userData, celix_bundle_context_t* ctx) {
-    celix_framework_bundle_activator_t* act = userData;
+    celix_framework_bundle_t* act = userData;
 
     bool conditionsEnabled = celix_bundleContext_getPropertyAsBool(
         ctx, CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED, CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED_DEFAULT);
@@ -181,7 +181,7 @@ celix_status_t celix_frameworkBundle_start(void* userData, celix_bundle_context_
 }
 
 celix_status_t celix_frameworkBundle_stop(void* userData, celix_bundle_context_t* ctx) {
-    celix_framework_bundle_activator_t* act = userData;
+    celix_framework_bundle_t* act = userData;
     celix_framework_t* framework = celix_bundleContext_getFramework(ctx);
 
     // remove framework listener
@@ -214,7 +214,7 @@ celix_status_t celix_frameworkBundle_stop(void* userData, celix_bundle_context_t
 }
 
 celix_status_t celix_frameworkBundle_destroy(void* userData, celix_bundle_context_t* ctx __attribute__((unused))) {
-    celix_framework_bundle_activator_t* act = userData;
+    celix_framework_bundle_t* act = userData;
     if (act) {
         celixThreadMutex_destroy(&act->mutex);
         free(userData);
