@@ -15,6 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(libzip REQUIRED)
 add_library(zip_ei STATIC src/zip_ei.cc)
 
 target_include_directories(zip_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)

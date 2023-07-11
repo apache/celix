@@ -49,8 +49,14 @@ class CelixConan(ConanFile):
         "build_deployment_admin": [True, False],
         "build_http_admin": [True, False],
         "build_log_service": [True, False],
+        "build_log_helper": [True, False],
+        "build_log_service_api": [True, False],
         "build_syslog_writer": [True, False],
         "build_pubsub": [True, False],
+        "build_pubsub_wire_protocol_v1": [True, False],
+        "build_pubsub_wire_protocol_v2": [True, False],
+        "build_pubsub_json_serializer": [True, False],
+        "build_pubsub_avrobin_serializer": [True, False],
         "build_pubsub_psa_zmq": [True, False],
         "build_pubsub_examples": [True, False],
         "build_pubsub_integration": [True, False],
@@ -68,6 +74,7 @@ class CelixConan(ConanFile):
         "build_rsa_json_rpc": [True, False],
         "build_rsa_discovery_zeroconf": [True, False],
         "build_shell": [True, False],
+        "build_shell_api": [True, False],
         "build_remote_shell": [True, False],
         "build_shell_bonjour": [True, False],
         "build_shell_tui": [True, False],
@@ -84,9 +91,6 @@ class CelixConan(ConanFile):
         "build_framework": [True, False],
         "build_rcm": [True, False],
         "build_utils": [True, False],
-        "build_log_helper": [True, False],
-        "build_log_service_api": [True, False],
-        "build_shell_api": [True, False],
         "celix_cxx14": [True, False],
         "celix_cxx17": [True, False],
         "celix_install_deprecated_api": [True, False],
@@ -105,8 +109,14 @@ class CelixConan(ConanFile):
         "build_deployment_admin": False,
         "build_http_admin": False,
         "build_log_service": False,
+        "build_log_helper": False,
+        "build_log_service_api": False,
         "build_syslog_writer": False,
         "build_pubsub": False,
+        "build_pubsub_wire_protocol_v1": False,
+        "build_pubsub_wire_protocol_v2": False,
+        "build_pubsub_json_serializer": False,
+        "build_pubsub_avrobin_serializer": False,
         "build_pubsub_psa_zmq": False,
         "build_pubsub_examples": False,
         "build_pubsub_integration": False,
@@ -124,6 +134,7 @@ class CelixConan(ConanFile):
         "build_rsa_json_rpc": False,
         "build_rsa_discovery_zeroconf": False,
         "build_shell": False,
+        "build_shell_api": False,
         "build_remote_shell": False,
         "build_shell_bonjour": False,
         "build_shell_tui": False,
@@ -140,9 +151,6 @@ class CelixConan(ConanFile):
         "build_framework": False,
         "build_rcm": False,
         "build_utils": False,
-        "build_log_helper": False,
-        "build_log_service_api": False,
-        "build_shell_api": False,
         "celix_cxx14": True,
         "celix_cxx17": True,
         "celix_install_deprecated_api": False,
@@ -200,16 +208,6 @@ class CelixConan(ConanFile):
         if not self.options.enable_testing:
             self.options.build_pubsub_integration = False
             self.options.enable_code_coverage = False
-        if not self.options.build_log_service:
-            self.options.build_syslog_writer = False
-        if not self.options.build_pubsub:
-            self.options.build_pubsub_psa_zmq = False
-            self.options.build_pubsub_examples = False
-            self.options.build_pubsub_integration = False
-            self.options.build_pubsub_psa_tcp = False
-            self.options.build_pubsub_psa_udp_mc = False
-            self.options.build_pubsub_psa_ws = False
-            self.options.build_pubsub_discovery_etcd = False
         if not self.options.build_remote_service_admin:
             self.options.build_rsa_remote_service_admin_dfi = False
             self.options.build_rsa_discovery_configured = False
@@ -217,29 +215,110 @@ class CelixConan(ConanFile):
             self.options.build_rsa_json_rpc = False
             self.options.build_rsa_remote_service_admin_shm_v2 = False
             self.options.build_rsa_discovery_zeroconf = False
-        if not self.options.build_shell:
-            self.options.build_remote_shell = False
-            self.options.build_shell_bonjour = False
-            self.options.build_shell_tui = False
-            self.options.build_shell_wui = False
-        if not self.options.celix_install_deprecated_api:
-            self.options.build_shell_bonjour = False
+
+        if self.options.build_shell_bonjour:
+            self.options.build_shell = True
+            self.options.celix_install_deprecated_api = True
 
         if self.options.build_cxx_rsa_integration:
             self.options.build_cxx_remote_service_admin = True
-            self.options.build_pubsub = True
             self.options.build_pushstreams = True
             self.options.build_promises = True
             self.options.build_log_helper = True
             self.options.build_shell = True
             self.options.build_shell_tui = True
             self.options.build_shell_api = True
+            self.options.build_pubsub = True
+            self.options.build_pubsub_wire_protocol_v2 = True
+            self.options.build_pubsub_json_serializer = True
             self.options.build_pubsub_psa_zmq = True
             self.options.build_pubsub_discovery_etcd = True
 
+        if self.options.build_pubsub_integration:
+            self.options.build_pubsub = True
+            self.options.build_shell_tui = True
+            self.options.build_pubsub_json_serializer = True
+            self.options.build_pubsub_wire_protocol_v2 = True
+            self.options.build_pubsub_wire_protocol_v1 = True
+
+        if self.options.build_pubsub_examples:
+            self.options.build_log_service = True
+            self.options.build_shell_tui = True
+            self.options.build_pubsub_json_serializer = True
+            self.options.build_pubsub_discovery_etcd = True
+            self.options.build_pubsub_wire_protocol_v2 = True
+            self.options.build_pubsub_wire_protocol_v1 = True
+
+        if self.options.build_pubsub_discovery_etcd:
+            self.options.build_pubsub = True
+            self.options.build_celix_etcdlib = True
+
+        if self.options.build_pubsub_psa_ws:
+            self.options.build_http_admin = True
+            self.options.build_pubsub = True
+
+        if self.options.build_pubsub_psa_zmq or self.options.build_pubsub_psa_tcp \
+                or self.options.build_pubsub_psa_udp_mc:
+            self.options.build_pubsub = True
+
+        if self.options.build_pubsub_wire_protocol_v1:
+            self.options.build_pubsub = True
+
+        if self.options.build_pubsub_wire_protocol_v2:
+            self.options.build_pubsub = True
+
+        if self.options.build_pubsub_json_serializer or self.build_pubsub_avrobin_serializer:
+            self.options.build_pubsub = True
+
+        if self.options.build_pubsub:
+            self.options.build_framework = True
+            self.options.build_celix_dfi = True
+            self.options.build_shell_api = True
+            self.options.build_log_helper = True
+            self.options.celix_install_deprecated_api = True
+
         if self.options.build_cxx_remote_service_admin:
             self.options.build_framework = True
+            self.options.build_log_helper = True
             self.options.celix_cxx17 = True
+
+        if self.options.build_remote_shell:
+            self.options.build_shell = True
+
+        if self.options.build_shell_wui:
+            self.options.build_shell = True
+            self.options.build_http_admin = True
+
+        if self.options.build_shell_tui:
+            self.options.build_shell = True
+
+        if self.options.build_shell:
+            self.options.build_shell_api = True
+            self.options.build_log_helper = True
+            self.options.build_framework = True
+
+        if self.options.build_syslog_writer:
+            self.options.build_log_service = True
+
+        if self.options.build_log_service:
+            self.options.build_log_service_api = True
+            self.options.build_shell_api = True
+            self.options.build_framework = True
+
+        if self.options.build_shell_api:
+            self.options.build_utils = True
+
+        if self.options.build_log_helper:
+            self.options.build_log_service_api = True
+            self.options.build_framework = True
+
+        if self.options.build_log_service_api:
+            self.options.build_utils = True
+            if self.options.celix_install_deprecated_api:
+                self.options.build_framework = True
+
+        if self.options.build_framework:
+            self.options.build_utils = True
 
         if self.options.build_pushstreams:
             self.options.build_promises = True
@@ -251,29 +330,27 @@ class CelixConan(ConanFile):
             self.options.celix_cxx14 = True
 
     def requirements(self):
-        self.requires("libcurl/[>=7.64.1 <8.0.0]")
-        self.options['libcurl'].shared = True
-        self.requires("zlib/[>=1.2.8 <2.0.0]")
-        self.options['zlib'].shared = True
-        self.requires("libuuid/1.0.3")
-        self.options['libuuid'].shared = True
-        self.requires("libzip/[>=1.7.3 <2.0.0]")
-        self.options['libzip'].shared = True
-        self.options['openssl'].shared = True
-        self.options['libxml2'].shared = True
+        if self.options.build_utils:
+            self.requires("libzip/[>=1.7.3 <2.0.0]")
+            self.options['libzip'].shared = True
+        if self.options.build_framework or self.options.build_pubsub:
+            self.requires("libuuid/1.0.3")
+            self.options['libuuid'].shared = True
+        if self.options.build_framework or self.options.build_celix_etcdlib:
+            self.requires("libcurl/[>=7.64.1 <8.0.0]")
+            self.options['libcurl'].shared = True
+        if self.options.build_deployment_admin:
+            self.requires("zlib/[>=1.2.8 <2.0.0]")
+            self.options['zlib'].shared = True
         if self.options.enable_testing:
             self.options['gtest'].shared = True
             if self.options.enable_address_sanitizer:
                 self.options["cpputest"].with_leak_detection = False
         if self.options.build_remote_service_admin or self.options.build_shell_bonjour:
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
+            self.options['libxml2'].shared = True
         if self.options.build_cxx_remote_service_admin:
             self.requires("rapidjson/[>=1.1.0 <2.0.0]")
-        if self.options.build_shell_bonjour:
-            # TODO: CC=cc is fixed in the official mdnsresponder Makefile, patching is needed to make cross-compile work
-            # https://github.com/conan-io/conan-center-index/issues/9711
-            # Another issue is in conan infrastructure: https://github.com/conan-io/conan-center-index/issues/9709
-            self.requires("mdnsresponder/1310.140.1")
         if self.options.build_pubsub_psa_zmq:
             self.requires("zeromq/4.3.4")
             self.options['zeromq'].shared = True
@@ -285,12 +362,17 @@ class CelixConan(ConanFile):
         if self.options.build_celix_dfi:
             self.requires("libffi/[>=3.2.1 <4.0.0]")
             self.options['libffi'].shared = True
-        if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
+        if self.options.build_celix_dfi or self.options.build_celix_etcdlib \
+                or self.options.build_pubsub_json_serializer or self.options.build_pubsub_avrobin_serializer \
+                or self.options.build_pubsub_discovery_etcd or self.options.build_pubsub_psa_ws:
             self.requires("jansson/[>=2.12 <3.0.0]")
             self.options['jansson'].shared = True
-        if self.options.build_rsa_discovery_zeroconf:
+        if self.options.build_rsa_discovery_zeroconf or self.options.build_shell_bonjour:
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
+            # TODO: CC=cc is fixed in the official mdnsresponder Makefile, patching is needed to make cross-compile work
+            # https://github.com/conan-io/conan-center-index/issues/9711
+            # Another issue is in conan infrastructure: https://github.com/conan-io/conan-center-index/issues/9709
             self.requires("mdnsresponder/1310.140.1")
         self.validate()
 

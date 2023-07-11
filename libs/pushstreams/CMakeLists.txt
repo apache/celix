@@ -20,6 +20,7 @@ celix_subproject(PUSHSTREAMS "Option to build the PushStreams library" ${PUSHSTR
 
 if (PUSHSTREAMS)
     set(CMAKE_CXX_STANDARD 17)
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
     find_package(Threads)
     add_library(PushStreams INTERFACE)
     target_include_directories(PushStreams INTERFACE

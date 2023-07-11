@@ -47,8 +47,7 @@ if (PUBSUB_PSA_ZMQ)
             )
 
     target_link_libraries(celix_pubsub_admin_zmq PRIVATE
-            Celix::framework Celix::dfi Celix::log_helper Celix::utils
-            ZeroMQ::ZeroMQ czmq::czmq ${OPTIONAL_OPENSSL_LIB})
+            Celix::log_helper ZeroMQ::ZeroMQ czmq::czmq libuuid::libuuid ${OPTIONAL_OPENSSL_LIB})
     target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::shell_api)
     target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
     target_include_directories(celix_pubsub_admin_zmq PRIVATE src)

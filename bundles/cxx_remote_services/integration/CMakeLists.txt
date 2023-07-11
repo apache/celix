@@ -17,8 +17,6 @@
 
 celix_subproject(CXX_RSA_INTEGRATION "Option to build the C++17 Remote Service Admin Service integration" ON DEPS SHELL SHELL_TUI PUBSUB PROMISES PUSHSTREAMS PUBSUB_PSA_ZMQ PUBSUB_DISCOVERY_ETCD)
 if (CXX_RSA_INTEGRATION)
-    find_package(ZeroMQ REQUIRED)
-    find_package(czmq REQUIRED)
     add_celix_bundle(TestExportImportRemoteServiceFactory
             SOURCES src/TestExportImportRemoteServiceFactory.cc
             )
@@ -71,7 +69,6 @@ if (CXX_RSA_INTEGRATION)
 
             CalculatorProvider
             )
-    target_link_libraries(RemoteCalculatorProvider PRIVATE ZeroMQ::ZeroMQ czmq::czmq)
 
     add_celix_container(RemoteCalculatorConsumer
             GROUP rsa
@@ -95,5 +92,4 @@ if (CXX_RSA_INTEGRATION)
 
             CalculatorConsumer
             )
-    target_link_libraries(RemoteCalculatorConsumer PRIVATE ZeroMQ::ZeroMQ czmq::czmq)
 endif()

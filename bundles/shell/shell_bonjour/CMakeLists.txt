@@ -19,10 +19,7 @@ celix_subproject(SHELL_BONJOUR "Option to enable building the Bonjour Shell (she
 if (SHELL_BONJOUR)
 	message(WARNING "Celix::bonjour_shell is considered unstable, because develop of this bundle has been dormant for a while")
 	find_package(LibXml2 REQUIRED)
-	
-	#TODO create/add FindDNS_SD.cmake and use it (with required)
-	find_library(DNS_SD_LIB NAMES dns_sd dns_services)
-	find_path(DNS_SD_INCLUDE_DIR dns_sd.h)
+	find_package(DNSSD REQUIRED)
 
 	set(BUNDLE_SYMBOLICNAME "bonjour_shell")
 	set(BUNDLE_VERSION "0.1.0")
@@ -44,10 +41,9 @@ if (SHELL_BONJOUR)
 	target_include_directories(bonjour_shell PRIVATE
 			"${PROJECT_SOURCE_DIR}/utils/public/include"
 			"${LIBXML2_INCLUDE_DIR}"
-			"${DNS_SD_INCLUDE_DIR}"
 			private/include
 	)
-	target_link_libraries(bonjour_shell PRIVATE ${LIBXML2_LIBRARIES} ${DNS_SD_LIB} Celix::shell_api)
+	target_link_libraries(bonjour_shell PRIVATE ${LIBXML2_LIBRARIES} DNSSD::DNSSD Celix::shell_api)
 
 	add_celix_container("bonjour_shell_deploy" BUNDLES
 		Celix::shell

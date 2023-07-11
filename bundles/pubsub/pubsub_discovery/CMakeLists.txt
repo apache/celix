@@ -17,7 +17,6 @@
 
 celix_subproject(PUBSUB_DISCOVERY_ETCD "Option to enable building the PubSub Discovery (ETCD) bundle" ON DEPS CELIX_ETCDLIB)
 if (PUBSUB_DISCOVERY_ETCD)
-    find_package(CURL REQUIRED)
     find_package(jansson REQUIRED)
 
     add_celix_bundle(celix_pubsub_discovery_etcd
@@ -30,9 +29,9 @@ if (PUBSUB_DISCOVERY_ETCD)
             )
     target_include_directories(celix_pubsub_discovery_etcd PRIVATE src)
     target_link_libraries(celix_pubsub_discovery_etcd PRIVATE
-            Celix::framework Celix::etcdlib_static
+            Celix::etcdlib_static
             Celix::shell_api Celix::log_helper
-            CURL::libcurl jansson::jansson
+            jansson::jansson
             )
     target_link_libraries(celix_pubsub_discovery_etcd PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
     celix_deprecated_utils_headers(celix_pubsub_discovery_etcd)

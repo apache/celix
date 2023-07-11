@@ -65,7 +65,7 @@ if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
                 SOVERSION 1
                 C_VISIBILITY_PRESET hidden
     )
-    target_link_libraries(etcdlib PUBLIC CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
+    target_link_libraries(etcdlib PRIVATE CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
 
     generate_export_header(etcdlib
             BASE_NAME "ETCDLIB"
@@ -81,7 +81,7 @@ if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
             PROPERTIES
                 OUTPUT_NAME "celix_etcdlib_static")
     target_compile_definitions(etcdlib_static PRIVATE  ETCDLIB_STATIC_DEFINE)
-    target_link_libraries(etcdlib_static PUBLIC CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
+    target_link_libraries(etcdlib_static PRIVATE CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
 
     add_executable(etcdlib_test ${CMAKE_CURRENT_SOURCE_DIR}/test/etcdlib_test.c)
     target_link_libraries(etcdlib_test PRIVATE etcdlib_static CURL::libcurl jansson::jansson)

@@ -17,7 +17,6 @@
 
 celix_subproject(FRAMEWORK "Option to build the Celix Framework" ON)
 if (FRAMEWORK)
-    find_package(ZLIB REQUIRED)
     find_package(libuuid REQUIRED)
     find_package(CURL REQUIRED)
 
@@ -37,7 +36,7 @@ if (FRAMEWORK)
             src/celix_bundle_state.c
             src/celix_framework_utils.c
             src/celix_module_private.h)
-    set(FRAMEWORK_DEPS libuuid::libuuid CURL::libcurl ZLIB::ZLIB ${CMAKE_DL_LIBS})
+    set(FRAMEWORK_DEPS libuuid::libuuid CURL::libcurl ${CMAKE_DL_LIBS})
 
     add_library(framework SHARED ${FRAMEWORK_SRC})
 

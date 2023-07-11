@@ -55,7 +55,6 @@ if (UTILS)
 
     add_library(utils SHARED ${UTILS_SRC})
 
-    target_link_libraries(utils PRIVATE libzip::libzip)
     set_target_properties(utils
             PROPERTIES
             C_VISIBILITY_PRESET hidden

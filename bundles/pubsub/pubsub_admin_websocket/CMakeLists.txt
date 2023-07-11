@@ -32,12 +32,9 @@ if (PUBSUB_PSA_WS)
             src/pubsub_websocket_common.c
             )
 
-    target_link_libraries(celix_pubsub_admin_websocket PRIVATE
-            Celix::framework Celix::log_helper Celix::utils
-            Celix::http_admin_api
-            )
+    target_link_libraries(celix_pubsub_admin_websocket PRIVATE Celix::log_helper Celix::http_admin_api)
     target_link_libraries(celix_pubsub_admin_websocket PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
-    target_link_libraries(celix_pubsub_admin_websocket PRIVATE Celix::shell_api)
+    target_link_libraries(celix_pubsub_admin_websocket PRIVATE Celix::shell_api libuuid::libuuid jansson::jansson)
     target_include_directories(celix_pubsub_admin_websocket PRIVATE src)
     celix_deprecated_utils_headers(celix_pubsub_admin_websocket)
     celix_deprecated_framework_headers(celix_pubsub_admin_websocket)
