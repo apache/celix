@@ -1290,7 +1290,7 @@ typedef struct celix_scheduled_event_options {
  *
  * The scheduled event will be called on the Celix framework event thread, repeatedly using the provided interval or
  * once if only a initial delay is provided.
- * The event callback should be relatively fast and the scheduled event interval should be relatively high, otherwise
+ * The event callback should be relatively fast and the scheduled event interval should be relatively long, otherwise
  * the framework event queue will be blocked and framework will not function properly.
  *
  * Scheduled events can be scheduled later than the provided initial delay and interval, because they are processed
