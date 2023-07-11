@@ -664,24 +664,29 @@ TEST_F(ScheduledEventTestSuite, ScheduledEventTimeoutLogTest) {
     celix_framework_setLogCallback(fw->getCFramework(), &logCount, logCallback);
 
 
-    //And a scheduled event with an initial delay of 1ms and an interval of 1ms that waits for 1ms in the callback
+    //And a scheduled event with an initial delay of 1ms and an interval of 1ms that waits for 200ms in the callback
     //and remove callback.
+
+    auto busyWaitCallback = [](void*){
+        auto start = std::chrono::steady_clock::now();
+        while (std::chrono::steady_clock::now() - start < std::chrono::milliseconds{200}) {
+            //busy wait
+        }
+    };
+
     celix_scheduled_event_options_t opts{};
     opts.name = "Sleep while Processing and Removing Scheduled Event";
     opts.initialDelayInSeconds = 0.01;
     opts.intervalInSeconds = 0.01;
-    opts.callback = [](void*){
-        std::this_thread::sleep_for(std::chrono::milliseconds{200});
-    };
-    opts.removeCallback = [](void*){
-        std::this_thread::sleep_for(std::chrono::milliseconds{200});
-    };
+    opts.callback = busyWaitCallback;
+    opts.removeCallback = busyWaitCallback;
     long eventId = celix_bundleContext_scheduleEvent(fw->getFrameworkBundleContext()->getCBundleContext(), &opts);
 
     //When the event is woken up
     celix_bundleContext_wakeupScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId);
 
-    // Then the log callback is called with a warning log message within an error margin, because callback took too long
+    // Then the log callback is called with a warning log message within an error margin and processing sleep time,
+    // because callback took too long.
     waitFor([&] { return logCount.load() == 1; },
             std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS + 200});
     EXPECT_EQ(1, logCount.load());
@@ -689,7 +694,8 @@ TEST_F(ScheduledEventTestSuite, ScheduledEventTimeoutLogTest) {
     //When removing the event
     celix_bundleContext_removeScheduledEvent(fw->getFrameworkBundleContext()->getCBundleContext(), eventId);
 
-    //Then the log callback is called at least one more time with a warning log message, because callback took too long
+    //Then the log callback is called at least one more time with a warning log message, because remove
+    //callback took too long
     //(note the logCount can be increased more than once, due to another processing thread)
     EXPECT_GE(logCount.load(), 2);
 }
