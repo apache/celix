@@ -368,12 +368,7 @@ class CelixConan(ConanFile):
             self.requires("jansson/[>=2.12 <3.0.0]")
             self.options['jansson'].shared = True
         if self.options.build_rsa_discovery_zeroconf or self.options.build_shell_bonjour:
-            # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
-            # https://github.com/conan-io/conan-center-index/pull/16254
-            # TODO: CC=cc is fixed in the official mdnsresponder Makefile, patching is needed to make cross-compile work
-            # https://github.com/conan-io/conan-center-index/issues/9711
-            # Another issue is in conan infrastructure: https://github.com/conan-io/conan-center-index/issues/9709
-            self.requires("mdnsresponder/1310.140.1")
+            self.requires("mdnsresponder/1790.80.10")
         self.validate()
 
     def _enable_error_injectors(self):
