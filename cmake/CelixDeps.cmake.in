@@ -13,10 +13,11 @@ $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::celix_pubsub_admin_websocket>>:find_depe
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::framework>>:find_dependency(CURL)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::etcdlib>>:find_dependency(CURL)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::RsaConfiguredDiscovery>>:find_dependency(RapidJSON)>
-$<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::rsa_discovery_common>>:find_dependency(LibXml2)>
+$<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::rsa_discovery>>:find_dependency(LibXml2)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::bonjour_shell>>:find_dependency(LibXml2)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::celix_pubsub_admin_zmq>>:find_dependency(ZeroMQ)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::celix_pubsub_admin_zmq>>:find_dependency(czmq)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::pubsub_admin_nanomsg>>:find_dependency(NanoMsg)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::http_admin_api>>:find_dependency(civetweb)>
+$<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::rsa_discovery>>:find_dependency(civetweb)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::rsa_discovery_zeroconf>>:find_dependency(DNSSD)>

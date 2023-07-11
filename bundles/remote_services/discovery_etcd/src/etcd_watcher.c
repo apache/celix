@@ -28,7 +28,6 @@
 #include "discovery.h"
 #include "discovery_impl.h"
 
-#include <curl/curl.h>
 #include "etcd.h"
 #include "etcd_watcher.h"
 
@@ -301,7 +300,7 @@ celix_status_t etcdWatcher_create(discovery_t *discovery, celix_bundle_context_t
 	const char* etcd_server = celix_bundleContext_getProperty(context, CFG_ETCD_SERVER_IP, DEFAULT_ETCD_SERVER_IP);
 	long etcd_port = celix_bundleContext_getPropertyAsLong(context, CFG_ETCD_SERVER_PORT, DEFAULT_ETCD_SERVER_PORT);
 
-	(*watcher)->etcdlib = etcdlib_create(etcd_server, (int)etcd_port, CURL_GLOBAL_DEFAULT);
+	(*watcher)->etcdlib = etcdlib_create(etcd_server, (int)etcd_port, ETCDLIB_NO_CURL_INITIALIZATION);
 	celix_status_t status = CELIX_SUCCESS;
 	if ((*watcher)->etcdlib == NULL) {
 		status = CELIX_BUNDLE_EXCEPTION;

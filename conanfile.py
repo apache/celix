@@ -68,6 +68,7 @@ class CelixConan(ConanFile):
         "build_cxx_rsa_integration": [True, False],
         "build_remote_service_admin": [True, False],
         "build_rsa_remote_service_admin_dfi": [True, False],
+        "build_rsa_discovery_common": [True, False],
         "build_rsa_discovery_configured": [True, False],
         "build_rsa_discovery_etcd": [True, False],
         "build_rsa_remote_service_admin_shm_v2": [True, False],
@@ -128,6 +129,7 @@ class CelixConan(ConanFile):
         "build_cxx_rsa_integration": False,
         "build_remote_service_admin": False,
         "build_rsa_remote_service_admin_dfi": False,
+        "build_rsa_discovery_common": False,
         "build_rsa_discovery_configured": False,
         "build_rsa_discovery_etcd": False,
         "build_rsa_remote_service_admin_shm_v2": False,
@@ -282,6 +284,21 @@ class CelixConan(ConanFile):
             self.options.build_log_helper = True
             self.options.celix_cxx17 = True
 
+        if self.options.build_rsa_discovery_etcd:
+            self.options.build_celix_etcdlib = True
+            self.options.build_rsa_discovery_common = True
+
+        if self.options.build_rsa_discovery_configured:
+            self.options.build_rsa_discovery_common = True
+
+        if self.options.build_rsa_discovery_common:
+            self.options.build_remote_service_admin = True
+
+        if self.options.build_remote_service_admin:
+            self.options.build_framework = True
+            self.options.build_log_helper = True
+            self.options.build_celix_dfi = True
+
         if self.options.build_remote_shell:
             self.options.build_shell = True
 
@@ -346,7 +363,7 @@ class CelixConan(ConanFile):
             self.options['gtest'].shared = True
             if self.options.enable_address_sanitizer:
                 self.options["cpputest"].with_leak_detection = False
-        if self.options.build_remote_service_admin or self.options.build_shell_bonjour:
+        if self.options.build_rsa_discovery_common or self.options.build_shell_bonjour:
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
             self.options['libxml2'].shared = True
         if self.options.build_cxx_remote_service_admin:
@@ -356,7 +373,7 @@ class CelixConan(ConanFile):
             self.options['zeromq'].shared = True
             self.requires("czmq/4.2.0")
             self.options['czmq'].shared = True
-        if self.options.build_http_admin or self.options.build_remote_service_admin:
+        if self.options.build_http_admin or self.options.build_rsa_discovery_common:
             self.requires("civetweb/1.15")
             self.options['civetweb'].shared = True
         if self.options.build_celix_dfi:

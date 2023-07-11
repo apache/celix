@@ -17,11 +17,6 @@
 
 celix_subproject(RSA_DISCOVERY_ETCD "Option to enable building the Discovery (ETCD) bundle" ON DEPS CELIX_ETCDLIB)
 if (RSA_DISCOVERY_ETCD)
-	find_package(CURL REQUIRED)
-	find_package(LibXml2 REQUIRED)
-	find_package(jansson REQUIRED)
-	find_package(civetweb REQUIRED)
-
 	add_celix_bundle(rsa_discovery_etcd
 			VERSION 0.9.0
 			SYMBOLIC_NAME "apache_celix_rsa_discovery_etcd"
@@ -30,18 +25,11 @@ if (RSA_DISCOVERY_ETCD)
 			SOURCES
 			src/discovery_impl.c
 			src/etcd_watcher.c
-			$<TARGET_OBJECTS:Celix::rsa_discovery_common>
 			)
-	target_link_libraries(rsa_discovery_etcd PRIVATE Celix::log_helper Celix::etcdlib_static Celix::rsa_common civetweb::civetweb)
+	target_link_libraries(rsa_discovery_etcd PRIVATE Celix::rsa_discovery_common Celix::log_helper Celix::etcdlib_static Celix::rsa_common)
 	target_include_directories(rsa_discovery_etcd PRIVATE src)
-	target_include_directories(rsa_discovery_etcd PRIVATE
-			$<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
-			)
-	target_include_directories(rsa_discovery_etcd SYSTEM PRIVATE
-			${CURL_INCLUDE_DIR}
-			${LIBXML2_INCLUDE_DIR}
-			)
-	target_link_libraries(rsa_discovery_etcd PRIVATE CURL::libcurl ${LIBXML2_LIBRARIES} jansson::jansson)
+	celix_deprecated_framework_headers(rsa_discovery_etcd)
+	celix_deprecated_utils_headers(rsa_discovery_etcd)
 
 	install_celix_bundle(rsa_discovery_etcd EXPORT celix COMPONENT rsa)
 	#Setup target aliases to match external usage
