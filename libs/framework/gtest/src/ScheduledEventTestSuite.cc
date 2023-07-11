@@ -645,7 +645,11 @@ TEST_F(ScheduledEventTestSuite, CxxWaitForScheduledEvent) {
     EXPECT_EQ(2, count.load());
 }
 
+#ifndef __APPLE__
 TEST_F(ScheduledEventTestSuite, ScheduledEventTimeoutLogTest) {
+    //Disabled for __APPLE__, because the expected timeout in celix_scheduledEvent_waitForRemoved does not always
+    //trigger. see also ticket #587.
+
     //Given a framework with a log callback that counts the number of warning log messages
     std::atomic<int> logCount{0};
     auto logCallback = [](void* handle, celix_log_level_e level, const char*, const char*, int, const char* format, va_list args){
@@ -699,3 +703,4 @@ TEST_F(ScheduledEventTestSuite, ScheduledEventTimeoutLogTest) {
     //(note the logCount can be increased more than once, due to another processing thread)
     EXPECT_GE(logCount.load(), 2);
 }
+#endif
