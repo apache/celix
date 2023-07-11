@@ -57,6 +57,7 @@ set(CELIX_FRAMEWORK_TEST_SOURCES
     src/BundleArchiveTestSuite.cc
     src/CelixLauncherTestSuite.cc
     src/CelixBundleCacheTestSuite.cc
+    src/ScheduledEventTestSuite.cc
 )
 
 add_executable(test_framework ${CELIX_FRAMEWORK_TEST_SOURCES})
@@ -128,7 +129,8 @@ if (LINKER_WRAP_SUPPORTED)
             src/CelixFrameworkUtilsErrorInjectionTestSuite.cc
             src/CelixBundleContextBundlesWithErrorTestSuite.cc
             src/CelixBundleCacheErrorInjectionTestSuite.cc
-            )
+            src/ScheduledEventWithErrorInjectionTestSuite.cc
+    )
     target_compile_definitions(test_framework_with_ei PRIVATE
             SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
             SIMPLE_CXX_BUNDLE_LOC="${SIMPLE_CXX_BUNDLE_LOC}"

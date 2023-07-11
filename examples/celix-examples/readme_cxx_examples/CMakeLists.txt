@@ -140,6 +140,12 @@ add_celix_bundle(ComponentWithServiceDependencyBundle
 )
 target_link_libraries(ComponentWithServiceDependencyBundle PRIVATE Celix::shell_api)
 
+
+add_celix_bundle(ScheduleEventsBundle
+    VERSION 1.0.0
+    SOURCES src/ScheduleEventsBundleActivator.cc
+)
+
 add_celix_container(ReadmeCxxExamplesContainer
     BUNDLES
         Celix::ShellCxx
@@ -151,6 +157,7 @@ add_celix_container(ReadmeCxxExamplesContainer
         SimpleComponentBundle
         ComponentWithProvidedServiceBundle
         ComponentWithServiceDependencyBundle
+        ScheduleEventsBundle
 )
 
 if (TARGET my_shell_command_provider_bundle)

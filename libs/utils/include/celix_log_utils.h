@@ -32,23 +32,23 @@ extern "C" {
 #endif
 
 /**
- * Convert a celix log level enum to a const char* value.
+ * @brief Convert a celix log level enum to a const char* value.
+ * @deprecated Use celix_logLevel_toString instead.
  */
-CELIX_UTILS_EXPORT const char* celix_logUtils_logLevelToString(celix_log_level_e level);
+CELIX_UTILS_DEPRECATED_EXPORT const char* celix_logUtils_logLevelToString(celix_log_level_e level);
 
 /**
- * Convert a const char* value to a celix log level
- * If the provided log level cannot be parsed or is NULL, the fallbackLogLevel is returned.
+ * @brief Convert a const char* value to a celix log level.
+ * @deprecated Use celix_logLevel_fromString instead.
  */
-CELIX_UTILS_EXPORT celix_log_level_e celix_logUtils_logLevelFromString(const char *level, celix_log_level_e fallbackLogLevel);
+CELIX_UTILS_DEPRECATED_EXPORT celix_log_level_e celix_logUtils_logLevelFromString(const char* level,
+                                                                                  celix_log_level_e fallbackLogLevel);
 
 /**
- * Convert a const char* value to a celix log level
- * If the provided log level cannot be parsed or is NULL, the fallbackLogLevel is returned and
- * if a convertedSuccessfully pointer is provided this will be set to false.
- * If converted successfully and the convertedSuccessfully pointer is provided. This will be set to true.
+ * @brief Convert a const char* value to a celix log level.
+ * @deprecated Use celix_logLevel_fromStringWithCheck instead.
  */
-CELIX_UTILS_EXPORT celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(
+CELIX_UTILS_DEPRECATED_EXPORT celix_log_level_e celix_logUtils_logLevelFromStringWithCheck(
         const char *level,
         celix_log_level_e fallbackLogLevel,
         bool *convertedSuccessfully);

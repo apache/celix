@@ -61,7 +61,7 @@ namespace celix {
          * The event will be added to the event loop and handled on the event loop thread.
          *
          * if bndId >=0 the bundle usage count will be increased while the event is not yet processed or finished processing.
-         * The eventName is expected to be const char* valid during til the event is finished processing.
+         * The name is expected to be const char* valid during til the event is finished processing.
          *
          * if eventId >=0 this will be used, otherwise a new event id will be generated.
          *

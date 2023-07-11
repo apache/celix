@@ -21,10 +21,16 @@
 
 #include <csignal>
 
+#include "celix_utils.h"
 #include "celix_threads.h"
 
 class ThreadsTestSuite : public ::testing::Test {
 public:
+#ifdef __APPLE__
+    const double ALLOWED_ERROR_MARGIN = 0.2;
+#else
+    const double ALLOWED_ERROR_MARGIN= 0.1;
+#endif
 };
 
 //----------------------TEST THREAD FUNCTION DECLARATIONS----------------------
@@ -105,7 +111,7 @@ TEST_F(ThreadsTestSuite, InitializedTest) {
     celixThread_join(thread, nullptr);
 }
 
-TEST_F(ThreadsTestSuite, CnceTest) {
+TEST_F(ThreadsTestSuite, OnceTest) {
     int *status;
     celix_thread_t thread;
     celix_thread_t thread2;
@@ -276,6 +282,38 @@ TEST_F(ThreadsTestSuite, CondBroadcastTest) {
     celixThread_join(thread, nullptr);
     celixThread_join(thread2, nullptr);
     free(param);
+}
+
+TEST_F(ThreadsTestSuite, CondTimedWaitTest) {
+    celix_thread_mutex_t mutex;
+    celix_thread_cond_t cond;
+
+    auto status = celixThreadMutex_create(&mutex, nullptr);
+    ASSERT_EQ(status, CELIX_SUCCESS);
+    status = celixThreadCondition_init(&cond, nullptr);
+    ASSERT_EQ(status, CELIX_SUCCESS);
+
+    //Test with nullptr abstime
+    status = celixThreadCondition_waitUntil(&cond, &mutex, nullptr);
+    ASSERT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+
+    //Test with valid abstime
+    auto start = celixThreadCondition_getTime();
+    auto targetEnd = celixThreadCondition_getDelayedTime(0.01);
+    celixThreadMutex_lock(&mutex);
+    status = celixThreadCondition_waitUntil(&cond, &mutex, &targetEnd);
+    ASSERT_EQ(status, ETIMEDOUT);
+    celixThreadMutex_unlock(&mutex);
+    auto end = celixThreadCondition_getTime();
+    EXPECT_NEAR(celix_difftime(&start, &end), 0.01, ALLOWED_ERROR_MARGIN);
+
+    start = celixThreadCondition_getTime();
+    celixThreadMutex_lock(&mutex);
+    status = celixThreadCondition_waitUntil(&cond, &mutex, &start);
+    ASSERT_EQ(status, ETIMEDOUT);
+    celixThreadMutex_unlock(&mutex);
+    end = celixThreadCondition_getTime();
+    EXPECT_NEAR(celix_difftime(&start, &end), 0.0, ALLOWED_ERROR_MARGIN);
 }
 
 //----------------------CELIX READ-WRITE LOCK TESTS----------------------

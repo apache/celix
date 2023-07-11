@@ -79,6 +79,25 @@ TEST_F(CelixFrameworkTestSuite, EventQueueTest) {
     EXPECT_EQ(4, count);
 }
 
+TEST_F(CelixFrameworkTestSuite, TimedWaitEventQueueTest) {
+    //When there is a emtpy event queue
+    celix_framework_waitForEmptyEventQueue(framework.get());
+
+    //And a generic event is fired, that block the queue for 20ms
+    auto callback = [](void* /*data*/) {
+        std::this_thread::sleep_for(std::chrono::milliseconds{200});
+    };
+    celix_framework_fireGenericEvent(framework.get(), -1L, -1L, "test", nullptr, callback, nullptr, nullptr);
+
+    //Then a wait for empty event queue for max 5ms will return a timeout
+    celix_status_t status = celix_framework_waitForEmptyEventQueueFor(framework.get(), 0.005);
+    EXPECT_EQ(ETIMEDOUT, status) << "Expected timeout, but got " << celix_strerror(status);
+
+    //And a wait for empty event queue for max 1s will return success
+    status = celix_framework_waitForEmptyEventQueueFor(framework.get(), 1);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
 TEST_F(CelixFrameworkTestSuite, AsyncInstallStartStopUpdateAndUninstallBundleTest) {
     long bndId = celix_framework_installBundleAsync(framework.get(), SIMPLE_TEST_BUNDLE1_LOCATION, false);
     EXPECT_GE(bndId, 0);

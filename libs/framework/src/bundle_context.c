@@ -111,13 +111,20 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	return status;
 }
 
-void celix_bundleContext_cleanup(celix_bundle_context_t *ctx) {
-    //NOTE not perfect, because stopping of registrations/tracker when the activator is destroyed can lead to segfault.
-    //but at least we can try to warn the bundle implementer that some cleanup is missing.
-    bundleContext_cleanupBundleTrackers(ctx);
-    bundleContext_cleanupServiceTrackers(ctx);
-    bundleContext_cleanupServiceTrackerTrackers(ctx);
-    bundleContext_cleanupServiceRegistration(ctx);
+void celix_bundleContext_cleanup(celix_bundle_context_t* ctx) {
+        fw_log(ctx->framework->logger,
+               CELIX_LOG_LEVEL_TRACE,
+               "Cleaning up bundle context `%s` (id=%li)",
+               celix_bundle_getSymbolicName(ctx->bundle),
+               celix_bundle_getId(ctx->bundle));
+
+        celix_framework_cleanupScheduledEvents(ctx->framework, celix_bundle_getId(ctx->bundle));
+        // NOTE not perfect, because stopping of registrations/tracker when the activator is destroyed can lead to
+        // segfault. but at least we can try to warn the bundle implementer that some cleanup is missing.
+        bundleContext_cleanupBundleTrackers(ctx);
+        bundleContext_cleanupServiceTrackers(ctx);
+        bundleContext_cleanupServiceTrackerTrackers(ctx);
+        bundleContext_cleanupServiceRegistration(ctx);
 }
 
 celix_status_t bundleContext_getBundle(bundle_context_pt context, bundle_pt *out) {
@@ -1490,6 +1497,41 @@ long celix_bundleContext_trackServiceTrackersAsync(
 
 void celix_bundleContext_waitForEvents(celix_bundle_context_t* ctx) {
     celix_framework_waitUntilNoEventsForBnd(ctx->framework, celix_bundle_getId(ctx->bundle));
+}
+
+long celix_bundleContext_scheduleEvent(celix_bundle_context_t* ctx,
+                                       const celix_scheduled_event_options_t* options) {
+    return celix_framework_scheduleEvent(ctx->framework,
+                                          celix_bundle_getId(ctx->bundle),
+                                          options->name,
+                                          options->initialDelayInSeconds,
+                                          options->intervalInSeconds,
+                                          options->callbackData,
+                                          options->callback,
+                                          options->removeCallbackData,
+                                          options->removeCallback);
+}
+
+celix_status_t celix_bundleContext_wakeupScheduledEvent(celix_bundle_context_t* ctx, long scheduledEventId) {
+    return celix_framework_wakeupScheduledEvent(ctx->framework, scheduledEventId);
+}
+
+celix_status_t celix_bundleContext_waitForScheduledEvent(celix_bundle_context_t* ctx,
+                                                         long scheduledEventId,
+                                                         double waitTimeInSeconds) {
+    return celix_framework_waitForScheduledEvent(ctx->framework, scheduledEventId, waitTimeInSeconds);
+}
+
+bool celix_bundleContext_removeScheduledEvent(celix_bundle_context_t* ctx, long scheduledEventId) {
+    return celix_framework_removeScheduledEvent(ctx->framework, false, true, scheduledEventId);
+}
+
+bool celix_bundleContext_removeScheduledEventAsync(celix_bundle_context_t* ctx, long scheduledEventId) {
+    return celix_framework_removeScheduledEvent(ctx->framework, true, true, scheduledEventId);
+}
+
+bool celix_bundleContext_tryRemoveScheduledEventAsync(celix_bundle_context_t* ctx, long scheduledEventId) {
+    return celix_framework_removeScheduledEvent(ctx->framework, true, false, scheduledEventId);
 }
 
 celix_bundle_t* celix_bundleContext_getBundle(const celix_bundle_context_t *ctx) {

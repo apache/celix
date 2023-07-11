@@ -12,7 +12,7 @@ PointerAlignment: Left
 SpacesBeforeTrailingComments: 1
 SortIncludes: true
 ---
-#Include regroup disabled by default. 
+#Include regroup disabled by default.
 #IncludeBlocks: Regroup
 #IncludeCategories:
 ##gtest headers

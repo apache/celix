@@ -122,13 +122,73 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadRwlockAttr_destroy(celix_thread_rwl
 typedef pthread_cond_t celix_thread_cond_t;
 typedef pthread_condattr_t celix_thread_condattr_t;
 
+/**
+ * @brief Initialize the given condition variable.
+ *
+ * For Linux the condition clock is set to CLOCK_MONOTONIC whether or not the attr is NULL.
+ *
+ * @param[in] condition The condition variable to initialize.
+ * @param[in] attr The condition variable attributes to use. Can be NULL for default attributes.
+ * @return CELIX_SUCCESS if the condition variable is initialized successfully.
+ */
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_thread_condattr_t *attr);
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_destroy(celix_thread_cond_t *condition);
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex);
 
-CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds);
+CELIX_UTILS_DEPRECATED_EXPORT celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds);
+
+/**
+ * @brief Get the current time suitable for Celix thread conditions.
+ *
+ * This function returns the current time compatible with the Celix thread conditions, specifically for
+ * the function celixThreadCondition_waitUntil, as long as the condition is initialized with
+ * celixThreadCondition_init.
+ *
+ * Note: Do not use the returned time for logging or displaying the current time as the choice of clock
+ * varies based on the operating system.
+ *
+ * @return A struct timespec denoting the current time.
+ */
+CELIX_UTILS_EXPORT struct timespec celixThreadCondition_getTime();
+
+/**
+ * @brief Calculate the current time incremented by a given delay, suitable for Celix thread conditions.
+ *
+ * This function provides the current time, increased by a specified delay (in seconds), compatible
+ * with Celix thread conditions. The resulting struct timespec can be used with the function
+ * celixThreadCondition_waitUntil, as long as the condition is initialized with celixThreadCondition_init.
+ *
+ * Note: Do not use the returned time for logging or displaying the current time as the choice of clock
+ * varies based on the operating system.
+ *
+ * @param[in] delayInSeconds The desired delay in seconds to be added to the current time.
+ * @return A struct timespec denoting the current time plus the provided delay.
+ */
+CELIX_UTILS_EXPORT struct timespec celixThreadCondition_getDelayedTime(double delayInSeconds);
+
+
+/**
+ * @brief Wait for the condition to be signaled or until the given absolute time is reached.
+ * 
+ * @section Errors
+ * - CELIX_SUCCESS if the condition is signaled before the delayInSeconds is reached.
+ * - CELIX_ILLEGAL_ARGUMENT if the absTime is null.
+ * - ETIMEDOUT If the absTime has passed.
+ * - EINTR Wait was interrupted by a signal.
+ *
+ *  Values for absTime should be obtained by celixThreadCondition_getTime, celixThreadCondition_getDelayedTime or
+ *  a modified timespec based on celixThreadCondition_getTime/celixThreadCondition_getDelayedTime.
+ * 
+ * @param[in] cond The condition to wait for.
+ * @param[in] mutex The (locked) mutex to use.
+ * @param[in] absTime The absolute time to wait for the condition to be signaled.
+ * @return CELIX_SUCCESS if the condition is signaled before the delayInSeconds is reached.
+ */
+CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_waitUntil(celix_thread_cond_t* cond, 
+                                                                 celix_thread_mutex_t* mutex, 
+                                                                 const struct timespec* absTime);
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond);
 
