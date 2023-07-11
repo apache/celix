@@ -124,13 +124,13 @@ TEST_F(FrameworkBundleTestSuite, FrameworkReadyRegisteredLaterTest) {
     EXPECT_EQ(1, count);
 
     // And the service.id of the framework.ready condition is higher than the service.id of the test condition
-    //(white-box test, framework.ready condition is registered last)
+    //(white-box test, framework.ready condition is registered later)
     long readySvcId = ctx->findServiceWithName(CELIX_CONDITION_SERVICE_NAME, frameworkReadyFilter);
     long testySvcId = ctx->findServiceWithName(CELIX_CONDITION_SERVICE_NAME, testFilter);
     EXPECT_GT(readySvcId, testySvcId);
 
-    // And the "components.ready" condition is not available, because the test bundle contains a component which will
-    // not become active
+    // And the "components.ready" condition does not become available, because the test bundle contains a component
+    // which will not become active
     count = ctx->useService<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
                 .setFilter(componentsReadyFilter)
                 .setTimeout(std::chrono::milliseconds{USE_SERVICE_TIMEOUT_IN_MS})

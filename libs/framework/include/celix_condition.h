@@ -44,16 +44,12 @@ extern "C" {
  * @brief Celix condition service struct.
  *
  * In dynamic systems, such as OSGi and Apache Celix, one of the more challenging problems can be to define when
- * a system or part of it is ready to do work. The answer can change depending on the individual perspective.
- * The developer of a web server might say, the system is ready when the server starts listening on port 80.
- * An application developer however would define the system as ready when the database connection is up and all
- * servlets are registered. Taking the application developers view, the web server should start listening on
- * port 80 when the application is ready and not beforehand.
+ * a system or part of it is ready to do work.
  *
- * The Condition service interface is a marker interface designed to address this issue.
+ * The celix_condition service interface is a marker interface designed to address this issue.
  * Its role is to provide a dependency that can be tracked. It acts as a defined signal to other services.
  *
- * A Condition service must be registered with the "celix.condition.id" service property.
+ * A celix_condition service must be registered with the "condition.id" service property.
  */
 typedef struct celix_condition {
     void* handle; /**< private dummy handle, note not used in marker service struct, but added to ensure

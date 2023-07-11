@@ -227,6 +227,9 @@ The Apache Celix framework will provide the following `celix_condition` services
 - Celix condition "framework.error". This service will be registered when the framework has not started successfully. 
   This can occur if any of the configured bundles fail to start or install. Note that the "framework.error" condition 
   is not part of the OSGi condition specification.
+- Celix condition "components.ready". This service will be registered when the "framework.ready" or "framework.error" 
+  service is registered, all components have become active and the event queue is empty. 
+  Note that the "components.ready" condition is not part of the OSGi condition specification.
 
 Contrary to the OSGi specification, the Apache Celix framework does not provide a public API for adding or removing 
 framework listeners. Instead, framework condition services can be used. This has the advantage of ensuring no 
