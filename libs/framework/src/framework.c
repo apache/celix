@@ -295,16 +295,6 @@ celix_status_t framework_destroy(framework_pt framework) {
         framework_waitForStop(framework);
     }
 
-    //Note the shutdown thread can not be joined on the framework_shutdown (which is normally more logical),
-    //because a shutdown can be initiated from a bundle.
-    //A bundle cannot be stopped when it is waiting for a framework shutdown -> hence a shutdown thread which
-    //has not been joined yet.
-    if (shutdownInitialized && !framework->shutdown.joined) {
-        celixThread_join(framework->shutdown.thread, NULL);
-        framework->shutdown.joined = true;
-    }
-
-
     celix_serviceRegistry_destroy(framework->registry);
 
     celixThreadMutex_lock(&framework->installedBundles.mutex);
