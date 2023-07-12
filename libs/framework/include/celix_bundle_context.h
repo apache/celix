@@ -203,10 +203,10 @@ typedef struct celix_service_registration_options {
     void (*asyncCallback)(void *data, long serviceId) CELIX_OPTS_INIT;
 } celix_service_registration_options_t;
 
-/**
+#ifndef __cplusplus
+/*!
  * @brief C Macro to create a empty celix_service_registration_options_t type.
  */
-#ifndef __cplusplus
 #define CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS { .svc = NULL, \
     .factory = NULL, \
     .serviceName = NULL, \
@@ -356,10 +356,10 @@ typedef struct celix_service_filter_options {
     bool ignoreServiceLanguage CELIX_OPTS_INIT;
 } celix_service_filter_options_t;
 
-/**
+#ifndef __cplusplus
+/*!
  * @brief C Macro to create a empty celix_service_filter_options_t type.
  */
-#ifndef __cplusplus
 #define CELIX_EMPTY_SERVICE_FILTER_OPTIONS {.serviceName = NULL, .versionRange = NULL, .filter = NULL, .serviceLanguage = NULL, .ignoreServiceLanguage = false}
 #endif
 
@@ -563,10 +563,10 @@ typedef struct celix_service_tracking_options {
     void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) CELIX_OPTS_INIT;
 } celix_service_tracking_options_t;
 
-/**
+#ifndef __cplusplus
+/*!
  * @brief C Macro to create a empty celix_service_tracking_options_t type.
  */
-#ifndef __cplusplus
 #define CELIX_EMPTY_SERVICE_TRACKING_OPTIONS { .filter.serviceName = NULL, \
     .filter.versionRange = NULL, \
     .filter.filter = NULL, \
@@ -781,10 +781,10 @@ typedef struct celix_service_use_options {
     int flags CELIX_OPTS_INIT;
 } celix_service_use_options_t;
 
-/**
+#ifndef __cplusplus
+/*!
  * @brief C Macro to create a empty celix_service_use_options_t type.
  */
-#ifndef __cplusplus
 #define CELIX_EMPTY_SERVICE_USE_OPTIONS {.filter.serviceName = NULL, \
     .filter.versionRange = NULL, \
     .filter.filter = NULL, \
@@ -1073,10 +1073,10 @@ typedef struct celix_bundle_tracker_options {
     void (*trackerCreatedCallback)(void *trackerCreatedCallbackData) CELIX_OPTS_INIT;
 } celix_bundle_tracking_options_t;
 
-/**
+#ifndef __cplusplus
+/*!
  * @brief C Macro to create a empty celix_service_filter_options_t type.
  */
-#ifndef __cplusplus
 #define CELIX_EMPTY_BUNDLE_TRACKING_OPTIONS {.callbackHandle = NULL, .onInstalled = NULL, .onStarted = NULL, .onStopped = NULL, .onBundleEvent = NULL, .includeFrameworkBundle = false, .trackerCreatedCallbackData = NULL, .trackerCreatedCallback = NULL}
 #endif
 
@@ -1224,7 +1224,7 @@ CELIX_FRAMEWORK_EXPORT long celix_bundleContext_trackServiceTrackersAsync(
  *
  * This tracker can be stopped with the celix_bundleContext_stopTracker function.
  *
- * @param ctx The bundle context
+ * @param ctx The bundle context.
  * @param serviceName The target service name for the service tracker to track.
  *                      If NULL is provided, add/remove callbacks will be called for all service trackers in the framework.
  * @param callbackHandle The callback handle which will be provided as handle in the trackerAdd and trackerRemove callback.
@@ -1253,6 +1253,143 @@ CELIX_FRAMEWORK_EXPORT celix_dependency_manager_t* celix_bundleContext_getDepend
  */
 CELIX_FRAMEWORK_EXPORT void celix_bundleContext_waitForEvents(celix_bundle_context_t *ctx);
 
+/**
+ * @struct celix_scheduled_event_options
+ * @brief Celix scheduled event options, used for creating scheduling events with the celix framework.
+ */
+typedef struct celix_scheduled_event_options {
+    const char* name CELIX_OPTS_INIT; /**<
+                                       * @brief The name of the event, used for logging and debugging.
+                                       *
+                                       * Expected to be const char* that is valid during the celix_bundleContext_scheduleEvent
+                                       * call. Can be NULL. */
+
+    double initialDelayInSeconds CELIX_OPTS_INIT; /**< @brief Initial delay in seconds before the event is processed.*/
+
+    double intervalInSeconds CELIX_OPTS_INIT; /**< @brief Schedule interval in seconds.
+                                               *  0 means one-shot scheduled event.
+                                               */
+
+    void* callbackData CELIX_OPTS_INIT; /**< @brief Data passed to the callback function when a event is scheduled.*/
+
+    void (*callback)(void* callbackData) CELIX_OPTS_INIT; /**< @brief Callback function called to process a scheduled
+                                                             event. Will be called on the event thread.*/
+
+    void* removeCallbackData
+        CELIX_OPTS_INIT; /**< @brief Data passed to the done callback function when a scheduled event is removed.*/
+
+    void (*removeCallback)(void* removeCallbackData)
+        CELIX_OPTS_INIT; /**< @brief Callback function called when a scheduled event is removed. Will be called on
+                                     the event thread.*/
+} celix_scheduled_event_options_t;
+
+#define CELIX_EMPTY_SCHEDULED_EVENT_OPTIONS {NULL, 0.0, 0.0, NULL, NULL, NULL, NULL}
+
+/**
+ * @brief Add a scheduled event to the Celix framework.
+ *
+ * The scheduled event will be called on the Celix framework event thread, repeatedly using the provided interval or
+ * once if only a initial delay is provided.
+ * The event callback should be relatively fast and the scheduled event interval should be relatively long, otherwise
+ * the framework event queue will be blocked and framework will not function properly.
+ *
+ * Scheduled events can be scheduled later than the provided initial delay and interval, because they are processed
+ * after other events in the Celix event thread.
+ * The target - but not guaranteed - precision of the scheduled event trigger is 1 microsecond.
+ *
+ * If the provided interval is 0, the scheduled event will a one-shot scheduled event and will be called once
+ * after the provided initial delay. If a bundle stops before the one-shot scheduled event is called, the scheduled
+ * event will be removed and not called.
+ *
+ * Scheduled events should be removed by the caller when not needed anymore, except for one-shot scheduled events.
+ * one-shot are automatically removed after the event callback is called.
+ *
+ * Note during bundle stop the framework will check if all scheduled events for the bundle are removed.
+ * For every not removed scheduled event that is not a one-shot event, a warning will be logged and the
+ * scheduled event will be removed.
+ *
+ * @param[in] ctx The bundle context.
+ * @param[in] options The scheduled event options, which describe the to be added scheduled event.
+ * @return The scheduled event id of the scheduled event. Can be used to cancel the event.
+ * @retval <0 If the event could not be added.
+ */
+CELIX_FRAMEWORK_EXPORT long celix_bundleContext_scheduleEvent(celix_bundle_context_t* ctx,
+                                                              const celix_scheduled_event_options_t* options);
+
+/**
+ * @brief Wakeup a scheduled event and returns immediately, not waiting for the scheduled event callback to be
+ * called.
+ *
+ * Silently ignored if the scheduled event ids < 0.
+ *
+ * @param[in] ctx The bundle context.
+ * @param[in] scheduledEventId The scheduled event id to wakeup.
+ * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not known.
+ */
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleContext_wakeupScheduledEvent(celix_bundle_context_t* ctx,
+                                                                               long scheduledEventId);
+
+/**
+ * @brief Wait until the next scheduled event is processed.
+ *
+ * Silently ignored if the scheduled event ids < 0.
+ *
+ * @param[in] ctx The bundle context.
+ * @param[in] scheduledEventId The scheduled event id to wait for.
+ * @param[in] waitTimeInSeconds The maximum time to wait for the next scheduled event. If <= 0 the function will return
+ *                             immediately.
+ * @return CELIX_SUCCESS if the scheduled event is woken up, CELIX_ILLEGAL_ARGUMENT if the scheduled event id is not
+ *         known and ETIMEDOUT if the waitTimeInSeconds is reached.
+ */
+CELIX_FRAMEWORK_EXPORT celix_status_t celix_bundleContext_waitForScheduledEvent(celix_bundle_context_t* ctx,
+                                                                                long scheduledEventId,
+                                                                                double waitTimeInSeconds);
+
+/**
+ * @brief Cancel and remove a scheduled event.
+ *
+ * Silently ignored if the scheduled event ids < 0.
+ *
+ * This function will block until a possible in-progress scheduled event callback is finished, the scheduled event
+ * is removed and, if configured, the remove callback is called.
+ *
+ * @param[in] ctx The bundle context.
+ * @param[in] scheduledEventId The scheduled event id to cancel and remove.
+ * @return true if a scheduled event is cancelled, false if the scheduled event id is not known.
+ */
+CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_removeScheduledEvent(celix_bundle_context_t* ctx,
+                                                                      long scheduledEventId);
+
+/**
+ * @brief Cancel and remove a scheduled event asynchronously.
+ *
+ * When this function returns, no new scheduled event callbacks will be called, but it is not guaranteed that there
+ * is still a scheduled event callback in progress and that the remove callback is called.
+ *
+ * Silently ignored if the scheduled event ids < 0.
+ *
+ * @param[in] ctx The bundle context.
+ * @param[in] scheduledEventId The scheduled event id to cancel and remove.
+ * @return true if a scheduled event is cancelled, false if the scheduled event id is not known.
+ */
+CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_removeScheduledEventAsync(celix_bundle_context_t* ctx,
+                                                                     long scheduledEventId);
+
+/**
+ * @brief Try to cancel and remove a scheduled event asynchronously.
+ *
+ * Silently ignored if the scheduled event ids < 0.
+ *
+ * When this function returns, no new scheduled event callbacks will be called, but it is not guaranteed that there
+ * is still a scheduled event callback in progress and that the remove callback is called.
+ * Will not log an error if the scheduled event id is not known.
+ *
+ * @param[in] ctx The bundle context.
+ * @param[in] scheduledEventId The scheduled event id to cancel.
+ * @return true if a scheduled event is cancelled, false if the scheduled event id is not known.
+ */
+CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_tryRemoveScheduledEventAsync(celix_bundle_context_t* ctx,
+                                                                        long scheduledEventId);
 
 /**
  * @brief Returns the bundle for this bundle context.

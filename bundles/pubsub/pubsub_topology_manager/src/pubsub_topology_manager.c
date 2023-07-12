@@ -1169,7 +1169,6 @@ void pubsub_topologyManager_removeMetricsService(void * handle, void *svc, const
     celixThreadMutex_unlock(&manager->psaMetrics.mutex);
 }
 
-
 static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t *manager, const char *commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
     fprintf(os, "\n");
 

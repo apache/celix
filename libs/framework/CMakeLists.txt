@@ -35,7 +35,8 @@ if (FRAMEWORK)
             src/framework_bundle_lifecycle_handler.c
             src/celix_bundle_state.c
             src/celix_framework_utils.c
-            src/celix_module_private.h)
+            src/celix_scheduled_event.c
+            )
     set(FRAMEWORK_DEPS libuuid::libuuid CURL::libcurl ${CMAKE_DL_LIBS})
 
     add_library(framework SHARED ${FRAMEWORK_SRC})

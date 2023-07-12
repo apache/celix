@@ -16,18 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * celix_threads.c
- *
- *  \date       4 Jun 2014
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <stdlib.h>
 #include <sys/time.h>
 #include <time.h>
-#include "signal.h"
+#include <signal.h>
+
 #include "celix_threads.h"
 #include "celix_utils.h"
 
@@ -150,11 +144,10 @@ celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_t
     return pthread_cond_init(condition, attr);
 #else
     celix_status_t status = CELIX_SUCCESS;
-    if(attr) {
+    if (attr) {
         status = pthread_condattr_setclock(attr, CLOCK_MONOTONIC);
         status = CELIX_DO_IF(status, pthread_cond_init(condition, attr));
-    }
-    else {
+    } else {
         celix_thread_condattr_t condattr;
         (void)pthread_condattr_init(&condattr); // always return 0
         status = pthread_condattr_setclock(&condattr, CLOCK_MONOTONIC);
@@ -182,20 +175,42 @@ celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond,
 }
 #else
 celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds) {
-    struct timespec time;
-    seconds = seconds >= 0 ? seconds : 0;
-    time = celix_gettime(CLOCK_MONOTONIC);
-    time.tv_sec += seconds;
-    if(nanoseconds > 0) {
-        time.tv_nsec += nanoseconds;
-        while (time.tv_nsec > CELIX_NS_IN_SEC) {
-            time.tv_sec++;
-            time.tv_nsec -= CELIX_NS_IN_SEC;
-        }
-    }
+    double delay = (double)seconds + ((double)nanoseconds / 1000000000);
+    struct timespec time = celixThreadCondition_getDelayedTime(delay);
     return pthread_cond_timedwait(cond, mutex, &time);
 }
 #endif
+
+struct timespec celixThreadCondition_getTime() {
+    return celixThreadCondition_getDelayedTime(0);
+}
+
+struct timespec celixThreadCondition_getDelayedTime(double delayInSeconds) {
+    struct timespec now = celix_gettime(CLOCK_MONOTONIC);
+    if (delayInSeconds == 0) {
+        return now;
+    }
+    return celix_delayedTimespec(&now, delayInSeconds);
+}
+
+celix_status_t
+celixThreadCondition_waitUntil(celix_thread_cond_t* cond, celix_thread_mutex_t* mutex, const struct timespec* absTime) {
+    if (absTime == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+#if __APPLE__
+    struct timespec now = celix_gettime(CLOCK_MONOTONIC);
+    double diff = celix_difftime(&now, absTime);
+    if (diff <= 0) {
+        return ETIMEDOUT;
+    }
+    long seconds = diff;
+    long nanoseconds = (diff - seconds) * CELIX_NS_IN_SEC;
+    return celixThreadCondition_timedwaitRelative(cond, mutex, seconds, nanoseconds);
+#else
+    return pthread_cond_timedwait(cond, mutex, absTime);
+#endif
+}
 
 celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond) {
     return pthread_cond_broadcast(cond);

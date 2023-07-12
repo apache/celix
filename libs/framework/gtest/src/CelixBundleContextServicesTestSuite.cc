@@ -477,7 +477,7 @@ TEST_F(CelixBundleContextServicesTestSuite, UseServiceInUseCallbackTest) {
     celix_bundleContext_unregisterService(ctx, svcId3);
 }
 
-TEST_F(CelixBundleContextServicesTestSuite, TegisterAndUseServiceTest) {
+TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceTest) {
     struct calc {
         int (*calc)(int);
     };

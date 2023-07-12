@@ -29,6 +29,7 @@
 #include "celix/ServiceRegistrationBuilder.h"
 #include "celix/UseServiceBuilder.h"
 #include "celix/TrackerBuilders.h"
+#include "celix/ScheduledEventBuilder.h"
 #include "celix/Bundle.h"
 #include "celix/Framework.h"
 
@@ -392,6 +393,14 @@ namespace celix {
          */
         MetaTrackerBuilder trackAnyServiceTrackers() {
             return MetaTrackerBuilder(cCtx, {});
+        }
+
+        /**
+         * @brief Schedule a callback to be called after the given initial delay and/or interval using a fluent 
+         * builder API.
+         */
+        ScheduledEventBuilder scheduledEvent() {
+            return ScheduledEventBuilder{cCtx};
         }
 
         /**

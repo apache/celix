@@ -42,6 +42,7 @@ if (UTILS)
             src/utils.c
             src/ip_utils.c
             src/filter.c
+            src/celix_log_level.c
             src/celix_log_utils.c
             src/celix_hash_map.c
             src/celix_file_utils.c
@@ -69,9 +70,9 @@ if (UTILS)
         target_compile_definitions(utils PRIVATE -DUSE_FILE32API)
     endif ()
 
-    if (NOT APPLE)
-        set(UTILS_PUBLIC_DEPS ${UTILS_PUBLIC_DEPS} rt)
-    endif ()
+if (NOT APPLE)
+    set(UTILS_PUBLIC_DEPS ${UTILS_PUBLIC_DEPS} rt)
+endif ()
 
     target_include_directories(utils PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
