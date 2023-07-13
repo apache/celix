@@ -70,9 +70,9 @@ if (UTILS)
         target_compile_definitions(utils PRIVATE -DUSE_FILE32API)
     endif ()
 
-if (NOT APPLE)
-    set(UTILS_PUBLIC_DEPS ${UTILS_PUBLIC_DEPS} rt)
-endif ()
+    if (NOT APPLE)
+        set(UTILS_PUBLIC_DEPS ${UTILS_PUBLIC_DEPS} rt)
+    endif ()
 
     target_include_directories(utils PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>

@@ -210,13 +210,6 @@ class CelixConan(ConanFile):
         if not self.options.enable_testing:
             self.options.build_pubsub_integration = False
             self.options.enable_code_coverage = False
-        if not self.options.build_remote_service_admin:
-            self.options.build_rsa_remote_service_admin_dfi = False
-            self.options.build_rsa_discovery_configured = False
-            self.options.build_rsa_discovery_etcd = False
-            self.options.build_rsa_json_rpc = False
-            self.options.build_rsa_remote_service_admin_shm_v2 = False
-            self.options.build_rsa_discovery_zeroconf = False
 
         if self.options.build_shell_bonjour:
             self.options.build_shell = True
@@ -291,7 +284,9 @@ class CelixConan(ConanFile):
         if self.options.build_rsa_discovery_configured:
             self.options.build_rsa_discovery_common = True
 
-        if self.options.build_rsa_discovery_common:
+        if self.options.build_rsa_discovery_common or self.options.build_rsa_discovery_zeroconf \
+                or self.options.build_rsa_remote_service_admin_dfi or self.options.build_rsa_json_rpc \
+                or self.options.build_rsa_remote_service_admin_shm_v2:
             self.options.build_remote_service_admin = True
 
         if self.options.build_remote_service_admin:
@@ -373,15 +368,14 @@ class CelixConan(ConanFile):
             self.options['zeromq'].shared = True
             self.requires("czmq/4.2.0")
             self.options['czmq'].shared = True
-        if self.options.build_http_admin or self.options.build_rsa_discovery_common:
+        if self.options.build_http_admin or self.options.build_rsa_discovery_commonor \
+                or self.options.build_rsa_remote_service_admin_dfi:
             self.requires("civetweb/1.15")
             self.options['civetweb'].shared = True
         if self.options.build_celix_dfi:
             self.requires("libffi/[>=3.2.1 <4.0.0]")
             self.options['libffi'].shared = True
-        if self.options.build_celix_dfi or self.options.build_celix_etcdlib \
-                or self.options.build_pubsub_json_serializer or self.options.build_pubsub_avrobin_serializer \
-                or self.options.build_pubsub_discovery_etcd or self.options.build_pubsub_psa_ws:
+        if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
             self.requires("jansson/[>=2.12 <3.0.0]")
             self.options['jansson'].shared = True
         if self.options.build_rsa_discovery_zeroconf or self.options.build_shell_bonjour:

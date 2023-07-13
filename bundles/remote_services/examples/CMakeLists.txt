@@ -18,7 +18,10 @@
 
 add_subdirectory(calculator_api)
 add_subdirectory(calculator_service)
-add_subdirectory(calculator_shell)
+
+if (BUILD_SHELL)
+    add_subdirectory(calculator_shell)
+endif ()
 
 add_subdirectory(remote_example_api)
 add_subdirectory(remote_example_service)

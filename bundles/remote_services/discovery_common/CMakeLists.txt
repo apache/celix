@@ -31,6 +31,7 @@ if (RSA_DISCOVERY_COMMON)
             )
     target_include_directories(rsa_discovery_common PUBLIC include
             PRIVATE src ${LIBXML2_INCLUDE_DIR})
+    celix_target_hide_symbols(rsa_discovery_common)
     celix_deprecated_utils_headers(rsa_discovery_common)
     celix_deprecated_framework_headers(rsa_discovery_common)
     target_link_libraries(rsa_discovery_common

@@ -35,8 +35,6 @@ if (SHELL_BONJOUR)
 	)
 	celix_deprecated_utils_headers(bonjour_shell)
 	celix_deprecated_framework_headers(bonjour_shell)
-	add_library(Celix::bonjour_shell ALIAS bonjour_shell)
-
 
 	target_include_directories(bonjour_shell PRIVATE
 			"${PROJECT_SOURCE_DIR}/utils/public/include"
@@ -44,6 +42,8 @@ if (SHELL_BONJOUR)
 			private/include
 	)
 	target_link_libraries(bonjour_shell PRIVATE ${LIBXML2_LIBRARIES} DNSSD::DNSSD Celix::shell_api)
+	install_celix_bundle(bonjour_shell EXPORT celix COMPONENT bonjour_shell)
+	add_library(Celix::bonjour_shell ALIAS bonjour_shell)
 
 	add_celix_container("bonjour_shell_deploy" BUNDLES
 		Celix::shell
