@@ -262,7 +262,7 @@ class CelixConan(ConanFile):
         if self.options.build_pubsub_wire_protocol_v2:
             self.options.build_pubsub = True
 
-        if self.options.build_pubsub_json_serializer or self.build_pubsub_avrobin_serializer:
+        if self.options.build_pubsub_json_serializer or self.options.build_pubsub_avrobin_serializer:
             self.options.build_pubsub = True
 
         if self.options.build_pubsub:
@@ -378,7 +378,7 @@ class CelixConan(ConanFile):
             self.options['zeromq'].shared = True
             self.requires("czmq/4.2.0")
             self.options['czmq'].shared = True
-        if self.options.build_http_admin or self.options.build_rsa_discovery_commonor \
+        if self.options.build_http_admin or self.options.build_rsa_discovery_common \
                 or self.options.build_rsa_remote_service_admin_dfi:
             self.requires("civetweb/1.15")
             self.options['civetweb'].shared = True

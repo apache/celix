@@ -172,6 +172,12 @@ include(CheckLinkerFlag)
 check_linker_flag(CXX LINKER:--wrap,celix_nonexistent_symbol LINKER_WRAP_SUPPORTED)
 cmake_pop_check_state()
 
+# avoid unknown export "celix" error when building nothing
+add_library(celix INTERFACE)
+add_library(Celix::celix ALIAS celix)
+install(TARGETS celix EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
+
 #Add generate_export_header to cmake
 include(GenerateExportHeader)
 
