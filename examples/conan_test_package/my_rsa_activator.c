@@ -17,10 +17,10 @@
   under the License.
  */
 
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
+#include <celix_log_helper.h>
 #include <remote_service_admin.h>
 #include <remote_constants.h>
-#include <celix_log_helper.h>
 
 
 struct remote_service_admin {

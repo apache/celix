@@ -21,14 +21,16 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Celix REQUIRED)
 
-add_celix_bundle(hello VERSION 1.0.0 SOURCES hello_bundle.c)
-target_link_libraries(hello PRIVATE Celix::log_helper)
-celix_get_bundle_file(hello HELLO_TEST_BUNDLE)
+option(TEST_FRAMEWORK "Test Celix framework" OFF)
+if (TEST_FRAMEWORK)
+    add_celix_bundle(hello VERSION 1.0.0 SOURCES hello_bundle.c)
+    celix_get_bundle_file(hello HELLO_TEST_BUNDLE)
 
-add_executable(use_framework test_framework.c)
-target_link_libraries(use_framework Celix::framework)
-add_celix_bundle_dependencies(use_framework hello)
-target_compile_definitions(use_framework PRIVATE HELLO_TEST_BUNDLE_LOCATION="${HELLO_TEST_BUNDLE}")
+    add_executable(use_framework test_framework.c)
+    target_link_libraries(use_framework Celix::framework)
+    add_celix_bundle_dependencies(use_framework hello)
+    target_compile_definitions(use_framework PRIVATE HELLO_TEST_BUNDLE_LOCATION="${HELLO_TEST_BUNDLE}")
+endif ()
 
 option(TEST_HTTP_ADMIN "Test http_admin" OFF)
 if (TEST_HTTP_ADMIN)
@@ -52,7 +54,7 @@ if (TEST_LOG_SERVICE)
             my_log_writer_activator.c
             VERSION 1.0.0
             )
-    target_link_libraries(my_log_writer PRIVATE Celix::log_helper Celix::log_service_api)
+    target_link_libraries(my_log_writer PRIVATE Celix::log_service_api)
     add_celix_container(use_log_writer COPY)
     celix_container_bundles(use_log_writer LEVEL 0 Celix::log_admin)
     celix_container_bundles(use_log_writer LEVEL 1 my_log_writer)
@@ -77,8 +79,6 @@ if (TEST_PUBSUB)
     target_link_libraries(my_pubsub_admin PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
     add_celix_container(use_my_psa
             BUNDLES
-            Celix::celix_pubsub_serializer_json
-            Celix::celix_pubsub_serializer_avrobin
             Celix::celix_pubsub_topology_manager
             my_pubsub_admin
             hello
@@ -91,8 +91,6 @@ option(TEST_PSA_ZMQ "Test ZeroMQ PubSub Admin" OFF)
 if (TEST_PSA_ZMQ)
     add_celix_container(use_psa_zmq
             BUNDLES
-            Celix::celix_pubsub_serializer_json
-            Celix::celix_pubsub_serializer_avrobin
             Celix::celix_pubsub_topology_manager
             Celix::celix_pubsub_admin_zmq
             hello
@@ -105,7 +103,6 @@ option(TEST_PSA_TCP "Test TCP PubSub Admin" OFF)
 if (TEST_PSA_TCP)
     add_celix_container(use_psa_tcp
             BUNDLES
-            Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_topology_manager
             Celix::celix_pubsub_admin_tcp
             hello
@@ -119,7 +116,6 @@ option(TEST_PSA_UDP_MC "Test UDP MC PubSub Admin" OFF)
 if (TEST_PSA_UDP_MC)
     add_celix_container(use_psa_udp_mc
             BUNDLES
-            Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_topology_manager
             Celix::celix_pubsub_admin_udp_multicast
             hello
@@ -134,7 +130,6 @@ if (TEST_PSA_WS)
     add_celix_container(use_psa_ws
             BUNDLES
             Celix::http_admin
-            Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_topology_manager
             Celix::celix_pubsub_admin_websocket
             hello
@@ -147,7 +142,6 @@ option(TEST_PSA_DISCOVERY_ETCD "Test the PubSub Discovery (ETCD) bundle" OFF)
 if (TEST_PSA_DISCOVERY_ETCD)
     add_celix_container(use_psa_discovery_etcd
             BUNDLES
-            Celix::celix_pubsub_serializer_json
             Celix::celix_pubsub_topology_manager
             Celix::celix_pubsub_discovery_etcd
             my_pubsub_admin

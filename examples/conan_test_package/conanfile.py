@@ -22,9 +22,11 @@ import os
 class TestPackageConan(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
     generators = "cmake_paths", "cmake_find_package"
+    # requires = "celix/2.3.0@docker/test"
 
     def build(self):
         cmake = CMake(self)
+        cmake.definitions["TEST_FRAMEWORK"] = self.options["celix"].build_framework
         cmake.definitions["TEST_HTTP_ADMIN"] = self.options["celix"].build_http_admin
         cmake.definitions["TEST_LOG_SERVICE"] = self.options["celix"].build_log_service
         cmake.definitions["TEST_SYSLOG_WRITER"] = self.options["celix"].build_syslog_writer
@@ -62,7 +64,8 @@ class TestPackageConan(ConanFile):
 
     def test(self):
         if not tools.cross_building(self, skip_x64_x86=True):
-            self.run("./use_framework", run_environment=True)
+            if self.options["celix"].build_framework:
+                self.run("./use_framework", run_environment=True)
             if self.options["celix"].build_http_admin:
                 self.run("./use_http_admin", cwd=os.path.join("deploy", "use_http_admin"), run_environment=True)
             if self.options["celix"].build_log_service:

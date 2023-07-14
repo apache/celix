@@ -202,10 +202,11 @@ class CelixConan(ConanFile):
             for opt, val in self.options.values.items():
                 if opt.startswith('build_'):
                     setattr(self.options, opt, True)
-            if self.settings.os != "Linux":
-                self.options.build_rsa_remote_service_admin_shm_v2 = False
-                self.options.build_rsa_discovery_zeroconf = False
-                self.options.build_shell_bonjour = False
+
+        if self.settings.os != "Linux":
+            self.options.build_rsa_remote_service_admin_shm_v2 = False
+            self.options.build_rsa_discovery_zeroconf = False
+            self.options.build_shell_bonjour = False
 
         if not self.options.enable_testing:
             self.options.build_pubsub_integration = False
@@ -328,6 +329,7 @@ class CelixConan(ConanFile):
             self.options.build_log_service_api = True
             self.options.build_shell_api = True
             self.options.build_framework = True
+            self.options.build_log_helper = True
 
         if self.options.build_shell_api:
             self.options.build_utils = True
