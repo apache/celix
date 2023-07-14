@@ -406,7 +406,9 @@ class CelixConan(ConanFile):
             self.requires("jansson/[>=2.12 <3.0.0]")
             self.options['jansson'].shared = True
         if self.options.build_rsa_discovery_zeroconf or self.options.build_shell_bonjour:
-            self.requires("mdnsresponder/1790.80.10")
+            # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
+            # https://github.com/conan-io/conan-center-index/pull/16254
+            self.requires("mdnsresponder/1310.140.1")
         self.validate()
 
     def _enable_error_injectors(self):
