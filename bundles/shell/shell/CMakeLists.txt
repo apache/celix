@@ -23,8 +23,8 @@ if (SHELL_API)
             )
     target_link_libraries(shell_api INTERFACE Celix::utils)
 
-    if (CELIX_INSTALL_DEPRECATED_API)
         target_include_directories(shell_api INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/deprecated_api>)
+    if (CELIX_INSTALL_DEPRECATED_API)
         install(DIRECTORY deprecated_api/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/shell COMPONENT shell)
     endif ()
 

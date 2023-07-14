@@ -220,6 +220,9 @@ class CelixConan(ConanFile):
         if self.options.build_shell_bonjour:
             self.options.build_shell = True
 
+        if self.options.build_deployment_admin:
+            self.options.build_framework = True
+
         if self.options.build_cxx_rsa_integration:
             self.options.build_cxx_remote_service_admin = True
             self.options.build_pushstreams = True
@@ -315,6 +318,9 @@ class CelixConan(ConanFile):
             self.options.build_log_helper = True
             self.options.build_framework = True
 
+        if self.options.build_http_admin:
+            self.options.build_framework = True
+
         if self.options.build_syslog_writer:
             self.options.build_log_service = True
 
@@ -344,6 +350,9 @@ class CelixConan(ConanFile):
         if self.options.build_dependency_manager_cxx:
             self.options.build_framework = True
             self.options.celix_cxx14 = True
+
+        if self.options.build_celix_dfi:
+            self.options.build_utils = True
 
         if self.options.build_framework:
             self.options.build_utils = True
