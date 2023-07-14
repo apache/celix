@@ -57,7 +57,7 @@ jobs:
       - name: Install dependencies
         run: |
           brew update
-          brew install lcov zeromq czmq cpputest jansson rapidjson libzip ossp-uuid
+          brew install lcov zeromq czmq cpputest jansson rapidjson libzip
       - name: Build
         env:
           BUILD_OPTIONS: |
