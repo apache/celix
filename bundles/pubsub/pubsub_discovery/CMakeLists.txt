@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(PUBSUB_DISCOVERY_ETCD "Option to enable building the PubSub Discovery (ETCD) bundle" ON DEPS CELIX_ETCDLIB)
+celix_subproject(PUBSUB_DISCOVERY_ETCD "Option to enable building the PubSub Discovery (ETCD) bundle" ON)
 if (PUBSUB_DISCOVERY_ETCD)
     find_package(jansson REQUIRED)
 

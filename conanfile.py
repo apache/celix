@@ -211,9 +211,14 @@ class CelixConan(ConanFile):
             self.options.build_pubsub_integration = False
             self.options.enable_code_coverage = False
 
+        if self.options.build_examples:
+            self.options.build_shell_tui = True
+            self.options.build_shell_wui = True
+            self.options.build_log_service = True
+            self.options.build_syslog_writer = True
+
         if self.options.build_shell_bonjour:
             self.options.build_shell = True
-            self.options.celix_install_deprecated_api = True
 
         if self.options.build_cxx_rsa_integration:
             self.options.build_cxx_remote_service_admin = True
@@ -293,6 +298,7 @@ class CelixConan(ConanFile):
             self.options.build_framework = True
             self.options.build_log_helper = True
             self.options.build_celix_dfi = True
+            self.options.celix_install_deprecated_api = True
 
         if self.options.build_remote_shell:
             self.options.build_shell = True

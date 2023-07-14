@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(SHELL_BONJOUR "Option to enable building the Bonjour Shell (shell access by chat clients)" OFF DEPS SHELL)
+celix_subproject(SHELL_BONJOUR "Option to enable building the Bonjour Shell (shell access by chat clients)" OFF)
 if (SHELL_BONJOUR)
 	message(WARNING "Celix::bonjour_shell is considered unstable, because develop of this bundle has been dormant for a while")
 	find_package(LibXml2 REQUIRED)

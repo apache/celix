@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(PUBSUB_PSA_WS "Build WebSocket PubSub Admin" ON DEPS HTTP_ADMIN)
+celix_subproject(PUBSUB_PSA_WS "Build WebSocket PubSub Admin" ON)
 if (PUBSUB_PSA_WS)
     find_package(jansson REQUIRED)
     find_package(libuuid REQUIRED)

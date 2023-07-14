@@ -16,7 +16,7 @@
 # under the License.
 
 set(PUSHSTREAMS_DEFAULT_ON ${CELIX_CXX17})
-celix_subproject(PUSHSTREAMS "Option to build the PushStreams library" ${PUSHSTREAMS_DEFAULT_ON} DEPS PROMISES)
+celix_subproject(PUSHSTREAMS "Option to build the PushStreams library" ${PUSHSTREAMS_DEFAULT_ON})
 
 if (PUSHSTREAMS)
     set(CMAKE_CXX_STANDARD 17)

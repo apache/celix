@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(CXX_RSA_INTEGRATION "Option to build the C++17 Remote Service Admin Service integration" ON DEPS SHELL SHELL_TUI PUBSUB PROMISES PUSHSTREAMS PUBSUB_PSA_ZMQ PUBSUB_DISCOVERY_ETCD)
+celix_subproject(CXX_RSA_INTEGRATION "Option to build the C++17 Remote Service Admin Service integration" ON)
 if (CXX_RSA_INTEGRATION)
     add_celix_bundle(TestExportImportRemoteServiceFactory
             SOURCES src/TestExportImportRemoteServiceFactory.cc

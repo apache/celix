@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(RSA_DISCOVERY_ETCD "Option to enable building the Discovery (ETCD) bundle" ON DEPS CELIX_ETCDLIB)
+celix_subproject(RSA_DISCOVERY_ETCD "Option to enable building the Discovery (ETCD) bundle" ON)
 if (RSA_DISCOVERY_ETCD)
 	add_celix_bundle(rsa_discovery_etcd
 			VERSION 0.9.0
