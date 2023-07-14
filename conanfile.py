@@ -449,4 +449,5 @@ class CelixConan(ConanFile):
         # check https://docs.conan.io/en/latest/reference/conanfile/methods.html#imports
         self.cpp_info.bindirs = ["bin", os.path.join("share", self.name, "bundles")]
         self.cpp_info.build_modules["cmake"].append(os.path.join("lib", "cmake", "Celix", "CelixConfig.cmake"))
-        self.cpp_info.build_modules["cmake_find_package"].append(os.path.join("lib", "cmake", "Celix", "CelixConfig.cmake"))
+        self.cpp_info.build_modules["cmake_find_package"].append(os.path.join("lib", "cmake",
+                                                                              "Celix", "CelixConfig.cmake"))

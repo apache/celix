@@ -23,6 +23,7 @@
 #include <celix_properties.h>
 #include <celix_shell_command.h>
 #include <celix_shell.h>
+#include <stdio.h>
 
 static void use(void *handle, void *svc) {
     celix_shell_t *shell = svc;
