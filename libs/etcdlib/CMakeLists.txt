@@ -21,7 +21,7 @@ if (NOT COMMAND celix_subproject)
     #act as a top level project. Making the etcdlib useable 
     #stand-alone
 
-    cmake_minimum_required (VERSION 3.2)
+    cmake_minimum_required (VERSION 3.18)
     project(ETCDLIB 
         VERSION 1.1.0
         LANGUAGES C CXX
@@ -45,16 +45,6 @@ endif ()
 if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
     find_package(CURL REQUIRED)
     find_package(jansson REQUIRED)
-
-    if (NOT TARGET CURL::libcurl)
-        #Note more recent curl will create CURL::libcurl target
-        message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
-        add_library(CURL::libcurl SHARED IMPORTED)
-        set_target_properties(CURL::libcurl PROPERTIES
-                IMPORTED_LOCATION "${CURL_LIBRARIES}"
-                INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
-                )
-    endif ()
 
     add_library(etcdlib SHARED src/etcd.c)
     target_include_directories(etcdlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>)
