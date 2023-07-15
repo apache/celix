@@ -22,7 +22,7 @@ import os
 class TestPackageConan(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
     generators = "cmake_paths", "cmake_find_package"
-    requires = "celix/2.3.0@docker/test"
+    # requires = "celix/2.3.0@docker/test"
 
     def build(self):
         cmake = CMake(self)
