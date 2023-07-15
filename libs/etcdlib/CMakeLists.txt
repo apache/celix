@@ -36,7 +36,6 @@ if (NOT COMMAND celix_subproject)
     set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
 
     set(ETCDLIB_CMP ${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
-    find_package(CURL REQUIRED)
     if (NOT TARGET CURL::libcurl)
         #Note more recent curl will create CURL::libcurl target
         message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
@@ -50,10 +49,10 @@ if (NOT COMMAND celix_subproject)
 else()
     set(ETCDLIB_CMP framework)
     celix_subproject(CELIX_ETCDLIB "Option to build the ETCD library" ON)
-    find_package(CURL REQUIRED)
 endif ()
 
 if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
+    find_package(CURL REQUIRED)
     find_package(jansson REQUIRED)
 
     add_library(etcdlib SHARED src/etcd.c)
