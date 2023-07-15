@@ -112,7 +112,7 @@ if (UTILS)
     add_library(Celix::utils ALIAS utils)
 
     if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
-        add_subdirectory(ei)
+        add_subdirectory(error_injector)
     endif ()
 
     if (ENABLE_TESTING)

@@ -74,7 +74,7 @@ if (FRAMEWORK)
     add_library(Celix::framework ALIAS framework)
 
     if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
-        add_subdirectory(ei)
+        add_subdirectory(error_injector)
     endif ()
     if (ENABLE_TESTING AND CELIX_CXX17) #framework tests are C++17
         add_library(framework_cut STATIC ${FRAMEWORK_SRC})
