@@ -44,9 +44,6 @@ jobs:
           source activate_run.sh
           ctest --output-on-failure
           source deactivate_run.sh
-      - name: Test Installed Celix
-        run: |
-          conan create -pr:b default -pr:h default -tf examples/conan_test_package -tbf test-build -o celix:build_all=True -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s .
 
   build-brew:
     runs-on: macOS-11

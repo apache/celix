@@ -45,3 +45,24 @@ jobs:
           CXX: ${{ matrix.compiler[1] }}
         run: |
           conan inspect . -a options | awk 'BEGIN { FS="[\t:]+" } /build/ && !/build_all/ { print $1}' | while read option; do conan create . -b missing -o celix:${option}=True  -pr:b release -pr:h default -tf examples/conan_test_package -tbf test-build -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s --require-override=zlib/1.2.13 || exit 1; done
+
+  mac-build:
+    runs-on: macOS-11
+    timeout-minutes: 120
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3.3.0
+      - name: Install conan
+        run: |
+          brew install python
+          pip3 install -U conan==1.59.0
+      - name: Setup Conan Profile
+        run: |
+          conan profile new default --detect
+          conan profile update settings.build_type=Release default
+      - name: Create Celix
+        env:
+          CC: ${{ matrix.compiler[0] }}
+          CXX: ${{ matrix.compiler[1] }}
+        run: |
+          conan inspect . -a options | awk 'BEGIN { FS="[\t:]+" } /build/ && !/build_all/ { print $1}' | while read option; do conan create . -b missing -o celix:${option}=True  -pr:b release -pr:h default -tf examples/conan_test_package -tbf test-build -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s --require-override=zlib/1.2.13 || exit 1; done
