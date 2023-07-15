@@ -61,7 +61,7 @@ if (CELIX_DFI)
 	add_library(Celix::dfi ALIAS dfi)
 
 	if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
-		add_subdirectory(ei)
+		add_subdirectory(error_injector)
 	endif ()
 	if (ENABLE_TESTING)
 		add_subdirectory(gtest)

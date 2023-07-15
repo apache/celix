@@ -49,7 +49,7 @@ if (LOG_HELPER)
 
     if (ENABLE_TESTING)
         if (LINKER_WRAP_SUPPORTED)
-            add_subdirectory(ei)
+            add_subdirectory(error_injector)
         endif ()
         add_subdirectory(gtest)
     endif ()
