@@ -36,15 +36,6 @@ if (NOT COMMAND celix_subproject)
     set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
 
     set(ETCDLIB_CMP ${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
-    if (NOT TARGET CURL::libcurl)
-        #Note more recent curl will create CURL::libcurl target
-        message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
-        add_library(CURL::libcurl SHARED IMPORTED)
-        set_target_properties(CURL::libcurl PROPERTIES
-                IMPORTED_LOCATION "${CURL_LIBRARIES}"
-                INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
-                )
-    endif ()
     set(ETCDLIB_STANDALONE ON)
 else()
     set(ETCDLIB_CMP framework)
@@ -54,6 +45,16 @@ endif ()
 if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
     find_package(CURL REQUIRED)
     find_package(jansson REQUIRED)
+
+    if (NOT TARGET CURL::libcurl)
+        #Note more recent curl will create CURL::libcurl target
+        message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
+        add_library(CURL::libcurl SHARED IMPORTED)
+        set_target_properties(CURL::libcurl PROPERTIES
+                IMPORTED_LOCATION "${CURL_LIBRARIES}"
+                INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
+                )
+    endif ()
 
     add_library(etcdlib SHARED src/etcd.c)
     target_include_directories(etcdlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>)
