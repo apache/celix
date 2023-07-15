@@ -15,14 +15,20 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(dfi_ei STATIC src/dfi_ei.cc)
+add_library(utils_ei STATIC src/celix_utils_ei.cc)
 
-target_include_directories(dfi_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(dfi_ei PUBLIC Celix::error_injector Celix::dfi)
+target_include_directories(utils_ei PUBLIC include)
+target_link_libraries(utils_ei PUBLIC Celix::error_injector Celix::utils)
 # It plays nicely with address sanitizer this way.
-target_link_options(dfi_ei INTERFACE
-        LINKER:--wrap,dynFunction_createClosure
-        LINKER:--wrap,jsonRpc_prepareInvokeRequest
-        LINKER:--wrap,dynInterface_getVersionString
+target_link_options(utils_ei INTERFACE
+        LINKER:--wrap,celix_utils_strdup
+        LINKER:--wrap,celix_utils_createDirectory
+        LINKER:--wrap,celix_utils_getLastModified
+        LINKER:--wrap,celix_utils_deleteDirectory
+        LINKER:--wrap,celix_utils_writeOrCreateString
+        LINKER:--wrap,celix_utils_extractZipData
+        LINKER:--wrap,celix_utils_extractZipFile
+        LINKER:--wrap,celix_utils_trim
+        LINKER:--wrap,celix_gettime
 )
-add_library(Celix::dfi_ei ALIAS dfi_ei)
+add_library(Celix::utils_ei ALIAS utils_ei)

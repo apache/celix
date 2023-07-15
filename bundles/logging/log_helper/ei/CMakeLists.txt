@@ -15,12 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(version_ei STATIC src/celix_version_ei.cc)
+add_library(log_helper_ei STATIC src/celix_log_helper_ei.cc)
 
-target_include_directories(version_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(version_ei PUBLIC Celix::error_injector Celix::utils)
+target_include_directories(log_helper_ei PUBLIC include)
+target_link_libraries(log_helper_ei PUBLIC Celix::error_injector Celix::log_helper)
 # It plays nicely with address sanitizer this way.
-target_link_options(version_ei INTERFACE
-        LINKER:--wrap,celix_version_createVersionFromString
-)
-add_library(Celix::version_ei ALIAS version_ei)
+target_link_options(log_helper_ei INTERFACE LINKER:--wrap,celix_logHelper_create)
+add_library(Celix::log_helper_ei ALIAS log_helper_ei)

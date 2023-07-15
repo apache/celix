@@ -73,6 +73,9 @@ if (FRAMEWORK)
     #Alias setup to match external usage
     add_library(Celix::framework ALIAS framework)
 
+    if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
+        add_subdirectory(ei)
+    endif ()
     if (ENABLE_TESTING AND CELIX_CXX17) #framework tests are C++17
         add_library(framework_cut STATIC ${FRAMEWORK_SRC})
         target_include_directories(framework_cut PUBLIC

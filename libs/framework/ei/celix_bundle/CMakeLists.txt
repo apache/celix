@@ -15,16 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(libzip REQUIRED)
-add_library(zip_ei STATIC src/zip_ei.cc)
+add_library(bundle_ei STATIC src/celix_bundle_ei.cc)
 
-target_include_directories(zip_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(zip_ei PUBLIC Celix::error_injector libzip::libzip)
-# It plays nicely with address sanitizer this way.
+target_include_directories(bundle_ei PUBLIC include)
+target_link_libraries(bundle_ei PUBLIC Celix::error_injector)
+target_link_libraries(bundle_ei PRIVATE Celix::framework)
 
-target_link_options(zip_ei INTERFACE
-        LINKER:--wrap,zip_stat_index
-        LINKER:--wrap,zip_fopen_index
-        LINKER:--wrap,zip_fread
+target_link_options(bundle_ei INTERFACE
+        LINKER:--wrap,celix_bundle_getSymbolicName
+        LINKER:--wrap,celix_bundle_getManifestValue
         )
-add_library(Celix::zip_ei ALIAS zip_ei)
+add_library(Celix::bundle_ei ALIAS bundle_ei)

@@ -17,7 +17,7 @@
 
 add_library(array_list_ei STATIC src/celix_array_list_ei.cc)
 
-target_include_directories(array_list_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_include_directories(array_list_ei PUBLIC include)
 target_link_libraries(array_list_ei PUBLIC Celix::error_injector Celix::utils)
 target_link_options(array_list_ei INTERFACE
         LINKER:--wrap,celix_arrayList_create
