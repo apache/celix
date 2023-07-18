@@ -47,6 +47,7 @@ set(UTILS_SRC
         src/celix_convert_utils.c
         src/celix_errno.c
         src/celix_err.c
+        src/celix_cleanup.c
         ${MEMSTREAM_SOURCES}
         )
 set(UTILS_PRIVATE_DEPS libzip::libzip)
