@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#include <stdlib.h>
+#include <stdlib.h> // for celix_autofree
 
 /* private */
 #define _CELIX_AUTOPTR_FUNC_NAME(TypeName) celix_autoptr_cleanup_##TypeName
@@ -33,7 +33,7 @@ extern "C" {
     typedef TypeName* _CELIX_AUTOPTR_TYPENAME(TypeName);                                                               \
     static __attribute__((__unused__)) inline void _CELIX_AUTOPTR_CLEAR_FUNC_NAME(TypeName)(TypeName * _ptr) {         \
         if (_ptr)                                                                                                      \
-            (cleanup)(_ptr);                                                                                \
+            (cleanup)(_ptr);                                                                                           \
     }                                                                                                                  \
     static __attribute__((__unused__)) inline void _CELIX_AUTOPTR_FUNC_NAME(TypeName)(TypeName** _ptr) {               \
         _CELIX_AUTOPTR_CLEAR_FUNC_NAME(TypeName)(*_ptr);                                                               \
@@ -41,16 +41,76 @@ extern "C" {
 
 
 /* API */
+/**
+ * @brief Defines the appropriate cleanup function for a pointer type.
+ *
+ * The function will not be called if the variable to be cleaned up contains NULL.
+ * With this definition, it will be possible to use celix_autoptr() with @a TypeName.
+ *
+ * @param TypeName A type name to define a celix_autoptr() cleanup function for.
+ * @param func The cleanup function.
+ */
 #define CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(TypeName, func) _CELIX_DEFINE_AUTOPTR_CLEANUP_FUNCS(TypeName, func)
+
+/**
+ * @brief Defines the appropriate cleanup function for a type.
+ * With this definition, it will be possible to use celix_auto() with @a TypeName.
+ * @param TypeName: A type name to define a celix_auto() cleanup function for.
+ * @param func The clear function.
+ */
 #define CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(TypeName, func)                                                           \
     static __attribute__((__unused__)) inline void _CELIX_AUTO_FUNC_NAME(TypeName)(TypeName* _ptr) { (func)(_ptr); }
+
+/**
+ * @brief Defines the appropriate cleanup function for a type.
+ *
+ * With this definition, it will be possible to use celix_auto() with
+ * @a TypeName.
+ *
+ * This function will be rarely used.  It is used with pointer-based
+ * typedefs and non-pointer types where the value of the variable
+ * represents a resource that must be freed.
+ *
+ * @a none specifies the "none" value for the type in question.  It is
+ * probably something like NULL or `-1`.  If the variable is found to
+ * contain this value then the free function will not be called.
+ *
+ * @param TypeName A type name to define a celix_auto() cleanup function for.
+ * @param func The free function.
+ * @param none The "none" value for the type.
+ */
 #define CELIX_DEFINE_AUTO_CLEANUP_FREE_FUNC(TypeName, func, none)                                                      \
     static __attribute__((__unused__)) inline void _CELIX_AUTO_FUNC_NAME(TypeName)(TypeName* _ptr)  {                  \
         if (*_ptr != none)                                                                                             \
             (func)(*_ptr);                                                                                             \
     }
 
+/**
+ * @brief Helper to declare a pointer variable with automatic cleanup.
+ *
+ * The variable is cleaned up in a way appropriate to its type when the
+ * variable goes out of scope.  The type must support this.
+ * The way to clean up the type must have been defined using the macro
+ * CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC().
+ *
+ * This is meant to be used to declare pointers to types with cleanup
+ * functions.  The type of the variable is a pointer to @a TypeName.  You
+ * must not add your own `*`.
+ */
 #define celix_autoptr(TypeName) _CELIX_CLEANUP(_CELIX_AUTOPTR_FUNC_NAME(TypeName)) _CELIX_AUTOPTR_TYPENAME(TypeName)
+
+/**
+ * @brief Helper to declare a variable with automatic cleanup.
+ *
+ * The variable is cleaned up in a way appropriate to its type when the
+ * variable goes out of scope.  The type must support this.
+ * The way to clean up the type must have been defined using one of the macros
+ * CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC() or CELIX_DEFINE_AUTO_CLEANUP_FREE_FUNC().
+ *
+ * This is meant to be used with stack-allocated structures and
+ * non-pointer types.  For the (more commonly used) pointer version, see
+ * celix_autoptr().
+ */
 #define celix_auto(TypeName) _CELIX_CLEANUP(_CELIX_AUTO_FUNC_NAME(TypeName)) TypeName
 
 static inline void celix_autoptr_cleanup_generic_free(void* p) {
@@ -58,8 +118,22 @@ static inline void celix_autoptr_cleanup_generic_free(void* p) {
     free(*pp);
 }
 
+/**
+ * @brief Macro to add an attribute to pointer variable to ensure automatic
+ * cleanup using free().
+ *
+ * This macro differs from celix_autoptr() in that it is an attribute supplied
+ * before the type name, rather than wrapping the type definition.  Instead
+ * of using a type-specific lookup, this macro always calls free() directly.
+ *
+ * This means it's useful for any type that is returned from malloc().
+ */
 #define celix_autofree _CELIX_CLEANUP(celix_autoptr_cleanup_generic_free)
 
+/**
+ * @brief Transfer the ownership of the pointer from the
+ * referenced variable to the "caller" of the macro.
+ */
 #ifdef __cplusplus
 #define celix_steal_ptr(p) \
     ({ auto __ptr = (p); (p) = NULL; __ptr; })
