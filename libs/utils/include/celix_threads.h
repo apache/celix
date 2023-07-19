@@ -23,6 +23,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 
+#include "celix_cleanup.h"
 #include "celix_errno.h"
 #include "celix_utils_export.h"
 
@@ -43,7 +44,7 @@ typedef pthread_attr_t celix_thread_attr_t;
 
 typedef void *(*celix_thread_start_t)(void *);
 
-static const celix_thread_t celix_thread_default = {0, 0};
+CELIX_UTILS_EXPORT extern const celix_thread_t celix_thread_default;
 
 CELIX_UTILS_EXPORT celix_status_t
 celixThread_create(celix_thread_t *new_thread, const celix_thread_attr_t *attr, celix_thread_start_t func, void *data);
@@ -77,6 +78,8 @@ CELIX_UTILS_EXPORT bool celixThread_initialized(celix_thread_t thread);
 typedef pthread_mutex_t celix_thread_mutex_t;
 typedef pthread_mutexattr_t celix_thread_mutexattr_t;
 
+#define CELIX_THREAD_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
+
 //MUTEX TYPES
 enum {
     CELIX_THREAD_MUTEX_NORMAL,
@@ -92,7 +95,47 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadMutex_destroy(celix_thread_mutex_t 
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadMutex_lock(celix_thread_mutex_t *mutex);
 
+CELIX_UTILS_EXPORT celix_status_t celixThreadMutex_tryLock(celix_thread_mutex_t *mutex);
+
 CELIX_UTILS_EXPORT celix_status_t celixThreadMutex_unlock(celix_thread_mutex_t *mutex);
+
+/**
+ * Opaque type. See celix_mutex_locker_new() for details.
+ */
+typedef void celix_mutex_locker_t;
+
+/**
+ * @brief * Lock @a mutex and return a new celix_mutex_locker_t.
+ *
+ * Unlock with g_mutex_locker_free(). Using celixThreadMutex_lock() on @a mutex
+ * while a celix_mutex_locker_t exists can lead to undefined behaviour.
+ *
+ * No allocation is performed, it is equivalent to a celixThreadMutex_lock() call.
+ * This is intended to be used with celix_autoptr().
+ *
+ * @param mutex A mutex to lock
+ * @return A new locker to be used with celix_autoptr().
+ */
+static inline celix_mutex_locker_t *
+celixThreadMutexLocker_new(celix_thread_mutex_t* mutex)
+{
+    celixThreadMutex_lock(mutex);
+    return (celix_mutex_locker_t*)mutex;
+}
+
+/**
+ * @brief Unlock the mutex of @a locker.
+ * See celixThreadMutexLocker_new() for details.
+ * No memory is freed, it is equivalent to a celixThreadMutex_unlock() call.
+ * @param locker a celix_mutex_locker_t
+ */
+static inline void
+celixThreadMutexLocker_free(celix_mutex_locker_t* locker)
+{
+    celixThreadMutex_unlock((celix_thread_mutex_t*)locker);
+}
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_mutex_locker_t, celixThreadMutexLocker_free)
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadMutexAttr_create(celix_thread_mutexattr_t *attr);
 
@@ -117,7 +160,6 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadRwlockAttr_create(celix_thread_rwlo
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadRwlockAttr_destroy(celix_thread_rwlockattr_t *attr);
 //NOTE: No support yet for setting specific rw lock attributes
-
 
 typedef pthread_cond_t celix_thread_cond_t;
 typedef pthread_condattr_t celix_thread_condattr_t;

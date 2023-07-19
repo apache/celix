@@ -21,8 +21,6 @@
 extern "C" {
 #endif
 
-#include <stdlib.h> // for celix_autofree
-
 /* private */
 #define _CELIX_AUTOPTR_FUNC_NAME(TypeName) celix_autoptr_cleanup_##TypeName
 #define _CELIX_AUTOPTR_CLEAR_FUNC_NAME(TypeName) celix_autoptr_clear_##TypeName
@@ -112,23 +110,6 @@ extern "C" {
  * celix_autoptr().
  */
 #define celix_auto(TypeName) _CELIX_CLEANUP(_CELIX_AUTO_FUNC_NAME(TypeName)) TypeName
-
-static inline void celix_autoptr_cleanup_generic_free(void* p) {
-    void** pp = (void**)p;
-    free(*pp);
-}
-
-/**
- * @brief Macro to add an attribute to pointer variable to ensure automatic
- * cleanup using free().
- *
- * This macro differs from celix_autoptr() in that it is an attribute supplied
- * before the type name, rather than wrapping the type definition.  Instead
- * of using a type-specific lookup, this macro always calls free() directly.
- *
- * This means it's useful for any type that is returned from malloc().
- */
-#define celix_autofree _CELIX_CLEANUP(celix_autoptr_cleanup_generic_free)
 
 /**
  * @brief Transfer the ownership of the pointer from the

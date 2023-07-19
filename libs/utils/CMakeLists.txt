@@ -114,6 +114,7 @@ add_library(Celix::utils ALIAS utils)
 
 if (ENABLE_TESTING)
     add_library(utils_cut STATIC ${UTILS_SRC})
+    target_compile_definitions(utils_cut PRIVATE CELIX_UTILS_STATIC_DEFINE)
     target_include_directories(utils_cut PUBLIC
             ${CMAKE_CURRENT_LIST_DIR}/include
             ${MEMSTREAM_INCLUDE_DIR}

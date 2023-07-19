@@ -25,6 +25,9 @@
 #include "celix_threads.h"
 #include "celix_utils.h"
 
+#ifndef CELIX_UTILS_STATIC_DEFINE
+const celix_thread_t celix_thread_default = {0, 0};
+#endif
 
 celix_status_t celixThread_create(celix_thread_t *new_thread, const celix_thread_attr_t *attr, celix_thread_start_t func, void *data) {
     celix_status_t status = CELIX_SUCCESS;
@@ -103,6 +106,10 @@ celix_status_t celixThreadMutex_destroy(celix_thread_mutex_t *mutex) {
 
 celix_status_t celixThreadMutex_lock(celix_thread_mutex_t *mutex) {
     return pthread_mutex_lock(mutex);
+}
+
+celix_status_t celixThreadMutex_tryLock(celix_thread_mutex_t *mutex) {
+    return pthread_mutex_trylock(mutex);
 }
 
 celix_status_t celixThreadMutex_unlock(celix_thread_mutex_t *mutex) {
