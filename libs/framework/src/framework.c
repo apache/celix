@@ -2652,7 +2652,8 @@ celix_framework_waitForScheduledEvent(celix_framework_t* fw, long scheduledEvent
     }
 
     celixThreadMutex_lock(&fw->dispatcher.mutex);
-    CELIX_SCHEDULED_EVENT_RETAIN_GUARD(event, celix_longHashMap_get(fw->dispatcher.scheduledEvents, scheduledEventId));
+    celix_autoptr(celix_scheduled_event_t) event = celix_scheduledEvent_retain(
+        celix_longHashMap_get(fw->dispatcher.scheduledEvents, scheduledEventId));
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 
     if (event == NULL) {
@@ -2676,7 +2677,8 @@ bool celix_framework_removeScheduledEvent(celix_framework_t* fw,
     }
 
     celixThreadMutex_lock(&fw->dispatcher.mutex);
-    CELIX_SCHEDULED_EVENT_RETAIN_GUARD(event, celix_longHashMap_get(fw->dispatcher.scheduledEvents, scheduledEventId));
+    celix_autoptr(celix_scheduled_event_t) event = celix_scheduledEvent_retain(
+        celix_longHashMap_get(fw->dispatcher.scheduledEvents, scheduledEventId));
     if (event) {
         celix_scheduledEvent_markForRemoval(event);
         celixThreadCondition_broadcast(&fw->dispatcher.cond); //notify dispatcher thread for removed scheduled event
