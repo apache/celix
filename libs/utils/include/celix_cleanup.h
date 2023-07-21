@@ -95,7 +95,7 @@ extern "C" {
  * functions.  The type of the variable is a pointer to @a TypeName.  You
  * must not add your own `*`.
  */
-#define celix_autoptr(TypeName) _CELIX_CLEANUP(_CELIX_AUTOPTR_FUNC_NAME(TypeName)) _CELIX_AUTOPTR_TYPENAME(TypeName)
+#define celix_autoptr(TypeName) __attribute__((__unused__)) _CELIX_CLEANUP(_CELIX_AUTOPTR_FUNC_NAME(TypeName)) _CELIX_AUTOPTR_TYPENAME(TypeName)
 
 /**
  * @brief Helper to declare a variable with automatic cleanup.
@@ -109,7 +109,7 @@ extern "C" {
  * non-pointer types.  For the (more commonly used) pointer version, see
  * celix_autoptr().
  */
-#define celix_auto(TypeName) _CELIX_CLEANUP(_CELIX_AUTO_FUNC_NAME(TypeName)) TypeName
+#define celix_auto(TypeName) __attribute__((__unused__)) _CELIX_CLEANUP(_CELIX_AUTO_FUNC_NAME(TypeName)) TypeName
 
 /**
  * @brief Transfer the ownership of the pointer from the

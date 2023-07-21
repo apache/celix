@@ -25,7 +25,7 @@ extern "C" {
 #include <stdlib.h>
 
 
-static inline void celix_autoptr_cleanup_generic_free(void* p) {
+static __attribute__((__unused__)) inline void celix_autoptr_cleanup_generic_free(void* p) {
     void** pp = (void**)p;
     free(*pp);
 }
@@ -40,7 +40,7 @@ static inline void celix_autoptr_cleanup_generic_free(void* p) {
  *
  * This means it's useful for any type that is returned from malloc().
  */
-#define celix_autofree _CELIX_CLEANUP(celix_autoptr_cleanup_generic_free)
+#define celix_autofree __attribute__((__unused__)) _CELIX_CLEANUP(celix_autoptr_cleanup_generic_free)
 
 #ifdef __cplusplus
 }
