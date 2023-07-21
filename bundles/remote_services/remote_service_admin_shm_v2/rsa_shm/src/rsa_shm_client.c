@@ -22,9 +22,11 @@
 #include "rsa_shm_constants.h"
 #include "celix_log_helper.h"
 #include "shm_pool.h"
-#include "celix_api.h"
 #include "celix_long_hash_map.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_string_hash_map.h"
+#include "celix_threads.h"
+#include "celix_utils.h"
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -104,7 +106,7 @@ celix_status_t rsaShmClientManager_create(celix_bundle_context_t *ctx,
     if (loghelper == NULL || ctx == NULL || clientManagerOut == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    rsa_shm_client_manager_t *clientManager = (rsa_shm_client_manager_t *)malloc(sizeof(*clientManager));
+    celix_autofree rsa_shm_client_manager_t *clientManager = (rsa_shm_client_manager_t *)malloc(sizeof(*clientManager));
     if (clientManager == NULL) {
         return CELIX_ENOMEM;
     }
@@ -118,32 +120,38 @@ celix_status_t rsaShmClientManager_create(celix_bundle_context_t *ctx,
 
     long shmPoolSize = celix_bundleContext_getPropertyAsLong(ctx, RSA_SHM_MEMORY_POOL_SIZE_KEY,
             RSA_SHM_MEMORY_POOL_SIZE_DEFAULT);
-    status = shmPool_create(shmPoolSize, &clientManager->shmPool);
+
+    celix_autoptr(shm_pool_t) shmPool = NULL;
+    status = shmPool_create(shmPoolSize, &shmPool);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_logTssErrors(loghelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_error(loghelper, "RsaShmClient: Error Creating shared memory pool.");
-        goto shm_pool_err;
+        celix_logHelper_error(loghelper, "RsaShmClient: Error Creating shared memory shmPool.");
+        return status;
     }
+    clientManager->shmPool = shmPool;
 
     status = celixThreadMutex_create(&clientManager->clientsMutex, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(loghelper, "RsaShmClient: Error creating clients mutex.");
-        goto client_list_lock_err;
+        return status;
     }
-    clientManager->clients = celix_stringHashMap_create();
+    celix_autoptr(celix_thread_mutex_t) clientsMutex = &clientManager->clientsMutex;
+    celix_autoptr(celix_string_hash_map_t) clients = clientManager->clients = celix_stringHashMap_create();
     assert(clientManager->clients != NULL);
 
     status = celixThreadMutex_create(&clientManager->exceptionMsgListMutex, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(loghelper, "RsaShmClient: Error creating msg list mutex.");
-        goto msg_list_lock_err;
+        return status;
     }
+    celix_autoptr(celix_thread_mutex_t) exceptionMsgListMutex = &clientManager->exceptionMsgListMutex;
     status = celixThreadCondition_init(&clientManager->exceptionMsgListNotEmpty, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(loghelper, "RsaShmClient: Error creating msg list signal.");
-        goto msg_list_cond_err;
+        return status;
     }
-    clientManager->exceptionMsgList = celix_arrayList_create();
+    celix_autoptr(celix_thread_cond_t) exceptionMsgListNotEmpty = &clientManager->exceptionMsgListNotEmpty;
+    celix_autoptr(celix_array_list_t) exceptionMsgList = clientManager->exceptionMsgList = celix_arrayList_create();
     assert(clientManager->exceptionMsgList != NULL);
 
     clientManager->threadActive = true;
@@ -151,26 +159,18 @@ celix_status_t rsaShmClientManager_create(celix_bundle_context_t *ctx,
             rsaShmClientManager_exceptionMsgHandlerThread, clientManager);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(loghelper, "RsaShmClient: Error creating msg list management thread.");
-        goto msg_life_manage_thread_err;
+        return status;
     }
     celixThread_setName(&clientManager->msgExceptionHandlerThread, "rsaShmMsgLifeManager");
 
-    *clientManagerOut = clientManager;
-
+    celix_steal_ptr(exceptionMsgList);
+    celix_steal_ptr(exceptionMsgListNotEmpty);
+    celix_steal_ptr(exceptionMsgListMutex);
+    celix_steal_ptr(clients);
+    celix_steal_ptr(clientsMutex);
+    celix_steal_ptr(shmPool);
+    *clientManagerOut = celix_steal_ptr(clientManager);
     return CELIX_SUCCESS;
-msg_life_manage_thread_err:
-    celix_arrayList_destroy(clientManager->exceptionMsgList);
-    (void)celixThreadCondition_destroy(&clientManager->exceptionMsgListNotEmpty);
-msg_list_cond_err:
-    (void)celixThreadMutex_destroy(&clientManager->exceptionMsgListMutex);
-msg_list_lock_err:
-    celix_stringHashMap_destroy(clientManager->clients);
-    (void)celixThreadMutex_destroy(&clientManager->clientsMutex);
-client_list_lock_err:
-    shmPool_destroy(clientManager->shmPool);
-shm_pool_err:
-    free(clientManager);
-    return status;
 }
 
 void rsaShmClientManager_destroy(rsa_shm_client_manager_t *clientManager) {
@@ -205,27 +205,19 @@ celix_status_t rsaShmClientManager_createOrAttachClient(rsa_shm_client_manager_t
     if (clientManager == NULL || peerServerName == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    celixThreadMutex_lock(&clientManager->clientsMutex);
+    celix_autoptr(celix_mutex_locker_t) locker = celixThreadMutexLocker_new(&clientManager->clientsMutex);
     rsa_shm_client_t *client = (rsa_shm_client_t *)celix_stringHashMap_get(clientManager->clients, peerServerName);
     if (client == NULL) {
         status = rsaShmClientManager_createClient(clientManager, peerServerName, &client);
         if (status != CELIX_SUCCESS) {
             celix_logHelper_error(clientManager->logHelper,"%s create shm client failed", peerServerName);
-            goto shm_client_err;
+            return status;
         }
         celix_stringHashMap_put(clientManager->clients, client->peerServerName, client);
     }
     client->refCnt ++;
-
     rsaShmClient_createOrAttachSvcDiagInfo(client, serviceId);
-
-    celixThreadMutex_unlock(&clientManager->clientsMutex);
-
     return CELIX_SUCCESS;
-
-shm_client_err:
-    celixThreadMutex_unlock(&clientManager->clientsMutex);
-    return status;
 }
 
 void rsaShmClientManager_destroyOrDetachClient(rsa_shm_client_manager_t *clientManager,

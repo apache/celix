@@ -23,7 +23,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <celix_errno.h>
+#include "celix_errno.h"
+#include "celix_cleanup.h"
 #include <stddef.h>
 #include <sys/types.h>
 
@@ -55,6 +56,8 @@ int shmPool_getShmId(shm_pool_t *pool);
  * @param[in] pool The shared memory pool instance
  */
 void shmPool_destroy(shm_pool_t *pool);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(shm_pool_t, shmPool_destroy)
 
 /**
  * @brief Allocate memory from shared memory pool

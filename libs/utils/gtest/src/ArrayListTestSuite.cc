@@ -257,3 +257,8 @@ TEST_F(ArrayListTestSuite, TestReturnStatusAddFunctions) {
 
     celix_arrayList_destroy(list);
 }
+
+TEST_F(ArrayListTestSuite, AutoCleanupTest) {
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    EXPECT_NE(nullptr, list);
+}

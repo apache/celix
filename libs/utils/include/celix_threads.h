@@ -95,6 +95,8 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadMutex_create(celix_thread_mutex_t *
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadMutex_destroy(celix_thread_mutex_t *mutex);
 
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_thread_mutex_t, celixThreadMutex_destroy)
+
 CELIX_UTILS_EXPORT celix_status_t celixThreadMutex_lock(celix_thread_mutex_t *mutex);
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadMutex_tryLock(celix_thread_mutex_t *mutex);
@@ -256,6 +258,8 @@ typedef pthread_condattr_t celix_thread_condattr_t;
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_thread_condattr_t *attr);
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_destroy(celix_thread_cond_t *condition);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_thread_cond_t, celixThreadCondition_destroy)
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex);
 

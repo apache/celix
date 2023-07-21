@@ -47,9 +47,21 @@ TEST_F(CelixUtilsCleanupTestSuite, AutoFreeTest) {
     ASSERT_EQ(nullptr, alwaysNull);
 }
 
+TEST_F(CelixUtilsCleanupTestSuite, StealPtrTest) {
+    celix_autofree char* p = NULL;
+    p = (char*)malloc(10);
+    free(celix_steal_ptr(p));
+}
+
 TEST_F(CelixUtilsCleanupTestSuite, ThradAttrTest) {
     celix_auto(celix_thread_attr_t) attr;
     EXPECT_EQ(0, pthread_attr_init(&attr));
+}
+
+TEST_F(CelixUtilsCleanupTestSuite, MutexTest) {
+    celix_thread_mutex_t mutex;
+    EXPECT_EQ(0, celixThreadMutex_create(&mutex, nullptr));
+    celix_autoptr(celix_thread_mutex_t) mutex2 = &mutex;
 }
 
 static void* mutexLockedThread(void* data) {
@@ -146,6 +158,12 @@ TEST_F(CelixUtilsCleanupTestSuite, RwLockLockerTest) {
 TEST_F(CelixUtilsCleanupTestSuite, RwLockAttrTest) {
     celix_auto(celix_thread_rwlockattr_t) attr;
     EXPECT_EQ(0, celixThreadRwlockAttr_create(&attr));
+}
+
+TEST_F(CelixUtilsCleanupTestSuite, CondTest) {
+    celix_thread_cond_t cond;
+    EXPECT_EQ(0, celixThreadCondition_init(&cond, nullptr));
+    celix_autoptr(celix_thread_cond_t) cond2 = &cond;
 }
 
 TEST_F(CelixUtilsCleanupTestSuite, CondAttrTest) {

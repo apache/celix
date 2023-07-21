@@ -58,9 +58,9 @@ add_library(utils SHARED ${UTILS_SRC} src/celix_log_level.c)
 target_link_libraries(utils PRIVATE libzip::libzip)
 set_target_properties(utils
         PROPERTIES
-        C_VISIBILITY_PRESET hidden
         SOVERSION ${CELIX_MAJOR}
         OUTPUT_NAME "celix_utils")
+celix_target_hide_symbols(utils)
 
 if (NOT OPEN_MEMSTREAM_EXISTS)
     target_compile_definitions(utils PUBLIC -DCELIX_UTILS_NO_MEMSTREAM_AVAILABLE)
