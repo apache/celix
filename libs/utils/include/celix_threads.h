@@ -46,6 +46,8 @@ typedef void *(*celix_thread_start_t)(void *);
 
 CELIX_UTILS_EXPORT extern const celix_thread_t celix_thread_default;
 
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_thread_attr_t, pthread_attr_destroy)
+
 CELIX_UTILS_EXPORT celix_status_t
 celixThread_create(celix_thread_t *new_thread, const celix_thread_attr_t *attr, celix_thread_start_t func, void *data);
 
@@ -105,9 +107,9 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadMutex_unlock(celix_thread_mutex_t *
 typedef void celix_mutex_locker_t;
 
 /**
- * @brief * Lock @a mutex and return a new celix_mutex_locker_t.
+ * @brief Lock @a mutex and return a new celix_mutex_locker_t.
  *
- * Unlock with g_mutex_locker_free(). Using celixThreadMutex_lock() on @a mutex
+ * Unlock with celixThreadMutexLocker_free(). Using celixThreadMutex_lock() on @a mutex
  * while a celix_mutex_locker_t exists can lead to undefined behaviour.
  *
  * No allocation is performed, it is equivalent to a celixThreadMutex_lock() call.
@@ -116,22 +118,20 @@ typedef void celix_mutex_locker_t;
  * @param mutex A mutex to lock
  * @return A new locker to be used with celix_autoptr().
  */
-static inline celix_mutex_locker_t *
-celixThreadMutexLocker_new(celix_thread_mutex_t* mutex)
-{
+static inline celix_mutex_locker_t* celixThreadMutexLocker_new(celix_thread_mutex_t* mutex) {
     celixThreadMutex_lock(mutex);
     return (celix_mutex_locker_t*)mutex;
 }
 
 /**
  * @brief Unlock the mutex of @a locker.
+ *
  * See celixThreadMutexLocker_new() for details.
  * No memory is freed, it is equivalent to a celixThreadMutex_unlock() call.
- * @param locker a celix_mutex_locker_t
+ *
+ * @param locker A celix_mutex_locker_t
  */
-static inline void
-celixThreadMutexLocker_free(celix_mutex_locker_t* locker)
-{
+static inline void celixThreadMutexLocker_free(celix_mutex_locker_t* locker) {
     celixThreadMutex_unlock((celix_thread_mutex_t*)locker);
 }
 
@@ -143,6 +143,8 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadMutexAttr_destroy(celix_thread_mute
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadMutexAttr_settype(celix_thread_mutexattr_t *attr, int type);
 
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_thread_mutexattr_t, celixThreadMutexAttr_destroy)
+
 typedef pthread_rwlock_t celix_thread_rwlock_t;
 typedef pthread_rwlockattr_t celix_thread_rwlockattr_t;
 
@@ -152,14 +154,92 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadRwlock_destroy(celix_thread_rwlock_
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadRwlock_readLock(celix_thread_rwlock_t *lock);
 
+CELIX_UTILS_EXPORT celix_status_t celixThreadRwlock_tryReadLock(celix_thread_rwlock_t *lock);
+
 CELIX_UTILS_EXPORT celix_status_t celixThreadRwlock_writeLock(celix_thread_rwlock_t *lock);
 
+CELIX_UTILS_EXPORT celix_status_t celixThreadRwlock_tryWriteLock(celix_thread_rwlock_t *lock);
+
 CELIX_UTILS_EXPORT celix_status_t celixThreadRwlock_unlock(celix_thread_rwlock_t *lock);
+
+/**
+ * Opaque type. See celixThreadRwlockWriterLocker_new() for details.
+ */
+typedef void celix_rwlock_writer_locker_t;
+
+/**
+ * @brief Obtain a write lock on @a rwLock and return a new celix_rwlock_writer_locker_t.
+ *
+ * Unlock with celixThreadRwlockWriterLocker_free(). Using celixThreadRwlock_unlock()
+ * on @a rwLock while a celix_rwlock_writer_locker_t exists can lead to undefined behaviour.
+ *
+ * No allocation is performed, it is equivalent to a celixThreadRwlock_writeLock() call.
+ * This is intended to be used with celix_autoptr().
+ *
+ * @param rwLock A read-write lock to lock.
+ * @return A new locker to be used with celix_autoptr().
+ */
+static inline celix_rwlock_writer_locker_t* celixThreadRwlockWriterLocker_new(celix_thread_rwlock_t* rwLock) {
+    celixThreadRwlock_writeLock(rwLock);
+    return (celix_rwlock_writer_locker_t*)rwLock;
+}
+
+/**
+ * @brief  Release a write lock on the read-write lock of @a locker.
+ *
+ * See celixThreadRwlockWriterLocker_new() for details.
+ * No memory is freed, it is equivalent to a celixThreadRwlock_unlock() call.
+ *
+ * @param locker A celix_rwlock_writer_locker_t.
+ */
+static inline void celixThreadRwlockWriterLocker_free(celix_rwlock_writer_locker_t* locker) {
+    celixThreadRwlock_unlock((celix_thread_rwlock_t*)locker);
+}
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_rwlock_writer_locker_t, celixThreadRwlockWriterLocker_free)
+
+/**
+ * Opaque type. See celixThreadRwlockReaderLocker_new() for details.
+ */
+typedef void celix_rwlock_reader_locker_t;
+
+/**
+ * @brief Obtain a read lock on @a rwLock and return a new celix_rwlock_reader_locker_t.
+ *
+ * Unlock with celixThreadRwlockReaderLocker_free(). Using celixThreadRwlock_unlock()
+ * on @rwLock while a celix_rwlock_reader_locker_t exists can lead to undefined behaviour.
+ *
+ * No allocation is performed, it is equivalent to a celixThreadRwlock_readLock() call.
+ * This is intended to be used with celix_autoptr().
+ *
+ * @param rwLock A read-write lock to lock.
+ * @return A new locker to be used with celix_autoptr().
+ */
+static inline celix_rwlock_reader_locker_t* celixThreadRwlockReaderLocker_new(celix_thread_rwlock_t* rwLock) {
+    celixThreadRwlock_readLock(rwLock);
+    return (celix_rwlock_reader_locker_t*)rwLock;
+}
+
+/**
+ * @brief Release a read lock on the read-write lock of @a locker.
+ *
+ * See celixThreadRwlockReaderLocker_new() for details.
+ * No memory is freed, it is equivalent to a celixThreadRwlock_unlock() call.
+ *
+ * @param locker A celix_rwlock_reader_locker_t.
+ */
+static inline void celixThreadRwlockReaderLocker_free(celix_rwlock_reader_locker_t* locker) {
+    celixThreadRwlock_unlock((celix_thread_rwlock_t*)locker);
+}
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_rwlock_reader_locker_t, celixThreadRwlockReaderLocker_free)
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadRwlockAttr_create(celix_thread_rwlockattr_t *attr);
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadRwlockAttr_destroy(celix_thread_rwlockattr_t *attr);
 //NOTE: No support yet for setting specific rw lock attributes
+
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_thread_rwlockattr_t, celixThreadRwlockAttr_destroy)
 
 typedef pthread_cond_t celix_thread_cond_t;
 typedef pthread_condattr_t celix_thread_condattr_t;
@@ -180,6 +260,8 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_destroy(celix_thread_cond
 CELIX_UTILS_EXPORT celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex);
 
 CELIX_UTILS_DEPRECATED_EXPORT celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds);
+
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_thread_condattr_t, pthread_condattr_destroy)
 
 /**
  * @brief Get the current time suitable for Celix thread conditions.

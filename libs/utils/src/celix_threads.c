@@ -239,8 +239,16 @@ celix_status_t celixThreadRwlock_readLock(celix_thread_rwlock_t *lock) {
     return pthread_rwlock_rdlock(lock);
 }
 
+celix_status_t celixThreadRwlock_tryReadLock(celix_thread_rwlock_t *lock) {
+    return pthread_rwlock_tryrdlock(lock);
+}
+
 celix_status_t celixThreadRwlock_writeLock(celix_thread_rwlock_t *lock) {
     return pthread_rwlock_wrlock(lock);
+}
+
+celix_status_t celixThreadRwlock_tryWriteLock(celix_thread_rwlock_t *lock) {
+    return pthread_rwlock_trywrlock(lock);
 }
 
 celix_status_t celixThreadRwlock_unlock(celix_thread_rwlock_t *lock) {

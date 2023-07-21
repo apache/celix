@@ -47,33 +47,108 @@ TEST_F(CelixUtilsCleanupTestSuite, AutoFreeTest) {
     ASSERT_EQ(nullptr, alwaysNull);
 }
 
-static void* mutexLockedThread(void* data)
-{
+TEST_F(CelixUtilsCleanupTestSuite, ThradAttrTest) {
+    celix_auto(celix_thread_attr_t) attr;
+    EXPECT_EQ(0, pthread_attr_init(&attr));
+}
+
+static void* mutexLockedThread(void* data) {
     celix_thread_mutex_t* mutex = (celix_thread_mutex_t*) data;
-    EXPECT_EQ(EBUSY, celixThreadMutex_tryLock(mutex));
+    EXPECT_NE(0, celixThreadMutex_tryLock(mutex));
     return NULL;
 }
 
-static void* mutexUnlockedThread(void* data)
-{
+static void* mutexUnlockedThread(void* data) {
     celix_thread_mutex_t* mutex = (celix_thread_mutex_t*) data;
     EXPECT_EQ(0, celixThreadMutex_tryLock(mutex));
     return NULL;
 }
 
 TEST_F(CelixUtilsCleanupTestSuite, MutexLockerTest) {
-    celix_thread_mutex_t mutex = CELIX_THREAD_MUTEX_INITIALIZER;
+    celix_thread_mutex_t mutex;
     celix_thread_t thread = celix_thread_default;
+    EXPECT_EQ(0, celixThreadMutex_create(&mutex, nullptr));
     if (true) {
         celix_autoptr(celix_mutex_locker_t) val = celixThreadMutexLocker_new(&mutex);
         ASSERT_NE(nullptr, val);
 
         // Verify that the mutex is actually locked
-        celixThread_create(&thread, NULL, mutexLockedThread, &mutex);
+        celixThread_create(&thread, nullptr, mutexLockedThread, &mutex);
         celixThread_join(thread, nullptr);
     }
 
     // Verify that the mutex is unlocked again
-    celixThread_create(&thread, NULL, mutexUnlockedThread, &mutex);
+    celixThread_create(&thread, nullptr, mutexUnlockedThread, &mutex);
     celixThread_join(thread, nullptr);
+    celixThreadMutex_destroy(&mutex);
+}
+
+TEST_F(CelixUtilsCleanupTestSuite, MutexAttrTest) {
+    celix_auto(celix_thread_mutexattr_t) attr;
+    EXPECT_EQ(0, celixThreadMutexAttr_create(&attr));
+}
+
+/* Thread function to check that an rw lock given in @data cannot be writer locked */
+static void* rwlockCannotTakeWriterLockThread(void* data) {
+    celix_thread_rwlock_t* lock = (celix_thread_rwlock_t*)data;
+    EXPECT_NE(0, celixThreadRwlock_tryWriteLock(lock));
+    return NULL;
+}
+
+/* Thread function to check that an rw lock given in @data can be reader locked */
+static void* rwlockCanTakeReaderLockThread(void* data) {
+    celix_thread_rwlock_t* lock = (celix_thread_rwlock_t*)data;
+    EXPECT_EQ(0, celixThreadRwlock_tryReadLock(lock));
+    celixThreadRwlock_unlock(lock);
+    return NULL;
+}
+
+TEST_F(CelixUtilsCleanupTestSuite, RwLockLockerTest) {
+    celix_thread_rwlock_t lock;
+    celix_thread_t thread = celix_thread_default;
+
+    ASSERT_EQ(0, celixThreadRwlock_create(&lock, nullptr));
+    if (true) {
+        celix_autoptr(celix_rwlock_writer_locker_t) val = celixThreadRwlockWriterLocker_new(&lock);
+        ASSERT_NE(nullptr, val);
+
+        /* Verify that we cannot take another writer lock as a writer lock is currently held */
+        celixThread_create(&thread, nullptr, rwlockCannotTakeWriterLockThread, &lock);
+        celixThread_join(thread, nullptr);
+
+        /* Verify that we cannot take a reader lock as a writer lock is currently held */
+        EXPECT_NE(0, celixThreadRwlock_tryReadLock(&lock));
+    }
+    if (true) {
+        celix_autoptr(celix_rwlock_reader_locker_t) val = celixThreadRwlockReaderLocker_new(&lock);
+        ASSERT_NE(nullptr, val);
+
+        /* Verify that we can take another reader lock from another thread */
+        celixThread_create(&thread, nullptr, rwlockCanTakeReaderLockThread, &lock);
+        celixThread_join(thread, nullptr);
+
+        /* ... and also that recursive reader locking from the same thread works */
+        EXPECT_EQ(0, celixThreadRwlock_tryReadLock(&lock));
+        celixThreadRwlock_unlock(&lock);
+
+        /* Verify that we cannot take a writer lock as a reader lock is currently held */
+        celixThread_create(&thread, nullptr, rwlockCannotTakeWriterLockThread, &lock);
+        celixThread_join(thread, nullptr);
+    }
+
+    /* Verify that we can take a writer lock again: this can only work if all of
+     * the locks taken above have been correctly released. */
+    EXPECT_EQ(0, celixThreadRwlock_tryWriteLock(&lock));
+    celixThreadRwlock_unlock(&lock);
+    celixThreadRwlock_destroy(&lock);
+}
+
+TEST_F(CelixUtilsCleanupTestSuite, RwLockAttrTest) {
+    celix_auto(celix_thread_rwlockattr_t) attr;
+    EXPECT_EQ(0, celixThreadRwlockAttr_create(&attr));
+}
+
+TEST_F(CelixUtilsCleanupTestSuite, CondAttrTest) {
+    celix_auto(celix_thread_condattr_t) attr;
+    EXPECT_EQ(0, pthread_condattr_init(&attr));
 }
