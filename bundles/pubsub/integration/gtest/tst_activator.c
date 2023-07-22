@@ -55,7 +55,7 @@ celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
         celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, "ping");
         act->subSvc1.handle = act;
         act->subSvc1.receive = tst_receive;
-        act->subSvcId1 = celix_bundleContext_registerServiceAsync(ctx, &act->subSvc1, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
+        act->subSvcId1 = celix_bundleContext_registerService(ctx, &act->subSvc1, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
     }
 
     {
@@ -63,13 +63,13 @@ celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
         celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, "ping");
         act->subSvc2.handle = act;
         act->subSvc2.receive = tst_receive2;
-        act->subSvcId2 = celix_bundleContext_registerServiceAsync(ctx, &act->subSvc2, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
+        act->subSvcId2 = celix_bundleContext_registerService(ctx, &act->subSvc2, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
     }
 
     {
         act->countSvc.handle = act;
         act->countSvc.receiveCount = tst_count;
-        act->countSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->countSvc, CELIX_RECEIVE_COUNT_SERVICE_NAME, NULL);
+        act->countSvcId = celix_bundleContext_registerService(ctx, &act->countSvc, CELIX_RECEIVE_COUNT_SERVICE_NAME, NULL);
     }
 
     return CELIX_SUCCESS;
