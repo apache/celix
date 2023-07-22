@@ -48,6 +48,7 @@ if (LINKER_WRAP_SUPPORTED)
             src/RsaShmClientServerUnitTestSuite.cc
             src/RsaShmActivatorUnitTestSuite.cc
             src/thpool_ei.cc
+            src/shm_pool_ei.cc
             )
 
     target_link_libraries(unit_test_rsa_shm PRIVATE
@@ -66,6 +67,7 @@ if (LINKER_WRAP_SUPPORTED)
             Celix::pthread_ei
             Celix::log_helper_ei
             Celix::properties_ei
+            Celix::long_hash_map_ei
             GTest::gtest
             GTest::gtest_main
             )
@@ -73,6 +75,7 @@ if (LINKER_WRAP_SUPPORTED)
     target_link_options(unit_test_rsa_shm PRIVATE
             LINKER:--wrap,thpool_init
             LINKER:--wrap,thpool_add_work
+            LINKER:--wrap,shmPool_malloc
             )
 
     target_compile_definitions(unit_test_rsa_shm PRIVATE -DRESOURCES_DIR="${CMAKE_CURRENT_LIST_DIR}/resources")

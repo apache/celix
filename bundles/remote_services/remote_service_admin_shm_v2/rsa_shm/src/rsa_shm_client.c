@@ -320,10 +320,13 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
             .metadataSize = metadataSize,
             .requestSize = request->iov_len,
     };
+    //LCOV_EXCL_START
     if (msgInfo.shmId < 0 || msgInfo.ctrlDataOffset < 0 || msgInfo.msgBodyOffset < 0) {
         celix_logHelper_error(clientManager->logHelper, "RsaShmClient: Illegal message info.");
+        // assert(0);
         return CELIX_ILLEGAL_ARGUMENT;
     }
+    //LCOV_EXCL_STOP
     while(1) {
         if (sendto(client->cfd, &msgInfo, sizeof(msgInfo), 0, (struct sockaddr *) &client->serverAddr,
                    sizeof(struct sockaddr_un)) == sizeof(msgInfo)) {
@@ -560,8 +563,10 @@ static bool rsaShmClientManager_handleMsgState(rsa_shm_client_manager_t *clientM
             removed = true;
             rsaShmClientManager_markSvcCallFinished(clientManager, msgEntry->peerServerName, msgEntry->serviceId);
             break;
+        //LCOV_EXCL_START
         default:
             break;
+        //LCOV_EXCL_STOP
     }
     if (signal) {
         pthread_cond_signal(&ctrl->signal);

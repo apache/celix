@@ -28,8 +28,10 @@
 #include "celix_properties.h"
 #include "celix_constants.h"
 #include "malloc_ei.h"
+#include "celix_long_hash_map_ei.h"
 #include "celix_threads_ei.h"
 #include "celix_utils_ei.h"
+#include "shm_pool_ei.h"
 #include "socket_ei.h"
 #include "stdio_ei.h"
 #include "pthread_ei.h"
@@ -57,6 +59,8 @@ public:
     ~RsaShmClientServerUnitTestSuite() override {
 
         //reset error injection
+        celix_ei_expect_celix_longHashMap_create(nullptr, 0, nullptr);
+        celix_ei_expect_shmPool_malloc(nullptr, 0, nullptr);
         celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_celixThreadMutex_create(nullptr, 0, 0);
         celix_ei_expect_celixThread_create(nullptr, 0, 0);
@@ -309,6 +313,21 @@ TEST_F(RsaShmClientServerUnitTestSuite, FailedToCreateDiagInfoMutex) {
     rsaShmClientManager_destroy(clientManager);
 }
 
+TEST_F(RsaShmClientServerUnitTestSuite, FailedToCreateHashMap) {
+    rsa_shm_client_manager_t *clientManager = nullptr;
+    auto status = rsaShmClientManager_create(ctx.get(), logHelper.get(), &clientManager);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_NE(nullptr, clientManager);
+
+    long serverId = 100;//dummy id
+    celix_ei_expect_celix_longHashMap_create((void*)&rsaShmClientManager_createOrAttachClient, 1, nullptr);
+    status = rsaShmClientManager_createOrAttachClient(clientManager, "shm_test_server", serverId);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    rsaShmClientManager_destroy(clientManager);
+
+}
+
 TEST_F(RsaShmClientServerUnitTestSuite, ShmClientFailedToDupPeerServerName) {
     rsa_shm_client_manager_t *clientManager = nullptr;
     auto status = rsaShmClientManager_create(ctx.get(), logHelper.get(), &clientManager);
@@ -505,6 +524,11 @@ TEST_F(RsaShmClientServerUnitTestSuite, FailedToCreateMsgControl) {
 
     struct iovec request = {.iov_base = (void*)"request", .iov_len = strlen("request")};
     struct iovec response = {.iov_base = nullptr, .iov_len = 0};
+
+    celix_ei_expect_shmPool_malloc((void*)&rsaShmClientManager_sendMsgTo, 2, nullptr);
+    status = rsaShmClientManager_sendMsgTo(clientManager, "shm_test_server", serverId, nullptr, &request, &response);
+    EXPECT_EQ(CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, ENOMEM), status);
+
     celix_ei_expect_pthread_mutexattr_init((void*)&rsaShmClientManager_sendMsgTo, 1, ENOMEM);
     status = rsaShmClientManager_sendMsgTo(clientManager, "shm_test_server", serverId, nullptr, &request, &response);
     EXPECT_EQ(CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, ENOMEM), status);
@@ -530,6 +554,33 @@ TEST_F(RsaShmClientServerUnitTestSuite, FailedToCreateMsgControl) {
     EXPECT_EQ(CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, ENOTSUP), status);
 
     celix_ei_expect_pthread_cond_init((void*)&rsaShmClientManager_sendMsgTo, 1, ENOMEM);
+    status = rsaShmClientManager_sendMsgTo(clientManager, "shm_test_server", serverId, nullptr, &request, &response);
+    EXPECT_EQ(CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, ENOMEM), status);
+
+    rsaShmClientManager_destroyOrDetachClient(clientManager, "shm_test_server", serverId);
+    rsaShmClientManager_destroy(clientManager);
+    rsaShmServer_destroy(server);
+}
+
+TEST_F(RsaShmClientServerUnitTestSuite, FailedToCreateMsgBody) {
+    rsa_shm_server_t *server = nullptr;
+    auto status = rsaShmServer_create(ctx.get(), "shm_test_server", logHelper.get(), ReceiveMsgCallback, nullptr, &server);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_NE(nullptr, server);
+
+    rsa_shm_client_manager_t *clientManager = nullptr;
+    status = rsaShmClientManager_create(ctx.get(), logHelper.get(), &clientManager);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_NE(nullptr, clientManager);
+
+    long serverId = 100;//dummy id
+    status = rsaShmClientManager_createOrAttachClient(clientManager, "shm_test_server", serverId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    struct iovec request = {.iov_base = (void*)"request", .iov_len = strlen("request")};
+    struct iovec response = {.iov_base = nullptr, .iov_len = 0};
+
+    celix_ei_expect_shmPool_malloc((void*)&rsaShmClientManager_sendMsgTo, 1, nullptr);
     status = rsaShmClientManager_sendMsgTo(clientManager, "shm_test_server", serverId, nullptr, &request, &response);
     EXPECT_EQ(CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, ENOMEM), status);
 
