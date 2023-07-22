@@ -551,3 +551,8 @@ TEST_F(HashMapTestSuite, StringHashMapCleanup) {
     celix_autoptr(celix_string_hash_map_t) map = celix_stringHashMap_create();
     EXPECT_NE(nullptr, map);
 }
+
+TEST_F(HashMapTestSuite, LongHashMapCleanup) {
+    celix_autoptr(celix_long_hash_map_t) map = celix_longHashMap_create();
+    EXPECT_NE(nullptr, map);
+}

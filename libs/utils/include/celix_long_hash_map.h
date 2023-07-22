@@ -20,6 +20,7 @@
 #ifndef CELIX_LONG_HASH_MAP_H_
 #define CELIX_LONG_HASH_MAP_H_
 
+#include "celix_cleanup.h"
 #include "celix_hash_map_value.h"
 #include "celix_utils_export.h"
 
@@ -153,6 +154,8 @@ CELIX_UTILS_EXPORT celix_long_hash_map_t* celix_longHashMap_createWithOptions(co
  * @param map The hashmap
  */
 CELIX_UTILS_EXPORT void celix_longHashMap_destroy(celix_long_hash_map_t* map);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_long_hash_map_t, celix_longHashMap_destroy)
 
 /**
  * @brief Returns the size of the hashmap

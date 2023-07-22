@@ -85,6 +85,23 @@ void shmPool_free(shm_pool_t *pool, void *ptr);
  */
 ssize_t shmPool_getMemoryOffset(shm_pool_t *pool, void *ptr);
 
+typedef struct celix_shm_pool_alloc {
+    void* ptr;
+    shm_pool_t* pool;
+} celix_shm_pool_alloc_t;
+
+static __attribute__((__unused__)) inline celix_shm_pool_alloc_t celix_shmPool_malloc(shm_pool_t *pool, size_t size) {
+    return (celix_shm_pool_alloc_t) {
+        .ptr = shmPool_malloc(pool, size),
+        .pool = pool
+    };
+}
+
+static __attribute__((__unused__)) inline void celix_shmPool_free(celix_shm_pool_alloc_t* alloc) {
+    shmPool_free(alloc->pool, alloc->ptr);
+}
+
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_shm_pool_alloc_t, celix_shmPool_free)
 
 #ifdef __cplusplus
 }

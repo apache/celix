@@ -17,8 +17,12 @@
 
 #include "celix_stdlib_cleanup.h"
 #include "celix_threads.h"
+#include "celix_unistd_cleanup.h"
+#include <fcntl.h>
 #include <gtest/gtest.h>
 #include <stdint.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 class CelixUtilsCleanupTestSuite : public ::testing::Test {
 };
@@ -169,4 +173,18 @@ TEST_F(CelixUtilsCleanupTestSuite, CondTest) {
 TEST_F(CelixUtilsCleanupTestSuite, CondAttrTest) {
     celix_auto(celix_thread_condattr_t) attr;
     EXPECT_EQ(0, pthread_condattr_init(&attr));
+}
+
+TEST_F(CelixUtilsCleanupTestSuite, FileDescriptorTest) {
+    celix_auto(celix_fd_t) fd = open("/dev/null", O_RDONLY);
+    EXPECT_NE(-1, fd);
+}
+
+TEST_F(CelixUtilsCleanupTestSuite, StealFdTest) {
+    celix_auto(celix_fd_t) fd = open("/dev/null", O_RDONLY);
+    EXPECT_NE(-1, fd);
+    celix_fd_t fd2 = celix_steal_fd(&fd);
+    EXPECT_EQ(-1, fd);
+    EXPECT_NE(-1, fd2);
+    close(fd2);
 }
