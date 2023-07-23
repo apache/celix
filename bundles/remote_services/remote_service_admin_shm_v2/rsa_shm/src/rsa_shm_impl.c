@@ -29,6 +29,7 @@
 #include "celix_api.h"
 #include "celix_long_hash_map.h"
 #include "celix_array_list.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,92 +67,82 @@ celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    *admin = calloc(1, sizeof(**admin));
-    if (*admin == NULL) {
+    celix_autofree rsa_shm_t* ad = calloc(1, sizeof(*ad));
+    if (ad == NULL) {
         return CELIX_ENOMEM;
     }
 
-    (*admin)->context = context;
-    (*admin)->logHelper = logHelper;
-    (*admin)->reqSenderSvcId = -1;
-    status = celixThreadMutex_create(&(*admin)->exportedServicesLock, NULL);
+    ad->context = context;
+    ad->logHelper = logHelper;
+    ad->reqSenderSvcId = -1;
+    status = celixThreadMutex_create(&ad->exportedServicesLock, NULL);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error((*admin)->logHelper, "Error creating mutex for exported service. %d", status);
-        goto exported_svc_lock_err;
+        celix_logHelper_error(logHelper, "Error creating mutex for exported service. %d", status);
+        return status;
     }
-    (*admin)->exportedServices = celix_longHashMap_create();
-    assert((*admin)->exportedServices);
+    celix_autoptr(celix_thread_mutex_t) exportedServicesLock = &ad->exportedServicesLock;
+    celix_autoptr(celix_long_hash_map_t) exportedServices = ad->exportedServices = celix_longHashMap_create();
+    assert(ad->exportedServices);
 
-    status = celixThreadMutex_create(&(*admin)->importedServicesLock, NULL);
+    status = celixThreadMutex_create(&ad->importedServicesLock, NULL);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error((*admin)->logHelper, "Error creating mutex for imported service. %d", status);
-        goto imported_svc_lock_err;
+        celix_logHelper_error(logHelper, "Error creating mutex for imported service. %d", status);
+        return status;
     }
-    (*admin)->importedServices = celix_arrayList_create();
-    assert((*admin)->importedServices != NULL);
+    celix_autoptr(celix_thread_mutex_t) importedServicesLock = &ad->importedServicesLock;
+    celix_autoptr(celix_array_list_t) importedServices = ad->importedServices = celix_arrayList_create();
+    assert(ad->importedServices != NULL);
 
-    status = rsaShmClientManager_create(context, (*admin)->logHelper, &(*admin)->shmClientManager);
+    status = rsaShmClientManager_create(context, logHelper, &ad->shmClientManager);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error((*admin)->logHelper,"Error creating shm client manager. %d", status);
-        goto shm_client_manager_err;
+        celix_logHelper_error(logHelper,"Error creating shm client manager. %d", status);
+        return status;
     }
+    celix_autoptr(rsa_shm_client_manager_t) shmClientManager = ad->shmClientManager;
 
-    (*admin)->reqSenderService.handle = *admin;
-    (*admin)->reqSenderService.sendRequest = (void*)rsaShm_send;
+    ad->reqSenderService.handle = ad;
+    ad->reqSenderService.sendRequest = (void*)rsaShm_send;
     celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
     opts.serviceName = RSA_REQUEST_SENDER_SERVICE_NAME;
     opts.serviceVersion = RSA_REQUEST_SENDER_SERVICE_VERSION;
-    opts.svc = &(*admin)->reqSenderService;
-    (*admin)->reqSenderSvcId = celix_bundleContext_registerServiceWithOptionsAsync(context, &opts);
-    if ((*admin)->reqSenderSvcId < 0) {
-        celix_logHelper_error((*admin)->logHelper,"Error registering request sender service.");
-        status = CELIX_BUNDLE_EXCEPTION;
-        goto err_registering_req_sender_svc;
+    opts.svc = &ad->reqSenderService;
+    ad->reqSenderSvcId = celix_bundleContext_registerServiceWithOptionsAsync(context, &opts);
+    if (ad->reqSenderSvcId < 0) {
+        celix_logHelper_error(logHelper,"Error registering request sender service.");
+        return CELIX_BUNDLE_EXCEPTION;
     }
+    celix_auto(celix_service_reg_t) reg = { .ctx = context, .svcId = ad->reqSenderSvcId };
 
     const char *fwUuid = celix_bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
     if (fwUuid == NULL) {
-        status = CELIX_BUNDLE_EXCEPTION;
-        celix_logHelper_error((*admin)->logHelper,"Error Getting cfw uuid for shm rsa admin.");
-        goto fw_uuid_err;
+        celix_logHelper_error(logHelper,"Error Getting cfw uuid for shm rsa admin.");
+        return CELIX_BUNDLE_EXCEPTION;
     }
     long bundleId = celix_bundleContext_getBundleId(context);
     if (bundleId < 0) {
-        status = CELIX_BUNDLE_EXCEPTION;
-        celix_logHelper_error((*admin)->logHelper,"Bundle id is invalid.");
-        goto bundle_id_err;
+        celix_logHelper_error(logHelper,"Bundle id is invalid.");
+        return CELIX_BUNDLE_EXCEPTION;
     }
-    int bytes = asprintf(&(*admin)->shmServerName, "ShmServ_%s_%ld", fwUuid, bundleId);
+    int bytes = asprintf(&ad->shmServerName, "ShmServ_%s_%ld", fwUuid, bundleId);
     if (bytes < 0) {
-        status = CELIX_ENOMEM;
-        celix_logHelper_error((*admin)->logHelper,"Failed to alloc memory for shm server name.");
-        goto shm_server_name_err;
+        celix_logHelper_error(logHelper,"Failed to alloc memory for shm server name.");
+        return CELIX_ENOMEM;
     }
-    status = rsaShmServer_create(context, (*admin)->shmServerName,(*admin)->logHelper,
-            rsaShm_receiveMsgCB, *admin, &(*admin)->shmServer);
+    celix_autofree char* shmServerName = ad->shmServerName;
+    status = rsaShmServer_create(context, ad->shmServerName,logHelper,
+            rsaShm_receiveMsgCB, ad, &ad->shmServer);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error((*admin)->logHelper,"Error creating shm server. %d", status);
-        goto shm_server_err;
+        celix_logHelper_error(logHelper,"Error creating shm server. %d", status);
+    } else {
+        celix_steal_ptr(shmServerName);
+        reg.svcId = -1;
+        celix_steal_ptr(shmClientManager);
+        celix_steal_ptr(importedServices);
+        celix_steal_ptr(importedServicesLock);
+        celix_steal_ptr(exportedServices);
+        celix_steal_ptr(exportedServicesLock);
+        *admin = celix_steal_ptr(ad);
     }
-
-    return CELIX_SUCCESS;
-shm_server_err:
-    free((*admin)->shmServerName);
-shm_server_name_err:
-bundle_id_err:
-fw_uuid_err:
-    celix_bundleContext_unregisterServiceAsync(context, (*admin)->reqSenderSvcId, NULL, NULL);
-    celix_bundleContext_waitForAsyncUnregistration(context, (*admin)->reqSenderSvcId);
-err_registering_req_sender_svc:
-    rsaShmClientManager_destroy((*admin)->shmClientManager);
-shm_client_manager_err:
-    celix_arrayList_destroy((*admin)->importedServices);
-    celixThreadMutex_destroy(&(*admin)->importedServicesLock);
-imported_svc_lock_err:
-    celix_longHashMap_destroy((*admin)->exportedServices);
-    celixThreadMutex_destroy(&(*admin)->exportedServicesLock);
-exported_svc_lock_err:
-    free(*admin);
     return status;
 }
 
@@ -159,8 +150,7 @@ void rsaShm_destroy(rsa_shm_t *admin) {
     rsaShmServer_destroy(admin->shmServer);
     free(admin->shmServerName);
 
-    celix_bundleContext_unregisterServiceAsync(admin->context, admin->reqSenderSvcId, NULL, NULL);
-    celix_bundleContext_waitForAsyncUnregistration(admin->context, admin->reqSenderSvcId);
+    celix_bundleContext_unregisterService(admin->context, admin->reqSenderSvcId);
 
     rsaShmClientManager_destroy(admin->shmClientManager);
 
@@ -176,6 +166,19 @@ void rsaShm_destroy(rsa_shm_t *admin) {
     return;
 }
 
+static export_registration_t* rsaShm_getExportService(rsa_shm_t *admin, long serviceId) {
+    celix_autoptr(celix_mutex_locker_t) lock = celixThreadMutexLocker_new(&admin->exportedServicesLock);
+    export_registration_t *export = NULL;
+    celix_array_list_t *exports = celix_longHashMap_get(admin->exportedServices, serviceId);
+    if (exports != NULL && celix_arrayList_size(exports) > 0) {
+        export = celix_arrayList_get(exports, 0);
+        if (export) {
+            exportRegistration_addRef(export);
+        }
+    }
+    return export;
+}
+
 static celix_status_t rsaShm_receiveMsgCB(void *handle, rsa_shm_server_t *shmServer,
         celix_properties_t *metadata, const struct iovec *request, struct iovec *response) {
     celix_status_t status = CELIX_SUCCESS;
@@ -187,43 +190,19 @@ static celix_status_t rsaShm_receiveMsgCB(void *handle, rsa_shm_server_t *shmSer
     long serviceId = celix_properties_getAsLong(metadata, OSGI_RSA_ENDPOINT_SERVICE_ID, -1);
     if (serviceId < 0) {
         celix_logHelper_error(admin->logHelper, "Service id is invalid.");
-        status = CELIX_ILLEGAL_ARGUMENT;
-        goto err_getting_service_id;
+        return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    celixThreadMutex_lock(&admin->exportedServicesLock);
-
-    //find exported registration
-    celix_array_list_t *exports = celix_longHashMap_get(admin->exportedServices, serviceId);
-    if (exports == NULL || celix_arrayList_size(exports) <= 0) {
-        status = CELIX_ILLEGAL_STATE;
-        celix_logHelper_error(admin->logHelper, "No export registration found for service id %ld", serviceId);
-        goto err_getting_exports;
-    }
-    export_registration_t *export = celix_arrayList_get(exports, 0);
+    celix_autoptr(export_registration_t) export = rsaShm_getExportService(admin, serviceId);
     if (export == NULL) {
-        celix_logHelper_error(admin->logHelper, "Error getting registration for service id %ld", serviceId);
-        status = CELIX_ILLEGAL_STATE;
-        goto not_found_export;
+        celix_logHelper_error(admin->logHelper, "No export registration found for service id %ld", serviceId);
+        return CELIX_ILLEGAL_STATE;
     }
-    // Add a reference to exported registration, avoid it is released by rsaShm_removeExportedService
-    exportRegistration_addRef(export);
-
-    celixThreadMutex_unlock(&admin->exportedServicesLock);
 
     status = exportRegistration_call(export, metadata, request, response);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(admin->logHelper,"Export registration call service failed, error code is %d", status);
     }
-
-    exportRegistration_release(export);
-
-    return status;
-
-not_found_export:
-err_getting_exports:
-    celixThreadMutex_unlock(&admin->exportedServicesLock);
-err_getting_service_id:
     return status;
 }
 

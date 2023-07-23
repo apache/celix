@@ -28,6 +28,7 @@
 
 #include "celix_types.h"
 
+#include "celix_cleanup.h"
 #include "service_factory.h"
 #include "celix_service_factory.h"
 #include "celix_service_listener.h"
@@ -118,6 +119,20 @@ bundleContext_retainServiceReference(celix_bundle_context_t *context, service_re
  */
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_ungetServiceReference(celix_bundle_context_t *context, service_reference_pt reference);
+
+typedef struct celix_service_ref {
+    service_reference_pt reference;
+    celix_bundle_context_t* context;
+} celix_service_ref_t;
+
+
+static __attribute__((__unused__)) inline void celix_ServiceRef_put(celix_service_ref_t* ref) {
+    if (ref->reference != NULL) {
+        bundleContext_ungetServiceReference(ref->context, ref->reference);
+    }
+}
+
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_service_ref_t, celix_ServiceRef_put);
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_getService(celix_bundle_context_t *context, service_reference_pt reference, void **service_instance);

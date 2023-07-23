@@ -22,6 +22,7 @@
 
 #include <stdarg.h>
 
+#include "celix_cleanup.h"
 #include "celix_types.h"
 #include "celix_service_factory.h"
 #include "celix_properties.h"
@@ -273,6 +274,18 @@ CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_isServiceRegistered(celix_bundle
  */
 CELIX_FRAMEWORK_EXPORT void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long serviceId);
 
+typedef struct celix_service_reg {
+    celix_bundle_context_t* ctx;
+    long svcId;
+} celix_service_reg_t;
+
+static __attribute__((__unused__)) inline void celix_service_unregister(celix_service_reg_t* reg) {
+    if (reg->svcId >= 0) {
+        celix_bundleContext_unregisterService(reg->ctx, reg->svcId);
+    }
+}
+
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_service_reg_t, celix_service_unregister)
 
 /**
  * @brief Unregister the service or service factory with service id.
