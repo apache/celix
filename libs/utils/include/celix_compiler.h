@@ -36,6 +36,12 @@ extern "C" {
  */
 #define CELIX_UNUSED __attribute__((unused))
 
+/* Indirect macros required for expanded argument pasting, eg. __LINE__. */
+#define _CELIX_PASTE(a, b) a##b
+#define CELIX_PASTE(a, b) _CELIX_PASTE(a, b)
+
+#define CELIX_UNIQUE_ID(prefix) CELIX_PASTE(CELIX_PASTE(__UNIQUE_ID_, prefix), __COUNTER__)
+
 #ifdef __cplusplus
 }
 #endif
