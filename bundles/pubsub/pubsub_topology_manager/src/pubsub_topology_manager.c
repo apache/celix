@@ -29,6 +29,7 @@
 #include "hash_map.h"
 #include "celix_array_list.h"
 #include "celix_bundle_context.h"
+#include "celix_compiler.h"
 #include "celix_constants.h"
 #include "utils.h"
 #include "celix_log_helper.h"
@@ -175,7 +176,7 @@ celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager
     return status;
 }
 
-void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_properties_t *props __attribute__((unused))) {
+void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_properties_t *props CELIX_UNUSED) {
     pubsub_topology_manager_t *manager = handle;
     pubsub_admin_service_t *psa = (pubsub_admin_service_t *) svc;
 
@@ -225,7 +226,7 @@ void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_proper
 
 }
 
-void pubsub_topologyManager_psaRemoved(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
+void pubsub_topologyManager_psaRemoved(void *handle, void *svc CELIX_UNUSED, const celix_properties_t *props) {
     pubsub_topology_manager_t *manager = handle;
     //pubsub_admin_service_t *psa = (pubsub_admin_service_t*) svc;
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
@@ -308,7 +309,7 @@ void pubsub_topologyManager_psaRemoved(void *handle, void *svc __attribute__((un
     celixThreadMutex_unlock(&manager->psaHandling.mutex);
 }
 
-void pubsub_topologyManager_subscriberAdded(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props, const celix_bundle_t *bnd) {
+void pubsub_topologyManager_subscriberAdded(void *handle, void *svc CELIX_UNUSED, const celix_properties_t *props, const celix_bundle_t *bnd) {
     pubsub_topology_manager_t *manager = handle;
 
     //NOTE new local subscriber service register
@@ -360,7 +361,7 @@ void pubsub_topologyManager_subscriberAdded(void *handle, void *svc __attribute_
     }
 }
 
-void pubsub_topologyManager_subscriberRemoved(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props, const celix_bundle_t *bnd) {
+void pubsub_topologyManager_subscriberRemoved(void *handle, void *svc CELIX_UNUSED, const celix_properties_t *props, const celix_bundle_t *bnd) {
     pubsub_topology_manager_t *manager = handle;
 
     //NOTE local subscriber service unregister
@@ -386,7 +387,7 @@ void pubsub_topologyManager_subscriberRemoved(void *handle, void *svc __attribut
     //NOTE not waking up psaHandling thread, topic receiver does not need to be removed immediately.
 }
 
-void pubsub_topologyManager_pubsubAnnounceEndpointListenerAdded(void *handle, void *svc, const celix_properties_t *props __attribute__((unused))) {
+void pubsub_topologyManager_pubsubAnnounceEndpointListenerAdded(void *handle, void *svc, const celix_properties_t *props CELIX_UNUSED) {
     pubsub_topology_manager_t *manager = (pubsub_topology_manager_t *) handle;
     pubsub_announce_endpoint_listener_t *listener = svc;
 
@@ -432,7 +433,7 @@ void pubsub_topologyManager_pubsubAnnounceEndpointListenerAdded(void *handle, vo
 }
 
 
-void pubsub_topologyManager_pubsubAnnounceEndpointListenerRemoved(void *handle, void *svc, const celix_properties_t *props __attribute__((unused))) {
+void pubsub_topologyManager_pubsubAnnounceEndpointListenerRemoved(void *handle, void *svc, const celix_properties_t *props CELIX_UNUSED) {
     pubsub_topology_manager_t *manager = (pubsub_topology_manager_t *) handle;
     pubsub_announce_endpoint_listener_t *listener = svc;
 
@@ -1169,7 +1170,7 @@ void pubsub_topologyManager_removeMetricsService(void * handle, void *svc, const
     celixThreadMutex_unlock(&manager->psaMetrics.mutex);
 }
 
-static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t *manager, const char *commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
+static celix_status_t pubsub_topologyManager_topology(pubsub_topology_manager_t *manager, const char *commandLine CELIX_UNUSED, FILE *os, FILE *errorStream CELIX_UNUSED) {
     fprintf(os, "\n");
 
     fprintf(os, "Discovered Endpoints: \n");
@@ -1322,7 +1323,7 @@ static void fetchBundleName(void *handle, const bundle_t *bundle) {
     *out = celix_bundle_getSymbolicName(bundle);
 }
 
-static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *manager, const char *commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
+static celix_status_t pubsub_topologyManager_metrics(pubsub_topology_manager_t *manager, const char *commandLine CELIX_UNUSED, FILE *os, FILE *errorStream CELIX_UNUSED) {
     celix_array_list_t *psaMetrics = celix_arrayList_create();
     celixThreadMutex_lock(&manager->psaMetrics.mutex);
     hash_map_iterator_t iter = hashMapIterator_construct(manager->psaMetrics.map);

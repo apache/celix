@@ -20,6 +20,7 @@
 #include <syslog.h>
 
 #include "celix_bundle_activator.h"
+#include "celix_compiler.h"
 #include "celix_log_sink.h"
 
 typedef struct celix_syslog_writer_activator {
@@ -27,7 +28,7 @@ typedef struct celix_syslog_writer_activator {
     long logSinkSvcId;
 } celix_syslog_writer_activator_t;
 
-static void celix_syslogWriter_sinkLog(void *handle __attribute__((unused)), celix_log_level_e level, long logServiceId  __attribute__((unused)), const char* logServiceName, const char* file, const char* function, int line, const char *format, va_list formatArgs) {
+static void celix_syslogWriter_sinkLog(void *handle CELIX_UNUSED, celix_log_level_e level, long logServiceId  CELIX_UNUSED, const char* logServiceName, const char* file, const char* function, int line, const char *format, va_list formatArgs) {
 
     //note details are note used
     (void)file;

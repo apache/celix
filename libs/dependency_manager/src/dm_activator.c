@@ -18,6 +18,7 @@
  */
 
 #include "dm_activator.h"
+#include "celix_compiler.h"
 
 #include <stdlib.h>
 
@@ -36,6 +37,6 @@ celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *ctx
     return dm_destroy(userData, ctx, mng);
 }
 
-celix_status_t bundleActivator_destroy(void * userData  __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
+celix_status_t bundleActivator_destroy(void * userData  CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
     return CELIX_SUCCESS; //nothing to do
 }

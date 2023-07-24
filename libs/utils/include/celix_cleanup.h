@@ -21,19 +21,20 @@
 extern "C" {
 #endif
 
+#include "celix_compiler.h"
+
 /* private */
 #define _CELIX_AUTOPTR_FUNC_NAME(TypeName) celix_autoptr_cleanup_##TypeName
 #define _CELIX_AUTOPTR_CLEAR_FUNC_NAME(TypeName) celix_autoptr_clear_##TypeName
 #define _CELIX_AUTOPTR_TYPENAME(TypeName) TypeName##_autoptr
 #define _CELIX_AUTO_FUNC_NAME(TypeName) celix_auto_cleanup_##TypeName
-#define _CELIX_CLEANUP(func) __attribute__((cleanup(func)))
 #define _CELIX_DEFINE_AUTOPTR_CLEANUP_FUNCS(TypeName, cleanup)                                                         \
     typedef TypeName* _CELIX_AUTOPTR_TYPENAME(TypeName);                                                               \
-    static __attribute__((__unused__)) inline void _CELIX_AUTOPTR_CLEAR_FUNC_NAME(TypeName)(TypeName * _ptr) {         \
+    static CELIX_UNUSED inline void _CELIX_AUTOPTR_CLEAR_FUNC_NAME(TypeName)(TypeName * _ptr) {         \
         if (_ptr)                                                                                                      \
             (cleanup)(_ptr);                                                                                           \
     }                                                                                                                  \
-    static __attribute__((__unused__)) inline void _CELIX_AUTOPTR_FUNC_NAME(TypeName)(TypeName** _ptr) {               \
+    static CELIX_UNUSED inline void _CELIX_AUTOPTR_FUNC_NAME(TypeName)(TypeName** _ptr) {               \
         _CELIX_AUTOPTR_CLEAR_FUNC_NAME(TypeName)(*_ptr);                                                               \
     }
 
@@ -57,7 +58,7 @@ extern "C" {
  * @param func The clear function.
  */
 #define CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(TypeName, func)                                                           \
-    static __attribute__((__unused__)) inline void _CELIX_AUTO_FUNC_NAME(TypeName)(TypeName* _ptr) { (func)(_ptr); }
+    static CELIX_UNUSED inline void _CELIX_AUTO_FUNC_NAME(TypeName)(TypeName* _ptr) { (func)(_ptr); }
 
 /**
  * @brief Defines the appropriate cleanup function for a type.
@@ -78,7 +79,7 @@ extern "C" {
  * @param none The "none" value for the type.
  */
 #define CELIX_DEFINE_AUTO_CLEANUP_FREE_FUNC(TypeName, func, none)                                                      \
-    static __attribute__((__unused__)) inline void _CELIX_AUTO_FUNC_NAME(TypeName)(TypeName* _ptr)  {                  \
+    static CELIX_UNUSED inline void _CELIX_AUTO_FUNC_NAME(TypeName)(TypeName* _ptr)  {                  \
         if (*_ptr != none)                                                                                             \
             (func)(*_ptr);                                                                                             \
     }
@@ -95,7 +96,7 @@ extern "C" {
  * functions.  The type of the variable is a pointer to @a TypeName.  You
  * must not add your own `*`.
  */
-#define celix_autoptr(TypeName) __attribute__((__unused__)) _CELIX_CLEANUP(_CELIX_AUTOPTR_FUNC_NAME(TypeName)) _CELIX_AUTOPTR_TYPENAME(TypeName)
+#define celix_autoptr(TypeName) CELIX_UNUSED CELIX_CLEANUP(_CELIX_AUTOPTR_FUNC_NAME(TypeName)) _CELIX_AUTOPTR_TYPENAME(TypeName)
 
 /**
  * @brief Helper to declare a variable with automatic cleanup.
@@ -109,7 +110,7 @@ extern "C" {
  * non-pointer types.  For the (more commonly used) pointer version, see
  * celix_autoptr().
  */
-#define celix_auto(TypeName) __attribute__((__unused__)) _CELIX_CLEANUP(_CELIX_AUTO_FUNC_NAME(TypeName)) TypeName
+#define celix_auto(TypeName) CELIX_UNUSED CELIX_CLEANUP(_CELIX_AUTO_FUNC_NAME(TypeName)) TypeName
 
 /**
  * @brief Transfer the ownership of the pointer from the

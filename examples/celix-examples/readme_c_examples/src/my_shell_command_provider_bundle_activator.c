@@ -18,6 +18,7 @@
  */
 
 #include <celix_bundle_activator.h>
+#include <celix_compiler.h>
 #include <celix_shell_command.h>
 
 typedef struct my_shell_command_provider_activator_data {
@@ -26,7 +27,7 @@ typedef struct my_shell_command_provider_activator_data {
     long shellCmdSvcId;
 } my_shell_command_provider_activator_data_t;
 
-static bool my_shell_command_executeCommand(void *handle, const char *commandLine, FILE *outStream, FILE *errorStream __attribute__((unused))) {
+static bool my_shell_command_executeCommand(void *handle, const char *commandLine, FILE *outStream, FILE *errorStream CELIX_UNUSED) {
     my_shell_command_provider_activator_data_t* data = handle;
     celix_bundle_t* bnd = celix_bundleContext_getBundle(data->ctx);
     fprintf(outStream, "Hello from bundle %s with command line '%s'\n", celix_bundle_getName(bnd), commandLine);

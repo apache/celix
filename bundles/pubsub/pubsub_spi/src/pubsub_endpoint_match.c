@@ -29,6 +29,7 @@
 #include "pubsub_admin.h"
 
 #include "pubsub_utils.h"
+#include "celix_compiler.h"
 #include "celix_constants.h"
 
 static double getPSAScore(const char *requested_admin, const char *request_qos, const char *adminType, double sampleScore, double controlScore, double defaultScore) {
@@ -88,7 +89,7 @@ struct psa_protocol_selection_data {
     long matchingSvcId;
 };
 
-void psa_protocol_selection_callback(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
+void psa_protocol_selection_callback(void *handle, void *svc CELIX_UNUSED, const celix_properties_t *props) {
     struct psa_protocol_selection_data *data = handle;
     const char *serType = celix_properties_get(props, PUBSUB_PROTOCOL_TYPE_KEY, NULL);
     if (serType == NULL) {

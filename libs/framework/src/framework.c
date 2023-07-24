@@ -28,6 +28,7 @@
 
 #include "celix_build_assert.h"
 #include "celix_bundle_context.h"
+#include "celix_compiler.h"
 #include "celix_constants.h"
 #include "celix_convert_utils.h"
 #include "celix_dependency_manager.h"
@@ -845,7 +846,7 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, celix_servi
     celix_serviceRegistry_addServiceListener(framework->registry, bundle, sfilter, listener);
 }
 
-void fw_removeServiceListener(framework_pt framework, bundle_pt bundle __attribute__((unused)), celix_service_listener_t *listener) {
+void fw_removeServiceListener(framework_pt framework, bundle_pt bundle CELIX_UNUSED, celix_service_listener_t *listener) {
     celix_serviceRegistry_removeServiceListener(framework->registry, listener);
 }
 

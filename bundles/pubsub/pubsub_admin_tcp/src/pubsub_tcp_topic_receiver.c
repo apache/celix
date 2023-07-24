@@ -35,6 +35,7 @@
 #include <pubsub_utils.h>
 #include "pubsub_interceptors_handler.h"
 #include <celix_api.h>
+#include "celix_compiler.h"
 #include "celix_string_hash_map.h"
 #include "celix_long_hash_map.h"
 
@@ -435,7 +436,7 @@ static void pubsub_tcpTopicReceiver_addSubscriber(void *handle, void *svc, const
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
+static void pubsub_tcpTopicReceiver_removeSubscriber(void *handle, void *svc CELIX_UNUSED, const celix_properties_t *props) {
     pubsub_tcp_topic_receiver_t *receiver = handle;
 
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);

@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "celix_compiler.h"
 #include "celix_properties.h"
 
 #include "pubsub_wire_v2_protocol_impl.h"
@@ -192,7 +193,7 @@ celix_status_t pubsubProtocol_wire_v2_decodeFooter(void* handle, void *data, siz
     return status;
 }
 
-celix_status_t pubsubProtocol_wire_v2_encodePayload(void* handle __attribute__((unused)), pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
+celix_status_t pubsubProtocol_wire_v2_encodePayload(void* handle CELIX_UNUSED, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
     return pubsubProtocol_encodePayload(message, outBuffer, outLength);
 }
 
@@ -200,10 +201,10 @@ celix_status_t pubsubProtocol_wire_v2_encodeMetadata(void *handle, pubsub_protoc
     return pubsubProtocol_encodeMetadata(message, (char**)bufferInOut, bufferLengthInOut, bufferContentLengthOut);
 }
 
-celix_status_t pubsubProtocol_wire_v2_decodePayload(void* handle __attribute__((unused)), void *data, size_t length, pubsub_protocol_message_t *message) {
+celix_status_t pubsubProtocol_wire_v2_decodePayload(void* handle CELIX_UNUSED, void *data, size_t length, pubsub_protocol_message_t *message) {
     return pubsubProtocol_decodePayload(data, length, message);
 }
 
-celix_status_t pubsubProtocol_wire_v2_decodeMetadata(void* handle __attribute__((unused)), void *data, size_t length, pubsub_protocol_message_t *message) {
+celix_status_t pubsubProtocol_wire_v2_decodeMetadata(void* handle CELIX_UNUSED, void *data, size_t length, pubsub_protocol_message_t *message) {
     return pubsubProtocol_decodeMetadata(data, length, message);
 }

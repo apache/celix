@@ -22,7 +22,8 @@
 #include <unistd.h>
 
 #include <celix_bundle_activator.h>
-#include "celix_log_helper.h"
+#include <celix_compiler.h>
+#include <celix_log_helper.h>
 
 typedef struct user_data {
     pthread_t logger_thread;
@@ -41,7 +42,7 @@ celix_status_t activator_start(user_data_t *data, celix_bundle_context_t *ctx) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t activator_stop(user_data_t *data, celix_bundle_context_t *ctx __attribute__((unused))) {
+celix_status_t activator_stop(user_data_t *data, celix_bundle_context_t *ctx CELIX_UNUSED) {
     pthread_mutex_lock(&data->lock);
     data->running = false;
     pthread_mutex_unlock(&data->lock);

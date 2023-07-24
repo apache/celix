@@ -27,6 +27,7 @@
 #include "utils.h"
 #include "hash_map.h"
 
+#include "celix_compiler.h"
 #include "celix_log_helper.h"
 #include "bundle_context.h"
 #include "json_serializer.h"
@@ -134,7 +135,7 @@ celix_status_t pubsubSerializer_createSerializerMap(void *handle, const celix_bu
     return CELIX_SUCCESS;
 }
 
-celix_status_t pubsubSerializer_destroySerializerMap(void* handle __attribute__((unused)), hash_map_pt serializerMap) {
+celix_status_t pubsubSerializer_destroySerializerMap(void* handle CELIX_UNUSED, hash_map_pt serializerMap) {
     celix_status_t status = CELIX_SUCCESS;
     //pubsub_json_serializer_t *serializer = handle;
     if (serializerMap == NULL) {
@@ -183,7 +184,7 @@ celix_status_t pubsubMsgSerializer_serialize(void *handle, const void* msg, stru
     return status;
 }
 
-celix_status_t pubsubMsgSerializer_deserialize(void* handle, const struct iovec* input, size_t inputIovLen __attribute__((unused)), void **out) {
+celix_status_t pubsubMsgSerializer_deserialize(void* handle, const struct iovec* input, size_t inputIovLen CELIX_UNUSED, void **out) {
     celix_status_t status = CELIX_SUCCESS;
     if (input == NULL) return CELIX_BUNDLE_EXCEPTION;
     pubsub_json_msg_serializer_impl_t *impl = handle;

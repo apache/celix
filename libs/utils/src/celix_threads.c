@@ -22,6 +22,7 @@
 #include <time.h>
 #include <signal.h>
 
+#include "celix_compiler.h"
 #include "celix_threads.h"
 #include "celix_utils.h"
 
@@ -47,7 +48,7 @@ void celixThread_setName(celix_thread_t *thread, const char *threadName) {
     pthread_setname_np(thread->thread, threadName);
 }
 #else
-void celixThread_setName(celix_thread_t *thread __attribute__((unused)), const char *threadName  __attribute__((unused))) {
+void celixThread_setName(celix_thread_t *thread CELIX_UNUSED, const char *threadName  CELIX_UNUSED) {
     //nop
 }
 #endif

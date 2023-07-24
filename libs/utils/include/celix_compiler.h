@@ -15,34 +15,28 @@
 //  specific language governing permissions and limitations
 //  under the License.
 
-#ifndef CELIX_CELIX_STDLIB_CLEANUP_H
-#define CELIX_CELIX_STDLIB_CLEANUP_H
+#ifndef CELIX_CELIX_COMPILER_H
+#define CELIX_CELIX_COMPILER_H
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "celix_cleanup.h"
-#include <stdlib.h>
-
-
-static CELIX_UNUSED inline void celix_autoptr_cleanup_generic_free(void* p) {
-    void** pp = (void**)p;
-    free(*pp);
-}
+/**
+ *   gcc: https://gcc.gnu.org/onlinedocs/gcc/Common-Variable-Attributes.html#index-cleanup-variable-attribute
+ * clang: https://clang.llvm.org/docs/AttributeReference.html#cleanup
+ */
+#define CELIX_CLEANUP(func) __attribute__((cleanup(func)))
 
 /**
- * @brief Macro to add an attribute to pointer variable to ensure automatic
- * cleanup using free().
- *
- * This macro differs from celix_autoptr() in that it is an attribute supplied
- * before the type name, rather than wrapping the type definition.  Instead
- * of using a type-specific lookup, this macro always calls free() directly.
- *
- * This means it's useful for any type that is returned from malloc().
+ *   gcc: https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html#index-unused-function-attribute
+ *   gcc: https://gcc.gnu.org/onlinedocs/gcc/Common-Type-Attributes.html#index-unused-type-attribute
+ *   gcc: https://gcc.gnu.org/onlinedocs/gcc/Common-Variable-Attributes.html#index-unused-variable-attribute
+ *   gcc: https://gcc.gnu.org/onlinedocs/gcc/Label-Attributes.html#index-unused-label-attribute
+ * clang: https://clang.llvm.org/docs/AttributeReference.html#maybe-unused-unused
  */
-#define celix_autofree CELIX_UNUSED CELIX_CLEANUP(celix_autoptr_cleanup_generic_free)
+#define CELIX_UNUSED __attribute__((unused))
 
 #ifdef __cplusplus
 }
 #endif
-#endif // CELIX_CELIX_STDLIB_CLEANUP_H
+#endif // CELIX_CELIX_COMPILER_H

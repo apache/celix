@@ -28,7 +28,7 @@ typedef int celix_fd_t;
 
 CELIX_DEFINE_AUTO_CLEANUP_FREE_FUNC(celix_fd_t, close, -1)
 
-static __attribute__((__unused__)) inline celix_fd_t celix_steal_fd(celix_fd_t* fd_ptr) {
+static CELIX_UNUSED inline celix_fd_t celix_steal_fd(celix_fd_t* fd_ptr) {
     celix_fd_t fd = *fd_ptr;
     *fd_ptr = -1;
     return fd;

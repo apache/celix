@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <ffi.h>
+#include "celix_compiler.h"
 #include "dyn_type_common.h"
 
 static int OK = 0;
@@ -374,7 +375,7 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 				    char ***out = (char ***) args[i];
                     char **ptrToString = NULL;
                     status = jsonSerializer_deserializeJson(subType, result, (void**)&ptrToString);
-                    char *s __attribute__((unused)) = *ptrToString; //note for debug
+                    char *s CELIX_UNUSED = *ptrToString; //note for debug
                     free(ptrToString);
                     **out = (void*)s;
                 } else {

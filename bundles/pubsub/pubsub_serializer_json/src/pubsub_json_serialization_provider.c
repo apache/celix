@@ -25,6 +25,7 @@
 
 #include "json_serializer.h"
 #include "dyn_message.h"
+#include "celix_compiler.h"
 #include "celix_log_helper.h"
 #include "pubsub_message_serialization_service.h"
 
@@ -81,7 +82,7 @@ static void pubsub_jsonSerializationProvider_freeSerializeMsg(pubsub_serializati
     }
 }
 
-static celix_status_t pubsub_jsonSerializationProvider_deserialize(pubsub_serialization_entry_t* entry, const struct iovec* input, size_t inputIovLen __attribute__((unused)), void **out) {
+static celix_status_t pubsub_jsonSerializationProvider_deserialize(pubsub_serialization_entry_t* entry, const struct iovec* input, size_t inputIovLen CELIX_UNUSED, void **out) {
     celix_status_t status = CELIX_SUCCESS;
     if (input == NULL) return CELIX_BUNDLE_EXCEPTION;
     void *msg = NULL;

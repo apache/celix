@@ -28,6 +28,7 @@
 #include <unistd.h>
 
 #include "celix_constants.h"
+#include "celix_compiler.h"
 #include "celix_file_utils.h"
 #include "celix_framework_utils_private.h"
 #include "celix_utils_api.h"
@@ -377,28 +378,28 @@ celix_status_t bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundl
 }
 
 //LCOV_EXCL_START
-celix_status_t bundleArchive_getRevision(bundle_archive_pt archive, long revNr __attribute__((unused)), bundle_revision_pt *revision) {
+celix_status_t bundleArchive_getRevision(bundle_archive_pt archive, long revNr CELIX_UNUSED, bundle_revision_pt *revision) {
     return bundleArchive_getCurrentRevision(archive, revision);
 }
 
-celix_status_t bundleArchive_getPersistentState(bundle_archive_pt archive __attribute__((unused)), bundle_state_e *state) {
+celix_status_t bundleArchive_getPersistentState(bundle_archive_pt archive CELIX_UNUSED, bundle_state_e *state) {
     fw_log(archive->fw->logger, CELIX_LOG_LEVEL_DEBUG, "Bundle archive persistent state no longer supported");
     *state = CELIX_BUNDLE_STATE_UNKNOWN;
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleArchive_setPersistentState(bundle_archive_pt archive __attribute__((unused)), bundle_state_e state  __attribute__((unused))) {
+celix_status_t bundleArchive_setPersistentState(bundle_archive_pt archive CELIX_UNUSED, bundle_state_e state  CELIX_UNUSED) {
     fw_log(archive->fw->logger, CELIX_LOG_LEVEL_DEBUG, "Bundle archive persistent state no longer supported");
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleArchive_getRefreshCount(bundle_archive_pt archive __attribute__((unused)), long *refreshCount) {
+celix_status_t bundleArchive_getRefreshCount(bundle_archive_pt archive CELIX_UNUSED, long *refreshCount) {
     fw_log(archive->fw->logger, CELIX_LOG_LEVEL_DEBUG, "Bundle archive refresh count is no longer supported");
     *refreshCount = 0;
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleArchive_setRefreshCount(bundle_archive_pt archive __attribute__((unused))) {
+celix_status_t bundleArchive_setRefreshCount(bundle_archive_pt archive CELIX_UNUSED) {
     fw_log(archive->fw->logger, CELIX_LOG_LEVEL_DEBUG, "Bundle archive refresh count is no longer supported");
     return CELIX_SUCCESS;
 }
@@ -422,7 +423,7 @@ celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, st
 }
 
 //LCOV_EXCL_START
-celix_status_t bundleArchive_setLastModified(bundle_archive_pt archive __attribute__((unused)), time_t lastModifiedTime  __attribute__((unused))) {
+celix_status_t bundleArchive_setLastModified(bundle_archive_pt archive CELIX_UNUSED, time_t lastModifiedTime  CELIX_UNUSED) {
     celix_status_t status = CELIX_SUCCESS;
     char manifestPathBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
     char* manifestPath = celix_utils_writeOrCreateString(manifestPathBuffer, sizeof(manifestPathBuffer), "%s/%s", archive->resourceCacheRoot, CELIX_BUNDLE_MANIFEST_REL_PATH);
@@ -431,7 +432,7 @@ celix_status_t bundleArchive_setLastModified(bundle_archive_pt archive __attribu
     return status;
 }
 
-celix_status_t bundleArchive_revise(bundle_archive_pt archive, const char * location __attribute__((unused)), const char *updatedBundleUrl) {
+celix_status_t bundleArchive_revise(bundle_archive_pt archive, const char * location CELIX_UNUSED, const char *updatedBundleUrl) {
     fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Revise not supported.");
     return CELIX_BUNDLE_EXCEPTION;
 }

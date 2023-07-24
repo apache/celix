@@ -17,6 +17,7 @@
  *under the License.
  */
 
+#include "celix_compiler.h"
 #include "celix_log_utils.h"
 
 #include <stdbool.h>
@@ -55,7 +56,7 @@ static inline void celix_logUtils_inlinePrintBacktrace(FILE *stream) {
     fflush(stream);
 }
 #else /* __UCLIBC__ */
-static inline void celix_logUtils_inlinePrintBacktrace(FILE *stream __attribute__((unused))) {
+static inline void celix_logUtils_inlinePrintBacktrace(FILE *stream CELIX_UNUSED) {
     //nop
 }
 #endif /* __UCLIBC__ */

@@ -25,6 +25,7 @@
 #include <czmq.h>
 #include <uuid/uuid.h>
 
+#include "celix_compiler.h"
 #include "celix_utils.h"
 #include "pubsub_constants.h"
 #include "pubsub/publisher.h"
@@ -345,7 +346,7 @@ static int psa_zmq_localMsgTypeIdForMsgType(void* handle, const char* msgType, u
     return 0;
 }
 
-static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties __attribute__((unused))) {
+static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties CELIX_UNUSED) {
     pubsub_zmq_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
 
@@ -368,7 +369,7 @@ static void* psa_zmq_getPublisherService(void *handle, const celix_bundle_t *req
     return &entry->service;
 }
 
-static void psa_zmq_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties __attribute__((unused))) {
+static void psa_zmq_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties CELIX_UNUSED) {
     pubsub_zmq_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
 
