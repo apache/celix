@@ -28,17 +28,19 @@ public:
     CondComponent() = default;
 };
 
-class CondTestBundleActivator {
-  public:
-    explicit CondTestBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
-        registration = ctx->registerUnmanagedService<celix_condition>(&condition, CELIX_CONDITION_SERVICE_NAME)
-                .addProperty(CELIX_CONDITION_ID, "test")
-                .build();
+class InactiveComponentBundleActivator {
+public:
+    explicit InactiveComponentBundleActivator(const std::shared_ptr<celix::BundleContext>& ctx) {
+        auto& cmp = ctx->getDependencyManager()->createComponent<CondComponent>();
+        cmp.createServiceDependency<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
+                .setFilter("(condition.id=does-not-exists)")
+                .setRequired(true);
+        cmp.build();
     }
 
-  private:
+private:
     std::shared_ptr<celix::ServiceRegistration> registration{};
     celix_condition condition{};
 };
 
-CELIX_GEN_CXX_BUNDLE_ACTIVATOR(CondTestBundleActivator)
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(InactiveComponentBundleActivator)

@@ -1538,7 +1538,7 @@ void celix_framework_cleanupScheduledEvents(celix_framework_t* fw, long bndId) {
 }
 
 static int celix_framework_eventQueueSize(celix_framework_t* fw) {
-    //precondition fw->dispatcher.mutex lockedx);
+    //precondition fw->dispatcher.mutex locked);
     return fw->dispatcher.eventQueueSize + celix_arrayList_size(fw->dispatcher.dynamicEventQueue);
 }
 

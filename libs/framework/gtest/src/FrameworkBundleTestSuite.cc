@@ -31,8 +31,6 @@ class FrameworkBundleTestSuite : public ::testing::Test {
         std::string{"("} + CELIX_CONDITION_ID + "=" + CELIX_CONDITION_ID_FRAMEWORK_READY + ")";
     const std::string frameworkErrorFilter =
         std::string{"("} + CELIX_CONDITION_ID + "=" + CELIX_CONDITION_ID_FRAMEWORK_ERROR + ")";
-    const std::string componentsReadyFilter =
-        std::string{"("} + CELIX_CONDITION_ID + "=" + CELIX_CONDITION_ID_COMPONENTS_READY + ")";
 
     FrameworkBundleTestSuite() = default;
 };
@@ -56,13 +54,6 @@ TEST_F(FrameworkBundleTestSuite, ConditionTrueFrameworkReadyAndComponentsReadyTe
     // But the condition service with id "framework.ready" will become available
     count = ctx->useService<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
                 .setFilter(frameworkReadyFilter)
-                .setTimeout(std::chrono::milliseconds{USE_SERVICE_TIMEOUT_IN_MS})
-                .build();
-    EXPECT_EQ(1, count);
-    
-    // And the condition service with id "components.ready" will become available
-    count = ctx->useService<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
-                .setFilter(componentsReadyFilter)
                 .setTimeout(std::chrono::milliseconds{USE_SERVICE_TIMEOUT_IN_MS})
                 .build();
     EXPECT_EQ(1, count);
@@ -128,13 +119,4 @@ TEST_F(FrameworkBundleTestSuite, FrameworkReadyRegisteredLaterTest) {
     long readySvcId = ctx->findServiceWithName(CELIX_CONDITION_SERVICE_NAME, frameworkReadyFilter);
     long testySvcId = ctx->findServiceWithName(CELIX_CONDITION_SERVICE_NAME, testFilter);
     EXPECT_GT(readySvcId, testySvcId);
-
-    // And the "components.ready" condition does not become available, because the test bundle contains a component
-    // which will not become active
-    count = ctx->useService<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
-                .setFilter(componentsReadyFilter)
-                .setTimeout(std::chrono::milliseconds{USE_SERVICE_TIMEOUT_IN_MS})
-                .build();
-    EXPECT_EQ(0, count);
 }
-

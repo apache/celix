@@ -32,8 +32,6 @@ class FrameworkBundleWithErrorInjectionTestSuite : public ::testing::Test {
     const int USE_SERVICE_TIMEOUT_IN_MS = 500;
     const std::string frameworkReadyFilter =
         std::string{"("} + CELIX_CONDITION_ID + "=" + CELIX_CONDITION_ID_FRAMEWORK_READY + ")";
-    const std::string componentsReadyFilter =
-        std::string{"("} + CELIX_CONDITION_ID + "=" + CELIX_CONDITION_ID_COMPONENTS_READY + ")";
 
     FrameworkBundleWithErrorInjectionTestSuite() = default;
 
@@ -85,18 +83,3 @@ TEST_F(FrameworkBundleWithErrorInjectionTestSuite, ErrorRegisteringFrameworkRead
     EXPECT_EQ(count, 0);
 }
 
-TEST_F(FrameworkBundleWithErrorInjectionTestSuite, ErrorRegisteringComponentsReadyConditionTest) {
-    // When an error injection for celix_properties_create is primed when called from celix_frameworkBundle_componentsCheck
-    celix_ei_expect_celix_properties_create((void*)celix_frameworkBundle_componentsCheck, 0, nullptr);
-
-    // And a framework instance is created
-    auto fw = celix::createFramework();
-    auto ctx = fw->getFrameworkBundleContext();
-
-    // Then the components.ready condition will not become available, due to an error creating properties for the service
-    auto count = ctx->useService<celix_condition>(CELIX_CONDITION_SERVICE_NAME)
-                     .setFilter(componentsReadyFilter)
-                     .setTimeout(std::chrono::milliseconds {USE_SERVICE_TIMEOUT_IN_MS})
-                     .build();
-    EXPECT_EQ(count, 0);
-}

@@ -17,45 +17,42 @@
  * under the License.
  */
 
-#ifndef CELIX_FRAMEWORK_BUNDLE_H_
-#define CELIX_FRAMEWORK_BUNDLE_H_
+#ifndef CELIX_COMPONENTS_READY_H_
+#define CELIX_COMPONENTS_READY_H_
 
-#include "celix_errno.h"
 #include "celix_bundle_context.h"
-#include "framework_event.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- * @brief The framework bundle bundle activator create.
- */
-celix_status_t celix_frameworkBundle_create(celix_bundle_context_t* ctx, void** userData);
+typedef struct celix_components_ready_check celix_components_ready_check_t;
 
 /**
- * @brief The framework bundle bundle activator start.
+ * @brief Creates a new components ready check.
+ * @param ctx The bundle context.
  */
-celix_status_t celix_frameworkBundle_start(void* userData, celix_bundle_context_t* ctx);
+celix_components_ready_check_t* celix_componentsReadyCheck_create(celix_bundle_context_t * ctx);
 
 /**
- * @brief The framework bundle bundle activator stop.
+ * @brief Destroys the components ready check.
  */
-celix_status_t celix_frameworkBundle_stop(void* userData, celix_bundle_context_t* ctx);
+void celix_componentsReadyCheck_destroy(celix_components_ready_check_t* rdy);
 
 /**
- * @brief The framework bundle bundle activator destroy.
- */
-celix_status_t celix_frameworkBundle_destroy(void* userData, celix_bundle_context_t* ctx);
-
-/**
- * @brief The framework bundle framework event handler.
+ * @brief Sets the framework ready condition.
  * @note Part of the header for testing purposes.
  */
-celix_status_t celix_frameworkBundle_handleFrameworkEvent(void* handle, framework_event_t* event);
+void celix_componentReadyCheck_setFrameworkReadySvc(void* handle, void* svc);
+
+/**
+ * @brief The scheduled event callback for the components.ready check.
+ * @note Part of the header for testing purposes.
+ */
+void celix_componentReadyCheck_registerCondition(celix_components_ready_check_t* rdy);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CELIX_FRAMEWORK_BUNDLE_H_ */
+#endif /* CELIX_COMPONENTS_READY_H_ */

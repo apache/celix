@@ -146,7 +146,6 @@ if (LINKER_WRAP_SUPPORTED)
     celix_deprecated_utils_headers(test_framework_with_ei)
     target_link_libraries(test_framework_with_ei PRIVATE
             framework_cut
-            Celix::framework
             Celix::malloc_ei
             Celix::utils_ei
             Celix::asprintf_ei

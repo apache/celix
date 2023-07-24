@@ -95,4 +95,11 @@ long __wrap_celix_bundleContext_registerServiceFactoryAsync(celix_bundle_context
     return __real_celix_bundleContext_registerServiceFactoryAsync(__ctx, __serviceName, __factory, __properties);
 }
 
+long __real_celix_bundleContext_scheduleEvent(celix_bundle_context_t *__ctx, const celix_scheduled_event_options_t* __options);
+CELIX_EI_DEFINE(celix_bundleContext_scheduleEvent, long)
+long __wrap_celix_bundleContext_scheduleEvent(celix_bundle_context_t *__ctx, const celix_scheduled_event_options_t* __options) {
+    CELIX_EI_IMPL(celix_bundleContext_scheduleEvent);
+    return __real_celix_bundleContext_scheduleEvent(__ctx, __options);
+}
+
 }

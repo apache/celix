@@ -17,26 +17,23 @@
  * under the License.
  */
 
-#ifndef CELIX_BUNDLE_CONTEXT_EI_H
-#define CELIX_BUNDLE_CONTEXT_EI_H
+#ifndef CELIX_COMPONENTS_READY_CONSTANTS_H_
+#define CELIX_COMPONENTS_READY_CONSTANTS_H_
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "celix_error_injector.h"
-#include "celix_errno.h"
 
-CELIX_EI_DECLARE(celix_bundleContext_getProperty, const char*);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_trackServicesWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_getBundleId, long);
-CELIX_EI_DECLARE(bundleContext_getServiceReferences, celix_status_t);
-CELIX_EI_DECLARE(bundleContext_retainServiceReference, celix_status_t);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceFactoryAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_scheduleEvent, long);
+/*!
+ * @brief The unique identifier for the components.ready condition.
+ *
+ * The components ready condition is registered by the framework if the framework.ready condition is registered
+ * and all components active.
+ */
+#define CELIX_CONDITION_ID_COMPONENTS_READY "components.ready"
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //CELIX_BUNDLE_CONTEXT_EI_H
+#endif /* CELIX_COMPONENTS_READY_CONSTANTS_H_ */

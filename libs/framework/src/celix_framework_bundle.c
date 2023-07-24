@@ -39,9 +39,6 @@ typedef struct celix_framework_bundle {
     long trueConditionSvcId;                  /**< service id of the condition service which is always true. */
     long frameworkReadyOrErrorConditionSvcId; /**< service id of the condition service which is set when the framework
                                             is ready or started up with an error */
-    long checkComponentsScheduledEventId; /**< event id of the scheduled event to check if the framework is ready. */
-    long componentsReadyConditionSvcId;   /**< service id of the condition service which is set when all components are
-                                            ready. */
 } celix_framework_bundle_t;
 
 celix_status_t celix_frameworkBundle_create(celix_bundle_context_t* ctx, void** userData) {
@@ -62,8 +59,6 @@ celix_status_t celix_frameworkBundle_create(celix_bundle_context_t* ctx, void** 
     act->listener.handle = act;
     act->listener.frameworkEvent = celix_frameworkBundle_handleFrameworkEvent;
     act->frameworkReadyOrErrorConditionSvcId = -1L;
-    act->checkComponentsScheduledEventId = -1L;
-    act->componentsReadyConditionSvcId = -1L;
     act->conditionInstance.handle = act;
     *userData = act;
 
@@ -111,7 +106,6 @@ celix_status_t celix_frameworkBundle_handleFrameworkEvent(void* handle, framewor
             }
             act->frameworkReadyOrErrorConditionSvcId =
                     celix_bundleContext_registerServiceWithOptionsAsync(act->ctx, &opts);
-            celix_bundleContext_wakeupScheduledEvent(act->ctx, act->checkComponentsScheduledEventId);
         } else {
             celix_bundleContext_log(act->ctx,
                                     CELIX_LOG_LEVEL_ERROR,
@@ -120,43 +114,6 @@ celix_status_t celix_frameworkBundle_handleFrameworkEvent(void* handle, framewor
         celixThreadMutex_unlock(&act->mutex);
     }
     return CELIX_SUCCESS;
-}
-
-void celix_frameworkBundle_componentsCheck(void* data) {
-    celix_framework_bundle_t* act = data;
-    celix_dependency_manager_t* mng = celix_bundleContext_getDependencyManager(act->ctx);
-
-    celixThreadMutex_lock(&act->mutex);
-    bool allComponentsActive = celix_dependencyManager_allComponentsActive(mng);
-    bool ready = allComponentsActive && act->frameworkReadyOrErrorConditionSvcId >= 0;
-    if (ready) {
-        celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
-        opts.serviceName = CELIX_CONDITION_SERVICE_NAME;
-        opts.serviceVersion = CELIX_CONDITION_SERVICE_VERSION;
-        opts.svc = &act->conditionInstance;
-        opts.properties = celix_properties_create();
-        if (opts.properties) {
-            celix_properties_set(opts.properties, CELIX_CONDITION_ID, CELIX_CONDITION_ID_COMPONENTS_READY);
-            celix_bundleContext_log(act->ctx, CELIX_LOG_LEVEL_DEBUG, "Registering components.ready condition service");
-            act->componentsReadyConditionSvcId = celix_bundleContext_registerServiceWithOptionsAsync(act->ctx, &opts);
-        } else {
-            celix_bundleContext_log(
-                    act->ctx, CELIX_LOG_LEVEL_ERROR, "Cannot create properties for components.ready condition service");
-        }
-        celix_bundleContext_removeScheduledEventAsync(act->ctx, act->checkComponentsScheduledEventId);
-        act->checkComponentsScheduledEventId = -1L;
-    }
-    celixThreadMutex_unlock(&act->mutex);
-}
-
-static void celix_frameworkBundle_startComponentsCheck(celix_framework_bundle_t* act) {
-    celix_scheduled_event_options_t opts = CELIX_EMPTY_SCHEDULED_EVENT_OPTIONS;
-    opts.name = "celix_frameworkBundle_componentsCheck";
-    opts.callback = celix_frameworkBundle_componentsCheck;
-    opts.callbackData = act;
-    opts.initialDelayInSeconds = 1; //note will be wakeup by framework event
-    opts.intervalInSeconds = 0.001;
-    act->checkComponentsScheduledEventId = celix_bundleContext_scheduleEvent(act->ctx, &opts);
 }
 
 celix_status_t celix_frameworkBundle_start(void* userData, celix_bundle_context_t* ctx) {
@@ -175,7 +132,6 @@ celix_status_t celix_frameworkBundle_start(void* userData, celix_bundle_context_
 
     fw_addFrameworkListener(
         celix_bundleContext_getFramework(ctx), celix_bundleContext_getBundle(ctx), &act->listener);
-    celix_frameworkBundle_startComponentsCheck(act);
 
     return CELIX_SUCCESS;
 }
@@ -187,24 +143,14 @@ celix_status_t celix_frameworkBundle_stop(void* userData, celix_bundle_context_t
     // remove framework listener
     fw_removeFrameworkListener(framework, celix_bundleContext_getBundle(ctx), &act->listener);
 
-    // stop ready check
-    celixThreadMutex_lock(&act->mutex);
-    long checkEventId = act->checkComponentsScheduledEventId;
-    act->checkComponentsScheduledEventId = -1L;
-    celixThreadMutex_unlock(&act->mutex);
-    celix_bundleContext_removeScheduledEvent(ctx, checkEventId);
-
     // remove framework true condition service and - if present - framework.ready condition service,
     celixThreadMutex_lock(&act->mutex);
     long trueConditionSvcId = act->trueConditionSvcId;
     long frameworkReadyOrErrorConditionSvcId = act->frameworkReadyOrErrorConditionSvcId;
-    long componentsReadyConditionSvcId = act->componentsReadyConditionSvcId;
     act->trueConditionSvcId = -1L;
     act->frameworkReadyOrErrorConditionSvcId = -1L;
-    act->componentsReadyConditionSvcId = -1L;
     celixThreadMutex_unlock(&act->mutex);
 
-    celix_bundleContext_unregisterService(ctx, componentsReadyConditionSvcId);
     celix_bundleContext_unregisterService(ctx, frameworkReadyOrErrorConditionSvcId);
     celix_bundleContext_unregisterService(ctx, trueConditionSvcId);
 
