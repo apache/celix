@@ -25,7 +25,9 @@
 #include "celix_constants.h"
 #include "celix_long_hash_map.h"
 #include "celix_string_hash_map.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_threads.h"
+#include "celix_unistd_cleanup.h"
 #include "celix_utils.h"
 #include "celix_errno.h"
 #include <dns_sd.h>
@@ -89,11 +91,10 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data);
 
 celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celix_log_helper_t *logHelper, discovery_zeroconf_watcher_t **watcherOut) {
     celix_status_t status = CELIX_SUCCESS;
-    discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)calloc(1, sizeof(*watcher));
+    celix_autofree discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)calloc(1, sizeof(*watcher));
     if (watcher == NULL) {
         celix_logHelper_fatal(logHelper, "Watcher: Failed to alloc watcher.");
-        status = CELIX_ENOMEM;
-        goto watcher_err;
+        return CELIX_ENOMEM;
     }
     watcher->logHelper = logHelper;
     watcher->ctx = ctx;
@@ -101,33 +102,36 @@ celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celi
     watcher->browseRef = NULL;
     watcher->eventFd = eventfd(0, 0);
     if (watcher->eventFd < 0) {
-        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
         celix_logHelper_fatal(logHelper, "Watcher: Failed to open event fd, %d.", errno);
-        goto event_fd_err;
+        return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
     }
+    celix_auto(celix_fd_t) eventFd = watcher->eventFd;
 
     const char *fwUuid = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
     if (fwUuid == NULL || strlen(fwUuid) >= sizeof(watcher->fwUuid)) {
-        status = CELIX_BUNDLE_EXCEPTION;
         celix_logHelper_fatal(logHelper, "Watcher: Failed to get framework uuid.");
-        goto fw_uuid_err;
+        return CELIX_BUNDLE_EXCEPTION;
     }
     strcpy(watcher->fwUuid, fwUuid);
 
     status = celixThreadMutex_create(&watcher->mutex, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_fatal(logHelper, "Watcher: Failed to create mutex, %d.", status);
-        goto mutex_err;
+        return status;
     }
+    celix_autoptr(celix_thread_mutex_t) mutex = &watcher->mutex;
     celix_string_hash_map_create_options_t epOpts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
     epOpts.storeKeysWeakly = true;
-    watcher->watchedEndpoints = celix_stringHashMap_createWithOptions(&epOpts);
+    celix_autoptr(celix_string_hash_map_t) watchedEndpoints =
+        watcher->watchedEndpoints = celix_stringHashMap_createWithOptions(&epOpts);
     assert(watcher->watchedEndpoints);
     celix_string_hash_map_create_options_t svcOpts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
-    watcher->watchedServices = celix_stringHashMap_createWithOptions(&svcOpts);
+    celix_autoptr(celix_string_hash_map_t) watchedServices =
+        watcher->watchedServices = celix_stringHashMap_createWithOptions(&svcOpts);
     assert(watcher->watchedServices != NULL);
 
-    watcher->epls = celix_longHashMap_create();
+    celix_autoptr(celix_long_hash_map_t) epls =
+        watcher->epls = celix_longHashMap_create();
     assert(watcher->epls != NULL);
 
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
@@ -138,35 +142,26 @@ celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celi
     opts.removeWithProperties = discoveryZeroconfWatcher_removeEPL;
     watcher->epListenerTrkId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
     if (watcher->epListenerTrkId < 0) {
-        status = CELIX_BUNDLE_EXCEPTION;
         celix_logHelper_fatal(logHelper, "Watcher: Failed to register endpoint listener service.");
-        goto epl_tracker_err;
+        return CELIX_BUNDLE_EXCEPTION;
     }
 
     watcher->running = true;
     status = celixThread_create(&watcher->watchEPThread,NULL, discoveryZeroconfWatcher_watchEPThread, watcher);
     if (status != CELIX_SUCCESS) {
-        goto thread_err;
+        celix_bundleContext_stopTrackerAsync(ctx, watcher->epListenerTrkId, NULL, NULL);
+        celix_bundleContext_waitForAsyncStopTracker(ctx, watcher->epListenerTrkId);
+        return status;
     }
     celixThread_setName(&watcher->watchEPThread, "DiscWatcher");
 
-    *watcherOut = watcher;
+    celix_steal_ptr(epls);
+    celix_steal_ptr(watchedServices);
+    celix_steal_ptr(watchedEndpoints);
+    celix_steal_ptr(mutex);
+    celix_steal_fd(&eventFd);
+    *watcherOut = celix_steal_ptr(watcher);
     return CELIX_SUCCESS;
-thread_err:
-    celix_bundleContext_stopTrackerAsync(ctx, watcher->epListenerTrkId, NULL, NULL);
-    celix_bundleContext_waitForAsyncStopTracker(ctx, watcher->epListenerTrkId);
-epl_tracker_err:
-    celix_longHashMap_destroy(watcher->epls);
-    celix_stringHashMap_destroy(watcher->watchedServices);
-    celix_stringHashMap_destroy(watcher->watchedEndpoints);
-    celixThreadMutex_destroy(&watcher->mutex);
-mutex_err:
-fw_uuid_err:
-    close(watcher->eventFd);
-event_fd_err:
-    free(watcher);
-watcher_err:
-    return status;
 }
 
 void discoveryZeroconfWatcher_destroy(discovery_zeroconf_watcher_t *watcher) {

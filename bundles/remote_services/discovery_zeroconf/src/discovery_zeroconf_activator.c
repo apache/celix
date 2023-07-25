@@ -31,26 +31,24 @@ typedef struct discovery_zeroconf_activator {
 
 celix_status_t discoveryZeroconfActivator_start(discovery_zeroconf_activator_t *act, celix_bundle_context_t *ctx) {
     celix_status_t status = CELIX_SUCCESS;
-    act->logHelper = celix_logHelper_create(ctx,"celix_rsa_zeroconf_discovery");
-    if (act->logHelper == NULL) {
-        status = CELIX_ENOMEM;
-        goto log_helper_err;
+    celix_autoptr(celix_log_helper_t) logger = celix_logHelper_create(ctx,"celix_rsa_zeroconf_discovery");
+    if (logger == NULL) {
+        return CELIX_ENOMEM;
     }
-    status = discoveryZeroconfAnnouncer_create(ctx, act->logHelper, &act->announcer);
+    celix_autoptr(discovery_zeroconf_announcer_t) announcer = NULL;
+    status = discoveryZeroconfAnnouncer_create(ctx, logger, &announcer);
     if (status != CELIX_SUCCESS) {
-        goto announcer_err;
+        return status;
     }
-    status = discoveryZeroconfWatcher_create(ctx, act->logHelper, &act->watcher);
+    celix_autoptr(discovery_zeroconf_watcher_t) watcher = NULL;
+    status = discoveryZeroconfWatcher_create(ctx, logger, &watcher);
     if (status != CELIX_SUCCESS) {
-        goto watcher_err;
+        return status;
     }
+    act->watcher = celix_steal_ptr(watcher);
+    act->announcer = celix_steal_ptr(announcer);
+    act->logHelper = celix_steal_ptr(logger);
     return CELIX_SUCCESS;
-watcher_err:
-    discoveryZeroconfAnnouncer_destroy(act->announcer);
-announcer_err:
-    celix_logHelper_destroy(act->logHelper);
-log_helper_err:
-    return status;
 }
 
 celix_status_t discoveryZeroconfActivator_stop(discovery_zeroconf_activator_t *act, celix_bundle_context_t *ctx) {

@@ -23,6 +23,7 @@
 extern "C" {
 #endif
 
+#include "celix_cleanup.h"
 #include "celix_log_helper.h"
 #include "celix_types.h"
 #include "celix_errno.h"
@@ -32,6 +33,8 @@ typedef struct discovery_zeroconf_watcher discovery_zeroconf_watcher_t;
 celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celix_log_helper_t *logHelper, discovery_zeroconf_watcher_t **watcherOut);
 
 void discoveryZeroconfWatcher_destroy(discovery_zeroconf_watcher_t *watcher);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(discovery_zeroconf_watcher_t, discoveryZeroconfWatcher_destroy)
 
 #ifdef __cplusplus
 }

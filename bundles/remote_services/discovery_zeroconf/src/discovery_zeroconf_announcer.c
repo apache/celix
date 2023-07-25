@@ -31,6 +31,8 @@
 #include "celix_types.h"
 #include "celix_errno.h"
 #include "celix_build_assert.h"
+#include "celix_stdlib_cleanup.h"
+#include "celix_unistd_cleanup.h"
 #include <dns_sd.h>
 #include <netinet/in.h>
 #include <net/if.h>
@@ -89,11 +91,10 @@ static void *discoveryZeroconfAnnouncer_refreshEndpointThread(void *data);
 
 celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, celix_log_helper_t *logHelper, discovery_zeroconf_announcer_t **announcerOut) {
     celix_status_t status = CELIX_SUCCESS;
-    discovery_zeroconf_announcer_t *announcer = (discovery_zeroconf_announcer_t *)calloc(1, sizeof(*announcer));
+    celix_autofree discovery_zeroconf_announcer_t *announcer = (discovery_zeroconf_announcer_t *)calloc(1, sizeof(*announcer));
     if (announcer == NULL) {
         celix_logHelper_fatal(logHelper, "Announcer: Failed to alloc announcer.");
-        status = CELIX_ENOMEM;
-        goto announcer_err;
+        return CELIX_ENOMEM;
     }
     announcer->ctx = ctx;
     announcer->logHelper = logHelper;
@@ -101,27 +102,27 @@ celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, ce
 
     announcer->eventFd = eventfd(0, 0);
     if (announcer->eventFd < 0) {
-        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
         celix_logHelper_fatal(logHelper, "Announcer: Failed to open event fd, %d.", errno);
-        goto eventfd_err;
+        return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
     }
+    celix_auto(celix_fd_t) eventFd = announcer->eventFd;
 
     status = celixThreadMutex_create(&announcer->mutex, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_fatal(logHelper, "Announcer: Failed to create mutex, %d.", status);
-        goto mutex_err;
+        return status;
     }
+    celix_autoptr(celix_thread_mutex_t) mutex = &announcer->mutex;
 
-    announcer->endpoints = celix_stringHashMap_create();
+    celix_autoptr(celix_string_hash_map_t) endpoints = announcer->endpoints = celix_stringHashMap_create();
     assert(announcer->endpoints != NULL);
-    announcer->revokedEndpoints = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) revokedEndpoints = announcer->revokedEndpoints = celix_arrayList_create();
     assert(announcer->revokedEndpoints != NULL);
 
     const char *fwUuid = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
     if (fwUuid == NULL || strlen(fwUuid) >= sizeof(announcer->fwUuid)) {
-        status = CELIX_BUNDLE_EXCEPTION;
         celix_logHelper_fatal(logHelper, "Announcer: Failed to get framework uuid.");
-        goto fw_uuid_err;
+        return CELIX_BUNDLE_EXCEPTION;
     }
     strcpy(announcer->fwUuid, fwUuid);
 
@@ -141,35 +142,29 @@ celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, ce
     opt.svc = &announcer->epListener;
     announcer->epListenerSvcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx, &opt);
     if (announcer->epListenerSvcId < 0) {
-        status = CELIX_BUNDLE_EXCEPTION;
         celix_logHelper_fatal(logHelper, "Announcer: Failed to register endpoint listener.");
-        goto ep_listener_err;
+        return CELIX_BUNDLE_EXCEPTION;
     }
+    celix_auto(celix_service_reg_t) epListenerSvcReg = {
+        .ctx = ctx,
+        .svcId = announcer->epListenerSvcId
+    };
 
     announcer->running = true;
     status = celixThread_create(&announcer->refreshEPThread, NULL, discoveryZeroconfAnnouncer_refreshEndpointThread, announcer);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_fatal(logHelper, "Announcer: Failed to create refreshing endpoint thread, %d.", status);
-        goto announce_ep_thread_err;
+        return status;
     }
     celixThread_setName(&announcer->refreshEPThread, "DiscAnnouncer");
 
-    *announcerOut = announcer;
+    epListenerSvcReg.svcId = -1;
+    celix_steal_ptr(revokedEndpoints);
+    celix_steal_ptr(endpoints);
+    celix_steal_ptr(mutex);
+    celix_steal_fd(&eventFd);
+    *announcerOut = celix_steal_ptr(announcer);
     return CELIX_SUCCESS;
-announce_ep_thread_err:
-    celix_bundleContext_unregisterServiceAsync(ctx, announcer->epListenerSvcId, NULL, NULL);
-    celix_bundleContext_waitForAsyncUnregistration(ctx, announcer->epListenerSvcId);
-ep_listener_err:
-fw_uuid_err:
-    celix_arrayList_destroy(announcer->revokedEndpoints);
-    celix_stringHashMap_destroy(announcer->endpoints);
-    celixThreadMutex_destroy(&announcer->mutex);
-mutex_err:
-    close(announcer->eventFd);
-eventfd_err:
-    free(announcer);
-announcer_err:
-    return status;
 }
 
 void discoveryZeroconfAnnouncer_destroy(discovery_zeroconf_announcer_t *announcer) {
@@ -229,7 +224,6 @@ static bool isLoopBackNetInterface(const char *ifName) {
 
 static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, endpoint_description_t *endpoint, char *matchedFilter) {
     (void)matchedFilter;//unused
-    celix_status_t status = CELIX_SUCCESS;
     discovery_zeroconf_announcer_t *announcer = (discovery_zeroconf_announcer_t *)handle;
     assert(announcer != NULL);
     if (endpointDescription_isInvalid(endpoint)) {
@@ -239,11 +233,10 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
 
     celix_logHelper_info(announcer->logHelper, "Announcer: Add endpoint for %s(%s).", endpoint->serviceName, endpoint->id);
 
-    announce_endpoint_entry_t *entry = (announce_endpoint_entry_t *)calloc(1, sizeof(*entry));
+    celix_autofree announce_endpoint_entry_t *entry = (announce_endpoint_entry_t *)calloc(1, sizeof(*entry));
     if (entry == NULL) {
         celix_logHelper_error(announcer->logHelper, "Announcer:  Failed to alloc endpoint entry.");
-        status = CELIX_ENOMEM;
-        goto endpoint_entry_err;
+        return CELIX_ENOMEM;
     }
     entry->registerRef = NULL;
     entry->announced = false;
@@ -275,35 +268,28 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
         int bytes = snprintf(entry->serviceType, sizeof(entry->serviceType), DZC_SERVICE_PRIMARY_TYPE",%s", serviceSubType);
         if (bytes >= sizeof(entry->serviceType)) {
             celix_logHelper_error(announcer->logHelper, "Announcer: Please reduce the length of service type for %s.", serviceSubType);
-            status = CELIX_ILLEGAL_ARGUMENT;
-            goto service_type_err;
+            return CELIX_ILLEGAL_ARGUMENT;
         }
     } else {
         CELIX_BUILD_ASSERT(sizeof(entry->serviceType) >= sizeof(DZC_SERVICE_PRIMARY_TYPE));
         strcpy(entry->serviceType, DZC_SERVICE_PRIMARY_TYPE);
     }
-    entry->properties = celix_properties_copy(endpoint->properties);
+    celix_autoptr(celix_properties_t) properties = entry->properties = celix_properties_copy(endpoint->properties);
 
     //Remove properties that remote service does not need
     celix_properties_unset(entry->properties, CELIX_RSA_NETWORK_INTERFACES);
     celix_properties_unset(entry->properties, DZC_SERVICE_TYPE_KEY);
     entry->serviceName = celix_properties_get(entry->properties, OSGI_FRAMEWORK_OBJECTCLASS, NULL);
     if (entry->serviceName == NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
         celix_logHelper_error(announcer->logHelper,"Announcer: Invalid service.");
-        goto service_name_err;
+        return CELIX_ILLEGAL_ARGUMENT;
     }
     celixThreadMutex_lock(&announcer->mutex);
-    celix_stringHashMap_put(announcer->endpoints, endpoint->id, entry);
+    celix_stringHashMap_put(announcer->endpoints, endpoint->id, celix_steal_ptr(entry));
     celixThreadMutex_unlock(&announcer->mutex);
     discoveryZeroconfAnnouncer_eventNotify(announcer);
+    celix_steal_ptr(properties);
     return CELIX_SUCCESS;
-service_name_err:
-    celix_properties_destroy(entry->properties);
-service_type_err:
-    free(entry);
-endpoint_entry_err:
-    return status;
 }
 
 static celix_status_t discoveryZeroconfAnnouncer_endpointRemoved(void *handle, endpoint_description_t *endpoint, char *matchedFilter) {
