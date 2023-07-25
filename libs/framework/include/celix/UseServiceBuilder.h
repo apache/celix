@@ -93,7 +93,7 @@ namespace celix {
         template <typename Rep, typename Period>
         UseServiceBuilder& setTimeout(std::chrono::duration<Rep, Period> duration) {
             auto micro =  std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-            timeoutInSeconds = micro / 1000000;
+            timeoutInSeconds = micro / 1000000.0;
             return *this;
         }
 
