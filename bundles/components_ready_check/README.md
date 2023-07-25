@@ -32,7 +32,12 @@ the condition id constant used to register the "components.ready" condition serv
 The Apache Celix Component Ready Check provides the `Celix::components_ready_check` bundle which registers the
 "components.ready" condition service.
 
-TODO explain when the "components.ready" condition service is registered.
+The "components.ready" condition service will be registered when the "framework.ready" service is registered, 
+all components have become active and the event queue is empty. 
+
+If the "components.ready" condition service is registered and some components become inactive or the event queue is 
+not empty, the "components.ready" condition is **not** removed. The "components.ready" condition is meant to indicate
+that the components in the initial framework startup phase are ready.
 
 ## CMake options
 
