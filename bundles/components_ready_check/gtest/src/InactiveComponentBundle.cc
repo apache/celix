@@ -40,7 +40,6 @@ public:
 
 private:
     std::shared_ptr<celix::ServiceRegistration> registration{};
-    celix_condition condition{};
 };
 
 CELIX_GEN_CXX_BUNDLE_ACTIVATOR(InactiveComponentBundleActivator)

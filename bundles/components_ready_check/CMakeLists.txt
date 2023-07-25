@@ -22,13 +22,15 @@ if (COMPONENTS_READY_CHECK)
     add_library(components_ready_api INTERFACE)
     target_include_directories(components_ready_api INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>)
     add_library(Celix::components_ready_api ALIAS components_ready_api)
+    install(TARGETS components_ready_api EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT components_ready
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix_components_ready_api)
+    install(DIRECTORY api/ DESTINATION include/celix_components_ready_api COMPONENT components_ready)
 
 
-    set(COMPONENTS_READY_CHECK_SRC src/celix_components_ready_check_activator.c src/celix_components_ready_check.c)
+    set(COMPONENTS_READY_CHECK_SRC src/celix_components_ready_check.c)
     set(COMPONENTS_READY_CHECK_DEPS Celix::framework Celix::components_ready_api)
-
     add_celix_bundle(components_ready_check
-        SOURCES ${COMPONENTS_READY_CHECK_SRC}
+        SOURCES src/celix_components_ready_check_activator.c ${COMPONENTS_READY_CHECK_SRC}
         VERSION 1.0.0
         SYMBOLIC_NAME "apache_celix_components_ready_check"
         GROUP "Celix/Conditions"
@@ -38,10 +40,6 @@ if (COMPONENTS_READY_CHECK)
     target_include_directories(components_ready_check PRIVATE src)
     target_link_libraries(components_ready_check PRIVATE ${COMPONENTS_READY_CHECK_DEPS})
     add_library(Celix::components_ready_check ALIAS components_ready_check)
-
-    #TODO check if include files are installed
-    install(TARGETS components_ready_api EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT components_ready
-            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/components_ready_api)
     install_celix_bundle(components_ready_check EXPORT celix COMPONENT components_ready)
 
     if (ENABLE_TESTING)
