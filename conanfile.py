@@ -120,6 +120,7 @@ class CelixConan(ConanFile):
         "build_shell_bonjour": False,
         "build_shell_tui": False,
         "build_shell_wui": False,
+        "build_components_ready_check": False,
         "build_examples": False,
         "build_celix_etcdlib":  False,
         "build_launcher": False,

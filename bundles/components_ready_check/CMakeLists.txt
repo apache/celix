@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#TODO add conanfile options for COMPONENTS_READY_CHECK
 celix_subproject(COMPONENTS_READY_CHECK "Bundle that checks if all components becomes active and reports this using a condition service" ON)
 if (COMPONENTS_READY_CHECK)
 
