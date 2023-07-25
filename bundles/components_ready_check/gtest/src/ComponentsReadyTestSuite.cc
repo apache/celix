@@ -26,7 +26,7 @@
 
 class ComponentsReadyTestSuite : public ::testing::Test {
 public:
-    const int USE_SERVICE_TIMEOUT_IN_MS = 2000;  // TODO improve test time to a lower value
+    const int USE_SERVICE_TIMEOUT_IN_MS = 250;
     const std::string componentsReadyFilter =
             std::string{"("} + CELIX_CONDITION_ID + "=" + CELIX_CONDITION_ID_COMPONENTS_READY + ")";
 
