@@ -1486,22 +1486,27 @@ static void celix_framework_processScheduledEvents(celix_framework_t* fw) {
 
 /**
  * @brief Calculate the next deadline for scheduled events.
- * @return The next deadline or a time 0 second and 0 nanoseconds if no scheduled events are available.
+ * @return The next deadline or 1 second delayed timespec if no events are scheduled.
  */
-static struct timespec celix_framework_nextDeadlineForScheduledEvents(celix_framework_t* framework) {
+static struct timespec celix_framework_nextDeadlineForEventsWait(celix_framework_t* framework) {
+    bool closestDeadlineSet = false;
     struct timespec closestDeadline = {0,0};
+
     celixThreadMutex_lock(&framework->dispatcher.mutex);
     CELIX_LONG_HASH_MAP_ITERATE(framework->dispatcher.scheduledEvents, entry) {
         celix_scheduled_event_t *visit = entry.value.ptrValue;
         struct timespec eventDeadline = celix_scheduledEvent_getNextDeadline(visit);
-        if (closestDeadline.tv_sec == 0 && closestDeadline.tv_nsec == 0) {
+        if (!closestDeadlineSet) {
             closestDeadline = eventDeadline;
+            closestDeadlineSet = true;
         } else if (celix_compareTime(&eventDeadline, &closestDeadline) < 0) {
             closestDeadline = eventDeadline;
         }
     }
     celixThreadMutex_unlock(&framework->dispatcher.mutex);
-    return closestDeadline;
+
+    struct timespec fallbackDeadline = celixThreadCondition_getDelayedTime(1); //max 1 second wait
+    return closestDeadlineSet ? closestDeadline : fallbackDeadline;
 }
 
 void celix_framework_cleanupScheduledEvents(celix_framework_t* fw, long bndId) {
@@ -1564,9 +1569,6 @@ static bool requiresScheduledEventsProcessing(celix_framework_t* framework) {
 }
 
 static void celix_framework_waitForNextEvent(celix_framework_t* fw, struct timespec nextDeadline) {
-    if (nextDeadline.tv_sec == 0 && nextDeadline.tv_nsec == 0) {
-        nextDeadline = celixThreadCondition_getDelayedTime(1); //no next deadline, wait max 1s
-    }
     celixThreadMutex_lock(&fw->dispatcher.mutex);
     if (celix_framework_eventQueueSize(fw) == 0 && !requiresScheduledEventsProcessing(fw) && fw->dispatcher.active) {
         celixThreadCondition_waitUntil(&fw->dispatcher.cond, &fw->dispatcher.mutex, &nextDeadline);
@@ -1586,7 +1588,7 @@ static void *fw_eventDispatcher(void *fw) {
     while (active) {
         fw_handleEvents(framework);
         celix_framework_processScheduledEvents(framework);
-        struct timespec nextDeadline = celix_framework_nextDeadlineForScheduledEvents(framework);
+        struct timespec nextDeadline = celix_framework_nextDeadlineForEventsWait(framework);
         celix_framework_waitForNextEvent(framework, nextDeadline);
 
         celixThreadMutex_lock(&framework->dispatcher.mutex);
