@@ -264,3 +264,7 @@ TEST(properties, sizeAndIteratorTest) {
 
     celix_properties_destroy(props);
 }
+
+TEST(properties, autocleanup) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+}

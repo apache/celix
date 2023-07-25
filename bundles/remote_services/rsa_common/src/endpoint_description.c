@@ -43,7 +43,7 @@ celix_status_t endpointDescription_create(celix_properties_t *properties, endpoi
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-	endpoint_description_t *ep = calloc(1,sizeof(*ep));
+    endpoint_description_t *ep = calloc(1,sizeof(*ep));
     if (ep == NULL) {
         return CELIX_ENOMEM;
     }

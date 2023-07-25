@@ -218,11 +218,10 @@ celix_status_t rsaShm_send(rsa_shm_t *admin, endpoint_description_t *endpoint,
         celix_logHelper_error(admin->logHelper,"RSA shm server name of %s is invalid.", endpoint->serviceName);
         return CELIX_SERVICE_EXCEPTION;
     }
-    celix_properties_t * newMetadata = celix_properties_copy(metadata);
+    celix_autoptr(celix_properties_t) newMetadata = celix_properties_copy(metadata);
     celix_properties_setLong(newMetadata,OSGI_RSA_ENDPOINT_SERVICE_ID, endpoint->serviceId);
     status = rsaShmClientManager_sendMsgTo(admin->shmClientManager, shmServerName,
             (long)endpoint->serviceId, newMetadata, request, response);
-    celix_properties_destroy(newMetadata);
 
     return status;
 }
@@ -266,7 +265,7 @@ static bool rsaShm_isConfigTypeMatched(celix_properties_t *properties) {
     if (exportConfigs != NULL) {
         // See if the EXPORT_CONFIGS matches this RSA. If so, try to export.
 
-        char *ecCopy = strndup(exportConfigs, strlen(exportConfigs));
+        celix_autofree char *ecCopy = strndup(exportConfigs, strlen(exportConfigs));
         const char delimiter[2] = ",";
         char *token, *savePtr;
 
@@ -279,8 +278,6 @@ static bool rsaShm_isConfigTypeMatched(celix_properties_t *properties) {
             }
             token = strtok_r(NULL, delimiter, &savePtr);
         }
-
-        free(ecCopy);
     }
     return matched;
 }
@@ -300,22 +297,24 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
     status = bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
     if (status != CELIX_SUCCESS) {
        celix_logHelper_error(admin->logHelper,"Error getting reference for service id %s.", serviceId);
-       goto references_err;
+       return status;
     }
     //We get reference with serviceId, so the size of references must be less than or equal to 1.
     reference = celix_arrayList_get(references, 0);
     celix_arrayList_destroy(references);
     if (reference == NULL) {
         celix_logHelper_error(admin->logHelper, "Expect a reference for service id %s.", serviceId);
-        status = CELIX_ILLEGAL_STATE;
-        goto get_reference_failed;
+        return CELIX_ILLEGAL_STATE;
     }
+    celix_auto(celix_service_ref_t) ref = {
+        .reference = reference,
+        .context = admin->context
+    };
 
-    celix_properties_t *exportedProperties = celix_properties_create();
+    celix_autoptr(celix_properties_t) exportedProperties = celix_properties_create();
     if (exportedProperties == NULL) {
-        status = CELIX_ENOMEM;
         celix_logHelper_error(admin->logHelper, "Error creating exported properties.");
-        goto failed_to_create_exported_properties;
+        return CELIX_ENOMEM;
     }
     unsigned int propertySize = 0;
     char **keys = NULL;
@@ -334,29 +333,25 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
         rsaShm_overlayProperties(properties,exportedProperties);
     }
 
-    celix_array_list_t *registrations = NULL;
+    celix_autoptr(celix_array_list_t) registrations = NULL;
     if (rsaShm_isConfigTypeMatched(exportedProperties)) {
         const char *exportsProp = celix_properties_get(exportedProperties, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, NULL);
         const char *providedProp = celix_properties_get(exportedProperties, (char *) OSGI_FRAMEWORK_OBJECTCLASS, NULL);
         if (exportsProp == NULL  || providedProp == NULL) {
             celix_logHelper_error(admin->logHelper, "Error exporting service %s. Missing property %s or %s.", serviceId, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, OSGI_FRAMEWORK_OBJECTCLASS);
-            status = CELIX_ILLEGAL_STATE;
-            goto exported_props_error;
+            return CELIX_ILLEGAL_STATE;
         }
-        char *exports = celix_utils_trim(exportsProp);
-        char *provided = celix_utils_trim(providedProp);
+        celix_autofree char *exports = celix_utils_trim(exportsProp);
+        celix_autofree char *provided = celix_utils_trim(providedProp);
         if (exports == NULL || provided == NULL) {
             celix_logHelper_error(admin->logHelper, "Failed to trim exported interface.");
-            free(exports);
-            free(provided);
-            status = CELIX_ENOMEM;
-            goto trim_props_error;
+            return CELIX_ENOMEM;
         }
 
         celix_logHelper_info(admin->logHelper, "Export services (%s)", exports);
 
-        celix_array_list_t *interfaces = celix_arrayList_create();
-        celix_array_list_t *proInterfaces = celix_arrayList_create();
+        celix_autoptr(celix_array_list_t) interfaces = celix_arrayList_create();
+        celix_autoptr(celix_array_list_t) proInterfaces = celix_arrayList_create();
         registrations = celix_arrayList_create();
 
         // Parse export interfaces for export service.
@@ -393,7 +388,7 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
         size_t interfaceNum = arrayList_size(interfaces);
         for (int iter = 0; iter < interfaceNum; iter++) {
             char *interface = arrayList_get(interfaces, iter);
-            endpoint_description_t *endpointDescription = NULL;
+            celix_autoptr(endpoint_description_t) endpointDescription = NULL;
             export_registration_t *registration = NULL;
             int ret = CELIX_SUCCESS;
             ret = rsaShm_createEndpointDescription(admin,
@@ -407,49 +402,22 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
             if (ret == CELIX_SUCCESS) {
                 celix_arrayList_add(registrations, registration);
             }
-            //We have did copy assignment for endpointDescription in exportRegistration_create
-            endpointDescription_destroy(endpointDescription);
         }
-
-        if (celix_arrayList_size(registrations) > 0) {
-            celixThreadMutex_lock(&admin->exportedServicesLock);
-            celix_longHashMap_put(admin->exportedServices, atol(serviceId), registrations);
-            celixThreadMutex_unlock(&admin->exportedServicesLock);
-        } else {
-            celix_arrayList_destroy(registrations);
-            registrations = NULL;
-        }
-        celix_arrayList_destroy(interfaces);
-        celix_arrayList_destroy(proInterfaces);
-        free(exports);
-        free(provided);
     }
 
     //We return a empty list of registrations if Remote Service Admin does not recognize any of the configuration types.
     celix_array_list_t *newRegistrations = celix_arrayList_create();
-    if (registrations != NULL) {
-        //clone registrations
-        int regSize = celix_arrayList_size(registrations);
+    int regSize = registrations != NULL ? celix_arrayList_size(registrations) : 0;
+    if (regSize > 0) {
         for (int i = 0; i < regSize; ++i) {
             celix_arrayList_add(newRegistrations, celix_arrayList_get(registrations, i));
         }
+        celix_autoptr(celix_mutex_locker_t) lock = celixThreadMutexLocker_new(&admin->exportedServicesLock);
+        celix_longHashMap_put(admin->exportedServices, atol(serviceId), celix_steal_ptr(registrations));
     }
     *registrationsOut = newRegistrations;
 
-    celix_properties_destroy(exportedProperties);
-
-    //We have retained the service refrence in exportRegistration_create
-    bundleContext_ungetServiceReference(admin->context, reference);
-
     return CELIX_SUCCESS;
-trim_props_error:
-exported_props_error:
-    celix_properties_destroy(exportedProperties);
-failed_to_create_exported_properties:
-    bundleContext_ungetServiceReference(admin->context, reference);
-get_reference_failed:
-references_err:
-    return status;
 }
 
 celix_status_t rsaShm_removeExportedService(rsa_shm_t *admin, export_registration_t *registration) {
@@ -490,10 +458,10 @@ celix_status_t rsaShm_removeExportedService(rsa_shm_t *admin, export_registratio
     return status;
 }
 
-static char *rsaShm_getRpcTypeWithDefault(rsa_shm_t *admin, const char *serviceExportedConfigs, const char *defaultVal) {
+static char *rsaShm_getRpcTypeWithDefault(rsa_shm_t *admin CELIX_UNUSED, const char *serviceExportedConfigs, const char *defaultVal) {
     char *rpcType = NULL;
     if (serviceExportedConfigs != NULL) {
-        char *ecCopy = celix_utils_strdup(serviceExportedConfigs);
+        celix_autofree char *ecCopy = celix_utils_strdup(serviceExportedConfigs);
         if (ecCopy == NULL) {
             return NULL;
         }
@@ -502,15 +470,13 @@ static char *rsaShm_getRpcTypeWithDefault(rsa_shm_t *admin, const char *serviceE
 
         token = strtok_r(ecCopy, delimiter, &savePtr);
         while (token != NULL) {
-            char *tokenTrim = celix_utils_trim(token);
+            celix_autofree char *tokenTrim = celix_utils_trim(token);
             if (tokenTrim != NULL && strncmp(tokenTrim, RSA_RPC_TYPE_PREFIX, sizeof(RSA_RPC_TYPE_PREFIX) - 1) == 0) {
-                rpcType = tokenTrim;
+                rpcType = celix_steal_ptr(tokenTrim);
                 break;//TODO Multiple RPC type values may be supported in the future.
             }
-            free(tokenTrim);
             token = strtok_r(NULL, delimiter, &savePtr);
         }
-        free(ecCopy);
     }
     //if rpc type is not exist, then set a default value.
     if (rpcType == NULL && defaultVal != NULL) {
@@ -528,7 +494,7 @@ static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
     assert(interface != NULL);
     assert(description != NULL);
 
-    celix_properties_t *endpointProperties = celix_properties_copy(exportedProperties);
+    celix_autoptr(celix_properties_t) endpointProperties = celix_properties_copy(exportedProperties);
     celix_properties_unset(endpointProperties,OSGI_FRAMEWORK_OBJECTCLASS);
     celix_properties_unset(endpointProperties,OSGI_RSA_SERVICE_EXPORTED_INTERFACES);
     celix_properties_unset(endpointProperties,OSGI_RSA_SERVICE_EXPORTED_CONFIGS);
@@ -544,8 +510,7 @@ static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
     const char *uuid = celix_bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
     if (uuid == NULL) {
         celix_logHelper_error(admin->logHelper, "Cannot get framework uuid");
-        status = CELIX_FRAMEWORK_EXCEPTION;
-        goto get_framework_uuid_failed;
+        return CELIX_FRAMEWORK_EXCEPTION;
     }
     celix_properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
     celix_properties_set(endpointProperties, (char*) OSGI_FRAMEWORK_OBJECTCLASS, interface);
@@ -553,49 +518,38 @@ static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
     celix_properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
     celix_properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED, "true");
 
-    char *rpcType = rsaShm_getRpcTypeWithDefault(admin, celix_properties_get(exportedProperties,OSGI_RSA_SERVICE_EXPORTED_CONFIGS, NULL),
+    celix_autofree char *rpcType = rsaShm_getRpcTypeWithDefault(admin, celix_properties_get(exportedProperties,OSGI_RSA_SERVICE_EXPORTED_CONFIGS, NULL),
             RSA_SHM_RPC_TYPE_DEFAULT);
     if (rpcType == NULL) {
         celix_logHelper_error(admin->logHelper, "Failed to get rpc type");
-        status = CELIX_ENOMEM;
-        goto get_rpc_type_failed;
+        return CELIX_ENOMEM;
     }
 
     char *importedConfigs = NULL;
     int bytes = asprintf(&importedConfigs, "%s,%s",RSA_SHM_CONFIGURATION_TYPE, rpcType);
     if (bytes < 0) {
         celix_logHelper_error(admin->logHelper, "Failed to create imported configs");
-        status = CELIX_ENOMEM;
-        goto alloc_import_config_failed;
+        return CELIX_ENOMEM;
     }
     celix_properties_setWithoutCopy(endpointProperties, strdup(OSGI_RSA_SERVICE_IMPORTED_CONFIGS), importedConfigs);
     celix_properties_set(endpointProperties, (char *) RSA_SHM_SERVER_NAME_KEY, admin->shmServerName);
     status = endpointDescription_create(endpointProperties, description);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(admin->logHelper, "Cannot create endpoint description for service %s", interface);
-        goto create_ep_failed;
+        return status;
     }
-
-    free(rpcType);
-
+    celix_steal_ptr(endpointProperties);
     return CELIX_SUCCESS;
-create_ep_failed:
-alloc_import_config_failed:
-    free(rpcType);
-get_rpc_type_failed:
-get_framework_uuid_failed:
-    celix_properties_destroy(endpointProperties);
-    return status;
 }
 
 //LCOV_EXCL_START
-celix_status_t rsaShm_getExportedServices(rsa_shm_t *admin, array_list_pt *services) {
+celix_status_t rsaShm_getExportedServices(rsa_shm_t *admin CELIX_UNUSED, array_list_pt *services CELIX_UNUSED) {
     celix_status_t status = CELIX_SUCCESS;
     //It is stub and will not be called at present.
     return status;
 }
 
-celix_status_t rsaShm_getImportedEndpoints(rsa_shm_t *admin, array_list_pt *services) {
+celix_status_t rsaShm_getImportedEndpoints(rsa_shm_t *admin CELIX_UNUSED, array_list_pt *services CELIX_UNUSED) {
     celix_status_t status = CELIX_SUCCESS;
     //It is stub and will not be called at present.
     return status;
@@ -609,13 +563,14 @@ celix_status_t rsaShm_importService(rsa_shm_t *admin, endpoint_description_t *en
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
+    *registration = NULL;
     celix_logHelper_info(admin->logHelper, "Import service %s", endpointDesc->serviceName);
 
     bool importService = false;
     const char *importConfigs = celix_properties_get(endpointDesc->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
     if (importConfigs != NULL) {
         // Check whether this RSA must be imported
-        char *ecCopy = strndup(importConfigs, strlen(importConfigs));
+        celix_autofree char *ecCopy = strndup(importConfigs, strlen(importConfigs));
         const char delimiter[2] = ",";
         char *token, *savePtr;
 
@@ -628,51 +583,42 @@ celix_status_t rsaShm_importService(rsa_shm_t *admin, endpoint_description_t *en
             }
             token = strtok_r(NULL, delimiter, &savePtr);
         }
-        free(ecCopy);
     } else {
         celix_logHelper_warning(admin->logHelper, "Mandatory %s element missing from endpoint description", OSGI_RSA_SERVICE_IMPORTED_CONFIGS);
+    }
+    if (!importService) {
+        return CELIX_SUCCESS;
     }
 
     import_registration_t *import = NULL;
     const char *shmServerName = NULL;
-    if (importService) {
 
-        shmServerName = celix_properties_get(endpointDesc->properties, RSA_SHM_SERVER_NAME_KEY, NULL);
-        if (shmServerName == NULL) {
-            status = CELIX_ILLEGAL_ARGUMENT;
-            celix_logHelper_error(admin->logHelper, "Get shm server name for service %s failed", endpointDesc->serviceName);
-            goto shm_server_name_err;
-        }
-
-        status = rsaShmClientManager_createOrAttachClient(admin->shmClientManager,
-                shmServerName, (long)endpointDesc->serviceId);
-        if (status != CELIX_SUCCESS) {
-            celix_logHelper_error(admin->logHelper, "Error Creating shm client for service %s. %d", endpointDesc->serviceName, status);
-            goto shm_client_err;
-        }
-
-        status = importRegistration_create(admin->context, admin->logHelper,
-                endpointDesc, admin->reqSenderSvcId, &import);
-        if (status != CELIX_SUCCESS) {
-            celix_logHelper_error(admin->logHelper, "Error Creating import registration for service %s. %d", endpointDesc->serviceName, status);
-            goto registration_create_failed;
-        }
-
-        celixThreadMutex_lock(&admin->importedServicesLock);
-        celix_arrayList_add(admin->importedServices, import);
-        celixThreadMutex_unlock(&admin->importedServicesLock);
-
-        *registration = import;
+    shmServerName = celix_properties_get(endpointDesc->properties, RSA_SHM_SERVER_NAME_KEY, NULL);
+    if (shmServerName == NULL) {
+        celix_logHelper_error(admin->logHelper, "Get shm server name for service %s failed", endpointDesc->serviceName);
+        return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    return CELIX_SUCCESS;
+    status = rsaShmClientManager_createOrAttachClient(admin->shmClientManager,
+                                                      shmServerName, (long)endpointDesc->serviceId);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(admin->logHelper, "Error Creating shm client for service %s. %d", endpointDesc->serviceName, status);
+        return status;
+    }
 
-registration_create_failed:
-    rsaShmClientManager_destroyOrDetachClient(admin->shmClientManager, shmServerName,
-            (long)endpointDesc->serviceId);
-shm_client_err:
-shm_server_name_err:
-    return status;
+    status = importRegistration_create(admin->context, admin->logHelper,
+                                       endpointDesc, admin->reqSenderSvcId, &import);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(admin->logHelper, "Error Creating import registration for service %s. %d", endpointDesc->serviceName, status);
+        rsaShmClientManager_destroyOrDetachClient(admin->shmClientManager, shmServerName,
+                                                  (long)endpointDesc->serviceId);
+        return status;
+    }
+
+    celix_autoptr(celix_mutex_locker_t) lock = celixThreadMutexLocker_new(&admin->importedServicesLock);
+    celix_arrayList_add(admin->importedServices, import);
+    *registration = import;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t rsaShm_removeImportedService(rsa_shm_t *admin, import_registration_t *registration) {
@@ -696,10 +642,9 @@ celix_status_t rsaShm_removeImportedService(rsa_shm_t *admin, import_registratio
         celix_logHelper_error(admin->logHelper, "Error getting endpoint from imported registration for service %s. It maybe cause resource leaks.", endpoint->serviceName);
     }
 
-    celixThreadMutex_lock(&admin->importedServicesLock);
+    celix_autoptr(celix_mutex_locker_t) lock = celixThreadMutexLocker_new(&admin->importedServicesLock);
     celix_arrayList_remove(admin->importedServices, registration);
     importRegistration_destroy(registration);
-    celixThreadMutex_unlock(&admin->importedServicesLock);
 
     return CELIX_SUCCESS;
 }
