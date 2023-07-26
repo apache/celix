@@ -149,8 +149,7 @@ celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celi
     watcher->running = true;
     status = celixThread_create(&watcher->watchEPThread,NULL, discoveryZeroconfWatcher_watchEPThread, watcher);
     if (status != CELIX_SUCCESS) {
-        celix_bundleContext_stopTrackerAsync(ctx, watcher->epListenerTrkId, NULL, NULL);
-        celix_bundleContext_waitForAsyncStopTracker(ctx, watcher->epListenerTrkId);
+        celix_bundleContext_stopTracker(ctx, watcher->epListenerTrkId);
         return status;
     }
     celixThread_setName(&watcher->watchEPThread, "DiscWatcher");
