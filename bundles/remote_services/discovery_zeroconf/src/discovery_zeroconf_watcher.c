@@ -153,8 +153,7 @@ celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celi
     *watcherOut = watcher;
     return CELIX_SUCCESS;
 thread_err:
-    celix_bundleContext_stopTrackerAsync(ctx, watcher->epListenerTrkId, NULL, NULL);
-    celix_bundleContext_waitForAsyncStopTracker(ctx, watcher->epListenerTrkId);
+    celix_bundleContext_stopTracker(ctx, watcher->epListenerTrkId);
 epl_tracker_err:
     celix_longHashMap_destroy(watcher->epls);
     celix_stringHashMap_destroy(watcher->watchedServices);
