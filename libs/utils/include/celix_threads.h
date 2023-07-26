@@ -154,6 +154,8 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadRwlock_create(celix_thread_rwlock_t
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadRwlock_destroy(celix_thread_rwlock_t *lock);
 
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_thread_rwlock_t, celixThreadRwlock_destroy)
+
 CELIX_UTILS_EXPORT celix_status_t celixThreadRwlock_readLock(celix_thread_rwlock_t *lock);
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadRwlock_tryReadLock(celix_thread_rwlock_t *lock);

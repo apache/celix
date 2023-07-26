@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <celix_types.h>
 
+#include "celix_cleanup.h"
 #include "celix_errno.h"
 #include "celix_array_list.h"
 #include "remote_interceptor.h"
@@ -31,6 +32,8 @@ typedef struct remote_interceptors_handler remote_interceptors_handler_t;
 
 celix_status_t remoteInterceptorsHandler_create(celix_bundle_context_t *ctx, remote_interceptors_handler_t **handler);
 celix_status_t remoteInterceptorsHandler_destroy(remote_interceptors_handler_t *handler);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(remote_interceptors_handler_t, remoteInterceptorsHandler_destroy)
 
 bool remoteInterceptorHandler_invokePreExportCall(remote_interceptors_handler_t *handler, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t **metadata);
 void remoteInterceptorHandler_invokePostExportCall(remote_interceptors_handler_t *handler, const celix_properties_t *svcProperties, const char *functionName, celix_properties_t *metadata);

@@ -24,6 +24,7 @@
 extern "C" {
 #endif
 #include "endpoint_description.h"
+#include "celix_cleanup.h"
 #include "celix_log_helper.h"
 #include "celix_types.h"
 #include "celix_errno.h"
@@ -33,6 +34,8 @@ typedef struct rsa_json_rpc rsa_json_rpc_t;
 celix_status_t rsaJsonRpc_create(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper, rsa_json_rpc_t **jsonRpcOut);
 
 void rsaJsonRpc_destroy(rsa_json_rpc_t *jsonRpc);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(rsa_json_rpc_t, rsaJsonRpc_destroy)
 
 celix_status_t rsaJsonRpc_createProxy(void *handle, const endpoint_description_t *endpointDesc,
         long requestSenderSvcId, long *proxySvcId);
