@@ -33,6 +33,9 @@ These `services` can be used directly or in a declarative way using `components`
 To run a selection of bundles, an Apache Celix `container` executable can be created. An Apache Celix `containter` will  
 start an Apache Celix framework and install and start the provided bundles.  
 
+## C Patterns
+Apache Celix is written in C and uses some C patterns to improve the development experience.
+
 ## Bundles
 An Apache Celix Bundle is a zip file which contains a collection of shared libraries, 
 configuration files and optional an activation entry. 
@@ -79,6 +82,8 @@ bundles contains binaries depending on the stdlibc++ library.
 * Building
   * [Building and Installing Apache Celix](building/README.md)
   * [Building and Developing Apache Celix with CLion](building/dev_celix_with_clion.md)
+* C Patterns
+  * [Apache Celix C Patterns](c_patterns.md)
 * Framework 
   * [Apache Celix Bundles](bundles.md)
   * [Apache Celix Services](services.md)
