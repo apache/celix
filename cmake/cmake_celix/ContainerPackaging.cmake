@@ -25,10 +25,10 @@ if (NOT TARGET celix-containers)
 	)
 	set_target_properties(celix-containers PROPERTIES "CONTAINER_DEPLOYMENTS" "") #initial empty deps list
 
-	get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
+	get_directory_property(CLEANFILES ADDITIONAL_CLEAN_FILES)
 	list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/deploy")
 	list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/celix")
-	set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
+	set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES "${CLEANFILES}")
 endif ()
 #####
 
@@ -293,7 +293,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
     else ()
         #LAUNCHER already set
         add_custom_target(${CONTAINER_TARGET}
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LAUNCHER} ${CONTAINER_LOC}/${CONTAINER_NAME}
+		    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LAUNCHER} ${CONTAINER_LOC}/${CONTAINER_NAME}
         )
     endif ()
 
@@ -351,14 +351,6 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
         set(LIB_PATH_NAME "LD_LIBRARY_PATH")
     endif()
 
-
-    #add a custom target which can depend on generation expressions
-    add_custom_target(${CONTAINER_TARGET}-deps
-        DEPENDS
-            $<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_TARGET_DEPS>
-    )
-    add_dependencies(${CONTAINER_TARGET} ${CONTAINER_TARGET}-deps)
-
     if (CONTAINER_NO_COPY)
         set(CONTAINER_COPY FALSE)
     elseif (CONTAINER_COPY)
@@ -369,7 +361,6 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
 
     ##### Container Target Properties #####
     #internal use
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_TARGET_DEPS" "") #target deps for the container.
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_0" "") #bundles to deploy for the container for startup level 0
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_1" "") #bundles to deploy for the container for startup level 1
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_2" "") #bundles to deploy for the container for startup level 2
@@ -404,9 +395,9 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
 
 
     #ensure the container dir will be deleted during clean
-    get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
+    get_directory_property(CLEANFILES ADDITIONAL_CLEAN_FILES)
     list(APPEND CLEANFILES "$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_LOC>")
-    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
+    set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES "${CLEANFILES}")
 endfunction()
 
 
@@ -443,56 +434,61 @@ function(celix_container_bundles_dir)
     endif()
 
     get_target_property(CONTAINER_LOC ${CONTAINER_TARGET} "CONTAINER_LOC")
-    get_target_property(DEPS ${CONTAINER_TARGET} "CONTAINER_TARGET_DEPS")
+
+    set(DEST_DIR "${CONTAINER_LOC}/${BD_DIR_NAME}")
+    get_target_property(CLEAN_FILES ${CONTAINER_TARGET} "ADDITIONAL_CLEAN_FILES")
+    if (NOT ${DEST_DIR} IN_LIST CLEAN_FILES)
+        list(APPEND CLEAN_FILES ${DEST_DIR})
+        set_target_properties(${CONTAINER_TARGET} PROPERTIES "ADDITIONAL_CLEAN_FILES" "${CLEAN_FILES}")
+    endif()
 
     foreach(BUNDLE IN ITEMS ${BD_BUNDLES})
         if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
-            get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME) 
-            set(OUT "${CONTAINER_LOC}/${BD_DIR_NAME}/${BUNDLE_FILENAME}")
-            add_custom_command(OUTPUT ${OUT}
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE} ${OUT}
-		        COMMENT "Copying (file) bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
-            )
+            get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME)
+            string(MAKE_C_IDENTIFIER ${BUNDLE_FILENAME} BUNDLE_ID) #Create id with no special chars
+            set(DEST "${DEST_DIR}/${BUNDLE_FILENAME}")
         elseif (TARGET ${BUNDLE})
             get_target_property(TARGET_TYPE ${BUNDLE} TYPE)
             if (TARGET_TYPE STREQUAL "INTERFACE_LIBRARY")
                 #ignore
             else ()
-                get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
-                if (IMP) #An imported bundle target -> handle target without DEPENDS
+                get_target_property(IMPORTED_TARGET ${BUNDLE} BUNDLE_IMPORTED)
+                get_target_property(ALIASED_TARGET ${BUNDLE} ALIASED_TARGET)
+                if (IMPORTED_TARGET) #An imported bundle target -> handle target without DEPENDS
                     _celix_extract_imported_bundle_info(${BUNDLE}) #extracts BUNDLE_FILE and BUNDLE_FILENAME
-                    string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-                    set(OUT "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
-                    set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/${BUNDLE_FILENAME}")
-                    add_custom_command(OUTPUT ${OUT}
-                        COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
-                        COMMAND ${CMAKE_COMMAND} -E make_directory ${CONTAINER_LOC}/${BD_DIR_NAME}
-                        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${BUNDLE_FILE}" ${DEST}
-                        COMMENT "Copying (imported) bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
-                    )
+                    string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars
+                    set(DEST "${DEST_DIR}/${BUNDLE_FILENAME}")
+                elseif (ALIASED_TARGET) #An alias target use the aliased target
+                    string(MAKE_C_IDENTIFIER ${ALIASED_TARGET} BUNDLE_ID) #Create id with no special chars
+                    set(BUNDLE_FILE "$<TARGET_PROPERTY:${ALIASED_TARGET},BUNDLE_FILE>")
+                    celix_get_bundle_filename(${ALIASED_TARGET} BUNDLE_FILENAME)
+                    set(DEST "${DEST_DIR}/${BUNDLE_FILENAME}")
+                    set(DEPS ${ALIASED_TARGET}_bundle) #Note white-box knowledge of celix_bundle custom target
                 else() #Assuming a bundle target (library or add_custom_target)
-                    string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-                    set(OUT "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
-                    set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
-                    add_custom_command(OUTPUT ${OUT}
-                        COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
-                        COMMAND ${CMAKE_COMMAND} -E make_directory ${CONTAINER_LOC}/${BD_DIR_NAME}
-                        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${DEST}
-                        COMMENT "Copying (target) bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
-                        DEPENDS $<TARGET_PROPERTY:${BUNDLE},BUNDLE_CREATE_BUNDLE_TARGET>
-                    )
+                    string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars
+                    set(BUNDLE_FILE "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>")
+                    celix_get_bundle_filename(${BUNDLE} BUNDLE_FILENAME)
+                    set(DEST "${DEST_DIR}/${BUNDLE_FILENAME}")
+                    set(DEPS ${BUNDLE}_bundle) #Note white-box knowledge of celix_bundle custom target
                 endif ()
             endif ()
         else ()
             message(FATAL_ERROR "Cannot add bundle in container ${CONTAINER_TARGET}. Provided bundle is not a abs path to an existing file nor a cmake target (${BUNDLE}).")
         endif ()
 
-        if (OUT)
-            list(APPEND DEPS "${OUT}")
+        if (BUNDLE_ID AND DEST AND BUNDLE_FILE)
+            add_custom_target(${CONTAINER_TARGET}_copy_bundle_${BUNDLE_ID}
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_FILE} ${DEST}
+                BYPRODUCTS ${DEST}
+                DEPENDS ${DEPS}
+            )
+            add_dependencies(${CONTAINER_TARGET} ${CONTAINER_TARGET}_copy_bundle_${BUNDLE_ID})
+
+            get_target_property(CLEAN_FILES ${CONTAINER_TARGET} "ADDITIONAL_CLEAN_FILES")
+            list(APPEND CLEAN_FILES ${DEST})
+            set_target_properties(${CONTAINER_TARGET} PROPERTIES "ADDITIONAL_CLEAN_FILES" "${CLEAN_FILES}")
         endif ()
     endforeach()
-
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_TARGET_DEPS" "${DEPS}")
 endfunction()
 
 function(deploy_bundles)
