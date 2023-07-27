@@ -53,9 +53,7 @@ celix_components_ready_check_t* celix_componentsReadyCheck_create(celix_bundle_c
         }
 
         char filter[32];
-        int written =
-            snprintf(filter, sizeof(filter), "(%s=%s)", CELIX_CONDITION_ID, CELIX_CONDITION_ID_FRAMEWORK_READY);
-        assert(written < sizeof(filter));
+        snprintf(filter, sizeof(filter), "(%s=%s)", CELIX_CONDITION_ID, CELIX_CONDITION_ID_FRAMEWORK_READY);
 
         celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
         opts.filter.serviceName = CELIX_CONDITION_SERVICE_NAME;
