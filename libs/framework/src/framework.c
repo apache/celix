@@ -42,7 +42,6 @@
 #include "bundle_private.h"
 #include "framework_private.h"
 #include "linked_list_iterator.h"
-#include "resolver.h"
 #include "service_reference_private.h"
 #include "service_registration_private.h"
 #include "celix_scheduled_event.h"
@@ -984,83 +983,6 @@ long framework_getNextBundleId(framework_pt framework) {
         nextId = __atomic_fetch_add(&framework->currentBundleId, 1, __ATOMIC_SEQ_CST);
     }
     return nextId;
-}
-
-celix_status_t framework_markResolvedModules(framework_pt framework, linked_list_pt resolvedModuleWireMap) {
-    celix_status_t status = CELIX_SUCCESS;
-    if (resolvedModuleWireMap != NULL) {
-        // hash_map_iterator_pt iterator = hashMapIterator_create(resolvedModuleWireMap);
-        linked_list_iterator_pt iterator = linkedListIterator_create(resolvedModuleWireMap, linkedList_size(resolvedModuleWireMap));
-        while (linkedListIterator_hasPrevious(iterator)) {
-            importer_wires_pt iw = linkedListIterator_previous(iterator);
-            // hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
-            module_pt module = iw->importer;
-
-//			bundle_pt bundle = module_getBundle(module);
-//			bundle_archive_pt archive = NULL;
-//			bundle_getArchive(bundle, &archive);
-//			bundle_revision_pt revision = NULL;
-//			bundleArchive_getCurrentRevision(archive, &revision);
-//			char *root = NULL;
-//			bundleRevision_getRoot(revision, &root);
-//			manifest_pt manifest = NULL;
-//			bundleRevision_getManifest(revision, &manifest);
-//
-//			char *private = manifest_getValue(manifest, OSGI_FRAMEWORK_PRIVATE_LIBRARY);
-//			char *export = manifest_getValue(manifest, OSGI_FRAMEWORK_EXPORT_LIBRARY);
-//
-//			printf("Root %s\n", root);
-
-            // for each library update the reference to the wires, if there are any
-
-            linked_list_pt wires = iw->wires;
-
-//			linked_list_iterator_pt wit = linkedListIterator_create(wires, 0);
-//			while (linkedListIterator_hasNext(wit)) {
-//			    wire_pt wire = linkedListIterator_next(wit);
-//			    module_pt importer = NULL;
-//			    requirement_pt requirement = NULL;
-//			    module_pt exporter = NULL;
-//                capability_pt capability = NULL;
-//			    wire_getImporter(wire, &importer);
-//			    wire_getRequirement(wire, &requirement);
-//
-//			    wire_getExporter(wire, &exporter);
-//			    wire_getCapability(wire, &capability);
-//
-//			    char *importerName = NULL;
-//			    module_getSymbolicName(importer, &importerName);
-//
-//			    char *exporterName = NULL;
-//                module_getSymbolicName(exporter, &exporterName);
-//
-//                version_pt version = NULL;
-//                char *name = NULL;
-//                capability_getServiceName(capability, &name);
-//                capability_getVersion(capability, &version);
-//                char *versionString = NULL;
-//                version_toString(version, framework->mp, &versionString);
-//
-//                printf("Module %s imports library %s:%s from %s\n", importerName, name, versionString, exporterName);
-//			}
-
-            if (status == CELIX_SUCCESS) {
-                module_setWires(module, wires);
-                resolver_moduleResolved(module);
-                const char *mname = NULL;
-                module_getSymbolicName(module, &mname);
-                status = framework_markBundleResolved(framework, module);
-                if (status == CELIX_SUCCESS) {
-                    module_setResolved(module);
-                }
-            }
-            linkedListIterator_remove(iterator);
-            free(iw);
-        }
-        linkedListIterator_destroy(iterator);
-        linkedList_destroy(resolvedModuleWireMap);
-    }
-    return status;
 }
 
 static celix_status_t framework_markBundleResolved(framework_pt framework, module_pt module) {
@@ -2273,7 +2195,6 @@ celix_status_t celix_framework_startBundleEntry(celix_framework_t* framework, ce
     const char* error = "";
     const char* name = "";
     module_pt module = NULL;
-    linked_list_pt wires = NULL;
     celix_bundle_context_t* context = NULL;
     celix_bundle_activator_t* activator = NULL;
 
@@ -2303,13 +2224,10 @@ celix_status_t celix_framework_startBundleEntry(celix_framework_t* framework, ce
             bundle_getCurrentModule(bndEntry->bnd, &module);
             module_getSymbolicName(module, &name);
             if (!module_isResolved(module)) {
-                wires = resolver_resolve(module);
-                if (wires == NULL) {
-                    celixThreadRwlock_unlock(&bndEntry->fsmMutex);
-                    return CELIX_BUNDLE_EXCEPTION;
-                }
-                status = framework_markResolvedModules(framework, wires);
-                if (status != CELIX_SUCCESS) {
+                status = framework_markBundleResolved(framework, module);
+                if (status == CELIX_SUCCESS) {
+                    module_setResolved(module);
+                } else {
                     break;
                 }
             }

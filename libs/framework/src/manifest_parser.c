@@ -39,15 +39,12 @@
 #include "linked_list_iterator.h"
 #include "celix_log.h"
 
-//FIXME the manifest parser has no destroy function and as result contains memory leaks.
-
 struct manifestParser {
 	module_pt owner;
 	manifest_pt manifest;
 
 	version_pt bundleVersion;
-	linked_list_pt capabilities;
-	linked_list_pt requirements;
+        //TODO: Implement Requirement-Capability-Model using RCM library
 };
 
 celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, manifest_parser_pt *manifest_parser) {
@@ -70,9 +67,6 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, mani
 			version_createEmptyVersion(&parser->bundleVersion);
 		}
 
-                linkedList_create(&parser->capabilities);
-                linkedList_create(&parser->requirements);
-
 		*manifest_parser = parser;
 
 		status = CELIX_SUCCESS;
@@ -86,10 +80,6 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, mani
 }
 
 celix_status_t manifestParser_destroy(manifest_parser_pt mp) {
-	linkedList_destroy(mp->capabilities);
-	mp->capabilities = NULL;
-	linkedList_destroy(mp->requirements);
-	mp->requirements = NULL;
 	version_destroy(mp->bundleVersion);
 	mp->bundleVersion = NULL;
 	mp->manifest = NULL;
@@ -128,20 +118,4 @@ celix_status_t manifestParser_getAndDuplicateDescription(manifest_parser_pt pars
 
 celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, version_pt *version) {
 	return version_clone(parser->bundleVersion, version);
-}
-
-celix_status_t manifestParser_getCapabilities(manifest_parser_pt parser, linked_list_pt *capabilities) {
-	celix_status_t status;
-
-	status = linkedList_clone(parser->capabilities, capabilities);
-
-	return status;
-}
-
-celix_status_t manifestParser_getRequirements(manifest_parser_pt parser, linked_list_pt *requirements) {
-	celix_status_t status;
-
-	status = linkedList_clone(parser->requirements, requirements);
-
-	return status;
 }

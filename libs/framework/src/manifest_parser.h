@@ -42,7 +42,5 @@ celix_status_t manifestParser_getAndDuplicateName(manifest_parser_pt parser, cha
 celix_status_t manifestParser_getAndDuplicateDescription(manifest_parser_pt parser, char **description);
 celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, version_pt *version);
 celix_status_t manifestParser_getAndDuplicateGroup(manifest_parser_pt parser, char **group);
-celix_status_t manifestParser_getCapabilities(manifest_parser_pt parser, linked_list_pt *capabilities);
-celix_status_t manifestParser_getRequirements(manifest_parser_pt parser, linked_list_pt *requirements);
 
 #endif /* MANIFEST_PARSER_H_ */
