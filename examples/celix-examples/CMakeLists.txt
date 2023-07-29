@@ -40,9 +40,6 @@ if (EXAMPLES)
         add_subdirectory(readme_cxx_examples)
     endif ()
 
-    #TODO refactor export_import
-    #add_subdirectory(export_import)
-
     add_subdirectory(http_example)
     add_subdirectory(embedding)
     add_subdirectory(track_tracker_example)
