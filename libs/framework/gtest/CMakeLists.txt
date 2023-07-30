@@ -234,6 +234,9 @@ if (ENABLE_TESTING_FOR_CXX14)
             COND_TEST_BUNDLE_LOC="${COND_TEST_BUNDLE_LOC}"
             INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE="${CMAKE_CURRENT_BINARY_DIR}/install_and_start_bundles.properties"
     )
+    if (ENABLE_TESTING_ON_CI)
+        target_compile_definitions(test_framework_with_cxx14 PRIVATE TESTING_ON_CI=1)
+    endif ()
     add_test(NAME test_framework_with_cxx14 COMMAND test_framework_with_cxx14)
     setup_target_for_coverage(test_framework_with_cxx14 SCAN_DIR ..)
 endif ()
