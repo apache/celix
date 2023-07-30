@@ -15,10 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-[package]
-name = "rust_bundle_activator"
-version = "0.1.0"
 
-[lib]
-name = "rust_bundle_activator"
-crate-type = ["cdylib"]
+[workspace]
+members = [
+    "hello_world_activator",
+]

@@ -25,11 +25,12 @@ if (CELIX_RUST_EXPERIMENTAL)
     )
     FetchContent_MakeAvailable(Corrosion)
 
-    corrosion_import_crate(MANIFEST_PATH hello_world_activator/Cargo.toml)
+    corrosion_import_crate(MANIFEST_PATH Cargo.toml)
 
     #Note corrosion_import_crate import creates a rust_bundle_activator CMake target, but this is a INTERFACE target.
-    #For no using abs path to expected bundle activator lib as ACTIVATOR argument
-    add_celix_bundle(rust_bundle ACTIVATOR ${CMAKE_BINARY_DIR}/misc/experimental/bundles/rust/librust_bundle_activator.so)
+    #Using the INTERFACE_LINK_LIBRARIES property we can get the actual target.
+    get_target_property(ACTUAL_LIB_TARGET rust_bundle_activator INTERFACE_LINK_LIBRARIES)
+    add_celix_bundle(rust_bundle ACTIVATOR ${ACTUAL_LIB_TARGET})
     add_dependencies(rust_bundle rust_bundle_activator)
 
     add_celix_container(rust_container
