@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  build-conan:
+  linux-build-conan:
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -72,7 +72,7 @@ jobs:
         run: |
           conan create -pr:b release -pr:h default -tf examples/conan_test_package -tbf test-build -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s .
 
-  build-apt:
+  linux-build-apt:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
