@@ -28,6 +28,9 @@ target_link_libraries(test_components_ready PRIVATE
         GTest::gtest
         GTest::gtest_main
 )
+if (ENABLE_TESTING_ON_CI)
+    target_compile_definitions(test_components_ready PRIVATE TESTING_ON_CI=1)
+endif ()
 celix_target_bundle_set_definition(test_components_ready NAME COMPONENTS_READY_CHECK_BUNDLE_SET Celix::components_ready_check)
 celix_target_bundle_set_definition(test_components_ready NAME ACTIVE_CMP_TEST_BUNDLE_SET ActiveComponentBundle)
 celix_target_bundle_set_definition(test_components_ready NAME INACTIVE_CMP_TEST_BUNDLE_SET InactiveComponentBundle)

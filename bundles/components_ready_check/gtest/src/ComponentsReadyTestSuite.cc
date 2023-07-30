@@ -26,7 +26,12 @@
 
 class ComponentsReadyTestSuite : public ::testing::Test {
 public:
+#ifdef TESTING_ON_CI
+    const int USE_SERVICE_TIMEOUT_IN_MS = 1000;
+#else
     const int USE_SERVICE_TIMEOUT_IN_MS = 250;
+#endif
+
     const std::string componentsReadyFilter =
             std::string{"("} + CELIX_CONDITION_ID + "=" + CELIX_CONDITION_ID_COMPONENTS_READY + ")";
 
@@ -77,7 +82,7 @@ TEST_F(ComponentsReadyTestSuite, ComponentsReadyWithInactiveComponentTest) {
     // When a test bundle with a not active-able component is installed
     celix::installBundleSet(*fw, INACTIVE_CMP_TEST_BUNDLE_SET);
 
-    // WAnd the components ready check bundle is installed
+    // And the components ready check bundle is installed
     celix::installBundleSet(*fw, COMPONENTS_READY_CHECK_BUNDLE_SET);
 
     // Then the "components.ready" condition will not become available, because the test bundle contains a component
