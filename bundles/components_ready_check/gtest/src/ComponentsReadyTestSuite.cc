@@ -26,7 +26,9 @@
 
 class ComponentsReadyTestSuite : public ::testing::Test {
 public:
-#ifdef TESTING_ON_CI
+#if defined(__APPLE__) && defined(TESTING_ON_CI)
+    const int USE_SERVICE_TIMEOUT_IN_MS = 1500;
+#elif TESTING_ON_CI
     const int USE_SERVICE_TIMEOUT_IN_MS = 1000;
 #else
     const int USE_SERVICE_TIMEOUT_IN_MS = 250;
