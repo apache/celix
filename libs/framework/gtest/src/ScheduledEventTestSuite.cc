@@ -25,10 +25,10 @@
 
 class ScheduledEventTestSuite : public ::testing::Test {
   public:
-#ifdef __APPLE__
-    const int ALLOWED_ERROR_MARGIN_IN_MS = 500;
+#ifdef CELIX_BUILD_ON_CI
+    const int ALLOWED_ERROR_MARGIN_IN_MS = 1000;
 #else
-    const int ALLOWED_ERROR_MARGIN_IN_MS = 200;
+    const int ALLOWED_ERROR_MARGIN_IN_MS = 100;
 #endif
 
     const double ALLOWED_PROCESSING_TIME_IN_SECONDS = 0.1;
@@ -483,11 +483,12 @@ TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventRAIITest) {
     std::atomic<int> count{0};
     auto callback = [&count]() { count.fetch_add(1); };
 
+    // And a remove boolean and a remove callback to set the boolean
     std::atomic<bool> removed{false};
     auto removeCallback = [&removed]() { removed.store(true); };
 
     {
-        // And a scoped scheduled event with a initial delay of 50ms
+        // And a scoped scheduled event with an initial delay of 50ms
         auto event = fw->getFrameworkBundleContext()
                          ->scheduledEvent()
                          .withName("test cxx one-shot")
@@ -498,10 +499,13 @@ TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventRAIITest) {
 
         // Then the count is not yet increased
         ASSERT_EQ(0, count.load());
+
+        // And the remove callback is not yet called
+        EXPECT_FALSE(removed.load());
     }
     // When the event is out of scope
 
-    // Then the remove callback is not yet called, because a one-shot event is not canceled when out of scope
+    // Then the remove callback is not yet called, because a one-shot event is not canceled when it goes out of scope
     EXPECT_FALSE(removed.load());
 
     // And count will be increased within the initial delay (including some error margin)
@@ -509,7 +513,7 @@ TEST_F(ScheduledEventTestSuite, CxxOneShotScheduledEventRAIITest) {
     EXPECT_EQ(1, count.load());
 
     // And the remove callback is called shortly after the initial delay
-    waitFor([&] { return removed.load(); }, std::chrono::milliseconds{10});
+    waitFor([&] { return removed.load(); }, std::chrono::milliseconds{ALLOWED_ERROR_MARGIN_IN_MS});
     EXPECT_TRUE(removed.load());
 }
 

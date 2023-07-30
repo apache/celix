@@ -85,6 +85,7 @@ class CelixConan(ConanFile):
         "celix_install_deprecated_api": [True, False],
         "celix_use_compression_for_bundle_zips": [True, False],
         "celix_err_buffer_size": "ANY",
+        "celix_build_on_ci": [True, False],
     }
     default_options = {
         "enable_testing": False,
@@ -134,6 +135,7 @@ class CelixConan(ConanFile):
         "celix_install_deprecated_api": False,
         "celix_use_compression_for_bundle_zips": True,
         "celix_err_buffer_size": 512,
+        "celix_build_on_ci": False,
     }
     _cmake = None
 
