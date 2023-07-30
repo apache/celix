@@ -25,7 +25,7 @@ if (CELIX_RUST_EXPERIMENTAL)
     )
     FetchContent_MakeAvailable(Corrosion)
 
-    corrosion_import_crate(MANIFEST_PATH Cargo.toml)
+    corrosion_import_crate(MANIFEST_PATH hello_world_activator/Cargo.toml)
 
     #Note corrosion_import_crate import creates a rust_bundle_activator CMake target, but this is a INTERFACE target.
     #For no using abs path to expected bundle activator lib as ACTIVATOR argument
