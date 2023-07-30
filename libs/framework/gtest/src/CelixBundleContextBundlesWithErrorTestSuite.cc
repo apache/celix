@@ -18,12 +18,11 @@
  */
 
 #include <gtest/gtest.h>
+
 #include "celix_bundle_context.h"
 #include "celix_framework.h"
 #include "celix_framework_factory.h"
-extern "C" {
-#include "celix_libloader.h"
-}
+#include "celix_constants.h"
 #include "celix_module_private.h"
 #include "celix_properties.h"
 #include "celix_utils_ei.h"
@@ -40,6 +39,8 @@ public:
         celix_properties_setBool(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", true);
         celix_properties_setBool(properties, "org.osgi.framework.storage.clean", true);
         celix_properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
+        celix_properties_setBool(properties, CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED, false);
+        celix_properties_set(properties, CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE, "10");
 
         fw = celix_frameworkFactory_createFramework(properties);
         ctx = celix_framework_getFrameworkContext(fw);
