@@ -183,7 +183,7 @@ endif ()
 option(ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11 "Test the Dependency Manager for C++11 support" OFF)
 option(ENABLE_TESTING_FOR_CXX14 "Test celix utils and framework C++ header for C++14 support" OFF)
 
-option(CELIX_BUILD_ON_CI "Whether the build is done on a CI server" OFF)
+option(ENABLE_TESTING_ON_CI "Whether to enable testing on CI. This influence allowed timing errors during unit tests" OFF)
 
 if (CELIX_INSTALL_DEPRECATED_API)
     #ignore deprecated warnings

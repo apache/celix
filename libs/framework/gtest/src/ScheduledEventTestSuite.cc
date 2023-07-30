@@ -25,7 +25,7 @@
 
 class ScheduledEventTestSuite : public ::testing::Test {
   public:
-#ifdef CELIX_BUILD_ON_CI
+#ifdef TESTING_ON_CI
     const int ALLOWED_ERROR_MARGIN_IN_MS = 1000;
 #else
     const int ALLOWED_ERROR_MARGIN_IN_MS = 100;

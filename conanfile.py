@@ -85,7 +85,7 @@ class CelixConan(ConanFile):
         "celix_install_deprecated_api": [True, False],
         "celix_use_compression_for_bundle_zips": [True, False],
         "celix_err_buffer_size": "ANY",
-        "celix_build_on_ci": [True, False],
+        "enable_testing_on_ci": [True, False],
     }
     default_options = {
         "enable_testing": False,
@@ -135,7 +135,7 @@ class CelixConan(ConanFile):
         "celix_install_deprecated_api": False,
         "celix_use_compression_for_bundle_zips": True,
         "celix_err_buffer_size": 512,
-        "celix_build_on_ci": False,
+        "enable_testing_on_ci": False,
     }
     _cmake = None
 
@@ -166,6 +166,7 @@ class CelixConan(ConanFile):
         del self.info.options.build_shell_bonjour
         del self.info.options.enable_testing_dependency_manager_for_cxx11
         del self.info.options.enable_testing_for_cxx14
+        del self.info.options.enable_testing_on_ci
 
     def build_requirements(self):
         if self.options.enable_testing:

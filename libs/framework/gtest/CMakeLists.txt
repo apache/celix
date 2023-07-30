@@ -124,9 +124,9 @@ target_compile_definitions(test_framework PRIVATE
         COND_TEST_BUNDLE_LOC="${COND_TEST_BUNDLE_LOC}"
         INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE="${CMAKE_CURRENT_BINARY_DIR}/install_and_start_bundles.properties"
 )
-if (CELIX_BUILD_ON_CI)
-    target_compile_definitions(test_framework PRIVATE CELIX_BUILD_ON_CI=1)
-endif (CELIX_BUILD_ON_CI)
+if (ENABLE_TESTING_ON_CI)
+    target_compile_definitions(test_framework PRIVATE TESTING_ON_CI=1)
+endif ()
 add_test(NAME test_framework COMMAND test_framework)
 setup_target_for_coverage(test_framework SCAN_DIR ..)
 
