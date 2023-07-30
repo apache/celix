@@ -118,6 +118,8 @@ celix_status_t celix_frameworkBundle_handleFrameworkEvent(void* handle, framewor
 
 celix_status_t celix_frameworkBundle_start(void* userData, celix_bundle_context_t* ctx) {
     celix_framework_bundle_t* act = userData;
+    celix_framework_t* fw = celix_bundleContext_getFramework(ctx);
+    celix_bundle_t* bnd = celix_bundleContext_getBundle(ctx);
 
     bool conditionsEnabled = celix_bundleContext_getPropertyAsBool(
         ctx, CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED, CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED_DEFAULT);
@@ -125,8 +127,7 @@ celix_status_t celix_frameworkBundle_start(void* userData, celix_bundle_context_
         return CELIX_SUCCESS;
     }
 
-    celix_status_t status = fw_addFrameworkListener(
-            celix_bundleContext_getFramework(ctx), celix_bundleContext_getBundle(ctx), &act->listener);
+    celix_status_t status = fw_addFrameworkListener(fw, bnd, &act->listener);
     if (status != CELIX_SUCCESS) {
         celix_bundleContext_log(
                 ctx, CELIX_LOG_LEVEL_ERROR, "Cannot add framework listener for framework bundle");
@@ -135,6 +136,7 @@ celix_status_t celix_frameworkBundle_start(void* userData, celix_bundle_context_
 
     celix_frameworkBundle_registerTrueCondition(act);
     if (act->trueConditionSvcId < 0) {
+        fw_removeFrameworkListener(fw, bnd, &act->listener);
         return CELIX_BUNDLE_EXCEPTION;
     }
 
