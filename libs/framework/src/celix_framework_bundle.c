@@ -125,13 +125,18 @@ celix_status_t celix_frameworkBundle_start(void* userData, celix_bundle_context_
         return CELIX_SUCCESS;
     }
 
+    celix_status_t status = fw_addFrameworkListener(
+            celix_bundleContext_getFramework(ctx), celix_bundleContext_getBundle(ctx), &act->listener);
+    if (status != CELIX_SUCCESS) {
+        celix_bundleContext_log(
+                ctx, CELIX_LOG_LEVEL_ERROR, "Cannot add framework listener for framework bundle");
+        return status;
+    }
+
     celix_frameworkBundle_registerTrueCondition(act);
     if (act->trueConditionSvcId < 0) {
         return CELIX_BUNDLE_EXCEPTION;
     }
-
-    fw_addFrameworkListener(
-        celix_bundleContext_getFramework(ctx), celix_bundleContext_getBundle(ctx), &act->listener);
 
     return CELIX_SUCCESS;
 }

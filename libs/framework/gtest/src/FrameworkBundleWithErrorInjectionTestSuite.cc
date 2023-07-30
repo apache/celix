@@ -22,7 +22,7 @@
 #include "celix/FrameworkFactory.h"
 #include "celix_condition.h"
 #include "celix_framework_bundle.h"
-
+#include "framework_private.h"
 #include "celix_properties_ei.h"
 #include "celix_threads_ei.h"
 #include "malloc_ei.h"
@@ -37,6 +37,7 @@ class FrameworkBundleWithErrorInjectionTestSuite : public ::testing::Test {
 
     ~FrameworkBundleWithErrorInjectionTestSuite() noexcept override {
         // reset error injections
+        celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_celixThreadMutex_create(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
@@ -68,7 +69,7 @@ TEST_F(FrameworkBundleWithErrorInjectionTestSuite, ErrorStartingFrameworkBundleT
 }
 
 TEST_F(FrameworkBundleWithErrorInjectionTestSuite, ErrorRegisteringFrameworkReadyConditionTest) {
-    // When an error injection for celix_properties_create is primed when called from celix_frameworkBundle_handleFrameworkEvent
+    // Given an error injection for celix_properties_create is primed when called from celix_frameworkBundle_handleFrameworkEvent
     celix_ei_expect_celix_properties_create((void*)celix_frameworkBundle_handleFrameworkEvent, 0, nullptr);
 
     // And a framework instance is created
@@ -83,3 +84,10 @@ TEST_F(FrameworkBundleWithErrorInjectionTestSuite, ErrorRegisteringFrameworkRead
     EXPECT_EQ(count, 0);
 }
 
+TEST_F(FrameworkBundleWithErrorInjectionTestSuite, ErrorAddingFwListenerTest) {
+    // Given an error injection for malloc is primed when called from fw_addFrameworkListener
+    celix_ei_expect_malloc((void*)fw_addFrameworkListener, 0, nullptr);
+
+    // Then an exception is expected when creating a framework instance, because fw bundle cannot be started
+    EXPECT_ANY_THROW(celix::createFramework());
+}
