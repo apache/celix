@@ -348,6 +348,9 @@ class CelixConan(ConanFile):
             if self.options.celix_install_deprecated_api:
                 self.options.build_framework = True
 
+        if self.options.build_components_ready_check:
+            self.options.build_framework = True
+
         if self.options.build_rcm:
             self.options.build_utils = True
 
