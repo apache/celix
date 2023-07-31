@@ -21,6 +21,7 @@
 #define CELIX_LOG_CONTROL_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include "celix_log_level.h"
 #include "celix_array_list.h"
 

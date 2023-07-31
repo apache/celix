@@ -17,7 +17,7 @@
 
 add_library(bundle_ctx_ei STATIC src/celix_bundle_context_ei.cc)
 
-target_include_directories(bundle_ctx_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_include_directories(bundle_ctx_ei PUBLIC include)
 target_link_libraries(bundle_ctx_ei PUBLIC Celix::error_injector)
 target_link_libraries(bundle_ctx_ei PRIVATE Celix::framework)
 

@@ -632,28 +632,35 @@ celix_service_tracker_t* celix_serviceTracker_create(
     return celix_serviceTracker_createWithOptions(ctx, &opts);
 }
 
-celix_service_tracker_t* celix_serviceTracker_createWithOptions(
-        bundle_context_t *ctx,
-        const celix_service_tracking_options_t *opts
-) {
-    celix_service_tracker_t *tracker = NULL;
+celix_service_tracker_t* celix_serviceTracker_createClosedWithOptions(celix_bundle_context_t* ctx,
+                                                                      const celix_service_tracking_options_t* opts) {
+    celix_service_tracker_t* tracker = NULL;
     const char* serviceName = NULL;
-    char *filter = NULL;
+    char* filter = NULL;
     assert(ctx != NULL);
     assert(opts != NULL);
     serviceName = opts->filter.serviceName == NULL ? "*" : opts->filter.serviceName;
-    filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->filter.serviceName, opts->filter.versionRange, opts->filter.filter);
-    if(filter == NULL) {
-        celix_framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+    filter = celix_serviceRegistry_createFilterFor(
+        ctx->framework->registry, opts->filter.serviceName, opts->filter.versionRange, opts->filter.filter);
+    if (filter == NULL) {
+        celix_framework_log(ctx->framework->logger,
+                            CELIX_LOG_LEVEL_ERROR,
+                            __FUNCTION__,
+                            __BASE_FILE__,
+                            __LINE__,
                             "Error cannot create filter.");
         return NULL;
     }
     tracker = calloc(1, sizeof(*tracker));
-    if(tracker == NULL) {
+    if (tracker == NULL) {
         free(filter);
-        celix_framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+        celix_framework_log(ctx->framework->logger,
+                            CELIX_LOG_LEVEL_ERROR,
+                            __FUNCTION__,
+                            __BASE_FILE__,
+                            __LINE__,
                             "No memory for tracker.");
-       return NULL;
+        return NULL;
     }
 
     tracker->context = ctx;
@@ -661,7 +668,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
     tracker->filter = filter;
     tracker->state = CELIX_SERVICE_TRACKER_CLOSED;
 
-    //setting callbacks
+    // setting callbacks
     tracker->callbackHandle = opts->callbackHandle;
     tracker->set = opts->set;
     tracker->add = opts->add;
@@ -684,8 +691,18 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
     tracker->currentHighestServiceId = -1;
 
     tracker->listener.handle = tracker;
-    tracker->listener.serviceChanged = (void *) serviceTracker_serviceChanged;
+    tracker->listener.serviceChanged = (void*)serviceTracker_serviceChanged;
+    return tracker;
+}
 
+celix_service_tracker_t* celix_serviceTracker_createWithOptions(
+        bundle_context_t *ctx,
+        const celix_service_tracking_options_t *opts
+) {
+    celix_service_tracker_t *tracker = celix_serviceTracker_createClosedWithOptions(ctx, opts);
+    if(tracker == NULL) {
+       return NULL;
+    }
     serviceTracker_open(tracker);
     return tracker;
 }

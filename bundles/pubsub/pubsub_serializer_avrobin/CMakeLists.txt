@@ -15,31 +15,33 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(jansson REQUIRED)
+celix_subproject(PUBSUB_AVROBIN_SERIALIZER "Option to enable building the Avro binary serializer bundle" ON)
+if (PUBSUB_AVROBIN_SERIALIZER)
+    find_package(jansson REQUIRED)
 
-add_celix_bundle(celix_pubsub_serializer_avrobin
-        BUNDLE_SYMBOLICNAME "apache_celix_pubsub_serializer_avrobin"
-        VERSION "1.1.0"
-        GROUP "Celix/PubSub"
-        SOURCES
-        src/ps_avrobin_serializer_activator.c
-        src/pubsub_avrobin_serializer_impl.c
-        src/pubsub_avrobin_serialization_provider.c
-)
-target_include_directories(celix_pubsub_serializer_avrobin PRIVATE
-        src
-        ${JANSSON_INCLUDE_DIR}
-)
-set_target_properties(celix_pubsub_serializer_avrobin PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(celix_pubsub_serializer_avrobin PRIVATE Celix::framework Celix::dfi ${JANSSON_LIBRARIES} Celix::log_helper)
-target_link_libraries(celix_pubsub_serializer_avrobin PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
-celix_deprecated_utils_headers(celix_pubsub_serializer_avrobin)
-celix_deprecated_framework_headers(celix_pubsub_serializer_avrobin)
+    add_celix_bundle(celix_pubsub_serializer_avrobin
+            BUNDLE_SYMBOLICNAME "apache_celix_pubsub_serializer_avrobin"
+            VERSION "1.1.0"
+            GROUP "Celix/PubSub"
+            SOURCES
+            src/ps_avrobin_serializer_activator.c
+            src/pubsub_avrobin_serializer_impl.c
+            src/pubsub_avrobin_serialization_provider.c
+            )
+    target_include_directories(celix_pubsub_serializer_avrobin PRIVATE
+            src
+            ${JANSSON_INCLUDE_DIR}
+            )
+    target_link_libraries(celix_pubsub_serializer_avrobin PRIVATE Celix::dfi jansson::jansson Celix::log_helper)
+    target_link_libraries(celix_pubsub_serializer_avrobin PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
+    celix_deprecated_utils_headers(celix_pubsub_serializer_avrobin)
+    celix_deprecated_framework_headers(celix_pubsub_serializer_avrobin)
 
-install_celix_bundle(celix_pubsub_serializer_avrobin EXPORT celix COMPONENT pubsub)
+    install_celix_bundle(celix_pubsub_serializer_avrobin EXPORT celix COMPONENT pubsub)
 
-add_library(Celix::celix_pubsub_serializer_avrobin ALIAS celix_pubsub_serializer_avrobin)
+    add_library(Celix::celix_pubsub_serializer_avrobin ALIAS celix_pubsub_serializer_avrobin)
 
-if (ENABLE_TESTING)
-    add_subdirectory(gtest)
-endif(ENABLE_TESTING)
+    if (ENABLE_TESTING)
+        add_subdirectory(gtest)
+    endif(ENABLE_TESTING)
+endif ()

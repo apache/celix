@@ -28,7 +28,6 @@ add_celix_container(dm_example
     BUNDLES
         Celix::shell
         Celix::shell_tui
-        Celix::dm_shell
 
         dm_example_phase1
         dm_example_phase2a

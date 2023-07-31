@@ -22,7 +22,7 @@ add_celix_bundle(celix_pubsub_poi_publisher2
         ../publisher/private/src/ps_pub_activator.c
         ../publisher/private/src/pubsub_publisher.c
 )
-target_link_libraries(celix_pubsub_poi_publisher2 PRIVATE Celix::framework Celix::pubsub_api)
+target_link_libraries(celix_pubsub_poi_publisher2 PRIVATE Celix::pubsub_api)
 target_include_directories(celix_pubsub_poi_publisher2 PRIVATE ../publisher/private/include)
 celix_deprecated_utils_headers(celix_pubsub_poi_publisher2)
 

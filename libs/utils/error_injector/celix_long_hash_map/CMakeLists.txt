@@ -15,20 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(utils_ei STATIC src/celix_utils_ei.cc)
+add_library(long_hash_map_ei STATIC src/celix_long_hash_map_ei.cc)
 
-target_include_directories(utils_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(utils_ei PUBLIC Celix::error_injector Celix::utils)
-# It plays nicely with address sanitizer this way.
-target_link_options(utils_ei INTERFACE
-        LINKER:--wrap,celix_utils_strdup
-        LINKER:--wrap,celix_utils_createDirectory
-        LINKER:--wrap,celix_utils_getLastModified
-        LINKER:--wrap,celix_utils_deleteDirectory
-        LINKER:--wrap,celix_utils_writeOrCreateString
-        LINKER:--wrap,celix_utils_extractZipData
-        LINKER:--wrap,celix_utils_extractZipFile
-        LINKER:--wrap,celix_utils_trim
-        LINKER:--wrap,celix_gettime
-)
-add_library(Celix::utils_ei ALIAS utils_ei)
+target_include_directories(long_hash_map_ei PUBLIC include)
+target_link_libraries(long_hash_map_ei PUBLIC Celix::error_injector Celix::utils)
+
+target_link_options(long_hash_map_ei INTERFACE
+        LINKER:--wrap,celix_longHashMap_create
+        )
+add_library(Celix::long_hash_map_ei ALIAS long_hash_map_ei)

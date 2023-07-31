@@ -22,6 +22,7 @@ endif ()
 celix_subproject(RSA_REMOTE_SERVICE_ADMIN_SHM_V2 "Option to enable building the Remote Service Admin Service SHM V2 bundle" RSA_REMOTE_SERVICE_ADMIN_SHM_V2_DEFAULT)
 if (RSA_REMOTE_SERVICE_ADMIN_SHM_V2)
 
+    add_subdirectory(thpool)
     add_subdirectory(shm_pool)
     add_subdirectory(rsa_shm)
 

@@ -1235,25 +1235,20 @@ static void celix_bundleContext_createTrackerOnEventLoop(void *data) {
     assert(celix_framework_isCurrentThreadTheEventLoop(entry->ctx->framework));
     celixThreadMutex_lock(&entry->ctx->mutex);
     bool cancelled = entry->cancelled;
-    celixThreadMutex_unlock(&entry->ctx->mutex);
     if (cancelled) {
         fw_log(entry->ctx->framework->logger, CELIX_LOG_LEVEL_DEBUG, "Creating of service tracker was cancelled. trk id = %li, svc name tracked = %s", entry->trackerId, entry->opts.filter.serviceName);
+        celixThreadMutex_unlock(&entry->ctx->mutex);
+        return;
+    }
+    celix_service_tracker_t *tracker = celix_serviceTracker_createClosedWithOptions(entry->ctx, &entry->opts);
+    if (tracker == NULL) {
+        fw_log(entry->ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot create tracker for bnd %s (%li)", celix_bundle_getSymbolicName(entry->ctx->bundle), celix_bundle_getId(entry->ctx->bundle));
     } else {
-        celix_service_tracker_t *tracker = celix_serviceTracker_createWithOptions(entry->ctx, &entry->opts);
-        if (tracker != NULL) {
-            celixThreadMutex_lock(&entry->ctx->mutex);
-            // double-check is necessary to eliminate first-check-then-do race condition
-            if(!entry->cancelled) {
-                entry->tracker = tracker;
-            }
-            celixThreadMutex_unlock(&entry->ctx->mutex);
-            if(entry->tracker == NULL) {
-                assert(entry->cancelled);
-                celix_serviceTracker_destroy(tracker);
-            }
-        } else {
-            fw_log(entry->ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot create tracker for bnd %s (%li)", celix_bundle_getSymbolicName(entry->ctx->bundle), celix_bundle_getId(entry->ctx->bundle));
-        }
+        entry->tracker = tracker;
+    }
+    celixThreadMutex_unlock(&entry->ctx->mutex);
+    if (tracker) {
+        serviceTracker_open(tracker);
     }
 }
 

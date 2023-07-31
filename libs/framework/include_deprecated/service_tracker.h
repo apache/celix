@@ -84,6 +84,15 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_service_tracker_t* celix_serviceTracker_
 );
 
 /**
+ * Creates a closed service tracker.
+ * It is similar to serviceTracker_create.
+ */
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_service_tracker_t* celix_serviceTracker_createClosedWithOptions(
+    celix_bundle_context_t *ctx,
+    const celix_service_tracking_options_t *opts
+);
+
+/**
  * Creates and starts (open) a service tracker.
  * Note that is different from the serviceTracker_create function, because is also starts the service tracker
  */

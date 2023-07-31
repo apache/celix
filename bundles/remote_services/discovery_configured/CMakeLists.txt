@@ -17,23 +17,17 @@
 
 celix_subproject(RSA_DISCOVERY_CONFIGURED "Option to enable building the Discovery (Configured) bundle" ON)
 if (RSA_DISCOVERY_CONFIGURED)
-    find_package(CURL REQUIRED)
-    find_package(LibXml2 REQUIRED)
-    find_package(civetweb REQUIRED)
-
     add_celix_bundle(rsa_discovery
             VERSION 0.9.0
             SYMBOLIC_NAME "apache_celix_rsa_discovery"
             NAME "Apache Celix RSA Configured Discovery"
             SOURCES
             src/discovery_impl.c
-            $<TARGET_OBJECTS:Celix::rsa_discovery_common>
             )
-    target_include_directories(rsa_discovery PRIVATE
-            src
-            $<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
-            )
-    target_link_libraries(rsa_discovery PRIVATE CURL::libcurl ${LIBXML2_LIBRARIES} Celix::log_helper Celix::rsa_common civetweb::civetweb)
+    target_include_directories(rsa_discovery PRIVATE src )
+    target_link_libraries(rsa_discovery PRIVATE Celix::rsa_discovery_common Celix::log_helper Celix::rsa_common)
+    celix_deprecated_framework_headers(rsa_discovery)
+    celix_deprecated_utils_headers(rsa_discovery)
 
     install_celix_bundle(rsa_discovery EXPORT celix COMPONENT rsa)
     #Setup target aliases to match external usage

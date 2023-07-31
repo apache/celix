@@ -15,14 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(bundle_ei STATIC src/celix_bundle_ei.cc)
+add_library(hash_map_ei STATIC src/celix_hash_map_ei.cc)
 
-target_include_directories(bundle_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(bundle_ei PUBLIC Celix::error_injector)
-target_link_libraries(bundle_ei PRIVATE Celix::framework)
-
-target_link_options(bundle_ei INTERFACE
-        LINKER:--wrap,celix_bundle_getSymbolicName
-        LINKER:--wrap,celix_bundle_getManifestValue
-        )
-add_library(Celix::bundle_ei ALIAS bundle_ei)
+target_include_directories(hash_map_ei PUBLIC include)
+target_link_libraries(hash_map_ei PUBLIC Celix::error_injector Celix::utils)
+target_link_options(hash_map_ei INTERFACE
+        LINKER:--wrap,celix_stringHashMap_create
+)
+add_library(Celix::hash_map_ei ALIAS hash_map_ei)

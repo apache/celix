@@ -15,19 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(threads_ei STATIC src/celix_threads_ei.cc)
+find_package(libzip REQUIRED)
+add_library(zip_ei STATIC src/zip_ei.cc)
 
-target_include_directories(threads_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(threads_ei PUBLIC Celix::error_injector Celix::utils)
+target_include_directories(zip_ei PUBLIC include)
+target_link_libraries(zip_ei PUBLIC Celix::error_injector libzip::libzip)
+# It plays nicely with address sanitizer this way.
 
-target_link_options(threads_ei INTERFACE
-        LINKER:--wrap,celixThreadMutex_create
-        LINKER:--wrap,celixThread_create
-        LINKER:--wrap,celixThreadCondition_init
-        LINKER:--wrap,celixThreadRwlock_create
-        LINKER:--wrap,celix_tss_create
-        LINKER:--wrap,celix_tss_delete
-        LINKER:--wrap,celix_tss_set
-        LINKER:--wrap,celix_tss_get
-)
-add_library(Celix::threads_ei ALIAS threads_ei)
+target_link_options(zip_ei INTERFACE
+        LINKER:--wrap,zip_stat_index
+        LINKER:--wrap,zip_fopen_index
+        LINKER:--wrap,zip_fread
+        )
+add_library(Celix::zip_ei ALIAS zip_ei)
