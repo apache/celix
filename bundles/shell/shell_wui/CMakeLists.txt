@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(SHELL_WUI "Option to enable building the Shell Web User Interface bundles" ON DEPS SHELL HTTP_ADMIN)
+celix_subproject(SHELL_WUI "Option to enable building the Shell Web User Interface bundles" ON)
 if (SHELL_WUI)
 
     add_celix_bundle(shell_wui

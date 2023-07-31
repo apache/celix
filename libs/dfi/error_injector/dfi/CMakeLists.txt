@@ -15,12 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(long_hash_map_ei STATIC src/celix_long_hash_map_ei.cc)
+add_library(dfi_ei STATIC src/dfi_ei.cc)
 
-target_include_directories(long_hash_map_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(long_hash_map_ei PUBLIC Celix::error_injector Celix::utils)
-
-target_link_options(long_hash_map_ei INTERFACE
-        LINKER:--wrap,celix_longHashMap_create
-        )
-add_library(Celix::long_hash_map_ei ALIAS long_hash_map_ei)
+target_include_directories(dfi_ei PUBLIC include)
+target_link_libraries(dfi_ei PUBLIC Celix::error_injector Celix::dfi)
+# It plays nicely with address sanitizer this way.
+target_link_options(dfi_ei INTERFACE
+        LINKER:--wrap,dynFunction_createClosure
+        LINKER:--wrap,jsonRpc_prepareInvokeRequest
+        LINKER:--wrap,dynInterface_getVersionString
+)
+add_library(Celix::dfi_ei ALIAS dfi_ei)

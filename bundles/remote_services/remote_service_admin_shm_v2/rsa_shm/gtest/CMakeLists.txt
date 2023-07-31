@@ -39,7 +39,7 @@ add_celix_bundle_dependencies(integration_test_rsa_shm Celix::rsa_shm)
 add_test(NAME run_integration_test_rsa_shm COMMAND integration_test_rsa_shm)
 setup_target_for_coverage(integration_test_rsa_shm SCAN_DIR ..)
 
-if (LINKER_WRAP_SUPPORTED)
+if (LINKER_WRAP_SUPPORTED AND BUILD_RSA_JSON_RPC)
     ####unit test
     add_executable(unit_test_rsa_shm
             src/RsaShmImplUnitTestSuite.cc
@@ -82,6 +82,7 @@ if (LINKER_WRAP_SUPPORTED)
     add_celix_bundle_dependencies(unit_test_rsa_shm Celix::rsa_json_rpc)
 
     celix_deprecated_utils_headers(unit_test_rsa_shm)
+    celix_deprecated_framework_headers(unit_test_rsa_shm)
 
     add_test(NAME run_unit_test_rsa_shm COMMAND unit_test_rsa_shm)
     setup_target_for_coverage(unit_test_rsa_shm SCAN_DIR ..)

@@ -15,32 +15,34 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(jansson REQUIRED)
+celix_subproject(PUBSUB_JSON_SERIALIZER "Option to enable building the PubSub JSON serializer bundle" ON)
+if (PUBSUB_JSON_SERIALIZER)
+    find_package(jansson REQUIRED)
 
 
-add_celix_bundle(celix_pubsub_serializer_json
-    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_serializer_json"
-    VERSION "1.1.0"
-    GROUP "Celix/PubSub"
-    SOURCES
-        src/ps_json_serializer_activator.c
-        src/pubsub_serializer_impl.c
-        src/pubsub_json_serialization_provider.c
-)
-target_include_directories(celix_pubsub_serializer_json PRIVATE
-    src
-)
-set_target_properties(celix_pubsub_serializer_json PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(celix_pubsub_serializer_json PRIVATE Celix::framework Celix::dfi jansson::jansson Celix::log_helper)
-target_link_libraries(celix_pubsub_serializer_json PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
-celix_deprecated_utils_headers(celix_pubsub_serializer_json)
-celix_deprecated_framework_headers(celix_pubsub_serializer_json)
+    add_celix_bundle(celix_pubsub_serializer_json
+            BUNDLE_SYMBOLICNAME "apache_celix_pubsub_serializer_json"
+            VERSION "1.1.0"
+            GROUP "Celix/PubSub"
+            SOURCES
+            src/ps_json_serializer_activator.c
+            src/pubsub_serializer_impl.c
+            src/pubsub_json_serialization_provider.c
+            )
+    target_include_directories(celix_pubsub_serializer_json PRIVATE
+            src
+            )
+    target_link_libraries(celix_pubsub_serializer_json PRIVATE Celix::dfi jansson::jansson Celix::log_helper)
+    target_link_libraries(celix_pubsub_serializer_json PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
+    celix_deprecated_utils_headers(celix_pubsub_serializer_json)
+    celix_deprecated_framework_headers(celix_pubsub_serializer_json)
 
-install_celix_bundle(celix_pubsub_serializer_json EXPORT celix COMPONENT pubsub)
+    install_celix_bundle(celix_pubsub_serializer_json EXPORT celix COMPONENT pubsub)
 
-add_library(Celix::celix_pubsub_serializer_json ALIAS celix_pubsub_serializer_json)
+    add_library(Celix::celix_pubsub_serializer_json ALIAS celix_pubsub_serializer_json)
 
 
-if (ENABLE_TESTING)
-    add_subdirectory(gtest)
-endif(ENABLE_TESTING)
+    if (ENABLE_TESTING)
+        add_subdirectory(gtest)
+    endif(ENABLE_TESTING)
+endif ()

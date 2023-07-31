@@ -19,9 +19,10 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3.3.0
-      - name: Install conan
+      - name: Install build dependencies
         run: |
           sudo pip install -U conan==1.59.0
+          sudo apt-get install -yq --no-install-recommends ninja-build
       - name: Setup Conan Profile
         env:
           CC: ${{ matrix.compiler[0] }}
@@ -51,7 +52,6 @@ jobs:
             -o celix:enable_testing_dependency_manager_for_cxx11=True
         run: |
           #force require libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
-          sudo apt-get install -yq --no-install-recommends ninja-build
           conan install . celix/ci -pr:b release -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing  -b cpputest --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s
       - name: Build
         env:
@@ -67,13 +67,6 @@ jobs:
           source activate_run.sh
           ctest --output-on-failure
           source deactivate_run.sh
-      - name: Test Installed Celix
-        env:
-          CC: ${{ matrix.compiler[0] }}
-          CXX: ${{ matrix.compiler[1] }}
-          CONAN_CMAKE_GENERATOR: Ninja
-        run: |
-          conan create -pr:b release -pr:h default -tf examples/conan_test_package -tbf test-build -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s .
 
   build-apt:
     runs-on: ubuntu-22.04

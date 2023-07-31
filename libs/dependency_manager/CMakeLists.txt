@@ -16,40 +16,43 @@
 # under the License.
 
 #dummy libaries to ensure backward compatability with projects using the dependency manager libs/shell
-add_library(dependency_manager_static STATIC src/dm_activator.c)
-celix_deprecated_framework_headers(dependency_manager_static)
-target_include_directories(dependency_manager_static PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
-)
-if (APPLE)
-    target_link_libraries(dependency_manager_static Celix::framework "-undefined dynamic_lookup")
-else()
-    target_link_libraries(dependency_manager_static Celix::framework)
-endif()
+celix_subproject(DEPENDENCY_MANAGER "Option to enable building the legacy Dependency Manager" ON)
+if (DEPENDENCY_MANAGER)
+    add_library(dependency_manager_static STATIC src/dm_activator.c)
+    celix_deprecated_framework_headers(dependency_manager_static)
+    target_include_directories(dependency_manager_static PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
+            )
+    if (APPLE)
+        target_link_libraries(dependency_manager_static Celix::framework "-undefined dynamic_lookup")
+    else()
+        target_link_libraries(dependency_manager_static Celix::framework)
+    endif()
 
-add_library(dependency_manager_so SHARED src/dm_activator.c)
-celix_deprecated_framework_headers(dependency_manager_so)
-target_include_directories(dependency_manager_so PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
-)
-if (APPLE)
-    target_link_libraries(dependency_manager_so Celix::framework "-undefined dynamic_lookup")
-else()
-    target_link_libraries(dependency_manager_so Celix::framework)
-endif()
+    add_library(dependency_manager_so SHARED src/dm_activator.c)
+    celix_deprecated_framework_headers(dependency_manager_so)
+    target_include_directories(dependency_manager_so PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
+            )
+    if (APPLE)
+        target_link_libraries(dependency_manager_so Celix::framework "-undefined dynamic_lookup")
+    else()
+        target_link_libraries(dependency_manager_so Celix::framework)
+    endif()
 
-#now part of the the shell bundle
-add_library(dm_shell INTERFACE)
+    #now part of the the shell bundle
+    add_library(dm_shell INTERFACE)
 
-celix_deprecated_utils_headers(dependency_manager_static)
-celix_deprecated_utils_headers(dependency_manager_so)
+    celix_deprecated_utils_headers(dependency_manager_static)
+    celix_deprecated_utils_headers(dependency_manager_so)
 
-#Setup target aliases to match external usage
-add_library(Celix::dm_shell ALIAS dm_shell)
-add_library(Celix::dependency_manager_static ALIAS dependency_manager_static)
-add_library(Celix::dependency_manager_so ALIAS dependency_manager_so)
+    #Setup target aliases to match external usage
+    add_library(Celix::dm_shell ALIAS dm_shell)
+    add_library(Celix::dependency_manager_static ALIAS dependency_manager_static)
+    add_library(Celix::dependency_manager_so ALIAS dependency_manager_so)
 
-#install dummy libs
-install(TARGETS dependency_manager_static dependency_manager_so dm_shell EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
+    #install dummy libs
+    install(TARGETS dependency_manager_static dependency_manager_so dm_shell EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
+endif ()
 

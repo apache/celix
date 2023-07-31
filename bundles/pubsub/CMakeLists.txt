@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(PUBSUB "Option to build the pubsub bundles" ON DEPS CELIX_DFI)
+celix_subproject(PUBSUB "Option to build the pubsub bundles" ON)
 if (PUBSUB)
     add_subdirectory(pubsub_api)
     add_subdirectory(pubsub_utils)
