@@ -90,14 +90,14 @@ typedef struct celix_shm_pool_alloc {
     shm_pool_t* pool;
 } celix_shm_pool_alloc_t;
 
-static __attribute__((__unused__)) inline celix_shm_pool_alloc_t celix_shmPool_malloc(shm_pool_t *pool, size_t size) {
+static CELIX_UNUSED inline celix_shm_pool_alloc_t celix_shmPool_malloc(shm_pool_t *pool, size_t size) {
     return (celix_shm_pool_alloc_t) {
         .ptr = shmPool_malloc(pool, size),
         .pool = pool
     };
 }
 
-static __attribute__((__unused__)) inline void celix_shmPool_free(celix_shm_pool_alloc_t* alloc) {
+static CELIX_UNUSED inline void celix_shmPool_free(celix_shm_pool_alloc_t* alloc) {
     shmPool_free(alloc->pool, alloc->ptr);
 }
 

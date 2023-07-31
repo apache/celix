@@ -24,6 +24,7 @@
 #include "shell_private.h"
 #include "celix_bundle_activator.h"
 #include "std_commands.h"
+#include "celix_compiler.h"
 #include "celix_constants.h"
 #include "celix_shell_command.h"
 #include "std_commands.h"
@@ -144,7 +145,7 @@ celix_status_t celix_bundleActivator_stop(void *activatorData, celix_bundle_cont
     return status;
 }
 
-celix_status_t celix_bundleActivator_destroy(void *activatorData, celix_bundle_context_t* __attribute__((__unused__)) ctx) {
+celix_status_t celix_bundleActivator_destroy(void *activatorData, celix_bundle_context_t* ctx CELIX_UNUSED) {
     celix_status_t status = CELIX_SUCCESS;
     shell_bundle_activator_t* activator = activatorData;
 

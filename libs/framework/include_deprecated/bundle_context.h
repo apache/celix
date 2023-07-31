@@ -126,7 +126,7 @@ typedef struct celix_service_ref {
 } celix_service_ref_t;
 
 
-static __attribute__((__unused__)) inline void celix_ServiceRef_put(celix_service_ref_t* ref) {
+static CELIX_UNUSED inline void celix_ServiceRef_put(celix_service_ref_t* ref) {
     if (ref->reference != NULL) {
         bundleContext_ungetServiceReference(ref->context, ref->reference);
     }

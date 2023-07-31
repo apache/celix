@@ -279,7 +279,7 @@ typedef struct celix_service_reg {
     long svcId;
 } celix_service_reg_t;
 
-static __attribute__((__unused__)) inline void celix_service_unregister(celix_service_reg_t* reg) {
+static CELIX_UNUSED inline void celix_service_unregister(celix_service_reg_t* reg) {
     if (reg->svcId >= 0) {
         celix_bundleContext_unregisterService(reg->ctx, reg->svcId);
     }
