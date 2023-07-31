@@ -162,7 +162,7 @@ static void rsaJsonRpcEndpoint_addSvcWithOwner(void *handle, void *service,
     celix_autoptr(dyn_interface_type) intfType = NULL;
     const char *serviceName = celix_properties_get(endpoint->endpointDesc->properties, CELIX_FRAMEWORK_SERVICE_NAME, "unknown-service");
 
-    celix_autoptr(celix_rwlock_writer_locker_t) lock = celixThreadRwlockWriterLocker_new(&endpoint->lock);
+    celix_auto(celix_rwlock_wlock_guard_t) lock = celixRwlockWlockGuard_init(&endpoint->lock);
 
     status = dfi_findAndParseInterfaceDescriptor(endpoint->logHelper,endpoint->ctx,
             svcOwner, endpoint->endpointDesc->serviceName, &intfType);
@@ -200,7 +200,7 @@ static void rsaJsonRpcEndpoint_removeSvcWithOwner(void *handle, void *service,
     (void)props;
     (void)svcOwner;
     rsa_json_rpc_endpoint_t *endpoint = (rsa_json_rpc_endpoint_t *)handle;
-    celix_autoptr(celix_rwlock_writer_locker_t) lock = celixThreadRwlockWriterLocker_new(&endpoint->lock);
+    celix_auto(celix_rwlock_wlock_guard_t) lock = celixRwlockWlockGuard_init(&endpoint->lock);
     if (endpoint->service == service) {
         endpoint->service = NULL;
         dynInterface_destroy(endpoint->intfType);

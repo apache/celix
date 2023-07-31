@@ -145,11 +145,8 @@ celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, ce
         celix_logHelper_fatal(logHelper, "Announcer: Failed to register endpoint listener.");
         return CELIX_BUNDLE_EXCEPTION;
     }
-    celix_auto(celix_service_reg_t) epListenerSvcReg = {
-        .ctx = ctx,
-        .svcId = announcer->epListenerSvcId
-    };
-
+    celix_auto(celix_service_registration_guard_t) epListenerSvcReg
+        = celix_serviceRegistrationGuard_init(ctx, announcer->epListenerSvcId);
     announcer->running = true;
     status = celixThread_create(&announcer->refreshEPThread, NULL, discoveryZeroconfAnnouncer_refreshEndpointThread, announcer);
     if (status != CELIX_SUCCESS) {

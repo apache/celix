@@ -100,11 +100,7 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
         celix_logHelper_error(logHelper,"RSA export reg: Retain refrence for %s failed. %d.", endpointDesc->serviceName, status);
         return status;
     }
-    celix_auto(celix_service_ref_t) ref = {
-        .reference = reference,
-        .context = context,
-    };
-
+    celix_auto(celix_service_ref_guard_t) ref = celix_ServiceRefGuard_init(context, reference);
     celix_autoptr(export_request_handler_service_entry_t) reqHandlerSvcEntry = exportRegistration_createReqHandlerSvcEntry();
     if (reqHandlerSvcEntry == NULL) {
         celix_logHelper_error(export->logHelper,"RSA export reg: Error creating endpoint svc entry.");
@@ -296,7 +292,7 @@ static void exportRegistration_addRequestHandlerSvc(void *handle, void *svc) {
     assert(svc != NULL);
     struct export_request_handler_service_entry *reqHandlerSvcEntry =
             (struct export_request_handler_service_entry *)handle;
-    celix_autoptr(celix_rwlock_writer_locker_t) locker = celixThreadRwlockWriterLocker_new(&reqHandlerSvcEntry->lock);
+    celix_auto(celix_rwlock_wlock_guard_t) locker = celixRwlockWlockGuard_init(&reqHandlerSvcEntry->lock);
     reqHandlerSvcEntry->reqHandlerSvc = (rsa_request_handler_service_t *)svc;
     return;
 }
@@ -306,7 +302,7 @@ static void exportRegistration_removeRequestHandlerSvc(void *handle, void *svc) 
     assert(svc != NULL);
     struct export_request_handler_service_entry *reqHandlerSvcEntry =
             (struct export_request_handler_service_entry *)handle;
-    celix_autoptr(celix_rwlock_writer_locker_t) locker = celixThreadRwlockWriterLocker_new(&reqHandlerSvcEntry->lock);
+    celix_auto(celix_rwlock_wlock_guard_t) locker = celixRwlockWlockGuard_init(&reqHandlerSvcEntry->lock);
     if (svc == reqHandlerSvcEntry->reqHandlerSvc) {
         reqHandlerSvcEntry->reqHandlerSvc = NULL;
     }
@@ -321,7 +317,7 @@ celix_status_t exportRegistration_call(export_registration_t *export, celix_prop
     }
     struct export_request_handler_service_entry *reqHandlerSvcEntry = export->reqHandlerSvcEntry;
     assert(reqHandlerSvcEntry != NULL);
-    celix_autoptr(celix_rwlock_reader_locker_t) locker = celixThreadRwlockReaderLocker_new(&reqHandlerSvcEntry->lock);
+    celix_auto(celix_rwlock_rlock_guard_t) locker = celixRwlockRlockGuard_init(&reqHandlerSvcEntry->lock);
     if (reqHandlerSvcEntry->reqHandlerSvc != NULL) {
         status =  reqHandlerSvcEntry->reqHandlerSvc->handleRequest(reqHandlerSvcEntry->reqHandlerSvc->handle, metadata, request, response);
     } else {

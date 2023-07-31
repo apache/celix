@@ -75,8 +75,8 @@ used to guard locks, manage service registration, etc. Support for RAII-like str
 additional cleanup functions that work with either the `celix_auto` or `celix_autoptr` macros.
 
 Examples include:
-- `celixThreadMutexLocker_new`
-- `celix_service_reg_t`
+- `celix_mutex_lock_guard_t`
+- `celix_service_registration_guard_t`
 
 Special effort is made to ensure that these constructs do not require additional allocation and should provide minimal 
 to no additional overhead.

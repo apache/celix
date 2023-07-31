@@ -85,8 +85,8 @@ TEST_F(CelixUtilsCleanupTestSuite, MutexLockerTest) {
     celix_thread_t thread = celix_thread_default;
     EXPECT_EQ(0, celixThreadMutex_create(&mutex, nullptr));
     if (true) {
-        celix_autoptr(celix_mutex_locker_t) val = celixThreadMutexLocker_new(&mutex);
-        ASSERT_NE(nullptr, val);
+        celix_auto(celix_mutex_lock_guard_t) val = celixMutexLockGuard_init(&mutex);
+        ASSERT_NE(nullptr, val.mutex);
 
         // Verify that the mutex is actually locked
         celixThread_create(&thread, nullptr, mutexLockedThread, &mutex);
@@ -125,8 +125,8 @@ TEST_F(CelixUtilsCleanupTestSuite, RwLockLockerTest) {
 
     ASSERT_EQ(0, celixThreadRwlock_create(&lock, nullptr));
     if (true) {
-        celix_autoptr(celix_rwlock_writer_locker_t) val = celixThreadRwlockWriterLocker_new(&lock);
-        ASSERT_NE(nullptr, val);
+        celix_auto(celix_rwlock_wlock_guard_t) val = celixRwlockWlockGuard_init(&lock);
+        ASSERT_NE(nullptr, val.lock);
 
         /* Verify that we cannot take another writer lock as a writer lock is currently held */
         celixThread_create(&thread, nullptr, rwlockCannotTakeWriterLockThread, &lock);
@@ -136,8 +136,8 @@ TEST_F(CelixUtilsCleanupTestSuite, RwLockLockerTest) {
         EXPECT_NE(0, celixThreadRwlock_tryReadLock(&lock));
     }
     if (true) {
-        celix_autoptr(celix_rwlock_reader_locker_t) val = celixThreadRwlockReaderLocker_new(&lock);
-        ASSERT_NE(nullptr, val);
+        celix_auto(celix_rwlock_rlock_guard_t) val = celixRwlockRlockGuard_init(&lock);
+        ASSERT_NE(nullptr, val.lock);
 
         /* Verify that we can take another reader lock from another thread */
         celixThread_create(&thread, nullptr, rwlockCanTakeReaderLockThread, &lock);

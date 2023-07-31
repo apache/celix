@@ -104,40 +104,45 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadMutex_tryLock(celix_thread_mutex_t 
 CELIX_UTILS_EXPORT celix_status_t celixThreadMutex_unlock(celix_thread_mutex_t *mutex);
 
 /**
- * Opaque type. See celix_mutex_locker_new() for details.
+ * @brief Lock guard for mutex.
  */
-typedef void celix_mutex_locker_t;
+typedef struct celix_mutex_lock_guard {
+    celix_thread_mutex_t *mutex;
+} celix_mutex_lock_guard_t;
 
 /**
- * @brief Lock @a mutex and return a new celix_mutex_locker_t.
+ * @brief Initialize a lock guard for @a mutex.
  *
- * Unlock with celixThreadMutexLocker_free(). Using celixThreadMutex_lock() on @a mutex
- * while a celix_mutex_locker_t exists can lead to undefined behaviour.
+ * Lock @a mutex and return a celix_mutex_lock_guard_t.
+ * Unlock with celixMutexLockGuard_deinit(). Using celixThreadMutex_lock() on @a mutex
+ * while a celix_mutex_lock_guard_t exists can lead to undefined behaviour.
  *
  * No allocation is performed, it is equivalent to a celixThreadMutex_lock() call.
- * This is intended to be used with celix_autoptr().
+ * This is intended to be used with celix_auto().
  *
- * @param mutex A mutex to lock
- * @return A new locker to be used with celix_autoptr().
+ * @param mutex A mutex to lock.
+ * @return An initialized lock guard to be used with celix_auto().
  */
-static inline celix_mutex_locker_t* celixThreadMutexLocker_new(celix_thread_mutex_t* mutex) {
+static CELIX_UNUSED inline celix_mutex_lock_guard_t celixMutexLockGuard_init(celix_thread_mutex_t* mutex) {
+    celix_mutex_lock_guard_t guard;
+    guard.mutex = mutex;
     celixThreadMutex_lock(mutex);
-    return (celix_mutex_locker_t*)mutex;
+    return guard;
 }
 
 /**
- * @brief Unlock the mutex of @a locker.
+ * @brief Deinitialize a lock guard for @a mutex.
  *
- * See celixThreadMutexLocker_new() for details.
+ * Unlock the mutex of @a guard.
  * No memory is freed, it is equivalent to a celixThreadMutex_unlock() call.
  *
- * @param locker A celix_mutex_locker_t
+ * @param guard A celix_mutex_lock_guard_t.
  */
-static inline void celixThreadMutexLocker_free(celix_mutex_locker_t* locker) {
-    celixThreadMutex_unlock((celix_thread_mutex_t*)locker);
+static CELIX_UNUSED inline void celixMutexLockGuard_deinit(celix_mutex_lock_guard_t* guard) {
+    celixThreadMutex_unlock(guard->mutex);
 }
 
-CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_mutex_locker_t, celixThreadMutexLocker_free)
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_mutex_lock_guard_t, celixMutexLockGuard_deinit)
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadMutexAttr_create(celix_thread_mutexattr_t *attr);
 
@@ -167,76 +172,94 @@ CELIX_UTILS_EXPORT celix_status_t celixThreadRwlock_tryWriteLock(celix_thread_rw
 CELIX_UTILS_EXPORT celix_status_t celixThreadRwlock_unlock(celix_thread_rwlock_t *lock);
 
 /**
- * Opaque type. See celixThreadRwlockWriterLocker_new() for details.
+ * @brief A RAII style write lock guard for celix_thread_rwlock_t.
+ *
+ * The lock is obtained in the constructor and released in the destructor.
+ * This is intended to be used with celix_auto().
  */
-typedef void celix_rwlock_writer_locker_t;
+typedef struct celix_rwlock_wlock_guard {
+    celix_thread_rwlock_t *lock;
+} celix_rwlock_wlock_guard_t;
 
 /**
- * @brief Obtain a write lock on @a rwLock and return a new celix_rwlock_writer_locker_t.
+ * @brief Initialize a write lock guard for @a lock.
  *
- * Unlock with celixThreadRwlockWriterLocker_free(). Using celixThreadRwlock_unlock()
- * on @a rwLock while a celix_rwlock_writer_locker_t exists can lead to undefined behaviour.
- *
- * No allocation is performed, it is equivalent to a celixThreadRwlock_writeLock() call.
- * This is intended to be used with celix_autoptr().
- *
- * @param rwLock A read-write lock to lock.
- * @return A new locker to be used with celix_autoptr().
- */
-static inline celix_rwlock_writer_locker_t* celixThreadRwlockWriterLocker_new(celix_thread_rwlock_t* rwLock) {
-    celixThreadRwlock_writeLock(rwLock);
-    return (celix_rwlock_writer_locker_t*)rwLock;
-}
-
-/**
- * @brief  Release a write lock on the read-write lock of @a locker.
- *
- * See celixThreadRwlockWriterLocker_new() for details.
- * No memory is freed, it is equivalent to a celixThreadRwlock_unlock() call.
- *
- * @param locker A celix_rwlock_writer_locker_t.
- */
-static inline void celixThreadRwlockWriterLocker_free(celix_rwlock_writer_locker_t* locker) {
-    celixThreadRwlock_unlock((celix_thread_rwlock_t*)locker);
-}
-
-CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_rwlock_writer_locker_t, celixThreadRwlockWriterLocker_free)
-
-/**
- * Opaque type. See celixThreadRwlockReaderLocker_new() for details.
- */
-typedef void celix_rwlock_reader_locker_t;
-
-/**
- * @brief Obtain a read lock on @a rwLock and return a new celix_rwlock_reader_locker_t.
- *
- * Unlock with celixThreadRwlockReaderLocker_free(). Using celixThreadRwlock_unlock()
- * on @rwLock while a celix_rwlock_reader_locker_t exists can lead to undefined behaviour.
+ * Obtain a write lock on @a lock and return a celix_rwlock_wlock_guard_t.
+ * Unlock with celixRwlockWlockGuard_deinit(). Using celixThreadRwlock_unlock()
+ * on @lock while a celix_rwlock_rlock_guard_t exists can lead to undefined behaviour.
  *
  * No allocation is performed, it is equivalent to a celixThreadRwlock_readLock() call.
- * This is intended to be used with celix_autoptr().
+ * This is intended to be used with celix_auto().
  *
- * @param rwLock A read-write lock to lock.
- * @return A new locker to be used with celix_autoptr().
+ * @param lock A read-write lock to lock.
+ * @return An initialized write lock guard to be used with celix_auto().
  */
-static inline celix_rwlock_reader_locker_t* celixThreadRwlockReaderLocker_new(celix_thread_rwlock_t* rwLock) {
-    celixThreadRwlock_readLock(rwLock);
-    return (celix_rwlock_reader_locker_t*)rwLock;
+static CELIX_UNUSED inline celix_rwlock_wlock_guard_t celixRwlockWlockGuard_init(celix_thread_rwlock_t* lock) {
+    celix_rwlock_wlock_guard_t guard;
+    guard.lock = lock;
+    celixThreadRwlock_writeLock(lock);
+    return guard;
 }
 
 /**
- * @brief Release a read lock on the read-write lock of @a locker.
+ * @brief Deinitialize a write lock guard.
  *
- * See celixThreadRwlockReaderLocker_new() for details.
+ * Release a write lock on the read-write lock contained in @a guard.
+ * See celixRwlockWlockGuard_init() for details.
  * No memory is freed, it is equivalent to a celixThreadRwlock_unlock() call.
  *
- * @param locker A celix_rwlock_reader_locker_t.
+ * @param guard A celix_rwlock_wlock_guard_t.
  */
-static inline void celixThreadRwlockReaderLocker_free(celix_rwlock_reader_locker_t* locker) {
-    celixThreadRwlock_unlock((celix_thread_rwlock_t*)locker);
+static CELIX_UNUSED inline void celixRwlockWlockGuard_deinit(celix_rwlock_wlock_guard_t* guard) {
+    celixThreadRwlock_unlock(guard->lock);
 }
 
-CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_rwlock_reader_locker_t, celixThreadRwlockReaderLocker_free)
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_rwlock_wlock_guard_t, celixRwlockWlockGuard_deinit)
+
+/**
+ * @brief A RAII style read lock guard for celix_thread_rwlock_t.
+ *
+ * The lock is obtained in the constructor and released in the destructor.
+ * This is intended to be used with celix_auto().
+ */
+typedef struct celix_rwlock_rlock_guard {
+    celix_thread_rwlock_t *lock;
+} celix_rwlock_rlock_guard_t;
+
+/**
+ * @brief Initialize a read lock guard for @a lock.
+ *
+ * Obtain a read lock on @a lock and return a celix_rwlock_rlock_guard_t.
+ * Unlock with celix_RwlockRlockGuard_deinit(). Using celixThreadRwlock_unlock()
+ * on @lock while a celix_rwlock_rlock_guard_t exists can lead to undefined behaviour.
+ *
+ * No allocation is performed, it is equivalent to a celixThreadRwlock_readLock() call.
+ * This is intended to be used with celix_auto().
+ *
+ * @param lock A read-write lock to lock.
+ * @return A guard to be used with celix_auto().
+ */
+static CELIX_UNUSED inline celix_rwlock_rlock_guard_t celixRwlockRlockGuard_init(celix_thread_rwlock_t *lock) {
+    celix_rwlock_rlock_guard_t guard;
+    guard.lock = lock;
+    celixThreadRwlock_readLock(lock);
+    return guard;
+}
+
+/**
+ * @brief Deinitialize a read lock guard.
+ *
+ * Release a read lock on the read-write lock contained in @a guard.
+ * See celixRwlockRlockGuard_init() for details.
+ * No memory is freed, it is equivalent to a celixThreadRwlock_unlock() call.
+ *
+ * @param guard A celix_rwlock_rlock_guard_t.
+ */
+static CELIX_UNUSED inline void celixRwlockRlockGuard_deinit(celix_rwlock_rlock_guard_t* guard) {
+    celixThreadRwlock_unlock(guard->lock);
+}
+
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_rwlock_rlock_guard_t, celixRwlockRlockGuard_deinit)
 
 CELIX_UTILS_EXPORT celix_status_t celixThreadRwlockAttr_create(celix_thread_rwlockattr_t *attr);
 

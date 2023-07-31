@@ -111,7 +111,8 @@ celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t
         celix_logHelper_error(logHelper,"Error registering request sender service.");
         return CELIX_BUNDLE_EXCEPTION;
     }
-    celix_auto(celix_service_reg_t) reg = { .ctx = context, .svcId = ad->reqSenderSvcId };
+    celix_auto(celix_service_registration_guard_t) reg =
+        celix_serviceRegistrationGuard_init(context, ad->reqSenderSvcId);
 
     const char *fwUuid = celix_bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
     if (fwUuid == NULL) {
@@ -167,7 +168,7 @@ void rsaShm_destroy(rsa_shm_t *admin) {
 }
 
 static export_registration_t* rsaShm_getExportService(rsa_shm_t *admin, long serviceId) {
-    celix_autoptr(celix_mutex_locker_t) lock = celixThreadMutexLocker_new(&admin->exportedServicesLock);
+    celix_auto(celix_mutex_lock_guard_t) lock = celixMutexLockGuard_init(&admin->exportedServicesLock);
     export_registration_t *export = NULL;
     celix_array_list_t *exports = celix_longHashMap_get(admin->exportedServices, serviceId);
     if (exports != NULL && celix_arrayList_size(exports) > 0) {
@@ -306,10 +307,7 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
         celix_logHelper_error(admin->logHelper, "Expect a reference for service id %s.", serviceId);
         return CELIX_ILLEGAL_STATE;
     }
-    celix_auto(celix_service_ref_t) ref = {
-        .reference = reference,
-        .context = admin->context
-    };
+    celix_auto(celix_service_ref_guard_t) ref = celix_ServiceRefGuard_init(admin->context, reference);
 
     celix_autoptr(celix_properties_t) exportedProperties = celix_properties_create();
     if (exportedProperties == NULL) {
@@ -412,7 +410,7 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
         for (int i = 0; i < regSize; ++i) {
             celix_arrayList_add(newRegistrations, celix_arrayList_get(registrations, i));
         }
-        celix_autoptr(celix_mutex_locker_t) lock = celixThreadMutexLocker_new(&admin->exportedServicesLock);
+        celix_auto(celix_mutex_lock_guard_t) lock = celixMutexLockGuard_init(&admin->exportedServicesLock);
         celix_longHashMap_put(admin->exportedServices, atol(serviceId), celix_steal_ptr(registrations));
     }
     *registrationsOut = newRegistrations;
@@ -615,7 +613,7 @@ celix_status_t rsaShm_importService(rsa_shm_t *admin, endpoint_description_t *en
         return status;
     }
 
-    celix_autoptr(celix_mutex_locker_t) lock = celixThreadMutexLocker_new(&admin->importedServicesLock);
+    celix_auto(celix_mutex_lock_guard_t) lock = celixMutexLockGuard_init(&admin->importedServicesLock);
     celix_arrayList_add(admin->importedServices, import);
     *registration = import;
     return CELIX_SUCCESS;
@@ -642,7 +640,7 @@ celix_status_t rsaShm_removeImportedService(rsa_shm_t *admin, import_registratio
         celix_logHelper_error(admin->logHelper, "Error getting endpoint from imported registration for service %s. It maybe cause resource leaks.", endpoint->serviceName);
     }
 
-    celix_autoptr(celix_mutex_locker_t) lock = celixThreadMutexLocker_new(&admin->importedServicesLock);
+    celix_auto(celix_mutex_lock_guard_t) lock = celixMutexLockGuard_init(&admin->importedServicesLock);
     celix_arrayList_remove(admin->importedServices, registration);
     importRegistration_destroy(registration);
 
