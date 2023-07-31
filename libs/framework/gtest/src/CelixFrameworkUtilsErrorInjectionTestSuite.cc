@@ -37,7 +37,10 @@
 class CelixFrameworkUtilsErrorInjectionTestSuite : public ::testing::Test {
 public:
     CelixFrameworkUtilsErrorInjectionTestSuite () {
-        framework = celix::createFramework({{"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"}});
+        framework = celix::createFramework({
+            {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"},
+            {CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED, "false"}
+        });
     }
 
     ~CelixFrameworkUtilsErrorInjectionTestSuite () override {

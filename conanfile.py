@@ -80,6 +80,7 @@ class CelixConan(ConanFile):
         "build_shell_bonjour": [True, False],
         "build_shell_tui": [True, False],
         "build_shell_wui": [True, False],
+        "build_components_ready_check": [True, False],
         "build_examples": [True, False],
         "build_celix_etcdlib": [True, False],
         "build_launcher": [True, False],
@@ -97,6 +98,7 @@ class CelixConan(ConanFile):
         "celix_install_deprecated_api": [True, False],
         "celix_use_compression_for_bundle_zips": [True, False],
         "celix_err_buffer_size": "ANY",
+        "enable_testing_on_ci": [True, False],
     }
     default_options = {
         "enable_testing": False,
@@ -141,6 +143,7 @@ class CelixConan(ConanFile):
         "build_shell_bonjour": False,
         "build_shell_tui": False,
         "build_shell_wui": False,
+        "build_components_ready_check": False,
         "build_examples": False,
         "build_celix_etcdlib":  False,
         "build_launcher": False,
@@ -158,6 +161,7 @@ class CelixConan(ConanFile):
         "celix_install_deprecated_api": False,
         "celix_use_compression_for_bundle_zips": True,
         "celix_err_buffer_size": 512,
+        "enable_testing_on_ci": False,
     }
     _cmake = None
 
@@ -191,6 +195,7 @@ class CelixConan(ConanFile):
         del self.info.options.build_shell_bonjour
         del self.info.options.enable_testing_dependency_manager_for_cxx11
         del self.info.options.enable_testing_for_cxx14
+        del self.info.options.enable_testing_on_ci
 
     def build_requirements(self):
         if self.options.enable_testing:
@@ -342,6 +347,9 @@ class CelixConan(ConanFile):
             self.options.build_utils = True
             if self.options.celix_install_deprecated_api:
                 self.options.build_framework = True
+
+        if self.options.build_components_ready_check:
+            self.options.build_framework = True
 
         if self.options.build_rcm:
             self.options.build_utils = True

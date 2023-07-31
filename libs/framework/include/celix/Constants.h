@@ -218,4 +218,12 @@ namespace celix {
      *
      */
     constexpr const char * const LOAD_BUNDLES_WITH_NODELETE = CELIX_LOAD_BUNDLES_WITH_NODELETE;
+
+    /**
+     * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED") to configure 
+     * whether framework condition services are enabled or not.
+     * Default is true.
+     * Should be a boolean value.
+     */
+    constexpr const char* const FRAMEWORK_CONDITION_SERVICES_ENABLED = CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED;
 }

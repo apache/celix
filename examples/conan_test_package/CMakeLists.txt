@@ -363,3 +363,8 @@ if (TEST_UTILS)
     add_executable(use_utils test_utils.c)
     target_link_libraries(use_utils PRIVATE Celix::utils)
 endif ()
+
+option(TEST_COMPONENTS_READY_CHECK "Test the components.ready condition checking bundle" OFF)
+if (TEST_COMPONENTS_READY_CHECK)
+    add_celix_container("use_components_ready_check" BUNDLES Celix::components_ready_check hello)
+endif ()

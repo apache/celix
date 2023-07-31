@@ -36,6 +36,7 @@ if (FRAMEWORK)
             src/celix_bundle_state.c
             src/celix_framework_utils.c
             src/celix_scheduled_event.c
+            src/celix_framework_bundle.c
             )
     set(FRAMEWORK_DEPS libuuid::libuuid CURL::libcurl ${CMAKE_DL_LIBS})
 

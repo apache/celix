@@ -206,6 +206,33 @@ add_executable(create_framework_with_celix_launcher src/launcher.c)
 target_link_libraries(create_framework_with_celix_launcher PRIVATE Celix::framework)
 ```
 
+## Framework `celix_condition` Services
+In a dynamic framework such as Apache Celix, it can sometimes be challenging to ascertain when the framework or 
+certain parts of a dynamic service-based application are ready for use. To address this issue, Apache Celix provides 
+services known as `celix_condition` services.
+
+A `celix_condition` service is a registered marker interface with a "condition.id" service property. 
+The service's availability signifies that the condition identified by the "condition.id" has been met.
+
+The `celix_condition` service is an adaptation of the
+[OSGi 8 Condition Service Specification](https://docs.osgi.org/specification/osgi.core/8.0.0/service.condition.html).
+
+The Apache Celix framework will provide the following `celix_condition` services for the respective states:
+
+- Celix condition "true", which is always available.
+- Celix condition "framework.ready". This service will be registered when the framework has successfully and fully 
+  started, which includes installing and starting all configured bundles and services, and ensuring the event queue is 
+  empty after all configured bundles have been started. Note that the "framework.ready" condition is not part of the 
+  OSGi condition specification.
+- Celix condition "framework.error". This service will be registered when the framework has not started successfully. 
+  This can occur if any of the configured bundles fail to start or install. Note that the "framework.error" condition 
+  is not part of the OSGi condition specification.
+
+Contrary to the OSGi specification, the Apache Celix framework does not provide a public API for adding or removing 
+framework listeners. Instead, framework condition services can be used. This has the advantage of ensuring no 
+framework state changes can be missed, because the state indicating condition services will be available 
+until the framework is stopped.
+
 ## Framework bundle cache
 The Apache Celix framework uses a bundle cache directory to store the installed bundles, their state and for a 
 persistent bundle storage. The bundle cache directory is created in the directory configured in the framework 

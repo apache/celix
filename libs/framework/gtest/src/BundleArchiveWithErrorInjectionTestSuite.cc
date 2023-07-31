@@ -43,8 +43,9 @@
 class BundleArchiveWithErrorInjectionTestSuite : public ::testing::Test {
   public:
     BundleArchiveWithErrorInjectionTestSuite() {
-        fw = celix::createFramework(
-            {{"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"}, {CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true"}});
+        fw = celix::createFramework({{"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"},
+                                     {CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true"},
+                                     {CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED, "false"}});
         ctx = fw->getFrameworkBundleContext();
     }
 

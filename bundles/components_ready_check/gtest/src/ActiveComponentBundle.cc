@@ -17,38 +17,25 @@
  * under the License.
  */
 
-#include "celix_framework_factory.h"
-#include "framework.h"
+#include "celix/BundleActivator.h"
+#include "celix_condition.h"
 
-framework_t* celix_frameworkFactory_createFramework(celix_properties_t *config) {
-    framework_t* fw = NULL;
+/**
+ * @brief Empty Test Component for testing the condition service
+ */
+class CondComponent {
+public:
+    CondComponent() = default;
+};
 
-    if (config == NULL) {
-        config = celix_properties_create();
+class ActiveComponentBundle {
+public:
+    explicit ActiveComponentBundle(const std::shared_ptr<celix::BundleContext>& ctx) {
+        ctx->getDependencyManager()->createComponent<CondComponent>().build();
     }
 
-    if (config == NULL) {
-        return NULL;
-    }
+private:
+    std::shared_ptr<celix::ServiceRegistration> registration{};
+};
 
-    celix_status_t status = framework_create(&fw, config);
-    if (status != CELIX_SUCCESS) {
-        celix_properties_destroy(config);
-        return NULL;
-    }
-
-    status = framework_start(fw);
-    if (status != CELIX_SUCCESS) {
-        framework_destroy(fw);
-        return NULL;
-    }
-
-    return fw;
-}
-
-void celix_frameworkFactory_destroyFramework(celix_framework_t *fw) {
-    if (fw != NULL) {
-        framework_stop(fw);
-        framework_destroy(fw);
-    }
-}
+CELIX_GEN_CXX_BUNDLE_ACTIVATOR(ActiveComponentBundle)

@@ -415,6 +415,11 @@ CELIX_FRAMEWORK_EXPORT void celix_framework_waitForGenericEvent(celix_framework_
  */
 CELIX_FRAMEWORK_EXPORT void celix_framework_waitForStop(celix_framework_t *framework);
 
+/**
+ * @brief Check if the event queue is empty.
+ */
+CELIX_FRAMEWORK_EXPORT bool celix_framework_isEventQueueEmpty(celix_framework_t* fw);
+
 #ifdef __cplusplus
 }
 #endif

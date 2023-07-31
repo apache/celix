@@ -65,6 +65,7 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_SHELL_BONJOUR"] = self.options["celix"].build_shell_bonjour
         cmake.definitions["TEST_CELIX_DFI"] = self.options["celix"].build_celix_dfi
         cmake.definitions["TEST_UTILS"] = self.options["celix"].build_utils
+        cmake.definitions["TEST_COMPONENTS_READY_CHECK"] = self.options["celix"].build_components_ready_check
         cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":
@@ -163,3 +164,6 @@ class TestPackageConan(ConanFile):
                 self.run("./use_celix_dfi", run_environment=True)
             if self.options["celix"].build_utils:
                 self.run("./use_utils", run_environment=True)
+            if self.options["celix"].build_components_ready_check:
+                self.run("./use_components_ready_check",
+                         cwd=os.path.join("deploy", "use_components_ready_check"), run_environment=True)
