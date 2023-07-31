@@ -525,7 +525,7 @@ TEST_F(RsaShmClientServerUnitTestSuite, FailedToCreateMsgControl) {
     struct iovec request = {.iov_base = (void*)"request", .iov_len = strlen("request")};
     struct iovec response = {.iov_base = nullptr, .iov_len = 0};
 
-    celix_ei_expect_shmPool_malloc((void*)&rsaShmClientManager_sendMsgTo, 2, nullptr);
+    celix_ei_expect_shmPool_malloc((void*)&rsaShmClientManager_sendMsgTo, 1, nullptr);
     status = rsaShmClientManager_sendMsgTo(clientManager, "shm_test_server", serverId, nullptr, &request, &response);
     EXPECT_EQ(CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, ENOMEM), status);
 
