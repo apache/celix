@@ -24,4 +24,5 @@ limitations under the License.
 This experimental bundles shows that it is possible to write a bundle in Rust, it directly uses the Apache Celix C api 
 and is not intended to be used in production.
 
-Ideally Rust support in Apache Celix is done by first adding a Rust api and use that for Rust bundles.
+Ideally Rust support is done by adding a Rust API for Apache Celix and use that API for Rust bundles, the current
+implementation only shows that is possible to write a bundle in Rust that gets called by Apache Celix framework. 

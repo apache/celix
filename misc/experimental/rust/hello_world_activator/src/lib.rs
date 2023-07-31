@@ -19,11 +19,6 @@
 
 use std::os::raw::c_void;
 
-// TODO use celix_bundleActivator_create to create a bundle activator
-// pub struct RustBundleActivator {
-//     bundle_context: *mut c_void, /*TODO use bindgen to generate the correct ctx type*/
-// }
-
 #[no_mangle]
 pub unsafe extern "C" fn celix_bundleActivator_start(_data: *mut c_void, _context: *mut c_void) -> i32 {
     println!("Rust Bundle started!");
