@@ -21,6 +21,7 @@ add_library(pubsub_api INTERFACE)
 target_include_directories(pubsub_api INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 )
+target_link_libraries(pubsub_api INTERFACE Celix::utils)
 
 #install api
 install(TARGETS pubsub_api EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub

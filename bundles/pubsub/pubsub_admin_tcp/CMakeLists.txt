@@ -33,13 +33,10 @@ if (PUBSUB_PSA_TCP)
             )
 
     target_link_libraries(celix_pubsub_admin_tcp PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
-    target_link_libraries(celix_pubsub_admin_tcp PRIVATE Celix::framework Celix::log_helper)
+    target_link_libraries(celix_pubsub_admin_tcp PRIVATE Celix::log_helper)
     target_link_libraries(celix_pubsub_admin_tcp PRIVATE Celix::shell_api)
     target_include_directories(celix_pubsub_admin_tcp PRIVATE src)
-    # cmake find package UUID set the wrong include dir for OSX, does Conan solve this?
-    if (NOT APPLE)
-        target_link_libraries(celix_pubsub_admin_tcp PRIVATE libuuid::libuuid)
-    endif()
+    target_link_libraries(celix_pubsub_admin_tcp PRIVATE libuuid::libuuid)
     celix_deprecated_utils_headers(celix_pubsub_admin_tcp)
     celix_deprecated_framework_headers(celix_pubsub_admin_tcp)
 

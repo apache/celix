@@ -15,28 +15,31 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(celix_wire_protocol_v2_impl STATIC
-        src/pubsub_wire_v2_protocol_impl.c
-)
-target_include_directories(celix_wire_protocol_v2_impl PRIVATE src)
-target_link_libraries(celix_wire_protocol_v2_impl PUBLIC Celix::pubsub_spi)
-target_link_libraries(celix_wire_protocol_v2_impl PUBLIC celix_pubsub_protocol_lib)
+celix_subproject(PUBSUB_WIRE_PROTOCOL_V2 "Option to enable building the PubSub Wire Protocol v2 bundle" ON)
+if (PUBSUB_WIRE_PROTOCOL_V2)
+    add_library(celix_wire_protocol_v2_impl STATIC
+            src/pubsub_wire_v2_protocol_impl.c
+            )
+    target_include_directories(celix_wire_protocol_v2_impl PRIVATE src)
+    target_link_libraries(celix_wire_protocol_v2_impl PUBLIC Celix::pubsub_spi)
+    target_link_libraries(celix_wire_protocol_v2_impl PUBLIC celix_pubsub_protocol_lib)
 
-add_celix_bundle(celix_pubsub_protocol_wire_v2
-    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_protocol_wire_v2"
-    VERSION "1.0.0"
-    GROUP "Celix/PubSub"
-    SOURCES
-        src/ps_wire_v2_protocol_activator.c
-)
-target_include_directories(celix_pubsub_protocol_wire_v2 PRIVATE src)
-target_link_libraries(celix_pubsub_protocol_wire_v2 PRIVATE Celix::pubsub_spi Celix::pubsub_utils)
-target_link_libraries(celix_pubsub_protocol_wire_v2 PRIVATE celix_wire_protocol_v2_impl)
+    add_celix_bundle(celix_pubsub_protocol_wire_v2
+            BUNDLE_SYMBOLICNAME "apache_celix_pubsub_protocol_wire_v2"
+            VERSION "1.0.0"
+            GROUP "Celix/PubSub"
+            SOURCES
+            src/ps_wire_v2_protocol_activator.c
+            )
+    target_include_directories(celix_pubsub_protocol_wire_v2 PRIVATE src)
+    target_link_libraries(celix_pubsub_protocol_wire_v2 PRIVATE Celix::pubsub_utils)
+    target_link_libraries(celix_pubsub_protocol_wire_v2 PRIVATE celix_wire_protocol_v2_impl)
 
-install_celix_bundle(celix_pubsub_protocol_wire_v2 EXPORT celix COMPONENT pubsub)
+    install_celix_bundle(celix_pubsub_protocol_wire_v2 EXPORT celix COMPONENT pubsub)
 
-add_library(Celix::celix_pubsub_protocol_wire_v2 ALIAS celix_pubsub_protocol_wire_v2)
+    add_library(Celix::celix_pubsub_protocol_wire_v2 ALIAS celix_pubsub_protocol_wire_v2)
 
-if (ENABLE_TESTING)
-    add_subdirectory(gtest)
-endif()
+    if (ENABLE_TESTING)
+        add_subdirectory(gtest)
+    endif()
+endif ()

@@ -18,10 +18,10 @@
  */
 
 #define _GNU_SOURCE
-#include <stdio.h>
-#include <celix_api.h>
+#include <celix_bundle_activator.h>
 #include <celix_compiler.h>
 #include <celix_log_sink.h>
+#include <stdio.h>
 
 typedef struct my_log_writer_activator {
     celix_log_sink_t logSinkSvc;
@@ -43,7 +43,10 @@ static void myLogWriter_sinkLog(void *handle CELIX_UNUSED, celix_log_level_e lev
     va_end(argCopy);
     if (needed > 1024) {
         char *allocatedBuffer = NULL;
-        vasprintf(&allocatedBuffer, format, formatArgs);
+        if(vasprintf(&allocatedBuffer, format, formatArgs) == -1) {
+            fprintf(stderr, "Error allocating memory for log message\n");
+            return;
+        }
         printf("my [%s]: %s", logServiceName, allocatedBuffer);
         free(allocatedBuffer);
     } else {

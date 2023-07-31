@@ -17,7 +17,7 @@
 
 add_library(properties_ei STATIC src/celix_properties_ei.cc)
 
-target_include_directories(properties_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_include_directories(properties_ei PUBLIC include)
 target_link_libraries(properties_ei PUBLIC Celix::error_injector Celix::utils)
 # It plays nicely with address sanitizer this way.
 target_link_options(properties_ei INTERFACE

@@ -60,6 +60,9 @@ if (CELIX_DFI)
 	#Alias setup to match external usage
 	add_library(Celix::dfi ALIAS dfi)
 
+	if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
+		add_subdirectory(error_injector)
+	endif ()
 	if (ENABLE_TESTING)
 		add_subdirectory(gtest)
 	endif(ENABLE_TESTING)

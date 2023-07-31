@@ -28,17 +28,17 @@ add_celix_bundle(rsa_discovery_shm
 		src/discovery_shm.c
 		src/discovery_shmWatcher.c
 		src/discovery_impl.c
-		$<TARGET_OBJECTS:Celix::rsa_discovery_common>
 )
 target_include_directories(rsa_discovery_shm PRIVATE
 		src
 		${LIBXML2_INCLUDE_DIR}
 		${CURL_INCLUDE_DIR}
-		$<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
 )
 target_link_libraries(rsa_discovery_shm PRIVATE
-		Celix::framework CURL::libcurl ${LIBXML2_LIBRARIES} Celix::log_helper
+		Celix::rsa_discovery_common Celix::framework CURL::libcurl ${LIBXML2_LIBRARIES} Celix::log_helper
 		rsa_common civetweb::civetweb)
+celix_deprecated_framework_headers(rsa_discovery_shm)
+celix_deprecated_utils_headers(rsa_discovery_shm)
 
 install_celix_bundle(rsa_discovery_shm EXPORT celix COMPONENT rsa)
 
