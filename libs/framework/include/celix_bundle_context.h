@@ -283,7 +283,7 @@ typedef struct celix_service_registration_guard {
 } celix_service_registration_guard_t;
 
 /**
- * @brief Initialize a a scode guard for an existing service registration.
+ * @brief Initialize a a scope guard for an existing service registration.
  * @param [in] ctx The bundle context associated with the service registration.
  * @param [in] serviceId The service id.
  * @return An initialized service registration guard.

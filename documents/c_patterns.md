@@ -38,9 +38,11 @@ The naming scheme used for the object struct is `<celix_object_name>`, typically
 `<celix_object_name>_t`. For the object functions, the following naming scheme is 
 used: `<celix_objectName>_<functionName>`. Note the camelCase for the object name and function name.
 
-An Apache Celix C object should always have a create and a destroy function. The create function is used to create 
-a new object, and the destroy function is used to destroy the object. The destroy function should also free the 
-object's memory.
+An Apache Celix C object should always have a constructor and a destructor. If memory allocation is involved, 
+a `celix_<objectName>_create` function is used to create and return a new object, and a `celix_<objectName>_destroy` 
+function is used to destroy the object and free the object's memory. Otherwise, use a `celix_<objectName>_init` function
+with `celix_status_t` return value to initialize the object's provided memory and use a `celix_<objectName>_deinit` 
+function to deinitialize the object. The `celix_<objectName>_deinit` function should not free the object's memory.
 
 An Apache Celix C object can also have additional functions to access object information or to manipulate the object. 
 If an object contains properties, it should provide a getter and setter function for each property.
@@ -53,8 +55,8 @@ different element types. Refer to the header files for more information.
 
 ## Apache Celix C Scope-Based Resource Management
 
-Apache Celix offers several macros to support scope-based resource management (SBRM). These macros are 
-inspired by [Scoped-based Resource Management for the Kernel](https://lwn.net/Articles/934838/).
+Apache Celix offers several macros to add support for scope-based resource management (SBRM) to existing types. 
+These macros are inspired by [Scoped-based Resource Management for the Kernel](https://lwn.net/Articles/934838/).
 
 The main macros used for SBRM are:
 - `celix_autofree`: Automatically frees memory with `free` when the variable goes out of scope.
@@ -65,13 +67,14 @@ The main macros used for SBRM are:
 
 These macros can be found in the Apache Celix utils headers `celix_cleanup.h` and `celix_stdlib_cleanup.h`.
 
-In Apache Celix, C objects must opt into SBRM. This is done by using a "define" macro, which determines the 
+In Apache Celix, C objects must opt into SBRM. This is done by using a `CELIX_DEFINE_AUTO` macro, which determines the 
 expected C functions to clean up the object.
 
 ## Support for Resource Allocation Is Initialization (RAII)-like Structures
 
-Based on the previously mentioned SBRM, Apache Celix also offers support for structures that resemble RAII. These can be 
-used to guard locks, manage service registration, etc. Support for RAII-like structures is facilitated by providing 
+Based on the previously mentioned SBRM, Apache Celix also offers support for structures that resemble RAII. 
+These can be used to guard locks, manage service registration, etc. These guards should follow the naming convention 
+`celix_<obj_to_guard>_guard_t`. Support for RAII-like structures is facilitated by providing 
 additional cleanup functions that work with either the `celix_auto` or `celix_autoptr` macros.
 
 Examples include:
