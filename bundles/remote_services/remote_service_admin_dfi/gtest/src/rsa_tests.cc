@@ -22,6 +22,7 @@
 #include <remote_constants.h>
 #include "celix_framework_factory.h"
 #include "celix_bundle_context.h"
+#include "celix_compiler.h"
 #include "celix_constants.h"
 #include "calculator_service.h"
 
@@ -54,7 +55,7 @@ extern "C" {
         celix_frameworkFactory_destroyFramework(framework);
     }
 
-    static void testServicesCallback(void *handle __attribute__((unused)), void *svc) {
+    static void testServicesCallback(void *handle CELIX_UNUSED, void *svc) {
         auto* rsa = static_cast<remote_service_admin_service_t*>(svc);
         celix_array_list_t *exported = celix_arrayList_create();
         celix_array_list_t *imported = celix_arrayList_create();
@@ -81,7 +82,7 @@ extern "C" {
         ASSERT_TRUE(called);
     }
 
-    static void testExportServiceCallback(void *handle __attribute__((unused)), void *svc) {
+    static void testExportServiceCallback(void *handle CELIX_UNUSED, void *svc) {
         auto* rsa = static_cast<remote_service_admin_service_t*>(svc);
 
         char strSvcId[64];
@@ -109,7 +110,7 @@ extern "C" {
         ASSERT_TRUE(called);
     }
 
-    static void testImportServiceCallback(void *handle __attribute__((unused)), void *svc) {
+    static void testImportServiceCallback(void *handle CELIX_UNUSED, void *svc) {
         thread_local bool init = true;
         thread_local endpoint_description_t *endpoint = nullptr;
         if (init) {

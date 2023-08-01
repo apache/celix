@@ -24,5 +24,5 @@ add_celix_bundle(celix_pubsub_interceptors_example
         src/second_interceptor.c
 )
 
-target_link_libraries(celix_pubsub_interceptors_example PRIVATE Celix::framework Celix::pubsub_spi)
+target_link_libraries(celix_pubsub_interceptors_example PRIVATE Celix::pubsub_spi)
 target_include_directories(celix_pubsub_interceptors_example PRIVATE include)

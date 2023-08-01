@@ -14,23 +14,25 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+celix_subproject(DEPENDENCY_MANAGER_CXX "Option to enable building the legacy C++ Dependency Manager" ON)
+if (DEPENDENCY_MANAGER_CXX)
+    add_library(dependency_manager_cxx_static STATIC
+            src/dm_activator.cc
+            )
+    celix_deprecated_framework_headers(dependency_manager_cxx_static)
+    set_target_properties(dependency_manager_cxx_static PROPERTIES OUTPUT_NAME "celix_dependency_manager_cxx_static")
+    target_compile_options(dependency_manager_cxx_static PRIVATE -fPIC)
+    target_compile_options(dependency_manager_cxx_static PRIVATE -Wno-deprecated-declarations)
+    if (APPLE)
+        target_link_libraries(dependency_manager_cxx_static Celix::framework "-undefined dynamic_lookup")
+    else()
+        target_link_libraries(dependency_manager_cxx_static Celix::framework)
+    endif()
 
-add_library(dependency_manager_cxx_static STATIC
-        src/dm_activator.cc
-)
-celix_deprecated_framework_headers(dependency_manager_cxx_static)
-set_target_properties(dependency_manager_cxx_static PROPERTIES OUTPUT_NAME "celix_dependency_manager_cxx_static")
-target_compile_options(dependency_manager_cxx_static PRIVATE -fPIC)
-target_compile_options(dependency_manager_cxx_static PRIVATE -Wno-deprecated-declarations)
-if (APPLE)
-    target_link_libraries(dependency_manager_cxx_static Celix::framework "-undefined dynamic_lookup")
-else()
-    target_link_libraries(dependency_manager_cxx_static Celix::framework)
-endif()
+    install(TARGETS dependency_manager_cxx_static EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
 
-install(TARGETS dependency_manager_cxx_static EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
+    celix_deprecated_utils_headers(dependency_manager_cxx_static)
 
-celix_deprecated_utils_headers(dependency_manager_cxx_static)
-
-#Setup target aliases to match external usage
-add_library(Celix::dependency_manager_cxx_static ALIAS dependency_manager_cxx_static)
+    #Setup target aliases to match external usage
+    add_library(Celix::dependency_manager_cxx_static ALIAS dependency_manager_cxx_static)
+endif ()

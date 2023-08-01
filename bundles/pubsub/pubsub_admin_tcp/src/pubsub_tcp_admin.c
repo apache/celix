@@ -29,6 +29,7 @@
 #include "pubsub_psa_tcp_constants.h"
 #include "pubsub_tcp_topic_sender.h"
 #include "pubsub_tcp_topic_receiver.h"
+#include "celix_compiler.h"
 #include "celix_constants.h"
 
 #define L_DEBUG(...) \
@@ -619,8 +620,8 @@ celix_status_t pubsub_tcpAdmin_removeDiscoveredEndpoint(void *handle, const celi
     return status;
 }
 
-bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine __attribute__((unused)), FILE *out,
-                                    FILE *errStream __attribute__((unused))) {
+bool pubsub_tcpAdmin_executeCommand(void *handle, const char *commandLine CELIX_UNUSED, FILE *out,
+                                    FILE *errStream CELIX_UNUSED) {
     pubsub_tcp_admin_t *psa = handle;
     celix_status_t status = CELIX_SUCCESS;
     char *line = celix_utils_strdup(commandLine);

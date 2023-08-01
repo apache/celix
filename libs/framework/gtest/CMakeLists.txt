@@ -30,7 +30,8 @@ celix_bundle_headers(bundle_with_bad_export "Export-Library: $<SEMICOLON>")
 add_celix_bundle(simple_cxx_bundle SOURCES src/HelloWorldCxxActivator.cc VERSION 1.0.0)
 celix_bundle_libs(simple_cxx_bundle "PRIVATE" TRUE Celix::framework)
 add_celix_bundle(simple_cxx_dep_man_bundle SOURCES src/HelloWorldCxxActivatorWithDepMan.cc VERSION 1.0.0)
-add_celix_bundle(cmp_test_bundle SOURCES src/CmpTestBundleActivator.cc)
+add_celix_bundle(cmp_test_bundle SOURCES src/CmpTestBundleActivator.cc VERSION 1.0.0)
+add_celix_bundle(cond_test_bundle SOURCES src/CondTestBundleActivator.cc VERSION 1.0.0)
 add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
 
 add_celix_bundle(unresolvable_bundle SOURCES src/nop_activator.c VERSION 1.0.0)
@@ -52,12 +53,13 @@ set(CELIX_FRAMEWORK_TEST_SOURCES
     src/DependencyManagerTestSuite.cc
     src/CxxBundleContextTestSuite.cc
     src/HelloWorldCxxActivator.cc
-    src/CxxFrameworkFactoryTestSuite.cc
+    src/FrameworkFactoryTestSuite.cc
     src/CxxBundleActivatorTestSuite.cc
     src/BundleArchiveTestSuite.cc
     src/CelixLauncherTestSuite.cc
     src/CelixBundleCacheTestSuite.cc
     src/ScheduledEventTestSuite.cc
+    src/FrameworkBundleTestSuite.cc
 )
 
 add_executable(test_framework ${CELIX_FRAMEWORK_TEST_SOURCES})
@@ -99,6 +101,7 @@ celix_get_bundle_filename(unresolvable_bundle UNRESOLVABLE_BUNDLE)
 celix_get_bundle_file(simple_cxx_bundle SIMPLE_CXX_BUNDLE_LOC)
 celix_get_bundle_file(simple_cxx_dep_man_bundle SIMPLE_CXX_DEP_MAN_BUNDLE_LOC)
 celix_get_bundle_file(cmp_test_bundle CMP_TEST_BUNDLE_LOC)
+celix_get_bundle_file(cond_test_bundle COND_TEST_BUNDLE_LOC)
 
 configure_file(config.properties.in config.properties @ONLY)
 configure_file(framework1.properties.in framework1.properties @ONLY)
@@ -118,8 +121,12 @@ target_compile_definitions(test_framework PRIVATE
         CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"
         SIMPLE_CXX_DEP_MAN_BUNDLE_LOC="${SIMPLE_CXX_DEP_MAN_BUNDLE_LOC}"
         CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"
+        COND_TEST_BUNDLE_LOC="${COND_TEST_BUNDLE_LOC}"
         INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE="${CMAKE_CURRENT_BINARY_DIR}/install_and_start_bundles.properties"
 )
+if (ENABLE_TESTING_ON_CI)
+    target_compile_definitions(test_framework PRIVATE TESTING_ON_CI=1)
+endif ()
 add_test(NAME test_framework COMMAND test_framework)
 setup_target_for_coverage(test_framework SCAN_DIR ..)
 
@@ -130,6 +137,8 @@ if (LINKER_WRAP_SUPPORTED)
             src/CelixBundleContextBundlesWithErrorTestSuite.cc
             src/CelixBundleCacheErrorInjectionTestSuite.cc
             src/ScheduledEventWithErrorInjectionTestSuite.cc
+            src/FrameworkBundleWithErrorInjectionTestSuite.cc
+            src/FrameworkFactoryWithErrorInjectionTestSuite.cc
     )
     target_compile_definitions(test_framework_with_ei PRIVATE
             SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
@@ -140,7 +149,6 @@ if (LINKER_WRAP_SUPPORTED)
     celix_deprecated_utils_headers(test_framework_with_ei)
     target_link_libraries(test_framework_with_ei PRIVATE
             framework_cut
-            Celix::framework
             Celix::malloc_ei
             Celix::utils_ei
             Celix::asprintf_ei
@@ -150,6 +158,7 @@ if (LINKER_WRAP_SUPPORTED)
             Celix::properties_ei
             Celix::stdlib_ei
             Celix::stat_ei
+            Celix::threads_ei
             GTest::gtest GTest::gtest_main
     )
 
@@ -222,8 +231,12 @@ if (ENABLE_TESTING_FOR_CXX14)
             CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"
             SIMPLE_CXX_DEP_MAN_BUNDLE_LOC="${SIMPLE_CXX_DEP_MAN_WITH_CXX11_BUNDLE_LOC}"
             CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"
+            COND_TEST_BUNDLE_LOC="${COND_TEST_BUNDLE_LOC}"
             INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE="${CMAKE_CURRENT_BINARY_DIR}/install_and_start_bundles.properties"
     )
+    if (ENABLE_TESTING_ON_CI)
+        target_compile_definitions(test_framework_with_cxx14 PRIVATE TESTING_ON_CI=1)
+    endif ()
     add_test(NAME test_framework_with_cxx14 COMMAND test_framework_with_cxx14)
     setup_target_for_coverage(test_framework_with_cxx14 SCAN_DIR ..)
 endif ()

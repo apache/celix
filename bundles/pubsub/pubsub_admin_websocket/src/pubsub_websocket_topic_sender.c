@@ -29,6 +29,7 @@
 #include "pubsub_psa_websocket_constants.h"
 #include "pubsub_websocket_common.h"
 #include <jansson.h>
+#include "celix_compiler.h"
 #include "celix_constants.h"
 #include "http_admin/api.h"
 #include "civetweb.h"
@@ -83,7 +84,7 @@ typedef struct psa_websocket_bounded_service_entry {
     int getCount;
 } psa_websocket_bounded_service_entry_t;
 
-static int psa_websocket_localMsgTypeIdForMsgType(void* handle __attribute__((unused)), const char* msgType, unsigned int* msgTypeId);
+static int psa_websocket_localMsgTypeIdForMsgType(void* handle CELIX_UNUSED, const char* msgType, unsigned int* msgTypeId);
 static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static void psa_websocket_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 static int psa_websocket_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *msg, celix_properties_t *metadata);
@@ -211,7 +212,7 @@ static int psa_websocket_localMsgTypeIdForMsgType(void* handle, const char* msgT
     return -1;
 }
 
-static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties __attribute__((unused))) {
+static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties CELIX_UNUSED) {
     pubsub_websocket_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
 
@@ -234,7 +235,7 @@ static void* psa_websocket_getPublisherService(void *handle, const celix_bundle_
     return &entry->service;
 }
 
-static void psa_websocket_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties __attribute__((unused))) {
+static void psa_websocket_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties CELIX_UNUSED) {
     pubsub_websocket_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
 
@@ -324,7 +325,7 @@ static void psa_websocketTopicSender_ready(struct mg_connection *connection, voi
     sender->sockConnection = connection;
 }
 
-static void psa_websocketTopicSender_close(const struct mg_connection *connection __attribute__((unused)), void *handle) {
+static void psa_websocketTopicSender_close(const struct mg_connection *connection CELIX_UNUSED, void *handle) {
     //Connection closed so reset connection
     pubsub_websocket_topic_sender_t *sender = (pubsub_websocket_topic_sender_t *) handle;
     sender->sockConnection = NULL;

@@ -29,6 +29,7 @@
 #include "hash_map.h"
 #include "bundle_context.h"
 
+#include "celix_compiler.h"
 #include "celix_log_helper.h"
 
 #include "avrobin_serializer.h"
@@ -207,7 +208,7 @@ void pubsubMsgAvrobinSerializer_freeSerializeMsg(void* handle, struct iovec* inp
 }
 
 
-static celix_status_t pubsubMsgAvrobinSerializer_deserialize(void *handle, const struct iovec* input, size_t inputIovLen __attribute__((unused)), void **out) {
+static celix_status_t pubsubMsgAvrobinSerializer_deserialize(void *handle, const struct iovec* input, size_t inputIovLen CELIX_UNUSED, void **out) {
     celix_status_t status = CELIX_SUCCESS;
     if (input == NULL) return CELIX_BUNDLE_EXCEPTION;
     pubsub_avrobin_msg_serializer_impl_t *impl = handle;

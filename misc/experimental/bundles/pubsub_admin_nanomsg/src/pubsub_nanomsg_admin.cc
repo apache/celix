@@ -34,6 +34,8 @@
 #include "pubsub_nanomsg_admin.h"
 #include "pubsub_psa_nanomsg_constants.h"
 
+#include "celix_compiler.h"
+
 
 static celix_status_t nanoMsg_getIpAddress(const char *interface, char **ip);
 
@@ -535,8 +537,8 @@ celix_status_t pubsub_nanomsg_admin::removeEndpoint(const celix_properties_t *en
     return CELIX_SUCCESS;;
 }
 
-celix_status_t pubsub_nanomsg_admin::executeCommand(char *commandLine __attribute__((unused)), FILE *out,
-                                                  FILE *errStream __attribute__((unused))) {
+celix_status_t pubsub_nanomsg_admin::executeCommand(char *commandLine CELIX_UNUSED, FILE *out,
+                                                  FILE *errStream CELIX_UNUSED) {
     celix_status_t  status = CELIX_SUCCESS;
     fprintf(out, "\n");
     fprintf(out, "Topic Senders:\n");

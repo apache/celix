@@ -46,10 +46,12 @@ public:
     const char * const TEST_BND_UNRESOLVABLE_LOC = "" TEST_BUNDLE_UNRESOLVABLE_LOCATION "";
 
     CelixBundleContextBundlesTestSuite() {
-        properties = properties_create();
-        properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
-        properties_set(properties, "org.osgi.framework.storage.clean", "true");
-        properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
+        properties = celix_properties_create();
+        celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
+        celix_properties_set(properties, "org.osgi.framework.storage.clean", "true");
+        celix_properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
+        celix_properties_set(properties, "CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED", "false");
+
 
         fw = celix_frameworkFactory_createFramework(properties);
         ctx = framework_getContext(fw);

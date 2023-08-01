@@ -122,6 +122,19 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, CreateAndDestroyWatcher) {
     discoveryZeroconfWatcher_destroy(watcher);
 }
 
+TEST_F(DiscoveryZeroconfWatcherTestSuite, Cleanup) {
+    celix_autoptr(discovery_zeroconf_watcher_t) watcher = nullptr;
+    celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(DiscoveryZeroconfWatcherTestSuite, StealPointer) {
+    celix_autoptr(discovery_zeroconf_watcher_t) watcher = nullptr;
+    celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    discoveryZeroconfWatcher_destroy(celix_steal_ptr(watcher));
+}
+
 TEST_F(DiscoveryZeroconfWatcherTestSuite, CreateWatcherFailed1) {
     discovery_zeroconf_watcher_t *watcher;
     celix_ei_expect_celix_bundleContext_getProperty((void*)&discoveryZeroconfWatcher_create, 0, nullptr);

@@ -28,32 +28,8 @@ include(cmake/cmake_celix/UseCelix.cmake)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 #find required packages
-find_package(ZLIB REQUIRED) #framework
-find_package(libuuid REQUIRED) #framework
-find_package(CURL REQUIRED) #framework, etcdlib
-find_package(libzip REQUIRED) #framework, etcdlib
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-
-if (NOT TARGET ZLIB::ZLIB)
-    #Note more recent zlib will create ZLIB::ZLIB target
-    message("Note ZLIB::ZLIB target not created by find_package(ZLIB). Creating ZLIB::ZLIB Target.")
-    add_library(ZLIB::ZLIB SHARED IMPORTED)
-    set_target_properties(ZLIB::ZLIB PROPERTIES
-            IMPORTED_LOCATION "${ZLIB_LIBRARIES}"
-            INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIRS}"
-            )
-endif ()
-
-if (NOT TARGET CURL::libcurl)
-    #Note more recent curl will create CURL::libcurl target
-    message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
-    add_library(CURL::libcurl SHARED IMPORTED)
-    set_target_properties(CURL::libcurl PROPERTIES
-            IMPORTED_LOCATION "${CURL_LIBRARIES}"
-            INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
-            )
-endif ()
 
 # see https://public.kitware.com/Bug/view.php?id=15696
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
@@ -70,7 +46,7 @@ if (ENABLE_TESTING)
 endif ()
 
 # Set C specific flags
-set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=c99 -fPIC ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fPIC ${CMAKE_C_FLAGS}")
 set(CMAKE_C_FLAGS "-Wall -Werror -Wformat -Wno-error=deprecated-declarations ${CMAKE_C_FLAGS}")
 
 # Set C++ specific flags
@@ -183,6 +159,8 @@ endif ()
 option(ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11 "Test the Dependency Manager for C++11 support" OFF)
 option(ENABLE_TESTING_FOR_CXX14 "Test celix utils and framework C++ header for C++14 support" OFF)
 
+option(ENABLE_TESTING_ON_CI "Whether to enable testing on CI. This influence allowed timing errors during unit tests" OFF)
+
 if (CELIX_INSTALL_DEPRECATED_API)
     #ignore deprecated warnings
     set(CMAKE_C_FLAGS "-Wno-deprecated-declarations ${CMAKE_C_FLAGS}")
@@ -195,6 +173,12 @@ cmake_reset_check_state()
 include(CheckLinkerFlag)
 check_linker_flag(CXX LINKER:--wrap,celix_nonexistent_symbol LINKER_WRAP_SUPPORTED)
 cmake_pop_check_state()
+
+# avoid unknown export "celix" error when building nothing
+add_library(celix INTERFACE)
+add_library(Celix::celix ALIAS celix)
+install(TARGETS celix EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
 
 #Add generate_export_header to cmake
 include(GenerateExportHeader)

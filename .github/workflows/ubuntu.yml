@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  build-conan:
+  linux-build-conan:
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -19,9 +19,10 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3.3.0
-      - name: Install conan
+      - name: Install build dependencies
         run: |
           sudo pip install -U conan==1.59.0
+          sudo apt-get install -yq --no-install-recommends ninja-build
       - name: Setup Conan Profile
         env:
           CC: ${{ matrix.compiler[0] }}
@@ -49,9 +50,9 @@ jobs:
             -o celix:build_all=True
             -o celix:enable_testing_for_cxx14=True
             -o celix:enable_testing_dependency_manager_for_cxx11=True
+            -o celix:enable_testing_on_ci=True
         run: |
           #force require libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
-          sudo apt-get install -yq --no-install-recommends ninja-build
           conan install . celix/ci -pr:b release -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing  -b cpputest --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s
       - name: Build
         env:
@@ -67,15 +68,8 @@ jobs:
           source activate_run.sh
           ctest --output-on-failure
           source deactivate_run.sh
-      - name: Test Installed Celix
-        env:
-          CC: ${{ matrix.compiler[0] }}
-          CXX: ${{ matrix.compiler[1] }}
-          CONAN_CMAKE_GENERATOR: Ninja
-        run: |
-          conan create -pr:b release -pr:h default -tf examples/conan_test_package -tbf test-build -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s .
 
-  build-apt:
+  linux-build-apt:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
@@ -112,6 +106,7 @@ jobs:
           -DRSA_SHM=ON
           -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON
           -DSHELL_BONJOUR=ON
+          -DENABLE_TESTING_ON_CI=ON
           -DCMAKE_BUILD_TYPE=Debug
       run: |
         mkdir build install

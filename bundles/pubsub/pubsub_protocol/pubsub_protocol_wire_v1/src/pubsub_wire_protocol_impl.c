@@ -22,6 +22,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "celix_compiler.h"
 #include "celix_properties.h"
 
 #include "pubsub_wire_protocol_impl.h"
@@ -52,7 +53,7 @@ celix_status_t pubsubProtocol_destroy(pubsub_protocol_wire_v1_t* protocol) {
     return status;
 }
 
-celix_status_t pubsubProtocol_getHeaderSize(void* handle __attribute__((unused)), size_t *length) {
+celix_status_t pubsubProtocol_getHeaderSize(void* handle CELIX_UNUSED, size_t *length) {
     *length = sizeof(int) * 5 + sizeof(short) * 2; // header + sync + version = 24
     return CELIX_SUCCESS;
 }
@@ -61,22 +62,22 @@ celix_status_t pubsubProtocol_getHeaderBufferSize(void* handle, size_t *length) 
     return pubsubProtocol_getHeaderSize(handle, length);
 }
 
-celix_status_t pubsubProtocol_getSyncHeaderSize(void* handle __attribute__((unused)),  size_t *length) {
+celix_status_t pubsubProtocol_getSyncHeaderSize(void* handle CELIX_UNUSED,  size_t *length) {
     *length = sizeof(int);
     return CELIX_SUCCESS;
 }
 
-celix_status_t pubsubProtocol_getSyncHeader(void* handle __attribute__((unused)), void *syncHeader) {
+celix_status_t pubsubProtocol_getSyncHeader(void* handle CELIX_UNUSED, void *syncHeader) {
     pubsubProtocol_writeInt(syncHeader, 0, true, PROTOCOL_WIRE_V1_SYNC_HEADER);
     return CELIX_SUCCESS;
 }
 
-celix_status_t pubsubProtocol_getFooterSize(void* handle __attribute__((unused)),  size_t *length) {
+celix_status_t pubsubProtocol_getFooterSize(void* handle CELIX_UNUSED,  size_t *length) {
     *length = 0;
     return CELIX_SUCCESS;
 }
 
-celix_status_t pubsubProtocol_isMessageSegmentationSupported(void* handle __attribute__((unused)), bool *isSupported) {
+celix_status_t pubsubProtocol_isMessageSegmentationSupported(void* handle CELIX_UNUSED, bool *isSupported) {
     *isSupported = false;
     return CELIX_SUCCESS;
 }
@@ -109,32 +110,32 @@ celix_status_t pubsubProtocol_encodeHeader(void *handle, pubsub_protocol_message
     return status;
 }
 
-celix_status_t pubsubProtocol_v1_encodePayload(void *handle __attribute__((unused)), pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
+celix_status_t pubsubProtocol_v1_encodePayload(void *handle CELIX_UNUSED, pubsub_protocol_message_t *message, void **outBuffer, size_t *outLength) {
     message->header.convertEndianess = true;
     return pubsubProtocol_encodePayload(message, outBuffer, outLength);
 }
 
-celix_status_t pubsubProtocol_v1_encodeMetadata(void *handle __attribute__((unused)), pubsub_protocol_message_t *message, void **bufferInOut, size_t *bufferLengthInOut, size_t *bufferContentLengthOut) {
+celix_status_t pubsubProtocol_v1_encodeMetadata(void *handle CELIX_UNUSED, pubsub_protocol_message_t *message, void **bufferInOut, size_t *bufferLengthInOut, size_t *bufferContentLengthOut) {
     message->header.convertEndianess = true;
     return pubsubProtocol_encodeMetadata(message, (char**)bufferInOut, bufferLengthInOut, bufferContentLengthOut);
 }
 
-celix_status_t pubsubProtocol_encodeFooter(void *handle __attribute__((unused)), pubsub_protocol_message_t *message __attribute__((unused)), void **outBuffer, size_t *outLength) {
+celix_status_t pubsubProtocol_encodeFooter(void *handle, pubsub_protocol_message_t *message CELIX_UNUSED, void **outBuffer CELIX_UNUSED, size_t *outLength) {
     message->header.convertEndianess = true;
     return pubsubProtocol_getFooterSize(handle,  outLength);
 }
 
-celix_status_t pubsubProtocol_v1_decodePayload(void* handle __attribute__((unused)), void *data, size_t length, pubsub_protocol_message_t *message){
+celix_status_t pubsubProtocol_v1_decodePayload(void* handle CELIX_UNUSED, void *data, size_t length, pubsub_protocol_message_t *message){
     message->header.convertEndianess = true;
     return pubsubProtocol_decodePayload(data, length, message);
 }
 
-celix_status_t pubsubProtocol_v1_decodeMetadata(void* handle __attribute__((unused)), void *data, size_t length, pubsub_protocol_message_t *message) {
+celix_status_t pubsubProtocol_v1_decodeMetadata(void* handle CELIX_UNUSED, void *data, size_t length, pubsub_protocol_message_t *message) {
     message->header.convertEndianess = true;
     return pubsubProtocol_decodeMetadata(data, length, message);
 }
 
-celix_status_t pubsubProtocol_decodeFooter(void* handle __attribute__((unused)), void *data __attribute__((unused)), size_t length __attribute__((unused)), pubsub_protocol_message_t *message __attribute__((unused))) {
+celix_status_t pubsubProtocol_decodeFooter(void* handle CELIX_UNUSED, void *data CELIX_UNUSED, size_t length CELIX_UNUSED, pubsub_protocol_message_t *message CELIX_UNUSED) {
     celix_status_t status = CELIX_SUCCESS;
     return status;
 }

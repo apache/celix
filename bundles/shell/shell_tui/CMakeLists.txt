@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" ON DEPS SHELL)
+celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" ON)
 if (SHELL_TUI)
 
     add_celix_bundle(shell_tui

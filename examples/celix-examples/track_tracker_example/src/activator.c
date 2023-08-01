@@ -22,6 +22,7 @@
 #include <stdio.h>
 
 #include <celix_bundle_activator.h>
+#include <celix_compiler.h>
 
 #define CALC_SERVICE_NAME   "CALC_SERVICE"
 typedef struct calc_service {
@@ -54,12 +55,12 @@ static void removeCalcTracker(void *handle, const celix_service_tracker_info_t *
     printf("Calc service tracker with filter '%s' removed. Tracked with tracker id %li\n", info->filter->filterStr, act->trackerId);
 }
 
-static void addCalcSvc(void* handle __attribute__((unused)), void* svc) {
+static void addCalcSvc(void* handle CELIX_UNUSED, void* svc) {
     calc_service_t *calc = svc;
     printf("Calc service added. result calc(2) is %i\n", calc->calc(calc->handle, 2));
 }
 
-static void removeCalcSvc(void* handle __attribute__((unused)), void* svc __attribute__((unused))) {
+static void removeCalcSvc(void* handle CELIX_UNUSED, void* svc CELIX_UNUSED) {
     printf("Calc service removed\n");
 }
 

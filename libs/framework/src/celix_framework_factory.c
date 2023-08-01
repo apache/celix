@@ -27,16 +27,22 @@ framework_t* celix_frameworkFactory_createFramework(celix_properties_t *config) 
         config = celix_properties_create();
     }
 
-    if (config != NULL) {
-        framework_create(&fw, config);
+    if (config == NULL) {
+        return NULL;
     }
-    if (fw != NULL) {
-        celix_status_t rc = framework_start(fw);
-        if (rc != CELIX_SUCCESS) {
-            framework_destroy(fw);
-            fw = NULL;
-        }
+
+    celix_status_t status = framework_create(&fw, config);
+    if (status != CELIX_SUCCESS) {
+        celix_properties_destroy(config);
+        return NULL;
     }
+
+    status = framework_start(fw);
+    if (status != CELIX_SUCCESS) {
+        framework_destroy(fw);
+        return NULL;
+    }
+
     return fw;
 }
 

@@ -163,7 +163,7 @@ static int celixLauncher_launchWithConfigAndProps(const char *configFile, celix_
 int celixLauncher_launchWithProperties(celix_properties_t* config, celix_framework_t** framework) {
 #ifndef CELIX_NO_CURLINIT
 	// Before doing anything else, let's setup Curl
-	curl_global_init(CURL_GLOBAL_NOTHING);
+	curl_global_init(CURL_GLOBAL_ALL);
 #endif
 	*framework = celix_frameworkFactory_createFramework(config);
 	return *framework != NULL ? CELIX_LAUNCHER_OK_EXIT_CODE : CELIX_LAUNCHER_ERROR_EXIT_CODE;

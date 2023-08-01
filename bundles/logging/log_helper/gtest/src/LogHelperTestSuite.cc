@@ -206,3 +206,8 @@ TEST_F(LogHelperTestSuite, CxxLogHelper) {
     helper.logTssErrors(CELIX_LOG_LEVEL_ERROR);
     EXPECT_EQ(6, helper.count());
 }
+
+TEST_F(LogHelperTestSuite, CLogHelperAutoCleanup) {
+    celix_autoptr(celix_log_helper_t) helper = celix_logHelper_create(ctx->getCBundleContext(), "test::Log");
+    celix_logHelper_info(helper, "Auto cleanup test");
+}

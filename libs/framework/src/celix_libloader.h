@@ -19,6 +19,9 @@
 
 #ifndef CELIX_CELIX_LIBLOADER_H
 #define CELIX_CELIX_LIBLOADER_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include "celix_bundle_context.h"
 
@@ -91,4 +94,7 @@ celix_bundle_activator_destroy_fp celix_libloader_findBundleActivatorDestroy(cel
  */
 void* celix_libloader_findBundleActivatorSymbolFromAddr(void *addr, const char* name);
 
+#ifdef __cplusplus
+}
+#endif
 #endif //CELIX_CELIX_LIBLOADER_H

@@ -20,13 +20,13 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "celix_bundle.h"
+#include "celix_bundle_context.h"
+#include "celix_constants.h"
 #include "celix_framework.h"
 #include "celix_shell_constants.h"
-#include "celix_bundle_context.h"
-#include "std_commands.h"
-#include "celix_bundle.h"
 #include "celix_utils.h"
-
+#include "std_commands.h"
 
 struct query_options {
     bool useColors;
@@ -143,9 +143,13 @@ static void queryCommand_listServices(celix_bundle_context_t *ctx, const struct 
     data.nrOfProvidedServicesFound = 0;
     data.nrOfRequestedServicesFound = 0;
 
-    if (opts->bndId >= 0L) {
+    if (opts->bndId >= CELIX_FRAMEWORK_BUNDLE_ID) {
         queryCommand_listServicesForBundle(ctx, opts->bndId, &data, opts, sout, serr);
     } else {
+        //query framework bundle
+        queryCommand_listServicesForBundle(ctx, CELIX_FRAMEWORK_BUNDLE_ID, &data, opts, sout, serr);
+
+        //query rest of the bundles
         celix_array_list_t *bundleIds = celix_bundleContext_listBundles(ctx);
         for (int i = 0; i < celix_arrayList_size(bundleIds); ++i) {
             long bndId = celix_arrayList_getLong(bundleIds, i);
@@ -165,7 +169,7 @@ static void queryCommand_listServices(celix_bundle_context_t *ctx, const struct 
 }
 
 
-bool queryCommand_execute(void *_ptr, const char *command_line_str, FILE *sout, FILE *serr __attribute__((unused))) {
+bool queryCommand_execute(void *_ptr, const char *command_line_str, FILE *sout, FILE *serr) {
     bundle_context_t* ctx = _ptr;
 
     char *commandLine = celix_utils_strdup(command_line_str); //note command_line_str should be treated as const.
@@ -199,7 +203,7 @@ bool queryCommand_execute(void *_ptr, const char *command_line_str, FILE *sout, 
             //check if its a number (bundle id)
             errno = 0;
             long bndId = strtol(sub_str, NULL, 10);
-            if (bndId > 0 && errno == 0 /*not EINVAL*/) {
+            if (bndId >= CELIX_FRAMEWORK_BUNDLE_ID && errno == 0 /*not EINVAL*/) {
                 opts.bndId = bndId;
             } else {
                 //not option and not a bundle id -> query

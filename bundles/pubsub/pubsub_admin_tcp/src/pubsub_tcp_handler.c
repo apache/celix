@@ -45,6 +45,7 @@
 #include "hash_map.h"
 #include "utils.h"
 #include "pubsub_tcp_handler.h"
+#include "celix_compiler.h"
 
 #define MAX_EVENTS   64
 #define MAX_DEFAULT_BUFFER_SIZE 4u
@@ -378,7 +379,7 @@ pubsub_tcpHandler_freeEntry(psa_tcp_connection_entry_t *entry) {
 // Releases the Buffer
 //
 static inline void
-pubsub_tcpHandler_releaseEntryBuffer(pubsub_tcpHandler_t *handle, int fd, unsigned int index __attribute__((unused))) {
+pubsub_tcpHandler_releaseEntryBuffer(pubsub_tcpHandler_t *handle, int fd, unsigned int index CELIX_UNUSED) {
     psa_tcp_connection_entry_t *entry = hashMap_get(handle->connection_fd_map, (void *) (intptr_t) fd);
     if (entry != NULL) {
         entry->buffer = NULL;

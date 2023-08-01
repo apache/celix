@@ -32,17 +32,14 @@ include("${REL_INSTALL_DIR}/share/celix/cmake/cmake_celix/UseCelix.cmake") #adds
 
 include(CMakeFindDependencyMacro)
 
-find_dependency(ZLIB) #Needed by framework
-find_dependency(libuuid) #Needed by framework
-find_dependency(CURL) #Needed by framework (used for curl initialization), etcdlib
-find_dependency(libzip) #Needed by utils
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_dependency(Threads)
 
-include("${REL_INSTALL_DIR}/share/celix/cmake/CelixDeps.cmake") #adds celix optional dependencies
+#adds celix optional dependencies
+include("${REL_INSTALL_DIR}/share/celix/cmake/CelixDeps.cmake")
 
-include("${REL_INSTALL_DIR}/share/celix/cmake/Targets.cmake") #imports lib and exe targets (e.g. Celix::framework)
-
+#imports lib and exe targets (e.g. Celix::framework)
+include("${REL_INSTALL_DIR}/share/celix/cmake/Targets.cmake")
 include("${REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake")
 
 # The rest is added to ensure backwards compatiblity with project using the cmake lib/include var instead of targets.
@@ -85,23 +82,3 @@ endif ()
 set(CELIX_BUNDLES_DIR ${REL_INSTALL_DIR}/share/celix/bundles)
 set(CELIX_SHELL_BUNDLE ${CELIX_BUNDLES_DIR}/shell.zip)
 set(CELIX_SHELL_TUI_BUNDLE ${CELIX_BUNDLES_DIR}/shell_tui.zip)
-
-if (NOT TARGET ZLIB::ZLIB)
-  #Note more recent zlib will create ZLIB::ZLIB target
-  message("Note ZLIB::ZLIB target not created by find_package(ZLIB). Creating ZLIB::ZLIB Target.")
-  add_library(ZLIB::ZLIB SHARED IMPORTED)
-  set_target_properties(ZLIB::ZLIB PROPERTIES
-          IMPORTED_LOCATION "${ZLIB_LIBRARIES}"
-          INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIRS}"
-          )
-endif ()
-
-if (NOT TARGET CURL::libcurl)
-  #Note more recent curl will create CURL::libcurl target
-  message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
-  add_library(CURL::libcurl SHARED IMPORTED)
-  set_target_properties(CURL::libcurl PROPERTIES
-          IMPORTED_LOCATION "${CURL_LIBRARIES}"
-          INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
-          )
-endif ()

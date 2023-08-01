@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <celix_bundle_activator.h>
+#include <celix_compiler.h>
 
 typedef struct my_bundle_activator_data {
     /*the hello world bundle activator struct is empty*/
@@ -32,12 +33,12 @@ void myBundle_goodbyeWorld(celix_bundle_context_t* ctx) {
     printf("Goodbye world from bundle with id %li\n", celix_bundleContext_getBundleId(ctx));
 }
 
-static celix_status_t myBundle_start(my_bundle_activator_data_t *data __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
+static celix_status_t myBundle_start(my_bundle_activator_data_t *data CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
     myBundle_helloWorld(ctx);
     return CELIX_SUCCESS;
 }
 
-static celix_status_t myBundle_stop(my_bundle_activator_data_t *data __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
+static celix_status_t myBundle_stop(my_bundle_activator_data_t *data CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
     myBundle_goodbyeWorld(ctx);
     return CELIX_SUCCESS;
 }

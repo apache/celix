@@ -21,6 +21,7 @@
 
 #include <csignal>
 
+#include "celix_compiler.h"
 #include "celix_utils.h"
 #include "celix_threads.h"
 
@@ -470,7 +471,7 @@ static int thread_test_func_recur_lock(celix_thread_mutex_t *mu, int i) {
     }
 }
 
-static void * thread_test_func_kill(void __attribute__((unused)) *arg){
+static void * thread_test_func_kill(void* arg CELIX_UNUSED){
     int * ret = (int*) malloc(sizeof(*ret));
     //sleep for about a minute, or until a kill signal (USR1) is received
     *ret = usleep(60000000);

@@ -37,19 +37,18 @@ celix_status_t rsaShmActivator_start(rsa_shm_activator_t *activator, celix_bundl
     assert(activator != NULL);
     assert(context != NULL);
 
-    activator->logHelper = celix_logHelper_create(context, "celix_rsa_shm");
-    if (activator->logHelper == NULL) {
-        status = CELIX_BUNDLE_EXCEPTION;
-        goto err_creating_log_helper;
+    celix_autoptr(celix_log_helper_t) logger = celix_logHelper_create(context, "celix_rsa_shm");
+    if (logger == NULL) {
+        return CELIX_BUNDLE_EXCEPTION;
     }
 
-
-    status = rsaShm_create(context, activator->logHelper, &activator->admin);
+    celix_autoptr(rsa_shm_t) admin = NULL;
+    status = rsaShm_create(context, logger, &admin);
     if (status != CELIX_SUCCESS) {
-        goto rsa_shm_err;
+        return status;
     }
 
-    activator->adminService.admin = (void*)activator->admin;
+    activator->adminService.admin = (void*)admin;
     activator->adminService.exportService = (void*)rsaShm_exportService;
 
     activator->adminService.getExportedServices = (void*)rsaShm_getExportedServices;
@@ -73,18 +72,11 @@ celix_status_t rsaShmActivator_start(rsa_shm_activator_t *activator, celix_bundl
     activator->adminSvcId = celix_bundleContext_registerServiceAsync(context, &activator->adminService,
             OSGI_RSA_REMOTE_SERVICE_ADMIN, NULL);
     if (activator->adminSvcId < 0) {
-        status = CELIX_BUNDLE_EXCEPTION;
-        goto err_registering_svc;
+        return CELIX_BUNDLE_EXCEPTION;
     }
-
+    activator->logHelper = celix_steal_ptr(logger);
+    activator->admin = celix_steal_ptr(admin);
     return CELIX_SUCCESS;
-
-err_registering_svc:
-    rsaShm_destroy(activator->admin);
-rsa_shm_err:
-    celix_logHelper_destroy(activator->logHelper);
-err_creating_log_helper:
-    return status;
 }
 
 celix_status_t rsaShmActivator_stop(rsa_shm_activator_t *activator, celix_bundle_context_t *context) {

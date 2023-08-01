@@ -31,6 +31,7 @@
 #include "pubsub_psa_udpmc_constants.h"
 #include "large_udp.h"
 #include "pubsub_udpmc_common.h"
+#include "celix_compiler.h"
 
 #define FIRST_SEND_DELAY_IN_SECONDS     2
 
@@ -185,7 +186,7 @@ void pubsub_udpmcTopicSender_destroy(pubsub_udpmc_topic_sender_t *sender) {
     }
 }
 
-const char* pubsub_udpmcTopicSender_psaType(pubsub_udpmc_topic_sender_t *sender __attribute__((unused))) {
+const char* pubsub_udpmcTopicSender_psaType(pubsub_udpmc_topic_sender_t *sender CELIX_UNUSED) {
     return PSA_UDPMC_PUBSUB_ADMIN_TYPE;
 }
 
@@ -220,7 +221,7 @@ static int psa_udpmc_localMsgTypeIdForMsgType(void *handle, const char *msgType,
     return 0;
 }
 
-static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties __attribute__((unused))) {
+static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties CELIX_UNUSED) {
     pubsub_udpmc_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
 
@@ -261,7 +262,7 @@ static void* psa_udpmc_getPublisherService(void *handle, const celix_bundle_t *r
     return svc;
 }
 
-static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties __attribute__((unused))) {
+static void psa_udpmc_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties CELIX_UNUSED) {
     pubsub_udpmc_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
 

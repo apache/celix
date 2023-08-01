@@ -29,6 +29,7 @@
 #include "celix_log.h"
 #include "celix_properties.h"
 #include "celix_file_utils.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
 #include "celix_bundle_context.h"
 #include "framework_private.h"
@@ -115,22 +116,22 @@ static bool celix_bundleCache_cleanOnCreate(celix_framework_t* fw) {
 celix_status_t celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cache_t** out) {
     celix_status_t status = CELIX_SUCCESS;
 
-    celix_bundle_cache_t* cache = calloc(1, sizeof(*cache));
+    celix_autofree celix_bundle_cache_t* cache = calloc(1, sizeof(*cache));
     if (!cache) {
-        status = CELIX_ENOMEM;
-        goto cache_calloc_failure;
+        return CELIX_ENOMEM;
     }
 
     cache->fw = fw;
     bool useTmpDir = celix_bundleCache_useTmpDir(fw);
     cache->deleteOnCreate = celix_bundleCache_cleanOnCreate(fw);
     cache->deleteOnDestroy = useTmpDir; //if tmp dir is used, delete on destroy
-    cache->locationToBundleIdLookupMap = celix_stringHashMap_create();
+    celix_autoptr(celix_string_hash_map_t) locationToBundleIdLookupMap =
+        cache->locationToBundleIdLookupMap = celix_stringHashMap_create();
     if (NULL == cache->locationToBundleIdLookupMap) {
-        status = CELIX_ENOMEM;
-        goto cache_map_failure;
+        return CELIX_ENOMEM;
     }
     celixThreadMutex_create(&cache->mutex, NULL);
+    celix_autoptr(celix_thread_mutex_t) mutex = &cache->mutex;
 
     if (useTmpDir) {
         //Using /tmp dir for cache, so that multiple frameworks can be launched
@@ -145,31 +146,28 @@ celix_status_t celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cach
         cache->cacheDir = celix_utils_strdup(cacheDir);
     }
     if (NULL == cache->cacheDir) {
-        status = CELIX_ENOMEM;
-        goto cache_dir_failure;
+        return CELIX_ENOMEM;
     }
+    celix_autofree char* cacheDir = cache->cacheDir;
 
     if (cache->deleteOnCreate) {
-        CELIX_GOTO_IF_ERR(status = celix_bundleCache_deleteCacheDir(cache), manipulate_dir_failure);
+        status = celix_bundleCache_deleteCacheDir(cache);
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
     }
     const char* errorStr;
     status = celix_utils_createDirectory(cache->cacheDir, false, &errorStr);
     if (status != CELIX_SUCCESS) {
         fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create bundle cache directory %s, error %s",
                    cache->cacheDir, errorStr);
-        goto manipulate_dir_failure;
+        return status;
     }
-    *out = cache;
+    celix_steal_ptr(cacheDir);
+    celix_steal_ptr(mutex);
+    celix_steal_ptr(locationToBundleIdLookupMap);
+    *out = celix_steal_ptr(cache);
     return CELIX_SUCCESS;
-    manipulate_dir_failure:
-    free(cache->cacheDir);
-    cache_dir_failure:
-    celixThreadMutex_destroy(&cache->mutex);
-    celix_stringHashMap_destroy(cache->locationToBundleIdLookupMap);
-    cache_map_failure:
-    free(cache);
-    cache_calloc_failure:
-    return status;
 }
 
 celix_status_t celix_bundleCache_destroy(celix_bundle_cache_t* cache) {

@@ -32,6 +32,7 @@
 #include "pubsub_tcp_handler.h"
 #include "pubsub_tcp_common.h"
 #include <uuid/uuid.h>
+#include "celix_compiler.h"
 #include "celix_constants.h"
 #include <pubsub_utils.h>
 #include "pubsub_interceptors_handler.h"
@@ -312,7 +313,7 @@ bool pubsub_tcpTopicSender_isPassive(pubsub_tcp_topic_sender_t *sender) {
 }
 
 static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *requestingBundle,
-                                         const celix_properties_t *svcProperties __attribute__((unused))) {
+                                         const celix_properties_t *svcProperties CELIX_UNUSED) {
     pubsub_tcp_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
 
@@ -336,7 +337,7 @@ static void *psa_tcp_getPublisherService(void *handle, const celix_bundle_t *req
 }
 
 static void psa_tcp_ungetPublisherService(void *handle, const celix_bundle_t *requestingBundle,
-                                          const celix_properties_t *svcProperties __attribute__((unused))) {
+                                          const celix_properties_t *svcProperties CELIX_UNUSED) {
     pubsub_tcp_topic_sender_t *sender = handle;
     long bndId = celix_bundle_getId(requestingBundle);
 

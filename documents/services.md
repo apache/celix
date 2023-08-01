@@ -224,7 +224,7 @@ typedef struct my_shell_command_provider_activator_data {
     long shellCmdSvcId;
 } my_shell_command_provider_activator_data_t;
 
-static bool my_shell_command_executeCommand(void *handle, const char *commandLine, FILE *outStream, FILE *errorStream __attribute__((unused))) {
+static bool my_shell_command_executeCommand(void *handle, const char *commandLine, FILE *outStream, FILE *errorStream CELIX_UNUSED) {
     my_shell_command_provider_activator_data_t* data = handle;
     celix_bundle_t* bnd = celix_bundleContext_getBundle(data->ctx);
     fprintf(outStream, "Hello from bundle %s with command line '%s'\n", celix_bundle_getName(bnd), commandLine);
@@ -378,12 +378,12 @@ typedef struct use_command_service_example_data {
     //nop
 } use_command_service_example_data_t;
 
-static void useShellCommandCallback(void *handle __attribute__((unused)), void *svc) {
+static void useShellCommandCallback(void *handle CELIX_UNUSED, void *svc) {
     celix_shell_command_t* cmdSvc = (celix_shell_command_t*)svc;
     cmdSvc->executeCommand(cmdSvc->handle, "my_command test call from C", stdout, stderr);
 }
 
-static celix_status_t use_command_service_example_start(use_command_service_example_data_t *data __attribute__((unused)), celix_bundle_context_t *ctx) {
+static celix_status_t use_command_service_example_start(use_command_service_example_data_t *data CELIX_UNUSED, celix_bundle_context_t *ctx) {
     celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
     opts.callbackHandle = NULL;
     opts.use = useShellCommandCallback;
@@ -396,7 +396,7 @@ static celix_status_t use_command_service_example_start(use_command_service_exam
     return CELIX_SUCCESS;
 }
 
-static celix_status_t use_command_service_example_stop(use_command_service_example_data_t *data __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
+static celix_status_t use_command_service_example_stop(use_command_service_example_data_t *data CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
     return CELIX_SUCCESS;
 }
 

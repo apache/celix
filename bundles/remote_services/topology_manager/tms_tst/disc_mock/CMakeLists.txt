@@ -23,5 +23,7 @@ add_celix_bundle(topology_manager_disc_mock_bundle
 )
 target_include_directories(topology_manager_disc_mock_bundle PRIVATE
         $<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
-)
+        )
 target_link_libraries(topology_manager_disc_mock_bundle PRIVATE Celix::framework)
+celix_deprecated_framework_headers(topology_manager_disc_mock_bundle)
+celix_deprecated_utils_headers(topology_manager_disc_mock_bundle)

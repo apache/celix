@@ -22,24 +22,31 @@
 #include <memory>
 
 #include "celix/Properties.h"
-#include "celix/BundleContext.h"
 #include "celix/Framework.h"
+#include "celix/BundleContext.h"
 #include "celix_framework_factory.h"
 
 namespace celix {
-    /**
-     * @brief Create a new celix Framework instance.
-     */
-    inline std::shared_ptr<celix::Framework> createFramework(const celix::Properties& properties = {}) {
-        auto* copy = celix_properties_copy(properties.getCProperties());
-        auto* cFw= celix_frameworkFactory_createFramework(copy);
-        auto fwCtx = std::make_shared<celix::BundleContext>(celix_framework_getFrameworkContext(cFw));
-        std::shared_ptr<celix::Framework> framework{new celix::Framework{std::move(fwCtx), cFw}, [](celix::Framework* fw) {
-            auto* cFw = fw->getCFramework();
-            delete fw;
-            celix_framework_waitForEmptyEventQueue(cFw);
-            celix_frameworkFactory_destroyFramework(cFw);
-        }};
-        return framework;
+/**
+ * @brief Create a new celix Framework instance.
+ * @throws celix::Exception if the framework could not be created.
+ */
+inline std::shared_ptr<celix::Framework> createFramework(const celix::Properties& properties = {}) {
+    auto* copy = celix_properties_copy(properties.getCProperties());
+    if (!copy) {
+        throw celix::Exception{"Could not copy properties"};
     }
+
+    auto* cFw = celix_frameworkFactory_createFramework(copy);
+    if (!cFw) {
+        throw celix::Exception{"Could not create framework"};
+    }
+
+    auto fwCtx = std::make_shared<celix::BundleContext>(celix_framework_getFrameworkContext(cFw));
+    return std::shared_ptr<celix::Framework>{new celix::Framework{std::move(fwCtx), cFw}, [](celix::Framework* fw) {
+                                                 auto* cFw = fw->getCFramework();
+                                                 delete fw;
+                                                 celix_frameworkFactory_destroyFramework(cFw);
+                                             }};
 }
+} // namespace celix

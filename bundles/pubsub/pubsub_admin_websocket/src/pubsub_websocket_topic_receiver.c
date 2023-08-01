@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <pubsub_endpoint.h>
 #include <arpa/inet.h>
+#include "celix_compiler.h"
 #include <celix_log_helper.h>
 #include <math.h>
 #include <limits.h>
@@ -417,7 +418,7 @@ static void pubsub_websocketTopicReceiver_addSubscriber(void *handle, void *svc,
     celixThreadMutex_unlock(&receiver->subscribers.mutex);
 }
 
-static void pubsub_websocketTopicReceiver_removeSubscriber(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
+static void pubsub_websocketTopicReceiver_removeSubscriber(void *handle, void *svc CELIX_UNUSED, const celix_properties_t *props) {
     pubsub_websocket_topic_receiver_t *receiver = handle;
 
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
@@ -621,8 +622,8 @@ static void psa_websocketTopicReceiver_ready(struct mg_connection *connection, v
 }
 
 
-static int psa_websocketTopicReceiver_data(struct mg_connection *connection __attribute__((unused)),
-                                            int op_code __attribute__((unused)),
+static int psa_websocketTopicReceiver_data(struct mg_connection *connection CELIX_UNUSED,
+                                            int op_code CELIX_UNUSED,
                                             char *data,
                                             size_t length,
                                             void *handle) {

@@ -23,6 +23,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "celix_cleanup.h"
 #include <celix_errno.h>
 #include <sys/types.h>
 #include <stddef.h>
@@ -47,6 +48,8 @@ celix_status_t shmCache_create(bool shmRdOnly, shm_cache_t **shmCache);
  * @param[in] shmCache The shared memory cache instance
  */
 void shmCache_destroy(shm_cache_t *shmCache);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(shm_cache_t, shmCache_destroy)
 
 /**
  * @brief It will be called when shared memory is closed

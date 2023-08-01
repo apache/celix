@@ -28,6 +28,7 @@
 
 #include "celix_types.h"
 
+#include "celix_cleanup.h"
 #include "service_factory.h"
 #include "celix_service_factory.h"
 #include "celix_service_listener.h"
@@ -118,6 +119,38 @@ bundleContext_retainServiceReference(celix_bundle_context_t *context, service_re
  */
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_ungetServiceReference(celix_bundle_context_t *context, service_reference_pt reference);
+
+/**
+ * @brief Service reference guard.
+ */
+typedef struct celix_service_ref_guard {
+    service_reference_pt reference;
+    celix_bundle_context_t* context;
+} celix_service_ref_guard_t;
+
+/**
+ * @brief Initialize a scope guard for an existing reference.
+ * @param [in] context Bundle owner of the service reference.
+ * @param [in] reference An existing service reference.
+ * @return An initialized service reference guard.
+ */
+static CELIX_UNUSED inline celix_service_ref_guard_t celix_ServiceRefGuard_init(celix_bundle_context_t* context,
+                                                                                service_reference_pt reference) {
+    return (celix_service_ref_guard_t){.reference = reference, .context = context};
+}
+
+/**
+ * @brief Deinitialize a service reference guard.
+ * Ungets the contained service reference if it is not NULL.
+ * @param [in] ref A service reference guard.
+ */
+static CELIX_UNUSED inline void celix_ServiceRefGuard_deinit(celix_service_ref_guard_t* ref) {
+    if (ref->reference != NULL) {
+        bundleContext_ungetServiceReference(ref->context, ref->reference);
+    }
+}
+
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_service_ref_guard_t, celix_ServiceRefGuard_deinit);
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
 bundleContext_getService(celix_bundle_context_t *context, service_reference_pt reference, void **service_instance);

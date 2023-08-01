@@ -29,8 +29,9 @@ extern "C" {
 
 /**
  * Creates a new framework. The framework will be in the started state.
- * @param config The framework configuration. Can be NULL.
- * @return a started framework or NULL
+ * @param[in] config The framework configuration. Can be NULL. This call will take ownership of the config and
+ *                   also destroy it when the call fails.
+ * @return a started framework or NULL. If NULL is returned the framework is not started.
  */
 CELIX_FRAMEWORK_EXPORT celix_framework_t* celix_frameworkFactory_createFramework(celix_properties_t *config);
 

@@ -157,12 +157,6 @@ void celix_scheduledEvent_release(celix_scheduled_event_t* event) {
     }
 }
 
-void celix_ScheduledEvent_cleanup(celix_scheduled_event_t** event) {
-    if (event) {
-        celix_scheduledEvent_release(*event);
-    }
-}
-
 const char* celix_scheduledEvent_getName(const celix_scheduled_event_t* event) { return event->eventName; }
 
 long celix_scheduledEvent_getId(const celix_scheduled_event_t* event) { return event->scheduledEventId; }

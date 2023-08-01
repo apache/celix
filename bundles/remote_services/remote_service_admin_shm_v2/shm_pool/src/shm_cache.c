@@ -24,6 +24,7 @@
 #include <celix_long_hash_map.h>
 #include <celix_threads.h>
 #include "celix_err.h"
+#include "celix_stdlib_cleanup.h"
 #include <stdlib.h>
 #include <assert.h>
 #include <sys/shm.h>
@@ -55,7 +56,7 @@ celix_status_t shmCache_create(bool shmRdOnly, shm_cache_t **shmCache) {
     if (shmCache == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    shm_cache_t *cache = (shm_cache_t *)malloc(sizeof(shm_cache_t));
+    celix_autofree shm_cache_t *cache = (shm_cache_t *)malloc(sizeof(shm_cache_t));
     if (cache == NULL) {
         return CELIX_ENOMEM;
     }
@@ -67,35 +68,32 @@ celix_status_t shmCache_create(bool shmRdOnly, shm_cache_t **shmCache) {
     status = celixThreadMutex_create(&cache->mutex, NULL);
     if(status != CELIX_SUCCESS) {
         celix_err_pushf("Shm cache: Error creating cache mutux. %d.\n", status);
-        goto mutex_err;
+        return status;
     }
-    cache->shmCacheBlocks = celix_longHashMap_create();
+    celix_autoptr(celix_thread_mutex_t) mutex = &cache->mutex;
+    celix_autoptr(celix_long_hash_map_t) shmCacheBlocks = cache->shmCacheBlocks = celix_longHashMap_create();
     assert(cache->shmCacheBlocks != NULL);
 
     status = celixThreadCondition_init(&cache->watcherStopped, NULL);
     if (status != CELIX_SUCCESS) {
         celix_err_pushf("Shm cache: Error creating stoped condition for cache watcher. %d.\n", status);
-        goto watcher_stopped_cond_err;
+        return status;
     }
+    celix_autoptr(celix_thread_cond_t) watcherStopped = &cache->watcherStopped;
     cache->watcherActive = true;
     status = celixThread_create(&cache->shmWatcherThread, NULL,
             shmCache_WatcherThread, cache);
     if (status != CELIX_SUCCESS) {
         celix_err_pushf("Shm cache: Error creating cache watcher. %d.\n", status);
-        goto watcher_thread_err;
+        return status;
     }
 
-    *shmCache = cache;
+    celix_steal_ptr(watcherStopped);
+    celix_steal_ptr(shmCacheBlocks);
+    celix_steal_ptr(mutex);
+    *shmCache = celix_steal_ptr(cache);
 
     return CELIX_SUCCESS;
-watcher_thread_err:
-    (void)celixThreadCondition_destroy(&cache->watcherStopped);
-watcher_stopped_cond_err:
-    celix_longHashMap_destroy(cache->shmCacheBlocks);
-    (void)celixThreadMutex_destroy(&cache->mutex);
-mutex_err:
-    free(cache);
-    return status;
 }
 
 void shmCache_setShmPeerClosedCB(shm_cache_t *shmCache, shmCache_shmPeerClosedCB shmPeerClosedCB, void *closedCBHandle) {

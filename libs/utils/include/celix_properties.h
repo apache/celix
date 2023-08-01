@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#include "celix_cleanup.h"
+#include "celix_compiler.h"
 #include "celix_errno.h"
 #include "celix_utils_export.h"
 
@@ -51,6 +53,8 @@ typedef struct celix_properties_iterator {
 CELIX_UTILS_EXPORT celix_properties_t* celix_properties_create(void);
 
 CELIX_UTILS_EXPORT void celix_properties_destroy(celix_properties_t *properties);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_properties_t, celix_properties_destroy)
 
 CELIX_UTILS_EXPORT celix_properties_t* celix_properties_load(const char *filename);
 
@@ -87,10 +91,11 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_hasNext(celix_properties_iterat
 CELIX_UTILS_EXPORT const char* celix_propertiesIterator_nextKey(celix_properties_iterator_t *iter);
 CELIX_UTILS_EXPORT celix_properties_t* celix_propertiesIterator_properties(celix_properties_iterator_t *iter);
 
-#define CELIX_PROPERTIES_FOR_EACH(props, key) \
+#define CELIX_PROPERTIES_FOR_EACH(props, key) _CELIX_PROPERTIES_FOR_EACH(CELIX_UNIQUE_ID(iter), props, key)
+
+#define _CELIX_PROPERTIES_FOR_EACH(iter, props, key) \
     for(celix_properties_iterator_t iter = celix_propertiesIterator_construct(props); \
         celix_propertiesIterator_hasNext(&iter), (key) = celix_propertiesIterator_nextKey(&iter);)
-
 
 
 #ifdef __cplusplus

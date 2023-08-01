@@ -21,6 +21,7 @@
 #include <remote_constants.h>
 #include <tst_service.h>
 #include "celix_api.h"
+#include "celix_compiler.h"
 
 extern "C" {
 
@@ -81,7 +82,7 @@ typedef struct rsa_dfi_exception_test_service {
         celix_frameworkFactory_destroyFramework(clientFramework);
     }
 
-    static int rsaDfi_excepTestFunc1(void *handle __attribute__((unused))) {
+    static int rsaDfi_excepTestFunc1(void *handle CELIX_UNUSED) {
         return CELIX_CUSTOMER_ERROR_MAKE(0,1);
     }
 
@@ -174,7 +175,7 @@ typedef struct rsa_dfi_exception_test_service {
         free(serverSvcInterceptor);
     }
 
-    static void testComplex(void *handle __attribute__((unused)), void *svc) {
+    static void testComplex(void *handle CELIX_UNUSED, void *svc) {
         auto *tst = static_cast<tst_service_t *>(svc);
 
         bool discovered = tst->isRemoteExampleDiscovered(tst->handle);
@@ -184,7 +185,7 @@ typedef struct rsa_dfi_exception_test_service {
         ASSERT_TRUE(ok);
     };
 
-    static void testAction(void *handle __attribute__((unused)), void *svc) {
+    static void testAction(void *handle CELIX_UNUSED, void *svc) {
         auto *tst = static_cast<tst_service_t *>(svc);
 
         bool discovered = tst->isRemoteExampleDiscovered(tst->handle);
@@ -194,7 +195,7 @@ typedef struct rsa_dfi_exception_test_service {
         ASSERT_TRUE(ok);
     };
 
-    static void testNumbers(void *handle __attribute__((unused)), void *svc) {
+    static void testNumbers(void *handle CELIX_UNUSED, void *svc) {
         auto *tst = static_cast<tst_service_t *>(svc);
 
         bool discovered = tst->isRemoteExampleDiscovered(tst->handle);
@@ -204,7 +205,7 @@ typedef struct rsa_dfi_exception_test_service {
         ASSERT_TRUE(ok);
     };
 
-    static void testString(void *handle __attribute__((unused)), void *svc) {
+    static void testString(void *handle CELIX_UNUSED, void *svc) {
         auto *tst = static_cast<tst_service_t *>(svc);
 
         bool discovered = tst->isRemoteExampleDiscovered(tst->handle);
@@ -214,7 +215,7 @@ typedef struct rsa_dfi_exception_test_service {
         ASSERT_TRUE(ok);
     };
 
-    static void testEnum(void *handle __attribute__((unused)), void *svc) {
+    static void testEnum(void *handle CELIX_UNUSED, void *svc) {
         auto *tst = static_cast<tst_service_t *>(svc);
 
         bool discovered = tst->isRemoteExampleDiscovered(tst->handle);
@@ -224,7 +225,7 @@ typedef struct rsa_dfi_exception_test_service {
         ASSERT_TRUE(ok);
     };
 
-    static void testConstString(void *handle __attribute__((unused)), void *svc) {
+    static void testConstString(void *handle CELIX_UNUSED, void *svc) {
         auto *tst = static_cast<tst_service_t *>(svc);
 
         bool discovered = tst->isRemoteExampleDiscovered(tst->handle);
@@ -234,7 +235,7 @@ typedef struct rsa_dfi_exception_test_service {
         ASSERT_TRUE(ok);
     };
 
-    static void testCalculator(void *handle __attribute__((unused)), void *svc) {
+    static void testCalculator(void *handle CELIX_UNUSED, void *svc) {
         auto *tst = static_cast<tst_service_t *>(svc);
 
         bool ok;
@@ -246,19 +247,19 @@ typedef struct rsa_dfi_exception_test_service {
         ASSERT_TRUE(ok);
     };
 
-    static void testCreateDestroyComponentWithRemoteService(void *handle __attribute__((unused)), void *svc) {
+    static void testCreateDestroyComponentWithRemoteService(void *handle CELIX_UNUSED, void *svc) {
         auto *tst = static_cast<tst_service_t *>(svc);
         bool ok = tst->testCreateDestroyComponentWithRemoteService(tst->handle);
         ASSERT_TRUE(ok);
     };
 
-    static void testAddRemoteServiceInRemoteService(void *handle __attribute__((unused)), void *svc) {
+    static void testAddRemoteServiceInRemoteService(void *handle CELIX_UNUSED, void *svc) {
         auto *tst = static_cast<tst_service_t *>(svc);
         bool ok = tst->testCreateRemoteServiceInRemoteCall(tst->handle);
         ASSERT_TRUE(ok);
     };
 
-    static void testInterceptorPreExportCallReturnFalse(void *handle __attribute__((unused)), void *svc) {
+    static void testInterceptorPreExportCallReturnFalse(void *handle CELIX_UNUSED, void *svc) {
         svcInterceptorPreExportCallRetval = false;
         auto *tst = static_cast<tst_service_t *>(svc);
 
@@ -266,7 +267,7 @@ typedef struct rsa_dfi_exception_test_service {
         ASSERT_FALSE(ok);
     }
 
-    static void testInterceptorPreProxyCallReturnFalse(void *handle __attribute__((unused)), void *svc) {
+    static void testInterceptorPreProxyCallReturnFalse(void *handle CELIX_UNUSED, void *svc) {
         clientInterceptorPreProxyCallRetval = false;
         auto *tst = static_cast<tst_service_t *>(svc);
 
@@ -274,7 +275,7 @@ typedef struct rsa_dfi_exception_test_service {
         ASSERT_FALSE(ok);
     }
 
-    static void testExceptionServiceCallback(void *handle __attribute__((unused)), void *svc) {
+    static void testExceptionServiceCallback(void *handle CELIX_UNUSED, void *svc) {
         rsa_dfi_exception_test_service_t * service = (rsa_dfi_exception_test_service_t *)(svc);
         int ret = service->func1(service->handle);
         EXPECT_EQ(CELIX_CUSTOMER_ERROR_MAKE(0,1),ret);

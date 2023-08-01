@@ -33,10 +33,10 @@ public:
     static constexpr const char * const TEST_BND2_LOC = "" SIMPLE_TEST_BUNDLE2_LOCATION "";
 
     CxxBundleContextTestSuite() {
-        auto* properties = properties_create();
-        properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
-        properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
-        properties_set(properties, "org.osgi.framework.storage", ".cacheCxxBundleContextTestFramework");
+        auto* properties = celix_properties_create();
+        celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
+        celix_properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
+        celix_properties_set(properties, "CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED", "false");
 
         auto* cfw = celix_frameworkFactory_createFramework(properties);
         fw = std::shared_ptr<celix_framework_t>{cfw, [](celix_framework_t* f){ celix_frameworkFactory_destroyFramework(f); }};

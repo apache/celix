@@ -28,6 +28,7 @@
 #include "dm_dependency_manager_impl.h"
 #include "celix_dependency_manager.h"
 #include "celix_bundle.h"
+#include "celix_compiler.h"
 #include "celix_framework.h"
 
 celix_dependency_manager_t* celix_private_dependencyManager_create(celix_bundle_context_t *context) {
@@ -311,7 +312,7 @@ bool celix_dependencyManager_areComponentsActive(celix_dependency_manager_t *mng
     return allActive;
 }
 
-void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager __attribute__((unused)), celix_dependency_manager_info_t *info) {
+void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager CELIX_UNUSED, celix_dependency_manager_info_t *info) {
     if (info != NULL) {
         celix_arrayList_destroy(info->components);
         free(info->bndSymbolicName);
@@ -320,7 +321,7 @@ void celix_dependencyManager_destroyInfo(celix_dependency_manager_t *manager __a
 }
 
 
-void celix_dependencyManager_destroyInfos(celix_dependency_manager_t *manager __attribute__((unused)), celix_array_list_t * infos /*entries celix_dm_dependency_manager_info_t*/) {
+void celix_dependencyManager_destroyInfos(celix_dependency_manager_t *manager CELIX_UNUSED, celix_array_list_t * infos /*entries celix_dm_dependency_manager_info_t*/) {
 	celix_arrayList_destroy(infos);
 }
 

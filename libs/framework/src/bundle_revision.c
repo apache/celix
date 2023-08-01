@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 
+#include "celix_compiler.h"
 #include "celix_utils.h"
 #include "bundle_revision_private.h"
 #include "framework_private.h"
@@ -89,7 +90,7 @@ celix_status_t bundleRevision_getRoot(const bundle_revision_t* revision, const c
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleRevision_getHandles(const bundle_revision_t* revision __attribute__((unused)), celix_array_list_t** handles) {
+celix_status_t bundleRevision_getHandles(const bundle_revision_t* revision CELIX_UNUSED, celix_array_list_t** handles) {
     //nop, usage deprecated
     if (handles) {
         *handles = celix_arrayList_create();

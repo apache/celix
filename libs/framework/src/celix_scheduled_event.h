@@ -21,6 +21,7 @@
 #define CELIX_CELIX_SCHEDULED_EVENT_H
 
 #include "celix_bundle_context.h"
+#include "celix_cleanup.h"
 #include "framework_private.h"
 
 #ifdef __cplusplus
@@ -74,26 +75,6 @@ celix_scheduled_event_t* celix_scheduledEvent_retain(celix_scheduled_event_t* ev
  * the scheduled event is destroyed. Will silently ignore a NULL event.
  */
 void celix_scheduledEvent_release(celix_scheduled_event_t* event);
-
-/**
- * @brief Call the release of provided the scheduled event pointer.
- * Meant to be pair with a __cleanup__ attribute or CELIX_SCHEDULED_EVENT_RETAIN_GUARD macro.
- */
-void celix_ScheduledEvent_cleanup(celix_scheduled_event_t** event);
-
-/*!
- * @brief Retain the scheduled event, add a cleanup attribute to release the scheduled event and
- * return a pointer to it.
- *
- * This macro can be used as a guard to automatically release the scheduled event when leaving the current scope.
- *
- * @param[in] __var_name__ The name of the variable to create.
- * @param[in] __scheduled_event__ The scheduled event to retain.
- * @return A pointer to the retained scheduled event.
- */
-#define CELIX_SCHEDULED_EVENT_RETAIN_GUARD(__var_name__, __scheduled_event__)                                          \
-    __attribute__((__cleanup__(celix_ScheduledEvent_cleanup))) celix_scheduled_event_t* __var_name__ =                 \
-        celix_scheduledEvent_retain(__scheduled_event__)
 
 /**
  * @brief Returns the scheduled event name.
@@ -183,6 +164,8 @@ celix_status_t celix_scheduledEvent_wait(celix_scheduled_event_t* event, double 
  * event is marked for removal for the given time.
  */
 bool celix_scheduledEvent_requiresProcessing(celix_scheduled_event_t* event, const struct timespec* scheduleTime);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_scheduled_event_t, celix_scheduledEvent_release)
 
 #ifdef __cplusplus
 };

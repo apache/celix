@@ -23,6 +23,7 @@
 
 #include "example_calc.h"
 #include <celix_bundle_activator.h>
+#include <celix_compiler.h>
 
 
 typedef struct activator_data {
@@ -36,7 +37,7 @@ typedef struct activator_data {
 } activator_data_t;
 
 
-static int calc(void *handle __attribute__((unused)), int input) {
+static int calc(void *handle CELIX_UNUSED, int input) {
     return 42 * input;
 }
 
@@ -104,7 +105,7 @@ static celix_status_t activator_start(activator_data_t *data, celix_bundle_conte
     return CELIX_SUCCESS;
 }
 
-static celix_status_t activator_stop(activator_data_t *data, celix_bundle_context_t *ctx __attribute__((unused))) {
+static celix_status_t activator_stop(activator_data_t *data, celix_bundle_context_t *ctx CELIX_UNUSED) {
     setRunning(data, false);
     pthread_join(data->thread, NULL);
     pthread_mutex_destroy(&data->mutex);

@@ -29,7 +29,10 @@
 class ScheduledEventWithErrorInjectionTestSuite : public ::testing::Test {
 public:
     ScheduledEventWithErrorInjectionTestSuite() {
-        fw = celix::createFramework({{"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "info"}});
+        fw = celix::createFramework({
+            {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "info"},
+            {CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED, "false"}
+        });
     }
 
     ~ScheduledEventWithErrorInjectionTestSuite() noexcept override {

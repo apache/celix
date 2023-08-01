@@ -20,6 +20,7 @@
 //src/component_with_provided_service_activator.c
 #include <stdlib.h>
 #include <celix_bundle_activator.h>
+#include <celix_compiler.h>
 #include <celix_shell_command.h>
 
 //********************* COMPONENT *******************************/
@@ -41,7 +42,7 @@ static bool componentWithProvidedService_executeCommand(
         component_with_provided_service_t *cmp,
         const char *commandLine,
         FILE *outStream,
-        FILE *errorStream __attribute__((unused))) {
+        FILE *errorStream CELIX_UNUSED) {
     int count = __atomic_add_fetch(&cmp->callCount, 1, __ATOMIC_SEQ_CST);
     fprintf(outStream, "Hello from cmp. command called %i times. commandLine: %s\n", count, commandLine);
     return true;

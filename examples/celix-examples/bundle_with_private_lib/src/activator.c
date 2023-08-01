@@ -21,6 +21,7 @@
 #include <stdio.h>
 
 #include <celix_bundle_activator.h>
+#include "celix_compiler.h"
 #include <test.h>
 
 
@@ -36,7 +37,7 @@ static celix_status_t activator_start(struct userData *data, celix_bundle_contex
     return CELIX_SUCCESS;
 }
 
-static celix_status_t activator_stop(struct userData *data, celix_bundle_context_t *ctx __attribute__((unused))) {
+static celix_status_t activator_stop(struct userData *data, celix_bundle_context_t *ctx CELIX_UNUSED) {
     printf("Goodbye %s\n", data->word);
     return CELIX_SUCCESS;
 }

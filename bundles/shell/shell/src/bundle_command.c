@@ -20,6 +20,7 @@
 #include "bundle_command.h"
 #include "celix_bundle_context.h"
 #include "celix_convert_utils.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
 #include <stdlib.h>
 #include <string.h>
@@ -29,44 +30,35 @@ bool bundleCommand_execute(void *handle, const char *constCommandLine, FILE *out
 
     char* sub = NULL;
     char* savePtr = NULL;
-    char* command = celix_utils_strdup(constCommandLine);
+    celix_autofree char* command = celix_utils_strdup(constCommandLine);
     strtok_r(command, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr); //ignore command name
     sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr);
-    celix_array_list_t* bundleIds = celix_arrayList_create();
-    bool validArgs = true;
+    celix_autoptr(celix_array_list_t) bundleIds = celix_arrayList_create();
 
     if (sub == NULL) {
         fprintf(errStream, "Incorrect number of arguments.\n");
-        validArgs = false;
+        return false;
     }
 
     for (; sub != NULL; sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr)) {
         bool converted;
         long bndId = celix_utils_convertStringToLong(sub, 0, &converted);
         if (!converted) {
-            validArgs = false;
             fprintf(errStream, "Cannot convert '%s' to long (bundle id).\n", sub);
-            continue;
+            return false;
         }
         if (!celix_bundleContext_isBundleInstalled(ctx, bndId)) {
-            validArgs = false;
             fprintf(outStream, "No bundle with id %li.\n", bndId);
-            continue;
+            return false;
         }
         celix_arrayList_addLong(bundleIds, bndId);
     }
-    free(command);
 
-    if (!validArgs) {
-        goto cleanup;
-    }
     for (int i = 0; i < celix_arrayList_size(bundleIds); i++) {
         long bndId = celix_arrayList_getLong(bundleIds, i);
         celix_framework_t* fw = celix_bundleContext_getFramework(ctx);
         ctrl(fw, bndId);
     }
 
-cleanup:
-    celix_arrayList_destroy(bundleIds);
-    return validArgs;
+    return true;
 }

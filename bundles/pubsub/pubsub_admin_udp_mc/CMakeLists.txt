@@ -17,8 +17,6 @@
 
 celix_subproject(PUBSUB_PSA_UDP_MC "Build UDP MC PubSub Admin" ON)
 if (PUBSUB_PSA_UDP_MC)
-    find_package(jansson REQUIRED)
-
     add_celix_bundle(celix_pubsub_admin_udp_multicast
             BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_udp_multicast"
             VERSION "1.0.0"
@@ -34,8 +32,7 @@ if (PUBSUB_PSA_UDP_MC)
     target_include_directories(celix_pubsub_admin_udp_multicast PRIVATE
             src
             )
-    set_target_properties(celix_pubsub_admin_udp_multicast PROPERTIES INSTALL_RPATH "$ORIGIN")
-    target_link_libraries(celix_pubsub_admin_udp_multicast PRIVATE Celix::framework Celix::dfi Celix::log_helper Celix::utils Celix::shell_api)
+    target_link_libraries(celix_pubsub_admin_udp_multicast PRIVATE Celix::log_helper Celix::shell_api)
     target_link_libraries(celix_pubsub_admin_udp_multicast PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
     celix_deprecated_utils_headers(celix_pubsub_admin_udp_multicast)
     celix_deprecated_framework_headers(celix_pubsub_admin_udp_multicast)
