@@ -26,6 +26,7 @@ if (CELIX_RUST_EXPERIMENTAL)
     FetchContent_MakeAvailable(Corrosion)
 
     corrosion_import_crate(MANIFEST_PATH Cargo.toml)
+    corrosion_add_target_local_rustflags(rust_bundle_activator  "-Cprefer-dynamic")
 
     #Note corrosion_import_crate import creates a rust_bundle_activator CMake target, but this is a INTERFACE target.
     #Using the INTERFACE_LINK_LIBRARIES property we can get the actual target.
