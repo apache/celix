@@ -53,6 +53,7 @@ struct celix_bundle_cache {
 
     celix_thread_mutex_t mutex; //protects below and access to the cache dir
     celix_string_hash_map_t* locationToBundleIdLookupMap; //key = location, value = bundle id.
+    bool locationToBundleIdLookupMapLoaded; //true if the locationToBundleIdLookupMap is loaded from disk
 };
 
 static const char* bundleCache_progamName() {
@@ -163,6 +164,7 @@ celix_status_t celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cach
                    cache->cacheDir, errorStr);
         return status;
     }
+    cache->locationToBundleIdLookupMapLoaded = false;
     celix_steal_ptr(cacheDir);
     celix_steal_ptr(mutex);
     celix_steal_ptr(locationToBundleIdLookupMap);
@@ -233,8 +235,8 @@ celix_status_t celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, bun
     const char* loc = NULL;
     celixThreadMutex_lock(&cache->mutex);
     (void) bundleArchive_getLocation(archive, &loc);
-    (void) celix_stringHashMap_remove(cache->locationToBundleIdLookupMap, loc);
     if (permanent) {
+        (void) celix_stringHashMap_remove(cache->locationToBundleIdLookupMap, loc);
         status = bundleArchive_closeAndDelete(archive);
     }
     celixThreadMutex_unlock(&cache->mutex);
@@ -246,12 +248,10 @@ celix_status_t celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, bun
  * Update location->bundle id lookup map.
  */
 static void celix_bundleCache_updateIdForLocationLookupMap(celix_bundle_cache_t* cache) {
-    celixThreadMutex_lock(&cache->mutex);
     DIR* dir = opendir(cache->cacheDir);
     if (dir == NULL) {
         fw_logCode(cache->fw->logger, CELIX_LOG_LEVEL_ERROR, CELIX_BUNDLE_EXCEPTION,
                    "Cannot open bundle cache directory %s", cache->cacheDir);
-        celixThreadMutex_unlock(&cache->mutex);
         return;
     }
     char archiveRootBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
@@ -276,22 +276,19 @@ static void celix_bundleCache_updateIdForLocationLookupMap(celix_bundle_cache_t*
         }
     }
     closedir(dir);
-    celixThreadMutex_unlock(&cache->mutex);
 }
 
 long celix_bundleCache_findBundleIdForLocation(celix_bundle_cache_t* cache, const char* location) {
     long bndId = -1;
     celixThreadMutex_lock(&cache->mutex);
+    if (!cache->locationToBundleIdLookupMapLoaded) {
+        celix_bundleCache_updateIdForLocationLookupMap(cache);
+        cache->locationToBundleIdLookupMapLoaded = true;
+    }
     if (celix_stringHashMap_hasKey(cache->locationToBundleIdLookupMap, location)) {
         bndId = celix_stringHashMap_getLong(cache->locationToBundleIdLookupMap, location, -1);
     }
     celixThreadMutex_unlock(&cache->mutex);
-    if (bndId == -1) {
-        celix_bundleCache_updateIdForLocationLookupMap(cache);
-        celixThreadMutex_lock(&cache->mutex);
-        bndId = celix_stringHashMap_getLong(cache->locationToBundleIdLookupMap, location, -1);
-        celixThreadMutex_unlock(&cache->mutex);
-    }
     return bndId;
 }
 
