@@ -15,8 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-[workspace]
-members = [
-    "celix_bindings",
-    "hello_world_activator",
-]
+[package]
+name = "celix_bindings"
+version = "0.0.1"
+
+[build-dependencies]
+bindgen = "0.66.1"
+
+[lib]
+name = "celix_bindings"
+path = "src/lib.rs"
+crate-type = ["rlib"]

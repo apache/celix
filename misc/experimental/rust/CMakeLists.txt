@@ -25,8 +25,16 @@ if (CELIX_RUST_EXPERIMENTAL)
     )
     FetchContent_MakeAvailable(Corrosion)
 
+    #Prepare a list of include paths needed to generating bindings for the Apache Celix C API
+    file(GENERATE
+            OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/include_paths.txt"
+            CONTENT "$<TARGET_PROPERTY:framework,INTERFACE_INCLUDE_DIRECTORIES>;$<TARGET_PROPERTY:utils,INTERFACE_INCLUDE_DIRECTORIES>"
+    )
+
     corrosion_import_crate(MANIFEST_PATH Cargo.toml)
-    corrosion_add_target_local_rustflags(rust_bundle_activator  "-Cprefer-dynamic")
+
+    corrosion_add_target_local_rustflags(rust_bundle_activator "-Cprefer-dynamic")
+    corrosion_link_libraries(rust_bundle_activator Celix::framework)
 
     #Note corrosion_import_crate import creates a rust_bundle_activator CMake target, but this is a INTERFACE target.
     #Using the INTERFACE_LINK_LIBRARIES property we can get the actual target.
@@ -41,5 +49,4 @@ if (CELIX_RUST_EXPERIMENTAL)
             Celix::shell_tui
             rust_bundle
     )
-
 endif ()
