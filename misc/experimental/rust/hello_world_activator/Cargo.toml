@@ -17,8 +17,12 @@
 
 [package]
 name = "rust_bundle_activator"
-version = "0.1.0"
+version = "0.0.1"
+
+[dependencies]
+celix_bindings = { path = "../celix_bindings" }
 
 [lib]
 name = "rust_bundle_activator"
+path = "src/lib.rs"
 crate-type = ["cdylib"]
