@@ -26,3 +26,26 @@ and is not intended to be used in production.
 
 Ideally Rust support is done by adding a Rust API for Apache Celix and use that API for Rust bundles, the current
 implementation only shows that is possible to write a bundle in Rust that gets called by Apache Celix framework. 
+
+# Building
+
+To build rust source the Corrosion cmake module is used. This module will be automatically downloaded when building 
+using `FetchContent_Declare`.
+
+To actual build the rust source files both the rust compiler and cargo are required. For ubuntu this can be installed
+using apt:
+```bash
+sudo apt install rustc cargo
+```
+It is possible to define C bindings in rust manually, but this is a lot of work and error prone. Rust has a tool called
+bindgen which can generate C bindings from a C header file. This is used to generate the C bindings for Apache Celix.
+bindgen is used in the build.rs of the rust package `celix_bindings`.
+
+It is also possible to run bindgen manually, for example:
+```bash
+cargo install bindgen # install bindgen, only needed once
+PATH=$PATH:$HOME/.cargo/bin # add cargo bin to path
+
+cd misc/experimental/rust/celix_bindings
+bindgen -o src/celix_bindings.rs celix_bindings.h -- -I<celix_framework_include_dir> -I<celix_utils_include_dir>
+```
