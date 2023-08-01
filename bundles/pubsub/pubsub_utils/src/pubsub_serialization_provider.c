@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "pubsub_message_serialization_marker.h"
+#include "celix_compiler.h"
 #include "celix_constants.h"
 #include "dyn_function.h"
 #include "celix_version.h"
@@ -64,7 +65,7 @@ struct pubsub_serialization_provider {
     //serialization callbacks
     celix_status_t (*serialize)(pubsub_serialization_entry_t* entry, const void* msg, struct iovec** output, size_t* outputIovLen);
     void (*freeSerializeMsg)(pubsub_serialization_entry_t* entry, struct iovec* input, size_t inputIovLen);
-    celix_status_t (*deserialize)(pubsub_serialization_entry_t* entry, const struct iovec* input, size_t inputIovLen __attribute__((unused)), void **out);
+    celix_status_t (*deserialize)(pubsub_serialization_entry_t* entry, const struct iovec* input, size_t inputIovLen CELIX_UNUSED, void **out);
     void (*freeDeserializeMsg)(pubsub_serialization_entry_t* entry, void *msg);
 
     //updated serialization services
@@ -169,7 +170,7 @@ static FILE* openFileStream(pubsub_serialization_provider_t* provider, descripto
     return result;
 }
 
-static unsigned int pubsub_serializationProvider_getMsgId(pubsub_serialization_provider_t* provider __attribute__((unused)), dyn_message_type *msg) {
+static unsigned int pubsub_serializationProvider_getMsgId(pubsub_serialization_provider_t* provider CELIX_UNUSED, dyn_message_type *msg) {
     unsigned int msgId = 0;
 
     char *msgName = NULL;
@@ -495,7 +496,7 @@ static void pubsub_serializationProvider_printEntryDetails(pubsub_serialization_
     free(bndName);
 }
 
-bool pubsub_serializationProvider_executeCommand(void *handle, const char *commandLine , FILE *outStream, FILE *errorStream  __attribute__((unused))) {
+bool pubsub_serializationProvider_executeCommand(void *handle, const char *commandLine , FILE *outStream, FILE *errorStream  CELIX_UNUSED) {
     pubsub_serialization_provider_t* provider = handle;
 
     bool verbose = false;
@@ -595,7 +596,7 @@ pubsub_serialization_provider_t *pubsub_serializationProvider_create(
         long serializationServiceRanking,
         celix_status_t (*serialize)(pubsub_serialization_entry_t* entry, const void* msg, struct iovec** output, size_t* outputIovLen),
         void (*freeSerializeMsg)(pubsub_serialization_entry_t* entry, struct iovec* input, size_t inputIovLen),
-        celix_status_t (*deserialize)(pubsub_serialization_entry_t* entry, const struct iovec* input, size_t inputIovLen __attribute__((unused)), void **out),
+        celix_status_t (*deserialize)(pubsub_serialization_entry_t* entry, const struct iovec* input, size_t inputIovLen CELIX_UNUSED, void **out),
         void (*freeDeserializeMsg)(pubsub_serialization_entry_t* entry, void *msg)) {
     pubsub_serialization_provider_t* provider = calloc(1, sizeof(*provider));
     provider->ctx = ctx;

@@ -18,17 +18,18 @@
  */
 
 #include "celix_bundle_activator.h"
+#include "celix_compiler.h"
 
 struct bundle_act {
 
 };
 
-static celix_status_t act_start(struct bundle_act *act __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
+static celix_status_t act_start(struct bundle_act *act CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
     printf("Return a bundle 'exception'\n");
     return CELIX_BUNDLE_EXCEPTION;
 }
 
-static celix_status_t act_stop(struct bundle_act *act __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
+static celix_status_t act_stop(struct bundle_act *act CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
     return CELIX_SUCCESS;
 }
 

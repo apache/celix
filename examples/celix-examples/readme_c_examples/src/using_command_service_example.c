@@ -18,18 +18,19 @@
  */
 #include <stdio.h>
 #include <celix_bundle_activator.h>
+#include <celix_compiler.h>
 #include <celix_shell_command.h>
 
 typedef struct use_command_service_example_data {
     //nop
 } use_command_service_example_data_t;
 
-static void useShellCommandCallback(void *handle __attribute__((unused)), void *svc) {
+static void useShellCommandCallback(void *handle CELIX_UNUSED, void *svc) {
     celix_shell_command_t* cmdSvc = (celix_shell_command_t*)svc;
     cmdSvc->executeCommand(cmdSvc->handle, "my_command test call from C", stdout, stderr);
 }
 
-static celix_status_t use_command_service_example_start(use_command_service_example_data_t *data __attribute__((unused)), celix_bundle_context_t *ctx) {
+static celix_status_t use_command_service_example_start(use_command_service_example_data_t *data CELIX_UNUSED, celix_bundle_context_t *ctx) {
     celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
     opts.callbackHandle = NULL;
     opts.use = useShellCommandCallback;
@@ -42,7 +43,7 @@ static celix_status_t use_command_service_example_start(use_command_service_exam
     return CELIX_SUCCESS;
 }
 
-static celix_status_t use_command_service_example_stop(use_command_service_example_data_t *data __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
+static celix_status_t use_command_service_example_stop(use_command_service_example_data_t *data CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
     return CELIX_SUCCESS;
 }
 

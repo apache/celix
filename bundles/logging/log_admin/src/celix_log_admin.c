@@ -27,6 +27,7 @@
 #include <celix_log_control.h>
 #include <assert.h>
 
+#include "celix_compiler.h"
 #include "celix_log_service.h"
 #include "celix_log_sink.h"
 #include "celix_utils.h"
@@ -310,7 +311,7 @@ static void celix_logAdmin_addSink(void *handle, void *svc, const celix_properti
     }
 }
 
-static void celix_logAdmin_remSink(void *handle, void *svc __attribute__((unused)), const celix_properties_t* props) {
+static void celix_logAdmin_remSink(void *handle, void *svc CELIX_UNUSED, const celix_properties_t* props) {
     celix_log_admin_t* admin = handle;
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
     const char* sinkName = celix_properties_get(props, CELIX_LOG_SINK_PROPERTY_NAME, NULL);
@@ -535,7 +536,7 @@ static void celix_logAdmin_setSinkEnabledCmd(celix_log_admin_t* admin, const cha
     }
 }
 
-static void celix_logAdmin_InfoCmd(celix_log_admin_t* admin, FILE* outStream, FILE* errorStream __attribute__((unused))) {
+static void celix_logAdmin_InfoCmd(celix_log_admin_t* admin, FILE* outStream, FILE* errorStream CELIX_UNUSED) {
     celix_array_list_t* logServices = celix_logAdmin_currentLogServices(admin);
     celix_array_list_t* sinks = celix_logAdmin_currentSinks(admin);
     celix_arrayList_sort(logServices, (void*)strcmp);

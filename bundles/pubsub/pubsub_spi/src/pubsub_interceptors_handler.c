@@ -17,6 +17,7 @@
  * under the License.
  */
 #include "celix_bundle_context.h"
+#include "celix_compiler.h"
 #include "celix_constants.h"
 #include "celix_array_list.h"
 #include "celix_utils.h"
@@ -105,7 +106,7 @@ void pubsubInterceptorsHandler_addInterceptor(void *handle, void *svc, const cel
     celixThreadMutex_unlock(&handler->lock);
 }
 
-void pubsubInterceptorsHandler_removeInterceptor(void *handle, void *svc, __attribute__((unused)) const celix_properties_t *props) {
+void pubsubInterceptorsHandler_removeInterceptor(void *handle, void *svc, const celix_properties_t *props CELIX_UNUSED) {
     pubsub_interceptors_handler_t *handler = handle;
 
     celixThreadMutex_lock(&handler->lock);

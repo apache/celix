@@ -24,6 +24,7 @@
 #include "dyn_type.h"
 #include "dyn_function.h"
 #include "dfi_log_util.h"
+#include "celix_cleanup.h"
 #include "celix_version.h"
 #include "celix_dfi_export.h"
 
@@ -75,6 +76,8 @@ CELIX_DFI_EXPORT int dynInterface_parse(FILE *descriptor, dyn_interface_type **o
  * @param[in] intf The dynamic interface type instance to destroy.
  */
 CELIX_DFI_EXPORT void dynInterface_destroy(dyn_interface_type *intf);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(dyn_interface_type, dynInterface_destroy);
 
 /**
  * @brief Gets the name of the given dynamic interface type instance.

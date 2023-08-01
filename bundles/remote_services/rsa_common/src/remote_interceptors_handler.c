@@ -20,6 +20,7 @@
 
 #include "celix_bundle_context.h"
 #include "celix_constants.h"
+#include "celix_compiler.h"
 #include "celix_array_list.h"
 #include "celix_threads.h"
 #include "celix_utils.h"
@@ -111,7 +112,7 @@ void remoteInterceptorsHandler_addInterceptor(void *handle, void *svc, const cel
     celixThreadMutex_unlock(&handler->lock);
 }
 
-void remoteInterceptorsHandler_removeInterceptor(void *handle, void *svc, __attribute__((unused)) const celix_properties_t *props) {
+void remoteInterceptorsHandler_removeInterceptor(void *handle, void *svc, const celix_properties_t *props CELIX_UNUSED) {
     remote_interceptors_handler_t *handler = handle;
 
     celixThreadMutex_lock(&handler->lock);

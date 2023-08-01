@@ -29,6 +29,7 @@
 #include "civetweb.h"
 
 #include "celix_utils_api.h"
+#include "celix_compiler.h"
 
 
 struct http_admin_manager {
@@ -154,7 +155,7 @@ void http_admin_addHttpService(void *handle, void *svc, const celix_properties_t
     }
 }
 
-void http_admin_removeHttpService(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
+void http_admin_removeHttpService(void *handle, void *svc CELIX_UNUSED, const celix_properties_t *props) {
     http_admin_manager_t *admin = (http_admin_manager_t *) handle;
 
     const char *uri = celix_properties_get(props, HTTP_ADMIN_URI, NULL);

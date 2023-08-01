@@ -25,6 +25,7 @@ extern "C" {
 #endif
 #include "export_registration.h"
 #include "endpoint_description.h"
+#include "celix_cleanup.h"
 #include "celix_log_helper.h"
 #include "celix_types.h"
 #include "celix_properties.h"
@@ -39,6 +40,8 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
 void exportRegistration_addRef(export_registration_t *registration);
 
 void exportRegistration_release(export_registration_t *registration);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(export_registration_t, exportRegistration_release)
 
 celix_status_t exportRegistration_getExportReference(export_registration_t *registration,
         export_reference_t **out);

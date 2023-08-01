@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 #include "celix_bundle_activator.h"
+#include "celix_compiler.h"
 #include "pubsub/api.h"
 
 #include "msg.h"
@@ -55,7 +56,7 @@ celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
         celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, "ping");
         act->subSvc1.handle = act;
         act->subSvc1.receive = tst_receive;
-        act->subSvcId1 = celix_bundleContext_registerServiceAsync(ctx, &act->subSvc1, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
+        act->subSvcId1 = celix_bundleContext_registerService(ctx, &act->subSvc1, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
     }
 
     {
@@ -63,13 +64,13 @@ celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
         celix_properties_set(props, PUBSUB_SUBSCRIBER_TOPIC, "ping");
         act->subSvc2.handle = act;
         act->subSvc2.receive = tst_receive2;
-        act->subSvcId2 = celix_bundleContext_registerServiceAsync(ctx, &act->subSvc2, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
+        act->subSvcId2 = celix_bundleContext_registerService(ctx, &act->subSvc2, PUBSUB_SUBSCRIBER_SERVICE_NAME, props);
     }
 
     {
         act->countSvc.handle = act;
         act->countSvc.receiveCount = tst_count;
-        act->countSvcId = celix_bundleContext_registerServiceAsync(ctx, &act->countSvc, CELIX_RECEIVE_COUNT_SERVICE_NAME, NULL);
+        act->countSvcId = celix_bundleContext_registerService(ctx, &act->countSvc, CELIX_RECEIVE_COUNT_SERVICE_NAME, NULL);
     }
 
     return CELIX_SUCCESS;
@@ -86,7 +87,7 @@ celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
 CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, bnd_start, bnd_stop) ;
 
 
-static int tst_receive(void *handle, const char * msgType __attribute__((unused)), unsigned int msgTypeId  __attribute__((unused)), void * voidMsg, const celix_properties_t *metadata  __attribute__((unused)), bool *release) {
+static int tst_receive(void *handle, const char * msgType CELIX_UNUSED, unsigned int msgTypeId  CELIX_UNUSED, void * voidMsg, const celix_properties_t *metadata  CELIX_UNUSED, bool *release) {
     struct activator *act = handle;
 
     msg_t *msg = voidMsg;
@@ -107,7 +108,7 @@ static int tst_receive(void *handle, const char * msgType __attribute__((unused)
     return CELIX_SUCCESS;
 }
 
-static int tst_receive2(void *handle, const char * msgType __attribute__((unused)), unsigned int msgTypeId  __attribute__((unused)), void * voidMsg, const celix_properties_t *metadata  __attribute__((unused)), bool *release  __attribute__((unused))) {
+static int tst_receive2(void *handle, const char * msgType CELIX_UNUSED, unsigned int msgTypeId  CELIX_UNUSED, void * voidMsg, const celix_properties_t *metadata  CELIX_UNUSED, bool *release  CELIX_UNUSED) {
     struct activator *act = handle;
 
     msg_t *msg = voidMsg;

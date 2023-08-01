@@ -17,9 +17,10 @@
  * under the License.
  */
 #include "celix_api.h"
+#include "celix_compiler.h"
 #include "celix_shell_command.h"
 
-static void useShellCommandCallback(void *handle __attribute__((unused)), void *svc) {
+static void useShellCommandCallback(void *handle CELIX_UNUSED, void *svc) {
     celix_shell_command_t* cmdSvc = (celix_shell_command_t*)svc;
     cmdSvc->executeCommand(cmdSvc->handle, "my_command test call from C", stdout, stderr);
 }

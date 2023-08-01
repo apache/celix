@@ -49,6 +49,7 @@ if (UTILS)
             src/celix_convert_utils.c
             src/celix_errno.c
             src/celix_err.c
+            src/celix_cleanup.c
             ${MEMSTREAM_SOURCES}
             )
     set(UTILS_PRIVATE_DEPS libzip::libzip)
@@ -58,9 +59,9 @@ if (UTILS)
 
     set_target_properties(utils
             PROPERTIES
-            C_VISIBILITY_PRESET hidden
             SOVERSION ${CELIX_MAJOR}
             OUTPUT_NAME "celix_utils")
+    celix_target_hide_symbols(utils)
 
     if (NOT OPEN_MEMSTREAM_EXISTS)
         target_compile_definitions(utils PUBLIC -DCELIX_UTILS_NO_MEMSTREAM_AVAILABLE)
@@ -117,6 +118,7 @@ if (UTILS)
 
     if (ENABLE_TESTING)
         add_library(utils_cut STATIC ${UTILS_SRC})
+        target_compile_definitions(utils_cut PRIVATE CELIX_UTILS_STATIC_DEFINE)
         target_include_directories(utils_cut PUBLIC
                 ${CMAKE_CURRENT_LIST_DIR}/include
                 ${MEMSTREAM_INCLUDE_DIR}

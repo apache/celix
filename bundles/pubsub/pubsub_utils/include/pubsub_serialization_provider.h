@@ -20,6 +20,7 @@
 #ifndef CELIX_PUBSUB_SERIALIZATION_PROVIDER_H
 #define CELIX_PUBSUB_SERIALIZATION_PROVIDER_H
 
+#include "celix_compiler.h"
 #include "celix_log_helper.h"
 #include "celix_bundle_context.h"
 #include "pubsub_message_serialization_service.h"
@@ -94,7 +95,7 @@ pubsub_serialization_provider_t *pubsub_serializationProvider_create(
         long serializationServiceRanking,
         celix_status_t (*serialize)(pubsub_serialization_entry_t* entry, const void* msg, struct iovec** output, size_t* outputIovLen),
         void (*freeSerializeMsg)(pubsub_serialization_entry_t* entry, struct iovec* input, size_t inputIovLen),
-        celix_status_t (*deserialize)(pubsub_serialization_entry_t* entry, const struct iovec* input, size_t inputIovLen __attribute__((unused)), void **out),
+        celix_status_t (*deserialize)(pubsub_serialization_entry_t* entry, const struct iovec* input, size_t inputIovLen CELIX_UNUSED, void **out),
         void (*freeDeserializeMsg)(pubsub_serialization_entry_t* entry, void *msg));
 
 /**

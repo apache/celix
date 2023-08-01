@@ -169,7 +169,7 @@ static void queryCommand_listServices(celix_bundle_context_t *ctx, const struct 
 }
 
 
-bool queryCommand_execute(void *_ptr, const char *command_line_str, FILE *sout, FILE *serr __attribute__((unused))) {
+bool queryCommand_execute(void *_ptr, const char *command_line_str, FILE *sout, FILE *serr) {
     bundle_context_t* ctx = _ptr;
 
     char *commandLine = celix_utils_strdup(command_line_str); //note command_line_str should be treated as const.

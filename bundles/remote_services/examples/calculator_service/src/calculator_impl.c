@@ -24,6 +24,7 @@
 #include <stdio.h>
 
 #include "calculator_impl.h"
+#include "celix_compiler.h"
 
 calculator_t* calculator_create(void) {
     struct calculator *calc = calloc(1, sizeof(*calc));
@@ -34,7 +35,7 @@ void calculator_destroy(calculator_t *calculator) {
     free(calculator);
 }
 
-int calculator_add(calculator_t *calculator __attribute__((unused)), double a, double b, double *result) {
+int calculator_add(calculator_t *calculator CELIX_UNUSED, double a, double b, double *result) {
     int status = CELIX_SUCCESS;
 
     *result = a + b;
@@ -43,7 +44,7 @@ int calculator_add(calculator_t *calculator __attribute__((unused)), double a, d
     return status;
 }
 
-int calculator_sub(calculator_t *calculator __attribute__((unused)), double a, double b, double *result) {
+int calculator_sub(calculator_t *calculator CELIX_UNUSED, double a, double b, double *result) {
     int status = CELIX_SUCCESS;
 
     *result = a - b;
@@ -52,7 +53,7 @@ int calculator_sub(calculator_t *calculator __attribute__((unused)), double a, d
     return status;
 }
 
-int calculator_sqrt(calculator_t *calculator __attribute__((unused)), double a, double *result) {
+int calculator_sqrt(calculator_t *calculator CELIX_UNUSED, double a, double *result) {
     int status = CELIX_SUCCESS;
 
     if (a > 0) {

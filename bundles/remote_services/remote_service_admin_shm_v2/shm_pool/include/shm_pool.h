@@ -23,7 +23,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <celix_errno.h>
+#include "celix_errno.h"
+#include "celix_cleanup.h"
 #include <stddef.h>
 #include <sys/types.h>
 
@@ -56,6 +57,8 @@ int shmPool_getShmId(shm_pool_t *pool);
  */
 void shmPool_destroy(shm_pool_t *pool);
 
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(shm_pool_t, shmPool_destroy)
+
 /**
  * @brief Allocate memory from shared memory pool
  *
@@ -82,6 +85,37 @@ void shmPool_free(shm_pool_t *pool, void *ptr);
  */
 ssize_t shmPool_getMemoryOffset(shm_pool_t *pool, void *ptr);
 
+/**
+ * @brief Scoped guard for shared memory pool allocation.
+ */
+typedef struct celix_shm_pool_alloc_guard {
+    void* ptr;
+    shm_pool_t* pool;
+} celix_shm_pool_alloc_guard_t;
+
+/**
+ * @brief Initialize a shared memory pool allocation guard.
+ * @param [in] addr Start address of the allocated memory.
+ * @param [in] pool The shared memory pool.
+ * @return An initialized guard.
+ */
+static CELIX_UNUSED inline celix_shm_pool_alloc_guard_t celix_shmPoolAllocGuard_init(void* addr, shm_pool_t* pool) {
+    return (celix_shm_pool_alloc_guard_t) {
+        .ptr = addr,
+        .pool = pool
+    };
+}
+
+/**
+ * @brief Deinitialize a shared memory pool allocation guard.
+ * The guard will free the allocated memory.
+ * @param [in] guard The guard to deinitialize.
+ */
+static CELIX_UNUSED inline void celix_shmPoolAllocGuard_deinit(celix_shm_pool_alloc_guard_t* guard) {
+    shmPool_free(guard->pool, guard->ptr);
+}
+
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_shm_pool_alloc_guard_t, celix_shmPoolAllocGuard_deinit)
 
 #ifdef __cplusplus
 }

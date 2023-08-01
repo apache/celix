@@ -20,6 +20,7 @@
 #include <stdlib.h>
 
 #include <celix_bundle_activator.h>
+#include <celix_compiler.h>
 
 #include "phase2.h"
 #include "phase3_cmp.h"
@@ -58,7 +59,7 @@ static celix_status_t activator_start(struct phase3_activator_struct *act, celix
 
 }
 
-static celix_status_t activator_stop(struct phase3_activator_struct *act __attribute__((unused)), celix_bundle_context_t *ctx) {
+static celix_status_t activator_stop(struct phase3_activator_struct *act CELIX_UNUSED, celix_bundle_context_t *ctx) {
     printf("phase3: stop\n");
     return CELIX_SUCCESS;
 }

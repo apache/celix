@@ -29,6 +29,7 @@
 
 #include "properties.h"
 #include "array_list.h"
+#include "celix_cleanup.h"
 #include <stdbool.h>
 
 struct endpoint_description {
@@ -45,6 +46,8 @@ typedef struct endpoint_description endpoint_description_t;
 
 celix_status_t endpointDescription_create(celix_properties_t *properties, endpoint_description_t **endpointDescription);
 celix_status_t endpointDescription_destroy(endpoint_description_t *description);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(endpoint_description_t, endpointDescription_destroy)
 
 bool endpointDescription_isInvalid(const endpoint_description_t *description);
 

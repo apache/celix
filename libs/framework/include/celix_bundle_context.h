@@ -22,6 +22,7 @@
 
 #include <stdarg.h>
 
+#include "celix_cleanup.h"
 #include "celix_types.h"
 #include "celix_service_factory.h"
 #include "celix_properties.h"
@@ -273,6 +274,37 @@ CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_isServiceRegistered(celix_bundle
  */
 CELIX_FRAMEWORK_EXPORT void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long serviceId);
 
+/**
+ * @brief Service registration guard.
+ */
+typedef struct celix_service_registration_guard {
+    celix_bundle_context_t* ctx;
+    long svcId;
+} celix_service_registration_guard_t;
+
+/**
+ * @brief Initialize a a scope guard for an existing service registration.
+ * @param [in] ctx The bundle context associated with the service registration.
+ * @param [in] serviceId The service id.
+ * @return An initialized service registration guard.
+ */
+static CELIX_UNUSED inline celix_service_registration_guard_t
+celix_serviceRegistrationGuard_init(celix_bundle_context_t* ctx, long serviceId) {
+    return (celix_service_registration_guard_t) { .ctx = ctx, .svcId = serviceId };
+}
+
+/**
+ * @brief Deinitialize a service registration guard.
+ * Will unregister the service if the service id is >= 0.
+ * @param [in] reg  A service registration guard
+ */
+static CELIX_UNUSED inline void celix_serviceRegistrationGuard_deinit(celix_service_registration_guard_t* reg) {
+    if (reg->svcId >= 0) {
+        celix_bundleContext_unregisterService(reg->ctx, reg->svcId);
+    }
+}
+
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_service_registration_guard_t, celix_serviceRegistrationGuard_deinit)
 
 /**
  * @brief Unregister the service or service factory with service id.

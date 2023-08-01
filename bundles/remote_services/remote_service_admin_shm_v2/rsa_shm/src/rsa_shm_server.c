@@ -21,8 +21,10 @@
 #include "rsa_shm_constants.h"
 #include "shm_cache.h"
 #include "celix_log_helper.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_build_assert.h"
 #include "celix_api.h"
+#include "celix_unistd_cleanup.h"
 #include <thpool.h>
 #include <sys/un.h>
 #include <sys/socket.h>
@@ -37,6 +39,9 @@
 #include <errno.h>
 
 #define MAX_RSA_SHM_SERVER_HANDLE_MSG_THREADS_NUM 5
+
+// move to thpool.h once it is reused in other places
+CELIX_DEFINE_AUTO_CLEANUP_FREE_FUNC(threadpool, thpool_destroy, NULL)
 
 struct rsa_shm_server {
     celix_bundle_context_t *ctx;
@@ -71,7 +76,7 @@ celix_status_t rsaShmServer_create(celix_bundle_context_t *ctx, const char *name
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    rsa_shm_server_t *server = (rsa_shm_server_t *)calloc(1, sizeof(rsa_shm_server_t));
+    celix_autofree rsa_shm_server_t *server = (rsa_shm_server_t *)calloc(1, sizeof(rsa_shm_server_t));
     if (server == NULL) {
         return CELIX_ENOMEM;
     }
@@ -81,15 +86,14 @@ celix_status_t rsaShmServer_create(celix_bundle_context_t *ctx, const char *name
             RSA_SHM_MSG_TIMEOUT_KEY, RSA_SHM_MSG_TIMEOUT_DEFAULT_IN_S);
     server->name = celix_utils_strdup(name);
     if (server->name == NULL) {
-        status = CELIX_ENOMEM;
-        goto failed_to_dup_name;
+        return CELIX_ENOMEM;
     }
+    celix_autofree char* serverName = server->name;
     server->loghelper = loghelper;
-    int sfd = socket(AF_UNIX, SOCK_DGRAM, 0);
+    celix_auto(celix_fd_t) sfd = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (sfd == -1) {
         celix_logHelper_error(loghelper, "RsaShmServer: create socket fd err, errno is %d.", errno);
-        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
-        goto sfd_err;
+        return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
     }
     server->sfd = sfd;
     struct sockaddr_un svaddr;
@@ -98,47 +102,38 @@ celix_status_t rsaShmServer_create(celix_bundle_context_t *ctx, const char *name
     strncpy(&svaddr.sun_path[1], name, sizeof(svaddr.sun_path) - 1);
     if (bind(sfd, (struct sockaddr *) &svaddr, sizeof(struct sockaddr_un)) == -1) {
         celix_logHelper_error(loghelper, "RsaShmServer: bind socket fd err, errno is %d.", errno);
-        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
-        goto sfd_bind_err;
+        return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
     }
 
-    shm_cache_t *shmCache = NULL;
+    celix_autoptr(shm_cache_t) shmCache = NULL;
     status = shmCache_create(false, &shmCache);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_logTssErrors(loghelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(loghelper, "RsaShmServer: create shm cache err; error code is %d.", status);
-        goto create_shm_cache_err;
+        return status;
     }
     server->shmCache = shmCache;
 
     server->threadPool = thpool_init(MAX_RSA_SHM_SERVER_HANDLE_MSG_THREADS_NUM);
     if (server->threadPool == NULL) {
         celix_logHelper_error(loghelper, "RsaShmServer: create thread pool err.");
-        status = CELIX_ILLEGAL_STATE;
-        goto create_thpool_err;
+        return CELIX_ILLEGAL_STATE;
     }
+    celix_auto(threadpool) thpool = server->threadPool;
     server->revCB = receiveCB;
     server->revCBHandle = revHandle;
     server->revMsgThreadActive = true;
     status = celixThread_create(&server->revMsgThread, NULL, rsaShmServer_receiveMsgThread, server);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(loghelper, "RsaShmServer: create receive msg thread err.");
-        goto create_rev_msg_thread_err;
+        return status;
     }
-    *shmServerOut = server;
+    celix_steal_ptr(thpool);
+    celix_steal_ptr(shmCache);
+    celix_steal_fd(&sfd);
+    celix_steal_ptr(serverName);
+    *shmServerOut = celix_steal_ptr(server);
     return CELIX_SUCCESS;
-create_rev_msg_thread_err:
-    thpool_destroy(server->threadPool);
-create_thpool_err:
-    shmCache_destroy(shmCache);
-create_shm_cache_err:
-sfd_bind_err:
-    close(sfd);
-sfd_err:
-    free(server->name);
-failed_to_dup_name:
-    free(server);
-    return status;
 }
 
 void rsaShmServer_destroy(rsa_shm_server_t *server) {

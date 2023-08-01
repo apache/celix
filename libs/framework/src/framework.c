@@ -28,6 +28,7 @@
 
 #include "celix_build_assert.h"
 #include "celix_bundle_context.h"
+#include "celix_compiler.h"
 #include "celix_constants.h"
 #include "celix_convert_utils.h"
 #include "celix_dependency_manager.h"
@@ -859,7 +860,7 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, celix_servi
     celix_serviceRegistry_addServiceListener(framework->registry, bundle, sfilter, listener);
 }
 
-void fw_removeServiceListener(framework_pt framework, bundle_pt bundle __attribute__((unused)), celix_service_listener_t *listener) {
+void fw_removeServiceListener(framework_pt framework, bundle_pt bundle CELIX_UNUSED, celix_service_listener_t *listener) {
     celix_serviceRegistry_removeServiceListener(framework->registry, listener);
 }
 
@@ -2658,7 +2659,8 @@ celix_framework_waitForScheduledEvent(celix_framework_t* fw, long scheduledEvent
     }
 
     celixThreadMutex_lock(&fw->dispatcher.mutex);
-    CELIX_SCHEDULED_EVENT_RETAIN_GUARD(event, celix_longHashMap_get(fw->dispatcher.scheduledEvents, scheduledEventId));
+    celix_autoptr(celix_scheduled_event_t) event = celix_scheduledEvent_retain(
+        celix_longHashMap_get(fw->dispatcher.scheduledEvents, scheduledEventId));
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 
     if (event == NULL) {
@@ -2682,7 +2684,8 @@ bool celix_framework_removeScheduledEvent(celix_framework_t* fw,
     }
 
     celixThreadMutex_lock(&fw->dispatcher.mutex);
-    CELIX_SCHEDULED_EVENT_RETAIN_GUARD(event, celix_longHashMap_get(fw->dispatcher.scheduledEvents, scheduledEventId));
+    celix_autoptr(celix_scheduled_event_t) event = celix_scheduledEvent_retain(
+        celix_longHashMap_get(fw->dispatcher.scheduledEvents, scheduledEventId));
     if (event) {
         celix_scheduledEvent_markForRemoval(event);
         celixThreadCondition_broadcast(&fw->dispatcher.cond); //notify dispatcher thread for removed scheduled event

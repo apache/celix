@@ -17,17 +17,17 @@
  * under the License.
  */
 
-#include <stdlib.h>
 #include <memory.h>
+#include <stdlib.h>
 
-#include "websocket_admin.h"
-#include "http_admin/api.h"
-#include "http_admin.h"
-#include "service_tree.h"
 #include "civetweb.h"
+#include "http_admin.h"
+#include "http_admin/api.h"
+#include "service_tree.h"
+#include "websocket_admin.h"
 
+#include "celix_compiler.h"
 #include "celix_utils_api.h"
-
 
 struct websocket_admin_manager {
     bundle_context_pt context;
@@ -90,7 +90,7 @@ void websocket_admin_addWebsocketService(void *handle, void *svc, const celix_pr
     }
 }
 
-void websocket_admin_removeWebsocketService(void *handle, void *svc __attribute__((unused)), const celix_properties_t *props) {
+void websocket_admin_removeWebsocketService(void *handle, void *svc CELIX_UNUSED, const celix_properties_t *props) {
     websocket_admin_manager_t *admin = (websocket_admin_manager_t *) handle;
 
     const char *uri = celix_properties_get(props, WEBSOCKET_ADMIN_URI, NULL);

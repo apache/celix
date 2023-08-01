@@ -44,10 +44,10 @@ if (FRAMEWORK)
 
     set_target_properties(framework
             PROPERTIES
-            C_VISIBILITY_PRESET hidden
             "VERSION" "${CELIX_MAJOR}.${CELIX_MINOR}.${CELIX_MICRO}"
             "SOVERSION" ${CELIX_MAJOR}
             OUTPUT_NAME "celix_framework")
+    celix_target_hide_symbols(framework)
     target_include_directories(framework PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
             )

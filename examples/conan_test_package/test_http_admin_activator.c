@@ -17,6 +17,7 @@
  *  under the License.
  */
 #include <celix_bundle_activator.h>
+#include <celix_compiler.h>
 #include <celix_framework.h>
 #include <civetweb.h>
 #include <http_admin/api.h>
@@ -77,8 +78,8 @@ celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
 
 CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, bnd_start, bnd_stop);
 
-int alias_test_put(void *handle __attribute__((unused)), struct mg_connection *connection,
-                   const char *path __attribute__((unused)), const char *data, size_t length) {
+int alias_test_put(void *handle CELIX_UNUSED, struct mg_connection *connection,
+                   const char *path CELIX_UNUSED, const char *data, size_t length) {
     //If data received, echo the data for the test case
     if (length > 0 && data != NULL) {
         const char *mime_type = mg_get_header(connection, "Content-Type");
@@ -90,9 +91,8 @@ int alias_test_put(void *handle __attribute__((unused)), struct mg_connection *c
     return 200;
 }
 
-int
-websocket_data_echo(struct mg_connection *connection, int op_code __attribute__((unused)), char *data, size_t length,
-                    void *handle __attribute__((unused))) {
+int websocket_data_echo(struct mg_connection *connection, int op_code CELIX_UNUSED, char *data, size_t length,
+                        void *handle CELIX_UNUSED) {
     mg_websocket_write(connection, MG_WEBSOCKET_OPCODE_PONG, data, length);
 
     return 0; //Close socket after echoing.

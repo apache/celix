@@ -31,6 +31,7 @@
 
 #include "celix_errno.h"
 #include "celix_log.h"
+#include "celix_stdlib_cleanup.h"
 
 #include "endpoint_description.h"
 #include "remote_constants.h"
@@ -43,7 +44,7 @@ celix_status_t endpointDescription_create(celix_properties_t *properties, endpoi
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-	endpoint_description_t *ep = calloc(1,sizeof(*ep));
+    endpoint_description_t *ep = calloc(1,sizeof(*ep));
     if (ep == NULL) {
         return CELIX_ENOMEM;
     }
@@ -86,27 +87,22 @@ endpoint_description_t *endpointDescription_clone(const endpoint_description_t *
     if (endpointDescription_isInvalid(description)) {
         return NULL;
     }
-    endpoint_description_t *newDesc = (endpoint_description_t*)calloc(1, sizeof(endpoint_description_t));
+    celix_autofree endpoint_description_t *newDesc = (endpoint_description_t*)calloc(1, sizeof(endpoint_description_t));
     if (newDesc == NULL) {
-        goto failed_to_allocate_new_desc;
+        return NULL;
     }
-    newDesc->properties = celix_properties_copy(description->properties);
+    celix_autoptr(celix_properties_t) properties = newDesc->properties = celix_properties_copy(description->properties);
     if (newDesc->properties == NULL) {
-        goto failed_to_copy_properties;
+        return NULL;
     }
     newDesc->frameworkUUID = (char*)celix_properties_get(newDesc->properties,OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
     newDesc->serviceId = description->serviceId;
     newDesc->id = (char*)celix_properties_get(newDesc->properties, OSGI_RSA_ENDPOINT_ID, NULL);
     newDesc->serviceName = celix_utils_strdup(description->serviceName);
     if (newDesc->serviceName == NULL) {
-        goto failed_to_dup_service_name;
+        return NULL;
     }
 
-    return newDesc;
-failed_to_dup_service_name:
-    celix_properties_destroy(newDesc->properties);
-failed_to_copy_properties:
-    free(newDesc);
-failed_to_allocate_new_desc:
-    return NULL;
+    celix_steal_ptr(properties);
+    return celix_steal_ptr(newDesc);
 }

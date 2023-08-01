@@ -21,10 +21,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "celix_constants.h"
+#include <celix_constants.h>
 
 #include "example_calc.h"
 #include <celix_bundle_activator.h>
+#include <celix_compiler.h>
 
 typedef struct activator_data {
     celix_bundle_context_t *ctx;
@@ -87,19 +88,19 @@ static void gccExample(activator_data_t *data) {
 #endif
 }
 
-static void addSvc(activator_data_t *data, void *svc __attribute__((unused))) {
+static void addSvc(activator_data_t *data, void *svc CELIX_UNUSED) {
     pthread_mutex_lock(&data->mutex);
     data->trackCount += 1;
     pthread_mutex_unlock(&data->mutex);
 }
 
-static void removeSvc(activator_data_t *data, void *svc __attribute__((unused))) {
+static void removeSvc(activator_data_t *data, void *svc CELIX_UNUSED) {
     pthread_mutex_lock(&data->mutex);
     data->trackCount -= 1;
     pthread_mutex_unlock(&data->mutex);
 }
 
-static void useHighest(activator_data_t *data __attribute__((unused)), example_calc_t *svc, const celix_properties_t *props) {
+static void useHighest(activator_data_t *data CELIX_UNUSED, example_calc_t *svc, const celix_properties_t *props) {
     int result = svc->calc(svc->handle, 2);
     long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
     long rank = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, -1L);
@@ -160,7 +161,7 @@ static celix_status_t activator_start(activator_data_t *data, celix_bundle_conte
     return CELIX_SUCCESS;
 }
 
-static celix_status_t activator_stop(activator_data_t *data, celix_bundle_context_t *ctx __attribute__((unused))) {
+static celix_status_t activator_stop(activator_data_t *data, celix_bundle_context_t *ctx CELIX_UNUSED) {
     if (data != NULL) {
         setRunning(data, false);
         pthread_join(data->thread, NULL);

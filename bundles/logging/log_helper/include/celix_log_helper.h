@@ -24,6 +24,7 @@
 
 #include "celix_log_level.h"
 #include "celix_bundle_context.h"
+#include "celix_cleanup.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +35,8 @@ typedef struct celix_log_helper celix_log_helper_t; //opaque
 celix_log_helper_t* celix_logHelper_create(celix_bundle_context_t* ctx, const char* logServiceName);
 
 void celix_logHelper_destroy(celix_log_helper_t* logHelper);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_log_helper_t, celix_logHelper_destroy)
 
 /**
  * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_TRACE level, printf style

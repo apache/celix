@@ -27,6 +27,7 @@
 #include "celix_version.h"
 #include "pubsub_message_serialization_service.h"
 #include "celix_log_helper.h"
+#include "celix_compiler.h"
 #include "celix_constants.h"
 #include "celix_threads.h"
 #include "celix_utils.h"
@@ -141,7 +142,7 @@ struct pubsub_serializerHandler_callback_data {
     pubsub_serializer_handler_t* handler;
 };
 
-static void pubsub_serializerHandler_useMarkerSvcCallback(void *handle, void* svc __attribute__((unused)), const celix_properties_t* props) {
+static void pubsub_serializerHandler_useMarkerSvcCallback(void *handle, void* svc CELIX_UNUSED, const celix_properties_t* props) {
     struct pubsub_serializerHandler_callback_data* data = handle;
     const char* serType = celix_properties_get(props, PUBSUB_MESSAGE_SERIALIZATION_MARKER_SERIALIZATION_TYPE_PROPERTY, NULL);
     bool backwardsCompatible = celix_properties_getAsBool(props, PUBSUB_MESSAGE_SERIALIZATION_MARKER_SERIALIZATION_BACKWARDS_COMPATIBLE, false);

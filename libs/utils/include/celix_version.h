@@ -26,6 +26,7 @@ extern "C" {
 
 #include <stdbool.h>
 
+#include "celix_cleanup.h"
 #include "celix_utils_export.h"
 
 /**
@@ -47,6 +48,8 @@ typedef struct celix_version celix_version_t;
 CELIX_UTILS_EXPORT celix_version_t* celix_version_createVersion(int major, int minor, int micro, const char* qualifier);
 
 CELIX_UTILS_EXPORT void celix_version_destroy(celix_version_t* version);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_version_t, celix_version_destroy)
 
 /**
  * Creates a copy of <code>version</code>.
