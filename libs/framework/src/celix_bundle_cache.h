@@ -91,7 +91,7 @@ celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, bund
 
 /**
  * @brief Destroy the archive from the cache.
- * It releases all resources allocated in celix_bundleCache_createArchive and deletes the invalid directories if needed.
+ * It releases all resources allocated in celix_bundleCache_createArchive and deletes invalid directories if any.
  * @param [in] cache The bundle cache to destroy archive from.
  * @param [in] archive The archive to destroy.
  */
