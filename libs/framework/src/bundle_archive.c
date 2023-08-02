@@ -446,17 +446,15 @@ celix_status_t bundleArchive_close(bundle_archive_pt archive) {
     // not yet needed/possible
     return CELIX_SUCCESS;
 }
-//LCOV_EXCL_STOP
 
 celix_status_t bundleArchive_closeAndDelete(bundle_archive_pt archive) {
-    celix_status_t status = CELIX_SUCCESS;
-    if (archive->id != CELIX_FRAMEWORK_BUNDLE_ID) {
-        const char* err = NULL;
-        status = celix_utils_deleteDirectory(archive->archiveRoot, &err);
-        framework_logIfError(archive->fw->logger, status, NULL, "Failed to delete archive root '%s': %s", archive->archiveRoot, err);
-    }
-    return status;
+    fw_log(archive->fw->logger,
+           CELIX_LOG_LEVEL_DEBUG,
+           "Usage of bundleArchive_closeAndDelete is deprecated and no longer needed. Called for bundle %s",
+           archive->bundleSymbolicName);
+    return CELIX_SUCCESS;
 }
+//LCOV_EXCL_STOP
 
 const char* celix_bundleArchive_getPersistentStoreRoot(bundle_archive_t* archive) {
     return archive->storeRoot;
