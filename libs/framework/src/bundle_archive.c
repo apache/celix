@@ -97,6 +97,35 @@ static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_arch
     return CELIX_SUCCESS;
 }
 
+static celix_status_t celix_bundleArchive_removeResourceCache(bundle_archive_t* archive) {
+    celix_status_t status = CELIX_SUCCESS;
+    const char* error = NULL;
+    struct stat st;
+    status = lstat(archive->resourceCacheRoot, &st);
+    if (status == -1 && errno == ENOENT) {
+        return CELIX_SUCCESS;
+    } else if(status == -1 && errno != ENOENT) {
+        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+        fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to stat bundle archive directory '%s'", archive->resourceCacheRoot);
+        return status;
+    }
+    // assert(status == 0);
+    // celix_utils_deleteDirectory does not work for dangling symlinks, so handle this case separately
+    if (S_ISLNK(st.st_mode)) {
+        status = unlink(archive->resourceCacheRoot);
+        if (status == -1) {
+            status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+            error = "Failed to remove existing bundle symlink";
+        }
+    } else {
+        status = celix_utils_deleteDirectory(archive->resourceCacheRoot, &error);
+    }
+    if (status != CELIX_SUCCESS) {
+        fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to remove existing bundle archive revision directory '%s': %s", archive->resourceCacheRoot, error);
+    }
+    return status;
+}
+
 static celix_status_t
 celix_bundleArchive_extractBundle(bundle_archive_t* archive, const char* bundleUrl) {
     celix_status_t status = CELIX_SUCCESS;
@@ -126,29 +155,9 @@ celix_bundleArchive_extractBundle(bundle_archive_t* archive, const char* bundleU
      * If dlopen/dlsym is used with newer files, but with the same inode already used in dlopen/dlsym this leads to
      * segfaults.
      */
-    const char* error = NULL;
-    struct stat st;
-    status = lstat(archive->resourceCacheRoot, &st);
-    if(status == -1 && errno != ENOENT) {
-        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
-        fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to stat bundle archive directory '%s'", archive->resourceCacheRoot);
+    status = celix_bundleArchive_removeResourceCache(archive);
+    if (status != CELIX_SUCCESS) {
         return status;
-    }
-    if (status == 0) {
-        // celix_utils_deleteDirectory does not work for dangling symlinks, so handle this case separately
-        if (S_ISLNK(st.st_mode)) {
-            status = unlink(archive->resourceCacheRoot);
-            if (status == -1) {
-                status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
-                error = "Failed to remove existing bundle symlink";
-            }
-        } else {
-            status = celix_utils_deleteDirectory(archive->resourceCacheRoot, &error);
-        }
-        if (status != CELIX_SUCCESS) {
-            fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to remove existing bundle archive revision directory '%s': %s", archive->resourceCacheRoot, error);
-            return status;
-        }
     }
     status = celix_framework_utils_extractBundle(archive->fw, bundleUrl, archive->resourceCacheRoot);
     if (status != CELIX_SUCCESS) {
@@ -235,7 +244,6 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
 
     archive->fw = fw;
     archive->id = id;
-    celixThreadMutex_create(&archive->lock, NULL);
 
     if (isSystemBundle) {
         archive->resourceCacheRoot = getcwd(NULL, 0);
@@ -312,7 +320,7 @@ calloc_failed:
     return status;
 }
 
-celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
+void bundleArchive_destroy(bundle_archive_pt archive) {
     if (archive != NULL) {
         free(archive->location);
         free(archive->savedBundleStatePropertiesPath);
@@ -322,10 +330,8 @@ celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
         free(archive->bundleSymbolicName);
         free(archive->bundleVersion);
         bundleRevision_destroy(archive->revision);
-        celixThreadMutex_destroy(&archive->lock);
         free(archive);
     }
-    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleArchive_getId(bundle_archive_pt archive, long* id) {
@@ -342,19 +348,15 @@ const char* celix_bundleArchive_getSymbolicName(bundle_archive_pt archive) {
 }
 
 celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char **location) {
-    celixThreadMutex_lock(&archive->lock);
     *location = archive->location;
-    celixThreadMutex_unlock(&archive->lock);
     return CELIX_SUCCESS;
 }
 
 char* celix_bundleArchive_getLocation(bundle_archive_pt archive) {
     char* result = NULL;
-    celixThreadMutex_lock(&archive->lock);
     if (archive->location) {
         result = celix_utils_strdup(archive->location);
     }
-    celixThreadMutex_unlock(&archive->lock);
     return result;
 }
 
@@ -371,9 +373,7 @@ celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive,
 //LCOV_EXCL_STOP
 
 celix_status_t bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundle_revision_pt* revision) {
-    celixThreadMutex_lock(&archive->lock);
     *revision = archive->revision;
-    celixThreadMutex_unlock(&archive->lock);
     return CELIX_SUCCESS;
 }
 
@@ -416,9 +416,7 @@ celix_status_t bundleArchive_getLastModified(bundle_archive_pt archive, time_t* 
 
 celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, struct timespec* lastModified) {
     celix_status_t status;
-    celixThreadMutex_lock(&archive->lock);
     status = celix_utils_getLastModified(archive->resourceCacheRoot, lastModified);
-    celixThreadMutex_unlock(&archive->lock);
     return status;
 }
 

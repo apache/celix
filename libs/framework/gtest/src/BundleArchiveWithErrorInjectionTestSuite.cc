@@ -198,7 +198,7 @@ TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     EXPECT_FALSE(celix_utils_directoryExists(TEST_ARCHIVE_ROOT));
     teardownErrorInjectors();
 
-    celix_ei_expect_lstat((void*) celix_bundleArchive_create, 2, -1);
+    celix_ei_expect_lstat((void*) celix_bundleArchive_create, 3, -1);
     EXPECT_EQ(CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EACCES),
               celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_EQ(nullptr, archive);
@@ -213,7 +213,7 @@ TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     archive = nullptr;
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     celix_utils_touch(SIMPLE_TEST_BUNDLE1_LOCATION);
-    celix_ei_expect_unlink((void*)celix_bundleArchive_create, 2, -1);
+    celix_ei_expect_unlink((void*)celix_bundleArchive_create, 3, -1);
     EXPECT_EQ(CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,EACCES),
               celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 2, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_EQ(nullptr, archive);
@@ -226,7 +226,7 @@ TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     archive = nullptr;
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     celix_utils_touch(SIMPLE_TEST_BUNDLE1_LOCATION);
-    celix_ei_expect_celix_utils_deleteDirectory((void*)celix_bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION);
+    celix_ei_expect_celix_utils_deleteDirectory((void*)celix_bundleArchive_create, 3, CELIX_FILE_IO_EXCEPTION);
     EXPECT_EQ(CELIX_FILE_IO_EXCEPTION,
               celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_EQ(nullptr, archive);

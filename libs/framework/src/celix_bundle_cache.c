@@ -234,8 +234,8 @@ celix_status_t celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, bun
     celix_status_t status = CELIX_SUCCESS;
     const char* loc = NULL;
     celixThreadMutex_lock(&cache->mutex);
-    (void) bundleArchive_getLocation(archive, &loc);
     if (permanent) {
+        (void) bundleArchive_getLocation(archive, &loc);
         (void) celix_stringHashMap_remove(cache->locationToBundleIdLookupMap, loc);
         status = bundleArchive_closeAndDelete(archive);
     }
