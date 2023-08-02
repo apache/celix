@@ -27,7 +27,6 @@
 #include <unistd.h>
 
 #include "framework_private.h"
-#include "resolver.h"
 #include "utils.h"
 #include "celix_file_utils.h"
 #include "bundle_archive_private.h"
@@ -286,7 +285,6 @@ celix_status_t bundle_revise(bundle_pt bundle, const char * location, const char
 
 celix_status_t bundle_addModule(bundle_pt bundle, module_pt module) {
 	celix_arrayList_add(bundle->modules, module);
-	resolver_addModule(module);
 
     //free previous module info
     free(bundle->symbolicName);
@@ -363,7 +361,6 @@ celix_status_t bundle_closeModules(const_bundle_pt bundle) {
     unsigned int i = 0;
     for (i = 0; i < arrayList_size(bundle->modules); i++) {
         module_pt module = (module_pt) arrayList_get(bundle->modules, i);
-        resolver_removeModule(module);
         module_setWires(module, NULL);
     }
 

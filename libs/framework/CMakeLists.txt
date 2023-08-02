@@ -25,7 +25,7 @@ if (FRAMEWORK)
             src/bundle_context.c src/bundle_revision.c
             src/framework.c src/manifest.c
             src/manifest_parser.c src/module.c
-            src/requirement.c src/capability.c src/resolver.c src/wire.c
+            src/requirement.c src/capability.c src/wire.c
             src/service_reference.c src/service_registration.c
             src/service_registry.c src/service_tracker.c src/service_tracker_customizer.c
             src/celix_log.c src/celix_launcher.c
