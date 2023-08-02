@@ -29,60 +29,39 @@
 #include "wire.h"
 
 struct wire {
-	module_pt importer;
-	requirement_pt requirement;
-	module_pt exporter;
-	capability_pt capability;
+    module_pt importer;
+    requirement_pt requirement;
+    module_pt exporter;
+    capability_pt capability;
 };
 
-celix_status_t wire_create(module_pt importer, requirement_pt requirement,
-		module_pt exporter, capability_pt capability, wire_pt *wire) {
-	celix_status_t status = CELIX_SUCCESS;
+//LCOV_EXCL_START
+celix_status_t wire_create(
+    module_pt importer, requirement_pt requirement, module_pt exporter, capability_pt capability, wire_pt* wire) {
+        celix_status_t status = CELIX_FRAMEWORK_EXCEPTION;
 
-	if (*wire != NULL) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	} else {
-		(*wire) = (wire_pt) malloc(sizeof(**wire));
-		if (!*wire) {
-			status = CELIX_ENOMEM;
-		} else {
-			(*wire)->importer = importer;
-			(*wire)->requirement = requirement;
-			(*wire)->exporter = exporter;
-			(*wire)->capability = capability;
-		}
-	}
+        framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot create wire");
 
-	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot create wire");
-
-	return status;
+        return status;
 }
 
 celix_status_t wire_destroy(wire_pt wire) {
-	wire->importer = NULL;
-	wire->requirement = NULL;
-	wire->exporter = NULL;
-	wire->capability = NULL;
-	free(wire);
-	return CELIX_SUCCESS;
+	return CELIX_FRAMEWORK_EXCEPTION;
 }
 
 celix_status_t wire_getCapability(wire_pt wire, capability_pt *capability) {
-	*capability = wire->capability;
-	return CELIX_SUCCESS;
+	return CELIX_FRAMEWORK_EXCEPTION;
 }
 
 celix_status_t wire_getRequirement(wire_pt wire, requirement_pt *requirement) {
-	*requirement = wire->requirement;
-	return CELIX_SUCCESS;
+    return CELIX_FRAMEWORK_EXCEPTION;
 }
 
 celix_status_t wire_getImporter(wire_pt wire, module_pt *importer) {
-	*importer = wire->importer;
-	return CELIX_SUCCESS;
+    return CELIX_FRAMEWORK_EXCEPTION;
 }
 
 celix_status_t wire_getExporter(wire_pt wire, module_pt *exporter) {
-	*exporter = wire->exporter;
-	return CELIX_SUCCESS;
+    return CELIX_FRAMEWORK_EXCEPTION;
 }
+//LCOV_EXCL_STOP

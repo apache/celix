@@ -16,19 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * test.h
- *
- *  \date       12 Feb 2014
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
-#ifndef TEST_H_
-#define TEST_H_
+use std::os::raw::c_void;
 
+#[no_mangle]
+pub unsafe extern "C" fn celix_bundleActivator_start(_data: *mut c_void, _context: *mut c_void) -> i32 {
+    println!("Rust Bundle started!");
+    0
+}
 
-void doo(void);
-
-
-#endif /* TEST_H_ */
+#[no_mangle]
+pub unsafe extern "C" fn celix_bundleActivator_stop(_data: *mut c_void, _context: *mut c_void) -> i32 {
+    println!("Rust Bundle stopped!");
+    0
+}

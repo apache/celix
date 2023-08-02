@@ -281,8 +281,6 @@ celix_status_t fw_removeBundleListener(framework_pt framework, bundle_pt bundle,
 celix_status_t fw_addFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener);
 celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener);
 
-celix_status_t framework_markResolvedModules(framework_pt framework, linked_list_pt wires);
-
 array_list_pt framework_getBundles(framework_pt framework) __attribute__((deprecated("not thread safe, use celix_framework_useBundles instead")));
 long framework_getBundle(framework_pt framework, const char* location);
 bundle_pt framework_getBundleById(framework_pt framework, long id);
