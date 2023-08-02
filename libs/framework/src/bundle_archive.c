@@ -54,10 +54,10 @@ struct bundleArchive {
     char* resourceCacheRoot;
     char* bundleSymbolicName; // read from the manifest
     char* bundleVersion;      // read from the manifest
-
-    celix_thread_mutex_t lock;   // protects below and saving of bundle state properties
     bundle_revision_t* revision; // the current revision
     char* location;
+    bool cacheValid; // is the cache valid (e.g. not deleted)
+    bool valid; // is the archive valid (e.g. not deleted)
 };
 
 static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_archive_pt archive) {
@@ -304,7 +304,8 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
             goto store_prop_failed;
         }
     }
-
+    archive->cacheValid = true;
+    archive->valid = true;
     *bundle_archive = archive;
     return CELIX_SUCCESS;
 store_prop_failed:
@@ -466,3 +467,29 @@ const char* celix_bundleArchive_getCurrentRevisionRoot(bundle_archive_t* archive
 }
 
 
+void celix_bundleArchive_invalidate(bundle_archive_pt archive) {
+    archive->valid = false;
+    archive->cacheValid = false;
+}
+
+void celix_bundleArchive_invalidateCache(bundle_archive_pt archive) {
+    archive->cacheValid = false;
+}
+
+bool celix_bundleArchive_isCacheValid(bundle_archive_pt archive) {
+    return archive->cacheValid;
+}
+
+void celix_bundleArchive_removeInvalidDirs(bundle_archive_pt archive) {
+    if (archive->id == CELIX_FRAMEWORK_BUNDLE_ID) {
+        return;
+    }
+    if (!archive->valid) {
+        celix_status_t status = CELIX_SUCCESS;
+        const char* err = NULL;
+        status = celix_utils_deleteDirectory(archive->archiveRoot, &err);
+        framework_logIfError(archive->fw->logger, status, NULL, "Failed to remove invalid archive root '%s': %s", archive->archiveRoot, err);
+    } else if (!archive->cacheValid){
+        (void)celix_bundleArchive_removeResourceCache(archive);
+    }
+}

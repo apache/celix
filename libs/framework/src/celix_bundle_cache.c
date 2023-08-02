@@ -230,18 +230,16 @@ celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, bund
     return celix_bundleCache_createArchive(fw->cache, CELIX_FRAMEWORK_BUNDLE_ID, NULL, archive);
 }
 
-celix_status_t celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, bundle_archive_pt archive, bool permanent) {
-    celix_status_t status = CELIX_SUCCESS;
-    const char* loc = NULL;
+void celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, bundle_archive_pt archive) {
     celixThreadMutex_lock(&cache->mutex);
-    if (permanent) {
+    if (!celix_bundleArchive_isCacheValid(archive)) {
+        const char* loc = NULL;
         (void) bundleArchive_getLocation(archive, &loc);
         (void) celix_stringHashMap_remove(cache->locationToBundleIdLookupMap, loc);
-        status = bundleArchive_closeAndDelete(archive);
     }
+    (void)celix_bundleArchive_removeInvalidDirs(archive);
     celixThreadMutex_unlock(&cache->mutex);
-    (void) bundleArchive_destroy(archive);
-    return status;
+    bundleArchive_destroy(archive);
 }
 
 /**

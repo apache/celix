@@ -2010,7 +2010,10 @@ static celix_status_t celix_framework_uninstallBundleEntryImpl(celix_framework_t
         celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
         (void)bundle_closeModules(bnd);
         (void)bundle_destroy(bnd);
-        (void)celix_bundleCache_destroyArchive(framework->cache, archive, permanent);
+        if(permanent) {
+            celix_bundleArchive_invalidate(archive);
+        }
+        (void)celix_bundleCache_destroyArchive(framework->cache, archive);
     }
     framework_logIfError(framework->logger, status, "", "Cannot uninstall bundle");
     return status;
@@ -2359,6 +2362,7 @@ celix_status_t celix_framework_updateBundleEntry(celix_framework_t* framework,
                 status = CELIX_ILLEGAL_STATE;
                 break;
             }
+            celix_bundleArchive_invalidateCache(celix_bundle_getArchive(bndEntry->bnd));
         }
         status = celix_framework_uninstallBundleEntryImpl(framework, bndEntry, false);
         if (status != CELIX_SUCCESS) {

@@ -75,6 +75,11 @@ const char* celix_bundleArchive_getPersistentStoreRoot(bundle_archive_t *archive
   */
 const char* celix_bundleArchive_getCurrentRevisionRoot(bundle_archive_pt archive);
 
+void celix_bundleArchive_invalidate(bundle_archive_pt archive);
+void celix_bundleArchive_invalidateCache(bundle_archive_pt archive);
+bool celix_bundleArchive_isCacheValid(bundle_archive_pt archive);
+void celix_bundleArchive_removeInvalidDirs(bundle_archive_pt archive);
+
 #ifdef __cplusplus
 }
 #endif
