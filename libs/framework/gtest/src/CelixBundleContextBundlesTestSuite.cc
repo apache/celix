@@ -29,6 +29,9 @@
 
 #include "bundle_context_private.h"
 #include "celix_api.h"
+#include "celix_bundle.h"
+#include "celix_bundle_context.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_file_utils.h"
 
 class CelixBundleContextBundlesTestSuite : public ::testing::Test {
@@ -311,6 +314,24 @@ TEST_F(CelixBundleContextBundlesTestSuite, UpdateBundlesTest) {
 
     ASSERT_TRUE(celix_bundleContext_unloadBundle(ctx, bndId1));
     ASSERT_FALSE(celix_bundleContext_updateBundle(ctx, bndId1, NULL));
+}
+
+TEST_F(CelixBundleContextBundlesTestSuite, ForceUpdateUsingBundleFromDifferentLocation) {
+    long bndId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    ASSERT_TRUE(bndId1 >= 0L);
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    ASSERT_TRUE(celix_bundleContext_isBundleActive(ctx, bndId1));
+    celix_autofree char* name1 = celix_bundleContext_getBundleSymbolicName(ctx, bndId1);
+    EXPECT_TRUE(celix_bundleContext_useBundle(ctx, bndId1, nullptr, [] (void *, const bundle_t *bundle) {
+        // make bundle cache root newer than the bundle at location TEST_BND2_LOC
+        celix_autofree char* root = celix_bundle_getEntry(bundle, "/");
+        celix_utils_touch(root);
+    }));
+    ASSERT_TRUE(celix_bundleContext_updateBundle(ctx, bndId1, TEST_BND2_LOC));
+    ASSERT_TRUE(celix_bundleContext_isBundleInstalled(ctx, bndId1));
+    celix_autofree char* name2 = celix_bundleContext_getBundleSymbolicName(ctx, bndId1);
+    // bundle cache contains the bundle at location TEST_BND2_LOC
+    ASSERT_STRNE(name1, name2);
 }
 
 TEST_F(CelixBundleContextBundlesTestSuite, UpdateCorruptUncompressedBundlesTest) {
