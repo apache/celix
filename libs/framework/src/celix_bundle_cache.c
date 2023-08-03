@@ -272,6 +272,7 @@ static void celix_bundleCache_updateIdForLocationLookupMap(celix_bundle_cache_t*
             }
             celix_properties_destroy(props);
         }
+        celix_utils_freeStringIfNotEqual(archiveRootBuffer, bundleStateProperties);
     }
     closedir(dir);
 }

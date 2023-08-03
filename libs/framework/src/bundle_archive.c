@@ -109,7 +109,7 @@ static celix_status_t celix_bundleArchive_removeResourceCache(bundle_archive_t* 
         fw_logCode(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to stat bundle archive directory '%s'", archive->resourceCacheRoot);
         return status;
     }
-    // assert(status == 0);
+    assert(status == 0);
     // celix_utils_deleteDirectory does not work for dangling symlinks, so handle this case separately
     if (S_ISLNK(st.st_mode)) {
         status = unlink(archive->resourceCacheRoot);
