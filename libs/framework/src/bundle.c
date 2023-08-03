@@ -334,20 +334,8 @@ celix_status_t bundle_close(const_bundle_pt bundle) {
 }
 
 celix_status_t bundle_closeAndDelete(const_bundle_pt bundle) {
-	celix_status_t status;
-
-	bundle_archive_pt archive = NULL;
-
-    bundle_closeModules(bundle);
-    bundle_closeRevisions(bundle);
-    status = bundle_getArchive(bundle, &archive);
-    if (status == CELIX_SUCCESS) {
-    	bundleArchive_closeAndDelete(archive);
-    }
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to close and delete bundle");
-
-    return status;
+    fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_DEBUG, "Usage of bundle_closeAndDelete is deprecated and no longer needed. Called for bundle %s", bundle->symbolicName);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_closeRevisions(const_bundle_pt bundle) {

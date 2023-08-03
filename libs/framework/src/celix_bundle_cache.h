@@ -91,16 +91,11 @@ celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, bund
 
 /**
  * @brief Destroy the archive from the cache.
- * It releases all resources allocated in celix_bundleCache_createArchive and deletes the archive directory if requested.
+ * It releases all resources allocated in celix_bundleCache_createArchive and deletes invalid directories if any.
  * @param [in] cache The bundle cache to destroy archive from.
  * @param [in] archive The archive to destroy.
- * @param [in] permanent Whether the archive directory should be deleted or not.
- * @return Status code indication failure or success:
- *      - CELIX_SUCCESS when no errors are encountered.
- *      - CELIX_FILE_IO_EXCEPTION when root of the archive is not a directory.
- *      - errno when the directory cannot be deleted for other reasons, check error codes of fts_open/fts_read/remove.
  */
-celix_status_t celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, bundle_archive_pt archive, bool permanent);
+void celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, bundle_archive_pt archive);
 
 /**
  * @brief Deletes the entire bundle cache.
