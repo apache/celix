@@ -553,7 +553,7 @@ function(celix_container_bundles)
 
     if (BUNDLES_INSTALL)
         get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_INSTALL")
-        sET(BUNDLES_LEVEL "install")
+        set(BUNDLES_LEVEL "install")
     else () #bundle level 0,1,2,3,4,5 or 6
         get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")
     endif ()
@@ -617,12 +617,12 @@ endfunction()
 
 #[[
 Private function to check if there are duplicate bundles in the container and print a warning if so.
-Arg CONTAINER_TARGET ADDED_BUNDLES_LIST
+Arg CONTAINER_TARGET ADDED_BUNDLES_LIST BUNDLE_LEVEL
 ]]
 function(_celix_container_check_duplicate_bundles)
     list(GET ARGN 0 CONTAINER_TARGET)
     list(GET ARGN 1 TO_ADD_BUNDLE)
-    list(GET ASRN 2 BUNDLE_LEVEL)
+    list(GET ARGN 2 BUNDLE_LEVEL)
 
     set(MSG "Bundle `${TO_ADD_BUNDLE}` is added to the container multiple times. This can lead to errors during \
         bundle installation. Bundle `${TO_ADD_BUNDLE}` already added to container '${CONTAINER_TARGET}` \
