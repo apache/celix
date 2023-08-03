@@ -31,13 +31,13 @@ jobs:
           # build profile
           conan profile new release --detect
           conan profile update settings.build_type=Release release
-          #Note no backwards compatiblity for gcc5 needed, setting libcxx to c++11.
+          #Note no backwards compatibility for gcc5 needed, setting libcxx to c++11.
           conan profile update settings.compiler.libcxx=libstdc++11 release
           conan profile show release
           # host profile
           conan profile new default --detect
           conan profile update settings.build_type=${{ matrix.type }} default
-          #Note no backwards compatiblity for gcc5 needed, setting libcxx to c++11.
+          #Note no backwards compatibility for gcc5 needed, setting libcxx to c++11.
           conan profile update settings.compiler.libcxx=libstdc++11 default
           conan profile show default
       - name: Configure and install dependencies
@@ -50,6 +50,7 @@ jobs:
             -o celix:build_all=True
             -o celix:enable_testing_for_cxx14=True
             -o celix:enable_testing_dependency_manager_for_cxx11=True
+            -o celix:enable_cmake_warning_tests=True
             -o celix:enable_testing_on_ci=True
         run: |
           #force require libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0

@@ -475,14 +475,13 @@ function(celix_container_bundles_dir)
             message(FATAL_ERROR "Cannot add bundle in container ${CONTAINER_TARGET}. Provided bundle is not a abs path to an existing file nor a cmake target (${BUNDLE}).")
         endif ()
 
-        if (BUNDLE_ID AND DEST AND BUNDLE_FILE)
+        if (BUNDLE_ID AND DEST AND BUNDLE_FILE AND NOT TARGET ${CONTAINER_TARGET}_copy_bundle_${BUNDLE_ID})
             add_custom_target(${CONTAINER_TARGET}_copy_bundle_${BUNDLE_ID}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_FILE} ${DEST}
                 BYPRODUCTS ${DEST}
                 DEPENDS ${DEPS}
             )
             add_dependencies(${CONTAINER_TARGET} ${CONTAINER_TARGET}_copy_bundle_${BUNDLE_ID})
-
             get_target_property(CLEAN_FILES ${CONTAINER_TARGET} "ADDITIONAL_CLEAN_FILES")
             list(APPEND CLEAN_FILES ${DEST})
             set_target_properties(${CONTAINER_TARGET} PROPERTIES "ADDITIONAL_CLEAN_FILES" "${CLEAN_FILES}")
@@ -554,6 +553,7 @@ function(celix_container_bundles)
 
     if (BUNDLES_INSTALL)
         get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_INSTALL")
+        sET(BUNDLES_LEVEL "install")
     else () #bundle level 0,1,2,3,4,5 or 6
         get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")
     endif ()
@@ -591,12 +591,18 @@ function(celix_container_bundles)
             message(FATAL_ERROR "Cannot add bundle `${BUNDLE}` to container target ${CONTAINER_TARGET}. Argument is not a path or cmake target")
         endif ()
 
-       if(COPY)
-            list(APPEND BUNDLES ${COPY_LOC})
-       else()
-            list(APPEND BUNDLES ${ABS_LOC})
-       endif()
-   endforeach()
+       if (COPY)
+           set(BUNDLE_TO_ADD ${COPY_LOC})
+       else ()
+           set(BUNDLE_TO_ADD ${ABS_LOC})
+       endif ()
+
+       list(FIND BUNDLES ${BUNDLE_TO_ADD} INDEX)
+       if (INDEX EQUAL -1) #Note this ignores the same bundle for the same level
+           _celix_container_check_duplicate_bundles(${CONTAINER_TARGET} ${BUNDLE_TO_ADD} ${TARGET_LEVEL})
+           list(APPEND BUNDLES ${BUNDLE_TO_ADD})
+       endif ()
+    endforeach()
 
     if (BUNDLES_INSTALL)
         set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_INSTALL" "${BUNDLES}")
@@ -604,9 +610,36 @@ function(celix_container_bundles)
         set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}" "${BUNDLES}")
     endif ()
 
-   if(COPY) 
+   if (COPY)
        celix_container_bundles_dir(${CONTAINER_TARGET} DIR_NAME bundles BUNDLES ${BUNDLES_LIST})
    endif()
+endfunction()
+
+#[[
+Private function to check if there are duplicate bundles in the container and print a warning if so.
+Arg CONTAINER_TARGET ADDED_BUNDLES_LIST
+]]
+function(_celix_container_check_duplicate_bundles)
+    list(GET ARGN 0 CONTAINER_TARGET)
+    list(GET ARGN 1 TO_ADD_BUNDLE)
+    list(GET ASRN 2 BUNDLE_LEVEL)
+
+    set(MSG "Bundle `${TO_ADD_BUNDLE}` is added to the container multiple times. This can lead to errors during \
+        bundle installation. Bundle `${TO_ADD_BUNDLE}` already added to container '${CONTAINER_TARGET}` \
+        at level ${BUNDLE_LEVEL}.")
+
+    get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_INSTALL")
+    list(FIND BUNDLES ${TO_ADD_BUNDLE} INDEX)
+    if (INDEX GREATER -1)
+        message(WARNING "${MSG}")
+    endif()
+    foreach(BUNDLE_LEVEL RANGE 0 6)
+        get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLE_LEVEL}")
+        list(FIND BUNDLES ${TO_ADD_BUNDLE} INDEX)
+        if (INDEX GREATER -1)
+            message(WARNING "${MSG}")
+        endif()
+    endforeach()
 endfunction()
 
 #[[

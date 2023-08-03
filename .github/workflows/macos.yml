@@ -30,6 +30,7 @@ jobs:
             -o celix:build_all=True
             -o celix:enable_testing_for_cxx14=True
             -o celix:enable_testing_dependency_manager_for_cxx11=True
+            -o celix:enable_cmake_warning_tests=True
             -o celix:enable_testing_on_ci=True
         run: |
           #force require libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
