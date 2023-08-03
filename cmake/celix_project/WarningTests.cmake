@@ -22,12 +22,16 @@ Including some constructions that will generate warnings.
 
 if (ENABLE_CMAKE_WARNING_TESTS AND TARGET Celix::shell AND TARGET Celix::shell_tui)
     add_celix_container(examples-with-duplicate-installed-bundles
-            BUNDLES Celix::shell Celix::shell_tui #add bundles with run level 3
+            INSTALL_BUNDLES Celix::shell
+            BUNDLES Celix::shell_tui #add bundles with run level 3
     )
 
     #Adding a bundle twice on the same run level is fine and the last entry should be ignored
-    celix_container_bundles(examples-with-duplicate-installed-bundles LEVEL 3 Celix::shell)
+    celix_container_bundles(examples-with-duplicate-installed-bundles INSTALL Celix::shell)
+    celix_container_bundles(examples-with-duplicate-installed-bundles LEVEL 3 Celix::shell_tui)
 
     #Adding a bundle twice on different run levels should result in an warning
     celix_container_bundles(examples-with-duplicate-installed-bundles LEVEL 4 Celix::shell_tui)
+    celix_container_bundles(examples-with-duplicate-installed-bundles LEVEL 4 Celix::shell)
+    celix_container_bundles(examples-with-duplicate-installed-bundles INSTALL Celix::shell_tui)
 endif ()
