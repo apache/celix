@@ -437,10 +437,9 @@ function(celix_container_bundles_dir)
 
     set(DEST_DIR "${CONTAINER_LOC}/${BD_DIR_NAME}")
     get_target_property(CLEAN_FILES ${CONTAINER_TARGET} "ADDITIONAL_CLEAN_FILES")
-    if (NOT ${DEST_DIR} IN_LIST CLEAN_FILES)
-        list(APPEND CLEAN_FILES ${DEST_DIR})
-        set_target_properties(${CONTAINER_TARGET} PROPERTIES "ADDITIONAL_CLEAN_FILES" "${CLEAN_FILES}")
-    endif()
+    list(APPEND CLEAN_FILES ${DEST_DIR})
+    list(REMOVE_DUPLICATES CLEAN_FILES)
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "ADDITIONAL_CLEAN_FILES" "${CLEAN_FILES}")
 
     foreach(BUNDLE IN ITEMS ${BD_BUNDLES})
         if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
