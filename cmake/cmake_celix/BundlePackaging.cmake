@@ -361,10 +361,8 @@ function(add_celix_bundle)
 
         if (APPLE)
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path")
-            set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES BUILD_RPATH "@loader_path")
         else ()
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
-            set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES BUILD_RPATH "$ORIGIN")
         endif ()
 
         if (NOT BUNDLE_DO_NOT_CONFIGURE_SYMBOL_VISIBILITY)
