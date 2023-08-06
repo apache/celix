@@ -27,6 +27,8 @@
 #include "service_registration_private.h"
 #include "listener_hook_service.h"
 #include "celix_constants.h"
+#include "celix_stdlib_cleanup.h"
+#include "celix_version_range.h"
 #include "service_reference_private.h"
 #include "framework_private.h"
 
@@ -820,17 +822,15 @@ char* celix_serviceRegistry_createFilterFor(celix_service_registry_t* registry, 
         serviceName = "*";
     }
 
-    char* versionRange = NULL;
+    celix_autofree char* versionRange = NULL;
     if (versionRangeStr != NULL) {
-        version_range_pt range;
-        celix_status_t status = versionRange_parse(versionRangeStr, &range);
-        if(status != CELIX_SUCCESS) {
+        celix_autoptr(celix_version_range_t) range = celix_versionRange_parse(versionRangeStr);
+        if(range == NULL) {
             celix_framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
                           "Error incorrect version range.");
             return NULL;
         }
         versionRange = versionRange_createLDAPFilter(range, CELIX_FRAMEWORK_SERVICE_VERSION);
-        versionRange_destroy(range);
         if (versionRange == NULL) {
             celix_framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
                           "Error creating LDAP filter.");
@@ -847,10 +847,6 @@ char* celix_serviceRegistry_createFilterFor(celix_service_registry_t* registry, 
         asprintf(&filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, additionalFilterIn);
     } else {
         asprintf(&filter, "(&(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, serviceName);
-    }
-
-    if (versionRange != NULL){
-        free(versionRange);
     }
 
     return filter;
