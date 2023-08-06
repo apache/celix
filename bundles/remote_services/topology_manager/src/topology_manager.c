@@ -317,7 +317,7 @@ celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr)
 	const char* serviceId = NULL;
 	bool found;
 	celix_properties_t *props;
-	filter_pt filter = filter_create(filterStr);
+	celix_autoptr(celix_filter_t) filter = celix_filter_create(filterStr);
 
 	if (filter == NULL) {
 		printf("filter creating failed\n");
@@ -381,9 +381,6 @@ celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr)
 
 	// should unlock until here ?, avoid srvRefs[i] is released during topologyManager_removeExportedService
 	celixThreadMutex_unlock(&manager->lock);
-
-
-	filter_destroy(filter);
 
 	return status;
 }
@@ -683,7 +680,7 @@ celix_status_t topologyManager_endpointListenerAdded(void* handle, service_refer
 
 	serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
-	filter_pt filter = filter_create(scope);
+	celix_autoptr(celix_filter_t) filter = celix_filter_create(scope);
 
 	hash_map_iterator_pt refIter = hashMapIterator_create(manager->exportedServices);
 
@@ -719,8 +716,6 @@ celix_status_t topologyManager_endpointListenerAdded(void* handle, service_refer
 	hashMapIterator_destroy(refIter);
 
 	celixThreadMutex_unlock(&manager->lock);
-
-	filter_destroy(filter);
 
 	return status;
 }
@@ -765,7 +760,7 @@ static celix_status_t topologyManager_notifyListenersEndpointAdded(topology_mana
 
 		status = bundleContext_getService(manager->context, reference, (void **) &epl);
 		if (status == CELIX_SUCCESS) {
-			filter_pt filter = filter_create(scope);
+			celix_autoptr(celix_filter_t) filter = celix_filter_create(scope);
 
 			int regSize = celix_arrayList_size(registrations);
 			for (int regIt = 0; regIt < regSize; regIt++) {
@@ -782,7 +777,6 @@ static celix_status_t topologyManager_notifyListenersEndpointAdded(topology_mana
 					status = substatus;
 				}
 			}
-			filter_destroy(filter);
 			bundleContext_ungetService(manager->context, reference, NULL);
 		}
 	}

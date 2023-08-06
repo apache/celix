@@ -878,7 +878,7 @@ celix_array_list_t* celix_serviceRegisrty_findServices(
         celix_service_registry_t* registry,
         const char* filterStr) {
 
-    celix_filter_t* filter = celix_filter_create(filterStr);
+    celix_autoptr(celix_filter_t) filter = celix_filter_create(filterStr);
     if (filter == NULL) {
         celix_framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
                       "Error incorrect filter.");
@@ -913,7 +913,6 @@ celix_array_list_t* celix_serviceRegisrty_findServices(
     }
     celixThreadRwlock_unlock(&registry->lock);
 
-    celix_filter_destroy(filter);
     celix_arrayList_destroy(matchedRegistrations);
     return result;
 }

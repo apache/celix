@@ -1391,12 +1391,13 @@ static celix_status_t bundleContext_callServicedTrackerTrackerCallback(void *han
             celix_bundle_t *bnd = NULL;
             bundleContext_getBundle(info->context, &bnd);
 
+            celix_autoptr(celix_filter_t) filter = celix_filter_create(info->filter);
             celix_service_tracker_info_t trkInfo;
             memset(&trkInfo, 0, sizeof(trkInfo));
             trkInfo.bundleId = celix_bundle_getId(bnd);
-            trkInfo.filter = celix_filter_create(info->filter);
-            trkInfo.serviceName = celix_filter_findAttribute(trkInfo.filter, OSGI_FRAMEWORK_OBJECTCLASS);
-            const char *filterSvcName = celix_filter_findAttribute(trkInfo.filter, OSGI_FRAMEWORK_OBJECTCLASS);
+            trkInfo.filter = filter;
+            trkInfo.serviceName = celix_filter_findAttribute(filter, OSGI_FRAMEWORK_OBJECTCLASS);
+            const char *filterSvcName = celix_filter_findAttribute(filter, OSGI_FRAMEWORK_OBJECTCLASS);
 
             bool match = entry->serviceName == NULL || (filterSvcName != NULL && strncmp(filterSvcName, entry->serviceName, 1024*1024) == 0);
 
@@ -1405,7 +1406,6 @@ static celix_status_t bundleContext_callServicedTrackerTrackerCallback(void *han
             } else if (!add && entry->remove != NULL && match) {
                 entry->remove(entry->callbackHandle, &trkInfo);
             }
-            celix_filter_destroy(trkInfo.filter);
         }
     }
     return CELIX_SUCCESS;

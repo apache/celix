@@ -22,6 +22,7 @@
 
 #include "celix_properties.h"
 #include "celix_array_list.h"
+#include "celix_cleanup.h"
 #include "celix_utils_export.h"
 
 #ifdef __cplusplus
@@ -64,6 +65,8 @@ struct celix_filter_struct {
 CELIX_UTILS_EXPORT celix_filter_t* celix_filter_create(const char *filterStr);
 
 CELIX_UTILS_EXPORT void celix_filter_destroy(celix_filter_t *filter);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_filter_t, celix_filter_destroy)
 
 CELIX_UTILS_EXPORT bool celix_filter_match(const celix_filter_t *filter, const celix_properties_t* props);
 
