@@ -59,9 +59,11 @@ if (DEPLOYMENT_ADMIN)
     add_library(Celix::deployment_admin_api ALIAS deployment_admin_api)
     add_library(Celix::deployment_admin ALIAS deployment_admin)
 
-    if (BUILD_SHELL AND BUILD_SHELL_TUI AND BUILD_LOG_SERVICE)
+    if (BUILD_SHELL AND BUILD_SHELL_TUI AND BUILD_LOG_SERVICE AND BUILD_LAUNCHER)
         add_celix_container(deployment-admin
+                LAUNCHER Celix::launcher
                 BUNDLES Celix::deployment_admin Celix::shell Celix::shell_tui Celix::log_admin
+                USE_CONFIG
                 PROPERTIES
                 "deployment_admin_url=http://localhost:8080"
                 "deployment_admin_identification=celix"

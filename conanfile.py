@@ -385,7 +385,7 @@ class CelixConan(ConanFile):
             self.options['libuuid'].shared = True
         if (self.options.build_framework or self.options.build_celix_etcdlib
                 or self.options.build_deployment_admin or self.options.build_rsa_discovery_common
-                or self.options.build_rsa_remote_service_admin_dfi):
+                or self.options.build_rsa_remote_service_admin_dfi or self.options.build_launcher):
             self.requires("libcurl/[>=7.64.1 <8.0.0]")
             self.options['libcurl'].shared = True
         if self.options.build_deployment_admin:

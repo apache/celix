@@ -48,48 +48,54 @@ if (CXX_RSA_INTEGRATION)
 
     ################# Integration examples ##################################
 
-    add_celix_container(RemoteCalculatorProvider
-            GROUP rsa
-            PROPERTIES
-            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
-            BUNDLES
-            Celix::ShellCxx
-            Celix::shell_tui
+    if (BUILD_LAUNCHER)
+        add_celix_container(RemoteCalculatorProvider
+                LAUNCHER Celix::launcher
+                GROUP rsa
+                USE_CONFIG
+                PROPERTIES
+                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
+                BUNDLES
+                Celix::ShellCxx
+                Celix::shell_tui
 
-            #Pubsub needed for remote services on pubsub
-            Celix::celix_pubsub_serializer_json
-            Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_zmq
-            Celix::celix_pubsub_protocol_wire_v2
-            Celix::celix_pubsub_discovery_etcd
+                #Pubsub needed for remote services on pubsub
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_admin_zmq
+                Celix::celix_pubsub_protocol_wire_v2
+                Celix::celix_pubsub_discovery_etcd
 
-            #Remote Services
-            Celix::RemoteServiceAdmin
-            TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
+                #Remote Services
+                Celix::RemoteServiceAdmin
+                TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
 
-            CalculatorProvider
-            )
+                CalculatorProvider
+        )
 
-    add_celix_container(RemoteCalculatorConsumer
-            GROUP rsa
-            PROPERTIES
-            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
-            BUNDLES
-            Celix::ShellCxx
-            Celix::shell_tui
+        add_celix_container(RemoteCalculatorConsumer
+                LAUNCHER Celix::launcher
+                GROUP rsa
+                USE_CONFIG
+                PROPERTIES
+                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
+                BUNDLES
+                Celix::ShellCxx
+                Celix::shell_tui
 
-            #Pubsub needed for remote services on pubsub
-            Celix::celix_pubsub_serializer_json
-            Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_discovery_etcd
-            Celix::celix_pubsub_admin_zmq
-            Celix::celix_pubsub_protocol_wire_v2
+                #Pubsub needed for remote services on pubsub
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_discovery_etcd
+                Celix::celix_pubsub_admin_zmq
+                Celix::celix_pubsub_protocol_wire_v2
 
-            #Remote Services
-            Celix::RsaConfiguredDiscovery
-            Celix::RemoteServiceAdmin
-            TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
+                #Remote Services
+                Celix::RsaConfiguredDiscovery
+                Celix::RemoteServiceAdmin
+                TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
 
-            CalculatorConsumer
-            )
+                CalculatorConsumer
+        )
+    endif ()
 endif()
