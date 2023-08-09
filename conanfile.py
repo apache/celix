@@ -381,8 +381,8 @@ class CelixConan(ConanFile):
             self.requires("libzip/[>=1.7.3 <2.0.0]")
             self.options['libzip'].shared = True
         if self.options.build_framework or self.options.build_pubsub:
-            self.requires("libuuid/1.0.3")
-            self.options['libuuid'].shared = True
+            self.requires("util-linux-libuuid/2.39")
+            self.options['util-linux-libuuid'].shared = True
         if self.options.build_framework or self.options.build_celix_etcdlib:
             self.requires("libcurl/[>=7.64.1 <8.0.0]")
             self.options['libcurl'].shared = True
