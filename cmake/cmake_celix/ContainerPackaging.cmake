@@ -553,7 +553,6 @@ function(celix_container_bundles)
 
     if (BUNDLES_INSTALL)
         get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_INSTALL")
-        set(BUNDLES_LEVEL "INSTALL")
     else () #bundle level 0,1,2,3,4,5 or 6
         get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")
     endif ()
@@ -624,15 +623,14 @@ function(_celix_container_check_duplicate_bundles)
     list(GET ARGN 1 TO_ADD_BUNDLE)
     list(GET ARGN 2 TARGET_LEVEL)
 
+    if (NOT TARGET_LEVEL) #install
+        return() #Bundles can be installed and added to a level
+    endif()
+
     set(PARTIAL_MSG "Bundle `${TO_ADD_BUNDLE}` is added to the container multiple times. This can lead to errors \
         during bundle installation. Bundle `${TO_ADD_BUNDLE}` for level ${TARGET_LEVEL} is already added to the \
         container '${CONTAINER_TARGET}` at level ")
 
-    get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_INSTALL")
-    list(FIND BUNDLES ${TO_ADD_BUNDLE} INDEX)
-    if (INDEX GREATER -1)
-        message(WARNING "${PARTIAL_MSG} INSTALL.")
-    endif()
     foreach(BUNDLE_LEVEL RANGE 0 6)
         get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLE_LEVEL}")
         list(FIND BUNDLES ${TO_ADD_BUNDLE} INDEX)
@@ -708,8 +706,16 @@ function(celix_container_embedded_bundles)
             message(FATAL_ERROR "Cannot add bundle `${BUNDLE}` to container target ${CONTAINER_TARGET}. Argument is not a path or cmake target")
         endif ()
         celix_target_embedded_bundle(${CONTAINER_TARGET} BUNDLE ${BUNDLE} NAME ${NAME})
-        list(APPEND BUNDLES "embedded://${NAME}")
+        set(BUNDLE_TO_ADD "embedded://${NAME}")
+
+        list(FIND BUNDLES ${BUNDLE_TO_ADD} INDEX)
+        if (INDEX EQUAL -1) #Note this ignores the same bundle for the same level
+            _celix_container_check_duplicate_bundles(${CONTAINER_TARGET} ${BUNDLE_TO_ADD} ${BUNDLES_LEVEL})
+            list(APPEND BUNDLES ${BUNDLE_TO_ADD})
+        endif ()
     endforeach()
+
+
 
     if (BUNDLES_INSTALL)
         set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_INSTALL" "${BUNDLES}")

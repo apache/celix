@@ -21,17 +21,35 @@ Including some constructions that will generate warnings.
 ]]
 
 if (ENABLE_CMAKE_WARNING_TESTS AND TARGET Celix::shell AND TARGET Celix::shell_tui)
-    add_celix_container(examples-with-duplicate-installed-bundles
+    add_celix_container(example_with_duplicate_bundles_1
             INSTALL_BUNDLES Celix::shell
             BUNDLES Celix::shell_tui #add bundles with run level 3
     )
 
     #Adding a bundle twice on the same run level is fine and the last entry should be ignored
-    celix_container_bundles(examples-with-duplicate-installed-bundles INSTALL Celix::shell)
-    celix_container_bundles(examples-with-duplicate-installed-bundles LEVEL 3 Celix::shell_tui)
+    celix_container_bundles(example_with_duplicate_bundles_1 INSTALL Celix::shell)
+    celix_container_bundles(example_with_duplicate_bundles_1 LEVEL 3 Celix::shell_tui)
+
+    #Starting a bundle that is already installed is fine and should not result in a warning
+    celix_container_bundles(example_with_duplicate_bundles_1 LEVEL 3 Celix::shell)
 
     #Adding a bundle twice on different run levels should result in an warning
-    celix_container_bundles(examples-with-duplicate-installed-bundles LEVEL 4 Celix::shell_tui)
-    celix_container_bundles(examples-with-duplicate-installed-bundles LEVEL 4 Celix::shell)
-    celix_container_bundles(examples-with-duplicate-installed-bundles INSTALL Celix::shell_tui)
+    celix_container_bundles(example_with_duplicate_bundles_1 LEVEL 4 Celix::shell_tui)
+    celix_container_bundles(example_with_duplicate_bundles_1 LEVEL 4 Celix::shell)
+
+    add_celix_container(example_with_duplicate_bundles_2
+            BUNDLES Celix::shell_tui #add bundles with run level 3
+    )
+
+    #Adding an embedded bundle as install and later with a run level which is already added as a normal bundle
+    #will not lead to a warning because multiple bundles are checked based on path and not based on the bundle
+    #symbolic name.
+    celix_container_embedded_bundles(example_with_duplicate_bundles_2 INSTALL Celix::shell_tui)
+    celix_container_embedded_bundles(example_with_duplicate_bundles_2 LEVEL 3 Celix::shell_tui)
+
+    #Adding an embedded again will not lead to an warning (ignored)
+    celix_container_embedded_bundles(example_with_duplicate_bundles_2 LEVEL 3 Celix::shell_tui)
+
+    #But adding an embedded bundle with a different run level will lead to an warning
+    celix_container_embedded_bundles(example_with_duplicate_bundles_2 LEVEL 4 Celix::shell_tui)
 endif ()
