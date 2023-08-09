@@ -17,5 +17,6 @@
 
 [workspace]
 members = [
+    "celix_bindings",
     "hello_world_activator",
 ]
