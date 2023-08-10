@@ -6,7 +6,7 @@ $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::deployment_admin>>:find_dependency(ZLIB)
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::dfi>>:find_dependency(libffi)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::dfi>>:find_dependency(jansson)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::etcdlib>>:find_dependency(jansson)>
-$<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::Celix::launcher>>:find_dependency(CURL)>
+$<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::launcher>>:find_dependency(CURL)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::etcdlib>>:find_dependency(CURL)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::deployment_admin>>:find_dependency(CURL)>
 $<$<BOOL:$<TARGET_NAME_IF_EXISTS:Celix::rsa_dfi>>:find_dependency(CURL)>
