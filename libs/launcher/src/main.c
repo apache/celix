@@ -17,8 +17,13 @@
  * under the License.
  */
 
+#include <curl/curl.h>
 #include "celix_launcher.h"
 
 int main(int argc, char *argv[]) {
-    return celixLauncher_launchAndWaitForShutdown(argc, argv, NULL);
+    int ret;
+    curl_global_init(CURL_GLOBAL_ALL);
+    ret = celixLauncher_launchAndWaitForShutdown(argc, argv, NULL);
+    curl_global_cleanup();
+    return ret;
 }

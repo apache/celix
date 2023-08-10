@@ -140,7 +140,7 @@ endif ()
 
 option(TEST_PSA_DISCOVERY_ETCD "Test the PubSub Discovery (ETCD) bundle" OFF)
 if (TEST_PSA_DISCOVERY_ETCD)
-    add_celix_container(use_psa_discovery_etcd
+    add_celix_container(build_psa_discovery_etcd
             BUNDLES
             Celix::celix_pubsub_topology_manager
             Celix::celix_pubsub_discovery_etcd
@@ -149,6 +149,19 @@ if (TEST_PSA_DISCOVERY_ETCD)
             PROPERTIES
             PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
             )
+    if (TEST_LAUNCHER)
+        add_celix_container(use_psa_discovery_etcd
+                LAUNCHER Celix::launcher
+                BUNDLES
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_discovery_etcd
+                my_pubsub_admin
+                hello
+                USE_CONFIG
+                PROPERTIES
+                PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+        )
+    endif ()
 endif ()
 
 option(TEST_RSA "Test Remote Service Admin" OFF)
@@ -177,13 +190,24 @@ endif ()
 
 option(TEST_RSA_DFI "Test the Remote Service Admin Service DFI" OFF)
 if (TEST_RSA_DFI)
-    add_celix_container(use_rsa_dfi
+    add_celix_container(build_rsa_dfi
             BUNDLES
             Celix::rsa_topology_manager
             Celix::rsa_dfi
             hello
             PROPERTIES
             )
+    if (TEST_LAUNCHER)
+        add_celix_container(use_rsa_dfi
+                LAUNCHER Celix::launcher
+                BUNDLES
+                Celix::rsa_topology_manager
+                Celix::rsa_dfi
+                hello
+                USE_CONFIG
+                PROPERTIES
+        )
+    endif ()
 endif ()
 
 option(TEST_RSA_SHM_V2 "Test the Remote Service Admin SHM V2" OFF)
@@ -209,7 +233,7 @@ endif ()
 
 option(TEST_RSA_DISCOVERY_CONFIGURED "Test the Discovery (Configured) bundle" OFF)
 if (TEST_RSA_DISCOVERY_CONFIGURED)
-    add_celix_container(use_rsa_configured
+    add_celix_container(build_rsa_configured
             BUNDLES
             Celix::rsa_discovery
             Celix::rsa_topology_manager
@@ -217,11 +241,23 @@ if (TEST_RSA_DISCOVERY_CONFIGURED)
             hello
             PROPERTIES
             )
+    if (TEST_LAUNCHER)
+        add_celix_container(use_rsa_configured
+                LAUNCHER Celix::launcher
+                BUNDLES
+                Celix::rsa_discovery
+                Celix::rsa_topology_manager
+                my_rsa
+                hello
+                USE_CONFIG
+                PROPERTIES
+        )
+    endif ()
 endif ()
 
 option(TEST_RSA_DISCOVERY_ETCD "Test the Discovery (ETCD) bundle" OFF)
 if (TEST_RSA_DISCOVERY_ETCD)
-    add_celix_container(use_rsa_etcd
+    add_celix_container(build_rsa_etcd
             BUNDLES
             Celix::rsa_discovery_etcd
             Celix::rsa_topology_manager
@@ -229,6 +265,18 @@ if (TEST_RSA_DISCOVERY_ETCD)
             hello
             PROPERTIES
             )
+    if (TEST_LAUNCHER)
+        add_celix_container(use_rsa_etcd
+                LAUNCHER Celix::launcher
+                BUNDLES
+                Celix::rsa_discovery_etcd
+                Celix::rsa_topology_manager
+                my_rsa
+                hello
+                USE_CONFIG
+                PROPERTIES
+        )
+    endif ()
 endif ()
 
 option(TEST_RSA_DISCOVERY_ZEROCONF "Test the Discovery (ZEROCONF) bundle" OFF)

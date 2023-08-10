@@ -95,21 +95,21 @@ class TestPackageConan(ConanFile):
                 self.run("./use_psa_udp_mc", cwd=os.path.join("deploy", "use_psa_udp_mc"), run_environment=True)
             if self.options["celix"].build_pubsub_psa_ws:
                 self.run("./use_psa_ws", cwd=os.path.join("deploy", "use_psa_ws"), run_environment=True)
-            if self.options["celix"].build_pubsub_discovery_etcd:
+            if self.options["celix"].build_pubsub_discovery_etcd and self.options["celix"].build_launcher:
                 self.run("./use_psa_discovery_etcd",
                          cwd=os.path.join("deploy", "use_psa_discovery_etcd"), run_environment=True)
             if self.options["celix"].build_remote_service_admin:
                 self.run("./use_my_rsa", cwd=os.path.join("deploy", "use_my_rsa"), run_environment=True)
                 self.run("./use_c_rsa_spi", run_environment=True)
-            if self.options["celix"].build_rsa_remote_service_admin_dfi:
+            if self.options["celix"].build_rsa_remote_service_admin_dfi and self.options["celix"].build_launcher:
                 self.run("./use_rsa_dfi", cwd=os.path.join("deploy", "use_rsa_dfi"), run_environment=True)
             if self.options["celix"].build_rsa_remote_service_admin_shm_v2:
                 self.run("./use_rsa_shm_v2", cwd=os.path.join("deploy", "use_rsa_shm_v2"), run_environment=True)
             if self.options["celix"].build_rsa_json_rpc:
                 self.run("./use_rsa_rpc_json", cwd=os.path.join("deploy", "use_rsa_rpc_json"), run_environment=True)
-            if self.options["celix"].build_rsa_discovery_configured:
+            if self.options["celix"].build_rsa_discovery_configured and self.options["celix"].build_launcher:
                 self.run("./use_rsa_configured", cwd=os.path.join("deploy", "use_rsa_configured"), run_environment=True)
-            if self.options["celix"].build_rsa_discovery_etcd:
+            if self.options["celix"].build_rsa_discovery_etcd and self.options["celix"].build_launcher:
                 self.run("./use_rsa_etcd", cwd=os.path.join("deploy", "use_rsa_etcd"), run_environment=True)
             if self.options["celix"].build_rsa_discovery_zeroconf:
                 self.run("./use_rsa_discovery_zeroconf",

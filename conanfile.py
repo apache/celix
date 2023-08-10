@@ -99,6 +99,7 @@ class CelixConan(ConanFile):
         "celix_use_compression_for_bundle_zips": [True, False],
         "celix_err_buffer_size": "ANY",
         "enable_testing_on_ci": [True, False],
+        "framework_curlinit": [True, False],
     }
     default_options = {
         "enable_testing": False,
@@ -162,6 +163,7 @@ class CelixConan(ConanFile):
         "celix_use_compression_for_bundle_zips": True,
         "celix_err_buffer_size": 512,
         "enable_testing_on_ci": False,
+        "framework_curlinit": True,
     }
     _cmake = None
 
@@ -383,7 +385,10 @@ class CelixConan(ConanFile):
         if self.options.build_framework or self.options.build_pubsub:
             self.requires("util-linux-libuuid/2.39")
             self.options['util-linux-libuuid'].shared = True
-        if self.options.build_framework or self.options.build_celix_etcdlib:
+        if ((self.options.build_framework and self.options.framework_curlinit)
+                or self.options.build_celix_etcdlib or self.options.build_deployment_admin
+                or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
+                or self.options.build_launcher):
             self.requires("libcurl/[>=7.64.1 <8.0.0]")
             self.options['libcurl'].shared = True
         if self.options.build_deployment_admin:

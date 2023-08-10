@@ -50,7 +50,7 @@ There are three variants of 'add_celix_container':
   CMake 'target_sources' command.
 - If a LAUNCHER (absolute path to a executable of CMake `add_executable` target) is provided that will be used as Celix launcher.
 
-Creating a Celix containers using 'add_celix_container' will lead to a CMake executable target (expect if a LAUNCHER is used).
+Creating a Celix containers using 'add_celix_container' will lead to a CMake executable target (unless a LAUNCHER is used).
 These targets can be used to run/debug Celix containers from a IDE (if the IDE supports CMake).
 
 Optional Arguments:
@@ -341,7 +341,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
         #Celix Main Project
         set(CELIX_LIB_DIRS "$<TARGET_FILE_DIR:Celix::framework>:$<TARGET_FILE_DIR:Celix::utils>:$<TARGET_FILE_DIR:Celix::dfi>")
     else ()
-	message(FATAL_ERROR "No Celix::framework target is defined. Did you use find_package(Celix REQUIRED)?")
+        message(FATAL_ERROR "No Celix::framework target is defined. Did you use find_package(Celix REQUIRED)?")
     endif()
 
     #generate release.sh and optional run.sh
@@ -393,6 +393,9 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
     celix_container_runtime_properties(${CONTAINER_TARGET} ${CONTAINER_RUNTIME_PROPERTIES})
     celix_container_embedded_properties(${CONTAINER_TARGET} ${CONTAINER_EMBEDDED_PROPERTIES})
 
+    if (LAUNCHER_DEP)
+        add_dependencies(${CONTAINER_TARGET} ${LAUNCHER_DEP})
+    endif ()
 
     #ensure the container dir will be deleted during clean
     get_directory_property(CLEANFILES ADDITIONAL_CLEAN_FILES)

@@ -30,10 +30,6 @@
 #include <curl/curl.h>
 #endif
 
-#include <string.h>
-#include <curl/curl.h>
-#include <signal.h>
-
 #include "framework.h"
 #include "celix_framework_factory.h"
 #include "celix_constants.h"

@@ -36,8 +36,9 @@ if (REMOTE_SERVICE_ADMIN)
         add_subdirectory(discovery_shm)
     endif ()
 
-    if (BUILD_RSA_DISCOVERY_ETCD AND BUILD_RSA_REMOTE_SERVICE_ADMIN_DFI AND BUILD_SHELL AND BUILD_SHELL_TUI AND BUILD_LOG_SERVICE)
+    if (BUILD_RSA_DISCOVERY_ETCD AND BUILD_RSA_REMOTE_SERVICE_ADMIN_DFI AND BUILD_SHELL AND BUILD_SHELL_TUI AND BUILD_LOG_SERVICE AND BUILD_LAUNCHER)
         add_celix_container(remote-services-dfi
+                LAUNCHER Celix::launcher
                 NAME "server"
                 GROUP "remote-services/remote-services-dfi"
                 BUNDLES
@@ -50,11 +51,13 @@ if (REMOTE_SERVICE_ADMIN)
 
                 celix_remote_interceptors_example
                 calculator
+                USE_CONFIG
                 PROPERTIES
                 RSA_PORT=18888
                 )
 
         add_celix_container(remote-services-dfi-client
+                LAUNCHER Celix::launcher
                 NAME "client"
                 GROUP "remote-services/remote-services-dfi"
                 BUNDLES
@@ -66,13 +69,15 @@ if (REMOTE_SERVICE_ADMIN)
                 Celix::rsa_discovery_etcd
                 celix_remote_interceptors_example
                 calculator_shell
+                USE_CONFIG
                 PROPERTIES
                 RSA_PORT=28888
                 )
     endif()
     
-    if (BUILD_RSA_DISCOVERY_CONFIGURED AND BUILD_RSA_REMOTE_SERVICE_ADMIN_SHM_V2 AND BUILD_RSA_JSON_RPC AND BUILD_SHELL AND BUILD_SHELL_TUI AND BUILD_LOG_SERVICE)
+    if (BUILD_RSA_DISCOVERY_CONFIGURED AND BUILD_RSA_REMOTE_SERVICE_ADMIN_SHM_V2 AND BUILD_RSA_JSON_RPC AND BUILD_SHELL AND BUILD_SHELL_TUI AND BUILD_LOG_SERVICE AND BUILD_LAUNCHER)
         add_celix_container(remote-services-shm-server
+                LAUNCHER Celix::launcher
                 NAME "server"
                 GROUP "remote-services/remote-services-shm"
                 BUNDLES
@@ -86,10 +91,12 @@ if (REMOTE_SERVICE_ADMIN)
 
                 celix_remote_interceptors_example
                 calculator
+                USE_CONFIG
                 PROPERTIES
                 )
 
         add_celix_container(remote-services-shm-client
+                LAUNCHER Celix::launcher
                 NAME "client"
                 GROUP "remote-services/remote-services-shm"
                 BUNDLES
@@ -102,12 +109,14 @@ if (REMOTE_SERVICE_ADMIN)
                 Celix::log_admin
                 celix_remote_interceptors_example
                 calculator_shell
+                USE_CONFIG
                 PROPERTIES
                 )
     endif()
 
-    if (BUILD_RSA_DISCOVERY_ZEROCONF AND BUILD_RSA_REMOTE_SERVICE_ADMIN_DFI AND BUILD_RSA_REMOTE_SERVICE_ADMIN_SHM_V2 AND BUILD_RSA_JSON_RPC AND BUILD_SHELL AND BUILD_SHELL_TUI AND BUILD_LOG_SERVICE)
+    if (BUILD_RSA_DISCOVERY_ZEROCONF AND BUILD_RSA_REMOTE_SERVICE_ADMIN_DFI AND BUILD_RSA_REMOTE_SERVICE_ADMIN_SHM_V2 AND BUILD_RSA_JSON_RPC AND BUILD_SHELL AND BUILD_SHELL_TUI AND BUILD_LOG_SERVICE AND BUILD_LAUNCHER)
         add_celix_container(remote-services-zeroconf-server
+                LAUNCHER Celix::launcher
                 NAME "server"
                 GROUP "remote-services/remote-services-zeroconf"
                 BUNDLES
@@ -121,11 +130,13 @@ if (REMOTE_SERVICE_ADMIN)
                 Celix::log_admin
                 celix_remote_interceptors_example
                 calculator
+                USE_CONFIG
                 PROPERTIES
                 CELIX_RSA_BIND_ON_ALL_INTERFACES=false
                 )
 
         add_celix_container(remote-services-zeroconf-client
+                LAUNCHER Celix::launcher
                 NAME "client"
                 GROUP "remote-services/remote-services-zeroconf"
                 BUNDLES
@@ -139,6 +150,7 @@ if (REMOTE_SERVICE_ADMIN)
                 Celix::log_admin
                 celix_remote_interceptors_example
                 calculator_shell
+                USE_CONFIG
                 PROPERTIES
                 CELIX_RSA_BIND_ON_ALL_INTERFACES=false
                 )

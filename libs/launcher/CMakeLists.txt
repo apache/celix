@@ -16,7 +16,9 @@
 # under the License.
 
 celix_subproject(LAUNCHER "Option to build the launcher" "ON")
-if (LAUNCHER) 
+if (LAUNCHER)
+    find_package(CURL REQUIRED)
+
     #celix launcher linked to libc
     add_executable(launcher
         src/main.c
@@ -25,7 +27,7 @@ if (LAUNCHER)
     set_target_properties(launcher PROPERTIES "INSTALL_RPATH" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
     target_include_directories(launcher PRIVATE src)
 
-    target_link_libraries(launcher PRIVATE Celix::framework)
+    target_link_libraries(launcher PRIVATE Celix::framework CURL::libcurl)
 
     install(TARGETS launcher EXPORT celix RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT framework)
     #Setup target aliases to match external usage

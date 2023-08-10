@@ -18,8 +18,10 @@
 celix_subproject(FRAMEWORK "Option to build the Celix Framework" ON)
 if (FRAMEWORK)
     find_package(libuuid REQUIRED)
-    find_package(CURL REQUIRED)
-
+    option(FRAMEWORK_CURLINIT "Do CURL initialization in framework" ON)
+    if (FRAMEWORK_CURLINIT)
+        find_package(CURL REQUIRED)
+    endif ()
     set(FRAMEWORK_SRC
             src/attribute.c src/bundle.c src/bundle_archive.c src/celix_bundle_cache.c
             src/bundle_context.c src/bundle_revision.c
@@ -38,8 +40,6 @@ if (FRAMEWORK)
             src/celix_scheduled_event.c
             src/celix_framework_bundle.c
             )
-    set(FRAMEWORK_DEPS libuuid::libuuid CURL::libcurl ${CMAKE_DL_LIBS})
-
     add_library(framework SHARED ${FRAMEWORK_SRC})
 
     set_target_properties(framework
@@ -54,7 +54,16 @@ if (FRAMEWORK)
     target_include_directories(framework PRIVATE ${CMAKE_CURRENT_LIST_DIR}/include_deprecated)
     target_compile_options(framework PRIVATE -DUSE_FILE32API)
     target_compile_options(framework PRIVATE -Wno-deprecated-declarations) #note part of the api is deprecated, ignore this warning on own api
+    if (NOT FRAMEWORK_CURLINIT)
+        target_compile_definitions(framework PRIVATE CELIX_NO_CURLINIT)
+    endif ()
     target_link_libraries(framework PUBLIC Celix::utils ${CELIX_OPTIONAL_EXTRA_LIBS})
+
+    set(FRAMEWORK_DEPS libuuid::libuuid ${CMAKE_DL_LIBS})
+    if (FRAMEWORK_CURLINIT)
+        set(FRAMEWORK_DEPS ${FRAMEWORK_DEPS} CURL::libcurl)
+    endif ()
+
     target_link_libraries(framework PRIVATE ${FRAMEWORK_DEPS})
 
     generate_export_header(framework
@@ -79,6 +88,7 @@ if (FRAMEWORK)
     endif ()
     if (ENABLE_TESTING AND CELIX_CXX17) #framework tests are C++17
         add_library(framework_cut STATIC ${FRAMEWORK_SRC})
+
         target_include_directories(framework_cut PUBLIC
                 ${CMAKE_CURRENT_LIST_DIR}/src
                 ${CMAKE_CURRENT_LIST_DIR}/include
@@ -87,6 +97,9 @@ if (FRAMEWORK)
                 )
         target_compile_options(framework_cut PRIVATE -DUSE_FILE32API)
         target_compile_options(framework_cut PRIVATE -Wno-deprecated-declarations) #note part of the api is deprecated, ignore this warning on own api
+        if (NOT FRAMEWORK_CURLINIT)
+            target_compile_definitions(framework_cut PRIVATE CELIX_NO_CURLINIT)
+        endif ()
         target_link_libraries(framework_cut PUBLIC Celix::utils ${CELIX_OPTIONAL_EXTRA_LIBS} ${FRAMEWORK_DEPS})
         celix_deprecated_utils_headers(framework_cut)
         add_subdirectory(gtest)
