@@ -808,20 +808,17 @@ celix_status_t fw_registerServiceFactory(framework_pt framework, service_registr
 celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *references, bundle_pt bundle, const char * serviceName, const char * sfilter) {
     celix_status_t status = CELIX_SUCCESS;
 
-	filter_pt filter = NULL;
-	unsigned int refIdx = 0;
+    celix_autoptr(celix_filter_t) filter = NULL;
+    unsigned int refIdx = 0;
 
     if (sfilter != NULL) {
-        filter = filter_create(sfilter);
-	}
+        filter = celix_filter_create(sfilter);
+    }
 
-	status = CELIX_DO_IF(status, serviceRegistry_getServiceReferences(framework->registry, bundle, serviceName, filter, references));
+    status = CELIX_DO_IF(status, serviceRegistry_getServiceReferences(framework->registry, bundle, serviceName, filter, references));
 
-	if (filter != NULL) {
-		filter_destroy(filter);
-	}
 
-	if (status == CELIX_SUCCESS) {
+    if (status == CELIX_SUCCESS) {
         for (refIdx = 0; (*references != NULL) && refIdx < arrayList_size(*references); refIdx++) {
             service_reference_pt ref = (service_reference_pt) arrayList_get(*references, refIdx);
             service_registration_pt reg = NULL;
@@ -838,11 +835,11 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
                 }
             }
         }
-	}
+    }
 
-	framework_logIfError(framework->logger, status, NULL, "Failed to get service references");
+    framework_logIfError(framework->logger, status, NULL, "Failed to get service references");
 
-	return status;
+    return status;
 }
 
 celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, array_list_pt *services) {

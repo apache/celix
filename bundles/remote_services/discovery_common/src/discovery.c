@@ -91,7 +91,7 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 	const char *scope = NULL;
 	serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
-	celix_filter_t *filter = celix_filter_create(scope);
+	celix_autoptr(celix_filter_t) filter = celix_filter_create(scope);
 
 	if (discoveryListener != NULL && strcmp(discoveryListener, "true") == 0) {
         celix_logHelper_info(discovery->loghelper, "EndpointListener Ignored - Discovery listener");
@@ -118,8 +118,6 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 
 		celixThreadMutex_unlock(&discovery->mutex);
 	}
-
-	celix_filter_destroy(filter);
 
 	return status;
 }
@@ -170,7 +168,7 @@ celix_status_t discovery_informEndpointListeners(discovery_t *discovery, endpoin
             const char* scope = NULL;
             serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
-            celix_filter_t *filter = celix_filter_create(scope);
+            celix_autoptr(celix_filter_t) filter = celix_filter_create(scope);
             bool matchResult = celix_filter_match(filter, endpoint->properties);
             if (matchResult) {
                 bundleContext_getService(discovery->context, reference, (void **) &listener);
@@ -185,8 +183,6 @@ celix_status_t discovery_informEndpointListeners(discovery_t *discovery, endpoin
                 }
                 bundleContext_ungetService(discovery->context, reference, NULL);
             }
-
-            celix_filter_destroy(filter);
         }
         hashMapIterator_destroy(iter);
     }

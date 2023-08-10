@@ -383,8 +383,8 @@ class CelixConan(ConanFile):
             self.requires("libzip/[>=1.7.3 <2.0.0]")
             self.options['libzip'].shared = True
         if self.options.build_framework or self.options.build_pubsub:
-            self.requires("libuuid/1.0.3")
-            self.options['libuuid'].shared = True
+            self.requires("util-linux-libuuid/2.39")
+            self.options['util-linux-libuuid'].shared = True
         if ((self.options.build_framework and self.options.framework_curlinit)
                 or self.options.build_celix_etcdlib or self.options.build_deployment_admin
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi

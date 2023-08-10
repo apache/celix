@@ -16,13 +16,13 @@
 # under the License.
 
 [package]
-name = "rust_bundle_activator"
+name = "celix_bindings"
 version = "0.0.1"
 
-[dependencies]
-celix_bindings = { path = "../celix_bindings" }
+[build-dependencies]
+bindgen = "0.66.1"
 
 [lib]
-name = "rust_bundle_activator"
+name = "celix_bindings"
 path = "src/lib.rs"
-crate-type = ["cdylib"]
+crate-type = ["rlib"]
