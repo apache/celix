@@ -158,7 +158,7 @@ endif ()
 
 option(ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11 "Test the Dependency Manager for C++11 support" OFF)
 option(ENABLE_TESTING_FOR_CXX14 "Test celix utils and framework C++ header for C++14 support" OFF)
-
+option(ENABLE_CMAKE_WARNING_TESTS "Enable cmake warning tests to test warning prints" OFF)
 option(ENABLE_TESTING_ON_CI "Whether to enable testing on CI. This influence allowed timing errors during unit tests" OFF)
 
 if (CELIX_INSTALL_DEPRECATED_API)
@@ -194,6 +194,9 @@ add_subdirectory(misc/experimental)
 
 #Example as last, because some example will check if underlining options are enabled
 add_subdirectory(examples/celix-examples)
+
+#include CMake warning tests
+include(cmake/celix_project/WarningTests.cmake)
 
 #export targets
 install(EXPORT celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE Targets.cmake COMPONENT cmake)
