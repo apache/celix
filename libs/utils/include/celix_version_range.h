@@ -23,6 +23,7 @@
 
 #include <stdbool.h>
 
+#include "celix_cleanup.h"
 #include "celix_errno.h"
 #include "celix_version.h"
 #include "celix_utils_export.h"
@@ -58,6 +59,8 @@ celix_versionRange_createVersionRange(celix_version_t* low, bool isLowInclusive,
 CELIX_UTILS_EXPORT celix_version_range_t* celix_versionRange_createInfiniteVersionRange();
 
 CELIX_UTILS_EXPORT void celix_versionRange_destroy(celix_version_range_t* range);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_version_range_t, celix_versionRange_destroy)
 
 /**
  * Determine if the specified version is part of the version range or not.
