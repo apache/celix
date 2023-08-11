@@ -27,9 +27,11 @@
 #ifndef MANIFEST_H_
 #define MANIFEST_H_
 
+#include <stddef.h>
 #include <stdio.h>
 
 #include "properties.h"
+#include "celix_cleanup.h"
 #include "celix_errno.h"
 #include "celix_framework_export.h"
 
@@ -51,6 +53,8 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT manifest_pt manifest_clone(manifest_pt manifes
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t manifest_createFromFile(const char *filename, manifest_pt *manifest);
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t manifest_destroy(manifest_pt manifest);
+
+CELIX_DEFINE_AUTO_CLEANUP_FREE_FUNC(manifest_pt, manifest_destroy, NULL)
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT void manifest_clear(manifest_pt manifest);
 

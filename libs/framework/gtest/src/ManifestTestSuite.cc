@@ -26,22 +26,44 @@
 
 class ManifestTestSuite : public ::testing::Test {
 protected:
-  manifest_pt manifest = nullptr;
-  void SetUp() override {
-      ASSERT_EQ(CELIX_SUCCESS, manifest_create(&manifest));
-  }
-  void TearDown() override {
-      manifest_destroy(manifest);
-  }
+    manifest_pt manifest = nullptr;
+    void SetUp() override {
+        ASSERT_EQ(CELIX_SUCCESS, manifest_create(&manifest));
+    }
+    void TearDown() override {
+        manifest_destroy(manifest);
+    }
+    void CheckPropertiesEqual(const celix_properties_t* prop1, const celix_properties_t* prop2) {
+        EXPECT_EQ(celix_properties_size(prop1), celix_properties_size(prop2));
+        const char* key = nullptr;
+        CELIX_PROPERTIES_FOR_EACH(prop1, key) {
+            EXPECT_STREQ(celix_properties_get(prop1, key, nullptr), celix_properties_get(prop2, key, nullptr));
+        }
+    }
+    void CheckManifestEqual(const manifest_pt manifest1, const manifest_pt manifest2) {
+        CheckPropertiesEqual(manifest_getMainAttributes(manifest1), manifest_getMainAttributes(manifest2));
+        hash_map_pt entries1 = nullptr;
+        EXPECT_EQ(CELIX_SUCCESS, manifest_getEntries(manifest1, &entries1));
+        hash_map_pt entries2 = nullptr;
+        EXPECT_EQ(CELIX_SUCCESS, manifest_getEntries(manifest2, &entries2));
+        EXPECT_EQ(hashMap_size(entries1), hashMap_size(entries2));
+        hash_map_iterator_t iter = hashMapIterator_construct(entries1);
+        while (hashMapIterator_hasNext(&iter)) {
+            hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
+            celix_properties_t* value1 = (celix_properties_t*)hashMapEntry_getValue(entry);
+            celix_properties_t* value2 = (celix_properties_t*)hashMap_get(entries2, hashMapEntry_getKey(entry));
+            CheckPropertiesEqual(value1, value2);
+        }
+    }
 };
 
 TEST_F(ManifestTestSuite, EmptyManifestTest) {
-  const celix_properties_t* mainAttr = manifest_getMainAttributes(manifest);
-  EXPECT_EQ(0, celix_properties_size(mainAttr));
-  hash_map_pt entries = nullptr;
-  EXPECT_EQ(CELIX_SUCCESS, manifest_getEntries(manifest, &entries));
-  EXPECT_NE(nullptr, entries);
-  EXPECT_EQ(0, hashMap_size(entries));
+    const celix_properties_t* mainAttr = manifest_getMainAttributes(manifest);
+    EXPECT_EQ(0, celix_properties_size(mainAttr));
+    hash_map_pt entries = nullptr;
+    EXPECT_EQ(CELIX_SUCCESS, manifest_getEntries(manifest, &entries));
+    EXPECT_NE(nullptr, entries);
+    EXPECT_EQ(0, hashMap_size(entries));
 }
 
 TEST_F(ManifestTestSuite, ReadManifestWithoutNameSectionsTest) {
@@ -107,4 +129,36 @@ TEST_F(ManifestTestSuite, ReadManifestWithNameSectionsTest) {
     EXPECT_STREQ("N8Ow2UY4yjnHZv5zeq2I1Uv/+uE=", celix_properties_get(entry2, "SHA1-Digest", nullptr));
     EXPECT_STREQ("com.third._3d.native", celix_properties_get(entry2, "Bundle-SymbolicName", nullptr));
     EXPECT_STREQ("1.5.3", celix_properties_get(entry2, "Bundle-Version", nullptr));
+}
+
+TEST_F(ManifestTestSuite, CleanupTest) {
+    celix_auto(manifest_pt) manifest2 = nullptr;
+    EXPECT_EQ(CELIX_SUCCESS, manifest_create(&manifest2));
+    celix_auto(manifest_pt) manifest3 = nullptr;
+    EXPECT_EQ(CELIX_SUCCESS, manifest_create(&manifest3));
+    EXPECT_EQ(CELIX_SUCCESS, manifest_destroy(celix_steal_ptr(manifest3)));
+}
+
+TEST_F(ManifestTestSuite, CloneTest) {
+    std::string content = "Manifest-Version: 1.0\n"
+                          "DeploymentPackage-Icon: %icon\n"
+                          "DeploymentPackage-SymbolicName: com.third._3d\n"
+                          "DeploymentPacakge-Version: 1.2.3.build22032005\n"
+                          "\n"
+                          "Name: bundles/3dlib.jar\n"
+                          "SHA1-Digest: MOez1l4gXHBo8ycYdAxstK3UvEg=\n"
+                          "Bundle-SymbolicName: com.third._3d\n"
+                          "Bundle-Version: 2.3.1\n"
+                          "\n"
+                          "Name: bundles/3dnative.jar\n"
+                          "SHA1-Digest: N8Ow2UY4yjnHZv5zeq2I1Uv/+uE=\n"
+                          "Bundle-SymbolicName: com.third._3d.native\n"
+                          "Bundle-Version: 1.5.3\n"
+                          "\n";
+    celix_autoptr(FILE) manifestFile = tmpfile();
+    EXPECT_EQ(content.size(), fwrite(content.c_str(), 1, content.size(), manifestFile));
+    rewind(manifestFile);
+    EXPECT_EQ(CELIX_SUCCESS, manifest_readFromStream(manifest, manifestFile));
+    celix_auto(manifest_pt) clone = manifest_clone(manifest);
+    CheckManifestEqual(manifest, clone);
 }

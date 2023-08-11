@@ -54,22 +54,25 @@ celix_status_t manifest_create(manifest_pt *manifest) {
 }
 
 manifest_pt manifest_clone(manifest_pt manifest) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
 
-	manifest_pt clone = NULL;
-	status = manifest_create(&clone);
-	if (status == CELIX_SUCCESS) {
-		hash_map_iterator_t iter = hashMapIterator_construct(manifest->attributes);
-		while (hashMapIterator_hasNext(&iter)) {
-			hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
-			char *key = hashMapEntry_getKey(entry);
-			celix_properties_t* value = hashMapEntry_getValue(entry);
-			celix_properties_t* cloneValue = celix_properties_copy(value);
-			hashMap_put(clone->attributes, key, cloneValue);
-		}
-	}
+    manifest_pt clone = NULL;
+    status = manifest_create(&clone);
+    if (status == CELIX_SUCCESS) {
+        const char* key = NULL;
+        CELIX_PROPERTIES_FOR_EACH(manifest->mainAttributes, key) {
+            celix_properties_set(clone->mainAttributes, key, celix_properties_get(manifest->mainAttributes, key, NULL));
+        }
+        hash_map_iterator_t iter = hashMapIterator_construct(manifest->attributes);
+        while (hashMapIterator_hasNext(&iter)) {
+            hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
+            celix_properties_t* value = hashMapEntry_getValue(entry);
+            celix_properties_t* cloneValue = celix_properties_copy(value);
+            hashMap_put(clone->attributes, strdup(hashMapEntry_getKey(entry)), cloneValue);
+        }
+    }
 
-	return clone;
+    return clone;
 }
 
 celix_status_t manifest_destroy(manifest_pt manifest) {
