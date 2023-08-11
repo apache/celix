@@ -27,6 +27,8 @@
 #ifndef MANIFEST_H_
 #define MANIFEST_H_
 
+#include <stdio.h>
+
 #include "properties.h"
 #include "celix_errno.h"
 #include "celix_framework_export.h"
@@ -57,6 +59,8 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_properties_t *manifest_getMainAttributes
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map);
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t manifest_read(manifest_pt manifest, const char *filename);
+
+CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t manifest_readFromStream(manifest_pt manifest, FILE* stream);
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT void manifest_write(manifest_pt manifest, const char *filename);
 

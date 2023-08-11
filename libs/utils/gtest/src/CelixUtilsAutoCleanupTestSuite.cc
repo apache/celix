@@ -15,6 +15,7 @@
 //  specific language governing permissions and limitations
 //  under the License.
 
+#include "celix_stdio_cleanup.h"
 #include "celix_stdlib_cleanup.h"
 #include "celix_threads.h"
 #include "celix_unistd_cleanup.h"
@@ -187,4 +188,8 @@ TEST_F(CelixUtilsCleanupTestSuite, StealFdTest) {
     EXPECT_EQ(-1, fd);
     EXPECT_NE(-1, fd2);
     close(fd2);
+}
+
+TEST_F(CelixUtilsCleanupTestSuite, FileTest) {
+    celix_autoptr(FILE) file = tmpfile();
 }

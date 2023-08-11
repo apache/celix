@@ -60,6 +60,7 @@ set(CELIX_FRAMEWORK_TEST_SOURCES
     src/CelixBundleCacheTestSuite.cc
     src/ScheduledEventTestSuite.cc
     src/FrameworkBundleTestSuite.cc
+    src/ManifestTestSuite.cc
 )
 
 add_executable(test_framework ${CELIX_FRAMEWORK_TEST_SOURCES})
