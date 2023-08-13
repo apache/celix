@@ -28,6 +28,8 @@
 #include <string.h>
 #include <stdbool.h>
 
+#include "celix_err.h"
+#include "celix_errno.h"
 #include "celix_stdio_cleanup.h"
 #include "manifest.h"
 #include "utils.h"
@@ -38,19 +40,20 @@ int fpeek(FILE *stream);
 static celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file);
 
 celix_status_t manifest_create(manifest_pt *manifest) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
 
-	*manifest = malloc(sizeof(**manifest));
-	if (!*manifest) {
-		status = CELIX_ENOMEM;
-	} else {
-		(*manifest)->mainAttributes = properties_create();
-		(*manifest)->attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-	}
+    *manifest = malloc(sizeof(**manifest));
+    if (!*manifest) {
+        status = CELIX_ENOMEM;
+    } else {
+        (*manifest)->mainAttributes = celix_properties_create();
+        (*manifest)->attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    }
 
-	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot create manifest");
-
-	return status;
+    if (status != CELIX_SUCCESS) {
+        celix_err_pushf("Cannot create manifest: %s", celix_strerror(status));
+    }
+    return status;
 }
 
 manifest_pt manifest_clone(manifest_pt manifest) {
@@ -94,17 +97,19 @@ celix_status_t manifest_destroy(manifest_pt manifest) {
 }
 
 celix_status_t manifest_createFromFile(const char *filename, manifest_pt *manifest) {
-	celix_status_t status;
+    celix_status_t status;
 
-	status = manifest_create(manifest);
+    status = manifest_create(manifest);
 
-	if (status == CELIX_SUCCESS) {
-		manifest_read(*manifest, filename);
-	}
+    if (status == CELIX_SUCCESS) {
+        manifest_read(*manifest, filename);
+    }
 
-	framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Cannot create manifest from file");
+    if (status != CELIX_SUCCESS) {
+        celix_err_pushf("Cannot create manifest from file: %s", celix_strerror(status));
+    }
 
-	return status;
+    return status;
 }
 
 void manifest_clear(manifest_pt manifest) {
@@ -131,8 +136,7 @@ celix_status_t manifest_read(manifest_pt manifest, const char *filename) {
     }
 
     if (status != CELIX_SUCCESS) {
-        fw_logCode(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, status,
-                   "Cannot read manifest %s", filename);
+        celix_err_pushf("Cannot read manifest %s: %s", filename, celix_strerror(status));
     }
 
     return status;
@@ -148,6 +152,7 @@ celix_status_t manifest_readFromStream(manifest_pt manifest, FILE* stream) {
     memset(lbuf,0,512);
     memset(name,0,512);
     memset(lastline,0,512);
+    const char* reason = NULL;
 
     manifest_readAttributes(manifest, manifest->mainAttributes, stream);
 
@@ -157,7 +162,7 @@ celix_status_t manifest_readFromStream(manifest_pt manifest, FILE* stream) {
 
         if (lbuf[--len] != '\n') {
             status = CELIX_FILE_IO_EXCEPTION;
-            framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Manifest line too long");
+            reason = "Manifest line too long";
             break;
         }
         if (len > 0 && lbuf[len - 1] == '\r') {
@@ -178,7 +183,7 @@ celix_status_t manifest_readFromStream(manifest_pt manifest, FILE* stream) {
                 name[len - 6] = '\0';
             } else {
                 status = CELIX_FILE_IO_EXCEPTION;
-                framework_logIfError(celix_frameworkLogger_globalLogger(), status, NULL, "Manifest invalid format");
+                reason = "Manifest invalid format";
                 break;
             }
 
@@ -219,7 +224,7 @@ celix_status_t manifest_readFromStream(manifest_pt manifest, FILE* stream) {
     }
 
     if (status != CELIX_SUCCESS) {
-        fw_logCode(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, status, "Cannot read manifest");
+        celix_err_pushf("Cannot read manifest for reason %s: %s", reason, celix_strerror(status));
     }
 
     return status;
@@ -243,72 +248,73 @@ int fpeek(FILE *stream) {
 }
 
 static celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file) {
-	char name[512]; memset(name,0,512);
-	char value[512]; memset(value,0,512);
-	char lastLine[512]; memset(lastLine,0,512);
-	char lbuf[512]; memset(lbuf,0,512);
+    char name[512]; memset(name,0,512);
+    char value[512]; memset(value,0,512);
+    char lastLine[512]; memset(lastLine,0,512);
+    char lbuf[512]; memset(lbuf,0,512);
 
 
-	while (fgets(lbuf, sizeof(lbuf), file ) != NULL ) {
-		int len = strlen(lbuf);
+    while (fgets(lbuf, sizeof(lbuf), file ) != NULL ) {
+        int len = strlen(lbuf);
 
-		if (lbuf[--len] != '\n') {
-			printf("MANIFEST: Line too long\n");
-			return CELIX_FILE_IO_EXCEPTION;
-		}
-		if (len > 0 && lbuf[len - 1] == '\r') {
-			--len;
-		}
-		if (len == 0) {
-			break;
-		}
-		
-		if (lbuf[0] == ' ') {
-			char buf[512];
-			buf[0] = '\0';
+        if (lbuf[--len] != '\n') {
+            celix_err_pushf("MANIFEST: Line too long");
+            return CELIX_FILE_IO_EXCEPTION;
+        }
+        if (len > 0 && lbuf[len - 1] == '\r') {
+            --len;
+        }
+        if (len == 0) {
+            break;
+        }
 
-			// Line continued
-			strcat(buf, lastLine);
-			strncat(buf, lbuf+1, len - 1);
+        if (lbuf[0] == ' ') {
+            char buf[512];
+            buf[0] = '\0';
 
-			if (fpeek(file) == ' ') {
-//				lastLine = realloc(lastLine, strlen(buf) + 1);
-				lastLine[0] = '\0';
-				strcpy(lastLine, buf);
-				continue;
-			}
-			value[0] = '\0';
-			strcpy(value, buf);
-		} else {
-	        int i = 0;
-			while (lbuf[i++] != ':') {
-				if (i >= len) {
-					printf("MANIFEST: Invalid header\n");
-					return CELIX_FILE_IO_EXCEPTION;
-				}
-			}
-			if (lbuf[i++] != ' ') {
-				printf("MANIFEST: Invalid header\n");
-				return CELIX_FILE_IO_EXCEPTION;
-			}
-			name[0] = '\0';
-			strncpy(name, lbuf, i - 2);
-			name[i - 2] = '\0';
-			if (fpeek(file) == ' ') {
-				int newlen = len - i;
-				lastLine[0] = '\0';
-				strncpy(lastLine, lbuf+i, len -i);
-				lastLine[newlen] = '\0';
-				continue;
-			}
-			value[0] = '\0';
-			strncpy(value, lbuf+i, len - i);
-			value[len - i] = '\0';
-		}
+            // Line continued
+            strcat(buf, lastLine);
+            strncat(buf, lbuf+1, len - 1);
 
-		properties_set(properties, name, value);
-	}
+            if (fpeek(file) == ' ') {
+//              lastLine = realloc(lastLine, strlen(buf) + 1);
+                lastLine[0] = '\0';
+                strcpy(lastLine, buf);
+                continue;
+            }
+            value[0] = '\0';
+            strcpy(value, buf);
+        } else {
+            int i = 0;
+            while (lbuf[i++] != ':') {
+                if (i >= len) {
 
-	return CELIX_SUCCESS;
+                    celix_err_pushf("MANIFEST: Invalid header");
+                    return CELIX_FILE_IO_EXCEPTION;
+                }
+            }
+            if (lbuf[i++] != ' ') {
+                celix_err_pushf("MANIFEST: Invalid header");
+                return CELIX_FILE_IO_EXCEPTION;
+            }
+            name[0] = '\0';
+            strncpy(name, lbuf, i - 2);
+            name[i - 2] = '\0';
+            if (fpeek(file) == ' ') {
+                int newlen = len - i;
+                lastLine[0] = '\0';
+                strncpy(lastLine, lbuf+i, len -i);
+                lastLine[newlen] = '\0';
+                continue;
+            }
+            value[0] = '\0';
+            strncpy(value, lbuf+i, len - i);
+            value[len - i] = '\0';
+        }
+
+        properties_set(properties, name, value);
+    }
+
+    return CELIX_SUCCESS;
 }
 

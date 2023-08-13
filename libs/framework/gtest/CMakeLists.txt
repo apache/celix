@@ -140,6 +140,7 @@ if (LINKER_WRAP_SUPPORTED)
             src/ScheduledEventWithErrorInjectionTestSuite.cc
             src/FrameworkBundleWithErrorInjectionTestSuite.cc
             src/FrameworkFactoryWithErrorInjectionTestSuite.cc
+            src/ManifestErrorInjectionTestSuite.cc
     )
     target_compile_definitions(test_framework_with_ei PRIVATE
             SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
