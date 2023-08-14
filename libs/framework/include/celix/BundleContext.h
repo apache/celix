@@ -722,6 +722,14 @@ namespace celix {
         }
 
         /**
+         * @brief Log celix per-thread error messages to the Celix framework logger using the provided log level.
+         * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
+         */
+        void logTssErrors(celix_log_level_e level) {
+            celix_bundleContext_logTssErrors(cCtx.get(), level);
+        }
+
+        /**
          * @brief Wait until all Celix events for this bundle are completed.
          */
         void waitForEvents() const {

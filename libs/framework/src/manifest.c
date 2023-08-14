@@ -33,7 +33,6 @@
 #include "celix_stdio_cleanup.h"
 #include "manifest.h"
 #include "utils.h"
-#include "celix_log.h"
 
 int fpeek(FILE *stream);
 
@@ -258,7 +257,7 @@ static celix_status_t manifest_readAttributes(manifest_pt manifest, properties_p
         int len = strlen(lbuf);
 
         if (lbuf[--len] != '\n') {
-            celix_err_pushf("MANIFEST: Line too long");
+            celix_err_push("MANIFEST: Line too long");
             return CELIX_FILE_IO_EXCEPTION;
         }
         if (len > 0 && lbuf[len - 1] == '\r') {
@@ -289,12 +288,12 @@ static celix_status_t manifest_readAttributes(manifest_pt manifest, properties_p
             while (lbuf[i++] != ':') {
                 if (i >= len) {
 
-                    celix_err_pushf("MANIFEST: Invalid header");
+                    celix_err_push("MANIFEST: Invalid header");
                     return CELIX_FILE_IO_EXCEPTION;
                 }
             }
             if (lbuf[i++] != ' ') {
-                celix_err_pushf("MANIFEST: Invalid header");
+                celix_err_push("MANIFEST: Invalid header");
                 return CELIX_FILE_IO_EXCEPTION;
             }
             name[0] = '\0';

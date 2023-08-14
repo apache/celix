@@ -20,6 +20,7 @@
 #ifndef CELIX_CELIX_ERR_H
 #define CELIX_CELIX_ERR_H
 
+#include <stdbool.h>
 #include <stdio.h>
 
 #include "celix_err_constants.h"
@@ -81,6 +82,17 @@ CELIX_UTILS_EXPORT void celix_err_resetErrors();
  * @param[in] postfix The postfix to print after each error message. If NULL, a '\n' postfix is printed.
  */
 CELIX_UTILS_EXPORT void celix_err_printErrors(FILE* stream, const char* prefix, const char* postfix);
+
+/**
+ * @brief Dump error messages from the current thread to the provided buffer.
+ * @param[in] buf The buffer to dump the error messages to.
+ * @param[in] size The size of the buffer.
+ * @param[in] prefix The prefix to print before each error message. If NULL no prefix is printed.
+ * @param[in] postfix The postfix to print after each error message. If NULL, a '\n' postfix is printed.
+ * @return the number of characters written to the buffer (excluding the terminating null character).
+ * A return value of size or more means that the output was truncated. See also snprintf.
+ */
+CELIX_UTILS_EXPORT int celix_err_dump(char* buf, size_t size, const char* prefix, const char* postfix);
 
 #ifdef __cplusplus
 }

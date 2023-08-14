@@ -76,6 +76,8 @@ CELIX_FRAMEWORK_EXPORT void celix_framework_vlog(
         const char* format,
         va_list args) __attribute__((format(printf,6,0)));
 
+CELIX_FRAMEWORK_EXPORT void celix_framework_logTssErrors(celix_framework_logger_t*  logger, celix_log_level_e level);
+
 #ifdef __cplusplus
 }
 #endif
