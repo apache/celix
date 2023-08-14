@@ -161,6 +161,7 @@ if (LINKER_WRAP_SUPPORTED)
             Celix::stdlib_ei
             Celix::stat_ei
             Celix::threads_ei
+            Celix::hmap_ei
             GTest::gtest GTest::gtest_main
     )
 

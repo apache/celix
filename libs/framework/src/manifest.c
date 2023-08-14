@@ -31,6 +31,7 @@
 #include "celix_err.h"
 #include "celix_errno.h"
 #include "celix_stdio_cleanup.h"
+#include "celix_stdlib_cleanup.h"
 #include "manifest.h"
 #include "utils.h"
 
@@ -40,14 +41,26 @@ static celix_status_t manifest_readAttributes(manifest_pt manifest, properties_p
 
 celix_status_t manifest_create(manifest_pt *manifest) {
     celix_status_t status = CELIX_SUCCESS;
-
-    *manifest = malloc(sizeof(**manifest));
-    if (!*manifest) {
-        status = CELIX_ENOMEM;
-    } else {
-        (*manifest)->mainAttributes = celix_properties_create();
-        (*manifest)->attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-    }
+    do {
+        celix_autofree manifest_pt manifestPtr = NULL;
+        manifestPtr = malloc(sizeof(**manifest));
+        if (manifestPtr == NULL) {
+            status = CELIX_ENOMEM;
+            break;
+        }
+        celix_autoptr(celix_properties_t) mainAttributes = celix_properties_create();
+        if (mainAttributes == NULL) {
+            status = CELIX_ENOMEM;
+            break;
+        }
+        manifestPtr->attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+        if (manifestPtr->attributes == NULL) {
+            status = CELIX_ENOMEM;
+            break;
+        }
+        manifestPtr->mainAttributes = celix_steal_ptr(mainAttributes);
+        *manifest = celix_steal_ptr(manifestPtr);
+    } while(false);
 
     if (status != CELIX_SUCCESS) {
         celix_err_pushf("Cannot create manifest: %s", celix_strerror(status));
@@ -58,7 +71,7 @@ celix_status_t manifest_create(manifest_pt *manifest) {
 manifest_pt manifest_clone(manifest_pt manifest) {
     celix_status_t status = CELIX_SUCCESS;
 
-    manifest_pt clone = NULL;
+    celix_auto(manifest_pt) clone = NULL;
     status = manifest_create(&clone);
     if (status == CELIX_SUCCESS) {
         const char* key = NULL;
@@ -70,11 +83,14 @@ manifest_pt manifest_clone(manifest_pt manifest) {
             hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
             celix_properties_t* value = hashMapEntry_getValue(entry);
             celix_properties_t* cloneValue = celix_properties_copy(value);
+            if (cloneValue == NULL) {
+                return NULL;
+            }
             hashMap_put(clone->attributes, strdup(hashMapEntry_getKey(entry)), cloneValue);
         }
     }
 
-    return clone;
+    return celix_steal_ptr(clone);
 }
 
 celix_status_t manifest_destroy(manifest_pt manifest) {

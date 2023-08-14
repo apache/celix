@@ -20,6 +20,11 @@
 
 #include <gtest/gtest.h>
 #include <string>
+#include <stdio.h>
+#if CELIX_UTILS_NO_MEMSTREAM_AVAILABLE
+#include "open_memstream.h"
+#include "fmemopen.h"
+#endif
 
 #include "celix_stdio_cleanup.h"
 #include "manifest.h"
@@ -71,9 +76,7 @@ TEST_F(ManifestTestSuite, ReadManifestWithoutNameSectionsTest) {
                           "DeploymentPackage-SymbolicName: com.third._3d\n"
                           "DeploymentPacakge-Version: 1.2.3.build22032005\n"
                           "DeploymentPackage-Copyright: ACME Inc. (c) 2003\n";
-    celix_autoptr(FILE) manifestFile = tmpfile();
-    EXPECT_EQ(content.size(), fwrite(content.c_str(), 1, content.size(), manifestFile));
-    rewind(manifestFile);
+    celix_autoptr(FILE) manifestFile = fmemopen((void*)content.c_str(), content.size(), "r");
     EXPECT_EQ(CELIX_SUCCESS, manifest_readFromStream(manifest, manifestFile));
     const celix_properties_t* mainAttr = manifest_getMainAttributes(manifest);
     EXPECT_EQ(4, celix_properties_size(mainAttr));
@@ -103,9 +106,7 @@ TEST_F(ManifestTestSuite, ReadManifestWithNameSectionsTest) {
                           "Bundle-SymbolicName: com.third._3d.native\n"
                           "Bundle-Version: 1.5.3\n"
                           "\n";
-    celix_autoptr(FILE) manifestFile = tmpfile();
-    EXPECT_EQ(content.size(), fwrite(content.c_str(), 1, content.size(), manifestFile));
-    rewind(manifestFile);
+    celix_autoptr(FILE) manifestFile = fmemopen((void*)content.c_str(), content.size(), "r");
     EXPECT_EQ(CELIX_SUCCESS, manifest_readFromStream(manifest, manifestFile));
     const celix_properties_t* mainAttr = manifest_getMainAttributes(manifest);
     EXPECT_EQ(4, celix_properties_size(mainAttr));
@@ -155,9 +156,7 @@ TEST_F(ManifestTestSuite, CloneTest) {
                           "Bundle-SymbolicName: com.third._3d.native\n"
                           "Bundle-Version: 1.5.3\n"
                           "\n";
-    celix_autoptr(FILE) manifestFile = tmpfile();
-    EXPECT_EQ(content.size(), fwrite(content.c_str(), 1, content.size(), manifestFile));
-    rewind(manifestFile);
+    celix_autoptr(FILE) manifestFile = fmemopen((void*)content.c_str(), content.size(), "r");
     EXPECT_EQ(CELIX_SUCCESS, manifest_readFromStream(manifest, manifestFile));
     celix_auto(manifest_pt) clone = manifest_clone(manifest);
     CheckManifestEqual(manifest, clone);

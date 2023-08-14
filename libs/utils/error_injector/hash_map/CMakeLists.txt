@@ -15,12 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(celix_array_list)
-add_subdirectory(celix_hash_map)
-add_subdirectory(celix_long_hash_map)
-add_subdirectory(celix_properties)
-add_subdirectory(celix_threads)
-add_subdirectory(celix_utils)
-add_subdirectory(celix_version)
-add_subdirectory(zip)
-add_subdirectory(hash_map)
+add_library(hmap_ei STATIC src/hmap_ei.cc)
+
+target_include_directories(hmap_ei PUBLIC include)
+target_link_libraries(hmap_ei PUBLIC Celix::error_injector Celix::utils)
+celix_deprecated_utils_headers(hmap_ei)
+target_link_options(hmap_ei INTERFACE
+        LINKER:--wrap,hashMap_create
+)
+add_library(Celix::hmap_ei ALIAS hmap_ei)
