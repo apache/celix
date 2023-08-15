@@ -21,10 +21,12 @@
 #include "hmap_ei.h"
 
 extern "C" {
-hash_map_pt __real_hashMap_create();
-CELIX_EI_DEFINE(hash_map_create, hash_map_pt);
-hash_map_pt __wrap_hashMap_create() {
-    CELIX_EI_IMPL(hash_map_create);
-    return __real_hashMap_create();
+hash_map_pt __real_hashMap_create(unsigned int (*keyHash)(const void *), unsigned int (*valueHash)(const void *),
+        int (*keyEquals)(const void *, const void *), int (*valueEquals)(const void *, const void *));
+CELIX_EI_DEFINE(hashMap_create, hash_map_pt);
+hash_map_pt __wrap_hashMap_create(unsigned int (*keyHash)(const void *), unsigned int (*valueHash)(const void *),
+        int (*keyEquals)(const void *, const void *), int (*valueEquals)(const void *, const void *)) {
+    CELIX_EI_IMPL(hashMap_create);
+    return __real_hashMap_create(keyHash, valueHash, keyEquals, valueEquals);
 }
 }

@@ -40,7 +40,7 @@ public:
         celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
         celix_ei_expect_celix_properties_copy(nullptr, 0, nullptr);
-        celix_ei_expect_hash_map_create(nullptr, 0, nullptr);
+        celix_ei_expect_hashMap_create(nullptr, 0, nullptr);
     }
 };
 
@@ -62,7 +62,7 @@ TEST_F(ManifestErrorInjectionTestSuite, NoMemoryForManifestCreateTest) {
     teardownErrorInjectors();
 
     manifest = nullptr;
-    celix_ei_expect_hash_map_create((void*)manifest_create, 0, nullptr);
+    celix_ei_expect_hashMap_create((void*)manifest_create, 0, nullptr);
     status = manifest_create(&manifest);
     EXPECT_EQ(CELIX_ENOMEM, status);
     EXPECT_EQ(nullptr, manifest);

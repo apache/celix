@@ -27,7 +27,7 @@ extern "C" {
 #include "celix_error_injector.h"
 #include "hash_map.h"
 
-CELIX_EI_DECLARE(hash_map_create, hash_map_pt);
+CELIX_EI_DECLARE(hashMap_create, hash_map_pt);
 
 #ifdef __cplusplus
 }
