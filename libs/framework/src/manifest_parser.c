@@ -33,7 +33,6 @@
 #include "manifest_parser.h"
 #include "capability.h"
 #include "requirement.h"
-#include "attribute.h"
 #include "hash_map.h"
 #include "celix_errno.h"
 #include "linked_list_iterator.h"
