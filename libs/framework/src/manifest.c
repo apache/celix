@@ -24,6 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
@@ -32,12 +33,9 @@
 #include "celix_errno.h"
 #include "celix_stdio_cleanup.h"
 #include "celix_stdlib_cleanup.h"
+#include "celix_utils.h"
 #include "manifest.h"
 #include "utils.h"
-
-int fpeek(FILE *stream);
-
-static celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file);
 
 celix_status_t manifest_create(manifest_pt *manifest) {
     celix_status_t status = CELIX_SUCCESS;
@@ -81,12 +79,16 @@ manifest_pt manifest_clone(manifest_pt manifest) {
         hash_map_iterator_t iter = hashMapIterator_construct(manifest->attributes);
         while (hashMapIterator_hasNext(&iter)) {
             hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
+            celix_autofree char* attrKey = celix_utils_strdup(hashMapEntry_getKey(entry));
+            if (attrKey == NULL) {
+                return NULL;
+            }
             celix_properties_t* value = hashMapEntry_getValue(entry);
             celix_properties_t* cloneValue = celix_properties_copy(value);
             if (cloneValue == NULL) {
                 return NULL;
             }
-            hashMap_put(clone->attributes, strdup(hashMapEntry_getKey(entry)), cloneValue);
+            hashMap_put(clone->attributes, celix_steal_ptr(attrKey), cloneValue);
         }
     }
 
@@ -114,16 +116,15 @@ celix_status_t manifest_destroy(manifest_pt manifest) {
 celix_status_t manifest_createFromFile(const char *filename, manifest_pt *manifest) {
     celix_status_t status;
 
-    status = manifest_create(manifest);
+    celix_auto(manifest_pt) manifestNew = NULL;
+    status = manifest_create(&manifestNew);
 
+    status = CELIX_DO_IF(status, manifest_read(manifestNew, filename));
     if (status == CELIX_SUCCESS) {
-        manifest_read(*manifest, filename);
-    }
-
-    if (status != CELIX_SUCCESS) {
+        *manifest = celix_steal_ptr(manifestNew);
+    } else {
         celix_err_pushf("Cannot create manifest from file: %s", celix_strerror(status));
     }
-
     return status;
 }
 
@@ -132,12 +133,12 @@ void manifest_clear(manifest_pt manifest) {
 }
 
 properties_pt manifest_getMainAttributes(manifest_pt manifest) {
-	return manifest->mainAttributes;
+    return manifest->mainAttributes;
 }
 
 celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map) {
-	*map = manifest->attributes;
-	return CELIX_SUCCESS;
+    *map = manifest->attributes;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t manifest_read(manifest_pt manifest, const char *filename) {
@@ -147,7 +148,7 @@ celix_status_t manifest_read(manifest_pt manifest, const char *filename) {
     if (file != NULL) {
         status = manifest_readFromStream(manifest, file);
     } else {
-        status = CELIX_FILE_IO_EXCEPTION;
+        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
     }
 
     if (status != CELIX_SUCCESS) {
@@ -158,178 +159,154 @@ celix_status_t manifest_read(manifest_pt manifest, const char *filename) {
 }
 
 celix_status_t manifest_readFromStream(manifest_pt manifest, FILE* stream) {
-    celix_status_t status = CELIX_SUCCESS;
-
     char lbuf[512];
-    char name[512];
-    bool skipEmptyLines = true;
-    char lastline[512];
-    memset(lbuf,0,512);
-    memset(name,0,512);
-    memset(lastline,0,512);
-    const char* reason = NULL;
+    char *bytes = lbuf;
 
-    manifest_readAttributes(manifest, manifest->mainAttributes, stream);
+    // get file size
+    if(fseek(stream, 0L, SEEK_END) == -1) {
+        return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+    }
+    long int size = ftell(stream);
+    if (size < 0) {
+        return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+    } else if (size >= INT_MAX) {
+        celix_err_pushf("Manifest error: file too large - %ld", size);
+        return CELIX_BUNDLE_EXCEPTION;
+    }
+    rewind(stream);
 
-    while (status==CELIX_SUCCESS && fgets(lbuf, sizeof(lbuf), stream) != NULL) {
-        properties_pt attributes;
-        int len = strlen(lbuf);
-
-        if (lbuf[--len] != '\n') {
-            status = CELIX_FILE_IO_EXCEPTION;
-            reason = "Manifest line too long";
-            break;
+    celix_autofree char* largeBuf = NULL;
+    if (size+1 > sizeof(lbuf)) {
+        largeBuf = bytes =  malloc(size+1);
+        if (largeBuf == NULL) {
+            celix_err_pushf("Manifest error: failed to allocate %ld bytes", size);
+            return CELIX_ENOMEM;
         }
-        if (len > 0 && lbuf[len - 1] == '\r') {
-            --len;
-        }
-        if (len == 0 && skipEmptyLines) {
-            continue;
-        }
-        skipEmptyLines = false;
-
-        if (strlen(name) == 0) {
-
-            if ((tolower(lbuf[0]) == 'n') && (tolower(lbuf[1]) == 'a') &&
-                (tolower(lbuf[2]) == 'm') && (tolower(lbuf[3]) == 'e') &&
-                (lbuf[4] == ':') && (lbuf[5] == ' ')) {
-                name[0] = '\0';
-                strncpy(name, lbuf+6, len - 6);
-                name[len - 6] = '\0';
-            } else {
-                status = CELIX_FILE_IO_EXCEPTION;
-                reason = "Manifest invalid format";
-                break;
-            }
-
-            if (fpeek(stream) == ' ') {
-                int newlen = len - 6;
-                lastline[0] = '\0';
-                strncpy(lastline, lbuf+6, len - 6);
-                lastline[newlen] = '\0';
-                continue;
-            }
-        } else {
-            int newlen = strlen(lastline) + len;
-            char buf[512];
-            buf[0] = '\0';
-            strcpy(buf, lastline);
-            strncat(buf, lbuf+1, len - 1);
-            buf[newlen] = '\0';
-
-            if (fpeek(stream) == ' ') {
-                lastline[0] = '\0';
-                strcpy(lastline, buf);
-                continue;
-            }
-            name[0] = '\0';
-            strcpy(name, buf);
-            name[strlen(buf)] = '\0';
-        }
-
-        attributes = hashMap_get(manifest->attributes, name);
-        if (attributes == NULL) {
-            attributes = properties_create();
-            hashMap_put(manifest->attributes, strdup(name), attributes);
-        }
-        manifest_readAttributes(manifest, attributes, stream);
-
-        name[0] = '\0';
-        skipEmptyLines = true;
     }
 
-    if (status != CELIX_SUCCESS) {
-        celix_err_pushf("Cannot read manifest for reason %s: %s", reason, celix_strerror(status));
+    if(fread(bytes, 1, size, stream) != (size_t)size) {
+        return CELIX_FILE_IO_EXCEPTION;
     }
+    // Force a new line at the end of the manifest to deal with broken manifest without any line-ending
+    bytes[size++] = '\n';
 
-    return status;
-}
-
-void manifest_write(manifest_pt manifest, const char * filename) {
-
-}
-
-const char* manifest_getValue(manifest_pt manifest, const char* name) {
-	const char* val = properties_get(manifest->mainAttributes, name);
-	bool isEmpty = utils_isStringEmptyOrNull(val);
-	return isEmpty ? NULL : val;
-}
-
-int fpeek(FILE *stream) {
-	int c;
-	c = fgetc(stream);
-	ungetc(c, stream);
-	return c;
-}
-
-static celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file) {
-    char name[512]; memset(name,0,512);
-    char value[512]; memset(value,0,512);
-    char lastLine[512]; memset(lastLine,0,512);
-    char lbuf[512]; memset(lbuf,0,512);
-
-
-    while (fgets(lbuf, sizeof(lbuf), file ) != NULL ) {
-        int len = strlen(lbuf);
-
-        if (lbuf[--len] != '\n') {
-            celix_err_push("MANIFEST: Line too long");
-            return CELIX_FILE_IO_EXCEPTION;
-        }
-        if (len > 0 && lbuf[len - 1] == '\r') {
-            --len;
-        }
-        if (len == 0) {
-            break;
-        }
-
-        if (lbuf[0] == ' ') {
-            char buf[512];
-            buf[0] = '\0';
-
-            // Line continued
-            strcat(buf, lastLine);
-            strncat(buf, lbuf+1, len - 1);
-
-            if (fpeek(file) == ' ') {
-//              lastLine = realloc(lastLine, strlen(buf) + 1);
-                lastLine[0] = '\0';
-                strcpy(lastLine, buf);
+    const char* key = NULL;
+    int last = 0;
+    int current = 0;
+    celix_properties_t *headers = manifest->mainAttributes;
+    for (int i = 0; i < size; i++)
+    {
+        // skip \r and \n if it is followed by another \n
+        // (we catch the blank line case in the next iteration)
+        if (bytes[i] == '\r')
+        {
+            if ((i + 1 < size) && (bytes[i + 1] == '\n'))
+            {
                 continue;
             }
-            value[0] = '\0';
-            strcpy(value, buf);
-        } else {
-            int i = 0;
-            while (lbuf[i++] != ':') {
-                if (i >= len) {
+        }
+        if (bytes[i] == '\n')
+        {
+            if ((i + 1 < size) && (bytes[i + 1] == ' '))
+            {
+                i++;
+                continue;
+            }
+        }
+        // If we don't have a key yet and see the first : we parse it as the key
+        // and skip the :<blank> that follows it.
+        if ((key == NULL) && (bytes[i] == ':'))
+        {
+            key = &bytes[last];
+            // precondition: current <= i
+            bytes[current++] = '\0';
+            if ((i + 1 < size) && (bytes[i + 1] == ' '))
+            {
+                last = current + 1;
+                continue;
+            }
+            else
+            {
+                celix_err_pushf("Manifest error: Missing space separator - %s", key);
+                return CELIX_INVALID_SYNTAX;
+            }
+        }
+        // if we are at the end of a line
+        if (bytes[i] == '\n')
+        {
+            // and it is a blank line stop parsing (main attributes are done)
+            if ((last == current) && (key == NULL))
+            {
+                headers = NULL;
+                continue;
+            }
+            // Otherwise, parse the value and add it to the map (we return
+            // if we don't have a key or the key already exist).
+            const char* value = &bytes[last];
+            // precondition: current <= i
+            bytes[current++] = '\0';
 
-                    celix_err_push("MANIFEST: Invalid header");
-                    return CELIX_FILE_IO_EXCEPTION;
+            if (key == NULL)
+            {
+                celix_err_pushf("Manifest error: Missing attribute name - %s", value);
+                return CELIX_INVALID_SYNTAX;
+            }
+            else if (headers != NULL && celix_properties_get(headers, key, NULL) != NULL)
+            {
+                celix_err_pushf("Manifest error: Duplicate attribute name - %s", key);
+                return CELIX_INVALID_SYNTAX;
+            }
+            if (headers == NULL) {
+                // beginning of individual-section
+                if (strcasecmp(key, "Name")) {
+                    celix_err_push("Manifest error: individual-section missing Name attribute");
+                    return CELIX_INVALID_SYNTAX;
+                }
+                headers = hashMap_get(manifest->attributes, value);
+                if (headers == NULL) {
+                    celix_autofree char* name = celix_utils_strdup(value);
+                    if (name == NULL) {
+                        return CELIX_ENOMEM;
+                    }
+                    headers = celix_properties_create();
+                    if (headers == NULL) {
+                        return CELIX_ENOMEM;
+                    }
+                    hashMap_put(manifest->attributes, (void*)celix_steal_ptr(name), headers);
+                }
+            } else if (headers == manifest->mainAttributes && celix_properties_size(headers) == 0) {
+                // beginning of main-section
+                if (strcasecmp(key, "Manifest-Version")) {
+                    celix_err_push("Manifest error: main-section must start with Manifest-Version");
+                    return CELIX_INVALID_SYNTAX;
                 }
             }
-            if (lbuf[i++] != ' ') {
-                celix_err_push("MANIFEST: Invalid header");
-                return CELIX_FILE_IO_EXCEPTION;
-            }
-            name[0] = '\0';
-            strncpy(name, lbuf, i - 2);
-            name[i - 2] = '\0';
-            if (fpeek(file) == ' ') {
-                int newlen = len - i;
-                lastLine[0] = '\0';
-                strncpy(lastLine, lbuf+i, len -i);
-                lastLine[newlen] = '\0';
-                continue;
-            }
-            value[0] = '\0';
-            strncpy(value, lbuf+i, len - i);
-            value[len - i] = '\0';
+            celix_properties_set(headers, key, value);
+            last = current;
+            key = NULL;
         }
-
-        properties_set(properties, name, value);
+        else
+        {
+            // precondition: current <= i
+            // write back the byte if it needs to be included in the key or the value.
+            bytes[current++] = bytes[i];
+        }
     }
-
+    if (celix_properties_size(manifest->mainAttributes) == 0) {
+        celix_err_push("Manifest error: Empty");
+        return CELIX_INVALID_SYNTAX;
+    }
     return CELIX_SUCCESS;
 }
 
+//LCOV_EXCL_START
+void manifest_write(manifest_pt manifest, const char * filename) {
+
+}
+//LCOV_EXCL_STOP
+
+const char* manifest_getValue(manifest_pt manifest, const char* name) {
+    const char* val = properties_get(manifest->mainAttributes, name);
+    bool isEmpty = utils_isStringEmptyOrNull(val);
+    return isEmpty ? NULL : val;
+}

@@ -22,11 +22,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-
-#ifndef CELIX_ERR_USE_THREAD_LOCAL
 #include <stdlib.h>
+
 #include "celix_threads.h"
-#endif
 
 typedef struct celix_err {
     char buffer[CELIX_ERR_BUFFER_SIZE];

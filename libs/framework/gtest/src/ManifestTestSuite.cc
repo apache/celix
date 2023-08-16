@@ -26,6 +26,7 @@
 #include "fmemopen.h"
 #endif
 
+#include "celix_err.h"
 #include "celix_stdio_cleanup.h"
 #include "manifest.h"
 
@@ -37,6 +38,7 @@ protected:
     }
     void TearDown() override {
         manifest_destroy(manifest);
+        celix_err_resetErrors();
     }
     void CheckPropertiesEqual(const celix_properties_t* prop1, const celix_properties_t* prop2) {
         EXPECT_EQ(celix_properties_size(prop1), celix_properties_size(prop2));
@@ -90,6 +92,25 @@ TEST_F(ManifestTestSuite, ReadManifestWithoutNameSectionsTest) {
     EXPECT_EQ(0, hashMap_size(entries));
 }
 
+TEST_F(ManifestTestSuite, ReadManifestWithoutNewlineInLastLineTest) {
+    std::string content = "Manifest-Version: 1.0\n"
+                          "DeploymentPackage-SymbolicName: com.third._3d\n"
+                          "DeploymentPacakge-Version: 1.2.3.build22032005\n"
+                          "DeploymentPackage-Copyright: ACME Inc. (c) 2003";
+    celix_autoptr(FILE) manifestFile = fmemopen((void*)content.c_str(), content.size(), "r");
+    EXPECT_EQ(CELIX_SUCCESS, manifest_readFromStream(manifest, manifestFile));
+    const celix_properties_t* mainAttr = manifest_getMainAttributes(manifest);
+    EXPECT_EQ(4, celix_properties_size(mainAttr));
+    EXPECT_STREQ("1.0", celix_properties_get(mainAttr, "Manifest-Version", nullptr));
+    EXPECT_STREQ("com.third._3d", celix_properties_get(mainAttr, "DeploymentPackage-SymbolicName", nullptr));
+    EXPECT_STREQ("1.2.3.build22032005", celix_properties_get(mainAttr, "DeploymentPacakge-Version", nullptr));
+    EXPECT_STREQ("ACME Inc. (c) 2003", celix_properties_get(mainAttr, "DeploymentPackage-Copyright", nullptr));
+    hash_map_pt entries = nullptr;
+    EXPECT_EQ(CELIX_SUCCESS, manifest_getEntries(manifest, &entries));
+    EXPECT_NE(nullptr, entries);
+    EXPECT_EQ(0, hashMap_size(entries));
+}
+
 TEST_F(ManifestTestSuite, ReadManifestWithNameSectionsTest) {
     std::string content = "Manifest-Version: 1.0\n"
                           "DeploymentPackage-Icon: %icon\n"
@@ -105,6 +126,11 @@ TEST_F(ManifestTestSuite, ReadManifestWithNameSectionsTest) {
                           "SHA1-Digest: N8Ow2UY4yjnHZv5zeq2I1Uv/+uE=\n"
                           "Bundle-SymbolicName: com.third._3d.native\n"
                           "Bundle-Version: 1.5.3\n"
+                          "\n"
+                          "Name: bundles/3dnative1.jar\n"
+                          "SHA1-Digest: N8Ow2UY4yjnHZv5zeq2I1Uv/+uF=\n"
+                          "Bundle-SymbolicName: com.third._3d.native1\n"
+                          "Bundle-Version: 1.5.4\n"
                           "\n";
     celix_autoptr(FILE) manifestFile = fmemopen((void*)content.c_str(), content.size(), "r");
     EXPECT_EQ(CELIX_SUCCESS, manifest_readFromStream(manifest, manifestFile));
@@ -117,16 +143,16 @@ TEST_F(ManifestTestSuite, ReadManifestWithNameSectionsTest) {
     hash_map_pt entries = nullptr;
     EXPECT_EQ(CELIX_SUCCESS, manifest_getEntries(manifest, &entries));
     EXPECT_NE(nullptr, entries);
-    EXPECT_EQ(2, hashMap_size(entries));
+    EXPECT_EQ(3, hashMap_size(entries));
 
     const celix_properties_t* entry1 = (const celix_properties_t*)hashMap_get(entries, "bundles/3dlib.jar");
-    EXPECT_EQ(3, celix_properties_size(entry1));
+    EXPECT_EQ(4, celix_properties_size(entry1));
     EXPECT_STREQ("MOez1l4gXHBo8ycYdAxstK3UvEg=", celix_properties_get(entry1, "SHA1-Digest", nullptr));
     EXPECT_STREQ("com.third._3d", celix_properties_get(entry1, "Bundle-SymbolicName", nullptr));
     EXPECT_STREQ("2.3.1", celix_properties_get(entry1, "Bundle-Version", nullptr));
 
     const celix_properties_t* entry2 = (const celix_properties_t*)hashMap_get(entries, "bundles/3dnative.jar");
-    EXPECT_EQ(3, celix_properties_size(entry2));
+    EXPECT_EQ(4, celix_properties_size(entry2));
     EXPECT_STREQ("N8Ow2UY4yjnHZv5zeq2I1Uv/+uE=", celix_properties_get(entry2, "SHA1-Digest", nullptr));
     EXPECT_STREQ("com.third._3d.native", celix_properties_get(entry2, "Bundle-SymbolicName", nullptr));
     EXPECT_STREQ("1.5.3", celix_properties_get(entry2, "Bundle-Version", nullptr));
@@ -160,4 +186,83 @@ TEST_F(ManifestTestSuite, CloneTest) {
     EXPECT_EQ(CELIX_SUCCESS, manifest_readFromStream(manifest, manifestFile));
     celix_auto(manifest_pt) clone = manifest_clone(manifest);
     CheckManifestEqual(manifest, clone);
+}
+
+TEST_F(ManifestTestSuite, CreateFromNonexistingFile) {
+    celix_auto(manifest_pt) manifest2 = nullptr;
+    EXPECT_EQ(ENOENT, manifest_createFromFile("nonexisting", &manifest2));
+    EXPECT_EQ(nullptr, manifest2);
+    celix_err_printErrors(stdout, "Errors are expected[", "]\n");
+}
+
+TEST_F(ManifestTestSuite, ManifestMissingSpaceSeparatorTest) {
+    std::string content = "Manifest-Version: 1.0\n"
+                          "NoSeparator:%icon\n"
+                          "DeploymentPackage-SymbolicName: com.third._3d\n"
+                          "DeploymentPacakge-Version: 1.2.3.build22032005\n"
+                          "\n";
+    celix_autoptr(FILE) manifestFile = fmemopen((void*)content.c_str(), content.size(), "r");
+    EXPECT_EQ(CELIX_INVALID_SYNTAX, manifest_readFromStream(manifest, manifestFile));
+    celix_err_printErrors(stdout, "Errors are expected[", "]\n");
+}
+
+TEST_F(ManifestTestSuite, ManifestMissingAttributeNameTest) {
+    std::string content = "Manifest-Version: 1.0\n"
+                          "%icon\n"
+                          "DeploymentPackage-SymbolicName: com.third._3d\n"
+                          "DeploymentPacakge-Version: 1.2.3.build22032005\n"
+                          "\n";
+    celix_autoptr(FILE) manifestFile = fmemopen((void*)content.c_str(), content.size(), "r");
+    EXPECT_EQ(CELIX_INVALID_SYNTAX, manifest_readFromStream(manifest, manifestFile));
+    celix_err_printErrors(stdout, "Errors are expected[", "]\n");
+}
+
+TEST_F(ManifestTestSuite, ManifestWithDuplicatedAttributeNameTest) {
+    std::string content = "Manifest-Version: 1.0\n"
+                          "DeploymentPackage-Icon: %icon\n"
+                          "DeploymentPackage-Icon: %icon\n"
+                          "DeploymentPackage-SymbolicName: com.third._3d\n"
+                          "DeploymentPacakge-Version: 1.2.3.build22032005\n"
+                          "\n";
+    celix_autoptr(FILE) manifestFile = fmemopen((void*)content.c_str(), content.size(), "r");
+    EXPECT_EQ(CELIX_INVALID_SYNTAX, manifest_readFromStream(manifest, manifestFile));
+    celix_err_printErrors(stdout, "Errors are expected[", "]\n");
+}
+
+TEST_F(ManifestTestSuite, ManifestMissingNameAttributeTest) {
+    std::string content = "Manifest-Version: 1.0\n"
+                          "DeploymentPackage-Icon: %icon\n"
+                          "DeploymentPackage-SymbolicName: com.third._3d\n"
+                          "DeploymentPacakge-Version: 1.2.3.build22032005\n"
+                          "\n"
+                          "SHA1-Digest: MOez1l4gXHBo8ycYdAxstK3UvEg=\n"
+                          "Bundle-SymbolicName: com.third._3d\n"
+                          "Bundle-Version: 2.3.1\n"
+                          "\n"
+                          "Name: bundles/3dnative.jar\n"
+                          "SHA1-Digest: N8Ow2UY4yjnHZv5zeq2I1Uv/+uE=\n"
+                          "Bundle-SymbolicName: com.third._3d.native\n"
+                          "Bundle-Version: 1.5.3\n"
+                          "\n";
+    celix_autoptr(FILE) manifestFile = fmemopen((void*)content.c_str(), content.size(), "r");
+    EXPECT_EQ(CELIX_INVALID_SYNTAX, manifest_readFromStream(manifest, manifestFile));
+    celix_err_printErrors(stdout, "Errors are expected[", "]\n");
+}
+
+TEST_F(ManifestTestSuite, ManifestMissingVersionTest) {
+    std::string content = /*"Manifest-Version: 1.0\n"*/
+                          "DeploymentPackage-Icon: %icon\n"
+                          "DeploymentPackage-SymbolicName: com.third._3d\n"
+                          "DeploymentPacakge-Version: 1.2.3.build22032005\n"
+                          "\n";
+    celix_autoptr(FILE) manifestFile = fmemopen((void*)content.c_str(), content.size(), "r");
+    EXPECT_EQ(CELIX_INVALID_SYNTAX, manifest_readFromStream(manifest, manifestFile));
+    celix_err_printErrors(stdout, "Errors are expected[", "]\n");
+}
+
+TEST_F(ManifestTestSuite, ReadEmptyManifestTest) {
+    std::string content = "\n";
+    celix_autoptr(FILE) manifestFile = fmemopen((void*)content.c_str(), content.size(), "r");
+    EXPECT_EQ(CELIX_INVALID_SYNTAX, manifest_readFromStream(manifest, manifestFile));
+    celix_err_printErrors(stdout, "Errors are expected[", "]\n");
 }
