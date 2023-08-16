@@ -128,9 +128,11 @@ celix_status_t manifest_createFromFile(const char *filename, manifest_pt *manife
     return status;
 }
 
+//LCOV_EXCL_START
 void manifest_clear(manifest_pt manifest) {
 
 }
+//LCOV_EXCL_STOP
 
 properties_pt manifest_getMainAttributes(manifest_pt manifest) {
     return manifest->mainAttributes;
