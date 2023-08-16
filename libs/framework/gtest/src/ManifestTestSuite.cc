@@ -92,6 +92,45 @@ TEST_F(ManifestTestSuite, ReadManifestWithoutNameSectionsTest) {
     EXPECT_EQ(0, hashMap_size(entries));
 }
 
+TEST_F(ManifestTestSuite, ReadManifestWithCarriageReturnTest) {
+    std::string content = "Manifest-Version: 1.0\r\n"
+                          "DeploymentPackage-SymbolicName: com.third._3d\r\n"
+                          "DeploymentPacakge-Version: 1.2.3.build22032005\r\n"
+                          "DeploymentPackage-Copyright: ACME Inc. (c) 2003\r\n";
+    celix_autoptr(FILE) manifestFile = fmemopen((void*)content.c_str(), content.size(), "r");
+    EXPECT_EQ(CELIX_SUCCESS, manifest_readFromStream(manifest, manifestFile));
+    const celix_properties_t* mainAttr = manifest_getMainAttributes(manifest);
+    EXPECT_EQ(4, celix_properties_size(mainAttr));
+    EXPECT_STREQ("1.0", celix_properties_get(mainAttr, "Manifest-Version", nullptr));
+    EXPECT_STREQ("com.third._3d", celix_properties_get(mainAttr, "DeploymentPackage-SymbolicName", nullptr));
+    EXPECT_STREQ("1.2.3.build22032005", celix_properties_get(mainAttr, "DeploymentPacakge-Version", nullptr));
+    EXPECT_STREQ("ACME Inc. (c) 2003", celix_properties_get(mainAttr, "DeploymentPackage-Copyright", nullptr));
+    hash_map_pt entries = nullptr;
+    EXPECT_EQ(CELIX_SUCCESS, manifest_getEntries(manifest, &entries));
+    EXPECT_NE(nullptr, entries);
+    EXPECT_EQ(0, hashMap_size(entries));
+}
+
+TEST_F(ManifestTestSuite, ReadManifestWithLineContinuationTest) {
+    std::string content = "Manifest-Version: 1.0\n"
+                          "DeploymentPackage-SymbolicName: com.third._3d\n"
+                          " x\n" /* line continuation */
+                          "DeploymentPacakge-Version: 1.2.3.build22032005\n"
+                          "DeploymentPackage-Copyright: ACME Inc. (c) 2003\n";
+    celix_autoptr(FILE) manifestFile = fmemopen((void*)content.c_str(), content.size(), "r");
+    EXPECT_EQ(CELIX_SUCCESS, manifest_readFromStream(manifest, manifestFile));
+    const celix_properties_t* mainAttr = manifest_getMainAttributes(manifest);
+    EXPECT_EQ(4, celix_properties_size(mainAttr));
+    EXPECT_STREQ("1.0", celix_properties_get(mainAttr, "Manifest-Version", nullptr));
+    EXPECT_STREQ("com.third._3dx", celix_properties_get(mainAttr, "DeploymentPackage-SymbolicName", nullptr));
+    EXPECT_STREQ("1.2.3.build22032005", celix_properties_get(mainAttr, "DeploymentPacakge-Version", nullptr));
+    EXPECT_STREQ("ACME Inc. (c) 2003", celix_properties_get(mainAttr, "DeploymentPackage-Copyright", nullptr));
+    hash_map_pt entries = nullptr;
+    EXPECT_EQ(CELIX_SUCCESS, manifest_getEntries(manifest, &entries));
+    EXPECT_NE(nullptr, entries);
+    EXPECT_EQ(0, hashMap_size(entries));
+}
+
 TEST_F(ManifestTestSuite, ReadManifestWithoutNewlineInLastLineTest) {
     std::string content = "Manifest-Version: 1.0\n"
                           "DeploymentPackage-SymbolicName: com.third._3d\n"
