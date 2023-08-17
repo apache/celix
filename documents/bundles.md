@@ -302,11 +302,11 @@ install_celix_targets(MyExport NAMESPACE ExamplePackage:: DESTINATION share/Exam
 #Install Package CMake configuration
 file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/ExamplePackageConfig.cmake CONTENT "
   # relative install dir from lib/CMake/ExamplePackage.
-  get_filename_component(REL_INSTALL_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-  get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
-  get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
-  get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
-  include(${REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake)
+  get_filename_component(EXAMPLE_PACKAGE_REL_INSTALL_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+  get_filename_component(EXAMPLE_PACKAGE_REL_INSTALL_DIR "${EXAMPLE_PACKAGE_REL_INSTALL_DIR}" PATH)
+  get_filename_component(EXAMPLE_PACKAGE_REL_INSTALL_DIR "${EXAMPLE_PACKAGE_REL_INSTALL_DIR}" PATH)
+  get_filename_component(EXAMPLE_PACKAGE_REL_INSTALL_DIR "${EXAMPLE_PACKAGE_REL_INSTALL_DIR}" PATH)
+  include(${EXAMPLE_PACKAGE_REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake)
 ")
 
 install(FILES
