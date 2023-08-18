@@ -161,12 +161,12 @@ celix_status_t manifest_read(manifest_pt manifest, const char *filename) {
 }
 
 celix_status_t manifest_readFromStream(manifest_pt manifest, FILE* stream) {
-    char lbuf[512];
-    char *bytes = lbuf;
+    char stackBuf[512];
+    char *bytes = stackBuf;
 
     // get file size
-    if(fseek(stream, 0L, SEEK_END) == -1) {
-        return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+    if (fseek(stream, 0L, SEEK_END) == -1) {
+        return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
     }
     long int size = ftell(stream);
     if (size < 0) {
@@ -177,10 +177,10 @@ celix_status_t manifest_readFromStream(manifest_pt manifest, FILE* stream) {
     }
     rewind(stream);
 
-    celix_autofree char* largeBuf = NULL;
-    if (size+1 > sizeof(lbuf)) {
-        largeBuf = bytes =  malloc(size+1);
-        if (largeBuf == NULL) {
+    celix_autofree char* heapBuf = NULL;
+    if (size+1 > sizeof(stackBuf)) {
+        heapBuf = bytes =  malloc(size+1);
+        if (heapBuf == NULL) {
             celix_err_pushf("Manifest error: failed to allocate %ld bytes", size);
             return CELIX_ENOMEM;
         }

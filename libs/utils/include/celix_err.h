@@ -85,7 +85,7 @@ CELIX_UTILS_EXPORT void celix_err_printErrors(FILE* stream, const char* prefix, 
 
 /**
  * @brief Dump error messages from the current thread to the provided buffer.
- * @param[in] buf The buffer to dump the error messages to.
+ * @param[in,out] buf The buffer to dump the error messages to.
  * @param[in] size The size of the buffer.
  * @param[in] prefix The prefix to print before each error message. If NULL no prefix is printed.
  * @param[in] postfix The postfix to print after each error message. If NULL, a '\n' postfix is printed.
