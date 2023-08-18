@@ -39,7 +39,6 @@ public:
     }
 };
 
-#ifndef CELIX_ERR_USE_THREAD_LOCAL
 TEST_F(ErrErrorInjectionTestSuite, PushErrorWithTssSetFailingTest) {
     //Given a primed error injection for celix_tss_set
     celix_ei_expect_celix_tss_set((void*)celix_err_push, 1, CELIX_ILLEGAL_STATE);
@@ -73,4 +72,3 @@ TEST_F(ErrErrorInjectionTestSuite, PushErrorWithMallocFailingTest) {
     EXPECT_TRUE(strstr(fileContents.c_str(), "Failed to allocate memory for celix_err") != nullptr) <<
         "Expected error message not found in: " << fileContents;
 }
-#endif

@@ -210,6 +210,7 @@ static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt
     status = manifest_createFromFile(manifestPath, manifestOut);
     celix_utils_freeStringIfNotEqual(pathBuffer, manifestPath);
     if (status != CELIX_SUCCESS) {
+        celix_framework_logTssErrors(archive->fw->logger, CELIX_LOG_LEVEL_ERROR);
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Cannot read manifest.");
         return status;
     }
@@ -317,6 +318,7 @@ dir_failed:
 init_failed:
     bundleArchive_destroy(archive);
 calloc_failed:
+    celix_framework_logTssErrors(fw->logger, CELIX_LOG_LEVEL_ERROR);
     framework_logIfError(fw->logger, status, error, "Could not create archive.");
     return status;
 }

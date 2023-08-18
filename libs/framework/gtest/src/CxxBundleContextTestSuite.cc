@@ -23,6 +23,7 @@
 
 #include "service_tracker.h"
 #include "celix/BundleContext.h"
+#include "celix_err.h"
 #include "celix_framework_factory.h"
 #include "celix_framework.h"
 #include "service_tracker_customizer.h"
@@ -414,6 +415,12 @@ TEST_F(CxxBundleContextTestSuite, LoggingUsingContext) {
     ctx->logWarn("warn");
     ctx->logError("error");
     ctx->logFatal("fatal");
+}
+
+TEST_F(CxxBundleContextTestSuite, LoggingTssErrorsTest) {
+    ctx->logTssErrors(CELIX_LOG_LEVEL_FATAL);
+    celix_err_push("Hello ERR");
+    ctx->logTssErrors(CELIX_LOG_LEVEL_FATAL);
 }
 
 TEST_F(CxxBundleContextTestSuite, GetFramework) {
