@@ -16,7 +16,7 @@
 # under the License.
 
 [package]
-name = "rust_bundle_activator"
+name = "rust_bundle"
 version = "0.0.1"
 
 [dependencies]

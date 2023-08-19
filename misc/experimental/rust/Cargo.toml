@@ -19,4 +19,5 @@
 members = [
     "celix_bindings",
     "hello_world_activator",
+    "rust_shell_tui",
 ]
