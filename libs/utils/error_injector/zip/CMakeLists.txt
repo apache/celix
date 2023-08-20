@@ -19,7 +19,7 @@ find_package(libzip REQUIRED)
 add_library(zip_ei STATIC src/zip_ei.cc)
 
 target_include_directories(zip_ei PUBLIC include)
-target_link_libraries(zip_ei PUBLIC Celix::error_injector libzip::libzip)
+target_link_libraries(zip_ei PUBLIC Celix::error_injector libzip::zip)
 # It plays nicely with address sanitizer this way.
 
 target_link_options(zip_ei INTERFACE

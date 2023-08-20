@@ -42,9 +42,9 @@ find_package_handle_standard_args(ZeroMQ  DEFAULT_MSG
 
 mark_as_advanced(ZEROMQ_INCLUDE_DIR ZEROMQ_LIBRARY )
 
-if (ZeroMQ_FOUND AND NOT TARGET ZeroMQ::ZeroMQ)
-    add_library(ZeroMQ::ZeroMQ SHARED IMPORTED)
-    set_target_properties(ZeroMQ::ZeroMQ PROPERTIES
+if (ZeroMQ_FOUND AND NOT TARGET libzmq)
+    add_library(libzmq SHARED IMPORTED)
+    set_target_properties(libzmq PROPERTIES
             IMPORTED_LOCATION "${ZEROMQ_LIBRARY}"
             INTERFACE_INCLUDE_DIRECTORIES "${ZEROMQ_INCLUDE_DIR}"
     )

@@ -15,8 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from conans import ConanFile, CMake, tools
-from conans.errors import ConanInvalidConfiguration
+from conan import ConanFile, tools
+from conan.errors import ConanInvalidConfiguration
+from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain
+from conan.tools.scm import Version
 import os
 
 
@@ -30,14 +32,14 @@ class CelixConan(ConanFile):
     url = "https://github.com/apache/celix.git"
     topics = ("conan", "celix", "osgi", "embedded", "linux", "C/C++")
     exports_sources = "CMakeLists.txt", "bundles*", "cmake*", "!cmake-build*", "examples*", "libs*", "misc*", "LICENSE"
-    generators = "cmake_paths", "cmake_find_package", "virtualrunenv"
+    generators = "CMakeDeps", "VirtualRunEnv"
     settings = "os", "arch", "compiler", "build_type"
     license = " Apache-2.0"
     description = "Apache Celix is an implementation of the OSGi specification adapted to C and C++ (C++17). " \
                   "It is a framework to develop (dynamic) modular software applications " \
                   "using component and/or service-oriented programming."
 
-    options = {
+    _celix_options = {
         "enable_testing": [True, False],
         "enable_code_coverage": [True, False],
         "enable_address_sanitizer": [True, False],
@@ -97,11 +99,13 @@ class CelixConan(ConanFile):
         "celix_cxx17": [True, False],
         "celix_install_deprecated_api": [True, False],
         "celix_use_compression_for_bundle_zips": [True, False],
-        "celix_err_buffer_size": "ANY",
+        "celix_err_buffer_size": ["ANY"],
         "enable_cmake_warning_tests": [True, False],
         "enable_testing_on_ci": [True, False],
         "framework_curlinit": [True, False],
     }
+
+    options = _celix_options
     default_options = {
         "enable_testing": False,
         "enable_code_coverage": False,
@@ -209,7 +213,7 @@ class CelixConan(ConanFile):
 
     def configure(self):
         if self.options.build_all:
-            for opt, val in self.options.values.items():
+            for opt in self._celix_options.keys():
                 if opt.startswith('build_'):
                     setattr(self.options, opt, True)
 
@@ -427,29 +431,32 @@ class CelixConan(ConanFile):
             self.requires("mdnsresponder/1310.140.1")
         self.validate()
 
-    def _enable_error_injectors(self):
-        for k in self.deps_cpp_info.deps:
-            if k == "mdnsresponder":
-                self._cmake.definitions["BUILD_ERROR_INJECTOR_MDNSRESPONDER"] = "ON"
+    def generate(self):
+        tc = CMakeToolchain(self)
+        for opt in self._celix_options.keys():
+            tc.cache_variables[opt.upper()] = self.options.get_safe(opt, False)
+        if self.options.enable_testing:
+            for k in self.deps_cpp_info.deps:
+                if k == "mdnsresponder":
+                    tc.cache_variables["BUILD_ERROR_INJECTOR_MDNSRESPONDER"] = "ON"
+        tc.cache_variables["CELIX_ERR_BUFFER_SIZE"] = self.options.celix_err_buffer_size
+        # tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
+        # the following is workaround for https://github.com/conan-io/conan/issues/7192
+        if self.settings.os == "Linux":
+            tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
+        elif self.settings.os == "Macos":
+            tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
+        v = Version(self.version)
+        tc.cache_variables["CELIX_MAJOR"] = v.major.value
+        tc.cache_variables["CELIX_MINOR"] = v.minor.value
+        tc.cache_variables["CELIX_MICRO"] = v.patch.value
+        tc.generate()
 
     def _configure_cmake(self):
         if self._cmake:
             return self._cmake
         self._cmake = CMake(self)
-        for opt, val in self.options.values.items():
-            self._cmake.definitions[opt.upper()] = self.options.get_safe(opt, False)
-        if self.options.enable_testing:
-            self._enable_error_injectors()
-        self._cmake.definitions["CELIX_ERR_BUFFER_SIZE"] = self.options.celix_err_buffer_size
-        self._cmake.definitions["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
-        # the following is workaround for https://github.com/conan-io/conan/issues/7192
-        if self.settings.os == "Linux":
-            self._cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
-        elif self.settings.os == "Macos":
-            self._cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
-        self.output.info(self._cmake.definitions)
-        v = tools.Version(self.version)
-        self._cmake.configure(defs={'CELIX_MAJOR': v.major, 'CELIX_MINOR': v.minor, 'CELIX_MICRO': v.patch})
+        self._cmake.configure()
         return self._cmake
 
     def build(self):
