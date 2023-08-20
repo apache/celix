@@ -19,31 +19,27 @@
 
 extern crate celix_bindings;
 
-use std::os::raw::c_void;
-use std::ffi::CString;
-use std::ffi::NulError;
-
-//TODO try to remove celix_bindings use statement
 use celix_bindings::*; //Add all Apache Celix C bindings to the namespace (i.e. celix_bundleContext_log, etc.)
 use celix::BundleActivator;
 use celix::BundleContext;
+use celix::Error;
 
 struct HelloWorldBundle {}
 
 impl BundleActivator for HelloWorldBundle {
     fn new(ctx: &mut dyn celix::BundleContext) -> Self {
         ctx.log_info("Hello World Bundle Activator created");
-        HelloWorldBundle {}
+        HelloWorldBundle{}
     }
 
-    fn start(&mut self, ctx: &mut dyn BundleContext) -> celix_status_t {
+    fn start(&mut self, ctx: &mut dyn BundleContext) -> Result<(), Error> {
         ctx.log_info("Hello World Bundle Activator started");
-        CELIX_SUCCESS
+        Ok(())
     }
 
-    fn stop(&mut self, ctx: &mut dyn BundleContext) -> celix_status_t {
+    fn stop(&mut self, ctx: &mut dyn BundleContext) -> Result<(), Error> {
         ctx.log_info("Hello World Bundle Activator stopped");
-        CELIX_SUCCESS
+        Ok(())
     }
 }
 

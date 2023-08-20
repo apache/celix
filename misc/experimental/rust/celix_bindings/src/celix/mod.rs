@@ -17,10 +17,25 @@
  * under the License.
  */
 
-#[allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code)]
-mod bindings {
-     include!(concat!(env!("OUT_DIR"), "/celix_bindings.rs"));
-}
-pub use bindings::*;
+use celix_status_t;
 
-pub mod celix;
+//Note C #defines (compile-time constants) are not all generated in the bindings file.
+//So introduce them here as constants.
+pub const CELIX_SUCCESS: celix_status_t = 0;
+
+mod errno;
+// Export errno types in the public API.
+pub use self::errno::Error as Error;
+
+mod bundle_context;
+// Export bundle context types in the public API.
+pub use self::bundle_context::BundleContext as BundleContext;
+pub use self::bundle_context::create_bundle_context_instance as create_bundle_context_instance;
+
+mod bundle_activator;
+// Export bundle activator types in the public API.
+pub use self::bundle_activator::BundleActivator as BundleActivator;
+
+// mod log_helper;
+// // Export log helper types in the public API.
+// pub use self::log_helper::LogHelper as LogHelper;

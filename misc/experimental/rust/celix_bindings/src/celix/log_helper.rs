@@ -17,6 +17,12 @@
  * under the License.
  */
 
+use ::celix::BundleContext;
+use celix_log_helper_t;
+use celix_logHelper_create;
+use celix_logHelper_destroy;
+use celix_logHelper_log;
+
 #[warn(unused_imports)]
 pub enum LogLevel {
     Trace = ::bindings::celix_log_level_CELIX_LOG_LEVEL_TRACE as isize,
@@ -27,7 +33,7 @@ pub enum LogLevel {
     Fatal = ::bindings::celix_log_level_CELIX_LOG_LEVEL_FATAL as isize,
 }
 
-struct LogHelper {
+pub struct LogHelper {
     celix_log_helper: *mut celix_log_helper_t,
 }
 

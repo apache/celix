@@ -16,6 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
+use celix_bundle_context_t;
+use celix_bundleContext_log;
 use celix_log_level_CELIX_LOG_LEVEL_INFO;
 
 pub trait BundleContext {
@@ -44,7 +47,13 @@ impl BundleContext for BundleContextImpl {
 
     fn log_info(&self, message: &str) {
         unsafe {
-            celix_bundleContext_log(self.c_bundle_context, celix_log_level_CELIX_LOG_LEVEL_INFO as u32, message.as_ptr() as *const i8);
+            //wrap str into CString to ensure null-terminated string
+            let c_str = std::ffi::CString::new(message).unwrap();
+            celix_bundleContext_log(self.c_bundle_context, celix_log_level_CELIX_LOG_LEVEL_INFO as u32, c_str.as_ptr() as *const i8);
         }
     }
+}
+
+pub fn create_bundle_context_instance(c_bundle_context: *mut celix_bundle_context_t) -> Box<dyn BundleContext> {
+    Box::new(BundleContextImpl::new(c_bundle_context))
 }

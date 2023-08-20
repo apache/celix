@@ -17,10 +17,29 @@
  * under the License.
  */
 
-#[allow(non_camel_case_types, non_snake_case, non_upper_case_globals, dead_code)]
-mod bindings {
-     include!(concat!(env!("OUT_DIR"), "/celix_bindings.rs"));
-}
-pub use bindings::*;
+use celix_status_t;
 
-pub mod celix;
+pub const BUNDLE_EXCEPTION: celix_status_t = 70001; //TODO move to celix_status_t_CELIX_BUNDLE_EXCEPTION
+
+pub enum Error {
+    BundleException,
+    CelixStatusError(celix_status_t), // Represent unexpected C API errors
+}
+
+impl From<celix_status_t> for Error {
+    fn from(status: celix_status_t) -> Self {
+        match status {
+            BUNDLE_EXCEPTION => Error::BundleException,
+            _ => Error::CelixStatusError(status),
+        }
+    }
+}
+
+impl Into<celix_status_t> for Error {
+    fn into(self) -> celix_status_t {
+        match self {
+            Error::BundleException => BUNDLE_EXCEPTION,
+            Error::CelixStatusError(status) => status,
+        }
+    }
+}
