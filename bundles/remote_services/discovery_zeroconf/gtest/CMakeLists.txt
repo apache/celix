@@ -64,7 +64,7 @@ if (LINKER_WRAP_SUPPORTED)
             GTest::gtest_main
             )
 
-    target_compile_definitions(unit_test_discovery_zeroconf PRIVATE -DMDNSD="${DNSSD_LIB_DIRS}/../bin/mdnsd")
+    target_compile_definitions(unit_test_discovery_zeroconf PRIVATE -DMDNSD="${DNSSD_INCLUDE_DIR}/../bin/mdnsd")
 
 
     add_test(NAME run_unit_test_discovery_zeroconf COMMAND sudo $<TARGET_FILE:unit_test_discovery_zeroconf>)
