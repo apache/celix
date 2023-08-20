@@ -17,18 +17,31 @@
  * under the License.
  */
 
-use celix_bundle_context_t;
-use celix_bundleContext_log;
-use celix_log_level_CELIX_LOG_LEVEL_INFO;
+use super::LogLevel;
+
+use celix_bindings::celix_bundle_context_t;
+use celix_bindings::celix_bundleContext_log;
+use celix_bindings::celix_log_level_e;
 
 pub trait BundleContext {
     fn get_c_bundle_context(&self) -> *mut celix_bundle_context_t;
 
+    fn log(&self, level: LogLevel, message: &str);
+
+    fn log_trace(&self, message: &str);
+
+    fn log_debug(&self, message: &str);
+
     fn log_info(&self, message: &str);
+
+    fn log_warning(&self, message: &str);
+
+    fn log_error(&self, message: &str);
+
+    fn log_fatal(&self, message: &str);
 }
 
-//note BundleContextImpl is pub for usage in bundle activator macro. TODO check if this can be avoided
-pub struct BundleContextImpl {
+struct BundleContextImpl {
     c_bundle_context: *mut celix_bundle_context_t,
 }
 
@@ -38,6 +51,19 @@ impl BundleContextImpl {
             c_bundle_context,
         }
     }
+    fn log_to_c(&self, level: LogLevel, message: &str) {
+        unsafe {
+            let result = std::ffi::CString::new(message);
+            match result {
+                Ok(c_str) => {
+                    celix_bundleContext_log(self.c_bundle_context, level.into(), c_str.as_ptr() as *const i8);
+                }
+                Err(e) => {
+                    println!("Error creating CString: {}", e);
+                }
+            }
+        }
+    }
 }
 
 impl BundleContext for BundleContextImpl {
@@ -45,15 +71,21 @@ impl BundleContext for BundleContextImpl {
         self.c_bundle_context
     }
 
-    fn log_info(&self, message: &str) {
-        unsafe {
-            //wrap str into CString to ensure null-terminated string
-            let c_str = std::ffi::CString::new(message).unwrap();
-            celix_bundleContext_log(self.c_bundle_context, celix_log_level_CELIX_LOG_LEVEL_INFO as u32, c_str.as_ptr() as *const i8);
-        }
-    }
+    fn log(&self, level: LogLevel, message: &str) { self.log_to_c(level, message); }
+
+    fn log_trace(&self, message: &str) { self.log(LogLevel::Trace, message); }
+
+    fn log_debug(&self, message: &str) { self.log(LogLevel::Debug, message); }
+
+    fn log_info(&self, message: &str) { self.log(LogLevel::Info, message); }
+
+    fn log_warning(&self, message: &str) { self.log(LogLevel::Warning, message); }
+
+    fn log_error(&self, message: &str){ self.log(LogLevel::Error, message); }
+
+    fn log_fatal(&self, message: &str){ self.log(LogLevel::Fatal, message); }
 }
 
-pub fn create_bundle_context_instance(c_bundle_context: *mut celix_bundle_context_t) -> Box<dyn BundleContext> {
+pub fn bundle_context_new(c_bundle_context: *mut celix_bundle_context_t) -> Box<dyn BundleContext> {
     Box::new(BundleContextImpl::new(c_bundle_context))
 }

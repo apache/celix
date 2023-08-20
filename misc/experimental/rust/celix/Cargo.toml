@@ -16,14 +16,13 @@
 # under the License.
 
 [package]
-name = "celixs"
+name = "celix"
 version = "0.0.1"
 
-[build-dependencies]
+[dependencies]
 celix_bindings = { path = "../celix_bindings" }
 
-
 [lib]
-name = "bindings"
+name = "celix"
 path = "src/lib.rs"
 crate-type = ["rlib"]

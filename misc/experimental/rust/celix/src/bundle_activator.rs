@@ -17,52 +17,41 @@
  * under the License.
  */
 
-use ::celix::BundleContext;
-use ::celix::Error;
+use std::sync::Arc;
+
+use super::BundleContext;
+use super::Error;
 
 pub trait BundleActivator {
-    fn new(ctx: &mut dyn BundleContext) -> Self;
-    fn start(&mut self, _ctx: &mut dyn BundleContext) -> Result<(), Error> { /* Default implementation */ Ok(())}
-    fn stop(&mut self, _ctx: &mut dyn BundleContext)  -> Result<(), Error> { /* Default implementation */ Ok(())}
+    fn new(ctx: Arc<dyn BundleContext>) -> Self;
+    fn start(&mut self) -> Result<(), Error> { /* Default implementation */ Ok(())}
+    fn stop(&mut self) -> Result<(), Error> { /* Default implementation */ Ok(())}
 }
 
 #[macro_export]
 macro_rules! generate_bundle_activator {
     ($activator:ty) => {
-        // fn assert_implements_trait(_: &$activator) {
-        //     fn must_implement<T: celix::BundleActivator>(_t: &T) {}
-        //     must_implement(&*(None::<$activator>).unwrap_or_default());
-        // }
-
-        struct ActivatorWrapper {
-            ctx: Box<dyn $crate::celix::BundleContext>,
-            activator: $activator,
-        }
-
         #[no_mangle]
         pub unsafe extern "C" fn celix_bundleActivator_create(
-            ctx: *mut $crate::celix_bundle_context_t,
+            ctx: *mut $crate::details::CBundleContext,
             out: *mut *mut ::std::ffi::c_void,
-        ) -> $crate::celix_status_t {
-            let mut context = $crate::celix::create_bundle_context_instance(ctx);
-            let activator = <$activator>::new(&mut *context);
-            let wrapper = ActivatorWrapper {
-                ctx: context,
-                activator
-            };
-            *out = Box::into_raw(Box::new(wrapper)) as *mut ::std::ffi::c_void;
-            $crate::celix::CELIX_SUCCESS
+        ) -> $crate::details::CStatus {
+            let boxed_context = $crate::bundle_context_new(ctx);
+            let mut arc_context = Arc::from(boxed_context);
+            let activator = <$activator>::new(arc_context);
+            *out = Box::into_raw(Box::new(activator)) as *mut ::std::ffi::c_void;
+            $crate::CELIX_SUCCESS
         }
 
         #[no_mangle]
         pub unsafe extern "C" fn celix_bundleActivator_start(
             handle: *mut ::std::ffi::c_void,
-            ctx: *mut $crate::celix_bundle_context_t,
-        ) -> $crate::celix_status_t {
-            let wrapper = &mut *(handle as *mut ActivatorWrapper);
-            let result = wrapper.activator.start(&mut *wrapper.ctx);
+            ctx: *mut $crate::details::CBundleContext,
+        ) -> $crate::details::CStatus {
+            let activator = &mut *(handle as *mut $activator);
+            let result = activator.start();
             match result {
-                Ok(_) => $crate::celix::CELIX_SUCCESS,
+                Ok(_) => $crate::CELIX_SUCCESS,
                 Err(e) => e.into(),
             }
         }
@@ -70,23 +59,24 @@ macro_rules! generate_bundle_activator {
         #[no_mangle]
         pub unsafe extern "C" fn celix_bundleActivator_stop(
             handle: *mut ::std::ffi::c_void,
-            ctx: *mut $crate::celix_bundle_context_t,
-        ) -> $crate::celix_status_t {
-            let wrapper = &mut *(handle as *mut ActivatorWrapper);
-            let result = wrapper.activator.stop(&mut *wrapper.ctx);
+            ctx: *mut $crate::details::CBundleContext,
+        ) -> $crate::details::CStatus {
+            let activator = &mut *(handle as *mut $activator);
+            let result = activator.stop();
             match result {
-                Ok(_) => $crate::celix::CELIX_SUCCESS,
+                Ok(_) => $crate::CELIX_SUCCESS,
                 Err(e) => e.into(),
             }
         }
 
         #[no_mangle]
         pub unsafe extern "C" fn celix_bundleActivator_destroy(
-            handle: *mut ::std::ffi::c_void
-        ) -> $crate::celix_status_t {
-            let reclaimed_wrapper = Box::from_raw(handle as *mut ActivatorWrapper);
-            drop(reclaimed_wrapper);
-            $crate::celix::CELIX_SUCCESS
+            handle: *mut ::std::ffi::c_void,
+            _ctx: *mut $crate::details::CBundleContext,
+        ) -> $crate::details::CStatus {
+            let reclaimed_activator = Box::from_raw(handle as *mut $activator);
+            drop(reclaimed_activator);
+            $crate::CELIX_SUCCESS
         }
     };
 }

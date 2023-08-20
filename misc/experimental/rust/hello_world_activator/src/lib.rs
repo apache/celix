@@ -17,36 +17,41 @@
  * under the License.
  */
 
-extern crate celix_bindings;
+extern crate celix;
 
-use celix_bindings::*; //Add all Apache Celix C bindings to the namespace (i.e. celix_bundleContext_log, etc.)
+use std::sync::Arc;
+
 use celix::BundleActivator;
 use celix::BundleContext;
 use celix::Error;
 
-struct HelloWorldBundle {}
+struct HelloWorldBundle {
+    ctx: Arc<dyn BundleContext>,
+}
 
 impl BundleActivator for HelloWorldBundle {
-    fn new(ctx: &mut dyn celix::BundleContext) -> Self {
+    fn new(ctx: Arc<dyn celix::BundleContext>) -> Self {
         ctx.log_info("Hello World Bundle Activator created");
-        HelloWorldBundle{}
+        HelloWorldBundle{
+            ctx,
+        }
     }
 
-    fn start(&mut self, ctx: &mut dyn BundleContext) -> Result<(), Error> {
-        ctx.log_info("Hello World Bundle Activator started");
+    fn start(&mut self) -> Result<(), Error> {
+        self.ctx.log_info("Hello World Bundle Activator started");
         Ok(())
     }
 
-    fn stop(&mut self, ctx: &mut dyn BundleContext) -> Result<(), Error> {
-        ctx.log_info("Hello World Bundle Activator stopped");
+    fn stop(&mut self) -> Result<(), Error> {
+        self.ctx.log_info("Hello World Bundle Activator stopped");
         Ok(())
     }
 }
 
 impl Drop for HelloWorldBundle {
     fn drop(&mut self) {
-        //TODO self.ctx.log_info("Hello World Bundle Activator dropped");
+        self.ctx.log_info("Hello World Bundle Activator destroyed");
     }
 }
 
-generate_bundle_activator!(HelloWorldBundle);
+celix::generate_bundle_activator!(HelloWorldBundle);

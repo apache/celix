@@ -17,25 +17,37 @@
  * under the License.
  */
 
-use celix_status_t;
+extern crate celix_bindings;
 
-//Note C #defines (compile-time constants) are not all generated in the bindings file.
-//So introduce them here as constants.
-pub const CELIX_SUCCESS: celix_status_t = 0;
+// Re-export the celix_status_t and celix_bundle_context_t C API in this crate public API so that
+// it can be used in the generate_bundle_activator macro.
+// Note that as result the celix rust lib is leaking the celix_status_t and celix_bundle_context_t
+// C API in its public API.
+#[doc(hidden)]
+pub mod details {
+    pub use celix_bindings::celix_status_t as CStatus;
+    pub use celix_bindings::celix_bundle_context_t as CBundleContext;
+}
 
 mod errno;
-// Export errno types in the public API.
+// Re-export errno types in the public API.
+pub use self::errno::CELIX_SUCCESS as CELIX_SUCCESS;
 pub use self::errno::Error as Error;
 
+mod log_level;
+// Re-export log level types in the public API.
+pub use self::log_level::LogLevel as LogLevel;
+
 mod bundle_context;
-// Export bundle context types in the public API.
+// Re-export bundle context types in the public API.
 pub use self::bundle_context::BundleContext as BundleContext;
-pub use self::bundle_context::create_bundle_context_instance as create_bundle_context_instance;
+pub use self::bundle_context::bundle_context_new as bundle_context_new;
 
 mod bundle_activator;
-// Export bundle activator types in the public API.
+// Re-export bundle activator types in the public API.
 pub use self::bundle_activator::BundleActivator as BundleActivator;
 
-// mod log_helper;
-// // Export log helper types in the public API.
-// pub use self::log_helper::LogHelper as LogHelper;
+mod log_helper;
+// Re-export log helper types in the public API.
+pub use self::log_helper::LogHelper as LogHelper;
+pub use self::log_helper::log_helper_new as log_helper_new;

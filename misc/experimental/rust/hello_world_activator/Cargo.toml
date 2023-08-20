@@ -20,7 +20,7 @@ name = "rust_bundle"
 version = "0.0.1"
 
 [dependencies]
-celix_bindings = { path = "../celix_bindings" }
+celix = { path = "../celix" }
 
 [lib]
 name = "rust_bundle_activator"

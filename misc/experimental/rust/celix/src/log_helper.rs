@@ -17,68 +17,92 @@
  * under the License.
  */
 
-use ::celix::BundleContext;
-use celix_log_helper_t;
-use celix_logHelper_create;
-use celix_logHelper_destroy;
-use celix_logHelper_log;
+use super::LogLevel;
+use super::BundleContext;
 
-#[warn(unused_imports)]
-pub enum LogLevel {
-    Trace = ::bindings::celix_log_level_CELIX_LOG_LEVEL_TRACE as isize,
-    Debug = ::bindings::celix_log_level_CELIX_LOG_LEVEL_DEBUG as isize,
-    Info = ::bindings::celix_log_level_CELIX_LOG_LEVEL_INFO as isize,
-    Warn = ::bindings::celix_log_level_CELIX_LOG_LEVEL_WARNING as isize,
-    Error = ::bindings::celix_log_level_CELIX_LOG_LEVEL_ERROR as isize,
-    Fatal = ::bindings::celix_log_level_CELIX_LOG_LEVEL_FATAL as isize,
-}
+use celix_bindings::celix_log_helper_t;
+use celix_bindings::celix_logHelper_create;
+use celix_bindings::celix_logHelper_destroy;
+use celix_bindings::celix_logHelper_log;
 
-pub struct LogHelper {
-    celix_log_helper: *mut celix_log_helper_t,
-}
+pub trait LogHelper {
+    fn log(&self, level: LogLevel, message: &str);
 
-impl LogHelper {
-    pub fn new(ctx: &dyn BundleContext, name: &str) -> Self {
-        LogHelper {
-            celix_log_helper: unsafe { celix_logHelper_create(ctx.get_c_bundle_context(), name.as_ptr() as *const i8) },
-        }
-    }
-
-    pub fn log(&self, level: LogLevel, message: &str) {
-        unsafe {
-            celix_logHelper_log(self.celix_log_helper, level as u32, message.as_ptr() as *const i8);
-        }
-    }
-
-    pub fn trace(&self, message: &str) {
+    fn trace(&self, message: &str) {
         self.log(LogLevel::Trace, message);
     }
 
-    pub fn debug(&self, message: &str) {
+    fn debug(&self, message: &str) {
         self.log(LogLevel::Debug, message);
     }
 
-    pub fn info(&self, message: &str) {
+    fn info(&self, message: &str) {
         self.log(LogLevel::Info, message);
     }
 
-    pub fn warn(&self, message: &str) {
-        self.log(LogLevel::Warn, message);
+    fn warning(&self, message: &str) {
+        self.log(LogLevel::Warning, message);
     }
 
-    pub fn error(&self, message: &str) {
+    fn error(&self, message: &str) {
         self.log(LogLevel::Error, message);
     }
 
-    pub fn fatal(&self, message: &str) {
+    fn fatal(&self, message: &str) {
         self.log(LogLevel::Fatal, message);
     }
 }
 
-impl Drop for LogHelper {
+struct LogHelperImpl {
+    celix_log_helper: *mut celix_log_helper_t,
+}
+
+impl  LogHelperImpl {
+    pub fn new(ctx: &dyn BundleContext, name: &str) -> Self {
+        unsafe {
+            let result = std::ffi::CString::new(name);
+            match result {
+                Ok(c_str) => {
+                    LogHelperImpl {
+                        celix_log_helper: celix_logHelper_create(ctx.get_c_bundle_context(), c_str.as_ptr() as *const i8),
+                    }
+                }
+                Err(e) => {
+                    ctx.log_error(&format!("Error creating CString: {}. Using \"error\" as log name", e));
+                    let c_str = std::ffi::CString::new("error").unwrap();
+                    LogHelperImpl {
+                        celix_log_helper: celix_logHelper_create(ctx.get_c_bundle_context(), c_str.as_ptr() as *const i8),
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl Drop for LogHelperImpl {
     fn drop(&mut self) {
         unsafe {
             celix_logHelper_destroy(self.celix_log_helper);
         }
     }
+}
+
+impl LogHelper for LogHelperImpl {
+    fn log(&self, level: LogLevel, message: &str) {
+        unsafe {
+            let result = std::ffi::CString::new(message);
+            match result {
+                Ok(c_str) => {
+                    celix_logHelper_log(self.celix_log_helper, level.into(), c_str.as_ptr() as *const i8);
+                }
+                Err(e) => {
+                    println!("Error creating CString: {}", e);
+                }
+            }
+        }
+    }
+}
+
+pub fn log_helper_new(ctx: &dyn BundleContext, name: &str) -> Box<dyn LogHelper> {
+    Box::new(LogHelperImpl::new(ctx, name))
 }

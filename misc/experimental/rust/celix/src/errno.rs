@@ -17,13 +17,18 @@
  * under the License.
  */
 
-use celix_status_t;
+use celix_bindings::celix_status_t;
 
-pub const BUNDLE_EXCEPTION: celix_status_t = 70001; //TODO move to celix_status_t_CELIX_BUNDLE_EXCEPTION
+pub const CELIX_SUCCESS: celix_status_t = celix_bindings::CELIX_SUCCESS as celix_status_t;
+
+//Note compile-time defined constants are not available in rust generated bindings, so
+//these are defined with literal values.
+pub const BUNDLE_EXCEPTION: celix_status_t = 70001;
+
 
 pub enum Error {
     BundleException,
-    CelixStatusError(celix_status_t), // Represent unexpected C API errors
+    CelixStatusError(celix_status_t), // Represent not explicitly mapped celix_status_t values
 }
 
 impl From<celix_status_t> for Error {
