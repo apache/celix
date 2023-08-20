@@ -67,9 +67,9 @@ jobs:
       - name: Test
         run: |
           cd build
-          source activate_run.sh
+          source conanrun.sh
           ctest --output-on-failure
-          source deactivate_run.sh
+          source deactivate_conanrun.sh
 
   linux-build-apt:
     runs-on: ubuntu-22.04

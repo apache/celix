@@ -23,7 +23,7 @@ limitations under the License.
 Apache Celix can be build for development in CLion with use of the Conan package manager.
 Conan will arrange the building of the Apache Celix dependencies and generate Find<package> files for these dependencies.
 
-Conan will also generate a `active_run.sh` and `deactivate_run.sh` script that does the environment (de)setup for the 
+Conan will also generate a `conanrun.sh` and `deactivate_conanrun.sh` script that does the environment (de)setup for the 
 binary locations of the build dependencies (i.e. configures `PATH` and `LD_LIBRARY_PATH`/`DYLD_LIBRARY_PATH`).
 
 ## Configuring CLion for C++17
@@ -54,9 +54,9 @@ cd cmake-build-debug
 make -j
 
 #optional setup run env and run tests
-source activate_run.sh 
+source conanrun.sh 
 ctest --verbose
-source deactivate_run.sh 
+source deactivate_conanrun.sh 
 ```
 
 ## Configuring CLion

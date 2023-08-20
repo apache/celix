@@ -38,9 +38,9 @@ jobs:
       - name: Test with coverage
         run: |
           cd build
-          source activate_run.sh
+          source conanrun.sh
           make coverage
-          source deactivate_run.sh
+          source deactivate_conanrun.sh
           lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx
       - name: Codecov
         uses: codecov/codecov-action@e156083f13aff6830c92fc5faa23505779fbf649

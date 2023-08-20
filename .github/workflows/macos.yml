@@ -44,9 +44,9 @@ jobs:
       - name: Test
         run: |
           cd build
-          source activate_run.sh
+          source conanrun.sh
           ctest --output-on-failure
-          source deactivate_run.sh
+          source deactivate_conanrun.sh
 
   macos-build-brew:
     runs-on: macOS-latest
