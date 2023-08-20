@@ -22,5 +22,3 @@ mod bindings {
      include!(concat!(env!("OUT_DIR"), "/celix_bindings.rs"));
 }
 pub use bindings::*;
-
-pub mod celix;
