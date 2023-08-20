@@ -12,27 +12,27 @@
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *  KIND, either express or implied.  See the License for the
+ * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
-/**
- * attribute_private.h
  *
- *  \date       Feb 11, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
  */
+#include "celix_properties.h"
+#include "hmap_ei.h"
 
-#ifndef ATTRIBUTE_PRIVATE_H_
-#define ATTRIBUTE_PRIVATE_H_
+#include <gtest/gtest.h>
 
-#include "attribute.h"
-
-struct attribute {
-	char * key;
-	char * value;
+class PropertiesErrorInjectionTestSuite : public ::testing::Test {
+public:
+    PropertiesErrorInjectionTestSuite() = default;
+    ~PropertiesErrorInjectionTestSuite() override {
+        celix_ei_expect_hashMap_create(nullptr, 0, nullptr);
+    }
 };
 
-
-#endif /* ATTRIBUTE_PRIVATE_H_ */
+TEST_F(PropertiesErrorInjectionTestSuite, CopyFailureTest) {
+    celix_autoptr(celix_properties_t) prop = celix_properties_create();
+    ASSERT_NE(nullptr, prop);
+    celix_ei_expect_hashMap_create((void *) &celix_properties_create, 0, nullptr);
+    ASSERT_EQ(nullptr, celix_properties_copy(prop));
+}

@@ -27,7 +27,6 @@
 #include <stdlib.h>
 
 #include "capability_private.h"
-#include "attribute.h"
 #include "celix_log.h"
 
 //LCOV_EXCL_START

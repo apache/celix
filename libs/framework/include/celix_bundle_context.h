@@ -1458,6 +1458,13 @@ CELIX_FRAMEWORK_EXPORT void celix_bundleContext_vlog(
         const char* format,
         va_list formatArgs) __attribute__((format(printf,3,0)));
 
+/**
+ *
+ * @brief Logs celix thread-specific storage error messages(celix_err) ith the provided celix log level.
+ * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
+ */
+CELIX_FRAMEWORK_EXPORT void celix_bundleContext_logTssErrors(const celix_bundle_context_t* ctx,
+                                                             celix_log_level_e level);
 
 /**
  * @brief Get the config property for the given key.

@@ -15,18 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(stdio_ei STATIC src/stdio_ei.cc)
+add_library(hmap_ei STATIC src/hmap_ei.cc)
 
-target_include_directories(stdio_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(stdio_ei PUBLIC Celix::error_injector)
-# It plays nicely with address sanitizer this way.
-target_link_options(stdio_ei INTERFACE
-        LINKER:--wrap,fopen
-        LINKER:--wrap,fwrite
-        LINKER:--wrap,remove
-        LINKER:--wrap,open_memstream
-        LINKER:--wrap,fseek
-        LINKER:--wrap,ftell
-        LINKER:--wrap,fread
-        )
-add_library(Celix::stdio_ei ALIAS stdio_ei)
+target_include_directories(hmap_ei PUBLIC include)
+target_link_libraries(hmap_ei PUBLIC Celix::error_injector Celix::utils)
+celix_deprecated_utils_headers(hmap_ei)
+target_link_options(hmap_ei INTERFACE
+        LINKER:--wrap,hashMap_create
+)
+add_library(Celix::hmap_ei ALIAS hmap_ei)

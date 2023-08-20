@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "celix_err.h"
 #include "celix_errno.h"
 #include "celix_log.h"
 #include "celix_threads.h"
@@ -144,4 +145,14 @@ void celix_framework_logCode(celix_framework_logger_t*  logger, celix_log_level_
     va_start(args, format);
     celix_framework_vlogInternal(logger, level, code, file, func, line, format, args);
     va_end(args);
+}
+
+void celix_framework_logTssErrors(celix_framework_logger_t* logger, celix_log_level_e level) {
+    char buf[CELIX_ERR_BUFFER_SIZE] = {0};
+    if (celix_err_dump(buf, sizeof(buf), "[TssErr] ", NULL) == 0) {
+        // nothing to output
+        return;
+    }
+    celix_err_resetErrors();
+    celix_framework_log(logger, level, NULL, NULL, 0, "Detected tss errors:\n%s", buf);
 }
