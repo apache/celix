@@ -104,9 +104,7 @@ class CelixConan(ConanFile):
         "enable_testing_on_ci": [True, False],
         "framework_curlinit": [True, False],
     }
-
-    options = _celix_options
-    default_options = {
+    _celix_defaults = {
         "enable_testing": False,
         "enable_code_coverage": False,
         "enable_address_sanitizer": False,
@@ -171,6 +169,8 @@ class CelixConan(ConanFile):
         "enable_testing_on_ci": False,
         "framework_curlinit": True,
     }
+
+    options = _celix_options
     _cmake = None
 
     def validate(self):
@@ -212,178 +212,188 @@ class CelixConan(ConanFile):
             self.test_requires("cpputest/4.0")
 
     def configure(self):
-        if self.options.build_all:
-            for opt in self._celix_options.keys():
+        # copy options to _celix_options, fill in defaults if not set
+        options = {}
+        for opt in self._celix_options.keys():
+            options[opt] = self.options.get_safe(opt).value
+            if options[opt] is None:
+                options[opt] = self._celix_defaults[opt]
+
+        if options["build_all"]:
+            for opt in options.keys():
                 if opt.startswith('build_'):
-                    setattr(self.options, opt, True)
+                    options[opt] = True
 
         if self.settings.os != "Linux":
-            self.options.build_rsa_remote_service_admin_shm_v2 = False
-            self.options.build_rsa_discovery_zeroconf = False
-            self.options.build_shell_bonjour = False
+            options["build_rsa_remote_service_admin_shm_v2"] = False
+            options["build_rsa_discovery_zeroconf"] = False
+            options["build_shell_bonjour"] = False
 
-        if not self.options.enable_testing:
-            self.options.build_pubsub_integration = False
-            self.options.enable_code_coverage = False
+        if not options["enable_testing"]:
+            options["build_pubsub_integration"] = False
+            options["enable_code_coverage"] = False
 
-        if self.options.build_examples:
-            self.options.build_shell_tui = True
-            self.options.build_shell_wui = True
-            self.options.build_log_service = True
-            self.options.build_syslog_writer = True
+        if options["build_examples"]:
+            options["build_shell_tui"] = True
+            options["build_shell_wui"] = True
+            options["build_log_service"] = True
+            options["build_syslog_writer"] = True
 
-        if self.options.build_shell_bonjour:
-            self.options.build_shell = True
+        if options["build_shell_bonjour"]:
+            options["build_shell"] = True
 
-        if self.options.build_deployment_admin:
-            self.options.build_framework = True
+        if options["build_deployment_admin"]:
+            options["build_framework"] = True
 
-        if self.options.build_cxx_rsa_integration:
-            self.options.build_cxx_remote_service_admin = True
-            self.options.build_pushstreams = True
-            self.options.build_promises = True
-            self.options.build_log_helper = True
-            self.options.build_shell = True
-            self.options.build_shell_tui = True
-            self.options.build_shell_api = True
-            self.options.build_pubsub = True
-            self.options.build_pubsub_wire_protocol_v2 = True
-            self.options.build_pubsub_json_serializer = True
-            self.options.build_pubsub_psa_zmq = True
-            self.options.build_pubsub_discovery_etcd = True
+        if options["build_cxx_rsa_integration"]:
+            options["build_cxx_remote_service_admin"] = True
+            options["build_pushstreams"] = True
+            options["build_promises"] = True
+            options["build_log_helper"] = True
+            options["build_shell"] = True
+            options["build_shell_tui"] = True
+            options["build_shell_api"] = True
+            options["build_pubsub"] = True
+            options["build_pubsub_wire_protocol_v2"] = True
+            options["build_pubsub_json_serializer"] = True
+            options["build_pubsub_psa_zmq"] = True
+            options["build_pubsub_discovery_etcd"] = True
 
-        if self.options.build_pubsub_integration:
-            self.options.build_pubsub = True
-            self.options.build_shell_tui = True
-            self.options.build_pubsub_json_serializer = True
-            self.options.build_pubsub_wire_protocol_v2 = True
-            self.options.build_pubsub_wire_protocol_v1 = True
+        if options["build_pubsub_integration"]:
+            options["build_pubsub"] = True
+            options["build_shell_tui"] = True
+            options["build_pubsub_json_serializer"] = True
+            options["build_pubsub_wire_protocol_v2"] = True
+            options["build_pubsub_wire_protocol_v1"] = True
 
-        if self.options.build_pubsub_examples:
-            self.options.build_log_service = True
-            self.options.build_shell_tui = True
-            self.options.build_pubsub_json_serializer = True
-            self.options.build_pubsub_discovery_etcd = True
-            self.options.build_pubsub_wire_protocol_v2 = True
-            self.options.build_pubsub_wire_protocol_v1 = True
+        if options["build_pubsub_examples"]:
+            options["build_log_service"] = True
+            options["build_shell_tui"] = True
+            options["build_pubsub_json_serializer"] = True
+            options["build_pubsub_discovery_etcd"] = True
+            options["build_pubsub_wire_protocol_v2"] = True
+            options["build_pubsub_wire_protocol_v1"] = True
 
-        if self.options.build_pubsub_discovery_etcd:
-            self.options.build_pubsub = True
-            self.options.build_celix_etcdlib = True
+        if options["build_pubsub_discovery_etcd"]:
+            options["build_pubsub"] = True
+            options["build_celix_etcdlib"] = True
 
-        if self.options.build_pubsub_psa_ws:
-            self.options.build_http_admin = True
-            self.options.build_pubsub = True
+        if options["build_pubsub_psa_ws"]:
+            options["build_http_admin"] = True
+            options["build_pubsub"] = True
 
-        if self.options.build_pubsub_psa_zmq or self.options.build_pubsub_psa_tcp \
-                or self.options.build_pubsub_psa_udp_mc:
-            self.options.build_pubsub = True
+        if options["build_pubsub_psa_zmq"] or options["build_pubsub_psa_tcp"] \
+                or options["build_pubsub_psa_udp_mc"]:
+            options["build_pubsub"] = True
 
-        if self.options.build_pubsub_wire_protocol_v1:
-            self.options.build_pubsub = True
+        if options["build_pubsub_wire_protocol_v1"]:
+            options["build_pubsub"] = True
 
-        if self.options.build_pubsub_wire_protocol_v2:
-            self.options.build_pubsub = True
+        if options["build_pubsub_wire_protocol_v2"]:
+            options["build_pubsub"] = True
 
-        if self.options.build_pubsub_json_serializer or self.options.build_pubsub_avrobin_serializer:
-            self.options.build_pubsub = True
+        if options["build_pubsub_json_serializer"] or options["build_pubsub_avrobin_serializer"]:
+            options["build_pubsub"] = True
 
-        if self.options.build_pubsub:
-            self.options.build_framework = True
-            self.options.build_celix_dfi = True
-            self.options.build_shell_api = True
-            self.options.build_log_helper = True
-            self.options.celix_install_deprecated_api = True
+        if options["build_pubsub"]:
+            options["build_framework"] = True
+            options["build_celix_dfi"] = True
+            options["build_shell_api"] = True
+            options["build_log_helper"] = True
+            options["celix_install_deprecated_api"] = True
 
-        if self.options.build_cxx_remote_service_admin:
-            self.options.build_framework = True
-            self.options.build_log_helper = True
-            self.options.celix_cxx17 = True
+        if options["build_cxx_remote_service_admin"]:
+            options["build_framework"] = True
+            options["build_log_helper"] = True
+            options["celix_cxx17"] = True
 
-        if self.options.build_rsa_discovery_etcd:
-            self.options.build_celix_etcdlib = True
-            self.options.build_rsa_discovery_common = True
+        if options["build_rsa_discovery_etcd"]:
+            options["build_celix_etcdlib"] = True
+            options["build_rsa_discovery_common"] = True
 
-        if self.options.build_rsa_discovery_configured:
-            self.options.build_rsa_discovery_common = True
+        if options["build_rsa_discovery_configured"]:
+            options["build_rsa_discovery_common"] = True
 
-        if self.options.build_rsa_discovery_common or self.options.build_rsa_discovery_zeroconf \
-                or self.options.build_rsa_remote_service_admin_dfi or self.options.build_rsa_json_rpc \
-                or self.options.build_rsa_remote_service_admin_shm_v2:
-            self.options.build_remote_service_admin = True
+        if options["build_rsa_discovery_common"] or options["build_rsa_discovery_zeroconf"] \
+                or options["build_rsa_remote_service_admin_dfi"] or options["build_rsa_json_rpc"] \
+                or options["build_rsa_remote_service_admin_shm_v2"]:
+            options["build_remote_service_admin"] = True
 
-        if self.options.build_remote_service_admin:
-            self.options.build_framework = True
-            self.options.build_log_helper = True
-            self.options.build_celix_dfi = True
-            self.options.celix_install_deprecated_api = True
+        if options["build_remote_service_admin"]:
+            options["build_framework"] = True
+            options["build_log_helper"] = True
+            options["build_celix_dfi"] = True
+            options["celix_install_deprecated_api"] = True
 
-        if self.options.build_remote_shell:
-            self.options.build_shell = True
+        if options["build_remote_shell"]:
+            options["build_shell"] = True
 
-        if self.options.build_shell_wui:
-            self.options.build_shell = True
-            self.options.build_http_admin = True
+        if options["build_shell_wui"]:
+            options["build_shell"] = True
+            options["build_http_admin"] = True
 
-        if self.options.build_shell_tui:
-            self.options.build_shell = True
+        if options["build_shell_tui"]:
+            options["build_shell"] = True
 
-        if self.options.build_shell:
-            self.options.build_shell_api = True
-            self.options.build_log_helper = True
-            self.options.build_framework = True
+        if options["build_shell"]:
+            options["build_shell_api"] = True
+            options["build_log_helper"] = True
+            options["build_framework"] = True
 
-        if self.options.build_http_admin:
-            self.options.build_framework = True
+        if options["build_http_admin"]:
+            options["build_framework"] = True
 
-        if self.options.build_syslog_writer:
-            self.options.build_log_service = True
+        if options["build_syslog_writer"]:
+            options["build_log_service"] = True
 
-        if self.options.build_log_service:
-            self.options.build_log_service_api = True
-            self.options.build_shell_api = True
-            self.options.build_framework = True
-            self.options.build_log_helper = True
+        if options["build_log_service"]:
+            options["build_log_service_api"] = True
+            options["build_shell_api"] = True
+            options["build_framework"] = True
+            options["build_log_helper"] = True
 
-        if self.options.build_shell_api:
-            self.options.build_utils = True
+        if options["build_shell_api"]:
+            options["build_utils"] = True
 
-        if self.options.build_log_helper:
-            self.options.build_log_service_api = True
-            self.options.build_framework = True
+        if options["build_log_helper"]:
+            options["build_log_service_api"] = True
+            options["build_framework"] = True
 
-        if self.options.build_log_service_api:
-            self.options.build_utils = True
-            if self.options.celix_install_deprecated_api:
-                self.options.build_framework = True
+        if options["build_log_service_api"]:
+            options["build_utils"] = True
+            if options["celix_install_deprecated_api"]:
+                options["build_framework"] = True
 
-        if self.options.build_components_ready_check:
-            self.options.build_framework = True
+        if options["build_components_ready_check"]:
+            options["build_framework"] = True
 
-        if self.options.build_rcm:
-            self.options.build_utils = True
+        if options["build_rcm"]:
+            options["build_utils"] = True
 
-        if self.options.build_launcher or self.options.build_dependency_manager:
-            self.options.build_framework = True
+        if options["build_launcher"] or options["build_dependency_manager"]:
+            options["build_framework"] = True
 
-        if self.options.build_dependency_manager_cxx:
-            self.options.build_framework = True
-            self.options.celix_cxx14 = True
+        if options["build_dependency_manager_cxx"]:
+            options["build_framework"] = True
+            options["celix_cxx14"] = True
 
-        if self.options.build_celix_dfi:
-            self.options.build_utils = True
+        if options["build_celix_dfi"]:
+            options["build_utils"] = True
 
-        if self.options.build_framework:
-            self.options.build_utils = True
+        if options["build_framework"]:
+            options["build_utils"] = True
 
-        if self.options.build_pushstreams:
-            self.options.build_promises = True
+        if options["build_pushstreams"]:
+            options["build_promises"] = True
 
-        if self.options.build_promises:
-            self.options.celix_cxx17 = True
+        if options["build_promises"]:
+            options["celix_cxx17"] = True
 
-        if self.options.celix_cxx17:
-            self.options.celix_cxx14 = True
+        if options["celix_cxx17"]:
+            options["celix_cxx14"] = True
+
+        for opt in self._celix_options.keys():
+            setattr(self.options, opt, options[opt])
 
         # Once we drop Conan1 support, the following could be merged into requirements()
         # https://github.com/conan-io/conan/issues/14528#issuecomment-1685344080
@@ -450,7 +460,7 @@ class CelixConan(ConanFile):
     def generate(self):
         tc = CMakeToolchain(self)
         for opt in self._celix_options.keys():
-            tc.cache_variables[opt.upper()] = self.options.get_safe(opt, False)
+            tc.cache_variables[opt.upper()] = self.options.get_safe(opt, self._celix_defaults[opt])
         if self.options.enable_testing:
             for k in self.deps_cpp_info.deps:
                 if k == "mdnsresponder":
