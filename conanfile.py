@@ -385,46 +385,62 @@ class CelixConan(ConanFile):
         if self.options.celix_cxx17:
             self.options.celix_cxx14 = True
 
-    def requirements(self):
+        # Once we drop Conan1 support, the following could be merged into requirements()
+        # https://github.com/conan-io/conan/issues/14528#issuecomment-1685344080
         if self.options.build_utils:
-            self.requires("libzip/[>=1.7.3 <2.0.0]")
             self.options['libzip'].shared = True
         if self.options.build_framework or self.options.build_pubsub:
-            self.requires("util-linux-libuuid/2.39")
             self.options['util-linux-libuuid'].shared = True
         if ((self.options.build_framework and self.options.framework_curlinit)
                 or self.options.build_celix_etcdlib or self.options.build_deployment_admin
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
                 or self.options.build_launcher):
-            self.requires("libcurl/[>=7.64.1 <8.0.0]")
             self.options['libcurl'].shared = True
         if self.options.build_deployment_admin:
-            self.requires("zlib/[>=1.2.8 <2.0.0]")
             self.options['zlib'].shared = True
         if self.options.enable_testing:
             self.options['gtest'].shared = True
             if self.options.enable_address_sanitizer:
                 self.options["cpputest"].with_leak_detection = False
         if self.options.build_rsa_discovery_common or self.options.build_shell_bonjour:
-            self.requires("libxml2/[>=2.9.9 <3.0.0]")
             self.options['libxml2'].shared = True
+        if self.options.build_pubsub_psa_zmq:
+            self.options['zeromq'].shared = True
+            self.options['czmq'].shared = True
+        if self.options.build_http_admin or self.options.build_rsa_discovery_common \
+                or self.options.build_rsa_remote_service_admin_dfi:
+            self.options['civetweb'].shared = True
+        if self.options.build_celix_dfi:
+            self.options['libffi'].shared = True
+        if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
+            self.options['jansson'].shared = True
+
+    def requirements(self):
+        if self.options.build_utils:
+            self.requires("libzip/[>=1.7.3 <2.0.0]")
+        if self.options.build_framework or self.options.build_pubsub:
+            self.requires("util-linux-libuuid/2.39")
+        if ((self.options.build_framework and self.options.framework_curlinit)
+                or self.options.build_celix_etcdlib or self.options.build_deployment_admin
+                or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
+                or self.options.build_launcher):
+            self.requires("libcurl/[>=7.64.1 <8.0.0]")
+        if self.options.build_deployment_admin:
+            self.requires("zlib/[>=1.2.8 <2.0.0]")
+        if self.options.build_rsa_discovery_common or self.options.build_shell_bonjour:
+            self.requires("libxml2/[>=2.9.9 <3.0.0]")
         if self.options.build_cxx_remote_service_admin:
             self.requires("rapidjson/[>=1.1.0 <2.0.0]")
         if self.options.build_pubsub_psa_zmq:
             self.requires("zeromq/4.3.4")
-            self.options['zeromq'].shared = True
             self.requires("czmq/4.2.0")
-            self.options['czmq'].shared = True
         if self.options.build_http_admin or self.options.build_rsa_discovery_common \
                 or self.options.build_rsa_remote_service_admin_dfi:
             self.requires("civetweb/1.15")
-            self.options['civetweb'].shared = True
         if self.options.build_celix_dfi:
             self.requires("libffi/[>=3.2.1 <4.0.0]")
-            self.options['libffi'].shared = True
         if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
             self.requires("jansson/[>=2.12 <3.0.0]")
-            self.options['jansson'].shared = True
         if self.options.build_rsa_discovery_zeroconf or self.options.build_shell_bonjour:
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
