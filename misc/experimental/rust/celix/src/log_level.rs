@@ -18,13 +18,13 @@
  */
 
 use celix_bindings::celix_log_level_e;
-use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_TRACE;
-use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_DEBUG;
-use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_INFO;
-use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_WARNING;
-use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_ERROR;
-use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_FATAL;
-use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_DISABLED;
+use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_TRACE as CELIX_LOG_LEVEL_TRACE;
+use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_DEBUG as CELIX_LOG_LEVEL_DEBUG;
+use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_INFO as CELIX_LOG_LEVEL_INFO;
+use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_WARNING as CELIX_LOG_LEVEL_WARNING;
+use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_ERROR as CELIX_LOG_LEVEL_ERROR;
+use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_FATAL as CELIX_LOG_LEVEL_FATAL;
+use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_DISABLED as CELIX_LOG_LEVEL_DISABLED;
 
 pub enum LogLevel {
     Trace,
@@ -38,12 +38,12 @@ pub enum LogLevel {
 impl From<celix_log_level_e> for LogLevel {
     fn from(level: celix_log_level_e) -> Self {
         match level {
-            celix_log_level_CELIX_LOG_LEVEL_TRACE => LogLevel::Trace,
-            celix_log_level_CELIX_LOG_LEVEL_DEBUG => LogLevel::Debug,
-            celix_log_level_CELIX_LOG_LEVEL_INFO => LogLevel::Info,
-            celix_log_level_CELIX_LOG_LEVEL_WARNING => LogLevel::Warning,
-            celix_log_level_CELIX_LOG_LEVEL_ERROR => LogLevel::Error,
-            celix_log_level_CELIX_LOG_LEVEL_FATAL => LogLevel::Fatal,
+            CELIX_LOG_LEVEL_TRACE => LogLevel::Trace,
+            CELIX_LOG_LEVEL_DEBUG => LogLevel::Debug,
+            CELIX_LOG_LEVEL_INFO => LogLevel::Info,
+            CELIX_LOG_LEVEL_WARNING => LogLevel::Warning,
+            CELIX_LOG_LEVEL_ERROR => LogLevel::Error,
+            CELIX_LOG_LEVEL_FATAL => LogLevel::Fatal,
             _ => LogLevel::Disabled,
         }
     }
@@ -52,13 +52,13 @@ impl From<celix_log_level_e> for LogLevel {
 impl Into<celix_log_level_e> for LogLevel {
     fn into(self) -> celix_log_level_e {
         match self {
-            LogLevel::Trace => celix_log_level_CELIX_LOG_LEVEL_TRACE,
-            LogLevel::Debug => celix_log_level_CELIX_LOG_LEVEL_DEBUG,
-            LogLevel::Info => celix_log_level_CELIX_LOG_LEVEL_INFO,
-            LogLevel::Warning => celix_log_level_CELIX_LOG_LEVEL_WARNING,
-            LogLevel::Error => celix_log_level_CELIX_LOG_LEVEL_ERROR,
-            LogLevel::Fatal => celix_log_level_CELIX_LOG_LEVEL_FATAL,
-            _ => celix_log_level_CELIX_LOG_LEVEL_DISABLED,
+            LogLevel::Trace => CELIX_LOG_LEVEL_TRACE,
+            LogLevel::Debug => CELIX_LOG_LEVEL_DEBUG,
+            LogLevel::Info => CELIX_LOG_LEVEL_INFO,
+            LogLevel::Warning => CELIX_LOG_LEVEL_WARNING,
+            LogLevel::Error => CELIX_LOG_LEVEL_ERROR,
+            LogLevel::Fatal => CELIX_LOG_LEVEL_FATAL,
+            _ => CELIX_LOG_LEVEL_DISABLED,
         }
     }
 }

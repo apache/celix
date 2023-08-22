@@ -15,11 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-[workspace]
-members = [
-    "celix_bindings",
-    "celix",
-    "hello_world_activator",
-    "shell_command_bundle",
-    #"rust_shell_tui",
-]
+[package]
+name = "rust_shell_command_activator"
+version = "0.0.1"
+
+[dependencies]
+celix_bindings = { path = "../celix_bindings" }
+celix = { path = "../celix" }
+
+[lib]
+name = "rust_shell_command_activator"
+path = "src/lib.rs"
+crate-type = ["cdylib"]

@@ -41,6 +41,7 @@ pub use self::log_level::LogLevel as LogLevel;
 mod bundle_context;
 // Re-export bundle context types in the public API.
 pub use self::bundle_context::BundleContext as BundleContext;
+pub use self::bundle_context::ServiceRegistration as ServiceRegistration;
 pub use self::bundle_context::bundle_context_new as bundle_context_new;
 
 mod bundle_activator;

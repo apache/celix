@@ -41,11 +41,11 @@ if (CELIX_RUST_EXPERIMENTAL)
     add_celix_bundle(rust_bundle ACTIVATOR ${ACTUAL_LIB_TARGET})
     add_dependencies(rust_bundle rust_bundle_activator)
 
-#    corrosion_add_target_local_rustflags(rust_shell_tui_activator "-Cprefer-dynamic")
-#    corrosion_link_libraries(rust_shell_tui_activator Celix::framework)
-#    get_target_property(ACTUAL_LIB_TARGET rust_shell_tui_activator INTERFACE_LINK_LIBRARIES)
-#    add_celix_bundle(rust_shell_tui ACTIVATOR ${ACTUAL_LIB_TARGET})
-#    add_dependencies(rust_shell_tui rust_shell_tui_activator)
+    corrosion_add_target_local_rustflags(rust_shell_command_activator "-Cprefer-dynamic")
+    corrosion_link_libraries(rust_shell_command_activator Celix::framework)
+    get_target_property(ACTUAL_LIB_TARGET rust_shell_command_activator INTERFACE_LINK_LIBRARIES)
+    add_celix_bundle(rust_shell_command ACTIVATOR ${ACTUAL_LIB_TARGET})
+    add_dependencies(rust_shell_command rust_shell_command_activator)
 
     add_celix_container(rust_container NO_COPY
         BUNDLES
@@ -54,11 +54,11 @@ if (CELIX_RUST_EXPERIMENTAL)
             rust_bundle
     )
 
-#    add_celix_container(rust_shell_tui_cnt NO_COPY
-#        BUNDLES
-#            Celix::shell
-#            Celix::shell_tui
-#            rust_shell_tui
-#    )
+    add_celix_container(rust_shell_cnt NO_COPY
+        BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            rust_shell_command
+    )
 
 endif()
