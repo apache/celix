@@ -337,6 +337,7 @@ class CelixConan(ConanFile):
 
         for opt in self._celix_defaults.keys():
             setattr(self.options, opt, options[opt])
+        del options
 
         # Conan 2 does not support set dependency option in requirements()
         # https://github.com/conan-io/conan/issues/14528#issuecomment-1685344080
@@ -391,7 +392,7 @@ class CelixConan(ConanFile):
             self.requires("czmq/4.2.0")
         if self.options.build_http_admin or self.options.build_rsa_discovery_common \
                 or self.options.build_rsa_remote_service_admin_dfi:
-            self.requires("civetweb/1.15")
+            self.requires("civetweb/1.16")
         if self.options.build_celix_dfi:
             self.requires("libffi/[>=3.2.1 <4.0.0]")
         if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
@@ -400,10 +401,8 @@ class CelixConan(ConanFile):
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
-        # A stop gap for https://github.com/conan-io/conan/issues/14535
-        lst = [x.ref.name for x in self.requires.values()]
-        if "libcurl" in lst or "civetweb" in lst:
-            self.requires("openssl/1.1.1t")
+        # the latest civetweb (1.16) is not ready for openssl3
+        self.requires("openssl/1.1.1t", override=True)
         self.validate()
 
     def generate(self):
@@ -425,6 +424,7 @@ class CelixConan(ConanFile):
         tc.cache_variables["CELIX_MAJOR"] = v.major.value
         tc.cache_variables["CELIX_MINOR"] = v.minor.value
         tc.cache_variables["CELIX_MICRO"] = v.patch.value
+        tc.user_presets_path = False
         tc.generate()
 
     def _configure_cmake(self):
