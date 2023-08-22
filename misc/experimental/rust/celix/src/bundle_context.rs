@@ -40,7 +40,7 @@ use super::LogLevel;
 pub struct ServiceRegistration {
     service_id: i64,
     weak_ctx: Weak<BundleContextImpl>,
-    boxed_svc: Option<Box<dyn Any>>,
+    _boxed_svc: Option<Box<dyn Any>>,
     // arc_svc: Option<Arc<dyn Any>>,
 }
 
@@ -194,7 +194,7 @@ impl ServiceRegistrationBuilder<'_> {
             Ok(ServiceRegistration {
                 service_id,
                 weak_ctx: self.ctx.get_self().clone(),
-                boxed_svc: self.boxed_svc.take(), //to ensure that a possible box instance is not dropped
+                _boxed_svc: self.boxed_svc.take(), //to ensure that a possible box instance is not dropped
                 // arc_svc: self.arc_svc.take(), //to ensure that a possible arc instance is not dropped
             })
         } else {

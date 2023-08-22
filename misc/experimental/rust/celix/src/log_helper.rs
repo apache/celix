@@ -17,6 +17,8 @@
  * under the License.
  */
 
+use std::sync::Arc;
+
 use super::LogLevel;
 use super::BundleContext;
 
@@ -24,71 +26,32 @@ use celix_bindings::celix_log_helper_t;
 use celix_bindings::celix_logHelper_create;
 use celix_bindings::celix_logHelper_destroy;
 use celix_bindings::celix_logHelper_log;
-
-pub trait LogHelper {
-    fn log(&self, level: LogLevel, message: &str);
-
-    fn trace(&self, message: &str) {
-        self.log(LogLevel::Trace, message);
-    }
-
-    fn debug(&self, message: &str) {
-        self.log(LogLevel::Debug, message);
-    }
-
-    fn info(&self, message: &str) {
-        self.log(LogLevel::Info, message);
-    }
-
-    fn warning(&self, message: &str) {
-        self.log(LogLevel::Warning, message);
-    }
-
-    fn error(&self, message: &str) {
-        self.log(LogLevel::Error, message);
-    }
-
-    fn fatal(&self, message: &str) {
-        self.log(LogLevel::Fatal, message);
-    }
-}
-
-struct LogHelperImpl {
+pub struct LogHelper {
     celix_log_helper: *mut celix_log_helper_t,
 }
 
-impl  LogHelperImpl {
-    pub fn new(ctx: &dyn BundleContext, name: &str) -> Self {
+impl LogHelper {
+    pub fn new(ctx: Arc<dyn BundleContext>, name: &str) -> Self {
         unsafe {
             let result = std::ffi::CString::new(name);
             match result {
                 Ok(c_str) => {
-                    LogHelperImpl {
+                    LogHelper {
                         celix_log_helper: celix_logHelper_create(ctx.get_c_bundle_context(), c_str.as_ptr() as *const i8),
                     }
                 }
                 Err(e) => {
                     ctx.log_error(&format!("Error creating CString: {}. Using \"error\" as log name", e));
                     let c_str = std::ffi::CString::new("error").unwrap();
-                    LogHelperImpl {
+                    LogHelper {
                         celix_log_helper: celix_logHelper_create(ctx.get_c_bundle_context(), c_str.as_ptr() as *const i8),
                     }
                 }
             }
         }
     }
-}
 
-impl Drop for LogHelperImpl {
-    fn drop(&mut self) {
-        unsafe {
-            celix_logHelper_destroy(self.celix_log_helper);
-        }
-    }
-}
-
-impl LogHelper for LogHelperImpl {
-    fn log(&self, level: LogLevel, message: &str) {
+    pub fn log(&self, level: LogLevel, message: &str) {
         unsafe {
             let result = std::ffi::CString::new(message);
             match result {
@@ -101,8 +64,35 @@ impl LogHelper for LogHelperImpl {
             }
         }
     }
+    pub fn trace(&self, message: &str) {
+        self.log(LogLevel::Trace, message);
+    }
+
+    pub fn debug(&self, message: &str) {
+        self.log(LogLevel::Debug, message);
+    }
+
+    pub fn info(&self, message: &str) {
+        self.log(LogLevel::Info, message);
+    }
+
+    pub fn warning(&self, message: &str) {
+        self.log(LogLevel::Warning, message);
+    }
+
+    pub fn error(&self, message: &str) {
+        self.log(LogLevel::Error, message);
+    }
+
+    pub fn fatal(&self, message: &str) {
+        self.log(LogLevel::Fatal, message);
+    }
 }
 
-pub fn log_helper_new(ctx: &dyn BundleContext, name: &str) -> Box<dyn LogHelper> {
-    Box::new(LogHelperImpl::new(ctx, name))
+impl Drop for LogHelper {
+    fn drop(&mut self) {
+        unsafe {
+            celix_logHelper_destroy(self.celix_log_helper);
+        }
+    }
 }

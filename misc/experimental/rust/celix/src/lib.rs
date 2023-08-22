@@ -51,4 +51,3 @@ pub use self::bundle_activator::BundleActivator as BundleActivator;
 mod log_helper;
 // Re-export log helper types in the public API.
 pub use self::log_helper::LogHelper as LogHelper;
-pub use self::log_helper::log_helper_new as log_helper_new;
