@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from conan import ConanFile, tools
+from conan import ConanFile, conan_version
 from conan.errors import ConanInvalidConfiguration
 from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain
 from conan.tools.scm import Version
@@ -39,71 +39,6 @@ class CelixConan(ConanFile):
                   "It is a framework to develop (dynamic) modular software applications " \
                   "using component and/or service-oriented programming."
 
-    _celix_options = {
-        "enable_testing": [True, False],
-        "enable_code_coverage": [True, False],
-        "enable_address_sanitizer": [True, False],
-        "enable_undefined_sanitizer": [True, False],
-        "enable_thread_sanitizer": [True, False],
-        "enable_testing_dependency_manager_for_cxx11": [True, False],
-        "enable_testing_for_cxx14": [True, False],
-        "build_all": [True, False],
-        "build_deployment_admin": [True, False],
-        "build_http_admin": [True, False],
-        "build_log_service": [True, False],
-        "build_log_helper": [True, False],
-        "build_log_service_api": [True, False],
-        "build_syslog_writer": [True, False],
-        "build_pubsub": [True, False],
-        "build_pubsub_wire_protocol_v1": [True, False],
-        "build_pubsub_wire_protocol_v2": [True, False],
-        "build_pubsub_json_serializer": [True, False],
-        "build_pubsub_avrobin_serializer": [True, False],
-        "build_pubsub_psa_zmq": [True, False],
-        "build_pubsub_examples": [True, False],
-        "build_pubsub_integration": [True, False],
-        "build_pubsub_psa_tcp": [True, False],
-        "build_pubsub_psa_udp_mc": [True, False],
-        "build_pubsub_psa_ws": [True, False],
-        "build_pubsub_discovery_etcd": [True, False],
-        "build_cxx_remote_service_admin": [True, False],
-        "build_cxx_rsa_integration": [True, False],
-        "build_remote_service_admin": [True, False],
-        "build_rsa_remote_service_admin_dfi": [True, False],
-        "build_rsa_discovery_common": [True, False],
-        "build_rsa_discovery_configured": [True, False],
-        "build_rsa_discovery_etcd": [True, False],
-        "build_rsa_remote_service_admin_shm_v2": [True, False],
-        "build_rsa_json_rpc": [True, False],
-        "build_rsa_discovery_zeroconf": [True, False],
-        "build_shell": [True, False],
-        "build_shell_api": [True, False],
-        "build_remote_shell": [True, False],
-        "build_shell_bonjour": [True, False],
-        "build_shell_tui": [True, False],
-        "build_shell_wui": [True, False],
-        "build_components_ready_check": [True, False],
-        "build_examples": [True, False],
-        "build_celix_etcdlib": [True, False],
-        "build_launcher": [True, False],
-        "build_promises": [True, False],
-        "build_pushstreams": [True, False],
-        "build_experimental": [True, False],
-        "build_celix_dfi": [True, False],
-        "build_dependency_manager": [True, False],
-        "build_dependency_manager_cxx": [True, False],
-        "build_framework": [True, False],
-        "build_rcm": [True, False],
-        "build_utils": [True, False],
-        "celix_cxx14": [True, False],
-        "celix_cxx17": [True, False],
-        "celix_install_deprecated_api": [True, False],
-        "celix_use_compression_for_bundle_zips": [True, False],
-        "celix_err_buffer_size": ["ANY"],
-        "enable_cmake_warning_tests": [True, False],
-        "enable_testing_on_ci": [True, False],
-        "framework_curlinit": [True, False],
-    }
     _celix_defaults = {
         "enable_testing": False,
         "enable_code_coverage": False,
@@ -164,13 +99,21 @@ class CelixConan(ConanFile):
         "celix_cxx17": True,
         "celix_install_deprecated_api": False,
         "celix_use_compression_for_bundle_zips": True,
-        "celix_err_buffer_size": 512,
         "enable_cmake_warning_tests": False,
         "enable_testing_on_ci": False,
         "framework_curlinit": True,
     }
+    options = {
+        "celix_err_buffer_size": ["ANY"],
+    }
+    default_options = {
+        "celix_err_buffer_size": 512,
+    }
 
-    options = _celix_options
+    for comp in _celix_defaults.keys():
+        options[comp] = [True, False]
+    del comp
+
     _cmake = None
 
     def validate(self):
@@ -212,9 +155,9 @@ class CelixConan(ConanFile):
             self.test_requires("cpputest/4.0")
 
     def configure(self):
-        # copy options to _celix_options, fill in defaults if not set
+        # copy options to options, fill in defaults if not set
         options = {}
-        for opt in self._celix_options.keys():
+        for opt in self._celix_defaults.keys():
             options[opt] = self.options.get_safe(opt).value
             if options[opt] is None:
                 options[opt] = self._celix_defaults[opt]
@@ -392,10 +335,10 @@ class CelixConan(ConanFile):
         if options["celix_cxx17"]:
             options["celix_cxx14"] = True
 
-        for opt in self._celix_options.keys():
+        for opt in self._celix_defaults.keys():
             setattr(self.options, opt, options[opt])
 
-        # Once we drop Conan1 support, the following could be merged into requirements()
+        # Conan 2 does not support set dependency option in requirements()
         # https://github.com/conan-io/conan/issues/14528#issuecomment-1685344080
         if self.options.build_utils:
             self.options['libzip'].shared = True
@@ -406,6 +349,7 @@ class CelixConan(ConanFile):
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
                 or self.options.build_launcher):
             self.options['libcurl'].shared = True
+            self.options['openssl'].shared = True
         if self.options.build_deployment_admin:
             self.options['zlib'].shared = True
         if self.options.enable_testing:
@@ -420,6 +364,7 @@ class CelixConan(ConanFile):
         if self.options.build_http_admin or self.options.build_rsa_discovery_common \
                 or self.options.build_rsa_remote_service_admin_dfi:
             self.options['civetweb'].shared = True
+            self.options['openssl'].shared = True
         if self.options.build_celix_dfi:
             self.options['libffi'].shared = True
         if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
@@ -455,12 +400,16 @@ class CelixConan(ConanFile):
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
+        # A stop gap for https://github.com/conan-io/conan/issues/14535
+        lst = [x.ref.name for x in self.requires.values()]
+        if "libcurl" in lst or "civetweb" in lst:
+            self.requires("openssl/1.1.1t")
         self.validate()
 
     def generate(self):
         tc = CMakeToolchain(self)
-        for opt in self._celix_options.keys():
-            tc.cache_variables[opt.upper()] = self.options.get_safe(opt, self._celix_defaults[opt])
+        for opt in self._celix_defaults.keys():
+            tc.cache_variables[opt.upper()] = self.options.get_safe(opt)
         if self.options.enable_testing:
             for k in self.deps_cpp_info.deps:
                 if k == "mdnsresponder":
