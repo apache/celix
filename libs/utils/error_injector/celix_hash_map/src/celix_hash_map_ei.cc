@@ -20,10 +20,19 @@
 #include "celix_hash_map_ei.h"
 
 extern "C" {
+
 celix_string_hash_map_t* __real_celix_stringHashMap_create();
 CELIX_EI_DEFINE(celix_stringHashMap_create, celix_string_hash_map_t*);
 celix_string_hash_map_t* __wrap_celix_stringHashMap_create() {
     CELIX_EI_IMPL(celix_stringHashMap_create);
     return __real_celix_stringHashMap_create();
 }
+
+celix_string_hash_map_t* __real_celix_stringHashMap_createWithOptions(const celix_string_hash_map_create_options_t* opts);
+CELIX_EI_DEFINE(celix_stringHashMap_createWithOptions, celix_string_hash_map_t*);
+celix_string_hash_map_t* __wrap_celix_stringHashMap_createWithOptions(const celix_string_hash_map_create_options_t* opts) {
+    CELIX_EI_IMPL(celix_stringHashMap_createWithOptions);
+    return __real_celix_stringHashMap_createWithOptions(opts);
+}
+
 }

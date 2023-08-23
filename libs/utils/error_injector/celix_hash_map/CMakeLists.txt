@@ -21,5 +21,6 @@ target_include_directories(hash_map_ei PUBLIC include)
 target_link_libraries(hash_map_ei PUBLIC Celix::error_injector Celix::utils)
 target_link_options(hash_map_ei INTERFACE
         LINKER:--wrap,celix_stringHashMap_create
+        LINKER:--wrap,celix_stringHashMap_createWithOptions
 )
 add_library(Celix::hash_map_ei ALIAS hash_map_ei)

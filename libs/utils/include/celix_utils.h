@@ -118,15 +118,6 @@ CELIX_UTILS_EXPORT char* celix_utils_trim(const char* string);
 CELIX_UTILS_EXPORT char* celix_utils_trimInPlace(char* string);
 
 /**
- * @brief Trims a string in place.
- *
- * The trim will remove any leading and trailing whitespaces (' ', '\t', etc based on isspace) from the input string.
- * The input string is modified in place.
- * @param[in,out] string The string to trim.
- */
-void celix_utils_trimInPlace(char* string);
-
-/**
  * @brief Check if a string is NULL or empty "".
  */
 CELIX_UTILS_EXPORT bool celix_utils_isStringNullOrEmpty(const char* s);

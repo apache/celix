@@ -359,6 +359,10 @@ celix_properties_t* celix_properties_create(void) {
         props->map = celix_stringHashMap_createWithOptions(&opts);
         props->currentStringBufferIndex = 0;
         props->currentEntriesBufferIndex = 0;
+        if (props->map == NULL) {
+            free(props);
+            props = NULL;
+        }
     }
     return props;
 }

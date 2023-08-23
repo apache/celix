@@ -108,7 +108,7 @@ if (LINKER_WRAP_SUPPORTED)
             Celix::ifaddrs_ei
             Celix::threads_ei
             Celix::malloc_ei
-            Celix::hmap_ei
+            Celix::hash_map_ei
             GTest::gtest GTest::gtest_main
     )
     target_include_directories(test_utils_with_ei PRIVATE ../src) #for version_private (needs refactoring of test)
@@ -130,4 +130,3 @@ if (ENABLE_TESTING_FOR_CXX14)
     add_test(NAME test_utils_cxx_headers_with_cxx14 COMMAND test_utils_cxx_headers_with_cxx14)
     setup_target_for_coverage(test_utils_cxx_headers_with_cxx14 SCAN_DIR ..)
 endif ()
-

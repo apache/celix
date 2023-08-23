@@ -585,3 +585,7 @@ TEST_F(PropertiesTestSuite, DeprecatedApiTest) {
 
     properties_destroy(props);
 }
+
+TEST_F(PropertiesTestSuite, PropertiesAutoCleanupTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+}
