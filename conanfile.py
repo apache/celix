@@ -173,9 +173,8 @@ class CelixConan(ConanFile):
             options["build_rsa_discovery_zeroconf"] = False
             options["build_shell_bonjour"] = False
 
-        if not options["enable_testing"]:
-            options["build_pubsub_integration"] = False
-            options["enable_code_coverage"] = False
+        if options["enable_code_coverage"]:
+            options["enable_testing"] = True
 
         if options["build_examples"]:
             options["build_shell_tui"] = True
@@ -209,6 +208,7 @@ class CelixConan(ConanFile):
             options["build_pubsub_json_serializer"] = True
             options["build_pubsub_wire_protocol_v2"] = True
             options["build_pubsub_wire_protocol_v1"] = True
+            options["enable_testing"] = True
 
         if options["build_pubsub_examples"]:
             options["build_log_service"] = True

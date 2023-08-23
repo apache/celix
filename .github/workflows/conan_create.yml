@@ -30,7 +30,6 @@ jobs:
         run: |
           # build profile
           conan profile detect -f
-          echo tools.cmake.cmaketoolchain:generator=Ninja >> ~\.conan2\global.conf
       - name: Create Celix
         env:
           CC: ${{ matrix.compiler[0] }}
