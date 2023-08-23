@@ -47,11 +47,6 @@
 
 struct module {
     celix_framework_t* fw;
-	linked_list_pt capabilities;
-	linked_list_pt requirements;
-	linked_list_pt wires;
-
-	array_list_pt dependentImporters;
 
 	version_pt version;
 	char* symbolicName;
@@ -60,7 +55,6 @@ struct module {
     char* description;
 	bool resolved;
 
-	manifest_pt headerMap;
 	char * id;
 
 	celix_bundle_t *bundle;
@@ -79,12 +73,9 @@ module_pt module_create(manifest_pt headerMap, const char * moduleId, bundle_pt 
     if (headerMap != NULL && fw != NULL) {
         module = (module_pt) calloc(1, sizeof(*module));
         module->fw = fw;
-        module->headerMap = headerMap;
         module->id = strdup(moduleId);
         module->bundle = bundle;
         module->resolved = false;
-        module->dependentImporters = NULL;
-        arrayList_create(&module->dependentImporters);
         celixThreadMutex_create(&module->handlesLock, NULL);
         module->libraryHandles = celix_arrayList_create();
 
@@ -104,14 +95,6 @@ module_pt module_create(manifest_pt headerMap, const char * moduleId, bundle_pt 
 
             module->version = NULL;
             manifestParser_getBundleVersion(mp, &module->version);
-
-            module->capabilities = NULL;
-            manifestParser_getCapabilities(mp, &module->capabilities);
-
-            module->requirements = NULL;
-            manifestParser_getRequirements(mp, &module->requirements);
-
-            module->wires = NULL;
 
             manifestParser_destroy(mp);
         }
@@ -135,12 +118,6 @@ module_pt module_createFrameworkModule(celix_framework_t* fw, bundle_pt bundle) 
         module->description = celix_utils_strdup("The Celix Framework System Bundle");
         module->version = NULL;
         version_createVersion(1, 0, 0, "", &module->version);
-        linkedList_create(&module->capabilities);
-        linkedList_create(&module->requirements);
-        module->dependentImporters = NULL;
-        arrayList_create(&module->dependentImporters);
-        module->wires = NULL;
-        module->headerMap = NULL;
         module->resolved = false;
         module->bundle = bundle;
         celixThreadMutex_create(&module->handlesLock, NULL);
@@ -150,45 +127,8 @@ module_pt module_createFrameworkModule(celix_framework_t* fw, bundle_pt bundle) 
 }
 
 void module_destroy(module_pt module) {
-	arrayList_destroy(module->dependentImporters);
 
 	version_destroy(module->version);
-
-	if (module->wires != NULL) {
-        linked_list_iterator_pt iter = linkedListIterator_create(module->wires, 0);
-        while (linkedListIterator_hasNext(iter)) {
-            wire_pt next = linkedListIterator_next(iter);
-            linkedListIterator_remove(iter);
-            wire_destroy(next);
-        }
-        linkedListIterator_destroy(iter);
-        linkedList_destroy(module->wires);
-	}
-
-	if (module->requirements != NULL) {
-	    linked_list_iterator_pt iter = linkedListIterator_create(module->requirements, 0);
-        while (linkedListIterator_hasNext(iter)) {
-            requirement_pt next = linkedListIterator_next(iter);
-            linkedListIterator_remove(iter);
-            requirement_destroy(next);
-        }
-        linkedListIterator_destroy(iter);
-        linkedList_destroy(module->requirements);
-	}
-
-	if (module->capabilities != NULL) {
-	    linked_list_iterator_pt iter = linkedListIterator_create(module->capabilities, 0);
-        while (linkedListIterator_hasNext(iter)) {
-            capability_pt next = linkedListIterator_next(iter);
-            linkedListIterator_remove(iter);
-            capability_destroy(next);
-        }
-        linkedListIterator_destroy(iter);
-        linkedList_destroy(module->capabilities);
-    }
-
-	module->headerMap = NULL;
-
 	free(module->id);
 	free(module->symbolicName);
     free(module->name);
@@ -200,22 +140,7 @@ void module_destroy(module_pt module) {
 }
 
 wire_pt module_getWire(module_pt module, const char * serviceName) {
-	wire_pt wire = NULL;
-	if (module->wires != NULL) {
-		linked_list_iterator_pt iterator = linkedListIterator_create(module->wires, 0);
-		while (linkedListIterator_hasNext(iterator)) {
-			const char* name;
-			wire_pt next = linkedListIterator_next(iterator);
-			capability_pt cap = NULL;
-			wire_getCapability(next, &cap);
-			capability_getServiceName(cap, &name);
-			if (strcasecmp(name, serviceName) == 0) {
-				wire = next;
-			}
-		}
-		linkedListIterator_destroy(iterator);
-	}
-	return wire;
+	return NULL;
 }
 
 version_pt module_getVersion(module_pt module) {
@@ -267,37 +192,10 @@ char * module_getId(module_pt module) {
 }
 
 linked_list_pt module_getWires(module_pt module) {
-	return module->wires;
+    return NULL;
 }
 
 void module_setWires(module_pt module, linked_list_pt wires) {
-    int i = 0;
-    for (i = 0; (module->wires != NULL) && (i < linkedList_size(module->wires)); i++) {
-        wire_pt wire = (wire_pt) linkedList_get(module->wires, i);
-        module_pt exporter = NULL;
-        wire_getExporter(wire, &exporter);
-        module_removeDependentImporter(exporter, module);
-    }
-
-    if (module->wires != NULL) {
-		linked_list_iterator_pt iter = linkedListIterator_create(module->wires, 0);
-		while (linkedListIterator_hasNext(iter)) {
-			wire_pt next = linkedListIterator_next(iter);
-			linkedListIterator_remove(iter);
-			wire_destroy(next);
-		}
-		linkedListIterator_destroy(iter);
-		linkedList_destroy(module->wires);
-	}
-
-	module->wires = wires;
-
-	for (i = 0; (module->wires != NULL) && (i < linkedList_size(module->wires)); i++) {
-        wire_pt wire = (wire_pt) linkedList_get(module->wires, i);
-        module_pt exporter = NULL;
-        wire_getExporter(wire, &exporter);
-        module_addDependentImporter(exporter, module);
-    }
 }
 
 bool module_isResolved(module_pt module) {
@@ -313,31 +211,27 @@ bundle_pt module_getBundle(module_pt module) {
 }
 
 linked_list_pt module_getRequirements(module_pt module) {
-	return module->requirements;
+    return NULL;
 }
 
 linked_list_pt module_getCapabilities(module_pt module) {
-	return module->capabilities;
+    return NULL;
 }
 
 array_list_pt module_getDependentImporters(module_pt module) {
-    return module->dependentImporters;
+    return NULL;
 }
 
 void module_addDependentImporter(module_pt module, module_pt importer) {
-    if (!arrayList_contains(module->dependentImporters, importer)) {
-        arrayList_add(module->dependentImporters, importer);
-    }
 }
 
 void module_removeDependentImporter(module_pt module, module_pt importer) {
-    arrayList_removeElement(module->dependentImporters, importer);
 }
 
 //----------------------------------------------------
 //TODO add implementation (functions not implemented but already exported)
 array_list_pt module_getDependentRequirers(module_pt module) {
-	return NULL;
+    return NULL;
 }
 
 void module_addDependentRequirer(module_pt module, module_pt requirer) {
@@ -348,12 +242,7 @@ void module_removeDependentRequirer(module_pt module, module_pt requirer) {
 //----------------------------------------------------
 
 array_list_pt module_getDependents(module_pt module) {
-    array_list_pt dependents = NULL;
-    arrayList_create(&dependents);
-
-    arrayList_addAll(dependents, module->dependentImporters);
-
-    return dependents;
+    return NULL;
 }
 
 celix_status_t celix_module_closeLibraries(celix_module_t* module) {
@@ -439,7 +328,7 @@ static celix_status_t celix_module_loadLibrariesInManifestEntry(celix_module_t* 
         char lib[128];
         lib[127] = '\0';
         strncpy(lib, pathToken, 127);
-        char *trimmedLib = utils_stringTrim(lib);
+        char *trimmedLib = celix_utils_trimInPlace(lib);
         status = celix_module_loadLibraryForManifestEntry(module, trimmedLib, archive, &handle);
 
         if ( (status == CELIX_SUCCESS) && (activator != NULL) && (strcmp(trimmedLib, activator) == 0) ) {

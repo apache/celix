@@ -25,6 +25,7 @@
 #include "celix_bundle_context.h"
 #include "celix_shell.h"
 #include "celix_framework_utils.h"
+#include "celix_constants.h"
 
 class ShellTestSuite : public ::testing::Test {
 public:
@@ -39,6 +40,9 @@ public:
         celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
         celix_properties_set(properties, "org.osgi.framework.storage", ".cacheShellTestSuite");
         celix_properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
+
+        //to ensure "query 0" is still a test case for am empty result.
+        celix_properties_setBool(properties, CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED, false);
 
         auto* cFw = celix_frameworkFactory_createFramework(properties);
         auto cCtx = celix_framework_getFrameworkContext(cFw);
@@ -104,11 +108,14 @@ TEST_F(ShellTestSuite, testAllCommandsAreCallable) {
     callCommand(ctx, "start", false); // incorrect number of arguments
     callCommand(ctx, "uninstall not-a-number", false);
     callCommand(ctx, "uninstall", false); // incorrect number of arguments
+    callCommand(ctx, "unload not-a-number", false);
+    callCommand(ctx, "unload", false); // incorrect number of arguments
     callCommand(ctx, "update not-a-number", false);
     callCommand(ctx, "update", false); // incorrect number of arguments
     callCommand(ctx, "stop 15", false); //non existing bundle id
     callCommand(ctx, "start 15", false); //non existing bundle id
     callCommand(ctx, "uninstall 15", false); //non existing bundle id
+    callCommand(ctx, "unload 15", false); //non existing bundle id
     callCommand(ctx, "update 15", false); //non existing bundle id
 }
 

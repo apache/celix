@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "celix_bundle.h"
+#include "celix_compiler.h"
 #include "celix_constants.h"
 #include "celix_utils.h"
 #include "dm_service_dependency_impl.h"
@@ -156,7 +157,7 @@ const char* celix_dmServiceDependency_getFilter(celix_dm_service_dependency_t *d
 	return (const char*)dependency->filter;
 }
 
-celix_status_t serviceDependency_setCallbacks(celix_dm_service_dependency_t *dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change __attribute__((unused)), service_remove_fpt remove, service_swap_fpt swap  __attribute__((unused))) {
+celix_status_t serviceDependency_setCallbacks(celix_dm_service_dependency_t *dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change CELIX_UNUSED, service_remove_fpt remove, service_swap_fpt swap  CELIX_UNUSED) {
     dependency->set = (celix_dm_service_update_fp)set;
     dependency->add = (celix_dm_service_update_fp)add;
     dependency->remove = (celix_dm_service_update_fp)remove;
@@ -377,7 +378,7 @@ void dependency_destroyDependencyInfo(dm_service_dependency_info_pt info) {
 	celix_dmServiceDependency_destroyInfo(NULL, info);
 }
 
-void celix_dmServiceDependency_destroyInfo(celix_dm_service_dependency_t *dep __attribute__((unused)), dm_service_dependency_info_t *info) {
+void celix_dmServiceDependency_destroyInfo(celix_dm_service_dependency_t *dep CELIX_UNUSED, dm_service_dependency_info_t *info) {
 	if (info != NULL) {
 	    free(info->serviceName);
 		free(info->filter);

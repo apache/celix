@@ -206,6 +206,33 @@ add_executable(create_framework_with_celix_launcher src/launcher.c)
 target_link_libraries(create_framework_with_celix_launcher PRIVATE Celix::framework)
 ```
 
+## Framework `celix_condition` Services
+In a dynamic framework such as Apache Celix, it can sometimes be challenging to ascertain when the framework or 
+certain parts of a dynamic service-based application are ready for use. To address this issue, Apache Celix provides 
+services known as `celix_condition` services.
+
+A `celix_condition` service is a registered marker interface with a "condition.id" service property. 
+The service's availability signifies that the condition identified by the "condition.id" has been met.
+
+The `celix_condition` service is an adaptation of the
+[OSGi 8 Condition Service Specification](https://docs.osgi.org/specification/osgi.core/8.0.0/service.condition.html).
+
+The Apache Celix framework will provide the following `celix_condition` services for the respective states:
+
+- Celix condition "true", which is always available.
+- Celix condition "framework.ready". This service will be registered when the framework has successfully and fully 
+  started, which includes installing and starting all configured bundles and services, and ensuring the event queue is 
+  empty after all configured bundles have been started. Note that the "framework.ready" condition is not part of the 
+  OSGi condition specification.
+- Celix condition "framework.error". This service will be registered when the framework has not started successfully. 
+  This can occur if any of the configured bundles fail to start or install. Note that the "framework.error" condition 
+  is not part of the OSGi condition specification.
+
+Contrary to the OSGi specification, the Apache Celix framework does not provide a public API for adding or removing 
+framework listeners. Instead, framework condition services can be used. This has the advantage of ensuring no 
+framework state changes can be missed, because the state indicating condition services will be available 
+until the framework is stopped.
+
 ## Framework bundle cache
 The Apache Celix framework uses a bundle cache directory to store the installed bundles, their state and for a 
 persistent bundle storage. The bundle cache directory is created in the directory configured in the framework 
@@ -259,20 +286,21 @@ So changing the environment variables after the framework is created will not ha
 
 The following framework properties are supported:
 
-| Framework Property                        | Default Value | Description                                                                                                                                                                           |
-|-------------------------------------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| CELIX_FRAMEWORK_CACHE_DIR                 | ".cache"      | The directory where the Apache Celix framework will store its data.                                                                                                                   |
-| CELIX_FRAMEWORK_CACHE_USE_TMP_DIR         | "false"       | If true, the Apache Celix framework will use the system temp directory for the cache directory.                                                                                       |
-| CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE | "false"       | If true, the Apache Celix framework will clean the cache directory on create.                                                                                                         |
-| CELIX_FRAMEWORK_FRAMEWORK_UUID            | ""            | The UUID of the Apache Celix framework. If not set, a random UUID will be generated.                                                                                                  |
-| CELIX_BUNDLES_PATH                        | "bundles"     | The directories where the Apache Celix framework will search for bundles. Multiple directories can be provided separated by a colon.                                                  |
-| CELIX_LOAD_BUNDLES_WITH_NODELETE          | "false"       | If true, the Apache Celix framework will load bundle libraries with the RTLD_NODELETE flags. Note for cmake build type Debug, the default is "true", otherwise the default is "false" |
-| CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE   | "100"         | The size of the static event queue. If more than 100 events in the queue are needed, dynamic memory allocation will be used.                                                          |
-| CELIX_FRAMEWORK_AUTO_START_0              | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                                                               |
-| CELIX_FRAMEWORK_AUTO_START_1              | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                                                               |
-| CELIX_FRAMEWORK_AUTO_START_2              | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                                                               |
-| CELIX_FRAMEWORK_AUTO_START_3              | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                                                               |
-| CELIX_FRAMEWORK_AUTO_START_4              | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                                                               |
-| CELIX_FRAMEWORK_AUTO_START_5              | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                                                               |
-| CELIX_AUTO_INSTALL                        | ""            | The bundles to install after the framework is started. Multiple bundles can be provided separated by a space.                                                                         |         
-| CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL    | "info"        | The default active log level for created log services. Possible values are "trace", "debug", "info", "warning", "error" and "fatal".                                                  |
+| Framework Property                                           | Default Value | Description                                                                                                                                                                           |
+|--------------------------------------------------------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| CELIX_FRAMEWORK_CACHE_DIR                                    | ".cache"      | The directory where the Apache Celix framework will store its data.                                                                                                                   |
+| CELIX_FRAMEWORK_CACHE_USE_TMP_DIR                            | "false"       | If true, the Apache Celix framework will use the system temp directory for the cache directory.                                                                                       |
+| CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE                    | "false"       | If true, the Apache Celix framework will clean the cache directory on create.                                                                                                         |
+| CELIX_FRAMEWORK_FRAMEWORK_UUID                               | ""            | The UUID of the Apache Celix framework. If not set, a random UUID will be generated.                                                                                                  |
+| CELIX_BUNDLES_PATH                                           | "bundles"     | The directories where the Apache Celix framework will search for bundles. Multiple directories can be provided separated by a colon.                                                  |
+| CELIX_LOAD_BUNDLES_WITH_NODELETE                             | "false"       | If true, the Apache Celix framework will load bundle libraries with the RTLD_NODELETE flags. Note for cmake build type Debug, the default is "true", otherwise the default is "false" |
+| CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE                      | "100"         | The size of the static event queue. If more than 100 events in the queue are needed, dynamic memory allocation will be used.                                                          |
+| CELIX_FRAMEWORK_AUTO_START_0                                 | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                                                               |
+| CELIX_FRAMEWORK_AUTO_START_1                                 | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                                                               |
+| CELIX_FRAMEWORK_AUTO_START_2                                 | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                                                               |
+| CELIX_FRAMEWORK_AUTO_START_3                                 | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                                                               |
+| CELIX_FRAMEWORK_AUTO_START_4                                 | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                                                               |
+| CELIX_FRAMEWORK_AUTO_START_5                                 | ""            | The bundles to install and start after the framework is started. Multiple bundles can be provided separated by a space.                                                               |
+| CELIX_AUTO_INSTALL                                           | ""            | The bundles to install after the framework is started. Multiple bundles can be provided separated by a space.                                                                         |         
+| CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL                       | "info"        | The default active log level for created log services. Possible values are "trace", "debug", "info", "warning", "error" and "fatal".                                                  |
+ | CELIX_ALLOWED_PROCESSING_TIME_FOR_SCHEDULED_EVENT_IN_SECONDS | "2"           | The allowed processing time for scheduled events in seconds, if processing takes longer a warning message will be logged.                                                             |

@@ -91,10 +91,11 @@
     filename : the filename of the file where date/time must be modified
     dosdate : the new date at the MSDos format (4 bytes)
     tmu_date : the SAME new date at the tm_unz format */
-void change_file_date(filename,dosdate,tmu_date)
-    const char *filename;
-    uLong dosdate;
-    tm_unz tmu_date;
+void change_file_date(
+    const char *filename,
+    uLong dosdate,
+    tm_unz tmu_date
+)
 {
 #ifdef _WIN32
   HANDLE hFile;
@@ -132,8 +133,7 @@ void change_file_date(filename,dosdate,tmu_date)
 /* mymkdir and change_file_date are not 100 % portable
    As I don't know well Unix, I wait feedback for the unix portion */
 
-int mymkdir(dirname)
-    const char* dirname;
+int mymkdir(const char* dirname)
 {
     int ret=0;
 #ifdef _WIN32
@@ -146,8 +146,7 @@ int mymkdir(dirname)
     return ret;
 }
 
-int makedir (newdir)
-    char *newdir;
+int makedir (char *newdir)
 {
   char *buffer ;
   char *p;

@@ -23,6 +23,7 @@
 
 #include "service_tracker.h"
 #include "celix/BundleContext.h"
+#include "celix_err.h"
 #include "celix_framework_factory.h"
 #include "celix_framework.h"
 #include "service_tracker_customizer.h"
@@ -33,10 +34,10 @@ public:
     static constexpr const char * const TEST_BND2_LOC = "" SIMPLE_TEST_BUNDLE2_LOCATION "";
 
     CxxBundleContextTestSuite() {
-        auto* properties = properties_create();
-        properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
-        properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
-        properties_set(properties, "org.osgi.framework.storage", ".cacheCxxBundleContextTestFramework");
+        auto* properties = celix_properties_create();
+        celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
+        celix_properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
+        celix_properties_set(properties, "CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED", "false");
 
         auto* cfw = celix_frameworkFactory_createFramework(properties);
         fw = std::shared_ptr<celix_framework_t>{cfw, [](celix_framework_t* f){ celix_frameworkFactory_destroyFramework(f); }};
@@ -414,6 +415,12 @@ TEST_F(CxxBundleContextTestSuite, LoggingUsingContext) {
     ctx->logWarn("warn");
     ctx->logError("error");
     ctx->logFatal("fatal");
+}
+
+TEST_F(CxxBundleContextTestSuite, LoggingTssErrorsTest) {
+    ctx->logTssErrors(CELIX_LOG_LEVEL_FATAL);
+    celix_err_push("Hello ERR");
+    ctx->logTssErrors(CELIX_LOG_LEVEL_FATAL);
 }
 
 TEST_F(CxxBundleContextTestSuite, GetFramework) {

@@ -15,10 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(CXX_RSA_INTEGRATION "Option to build the C++17 Remote Service Admin Service integration" ON DEPS SHELL SHELL_TUI PUBSUB PROMISES PUSHSTREAMS PUBSUB_PSA_ZMQ PUBSUB_DISCOVERY_ETCD)
+celix_subproject(CXX_RSA_INTEGRATION "Option to build the C++17 Remote Service Admin Service integration" ON)
 if (CXX_RSA_INTEGRATION)
-    find_package(ZeroMQ REQUIRED)
-    find_package(czmq REQUIRED)
     add_celix_bundle(TestExportImportRemoteServiceFactory
             SOURCES src/TestExportImportRemoteServiceFactory.cc
             )
@@ -50,50 +48,54 @@ if (CXX_RSA_INTEGRATION)
 
     ################# Integration examples ##################################
 
-    add_celix_container(RemoteCalculatorProvider
-            GROUP rsa
-            PROPERTIES
-            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
-            BUNDLES
-            Celix::ShellCxx
-            Celix::shell_tui
+    if (BUILD_LAUNCHER)
+        add_celix_container(RemoteCalculatorProvider
+                LAUNCHER Celix::launcher
+                GROUP rsa
+                USE_CONFIG
+                PROPERTIES
+                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
+                BUNDLES
+                Celix::ShellCxx
+                Celix::shell_tui
 
-            #Pubsub needed for remote services on pubsub
-            Celix::celix_pubsub_serializer_json
-            Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_zmq
-            Celix::celix_pubsub_protocol_wire_v2
-            Celix::celix_pubsub_discovery_etcd
+                #Pubsub needed for remote services on pubsub
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_admin_zmq
+                Celix::celix_pubsub_protocol_wire_v2
+                Celix::celix_pubsub_discovery_etcd
 
-            #Remote Services
-            Celix::RemoteServiceAdmin
-            TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
+                #Remote Services
+                Celix::RemoteServiceAdmin
+                TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
 
-            CalculatorProvider
-            )
-    target_link_libraries(RemoteCalculatorProvider PRIVATE ZeroMQ::ZeroMQ czmq::czmq)
+                CalculatorProvider
+        )
 
-    add_celix_container(RemoteCalculatorConsumer
-            GROUP rsa
-            PROPERTIES
-            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
-            BUNDLES
-            Celix::ShellCxx
-            Celix::shell_tui
+        add_celix_container(RemoteCalculatorConsumer
+                LAUNCHER Celix::launcher
+                GROUP rsa
+                USE_CONFIG
+                PROPERTIES
+                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
+                BUNDLES
+                Celix::ShellCxx
+                Celix::shell_tui
 
-            #Pubsub needed for remote services on pubsub
-            Celix::celix_pubsub_serializer_json
-            Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_discovery_etcd
-            Celix::celix_pubsub_admin_zmq
-            Celix::celix_pubsub_protocol_wire_v2
+                #Pubsub needed for remote services on pubsub
+                Celix::celix_pubsub_serializer_json
+                Celix::celix_pubsub_topology_manager
+                Celix::celix_pubsub_discovery_etcd
+                Celix::celix_pubsub_admin_zmq
+                Celix::celix_pubsub_protocol_wire_v2
 
-            #Remote Services
-            Celix::RsaConfiguredDiscovery
-            Celix::RemoteServiceAdmin
-            TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
+                #Remote Services
+                Celix::RsaConfiguredDiscovery
+                Celix::RemoteServiceAdmin
+                TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
 
-            CalculatorConsumer
-            )
-    target_link_libraries(RemoteCalculatorConsumer PRIVATE ZeroMQ::ZeroMQ czmq::czmq)
+                CalculatorConsumer
+        )
+    endif ()
 endif()

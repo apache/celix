@@ -19,7 +19,7 @@
 add_executable(test_log_admin
         src/LogAdminTestSuite.cc
 )
-target_link_libraries(test_log_admin PRIVATE Celix::log_service_api Celix::shell_api GTest::gtest GTest::gtest_main)
+target_link_libraries(test_log_admin PRIVATE Celix::framework Celix::log_service_api Celix::shell_api GTest::gtest GTest::gtest_main)
 
 add_celix_bundle_dependencies(test_log_admin Celix::log_admin)
 target_compile_definitions(test_log_admin PRIVATE -DLOG_ADMIN_BUNDLE=\"$<TARGET_PROPERTY:log_admin,BUNDLE_FILE>\")

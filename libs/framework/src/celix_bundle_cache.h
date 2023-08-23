@@ -20,11 +20,13 @@
 #ifndef CELIX_BUNDLE_CACHE_H_
 #define CELIX_BUNDLE_CACHE_H_
 
+#include <stdbool.h>
+
+#include "celix_array_list.h"
+#include "celix_framework.h"
+#include "celix_long_hash_map.h"
 
 #include "bundle_archive.h"
-#include "celix_framework.h"
-#include "celix_array_list.h"
-#include "celix_long_hash_map.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,7 +49,7 @@ typedef struct celix_bundle_cache celix_bundle_cache_t;
  * @return CELIX_SUCCESS if bundle cache is successfully created.
  */
 celix_status_t
-celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cache_t **out);
+celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cache_t** out);
 
 /**
  * @brief Destroy the bundle cache, releasing all resources allocated in celix_bundleCache_create
@@ -56,12 +58,12 @@ celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cache_t **out);
  * @return Status code indication failure or success:
  *      - CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t celix_bundleCache_destroy(celix_bundle_cache_t *cache);
+celix_status_t celix_bundleCache_destroy(celix_bundle_cache_t* cache);
 
 /**
- * @brief Creates a new archive for the given bundle (using the id and location). The archive is created on the supplied bundlePool.
+ * @brief Creates a new archive for the given bundle (using the id and location).
  *
- * @param fw The Celix framework to create an archive in
+ * @param cache The bundle cache to create an archive in.
  * @param id The id of the bundle
  * @param location The location identifier of the bundle
  * @param archive The archive to create
@@ -72,7 +74,7 @@ celix_status_t celix_bundleCache_destroy(celix_bundle_cache_t *cache);
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_archive</code> failed.
  */
 celix_status_t
-celix_bundleCache_createArchive(celix_framework_t *fw, long id, const char *location, bundle_archive_pt *archive);
+celix_bundleCache_createArchive(celix_bundle_cache_t* cache, long id, const char* location, bundle_archive_pt* archive);
 
 /**
  * @@brief Creates a new system archive for framework bundle.
@@ -85,8 +87,15 @@ celix_bundleCache_createArchive(celix_framework_t *fw, long id, const char *loca
  *         - CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
  *         - CELIX_BUNDLE_EXCEPTION If the bundle cannot be created.
  */
-celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, bundle_archive_pt *archive);
+celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, bundle_archive_pt* archive);
 
+/**
+ * @brief Destroy the archive from the cache.
+ * It releases all resources allocated in celix_bundleCache_createArchive and deletes invalid directories if any.
+ * @param [in] cache The bundle cache to destroy archive from.
+ * @param [in] archive The archive to destroy.
+ */
+void celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, bundle_archive_pt archive);
 
 /**
  * @brief Deletes the entire bundle cache.
@@ -97,25 +106,25 @@ celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, bund
  * 		- CELIX_ILLEGAL_ARGUMENT If the cache is invalid
  * 		- CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
  */
-celix_status_t celix_bundleCache_deleteCacheDir(celix_bundle_cache_t *cache);
+celix_status_t celix_bundleCache_deleteCacheDir(celix_bundle_cache_t* cache);
 
 /**
  * @brief Find if the there is already a bundle cache for the provided bundle zip location and if this is true
  * return the bundle id for the bundle cache entry.
  *
- * @param fw The framework.
+ * @param cache The cache.
  * @param location The location of the bundle zip to find the id for.
  * @return The bundle id or -1 if not found.
  */
-long celix_bundleCache_findBundleIdForLocation(celix_framework_t *fw, const char *location);
+long celix_bundleCache_findBundleIdForLocation(celix_bundle_cache_t* cache, const char* location);
 
 /**
  * @brief Find if the there is already a bundle cache for the provided bundle id.
- * @param fw The framework.
+ * @param cache The bundle cache.
  * @param bndId  The bundle id to find the bundle cache for.
  * @return Whether the bundle id is already used in a bundle cache entry.
  */
-bool celix_bundleCache_isBundleIdAlreadyUsed(celix_framework_t *fw, long bndId);
+bool celix_bundleCache_isBundleIdAlreadyUsed(celix_bundle_cache_t* cache, long bndId);
 
 /**
  * Clean existing cache dir and create the bundle archives cache for all the bundles configured for starting and
@@ -130,7 +139,7 @@ bool celix_bundleCache_isBundleIdAlreadyUsed(celix_framework_t *fw, long bndId);
  * @param[in] printProgress Whether report progress of bundle archive creation.
  * @return Status code indication failure or success.
  */
-celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t *fw, bool printProgress);
+celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t* fw, bool printProgress);
 
 #ifdef __cplusplus
 }

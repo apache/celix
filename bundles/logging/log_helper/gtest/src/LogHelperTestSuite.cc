@@ -26,6 +26,7 @@
 #include "celix_log_constants.h"
 #include "celix_log_helper.h"
 #include "celix/LogHelper.h"
+#include "celix_err.h"
 
 class LogHelperTestSuite : public ::testing::Test {
 public:
@@ -65,7 +66,7 @@ TEST_F(LogHelperTestSuite, LogToLogSvc) {
     std::atomic<size_t> logCount{0};
     celix_log_service_t logSvc;
     logSvc.handle = (void*)&logCount;
-    logSvc.vlog = [](void *handle, celix_log_level_e, const char *format, va_list formatArgs) {
+    logSvc.vlogDetails= [](void *handle, celix_log_level_e, const char*, const char*, int, const char *format, va_list formatArgs) {
         auto* c = static_cast<std::atomic<size_t>*>(handle);
         c->fetch_add(1);
         vfprintf(stderr, format, formatArgs);
@@ -98,6 +99,98 @@ TEST_F(LogHelperTestSuite, LogToLogSvc) {
     celix_logHelper_destroy(helper);
 }
 
+TEST_F(LogHelperTestSuite, LogTssErrors) {
+    auto *helper = celix_logHelper_create(ctx->getCBundleContext(), "test::Log");
+    EXPECT_EQ(0, celix_logHelper_logCount(helper));
+
+    char *buf = nullptr;
+    celix_log_service_t logSvc;
+    logSvc.handle = (void*)&buf;
+    logSvc.vlogDetails= [](void *handle, celix_log_level_e, const char*, const char*, int, const char *format, va_list formatArgs) {
+        auto **b = static_cast<char **>(handle);
+        vasprintf(b, format, formatArgs);
+        EXPECT_NE(nullptr, *b);
+    };
+    auto* props = celix_properties_create();
+    celix_properties_set(props, CELIX_LOG_SERVICE_PROPERTY_NAME, "test::Log");
+    celix_service_registration_options_t opts{};
+    opts.serviceName = CELIX_LOG_SERVICE_NAME;
+    opts.serviceVersion = CELIX_LOG_SERVICE_VERSION;
+    opts.properties = props;
+    opts.svc = (void*)&logSvc;
+    long svcId = celix_bundleContext_registerServiceWithOptions(ctx->getCBundleContext(), &opts);
+
+    //celix error messages is empty
+    celix_logHelper_logTssErrors(helper, CELIX_LOG_LEVEL_ERROR);
+    EXPECT_EQ(0, celix_logHelper_logCount(helper));
+
+    //Log celix error messages
+    int logCnt = 0;
+    for (logCnt = 0; logCnt < 5; ++logCnt) {
+        celix_err_pushf("celix error message%d", logCnt);
+    }
+
+    //Print celix error messages
+    celix_logHelper_logTssErrors(helper, CELIX_LOG_LEVEL_ERROR);
+    EXPECT_EQ(1, celix_logHelper_logCount(helper));
+
+    //Check celix error message format
+    char *p = buf;
+    char data[32]={0};
+    sscanf(p,"%[^\n]",data);
+    EXPECT_STREQ(data, "Detected tss errors:");
+    p = p+strlen(data)+1;//skip '\n'
+    while(logCnt--)
+    {
+        sscanf(p,"%[^\n]",data);
+        char expected[64];
+        sprintf(expected, "[TssErr] celix error message%d", logCnt);
+        EXPECT_STREQ(data, expected);
+
+        p = p+strlen(data)+1;//skip '\n'
+    }
+    free(buf);
+
+    celix_bundleContext_unregisterService(ctx->getCBundleContext(), svcId);
+    celix_logHelper_destroy(helper);
+}
+
+TEST_F(LogHelperTestSuite, TssErrorsAlwaysIncludeNulTerminated) {
+    auto *helper = celix_logHelper_create(ctx->getCBundleContext(), "test::Log");
+    EXPECT_EQ(0, celix_logHelper_logCount(helper));
+
+    char *buf = nullptr;
+    celix_log_service_t logSvc;
+    logSvc.handle = (void*)&buf;
+    logSvc.vlogDetails= [](void *handle, celix_log_level_e, const char*, const char*, int, const char *format, va_list formatArgs) {
+        auto **b = static_cast<char **>(handle);
+        vasprintf(b, format, formatArgs);
+        EXPECT_NE(nullptr, *b);
+    };
+    auto* props = celix_properties_create();
+    celix_properties_set(props, CELIX_LOG_SERVICE_PROPERTY_NAME, "test::Log");
+    celix_service_registration_options_t opts{};
+    opts.serviceName = CELIX_LOG_SERVICE_NAME;
+    opts.serviceVersion = CELIX_LOG_SERVICE_VERSION;
+    opts.properties = props;
+    opts.svc = (void*)&logSvc;
+    long svcId = celix_bundleContext_registerServiceWithOptions(ctx->getCBundleContext(), &opts);
+
+    //celix error messages total length is greater than 512
+    int logCnt = 0;
+    for (logCnt = 0; logCnt < 64; ++logCnt) {
+        celix_err_pushf("celix error message%d", logCnt);
+    }
+
+    //Print celix error messages
+    celix_logHelper_logTssErrors(helper, CELIX_LOG_LEVEL_ERROR);
+    EXPECT_LT(strlen(buf)-(sizeof("Detected tss errors:\n") - 1), 512);
+    free(buf);
+
+    celix_bundleContext_unregisterService(ctx->getCBundleContext(), svcId);
+    celix_logHelper_destroy(helper);
+}
+
 TEST_F(LogHelperTestSuite, CxxLogHelper) {
     celix::LogHelper helper{ctx, "test name"};
 
@@ -109,5 +202,12 @@ TEST_F(LogHelperTestSuite, CxxLogHelper) {
     helper.warning("testing %i", 3); //not not active
     helper.error("testing %i", 4); //not not active
     helper.fatal("testing %i", 5); //not not active
-    EXPECT_EQ(5, helper.count());
+    celix_err_pushf("celix error message");
+    helper.logTssErrors(CELIX_LOG_LEVEL_ERROR);
+    EXPECT_EQ(6, helper.count());
+}
+
+TEST_F(LogHelperTestSuite, CLogHelperAutoCleanup) {
+    celix_autoptr(celix_log_helper_t) helper = celix_logHelper_create(ctx->getCBundleContext(), "test::Log");
+    celix_logHelper_info(helper, "Auto cleanup test");
 }

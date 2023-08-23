@@ -16,11 +16,11 @@
 # under the License.
 
 if (COMMAND celix_subproject)
-    celix_subproject(EXAMPLES "Option to enable building the Examples" ON DEPS SHELL SHELL_TUI LOG_SERVICE)
+    celix_subproject(EXAMPLES "Option to enable building the Examples" ON)
 else ()
     set(EXAMPLES true) #celix_subproject is only available in the celix project -> using examples dir in other project is also supported
-    option(CELIX_CXX14 ON)
-    option(CELIX_CXX17 ON)
+    option(CELIX_CXX14 "Build C++14 libraries and bundles." ON)
+    option(CELIX_CXX17 "Build C++17 libraries and bundles." ON)
 endif ()
 if (EXAMPLES)
     add_definitions(-DADD_CELIX_DEPRECATED_WARNING) #ensure that no deprecated api is used in the examples
@@ -39,9 +39,6 @@ if (EXAMPLES)
     if (CELIX_CXX17)
         add_subdirectory(readme_cxx_examples)
     endif ()
-
-    #TODO refactor export_import
-    #add_subdirectory(export_import)
 
     add_subdirectory(http_example)
     add_subdirectory(embedding)

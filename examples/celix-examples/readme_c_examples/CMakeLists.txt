@@ -77,6 +77,11 @@ add_celix_bundle(component_with_service_dependency_bundle
 )
 target_link_libraries(component_with_service_dependency_bundle PRIVATE Celix::shell_api)
 
+add_celix_bundle(schedule_events_bundle
+    VERSION 1.0.0
+    SOURCES src/schedule_events_bundle_activator.c
+)
+
 add_celix_container(readme_c_examples_container
     C
     BUNDLES
@@ -88,6 +93,7 @@ add_celix_container(readme_c_examples_container
         simple_component_bundle
         component_with_provided_service_bundle
         component_with_service_dependency_bundle
+        schedule_events_bundle
 )
 
 

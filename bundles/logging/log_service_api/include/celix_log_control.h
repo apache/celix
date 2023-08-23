@@ -20,6 +20,8 @@
 #ifndef CELIX_LOG_CONTROL_H
 #define CELIX_LOG_CONTROL_H
 
+#include <stdbool.h>
+#include <stddef.h>
 #include "celix_log_level.h"
 #include "celix_array_list.h"
 
@@ -28,8 +30,8 @@ extern "C" {
 #endif
 
 #define CELIX_LOG_CONTROL_NAME      "celix_log_control"
-#define CELIX_LOG_CONTROL_VERSION   "1.0.0"
-#define CELIX_LOG_CONTROL_USE_RANGE "[1.0.0,2)"
+#define CELIX_LOG_CONTROL_VERSION   "1.1.0"
+#define CELIX_LOG_CONTROL_USE_RANGE "[1.1.0,2)"
 
 typedef struct celix_log_control {
     void *handle;
@@ -49,6 +51,30 @@ typedef struct celix_log_control {
     bool (*logServiceInfo)(void *handle, const char* loggerName, celix_log_level_e* outActiveLogLevel);
 
     bool (*sinkInfo)(void *handle, const char* sinkName, bool *outEnabled);
+
+    /**
+     * @brief Switch between detailed and brief mode for selected loggers.
+     * @details In detailed mode, details(if available) are attached to log messages from the select loggers.
+     * For example, the file name, function name, and line number.
+     * @since 1.1.0
+     * @param[in] handle The service handle.
+     * @param[in] select The select string that specifies the case-insensitive name prefix of target loggers.
+     * @param[in] detailed True to enable detailed mode, false to disable detailed mode(i.e. enable brief mode).
+     * @return Number of logger selected.
+     */
+    size_t (*setDetailed)(void *handle, const char* select, bool detailed);
+
+    /**
+     * @brief Get the active log level and the detailed mode for a selected logger.
+     * @details If the logger is not found, the outActiveLogLevel and outDetailed are not changed.
+     * @since 1.1.0
+     * @param [in] handle The service handle.
+     * @param [in] loggerName The name of the target logger.
+     * @param [out] outActiveLogLevel The active log level of the target logger.
+     * @param [out] outDetailed The detailed mode of the target logger.
+     * @return True if the target logger is found, false otherwise.
+     */
+    bool (*logServiceInfoEx)(void *handle, const char* loggerName, celix_log_level_e* outActiveLogLevel, bool* outDetailed);
 
 } celix_log_control_t;
 

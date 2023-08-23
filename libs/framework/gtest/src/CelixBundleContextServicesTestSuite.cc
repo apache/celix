@@ -47,6 +47,7 @@ public:
         celix_properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
         celix_properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
         celix_properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
+        celix_properties_set(properties, "CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED", "false");
         celix_properties_setLong(properties, CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE,  256); //ensure that the floodEventLoopTest overflows the static event queue size
 
         fw = celix_frameworkFactory_createFramework(properties);
@@ -477,7 +478,7 @@ TEST_F(CelixBundleContextServicesTestSuite, UseServiceInUseCallbackTest) {
     celix_bundleContext_unregisterService(ctx, svcId3);
 }
 
-TEST_F(CelixBundleContextServicesTestSuite, TegisterAndUseServiceTest) {
+TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceTest) {
     struct calc {
         int (*calc)(int);
     };

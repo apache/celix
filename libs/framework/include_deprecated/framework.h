@@ -32,8 +32,20 @@ extern "C" {
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t framework_create(celix_framework_t **framework, celix_properties_t *config);
 
+/**
+ * @brief Start the framework.
+ * @note Not thread safe.
+ * @param[in] framework The framework to start.
+ * @return CELIX_SUCCESS if the framework is started.
+ */
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t framework_start(celix_framework_t *framework);
 
+/**
+ * @brief Stop the framework.
+ * @note Not thread safe.
+ * @param[in] framework The framework to stop.
+ * @return CELIX_SUCCESS if the framework is stopped.
+ */
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t framework_stop(celix_framework_t *framework);
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t framework_destroy(celix_framework_t *framework);

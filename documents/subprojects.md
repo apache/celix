@@ -32,6 +32,7 @@ Apache Celix is organized into several subprojects. The following subproject are
 * [Pubsub](../bundles/pubsub/README.md) - An implementation for a publish-subscribe remote message communication system. 
 * [HTTP Admin](../bundles/http_admin/README.md) - An implementation for the OSGi HTTP whiteboard adapted to C and based on civetweb.
 * [Remote Services](../bundles/cxx_remote_services) - A C++17 adaption and implementation of the OSGi Remote Service Admin specification.
+* [Components Ready Check](../bundles/components_ready_check/README.md) - A bundle which checks if all components are ready.
 
 Standalone libraries:
 

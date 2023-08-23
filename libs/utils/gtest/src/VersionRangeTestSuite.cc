@@ -43,6 +43,10 @@ TEST_F(VersionRangeTestSuite, create) {
     versionRange_destroy(range);
 }
 
+TEST_F(VersionRangeTestSuite, cleanup) {
+    celix_autoptr(celix_version_range_t) range = celix_versionRange_createInfiniteVersionRange();
+}
+
 TEST_F(VersionRangeTestSuite, createInfinite) {
     celix_status_t status = CELIX_SUCCESS;
     version_range_pt range = nullptr;

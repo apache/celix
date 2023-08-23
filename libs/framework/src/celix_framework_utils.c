@@ -20,20 +20,21 @@
 #include "celix_framework_utils.h"
 #include "celix_framework_utils_private.h"
 
+#include <assert.h>
+#include <dlfcn.h>
 #include <errno.h>
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <dlfcn.h>
-#include <assert.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "bundle_archive.h"
+#include "celix_bundle_context.h"
 #include "celix_constants.h"
+#include "celix_file_utils.h"
 #include "celix_log.h"
 #include "celix_properties.h"
-#include "celix_file_utils.h"
 #include "celix_utils.h"
-#include "celix_bundle_context.h"
 #include "framework_private.h"
 
 #define FILE_URL_SCHEME "file://"
@@ -196,7 +197,23 @@ static celix_status_t celix_framework_utils_extractBundlePath(celix_framework_t 
         //other errors should be caught by celix_framework_utils_isBundleUrlValid
         return CELIX_ENOMEM;
     }
-    celix_status_t status = celix_utils_extractZipFile(resolvedPath, extractPath, &err);
+    celix_status_t status = CELIX_SUCCESS;
+    if (celix_utils_directoryExists(resolvedPath)) {
+        char *abs = realpath(resolvedPath, NULL);
+        if (abs == NULL) {
+            status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+            err = "Could not get real path for bundle";
+        }
+        if (status == CELIX_SUCCESS) {
+            if(symlink(abs, extractPath) == -1) {
+                status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
+                err = "Could not add symbolic link";
+            }
+        }
+        free(abs);
+    } else {
+        status = celix_utils_extractZipFile(resolvedPath, extractPath, &err);
+    }
     framework_logIfError(fw->logger, status, err, "Could not extract bundle zip file `%s` to `%s`", resolvedPath, extractPath);
     celix_utils_freeStringIfNotEqual(buffer, resolvedPath);
     return status;

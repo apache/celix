@@ -17,12 +17,12 @@
   under the License.
  */
 
-#include <celix_api.h>
-#include <pubsub_serializer.h>
+#include <celix_bundle_activator.h>
+#include <celix_constants.h>
 #include <celix_log_helper.h>
 #include <pubsub_admin.h>
 #include <pubsub_constants.h>
-#include <celix_constants.h>
+#include <pubsub_serializer.h>
 #include <stdlib.h>
 
 typedef struct my_psa_activator {

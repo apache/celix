@@ -188,7 +188,7 @@ extern "C" {
  * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE") specifying
  * whether to delete the cache dir on framework creation.
  *
- * If not specified "true" is used.
+ * The default value is false
  */
 #define CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE "CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE"
 
@@ -321,6 +321,30 @@ extern "C" {
  * Then bundles defined in CELIX_AUTO_START_6 are stopped, followed by bundles defined in CELIX_AUTO_START_5, etc.
  */
 #define CELIX_AUTO_INSTALL "CELIX_AUTO_INSTALL"
+
+/*!
+ * @brief Celix framework environment property (named "CELIX_ALLOWED_PROCESSING_TIME_FOR_SCHEDULED_EVENT_IN_SECONDS")
+ * to configure the allowed processing time for a scheduled event callback or a remove callback before a warning
+ * log message is printed that the processing time is too long.
+ * Should be a double value in seconds.
+ */
+#define CELIX_ALLOWED_PROCESSING_TIME_FOR_SCHEDULED_EVENT_IN_SECONDS                                                   \
+    "CELIX_ALLOWED_PROCESSING_TIME_FOR_SCHEDULED_EVENT_IN_SECONDS"
+
+/**
+ * @brief The default , in seconds, allowed processing time for a processing a scheduled event or a remove callback
+ * before a warning log message is printed.
+ */
+#define CELIX_DEFAULT_ALLOWED_PROCESSING_TIME_FOR_SCHEDULED_EVENT_IN_SECONDS 2.0
+
+/**
+ * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED") to configure 
+ * whether framework condition services are enabled or not.
+ * Default is true.
+ * Should be a boolean value.
+ */
+#define CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED "CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED"
+
 
 #ifdef __cplusplus
 }

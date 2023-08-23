@@ -60,7 +60,12 @@ extern "C" {
  * Helper macro which check the current status and executes a goto the provided label if the
  * status is not CELIX_SUCCESS (0)
  */
-#define CELIX_GOTO_IF_ERR(status, label) if ((status) != CELIX_SUCCESS) { goto label; }
+#define CELIX_GOTO_IF_ERR(status, label)                                                                               \
+    do {                                                                                                               \
+        if ((status) != CELIX_SUCCESS) {                                                                               \
+            goto label;                                                                                                \
+        }                                                                                                              \
+    } while (0)
 
 /*!
  * \defgroup celix_errno Error Codes
@@ -135,7 +140,7 @@ CELIX_UTILS_EXPORT bool celix_utils_isCustomerStatusCode(celix_status_t code);
  * \param fac Facility
  * \param code Code
  */
-#define CELIX_ERROR_MAKE(fac,code) (((unsigned int)(fac)<<16) | ((code)&0xFFFF))
+#define CELIX_ERROR_MAKE(fac,code) (((fac)<<16) | ((code)&0xFFFF))
 
 /*!
  * Make the customer error code
@@ -190,6 +195,7 @@ CELIX_UTILS_EXPORT bool celix_utils_isCustomerStatusCode(celix_status_t code);
 #define CELIX_FRAMEWORK_EXCEPTION       CELIX_ERROR_MAKE(CELIX_FACILITY_FRAMEWORK, 4471)
 #define CELIX_FILE_IO_EXCEPTION         CELIX_ERROR_MAKE(CELIX_FACILITY_FRAMEWORK, 4472)
 #define CELIX_SERVICE_EXCEPTION         CELIX_ERROR_MAKE(CELIX_FACILITY_FRAMEWORK, 4473)
+
 /*!
  * Exception indicating a problem with a interceptor
  */

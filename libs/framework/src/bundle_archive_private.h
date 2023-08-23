@@ -21,6 +21,8 @@
 #ifndef BUNDLE_ARCHIVE_PRIVATE_H_
 #define BUNDLE_ARCHIVE_PRIVATE_H_
 
+#include <time.h>
+
 #include "bundle_archive.h"
 
 #ifdef __cplusplus
@@ -41,10 +43,13 @@ extern "C" {
 
 /**
  * @brief Create bundle archive.
+ * Create a bundle archive for the given root, id, location and revision nr.
+ * Also create the bundle cache dir and if will reuse a existing bundle resource cache dir if the provided
+ * bundle zip location is older then the existing bundle resource cache dir.
  */
 celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, bundle_archive_pt *bundle_archive);
 
-celix_status_t bundleArchive_destroy(bundle_archive_pt archive);
+void bundleArchive_destroy(bundle_archive_pt archive);
 
 /**
  * @brief Returns the bundle id of the bundle archive.
@@ -69,6 +74,26 @@ const char* celix_bundleArchive_getPersistentStoreRoot(bundle_archive_t *archive
   * Returns the root of the current revision.
   */
 const char* celix_bundleArchive_getCurrentRevisionRoot(bundle_archive_pt archive);
+
+/**
+ * @brief Invalidate the whole bundle archive.
+ */
+void celix_bundleArchive_invalidate(bundle_archive_pt archive);
+
+/**
+ * @brief Invalidate the bundle archive's bundle cache.
+ */
+void celix_bundleArchive_invalidateCache(bundle_archive_pt archive);
+
+/**
+ * @brief Return if the bundle cache is valid.
+ */
+bool celix_bundleArchive_isCacheValid(bundle_archive_pt archive);
+
+/**
+ * @brief Remove all valid directories of the bundle archive.
+ */
+void celix_bundleArchive_removeInvalidDirs(bundle_archive_pt archive);
 
 #ifdef __cplusplus
 }

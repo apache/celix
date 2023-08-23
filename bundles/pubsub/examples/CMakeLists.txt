@@ -15,20 +15,17 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(PUBSUB_EXAMPLES "Option to build the pubsub examples" ON DEPS LOG_SERVICE SHELL SHELL_TUI PUBSUB_DISCOVERY_ETCD)
+celix_subproject(PUBSUB_EXAMPLES "Option to build the pubsub examples" ON)
 if (PUBSUB_EXAMPLES)
     add_subdirectory(pubsub)
 
     find_program(ETCD_CMD NAMES etcd)
     find_program(XTERM_CMD NAMES xterm)
 
-    find_package(jansson REQUIRED)
-
-    set(PUBSUB_CONTAINER_LIBS jansson::jansson Celix::dfi)
-
     # UDP Multicast
-    if (BUILD_PUBSUB_PSA_UDP_MC)
+    if (BUILD_PUBSUB_PSA_UDP_MC AND BUILD_LAUNCHER)
         add_celix_container(pubsub_publisher_udp_mc
+                LAUNCHER Celix::launcher
                 GROUP pubsub
                 BUNDLES
                 Celix::log_admin
@@ -40,14 +37,15 @@ if (PUBSUB_EXAMPLES)
                 Celix::celix_pubsub_admin_udp_multicast
                 celix_pubsub_poi_publisher
                 celix_pubsub_poi_publisher2
+                USE_CONFIG
                 PROPERTIES
                 PSA_UDPMC_VERBOSE=true
                 PUBSUB_ETCD_DISCOVERY_VERBOSE=true
                 PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
                 )
-        target_link_libraries(pubsub_publisher_udp_mc PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         add_celix_container(pubsub_subscriber_udp_mc
+                LAUNCHER Celix::launcher
                 GROUP pubsub
                 BUNDLES
                 Celix::log_admin
@@ -58,14 +56,15 @@ if (PUBSUB_EXAMPLES)
                 Celix::celix_pubsub_topology_manager
                 Celix::celix_pubsub_admin_udp_multicast
                 celix_pubsub_poi_subscriber
+                USE_CONFIG
                 PROPERTIES
                 PSA_UDPMC_VERBOSE=true
                 PUBSUB_ETCD_DISCOVERY_VERBOSE=true
                 PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
                 )
-        target_link_libraries(pubsub_subscriber_udp_mc PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         add_celix_container(pubsub_subscriber2_udp_mc
+                LAUNCHER Celix::launcher
                 GROUP pubsub
                 BUNDLES
                 Celix::log_admin
@@ -76,12 +75,12 @@ if (PUBSUB_EXAMPLES)
                 Celix::celix_pubsub_topology_manager
                 Celix::celix_pubsub_admin_udp_multicast
                 celix_pubsub_poi_subscriber
+                USE_CONFIG
                 PROPERTIES
                 PSA_UDPMC_VERBOSE=true
                 PUBSUB_ETCD_DISCOVERY_VERBOSE=true
                 PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
                 )
-        target_link_libraries(pubsub_subscriber2_udp_mc PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         if (ETCD_CMD AND XTERM_CMD)
             # Runtime starting a publish and subscriber for udp mc
@@ -99,9 +98,10 @@ if (PUBSUB_EXAMPLES)
         endif ()
     endif()
 
-    if (BUILD_PUBSUB_PSA_TCP)
+    if (BUILD_PUBSUB_PSA_TCP AND BUILD_LAUNCHER)
         # TCP
         add_celix_container(pubsub_publisher_tcp
+                LAUNCHER Celix::launcher
                 GROUP pubsub
                 BUNDLES
                 Celix::log_admin
@@ -114,14 +114,15 @@ if (PUBSUB_EXAMPLES)
                 Celix::celix_pubsub_protocol_wire_v2
                 celix_pubsub_poi_publisher
                 celix_pubsub_poi_publisher2
+                USE_CONFIG
                 PROPERTIES
                 PSA_TCP_VERBOSE=true
                 PUBSUB_ETCD_DISCOVERY_VERBOSE=true
                 PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
                 )
-        target_link_libraries(pubsub_publisher_tcp PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         add_celix_container(pubsub_subscriber_tcp
+                LAUNCHER Celix::launcher
                 GROUP pubsub
                 BUNDLES
                 Celix::log_admin
@@ -133,14 +134,15 @@ if (PUBSUB_EXAMPLES)
                 Celix::celix_pubsub_admin_tcp
                 Celix::celix_pubsub_protocol_wire_v2
                 celix_pubsub_poi_subscriber
+                USE_CONFIG
                 PROPERTIES
                 PSA_TCP_VERBOSE=true
                 PUBSUB_ETCD_DISCOVERY_VERBOSE=true
                 PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
                 )
-        target_link_libraries(pubsub_subscriber_tcp PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         add_celix_container(pubsub_subscriber2_tcp
+                LAUNCHER Celix::launcher
                 GROUP pubsub
                 BUNDLES
                 Celix::log_admin
@@ -152,12 +154,12 @@ if (PUBSUB_EXAMPLES)
                 Celix::celix_pubsub_admin_tcp
                 Celix::celix_pubsub_protocol_wire_v2
                 celix_pubsub_poi_subscriber
+                USE_CONFIG
                 PROPERTIES
                 PSA_TCP_VERBOSE=true
                 PUBSUB_ETCD_DISCOVERY_VERBOSE=true
                 PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
                 )
-        target_link_libraries(pubsub_subscriber2_tcp PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         if (ETCD_CMD AND XTERM_CMD)
             # Runtime starting a publish and subscriber for tcp
@@ -175,15 +177,12 @@ if (PUBSUB_EXAMPLES)
         endif ()
     endif()
 
-    if (BUILD_PUBSUB_PSA_ZMQ)
-        find_package(ZeroMQ REQUIRED)
-        find_package(czmq REQUIRED)
-
-        set(PUBSUB_CONTAINER_LIBS ${PUBSUB_CONTAINER_LIBS} ZeroMQ::ZeroMQ czmq::czmq ${OPTIONAL_OPENSSL_LIB})
+    if (BUILD_PUBSUB_PSA_ZMQ AND BUILD_LAUNCHER)
 
         if (BUILD_PUBSUB_PSA_TCP AND BUILD_PUBSUB_PSA_UDP_MC)
             # Dynamic ZMQ / UDP / TCP admin
             add_celix_container(pubsub_publisher
+                    LAUNCHER Celix::launcher
                     GROUP "pubsub"
                     BUNDLES
                     Celix::shell
@@ -197,10 +196,11 @@ if (PUBSUB_EXAMPLES)
                     Celix::celix_pubsub_protocol_wire_v1
                     celix_pubsub_poi_publisher
                     celix_pubsub_poi_publisher2
+                    USE_CONFIG
                     )
-            target_link_libraries(pubsub_publisher PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
             add_celix_container(pubsub_subscriber
+                    LAUNCHER Celix::launcher
                     GROUP "pubsub"
                     BUNDLES
                     Celix::shell
@@ -213,12 +213,13 @@ if (PUBSUB_EXAMPLES)
                     Celix::celix_pubsub_admin_tcp
                     Celix::celix_pubsub_protocol_wire_v1
                     celix_pubsub_poi_subscriber
+                    USE_CONFIG
                     )
-            target_link_libraries(pubsub_subscriber PRIVATE ${PUBSUB_CONTAINER_LIBS})
         endif()
 
         # ZMQ
         add_celix_container(pubsub_zmq
+                LAUNCHER Celix::launcher
                 GROUP "pubsub"
                 BUNDLES
                 Celix::shell
@@ -229,12 +230,13 @@ if (PUBSUB_EXAMPLES)
                 Celix::celix_pubsub_admin_zmq
                 celix_pubsub_poi_publisher
                 celix_pubsub_poi_subscriber
+                USE_CONFIG
                 PROPERTIES
                 PSA_ZMQ_ZEROCOPY_ENABLED=true
                 )
-        target_link_libraries(pubsub_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         add_celix_container(pubsub_publisher_zmq
+                LAUNCHER Celix::launcher
                 GROUP "pubsub"
                 BUNDLES
                 Celix::shell
@@ -247,15 +249,16 @@ if (PUBSUB_EXAMPLES)
                 celix_pubsub_poi_publisher
                 celix_pubsub_poi_publisher2
                 celix_pubsub_interceptors_example
+                USE_CONFIG
                 PROPERTIES
                 PSA_ZMQ_VERBOSE=true
                 PUBSUB_ETCD_DISCOVERY_VERBOSE=true
                 PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
                 PSA_ZMQ_ZEROCOPY_ENABLED=false
                 )
-        target_link_libraries(pubsub_publisher_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         add_celix_container(pubsub_subscriber_zmq
+                LAUNCHER Celix::launcher
                 GROUP "pubsub"
                 BUNDLES
                 Celix::shell
@@ -267,14 +270,15 @@ if (PUBSUB_EXAMPLES)
                 Celix::celix_pubsub_admin_zmq
                 celix_pubsub_poi_subscriber
                 celix_pubsub_interceptors_example
+                USE_CONFIG
                 PROPERTIES
                 PSA_ZMQ_VERBOSE=true
                 PUBSUB_ETCD_DISCOVERY_VERBOSE=true
                 PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
                 )
-        target_link_libraries(pubsub_subscriber_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         add_celix_container(pubsub_subscriber2_zmq
+                LAUNCHER Celix::launcher
                 GROUP "pubsub"
                 BUNDLES
                 Celix::shell
@@ -284,12 +288,12 @@ if (PUBSUB_EXAMPLES)
                 Celix::celix_pubsub_topology_manager
                 Celix::celix_pubsub_admin_zmq
                 celix_pubsub_poi_subscriber
+                USE_CONFIG
                 PROPERTIES
                 PSA_ZMQ_VERBOSE=true
                 PUBSUB_ETCD_DISCOVERY_VERBOSE=true
                 PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
                 )
-        target_link_libraries(pubsub_subscriber2_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         if (ETCD_CMD AND XTERM_CMD)
             # Runtime starting two bundles using both zmq and upd mc pubsub
@@ -320,10 +324,10 @@ if (PUBSUB_EXAMPLES)
         endif ()
     endif()
 
-    if (BUILD_PUBSUB_PSA_NANOMSG)
-        set(PUBSUB_CONTAINER_LIBS NANOMSG::lib ${PUBSUB_CONTAINER_LIBS})
+    if (BUILD_PUBSUB_PSA_NANOMSG AND BUILD_LAUNCHER)
 
         add_celix_container(pubsub_publisher1_nanomsg
+                LAUNCHER Celix::launcher
                 GROUP "pubsub"
                 BUNDLES
                 Celix::shell
@@ -333,14 +337,15 @@ if (PUBSUB_EXAMPLES)
                 Celix::celix_pubsub_topology_manager
                 Celix::celix_pubsub_admin_nanomsg
                 celix_pubsub_poi_publisher
+                USE_CONFIG
                 PROPERTIES
                 PSA_NANOMSG_VERBOSE=true
                 PUBSUB_ETCD_DISCOVERY_VERBOSE=true
                 PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
                 )
-        target_link_libraries(pubsub_publisher1_nanomsg PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         add_celix_container(pubsub_publisher2_nanomsg
+                LAUNCHER Celix::launcher
                 GROUP "pubsub"
                 BUNDLES
                 Celix::shell
@@ -350,14 +355,15 @@ if (PUBSUB_EXAMPLES)
                 Celix::celix_pubsub_topology_manager
                 Celix::celix_pubsub_admin_nanomsg
                 celix_pubsub_poi_publisher
+                USE_CONFIG
                 PROPERTIES
                 PSA_NANOMSG_VERBOSE=true
                 PUBSUB_ETCD_DISCOVERY_VERBOSE=true
                 PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
                 )
-        target_link_libraries(pubsub_publisher2_nanomsg PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         add_celix_container(pubsub_subscriber1_nanomsg
+                LAUNCHER Celix::launcher
                 GROUP "pubsub"
                 BUNDLES
                 Celix::shell
@@ -367,14 +373,15 @@ if (PUBSUB_EXAMPLES)
                 Celix::celix_pubsub_topology_manager
                 Celix::celix_pubsub_admin_nanomsg
                 celix_pubsub_poi_subscriber
+                USE_CONFIG
                 PROPERTIES
                 PSA_NANOMSG_VERBOSE=true
                 PUBSUB_ETCD_DISCOVERY_VERBOSE=true
                 PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
                 )
-        target_link_libraries(pubsub_subscriber1_nanomsg PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         add_celix_container(pubsub_subscriber2_nanomsg
+                LAUNCHER Celix::launcher
                 GROUP "pubsub"
                 BUNDLES
                 Celix::shell
@@ -384,12 +391,12 @@ if (PUBSUB_EXAMPLES)
                 Celix::celix_pubsub_topology_manager
                 Celix::celix_pubsub_admin_nanomsg
                 celix_pubsub_poi_subscriber
+                USE_CONFIG
                 PROPERTIES
                 PSA_NANOMSG_VERBOSE=true
                 PUBSUB_ETCD_DISCOVERY_VERBOSE=true
                 PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
                 )
-        target_link_libraries(pubsub_subscriber2_nanomsg PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
         if (ETCD_CMD AND XTERM_CMD)
             # Runtime starting a publisher and 2 subscribers for nanomsg
@@ -428,6 +435,5 @@ if (PUBSUB_EXAMPLES)
                 CELIX_HTTP_ADMIN_LISTENING_PORTS=7660
                 CELIX_HTTP_ADMIN_NUM_THREADS=5
                 )
-        target_link_libraries(pubsub_websocket_example PRIVATE ${PUBSUB_CONTAINER_LIBS})
     endif()
 endif ()

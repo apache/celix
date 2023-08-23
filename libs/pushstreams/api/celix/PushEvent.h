@@ -27,7 +27,7 @@ namespace celix {
     public:
         virtual  ~PushEvent() = default;
    
-        enum class EventType {
+        enum class EventType : std::uint8_t {
             DATA,
             ERROR,
             CLOSE

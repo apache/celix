@@ -19,6 +19,7 @@
 
 #include "rsa_request_sender_tracker.h"
 #include "rsa_request_sender_service.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_log_helper.h"
 #include "celix_long_hash_map.h"
 #include "celix_threads.h"
@@ -45,7 +46,7 @@ celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, celix
     if (ctx == NULL || logHelper == NULL || trackerOut == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    rsa_request_sender_tracker_t *tracker = calloc(1, sizeof(*tracker));
+    celix_autofree rsa_request_sender_tracker_t *tracker = calloc(1, sizeof(*tracker));
     if (tracker == NULL) {
         return CELIX_ENOMEM;
     }
@@ -53,9 +54,10 @@ celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, celix
     tracker->logHelper = logHelper;
     status = celixThreadRwlock_create(&tracker->lock, NULL);
     if (status != CELIX_SUCCESS) {
-        goto err_creating_lock;
+        return status;
     }
-    tracker->requestSenderSvcs = celix_longHashMap_create();
+    celix_autoptr(celix_thread_rwlock_t) lock = &tracker->lock;
+    celix_autoptr(celix_long_hash_map_t) requestSenderSvcs = tracker->requestSenderSvcs = celix_longHashMap_create();
     assert(tracker->requestSenderSvcs != NULL);
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.serviceName = RSA_REQUEST_SENDER_SERVICE_NAME;
@@ -66,17 +68,12 @@ celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, celix
     tracker->reqSenderTrkId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
     if (tracker->reqSenderTrkId < 0) {
         celix_logHelper_error(tracker->logHelper, "Error tracking request sender service.");
-        status = CELIX_SERVICE_EXCEPTION;
-        goto err_tracking_svc;
+        return CELIX_SERVICE_EXCEPTION;
     }
-    *trackerOut = tracker;
+    celix_steal_ptr(requestSenderSvcs);
+    celix_steal_ptr(lock);
+    *trackerOut = celix_steal_ptr(tracker);
     return CELIX_SUCCESS;
-err_tracking_svc:
-    celix_longHashMap_destroy(tracker->requestSenderSvcs);
-    (void)celixThreadRwlock_destroy(&tracker->lock);
-err_creating_lock:
-    free(tracker);
-    return status;
 }
 
 static void rsaRequestSenderTracker_addServiceWithProperties(void *handle, void *svc,

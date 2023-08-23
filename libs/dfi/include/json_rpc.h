@@ -34,10 +34,50 @@ extern "C" {
 //logging
 DFI_SETUP_LOG_HEADER(jsonRpc);
 
+/**
+ * @brief Call a remote service using JSON-RPC.
+ *
+ * Caller is the owner of the out parameter and should release it using free.
+ *
+ * In case of an error, an error message is added to celix_err.
+ *
+ * @param[in] intf The interface type of the service to call.
+ * @param[in] service The service to call.
+ * @param[in] request The JSON-RPC request to send.
+ * @param[out] out The JSON-RPC reply.
+ * @return 0 if successful, otherwise 1.
+ *
+ */
 CELIX_DFI_EXPORT int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, char **out);
 
-
+/**
+ * @brief Prepare a JSON-RPC request for a given function.
+ *
+ * Caller is the owner of the out parameter and should release it using free.
+ *
+ * In case of an error, an error message is added to celix_err.
+ *
+ * @param[in] func The function type to prepare the request for.
+ * @param[in] id The function ID.
+ * @param[in] args The arguments to use for the function.
+ * @param[out] out The JSON-RPC request.
+ * @return 0 if successful, otherwise 1.
+ *
+ */
 CELIX_DFI_EXPORT int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *args[], char **out);
+
+/**
+ * @brief Handle a JSON-RPC reply for a given function.
+ *
+ * In case of an error, an error message is added to celix_err.
+ *
+ * @param[in] func The function type to handle the reply for.
+ * @param[in] reply The JSON-RPC reply.
+ * @param[out] args The arguments to use for the function.
+ * @param[out] rsErrno The return status of the function.
+ * @return 0 if successful, otherwise 1.
+ *
+ */
 CELIX_DFI_EXPORT int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[], int *rsErrno);
 
 #ifdef __cplusplus

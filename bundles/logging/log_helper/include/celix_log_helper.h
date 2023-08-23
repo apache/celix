@@ -24,6 +24,7 @@
 
 #include "celix_log_level.h"
 #include "celix_bundle_context.h"
+#include "celix_cleanup.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +35,8 @@ typedef struct celix_log_helper celix_log_helper_t; //opaque
 celix_log_helper_t* celix_logHelper_create(celix_bundle_context_t* ctx, const char* logServiceName);
 
 void celix_logHelper_destroy(celix_log_helper_t* logHelper);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_log_helper_t, celix_logHelper_destroy)
 
 /**
  * @brief Logs to celix_logHelper_log using the CELIX_LOG_LEVEL_TRACE level, printf style
@@ -89,6 +92,13 @@ void celix_logHelper_logDetails(celix_log_helper_t* logHelper,
                                 const char* function,
                                 int line,
                                 const char *format, ...) __attribute__((format(printf,6,7)));
+
+/**
+ * @brief Logs celix thread-specific storage error messages(celix_err) using the provided celix log level to the log_helper.
+ *
+ * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
+ */
+void celix_logHelper_logTssErrors(celix_log_helper_t* logHelper, celix_log_level_e level);
 
 /**
  * @brief Logs a message to the log_helper using a format string and a va_list argument (vprintf style).

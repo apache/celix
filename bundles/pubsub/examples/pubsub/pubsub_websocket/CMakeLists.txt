@@ -16,9 +16,6 @@
 # under the License.
 
 
-find_package(CURL REQUIRED)
-
-
 add_celix_bundle(celix_pubsub_websocket_example
     SYMBOLIC_NAME "apache_celix_pubsub_websocket_example"
     VERSION "1.0.0"
@@ -26,7 +23,7 @@ add_celix_bundle(celix_pubsub_websocket_example
         private/src/ps_websocket_activator.c
         private/src/pubsub_websocket_example.c
 )
-target_link_libraries(celix_pubsub_websocket_example PRIVATE Celix::framework Celix::pubsub_api ${CURL_LIBRARIES})
+target_link_libraries(celix_pubsub_websocket_example PRIVATE Celix::pubsub_api)
 target_include_directories(celix_pubsub_websocket_example PRIVATE private/include)
 celix_deprecated_utils_headers(celix_pubsub_websocket_example)
 celix_deprecated_framework_headers(celix_pubsub_websocket_example)

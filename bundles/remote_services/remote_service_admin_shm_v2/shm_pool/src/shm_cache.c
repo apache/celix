@@ -23,7 +23,8 @@
 #include <celix_array_list.h>
 #include <celix_long_hash_map.h>
 #include <celix_threads.h>
-#include <stdio.h>
+#include "celix_err.h"
+#include "celix_stdlib_cleanup.h"
 #include <stdlib.h>
 #include <assert.h>
 #include <sys/shm.h>
@@ -55,7 +56,7 @@ celix_status_t shmCache_create(bool shmRdOnly, shm_cache_t **shmCache) {
     if (shmCache == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    shm_cache_t *cache = (shm_cache_t *)malloc(sizeof(shm_cache_t));
+    celix_autofree shm_cache_t *cache = (shm_cache_t *)malloc(sizeof(shm_cache_t));
     if (cache == NULL) {
         return CELIX_ENOMEM;
     }
@@ -66,36 +67,33 @@ celix_status_t shmCache_create(bool shmRdOnly, shm_cache_t **shmCache) {
 
     status = celixThreadMutex_create(&cache->mutex, NULL);
     if(status != CELIX_SUCCESS) {
-        fprintf(stderr,"Shm cache: Error creating cache mutux. %d.\n", status);
-        goto mutex_err;
+        celix_err_pushf("Shm cache: Error creating cache mutux. %d.\n", status);
+        return status;
     }
-    cache->shmCacheBlocks = celix_longHashMap_create();
+    celix_autoptr(celix_thread_mutex_t) mutex = &cache->mutex;
+    celix_autoptr(celix_long_hash_map_t) shmCacheBlocks = cache->shmCacheBlocks = celix_longHashMap_create();
     assert(cache->shmCacheBlocks != NULL);
 
     status = celixThreadCondition_init(&cache->watcherStopped, NULL);
     if (status != CELIX_SUCCESS) {
-        fprintf(stderr,"Shm cache: Error creating stoped condition for cache watcher. %d.\n", status);
-        goto watcher_stopped_cond_err;
+        celix_err_pushf("Shm cache: Error creating stoped condition for cache watcher. %d.\n", status);
+        return status;
     }
+    celix_autoptr(celix_thread_cond_t) watcherStopped = &cache->watcherStopped;
     cache->watcherActive = true;
     status = celixThread_create(&cache->shmWatcherThread, NULL,
             shmCache_WatcherThread, cache);
     if (status != CELIX_SUCCESS) {
-        fprintf(stderr,"Shm cache: Error creating cache watcher. %d.\n", status);
-        goto watcher_thread_err;
+        celix_err_pushf("Shm cache: Error creating cache watcher. %d.\n", status);
+        return status;
     }
 
-    *shmCache = cache;
+    celix_steal_ptr(watcherStopped);
+    celix_steal_ptr(shmCacheBlocks);
+    celix_steal_ptr(mutex);
+    *shmCache = celix_steal_ptr(cache);
 
     return CELIX_SUCCESS;
-watcher_thread_err:
-    (void)celixThreadCondition_destroy(&cache->watcherStopped);
-watcher_stopped_cond_err:
-    celix_longHashMap_destroy(cache->shmCacheBlocks);
-    (void)celixThreadMutex_destroy(&cache->mutex);
-mutex_err:
-    free(cache);
-    return status;
 }
 
 void shmCache_setShmPeerClosedCB(shm_cache_t *shmCache, shmCache_shmPeerClosedCB shmPeerClosedCB, void *closedCBHandle) {
@@ -126,7 +124,7 @@ static shm_cache_block_t * shmCache_createBlock(shm_cache_t *shmCache, int shmId
         shmBlock->refCnt = 1;
         shmBlock->maxOffset = 0;
     } else {
-        fprintf(stderr,"Shm cache: Error attaching shared memory for shmid %d. %d.\n", shmId, errno);
+        celix_err_pushf("Shm cache: Error attaching shared memory for shmid %d. %d.\n", shmId, errno);
     }
     return shmBlock;
 }
@@ -172,7 +170,7 @@ void shmCache_releaseMemoryPtr(shm_cache_t *shmCache, void *ptr) {
                 if (shmBlock->refCnt != 0) {
                     shmBlock->refCnt--;
                 } else {
-                    fprintf(stderr, "Shm cache: Shm block double free.\n");
+                    assert(0);//should never happen
                 }
                 break;
             }
@@ -192,9 +190,7 @@ void shmCache_destroy(shm_cache_t *shmCache) {
         celixThreadCondition_destroy(&shmCache->watcherStopped);
         CELIX_LONG_HASH_MAP_ITERATE(shmCache->shmCacheBlocks, iter) {
             shm_cache_block_t *shmBlock = (shm_cache_block_t *)iter.value.ptrValue;
-            if (shmBlock->refCnt != 0) {
-                fprintf(stderr, "Shm cache: Shm cache is destroyed when its refrence count is not zero. It maybe cause memory used after free.\n");
-            }
+            assert(shmBlock->refCnt == 0);//should be 0, otherwise memory leak
             shmCache_destroyBlock(shmCache, shmBlock);
         }
         celix_longHashMap_destroy(shmCache->shmCacheBlocks);
@@ -215,7 +211,7 @@ static void * shmCache_WatcherThread(void *data) {
         celixThreadMutex_lock(&shmCache->mutex);
         int waitRet = 0;
         while (shmCache->watcherActive && waitRet != ETIMEDOUT) {
-            // pthread_cond_timedwait shall not return an error code of [EINTR]
+            // pthread_cond_timedwait shall not return an error code of [EINTR]，refer https://man7.org/linux/man-pages/man3/pthread_cond_timedwait.3p.html
             waitRet = celixThreadCondition_timedwaitRelative(&shmCache->watcherStopped, &shmCache->mutex, 2 * SHM_HEART_BEAT_UPDATE_INTERVAL_IN_S, 0);
         }
         active = shmCache->watcherActive;

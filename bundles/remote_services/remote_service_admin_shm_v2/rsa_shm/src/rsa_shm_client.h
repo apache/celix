@@ -23,6 +23,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "celix_cleanup.h"
 #include "celix_log_helper.h"
 #include "celix_types.h"
 #include "celix_properties.h"
@@ -37,6 +38,8 @@ celix_status_t rsaShmClientManager_create(celix_bundle_context_t *ctx,
         celix_log_helper_t *loghelper, rsa_shm_client_manager_t **clientManagerOut);
 
 void rsaShmClientManager_destroy(rsa_shm_client_manager_t *clientManager);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(rsa_shm_client_manager_t, rsaShmClientManager_destroy)
 
 celix_status_t rsaShmClientManager_createOrAttachClient(rsa_shm_client_manager_t *clientManager,
         const char *peerServerName, long serviceId);

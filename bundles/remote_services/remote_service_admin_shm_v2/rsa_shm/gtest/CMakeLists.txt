@@ -39,7 +39,7 @@ add_celix_bundle_dependencies(integration_test_rsa_shm Celix::rsa_shm)
 add_test(NAME run_integration_test_rsa_shm COMMAND integration_test_rsa_shm)
 setup_target_for_coverage(integration_test_rsa_shm SCAN_DIR ..)
 
-if (LINKER_WRAP_SUPPORTED)
+if (LINKER_WRAP_SUPPORTED AND BUILD_RSA_JSON_RPC)
     ####unit test
     add_executable(unit_test_rsa_shm
             src/RsaShmImplUnitTestSuite.cc
@@ -48,12 +48,13 @@ if (LINKER_WRAP_SUPPORTED)
             src/RsaShmClientServerUnitTestSuite.cc
             src/RsaShmActivatorUnitTestSuite.cc
             src/thpool_ei.cc
+            src/shm_pool_ei.cc
             )
 
     target_link_libraries(unit_test_rsa_shm PRIVATE
             rsa_shm_cut
             Celix::c_rsa_spi
-            Celix::rsa_common
+            rsa_common_cut
             Celix::log_helper
             Celix::framework
             Celix::threads_ei
@@ -65,6 +66,8 @@ if (LINKER_WRAP_SUPPORTED)
             Celix::stdio_ei
             Celix::pthread_ei
             Celix::log_helper_ei
+            Celix::properties_ei
+            Celix::long_hash_map_ei
             GTest::gtest
             GTest::gtest_main
             )
@@ -72,6 +75,7 @@ if (LINKER_WRAP_SUPPORTED)
     target_link_options(unit_test_rsa_shm PRIVATE
             LINKER:--wrap,thpool_init
             LINKER:--wrap,thpool_add_work
+            LINKER:--wrap,shmPool_malloc
             )
 
     target_compile_definitions(unit_test_rsa_shm PRIVATE -DRESOURCES_DIR="${CMAKE_CURRENT_LIST_DIR}/resources")
@@ -81,6 +85,7 @@ if (LINKER_WRAP_SUPPORTED)
     add_celix_bundle_dependencies(unit_test_rsa_shm Celix::rsa_json_rpc)
 
     celix_deprecated_utils_headers(unit_test_rsa_shm)
+    celix_deprecated_framework_headers(unit_test_rsa_shm)
 
     add_test(NAME run_unit_test_rsa_shm COMMAND unit_test_rsa_shm)
     setup_target_for_coverage(unit_test_rsa_shm SCAN_DIR ..)

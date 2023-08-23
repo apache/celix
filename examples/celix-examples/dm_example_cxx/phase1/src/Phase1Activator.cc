@@ -20,6 +20,7 @@
 #include "Phase1Cmp.h"
 #include "Phase1Activator.h"
 #include "IPhase2.h"
+#include <celix_compiler.h>
 #include <celix/BundleActivator.h>
 
 using namespace celix::dm;
@@ -33,8 +34,8 @@ struct InvalidCServ {
     virtual ~InvalidCServ() = default;
     void* handle {nullptr}; //valid pod
     int (*foo)(double arg) {nullptr}; //still valid pod
-    void bar(double __attribute__((unused)) arg) {} //still valid pod
-    virtual void baz(double __attribute__((unused)) arg) {} //not a valid pod
+    void bar(double arg CELIX_UNUSED) {} //still valid pod
+    virtual void baz(double arg CELIX_UNUSED) {} //not a valid pod
 };
 
 Phase1Activator::Phase1Activator(std::shared_ptr<celix::dm::DependencyManager> mng) {

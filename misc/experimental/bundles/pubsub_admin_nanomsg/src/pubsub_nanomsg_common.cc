@@ -19,8 +19,9 @@
 
 #include <memory.h>
 #include "pubsub_nanomsg_common.h"
+#include "celix_compiler.h"
 
-int celix::pubsub::nanomsg::localMsgTypeIdForMsgType(void *handle __attribute__((unused)), const char *msgType,
+int celix::pubsub::nanomsg::localMsgTypeIdForMsgType(void *handle CELIX_UNUSED, const char *msgType,
                                          unsigned int *msgTypeId) {
     *msgTypeId = utils_stringHash(msgType);
     return 0;

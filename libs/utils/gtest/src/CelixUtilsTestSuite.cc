@@ -259,7 +259,7 @@ TEST_F(UtilsTestSuite, StringTrimTest) {
     free(trimmed);
 
     // Empty string
-    trimmed = utils_stringTrim(celix_utils_strdup("  abc   "));
+    trimmed = celix_utils_trim("  abc   ");
     EXPECT_STREQ("abc", trimmed);
     free(trimmed);
 }

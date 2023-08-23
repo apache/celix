@@ -24,6 +24,8 @@
 extern "C" {
 #endif
 
+#include <netinet/in.h>
+
 typedef struct pubsub_utils_url {
   char *url;
   char *protocol;

@@ -156,12 +156,12 @@ void myBundle_goodbyeWorld(celix_bundle_context_t* ctx) {
     printf("Goodbye world from bundle with id %li\n", celix_bundleContext_getBundleId(ctx));
 }
 
-static celix_status_t myBundle_start(my_bundle_activator_data_t *data __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
+static celix_status_t myBundle_start(my_bundle_activator_data_t *data CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
     myBundle_helloWorld(ctx);
     return CELIX_SUCCESS;
 }
 
-static celix_status_t myBundle_stop(my_bundle_activator_data_t *data __attribute__((unused)), celix_bundle_context_t *ctx __attribute__((unused))) {
+static celix_status_t myBundle_stop(my_bundle_activator_data_t *data CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
     myBundle_goodbyeWorld(ctx);
     return CELIX_SUCCESS;
 }
@@ -302,11 +302,11 @@ install_celix_targets(MyExport NAMESPACE ExamplePackage:: DESTINATION share/Exam
 #Install Package CMake configuration
 file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/ExamplePackageConfig.cmake CONTENT "
   # relative install dir from lib/CMake/ExamplePackage.
-  get_filename_component(REL_INSTALL_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-  get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
-  get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
-  get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
-  include(${REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake)
+  get_filename_component(EXAMPLE_PACKAGE_REL_INSTALL_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+  get_filename_component(EXAMPLE_PACKAGE_REL_INSTALL_DIR "${EXAMPLE_PACKAGE_REL_INSTALL_DIR}" PATH)
+  get_filename_component(EXAMPLE_PACKAGE_REL_INSTALL_DIR "${EXAMPLE_PACKAGE_REL_INSTALL_DIR}" PATH)
+  get_filename_component(EXAMPLE_PACKAGE_REL_INSTALL_DIR "${EXAMPLE_PACKAGE_REL_INSTALL_DIR}" PATH)
+  include(${EXAMPLE_PACKAGE_REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake)
 ")
 
 install(FILES

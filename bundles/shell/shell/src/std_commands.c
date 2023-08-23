@@ -82,7 +82,7 @@ celix_std_commands_t* celix_stdCommands_create(celix_bundle_context_t* ctx) {
                     .exec = uninstallCommand_execute,
                     .name = "celix::uninstall",
                     .description = "uninstall bundle(s).",
-                    .usage = "uninstall <file> [<file> ...]"
+                    .usage = "uninstall <id> [<id> ...]"
             };
     commands->std_commands[5] =
             (struct celix_shell_command_register_entry) {
@@ -133,6 +133,13 @@ celix_std_commands_t* celix_stdCommands_create(celix_bundle_context_t* ctx) {
                     .usage = "quit"
             };
     commands->std_commands[11] =
+        (struct celix_shell_command_register_entry) {
+            .exec = unloadCommand_execute,
+            .name = "celix::unload",
+            .description = "unload bundle(s).",
+            .usage = "unload <id> [<id> ...]"
+        };
+    commands->std_commands[12] =
             (struct celix_shell_command_register_entry) {
                     .exec = NULL
             };

@@ -33,6 +33,7 @@
 #include <jansson.h>
 #include "json_serializer.h"
 #include "utils.h"
+#include "celix_utils.h"
 
 #include "import_registration_dfi.h"
 #include "export_registration_dfi.h"
@@ -135,7 +136,6 @@ static celix_status_t remoteServiceAdmin_getIpAddress(char* interface, char** ip
 static char* remoteServiceAdmin_getIFNameForIP(const char *ip);
 static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp);
 static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp);
-static void remoteServiceAdmin_log(remote_service_admin_t *admin, int level, const char *file, int line, const char *msg, ...);
 static void remoteServiceAdmin_setupStopExportsThread(remote_service_admin_t* admin);
 static void remoteServiceAdmin_teardownStopExportsThread(remote_service_admin_t* admin);
 
@@ -196,12 +196,6 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
          celixThreadMutex_create(&(*admin)->importedServicesLock, NULL);
 
         (*admin)->loghelper = celix_logHelper_create(context, "celix_rsa_admin");
-        dynCommon_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
-        dynType_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
-        dynFunction_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
-        dynInterface_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
-        jsonSerializer_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
-        jsonRpc_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
 
         long port = celix_bundleContext_getPropertyAsLong(context, RSA_PORT_KEY, RSA_PORT_DEFAULT);
         const char *ip = celix_bundleContext_getProperty(context, RSA_IP_KEY, RSA_IP_DEFAULT);
@@ -597,7 +591,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
 
         token = strtok_r(ecCopy, delimiter, &savePtr);
         while (token != NULL) {
-            if (strncmp(utils_stringTrim(token), RSA_DFI_CONFIGURATION_TYPE, 1024) == 0) {
+            if (strncmp(celix_utils_trimInPlace(token), RSA_DFI_CONFIGURATION_TYPE, 1024) == 0) {
                 export = true;
                 break;
             }
@@ -889,7 +883,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
 
         token = strtok_r(ecCopy, delimiter, &savePtr);
         while (token != NULL) {
-            if (strncmp(utils_stringTrim(token), RSA_DFI_CONFIGURATION_TYPE, 1024) == 0) {
+            if (strncmp(celix_utils_trimInPlace(token), RSA_DFI_CONFIGURATION_TYPE, 1024) == 0) {
                 importService = true;
                 break;
             }
@@ -1055,17 +1049,3 @@ static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb
     return size * nmemb;
 }
 
-
-static void remoteServiceAdmin_log(remote_service_admin_t *admin, int level, const char *file, int line, const char *msg, ...) {
-    va_list ap;
-    va_start(ap, msg);
-    int levels[5] = {0, CELIX_LOG_LEVEL_ERROR, CELIX_LOG_LEVEL_WARNING, CELIX_LOG_LEVEL_INFO, CELIX_LOG_LEVEL_DEBUG};
-
-    char buf1[256];
-    snprintf(buf1, 256, "FILE:%s, LINE:%i, MSG:", file, line);
-
-    char buf2[256];
-    vsnprintf(buf2, 256, msg, ap);
-    celix_logHelper_log(admin->loghelper, levels[level], "%s%s", buf1, buf2);
-    va_end(ap);
-}

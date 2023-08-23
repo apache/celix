@@ -37,6 +37,8 @@
 
 #include <stdio.h>
 
+#include "celix_cleanup.h"
+#include "celix_compiler.h"
 #include "celix_errno.h"
 #include "celix_version.h"
 #include "celix_utils_export.h"
@@ -125,6 +127,8 @@ CELIX_UTILS_EXPORT celix_properties_t* celix_properties_create(void);
  * @param[in] properties The property set to destroy. If properties is NULL, this function will do nothing.
  */
 CELIX_UTILS_EXPORT void celix_properties_destroy(celix_properties_t* properties);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_properties_t, celix_properties_destroy)
 
 /**
  * @brief Load properties from a file.
@@ -439,8 +443,6 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_i
     !celix_propertiesIterator_isEnd(&(iterName)); celix_propertiesIterator_next(&(iterName)))
 
 
-
-
 /**** Deprecated API *************************************************************************************************/
 
 /**
@@ -503,9 +505,11 @@ CELIX_UTILS_DEPRECATED_EXPORT const char* celix_propertiesIterator_nextKey(celix
  * key3 = value3
  * @endcode
 */
-#define CELIX_PROPERTIES_FOR_EACH(properties, key) \
-    for(celix_properties_iterator_t iter_##key = celix_propertiesIterator_construct(properties); \
-       celix_propertiesIterator_hasNext(&iter_##key), (key) = celix_propertiesIterator_nextKey(&iter_##key);)
+#define CELIX_PROPERTIES_FOR_EACH(props, key) _CELIX_PROPERTIES_FOR_EACH(CELIX_UNIQUE_ID(iter), props, key)
+
+#define _CELIX_PROPERTIES_FOR_EACH(iter, props, key) \
+    for(celix_properties_iterator_t iter = celix_propertiesIterator_construct(props); \
+        celix_propertiesIterator_hasNext(&iter), (key) = celix_propertiesIterator_nextKey(&iter);)
 
 #ifdef __cplusplus
 }

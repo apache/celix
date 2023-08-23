@@ -33,7 +33,6 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             src/export_registration_dfi.c
             src/import_registration_dfi.c
             )
-    celix_bundle_private_libs(rsa_dfi Celix::dfi)
     target_link_libraries(rsa_dfi PRIVATE
             Celix::rsa_dfi_utils
             Celix::dfi
@@ -42,6 +41,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             CURL::libcurl
             civetweb::civetweb
             jansson::jansson
+            libuuid::libuuid
             )
     celix_deprecated_utils_headers(rsa_dfi)
     celix_deprecated_framework_headers(rsa_dfi)

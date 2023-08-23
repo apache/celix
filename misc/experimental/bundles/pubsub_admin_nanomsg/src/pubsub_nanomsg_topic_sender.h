@@ -23,6 +23,7 @@
 #include <mutex>
 #include <map>
 #include "celix_bundle_context.h"
+#include "celix_compiler.h"
 #include <log_helper.h>
 #include <pubsub_serializer.h>
 #include <pubsub/publisher.h>
@@ -74,9 +75,9 @@ namespace pubsub {
             const std::string &getUrl() const;
 
             void* getPublisherService(const celix_bundle_t *requestingBundle,
-                                      const celix_properties_t *svcProperties __attribute__((unused)));
+                                      const celix_properties_t *svcProperties CELIX_UNUSED);
             void ungetPublisherService(const celix_bundle_t *requestingBundle,
-                                       const celix_properties_t *svcProperties __attribute__((unused)));
+                                       const celix_properties_t *svcProperties CELIX_UNUSED);
             int topicPublicationSend(unsigned int msgTypeId, const void *inMsg);
             void delay_first_send_for_late_joiners() ;
 

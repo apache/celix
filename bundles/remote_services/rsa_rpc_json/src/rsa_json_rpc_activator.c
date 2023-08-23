@@ -39,19 +39,22 @@ static celix_status_t rsaJsonRpc_start(rsa_json_rpc_activator_t* activator, celi
 
     activator->ctx = ctx;
     activator->rpcSvcId = -1;
-    activator->logHelper = celix_logHelper_create(ctx, "rsa_json_rpc");
+    celix_autoptr(celix_log_helper_t) logHelper = activator->logHelper = celix_logHelper_create(ctx, "rsa_json_rpc");
     if (activator->logHelper == NULL) {
-        status = CELIX_BUNDLE_EXCEPTION;
-        goto log_helper_err;
+        return CELIX_BUNDLE_EXCEPTION;
     }
 
     status = rsaJsonRpc_create(ctx, activator->logHelper, &activator->jsonRpc);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(activator->logHelper, "Error creating json rpc. %d.", status);
-        goto rpc_err;
+        return status;
     }
+    celix_autoptr(rsa_json_rpc_t) jsonRpc = activator->jsonRpc;
     celix_properties_t *props = celix_properties_create();
-    assert(props != NULL);
+    if (props == NULL) {
+        celix_logHelper_error(activator->logHelper, "Error creating properties for json rpc.");
+        return CELIX_ENOMEM;
+    }
     celix_properties_set(props, RSA_RPC_TYPE_KEY, "celix.remote.admin.rpc_type.json");
     activator->rpcFac.handle = activator->jsonRpc;
     activator->rpcFac.createProxy = rsaJsonRpc_createProxy;
@@ -66,17 +69,11 @@ static celix_status_t rsaJsonRpc_start(rsa_json_rpc_activator_t* activator, celi
     activator->rpcSvcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx, &opts);
     if (activator->rpcSvcId < 0) {
         celix_logHelper_error(activator->logHelper, "Error registering json rpc service.");
-        status = CELIX_BUNDLE_EXCEPTION;
-        goto rpc_svc_err;
+        return CELIX_BUNDLE_EXCEPTION;
     }
+    celix_steal_ptr(jsonRpc);
+    celix_steal_ptr(logHelper);
     return CELIX_SUCCESS;
-rpc_svc_err:
-    //props is freed by framework;
-    rsaJsonRpc_destroy(activator->jsonRpc);
-rpc_err:
-    celix_logHelper_destroy(activator->logHelper);
-log_helper_err:
-    return status;
 }
 
 static celix_status_t rsaJsonRpc_stop(rsa_json_rpc_activator_t *activator, celix_bundle_context_t* ctx) {

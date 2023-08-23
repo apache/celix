@@ -25,6 +25,7 @@ set(CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS
 )
 
 add_executable(test_utils
+        src/LogTestSuite.cc
         src/LogUtilsTestSuite.cc
         src/VersionRangeTestSuite.cc
         src/TimeUtilsTestSuite.cc
@@ -39,10 +40,11 @@ add_executable(test_utils
         src/ErrTestSuite.cc
         src/ThreadsTestSuite.cc
         src/CelixErrnoTestSuite.cc
+        src/CelixUtilsAutoCleanupTestSuite.cc
         ${CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS}
 )
 
-target_link_libraries(test_utils PRIVATE utils_cut GTest::gtest GTest::gtest_main libzip::libzip)
+target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::libzip)
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
 celix_deprecated_utils_headers(test_utils)
 
@@ -93,9 +95,22 @@ if (LINKER_WRAP_SUPPORTED)
             src/IpUtilsErrorInjectionTestSuite.cc
             src/ArrayListErrorInjectionTestSuite.cc
             src/ErrErrorInjectionTestSuite.cc
+            src/PropertiesErrorInjectionTestSuite.cc
             src/VersionErrorInjectionTestSuite.cc
     )
-    target_link_libraries(test_utils_with_ei PRIVATE Celix::zip_ei Celix::stdio_ei Celix::stat_ei Celix::fts_ei utils_cut Celix::utils_ei Celix::ifaddrs_ei Celix::threads_ei Celix::malloc_ei GTest::gtest GTest::gtest_main)
+    target_link_libraries(test_utils_with_ei PRIVATE
+            Celix::zip_ei
+            Celix::stdio_ei
+            Celix::stat_ei
+            Celix::fts_ei
+            utils_cut
+            Celix::utils_ei
+            Celix::ifaddrs_ei
+            Celix::threads_ei
+            Celix::malloc_ei
+            Celix::hmap_ei
+            GTest::gtest GTest::gtest_main
+    )
     target_include_directories(test_utils_with_ei PRIVATE ../src) #for version_private (needs refactoring of test)
     celix_deprecated_utils_headers(test_utils_with_ei)
     add_dependencies(test_utils_with_ei test_utils_resources)

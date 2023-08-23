@@ -19,13 +19,13 @@ add_celix_bundle(log_admin
 	SYMBOLIC_NAME "apache_celix_log_admin"
 	NAME "Apache Celix Log Admin"
 	GROUP "Celix/Logging"
-	VERSION "1.0.0"
+	VERSION "1.1.0"
 	SOURCES
 		src/celix_log_admin.c
 		src/celix_log_admin_activator.c
 	FILENAME celix_log_admin
 )
-target_link_libraries(log_admin PRIVATE Celix::log_helper Celix::shell_api)
+target_link_libraries(log_admin PRIVATE Celix::log_service_api Celix::shell_api)
 target_include_directories(log_admin PRIVATE src)
 celix_deprecated_utils_headers(log_admin)
 install_celix_bundle(log_admin EXPORT celix COMPONENT logging)

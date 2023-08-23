@@ -30,10 +30,6 @@
 #include <curl/curl.h>
 #endif
 
-#include <string.h>
-#include <curl/curl.h>
-#include <signal.h>
-
 #include "framework.h"
 #include "celix_framework_factory.h"
 #include "celix_constants.h"
@@ -163,7 +159,7 @@ static int celixLauncher_launchWithConfigAndProps(const char *configFile, celix_
 int celixLauncher_launchWithProperties(celix_properties_t* config, celix_framework_t** framework) {
 #ifndef CELIX_NO_CURLINIT
 	// Before doing anything else, let's setup Curl
-	curl_global_init(CURL_GLOBAL_NOTHING);
+	curl_global_init(CURL_GLOBAL_ALL);
 #endif
 	*framework = celix_frameworkFactory_createFramework(config);
 	return *framework != NULL ? CELIX_LAUNCHER_OK_EXIT_CODE : CELIX_LAUNCHER_ERROR_EXIT_CODE;
@@ -273,7 +269,7 @@ static int celixLauncher_createBundleCache(celix_properties_t* embeddedPropertie
         return CELIX_LAUNCHER_ERROR_EXIT_CODE;
     }
     status = celix_framework_utils_createBundleArchivesCache(fw);
-    status = CELIX_DO_IF(status, framework_destroy(fw));
+    (void)framework_destroy(fw);
     if (status != CELIX_SUCCESS) {
         fprintf(stderr, "Failed to create bundle cache\n");
         return CELIX_LAUNCHER_ERROR_EXIT_CODE;

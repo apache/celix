@@ -48,6 +48,8 @@ bool installCommand_execute(void *handle, const char *commandLine, FILE *outStre
 
 bool uninstallCommand_execute(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
 
+bool unloadCommand_execute(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
+
 bool updateCommand_execute(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);
 
 bool helpCommand_execute(void *handle, const char *commandLine, FILE *outStream, FILE *errStream);

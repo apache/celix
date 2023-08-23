@@ -28,32 +28,8 @@ include(cmake/cmake_celix/UseCelix.cmake)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 #find required packages
-find_package(ZLIB REQUIRED) #framework
-find_package(libuuid REQUIRED) #framework
-find_package(CURL REQUIRED) #framework, etcdlib
-find_package(libzip REQUIRED) #framework, etcdlib
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-
-if (NOT TARGET ZLIB::ZLIB)
-    #Note more recent zlib will create ZLIB::ZLIB target
-    message("Note ZLIB::ZLIB target not created by find_package(ZLIB). Creating ZLIB::ZLIB Target.")
-    add_library(ZLIB::ZLIB SHARED IMPORTED)
-    set_target_properties(ZLIB::ZLIB PROPERTIES
-            IMPORTED_LOCATION "${ZLIB_LIBRARIES}"
-            INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE_DIRS}"
-            )
-endif ()
-
-if (NOT TARGET CURL::libcurl)
-    #Note more recent curl will create CURL::libcurl target
-    message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
-    add_library(CURL::libcurl SHARED IMPORTED)
-    set_target_properties(CURL::libcurl PROPERTIES
-            IMPORTED_LOCATION "${CURL_LIBRARIES}"
-            INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
-            )
-endif ()
 
 # see https://public.kitware.com/Bug/view.php?id=15696
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
@@ -182,6 +158,8 @@ endif ()
 
 option(ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11 "Test the Dependency Manager for C++11 support" OFF)
 option(ENABLE_TESTING_FOR_CXX14 "Test celix utils and framework C++ header for C++14 support" OFF)
+option(ENABLE_CMAKE_WARNING_TESTS "Enable cmake warning tests to test warning prints" OFF)
+option(ENABLE_TESTING_ON_CI "Whether to enable testing on CI. This influence allowed timing errors during unit tests" OFF)
 
 if (CELIX_INSTALL_DEPRECATED_API)
     #ignore deprecated warnings
@@ -196,6 +174,12 @@ include(CheckLinkerFlag)
 check_linker_flag(CXX LINKER:--wrap,celix_nonexistent_symbol LINKER_WRAP_SUPPORTED)
 cmake_pop_check_state()
 
+# avoid unknown export "celix" error when building nothing
+add_library(celix INTERFACE)
+add_library(Celix::celix ALIAS celix)
+install(TARGETS celix EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix)
+
 #Add generate_export_header to cmake
 include(GenerateExportHeader)
 
@@ -209,7 +193,10 @@ add_subdirectory(bundles)
 add_subdirectory(misc/experimental)
 
 #Example as last, because some example will check if underlining options are enabled
-add_subdirectory(examples/celix-examples examples)
+add_subdirectory(examples/celix-examples)
+
+#include CMake warning tests
+include(cmake/celix_project/WarningTests.cmake)
 
 #export targets
 install(EXPORT celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE Targets.cmake COMPONENT cmake)
@@ -218,6 +205,15 @@ install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE
 #install celix cmake modules
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/ DESTINATION share/celix/cmake/Modules)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_celix/ DESTINATION share/celix/cmake/cmake_celix)
+
+file(GENERATE
+        OUTPUT "${PROJECT_BINARY_DIR}/celix/gen/cmake/CelixDeps.cmake"
+        INPUT cmake/CelixDeps.cmake.in
+        )
+
+install(FILES
+        "${PROJECT_BINARY_DIR}/celix/gen/cmake/CelixDeps.cmake"
+        DESTINATION share/celix/cmake COMPONENT cmake)
 
 #configure and install CelixConfig and CelixConfigVersion files
 configure_file(cmake/CelixConfigVersion.cmake.in

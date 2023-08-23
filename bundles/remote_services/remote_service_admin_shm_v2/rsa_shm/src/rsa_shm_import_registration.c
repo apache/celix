@@ -22,6 +22,7 @@
 #include "remote_constants.h"
 #include "celix_log_helper.h"
 #include "celix_api.h"
+#include "celix_stdlib_cleanup.h"
 #include <string.h>
 #include <assert.h>
 
@@ -41,12 +42,11 @@ static void importRegistration_removeRpcFac(void *handle, void *svc);
 celix_status_t importRegistration_create(celix_bundle_context_t *context,
         celix_log_helper_t *logHelper, endpoint_description_t *endpointDesc,
         long reqSenderSvcId, import_registration_t **importOut) {
-    celix_status_t status = CELIX_SUCCESS;
     if (context == NULL || logHelper == NULL || endpointDescription_isInvalid(endpointDesc)
             || reqSenderSvcId < 0 || importOut == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    import_registration_t *import = (import_registration_t *)calloc(1, sizeof(*import));
+    celix_autofree import_registration_t *import = (import_registration_t *)calloc(1, sizeof(*import));
     if (import == NULL) {
         return CELIX_ENOMEM;
     }
@@ -55,9 +55,9 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
 
     import->endpointDesc = endpointDescription_clone(endpointDesc);
     if (import->endpointDesc == NULL) {
-        status = CELIX_ENOMEM;
-        goto clone_ep_err;
+        return CELIX_ENOMEM;
     }
+    celix_autoptr(endpoint_description_t) epDesc = import->endpointDesc;
 
     import->reqSenderSvcId = reqSenderSvcId;
     import->rpcFac = NULL;
@@ -67,35 +67,31 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
             OSGI_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
     if (serviceImportedConfigs == NULL) {
         celix_logHelper_error(logHelper,"RSA import reg: service.imported.configs property is not exist.");
-        status = CELIX_ILLEGAL_ARGUMENT;
-        goto imported_configs_err;
+        return CELIX_ILLEGAL_ARGUMENT;
     }
     char *rsaRpcType = NULL;
-    char *icCopy = strdup(serviceImportedConfigs);
+    celix_autofree char *icCopy = strdup(serviceImportedConfigs);
     const char delimiter[2] = ",";
     char *token, *savePtr;
     token = strtok_r(icCopy, delimiter, &savePtr);
     while (token != NULL) {
-        rsaRpcType = celix_utils_trim(token);
-        if (rsaRpcType != NULL && strncmp(rsaRpcType, RSA_RPC_TYPE_PREFIX, sizeof(RSA_RPC_TYPE_PREFIX) - 1) == 0) {
+        rsaRpcType = celix_utils_trimInPlace(token);
+        if (strncmp(rsaRpcType, RSA_RPC_TYPE_PREFIX, sizeof(RSA_RPC_TYPE_PREFIX) - 1) == 0) {
             break;
         }
-        free(rsaRpcType);
         rsaRpcType = NULL;
         token = strtok_r(NULL, delimiter, &savePtr);
     }
     if (rsaRpcType == NULL) {
         celix_logHelper_error(logHelper,"RSA import reg: %s property is not exist.", RSA_RPC_TYPE_KEY);
-        status = CELIX_ILLEGAL_ARGUMENT;
-        goto rpc_type_err;
+        return CELIX_ILLEGAL_ARGUMENT;
     }
 
     char filter[128] = {0};
     int bytes = snprintf(filter, sizeof(filter), "(%s=%s)", RSA_RPC_TYPE_KEY, rsaRpcType);
     if (bytes >= sizeof(filter)) {
      celix_logHelper_error(logHelper,"RSA import reg: The value(%s) of %s is too long.", rsaRpcType, RSA_RPC_TYPE_KEY);
-     status = CELIX_ILLEGAL_ARGUMENT;
-     goto rpc_type_filter_err;
+     return CELIX_ILLEGAL_ARGUMENT;
     }
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.filter = filter;
@@ -106,27 +102,14 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
     opts.remove = importRegistration_removeRpcFac;
     import->rpcSvcTrkId = celix_bundleContext_trackServicesWithOptionsAsync(context, &opts);
     if (import->rpcSvcTrkId < 0) {
-     celix_logHelper_error(logHelper,"RSA import reg: Error Tracking service for %s.", RSA_RPC_FACTORY_NAME);
-     status = CELIX_SERVICE_EXCEPTION;
-     goto tracker_err;
+        celix_logHelper_error(logHelper,"RSA import reg: Error Tracking service for %s.", RSA_RPC_FACTORY_NAME);
+        return CELIX_SERVICE_EXCEPTION;
     }
 
-    *importOut = import;
-
-    free(rsaRpcType);
-    free(icCopy);
+    celix_steal_ptr(epDesc);
+    *importOut = celix_steal_ptr(import);
 
     return CELIX_SUCCESS;
-tracker_err:
-rpc_type_filter_err:
-    free(rsaRpcType);
-rpc_type_err:
-    free(icCopy);
-imported_configs_err:
-    endpointDescription_destroy(import->endpointDesc);
-clone_ep_err:
-    free(import);
-    return status;
 }
 
 static void importRegistration_stopRpcSvcTrkDone(void *data) {
@@ -192,25 +175,25 @@ static void importRegistration_removeRpcFac(void *handle, void *svc) {
 
 //LCOV_EXCL_START
 
-celix_status_t importRegistration_getException(import_registration_t *registration) {
+celix_status_t importRegistration_getException(import_registration_t *registration CELIX_UNUSED) {
     celix_status_t status = CELIX_SUCCESS;
     //It is stub and will not be called at present.
     return status;
 }
 
-celix_status_t importRegistration_getImportReference(import_registration_t *registration, import_reference_t **reference) {
+celix_status_t importRegistration_getImportReference(import_registration_t *registration CELIX_UNUSED, import_reference_t **reference CELIX_UNUSED) {
     celix_status_t status = CELIX_SUCCESS;
     //It is stub and will not be called at present.
     return status;
 }
 
-celix_status_t importReference_getImportedEndpoint(import_reference_t *reference) {
+celix_status_t importReference_getImportedEndpoint(import_reference_t *reference CELIX_UNUSED) {
     celix_status_t status = CELIX_SUCCESS;
     //It is stub and will not be called at present.
     return status;
 }
 
-celix_status_t importReference_getImportedService(import_reference_t *reference) {
+celix_status_t importReference_getImportedService(import_reference_t *reference CELIX_UNUSED) {
     celix_status_t status = CELIX_SUCCESS;
     //It is stub and will not be called at present.
     return status;

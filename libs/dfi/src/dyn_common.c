@@ -71,7 +71,6 @@ int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char 
     }
 
     if (status == OK) {
-       LOG_DEBUG("Parsed name '%s'", buf);
        *result = buf;
     } else if (buf != NULL) {
         free(buf);

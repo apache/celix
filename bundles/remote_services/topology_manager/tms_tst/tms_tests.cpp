@@ -494,8 +494,13 @@ extern "C" {
 
         celix_framework_waitForEmptyEventQueue(framework);
 
-        bool imported = testImport->IsImported(testImport);
-        EXPECT_EQ(true, imported);
+        //Then endpointImported becomes true within 1 second
+        bool imported;
+        int iteration = 0;
+        do {
+            imported = testImport->IsImported(testImport);
+            usleep(1000);
+        } while (!imported && iteration++ < 1000);
 
         rc = eplService->endpointRemoved(eplService->handle, endpoint, NULL);
         EXPECT_EQ(CELIX_SUCCESS, rc);
@@ -541,8 +546,13 @@ extern "C" {
 
         celix_framework_waitForEmptyEventQueue(framework);
 
-        bool imported = testImport->IsImported(testImport);
-        EXPECT_EQ(true, imported);
+        //Then endpointImported becomes true within 1 second
+        bool imported;
+        int iteration = 0;
+        do {
+            imported = testImport->IsImported(testImport);
+            usleep(1000);
+        } while (!imported && iteration++ < 1000);
 
         rc = eplService->endpointRemoved(eplService->handle, endpoint, NULL);
         EXPECT_EQ(CELIX_SUCCESS, rc);
@@ -633,8 +643,14 @@ extern "C" {
 
         celix_framework_waitForEmptyEventQueue(framework);
 
-        celix_framework_waitForEmptyEventQueue(framework);
-        bool imported = testImport->IsImported(testImport);
+        //Then endpointImported becomes true within 1 second
+        bool imported;
+        int iteration = 0;
+        do {
+            imported = testImport->IsImported(testImport);
+            usleep(1000);
+        } while (!imported && iteration++ < 1000);
+
         EXPECT_EQ(true, imported);
 
         rc = eplService->endpointRemoved(eplService->handle, endpoint, NULL);

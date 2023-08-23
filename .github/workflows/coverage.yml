@@ -27,8 +27,9 @@ jobs:
             -o celix:enable_code_coverage=True
             -o celix:enable_testing_for_cxx14=True
             -o celix:enable_testing_dependency_manager_for_cxx11=True
+            -o celix:enable_testing_on_ci=True
         run: |
-          #force reequire libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
+          #force require libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
           conan install . celix/ci -pr:b default -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing -b cpputest --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s
       - name: Build
         run: |

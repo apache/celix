@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include <celix_bundle_activator.h>
+#include <celix_compiler.h>
 
 #include "example_calc.h"
 
@@ -33,17 +34,17 @@ typedef struct activator_data {
 } activator_data_t;
 
 
-static void addSvc(activator_data_t *data __attribute__((unused)), example_calc_t *calc) {
+static void addSvc(activator_data_t *data CELIX_UNUSED, example_calc_t *calc) {
     int result = calc->calc(calc->handle, 2);
     printf("Added calc service, result is %i\n", result);
 }
 
-static void removeSvc(activator_data_t *data __attribute__((unused)), example_calc_t *calc) {
+static void removeSvc(activator_data_t *data CELIX_UNUSED, example_calc_t *calc) {
     int result = calc->calc(calc->handle, 3);
     printf("Removing calc service, result is %i\n", result);
 }
 
-static void useCalc(activator_data_t *data __attribute__((unused)), example_calc_t *calc) {
+static void useCalc(activator_data_t *data CELIX_UNUSED, example_calc_t *calc) {
     int result = calc->calc(calc->handle, 2);
     printf("Called highest ranking service. Result is %i\n", result);
 }

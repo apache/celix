@@ -21,7 +21,7 @@
 #include <stdio.h>
 
 int main() {
-    etcdlib_t *db = etcdlib_create("127.0.0.1", 8000, ETCDLIB_NO_CURL_INITIALIZATION);
+    etcdlib_t *db = etcdlib_create("127.0.0.1", 8000, 0);
     if (db != NULL) {
         printf("etcdlib instance %p created\n", db);
     }

@@ -23,5 +23,6 @@ target_link_libraries(stat_ei PUBLIC Celix::error_injector)
 target_link_options(stat_ei INTERFACE
         LINKER:--wrap,mkdir
         LINKER:--wrap,stat
+        LINKER:--wrap,lstat
         )
 add_library(Celix::stat_ei ALIAS stat_ei)

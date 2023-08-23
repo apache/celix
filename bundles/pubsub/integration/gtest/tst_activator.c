@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 #include "celix_bundle_activator.h"
+#include "celix_compiler.h"
 #include "pubsub/api.h"
 
 #include "msg.h"
@@ -86,7 +87,7 @@ celix_status_t bnd_stop(struct activator *act, celix_bundle_context_t *ctx) {
 CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, bnd_start, bnd_stop) ;
 
 
-static int tst_receive(void *handle, const char * msgType __attribute__((unused)), unsigned int msgTypeId  __attribute__((unused)), void * voidMsg, const celix_properties_t *metadata  __attribute__((unused)), bool *release) {
+static int tst_receive(void *handle, const char * msgType CELIX_UNUSED, unsigned int msgTypeId  CELIX_UNUSED, void * voidMsg, const celix_properties_t *metadata  CELIX_UNUSED, bool *release) {
     struct activator *act = handle;
 
     msg_t *msg = voidMsg;
@@ -107,7 +108,7 @@ static int tst_receive(void *handle, const char * msgType __attribute__((unused)
     return CELIX_SUCCESS;
 }
 
-static int tst_receive2(void *handle, const char * msgType __attribute__((unused)), unsigned int msgTypeId  __attribute__((unused)), void * voidMsg, const celix_properties_t *metadata  __attribute__((unused)), bool *release  __attribute__((unused))) {
+static int tst_receive2(void *handle, const char * msgType CELIX_UNUSED, unsigned int msgTypeId  CELIX_UNUSED, void * voidMsg, const celix_properties_t *metadata  CELIX_UNUSED, bool *release  CELIX_UNUSED) {
     struct activator *act = handle;
 
     msg_t *msg = voidMsg;

@@ -20,6 +20,7 @@
 #pragma once
 
 #include <memory>
+#include <functional>
 
 #include "celix_framework.h"
 
@@ -61,7 +62,7 @@ namespace celix {
          * The event will be added to the event loop and handled on the event loop thread.
          *
          * if bndId >=0 the bundle usage count will be increased while the event is not yet processed or finished processing.
-         * The eventName is expected to be const char* valid during til the event is finished processing.
+         * The name is expected to be const char* valid during til the event is finished processing.
          *
          * if eventId >=0 this will be used, otherwise a new event id will be generated.
          *
@@ -105,7 +106,7 @@ namespace celix {
          * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
          * the C++ API.
          */
-        celix_framework_t * getCFramework() const {
+        celix_framework_t* getCFramework() const {
             return cFw.get();
         }
     private:

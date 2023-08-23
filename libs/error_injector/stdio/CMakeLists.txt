@@ -25,5 +25,8 @@ target_link_options(stdio_ei INTERFACE
         LINKER:--wrap,fwrite
         LINKER:--wrap,remove
         LINKER:--wrap,open_memstream
+        LINKER:--wrap,fseek
+        LINKER:--wrap,ftell
+        LINKER:--wrap,fread
         )
 add_library(Celix::stdio_ei ALIAS stdio_ei)

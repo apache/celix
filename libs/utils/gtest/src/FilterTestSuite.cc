@@ -414,6 +414,10 @@ TEST_F(FilterTestSuite, filterMatch) {
     celix_filter_destroy(f3);
 }
 
+TEST_F(FilterTestSuite, AutoCleanupTest) {
+    celix_autoptr(celix_filter_t) filter = celix_filter_create("(test_attr1=attr1)");
+}
+
 #include "filter.h"
 TEST_F(FilterTestSuite, deprecatedApi) {
     auto* f1 = filter_create("(test_attr1=attr1)");

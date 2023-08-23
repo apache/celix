@@ -25,7 +25,7 @@ target_include_directories(shm_pool PUBLIC include)
 
 target_include_directories(shm_pool PRIVATE src src/tlsf)
 
-target_link_libraries(shm_pool PUBLIC Celix::framework)
+target_link_libraries(shm_pool PUBLIC Celix::utils)
 
 #Alias setup to match external usage
 add_library(Celix::shm_pool ALIAS shm_pool)

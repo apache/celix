@@ -23,6 +23,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "celix_cleanup.h"
 #include <celix_errno.h>
 #include <sys/types.h>
 #include <stddef.h>
@@ -32,6 +33,8 @@ typedef struct shm_cache shm_cache_t;
 
 /**
  * @brief Create shared memory cache
+ *
+ * In case of an error, an error message is added to celix_err.
  *
  * @param[in] shmRdOnly Only read shared memory
  * @param[out] shmCache The shared memory cache instance
@@ -45,6 +48,8 @@ celix_status_t shmCache_create(bool shmRdOnly, shm_cache_t **shmCache);
  * @param[in] shmCache The shared memory cache instance
  */
 void shmCache_destroy(shm_cache_t *shmCache);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(shm_cache_t, shmCache_destroy)
 
 /**
  * @brief It will be called when shared memory is closed
@@ -66,6 +71,8 @@ void shmCache_setShmPeerClosedCB(shm_cache_t *shmCache, shmCache_shmPeerClosedCB
 
 /**
  * @brief Get shared memory address from shared memory cache.
+ *
+ * In case of an error, an error message is added to celix_err.
  *
  * @param shmCache The shared memory cache instance
  * @param shmId Shared memory id

@@ -19,6 +19,7 @@
 
 #include <stdbool.h>
 
+#include "celix_cleanup.h"
 #include "celix_errno.h"
 #include "celix_utils_export.h"
 
@@ -147,6 +148,8 @@ celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_cre
  */
 CELIX_UTILS_EXPORT
 void celix_arrayList_destroy(celix_array_list_t *list);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_array_list_t, celix_arrayList_destroy)
 
 /**
  * @brief Returns the size of the array list.

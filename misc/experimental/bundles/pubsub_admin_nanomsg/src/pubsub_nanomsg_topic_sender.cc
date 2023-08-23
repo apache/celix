@@ -33,6 +33,7 @@
 #include "pubsub_nanomsg_topic_sender.h"
 #include "pubsub_psa_nanomsg_constants.h"
 #include "pubsub_nanomsg_common.h"
+#include "celix_compiler.h"
 
 #define FIRST_SEND_DELAY_IN_SECONDS                 2
 #define NANOMSG_BIND_MAX_RETRY                      10
@@ -143,7 +144,7 @@ const std::string &pubsub::nanomsg::pubsub_nanomsg_topic_sender::getUrl() const 
 
 
 void* pubsub::nanomsg::pubsub_nanomsg_topic_sender::getPublisherService(const celix_bundle_t *requestingBundle,
-                                             const celix_properties_t *svcProperties __attribute__((unused))) {
+                                             const celix_properties_t *svcProperties CELIX_UNUSED) {
     long bndId = celix_bundle_getId(requestingBundle);
     void *service{nullptr};
     std::lock_guard<std::mutex> lock(boundedServices.mutex);

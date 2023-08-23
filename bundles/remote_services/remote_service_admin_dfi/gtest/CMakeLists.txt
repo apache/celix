@@ -53,7 +53,6 @@ target_link_libraries(test_rsa_dfi PRIVATE
 
 get_property(rsa_bundle_file TARGET rsa_dfi PROPERTY BUNDLE_FILE)
 get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE_FILE)
-get_property(calculator_shell_bundle_file TARGET calculator_shell PROPERTY BUNDLE_FILE)
 get_property(discovery_bundle_file TARGET rsa_discovery PROPERTY BUNDLE_FILE)
 get_property(topology_manager_bundle_file TARGET Celix::rsa_topology_manager PROPERTY BUNDLE_FILE)
 get_property(tst_bundle_file TARGET rsa_dfi_tst_bundle PROPERTY BUNDLE_FILE)
@@ -69,7 +68,6 @@ add_celix_bundle_dependencies(test_rsa_dfi
         rsa_dfi #note depend on the target creating the bundle zip not the lib target
         calculator
         remote_example_service
-        calculator_shell
         rsa_discovery
         Celix::rsa_topology_manager
         rsa_dfi_tst_bundle

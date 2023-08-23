@@ -108,6 +108,14 @@ CELIX_UTILS_EXPORT bool celix_utils_containsWhitespace(const char* s);
  * @return A trimmed version of the input string. The caller is responsible for freeing the memory of this string.
  */
 CELIX_UTILS_EXPORT char* celix_utils_trim(const char* string);
+/**
+ * @brief Trims the provided string in place.
+ *
+ * The trim will remove any leading and trailing whitespaces (' ', '\t', etc based on `isspace`)/
+ * @param string the string to be trimmed.
+ * @return string.
+ */
+CELIX_UTILS_EXPORT char* celix_utils_trimInPlace(char* string);
 
 /**
  * @brief Trims a string in place.
@@ -163,10 +171,26 @@ CELIX_UTILS_EXPORT double celix_difftime(const struct timespec *tBegin, const st
 CELIX_UTILS_EXPORT struct timespec celix_gettime(clockid_t clockId);
 
 /**
+ * @brief Returns the absolute time for the provided delay in seconds.
+ * @param[in] time The time to add the delay to. Can be NULL, in which case the time is 0.
+ * @param[in] delayInSeconds The delay in seconds.
+ * @return A new time with the delay added.
+ */
+CELIX_UTILS_EXPORT struct timespec celix_delayedTimespec(const struct timespec* time, double delayInSeconds);
+
+/**
  * @brief Returns the elapsed time - in seconds - relative to the startTime
  * using the clock for the provided clockid.
  */
 CELIX_UTILS_EXPORT double celix_elapsedtime(clockid_t clockId, struct timespec startTime);
+
+/**
+ * @brief Compare two time arguments.
+ * @param[in] a The first timespec.
+ * @param[in] b The second timespec.
+ * @return 0 if equal, -1 if a is before b and 1 if a is after b.
+ */
+CELIX_UTILS_EXPORT int celix_compareTime(const struct timespec* a, const struct timespec* b);
 
 /**
  * @brief Creates a hash from a string

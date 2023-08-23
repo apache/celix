@@ -113,11 +113,9 @@ celix_status_t tm_addImportScope(void *handle, char *filter) {
     celix_status_t status = CELIX_SUCCESS;
     scope_pt scope = (scope_pt) handle;
 
-    filter_pt new;
-
     if (handle == NULL)
         return CELIX_ILLEGAL_ARGUMENT;
-    new = filter_create(filter);
+    celix_autoptr(celix_filter_t) new = celix_filter_create(filter);
     if (new == NULL) {
         return CELIX_ILLEGAL_ARGUMENT; // filter not parsable
     }
@@ -125,9 +123,8 @@ celix_status_t tm_addImportScope(void *handle, char *filter) {
         int index = arrayList_indexOf(scope->importScopes, new);
         filter_pt present = (filter_pt) arrayList_get(scope->importScopes, index);
         if (present == NULL) {
-            arrayList_add(scope->importScopes, new);
+            arrayList_add(scope->importScopes, celix_steal_ptr(new));
         } else {
-            filter_destroy(new);
             status = CELIX_ILLEGAL_ARGUMENT;
         }
 
@@ -300,7 +297,7 @@ celix_status_t scope_getExportProperties(scope_pt scope, service_reference_pt re
         while ((!found) && hashMapIterator_hasNext(scopedPropIter)) {
             hash_map_entry_pt scopedEntry = hashMapIterator_nextEntry(scopedPropIter);
             char *filterStr = (char *) hashMapEntry_getKey(scopedEntry);
-            filter_pt filter = filter_create(filterStr);
+            celix_autoptr(celix_filter_t) filter = celix_filter_create(filterStr);
             if (filter != NULL) {
                 // test if the scope filter matches the exported service properties
                 status = filter_match(filter, serviceProperties, &found);
@@ -309,7 +306,6 @@ celix_status_t scope_getExportProperties(scope_pt scope, service_reference_pt re
                     *props = item->props;
                 }
             }
-            filter_destroy(filter);
         }
         hashMapIterator_destroy(scopedPropIter);
         celix_properties_destroy(serviceProperties);

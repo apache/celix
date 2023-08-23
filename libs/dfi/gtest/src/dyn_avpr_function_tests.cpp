@@ -20,6 +20,7 @@
 #include "gtest/gtest.h"
 
 #include <celix_utils.h>
+#include <celix_compiler.h>
 #include <ffi.h>
 
 extern "C" {
@@ -234,7 +235,7 @@ public:
 };
 
 // Test 1, simple function with three arguments and a return type
-static int avpr_example1(__attribute__((unused)) void* handle, int32_t a, int32_t b, int32_t c, int32_t * out) {
+static int avpr_example1(CELIX_UNUSED void* handle, int32_t a, int32_t b, int32_t c, int32_t * out) {
     EXPECT_EQ(2, a);
     EXPECT_EQ(4, b);
     EXPECT_EQ(8, c);
@@ -277,7 +278,7 @@ struct avpr_example2_arg2 {
     double val3;
 };
 
-static int avpr_example2(__attribute__((unused)) void* handle, int32_t arg1, struct avpr_example2_arg2 arg2, double arg3, double* out) {
+static int avpr_example2(CELIX_UNUSED void* handle, int32_t arg1, struct avpr_example2_arg2 arg2, double arg3, double* out) {
     EXPECT_EQ(2, arg1);
     EXPECT_EQ(2, arg2.val1);
     EXPECT_EQ(3, arg2.val2);
@@ -339,7 +340,7 @@ TEST_F(DynAvprFunctionTests, Example3) {
 
 // Test 4, with void pointer and native output
 /*
-static int avpr_example4(__attribute__((unused)) void *handle, void *ptr, double a, double *out, int *out_2) {
+static int avpr_example4(CELIX_UNUSED void *handle, void *ptr, double a, double *out, int *out_2) {
     auto b = (double *)ptr;
     ASSERT_EQ(2.0, *b);
     ASSERT_EQ(2.0, a);
@@ -396,7 +397,7 @@ struct tst_seq {
     double *buf;
 };
 
-static int avpr_example5(__attribute__((unused)) void* handle, struct tst_seq seq, __attribute__((unused)) void* out)  {
+static int avpr_example5(CELIX_UNUSED void* handle, struct tst_seq seq, CELIX_UNUSED void* out)  {
     EXPECT_EQ(4, seq.cap);
     EXPECT_EQ(2, seq.len);
     EXPECT_EQ(1.1, seq.buf[0]);
@@ -482,7 +483,7 @@ struct double_seq {
     double *buf;
 };
 
-static int avpr_example7(__attribute__((unused)) void *handle, struct double_seq seq_in, double* out) {
+static int avpr_example7(CELIX_UNUSED void *handle, struct double_seq seq_in, double* out) {
     EXPECT_EQ(2, seq_in.cap);
     EXPECT_EQ(2, seq_in.len);
     *out = seq_in.buf[0] + seq_in.buf[1];
@@ -519,7 +520,7 @@ TEST_F(DynAvprFunctionTests, Example7) {
 }
 
 //Test 8, Test function with array as return value
-static int avpr_example8(__attribute__((unused))void *handle, double arg1, struct double_seq** out) {
+static int avpr_example8(CELIX_UNUSED void *handle, double arg1, struct double_seq** out) {
     EXPECT_NEAR(2.0, arg1, 0.001);
     EXPECT_EQ(3, (*out)->cap);
     (*out)->buf[0] = 0.0;
@@ -562,7 +563,7 @@ TEST_F(DynAvprFunctionTests, Example8) {
 }
 
 // Test 9, Test function with string as return value
-static int avpr_example9(__attribute__((unused))void *handle, char** out) {
+static int avpr_example9(CELIX_UNUSED void *handle, char** out) {
     *out = strdup("result_out");
     EXPECT_TRUE(*out != nullptr);
     return 0;
@@ -600,7 +601,7 @@ extern "C" {
     };
 }
 
-static int avpr_example10(__attribute__((unused))void *handle, struct tst_10 ** out) {
+static int avpr_example10(CELIX_UNUSED void *handle, struct tst_10 ** out) {
     (*out)->name = strdup("my_new_char");
     EXPECT_TRUE((*out)->name != nullptr);
     (*out)->id = 132;

@@ -32,6 +32,7 @@
 #include "pubsub_psa_udpmc_constants.h"
 #include "pubsub_udpmc_topic_sender.h"
 #include "pubsub_udpmc_topic_receiver.h"
+#include "celix_compiler.h"
 
 
 #define L_DEBUG(...) \
@@ -536,7 +537,7 @@ celix_status_t pubsub_udpmcAdmin_removeEndpoint(void *handle, const celix_proper
     return status;
 }
 
-bool pubsub_udpmcAdmin_executeCommand(void *handle, const char *commandLine __attribute__((unused)), FILE *out, FILE *errStream __attribute__((unused))) {
+bool pubsub_udpmcAdmin_executeCommand(void *handle, const char *commandLine CELIX_UNUSED, FILE *out, FILE *errStream CELIX_UNUSED) {
     pubsub_udpmc_admin_t *psa = handle;
 
     fprintf(out, "\n");

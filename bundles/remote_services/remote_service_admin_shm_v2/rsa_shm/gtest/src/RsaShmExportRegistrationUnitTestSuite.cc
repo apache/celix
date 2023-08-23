@@ -273,6 +273,19 @@ TEST_F(RsaShmExportRegUnitTestSuite, CreateExportRegistrationWithNoMemory) {
     endpointDescription_destroy(endpoint);
 }
 
+TEST_F(RsaShmExportRegUnitTestSuite, FailedToCloneEndpointDescription) {
+    endpoint_description_t *endpoint = CreateEndpointDescription();
+    service_reference_pt reference = GetServiceReference();
+
+    celix_ei_expect_calloc((void*)&endpointDescription_clone, 0, nullptr);
+    export_registration_t *exportRegistration = nullptr;
+    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    bundleContext_ungetServiceReference(ctx.get(), reference);
+    endpointDescription_destroy(endpoint);
+}
+
 TEST_F(RsaShmExportRegUnitTestSuite, CreateExportRegistrationWithTrackingRpcFactoryFails) {
     endpoint_description_t *endpoint = CreateEndpointDescription();
     service_reference_pt reference = GetServiceReference();

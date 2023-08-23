@@ -21,7 +21,7 @@ if (NOT COMMAND celix_subproject)
     #act as a top level project. Making the etcdlib useable 
     #stand-alone
 
-    cmake_minimum_required (VERSION 3.2)
+    cmake_minimum_required (VERSION 3.18)
     project(ETCDLIB 
         VERSION 1.1.0
         LANGUAGES C CXX
@@ -36,24 +36,14 @@ if (NOT COMMAND celix_subproject)
     set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
 
     set(ETCDLIB_CMP ${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
-    find_package(CURL REQUIRED)
-    if (NOT TARGET CURL::libcurl)
-        #Note more recent curl will create CURL::libcurl target
-        message("Note CURL::libcurl target not created by find_package(CURL). Creating CURL::libcurl Target.")
-        add_library(CURL::libcurl SHARED IMPORTED)
-        set_target_properties(CURL::libcurl PROPERTIES
-                IMPORTED_LOCATION "${CURL_LIBRARIES}"
-                INTERFACE_INCLUDE_DIRECTORIES "${CURL_INCLUDE_DIRS}"
-                )
-    endif ()
     set(ETCDLIB_STANDALONE ON)
 else()
     set(ETCDLIB_CMP framework)
     celix_subproject(CELIX_ETCDLIB "Option to build the ETCD library" ON)
-    find_package(CURL REQUIRED)
 endif ()
 
 if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
+    find_package(CURL REQUIRED)
     find_package(jansson REQUIRED)
 
     add_library(etcdlib SHARED src/etcd.c)
@@ -65,7 +55,7 @@ if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
                 SOVERSION 1
                 C_VISIBILITY_PRESET hidden
     )
-    target_link_libraries(etcdlib PUBLIC CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
+    target_link_libraries(etcdlib PRIVATE CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
 
     generate_export_header(etcdlib
             BASE_NAME "ETCDLIB"
@@ -81,7 +71,7 @@ if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
             PROPERTIES
                 OUTPUT_NAME "celix_etcdlib_static")
     target_compile_definitions(etcdlib_static PRIVATE  ETCDLIB_STATIC_DEFINE)
-    target_link_libraries(etcdlib_static PUBLIC CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
+    target_link_libraries(etcdlib_static PRIVATE CURL::libcurl jansson::jansson ${CELIX_OPTIONAL_EXTRA_LIBS})
 
     add_executable(etcdlib_test ${CMAKE_CURRENT_SOURCE_DIR}/test/etcdlib_test.c)
     target_link_libraries(etcdlib_test PRIVATE etcdlib_static CURL::libcurl jansson::jansson)

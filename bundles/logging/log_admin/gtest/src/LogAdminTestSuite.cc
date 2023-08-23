@@ -83,11 +83,11 @@ TEST_F(LogBundleTestSuite, NrOfLogServices) {
     EXPECT_EQ(1, control->nrOfLogServices(control->handle, nullptr)); //default the framework log services is available
 
     //request "default" log service
-    long trkId1 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, NULL, NULL);
+    long trkId1 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, nullptr, nullptr);
     EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 
     //request "default" log service -> already created
-    long trkId2 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, NULL, NULL);
+    long trkId2 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, nullptr, nullptr);
     EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 
     //request a 'logger1' log service
@@ -224,7 +224,7 @@ TEST_F(LogBundleTestSuite, SinkLogControl) {
 
 TEST_F(LogBundleTestSuite, LogServiceControl) {
     //request "default" log service
-    long trkId1 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, NULL, NULL);
+    long trkId1 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME, nullptr, nullptr);
     celix_framework_waitForEmptyEventQueue(fw.get());
     EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 
@@ -261,6 +261,18 @@ TEST_F(LogBundleTestSuite, LogServiceControl) {
     EXPECT_TRUE(control->logServiceInfo(control->handle, "test::group::Log2", &activeLogLevel));
     EXPECT_EQ(CELIX_LOG_LEVEL_DEBUG, activeLogLevel);
 
+
+    bool detailed;
+    EXPECT_EQ(2, control->setDetailed(control->handle, "test::group", false));
+    EXPECT_TRUE(control->logServiceInfoEx(control->handle, "test::group::Log1", nullptr, &detailed));
+    EXPECT_FALSE(detailed);
+    EXPECT_TRUE(control->logServiceInfoEx(control->handle, "test::group::Log2", nullptr, &detailed));
+    EXPECT_FALSE(detailed);
+    EXPECT_EQ(4, control->setDetailed(control->handle, nullptr, true));
+    EXPECT_TRUE(control->logServiceInfoEx(control->handle, "test::group::Log1", nullptr, &detailed));
+    EXPECT_TRUE(detailed);
+    EXPECT_TRUE(control->logServiceInfoEx(control->handle, "test::group::Log2", nullptr, &detailed));
+    EXPECT_TRUE(detailed);
 
     auto *list = control->currentLogServices(control->handle);
     EXPECT_EQ(4, celix_arrayList_size(list));
@@ -316,7 +328,7 @@ TEST_F(LogBundleTestSuite, LogServiceAndSink) {
 
     //request a 'logger1' log service
     long trkId;
-    std::atomic<celix_log_service_t*> logSvc;
+    std::atomic<celix_log_service_t*> logSvc{};
     {
         celix_service_tracking_options_t opts{};
         opts.filter.serviceName = CELIX_LOG_SERVICE_NAME;
@@ -370,6 +382,59 @@ TEST_F(LogBundleTestSuite, LogServiceAndSink) {
     ls->fatal(ls->handle, "test %i %i %i", 1, 2, 3); //+0 (no log to sink, fallback to stdout)
     EXPECT_EQ(initial +11, count.load());
 
+    celix_log_sink_t sink2;
+    count = 0;
+    sink2.handle = (void *)&count;
+    sink2.sinkLog = [](void* handle, celix_log_level_e /*level*/, long /*logServiceId*/, const char* /*logServiceName*/, const char* file, const char* function, int line, const char* format, va_list /*formatArgs*/) {
+        auto *count = static_cast<std::atomic<size_t>*>(handle);
+        count->fetch_add(1);
+        EXPECT_STREQ(__FILE__, file);
+        EXPECT_TRUE(function != nullptr);
+        EXPECT_LE(__LINE__, line);
+        EXPECT_STREQ("error", format);
+    };
+    {
+        auto *svcProps = celix_properties_create();
+        celix_properties_set(svcProps, "name", "test::Sink2");
+        celix_service_registration_options_t opts{};
+        opts.serviceName = CELIX_LOG_SINK_NAME;
+        opts.serviceVersion = CELIX_LOG_SINK_VERSION;
+        opts.properties = svcProps;
+        opts.svc = &sink2;
+        svcId = celix_bundleContext_registerServiceWithOptions(ctx.get(), &opts);
+    }
+    control->setDetailed(control->handle, "test::Log1", true);
+    ls->logDetails(ls->handle, CELIX_LOG_LEVEL_ERROR, __FILE__, __FUNCTION__, __LINE__, "error");
+    EXPECT_EQ(1, count.load());
+    celix_bundleContext_unregisterService(ctx.get(), svcId); //no log sink anymore
+
+
+    celix_log_sink_t sink3;
+    count = 0;
+    sink3.handle = (void *)&count;
+    sink3.sinkLog = [](void* handle, celix_log_level_e /*level*/, long /*logServiceId*/, const char* /*logServiceName*/, const char* file, const char* function, int line, const char* format, va_list /*formatArgs*/) {
+        auto *count = static_cast<std::atomic<size_t>*>(handle);
+        count->fetch_add(1);
+        EXPECT_TRUE(file == nullptr);
+        EXPECT_TRUE(function == nullptr);
+        EXPECT_EQ(0, line);
+        EXPECT_STREQ("error", format);
+    };
+    {
+        auto *svcProps = celix_properties_create();
+        celix_properties_set(svcProps, "name", "test::Sink3");
+        celix_service_registration_options_t opts{};
+        opts.serviceName = CELIX_LOG_SINK_NAME;
+        opts.serviceVersion = CELIX_LOG_SINK_VERSION;
+        opts.properties = svcProps;
+        opts.svc = &sink3;
+        svcId = celix_bundleContext_registerServiceWithOptions(ctx.get(), &opts);
+    }
+    control->setDetailed(control->handle, "test::Log1", false);
+    ls->logDetails(ls->handle, CELIX_LOG_LEVEL_ERROR, __FILE__, __FUNCTION__, __LINE__, "error");
+    EXPECT_EQ(1, count.load());
+    celix_bundleContext_unregisterService(ctx.get(), svcId); //no log sink anymore
+
     celix_bundleContext_stopTracker(ctx.get(), trkId);
 }
 
@@ -406,21 +471,23 @@ TEST_F(LogBundleTestSuite, LogAdminCmd) {
     opts.filter.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;
     opts.use = [](void*, void *svc) {
         auto* cmd = static_cast<celix_shell_command_t*>(svc);
-        char *cmdResult = NULL;
+        char *cmdResult = nullptr;
         size_t cmdResultLen;
         FILE *ss = open_memstream(&cmdResult, &cmdResultLen);
         cmd->executeCommand(cmd->handle, "celix::log_admin", ss, ss); //overview
         fclose(ss);
         EXPECT_TRUE(strstr(cmdResult, "Log Admin provided log services:") != nullptr);
         EXPECT_TRUE(strstr(cmdResult, "Log Admin found log sinks:") != nullptr);
+        EXPECT_TRUE(strstr(cmdResult, "test::Log1, active log level info, brief") != nullptr);
         free(cmdResult);
     };
+    control->setDetailed(control->handle, "test::Log1", false);
     bool called = celix_bundleContext_useServiceWithOptions(ctx.get(), &opts);
     EXPECT_TRUE(called);
 
     opts.use = [](void*, void *svc) {
         auto* cmd = static_cast<celix_shell_command_t*>(svc);
-        char *cmdResult = NULL;
+        char *cmdResult = nullptr;
         size_t cmdResultLen;
         FILE *ss = open_memstream(&cmdResult, &cmdResultLen);
         cmd->executeCommand(cmd->handle, "celix::log_admin log fatal", ss, ss); //all
@@ -437,7 +504,7 @@ TEST_F(LogBundleTestSuite, LogAdminCmd) {
 
     opts.use = [](void*, void *svc) {
         auto* cmd = static_cast<celix_shell_command_t*>(svc);
-        char *cmdResult = NULL;
+        char *cmdResult = nullptr;
         size_t cmdResultLen;
         FILE *ss = open_memstream(&cmdResult, &cmdResultLen);
         cmd->executeCommand(cmd->handle, "celix::log_admin sink false", ss, ss); //all
@@ -454,12 +521,72 @@ TEST_F(LogBundleTestSuite, LogAdminCmd) {
     called = celix_bundleContext_useServiceWithOptions(ctx.get(), &opts);
     EXPECT_TRUE(called);
 
+    opts.use = [](void*, void *svc) {
+        auto* cmd = static_cast<celix_shell_command_t*>(svc);
+        char *cmdResult = nullptr;
+        size_t cmdResultLen;
+        char *errResult = nullptr;
+        size_t errResultLen;
+        FILE *ss = open_memstream(&cmdResult, &cmdResultLen);
+        FILE *es = open_memstream(&errResult, &errResultLen);
+        cmd->executeCommand(cmd->handle, "celix::log_admin detail test::Log1 true", ss, es); //with selection
+        fclose(es);
+        fclose(ss);
+        EXPECT_STREQ(cmdResult, "Updated 1 log services to detailed.\n");
+        EXPECT_STREQ(errResult, "");
+        free(errResult);
+        free(cmdResult);
+
+        ss = open_memstream(&cmdResult, &cmdResultLen);
+        es = open_memstream(&errResult, &errResultLen);
+        cmd->executeCommand(cmd->handle, "celix::log_admin detail test::Log1 false", ss, es); //with selection
+        fclose(es);
+        fclose(ss);
+        EXPECT_STREQ(cmdResult, "Updated 1 log services to brief.\n");
+        EXPECT_STREQ(errResult, "");
+        free(errResult);
+        free(cmdResult);
+
+
+        ss = open_memstream(&cmdResult, &cmdResultLen);
+        es = open_memstream(&errResult, &errResultLen);
+        cmd->executeCommand(cmd->handle, "celix::log_admin detail test::Log1 error", ss, es); //with selection
+        fclose(es);
+        fclose(ss);
+        EXPECT_STREQ(cmdResult, "");
+        EXPECT_STREQ(errResult, "Cannot convert 'error' to a boolean value.\n");
+        free(errResult);
+        free(cmdResult);
+
+        ss = open_memstream(&cmdResult, &cmdResultLen);
+        es = open_memstream(&errResult, &errResultLen);
+        cmd->executeCommand(cmd->handle, "celix::log_admin detail true", ss, es); //with selection
+        fclose(es);
+        fclose(ss);
+        EXPECT_STREQ(cmdResult, "Updated 2 log services to detailed.\n");
+        EXPECT_STREQ(errResult, "");
+        free(errResult);
+        free(cmdResult);
+
+        ss = open_memstream(&cmdResult, &cmdResultLen);
+        es = open_memstream(&errResult, &errResultLen);
+        cmd->executeCommand(cmd->handle, "celix::log_admin detail", ss, es); //with selection
+        fclose(es);
+        fclose(ss);
+        EXPECT_STREQ(cmdResult, "");
+        EXPECT_STREQ(errResult, "Invalid arguments. For log command expected 1 or 2 args. (<true|false> or <log_service_selection> <true|false>");
+        free(errResult);
+        free(cmdResult);
+    };
+    called = celix_bundleContext_useServiceWithOptions(ctx.get(), &opts);
+    EXPECT_TRUE(called);
+
     celix_bundleContext_unregisterService(ctx.get(), svcId);
     celix_bundleContext_stopTracker(ctx.get(), trkId);
 
     opts.use = [](void*, void *svc) {
         auto* cmd = static_cast<celix_shell_command_t*>(svc);
-        char *cmdResult = NULL;
+        char *cmdResult = nullptr;
         size_t cmdResultLen;
         FILE *ss = open_memstream(&cmdResult, &cmdResultLen);
         cmd->executeCommand(cmd->handle, "celix::log_admin", ss, ss);

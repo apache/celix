@@ -1,0 +1,8 @@
+:header
+type=interface
+name=example5
+version=1.0.0
+:annotations
+:types
+:methods
+action(V)=action(#am=handle;P)N

@@ -105,6 +105,15 @@ namespace celix {
             return celix_logHelper_logCount(logHelper.get());
         }
 
+        /**
+         * @brief Logs celix thread-specific storage error messages(celix_err) using the provided celix log level to the log_helper.
+         *
+         * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
+         */
+        void logTssErrors(celix_log_level_e level) const {
+            celix_logHelper_logTssErrors(logHelper.get(), level);
+        }
+
     private:
         std::shared_ptr<celix_log_helper> createHelper(const std::shared_ptr<celix::BundleContext>& ctx, const std::string& logName) {
             return std::shared_ptr<celix_log_helper>{

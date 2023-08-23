@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "celix_compiler.h"
 #include "celix_constants.h"
 #include <stdint.h>
 #include <utils.h>
@@ -231,7 +232,7 @@ celix_status_t serviceReference_invalidateCache(service_reference_pt reference) 
 	return status;
 }
 
-bool serviceReference_isAssignableTo(service_reference_pt reference __attribute__((unused)), bundle_pt requester __attribute__((unused)), const char* serviceName __attribute__((unused))) {
+bool serviceReference_isAssignableTo(service_reference_pt reference CELIX_UNUSED, bundle_pt requester CELIX_UNUSED, const char* serviceName CELIX_UNUSED) {
 	bool allow = true;
 
 	/*NOTE for now always true. It would be nice to be able to do some checks if the services are really assignable.

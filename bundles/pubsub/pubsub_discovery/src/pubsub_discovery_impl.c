@@ -28,6 +28,7 @@
 #include <assert.h>
 #include <sys/time.h>
 
+#include "celix_compiler.h"
 #include "celix_bundle_context.h"
 #include "celix_properties.h"
 #include "celix_constants.h"
@@ -565,7 +566,7 @@ static char* pubsub_discovery_createJsonEndpoint(const celix_properties_t *props
     return str;
 }
 
-bool pubsub_discovery_executeCommand(void *handle, const char * commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
+bool pubsub_discovery_executeCommand(void *handle, const char * commandLine CELIX_UNUSED, FILE *os, FILE *errorStream CELIX_UNUSED) {
     pubsub_discovery_t *disc = handle;
 
     struct timespec now;

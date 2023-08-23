@@ -468,10 +468,10 @@ static void celix_properties_parseLine(const char* line, celix_properties_t *pro
     }
 
     if (!isComment) {
-        celix_utils_trimInPlace(key);
-        celix_utils_trimInPlace(value);
-        celix_properties_setWithoutCopy(props, key, value);
-    } else {
+        //printf("putting 'key'/'value' '%s'/'%s' in properties\n", utils_stringTrim(key), utils_stringTrim(value));
+        celix_properties_set(props, celix_utils_trimInPlace(key), celix_utils_trimInPlace(value));
+    }
+    if(key) {
         free(key);
         free(value);
     }
@@ -707,8 +707,8 @@ bool celix_properties_getAsBool(const celix_properties_t *props, const char *key
     } else if (entry != NULL) {
         char buf[32];
         snprintf(buf, 32, "%s", entry->value);
-        celix_utils_trimInPlace(buf);
-        if (strncasecmp("true", buf, strlen("true")) == 0) {
+        char *trimmed = celix_utils_trimInPlace(buf);
+        if (strncasecmp("true", trimmed, strlen("true")) == 0) {
             result = true;
         } else if (strncasecmp("false", buf, strlen("false")) == 0) {
             result = false;

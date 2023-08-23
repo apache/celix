@@ -29,6 +29,7 @@
 #include "celix/ServiceRegistrationBuilder.h"
 #include "celix/UseServiceBuilder.h"
 #include "celix/TrackerBuilders.h"
+#include "celix/ScheduledEventBuilder.h"
 #include "celix/Bundle.h"
 #include "celix/Framework.h"
 
@@ -395,6 +396,14 @@ namespace celix {
         }
 
         /**
+         * @brief Schedule a callback to be called after the given initial delay and/or interval using a fluent 
+         * builder API.
+         */
+        ScheduledEventBuilder scheduledEvent() {
+            return ScheduledEventBuilder{cCtx};
+        }
+
+        /**
          * @brief Install and optional start a bundle.
          *
          * Will silently ignore bundle ids < 0.
@@ -710,6 +719,14 @@ namespace celix {
             va_start(args, format);
             celix_bundleContext_vlog(cCtx.get(), CELIX_LOG_LEVEL_FATAL, format, args);
             va_end(args);
+        }
+
+        /**
+         * @brief Log celix per-thread error messages to the Celix framework logger using the provided log level.
+         * Silently ignores log level CELIX_LOG_LEVEL_DISABLED.
+         */
+        void logTssErrors(celix_log_level_e level) {
+            celix_bundleContext_logTssErrors(cCtx.get(), level);
         }
 
         /**

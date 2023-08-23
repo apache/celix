@@ -67,6 +67,6 @@ then update the "Google Test" template so that the `active_run.sh` Conan generat
 "Environment variables" entry. 
 
 If the Apache Celix CMake build directory is `home/joe/workspace/celix/cmake-build-debug` then the value for 
-"Environment variables" should be: `source /home/joe/workspace/celix/cmake-build-debug/activate_run.sh`
+"Environment variables" should be: `source /home/joe/workspace/celix/cmake-build-debug/environment_run.sh.env`
 
 ![Configure CLion](media/clion_run_configuration_template.png)

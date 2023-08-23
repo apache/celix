@@ -24,6 +24,7 @@
 #include <map>
 #include <pubsub_admin.h>
 #include "celix_api.h"
+#include "celix_compiler.h"
 #include "pubsub_nanomsg_topic_receiver.h"
 #include <pubsub_serializer.h>
 #include "LogHelper.h"
@@ -95,8 +96,8 @@ private:
     celix_status_t addEndpoint(const celix_properties_t *endpoint);
     celix_status_t removeEndpoint(const celix_properties_t *endpoint);
 
-    celix_status_t executeCommand(char *commandLine __attribute__((unused)), FILE *out,
-                                                        FILE *errStream __attribute__((unused)));
+    celix_status_t executeCommand(char *commandLine CELIX_UNUSED, FILE *out,
+                                                        FILE *errStream CELIX_UNUSED);
 
     celix_status_t connectEndpointToReceiver(pubsub::nanomsg::topic_receiver *receiver,
                                                                    const celix_properties_t *endpoint);

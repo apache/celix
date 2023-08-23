@@ -27,7 +27,6 @@
 #include <unistd.h>
 
 #include "framework_private.h"
-#include "resolver.h"
 #include "utils.h"
 #include "celix_file_utils.h"
 #include "bundle_archive_private.h"
@@ -238,8 +237,8 @@ celix_status_t bundle_update(bundle_pt bundle, const char* updatedBundleUrl) {
 }
 
 celix_status_t bundle_stop(bundle_pt bundle) {
-    //note deprecated call use celix_bundleContext_startBundle instead
-    return celix_framework_startBundle(bundle->framework, celix_bundle_getId(bundle));
+    //note deprecated call use celix_bundleContext_stopBundle instead
+    return celix_framework_stopBundle(bundle->framework, celix_bundle_getId(bundle));
 }
 
 celix_status_t bundle_uninstall(bundle_pt bundle) {
@@ -280,35 +279,12 @@ celix_status_t bundle_setPersistentStateUninstalled(bundle_pt bundle) {
 }
 
 celix_status_t bundle_revise(bundle_pt bundle, const char * location, const char *inputFile) {
-	celix_status_t status;
-
-	bundle_archive_pt archive = NULL;
-	status = bundle_getArchive(bundle, &archive);
-	if (status == CELIX_SUCCESS) {
-		status = bundleArchive_revise(archive, location, inputFile);
-		if (status == CELIX_SUCCESS) {
-			module_pt module;
-			status = bundle_createModule(bundle, &module);
-			if (status == CELIX_SUCCESS) {
-				status = bundle_addModule(bundle, module);
-			} else {
-				bool rolledback;
-				status = bundleArchive_rollbackRevise(archive, &rolledback);
-				if (status == CELIX_SUCCESS) {
-					status = CELIX_BUNDLE_EXCEPTION;
-				}
-			}
-		}
-	}
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to revise bundle");
-
-	return status;
+    fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_DEBUG, "Usage of bundle_revise is deprecated and no longer needed. Called for bundle %s", bundle->symbolicName);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_addModule(bundle_pt bundle, module_pt module) {
 	celix_arrayList_add(bundle->modules, module);
-	resolver_addModule(module);
 
     //free previous module info
     free(bundle->symbolicName);
@@ -358,20 +334,8 @@ celix_status_t bundle_close(const_bundle_pt bundle) {
 }
 
 celix_status_t bundle_closeAndDelete(const_bundle_pt bundle) {
-	celix_status_t status;
-
-	bundle_archive_pt archive = NULL;
-
-    bundle_closeModules(bundle);
-    bundle_closeRevisions(bundle);
-    status = bundle_getArchive(bundle, &archive);
-    if (status == CELIX_SUCCESS) {
-    	bundleArchive_closeAndDelete(archive);
-    }
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to close and delete bundle");
-
-    return status;
+    fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_DEBUG, "Usage of bundle_closeAndDelete is deprecated and no longer needed. Called for bundle %s", bundle->symbolicName);
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_closeRevisions(const_bundle_pt bundle) {
@@ -385,7 +349,6 @@ celix_status_t bundle_closeModules(const_bundle_pt bundle) {
     unsigned int i = 0;
     for (i = 0; i < arrayList_size(bundle->modules); i++) {
         module_pt module = (module_pt) arrayList_get(bundle->modules, i);
-        resolver_removeModule(module);
         module_setWires(module, NULL);
     }
 

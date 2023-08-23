@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "celix_compiler.h"
 #include "celix/FrameworkFactory.h"
 #include "civetweb.h"
 
@@ -169,8 +170,8 @@ TEST_F(HttpAndWebsocketTestSuite, websocket_echo_test) {
 }
 
 static int
-websocket_client_data_handler(struct mg_connection *conn __attribute__((unused)),
-                              int flags __attribute__((unused)),
+websocket_client_data_handler(struct mg_connection *conn CELIX_UNUSED,
+                              int flags CELIX_UNUSED,
                               char *data,
                               size_t data_len,
                               void *user_data){

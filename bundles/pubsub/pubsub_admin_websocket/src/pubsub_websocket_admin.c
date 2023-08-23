@@ -20,6 +20,7 @@
 #include <memory.h>
 #include <ip_utils.h>
 
+#include "celix_compiler.h"
 #include "pubsub_endpoint.h"
 #include "pubsub_serializer.h"
 #include "pubsub_matching.h"
@@ -476,7 +477,7 @@ celix_status_t pubsub_websocketAdmin_removeDiscoveredEndpoint(void *handle, cons
     return status;
 }
 
-bool pubsub_websocketAdmin_executeCommand(void *handle, const char *commandLine __attribute__((unused)), FILE *out, FILE *errStream __attribute__((unused))) {
+bool pubsub_websocketAdmin_executeCommand(void *handle, const char *commandLine CELIX_UNUSED, FILE *out, FILE *errStream CELIX_UNUSED) {
     pubsub_websocket_admin_t *psa = handle;
 
     fprintf(out, "\n");
