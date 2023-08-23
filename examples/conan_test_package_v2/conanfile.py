@@ -18,6 +18,7 @@
 from conan import ConanFile
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 from conan.tools.build import can_run
+from conan.tools.files import chdir
 import os
 
 
@@ -75,6 +76,11 @@ class TestPackageConan(ConanFile):
         tc.cache_variables["TEST_CELIX_DFI"] = celix_options.build_celix_dfi
         tc.cache_variables["TEST_UTILS"] = celix_options.build_utils
         tc.cache_variables["TEST_COMPONENTS_READY_CHECK"] = celix_options.build_components_ready_check
+        # the following is workaround https://github.com/conan-io/conan/issues/7192
+        if self.settings.os == "Linux":
+            tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
+        elif self.settings.os == "Macos":
+            tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
         tc.user_presets_path = False
         tc.generate()
 
@@ -85,94 +91,95 @@ class TestPackageConan(ConanFile):
 
     def test(self):
         if can_run(self):
-            celix_options = self.dependencies["celix"].options
-            if celix_options.build_framework:
-                self.run("./use_framework", run_environment=True)
-            if celix_options.build_http_admin:
-                self.run("./use_http_admin", cwd=os.path.join("deploy", "use_http_admin"), run_environment=True)
-            if celix_options.build_log_service:
-                self.run("./use_log_writer", cwd=os.path.join("deploy", "use_log_writer"), run_environment=True)
-            if celix_options.build_syslog_writer:
-                self.run("./use_syslog_writer", cwd=os.path.join("deploy", "use_syslog_writer"), run_environment=True)
-            if celix_options.build_pubsub:
-                self.run("./use_my_psa", cwd=os.path.join("deploy", "use_my_psa"), run_environment=True)
-            if celix_options.build_pubsub_psa_zmq:
-                self.run("./use_psa_zmq", cwd=os.path.join("deploy", "use_psa_zmq"), run_environment=True)
-            if celix_options.build_pubsub_psa_tcp:
-                self.run("./use_psa_tcp", cwd=os.path.join("deploy", "use_psa_tcp"), run_environment=True)
-            if celix_options.build_pubsub_psa_udp_mc:
-                self.run("./use_psa_udp_mc", cwd=os.path.join("deploy", "use_psa_udp_mc"), run_environment=True)
-            if celix_options.build_pubsub_psa_ws:
-                self.run("./use_psa_ws", cwd=os.path.join("deploy", "use_psa_ws"), run_environment=True)
-            if celix_options.build_pubsub_discovery_etcd and celix_options.build_launcher:
-                self.run("./use_psa_discovery_etcd",
-                         cwd=os.path.join("deploy", "use_psa_discovery_etcd"), run_environment=True)
-            if celix_options.build_remote_service_admin:
-                self.run("./use_my_rsa", cwd=os.path.join("deploy", "use_my_rsa"), run_environment=True)
-                self.run("./use_c_rsa_spi", run_environment=True)
-            if celix_options.build_rsa_remote_service_admin_dfi and celix_options.build_launcher:
-                self.run("./use_rsa_dfi", cwd=os.path.join("deploy", "use_rsa_dfi"), run_environment=True)
-            if celix_options.build_rsa_remote_service_admin_shm_v2:
-                self.run("./use_rsa_shm_v2", cwd=os.path.join("deploy", "use_rsa_shm_v2"), run_environment=True)
-            if celix_options.build_rsa_json_rpc:
-                self.run("./use_rsa_rpc_json", cwd=os.path.join("deploy", "use_rsa_rpc_json"), run_environment=True)
-            if celix_options.build_rsa_discovery_configured and celix_options.build_launcher:
-                self.run("./use_rsa_configured", cwd=os.path.join("deploy", "use_rsa_configured"), run_environment=True)
-            if celix_options.build_rsa_discovery_etcd and celix_options.build_launcher:
-                self.run("./use_rsa_etcd", cwd=os.path.join("deploy", "use_rsa_etcd"), run_environment=True)
-            if celix_options.build_rsa_discovery_zeroconf:
-                self.run("./use_rsa_discovery_zeroconf",
-                         cwd=os.path.join("deploy", "use_rsa_discovery_zeroconf"), run_environment=True)
-            if celix_options.build_shell:
-                self.run("./use_shell", run_environment=True)
-                if celix_options.celix_cxx17 or celix_options.celix_cxx14:
-                    self.run("./use_cxx_shell", run_environment=True)
-            if celix_options.build_remote_shell:
-                self.run("./use_remote_shell", cwd=os.path.join("deploy", "use_remote_shell"), run_environment=True)
-            if celix_options.build_shell_tui:
-                self.run("./use_shell_tui", cwd=os.path.join("deploy", "use_shell_tui"), run_environment=True)
-            if celix_options.build_shell_wui:
-                self.run("./use_shell_wui", cwd=os.path.join("deploy", "use_shell_wui"), run_environment=True)
-            if celix_options.build_celix_etcdlib:
-                self.run("./use_etcd_lib", run_environment=True)
-            if celix_options.build_launcher:
-                self.run("./use_launcher", cwd=os.path.join("deploy", "use_launcher"), run_environment=True)
-            if celix_options.build_promises:
-                self.run("./use_promises", run_environment=True)
-            if celix_options.build_pushstreams:
-                self.run("./use_pushstreams", run_environment=True)
-            if celix_options.build_deployment_admin:
-                self.run("./use_deployment_admin",
-                         cwd=os.path.join("deploy", "use_deployment_admin"), run_environment=True)
-            if celix_options.build_log_helper:
-                self.run("./use_log_helper", run_environment=True)
-            if celix_options.build_log_service_api:
-                self.run("./use_log_service_api", run_environment=True)
-            if celix_options.build_pubsub_wire_protocol_v1:
-                self.run("./use_pubsub_wire_protocol_v1",
-                         cwd=os.path.join("deploy", "use_pubsub_wire_protocol_v1"), run_environment=True)
-            if celix_options.build_pubsub_wire_protocol_v2:
-                self.run("./use_pubsub_wire_protocol_v2",
-                         cwd=os.path.join("deploy", "use_pubsub_wire_protocol_v2"), run_environment=True)
-            if celix_options.build_pubsub_json_serializer:
-                self.run("./use_pubsub_json_serializer",
-                         cwd=os.path.join("deploy", "use_pubsub_json_serializer"), run_environment=True)
-            if celix_options.build_pubsub_avrobin_serializer:
-                self.run("./use_pubsub_avrobin_serializer",
-                         cwd=os.path.join("deploy", "use_pubsub_avrobin_serializer"), run_environment=True)
-            if celix_options.build_cxx_remote_service_admin:
-                self.run("./use_cxx_remote_service_admin",
-                         cwd=os.path.join("deploy", "use_cxx_remote_service_admin"), run_environment=True)
-                self.run("./use_rsa_spi", run_environment=True)
-            if celix_options.build_shell_api:
-                self.run("./use_shell_api", run_environment=True)
-            if celix_options.build_shell_bonjour:
-                self.run("./use_shell_bonjour",
-                         cwd=os.path.join("deploy", "use_shell_bonjour"), run_environment=True)
-            if celix_options.build_celix_dfi:
-                self.run("./use_celix_dfi", run_environment=True)
-            if celix_options.build_utils:
-                self.run("./use_utils", run_environment=True)
-            if celix_options.build_components_ready_check:
-                self.run("./use_components_ready_check",
-                         cwd=os.path.join("deploy", "use_components_ready_check"), run_environment=True)
+            with chdir(self, self.build_folder):
+                celix_options = self.dependencies["celix"].options
+                if celix_options.build_framework:
+                    self.run("./conan_test_package/use_framework", env="conanrun")
+                if celix_options.build_http_admin:
+                    self.run("./use_http_admin", cwd=os.path.join("deploy", "use_http_admin"), env="conanrun")
+                if celix_options.build_log_service:
+                    self.run("./use_log_writer", cwd=os.path.join("deploy", "use_log_writer"), env="conanrun")
+                if celix_options.build_syslog_writer:
+                    self.run("./use_syslog_writer", cwd=os.path.join("deploy", "use_syslog_writer"), env="conanrun")
+                if celix_options.build_pubsub:
+                    self.run("./use_my_psa", cwd=os.path.join("deploy", "use_my_psa"), env="conanrun")
+                if celix_options.build_pubsub_psa_zmq:
+                    self.run("./use_psa_zmq", cwd=os.path.join("deploy", "use_psa_zmq"), env="conanrun")
+                if celix_options.build_pubsub_psa_tcp:
+                    self.run("./use_psa_tcp", cwd=os.path.join("deploy", "use_psa_tcp"), env="conanrun")
+                if celix_options.build_pubsub_psa_udp_mc:
+                    self.run("./use_psa_udp_mc", cwd=os.path.join("deploy", "use_psa_udp_mc"), env="conanrun")
+                if celix_options.build_pubsub_psa_ws:
+                    self.run("./use_psa_ws", cwd=os.path.join("deploy", "use_psa_ws"), env="conanrun")
+                if celix_options.build_pubsub_discovery_etcd and celix_options.build_launcher:
+                    self.run("./use_psa_discovery_etcd",
+                             cwd=os.path.join("deploy", "use_psa_discovery_etcd"), env="conanrun")
+                if celix_options.build_remote_service_admin:
+                    self.run("./use_my_rsa", cwd=os.path.join("deploy", "use_my_rsa"), env="conanrun")
+                    self.run("./conan_test_package/use_c_rsa_spi", env="conanrun")
+                if celix_options.build_rsa_remote_service_admin_dfi and celix_options.build_launcher:
+                    self.run("./use_rsa_dfi", cwd=os.path.join("deploy", "use_rsa_dfi"), env="conanrun")
+                if celix_options.build_rsa_remote_service_admin_shm_v2:
+                    self.run("./use_rsa_shm_v2", cwd=os.path.join("deploy", "use_rsa_shm_v2"), env="conanrun")
+                if celix_options.build_rsa_json_rpc:
+                    self.run("./use_rsa_rpc_json", cwd=os.path.join("deploy", "use_rsa_rpc_json"), env="conanrun")
+                if celix_options.build_rsa_discovery_configured and celix_options.build_launcher:
+                    self.run("./use_rsa_configured", cwd=os.path.join("deploy", "use_rsa_configured"), env="conanrun")
+                if celix_options.build_rsa_discovery_etcd and celix_options.build_launcher:
+                    self.run("./use_rsa_etcd", cwd=os.path.join("deploy", "use_rsa_etcd"), env="conanrun")
+                if celix_options.build_rsa_discovery_zeroconf:
+                    self.run("./use_rsa_discovery_zeroconf",
+                             cwd=os.path.join("deploy", "use_rsa_discovery_zeroconf"), env="conanrun")
+                if celix_options.build_shell:
+                    self.run("./conan_test_package/use_shell", env="conanrun")
+                    if celix_options.celix_cxx17 or celix_options.celix_cxx14:
+                        self.run("./conan_test_package/use_cxx_shell", env="conanrun")
+                if celix_options.build_remote_shell:
+                    self.run("./use_remote_shell", cwd=os.path.join("deploy", "use_remote_shell"), env="conanrun")
+                if celix_options.build_shell_tui:
+                    self.run("./use_shell_tui", cwd=os.path.join("deploy", "use_shell_tui"), env="conanrun")
+                if celix_options.build_shell_wui:
+                    self.run("./use_shell_wui", cwd=os.path.join("deploy", "use_shell_wui"), env="conanrun")
+                if celix_options.build_celix_etcdlib:
+                    self.run("./conan_test_package/use_etcd_lib", env="conanrun")
+                if celix_options.build_launcher:
+                    self.run("./use_launcher", cwd=os.path.join("deploy", "use_launcher"), env="conanrun")
+                if celix_options.build_promises:
+                    self.run("./conan_test_package/use_promises", env="conanrun")
+                if celix_options.build_pushstreams:
+                    self.run("./conan_test_package/use_pushstreams", env="conanrun")
+                if celix_options.build_deployment_admin:
+                    self.run("./use_deployment_admin",
+                             cwd=os.path.join("deploy", "use_deployment_admin"), env="conanrun")
+                if celix_options.build_log_helper:
+                    self.run("./conan_test_package/use_log_helper", env="conanrun")
+                if celix_options.build_log_service_api:
+                    self.run("./conan_test_package/use_log_service_api", env="conanrun")
+                if celix_options.build_pubsub_wire_protocol_v1:
+                    self.run("./use_pubsub_wire_protocol_v1",
+                             cwd=os.path.join("deploy", "use_pubsub_wire_protocol_v1"), env="conanrun")
+                if celix_options.build_pubsub_wire_protocol_v2:
+                    self.run("./use_pubsub_wire_protocol_v2",
+                             cwd=os.path.join("deploy", "use_pubsub_wire_protocol_v2"), env="conanrun")
+                if celix_options.build_pubsub_json_serializer:
+                    self.run("./use_pubsub_json_serializer",
+                             cwd=os.path.join("deploy", "use_pubsub_json_serializer"), env="conanrun")
+                if celix_options.build_pubsub_avrobin_serializer:
+                    self.run("./use_pubsub_avrobin_serializer",
+                             cwd=os.path.join("deploy", "use_pubsub_avrobin_serializer"), env="conanrun")
+                if celix_options.build_cxx_remote_service_admin:
+                    self.run("./use_cxx_remote_service_admin",
+                             cwd=os.path.join("deploy", "use_cxx_remote_service_admin"), env="conanrun")
+                    self.run("./conan_test_package/use_rsa_spi", env="conanrun")
+                if celix_options.build_shell_api:
+                    self.run("./conan_test_package/use_shell_api", env="conanrun")
+                if celix_options.build_shell_bonjour:
+                    self.run("./use_shell_bonjour",
+                             cwd=os.path.join("deploy", "use_shell_bonjour"), env="conanrun")
+                if celix_options.build_celix_dfi:
+                    self.run("./conan_test_package/use_celix_dfi", env="conanrun")
+                if celix_options.build_utils:
+                    self.run("./conan_test_package/use_utils", env="conanrun")
+                if celix_options.build_components_ready_check:
+                    self.run("./use_components_ready_check",
+                             cwd=os.path.join("deploy", "use_components_ready_check"), env="conanrun")
