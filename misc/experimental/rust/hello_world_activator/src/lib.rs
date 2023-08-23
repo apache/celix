@@ -32,9 +32,7 @@ struct HelloWorldBundle {
 impl BundleActivator for HelloWorldBundle {
     fn new(ctx: Arc<dyn celix::BundleContext>) -> Self {
         ctx.log_info("Hello World Bundle Activator created");
-        HelloWorldBundle{
-            ctx,
-        }
+        HelloWorldBundle { ctx }
     }
 
     fn start(&mut self) -> Result<(), Error> {

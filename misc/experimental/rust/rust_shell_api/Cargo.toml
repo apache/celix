@@ -16,15 +16,13 @@
 # under the License.
 
 [package]
-name = "rust_shell_command_activator"
+name = "rust_shell_api"
 version = "0.0.1"
 
 [dependencies]
-celix_bindings = { path = "../celix_bindings" }
 celix = { path = "../celix" }
-rust_shell_api = { path = "../rust_shell_api" }
 
 [lib]
-name = "rust_shell_command_activator"
+name = "rust_shell_api"
 path = "src/lib.rs"
-crate-type = ["cdylib"]
+crate-type = ["rlib"]

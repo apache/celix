@@ -17,21 +17,22 @@
  * under the License.
  */
 
-use std::ptr::null_mut;
-use std::ffi::c_void;
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::sync::Weak;
 use std::any::type_name;
 use std::any::Any;
+use std::collections::HashMap;
+use std::ffi::c_void;
+use std::ops::DerefMut;
+use std::ptr::null_mut;
+use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::Weak;
 
-use celix_bindings::celix_bundle_context_t;
 use celix_bindings::celix_bundleContext_log;
-use celix_bindings::celix_properties_create;
-use celix_bindings::celix_properties_set;
 use celix_bindings::celix_bundleContext_registerServiceWithOptions;
 use celix_bindings::celix_bundleContext_unregisterService;
+use celix_bindings::celix_bundle_context_t;
+use celix_bindings::celix_properties_create;
+use celix_bindings::celix_properties_set;
 use celix_bindings::celix_service_registration_options_t;
 
 use super::Error;
@@ -41,7 +42,6 @@ pub struct ServiceRegistration {
     service_id: i64,
     weak_ctx: Weak<BundleContextImpl>,
     _boxed_svc: Option<Box<dyn Any>>,
-    // arc_svc: Option<Arc<dyn Any>>,
 }
 
 impl Drop for ServiceRegistration {
@@ -57,7 +57,6 @@ impl Drop for ServiceRegistration {
 pub struct ServiceRegistrationBuilder<'a> {
     ctx: &'a BundleContextImpl,
     boxed_svc: Option<Box<dyn Any>>,
-    // _arc_svc: Option<Arc<dyn Any>>,
     unmanaged_svc: *mut c_void,
     service_name: String,
     service_version: String,
@@ -65,11 +64,10 @@ pub struct ServiceRegistrationBuilder<'a> {
 }
 
 impl ServiceRegistrationBuilder<'_> {
-    fn new<'a>(ctx: &'a BundleContextImpl) -> ServiceRegistrationBuilder<'a> {
+    fn new(ctx: &BundleContextImpl) -> ServiceRegistrationBuilder {
         ServiceRegistrationBuilder {
             ctx,
             boxed_svc: None,
-            //arc_svc: None,
             unmanaged_svc: null_mut(),
             service_name: "".to_string(),
             service_version: "".to_string(),
@@ -82,41 +80,29 @@ impl ServiceRegistrationBuilder<'_> {
         self
     }
 
-    fn with_type_name_as_service_name<I>(&mut self) -> &mut Self {
+    fn with_service_name_if_not_set(&mut self, name: &str) -> &mut Self {
         if self.service_name.is_empty() {
-            self.service_name = type_name::<I>().to_string();
+            self.service_name = name.to_string();
         }
         self
     }
 
-    pub fn with_service<I:'static>(&mut self, instance: I) -> &mut Self {
-        self.boxed_svc = Some(Box::new(instance));
-        //self.arc_svc = None;
+    pub fn with_service<I: 'static>(&mut self, svc: I) -> &mut Self {
+        self.boxed_svc = Some(Box::new(svc));
         self.unmanaged_svc = null_mut();
-        self.with_type_name_as_service_name::<I>()
+        self.with_service_name_if_not_set(type_name::<I>())
     }
 
-    //TODO check if dyn is needed (e.g. a trait object is needed)
-    pub fn with_boxed_service<I:'static>(&mut self, instance: Box</*dyn*/ I>) -> &mut Self {
-        self.boxed_svc = Some(instance);
-        //self.arc_svc = None;
+    pub fn with_boxed_service<T: ?Sized + 'static>(&mut self, svc: Box<T>) -> &mut Self {
+        self.boxed_svc = Some(Box::new(svc));
         self.unmanaged_svc = null_mut();
-        self.with_type_name_as_service_name::<I>()
+        self.with_service_name_if_not_set(type_name::<T>())
     }
 
-    //TODO check if dyn is needed (e.g. a trait object is needed)
-    // pub fn with_arc_instance<I:'static>(&mut self, instance: Arc</*dyn*/ I>) -> &mut Self {
-    //     self.boxed_svc = None;
-    //     self.arc_svc = Some(instance);
-    //     self.unmanaged_svc = null_mut();
-    //     self.with_type_name_as_service_name::<I>()
-    // }
-
-    pub fn with_unmanaged_service<I>(&mut self, instance: *mut I) -> &mut Self {
+    pub fn with_unmanaged_service<I>(&mut self, svc: *mut I) -> &mut Self {
         self.boxed_svc = None;
-        //self.arc_svc = None;
-        self.unmanaged_svc = instance as *mut c_void;
-        self.with_type_name_as_service_name::<I>()
+        self.unmanaged_svc = svc as *mut c_void;
+        self.with_service_name_if_not_set(type_name::<I>())
     }
 
     pub fn with_version(&mut self, version: &str) -> &mut Self {
@@ -130,18 +116,21 @@ impl ServiceRegistrationBuilder<'_> {
     }
 
     pub fn with_property(&mut self, key: &str, value: &str) -> &mut Self {
-        self.service_properties.insert(key.to_string(), value.to_string());
+        self.service_properties
+            .insert(key.to_string(), value.to_string());
         self
     }
 
     fn validate(&self) -> Result<(), Error> {
         let mut valid = true;
         if self.service_name.is_empty() {
-            self.ctx.log_error("Cannot register service. Service name is empty");
+            self.ctx
+                .log_error("Cannot register service. Service name is empty");
             valid = false;
         }
         if self.boxed_svc.is_none() && /*self.arc_svc.is_none() &&*/ self.unmanaged_svc.is_null() {
-            self.ctx.log_error("Cannot register service. No instance provided");
+            self.ctx
+                .log_error("Cannot register service. No instance provided");
             valid = false;
         }
         match valid {
@@ -155,47 +144,45 @@ impl ServiceRegistrationBuilder<'_> {
             let any_svc: &mut dyn Any = boxed_svc.as_mut();
             let boxed_svc_ptr = any_svc as *mut dyn Any; //note box still owns the instance
             boxed_svc_ptr as *mut c_void
-        // } else if let Some(arc_svc) = self.arc_svc.as_mut() {
-        //     let any_svc: &mut dyn Any = arc_svc.as_mut();
-        //     let arc_svc_ptr = arc_svc as *mut dyn Any; //note arc still owns the instance
-        //     arc_svc_ptr as *mut c_void
         } else if self.unmanaged_svc.is_null() {
             panic!("Cannot get c_svc. No instance provided");
         } else {
-            self.unmanaged_svc as *mut c_void
+            self.unmanaged_svc
         }
     }
 
-    unsafe fn build_unsafe(&mut self) -> Result<ServiceRegistration, Error> {
+    unsafe fn build_unsafe(&mut self, svc_ptr: *mut c_void) -> Result<ServiceRegistration, Error> {
         let c_service_name = std::ffi::CString::new(self.service_name.as_str()).unwrap();
         let c_service_version = std::ffi::CString::new(self.service_version.as_str()).unwrap();
         let c_service_properties = celix_properties_create();
-        let c_service = self.get_c_svc();
         for (key, value) in self.service_properties.iter() {
             let c_key = std::ffi::CString::new(key.as_str()).unwrap();
             let c_value = std::ffi::CString::new(value.as_str()).unwrap();
             celix_properties_set(c_service_properties, c_key.as_ptr(), c_value.as_ptr());
         }
         let opts = celix_service_registration_options_t {
-            svc: c_service,
+            svc: svc_ptr,
             factory: null_mut(),
             serviceName: c_service_name.as_ptr() as *const i8,
             properties: c_service_properties,
             serviceLanguage: null_mut(),
-            serviceVersion: if self.service_version.is_empty() { null_mut() } else { c_service_version.as_ptr() as *const i8},
+            serviceVersion: if self.service_version.is_empty() {
+                null_mut()
+            } else {
+                c_service_version.as_ptr() as *const i8
+            },
             asyncData: null_mut(),
             asyncCallback: None,
         };
 
-        let service_id: i64 = celix_bundleContext_registerServiceWithOptions(
-            self.ctx.get_c_bundle_context(),
-            &opts);
+        let service_id: i64 =
+            celix_bundleContext_registerServiceWithOptions(self.ctx.get_c_bundle_context(), &opts);
         if service_id >= 0 {
             Ok(ServiceRegistration {
                 service_id,
                 weak_ctx: self.ctx.get_self().clone(),
                 _boxed_svc: self.boxed_svc.take(), //to ensure that a possible box instance is not dropped
-                // arc_svc: self.arc_svc.take(), //to ensure that a possible arc instance is not dropped
+                                                   // arc_svc: self.arc_svc.take(), //to ensure that a possible arc instance is not dropped
             })
         } else {
             Err(Error::BundleException)
@@ -204,9 +191,10 @@ impl ServiceRegistrationBuilder<'_> {
 
     pub fn build(&mut self) -> Result<ServiceRegistration, Error> {
         self.validate()?;
+        let svc_ptr = self.get_c_svc();
         unsafe {
             //TODO make unsafe part smaller (if possible)
-            self.build_unsafe()
+            self.build_unsafe(svc_ptr)
         }
     }
 }
@@ -233,7 +221,7 @@ pub trait BundleContext {
 
 struct BundleContextImpl {
     c_bundle_context: *mut celix_bundle_context_t,
-    weak_self : Mutex<Option<Weak<BundleContextImpl>>>,
+    weak_self: Mutex<Option<Weak<BundleContextImpl>>>,
 }
 
 impl BundleContextImpl {
@@ -267,7 +255,11 @@ impl BundleContextImpl {
             let result = std::ffi::CString::new(message);
             match result {
                 Ok(c_str) => {
-                    celix_bundleContext_log(self.c_bundle_context, level.into(), c_str.as_ptr() as *const i8);
+                    celix_bundleContext_log(
+                        self.c_bundle_context,
+                        level.into(),
+                        c_str.as_ptr() as *const i8,
+                    );
                 }
                 Err(e) => {
                     println!("Error creating CString: {}", e);
@@ -282,19 +274,33 @@ impl BundleContext for BundleContextImpl {
         self.c_bundle_context
     }
 
-    fn log(&self, level: LogLevel, message: &str) { self.log_to_c(level, message); }
+    fn log(&self, level: LogLevel, message: &str) {
+        self.log_to_c(level, message);
+    }
 
-    fn log_trace(&self, message: &str) { self.log(LogLevel::Trace, message); }
+    fn log_trace(&self, message: &str) {
+        self.log(LogLevel::Trace, message);
+    }
 
-    fn log_debug(&self, message: &str) { self.log(LogLevel::Debug, message); }
+    fn log_debug(&self, message: &str) {
+        self.log(LogLevel::Debug, message);
+    }
 
-    fn log_info(&self, message: &str) { self.log(LogLevel::Info, message); }
+    fn log_info(&self, message: &str) {
+        self.log(LogLevel::Info, message);
+    }
 
-    fn log_warning(&self, message: &str) { self.log(LogLevel::Warning, message); }
+    fn log_warning(&self, message: &str) {
+        self.log(LogLevel::Warning, message);
+    }
 
-    fn log_error(&self, message: &str){ self.log(LogLevel::Error, message); }
+    fn log_error(&self, message: &str) {
+        self.log(LogLevel::Error, message);
+    }
 
-    fn log_fatal(&self, message: &str){ self.log(LogLevel::Fatal, message); }
+    fn log_fatal(&self, message: &str) {
+        self.log(LogLevel::Fatal, message);
+    }
 
     fn register_service(&self) -> ServiceRegistrationBuilder {
         ServiceRegistrationBuilder::new(self)

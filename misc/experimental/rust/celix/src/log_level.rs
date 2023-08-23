@@ -17,14 +17,14 @@
  * under the License.
  */
 
-use celix_bindings::celix_log_level_e;
-use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_TRACE as CELIX_LOG_LEVEL_TRACE;
 use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_DEBUG as CELIX_LOG_LEVEL_DEBUG;
-use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_INFO as CELIX_LOG_LEVEL_INFO;
-use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_WARNING as CELIX_LOG_LEVEL_WARNING;
+use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_DISABLED as CELIX_LOG_LEVEL_DISABLED;
 use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_ERROR as CELIX_LOG_LEVEL_ERROR;
 use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_FATAL as CELIX_LOG_LEVEL_FATAL;
-use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_DISABLED as CELIX_LOG_LEVEL_DISABLED;
+use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_INFO as CELIX_LOG_LEVEL_INFO;
+use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_TRACE as CELIX_LOG_LEVEL_TRACE;
+use celix_bindings::celix_log_level_CELIX_LOG_LEVEL_WARNING as CELIX_LOG_LEVEL_WARNING;
+use celix_bindings::celix_log_level_e;
 
 pub enum LogLevel {
     Trace,
@@ -33,7 +33,7 @@ pub enum LogLevel {
     Warning,
     Error,
     Fatal,
-    Disabled
+    Disabled,
 }
 impl From<celix_log_level_e> for LogLevel {
     fn from(level: celix_log_level_e) -> Self {

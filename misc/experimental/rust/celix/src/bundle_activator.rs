@@ -24,8 +24,14 @@ use super::Error;
 
 pub trait BundleActivator {
     fn new(ctx: Arc<dyn BundleContext>) -> Self;
-    fn start(&mut self) -> Result<(), Error> { /* Default implementation */ Ok(())}
-    fn stop(&mut self) -> Result<(), Error> { /* Default implementation */ Ok(())}
+    fn start(&mut self) -> Result<(), Error> {
+        /* Default implementation */
+        Ok(())
+    }
+    fn stop(&mut self) -> Result<(), Error> {
+        /* Default implementation */
+        Ok(())
+    }
 }
 
 #[macro_export]

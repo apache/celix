@@ -25,7 +25,6 @@ pub const CELIX_SUCCESS: celix_status_t = celix_bindings::CELIX_SUCCESS as celix
 //these are defined with literal values.
 pub const BUNDLE_EXCEPTION: celix_status_t = 70001;
 
-
 pub enum Error {
     BundleException,
     CelixStatusError(celix_status_t), // Represent not explicitly mapped celix_status_t values

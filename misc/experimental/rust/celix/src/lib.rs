@@ -25,29 +25,29 @@ extern crate celix_bindings;
 // C API in its public API.
 #[doc(hidden)]
 pub mod details {
-    pub use celix_bindings::celix_status_t as CStatus;
     pub use celix_bindings::celix_bundle_context_t as CBundleContext;
+    pub use celix_bindings::celix_status_t as CStatus;
 }
 
 mod errno;
 // Re-export errno types in the public API.
-pub use self::errno::CELIX_SUCCESS as CELIX_SUCCESS;
-pub use self::errno::Error as Error;
+pub use self::errno::Error;
+pub use self::errno::CELIX_SUCCESS;
 
 mod log_level;
 // Re-export log level types in the public API.
-pub use self::log_level::LogLevel as LogLevel;
+pub use self::log_level::LogLevel;
 
 mod bundle_context;
 // Re-export bundle context types in the public API.
-pub use self::bundle_context::BundleContext as BundleContext;
-pub use self::bundle_context::ServiceRegistration as ServiceRegistration;
-pub use self::bundle_context::bundle_context_new as bundle_context_new;
+pub use self::bundle_context::bundle_context_new;
+pub use self::bundle_context::BundleContext;
+pub use self::bundle_context::ServiceRegistration;
 
 mod bundle_activator;
 // Re-export bundle activator types in the public API.
-pub use self::bundle_activator::BundleActivator as BundleActivator;
+pub use self::bundle_activator::BundleActivator;
 
 mod log_helper;
 // Re-export log helper types in the public API.
-pub use self::log_helper::LogHelper as LogHelper;
+pub use self::log_helper::LogHelper;

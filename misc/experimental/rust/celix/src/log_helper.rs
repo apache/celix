@@ -19,13 +19,13 @@
 
 use std::sync::Arc;
 
-use super::LogLevel;
 use super::BundleContext;
+use super::LogLevel;
 
-use celix_bindings::celix_log_helper_t;
 use celix_bindings::celix_logHelper_create;
 use celix_bindings::celix_logHelper_destroy;
 use celix_bindings::celix_logHelper_log;
+use celix_bindings::celix_log_helper_t;
 pub struct LogHelper {
     celix_log_helper: *mut celix_log_helper_t,
 }
@@ -35,16 +35,23 @@ impl LogHelper {
         unsafe {
             let result = std::ffi::CString::new(name);
             match result {
-                Ok(c_str) => {
-                    LogHelper {
-                        celix_log_helper: celix_logHelper_create(ctx.get_c_bundle_context(), c_str.as_ptr() as *const i8),
-                    }
-                }
+                Ok(c_str) => LogHelper {
+                    celix_log_helper: celix_logHelper_create(
+                        ctx.get_c_bundle_context(),
+                        c_str.as_ptr() as *const i8,
+                    ),
+                },
                 Err(e) => {
-                    ctx.log_error(&format!("Error creating CString: {}. Using \"error\" as log name", e));
+                    ctx.log_error(&format!(
+                        "Error creating CString: {}. Using \"error\" as log name",
+                        e
+                    ));
                     let c_str = std::ffi::CString::new("error").unwrap();
                     LogHelper {
-                        celix_log_helper: celix_logHelper_create(ctx.get_c_bundle_context(), c_str.as_ptr() as *const i8),
+                        celix_log_helper: celix_logHelper_create(
+                            ctx.get_c_bundle_context(),
+                            c_str.as_ptr() as *const i8,
+                        ),
                     }
                 }
             }
@@ -56,7 +63,11 @@ impl LogHelper {
             let result = std::ffi::CString::new(message);
             match result {
                 Ok(c_str) => {
-                    celix_logHelper_log(self.celix_log_helper, level.into(), c_str.as_ptr() as *const i8);
+                    celix_logHelper_log(
+                        self.celix_log_helper,
+                        level.into(),
+                        c_str.as_ptr() as *const i8,
+                    );
                 }
                 Err(e) => {
                     println!("Error creating CString: {}", e);
