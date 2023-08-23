@@ -33,8 +33,7 @@ jobs:
           conan install . celix/ci -pr:b default -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing -b cpputest --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s
       - name: Build
         run: |
-          conan build . -bf build --configure
-          conan build . -bf build --build
+          conan build . -bf build
       - name: Test with coverage
         run: |
           cd build

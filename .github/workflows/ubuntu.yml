@@ -62,8 +62,7 @@ jobs:
           CXX: ${{ matrix.compiler[1] }}
           CONAN_CMAKE_GENERATOR: Ninja
         run: |
-          conan build . -bf build --configure
-          conan build . -bf build --build
+          conan build . -bf build
       - name: Test
         run: |
           cd build
