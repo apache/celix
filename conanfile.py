@@ -411,9 +411,9 @@ class CelixConan(ConanFile):
         for opt in self._celix_defaults.keys():
             tc.cache_variables[opt.upper()] = self.options.get_safe(opt)
         if self.options.enable_testing:
-            for k in self.deps_cpp_info.deps:
-                if k == "mdnsresponder":
-                    tc.cache_variables["BUILD_ERROR_INJECTOR_MDNSRESPONDER"] = "ON"
+            lst = [x.ref.name for x in self.requires.values()]
+            if "mdnsresponder" in lst:
+                tc.cache_variables["BUILD_ERROR_INJECTOR_MDNSRESPONDER"] = "ON"
         tc.cache_variables["CELIX_ERR_BUFFER_SIZE"] = self.options.celix_err_buffer_size
         # tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
