@@ -18,14 +18,9 @@
  */
 
 #include <gtest/gtest.h>
-#include <string.h>
 
 #include "celix_utils_ei.h"
-#include "CppUTest/TestHarness.h"
-#include "CppUTest/TestHarness_c.h"
-#include "CppUTest/CommandLineTestRunner.h"
 #include "malloc_ei.h"
-
 #include "celix_version.h"
 
 

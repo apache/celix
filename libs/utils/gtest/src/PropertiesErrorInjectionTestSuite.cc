@@ -17,12 +17,13 @@
  * under the License.
  *
  */
+
+#include <gtest/gtest.h>
+
 #include "celix_properties.h"
 
 #include "malloc_ei.h"
 #include "celix_hash_map_ei.h"
-
-#include <gtest/gtest.h>
 
 class PropertiesErrorInjectionTestSuite : public ::testing::Test {
 public:
