@@ -19,6 +19,7 @@ from conan import ConanFile, conan_version
 from conan.errors import ConanInvalidConfiguration
 from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain
 from conan.tools.scm import Version
+from conan.tools.files import copy
 import os
 
 
@@ -440,7 +441,7 @@ class CelixConan(ConanFile):
         cmake.build()
 
     def package(self):
-        self.copy("LICENSE", dst="licenses", src=self.source_folder)
+        copy(self, "LICENSE", src=self.source_folder, dst=os.path.join(self.package_folder, "licenses"))
         cmake = self._configure_cmake()
         cmake.install()
 
@@ -451,3 +452,4 @@ class CelixConan(ConanFile):
         self.cpp_info.build_modules["cmake"].append(os.path.join("lib", "cmake", "Celix", "CelixConfig.cmake"))
         self.cpp_info.build_modules["cmake_find_package"].append(os.path.join("lib", "cmake",
                                                                               "Celix", "CelixConfig.cmake"))
+        self.cpp_info.set_property("cmake_build_modules", [os.path.join("lib", "cmake", "Celix", "CelixConfig.cmake")])
