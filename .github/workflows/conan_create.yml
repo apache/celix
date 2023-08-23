@@ -29,7 +29,7 @@ jobs:
           CXX: ${{ matrix.compiler[1] }}
         run: |
           # build profile
-          conan profile new default --detect
+          conan profile detect -f
           echo tools.cmake.cmaketoolchain:generator=Ninja >> ~\.conan2\global.conf
       - name: Create Celix
         env:
