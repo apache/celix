@@ -47,11 +47,18 @@ conan profile update settings.build_type=Debug debug
 
 #generate and configure cmake-build-debug directory
 conan install . celix/2.3.0 -pr:b default -pr:h debug -if cmake-build-debug/ -o celix:enable_testing=True -o celix:enable_address_sanitizer=True -o celix:build_all=True -b missing
-conan build . -bf cmake-build-debug/ --configure
 
-#optional build
+#invoke the exact cmake command `conan install` shows to configure the build directory
 cd cmake-build-debug
+cmake .. -G "Unix Makefiles" -DCMAKE_TOOLCHAIN_FILE=/home/peng/Downloads/git/mycelix/cmake-build-debug/conan_toolchain.cmake -DENABLE_TESTING=ON -DENABLE_CODE_COVERAGE=OFF -DENABLE_ADDRESS_SANITIZER=ON -DENABLE_UNDEFINED_SANITIZER=OFF -DENABLE_THREAD_SANITIZER=OFF -DENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11=OFF -DENABLE_TESTING_FOR_CXX14=OFF -DBUILD_ALL=ON -DBUILD_DEPLOYMENT_ADMIN=ON -DBUILD_HTTP_ADMIN=ON -DBUILD_LOG_SERVICE=ON -DBUILD_LOG_HELPER=ON -DBUILD_LOG_SERVICE_API=ON -DBUILD_SYSLOG_WRITER=ON -DBUILD_PUBSUB=ON -DBUILD_PUBSUB_WIRE_PROTOCOL_V1=ON -DBUILD_PUBSUB_WIRE_PROTOCOL_V2=ON -DBUILD_PUBSUB_JSON_SERIALIZER=ON -DBUILD_PUBSUB_AVROBIN_SERIALIZER=ON -DBUILD_PUBSUB_PSA_ZMQ=ON -DBUILD_PUBSUB_EXAMPLES=ON -DBUILD_PUBSUB_INTEGRATION=ON -DBUILD_PUBSUB_PSA_TCP=ON -DBUILD_PUBSUB_PSA_UDP_MC=ON -DBUILD_PUBSUB_PSA_WS=ON -DBUILD_PUBSUB_DISCOVERY_ETCD=ON -DBUILD_CXX_REMOTE_SERVICE_ADMIN=ON -DBUILD_CXX_RSA_INTEGRATION=ON -DBUILD_REMOTE_SERVICE_ADMIN=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_DFI=ON -DBUILD_RSA_DISCOVERY_COMMON=ON -DBUILD_RSA_DISCOVERY_CONFIGURED=ON -DBUILD_RSA_DISCOVERY_ETCD=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON -DBUILD_RSA_JSON_RPC=ON -DBUILD_RSA_DISCOVERY_ZEROCONF=ON -DBUILD_SHELL=ON -DBUILD_SHELL_API=ON -DBUILD_REMOTE_SHELL=ON -DBUILD_SHELL_BONJOUR=ON -DBUILD_SHELL_TUI=ON -DBUILD_SHELL_WUI=ON -DBUILD_COMPONENTS_READY_CHECK=ON -DBUILD_EXAMPLES=ON -DBUILD_CELIX_ETCDLIB=ON -DBUILD_LAUNCHER=ON -DBUILD_PROMISES=ON -DBUILD_PUSHSTREAMS=ON -DBUILD_EXPERIMENTAL=ON -DBUILD_CELIX_DFI=ON -DBUILD_DEPENDENCY_MANAGER=ON -DBUILD_DEPENDENCY_MANAGER_CXX=ON -DBUILD_FRAMEWORK=ON -DBUILD_RCM=ON -DBUILD_UTILS=ON -DCELIX_CXX14=ON -DCELIX_CXX17=ON -DCELIX_INSTALL_DEPRECATED_API=ON -DCELIX_USE_COMPRESSION_FOR_BUNDLE_ZIPS=ON -DENABLE_CMAKE_WARNING_TESTS=OFF -DENABLE_TESTING_ON_CI=OFF -DFRAMEWORK_CURLINIT=ON -DBUILD_ERROR_INJECTOR_MDNSRESPONDER=ON -DCELIX_ERR_BUFFER_SIZE=512 -DCMAKE_EXE_LINKER_FLAGS=-Wl,--unresolved-symbols=ignore-in-shared-libs -DCELIX_MAJOR=2 -DCELIX_MINOR=3 -DCELIX_MICRO=0 -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_BUILD_TYPE=Debug
+
+#optional build, you may want to skip it and use CLion to build
 make -j
+
+# if you don't like the above very long cmake command, you may use the following command instead
+# Note that it does a full building, which may take a long time
+# conan build . -bf cmake-build-debug/
+
 
 #optional setup run env and run tests
 source conanrun.sh 
@@ -63,10 +70,10 @@ source deactivate_conanrun.sh
 To ensure that all Conan build dependencies can be found the Run/Debug configurations of CLion needs te be updated.
 
 This can be done under the menu "Run->Edit Configurations...", then select "Edit configuration templates..." and
-then update the "Google Test" template so that the `active_run.sh` Conan generated script is sourced in the 
+then update the "Google Test" template so that the `conanrun.sh` Conan generated script is sourced in the 
 "Environment variables" entry. 
 
 If the Apache Celix CMake build directory is `home/joe/workspace/celix/cmake-build-debug` then the value for 
-"Environment variables" should be: `source /home/joe/workspace/celix/cmake-build-debug/environment_run.sh.env`
+"Environment variables" should be: `source /home/joe/workspace/celix/cmake-build-debug/conanrun.sh`
 
 ![Configure CLion](media/clion_run_configuration_template.png)
