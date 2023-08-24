@@ -9,19 +9,19 @@ on:
 jobs:
 
   ubuntu-build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         compiler: [ [gcc,g++], [clang,clang++] ]
-        type: [ Debug ]
+        type: [ Release ]
     timeout-minutes: 120
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3.3.0
       - name: Install build dependencies
         run: |
-          sudo pip install -U conan==1.59.0
+          sudo pip install -U conan
           sudo apt-get install -yq --no-install-recommends ninja-build
       - name: Setup Conan Profile
         env:
@@ -29,24 +29,13 @@ jobs:
           CXX: ${{ matrix.compiler[1] }}
         run: |
           # build profile
-          conan profile new release --detect
-          conan profile update settings.build_type=Release release
-          #Note no backwards compatiblity for gcc5 needed, setting libcxx to c++11.
-          conan profile update settings.compiler.libcxx=libstdc++11 release
-          conan profile show release
-          # host profile
-          conan profile new default --detect
-          conan profile update settings.build_type=${{ matrix.type }} default
-          #Note no backwards compatiblity for gcc5 needed, setting libcxx to c++11.
-          conan profile update settings.compiler.libcxx=libstdc++11 default
-          conan profile show default
+          conan profile detect -f
       - name: Create Celix
         env:
           CC: ${{ matrix.compiler[0] }}
           CXX: ${{ matrix.compiler[1] }}
-          CONAN_CMAKE_GENERATOR: Ninja
         run: |
-          conan inspect . -a options | awk 'BEGIN { FS="[\t:]+" } /build/ && !/build_all/ { print $1}' | while read option; do conan create . -b missing -o celix:${option}=True  -pr:b release -pr:h default -tf examples/conan_test_package -tbf test-build -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s --require-override=zlib/1.2.13 || exit 1; done
+          conan inspect .  | awk 'BEGIN { FS="[\t:]+"; output=0 } /build/ && !/build_all/ { if(output) print $1} /^options/ {output=1} /^options_definitions/ {output=0}' | while read option; do conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix/*:${option}=True  -pr:b default -pr:h default -s:h build_type=${{ matrix.type }} -tf examples/conan_test_package_v2 -o celix/*:celix_cxx17=True -o celix/*:celix_install_deprecated_api=True || exit 1; done
 
   mac-build:
     runs-on: macOS-11
@@ -66,6 +55,5 @@ jobs:
         env:
           CC: ${{ matrix.compiler[0] }}
           CXX: ${{ matrix.compiler[1] }}
-          CONAN_CMAKE_GENERATOR: Ninja
         run: |
-          conan inspect . -a options | awk 'BEGIN { FS="[\t:]+" } /build/ && !/build_all/ { print $1}' | while read option; do conan create . -b missing -o celix:${option}=True  -pr:b default -pr:h default -tf examples/conan_test_package -tbf test-build -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s --require-override=zlib/1.2.13 || exit 1; done
+          conan inspect . -a options | awk 'BEGIN { FS="[\t:]+" } /build/ && !/build_all/ { print $1}' | while read option; do conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix:${option}=True  -pr:b default -pr:h default -tf examples/conan_test_package -tbf test-build -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s --require-override=zlib/1.2.13 || exit 1; done

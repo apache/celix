@@ -485,7 +485,7 @@ static void psa_udpmc_processMsg(pubsub_udpmc_topic_receiver_t *receiver, pubsub
             if (validVersion) {
                 struct iovec deSerializeBuffer;
                 deSerializeBuffer.iov_base = msg->payload;
-                deSerializeBuffer.iov_len  = 0;
+                deSerializeBuffer.iov_len  = msg->payloadSize;
                 celix_status_t status = msgSer->deserialize(msgSer->handle, &deSerializeBuffer, 0, &msgInst);
 
                 if (status == CELIX_SUCCESS) {

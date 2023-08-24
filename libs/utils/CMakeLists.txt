@@ -52,7 +52,7 @@ if (UTILS)
             src/celix_cleanup.c
             ${MEMSTREAM_SOURCES}
             )
-    set(UTILS_PRIVATE_DEPS libzip::libzip)
+    set(UTILS_PRIVATE_DEPS libzip::zip)
     set(UTILS_PUBLIC_DEPS)
 
     add_library(utils SHARED ${UTILS_SRC})
@@ -140,19 +140,19 @@ if (UTILS)
 
             add_executable(hash_map_test private/test/hash_map_test.cpp)
             target_include_directories(hash_map_test PRIVATE include_deprecated)
-            target_link_libraries(hash_map_test utils_cut CppUTest::CppUTest pthread)
+            target_link_libraries(hash_map_test utils_cut CppUTest pthread)
 
             add_executable(array_list_test private/test/array_list_test.cpp)
             target_include_directories(array_list_test PRIVATE include_deprecated)
-            target_link_libraries(array_list_test utils_cut CppUTest::CppUTest pthread)
+            target_link_libraries(array_list_test utils_cut CppUTest pthread)
 
             add_executable(linked_list_test private/test/linked_list_test.cpp)
             target_include_directories(linked_list_test PRIVATE include_deprecated)
-            target_link_libraries(linked_list_test utils_cut CppUTest::CppUTest pthread)
+            target_link_libraries(linked_list_test utils_cut CppUTest pthread)
 
             add_executable(ip_utils_test private/test/ip_utils_test.cpp)
             target_include_directories(ip_utils_test PRIVATE include_deprecated)
-            target_link_libraries(ip_utils_test CppUTest::CppUTest  utils_cut pthread)
+            target_link_libraries(ip_utils_test CppUTest  utils_cut pthread)
 
             add_test(NAME run_array_list_test COMMAND array_list_test)
             add_test(NAME run_hash_map_test COMMAND hash_map_test)
