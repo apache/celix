@@ -41,7 +41,7 @@ add_executable(test_utils
         ${CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS}
 )
 
-target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::libzip)
+target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::zip)
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
 celix_deprecated_utils_headers(test_utils)
 

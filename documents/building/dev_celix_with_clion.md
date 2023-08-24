@@ -23,7 +23,7 @@ limitations under the License.
 Apache Celix can be build for development in CLion with use of the Conan package manager.
 Conan will arrange the building of the Apache Celix dependencies and generate Find<package> files for these dependencies.
 
-Conan will also generate a `active_run.sh` and `deactivate_run.sh` script that does the environment (de)setup for the 
+Conan will also generate a `conanrun.sh` and `deactivate_conanrun.sh` script that does the environment (de)setup for the 
 binary locations of the build dependencies (i.e. configures `PATH` and `LD_LIBRARY_PATH`/`DYLD_LIBRARY_PATH`).
 
 ## Configuring CLion for C++17
@@ -47,26 +47,27 @@ conan profile update settings.build_type=Debug debug
 
 #generate and configure cmake-build-debug directory
 conan install . celix/2.3.0 -pr:b default -pr:h debug -if cmake-build-debug/ -o celix:enable_testing=True -o celix:enable_address_sanitizer=True -o celix:build_all=True -b missing
-conan build . -bf cmake-build-debug/ --configure
 
-#optional build
-cd cmake-build-debug
-make -j
+# optional build
+# If you want to skip building, which may take long, you can copy the the exact CMAKE command `conan install` shows into CLion
+# and let CLion perform build directory configuration and build.
+conan build . -bf cmake-build-debug/
 
 #optional setup run env and run tests
-source activate_run.sh 
+cd cmake-build-debug
+source conanrun.sh 
 ctest --verbose
-source deactivate_run.sh 
+source deactivate_conanrun.sh 
 ```
 
 ## Configuring CLion
 To ensure that all Conan build dependencies can be found the Run/Debug configurations of CLion needs te be updated.
 
 This can be done under the menu "Run->Edit Configurations...", then select "Edit configuration templates..." and
-then update the "Google Test" template so that the `active_run.sh` Conan generated script is sourced in the 
+then update the "Google Test" template so that the `conanrun.sh` Conan generated script is sourced in the 
 "Environment variables" entry. 
 
 If the Apache Celix CMake build directory is `home/joe/workspace/celix/cmake-build-debug` then the value for 
-"Environment variables" should be: `source /home/joe/workspace/celix/cmake-build-debug/environment_run.sh.env`
+"Environment variables" should be: `source /home/joe/workspace/celix/cmake-build-debug/conanrun.sh`
 
 ![Configure CLion](media/clion_run_configuration_template.png)

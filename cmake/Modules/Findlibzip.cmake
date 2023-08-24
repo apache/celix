@@ -37,12 +37,15 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(libzip  DEFAULT_MSG
         LIBZIP_LIBRARY LIBZIP_INCLUDE_DIR)
 
-if(libzip_FOUND AND NOT TARGET libzip::libzip)
-    add_library(libzip::libzip IMPORTED STATIC GLOBAL)
-    set_target_properties(libzip::libzip PROPERTIES
+if(libzip_FOUND AND NOT TARGET libzip::zip)
+    add_library(libzip::zip IMPORTED STATIC GLOBAL)
+    set_target_properties(libzip::zip PROPERTIES
             IMPORTED_LOCATION "${LIBZIP_LIBRARY}"
             INTERFACE_INCLUDE_DIRECTORIES "${LIBZIP_INCLUDE_DIR}"
     )
+    if (NOT TARGET libzip::libzip)
+        add_library(libzip::libzip ALIAS libzip::zip)
+    endif ()
 endif()
 
 unset(LIBZIP_LIBRARY)

@@ -52,7 +52,7 @@ if (UTILS)
             src/celix_cleanup.c
             ${MEMSTREAM_SOURCES}
             )
-    set(UTILS_PRIVATE_DEPS libzip::libzip)
+    set(UTILS_PRIVATE_DEPS libzip::zip)
     set(UTILS_PUBLIC_DEPS)
 
     add_library(utils SHARED ${UTILS_SRC})
@@ -140,33 +140,33 @@ if (UTILS)
 
             add_executable(hash_map_test private/test/hash_map_test.cpp)
             target_include_directories(hash_map_test PRIVATE include_deprecated)
-            target_link_libraries(hash_map_test utils_cut CppUTest::CppUTest pthread)
+            target_link_libraries(hash_map_test utils_cut CppUTest pthread)
 
             add_executable(array_list_test private/test/array_list_test.cpp)
             target_include_directories(array_list_test PRIVATE include_deprecated)
-            target_link_libraries(array_list_test utils_cut CppUTest::CppUTest pthread)
+            target_link_libraries(array_list_test utils_cut CppUTest pthread)
 
             add_executable(linked_list_test private/test/linked_list_test.cpp)
             target_include_directories(linked_list_test PRIVATE include_deprecated)
-            target_link_libraries(linked_list_test utils_cut CppUTest::CppUTest pthread)
+            target_link_libraries(linked_list_test utils_cut CppUTest pthread)
 
             add_executable(properties_test private/test/properties_test.cpp)
             target_include_directories(properties_test PRIVATE include_deprecated)
-            target_link_libraries(properties_test CppUTest::CppUTest CppUTest::CppUTestExt utils_cut pthread)
+            target_link_libraries(properties_test CppUTest CppUTestExt utils_cut pthread)
 
             add_executable(ip_utils_test private/test/ip_utils_test.cpp)
             target_include_directories(ip_utils_test PRIVATE include_deprecated)
-            target_link_libraries(ip_utils_test CppUTest::CppUTest  utils_cut pthread)
+            target_link_libraries(ip_utils_test CppUTest  utils_cut pthread)
 
             add_executable(version_test private/test/version_test.cpp)
             target_include_directories(version_test PRIVATE include_deprecated)
-            target_link_libraries(version_test CppUTest::CppUTest utils_cut pthread)
+            target_link_libraries(version_test CppUTest utils_cut pthread)
 
 
             if (LINKER_WRAP_SUPPORTED)
                 add_executable(version_ei_test private/test/version_ei_test.cc)
                 target_include_directories(version_ei_test PRIVATE include_deprecated)
-                target_link_libraries(version_ei_test CppUTest::CppUTest utils_cut Celix::malloc_ei Celix::utils_ei pthread)
+                target_link_libraries(version_ei_test CppUTest utils_cut Celix::malloc_ei Celix::utils_ei pthread)
                 add_test(NAME version_ei_test COMMAND version_ei_test)
             endif ()
 
