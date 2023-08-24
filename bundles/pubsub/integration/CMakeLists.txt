@@ -160,6 +160,8 @@ if (PUBSUB_INTEGRATION)
                 )
         target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main)
         target_include_directories(pubsub_udpmc_tests SYSTEM PRIVATE gtest)
+        add_test(NAME pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
+        setup_target_for_coverage(pubsub_udpmc_tests SCAN_DIR ..)
 
         add_celix_container(pstm_deadlock_udpmc_test
                 USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
