@@ -11,7 +11,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Install conan and lcov
         run: |
-          sudo apt-get install -yq --no-install-recommends lcov
+          sudo apt-get install -yq --no-install-recommends lcov ninja-build
           sudo pip install conan==1.59.0
       - name: Setup Conan Profile
         run: |

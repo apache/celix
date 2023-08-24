@@ -407,7 +407,7 @@ class CelixConan(ConanFile):
         self.validate()
 
     def generate(self):
-        tc = CMakeToolchain(self)
+        tc = CMakeToolchain(self, generator="Ninja")
         for opt in self._celix_defaults.keys():
             tc.cache_variables[opt.upper()] = self.options.get_safe(opt)
         if self.options.enable_testing:
