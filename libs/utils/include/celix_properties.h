@@ -426,7 +426,7 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_i
  * The loop variable `iterName` will be of type celix_properties_iterator_t and will contain the current
  * entry during each iteration.
  *
- * @param[in] map The properties object to iterate over.
+ * @param[in] props The properties object to iterate over.
  * @param[in] iterName The name of the iterator variable to use in the loop.
  *
  * Example usage:
@@ -438,8 +438,8 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_i
  * }
  * @endcode
  */
-#define CELIX_PROPERTIES_ITERATE(map, iterName) \
-    for (celix_properties_iterator_t iterName = celix_properties_begin(map); \
+#define CELIX_PROPERTIES_ITERATE(props, iterName) \
+    for (celix_properties_iterator_t iterName = celix_properties_begin((props)); \
     !celix_propertiesIterator_isEnd(&(iterName)); celix_propertiesIterator_next(&(iterName)))
 
 
