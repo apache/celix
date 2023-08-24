@@ -38,7 +38,7 @@ jobs:
         run: |
           cd build
           source conanrun.sh
-          make coverage
+          ninja coverage
           source deactivate_conanrun.sh
           lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx
       - name: Codecov
