@@ -48,4 +48,7 @@ if (czmq_FOUND AND NOT TARGET czmq)
             IMPORTED_LOCATION "${CZMQ_LIBRARY}"
             INTERFACE_INCLUDE_DIRECTORIES "${CZMQ_INCLUDE_DIR}"
     )
+    if (NOT TARGET czmq::czmq)
+        add_library(czmq::czmq ALIAS czmq)
+    endif ()
 endif ()

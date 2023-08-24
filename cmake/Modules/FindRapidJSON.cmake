@@ -32,4 +32,7 @@ if(RapidJSON_FOUND AND NOT TARGET rapidjson)
     add_library(rapidjson INTERFACE IMPORTED)
     set_target_properties(rapidjson PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
             "${RapidJSON_INCLUDE_DIRS}")
+    if (NOT TARGET RapidJSON::RapidJSON)
+        add_library(RapidJSON::RapidJSON ALIAS rapidjson)
+    endif ()
 endif()

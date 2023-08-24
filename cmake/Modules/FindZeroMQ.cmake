@@ -48,4 +48,7 @@ if (ZeroMQ_FOUND AND NOT TARGET libzmq)
             IMPORTED_LOCATION "${ZEROMQ_LIBRARY}"
             INTERFACE_INCLUDE_DIRECTORIES "${ZEROMQ_INCLUDE_DIR}"
     )
+    if (NOT TARGET ZeroMQ::ZeroMQ)
+        add_library(ZeroMQ::ZeroMQ ALIAS libzmq)
+    endif ()
 endif ()

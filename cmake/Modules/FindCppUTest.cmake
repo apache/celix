@@ -50,6 +50,9 @@ IF(CppUTest_FOUND)
                 IMPORTED_LOCATION "${CppUTest_LIBRARY}"
                 INTERFACE_INCLUDE_DIRECTORIES "${CppUTest_INCLUDE_DIR}"
                 )
+        if (NOT TARGET CppUTest::CppUTest)
+            add_library(CppUTest::CppUTest ALIAS CppUTest)
+        endif ()
     endif()
     SET(CppUTest_EXT_LIBRARIES ${CppUTest_EXT_LIBRARY})
     SET(CppUTest_EXT_INCLUDE_DIRS ${CppUTest_EXT_INCLUDE_DIR})
@@ -59,5 +62,8 @@ IF(CppUTest_FOUND)
                 IMPORTED_LOCATION "${CppUTest_EXT_LIBRARY}"
                 INTERFACE_INCLUDE_DIRECTORIES "${CppUTest_EXT_INCLUDE_DIR}"
                 )
+        if (NOT TARGET CppUTest::CppUTestExt)
+            add_library(CppUTest::CppUTestExt ALIAS CppUTestExt)
+        endif ()
     endif()
 ENDIF(CppUTest_FOUND)

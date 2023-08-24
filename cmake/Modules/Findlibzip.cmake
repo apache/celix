@@ -43,6 +43,9 @@ if(libzip_FOUND AND NOT TARGET libzip::zip)
             IMPORTED_LOCATION "${LIBZIP_LIBRARY}"
             INTERFACE_INCLUDE_DIRECTORIES "${LIBZIP_INCLUDE_DIR}"
     )
+    if (NOT TARGET libzip::libzip)
+        add_library(libzip::libzip ALIAS libzip::zip)
+    endif ()
 endif()
 
 unset(LIBZIP_LIBRARY)
