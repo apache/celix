@@ -108,7 +108,7 @@ class CelixConan(ConanFile):
         "celix_err_buffer_size": ["ANY"],
     }
     default_options = {
-        "celix_err_buffer_size": 512,
+        "celix_err_buffer_size": "512",
     }
 
     for comp in _celix_defaults.keys():
@@ -414,7 +414,7 @@ class CelixConan(ConanFile):
             lst = [x.ref.name for x in self.requires.values()]
             if "mdnsresponder" in lst:
                 tc.cache_variables["BUILD_ERROR_INJECTOR_MDNSRESPONDER"] = "ON"
-        tc.cache_variables["CELIX_ERR_BUFFER_SIZE"] = self.options.celix_err_buffer_size
+        tc.cache_variables["CELIX_ERR_BUFFER_SIZE"] = str(self.options.celix_err_buffer_size)
         # tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":
@@ -422,10 +422,9 @@ class CelixConan(ConanFile):
         elif self.settings.os == "Macos":
             tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
         v = Version(self.version)
-        tc.cache_variables["CELIX_MAJOR"] = v.major.value
-        tc.cache_variables["CELIX_MINOR"] = v.minor.value
-        tc.cache_variables["CELIX_MICRO"] = v.patch.value
-        tc.user_presets_path = False
+        tc.cache_variables["CELIX_MAJOR"] = str(v.major.value)
+        tc.cache_variables["CELIX_MINOR"] = str(v.minor.value)
+        tc.cache_variables["CELIX_MICRO"] = str(v.patch.value)
         tc.generate()
 
     def _configure_cmake(self):
