@@ -246,15 +246,21 @@ char* celix_versionRange_createLDAPFilter(const celix_version_range_t* range, co
 
     int ret = -1;
     if(range->high == NULL) {
-        ret = asprintf(&output, "(&(%s%s%i.%i.%i))",
-                       serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
-                       range->low->minor, range->low->micro);
-    } else {
-        ret = asprintf(&output, "(&(%s%s%i.%i.%i)(%s%s%i.%i.%i))",
+        ret = asprintf(&output, "(&(%s%s%i.%i.%i%s%s))",
                        serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
                        range->low->minor, range->low->micro,
+                       range->low->qualifier ? "." : "",
+                       range->low->qualifier ? range->low->qualifier : "");
+    } else {
+        ret = asprintf(&output, "(&(%s%s%i.%i.%i%s%s)(%s%s%i.%i.%i%s%s))",
+                       serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
+                       range->low->minor, range->low->micro,
+                       range->low->qualifier ? "." : "",
+                          range->low->qualifier ? range->low->qualifier : "",
                        serviceVersionAttributeName, range->isHighInclusive ? "<=" : "<", range->high->major,
-                       range->high->minor, range->high->micro);
+                       range->high->minor, range->high->micro,
+                       range->high->qualifier ? "." : "",
+                       range->high->qualifier ? range->high->qualifier : "");
     }
 
     if (ret < 0) {
