@@ -21,13 +21,16 @@ use std::any::type_name;
 use std::any::Any;
 use std::collections::HashMap;
 use std::ffi::c_void;
-use std::ops::DerefMut;
 use std::ptr::null_mut;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::sync::Weak;
 
 use celix_bindings::celix_bundleContext_log;
+use celix_bindings::celix_service_use_options_t;
+use celix_bindings::celix_service_filter_options_t;
+use celix_bindings::celix_bundleContext_useServicesWithOptions;
+use celix_bindings::celix_bundleContext_useServiceWithOptions;
 use celix_bindings::celix_bundleContext_registerServiceWithOptions;
 use celix_bindings::celix_bundleContext_unregisterService;
 use celix_bindings::celix_bundle_context_t;
@@ -193,8 +196,123 @@ impl ServiceRegistrationBuilder<'_> {
         self.validate()?;
         let svc_ptr = self.get_c_svc();
         unsafe {
-            //TODO make unsafe part smaller (if possible)
             self.build_unsafe(svc_ptr)
+        }
+    }
+}
+
+pub struct ServiceUseBuilder<'a> {
+    ctx: &'a BundleContextImpl,
+    many: bool,
+    service_name: String,
+    filter: String,
+    callback: Option<Box<Box<dyn Fn(&dyn Any)>>>
+}
+
+impl ServiceUseBuilder<'_> {
+    fn new(ctx: &BundleContextImpl, many: bool) -> ServiceUseBuilder {
+        ServiceUseBuilder {
+            ctx,
+            many,
+            service_name: "".to_string(),
+            filter: "".to_string(),
+            callback: None,
+        }
+    }
+
+    pub fn with_service<T: ?Sized + 'static>(&mut self) -> &mut Self {
+        self.service_name = type_name::<T>().to_string();
+        self
+    }
+
+    #[doc = " @brief Provide a callback which will be called when a service is available. T must be a Sized (non trait) type, due to the use of downcast_ref"]
+    pub fn with_callback<T: Sized + 'static>(&mut self, closure: Box<dyn Fn(&T)>)-> &mut Self {
+        if self.service_name.is_empty() {
+            self.with_service::<T>();
+        }
+
+        let any_closure = Box::new(move |any_svc: &dyn Any| {
+            if let Some(svc) = any_svc.downcast_ref::<T>() {
+                closure(svc);
+            }
+        });
+
+        self.callback = Some(Box::new(any_closure));
+        self
+    }
+
+    #[doc = " @brief Provide a callback which will be called when a service is available, with a dyn Any argument. Note that this is useful for trait objects."]
+    pub fn with_any_callback(&mut self, closure: Box<dyn Fn(&dyn Any)>)-> &mut Self {
+        self.callback = Some(Box::new(closure)); //note double boxed
+        self
+    }
+
+    pub fn with_service_name(&mut self, name: &str) -> &mut Self {
+        self.service_name = name.to_string();
+        self
+    }
+
+    pub fn with_filter(&mut self, filter: &str) -> &mut Self {
+        self.filter = filter.to_string();
+        self
+    }
+
+    fn validate(&self) -> Result<(), Error> {
+        if self.callback.is_none() || self.service_name.is_empty() {
+            return Err(Error::BundleException);
+        }
+        Ok(())
+    }
+
+    unsafe extern "C" fn use_service_c_callback(handle: *mut c_void, svc: *mut c_void) {
+        let boxed_fn = Box::from_raw(handle as *mut Box<dyn Fn(&dyn Any)>);
+        let any_svc_ptr = svc as *mut dyn Any;
+        let any_svc_ref = any_svc_ptr.as_ref().unwrap();
+        boxed_fn(any_svc_ref);
+    }
+
+    pub fn build(&mut self) ->  Result<isize, Error> {
+        self.validate()?;
+
+        let c_service_name = std::ffi::CString::new(self.service_name.as_str()).unwrap();
+        let c_filter = std::ffi::CString::new(self.filter.as_str()).unwrap();
+        let c_service_name_ptr: *const i8 = c_service_name.as_ptr();
+
+        //Note filter is for now unused, introduce when updating to use of celix_bundleContext_useServiceWithOptions
+        let c_filter_ptr: *const i8 = if self.filter.is_empty() { null_mut()} else {c_filter.as_ptr() };
+
+        let boxed_fn = self.callback.take().unwrap();
+        let fn_ptr = Box::into_raw(boxed_fn) as *mut c_void;
+
+
+        let opts = celix_service_use_options_t {
+            filter: celix_service_filter_options_t {
+                serviceName: c_service_name_ptr,
+                versionRange: null_mut(),
+                filter: c_filter_ptr,
+                serviceLanguage: null_mut(),
+                ignoreServiceLanguage: false,
+            },
+            waitTimeoutInSeconds: 0.0,
+            callbackHandle: fn_ptr,
+            use_: Some(Self::use_service_c_callback),
+            useWithProperties: None,
+            useWithOwner: None,
+            flags: 0,
+        };
+
+        unsafe {
+            if self.many {
+                let count = celix_bundleContext_useServicesWithOptions(self.ctx.get_c_bundle_context(), &opts);
+                Ok(count as isize)
+            } else {
+                let called = celix_bundleContext_useServiceWithOptions(self.ctx.get_c_bundle_context(), &opts);
+                if called {
+                    Ok(1)
+                } else {
+                    Ok(0)
+                }
+            }
         }
     }
 }
@@ -217,6 +335,10 @@ pub trait BundleContext {
     fn log_fatal(&self, message: &str);
 
     fn register_service(&self) -> ServiceRegistrationBuilder;
+
+    fn use_service(&self) -> ServiceUseBuilder;
+
+    fn use_services(&self) -> ServiceUseBuilder;
 }
 
 struct BundleContextImpl {
@@ -304,6 +426,14 @@ impl BundleContext for BundleContextImpl {
 
     fn register_service(&self) -> ServiceRegistrationBuilder {
         ServiceRegistrationBuilder::new(self)
+    }
+
+    fn use_service(&self) -> ServiceUseBuilder {
+        ServiceUseBuilder::new(self, false)
+    }
+
+    fn use_services(&self) -> ServiceUseBuilder {
+        ServiceUseBuilder::new(self, true)
     }
 }
 
