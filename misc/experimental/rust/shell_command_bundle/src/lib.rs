@@ -35,11 +35,11 @@ use celix_bindings::celix_shell_command_t;
 use celix_bindings::FILE;
 
 struct CShellCommandImpl {
-    ctx: Arc<dyn BundleContext>,
+    ctx: Arc<BundleContext>,
 }
 
 impl CShellCommandImpl {
-    fn new(ctx: Arc<dyn BundleContext>) -> Self {
+    fn new(ctx: Arc<BundleContext>) -> Self {
         ctx.log_info("Shell Command created");
         CShellCommandImpl { ctx }
     }
@@ -72,11 +72,11 @@ impl CShellCommandImpl {
 //temporary, should be moved in a separate API crate
 
 struct RustShellCommandImpl {
-    ctx: Arc<dyn BundleContext>,
+    ctx: Arc<BundleContext>,
 }
 
 impl RustShellCommandImpl {
-    fn new(ctx: Arc<dyn BundleContext>) -> Self {
+    fn new(ctx: Arc<BundleContext>) -> Self {
         ctx.log_info("Rust Shell Command created");
         RustShellCommandImpl { ctx }
     }
@@ -91,7 +91,7 @@ impl RustShellCommandTrait for RustShellCommandImpl {
 }
 
 struct ShellCommandActivator {
-    ctx: Arc<dyn BundleContext>,
+    ctx: Arc<BundleContext>,
     //log_helper: Box<dyn LogHelper>,
     shell_command_provider: CShellCommandImpl,
     registrations: Vec<celix::ServiceRegistration>,
@@ -167,6 +167,8 @@ impl ShellCommandActivator {
         let count = self.ctx.use_services()
             .with_service::<dyn RustShellCommandTrait>()
             .with_any_callback(Box::new( |svc: &dyn Any| {
+                //Mote below downcast, this is a hack. Cannot downcast to trait.
+                //Fixme trait service users should not need impl type (impl details)
                 let typed_svc = svc.downcast_ref::<RustShellCommandImpl>();
                 if let Some(svc) = typed_svc {
                     let _ = svc.execute_command("test");
@@ -190,7 +192,7 @@ impl ShellCommandActivator {
 }
 
 impl BundleActivator for ShellCommandActivator {
-    fn new(ctx: Arc<dyn celix::BundleContext>) -> Self {
+    fn new(ctx: Arc<BundleContext>) -> Self {
         let result = ShellCommandActivator {
             ctx: ctx.clone(),
             shell_command_provider: CShellCommandImpl::new(ctx.clone()),

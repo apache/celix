@@ -23,7 +23,7 @@ use super::BundleContext;
 use super::Error;
 
 pub trait BundleActivator {
-    fn new(ctx: Arc<dyn BundleContext>) -> Self;
+    fn new(ctx: Arc<BundleContext>) -> Self;
     fn start(&mut self) -> Result<(), Error> {
         /* Default implementation */
         Ok(())

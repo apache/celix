@@ -26,11 +26,11 @@ use celix::BundleContext;
 use celix::Error;
 
 struct HelloWorldBundle {
-    ctx: Arc<dyn BundleContext>,
+    ctx: Arc<BundleContext>,
 }
 
 impl BundleActivator for HelloWorldBundle {
-    fn new(ctx: Arc<dyn celix::BundleContext>) -> Self {
+    fn new(ctx: Arc<BundleContext>) -> Self {
         ctx.log_info("Hello World Bundle Activator created");
         HelloWorldBundle { ctx }
     }

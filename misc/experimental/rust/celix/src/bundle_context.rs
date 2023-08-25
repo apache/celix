@@ -43,7 +43,7 @@ use super::LogLevel;
 
 pub struct ServiceRegistration {
     service_id: i64,
-    weak_ctx: Weak<BundleContextImpl>,
+    weak_ctx: Weak<BundleContext>,
     _boxed_svc: Option<Box<dyn Any>>,
 }
 
@@ -58,20 +58,18 @@ impl Drop for ServiceRegistration {
 }
 
 pub struct ServiceRegistrationBuilder<'a> {
-    ctx: &'a BundleContextImpl,
+    ctx: &'a BundleContext,
     boxed_svc: Option<Box<dyn Any>>,
-    unmanaged_svc: *mut c_void,
     service_name: String,
     service_version: String,
     service_properties: HashMap<String, String>,
 }
 
 impl ServiceRegistrationBuilder<'_> {
-    fn new(ctx: &BundleContextImpl) -> ServiceRegistrationBuilder {
+    fn new(ctx: &BundleContext) -> ServiceRegistrationBuilder {
         ServiceRegistrationBuilder {
             ctx,
             boxed_svc: None,
-            unmanaged_svc: null_mut(),
             service_name: "".to_string(),
             service_version: "".to_string(),
             service_properties: HashMap::new(),
@@ -92,20 +90,12 @@ impl ServiceRegistrationBuilder<'_> {
 
     pub fn with_service<I: 'static>(&mut self, svc: I) -> &mut Self {
         self.boxed_svc = Some(Box::new(svc));
-        self.unmanaged_svc = null_mut();
         self.with_service_name_if_not_set(type_name::<I>())
     }
 
     pub fn with_boxed_service<T: ?Sized + 'static>(&mut self, svc: Box<T>) -> &mut Self {
         self.boxed_svc = Some(Box::new(svc));
-        self.unmanaged_svc = null_mut();
         self.with_service_name_if_not_set(type_name::<T>())
-    }
-
-    pub fn with_unmanaged_service<I>(&mut self, svc: *mut I) -> &mut Self {
-        self.boxed_svc = None;
-        self.unmanaged_svc = svc as *mut c_void;
-        self.with_service_name_if_not_set(type_name::<I>())
     }
 
     pub fn with_version(&mut self, version: &str) -> &mut Self {
@@ -131,7 +121,7 @@ impl ServiceRegistrationBuilder<'_> {
                 .log_error("Cannot register service. Service name is empty");
             valid = false;
         }
-        if self.boxed_svc.is_none() && /*self.arc_svc.is_none() &&*/ self.unmanaged_svc.is_null() {
+        if self.boxed_svc.is_none() /*&& self.arc_svc.is_none() */  {
             self.ctx
                 .log_error("Cannot register service. No instance provided");
             valid = false;
@@ -147,10 +137,8 @@ impl ServiceRegistrationBuilder<'_> {
             let any_svc: &mut dyn Any = boxed_svc.as_mut();
             let boxed_svc_ptr = any_svc as *mut dyn Any; //note box still owns the instance
             boxed_svc_ptr as *mut c_void
-        } else if self.unmanaged_svc.is_null() {
-            panic!("Cannot get c_svc. No instance provided");
         } else {
-            self.unmanaged_svc
+            null_mut()
         }
     }
 
@@ -184,8 +172,7 @@ impl ServiceRegistrationBuilder<'_> {
             Ok(ServiceRegistration {
                 service_id,
                 weak_ctx: self.ctx.get_self().clone(),
-                _boxed_svc: self.boxed_svc.take(), //to ensure that a possible box instance is not dropped
-                                                   // arc_svc: self.arc_svc.take(), //to ensure that a possible arc instance is not dropped
+                _boxed_svc: self.boxed_svc.take(),
             })
         } else {
             Err(Error::BundleException)
@@ -202,7 +189,7 @@ impl ServiceRegistrationBuilder<'_> {
 }
 
 pub struct ServiceUseBuilder<'a> {
-    ctx: &'a BundleContextImpl,
+    ctx: &'a BundleContext,
     many: bool,
     service_name: String,
     filter: String,
@@ -210,7 +197,7 @@ pub struct ServiceUseBuilder<'a> {
 }
 
 impl ServiceUseBuilder<'_> {
-    fn new(ctx: &BundleContextImpl, many: bool) -> ServiceUseBuilder {
+    fn new(ctx: &BundleContext, many: bool) -> ServiceUseBuilder {
         ServiceUseBuilder {
             ctx,
             many,
@@ -317,38 +304,14 @@ impl ServiceUseBuilder<'_> {
     }
 }
 
-pub trait BundleContext {
-    fn get_c_bundle_context(&self) -> *mut celix_bundle_context_t;
-
-    fn log(&self, level: LogLevel, message: &str);
-
-    fn log_trace(&self, message: &str);
-
-    fn log_debug(&self, message: &str);
-
-    fn log_info(&self, message: &str);
-
-    fn log_warning(&self, message: &str);
-
-    fn log_error(&self, message: &str);
-
-    fn log_fatal(&self, message: &str);
-
-    fn register_service(&self) -> ServiceRegistrationBuilder;
-
-    fn use_service(&self) -> ServiceUseBuilder;
-
-    fn use_services(&self) -> ServiceUseBuilder;
-}
-
-struct BundleContextImpl {
+pub struct BundleContext {
     c_bundle_context: *mut celix_bundle_context_t,
-    weak_self: Mutex<Option<Weak<BundleContextImpl>>>,
+    weak_self: Mutex<Option<Weak<BundleContext>>>,
 }
 
-impl BundleContextImpl {
+impl BundleContext {
     fn new(c_bundle_context: *mut celix_bundle_context_t) -> Arc<Self> {
-        let ctx = Arc::new(BundleContextImpl {
+        let ctx = Arc::new(BundleContext {
             c_bundle_context,
             weak_self: Mutex::new(None),
         });
@@ -357,12 +320,12 @@ impl BundleContextImpl {
         ctx
     }
 
-    fn set_self(&self, weak_self: Weak<BundleContextImpl>) {
+    fn set_self(&self, weak_self: Weak<BundleContext>) {
         let mut guard = self.weak_self.lock().unwrap();
         *guard = Some(weak_self);
     }
 
-    fn get_self(&self) -> Weak<BundleContextImpl> {
+    fn get_self(&self) -> Weak<BundleContext> {
         self.weak_self.lock().unwrap().clone().unwrap()
     }
 
@@ -389,54 +352,55 @@ impl BundleContextImpl {
             }
         }
     }
-}
 
-impl BundleContext for BundleContextImpl {
-    fn get_c_bundle_context(&self) -> *mut celix_bundle_context_t {
+    pub fn get_c_bundle_context(&self) -> *mut celix_bundle_context_t {
         self.c_bundle_context
     }
 
-    fn log(&self, level: LogLevel, message: &str) {
+    pub fn log(&self, level: LogLevel, message: &str) {
         self.log_to_c(level, message);
     }
 
-    fn log_trace(&self, message: &str) {
+    pub fn log_trace(&self, message: &str) {
         self.log(LogLevel::Trace, message);
     }
 
-    fn log_debug(&self, message: &str) {
+    pub fn log_debug(&self, message: &str) {
         self.log(LogLevel::Debug, message);
     }
 
-    fn log_info(&self, message: &str) {
+    pub fn log_info(&self, message: &str) {
         self.log(LogLevel::Info, message);
     }
 
-    fn log_warning(&self, message: &str) {
+    pub fn log_warning(&self, message: &str) {
         self.log(LogLevel::Warning, message);
     }
 
-    fn log_error(&self, message: &str) {
+    pub fn log_error(&self, message: &str) {
         self.log(LogLevel::Error, message);
     }
 
-    fn log_fatal(&self, message: &str) {
+    pub fn log_fatal(&self, message: &str) {
         self.log(LogLevel::Fatal, message);
     }
 
-    fn register_service(&self) -> ServiceRegistrationBuilder {
+    //TODO make generic
+    pub fn register_service(&self) -> ServiceRegistrationBuilder {
         ServiceRegistrationBuilder::new(self)
     }
 
-    fn use_service(&self) -> ServiceUseBuilder {
+    //TODO make generic
+    pub fn use_service(&self) -> ServiceUseBuilder {
         ServiceUseBuilder::new(self, false)
     }
 
-    fn use_services(&self) -> ServiceUseBuilder {
+    //TODO make generic
+    pub fn use_services(&self) -> ServiceUseBuilder {
         ServiceUseBuilder::new(self, true)
     }
 }
 
-pub fn bundle_context_new(c_bundle_context: *mut celix_bundle_context_t) -> Arc<dyn BundleContext> {
-    BundleContextImpl::new(c_bundle_context)
+pub fn bundle_context_new(c_bundle_context: *mut celix_bundle_context_t) -> Arc<BundleContext> {
+    BundleContext::new(c_bundle_context)
 }

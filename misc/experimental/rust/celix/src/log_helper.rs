@@ -31,7 +31,7 @@ pub struct LogHelper {
 }
 
 impl LogHelper {
-    pub fn new(ctx: Arc<dyn BundleContext>, name: &str) -> Self {
+    pub fn new(ctx: Arc<BundleContext>, name: &str) -> Self {
         unsafe {
             let result = std::ffi::CString::new(name);
             match result {
