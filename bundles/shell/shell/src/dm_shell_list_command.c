@@ -24,6 +24,7 @@
 #include "celix_bundle_context.h"
 #include "celix_dependency_manager.h"
 #include "celix_dm_component.h"
+#include "std_commands.h"
 
 static void parseCommandLine(const char*line, celix_array_list_t **requestedBundleIds, bool *fullInfo, bool *wtf, FILE *err) {
     *fullInfo = false;
@@ -49,7 +50,7 @@ static void parseCommandLine(const char*line, celix_array_list_t **requestedBund
     free (str);
 }
 
-celix_status_t dmListCommand_execute(void* handle, char * line, FILE *out, FILE *err) {
+bool dmListCommand_execute(void* handle, const char* line, FILE *out, FILE *err) {
     celix_bundle_context_t *ctx = handle;
     celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(ctx);
 
@@ -91,5 +92,5 @@ celix_status_t dmListCommand_execute(void* handle, char * line, FILE *out, FILE 
 
     celix_arrayList_destroy(bundleIds);
 
-    return CELIX_SUCCESS;
+    return true;
 }
