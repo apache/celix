@@ -16,7 +16,7 @@
 # under the License.
 
 option(CELIX_RUST_EXPERIMENTAL "Enable experimental rust bundle" OFF)
-if (CELIX_RUST_EXPERIMENTAL)
+if (CELIX_RUST_EXPERIMENTAL AND TARGET Celix::shell_tui AND TARGET Celix::shell AND TARGET Celix::log_admin)
     include(FetchContent)
     FetchContent_Declare(
             Corrosion
@@ -29,7 +29,7 @@ if (CELIX_RUST_EXPERIMENTAL)
     #Note for now this includes framework, utils and shell_api maybe this should be separated in the future.
     file(GENERATE OUTPUT
         "${CMAKE_CURRENT_BINARY_DIR}/include_paths.txt" CONTENT
-        "$<TARGET_PROPERTY:framework,INTERFACE_INCLUDE_DIRECTORIES>;$<TARGET_PROPERTY:utils,INTERFACE_INCLUDE_DIRECTORIES>;$<TARGET_PROPERTY:shell_api,INTERFACE_INCLUDE_DIRECTORIES>;$<TARGET_PROPERTY:Celix::log_service_api,INTERFACE_INCLUDE_DIRECTORIES>;$<TARGET_PROPERTY:Celix::log_helper,INTERFACE_INCLUDE_DIRECTORIES>")
+        "$<TARGET_PROPERTY:framework,INTERFACE_INCLUDE_DIRECTORIES>;$<TARGET_PROPERTY:utils,INTERFACE_INCLUDE_DIRECTORIES>;$<TARGET_PROPERTY:shell_api,INTERFACE_INCLUDE_DIRECTORIES>;$<TARGET_PROPERTY:Celix::log_service_api,INTERFACE_INCLUDE_DIRECTORIES>")
 
     corrosion_import_crate(MANIFEST_PATH Cargo.toml)
     corrosion_add_target_local_rustflags(rust_bundle_activator "-Cprefer-dynamic")
@@ -40,11 +40,17 @@ if (CELIX_RUST_EXPERIMENTAL)
     get_target_property(ACTUAL_LIB_TARGET rust_bundle_activator INTERFACE_LINK_LIBRARIES)
     add_celix_bundle(rust_bundle ACTIVATOR ${ACTUAL_LIB_TARGET})
     add_dependencies(rust_bundle rust_bundle_activator)
-
     corrosion_add_target_local_rustflags(rust_shell_command_activator "-Cprefer-dynamic")
-    corrosion_link_libraries(rust_shell_command_activator Celix::framework)
+    corrosion_link_libraries(rust_shell_command_activator
+            Celix::framework
+    )
     get_target_property(ACTUAL_LIB_TARGET rust_shell_command_activator INTERFACE_LINK_LIBRARIES)
     add_celix_bundle(rust_shell_command ACTIVATOR ${ACTUAL_LIB_TARGET})
+    target_link_libraries(${ACTUAL_LIB_TARGET} INTERFACE
+            -Wl,--whole-archive
+            Celix::log_helper
+            -Wl,--no-whole-archive
+    )
     add_dependencies(rust_shell_command rust_shell_command_activator)
 
     add_celix_container(rust_container NO_COPY
@@ -56,6 +62,7 @@ if (CELIX_RUST_EXPERIMENTAL)
 
     add_celix_container(rust_shell_cnt NO_COPY
         BUNDLES
+            Celix::log_admin
             Celix::shell
             Celix::shell_tui
             rust_shell_command

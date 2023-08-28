@@ -17,6 +17,7 @@
  * under the License.
  */
 
+use std::fmt::{Debug, Formatter};
 use celix_bindings::celix_status_t;
 
 pub const CELIX_SUCCESS: celix_status_t = celix_bindings::CELIX_SUCCESS as celix_status_t;
@@ -44,6 +45,15 @@ impl Into<celix_status_t> for Error {
         match self {
             Error::BundleException => BUNDLE_EXCEPTION,
             Error::CelixStatusError(status) => status,
+        }
+    }
+}
+
+impl Debug for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::BundleException => write!(f, "BundleException"),
+            Error::CelixStatusError(status) => write!(f, "CelixStatusError({})", status),
         }
     }
 }

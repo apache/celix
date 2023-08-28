@@ -43,6 +43,7 @@ mod bundle_context;
 pub use self::bundle_context::bundle_context_new;
 pub use self::bundle_context::BundleContext;
 pub use self::bundle_context::ServiceRegistration;
+pub use self ::bundle_context::ServiceTracker;
 
 mod bundle_activator;
 // Re-export bundle activator types in the public API.

@@ -17,93 +17,98 @@
  * under the License.
  */
 
-use std::sync::Arc;
+use std::ops::Deref;
+use std::sync::{Arc, Mutex, RwLock};
 
 use super::BundleContext;
 use super::LogLevel;
 
-use celix_bindings::celix_logHelper_create;
-use celix_bindings::celix_logHelper_destroy;
-use celix_bindings::celix_logHelper_log;
-use celix_bindings::celix_log_helper_t;
+use celix_bindings::celix_log_service_t;
+use ServiceTracker;
+
 pub struct LogHelper {
-    celix_log_helper: *mut celix_log_helper_t,
+    name: String,
+    tracker: Mutex<Option<ServiceTracker<celix_log_service_t>>>,
+    log_svc: RwLock<Option<*const celix_log_service_t>>,
 }
 
 impl LogHelper {
-    pub fn new(ctx: Arc<BundleContext>, name: &str) -> Self {
-        unsafe {
-            let result = std::ffi::CString::new(name);
-            match result {
-                Ok(c_str) => LogHelper {
-                    celix_log_helper: celix_logHelper_create(
-                        ctx.get_c_bundle_context(),
-                        c_str.as_ptr() as *const i8,
-                    ),
-                },
-                Err(e) => {
-                    ctx.log_error(&format!(
-                        "Error creating CString: {}. Using \"error\" as log name",
-                        e
-                    ));
-                    let c_str = std::ffi::CString::new("error").unwrap();
-                    LogHelper {
-                        celix_log_helper: celix_logHelper_create(
-                            ctx.get_c_bundle_context(),
-                            c_str.as_ptr() as *const i8,
-                        ),
-                    }
+
+    pub fn new(ctx: Arc<BundleContext>, name: &str) -> Arc<Self> {
+        let helper = Arc::new(LogHelper{
+            name: name.to_string(),
+            tracker: Mutex::new(None),
+            log_svc: RwLock::new(None),
+        });
+        let filter = format!("(name={})", name);
+        let weak_helper = Arc::downgrade(&helper);
+        let tracker = ctx.track_services::<celix_log_service_t>()
+            .with_service_name("celix_log_service")
+            .with_filter(filter.as_str())
+            .with_set_callback(Box::new(move|optional_svc| {
+                if let Some(helper) = weak_helper.upgrade() {
+                    helper.set_celix_log_service(optional_svc);
                 }
+            }))
+            .build().unwrap();
+        helper.tracker.lock().unwrap().replace(tracker);
+        helper
+    }
+
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn set_celix_log_service(&self, optional_svc: Option<&celix_log_service_t>) {
+        match optional_svc {
+            Some(svc) => {
+                let svc_ptr: *const celix_log_service_t = svc as *const celix_log_service_t;
+                self.log_svc.write().unwrap().replace(svc_ptr);
+            }
+            None => {
+                self.log_svc.write().unwrap().take();
             }
         }
     }
 
     pub fn log(&self, level: LogLevel, message: &str) {
-        unsafe {
-            let result = std::ffi::CString::new(message);
-            match result {
-                Ok(c_str) => {
-                    celix_logHelper_log(
-                        self.celix_log_helper,
-                        level.into(),
-                        c_str.as_ptr() as *const i8,
-                    );
+        let str_result = std::ffi::CString::new(message).unwrap();
+        let guard = self.log_svc.read().unwrap();
+        if let Some(svc) = guard.as_ref() {
+            unsafe {
+                if svc.is_null() {
+                    return;
                 }
-                Err(e) => {
-                    println!("Error creating CString: {}", e);
+                let svc = &**svc;
+                if svc.log.is_none() {
+                    return;
                 }
+                let log_fn = svc.deref().log.as_ref().unwrap();
+                log_fn(svc.handle, level.into(), str_result.as_ptr());
             }
         }
     }
-    pub fn trace(&self, message: &str) {
+    pub fn log_trace(&self, message: &str) {
         self.log(LogLevel::Trace, message);
     }
 
-    pub fn debug(&self, message: &str) {
+    pub fn log_debug(&self, message: &str) {
         self.log(LogLevel::Debug, message);
     }
 
-    pub fn info(&self, message: &str) {
+    pub fn log_info(&self, message: &str) {
         self.log(LogLevel::Info, message);
     }
 
-    pub fn warning(&self, message: &str) {
+    pub fn log_warning(&self, message: &str) {
         self.log(LogLevel::Warning, message);
     }
 
-    pub fn error(&self, message: &str) {
+    pub fn log_error(&self, message: &str) {
         self.log(LogLevel::Error, message);
     }
 
-    pub fn fatal(&self, message: &str) {
+    pub fn log_fatal(&self, message: &str) {
         self.log(LogLevel::Fatal, message);
-    }
-}
-
-impl Drop for LogHelper {
-    fn drop(&mut self) {
-        unsafe {
-            celix_logHelper_destroy(self.celix_log_helper);
-        }
     }
 }

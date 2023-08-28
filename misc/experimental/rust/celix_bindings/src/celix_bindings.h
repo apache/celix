@@ -33,4 +33,3 @@
 
 #include "celix_shell_command.h"
 #include "celix_log_service.h"
-#include "celix_log_helper.h"
