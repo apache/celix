@@ -28,8 +28,3 @@ pub const COMMAND_DESCRIPTION: &str = "command.description";
 pub trait RustShellCommandTrait {
     fn execute_command(&self, command_line: &str) -> Result<(), Error>;
 }
-
-#[doc = "A struct to register a Rust Shell Command"]
-pub struct RustShellCommandStruct {
-    pub execute_command: Box<dyn Fn(&str) -> Result<(), Error>>
-}

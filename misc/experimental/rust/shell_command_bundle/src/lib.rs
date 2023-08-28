@@ -28,7 +28,7 @@ use std::sync::Arc;
 use celix::{BundleActivator, LogHelper};
 use celix::BundleContext;
 use celix::Error;
-use rust_shell_api::{RustShellCommandTrait, RustShellCommandStruct};
+use rust_shell_api::RustShellCommandTrait;
 
 use celix_bindings::celix_shell_command_t;
 use celix_bindings::FILE;
@@ -123,21 +123,6 @@ impl ShellCommandActivator {
         self.log_helper.log_info("Rust trait Shell Command registered");
 
 
-        //Register Rust struct service (with closures) as value
-        let cloned_ctx = self.ctx.clone();
-        let rust_shell_command = RustShellCommandStruct {
-            execute_command: Box::new(move |command_line: &str| {
-                cloned_ctx.log_info(format!("Execute command: {}", command_line).as_str());
-                Ok(())
-            }),
-        };
-        let registration = self.ctx.register_service()
-            .with_service(rust_shell_command)
-            .with_property("command.name", "exe_rust_command2")
-            .with_property("command.description", "Simple command written in a Rust struct using a Rust closure")
-            .build()?;
-        self.registrations.push(registration);
-        self.log_helper.log_info("Rust struct Shell Command registered");
         Ok(())
     }
 
@@ -168,16 +153,6 @@ impl ShellCommandActivator {
             .build()?;
         self.log_helper.log_info(format!("Found {} RustShellCommandTrait services", count).as_str());
 
-        self.log_helper.log_info("Use Rust struct service command service");
-        let count = self.ctx.use_services()
-            .with_callback(Box::new( |svc: &RustShellCommandStruct| {
-                let exe_cmd = svc.execute_command.as_ref();
-                let _ = exe_cmd("test rust struct");
-            }))
-            .build()?;
-        self.log_helper.log_info(format!("Found {} RustShellCommandStruct services", count).as_str());
-
-        self.log_helper.log_info("Rust Shell Command started");
         Ok(())
     }
 }

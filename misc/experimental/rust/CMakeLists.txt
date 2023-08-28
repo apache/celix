@@ -44,13 +44,9 @@ if (CELIX_RUST_EXPERIMENTAL AND TARGET Celix::shell_tui AND TARGET Celix::shell 
     corrosion_link_libraries(rust_shell_command_activator
             Celix::framework
     )
+
     get_target_property(ACTUAL_LIB_TARGET rust_shell_command_activator INTERFACE_LINK_LIBRARIES)
     add_celix_bundle(rust_shell_command ACTIVATOR ${ACTUAL_LIB_TARGET})
-    target_link_libraries(${ACTUAL_LIB_TARGET} INTERFACE
-            -Wl,--whole-archive
-            Celix::log_helper
-            -Wl,--no-whole-archive
-    )
     add_dependencies(rust_shell_command rust_shell_command_activator)
 
     add_celix_container(rust_container NO_COPY
@@ -62,9 +58,9 @@ if (CELIX_RUST_EXPERIMENTAL AND TARGET Celix::shell_tui AND TARGET Celix::shell 
 
     add_celix_container(rust_shell_cnt NO_COPY
         BUNDLES
-            Celix::log_admin
             Celix::shell
             Celix::shell_tui
+            Celix::log_admin
             rust_shell_command
     )
 
