@@ -5,6 +5,11 @@ on:
   pull_request:
   schedule:
     - cron:  '0 0 * * *'
+  workflow_dispatch:
+
+env:
+  CONAN_USER_HOME: "${{ github.workspace }}/release/"
+  CONAN_USER_HOME_SHORT: "${{ github.workspace }}/release/short"
 
 jobs:
 
@@ -30,6 +35,15 @@ jobs:
         run: |
           # build profile
           conan profile detect -f
+      - name: Using the builtin GitHub Cache Action for .conan
+        id: cache-conan
+        uses: actions/cache@v1
+        env:
+          cache-name: cache-conan2-modules
+        with:
+          path: ${{ env.CONAN_USER_HOME }}
+          key: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ matrix.compiler[0] }}-${{ matrix.type }}-${{ hashFiles('conanfile.py') }}
+          restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ matrix.compiler[0] }}-${{ matrix.type }}-
       - name: Create Celix
         env:
           CC: ${{ matrix.compiler[0] }}
@@ -51,6 +65,15 @@ jobs:
         run: |
           conan profile new default --detect
           conan profile update settings.build_type=Release default
+      - name: Using the builtin GitHub Cache Action for .conan
+        id: cache-conan
+        uses: actions/cache@v1
+        env:
+          cache-name: cache-conan2-modules
+        with:
+          path: ${{ env.CONAN_USER_HOME }}
+          key: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ matrix.compiler[0] }}-${{ matrix.type }}-${{ hashFiles('conanfile.py') }}
+          restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ matrix.compiler[0] }}-${{ matrix.type }}-
       - name: Create Celix
         env:
           CC: ${{ matrix.compiler[0] }}
