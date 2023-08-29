@@ -32,7 +32,8 @@ class CelixConan(ConanFile):
     homepage = "https://celix.apache.org"
     url = "https://github.com/apache/celix.git"
     topics = ("conan", "celix", "osgi", "embedded", "linux", "C/C++")
-    exports_sources = "CMakeLists.txt", "bundles*", "cmake*", "!cmake-build*", "examples*", "libs*", "misc*", "LICENSE"
+    exports_sources = ("CMakeLists.txt", "bundles*", "cmake*", "!cmake-build*", "examples*", "libs*", "misc*",
+                       "LICENSE", "!examples/conan_test_package*")
     generators = "CMakeDeps", "VirtualRunEnv"
     settings = "os", "arch", "compiler", "build_type"
     license = " Apache-2.0"
