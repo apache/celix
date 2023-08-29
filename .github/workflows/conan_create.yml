@@ -46,12 +46,18 @@ jobs:
           path: ${{ env.CONAN_HOME }}
           key: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ matrix.compiler[0] }}-${{ matrix.type }}-${{ hashFiles('conanfile.py') }}
           restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ matrix.compiler[0] }}-${{ matrix.type }}-
-      - name: Create Celix
+      - name: Create All
         env:
           CC: ${{ matrix.compiler[0] }}
           CXX: ${{ matrix.compiler[1] }}
         run: |
-          conan inspect .  | awk 'BEGIN { FS="[\t:]+"; output=0 } /build/ && !/build_all/ { if(output) print $1} /^options/ {output=1} /^options_definitions/ {output=0}' | while read option; do conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix/*:${option}=True  -pr:b default -pr:h default -s:h build_type=${{ matrix.type }} -tf examples/conan_test_package_v2 -o celix/*:celix_cxx17=True -o celix/*:celix_install_deprecated_api=True || exit 1; done
+          conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix/*:build_all=True  -pr:b default -pr:h default -s:h build_type=${{ matrix.type }} -tf examples/conan_test_package_v2 -o celix/*:celix_cxx17=True -o celix/*:celix_install_deprecated_api=True
+      - name: Create Component
+        env:
+          CC: ${{ matrix.compiler[0] }}
+          CXX: ${{ matrix.compiler[1] }}
+        run: |
+          conan inspect .  | awk 'BEGIN { FS="[\t:]+"; output=0 } /build/ && !/build_all/ { if(output) print $1} /^options/ {output=1} /^options_definitions/ {output=0}' | while read option; do conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix/*:${option}=True  -pr:b default -pr:h default -s:h build_type=${{ matrix.type }} -tf "" -o celix/*:celix_cxx17=True -o celix/*:celix_install_deprecated_api=True || exit 1; done
       - name: Remove Celix
         run: |
           conan remove -c celix/* 
@@ -79,9 +85,12 @@ jobs:
           path: ${{ env.CONAN_USER_HOME }}
           key: ${{ runner.os }}-builder-${{ env.cache-name }}-${{ hashFiles('conanfile.py') }}
           restore-keys: ${{ runner.os }}-builder-${{ env.cache-name }}-
-      - name: Create Celix
+      - name: Create All
         run: |
-          conan inspect . -a options | awk 'BEGIN { FS="[\t:]+" } /build/ && !/build_all/ { print $1}' | while read option; do conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix:${option}=True  -pr:b default -pr:h default -tf examples/conan_test_package -tbf test-build -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s --require-override=zlib/1.2.13 || exit 1; done
+          conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix:build_all=True  -pr:b default -pr:h default -tf examples/conan_test_package -tbf test-build -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s --require-override=zlib/1.2.13
+      - name: Create Component
+        run: |
+          conan inspect . -a options | awk 'BEGIN { FS="[\t:]+" } /build/ && !/build_all/ { print $1}' | while read option; do conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix:${option}=True  -pr:b default -pr:h default -tbf test-build -o celix:celix_cxx17=True -o celix:celix_install_deprecated_api=True --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s --require-override=zlib/1.2.13 || exit 1; done
       - name: Remove Celix
         run: |
           conan remove -f 'celix/*'
