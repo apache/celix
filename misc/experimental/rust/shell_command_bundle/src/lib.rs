@@ -28,7 +28,7 @@ use std::sync::Arc;
 use celix::{BundleActivator, LogHelper};
 use celix::BundleContext;
 use celix::Error;
-use rust_shell_api::RustShellCommandTrait;
+use rust_shell_api::RustShellCommand;
 
 use celix_bindings::celix_shell_command_t;
 use celix_bindings::FILE;
@@ -81,7 +81,7 @@ impl RustShellCommandImpl {
     }
 }
 
-impl RustShellCommandTrait for RustShellCommandImpl {
+impl RustShellCommand for RustShellCommandImpl {
     fn execute_command(&self, command_line: &str) -> Result<(), Error> {
         self.ctx
             .log_info(format!("Execute command: {}.", command_line).as_str());
@@ -112,8 +112,8 @@ impl ShellCommandActivator {
         self.registrations.push(registration);
         self.log_helper.log_info("C Shell Command registered");
 
-        //Register Rust trait service register using a Box
-        let rust_shell_command: Arc<dyn RustShellCommandTrait> = Arc::new(RustShellCommandImpl::new(self.ctx.clone()));
+        //Register Rust trait service register using a Arc
+        let rust_shell_command: Arc<dyn RustShellCommand> = Arc::new(RustShellCommandImpl::new(self.ctx.clone()));
         let registration = self.ctx.register_service()
             .with_service(rust_shell_command)
             .with_property(rust_shell_api::COMMAND_NAME, "exe_rust_command")
@@ -147,7 +147,7 @@ impl ShellCommandActivator {
         //test using Rust trait service
         self.log_helper.log_info("Use Rust trait service command service");
         let count = self.ctx.use_services()
-            .with_callback(Box::new( |svc: &Arc<dyn RustShellCommandTrait>| {
+            .with_callback(Box::new( |svc: &Arc<dyn RustShellCommand>| {
                 let _ = svc.execute_command("test rest trait");
             }))
             .build()?;

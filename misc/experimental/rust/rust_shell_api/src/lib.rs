@@ -25,6 +25,6 @@ pub const COMMAND_USAGE: &str = "command.usage";
 pub const COMMAND_DESCRIPTION: &str = "command.description";
 
 #[doc = "A trait to implement a Celix Shell Command"]
-pub trait RustShellCommandTrait {
+pub trait RustShellCommand {
     fn execute_command(&self, command_line: &str) -> Result<(), Error>;
 }
