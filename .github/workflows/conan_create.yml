@@ -91,7 +91,7 @@ jobs:
         run: |
           conan profile new default --detect
           conan profile update settings.build_type=Release default
-      - name: Using the builtin GitHub Cache Action for .conan
+      - name: Conan Cache
         id: cache-conan
         uses: actions/cache@v1
         env:
