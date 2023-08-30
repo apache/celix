@@ -58,10 +58,10 @@ jobs:
           restore-keys: ${{ runner.os }}-test-builder-${{ env.cache-name }}-${{ matrix.compiler[0] }}-${{ matrix.type }}-
       - name: Prepare ccache timestamp
         id: ccache_cache_timestamp
-        shell: cmake -P {0} >> $GITHUB_OUTPUT
+        shell: cmake -P {0}
         run: |
           string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-          message("timestamp=${current_date}")
+          message("::set-output name=timestamp::${current_date}")
       - name: ccache Cache
         uses: actions/cache@v1
         with:
@@ -129,10 +129,10 @@ jobs:
           ccache
     - name: Prepare ccache timestamp
       id: ccache_cache_timestamp
-      shell: cmake -P {0} >> $GITHUB_OUTPUT
+      shell: cmake -P {0}
       run: |
         string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-        message("timestamp=${current_date}")
+        message("::set-output name=timestamp::${current_date}")
     - name: ccache Cache
       uses: actions/cache@v1
       with:
