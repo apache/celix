@@ -104,6 +104,7 @@ class CelixConan(ConanFile):
         "enable_cmake_warning_tests": False,
         "enable_testing_on_ci": False,
         "framework_curlinit": True,
+        "enable_ccache": False,
     }
     options = {
         "celix_err_buffer_size": ["ANY"],
@@ -155,6 +156,8 @@ class CelixConan(ConanFile):
         if self.options.enable_testing:
             self.test_requires("gtest/1.10.0")
             self.test_requires("cpputest/4.0")
+        if self.options.enable_ccache:
+            self.build_requires("ccache/4.8.2")
 
     def configure(self):
         # copy options to options, fill in defaults if not set
