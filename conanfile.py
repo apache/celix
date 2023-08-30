@@ -151,13 +151,14 @@ class CelixConan(ConanFile):
         del self.info.options.enable_testing_for_cxx14
         del self.info.options.enable_cmake_warning_tests
         del self.info.options.enable_testing_on_ci
+        del self.options.enable_ccache
 
     def build_requirements(self):
         if self.options.enable_testing:
             self.test_requires("gtest/1.10.0")
             self.test_requires("cpputest/4.0")
         if self.options.enable_ccache:
-            self.build_requires("ccache/4.8.2")
+            self.build_requires("ccache/4.6")
 
     def configure(self):
         # copy options to options, fill in defaults if not set
