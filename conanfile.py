@@ -32,7 +32,8 @@ class CelixConan(ConanFile):
     homepage = "https://celix.apache.org"
     url = "https://github.com/apache/celix.git"
     topics = ("conan", "celix", "osgi", "embedded", "linux", "C/C++")
-    exports_sources = "CMakeLists.txt", "bundles*", "cmake*", "!cmake-build*", "examples*", "libs*", "misc*", "LICENSE"
+    exports_sources = ("CMakeLists.txt", "bundles*", "cmake*", "!cmake-build*", "examples*", "libs*", "misc*",
+                       "LICENSE", "!examples/conan_test_package*")
     generators = "CMakeDeps", "VirtualRunEnv"
     settings = "os", "arch", "compiler", "build_type"
     license = " Apache-2.0"
@@ -103,6 +104,7 @@ class CelixConan(ConanFile):
         "enable_cmake_warning_tests": False,
         "enable_testing_on_ci": False,
         "framework_curlinit": True,
+        "enable_ccache": False,
     }
     options = {
         "celix_err_buffer_size": ["ANY"],
@@ -149,11 +151,14 @@ class CelixConan(ConanFile):
         del self.info.options.enable_testing_for_cxx14
         del self.info.options.enable_cmake_warning_tests
         del self.info.options.enable_testing_on_ci
+        del self.info.options.enable_ccache
 
     def build_requirements(self):
         if self.options.enable_testing:
             self.test_requires("gtest/1.10.0")
             self.test_requires("cpputest/4.0")
+        if self.options.enable_ccache:
+            self.build_requires("ccache/4.6")
 
     def configure(self):
         # copy options to options, fill in defaults if not set

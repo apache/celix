@@ -6,6 +6,13 @@ on:
   schedule:
     - cron:  '0 0 * * *'
 
+env:
+  CONAN_USER_HOME: "${{ github.workspace }}/release/"
+  CONAN_USER_HOME_SHORT: "${{ github.workspace }}/release/short"
+  CONAN_HOME: "${{ github.workspace }}/release/"
+  CCACHE_DIR: "${{ github.workspace }}/.ccache"
+  CCACHE_SLOPPINESS: include_file_ctime,include_file_mtime
+
 jobs:
 
   linux-build-conan:
@@ -40,6 +47,26 @@ jobs:
           #Note no backwards compatibility for gcc5 needed, setting libcxx to c++11.
           conan profile update settings.compiler.libcxx=libstdc++11 default
           conan profile show default
+      - name: Conan Cache
+        id: cache-conan
+        uses: actions/cache@v1
+        env:
+          cache-name: cache-conan2-modules
+        with:
+          path: ${{ env.CONAN_HOME }}
+          key: ${{ runner.os }}-test-builder-${{ env.cache-name }}-${{ matrix.compiler[0] }}-${{ matrix.type }}-${{ hashFiles('conanfile.py') }}
+          restore-keys: ${{ runner.os }}-test-builder-${{ env.cache-name }}-${{ matrix.compiler[0] }}-${{ matrix.type }}-
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: |
+          echo timestamp=`date +"%Y-%m-%d-%H;%M;%S"` >> $GITHUB_OUTPUT
+      - name: ccache Cache
+        uses: actions/cache@v1
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ runner.os }}-test-ccache-${{ matrix.compiler[0] }}-${{ matrix.type }}-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
+          restore-keys: |
+            ${{ runner.os }}-test-ccache-${{ matrix.compiler[0] }}-${{ matrix.type }}-
       - name: Configure and install dependencies
         env:
           CC: ${{ matrix.compiler[0] }}
@@ -53,6 +80,7 @@ jobs:
             -o celix:enable_cmake_warning_tests=True
             -o celix:enable_testing_on_ci=True
             -o celix:framework_curlinit=False
+            -o celix:enable_ccache=True
         run: |
           #force require libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
           conan install . celix/ci -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing  -b cpputest --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s
@@ -95,7 +123,19 @@ jobs:
           rapidjson-dev \
           libavahi-compat-libdnssd-dev \
           libcivetweb-dev \
-          civetweb
+          civetweb \
+          ccache
+    - name: Prepare ccache timestamp
+      id: ccache_cache_timestamp
+      run: |
+        echo timestamp=`date +"%Y-%m-%d-%H;%M;%S"` >> $GITHUB_OUTPUT
+    - name: ccache Cache
+      uses: actions/cache@v1
+      with:
+        path: ${{ env.CCACHE_DIR }}
+        key: ${{ runner.os }}-apt-test-ccache-gcc-Debug-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
+        restore-keys: |
+          ${{ runner.os }}-apt-test-ccache-gcc-Debug-
     - name: Build
       env:
         BUILD_OPTIONS: |
@@ -109,6 +149,7 @@ jobs:
           -DSHELL_BONJOUR=ON
           -DENABLE_TESTING_ON_CI=ON
           -DCMAKE_BUILD_TYPE=Debug
+          -DENABLE_CCACHE=ON
       run: |
         mkdir build install
         cd build
