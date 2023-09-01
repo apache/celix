@@ -31,7 +31,7 @@ jobs:
           conan profile update settings.build_type=Release default
       - name: Conan Cache
         id: cache-conan
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         env:
           cache-name: cache-conan-modules
         with:
@@ -43,7 +43,7 @@ jobs:
         run: |
           echo timestamp=`date +"%Y-%m-%d-%H;%M;%S"` >> $GITHUB_OUTPUT
       - name: ccache Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-test-ccache-Release-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
@@ -89,7 +89,7 @@ jobs:
         run: |
           echo timestamp=`date +"%Y-%m-%d-%H;%M;%S"` >> $GITHUB_OUTPUT
       - name: ccache Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-brew-test-ccache-Release-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
