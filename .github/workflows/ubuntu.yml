@@ -49,7 +49,7 @@ jobs:
           conan profile show default
       - name: Conan Cache
         id: cache-conan
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         env:
           cache-name: cache-conan2-modules
         with:
@@ -61,7 +61,7 @@ jobs:
         run: |
           echo timestamp=`date +"%Y-%m-%d-%H;%M;%S"` >> $GITHUB_OUTPUT
       - name: ccache Cache
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-test-ccache-${{ matrix.compiler[0] }}-${{ matrix.type }}-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
@@ -130,7 +130,7 @@ jobs:
       run: |
         echo timestamp=`date +"%Y-%m-%d-%H;%M;%S"` >> $GITHUB_OUTPUT
     - name: ccache Cache
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: ${{ env.CCACHE_DIR }}
         key: ${{ runner.os }}-apt-test-ccache-gcc-Debug-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
