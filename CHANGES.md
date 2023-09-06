@@ -31,6 +31,9 @@ limitations under the License.
 - Celix error library for printing errors when no framework is available.
 - Scope-based Resource Management (RAII-light for C).
 - Rust Proof of Concept (PoC) for Apache Celix.
+- Support for uncompressed bundle deployment, which enables multiple frameworks to share the bundle resources by
+  using unzipped bundle dirs instead of a zip files as BUNDLES arguments in `add_celix_container`.
+
 
 ## Improvements
 
