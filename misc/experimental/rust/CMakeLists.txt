@@ -17,10 +17,6 @@
 
 option(CELIX_RUST_EXPERIMENTAL "Enable experimental rust bundle" OFF)
 if (CELIX_RUST_EXPERIMENTAL AND TARGET Celix::shell_tui AND TARGET Celix::shell AND TARGET Celix::log_admin)
-    #Note because of FetchContent_Declare needs CMake 3.19 or higher,
-    #so the Apache Celix Rust PoC needs CMake 3.19 or higher
-    cmake_minimum_required(VERSION 3.19)
-
     include(FetchContent)
     FetchContent_Declare(
             Corrosion
