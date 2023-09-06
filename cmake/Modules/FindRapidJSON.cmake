@@ -28,8 +28,11 @@ find_package_handle_standard_args(RapidJSON DEFAULT_MSG
 
 mark_as_advanced(RapidJSON_INCLUDE_DIR)
 
-if(RapidJSON_FOUND AND NOT TARGET RapidJSON::RapidJSON)
-    add_library(RapidJSON::RapidJSON INTERFACE IMPORTED)
-    set_target_properties(RapidJSON::RapidJSON PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
+if(RapidJSON_FOUND AND NOT TARGET rapidjson)
+    add_library(rapidjson INTERFACE IMPORTED)
+    set_target_properties(rapidjson PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
             "${RapidJSON_INCLUDE_DIRS}")
+    if (NOT TARGET RapidJSON::RapidJSON)
+        add_library(RapidJSON::RapidJSON ALIAS rapidjson)
+    endif ()
 endif()

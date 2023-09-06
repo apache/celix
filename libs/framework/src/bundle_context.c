@@ -1603,3 +1603,7 @@ void celix_bundleContext_log(const celix_bundle_context_t *ctx, celix_log_level_
 void celix_bundleContext_vlog(const celix_bundle_context_t *ctx, celix_log_level_e level, const char *format, va_list formatArgs) {
     celix_framework_vlog(ctx->framework->logger, level, NULL, NULL, 0, format, formatArgs);
 }
+
+void celix_bundleContext_logTssErrors(const celix_bundle_context_t *ctx, celix_log_level_e level) {
+    celix_framework_logTssErrors(ctx->framework->logger, level);
+}

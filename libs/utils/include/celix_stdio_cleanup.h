@@ -12,29 +12,25 @@
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *  KIND, either express or implied.  See the License for the
+ * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- */
-/**
- * attribute.h
  *
- *  \date       Jul 27, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef ATTRIBUTE_H_
-#define ATTRIBUTE_H_
+#ifndef CELIX_CELIX_STDIO_CLEANUP_H
+#define CELIX_CELIX_STDIO_CLEANUP_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include "celix_errno.h"
+#include <stdio.h>
 
-typedef struct attribute *attribute_pt;
+#include "celix_cleanup.h"
 
-celix_status_t attribute_create(char * key, char * value, attribute_pt *attribute);
-celix_status_t attribute_destroy(attribute_pt attribute);
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(FILE, fclose)
 
-celix_status_t attribute_getKey(attribute_pt attribute, char **key);
-celix_status_t attribute_getValue(attribute_pt attribute, char **value);
-
-#endif /* ATTRIBUTE_H_ */
+#ifdef __cplusplus
+}
+#endif
+#endif // CELIX_CELIX_STDIO_CLEANUP_H

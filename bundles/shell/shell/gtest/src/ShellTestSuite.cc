@@ -17,6 +17,7 @@
  * under the License.
  */
 
+#include <future>
 #include <gtest/gtest.h>
 #include <thread>
 
@@ -63,20 +64,24 @@ TEST_F(ShellTestSuite, shellBundleInstalledTest) {
 }
 
 static void callCommand(std::shared_ptr<celix_bundle_context_t>& ctx, const char *cmdLine, bool cmdShouldSucceed) {
-    celix_service_use_options_t opts{};
-
     struct callback_data {
         const char *cmdLine{};
         bool cmdShouldSucceed{};
+        std::promise<void> barrier{};
+        celix_bundle_context_t* context{};
+        long tracker{-1};
     };
+    // Note that using celix_bundleContext_useServiceWithOptions to call command quit/stop may result in deadlock.
+    // For more on this, see https://github.com/apache/celix/issues/629
     struct callback_data data{};
     data.cmdLine = cmdLine;
     data.cmdShouldSucceed = cmdShouldSucceed;
-
-    opts.filter.serviceName = CELIX_SHELL_SERVICE_NAME;
-    opts.callbackHandle = static_cast<void*>(&data);
-    opts.waitTimeoutInSeconds = 1.0;
-    opts.use = [](void *handle, void *svc) {
+    data.context = ctx.get();
+    data.tracker = celix_bundleContext_trackService(ctx.get(), CELIX_SHELL_SERVICE_NAME,
+                                                    static_cast<void*>(&data), [](void * handle, void * svc) {
+        if (svc == nullptr) {
+            return;
+        }
         auto *shell = static_cast<celix_shell_t *>(svc);
         auto *d = static_cast<struct callback_data*>(handle);
         EXPECT_TRUE(shell != nullptr);
@@ -86,9 +91,10 @@ static void callCommand(std::shared_ptr<celix_bundle_context_t>& ctx, const char
         } else {
             EXPECT_NE(CELIX_SUCCESS, status) << "Command '" << d->cmdLine << "' should not succeed";
         }
-    };
-    bool called = celix_bundleContext_useServiceWithOptions(ctx.get(), &opts);
-    EXPECT_TRUE(called);
+        celix_bundleContext_stopTracker(d->context, d->tracker);
+        d->barrier.set_value();
+    });
+    data.barrier.get_future().wait();
 }
 
 TEST_F(ShellTestSuite, testAllCommandsAreCallable) {

@@ -163,17 +163,10 @@ void celix_logHelper_vlogDetails(celix_log_helper_t* logHelper, celix_log_level_
 }
 
 void celix_logHelper_logTssErrors(celix_log_helper_t* logHelper, celix_log_level_e level) {
-    if (celix_err_getErrorCount() == 0) {
+    char buf[CELIX_ERR_BUFFER_SIZE] = {0};
+    if (celix_err_dump(buf, sizeof(buf), "[TssErr] ", NULL) == 0) {
+        // nothing to output
         return;
-    }
-    char buf[512] = {0};
-    int ret;
-    int bytes = 0;
-    for (const char *errMsg = celix_err_popLastError(); errMsg != NULL && bytes < sizeof(buf); errMsg = celix_err_popLastError()) {
-        ret = snprintf(buf + bytes, sizeof(buf) - bytes, "[TssErr] %s\n", errMsg);
-        if (ret > 0) {
-            bytes += ret;
-        }
     }
     celix_err_resetErrors();
     celix_logHelper_logDetails(logHelper, level, NULL, NULL, 0, "Detected tss errors:\n%s", buf);

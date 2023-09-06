@@ -57,7 +57,7 @@ int jsonSerializer_deserialize(dyn_type *type, const char *input, size_t length,
         json_decref(root);
     } else {
         status = ERROR;
-        LOG_ERROR("Error parsing json input '%s'. Error is: %s\n", input, error.text);
+        LOG_ERROR("Error parsing json input '%.*s'. Error is: %s\n", (int)length, input, error.text);
     }
 
     if (status != OK) {

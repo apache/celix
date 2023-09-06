@@ -17,10 +17,11 @@
  *under the License.
  */
 
+#include "std_commands.h"
 #include "celix_bundle_context.h"
 #include "celix_compiler.h"
 
-bool quitCommand_execute(void *_ptr, char *command_line_str CELIX_UNUSED, FILE *sout, FILE *serr CELIX_UNUSED) {
+bool quitCommand_execute(void *_ptr, const char *command_line_str CELIX_UNUSED, FILE *sout, FILE *serr CELIX_UNUSED) {
     bundle_context_t* ctx = _ptr;
     fprintf(sout, "Quitting framework\n");
     return celix_bundleContext_stopBundle(ctx, 0L);
