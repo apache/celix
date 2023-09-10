@@ -40,7 +40,7 @@ limitations under the License.
 - Support for Conan 2.
 - Support for uclibc (not tested in CI yet).
 - Support for C++14 in addition to C++17.
-- Deprecated `snprintf` usage; transitioned to `snprintf` or `aprintf`.
+- Deprecated `sprintf` usage; transitioned to `snprintf` or `aprintf`.
 - Refactored the bundle cache to support retention of unchanged bundles on disk.
 - Automatic scan for project build options using CMake.
 - Use of upstream `civetweb` dependency instead of embedded sources.
@@ -99,7 +99,7 @@ limitations under the License.
 
 ## Fixes
 
-- Fixes etcdlib CMake setup to that etcdlib can be build as a separate project
+- Fixes etcdlib CMake setup to that etcdlib can be built as a separate project
 
 # Noteworthy changes for 2.2.0 (2020-01-06)
 
