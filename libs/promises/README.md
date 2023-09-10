@@ -85,7 +85,7 @@ target_link_libraries(PromiseExamples PRIVATE Celix::Promises)
 
 ## Open Issues & TODOs
 
-- Documentation not complete
-- PromiseFactory is not complete yet
-- The static helper class Promises is not implemented yet (e.g. all/any)
-- Promise::flatMap not implemented yet
+- Documentation not complete.
+- PromiseFactory is not complete.
+- The static helper class Promises is not implemented (e.g. all/any).
+- Promise::flatMap not implemented.

@@ -14,10 +14,3 @@ NOTE: this implementation is still experiment and the api and behaviour will pro
 [OSGi Compendium Release 7 Push Stream Specification (HTML)](https://osgi.org/specification/osgi.cmpn/7.0.0/util.pushstream.html)
 
 [OSGi Compendium Release 7 Specification (PDF)](https://docs.osgi.org/download/r7/osgi.cmpn-7.0.0.pdf)
-
-## Usage
-
-## Differences with OSGi PushStreams & Java
-
-
-## Open Issues & TODOs
