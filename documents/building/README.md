@@ -40,15 +40,58 @@ git clone --single-branch --branch master https://github.com/apache/celix.git
 ```
 
 ## Building and installing
-Apache Celix uses [CMake](https://cmake.org) as build system. CMake can generate (among others) makefiles.
+Apache Celix can be build using [Conan](https://conan.io) as package manager/build system or by directly using
+[CMake](https://cmake.org).
 
-### Building and installing with preinstalled libraries
+### Building Apache Celix using Conan
 The following packages (libraries + headers) should be installed on your system:
 
 * Development Environment
     * build-essentials (gcc/g++ or clang/clang++) 
     * java or zip (for packaging bundles)
     * make (3.14 or higher)
+    * git
+    * cmake (3.18 or higher)
+    * Conan (2 or higher)
+
+For Ubuntu 20.04, use the following commands:
+```bash
+sudo apt-get install -yq --no-install-recommends \
+    build-essential \
+    git \
+    default-jdk \
+    python3 \
+    python3-pip 
+        
+#The cmake version for Ubuntu 20 is older than 3.14,
+#use snap to install the latest cmake version
+snap install cmake
+
+#Install conan
+pip3 install -U conan   
+```
+
+Configure conan default profile using automatic detection of the system
+```bash
+conan profile detect
+```
+
+Create Apache Celix package - and build the dependencies - in the Conan cache:
+```bash
+cd <celix_source_dir>
+conan create . --output-folder build --build missing -o build_all=True  
+```
+
+Note installing Apache Celix is not required when using Conan, because Conan will install the Apache Celix package
+in the local Conan cache.
+
+### Building Apache Celix directly using CMake
+The following packages (libraries + headers) should be installed on your system:
+
+* Development Environment
+    * build-essentials (gcc/g++ or clang/clang++) 
+    * java or zip (for packaging bundles)
+    * make (3.18 or higher)
     * git
 * Apache Celix Dependencies
     * libzip
