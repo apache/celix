@@ -61,7 +61,8 @@ sudo apt-get install -yq --no-install-recommends \
     git \
     default-jdk \
     python3 \
-    python3-pip 
+    python3-pip \
+    ninja-build
         
 #The cmake version for Ubuntu 20 is older than 3.14,
 #use snap to install the latest cmake version
@@ -79,7 +80,9 @@ conan profile detect
 Create Apache Celix package - and build the dependencies - in the Conan cache:
 ```bash
 cd <celix_source_dir>
-conan create . --output-folder build --build missing -o build_all=True  
+conan create . --build missing -o build_all=True   
+#Optionally build with CMake->Ninja, instead of CMake->Make. Note this includes building dependencies with Ninja. 
+conan create . --build missing -o build_all=True  -c tools.cmake.cmaketoolchain:generator=Ninja 
 ```
 
 Note installing Apache Celix is not required when using Conan, because Conan will install the Apache Celix package
