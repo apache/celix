@@ -10,7 +10,6 @@ env:
   CONAN_USER_HOME: "${{ github.workspace }}/release/"
   CONAN_USER_HOME_SHORT: "${{ github.workspace }}/release/short"
   CONAN_HOME: "${{ github.workspace }}/release/"
-  CCACHE_NOHASHDIR: true
   CCACHE_DIR: "${{ github.workspace }}/.ccache"
   CCACHE_SLOPPINESS: include_file_ctime,include_file_mtime
 
