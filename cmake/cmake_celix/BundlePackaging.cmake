@@ -1015,17 +1015,16 @@ function(install_celix_bundle)
     endif ()
 
     get_target_property(BUNDLE_CONTENT_DIR ${BUNDLE} "BUNDLE_CONTENT_DIR")
-    set(BUNDLE_INSTALL_DIR "${BUNDLE_CONTENT_DIR}_install")
-    # copy bundle content to prepare the bundle to be installed
-    install(CODE "file(COPY ${BUNDLE_CONTENT_DIR}/ DESTINATION ${BUNDLE_INSTALL_DIR})")
 
     # fix RPATH of shared objects in the bundle to be installed using CMake's internal RPATH rewrite
     get_target_property(LIB_TARGETS ${BUNDLE} "BUNDLE_LIB_TARGETS")
     get_target_property(BUNDLE_GEN_DIR ${BUNDLE} "BUNDLE_GEN_DIR")
     foreach (LIB_TARGET ${LIB_TARGETS})
         install(TARGETS ${LIB_TARGET} LIBRARY DESTINATION ${BUNDLE_GEN_DIR} NAMELINK_SKIP COMPONENT ${BUNDLE})
+        # remove the shared objects with BUILD_RPATH
+        install(CODE "file(REMOVE ${BUNDLE_CONTENT_DIR}/$<TARGET_SONAME_FILE_NAME:${LIB_TARGET}>)" COMPONENT ${BUNDLE})
         # JAR does not support symbolic links, so we only install soname file
-        install(FILES ${BUNDLE_GEN_DIR}/$<TARGET_FILE_NAME:${LIB_TARGET}> DESTINATION ${BUNDLE_INSTALL_DIR}
+        install(FILES ${BUNDLE_GEN_DIR}/$<TARGET_FILE_NAME:${LIB_TARGET}> DESTINATION ${BUNDLE_CONTENT_DIR}
                 RENAME $<TARGET_SONAME_FILE_NAME:${LIB_TARGET}> COMPONENT ${BUNDLE})
     endforeach ()
 
@@ -1037,17 +1036,19 @@ function(install_celix_bundle)
     if (JAR_COMMAND)
         install(CODE
                 "execute_process(
-                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} ${BUNDLE_GEN_DIR}/MANIFEST.MF -C ${BUNDLE_INSTALL_DIR} .
+                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} ${BUNDLE_GEN_DIR}/MANIFEST.MF -C ${BUNDLE_CONTENT_DIR} .
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             )"
+                COMPONENT ${BUNDLE}
         )
     elseif (ZIP_COMMAND)
         install(CODE
                 "execute_process(
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.MF META-INF/MANIFEST.MF
-                COMMAND ${ZIP_COMMAND} ${CELIX_ZIP_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} *
-                WORKING_DIRECTORY ${BUNDLE_INSTALL_DIR}
+                COMMAND ${ZIP_COMMAND} ${CELIX_ZIP_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} . -i *
+                WORKING_DIRECTORY ${BUNDLE_CONTENT_DIR}
             )"
+                COMPONENT ${BUNDLE}
         )
     else ()
         message(FATAL_ERROR "A jar or zip command is needed to jar/zip bundles")
