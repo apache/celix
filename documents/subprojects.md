@@ -36,8 +36,14 @@ Apache Celix also provides several standalone libraries which can be used withou
 * [ETCD library](../libs/etcdlib/README.md) - A C library that interfaces with ETCD.
 * [Promises library](../libs/promises/README.md) - A C++17 header only adaption and implementation of the OSGi Promise specification.
 * [Push Streams Library](../libs/pushstreams/README.md) - A C++17 header adaption and only implementation of the OSGi Push Stream specification.
-* [Error Injector Library](../libs/error_injector/README.md) - A C library which can be used to inject errors in a running process, for testing purposes.
 * [Dynamic Function Interfacy Library](../libs/dfi/README.md) - A C library, build on top of libffi, to dynamical create C function proxies based on descriptor files.
+
+When using Conan as build system, these libraries can be build standalone using the following commands:
+
+* ETCD library: `conan create . -b missing -o build_celix_etcdlib=True`
+* Promises library: `conan create . -b missing -o build_promises=True`
+* Push Streams Library: `conan create . -b missing -o build_pushstreams=True`
+* Dynamic Function Interfacy Library: `conan create . -b missing -o build_celix_dfi=True`
 
 ## Bundles or Groups of Bundles
 Modularization is an important aspect of OSGi. Apache Celix provides several bundles or groups of bundles which extend
