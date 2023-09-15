@@ -1299,7 +1299,6 @@ int pubsub_tcpHandler_acceptHandler(pubsub_tcpHandler_t *handle, psa_tcp_connect
 #endif
         if (rc < 0) {
             pubsub_tcpHandler_freeEntry(entry);
-            free(entry);
             L_ERROR("[TCP Socket] Cannot create epoll\n");
         } else {
             // Call Accept Connection callback

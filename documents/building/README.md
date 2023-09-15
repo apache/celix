@@ -24,11 +24,14 @@ Apache Celix aims to be support a broad range of UNIX platforms.
  
 Currently, the [continuous integration build server] builds and tests Apache Celix for:
 
-* Ubuntu Bionic Beaver (20.04)
-    * GCC 
-    * CLang 
+* Ubuntu Focal Fossa (20.04)
+  * GCC
+  * CLang
+* Ubuntu Jammy Jellyfish (22.04)
+  * GCC 
+  * CLang 
 * OSX
-    * CLang
+  * CLang
 
 
 ### Download the Apache Celix sources
@@ -40,15 +43,73 @@ git clone --single-branch --branch master https://github.com/apache/celix.git
 ```
 
 ## Building and installing
-Apache Celix uses [CMake](https://cmake.org) as build system. CMake can generate (among others) makefiles.
+Apache Celix can be build using [Conan](https://conan.io) as package manager/build system or by directly using
+[CMake](https://cmake.org).
 
-### Building and installing with preinstalled libraries
+### Building Apache Celix using Conan
 The following packages (libraries + headers) should be installed on your system:
 
 * Development Environment
     * build-essentials (gcc/g++ or clang/clang++) 
     * java or zip (for packaging bundles)
     * make (3.14 or higher)
+    * git
+    * cmake (3.19 or higher)
+    * Conan (2 or higher)
+
+For Ubuntu 22.04, use the following commands:
+```bash
+sudo apt-get install -yq --no-install-recommends \
+    build-essential \
+    git \
+    default-jdk \
+    python3 \
+    python3-pip \
+    ninja-build
+        
+#The cmake version for Ubuntu 20 is older than 3.14,
+#use snap to install the latest cmake version
+snap install cmake
+
+#Install conan
+pip3 install -U conan   
+```
+
+Configure conan default profile using automatic detection of the system
+```bash
+conan profile detect
+```
+
+Create Apache Celix package - and build the dependencies - in the Conan cache:
+```bash
+cd <celix_source_dir>
+conan create . --build missing -o build_all=True   
+#Optionally build with CMake->Ninja, instead of CMake->Make. Note this includes building dependencies with Ninja. 
+conan create . --build missing -o build_all=True  -c tools.cmake.cmaketoolchain:generator=Ninja 
+```
+
+Note installing Apache Celix is not required when using Conan, because Conan will install the Apache Celix package
+in the local Conan cache.
+
+It is also possible to only build a selection of the Apache Celix bundles and/or libs. This can be done by providing
+build options for the required parts instead of the `build_all=True` option. For example to only build the Apache Celix
+framework library and the Apache Celix utils library use the following command:
+```bash
+conan create . --build missing -o build_framework=True -o build_utils=True
+```
+
+To see a complete overview of the available build options use the following command:
+```bash
+conan inspect . | grep build_
+```
+
+### Building Apache Celix directly using CMake
+The following packages (libraries + headers) should be installed on your system:
+
+* Development Environment
+    * build-essentials (gcc/g++ or clang/clang++) 
+    * java or zip (for packaging bundles)
+    * make (3.19 or higher)
     * git
 * Apache Celix Dependencies
     * libzip
@@ -62,7 +123,7 @@ The following packages (libraries + headers) should be installed on your system:
     * libczmq (for PubSubAdmin ZMQ)
 	
 
-For Ubuntu 20.04, use the following commands:
+For Ubuntu 22.04, use the following commands:
 ```bash
 #### get dependencies
 sudo apt-get install -yq --no-install-recommends \
