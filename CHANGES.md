@@ -19,6 +19,42 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
+# Noteworthy Changes for 2.4.0 (TBD)
+
+## New Features
+
+- V2 Shared memory for remote service admin.
+- Zeroconf discovery of remote services.
+- Symbol visibility support: Bundle symbols are now hidden by default, except for the bundle activator.
+- Error injection library (for testing).
+- Coding convention documentation.
+- Celix error library for printing errors when no framework is available.
+- Scope-based Resource Management (RAII-light for C).
+- Rust Proof of Concept (PoC) for Apache Celix.
+- Support for uncompressed bundle deployment, which enables multiple frameworks to share the bundle resources by
+  using unzipped bundle dirs instead of a zip files as BUNDLES arguments in `add_celix_container`.
+
+
+## Improvements
+
+- Support for Conan 2.
+- Support for uclibc (not tested in CI yet).
+- Support for C++14 in addition to C++17.
+- Deprecated `sprintf` usage; transitioned to `snprintf` or `aprintf`.
+- Refactored the bundle cache to support retention of unchanged bundles on disk.
+- Automatic scan for project build options using CMake.
+- Use of upstream `civetweb` dependency instead of embedded sources.
+- Applied attribute format for printf-like functions.
+- Removed the busy loop mechanism from the pubsub admin websocket.
+- Improved cleanup procedures during bundle uninstallation to conform to the OSGi specification.
+- Improved `INSTALL_RPATH` to use `$ORIGIN` during installation.
+- Corrected bundle update behavior when updating bundles from different sources.
+- Enhanced `libcurl` initialization procedures and made `libcurl` optional.
+
+## Fixes
+
+- Numerous minor fixes, especially concerning multi-threading issues and error handling.
+
 # Noteworthy changes for 2.3.0 (2022-07-10)
 
 ## New Features
@@ -63,7 +99,7 @@ limitations under the License.
 
 ## Fixes
 
-- Fixes etcdlib CMake setup to that etcdlib can be build as a separate project
+- Fixes etcdlib CMake setup to that etcdlib can be built as a separate project
 
 # Noteworthy changes for 2.2.0 (2020-01-06)
 
