@@ -17,8 +17,6 @@
  * under the License.
  */
 
-extern crate bindgen;
-
 use std::env;
 use std::error::Error;
 use std::fs::File;

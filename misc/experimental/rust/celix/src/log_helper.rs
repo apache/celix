@@ -17,7 +17,6 @@
  * under the License.
  */
 
-use std::ops::Deref;
 use std::sync::{Arc, Mutex, RwLock};
 
 use super::BundleContext;
@@ -83,7 +82,7 @@ impl LogHelper {
                 if svc.log.is_none() {
                     return;
                 }
-                let log_fn = svc.deref().log.as_ref().unwrap();
+                let log_fn = svc.log.as_ref().unwrap();
                 log_fn(svc.handle, level.into(), str_result.as_ptr());
             }
         }
