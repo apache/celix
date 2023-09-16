@@ -24,7 +24,9 @@
 class ErrTestSuite : public ::testing::Test {
 public:
     ErrTestSuite() = default;
-    ~ErrTestSuite() noexcept override = default;
+    ~ErrTestSuite() noexcept override {
+        celix_err_resetErrors();
+    }
 };
 
 TEST_F(ErrTestSuite, AddAndPopErrorTest) {
@@ -101,4 +103,41 @@ TEST_F(ErrTestSuite, PrintErrorsTest) {
     EXPECT_STREQ("PREerror message2POSTPREerror message1POST", buf);
     EXPECT_EQ(0, celix_err_getErrorCount());
     free(buf);
+}
+
+#define ERR_TEST_PREFIX "<"
+#define ERR_TEST_POSTFIX ">"
+
+TEST_F(ErrTestSuite, DumpErrorsTest) {
+    char buf[CELIX_ERR_BUFFER_SIZE] = {0};
+    // empty ERR
+    EXPECT_EQ(0, celix_err_dump(buf, CELIX_ERR_BUFFER_SIZE, NULL, NULL));
+
+    // log messages
+    int logCnt = 0;
+    for (logCnt = 0; logCnt < 5; ++logCnt) {
+        celix_err_pushf("celix error message%d", logCnt);
+    }
+    EXPECT_EQ(115, celix_err_dump(buf, CELIX_ERR_BUFFER_SIZE, ERR_TEST_PREFIX, ERR_TEST_POSTFIX"\n"));
+    char* p = buf;
+    char data[32]={0};
+    while(logCnt--)
+    {
+        sscanf(p,"%[^\n]",data);
+        char expected[64];
+        sprintf(expected, "<celix error message%d>", logCnt);
+        EXPECT_STREQ(data, expected);
+        p = p+strlen(data)+1;//skip '\n'
+    }
+}
+
+TEST_F(ErrTestSuite, DumpedErrorsAlwaysNulTerminatedTest) {
+    char buf[CELIX_ERR_BUFFER_SIZE] = {0};
+    //celix error messages total length is greater than 512
+    int logCnt = 0;
+    for (logCnt = 0; logCnt < 64; ++logCnt) {
+        celix_err_pushf("celix error message%d", logCnt);
+    }
+    EXPECT_LE(CELIX_ERR_BUFFER_SIZE, celix_err_dump(buf, CELIX_ERR_BUFFER_SIZE, ERR_TEST_PREFIX, ERR_TEST_POSTFIX"\n"));
+    EXPECT_EQ('\0', buf[CELIX_ERR_BUFFER_SIZE-1]);
 }

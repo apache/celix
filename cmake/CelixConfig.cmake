@@ -23,12 +23,12 @@
 #  CELIX_LAUNCHER          - The Celix launcher
 
 # relative install dir from lib/CMake/Celix.
-get_filename_component(REL_INSTALL_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
-get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
-get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
+get_filename_component(CELIX_REL_INSTALL_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+get_filename_component(CELIX_REL_INSTALL_DIR "${CELIX_REL_INSTALL_DIR}" PATH)
+get_filename_component(CELIX_REL_INSTALL_DIR "${CELIX_REL_INSTALL_DIR}" PATH)
+get_filename_component(CELIX_REL_INSTALL_DIR "${CELIX_REL_INSTALL_DIR}" PATH)
 
-include("${REL_INSTALL_DIR}/share/celix/cmake/cmake_celix/UseCelix.cmake") #adds celix commands (e.g. add_celix_bundle)
+include("${CELIX_REL_INSTALL_DIR}/share/celix/cmake/cmake_celix/UseCelix.cmake") #adds celix commands (e.g. add_celix_bundle)
 
 include(CMakeFindDependencyMacro)
 
@@ -36,18 +36,18 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_dependency(Threads)
 
 #adds celix optional dependencies
-include("${REL_INSTALL_DIR}/share/celix/cmake/CelixDeps.cmake")
+include("${CELIX_REL_INSTALL_DIR}/share/celix/cmake/CelixDeps.cmake")
 
 #imports lib and exe targets (e.g. Celix::framework)
-include("${REL_INSTALL_DIR}/share/celix/cmake/Targets.cmake")
-include("${REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake")
+include("${CELIX_REL_INSTALL_DIR}/share/celix/cmake/Targets.cmake")
+include("${CELIX_REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake")
 
 # The rest is added to ensure backwards compatiblity with project using the cmake lib/include var instead of targets.
-set(CELIX_CMAKE_MODULES_DIR ${REL_INSTALL_DIR}/share/celix/cmake/Modules)
+set(CELIX_CMAKE_MODULES_DIR ${CELIX_REL_INSTALL_DIR}/share/celix/cmake/Modules)
 
-set(CELIX_FRAMEWORK_INCLUDE_DIR "${REL_INSTALL_DIR}/include/celix")
-set(CELIX_UTILS_INCLUDE_DIR "${REL_INSTALL_DIR}/include/utils")
-set(CELIX_DFI_INCLUDE_DIR "${REL_INSTALL_DIR}/include/dfi")
+set(CELIX_FRAMEWORK_INCLUDE_DIR "${CELIX_REL_INSTALL_DIR}/include/celix")
+set(CELIX_UTILS_INCLUDE_DIR "${CELIX_REL_INSTALL_DIR}/include/utils")
+set(CELIX_DFI_INCLUDE_DIR "${CELIX_REL_INSTALL_DIR}/include/dfi")
 
 set(CELIX_LIBRARIES Celix::framework Celix::utils Celix::dfi)
 set(CELIX_INCLUDE_DIRS
@@ -79,6 +79,6 @@ if (TARGET Celix::dependency_manager_cxx)
   set(CELIX_DM_CXX_STATIC_LIB $<TARGET_PROPERTY:Celix::dependency_manager_cxx,INTERFACE_INCLUDE_DIRECTORIES>)
 endif ()
 
-set(CELIX_BUNDLES_DIR ${REL_INSTALL_DIR}/share/celix/bundles)
+set(CELIX_BUNDLES_DIR ${CELIX_REL_INSTALL_DIR}/share/celix/bundles)
 set(CELIX_SHELL_BUNDLE ${CELIX_BUNDLES_DIR}/shell.zip)
 set(CELIX_SHELL_TUI_BUNDLE ${CELIX_BUNDLES_DIR}/shell_tui.zip)

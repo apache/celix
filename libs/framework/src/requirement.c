@@ -24,12 +24,10 @@
  *  \copyright	Apache License, Version 2.0
  */
 
-#include <stdlib.h>
-
-#include "requirement_private.h"
-#include "version_range.h"
-#include "attribute.h"
+#include "celix_errno.h"
 #include "celix_log.h"
+#include "requirement_private.h"
+#include "hash_map.h"
 
 //LCOV_EXCL_START
 celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement) {

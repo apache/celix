@@ -38,7 +38,7 @@ target_link_libraries(RsaConfiguredDiscovery PRIVATE
         Celix::framework
         Celix::rsa_spi
         Celix::log_helper
-        RapidJSON::RapidJSON
+        rapidjson
 )
 
 target_include_directories(RsaConfiguredDiscovery PRIVATE src)

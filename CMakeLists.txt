@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required (VERSION 3.18)
+cmake_minimum_required (VERSION 3.19)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
 cmake_policy(SET CMP0068 NEW)
@@ -42,6 +42,16 @@ if (ENABLE_TESTING)
     find_package(GTest QUIET)
     if (NOT GTest_FOUND)
         include(AddGTest)
+    endif()
+endif ()
+
+
+option(ENABLE_CCACHE "Enabled building with ccache" FALSE)
+if (ENABLE_CCACHE)
+    find_program(CCACHE_EXECUTABLE ccache)
+    if(CCACHE_EXECUTABLE)
+        set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_EXECUTABLE})
+        set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_EXECUTABLE})
     endif()
 endif ()
 
@@ -158,7 +168,7 @@ endif ()
 
 option(ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11 "Test the Dependency Manager for C++11 support" OFF)
 option(ENABLE_TESTING_FOR_CXX14 "Test celix utils and framework C++ header for C++14 support" OFF)
-
+option(ENABLE_CMAKE_WARNING_TESTS "Enable cmake warning tests to test warning prints" OFF)
 option(ENABLE_TESTING_ON_CI "Whether to enable testing on CI. This influence allowed timing errors during unit tests" OFF)
 
 if (CELIX_INSTALL_DEPRECATED_API)
@@ -194,6 +204,9 @@ add_subdirectory(misc/experimental)
 
 #Example as last, because some example will check if underlining options are enabled
 add_subdirectory(examples/celix-examples)
+
+#include CMake warning tests
+include(cmake/celix_project/WarningTests.cmake)
 
 #export targets
 install(EXPORT celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE Targets.cmake COMPONENT cmake)

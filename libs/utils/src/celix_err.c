@@ -22,11 +22,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-
-#ifndef CELIX_ERR_USE_THREAD_LOCAL
 #include <stdlib.h>
+
 #include "celix_threads.h"
-#endif
 
 typedef struct celix_err {
     char buffer[CELIX_ERR_BUFFER_SIZE];
@@ -43,6 +41,15 @@ static void celix_err_destroyTssErr(void* data) {
         free(err);
     }
 }
+
+
+static celix_err_t* celix_err_getRawTssErr() {
+    if (!celix_err_tssKeyInitialized) {
+        return NULL;
+    }
+    return celix_tss_get(celix_err_tssKey);
+}
+
 
 celix_err_t* celix_err_getTssErr() {
     if (!celix_err_tssKeyInitialized) {
@@ -93,7 +100,7 @@ __attribute__((destructor)) void celix_err_deinitThreadSpecificStorageKey() {
 
 const char* celix_err_popLastError() {
     const char* result = NULL;
-    celix_err_t* err = celix_err_getTssErr();
+    celix_err_t* err = celix_err_getRawTssErr();
     if (err && err->pos > 0) {
         //move back to start last error message
         err->pos -= 1; //move before \0 in last error message
@@ -107,11 +114,7 @@ const char* celix_err_popLastError() {
 
 int celix_err_getErrorCount() {
     int result = 0;
-    if (!celix_err_tssKeyInitialized) {
-        fprintf(stderr, "celix_err_tssKey is not initialized\n");
-        return 0;
-    }
-    celix_err_t* err = celix_tss_get(celix_err_tssKey);
+    celix_err_t* err = celix_err_getRawTssErr();
     for (int i = 0; err && i < err->pos; ++i) {
         if (err->buffer[i] == '\0') {
             result += 1;
@@ -121,7 +124,7 @@ int celix_err_getErrorCount() {
 }
 
 void celix_err_resetErrors() {
-    celix_err_t* err = celix_err_getTssErr();
+    celix_err_t* err = celix_err_getRawTssErr();
     if (err) {
         err->pos = 0; //no entry
     }
@@ -168,4 +171,18 @@ void celix_err_printErrors(FILE* stream, const char* prefix, const char* postfix
     while (errMsg = celix_err_popLastError(), errMsg != NULL) {
         fprintf(stream, "%s%s%s", pre, errMsg, post);
     }
+}
+
+int celix_err_dump(char* buf, size_t size, const char* prefix, const char* postfix) {
+    int ret;
+    int bytes = 0;
+    const char* pre = prefix == NULL ? "" : prefix;
+    const char* post = postfix == NULL ? "\n" : postfix;
+    for (const char *errMsg = celix_err_popLastError(); errMsg != NULL && bytes < size; errMsg = celix_err_popLastError()) {
+        ret = snprintf(buf + bytes, size - bytes, "%s%s%s", pre, errMsg, post);
+        if (ret > 0) {
+            bytes += ret;
+        }
+    }
+    return bytes;
 }

@@ -20,9 +20,9 @@
 #  Celix::Promise CMake imported target
 
 # relative install dir from lib/CMake/CelixPromise.
-get_filename_component(REL_INSTALL_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
-get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
-get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
+get_filename_component(CELIX_PROMISES_REL_INSTALL_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+get_filename_component(CELIX_PROMISES_REL_INSTALL_DIR "${CELIX_PROMISES_REL_INSTALL_DIR}" PATH)
+get_filename_component(CELIX_PROMISES_REL_INSTALL_DIR "${CELIX_PROMISES_REL_INSTALL_DIR}" PATH)
+get_filename_component(CELIX_PROMISES_REL_INSTALL_DIR "${CELIX_PROMISES_REL_INSTALL_DIR}" PATH)
 
-include("${REL_INSTALL_DIR}/share/CelixPromises/cmake/Targets.cmake") #imports lib and exe targets (e.g. Celix::framework)
+include("${CELIX_PROMISES_REL_INSTALL_DIR}/share/CelixPromises/cmake/Targets.cmake") #imports lib and exe targets (e.g. Celix::framework)

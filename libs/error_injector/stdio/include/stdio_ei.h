@@ -34,6 +34,12 @@ CELIX_EI_DECLARE(remove, int);
 
 CELIX_EI_DECLARE(open_memstream, FILE *);
 
+CELIX_EI_DECLARE(fseek, int);
+
+CELIX_EI_DECLARE(ftell, long);
+
+CELIX_EI_DECLARE(fread, size_t);
+
 #ifdef __cplusplus
 }
 #endif
