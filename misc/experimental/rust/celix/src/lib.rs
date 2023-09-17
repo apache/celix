@@ -17,8 +17,6 @@
  * under the License.
  */
 
-extern crate celix_bindings;
-
 // Re-export the celix_status_t and celix_bundle_context_t C API in this crate public API so that
 // it can be used in the generate_bundle_activator macro.
 // Note that as result the celix rust lib is leaking the celix_status_t and celix_bundle_context_t

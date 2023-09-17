@@ -23,7 +23,7 @@ use super::BundleContext;
 use super::LogLevel;
 
 use celix_bindings::celix_log_service_t;
-use ServiceTracker;
+use crate::ServiceTracker;
 
 pub struct LogHelper {
     name: String,

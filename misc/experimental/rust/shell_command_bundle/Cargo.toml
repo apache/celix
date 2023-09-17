@@ -18,6 +18,7 @@
 [package]
 name = "rust_shell_command_activator"
 version = "0.0.1"
+edition = '2021'
 
 [dependencies]
 celix_bindings = { path = "../celix_bindings" }

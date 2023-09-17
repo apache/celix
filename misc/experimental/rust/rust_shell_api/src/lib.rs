@@ -17,8 +17,6 @@
  * under the License.
  */
 
-extern crate celix;
-
 use celix::Error;
 pub const COMMAND_NAME: &str = "command.name";
 pub const COMMAND_USAGE: &str = "command.usage";

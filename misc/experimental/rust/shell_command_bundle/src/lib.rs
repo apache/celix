@@ -17,10 +17,6 @@
  * under the License.
  */
 
-extern crate celix;
-extern crate celix_bindings;
-extern crate rust_shell_api;
-
 use std::ffi::c_char;
 use std::ffi::c_void;
 use std::sync::Arc;

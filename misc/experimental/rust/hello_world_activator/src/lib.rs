@@ -17,8 +17,6 @@
  * under the License.
  */
 
-extern crate celix;
-
 use std::sync::Arc;
 
 use celix::BundleActivator;
