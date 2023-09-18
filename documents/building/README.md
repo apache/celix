@@ -108,7 +108,7 @@ conan inspect . | grep build_
 When using Celix via Conan, you may encounter an [issue](https://github.com/apache/celix/issues/642) where libzip.so is not found by linker.
 This is due to a [bug in Conan](https://github.com/conan-io/conan/issues/7192).
 
-A workaround we adopt in Celix is to add the following to the conanfile.py:
+A workaround we adopt in Celix is adding the following to conanfile.py:
 
 ```python
     def generate(self):
