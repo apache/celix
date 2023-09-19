@@ -13,45 +13,64 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Release Notes for Apache Celix 2.2.0
-
-## Known shortcomings:
-
-- Uninstall of bundle is not working correctly.
-- Importing and exported of bundle libraries is not working correctly.
+# Release Notes for Apache Celix 2.4.0
 
 ## Versions
 
 ### Libraries:
- - Celix Framework library: 2.2.0
- - Celix Utils library: 2.2.0
- - Celix DFI library: 1.2.0
- - Celix etcdlib: 1.1.0
+ - Celix::framework: 2.4.0
+ - Celix::utils: 2.4.0
+ - Celix::dfi: 1.3.0
+ - Celix::etcdlib: 1.2.0
+ - Celix::Promises: 1.1.0
+ - Celix::PushStreams: N/A
+ - Celix::rcm: 0.0.1
 
-### Bundles
- - Shell Tui: 1.1.0
- - Shell Bonjour: 0.1.0 
- - Shell: 2.1.0
- - Remote Shell: 0.0.2 
- - Log Writer: 1.2.0
- - Log Service: 1.2.0
- - Event Admin: 0.0.0 
- - Device Access: 0.0.2 
- - Deployment Admin: 0.0.2 
- - Config Admin: 0.0.1 
+### Bundles & Bundle Support Libraries:
+ - Celix::components_ready_check: 1.0.0
+ - Shell
+    - Celix::shell: 2.1.0
+    - Celix::ShellCxx: 2.1.0
+    - Celix::shell_tui: 1.1.0
+    - Celix::shell_wui: 1.1.0
+    - Celix::shell_bonjour: 0.1.0
+    - Celix::shell_remote: 0.0.2
+ - Logging
+    - Celix::log_admin: 1.1.0
+    - Celix::log_helper library: N/A
+    - Celix::log_service_api: N/A
+    - Celix::syslog_writer: 1.0.0
+ - HTTP Admin
+    - Celix::http_admin_api library: N/A
+    - Celix::http_admin: 1.0.0
+ - Deployment Admin: 0.0.2
  - Remote Services
-   - Remote Service Admin Dfi: 0.9.0 
-   - Remote Service Admin HTTP: 0.9.0 
-   - Remote Service Admin SHM: 0.9.0 
-   - Topology Manager: 0.9.0 
-   - ETCD Discovery: 0.9.0 
-   - Configured Discovery: 0.9.0 
+   - Celix::remote_services_api library: N/A
+   - Celix::c_rsa_spi: N/A
+   - Celix::rsa_common: N/A
+   - Celix::rsa_dfi_utils: N/A
+   - Celix::rsa_json_rpc: 1.0.0
+   - Celix::rsa_discovery: 0.9.0
+   - Celix::rsa_discovery_etcd: 0.9.0
+   - Celix::rsa_discovery_shm: 0.0.1
+   - Celix::rsa_discovery_zeroconf: 1.0.0
+   - Celix::rsa_dfi: 0.9.0
+   - Celix::rsa_shm 1.0.0
+   - Celix::rsa_topology_manager: 0.9.0
+ - C++ Remote Services
+   - Celix::rsa_spi library: N/A
+   - Celix::RemoteServiceAdmin: 0.9.0
+   - Celix::RsaConfiguredDiscovery: 0.9.0
  - PubSub
-   - PubSubAdmin UDP Multicast : 1.0.0
-   - PubSubAdmin ZMQ : 1.1.0
-   - PubSub ETCD Discovery: 1.1.0
-   - PubSub Topology Manager: 1.1.0
-   - PubSub JSON Serializer : 1.1.0
-   - PubSub Avrobin Serializer : 1.0.0
-   - PubSub Websocket: 1.0.0
-   - PubSub TCP: 1.0.0
+   - Celix::pubsub_utils library: N/A
+   - Celix::pubsub_spi library: N/A
+   - Celix::pubsub_api library: N/A
+   - Celix::celix_pubsub_protocol_wire_v1: 1.0.1
+   - Celix::celix_pubsub_protocol_wire_v2: 1.0.1
+   - Celix::celix_pubsub_admin_tcp: 2.1.0
+   - Celix::celix_pubsub_admin_udp_multicast: 1.1.0
+   - Celix::celix_pubsub_admin_websocket: 2.1.0
+   - Celix::celix_pubsub_admin_zmq: 2.1.0
+   - Celix::celix_pubsub_serializer_avrobin: 1.1.1
+   - Celix::celix_pubsub_serializer_json: 1.1.1
+   - Celix::celix_pubsub_topology_manager: 1.1.1

@@ -19,7 +19,7 @@ if (SHELL_WUI)
 
     add_celix_bundle(shell_wui
         SYMBOLIC_NAME "apache_celix_shell_wui"
-        VERSION "1.0.0"
+        VERSION "1.1.0"
         NAME "Apache Celix Shell WUI"
         FILENAME celix_shell_wui
         GROUP "Celix/Shell"
