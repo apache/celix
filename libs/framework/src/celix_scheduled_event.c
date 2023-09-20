@@ -22,6 +22,7 @@
 #include <assert.h>
 
 #include "celix_constants.h"
+#include "celix_ref.h"
 #include "celix_utils.h"
 
 /**
@@ -44,6 +45,7 @@ static const char* const CELIX_SCHEDULED_EVENT_DEFAULT_NAME = "unnamed";
  * @see celix_bundleContext_wakeupScheduledEvent
  */
 struct celix_scheduled_event {
+    struct celix_ref useCount;        /**< The use count of the scheduled event. */
     long scheduledEventId;            /**< The ID of the scheduled event. */
     celix_framework_logger_t* logger; /**< The framework logger used to log information */
     long bndId;                       /**< The bundle id for the bundle that owns the scheduled event. */
@@ -62,7 +64,6 @@ struct celix_scheduled_event {
     celix_thread_mutex_t mutex; /**< The mutex to protect the data below. */
     celix_thread_cond_t cond;   /**< The condition variable to signal the scheduled event for a changed callCount and
                                    isRemoved. */
-    size_t useCount;            /**< The use count of the scheduled event. */
     size_t callCount;           /**< The call count of the scheduled event. */
     bool isMarkedForRemoval;    /**< Whether the scheduled event is marked for removal. */
     bool isRemoved;             /**< Whether the scheduled event is removed. */
@@ -110,7 +111,7 @@ celix_scheduled_event_t* celix_scheduledEvent_create(celix_framework_t* fw,
     event->removedCallbackData = removedCallbackData;
     event->removedCallback = removedCallback;
     event->isMarkedForRemoval = false;
-    event->useCount = 1;
+    celix_ref_init(&event->useCount);
     event->callCount = 0;
     event->isRemoved = false;
     event->nextDeadline = celixThreadCondition_getDelayedTime(event->initialDelayInSeconds);
@@ -136,9 +137,7 @@ celix_scheduled_event_t* celix_scheduledEvent_retain(celix_scheduled_event_t* ev
         return NULL;
     }
 
-    celixThreadMutex_lock(&event->mutex);
-    event->useCount += 1;
-    celixThreadMutex_unlock(&event->mutex);
+    celix_ref_get(&event->useCount);
     return event;
 }
 
@@ -146,15 +145,7 @@ void celix_scheduledEvent_release(celix_scheduled_event_t* event) {
     if (event == NULL) {
         return;
     }
-
-    celixThreadMutex_lock(&event->mutex);
-    event->useCount -= 1;
-    bool unused = event->useCount == 0;
-    celixThreadMutex_unlock(&event->mutex);
-
-    if (unused) {
-        celix_scheduledEvent_destroy(event);
-    }
+    celix_ref_put(&event->useCount, (bool (*)(struct celix_ref *))celix_scheduledEvent_destroy);
 }
 
 const char* celix_scheduledEvent_getName(const celix_scheduled_event_t* event) { return event->eventName; }
