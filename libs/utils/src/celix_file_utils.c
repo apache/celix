@@ -214,6 +214,11 @@ static celix_status_t celix_utils_extractZipInternal(zip_t *zip, const char* ext
     char buf[5120];
     size_t bufSize = 5112;
 
+    status = celix_utils_createDirectory(extractToDir, false, errorOut);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+
     for (zip_int64_t i = 0; status == CELIX_SUCCESS && i < nrOfEntries; ++i) {
         zip_stat_t st;
         if(zip_stat_index(zip, i, 0, &st) == -1) {

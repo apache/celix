@@ -189,9 +189,16 @@ TEST_F(FileUtilsTestSuite, ExtractZipFileTest) {
     EXPECT_EQ(celix_properties_getAsLong(props, "level", 0), 2);
     celix_properties_destroy(props);
 
+    //Given a test zip file, extract to file is a error
+    const char* error = nullptr;
+    status = celix_utils_extractZipFile(TEST_ZIP_LOCATION, file1, &error);
+    EXPECT_NE(status, CELIX_SUCCESS);
+    EXPECT_NE(error, nullptr);
+
+
     //Given a incorrect path extractZipFile returns a error
     const char* invalidPath = "does-not-exists.zip";
-    const char* error = nullptr;
+    error = nullptr;
     EXPECT_FALSE(celix_utils_fileExists(invalidPath));
     status = celix_utils_extractZipFile(invalidPath, extractLocation, &error);
     EXPECT_NE(status, CELIX_SUCCESS);
