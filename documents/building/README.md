@@ -162,9 +162,9 @@ sudo apt-get install -yq --no-install-recommends \
 
 For OSX systems with brew installed, use the following commands:
 ```bash
-    brew update && \
-    brew install lcov libffi libzip czmq rapidjson libxml2 cmake jansson && \
-    brew link --force libffi
+brew update && \
+brew install lcov libffi libzip czmq rapidjson libxml2 cmake jansson && \
+brew link --force libffi
 ``` 
 
 Use CMake and make to build Apache Celix
