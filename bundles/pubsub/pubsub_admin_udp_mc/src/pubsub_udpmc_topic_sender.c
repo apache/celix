@@ -24,7 +24,6 @@
 #include <pubsub_constants.h>
 #include <pubsub/publisher.h>
 #include <utils.h>
-#include <zconf.h>
 #include <arpa/inet.h>
 #include <pubsub_utils.h>
 #include "pubsub_udpmc_topic_sender.h"

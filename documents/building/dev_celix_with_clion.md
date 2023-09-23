@@ -60,6 +60,17 @@ ctest --verbose
 source deactivate_conanrun.sh 
 ```
 
+### Work with Conan 2
+
+The above is for Conan 1.x. 
+Conan 2 has greatly simplified its integration with CLion. 
+Issuing the following command will produce a CMakeUserPresets.json at the project root, which CLion will load automatically to set up CMake profiles. 
+Then Celix can be built within the IDE.
+
+```shell
+conan install . -pr:b default -pr:h default -s:h build_type=Debug -o celix/*:build_all=True -o celix/*:celix_cxx17=True -o celix/*:enable_testing=True -b missing  -o celix/*:enable_address_sanitizer=True -of cmake-build-debug
+```
+
 ## Configuring CLion
 To ensure that all Conan build dependencies can be found the Run/Debug configurations of CLion needs te be updated.
 
