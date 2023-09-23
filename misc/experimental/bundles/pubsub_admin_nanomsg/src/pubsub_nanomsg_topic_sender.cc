@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <utils.h>
 #include <arpa/inet.h>
-#include <zconf.h>
 #include <LogHelper.h>
 #include <nanomsg/nn.h>
 #include <nanomsg/bus.h>
