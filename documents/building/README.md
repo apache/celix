@@ -61,16 +61,13 @@ For Ubuntu 22.04, use the following commands:
 ```bash
 sudo apt-get install -yq --no-install-recommends \
     build-essential \
+    cmake \
     git \
     default-jdk \
     python3 \
     python3-pip \
     ninja-build
         
-#The cmake version for Ubuntu 20 is older than 3.14,
-#use snap to install the latest cmake version
-snap install cmake
-
 #Install conan
 pip3 install -U conan   
 ```
@@ -148,6 +145,7 @@ For Ubuntu 22.04, use the following commands:
 #### get dependencies
 sudo apt-get install -yq --no-install-recommends \
     build-essential \
+    cmake \
     git \
     curl \
     uuid-dev \
@@ -160,17 +158,13 @@ sudo apt-get install -yq --no-install-recommends \
     libczmq-dev \
     libcpputest-dev \
     rapidjson-dev
-
-#The cmake version for Ubuntu 20 is older than 3.14,
-#use snap to install the latest cmake version
-snap install cmake
 ```
 
 For OSX systems with brew installed, use the following commands:
 ```bash
-    brew update && \
-    brew install lcov libffi libzip czmq rapidjson libxml2 cmake jansson && \
-    brew link --force libffi
+brew update && \
+brew install lcov libffi libzip czmq rapidjson libxml2 cmake jansson && \
+brew link --force libffi
 ``` 
 
 Use CMake and make to build Apache Celix
