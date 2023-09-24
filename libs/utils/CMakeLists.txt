@@ -112,7 +112,7 @@ if (UTILS)
     #Alias setup to match external usage
     add_library(Celix::utils ALIAS utils)
 
-    if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
+    if (ENABLE_TESTING AND EI_TESTS)
         add_subdirectory(error_injector)
     endif ()
 
@@ -163,7 +163,7 @@ if (UTILS)
             target_link_libraries(version_test CppUTest utils_cut pthread)
 
 
-            if (LINKER_WRAP_SUPPORTED)
+            if (EI_TESTS)
                 add_executable(version_ei_test private/test/version_ei_test.cc)
                 target_include_directories(version_ei_test PRIVATE include_deprecated)
                 target_link_libraries(version_ei_test CppUTest utils_cut Celix::malloc_ei Celix::utils_ei pthread)

@@ -83,7 +83,7 @@ if (FRAMEWORK)
     #Alias setup to match external usage
     add_library(Celix::framework ALIAS framework)
 
-    if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
+    if (ENABLE_TESTING AND EI_TESTS)
         add_subdirectory(error_injector)
     endif ()
     if (ENABLE_TESTING AND CELIX_CXX17) #framework tests are C++17

@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-if (LINKER_WRAP_SUPPORTED)
+if (EI_TESTS)
     add_executable(test_shm_pool
             src/ShmPoolTestSuite.cc
             src/ShmCacheTestSuite.cc
