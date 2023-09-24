@@ -48,7 +48,7 @@ if (LOG_HELPER)
     add_library(Celix::log_helper ALIAS log_helper)
 
     if (ENABLE_TESTING)
-        if (LINKER_WRAP_SUPPORTED)
+        if (EI_TESTS)
             add_subdirectory(error_injector)
         endif ()
         add_subdirectory(gtest)

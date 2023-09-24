@@ -131,7 +131,7 @@ endif ()
 add_test(NAME test_framework COMMAND test_framework)
 setup_target_for_coverage(test_framework SCAN_DIR ..)
 
-if (LINKER_WRAP_SUPPORTED)
+if (EI_TESTS)
     add_executable(test_framework_with_ei
             src/BundleArchiveWithErrorInjectionTestSuite.cc
             src/CelixFrameworkUtilsErrorInjectionTestSuite.cc

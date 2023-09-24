@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-if (LINKER_WRAP_SUPPORTED)
+if (EI_TESTS)
     ####unit test
     add_executable(unit_test_rsa_common
             src/EndpointDescriptionUnitTestSuite.cc

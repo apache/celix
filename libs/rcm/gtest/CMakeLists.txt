@@ -25,7 +25,7 @@ target_link_libraries(test_rcm PRIVATE Celix::rcm GTest::gtest GTest::gtest_main
 add_test(NAME test_rcm COMMAND test_rcm)
 setup_target_for_coverage(test_rcm SCAN_DIR ..)
 
-if (LINKER_WRAP_SUPPORTED)
+if (EI_TESTS)
     add_executable(test_rcm_with_error_injection
         src/RequirementCapabilityModelWithErrorInjectionTestSuite.cc
     )

@@ -184,6 +184,12 @@ include(CheckLinkerFlag)
 check_linker_flag(CXX LINKER:--wrap,celix_nonexistent_symbol LINKER_WRAP_SUPPORTED)
 cmake_pop_check_state()
 
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND LINKER_WRAP_SUPPORTED)
+    set(EI_TESTS ON)
+else ()
+    set(EI_TESTS OFF)
+endif()
+
 # avoid unknown export "celix" error when building nothing
 add_library(celix INTERFACE)
 add_library(Celix::celix ALIAS celix)
