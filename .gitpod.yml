@@ -1,3 +1,4 @@
+---
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,23 +16,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-*~
-*.swp
+tasks:
+  - init: |
+      mkdir -p cmake-build-debug-gitpod
+      cd cmake-build-debug-gitpod && ../container/support-scripts/build-all.sh && make -j
 
-/.project
-.DS_Store
-.clion.source.upload.marker
-.idea
-.vscode
-*.iml
-*.pyc
-*.enc
-*.pub
-
-build
-cmake-build*
-nbproject
-target
-html
-CMakeUserPresets.json
-
+image:
+  file: container/Containerfile.gitpod

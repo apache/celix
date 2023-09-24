@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -14,24 +16,20 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+#
+# Build a Celix dev container with all needed dependencies pre-installed.
 
-*~
-*.swp
+SCRIPT_LOCATION=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
+CELIX_REPO_ROOT=$(realpath "${SCRIPT_LOCATION}/..")
 
-/.project
-.DS_Store
-.clion.source.upload.marker
-.idea
-.vscode
-*.iml
-*.pyc
-*.enc
-*.pub
+# Check which container engine is available.
+# Check for podman first, because the 'podman-docker' package might be installed providing a dummy 'docker' command.
+if command -v podman > /dev/null 2>&1; then
+    CONTAINER_ENGINE="podman"
+else
+    CONTAINER_ENGINE="docker"
+fi
 
-build
-cmake-build*
-nbproject
-target
-html
-CMakeUserPresets.json
+cd "${SCRIPT_LOCATION}"
+${CONTAINER_ENGINE} build -t apache/celix-dev:ubuntu-latest -f Containerfile.ubuntu .
 
