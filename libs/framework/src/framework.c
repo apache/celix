@@ -1113,6 +1113,14 @@ static void* framework_shutdown(void *framework) {
     celixThreadMutex_unlock(&fw->installedBundles.mutex);
 
     size = celix_arrayList_size(stopEntries);
+    for (int i = size-1; i >= 0; --i) { //note loop in reverse order -> stop later installed bundle first
+        celix_framework_bundle_entry_t *entry = celix_arrayList_get(stopEntries, i);
+
+        bundle_state_e state = celix_bundle_getState(entry->bnd);
+        if (state == CELIX_BUNDLE_STATE_ACTIVE || state == CELIX_BUNDLE_STATE_STARTING) {
+            celix_framework_stopBundleEntry(fw, entry);
+        }
+    }
     for (int i = size-1; i >= 0; --i) { //note loop in reverse order -> uninstall later installed bundle first
         celix_framework_bundle_entry_t *entry = celix_arrayList_get(stopEntries, i);
         celix_framework_uninstallBundleEntry(fw, entry, false);
