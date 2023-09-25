@@ -18,12 +18,18 @@
  */
 
 #include <curl/curl.h>
+#include <civetweb.h>
 #include <gtest/gtest.h>
+#include <libxml/parser.h>
 
 int main(int argc, char **argv) {
+    xmlInitParser();
     curl_global_init(CURL_GLOBAL_ALL);
+    mg_init_library(MG_FEATURES_ALL);
     ::testing::InitGoogleTest(&argc, argv);
     int rc = RUN_ALL_TESTS();
+    mg_exit_library();
     curl_global_cleanup();
+    xmlCleanupParser();
     return rc;
 }

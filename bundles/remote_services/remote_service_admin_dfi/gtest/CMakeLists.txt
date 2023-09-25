@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(libffi REQUIRED)
+find_package(LibXml2 REQUIRED)
+
 add_celix_bundle(rsa_dfi_tst_bundle
     VERSION 0.0.1
     SOURCES
@@ -42,6 +45,11 @@ add_executable(test_rsa_dfi
 target_include_directories(test_rsa_dfi PRIVATE src)
 celix_deprecated_utils_headers(test_rsa_dfi)
 celix_deprecated_framework_headers(test_rsa_dfi)
+
+target_include_directories(test_rsa_dfi PRIVATE
+        "${LIBXML2_INCLUDE_DIR}"
+)
+
 target_link_libraries(test_rsa_dfi PRIVATE
         civetweb::civetweb
         CURL::libcurl
@@ -49,6 +57,8 @@ target_link_libraries(test_rsa_dfi PRIVATE
         Celix::rsa_common
         calculator_api
         GTest::gtest
+        libffi::libffi
+        ${LIBXML2_LIBRARIES}
 )
 
 get_property(rsa_bundle_file TARGET rsa_dfi PROPERTY BUNDLE_FILE)
