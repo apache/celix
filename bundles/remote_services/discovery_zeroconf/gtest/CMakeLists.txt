@@ -40,7 +40,7 @@ target_compile_definitions(integration_test_discovery_zeroconf PRIVATE -DDISCOVE
 add_test(NAME run_integration_test_discovery_zeroconf COMMAND integration_test_discovery_zeroconf)
 setup_target_for_coverage(integration_test_discovery_zeroconf SCAN_DIR ..)
 
-if (LINKER_WRAP_SUPPORTED)
+if (EI_TESTS)
     ####unit test
     add_executable(unit_test_discovery_zeroconf
             src/DiscoveryZeroconfAnnouncerTestSuite.cc

@@ -422,7 +422,7 @@ void celix_foo_destroy(celix_foo_t* foo) {
 ## Error Injection
 
 - Use the Apache Celix error_injector libraries to inject errors in unit tests in a controlled way.
-- Create a separate test suite for error injection tests and place them under a `LINKER_WRAP_SUPPORTED` cmake condition.
+- Create a separate test suite for error injection tests and place them under a `EI_TESTS` cmake condition.
 - Reset error injection setup on the `TearDown` function or destructor of the test fixture.
 - If an - internal or external - function is missing error injection support, add it to the error_injector library.
   - Try to create small error injector libraries for specific functionality.

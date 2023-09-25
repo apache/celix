@@ -82,7 +82,7 @@ add_test(NAME test_utils COMMAND test_utils)
 setup_target_for_coverage(test_utils SCAN_DIR ..)
 
 
-if (LINKER_WRAP_SUPPORTED)
+if (EI_TESTS)
     add_executable(test_utils_with_ei
             src/FileUtilsErrorInjectionTestSuite.cc
             src/ConvertUtilsErrorInjectionTestSuite.cc
