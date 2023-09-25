@@ -21,7 +21,6 @@
 
 #include "celix_launcher.h"
 #include "celix_bundle_context.h"
-#include <civetweb.h>
 #include <unistd.h>
 #include "receive_count_service.h"
 
@@ -117,13 +116,4 @@ TEST_F(PubSubIntegrationTestSuite, recvTest) {
 
 TEST_F(PubSubIntegrationWithEnvironmentTestSuite, recvTest) {
     receiveTest(ctx);
-}
-
-
-int main(int argc, char **argv) {
-    mg_init_library(MG_FEATURES_ALL);
-    ::testing::InitGoogleTest(&argc, argv);
-    int rc = RUN_ALL_TESTS();
-    mg_exit_library();
-    return rc;
 }

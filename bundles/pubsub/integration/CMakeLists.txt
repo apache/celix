@@ -332,7 +332,7 @@ if (PUBSUB_INTEGRATION)
         find_package(civetweb REQUIRED)
         add_celix_container(pubsub_websocket_v2_tests
                 USE_CONFIG
-                LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
+                LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubWebsocketTestMain.cc
                 DIR ${CMAKE_CURRENT_BINARY_DIR}
                 PROPERTIES
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
