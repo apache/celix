@@ -139,7 +139,7 @@ jobs:
         path: ${{ env.CCACHE_DIR }}
         key: ${{ runner.os }}-apt-test-ccache-gcc-${{ matrix.type }}-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
         restore-keys: |
-          ${{ runner.os }}-apt-test-ccache-gcc-Debug-
+          ${{ runner.os }}-apt-test-ccache-gcc-${{ matrix.type }}-
     - name: Build
       env:
         BUILD_OPTIONS: |
