@@ -46,10 +46,6 @@ target_include_directories(test_rsa_dfi PRIVATE src)
 celix_deprecated_utils_headers(test_rsa_dfi)
 celix_deprecated_framework_headers(test_rsa_dfi)
 
-target_include_directories(test_rsa_dfi PRIVATE
-        "${LIBXML2_INCLUDE_DIR}"
-)
-
 target_link_libraries(test_rsa_dfi PRIVATE
         civetweb::civetweb
         CURL::libcurl
@@ -58,7 +54,7 @@ target_link_libraries(test_rsa_dfi PRIVATE
         calculator_api
         GTest::gtest
         libffi::libffi
-        ${LIBXML2_LIBRARIES}
+        ${LIBXML2_LIBRARIES} # work around memory leak reported by ASAN
 )
 
 get_property(rsa_bundle_file TARGET rsa_dfi PROPERTY BUNDLE_FILE)
