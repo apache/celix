@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         compiler: [ [gcc,g++], [clang,clang++] ]
-        type: [ Debug ]
+        type: [ Debug, RelWithDebInfo ]
     timeout-minutes: 120
     steps:
       - name: Checkout source code
@@ -100,6 +100,10 @@ jobs:
 
   linux-build-apt:
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        type: [ Debug, RelWithDebInfo ]
     timeout-minutes: 120
     steps:
     - name: Checkout source code
@@ -133,9 +137,9 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ${{ env.CCACHE_DIR }}
-        key: ${{ runner.os }}-apt-test-ccache-gcc-Debug-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
+        key: ${{ runner.os }}-apt-test-ccache-gcc-${{ matrix.type }}-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
         restore-keys: |
-          ${{ runner.os }}-apt-test-ccache-gcc-Debug-
+          ${{ runner.os }}-apt-test-ccache-gcc-${{ matrix.type }}-
     - name: Build
       env:
         BUILD_OPTIONS: |
@@ -148,7 +152,7 @@ jobs:
           -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON
           -DSHELL_BONJOUR=ON
           -DENABLE_TESTING_ON_CI=ON
-          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_BUILD_TYPE=${{ matrix.type }}
           -DENABLE_CCACHE=ON
       run: |
         mkdir build install

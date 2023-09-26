@@ -329,9 +329,10 @@ if (PUBSUB_INTEGRATION)
     endif()
 
     if (BUILD_PUBSUB_PSA_WS)
+        find_package(civetweb REQUIRED)
         add_celix_container(pubsub_websocket_v2_tests
                 USE_CONFIG
-                LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
+                LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubWebsocketTestMain.cc
                 DIR ${CMAKE_CURRENT_BINARY_DIR}
                 PROPERTIES
                 LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
@@ -346,7 +347,7 @@ if (PUBSUB_INTEGRATION)
                 pubsub_tst
                 pubsub_serializer
                 )
-        target_link_libraries(pubsub_websocket_v2_tests PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main)
+        target_link_libraries(pubsub_websocket_v2_tests PRIVATE Celix::pubsub_api GTest::gtest civetweb::civetweb)
         target_include_directories(pubsub_websocket_v2_tests SYSTEM PRIVATE gtest)
         add_test(NAME pubsub_websocket_v2_tests COMMAND pubsub_websocket_v2_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_websocket_v2_tests,CONTAINER_LOC>)
         setup_target_for_coverage(pubsub_websocket_v2_tests SCAN_DIR ..)

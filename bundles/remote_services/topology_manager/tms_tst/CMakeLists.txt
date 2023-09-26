@@ -16,6 +16,8 @@
 # under the License.
 
 find_package(CURL REQUIRED)
+find_package(civetweb REQUIRED)
+find_package(libffi REQUIRED)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/framework/public/include
@@ -44,6 +46,8 @@ target_link_libraries(test_tm_scoped PRIVATE
         calculator_api
         Celix::rsa_common
         CURL::libcurl
+        civetweb::civetweb
+        libffi::libffi
 )
 
 add_celix_bundle_dependencies(test_tm_scoped Celix::rsa_dfi Celix::rsa_topology_manager calculator topology_manager_disc_mock_bundle topology_manager_test_bundle)

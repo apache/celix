@@ -115,6 +115,7 @@ void celix::rsa::RemoteServiceAdmin::removeImportedServiceFactory(
     importServiceFactories.erase(targetServiceName);
 
     //TODO remove imported services from this factory ??needed
+    //FIXME yes, it will lead to crash if we uninstall the factory: https://github.com/apache/celix/issues/653
 }
 
 void celix::rsa::RemoteServiceAdmin::addExportedServiceFactory(

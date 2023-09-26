@@ -57,8 +57,8 @@ public:
                 PS_PSA_BUNDLE_LOC,
                 PS_WIRE_BUNDLE_LOC,
                 RS_DISCOVERY_BUNDLE_LOC,
-                RS_RSA_BUNDLE_LOC,
-                RS_FACTORY_BUNDLE_LOC };
+                RS_FACTORY_BUNDLE_LOC ,
+                RS_RSA_BUNDLE_LOC};
         for (const auto& bndLoc : sharedBundles) {
             auto bndId = ctx->installBundle(bndLoc);
             EXPECT_GE(bndId, 0);
