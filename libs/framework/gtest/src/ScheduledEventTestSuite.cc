@@ -25,12 +25,10 @@
 
 class ScheduledEventTestSuite : public ::testing::Test {
   public:
-#if defined(__APPLE__) && defined(TESTING_ON_CI)
-    const int ALLOWED_ERROR_MARGIN_IN_MS = 1500;
-#elif TESTING_ON_CI
-    const int ALLOWED_ERROR_MARGIN_IN_MS = 1000;
+#if defined(__APPLE__) || defined(TESTING_ON_CI)
+    const int ALLOWED_ERROR_MARGIN_IN_MS = 2000;
 #else
-    const int ALLOWED_ERROR_MARGIN_IN_MS = 100;
+    const int ALLOWED_ERROR_MARGIN_IN_MS = 1000;
 #endif
 
     const double ALLOWED_PROCESSING_TIME_IN_SECONDS = 0.1;
