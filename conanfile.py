@@ -363,7 +363,8 @@ class CelixConan(ConanFile):
             self.options['gtest'].shared = True
             if self.options.enable_address_sanitizer:
                 self.options["cpputest"].with_leak_detection = False
-        if self.options.build_rsa_discovery_common or self.options.build_shell_bonjour:
+        if (self.options.build_rsa_discovery_common or self.options.build_shell_bonjour or
+                (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.options['libxml2'].shared = True
         if self.options.build_pubsub_psa_zmq:
             self.options['zeromq'].shared = True
@@ -389,7 +390,8 @@ class CelixConan(ConanFile):
             self.requires("libcurl/[>=7.64.1 <8.0.0]")
         if self.options.build_deployment_admin:
             self.requires("zlib/[>=1.2.8 <2.0.0]")
-        if self.options.build_rsa_discovery_common or self.options.build_shell_bonjour:
+        if (self.options.build_rsa_discovery_common or self.options.build_shell_bonjour or
+                (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
         if self.options.build_cxx_remote_service_admin:
             self.requires("rapidjson/[>=1.1.0 <2.0.0]")
