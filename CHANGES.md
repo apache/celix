@@ -19,6 +19,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
+# Noteworthy Changes for 3.0.0 (TBD)
+
+## Backwards incompatible changes
+
+- The libs `dependency_manager_static`, `shell_dm` and `dependency_manager_cxx_static` are removed. These libraries are
+  not needed anymore. The dependency manager is an integral part of the framework lib and the `dm` command is part 
+  of the standard shell commands.
+
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 
 ## New Features
