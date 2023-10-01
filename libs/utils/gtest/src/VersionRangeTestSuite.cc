@@ -418,8 +418,8 @@ TEST_F(VersionRangeTestSuite, createLdapFilterInPlaceInfiniteHigh) {
 }
 
 TEST_F(VersionRangeTestSuite, createLdapFilterWithQualifier) {
-    celix_autoptr(celix_version_t) low = celix_version_createVersion(1, 2, 2, "0");
-    celix_autoptr(celix_version_t) high = celix_version_createVersion(1, 2, 2, "0");
+    celix_autoptr(celix_version_t) low = celix_version_create(1, 2, 2, "0");
+    celix_autoptr(celix_version_t) high = celix_version_create(1, 2, 2, "0");
 
     celix_autoptr(celix_version_range_t) range = celix_versionRange_createVersionRange(celix_steal_ptr(low), true,
                                                                                        celix_steal_ptr(high), true);

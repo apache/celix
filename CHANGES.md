@@ -19,6 +19,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
+# Noteworthy Changes for 3.0.0 (TBD)
+
+## Backwards incompatible changes
+
+- C Properties are no longer a direct typedef o `hashmap`.  
+
+## New Features
+
+- Minimal form of type support for celix Properties.
+
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 
 ## New Features
