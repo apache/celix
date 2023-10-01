@@ -29,14 +29,7 @@ add_subdirectory(framework)
 #launcher
 add_subdirectory(launcher)
 
-#add_subdirectory(event_admin)# event_admin is unstable
-add_subdirectory(dependency_manager)
-if (CELIX_CXX14)
-    add_subdirectory(dependency_manager_cxx)
-endif ()
-
 # Error Injectors
 if (ENABLE_TESTING AND EI_TESTS)
     add_subdirectory(error_injector)
 endif ()
-
