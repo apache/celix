@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required (VERSION 3.18)
+cmake_minimum_required (VERSION 3.19)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0042 NEW)
 cmake_policy(SET CMP0068 NEW)
@@ -42,6 +42,16 @@ if (ENABLE_TESTING)
     find_package(GTest QUIET)
     if (NOT GTest_FOUND)
         include(AddGTest)
+    endif()
+endif ()
+
+
+option(ENABLE_CCACHE "Enabled building with ccache" FALSE)
+if (ENABLE_CCACHE)
+    find_program(CCACHE_EXECUTABLE ccache)
+    if(CCACHE_EXECUTABLE)
+        set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_EXECUTABLE})
+        set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_EXECUTABLE})
     endif()
 endif ()
 
@@ -136,7 +146,7 @@ endif()
 # Set version for the framework package/release
 if (NOT DEFINED CELIX_MAJOR)
     set(CELIX_MAJOR "2")
-    set(CELIX_MINOR "3")
+    set(CELIX_MINOR "4")
     set(CELIX_MICRO "0")
 endif ()
 
@@ -173,6 +183,12 @@ cmake_reset_check_state()
 include(CheckLinkerFlag)
 check_linker_flag(CXX LINKER:--wrap,celix_nonexistent_symbol LINKER_WRAP_SUPPORTED)
 cmake_pop_check_state()
+
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND LINKER_WRAP_SUPPORTED)
+    set(EI_TESTS ON)
+else ()
+    set(EI_TESTS OFF)
+endif()
 
 # avoid unknown export "celix" error when building nothing
 add_library(celix INTERFACE)

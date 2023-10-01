@@ -24,7 +24,6 @@
 #include <pubsub_constants.h>
 #include <pubsub/publisher.h>
 #include <utils.h>
-#include <zconf.h>
 #include <arpa/inet.h>
 #include <celix_log_helper.h>
 #include "pubsub_psa_tcp_constants.h"

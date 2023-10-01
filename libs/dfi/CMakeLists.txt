@@ -43,7 +43,7 @@ if (CELIX_DFI)
 	target_link_libraries(dfi PUBLIC jansson::jansson Celix::utils)##The public header file(dyn_interface.h) Celix::utils(celix_version.h)
 	set_target_properties(dfi PROPERTIES
 			C_VISIBILITY_PRESET hidden
-			VERSION "1.1.0"
+			VERSION "1.3.0"
 			"SOVERSION" 1
 			OUTPUT_NAME "celix_dfi")
 
@@ -60,7 +60,7 @@ if (CELIX_DFI)
 	#Alias setup to match external usage
 	add_library(Celix::dfi ALIAS dfi)
 
-	if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
+	if (ENABLE_TESTING AND EI_TESTS)
 		add_subdirectory(error_injector)
 	endif ()
 	if (ENABLE_TESTING)

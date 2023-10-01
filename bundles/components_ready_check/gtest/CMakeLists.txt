@@ -38,7 +38,7 @@ celix_target_bundle_set_definition(test_components_ready NAME INACTIVE_CMP_TEST_
 add_test(NAME test_components_ready COMMAND test_components_ready)
 setup_target_for_coverage(test_components_ready SCAN_DIR ..)
 
-if (LINKER_WRAP_SUPPORTED)
+if (EI_TESTS)
     add_executable(test_components_ready_with_ei src/ComponentsReadyWithErrorInjectionTestSuite.cc)
     target_link_libraries(test_components_ready_with_ei PRIVATE
             framework_cut

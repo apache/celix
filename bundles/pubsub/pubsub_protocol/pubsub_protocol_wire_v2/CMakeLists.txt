@@ -26,7 +26,7 @@ if (PUBSUB_WIRE_PROTOCOL_V2)
 
     add_celix_bundle(celix_pubsub_protocol_wire_v2
             BUNDLE_SYMBOLICNAME "apache_celix_pubsub_protocol_wire_v2"
-            VERSION "1.0.0"
+            VERSION "1.0.1"
             GROUP "Celix/PubSub"
             SOURCES
             src/ps_wire_v2_protocol_activator.c

@@ -112,7 +112,7 @@ if (UTILS)
     #Alias setup to match external usage
     add_library(Celix::utils ALIAS utils)
 
-    if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
+    if (ENABLE_TESTING AND EI_TESTS)
         add_subdirectory(error_injector)
     endif ()
 

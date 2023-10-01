@@ -36,7 +36,7 @@ target_compile_definitions(integration_test_rsa_json_rpc PRIVATE -DRSA_JSON_RPC_
 add_test(NAME run_integration_test_rsa_json_rpc COMMAND integration_test_rsa_json_rpc)
 setup_target_for_coverage(integration_test_rsa_json_rpc SCAN_DIR ..)
 
-if (LINKER_WRAP_SUPPORTED)
+if (EI_TESTS)
     ####unit test
     add_executable(unit_test_rsa_json_rpc
             src/RsaJsonRpcUnitTestSuite.cc

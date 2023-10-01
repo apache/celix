@@ -22,7 +22,7 @@ if (PUBSUB_PSA_WS)
 
     add_celix_bundle(celix_pubsub_admin_websocket
             BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_websocket"
-            VERSION "2.0.0"
+            VERSION "2.1.0"
             GROUP "Celix/PubSub"
             SOURCES
             src/psa_activator.c

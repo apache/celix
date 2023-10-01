@@ -104,7 +104,7 @@ The bundle context provides functions/methods to:
  - Find service ids for a given filter.
  - Use services directly (without manually creating a service tracker).
  - Use bundles directly (without manually creating a bundle tracker).
- - Wait for events in the Celix event thread.
+ - Wait for events in the Apache Celix event thread.
  - Retrieve framework property values. 
  - Retrieve the bundle object associated with the bundle context. 
  
@@ -180,7 +180,7 @@ add_celix_bundle(my_bundle
     SOURCES src/my_bundle_activator.c
 )
 
-#With `make all`, `make celix-containers` or `make my_container` this Celix container executable will be created at:
+#With `make all`, `make celix-containers` or `make my_container` this Apache Celix container executable will be created at:
 # ${CMAKE_BINARY_DIR}/deploy/my_container/my_container
 add_celix_container(my_container
     C
@@ -221,7 +221,7 @@ add_celix_bundle(MyBundle
     SOURCES src/MyBundleActivator.cc
 )
 
-#With `make all`, `make celix-containers` or `make MyContainer` this Celix container executable will be created at:
+#With `make all`, `make celix-containers` or `make MyContainer` this Apache Celix container executable will be created at:
 # ${CMAKE_BINARY_DIR}/deploy/my_container/MyContainer
 add_celix_container(MyContainer
     CXX
@@ -278,7 +278,7 @@ Bundles will be installed as zip files in the package (default the CMAKE_PROJECT
 It is also possible to use Apache Celix bundles as CMake imported targets, but this requires a more complex 
 CMake installation setup.
 
-## Installing Celix CMake targets
+## Installing Apache Celix CMake targets
 The `install_celix_targets` can be used to generate a CMake file with the imported Apache Celix Bundle CMake targets 
 and this is ideally coupled with a CMake config file so that the bundles are made available when 
 CMake's `find_package` is used.
@@ -296,7 +296,7 @@ add_celix_bundle(ExampleBundleB ...)
 #Install bundle zips
 install_celix_bundle(ExampleBundleA EXPORT MyExport)
 install_celix_bundle(ExampleBundleB EXPORT MyExport)
-#install exported Celix CMake targets
+#install exported Apache Celix CMake targets
 install_celix_targets(MyExport NAMESPACE ExamplePackage:: DESTINATION share/ExamplePackage/cmake FILE CelixTargets)
 
 #Install Package CMake configuration

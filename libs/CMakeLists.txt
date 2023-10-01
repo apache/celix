@@ -36,7 +36,7 @@ if (CELIX_CXX14)
 endif ()
 
 # Error Injectors
-if (ENABLE_TESTING AND LINKER_WRAP_SUPPORTED)
+if (ENABLE_TESTING AND EI_TESTS)
     add_subdirectory(error_injector)
 endif ()
 

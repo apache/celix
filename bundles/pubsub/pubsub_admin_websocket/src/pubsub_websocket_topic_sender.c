@@ -23,7 +23,6 @@
 #include <pubsub_constants.h>
 #include <pubsub/publisher.h>
 #include <utils.h>
-#include <zconf.h>
 #include <celix_log_helper.h>
 #include "pubsub_websocket_topic_sender.h"
 #include "pubsub_psa_websocket_constants.h"

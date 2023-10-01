@@ -28,11 +28,12 @@ required_conan_version = ">=1.32.0"
 
 class CelixConan(ConanFile):
     name = "celix"
-    version = "2.3.0"
+    version = "2.4.0"
     homepage = "https://celix.apache.org"
     url = "https://github.com/apache/celix.git"
     topics = ("conan", "celix", "osgi", "embedded", "linux", "C/C++")
-    exports_sources = "CMakeLists.txt", "bundles*", "cmake*", "!cmake-build*", "examples*", "libs*", "misc*", "LICENSE"
+    exports_sources = ("CMakeLists.txt", "bundles*", "cmake*", "!cmake-build*", "examples*", "libs*", "misc*",
+                       "LICENSE", "!examples/conan_test_package*")
     generators = "CMakeDeps", "VirtualRunEnv"
     settings = "os", "arch", "compiler", "build_type"
     license = " Apache-2.0"
@@ -103,12 +104,13 @@ class CelixConan(ConanFile):
         "enable_cmake_warning_tests": False,
         "enable_testing_on_ci": False,
         "framework_curlinit": True,
+        "enable_ccache": False,
     }
     options = {
         "celix_err_buffer_size": ["ANY"],
     }
     default_options = {
-        "celix_err_buffer_size": 512,
+        "celix_err_buffer_size": "512",
     }
 
     for comp in _celix_defaults.keys():
@@ -149,11 +151,14 @@ class CelixConan(ConanFile):
         del self.info.options.enable_testing_for_cxx14
         del self.info.options.enable_cmake_warning_tests
         del self.info.options.enable_testing_on_ci
+        del self.info.options.enable_ccache
 
     def build_requirements(self):
         if self.options.enable_testing:
             self.test_requires("gtest/1.10.0")
             self.test_requires("cpputest/4.0")
+        if self.options.enable_ccache:
+            self.build_requires("ccache/4.6")
 
     def configure(self):
         # copy options to options, fill in defaults if not set
@@ -358,7 +363,8 @@ class CelixConan(ConanFile):
             self.options['gtest'].shared = True
             if self.options.enable_address_sanitizer:
                 self.options["cpputest"].with_leak_detection = False
-        if self.options.build_rsa_discovery_common or self.options.build_shell_bonjour:
+        if (self.options.build_rsa_discovery_common or self.options.build_shell_bonjour or
+                (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.options['libxml2'].shared = True
         if self.options.build_pubsub_psa_zmq:
             self.options['zeromq'].shared = True
@@ -384,7 +390,8 @@ class CelixConan(ConanFile):
             self.requires("libcurl/[>=7.64.1 <8.0.0]")
         if self.options.build_deployment_admin:
             self.requires("zlib/[>=1.2.8 <2.0.0]")
-        if self.options.build_rsa_discovery_common or self.options.build_shell_bonjour:
+        if (self.options.build_rsa_discovery_common or self.options.build_shell_bonjour or
+                (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
         if self.options.build_cxx_remote_service_admin:
             self.requires("rapidjson/[>=1.1.0 <2.0.0]")
@@ -414,7 +421,7 @@ class CelixConan(ConanFile):
             lst = [x.ref.name for x in self.requires.values()]
             if "mdnsresponder" in lst:
                 tc.cache_variables["BUILD_ERROR_INJECTOR_MDNSRESPONDER"] = "ON"
-        tc.cache_variables["CELIX_ERR_BUFFER_SIZE"] = self.options.celix_err_buffer_size
+        tc.cache_variables["CELIX_ERR_BUFFER_SIZE"] = str(self.options.celix_err_buffer_size)
         # tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":
@@ -422,10 +429,9 @@ class CelixConan(ConanFile):
         elif self.settings.os == "Macos":
             tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
         v = Version(self.version)
-        tc.cache_variables["CELIX_MAJOR"] = v.major.value
-        tc.cache_variables["CELIX_MINOR"] = v.minor.value
-        tc.cache_variables["CELIX_MICRO"] = v.patch.value
-        tc.user_presets_path = False
+        tc.cache_variables["CELIX_MAJOR"] = str(v.major.value)
+        tc.cache_variables["CELIX_MINOR"] = str(v.minor.value)
+        tc.cache_variables["CELIX_MICRO"] = str(v.patch.value)
         tc.generate()
 
     def _configure_cmake(self):

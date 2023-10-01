@@ -21,6 +21,7 @@
 
 #include "version.h"
 #include "version_range.h" //NOTE testing celix_version_range through the deprecated version_range api.
+#include "celix_stdlib_cleanup.h"
 #include "celix_version_range.h"
 #include "version_private.h"
 
@@ -414,4 +415,14 @@ TEST_F(VersionRangeTestSuite, createLdapFilterInPlaceInfiniteHigh) {
     EXPECT_STREQ(buffer, "(&(service.version>1.2.3))");
 
     versionRange_destroy(range);
+}
+
+TEST_F(VersionRangeTestSuite, createLdapFilterWithQualifier) {
+    celix_autoptr(celix_version_t) low = celix_version_createVersion(1, 2, 2, "0");
+    celix_autoptr(celix_version_t) high = celix_version_createVersion(1, 2, 2, "0");
+
+    celix_autoptr(celix_version_range_t) range = celix_versionRange_createVersionRange(celix_steal_ptr(low), true,
+                                                                                       celix_steal_ptr(high), true);
+    celix_autofree char* filter = celix_versionRange_createLDAPFilter(range, "service.version");
+    EXPECT_STREQ(filter, "(&(service.version>=1.2.2.0)(service.version<=1.2.2.0))");
 }
