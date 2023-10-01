@@ -19,7 +19,7 @@ celix_subproject(PUBSUB_PSA_UDP_MC "Build UDP MC PubSub Admin" ON)
 if (PUBSUB_PSA_UDP_MC)
     add_celix_bundle(celix_pubsub_admin_udp_multicast
             BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_udp_multicast"
-            VERSION "1.0.0"
+            VERSION "1.1.0"
             GROUP "Celix/PubSub"
             SOURCES
             src/psa_activator.c

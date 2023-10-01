@@ -36,7 +36,7 @@ if (PUBSUB_PSA_ZMQ)
 
     add_celix_bundle(celix_pubsub_admin_zmq
             BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq"
-            VERSION "2.0.0"
+            VERSION "2.1.0"
             GROUP "Celix/PubSub"
             SOURCES
             src/psa_activator.c
