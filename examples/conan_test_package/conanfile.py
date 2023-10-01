@@ -62,7 +62,6 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_PUBSUB_AVROBIN_SERIALIZER"] = self.options["celix"].build_pubsub_avrobin_serializer
         cmake.definitions["TEST_CXX_REMOTE_SERVICE_ADMIN"] = self.options["celix"].build_cxx_remote_service_admin
         cmake.definitions["TEST_SHELL_API"] = self.options["celix"].build_shell_api
-        cmake.definitions["TEST_SHELL_BONJOUR"] = self.options["celix"].build_shell_bonjour
         cmake.definitions["TEST_CELIX_DFI"] = self.options["celix"].build_celix_dfi
         cmake.definitions["TEST_UTILS"] = self.options["celix"].build_utils
         cmake.definitions["TEST_COMPONENTS_READY_CHECK"] = self.options["celix"].build_components_ready_check
@@ -157,9 +156,6 @@ class TestPackageConan(ConanFile):
                 self.run("./use_rsa_spi", run_environment=True)
             if self.options["celix"].build_shell_api:
                 self.run("./use_shell_api", run_environment=True)
-            if self.options["celix"].build_shell_bonjour:
-                self.run("./use_shell_bonjour",
-                         cwd=os.path.join("deploy", "use_shell_bonjour"), run_environment=True)
             if self.options["celix"].build_celix_dfi:
                 self.run("./use_celix_dfi", run_environment=True)
             if self.options["celix"].build_utils:

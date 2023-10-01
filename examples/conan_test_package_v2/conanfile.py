@@ -72,7 +72,6 @@ class TestPackageConan(ConanFile):
         tc.cache_variables["TEST_PUBSUB_AVROBIN_SERIALIZER"] = celix_options.build_pubsub_avrobin_serializer
         tc.cache_variables["TEST_CXX_REMOTE_SERVICE_ADMIN"] = celix_options.build_cxx_remote_service_admin
         tc.cache_variables["TEST_SHELL_API"] = celix_options.build_shell_api
-        tc.cache_variables["TEST_SHELL_BONJOUR"] = celix_options.build_shell_bonjour
         tc.cache_variables["TEST_CELIX_DFI"] = celix_options.build_celix_dfi
         tc.cache_variables["TEST_UTILS"] = celix_options.build_utils
         tc.cache_variables["TEST_COMPONENTS_READY_CHECK"] = celix_options.build_components_ready_check
@@ -173,9 +172,6 @@ class TestPackageConan(ConanFile):
                     self.run("./conan_test_package/use_rsa_spi", env="conanrun")
                 if celix_options.build_shell_api:
                     self.run("./conan_test_package/use_shell_api", env="conanrun")
-                if celix_options.build_shell_bonjour:
-                    self.run("./use_shell_bonjour",
-                             cwd=os.path.join("deploy", "use_shell_bonjour"), env="conanrun")
                 if celix_options.build_celix_dfi:
                     self.run("./conan_test_package/use_celix_dfi", env="conanrun")
                 if celix_options.build_utils:
