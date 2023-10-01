@@ -382,6 +382,7 @@ class CelixConan(ConanFile):
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
                 or self.options.build_launcher):
             self.requires("libcurl/[>=7.64.1 <8.0.0]")
+            self.requires("zlib/[>=1.2.13 <2.0.0]") #Direct dep on zlib is needed to resolve a conflict with libcurl and libzip
         if (self.options.build_rsa_discovery_common or self.options.build_shell_bonjour or
                 (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
