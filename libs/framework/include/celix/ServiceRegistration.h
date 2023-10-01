@@ -67,21 +67,6 @@ namespace celix {
          * @return The new ServiceRegistration object as shared ptr.
          * @throws celix::Exception
          */
-#if __cplusplus >= 201703L //C++17 or higher
-        static std::shared_ptr<ServiceRegistration> create(std::shared_ptr<celix_bundle_context_t> cCtx,
-                                                           std::shared_ptr<void> svc,
-                                                           std::string_view name,
-                                                           std::string_view version,
-                                                           celix::Properties properties,
-                                                           bool registerAsync,
-                                                           bool unregisterAsync,
-                                                           std::vector<std::function<void(ServiceRegistration&)>> onRegisteredCallbacks,
-                                                           std::vector<std::function<void(ServiceRegistration&)>> onUnregisteredCallbacks) {
-            return createInternal(std::move(cCtx), std::move(svc), name.data(),
-                                  version.data(), std::move(properties), registerAsync,
-                                  unregisterAsync, std::move(onRegisteredCallbacks), std::move(onUnregisteredCallbacks));
-        }
-#else
         static std::shared_ptr<ServiceRegistration> create(std::shared_ptr<celix_bundle_context_t> cCtx,
                                                            std::shared_ptr<void> svc,
                                                            const std::string& name,
@@ -95,7 +80,6 @@ namespace celix {
                                   version.c_str(), std::move(properties), registerAsync,
                                   unregisterAsync, std::move(onRegisteredCallbacks), std::move(onUnregisteredCallbacks));
         }
-#endif
 
         /**
          * @brief The service name for this service registration.

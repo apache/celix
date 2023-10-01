@@ -725,21 +725,6 @@ TEST_F(CxxBundleContextTestSuite, GetBundleInformation) {
     EXPECT_TRUE(startCalled);
 }
 
-#if __cplusplus >= 201703L //C++17 or higher
-class TestInterfaceWithStaticInfo {
-public:
-    static constexpr std::string_view NAME = "TestName";
-    static constexpr std::string_view VERSION = "1.2.3";
-};
-
-TEST_F(CxxBundleContextTestSuite, RegisterServiceWithNameAndVersionInfo) {
-    auto reg = ctx->registerService<TestInterfaceWithStaticInfo>(std::make_shared<TestInterfaceWithStaticInfo>())
-            .build();
-    EXPECT_EQ(reg->getServiceName(), "TestName");
-    EXPECT_EQ(reg->getServiceVersion(), "1.2.3");
-}
-#endif
-
 TEST_F(CxxBundleContextTestSuite, listBundles) {
     auto list = ctx->listBundleIds();
     EXPECT_EQ(0, list.size());

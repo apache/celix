@@ -15,21 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set(CMAKE_CXX_STANDARD 17)
-
-set(CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS
+add_executable(test_utils
         src/CxxUtilsTestSuite.cc
         src/CxxPropertiesTestSuite.cc
         src/CxxFilterTestSuite.cc
-)
-
-add_executable(test_utils
         src/LogTestSuite.cc
         src/LogUtilsTestSuite.cc
         src/VersionRangeTestSuite.cc
         src/TimeUtilsTestSuite.cc
-        src/HashMapTestSuite.cc
-        src/ArrayListTestSuite.cc
         src/FileUtilsTestSuite.cc
         src/FilterTestSuite.cc
         src/CelixUtilsTestSuite.cc
@@ -38,10 +31,16 @@ add_executable(test_utils
         src/ThreadsTestSuite.cc
         src/CelixErrnoTestSuite.cc
         src/CelixUtilsAutoCleanupTestSuite.cc
-        ${CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS}
 )
 
-target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::zip)
+add_library(test_utils_cxx17tests STATIC
+        src/ArrayListTestSuite.cc #Uses constexpr
+        src/HashMapTestSuite.cc   #Uses constexpr
+)
+target_link_libraries(test_utils_cxx17tests PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main)
+target_compile_features(test_utils_cxx17tests PRIVATE cxx_std_17)
+
+target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::zip test_utils_cxx17tests)
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
 celix_deprecated_utils_headers(test_utils)
 
@@ -112,15 +111,3 @@ if (EI_TESTS)
     add_test(NAME test_utils_with_ei COMMAND test_utils_with_ei)
     setup_target_for_coverage(test_utils_with_ei SCAN_DIR ..)
 endif ()
-
-if (ENABLE_TESTING_FOR_CXX14)
-    #Setting standard to C++14 and testing C++ Properties.h, Filter.h and Utils.h to ensure that C++14 is supported.
-    set(CMAKE_CXX_STANDARD 14)
-    add_executable(test_utils_cxx_headers_with_cxx14
-            ${CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS}
-    )
-    target_link_libraries(test_utils_cxx_headers_with_cxx14 PRIVATE utils_cut GTest::gtest GTest::gtest_main)
-    add_test(NAME test_utils_cxx_headers_with_cxx14 COMMAND test_utils_cxx_headers_with_cxx14)
-    setup_target_for_coverage(test_utils_cxx_headers_with_cxx14 SCAN_DIR ..)
-endif ()
-

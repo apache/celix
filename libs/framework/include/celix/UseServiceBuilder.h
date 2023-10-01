@@ -70,11 +70,7 @@ namespace celix {
          * Example:
          *      "(property_key=value)"
          */
-#if __cplusplus >= 201703L //C++17 or higher
-        UseServiceBuilder& setFilter(std::string_view f) { filter = celix::Filter{f}; return *this; }
-#else
         UseServiceBuilder& setFilter(const std::string& f) { filter = celix::Filter{f}; return *this; }
-#endif
 
         /**
          * @brief Set filter to be used to matching services.
