@@ -50,7 +50,6 @@ class CelixConan(ConanFile):
         "enable_testing_dependency_manager_for_cxx11": False,
         "enable_testing_for_cxx14": False,
         "build_all": False,
-        "build_deployment_admin": False,
         "build_http_admin": False,
         "build_log_service": False,
         "build_log_helper": False,
@@ -189,9 +188,6 @@ class CelixConan(ConanFile):
 
         if options["build_shell_bonjour"]:
             options["build_shell"] = True
-
-        if options["build_deployment_admin"]:
-            options["build_framework"] = True
 
         if options["build_cxx_rsa_integration"]:
             options["build_cxx_remote_service_admin"] = True
@@ -352,13 +348,11 @@ class CelixConan(ConanFile):
         if self.options.build_framework or self.options.build_pubsub:
             self.options['util-linux-libuuid'].shared = True
         if ((self.options.build_framework and self.options.framework_curlinit)
-                or self.options.build_celix_etcdlib or self.options.build_deployment_admin
+                or self.options.build_celix_etcdlib
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
                 or self.options.build_launcher):
             self.options['libcurl'].shared = True
             self.options['openssl'].shared = True
-        if self.options.build_deployment_admin:
-            self.options['zlib'].shared = True
         if self.options.enable_testing:
             self.options['gtest'].shared = True
             if self.options.enable_address_sanitizer:
@@ -384,12 +378,10 @@ class CelixConan(ConanFile):
         if self.options.build_framework or self.options.build_pubsub:
             self.requires("util-linux-libuuid/2.39")
         if ((self.options.build_framework and self.options.framework_curlinit)
-                or self.options.build_celix_etcdlib or self.options.build_deployment_admin
+                or self.options.build_celix_etcdlib
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
                 or self.options.build_launcher):
             self.requires("libcurl/[>=7.64.1 <8.0.0]")
-        if self.options.build_deployment_admin:
-            self.requires("zlib/[>=1.2.8 <2.0.0]")
         if (self.options.build_rsa_discovery_common or self.options.build_shell_bonjour or
                 (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
