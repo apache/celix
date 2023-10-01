@@ -19,6 +19,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
+# Noteworthy Changes for 3.0.0 (TBD)
+
+## Backwards incompatible changes
+
+- Celix C API without a `celix_` is removed from the utils and framework lib and no longer supported.
+- Shell v2 api is removed and no longer supported.
+- Logging v2 api is removed and no longer supported.
+- Bonjour Shell bundle is removed and no longer supported.
+
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 
 ## New Features
