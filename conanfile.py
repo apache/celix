@@ -153,7 +153,7 @@ class CelixConan(ConanFile):
         del self.info.options.enable_cmake_warning_tests
         del self.info.options.enable_testing_on_ci
         del self.info.options.enable_ccache
-        del self.info.optoins.enable_deprecated_warnings
+        del self.info.options.enable_deprecated_warnings
 
     def build_requirements(self):
         if self.options.enable_testing:
