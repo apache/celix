@@ -23,14 +23,6 @@ if (LOG_SERVICE_API)
             )
     target_link_libraries(log_service_api INTERFACE Celix::utils)
 
-    if (CELIX_INSTALL_DEPRECATED_API)
-        target_link_libraries(log_service_api INTERFACE Celix::framework)
-        target_include_directories(log_service_api INTERFACE
-                $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include_v2>
-                )
-        install(DIRECTORY include_v2/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_service)
-    endif ()
-
     install(TARGETS log_service_api EXPORT celix
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_service)
     install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/log_service)
