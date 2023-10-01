@@ -164,6 +164,7 @@ option(CELIX_INSTALL_DEPRECATED_API "whether to install (and use) deprecated api
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
 
 option(CELIX_CXX14 "Build C++14 libraries and bundles. Note for tests C++ is always used." ON)
+option(CELIX_CXX17 "Build C++17 libraries and bundles. Note for tests C++ is always used." ON)
 if (CELIX_CXX17 AND NOT CELIX_CXX14)
     set(CELIX_CXX14 ON)
 endif ()
