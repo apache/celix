@@ -27,6 +27,7 @@ limitations under the License.
 - Shell v2 api is removed and no longer supported.
 - Logging v2 api is removed and no longer supported.
 - Bonjour Shell bundle is removed and no longer supported.
+- pubsub_serializer.h is removed and no longer supported. Use pubsub_message_serialization_service.h instead. 
 
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 

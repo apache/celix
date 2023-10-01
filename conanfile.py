@@ -65,7 +65,6 @@ class CelixConan(ConanFile):
         "build_pubsub_examples": False,
         "build_pubsub_integration": False,
         "build_pubsub_psa_tcp": False,
-        "build_pubsub_psa_udp_mc": False,
         "build_pubsub_psa_ws": False,
         "build_pubsub_discovery_etcd": False,
         "build_cxx_remote_service_admin": False,
@@ -233,8 +232,7 @@ class CelixConan(ConanFile):
             options["build_http_admin"] = True
             options["build_pubsub"] = True
 
-        if options["build_pubsub_psa_zmq"] or options["build_pubsub_psa_tcp"] \
-                or options["build_pubsub_psa_udp_mc"]:
+        if options["build_pubsub_psa_zmq"] or options["build_pubsub_psa_tcp"]:
             options["build_pubsub"] = True
 
         if options["build_pubsub_wire_protocol_v1"]:

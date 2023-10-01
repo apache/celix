@@ -25,7 +25,6 @@ if (PUBSUB_AVROBIN_SERIALIZER)
             GROUP "Celix/PubSub"
             SOURCES
             src/ps_avrobin_serializer_activator.c
-            src/pubsub_avrobin_serializer_impl.c
             src/pubsub_avrobin_serialization_provider.c
             )
     target_include_directories(celix_pubsub_serializer_avrobin PRIVATE

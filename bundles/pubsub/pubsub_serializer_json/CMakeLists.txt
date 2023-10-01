@@ -26,7 +26,6 @@ if (PUBSUB_JSON_SERIALIZER)
             GROUP "Celix/PubSub"
             SOURCES
             src/ps_json_serializer_activator.c
-            src/pubsub_serializer_impl.c
             src/pubsub_json_serialization_provider.c
             )
     target_include_directories(celix_pubsub_serializer_json PRIVATE

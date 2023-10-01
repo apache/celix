@@ -17,7 +17,6 @@
  * under the License.
  */
 
-#include <pubsub_serializer.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <memory.h>

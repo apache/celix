@@ -43,7 +43,6 @@ class TestPackageConan(ConanFile):
         tc.cache_variables["TEST_PUBSUB"] = celix_options.build_pubsub
         tc.cache_variables["TEST_PSA_ZMQ"] = celix_options.build_pubsub_psa_zmq
         tc.cache_variables["TEST_PSA_TCP"] = celix_options.build_pubsub_psa_tcp
-        tc.cache_variables["TEST_PSA_UDP_MC"] = celix_options.build_pubsub_psa_udp_mc
         tc.cache_variables["TEST_PSA_WS"] = celix_options.build_pubsub_psa_ws
         tc.cache_variables["TEST_PSA_DISCOVERY_ETCD"] = celix_options.build_pubsub_discovery_etcd
         tc.cache_variables["TEST_RSA"] = celix_options.build_remote_service_admin
@@ -106,8 +105,6 @@ class TestPackageConan(ConanFile):
                     self.run("./use_psa_zmq", cwd=os.path.join("deploy", "use_psa_zmq"), env="conanrun")
                 if celix_options.build_pubsub_psa_tcp:
                     self.run("./use_psa_tcp", cwd=os.path.join("deploy", "use_psa_tcp"), env="conanrun")
-                if celix_options.build_pubsub_psa_udp_mc:
-                    self.run("./use_psa_udp_mc", cwd=os.path.join("deploy", "use_psa_udp_mc"), env="conanrun")
                 if celix_options.build_pubsub_psa_ws:
                     self.run("./use_psa_ws", cwd=os.path.join("deploy", "use_psa_ws"), env="conanrun")
                 if celix_options.build_pubsub_discovery_etcd and celix_options.build_launcher:
