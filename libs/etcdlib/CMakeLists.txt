@@ -23,7 +23,7 @@ if (NOT COMMAND celix_subproject)
 
     cmake_minimum_required (VERSION 3.18)
     project(ETCDLIB 
-        VERSION 1.1.0
+        VERSION 1.2.0
         LANGUAGES C CXX
     )
 
@@ -51,7 +51,7 @@ if (CELIX_ETCDLIB OR ETCDLIB_STANDALONE)
     target_include_directories(etcdlib PRIVATE src)
     set_target_properties(etcdlib
             PROPERTIES
-                VERSION 1.0.0
+                VERSION 1.2.0
                 SOVERSION 1
                 C_VISIBILITY_PRESET hidden
     )

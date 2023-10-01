@@ -28,7 +28,7 @@ required_conan_version = ">=1.32.0"
 
 class CelixConan(ConanFile):
     name = "celix"
-    version = "2.3.0"
+    version = "2.4.0"
     homepage = "https://celix.apache.org"
     url = "https://github.com/apache/celix.git"
     topics = ("conan", "celix", "osgi", "embedded", "linux", "C/C++")

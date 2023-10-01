@@ -21,7 +21,7 @@ if (PUBSUB_PSA_TCP)
 
     add_celix_bundle(celix_pubsub_admin_tcp
             BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_tcp"
-            VERSION "2.0.0"
+            VERSION "2.1.0"
             GROUP "Celix/PubSub"
             SOURCES
             src/psa_activator.c
