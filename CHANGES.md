@@ -19,6 +19,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
+# Noteworthy Changes for 3.0.0 (TBD)
+
+## Backwards incompatible changes
+
+- C++11 support for dm is removed. C++14 is now the minimum required version.
+- C++17 string_view support is removed from the utils and framework lib.
+
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 
 ## New Features
