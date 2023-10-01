@@ -75,9 +75,6 @@ if (FRAMEWORK)
     install(TARGETS framework EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/framework)
     install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/framework COMPONENT framework)
-    if (CELIX_INSTALL_DEPRECATED_API)
-        install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/framework COMPONENT framework)
-    endif ()
     install(DIRECTORY ${CMAKE_BINARY_DIR}/celix/gen/includes/framework/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/framework COMPONENT framework)
 
     #Alias setup to match external usage

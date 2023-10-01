@@ -105,6 +105,7 @@ class CelixConan(ConanFile):
         "enable_testing_on_ci": False,
         "framework_curlinit": True,
         "enable_ccache": False,
+        "enable_deprecated_warnings": False,
     }
     options = {
         "celix_err_buffer_size": ["ANY"],
@@ -152,6 +153,7 @@ class CelixConan(ConanFile):
         del self.info.options.enable_cmake_warning_tests
         del self.info.options.enable_testing_on_ci
         del self.info.options.enable_ccache
+        del self.info.optoins.enable_deprecated_warnings
 
     def build_requirements(self):
         if self.options.enable_testing:

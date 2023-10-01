@@ -157,7 +157,6 @@ if (ENABLE_TESTING)
     enable_testing()
 endif()
 
-option(CELIX_INSTALL_DEPRECATED_API "whether to install (and use) deprecated apis (i.e. header without a celix_ prefix." ON)
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
 
 option(CELIX_CXX14 "Build C++14 libraries and bundles. Note for tests C++ is always used." ON)
@@ -170,9 +169,9 @@ option(ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11 "Test the Dependency Manager 
 option(ENABLE_TESTING_FOR_CXX14 "Test celix utils and framework C++ header for C++14 support" OFF)
 option(ENABLE_CMAKE_WARNING_TESTS "Enable cmake warning tests to test warning prints" OFF)
 option(ENABLE_TESTING_ON_CI "Whether to enable testing on CI. This influence allowed timing errors during unit tests" OFF)
+option(ENABLE_DEPRECATED_WARNINGS "Enable compiler warnings for usage of deprecated functionality" OFF)
 
-if (CELIX_INSTALL_DEPRECATED_API)
-    #ignore deprecated warnings
+if (NOT ENABLE_DEPRECATED_WARNINGS)
     set(CMAKE_C_FLAGS "-Wno-deprecated-declarations ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "-Wno-deprecated-declarations ${CMAKE_CXX_FLAGS}")
 endif ()
