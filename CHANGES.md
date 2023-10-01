@@ -19,7 +19,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Noteworthy Changes for 2.4.0 (TBD)
+# Noteworthy Changes for 3.0.0 (TBD)
+
+- Deployment Admin bundle has been removed and is no longer supported.
+
+# Noteworthy Changes for 2.4.0 (2023-09-27)
 
 ## New Features
 
@@ -30,10 +34,10 @@ limitations under the License.
 - Coding convention documentation.
 - Celix error library for printing errors when no framework is available.
 - Scope-based Resource Management (RAII-light for C).
-- Rust Proof of Concept (PoC) for Apache Celix.
 - Support for uncompressed bundle deployment, which enables multiple frameworks to share the bundle resources by
   using unzipped bundle dirs instead of a zip files as BUNDLES arguments in `add_celix_container`.
-
+- Scheduled event support, so that (low-frequency / non IO blocking) events can be scheduled on the Apache Celix event
+  thread. 
 
 ## Improvements
 
