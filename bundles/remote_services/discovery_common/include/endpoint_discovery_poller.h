@@ -31,6 +31,7 @@
 #include "discovery_type.h"
 #include "celix_log_helper.h"
 #include "celix_threads.h"
+#include "celix_array_list.h"
 #include "hash_map.h"
 
 typedef struct endpoint_discovery_poller endpoint_discovery_poller_t;
@@ -55,6 +56,6 @@ celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_t *poll
 celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_poller_t *poller, char *url);
 celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discovery_poller_t *poller, char *url);
 
-celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_poller_t *poller, array_list_pt urls);
+celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_poller_t *poller, celix_array_list_t* urls);
 
 #endif /* ENDPOINT_DISCOVERY_POLLER_H_ */

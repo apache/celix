@@ -35,13 +35,16 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_PSA_TCP"] = self.options["celix"].build_pubsub_psa_tcp
         cmake.definitions["TEST_PSA_WS"] = self.options["celix"].build_pubsub_psa_ws
         cmake.definitions["TEST_PSA_DISCOVERY_ETCD"] = self.options["celix"].build_pubsub_discovery_etcd
-        cmake.definitions["TEST_RSA"] = self.options["celix"].build_remote_service_admin
-        cmake.definitions["TEST_RSA_DFI"] = self.options["celix"].build_rsa_remote_service_admin_dfi
-        cmake.definitions["TEST_RSA_SHM_V2"] = self.options["celix"].build_rsa_remote_service_admin_shm_v2
-        cmake.definitions["TEST_RSA_RPC_JSON"] = self.options["celix"].build_rsa_json_rpc
-        cmake.definitions["TEST_RSA_DISCOVERY_CONFIGURED"] = self.options["celix"].build_rsa_discovery_configured
-        cmake.definitions["TEST_RSA_DISCOVERY_ETCD"] = self.options["celix"].build_rsa_discovery_etcd
-        cmake.definitions["TEST_RSA_DISCOVERY_ZEROCONF"] = self.options["celix"].build_rsa_discovery_zeroconf
+
+        #TODO #509. Refactor RSA so that service_reference and hashmap are not needed anymore
+        #cmake.definitions["TEST_RSA"] = self.options["celix"].build_remote_service_admin
+        #cmake.definitions["TEST_RSA_DFI"] = self.options["celix"].build_rsa_remote_service_admin_dfi
+        #cmake.definitions["TEST_RSA_SHM_V2"] = self.options["celix"].build_rsa_remote_service_admin_shm_v2
+        #cmake.definitions["TEST_RSA_RPC_JSON"] = self.options["celix"].build_rsa_json_rpc
+        #cmake.definitions["TEST_RSA_DISCOVERY_CONFIGURED"] = self.options["celix"].build_rsa_discovery_configured
+        #cmake.definitions["TEST_RSA_DISCOVERY_ETCD"] = self.options["celix"].build_rsa_discovery_etcd
+        #cmake.definitions["TEST_RSA_DISCOVERY_ZEROCONF"] = self.options["celix"].build_rsa_discovery_zeroconf
+
         cmake.definitions["TEST_SHELL"] = self.options["celix"].build_shell
         if self.options["celix"].build_shell:
             cmake.definitions["TEST_CXX_SHELL"] = self.options["celix"].celix_cxx17 or self.options["celix"].celix_cxx14
@@ -94,22 +97,25 @@ class TestPackageConan(ConanFile):
             if self.options["celix"].build_pubsub_discovery_etcd and self.options["celix"].build_launcher:
                 self.run("./use_psa_discovery_etcd",
                          cwd=os.path.join("deploy", "use_psa_discovery_etcd"), run_environment=True)
-            if self.options["celix"].build_remote_service_admin:
-                self.run("./use_my_rsa", cwd=os.path.join("deploy", "use_my_rsa"), run_environment=True)
-                self.run("./use_c_rsa_spi", run_environment=True)
-            if self.options["celix"].build_rsa_remote_service_admin_dfi and self.options["celix"].build_launcher:
-                self.run("./use_rsa_dfi", cwd=os.path.join("deploy", "use_rsa_dfi"), run_environment=True)
-            if self.options["celix"].build_rsa_remote_service_admin_shm_v2:
-                self.run("./use_rsa_shm_v2", cwd=os.path.join("deploy", "use_rsa_shm_v2"), run_environment=True)
-            if self.options["celix"].build_rsa_json_rpc:
-                self.run("./use_rsa_rpc_json", cwd=os.path.join("deploy", "use_rsa_rpc_json"), run_environment=True)
-            if self.options["celix"].build_rsa_discovery_configured and self.options["celix"].build_launcher:
-                self.run("./use_rsa_configured", cwd=os.path.join("deploy", "use_rsa_configured"), run_environment=True)
-            if self.options["celix"].build_rsa_discovery_etcd and self.options["celix"].build_launcher:
-                self.run("./use_rsa_etcd", cwd=os.path.join("deploy", "use_rsa_etcd"), run_environment=True)
-            if self.options["celix"].build_rsa_discovery_zeroconf:
-                self.run("./use_rsa_discovery_zeroconf",
-                         cwd=os.path.join("deploy", "use_rsa_discovery_zeroconf"), run_environment=True)
+
+            #TODO #509. Refactor RSA so that service_reference and hashmap are not needed anymore
+            # if self.options["celix"].build_remote_service_admin:
+            #     self.run("./use_my_rsa", cwd=os.path.join("deploy", "use_my_rsa"), run_environment=True)
+            #     self.run("./use_c_rsa_spi", run_environment=True)
+            # if self.options["celix"].build_rsa_remote_service_admin_dfi and self.options["celix"].build_launcher:
+            #     self.run("./use_rsa_dfi", cwd=os.path.join("deploy", "use_rsa_dfi"), run_environment=True)
+            # if self.options["celix"].build_rsa_remote_service_admin_shm_v2:
+            #     self.run("./use_rsa_shm_v2", cwd=os.path.join("deploy", "use_rsa_shm_v2"), run_environment=True)
+            # if self.options["celix"].build_rsa_json_rpc:
+            #     self.run("./use_rsa_rpc_json", cwd=os.path.join("deploy", "use_rsa_rpc_json"), run_environment=True)
+            # if self.options["celix"].build_rsa_discovery_configured and self.options["celix"].build_launcher:
+            #     self.run("./use_rsa_configured", cwd=os.path.join("deploy", "use_rsa_configured"), run_environment=True)
+            # if self.options["celix"].build_rsa_discovery_etcd and self.options["celix"].build_launcher:
+            #     self.run("./use_rsa_etcd", cwd=os.path.join("deploy", "use_rsa_etcd"), run_environment=True)
+            # if self.options["celix"].build_rsa_discovery_zeroconf:
+            #     self.run("./use_rsa_discovery_zeroconf",
+            #              cwd=os.path.join("deploy", "use_rsa_discovery_zeroconf"), run_environment=True)
+
             if self.options["celix"].build_shell:
                 self.run("./use_shell", run_environment=True)
                 if self.options["celix"].celix_cxx17 or self.options["celix"].celix_cxx14:
