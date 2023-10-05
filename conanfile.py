@@ -92,8 +92,6 @@ class CelixConan(ConanFile):
         "build_pushstreams": False,
         "build_experimental": False,
         "build_celix_dfi": False,
-        "build_dependency_manager": False,
-        "build_dependency_manager_cxx": False,
         "build_framework": False,
         "build_rcm": False,
         "build_utils": False,
@@ -319,12 +317,8 @@ class CelixConan(ConanFile):
         if options["build_rcm"]:
             options["build_utils"] = True
 
-        if options["build_launcher"] or options["build_dependency_manager"]:
+        if options["build_launcher"]:
             options["build_framework"] = True
-
-        if options["build_dependency_manager_cxx"]:
-            options["build_framework"] = True
-            options["celix_cxx14"] = True
 
         if options["build_celix_dfi"]:
             options["build_utils"] = True
