@@ -345,11 +345,6 @@ if (TEST_PUSHSTREAMS)
     target_link_libraries(use_pushstreams PRIVATE Celix::PushStreams)
 endif ()
 
-option(TEST_DEPLOYMENT_ADMIN "Test deployment admin" OFF)
-if (TEST_DEPLOYMENT_ADMIN)
-    add_celix_container("use_deployment_admin" BUNDLES Celix::deployment_admin hello)
-endif ()
-
 option(TEST_LOG_HELPER "Test log helper" OFF)
 if (TEST_LOG_HELPER)
     add_executable(use_log_helper test_log_helper.c)
