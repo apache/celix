@@ -37,7 +37,7 @@ class CelixConan(ConanFile):
     generators = "CMakeDeps", "VirtualRunEnv"
     settings = "os", "arch", "compiler", "build_type"
     license = " Apache-2.0"
-    description = "Apache Celix is an implementation of the OSGi specification adapted to C and C++ (C++17). " \
+    description = "Apache Celix is an implementation of the OSGi specification adapted to C and C++ (C++14). " \
                   "It is a framework to develop (dynamic) modular software applications " \
                   "using component and/or service-oriented programming."
 
