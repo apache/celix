@@ -19,7 +19,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Conan v1 Test Package
+# Conan Test Package
 
 > To learn API usage, we refer our users to `celix-examples` and various tests. The C/C++ source codes in this folder are NOT worth reading.
 

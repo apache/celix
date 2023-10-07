@@ -27,8 +27,8 @@
 #ifndef ENDPOINT_LISTENER_H_
 #define ENDPOINT_LISTENER_H_
 
-#include "celix_array_list.h"
-#include "celix_properties.h"
+#include "array_list.h"
+#include "properties.h"
 
 #include "endpoint_description.h"
 

@@ -22,13 +22,32 @@
 #include <celix_log_helper.h>
 #include <pubsub_admin.h>
 #include <pubsub_constants.h>
+#include <pubsub_serializer.h>
 #include <stdlib.h>
 
 typedef struct my_psa_activator {
     celix_log_helper_t *logHelper;
+    long serializersTrackerId;
     pubsub_admin_service_t adminService;
     long adminSvcId;
 } my_psa_activator_t;
+
+static void myPsa_addSerializerSvc(void *handle, void *svc, const celix_properties_t *props) {
+    my_psa_activator_t *act = handle;
+    const char *serType = celix_properties_get(props, PUBSUB_SERIALIZER_TYPE_KEY, NULL);
+    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    celix_logHelper_info(act->logHelper, "Serializer Added: %s=%s %s=%ld\n",
+                         PUBSUB_SERIALIZER_TYPE_KEY, serType, OSGI_FRAMEWORK_SERVICE_ID, svcId);
+
+}
+
+static void myPsa_removeSerializerSvc(void *handle, void *svc, const celix_properties_t *props) {
+    my_psa_activator_t *act = handle;
+    const char *serType = celix_properties_get(props, PUBSUB_SERIALIZER_TYPE_KEY, NULL);
+    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    celix_logHelper_info(act->logHelper, "Serializer Removed: %s=%s %s=%ld\n",
+                         PUBSUB_SERIALIZER_TYPE_KEY, serType, OSGI_FRAMEWORK_SERVICE_ID, svcId);
+}
 
 static celix_status_t matchPublisher(void *handle, long svcRequesterBndId,
                                      const celix_filter_t *svcFilter, celix_properties_t **outTopicProperties,
@@ -118,8 +137,20 @@ static celix_status_t removeDiscoveredEndpoint(void *handle, const celix_propert
 
 int psa_udpmc_start(my_psa_activator_t *act, celix_bundle_context_t *ctx) {
     act->adminSvcId = -1L;
+    act->serializersTrackerId = -1L;
     act->logHelper = celix_logHelper_create(ctx, "my_psa_admin");
     celix_status_t status = CELIX_SUCCESS;
+
+    //track serializers
+    if (status == CELIX_SUCCESS) {
+        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+        opts.filter.serviceName = PUBSUB_SERIALIZER_SERVICE_NAME;
+        opts.filter.ignoreServiceLanguage = true;
+        opts.callbackHandle = act;
+        opts.addWithProperties = myPsa_addSerializerSvc;
+        opts.removeWithProperties = myPsa_removeSerializerSvc;
+        act->serializersTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    }
 
     //register pubsub admin service
     if (status == CELIX_SUCCESS) {
@@ -146,6 +177,7 @@ int psa_udpmc_start(my_psa_activator_t *act, celix_bundle_context_t *ctx) {
 
 int psa_udpmc_stop(my_psa_activator_t *act, celix_bundle_context_t *ctx) {
     celix_bundleContext_unregisterService(ctx, act->adminSvcId);
+    celix_bundleContext_stopTracker(ctx, act->serializersTrackerId);
     celix_logHelper_destroy(act->logHelper);
     return CELIX_SUCCESS;
 }

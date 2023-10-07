@@ -28,7 +28,6 @@
 #include <string.h>
 #include <libxml/xmlwriter.h>
 
-#include "hash_map.h"
 #include "celix_constants.h"
 #include "remote_constants.h"
 
