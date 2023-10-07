@@ -19,6 +19,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
+# Noteworthy Changes for 3.0.0 (TBD)
+
+- Deployment Admin bundle has been removed and is no longer supported.
+
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 
 ## New Features

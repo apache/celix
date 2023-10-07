@@ -63,7 +63,6 @@ class TestPackageConan(ConanFile):
         tc.cache_variables["TEST_LAUNCHER"] = celix_options.build_launcher
         tc.cache_variables["TEST_PROMISES"] = celix_options.build_promises
         tc.cache_variables["TEST_PUSHSTREAMS"] = celix_options.build_pushstreams
-        tc.cache_variables["TEST_DEPLOYMENT_ADMIN"] = celix_options.build_deployment_admin
         tc.cache_variables["TEST_LOG_HELPER"] = celix_options.build_log_helper
         tc.cache_variables["TEST_LOG_SERVICE_API"] = celix_options.build_log_service_api
         tc.cache_variables["TEST_PUBSUB_WIRE_PROTOCOL_V1"] = celix_options.build_pubsub_wire_protocol_v1
@@ -148,9 +147,6 @@ class TestPackageConan(ConanFile):
                     self.run("./conan_test_package/use_promises", env="conanrun")
                 if celix_options.build_pushstreams:
                     self.run("./conan_test_package/use_pushstreams", env="conanrun")
-                if celix_options.build_deployment_admin:
-                    self.run("./use_deployment_admin",
-                             cwd=os.path.join("deploy", "use_deployment_admin"), env="conanrun")
                 if celix_options.build_log_helper:
                     self.run("./conan_test_package/use_log_helper", env="conanrun")
                 if celix_options.build_log_service_api:
