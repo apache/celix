@@ -23,6 +23,7 @@ limitations under the License.
 
 ## Backwards incompatible changes
 
+- Deployment Admin bundle has been removed and is no longer supported.
 - The libs `dependency_manager_static`, `shell_dm` and `dependency_manager_cxx_static` are removed. These libraries are
   not needed anymore. The dependency manager is an integral part of the framework lib and the `dm` command is part 
   of the standard shell commands.
