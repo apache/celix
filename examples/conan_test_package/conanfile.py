@@ -55,7 +55,6 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_LAUNCHER"] = self.options["celix"].build_launcher
         cmake.definitions["TEST_PROMISES"] = self.options["celix"].build_promises
         cmake.definitions["TEST_PUSHSTREAMS"] = self.options["celix"].build_pushstreams
-        cmake.definitions["TEST_DEPLOYMENT_ADMIN"] = self.options["celix"].build_deployment_admin
         cmake.definitions["TEST_LOG_HELPER"] = self.options["celix"].build_log_helper
         cmake.definitions["TEST_LOG_SERVICE_API"] = self.options["celix"].build_log_service_api
         cmake.definitions["TEST_PUBSUB_WIRE_PROTOCOL_V1"] = self.options["celix"].build_pubsub_wire_protocol_v1
@@ -134,9 +133,6 @@ class TestPackageConan(ConanFile):
                 self.run("./use_promises", run_environment=True)
             if self.options["celix"].build_pushstreams:
                 self.run("./use_pushstreams", run_environment=True)
-            if self.options["celix"].build_deployment_admin:
-                self.run("./use_deployment_admin",
-                         cwd=os.path.join("deploy", "use_deployment_admin"), run_environment=True)
             if self.options["celix"].build_log_helper:
                 self.run("./use_log_helper", run_environment=True)
             if self.options["celix"].build_log_service_api:

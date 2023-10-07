@@ -23,7 +23,10 @@ limitations under the License.
 
 ## Backwards incompatible changes
 
-- Celix C API without a `celix_` is removed from the utils and framework lib and no longer supported.
+- Deployment Admin bundle has been removed and is no longer supported.
+- The libs `dependency_manager_static`, `shell_dm` and `dependency_manager_cxx_static` are removed. These libraries are
+  not needed anymore. The dependency manager is an integral part of the framework lib and the `dm` command is part 
+  of the standard shell commands.
 - Shell v2 api is removed and no longer supported.
 - Logging v2 api is removed and no longer supported.
 - Bonjour Shell bundle is removed and no longer supported.

@@ -28,7 +28,7 @@ required_conan_version = ">=1.32.0"
 
 class CelixConan(ConanFile):
     name = "celix"
-    version = "2.4.0"
+    version = "3.0.0"
     homepage = "https://celix.apache.org"
     url = "https://github.com/apache/celix.git"
     topics = ("conan", "celix", "osgi", "embedded", "linux", "C/C++")
@@ -50,7 +50,6 @@ class CelixConan(ConanFile):
         "enable_testing_dependency_manager_for_cxx11": False,
         "enable_testing_for_cxx14": False,
         "build_all": False,
-        "build_deployment_admin": False,
         "build_http_admin": False,
         "build_log_service": False,
         "build_log_helper": False,
@@ -91,8 +90,6 @@ class CelixConan(ConanFile):
         "build_pushstreams": False,
         "build_experimental": False,
         "build_celix_dfi": False,
-        "build_dependency_manager": False,
-        "build_dependency_manager_cxx": False,
         "build_framework": False,
         "build_rcm": False,
         "build_utils": False,
@@ -190,9 +187,6 @@ class CelixConan(ConanFile):
 
         if options["build_shell_bonjour"]:
             options["build_shell"] = True
-
-        if options["build_deployment_admin"]:
-            options["build_framework"] = True
 
         if options["build_cxx_rsa_integration"]:
             options["build_cxx_remote_service_admin"] = True
@@ -319,12 +313,8 @@ class CelixConan(ConanFile):
         if options["build_rcm"]:
             options["build_utils"] = True
 
-        if options["build_launcher"] or options["build_dependency_manager"]:
+        if options["build_launcher"]:
             options["build_framework"] = True
-
-        if options["build_dependency_manager_cxx"]:
-            options["build_framework"] = True
-            options["celix_cxx14"] = True
 
         if options["build_celix_dfi"]:
             options["build_utils"] = True
@@ -352,13 +342,11 @@ class CelixConan(ConanFile):
         if self.options.build_framework or self.options.build_pubsub:
             self.options['util-linux-libuuid'].shared = True
         if ((self.options.build_framework and self.options.framework_curlinit)
-                or self.options.build_celix_etcdlib or self.options.build_deployment_admin
+                or self.options.build_celix_etcdlib
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
                 or self.options.build_launcher):
             self.options['libcurl'].shared = True
             self.options['openssl'].shared = True
-        if self.options.build_deployment_admin:
-            self.options['zlib'].shared = True
         if self.options.enable_testing:
             self.options['gtest'].shared = True
             if self.options.enable_address_sanitizer:
@@ -384,12 +372,10 @@ class CelixConan(ConanFile):
         if self.options.build_framework or self.options.build_pubsub:
             self.requires("util-linux-libuuid/2.39")
         if ((self.options.build_framework and self.options.framework_curlinit)
-                or self.options.build_celix_etcdlib or self.options.build_deployment_admin
+                or self.options.build_celix_etcdlib
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
                 or self.options.build_launcher):
             self.requires("libcurl/[>=7.64.1 <8.0.0]")
-        if self.options.build_deployment_admin:
-            self.requires("zlib/[>=1.2.8 <2.0.0]")
         if (self.options.build_rsa_discovery_common or self.options.build_shell_bonjour or
                 (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
@@ -409,6 +395,8 @@ class CelixConan(ConanFile):
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
+        # 'libzip/1.10.1' requires 'zlib/1.2.13' while 'libcurl/7.64.1' requires 'zlib/1.2.12'
+        self.requires("zlib/1.2.13", override=True)
         # the latest civetweb (1.16) is not ready for openssl3
         self.requires("openssl/1.1.1t", override=True)
         self.validate()

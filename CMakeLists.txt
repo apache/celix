@@ -145,8 +145,8 @@ endif()
 
 # Set version for the framework package/release
 if (NOT DEFINED CELIX_MAJOR)
-    set(CELIX_MAJOR "2")
-    set(CELIX_MINOR "4")
+    set(CELIX_MAJOR "3")
+    set(CELIX_MINOR "0")
     set(CELIX_MICRO "0")
 endif ()
 
