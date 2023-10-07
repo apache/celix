@@ -447,7 +447,7 @@ namespace celix {
             long svcId = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_ID, -1L);
             long svcRanking = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
             auto svc = std::shared_ptr<I>{static_cast<I*>(voidSvc), [](I*){/*nop*/}};
-            auto props = celix::Properties::wrap(cProps);
+            auto props = std::make_shared<const celix::Properties>(celix::Properties::wrap(cProps));
             auto owner = std::make_shared<celix::Bundle>(const_cast<celix_bundle_t*>(cBnd));
             return std::make_shared<SvcEntry>(svcId, svcRanking, svc, props, owner);
         }

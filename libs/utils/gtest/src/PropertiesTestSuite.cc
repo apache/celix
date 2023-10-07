@@ -316,9 +316,8 @@ TEST_F(PropertiesTestSuite, SizeAndIteratorTest) {
     EXPECT_EQ(4, celix_properties_size(props));
 
     int count = 0;
-    const char *key;
-    CELIX_PROPERTIES_FOR_EACH(props, key) {
-        EXPECT_NE(key, nullptr);
+    CELIX_PROPERTIES_ITERATE(props, entry) {
+        EXPECT_NE(entry.key, nullptr);
         count++;
     }
     EXPECT_EQ(4, count);
@@ -396,26 +395,6 @@ TEST_F(PropertiesTestSuite, GetEntryTest) {
     EXPECT_EQ(nullptr, entry);
 
     celix_version_destroy(version);
-    celix_properties_destroy(props);
-}
-
-TEST_F(PropertiesTestSuite, IteratorNextKeyTest) {
-    auto* props = celix_properties_create();
-    celix_properties_set(props, "key1", "value1");
-    celix_properties_set(props, "key2", "value2");
-    celix_properties_set(props, "key3", "value3");
-    auto iter = celix_propertiesIterator_construct(props);
-    const char* key;
-    int count = 0;
-    while (celix_propertiesIterator_hasNext(&iter)) {
-        key = celix_propertiesIterator_nextKey(&iter);
-        EXPECT_NE(strstr(key, "key"), nullptr);
-        count++;
-    }
-    EXPECT_EQ(count, 3);
-    key = celix_propertiesIterator_nextKey(&iter);
-    EXPECT_EQ(nullptr, key) << "got key: " << key;
-
     celix_properties_destroy(props);
 }
 
@@ -557,6 +536,32 @@ TEST_F(PropertiesTestSuite, SetWithCopyTest) {
     celix_properties_setWithoutCopy(props, celix_utils_strdup("key"), celix_utils_strdup("value2"));
     EXPECT_EQ(1, celix_properties_size(props));
     celix_properties_destroy(props);
+}
+
+TEST_F(PropertiesTestSuite, SetEntryTest) {
+    auto* props1 = celix_properties_create();
+    auto* props2 = celix_properties_create();
+    celix_properties_set(props1, "key1", "value1");
+    celix_properties_setLong(props1, "key2", 123);
+    celix_properties_setBool(props1, "key3", true);
+    celix_properties_setDouble(props1, "key4", 3.14);
+    auto* version = celix_version_create(1, 2, 3, nullptr);
+    celix_properties_setVersion(props1, "key5", version);
+    celix_version_destroy(version);
+
+    CELIX_PROPERTIES_ITERATE(props1, visit) {
+        celix_properties_setEntry(props2, visit.key, &visit.entry);
+    }
+
+    EXPECT_EQ(5, celix_properties_size(props2));
+    EXPECT_STREQ("value1", celix_properties_get(props2, "key1", nullptr));
+    EXPECT_EQ(123, celix_properties_getAsLong(props2, "key2", -1L));
+    EXPECT_EQ(true, celix_properties_getAsBool(props2, "key3", false));
+    EXPECT_EQ(3.14, celix_properties_getAsDouble(props2, "key4", -1.0));
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_VERSION, celix_properties_getType(props2, "key5"));
+
+    celix_properties_destroy(props1);
+    celix_properties_destroy(props2);
 }
 
 TEST_F(PropertiesTestSuite, DeprecatedApiTest) {

@@ -317,6 +317,7 @@ static void celix_properties_createAndSetEntry(
     }
     celix_properties_entry_t* entry = celix_properties_createEntry(properties, key, strValue, longValue, doubleValue,
                                                                    boolValue, versionValue);
+
     const char* mapKey = key;
     if (!celix_stringHashMap_hasKey(properties->map, key)) {
         //new entry, needs new allocated key;
@@ -657,6 +658,28 @@ void celix_properties_setWithoutCopy(celix_properties_t *properties, char *key, 
     }
 }
 
+void celix_properties_setEntry(celix_properties_t* properties, const char* key, const celix_properties_entry_t* entry) {
+    if (properties != NULL && key != NULL && entry != NULL) {
+        switch (entry->valueType) {
+            case CELIX_PROPERTIES_VALUE_TYPE_LONG:
+                celix_properties_setLong(properties, key, entry->typed.longValue);
+                break;
+            case CELIX_PROPERTIES_VALUE_TYPE_DOUBLE:
+                celix_properties_setDouble(properties, key, entry->typed.doubleValue);
+                break;
+            case CELIX_PROPERTIES_VALUE_TYPE_BOOL:
+                celix_properties_setBool(properties, key, entry->typed.boolValue);
+                break;
+            case CELIX_PROPERTIES_VALUE_TYPE_VERSION:
+                celix_properties_setVersion(properties, key, entry->typed.versionValue);
+                break;
+            default: //STRING
+                celix_properties_set(properties, key, entry->value);
+                break;
+        }
+    }
+}
+
 void celix_properties_unset(celix_properties_t *properties, const char *key) {
     if (properties != NULL) {
         celix_stringHashMap_remove(properties->map, key);
@@ -769,49 +792,6 @@ typedef struct {
     celix_string_hash_map_iterator_t mapIter;
     const celix_properties_t* props;
 }  celix_properties_iterator_internal_t;
-
-celix_properties_iterator_t celix_propertiesIterator_construct(const celix_properties_t *properties) {
-    celix_properties_iterator_internal_t internalIter;
-    internalIter.mapIter = celix_stringHashMap_begin(properties->map);
-    internalIter.props = properties;
-
-    celix_properties_iterator_t iter;
-    iter.index = 0;
-    iter.key = NULL;
-    memset(&iter.entry, 0, sizeof(iter.entry));
-
-    CELIX_BUILD_ASSERT(sizeof(celix_properties_iterator_internal_t) <= sizeof(iter._data));
-    memset(&iter._data, 0, sizeof(iter._data));
-    memcpy(iter._data, &internalIter, sizeof(internalIter));
-    return iter;
-}
-
-bool celix_propertiesIterator_hasNext(celix_properties_iterator_t *iter) {
-    celix_properties_iterator_internal_t internalIter;
-    memcpy(&internalIter, iter->_data, sizeof(internalIter));
-    return !celix_stringHashMapIterator_isEnd(&internalIter.mapIter);
-}
-
-const char* celix_propertiesIterator_nextKey(celix_properties_iterator_t *iter) {
-    celix_properties_iterator_internal_t internalIter;
-    memcpy(&internalIter, iter->_data, sizeof(internalIter));
-
-    //note assigning key first and then move the next, because celix string hash map iter start at the beginning
-    const char* key = internalIter.mapIter.key;
-    iter->index = (int)internalIter.mapIter.index;
-    celix_properties_entry_t* entry = internalIter.mapIter.value.ptrValue;
-    if (entry != NULL) {
-        iter->key = internalIter.mapIter.key;
-        memcpy(&iter->entry, entry, sizeof(iter->entry));
-    } else {
-        iter->key = NULL;
-        memset(&iter->entry, 0, sizeof(iter->entry));
-    }
-    celix_stringHashMapIterator_next(&internalIter.mapIter);
-
-    memcpy(iter->_data, &internalIter, sizeof(internalIter));
-    return key;
-}
 
 celix_properties_iterator_t celix_properties_begin(const celix_properties_t* properties) {
     CELIX_BUILD_ASSERT(sizeof(celix_properties_iterator_internal_t) <= sizeof(celix_properties_iterator_t));

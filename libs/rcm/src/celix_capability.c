@@ -83,11 +83,9 @@ bool celix_capability_equals(const celix_capability_t* cap1, const celix_capabil
 
     //compare attributes
     bool equals = true;
-    const char* visit;
-    CELIX_PROPERTIES_FOR_EACH(cap1->attributes, visit) {
-        const char* value1 = celix_properties_get(cap1->attributes, visit, NULL);
-        const char* value2 = celix_properties_get(cap2->attributes, visit, NULL);
-        if (!celix_utils_stringEquals(value1, value2)) {
+    CELIX_PROPERTIES_ITERATE(cap1->attributes, visit) {
+        const char* value2 = celix_properties_get(cap2->attributes, visit.key, NULL);
+        if (!celix_utils_stringEquals(visit.entry.value, value2)) {
             equals = false;
             break;
         }
@@ -95,10 +93,9 @@ bool celix_capability_equals(const celix_capability_t* cap1, const celix_capabil
     if (!equals) {
         return false;
     }
-    CELIX_PROPERTIES_FOR_EACH(cap1->directives, visit) {
-        const char* value1 = celix_properties_get(cap1->directives, visit, NULL);
-        const char* value2 = celix_properties_get(cap2->directives, visit, NULL);
-        if (!celix_utils_stringEquals(value1, value2)) {
+    CELIX_PROPERTIES_ITERATE(cap1->directives, visit) {
+        const char* value2 = celix_properties_get(cap2->directives, visit.key, NULL);
+        if (!celix_utils_stringEquals(visit.entry.value, value2)) {
             equals = false;
             break;
         }
@@ -108,17 +105,13 @@ bool celix_capability_equals(const celix_capability_t* cap1, const celix_capabil
 
 unsigned int celix_capability_hashCode(const celix_capability_t* cap) {
     unsigned int hash = celix_utils_stringHash(cap->ns);
-    const char* visit;
-
-    CELIX_PROPERTIES_FOR_EACH(cap->attributes, visit) {
-        const char* value = celix_properties_get(cap->attributes, visit, NULL);
-        hash += celix_utils_stringHash(visit);
-        hash += celix_utils_stringHash(value);
+    CELIX_PROPERTIES_ITERATE(cap->attributes, visit) {
+        hash += celix_utils_stringHash(visit.key);
+        hash += celix_utils_stringHash(visit.entry.value);
     }
-    CELIX_PROPERTIES_FOR_EACH(cap->directives, visit) {
-        const char* value = celix_properties_get(cap->directives, visit, NULL);
-        hash += celix_utils_stringHash(visit);
-        hash += celix_utils_stringHash(value);
+    CELIX_PROPERTIES_ITERATE(cap->directives, visit) {
+        hash += celix_utils_stringHash(visit.key);
+        hash += celix_utils_stringHash(visit.entry.value);
     }
     return hash;
 }
@@ -152,10 +145,8 @@ void celix_capability_addAttribute(celix_capability_t* cap, const char* key, con
 }
 
 void celix_capability_addAttributes(celix_capability_t* cap, const celix_properties_t* attributes) {
-    const char* visit;
-    CELIX_PROPERTIES_FOR_EACH(attributes, visit) {
-        const char* value = celix_properties_get(attributes, visit, NULL);
-        celix_properties_set(cap->attributes, visit, value);
+    CELIX_PROPERTIES_ITERATE(attributes, visit) {
+        celix_properties_set(cap->attributes, visit.key, visit.entry.value);
     }
 }
 
@@ -164,9 +155,7 @@ void celix_capability_addDirective(celix_capability_t* cap, const char* key, con
 }
 
 void celix_capability_addDirectives(celix_capability_t* cap, const celix_properties_t* directives) {
-    const char* visit;
-    CELIX_PROPERTIES_FOR_EACH(directives, visit) {
-        const char* value = celix_properties_get(directives, visit, NULL);
-        celix_properties_set(cap->directives, visit, value);
+    CELIX_PROPERTIES_ITERATE(directives, visit) {
+        celix_properties_set(cap->directives, visit.key, visit.entry.value);
     }
 }

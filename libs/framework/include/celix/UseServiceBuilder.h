@@ -164,10 +164,10 @@ namespace celix {
                     func(*svc);
                 }
                 for (const auto& func : builder->callbacksWithProperties) {
-                    func(*svc, *props);
+                    func(*svc, props);
                 }
                 for (const auto& func : builder->callbacksWithOwner) {
-                    func(*svc, *props, bnd);
+                    func(*svc, props, bnd);
                 }
             };
 

@@ -242,9 +242,17 @@ namespace celix {
          * @brief Wrap C properties and returns it as const in a shared_ptr,
          * but does not take ownership -> dtor will not destroy C properties.
          */
-        static std::shared_ptr<const Properties> wrap(const celix_properties_t* wrapProps) {
+        static const Properties wrap(const celix_properties_t* wrapProps) {
             auto* cp = const_cast<celix_properties_t*>(wrapProps);
-            return std::shared_ptr<const Properties>{new Properties{cp, false}};
+            return Properties{cp, false};
+        }
+
+        /**
+         * @brief Wrap C properties and returns it as const in a shared_ptr,
+         * but does not take ownership -> dtor will not destroy C properties.
+         */
+        static const Properties wrap(celix_properties_t* wrapProps) {
+            return Properties{wrapProps, false};
         }
 
         /**
@@ -252,6 +260,13 @@ namespace celix {
          */
         static Properties own(celix_properties_t* wrapProps) {
             return Properties{wrapProps, true};
+        }
+
+        /**
+         * @brief Copy C properties and take ownership -> dtor will destroy C properties.
+         */
+        static Properties copy(const celix_properties_t* copyProps) {
+            return Properties{celix_properties_copy(copyProps), true};
         }
 
         /**

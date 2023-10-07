@@ -70,7 +70,7 @@ typedef enum celix_properties_value_type {
 } celix_properties_value_type_e;
 
 /**
- * @brief A structure representing a single entry in a property set.
+ * @brief A structure representing a single value entry in a property set.
  */
 typedef struct celix_properties_entry {
     const char* value;                          /**< The string value or string representation of a non-string
@@ -220,6 +220,15 @@ CELIX_UTILS_EXPORT void celix_properties_set(celix_properties_t* properties, con
  *              modified after calling this function.
  */
 CELIX_UTILS_EXPORT void celix_properties_setWithoutCopy(celix_properties_t* properties, char* key, char *value);
+
+/**
+ * @brief Set the value of a property based on the provided property entry, maintaining underlying type.
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] entry The entry to set the property to. The entry will be copied, so it can be freed after calling
+ *                  this function.
+ */
+CELIX_UTILS_EXPORT void celix_properties_setEntry(celix_properties_t* properties, const char* key, const celix_properties_entry_t* entry);
 
 /**
  * @brief Unset a property, removing it from the property set.
@@ -441,75 +450,6 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_i
 #define CELIX_PROPERTIES_ITERATE(props, iterName) \
     for (celix_properties_iterator_t iterName = celix_properties_begin((props)); \
     !celix_propertiesIterator_isEnd(&(iterName)); celix_propertiesIterator_next(&(iterName)))
-
-
-/**** Deprecated API *************************************************************************************************/
-
-/**
- * @brief Constructs a new properties iterator.
- * @deprecated This function is deprecated, use celix_properties_begin, celix_propertiesIterator_next and celix_propertiesIterator_isEnd instead.
- *
- * Note: The iterator is initialized to be before the first entry. To advance to the first entry,
- * call `celix_propertiesIterator_nextEntry`.
- *
- * @param[in] properties The properties object to iterate over.
- * @return The newly constructed iterator.
- */
-CELIX_UTILS_DEPRECATED_EXPORT celix_properties_iterator_t celix_propertiesIterator_construct(const celix_properties_t* properties);
-
-/**
- * @brief Determines whether the iterator has more entries.
- * @deprecated This function is deprecated, use celix_properties_begin, celix_propertiesIterator_next and celix_propertiesIterator_isEnd instead.
- *
- * @param[in] iter The iterator.
- * @return true if the iterator has more entries, false otherwise.
- */
-CELIX_UTILS_DEPRECATED_EXPORT bool celix_propertiesIterator_hasNext(celix_properties_iterator_t *iter);
-
-/**
- * @brief Advances the iterator to the next entry and returns the key for the current entry.
- * @deprecated This function is deprecated, use celix_properties_begin, celix_propertiesIterator_next and celix_propertiesIterator_isEnd instead.
- *
- * If the iterator has no more entries, this function returns NULL.
- *
- * @param[in, out] iter The iterator.
- * @return The key for the current entry, or NULL if the iterator has no more entries.
- */
-CELIX_UTILS_DEPRECATED_EXPORT const char* celix_propertiesIterator_nextKey(celix_properties_iterator_t* iter);
-
-/**
- * @brief Macro for iterating over the properties in a property set.
- * @deprecated This macro is deprecated, use CELIX_PROPERTIES_ITERATE instead.
- *
- * @param[in] properties The property set to iterate over.
- * @param[out] key The variable to use for the current key in the loop.
- *
- *
- * Example usage:
- * @code{.c}
- * celix_properties_t* properties = celix_properties_create();
- * celix_properties_set(properties, "key1", "value1");
- * celix_properties_set(properties, "key2", "value2");
- * celix_properties_set(properties, "key3", "value3");
- *
- * const char* key;
- * CELIX_PROPERTIES_FOR_EACH(properties, key) {
- *     printf("%s = %s\n", key, celix_properties_get(properties, key, ""));
- * }
- * @endcode
- *
- * Output:
- * @code{.c}
- * key1 = value1
- * key2 = value2
- * key3 = value3
- * @endcode
-*/
-#define CELIX_PROPERTIES_FOR_EACH(props, key) _CELIX_PROPERTIES_FOR_EACH(CELIX_UNIQUE_ID(iter), props, key)
-
-#define _CELIX_PROPERTIES_FOR_EACH(iter, props, key) \
-    for(celix_properties_iterator_t iter = celix_propertiesIterator_construct(props); \
-        celix_propertiesIterator_hasNext(&iter), (key) = celix_propertiesIterator_nextKey(&iter);)
 
 #ifdef __cplusplus
 }

@@ -104,8 +104,23 @@ TEST_F(CxxPropertiesTestSuite, WrapTest) {
     EXPECT_EQ(1, celix_properties_size(props));
     {
         auto cxxProps = celix::Properties::wrap(props);
-        EXPECT_EQ(1, cxxProps->size());
-        EXPECT_EQ(props, cxxProps->getCProperties());
+        EXPECT_EQ(1, cxxProps.size());
+        EXPECT_EQ(props, cxxProps.getCProperties());
+    } //NOTE cxxProps out of scope, but will not destroy celix_properties
+    EXPECT_EQ(1, celix_properties_size(props));
+
+    celix_properties_destroy(props);
+}
+
+TEST_F(CxxPropertiesTestSuite, CopyCPropsTest) {
+    auto *props = celix_properties_create();
+    celix_properties_set(props, "test", "test");
+
+    EXPECT_EQ(1, celix_properties_size(props));
+    {
+        auto cxxProps = celix::Properties::copy(props);
+        EXPECT_EQ(1, cxxProps.size());
+        EXPECT_NE(props, cxxProps.getCProperties());
     } //NOTE cxxProps out of scope, but will not destroy celix_properties
     EXPECT_EQ(1, celix_properties_size(props));
 
