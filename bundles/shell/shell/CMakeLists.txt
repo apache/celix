@@ -22,7 +22,6 @@ if (SHELL_API)
             $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
             )
     target_link_libraries(shell_api INTERFACE Celix::utils)
-    target_include_directories(shell_api INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/deprecated_api>)
 
     install(TARGETS shell_api EXPORT celix COMPONENT shell
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/shell)

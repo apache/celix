@@ -79,7 +79,6 @@ class CelixConan(ConanFile):
         "build_shell": False,
         "build_shell_api": False,
         "build_remote_shell": False,
-        "build_shell_bonjour": False,
         "build_shell_tui": False,
         "build_shell_wui": False,
         "build_components_ready_check": False,
@@ -126,9 +125,6 @@ class CelixConan(ConanFile):
         if self.options.build_rsa_discovery_zeroconf and self.settings.os != "Linux":
             raise ConanInvalidConfiguration("Celix build_rsa_discovery_zeroconf is only supported for Linux")
 
-        if self.options.build_shell_bonjour and self.settings.os != "Linux":
-            raise ConanInvalidConfiguration("Celix build_shell_bonjour is only supported for Linux")
-
         try:
             val = int(self.options.celix_err_buffer_size)
             if val <= 0:
@@ -143,7 +139,6 @@ class CelixConan(ConanFile):
         del self.info.options.build_pubsub_examples
         del self.info.options.build_cxx_rsa_integration
         del self.info.options.build_examples
-        del self.info.options.build_shell_bonjour
         del self.info.options.enable_testing_dependency_manager_for_cxx11
         del self.info.options.enable_testing_for_cxx14
         del self.info.options.enable_cmake_warning_tests
@@ -174,7 +169,6 @@ class CelixConan(ConanFile):
         if self.settings.os != "Linux":
             options["build_rsa_remote_service_admin_shm_v2"] = False
             options["build_rsa_discovery_zeroconf"] = False
-            options["build_shell_bonjour"] = False
 
         if options["enable_code_coverage"]:
             options["enable_testing"] = True
@@ -184,9 +178,6 @@ class CelixConan(ConanFile):
             options["build_shell_wui"] = True
             options["build_log_service"] = True
             options["build_syslog_writer"] = True
-
-        if options["build_shell_bonjour"]:
-            options["build_shell"] = True
 
         if options["build_cxx_rsa_integration"]:
             options["build_cxx_remote_service_admin"] = True
@@ -351,8 +342,8 @@ class CelixConan(ConanFile):
             self.options['gtest'].shared = True
             if self.options.enable_address_sanitizer:
                 self.options["cpputest"].with_leak_detection = False
-        if (self.options.build_rsa_discovery_common or self.options.build_shell_bonjour or
-                (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
+        if (self.options.build_rsa_discovery_common
+                or (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.options['libxml2'].shared = True
         if self.options.build_pubsub_psa_zmq:
             self.options['zeromq'].shared = True
@@ -376,8 +367,8 @@ class CelixConan(ConanFile):
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
                 or self.options.build_launcher):
             self.requires("libcurl/[>=7.64.1 <8.0.0]")
-        if (self.options.build_rsa_discovery_common or self.options.build_shell_bonjour or
-                (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
+        if (self.options.build_rsa_discovery_common
+                or (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
         if self.options.build_cxx_remote_service_admin:
             self.requires("rapidjson/[>=1.1.0 <2.0.0]")
@@ -391,7 +382,7 @@ class CelixConan(ConanFile):
             self.requires("libffi/[>=3.2.1 <4.0.0]")
         if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
             self.requires("jansson/[>=2.12 <3.0.0]")
-        if self.options.build_rsa_discovery_zeroconf or self.options.build_shell_bonjour:
+        if self.options.build_rsa_discovery_zeroconf:
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
