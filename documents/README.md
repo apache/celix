@@ -70,7 +70,7 @@ is that this can be done with a single `add_celix_container` Apache Celix CMake 
 One of the reasons why C was chosen as implementation language is that C can act as a common denominator for 
 (service oriented) interoperability between a range of languages.
 
-C++ (C++17) support is build on top of the C API and is realized using a header only implementation. 
+C++ support is build on top of the C API and is realized using a header only implementation. 
 This means that all the binary artifact for the Apache Celix framework and util library are pure C and do not depend on 
 libstdc++. 
 
