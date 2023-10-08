@@ -101,19 +101,17 @@ celix_status_t pubsubProtocol_encodeMetadata(pubsub_protocol_message_t* message,
             *bufferInOut = newBuffer;
             *bufferLengthInOut = newLength;
         }
-        const char* key;
         if (metadataSize == 0) {
             encoded = true;
             continue;
         }
         celix_status_t status = CELIX_SUCCESS;
-        CELIX_PROPERTIES_FOR_EACH(message->metadata.metadata, key) {
-            const char *val = celix_properties_get(message->metadata.metadata, key, "");
+        CELIX_PROPERTIES_ITERATE(message->metadata.metadata, iter) {
             if (status == CELIX_SUCCESS) {
-                status = pubsubProtocol_addNetstringEntryToBuffer(*bufferInOut, *bufferLengthInOut, &offset, key);
+                status = pubsubProtocol_addNetstringEntryToBuffer(*bufferInOut, *bufferLengthInOut, &offset, iter.key);
             }
             if (status == CELIX_SUCCESS) {
-                status = pubsubProtocol_addNetstringEntryToBuffer(*bufferInOut, *bufferLengthInOut, &offset, val);
+                status = pubsubProtocol_addNetstringEntryToBuffer(*bufferInOut, *bufferLengthInOut, &offset, iter.entry.value);
             }
         }
         if (status == CELIX_FILE_IO_EXCEPTION) {

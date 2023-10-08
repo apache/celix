@@ -61,7 +61,7 @@ bool celix_utils_stringEquals(const char* a, const char* b) {
     } else if (a == NULL || b == NULL) {
         return false;
     } else {
-        return strncmp(a, b, 1024*124*10) == 0;
+        return strncmp(a, b, CELIX_UTILS_MAX_STRLEN) == 0;
     }
 }
 
@@ -116,7 +116,7 @@ char * string_ndup(const char *s, size_t n) {
     return ret;
 }
 
-static char* celix_utilsTrimInternal(char *string) {
+static char* celix_utilsTrimInternal(char* string) {
     if (string == NULL) {
         return NULL;
     }
@@ -152,6 +152,7 @@ static char* celix_utilsTrimInternal(char *string) {
 char* celix_utils_trim(const char* string) {
     return celix_utilsTrimInternal(celix_utils_strdup(string));
 }
+
 char* celix_utils_trimInPlace(char* string) {
     return celix_utilsTrimInternal(string);
 }

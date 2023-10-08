@@ -17,40 +17,31 @@
   under the License.
  */
 
-#include <string.h>
+#include <gtest/gtest.h>
 
 #include "celix_utils_ei.h"
-#include "CppUTest/TestHarness.h"
-#include "CppUTest/TestHarness_c.h"
-#include "CppUTest/CommandLineTestRunner.h"
 #include "malloc_ei.h"
-
 #include "celix_version.h"
 
-int main(int argc, char** argv) {
-    MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
-    return RUN_ALL_TESTS(argc, argv);
-}
 
-TEST_GROUP(version_ei) {
-
-    void setup(void) {
+class VersionErrorInjectionTestSuite : public ::testing::Test {
+public:
+    VersionErrorInjectionTestSuite() {
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
     }
-
-    void teardown(void) {
+    ~VersionErrorInjectionTestSuite() noexcept override {
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
     }
 };
 
-TEST(version_ei, create) {
+TEST_F(VersionErrorInjectionTestSuite, CreateTest) {
     celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
-    celix_version_t *version = celix_version_createVersion(2, 2, 0, nullptr);
-    POINTERS_EQUAL(nullptr, version);
+    celix_version_t *version = celix_version_create(2, 2, 0, nullptr);
+    EXPECT_EQ(nullptr, version);
 
     celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
-    version = celix_version_createVersion(2, 2, 0, nullptr);
-    POINTERS_EQUAL(nullptr, version);
+    version = celix_version_create(2, 2, 0, "qualifier");
+    EXPECT_EQ(nullptr, version);
 }

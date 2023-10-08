@@ -97,10 +97,8 @@ static void queryCommand_callback(void *handle, const celix_bundle_t *bnd) {
                 if (data->opts->verbose) {
                     fprintf(data->sout, "   |- Is factory: %s\n", entry->factory ? "true" : "false");
                     fprintf(data->sout, "   |- Properties:\n");
-                    const char *key;
-                    CELIX_PROPERTIES_FOR_EACH(entry->serviceProperties, key) {
-                        const char *val = celix_properties_get(entry->serviceProperties, key, "!ERROR!");
-                        fprintf(data->sout, "      |- %20s = %s\n", key, val);
+                    CELIX_PROPERTIES_ITERATE(entry->serviceProperties, iter) {
+                        fprintf(data->sout, "      |- %20s = %s\n", iter.key, iter.entry.value);
                     }
                 }
             }

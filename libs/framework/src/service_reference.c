@@ -197,23 +197,28 @@ celix_status_t serviceReference_getProperty(service_reference_pt ref, const char
 }
 
 celix_status_t serviceReference_getPropertyKeys(service_reference_pt ref, char **keys[], unsigned int *size) {
-    celix_status_t status = CELIX_SUCCESS;
-    properties_pt props = NULL;
-
-    status = serviceRegistration_getProperties(ref->registration, &props);
-    assert(status == CELIX_SUCCESS);
-    hash_map_iterator_pt it;
-    int i = 0;
-    int vsize = hashMap_size(props);
-    *size = (unsigned int)vsize;
-    *keys = malloc(vsize * sizeof(**keys));
-    it = hashMapIterator_create(props);
-    while (hashMapIterator_hasNext(it)) {
-        (*keys)[i] = hashMapIterator_nextKey(it);
-        i++;
+    if (!keys || !size) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-    hashMapIterator_destroy(it);
-    return status;
+
+    celix_properties_t* props = NULL;
+    celix_status_t status = serviceRegistration_getProperties(ref->registration, &props);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+
+    *size = celix_properties_size(props);
+    *keys = malloc((*size) * sizeof(**keys));
+    if (!*keys) {
+        return ENOMEM;
+    }
+
+    int i = 0;
+    CELIX_PROPERTIES_ITERATE(props, entry) {
+        (*keys)[i++] = (char*)entry.key;
+    }
+
+    return CELIX_SUCCESS;
 }
 
 celix_status_t serviceReference_invalidateCache(service_reference_pt reference) {

@@ -28,6 +28,8 @@ extern "C" {
 
 CELIX_EI_DECLARE(celix_stringHashMap_create, celix_string_hash_map_t*);
 
+CELIX_EI_DECLARE(celix_stringHashMap_createWithOptions, celix_string_hash_map_t*);
+
 #ifdef __cplusplus
 }
 #endif

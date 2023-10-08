@@ -253,7 +253,6 @@ static void rsaShm_overlayProperties(celix_properties_t *additionalProperties, c
             }
         }
     }
-    return;
 }
 
 static bool rsaShm_isConfigTypeMatched(celix_properties_t *properties) {

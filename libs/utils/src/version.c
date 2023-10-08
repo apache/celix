@@ -27,8 +27,10 @@
 #include "celix_errno.h"
 #include "version_private.h"
 
+static const char* const CELIX_VERSION_EMPTY_QUALIFIER = "";
+
 celix_status_t version_createVersion(int major, int minor, int micro, const char * qualifier, version_pt *version) {
-    *version = celix_version_createVersion(major, minor, micro, qualifier);
+    *version = celix_version_create(major, minor, micro, qualifier);
     return *version == NULL ? CELIX_ILLEGAL_ARGUMENT : CELIX_SUCCESS;
 }
 
@@ -95,15 +97,20 @@ celix_status_t version_isCompatible(version_pt user, version_pt provider, bool* 
     return CELIX_SUCCESS;
 }
 
-celix_version_t* celix_version_createVersion(int major, int minor, int micro, const char* qualifier) {
+celix_version_t* celix_version_createVersion(int major, int minor, int micro, const char * qualifier) {
+    return celix_version_create(major, minor, micro, qualifier);
+}
+
+celix_version_t* celix_version_create(int major, int minor, int micro, const char* qualifier) {
     if (major < 0 || minor < 0 || micro < 0) {
         return NULL;
     }
 
     if (qualifier == NULL) {
-        qualifier = "";
+        qualifier = CELIX_VERSION_EMPTY_QUALIFIER;
     }
-    for (int i = 0; i < strlen(qualifier); i++) {
+    size_t qualifierLen = strlen(qualifier);
+    for (int i = 0; i < qualifierLen; i++) {
         char ch = qualifier[i];
         if (('A' <= ch) && (ch <= 'Z')) {
             continue;
@@ -126,9 +133,9 @@ celix_version_t* celix_version_createVersion(int major, int minor, int micro, co
         version->major = major;
         version->minor = minor;
         version->micro = micro;
-        version->qualifier = celix_utils_strdup(qualifier);
+        version->qualifier = qualifierLen == 0 ? (char*)CELIX_VERSION_EMPTY_QUALIFIER : celix_utils_strdup(qualifier);
         if (version->qualifier == NULL) {
-            free(version);
+            celix_version_destroy(version);
             version = NULL;
         }
     }
@@ -137,14 +144,19 @@ celix_version_t* celix_version_createVersion(int major, int minor, int micro, co
 
 void celix_version_destroy(celix_version_t* version) {
     if (version != NULL) {
-        free(version->qualifier);
+        if (version->qualifier != CELIX_VERSION_EMPTY_QUALIFIER) {
+            free(version->qualifier);
+        }
         free(version);
     }
 }
 
 
 celix_version_t* celix_version_copy(const celix_version_t* version) {
-    return celix_version_createVersion(version->major, version->minor, version->micro, version->qualifier);
+    if (version == NULL) {
+        return celix_version_createEmptyVersion();
+    }
+    return celix_version_create(version->major, version->minor, version->micro, version->qualifier);
 }
 
 
@@ -216,7 +228,7 @@ celix_version_t* celix_version_createVersionFromString(const char *versionStr) {
 
     celix_version_t* version = NULL;
     if (status == CELIX_SUCCESS) {
-        version = celix_version_createVersion(major, minor, micro, qualifier);
+        version = celix_version_create(major, minor, micro, qualifier);
     }
 
     if (qualifier != NULL) {
@@ -228,7 +240,7 @@ celix_version_t* celix_version_createVersionFromString(const char *versionStr) {
 
 
 celix_version_t* celix_version_createEmptyVersion() {
-    return celix_version_createVersion(0, 0, 0, NULL);
+    return celix_version_create(0, 0, 0, NULL);
 }
 
 int celix_version_getMajor(const celix_version_t* version) {
@@ -289,6 +301,15 @@ char* celix_version_toString(const celix_version_t* version) {
     return string;
 }
 
+bool celix_version_fillString(const celix_version_t* version, char *str, size_t strLen) {
+    int written;
+    if (strnlen(version->qualifier, 1) > 0) {
+        written = snprintf(str, strLen, "%d.%d.%d.%s", version->major, version->minor, version->micro, version->qualifier);
+    } else {
+        written = snprintf(str, strLen, "%d.%d.%d", version->major, version->minor, version->micro);
+    }
+    return written >= 0 && written < strLen;
+}
 
 bool celix_version_isCompatible(const celix_version_t* user, const celix_version_t* provider) {
     if (user == NULL && provider == NULL) {

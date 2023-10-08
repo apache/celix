@@ -110,9 +110,8 @@ public:
             const auto *msg = static_cast<const msg_t*>(rawMsg);
             EXPECT_GE(msg->seqNr, 0);
             EXPECT_STREQ(celix_properties_get(metadata, "test", nullptr), "preSend");
-            const char *key;
-            CELIX_PROPERTIES_FOR_EACH(metadata, key) {
-                printf("got property %s=%s\n", key, celix_properties_get(metadata, key, nullptr));
+            CELIX_PROPERTIES_ITERATE(metadata, iter) {
+                printf("got property %s=%s\n", iter.key, iter.entry.value);
             }
             fprintf(stdout, "Got message in postSend interceptor %s/%s for type %s and ser %s with seq nr %i\n", intProps->scope, intProps->topic, intProps->psaType, intProps->serializationType, msg->seqNr);
 

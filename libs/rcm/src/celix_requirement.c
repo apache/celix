@@ -89,45 +89,33 @@ bool celix_requirement_equals(const celix_requirement_t* req1, const celix_requi
     }
 
     //compare attributes
-    bool equals = true;
-    const char* visit;
-    CELIX_PROPERTIES_FOR_EACH(req1->attributes, visit) {
-        const char* val1 = celix_properties_get(req1->attributes, visit, NULL);
-        const char* val2 = celix_properties_get(req2->attributes, visit, NULL);
-        if (!celix_utils_stringEquals(val1, val2)) {
-            equals = false;
-            break;
+    CELIX_PROPERTIES_ITERATE(req1->attributes, visit) {
+        const char* val2 = celix_properties_get(req2->attributes, visit.key, NULL);
+        if (!celix_utils_stringEquals(visit.entry.value, val2)) {
+            return false;
         }
-    }
-    if (!equals) {
-        return false;
     }
 
     //compare directives
-    CELIX_PROPERTIES_FOR_EACH(req1->directives, visit) {
-        const char* val1 = celix_properties_get(req1->directives, visit, NULL);
-        const char* val2 = celix_properties_get(req2->directives, visit, NULL);
-        if (!celix_utils_stringEquals(val1, val2)) {
-            equals = false;
-            break;
+    CELIX_PROPERTIES_ITERATE(req1->directives, visit) {
+        const char* val2 = celix_properties_get(req2->directives, visit.key, NULL);
+        if (!celix_utils_stringEquals(visit.entry.value, val2)) {
+            return false;
         }
     }
-    return equals;
+
+    return true;
 }
 
 unsigned int celix_requirement_hashCode(const celix_requirement_t* req) {
     unsigned int hash = celix_utils_stringHash(req->ns);
-    const char* visit;
-
-    CELIX_PROPERTIES_FOR_EACH(req->attributes, visit) {
-        const char* val = celix_properties_get(req->attributes, visit, NULL);
-        hash += celix_utils_stringHash(visit);
-        hash += celix_utils_stringHash(val);
+    CELIX_PROPERTIES_ITERATE(req->attributes, visit) {
+        hash += celix_utils_stringHash(visit.key);
+        hash += celix_utils_stringHash(visit.entry.value);
     }
-    CELIX_PROPERTIES_FOR_EACH(req->directives, visit) {
-        const char* val = celix_properties_get(req->directives, visit, NULL);
-        hash += celix_utils_stringHash(visit);
-        hash += celix_utils_stringHash(val);
+    CELIX_PROPERTIES_ITERATE(req->directives, visit) {
+            hash += celix_utils_stringHash(visit.key);
+            hash += celix_utils_stringHash(visit.entry.value);
     }
     return hash;
 }
@@ -169,17 +157,13 @@ void celix_requirement_addAttribute(celix_requirement_t* req, const char* key, c
 }
 
 void celix_requirement_addDirectives(celix_requirement_t* req, const celix_properties_t* directives) {
-    const char* visit;
-    CELIX_PROPERTIES_FOR_EACH(directives, visit) {
-        const char* val = celix_properties_get(directives, visit, NULL);
-        celix_requirement_addDirective(req, visit, val);
+    CELIX_PROPERTIES_ITERATE(directives, visit) {
+        celix_requirement_addDirective(req, visit.key, visit.entry.value);
     }
 }
 
 void celix_requirement_addAttributes(celix_requirement_t* req, const celix_properties_t* attributes) {
-    const char* visit;
-    CELIX_PROPERTIES_FOR_EACH(attributes, visit) {
-        const char* val = celix_properties_get(attributes, visit, NULL);
-        celix_requirement_addAttribute(req, visit, val);
+    CELIX_PROPERTIES_ITERATE(attributes, visit) {
+        celix_requirement_addAttribute(req, visit.key, visit.entry.value);
     }
 }

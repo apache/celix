@@ -71,6 +71,9 @@ typedef struct celix_long_hash_map_create_options {
      * only the simpleRemovedCallback will be used.
      *
      * Default is NULL.
+     *
+     * @param[in] removedValue The value that was removed from the hash map. This value is no longer used by the
+     *                         hash map and can be freed.
      */
     void (*simpleRemovedCallback)(void* value) CELIX_OPTS_INIT;
 
@@ -91,6 +94,11 @@ typedef struct celix_long_hash_map_create_options {
      * only the simpleRemovedCallback will be used.
      *
      * Default is NULL.
+     *
+     * @param[in] data The void pointer to the data that was provided when the callback was set as removedCallbackData.
+     * @param[in] removedKey The key of the value that was removed from the hash map.
+     * @param[in] removedValue The value that was removed from the hash map. This value is no longer used by the
+     *                         hash map and can be freed.
      */
     void (*removedCallback)(void* data, long removedKey, celix_hash_map_value_t removedValue) CELIX_OPTS_INIT;
 
@@ -163,12 +171,15 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_long_hash_map_t, celix_longHashMap_destr
 CELIX_UTILS_EXPORT size_t celix_longHashMap_size(const celix_long_hash_map_t* map);
 
 /**
- * @brief add pointer entry the string hash map.
+ * @brief Add pointer entry the string hash map.
  *
- * @param map The hashmap
- * @param key  The key to use.
- * @param value The value to store with the key
- * @return The previous key or NULL of no key was set. Note also returns NULL if the previous value for the key was NULL.
+ * @note The returned previous value can be already freed by a removed callback (if configured).
+ *
+ * @param[in] map The hashmap
+ * @param[in] key  The key to use.
+ * @param[in] value The value to store with the key
+ * @return The previous value or NULL of no value was set for th provided key.
+ *         Note also returns NULL if the previous value for the key was NULL.
  */
 CELIX_UTILS_EXPORT void* celix_longHashMap_put(celix_long_hash_map_t* map, long key, void* value);
 
@@ -265,44 +276,51 @@ CELIX_UTILS_EXPORT bool celix_longHashMap_remove(celix_long_hash_map_t* map, lon
 CELIX_UTILS_EXPORT void celix_longHashMap_clear(celix_long_hash_map_t* map);
 
 /**
- * @brief Create and return a hash map iterator for the beginning of the hash map.
+ * @brief Get an iterator pointing to the first element in the map.
  *
+ * @param[in] map The map to get the iterator for.
+ * @return An iterator pointing to the first element in the map.
  */
 CELIX_UTILS_EXPORT celix_long_hash_map_iterator_t celix_longHashMap_begin(const celix_long_hash_map_t* map);
 
 /**
- * @brief Check if the iterator is the end of the hash map.
+ * @brief Get an iterator pointing to the element following the last element in the map.
  *
- * @note the end iterator should not be used to retrieve a key of value.
+ * @param[in] map The map to get the iterator for.
+ * @return An iterator pointing to the element following the last element in the map.
+ */
+celix_long_hash_map_iterator_t celix_longHashMap_end(const celix_long_hash_map_t* map);
+
+/**
  *
- * @return true if the iterator is the end.
+ * @brief Determine if the iterator points to the element following the last element in the map.
+ *
+ * @param[in] iter The iterator to check.
+ * @return true if the iterator points to the element following the last element in the map, false otherwise.
  */
 CELIX_UTILS_EXPORT bool celix_longHashMapIterator_isEnd(const celix_long_hash_map_iterator_t* iter);
 
 /**
- * @brief Moves the provided iterator to the next entry in the hash map.
+ * @brief Advance the iterator to the next element in the map.
+ * @param[in] iter The iterator to advance.
  */
 CELIX_UTILS_EXPORT void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter);
 
 /**
- * @brief Marco to loop over all the entries of a long hash map.
- *
- * Small example of how to use the iterate macro:
- * @code
- * celix_long_hash_map_t* map = ...
- * CELIX_LONG_HASH_MAP_ITERATE(map, iter) {
- *     printf("Visiting hash map entry with key %li\n", inter.key);
- * }
- * @endcode
+ * @brief Compares two celix_long_hash_map_iterator_t objects for equality.
+ * @param[in] iterator The first iterator to compare.
+ * @param[in] other The second iterator to compare.
+ * @return true if the iterators point to the same entry in the same hash map, false otherwise.
  */
-#define CELIX_LONG_HASH_MAP_ITERATE(map, iterName) \
-    for (celix_long_hash_map_iterator_t iterName = celix_longHashMap_begin(map); !celix_longHashMapIterator_isEnd(&(iterName)); celix_longHashMapIterator_next(&(iterName)))
+bool celix_longHashMapIterator_equals(
+        const celix_long_hash_map_iterator_t* iterator,
+        const celix_long_hash_map_iterator_t* other);
 
 /**
  * @brief Remove the hash map entry for the provided iterator and updates the iterator to the next hash map entry
  *
  * Small example of how to use the celix_longHashMapIterator_remove function:
- * @code
+ * @code{.c}
  * //remove all even entries
  * celix_long_hash_map_t* map = ...
  * celix_long_hash_map_iterator_t iter = celix_longHashMap_begin(map);
@@ -316,6 +334,23 @@ CELIX_UTILS_EXPORT void celix_longHashMapIterator_next(celix_long_hash_map_itera
  * @endcode
  */
 CELIX_UTILS_EXPORT void celix_longHashMapIterator_remove(celix_long_hash_map_iterator_t* iter);
+
+/**
+ * @brief Marco to loop over all the entries of a long hash map.
+ *
+ * Small example of how to use the iterate macro:
+ * @code{.c}
+ * celix_long_hash_map_t* map = ...
+ * CELIX_LONG_HASH_MAP_ITERATE(map, iter) {
+ *     printf("Visiting hash map entry with key %li\n", inter.key);
+ * }
+ * @endcode
+ *
+ * @param map The (const celix_long_hash_map_t*) map to iterate over.
+ * @param iterName A iterName which will be of type celix_long_hash_map_iterator_t to hold the iterator.
+ */
+#define CELIX_LONG_HASH_MAP_ITERATE(map, iterName) \
+    for (celix_long_hash_map_iterator_t iterName = celix_longHashMap_begin(map); !celix_longHashMapIterator_isEnd(&(iterName)); celix_longHashMapIterator_next(&(iterName)))
 
 #ifdef __cplusplus
 }

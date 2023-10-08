@@ -21,6 +21,7 @@ set(CELIX_UTIL_TEST_SOURCES_FOR_CXX_HEADERS
         src/CxxUtilsTestSuite.cc
         src/CxxPropertiesTestSuite.cc
         src/CxxFilterTestSuite.cc
+        src/CxxVersionTestSuite.cc
 )
 
 add_executable(test_utils
@@ -34,6 +35,8 @@ add_executable(test_utils
         src/FilterTestSuite.cc
         src/CelixUtilsTestSuite.cc
         src/ConvertUtilsTestSuite.cc
+        src/PropertiesTestSuite.cc
+        src/VersionTestSuite.cc
         src/ErrTestSuite.cc
         src/ThreadsTestSuite.cc
         src/CelixErrnoTestSuite.cc
@@ -44,6 +47,9 @@ add_executable(test_utils
 target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::zip)
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
 celix_deprecated_utils_headers(test_utils)
+
+configure_file(resources/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
+
 
 ####### generating zip file used for testing ##########################################################################
 file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties" CONTENT "level=1\n")
@@ -90,6 +96,7 @@ if (EI_TESTS)
             src/ArrayListErrorInjectionTestSuite.cc
             src/ErrErrorInjectionTestSuite.cc
             src/PropertiesErrorInjectionTestSuite.cc
+            src/VersionErrorInjectionTestSuite.cc
     )
     target_link_libraries(test_utils_with_ei PRIVATE
             Celix::zip_ei
@@ -101,7 +108,7 @@ if (EI_TESTS)
             Celix::ifaddrs_ei
             Celix::threads_ei
             Celix::malloc_ei
-            Celix::hmap_ei
+            Celix::hash_map_ei
             GTest::gtest GTest::gtest_main
     )
     target_include_directories(test_utils_with_ei PRIVATE ../src) #for version_private (needs refactoring of test)
@@ -123,4 +130,3 @@ if (ENABLE_TESTING_FOR_CXX14)
     add_test(NAME test_utils_cxx_headers_with_cxx14 COMMAND test_utils_cxx_headers_with_cxx14)
     setup_target_for_coverage(test_utils_cxx_headers_with_cxx14 SCAN_DIR ..)
 endif ()
-

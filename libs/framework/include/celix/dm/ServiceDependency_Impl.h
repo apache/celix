@@ -237,20 +237,8 @@ void CServiceDependency<T,I>::setupCallbacks() {
 
 template<class T, typename I>
 int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, Properties&&)> fp, const celix_properties_t *props, const void* service) {
-    Properties properties {};
-    const char* key {nullptr};
-    const char* value {nullptr};
-
-    if (props != nullptr) {
-        CELIX_PROPERTIES_FOR_EACH(props, key) {
-            value = celix_properties_get(props, key, ""); //note. C++ does not allow nullptr entries for std::string
-            //std::cout << "got property " << key << "=" << value << "\n";
-            properties[key] = value;
-        }
-    }
-
+    auto properties = Properties::copy(props);
     const I* srv = (const I*) service;
-
     fp(srv, std::move(properties));
     return 0;
 }
@@ -504,19 +492,7 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setStrategy(DependencyUpdateStra
 template<class T, class I>
 int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)> fp, const celix_properties_t *props, const void* service) {
     I *svc = (I*)service;
-
-    Properties properties {};
-    const char* key {nullptr};
-    const char* value {nullptr};
-
-    if (props != nullptr) {
-        CELIX_PROPERTIES_FOR_EACH(props, key) {
-            value = celix_properties_get(props, key, "");
-            //std::cout << "got property " << key << "=" << value << "\n";
-            properties[key] = value;
-        }
-    }
-
+    auto properties = celix::Properties::wrap(props);
     fp(svc, std::move(properties)); //explicit move of lvalue properties.
     return 0;
 }
@@ -539,7 +515,7 @@ void ServiceDependency<T,I>::setupCallbacks() {
                 std::weak_ptr<I> replacedSvc = dep->setService.first;
                 std::weak_ptr<const celix::Properties> replacedProps = dep->setService.second;
                 auto svc = std::shared_ptr<I>{static_cast<I*>(rawSvc), [](I*){/*nop*/}};
-                auto props = rawProps ? celix::Properties::wrap(rawProps) : nullptr;
+                auto props = rawProps ? std::make_shared<const celix::Properties>(celix::Properties::wrap(rawProps)) : nullptr;
                 dep->setService = std::make_pair(std::move(svc), std::move(props));
                 dep->setFpUsingSharedPtr(dep->setService.first, dep->setService.second);
                 dep->waitForExpired(replacedSvc, svcId, "service pointer");
@@ -556,7 +532,7 @@ void ServiceDependency<T,I>::setupCallbacks() {
                 rc = dep->invokeCallback(dep->addFp, rawProps, rawSvc);
             }
             if (dep->addFpUsingSharedPtr) {
-                auto props = celix::Properties::wrap(rawProps);
+                auto props = std::make_shared<const celix::Properties>(celix::Properties::wrap(rawProps));
                 auto svc = std::shared_ptr<I>{static_cast<I*>(rawSvc), [](I*){/*nop*/}};
                 auto svcId = props->getAsLong(celix::SERVICE_ID, -1);
                 dep->addFpUsingSharedPtr(svc, props);

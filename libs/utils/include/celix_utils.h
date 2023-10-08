@@ -101,8 +101,11 @@ CELIX_UTILS_EXPORT bool celix_utils_containsWhitespace(const char* s);
 /**
  * @brief Returns a trimmed string.
  *
- * The trim will remove any leading and trailing whitespaces (' ', '\t', etc based on `isspace`)/
- * Caller is owner of the returned string.
+ * This function will remove any leading and trailing whitespaces (' ', '\t', etc based on isspace) from the
+ * input string.
+ *
+ * @param[in] string The input string to be trimmed.
+ * @return A trimmed version of the input string. The caller is responsible for freeing the memory of this string.
  */
 CELIX_UTILS_EXPORT char* celix_utils_trim(const char* string);
 /**
