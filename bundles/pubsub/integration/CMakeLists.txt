@@ -143,59 +143,6 @@ if (PUBSUB_INTEGRATION)
     target_include_directories(pubsub_serializer PRIVATE gtest)
     target_link_libraries(pubsub_serializer PRIVATE Celix::pubsub_api Celix::pubsub_spi)
 
-    if (BUILD_PUBSUB_PSA_UDP_MC)
-        add_celix_container(pubsub_udpmc_tests
-                USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-                LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/gtest/PubSubIntegrationTestSuite.cc
-                DIR ${CMAKE_CURRENT_BINARY_DIR}
-                PROPERTIES
-                LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
-                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
-                BUNDLES
-                Celix::celix_pubsub_serializer_json
-                Celix::celix_pubsub_topology_manager
-                Celix::celix_pubsub_admin_udp_multicast
-                pubsub_sut
-                pubsub_tst
-                )
-        target_link_libraries(pubsub_udpmc_tests PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main)
-        target_include_directories(pubsub_udpmc_tests SYSTEM PRIVATE gtest)
-        add_test(NAME pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
-        setup_target_for_coverage(pubsub_udpmc_tests SCAN_DIR ..)
-
-        add_celix_container(pstm_deadlock_udpmc_test
-                USE_CONFIG #ensures that a config.properties will be created with the launch bundles.
-                LAUNCHER_SRC ${CMAKE_CURRENT_LIST_DIR}/pstm_deadlock_test/test_runner.cc
-                DIR ${CMAKE_CURRENT_BINARY_DIR}
-                PROPERTIES
-                LOGHELPER_STDOUT_FALLBACK_INCLUDE_DEBUG=true
-                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=trace
-                BUNDLES
-                Celix::celix_pubsub_serializer_json
-                Celix::celix_pubsub_protocol_wire_v2
-                Celix::celix_pubsub_topology_manager
-                Celix::celix_pubsub_admin_udp_multicast
-                Celix::shell
-                Celix::shell_tui
-                )
-        target_compile_definitions(pstm_deadlock_udpmc_test PRIVATE -DDEADLOCK_SUT_BUNDLE_FILE=\"${DEADLOCK_SUT_BUNDLE_FILE}\")
-        target_link_libraries(pstm_deadlock_udpmc_test PRIVATE Celix::pubsub_api GTest::gtest GTest::gtest_main)
-        target_include_directories(pstm_deadlock_udpmc_test SYSTEM PRIVATE pstm_deadlock_udpmc_test)
-
-        add_celix_bundle_dependencies(pstm_deadlock_udpmc_test pubsub_deadlock_sut)
-
-        #Framework "bundle" has no cache dir. Default as "cache dir" the cwd is used.
-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/msg.descriptor ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_udpmc_gtest/META-INF/descriptors/msg.descriptor COPYONLY)
-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/meta_data/deadlock.scope.properties ${CMAKE_CURRENT_BINARY_DIR}/pstm_deadlock_udpmc_gtest/META-INF/topics/pub/deadlock.properties COPYONLY)
-
-        add_test(NAME pstm_deadlock_udpmc_test COMMAND pstm_deadlock_udpmc_test WORKING_DIRECTORY $<TARGET_PROPERTY:pstm_deadlock_udpmc_test,CONTAINER_LOC>)
-        setup_target_for_coverage(pstm_deadlock_udpmc_test SCAN_DIR ..)
-
-        #TODO fix issues with UDPMC and reanble test again
-        #add_test(NAME pubsub_udpmc_tests COMMAND pubsub_udpmc_tests WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_udpmc_tests,CONTAINER_LOC>)
-        #setup_target_for_coverage(pubsub_udpmc_tests SCAN_DIR ..)
-    endif()
-
     if (BUILD_PUBSUB_PSA_TCP)
         # TCP v2 tests
 

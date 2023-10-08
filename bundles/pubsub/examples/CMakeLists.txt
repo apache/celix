@@ -22,82 +22,6 @@ if (PUBSUB_EXAMPLES)
     find_program(ETCD_CMD NAMES etcd)
     find_program(XTERM_CMD NAMES xterm)
 
-    # UDP Multicast
-    if (BUILD_PUBSUB_PSA_UDP_MC AND BUILD_LAUNCHER)
-        add_celix_container(pubsub_publisher_udp_mc
-                LAUNCHER Celix::launcher
-                GROUP pubsub
-                BUNDLES
-                Celix::log_admin
-                Celix::shell
-                Celix::shell_tui
-                Celix::celix_pubsub_serializer_json
-                Celix::celix_pubsub_discovery_etcd
-                Celix::celix_pubsub_topology_manager
-                Celix::celix_pubsub_admin_udp_multicast
-                celix_pubsub_poi_publisher
-                celix_pubsub_poi_publisher2
-                USE_CONFIG
-                PROPERTIES
-                PSA_UDPMC_VERBOSE=true
-                PUBSUB_ETCD_DISCOVERY_VERBOSE=true
-                PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
-                )
-
-        add_celix_container(pubsub_subscriber_udp_mc
-                LAUNCHER Celix::launcher
-                GROUP pubsub
-                BUNDLES
-                Celix::log_admin
-                Celix::shell
-                Celix::shell_tui
-                Celix::celix_pubsub_serializer_json
-                Celix::celix_pubsub_discovery_etcd
-                Celix::celix_pubsub_topology_manager
-                Celix::celix_pubsub_admin_udp_multicast
-                celix_pubsub_poi_subscriber
-                USE_CONFIG
-                PROPERTIES
-                PSA_UDPMC_VERBOSE=true
-                PUBSUB_ETCD_DISCOVERY_VERBOSE=true
-                PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
-                )
-
-        add_celix_container(pubsub_subscriber2_udp_mc
-                LAUNCHER Celix::launcher
-                GROUP pubsub
-                BUNDLES
-                Celix::log_admin
-                Celix::shell
-                Celix::shell_tui
-                Celix::celix_pubsub_serializer_json
-                Celix::celix_pubsub_discovery_etcd
-                Celix::celix_pubsub_topology_manager
-                Celix::celix_pubsub_admin_udp_multicast
-                celix_pubsub_poi_subscriber
-                USE_CONFIG
-                PROPERTIES
-                PSA_UDPMC_VERBOSE=true
-                PUBSUB_ETCD_DISCOVERY_VERBOSE=true
-                PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
-                )
-
-        if (ETCD_CMD AND XTERM_CMD)
-            # Runtime starting a publish and subscriber for udp mc
-            add_celix_runtime(pubsub_rt_upd_mc
-                    NAME udp_mc
-                    GROUP pubsub
-                    CONTAINERS
-                    pubsub_publisher_udp_mc
-                    pubsub_subscriber_udp_mc
-                    pubsub_subscriber2_udp_mc
-                    COMMANDS
-                    etcd
-                    USE_TERM
-                    )
-        endif ()
-    endif()
-
     if (BUILD_PUBSUB_PSA_TCP AND BUILD_LAUNCHER)
         # TCP
         add_celix_container(pubsub_publisher_tcp
@@ -179,7 +103,7 @@ if (PUBSUB_EXAMPLES)
 
     if (BUILD_PUBSUB_PSA_ZMQ AND BUILD_LAUNCHER)
 
-        if (BUILD_PUBSUB_PSA_TCP AND BUILD_PUBSUB_PSA_UDP_MC)
+        if (BUILD_PUBSUB_PSA_TCP)
             # Dynamic ZMQ / UDP / TCP admin
             add_celix_container(pubsub_publisher
                     LAUNCHER Celix::launcher
@@ -191,7 +115,6 @@ if (PUBSUB_EXAMPLES)
                     Celix::celix_pubsub_discovery_etcd
                     Celix::celix_pubsub_topology_manager
                     Celix::celix_pubsub_admin_zmq
-                    Celix::celix_pubsub_admin_udp_multicast
                     Celix::celix_pubsub_admin_tcp
                     Celix::celix_pubsub_protocol_wire_v1
                     celix_pubsub_poi_publisher
@@ -209,7 +132,6 @@ if (PUBSUB_EXAMPLES)
                     Celix::celix_pubsub_discovery_etcd
                     Celix::celix_pubsub_topology_manager
                     Celix::celix_pubsub_admin_zmq
-                    Celix::celix_pubsub_admin_udp_multicast
                     Celix::celix_pubsub_admin_tcp
                     Celix::celix_pubsub_protocol_wire_v1
                     celix_pubsub_poi_subscriber

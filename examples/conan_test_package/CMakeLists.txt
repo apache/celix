@@ -112,19 +112,6 @@ if (TEST_PSA_TCP)
             )
 endif ()
 
-option(TEST_PSA_UDP_MC "Test UDP MC PubSub Admin" OFF)
-if (TEST_PSA_UDP_MC)
-    add_celix_container(use_psa_udp_mc
-            BUNDLES
-            Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_udp_multicast
-            hello
-            PROPERTIES
-            PSA_UDPMC_VERBOSE=true
-            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
-            )
-endif ()
-
 option(TEST_PSA_WS "Test WebSocket PubSub Admin" OFF)
 if (TEST_PSA_WS)
     add_celix_container(use_psa_ws
@@ -345,11 +332,6 @@ if (TEST_PUSHSTREAMS)
     target_link_libraries(use_pushstreams PRIVATE Celix::PushStreams)
 endif ()
 
-option(TEST_DEPLOYMENT_ADMIN "Test deployment admin" OFF)
-if (TEST_DEPLOYMENT_ADMIN)
-    add_celix_container("use_deployment_admin" BUNDLES Celix::deployment_admin hello)
-endif ()
-
 option(TEST_LOG_HELPER "Test log helper" OFF)
 if (TEST_LOG_HELPER)
     add_executable(use_log_helper test_log_helper.c)
@@ -393,11 +375,6 @@ option(TEST_SHELL_API "Test shell api" OFF)
 if (TEST_SHELL_API)
     add_executable(use_shell_api test_shell_api.c)
     target_link_libraries(use_shell_api PRIVATE Celix::shell_api)
-endif ()
-
-option(TEST_SHELL_BONJOUR "Test shell bonjour" OFF)
-if (TEST_SHELL_BONJOUR)
-    add_celix_container("use_shell_bonjour" INSTALL_BUNDLES Celix::bonjour_shell BUNDLES hello)
 endif ()
 
 option(TEST_CELIX_DFI "Test Celix DFI" OFF)

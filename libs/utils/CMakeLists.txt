@@ -105,9 +105,8 @@ if (UTILS)
             DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils/
             COMPONENT framework)
 
-    if (CELIX_INSTALL_DEPRECATED_API)
-        install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils COMPONENT framework)
-    endif ()
+    #TODO #509, remove installation of deprecated headers
+    install(DIRECTORY include_deprecated/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils COMPONENT framework)
 
     #Alias setup to match external usage
     add_library(Celix::utils ALIAS utils)

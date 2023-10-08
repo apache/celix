@@ -113,62 +113,6 @@ celix_status_t shell_removeCommand(shell_t *shell, celix_shell_command_t *svc, c
     return status;
 }
 
-#ifdef CELIX_INSTALL_DEPRECATED_API
-celix_status_t shell_addLegacyCommand(shell_t *shell, command_service_t *svc, const celix_properties_t *props) {
-    celix_status_t status = CELIX_SUCCESS;
-    const char *name = celix_properties_get(props, OSGI_SHELL_COMMAND_NAME, NULL);
-
-    if (name == NULL) {
-        celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command service must contain a '%s' property!", CELIX_SHELL_COMMAND_NAME);
-        status = CELIX_BUNDLE_EXCEPTION;
-    } else {
-        long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
-        celixThreadRwlock_writeLock(&shell->lock);
-        if (hashMap_containsKey(shell->legacyCommandServices, name)) {
-            celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command with name %s already registered!", name);
-        } else {
-            celix_legacy_command_entry_t *entry = calloc(1, sizeof(*entry));
-            entry->svcId = svcId;
-            entry->svc = svc;
-            entry->props = props;
-            hashMap_put(shell->legacyCommandServices, (void*)name, entry);
-        }
-        celixThreadRwlock_unlock(&shell->lock);
-    }
-
-    return status;
-}
-#endif
-
-#ifdef CELIX_INSTALL_DEPRECATED_API
-celix_status_t shell_removeLegacyCommand(shell_t *shell, command_service_t *svc, const celix_properties_t *props) {
-    celix_status_t status = CELIX_SUCCESS;
-    const char *name = celix_properties_get(props, OSGI_SHELL_COMMAND_NAME, NULL);
-
-    if (name == NULL) {
-        celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command service must contain a '%s' property!", OSGI_SHELL_COMMAND_NAME);
-        status = CELIX_BUNDLE_EXCEPTION;
-    } else {
-        long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
-        celixThreadRwlock_writeLock(&shell->lock);
-        if (hashMap_containsKey(shell->legacyCommandServices, name)) {
-            celix_legacy_command_entry_t *entry = hashMap_get(shell->legacyCommandServices, name);
-            if (entry->svcId == svcId) {
-                hashMap_remove(shell->legacyCommandServices, name);
-                free(entry);
-            } else {
-                celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "svc id for command with name %s does not match (%li == %li)!", name, svcId, entry->svcId);
-            }
-        } else {
-            celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Cannot find shell command with name %s!", name);
-        }
-        celixThreadRwlock_unlock(&shell->lock);
-    }
-
-    return status;
-}
-#endif
-
 celix_status_t shell_getCommands(shell_t *shell, celix_array_list_t **outCommands) {
 	celix_status_t status = CELIX_SUCCESS;
 	celix_array_list_t *result = celix_arrayList_create();
