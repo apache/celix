@@ -157,18 +157,19 @@ endif ()
 set(DEFAULT_VERSION 1.0.0)
 
 if (ENABLE_TESTING)
+    #Note tests are C++. Default C++14 and some C++17. For C++14 tests no additional option is needed.
+    #For C++17 tests CELIX_CXX17 must be enabled.
     enable_testing()
 endif()
 
 option(CELIX_USE_ZIP_INSTEAD_OF_JAR "Default Celix cmake command will use jar to package bundle (if found). This option enforces Celix to use zip instead." OFF)
 
-option(CELIX_CXX14 "Build C++14 libraries and bundles. Note for tests C++ is always used." ON)
-option(CELIX_CXX17 "Build C++17 libraries and bundles. Note for tests C++ is always used." ON)
+option(CELIX_CXX14 "Build C++14 libraries and bundles." ON)
+option(CELIX_CXX17 "Build C++17 libraries, bundles and if testing is enabled C++17 tests" ON)
 if (CELIX_CXX17 AND NOT CELIX_CXX14)
     set(CELIX_CXX14 ON)
 endif ()
 
-option(ENABLE_TESTING_DEPENDENCY_MANAGER_FOR_CXX11 "Test the Dependency Manager for C++11 support" OFF)
 option(ENABLE_CMAKE_WARNING_TESTS "Enable cmake warning tests to test warning prints" OFF)
 option(ENABLE_TESTING_ON_CI "Whether to enable testing on CI. This influence allowed timing errors during unit tests" OFF)
 option(ENABLE_DEPRECATED_WARNINGS "Enable compiler warnings for usage of deprecated functionality" OFF)

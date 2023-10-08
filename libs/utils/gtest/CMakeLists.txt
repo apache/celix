@@ -33,16 +33,20 @@ add_executable(test_utils
         src/CelixUtilsAutoCleanupTestSuite.cc
 )
 
-add_library(test_utils_cxx17tests STATIC
-        src/ArrayListTestSuite.cc #Uses constexpr
-        src/HashMapTestSuite.cc   #Uses constexpr
-)
-target_link_libraries(test_utils_cxx17tests PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main)
-target_compile_features(test_utils_cxx17tests PRIVATE cxx_std_17)
-
-target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::zip test_utils_cxx17tests)
+target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::zip)
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
 celix_deprecated_utils_headers(test_utils)
+
+
+if (CELIX_CXX17)
+    add_library(test_utils_cxx17tests STATIC
+            src/ArrayListTestSuite.cc #Uses constexpr
+            src/HashMapTestSuite.cc   #Uses constexpr
+    )
+    target_link_libraries(test_utils_cxx17tests PRIVATE utils_cut Celix::utils GTest::gtest)
+    target_compile_features(test_utils_cxx17tests PRIVATE cxx_std_17)
+    target_link_libraries(test_utils PRIVATE test_utils_cxx17tests)
+endif ()
 
 ####### generating zip file used for testing ##########################################################################
 file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties" CONTENT "level=1\n")
