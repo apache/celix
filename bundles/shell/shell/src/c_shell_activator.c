@@ -36,7 +36,6 @@ struct shell_bundle_activator {
 
 	long shellSvcId;
 	long trackerId;
-	long legacyTrackerId;
 };
 
 typedef struct shell_bundle_activator shell_bundle_activator_t;
@@ -109,20 +108,7 @@ celix_status_t celix_bundleActivator_start(void *activatorData, celix_bundle_con
         opts.filter.ignoreServiceLanguage = true;
         opts.filter.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;
         activator->trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
-        activator->legacyTrackerId = -1L;
     }
-
-#ifdef CELIX_INSTALL_DEPRECATED_API
-    if (status == CELIX_SUCCESS) {
-        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-        opts.callbackHandle = activator->shell;
-        opts.addWithProperties = (void*) shell_addLegacyCommand;
-        opts.removeWithProperties = (void*) shell_removeLegacyCommand;
-        opts.filter.ignoreServiceLanguage = true;
-        opts.filter.serviceName = OSGI_SHELL_COMMAND_SERVICE_NAME;
-        activator->legacyTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
-    }
-#endif
 
     return status;
 }
@@ -136,8 +122,6 @@ celix_status_t celix_bundleActivator_stop(void *activatorData, celix_bundle_cont
         celix_stdCommands_destroy(activator->stdCommands);
         celix_bundleContext_unregisterService(ctx, activator->shellSvcId);
         celix_bundleContext_stopTracker(ctx, activator->trackerId);
-        celix_bundleContext_stopTracker(ctx, activator->legacyTrackerId);
-
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }

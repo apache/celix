@@ -33,7 +33,6 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_PUBSUB"] = self.options["celix"].build_pubsub
         cmake.definitions["TEST_PSA_ZMQ"] = self.options["celix"].build_pubsub_psa_zmq
         cmake.definitions["TEST_PSA_TCP"] = self.options["celix"].build_pubsub_psa_tcp
-        cmake.definitions["TEST_PSA_UDP_MC"] = self.options["celix"].build_pubsub_psa_udp_mc
         cmake.definitions["TEST_PSA_WS"] = self.options["celix"].build_pubsub_psa_ws
         cmake.definitions["TEST_PSA_DISCOVERY_ETCD"] = self.options["celix"].build_pubsub_discovery_etcd
         cmake.definitions["TEST_RSA"] = self.options["celix"].build_remote_service_admin
@@ -61,7 +60,6 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_PUBSUB_AVROBIN_SERIALIZER"] = self.options["celix"].build_pubsub_avrobin_serializer
         cmake.definitions["TEST_CXX_REMOTE_SERVICE_ADMIN"] = self.options["celix"].build_cxx_remote_service_admin
         cmake.definitions["TEST_SHELL_API"] = self.options["celix"].build_shell_api
-        cmake.definitions["TEST_SHELL_BONJOUR"] = self.options["celix"].build_shell_bonjour
         cmake.definitions["TEST_CELIX_DFI"] = self.options["celix"].build_celix_dfi
         cmake.definitions["TEST_UTILS"] = self.options["celix"].build_utils
         cmake.definitions["TEST_COMPONENTS_READY_CHECK"] = self.options["celix"].build_components_ready_check
@@ -90,8 +88,6 @@ class TestPackageConan(ConanFile):
                 self.run("./use_psa_zmq", cwd=os.path.join("deploy", "use_psa_zmq"), run_environment=True)
             if self.options["celix"].build_pubsub_psa_tcp:
                 self.run("./use_psa_tcp", cwd=os.path.join("deploy", "use_psa_tcp"), run_environment=True)
-            if self.options["celix"].build_pubsub_psa_udp_mc:
-                self.run("./use_psa_udp_mc", cwd=os.path.join("deploy", "use_psa_udp_mc"), run_environment=True)
             if self.options["celix"].build_pubsub_psa_ws:
                 self.run("./use_psa_ws", cwd=os.path.join("deploy", "use_psa_ws"), run_environment=True)
             if self.options["celix"].build_pubsub_discovery_etcd and self.options["celix"].build_launcher:
@@ -153,9 +149,6 @@ class TestPackageConan(ConanFile):
                 self.run("./use_rsa_spi", run_environment=True)
             if self.options["celix"].build_shell_api:
                 self.run("./use_shell_api", run_environment=True)
-            if self.options["celix"].build_shell_bonjour:
-                self.run("./use_shell_bonjour",
-                         cwd=os.path.join("deploy", "use_shell_bonjour"), run_environment=True)
             if self.options["celix"].build_celix_dfi:
                 self.run("./use_celix_dfi", run_environment=True)
             if self.options["celix"].build_utils:

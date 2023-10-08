@@ -17,7 +17,6 @@
  * under the License.
  */
 
-#include <pubsub_serializer.h>
 #include <pubsub_protocol.h>
 #include <stdlib.h>
 #include <pubsub/subscriber.h>

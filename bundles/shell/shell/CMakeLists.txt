@@ -23,11 +23,6 @@ if (SHELL_API)
             )
     target_link_libraries(shell_api INTERFACE Celix::utils)
 
-        target_include_directories(shell_api INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/deprecated_api>)
-    if (CELIX_INSTALL_DEPRECATED_API)
-        install(DIRECTORY deprecated_api/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/shell COMPONENT shell)
-    endif ()
-
     install(TARGETS shell_api EXPORT celix COMPONENT shell
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/shell)
     install(DIRECTORY api/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/shell COMPONENT shell)
@@ -68,11 +63,7 @@ if (SHELL)
             )
     target_include_directories(shell PRIVATE src)
     target_link_libraries(shell PRIVATE shell_commands Celix::shell_api Celix::log_helper)
-    target_compile_options(shell PRIVATE -Wno-deprecated-declarations)
     celix_deprecated_utils_headers(shell)
-    if (CELIX_INSTALL_DEPRECATED_API)
-        target_compile_definitions(shell PRIVATE CELIX_INSTALL_DEPRECATED_API)
-    endif ()
     install_celix_bundle(shell EXPORT celix COMPONENT shell)
 
     #Setup target aliases to match external usage

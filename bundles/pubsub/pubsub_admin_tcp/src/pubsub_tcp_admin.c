@@ -19,7 +19,6 @@
 
 #include <memory.h>
 #include <pubsub_endpoint.h>
-#include <pubsub_serializer.h>
 #include <ip_utils.h>
 
 #include <pubsub_matching.h>

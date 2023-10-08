@@ -29,7 +29,6 @@
 #include "celix_compiler.h"
 #include "pubsub_serializer_handler.h"
 #include "pubsub_endpoint.h"
-#include "pubsub_serializer.h"
 #include "pubsub_protocol.h"
 #include "pubsub_matching.h"
 #include "pubsub_utils.h"

@@ -22,9 +22,6 @@ add_executable(test_shell
 target_link_libraries(test_shell PRIVATE Celix::framework Celix::shell_api GTest::gtest GTest::gtest_main)
 celix_target_bundle_set_definition(test_shell NAME TEST_BUNDLES Celix::shell)
 target_compile_options(test_shell PRIVATE -Wno-deprecated-declarations)
-if (CELIX_INSTALL_DEPRECATED_API)
-    target_compile_definitions(test_shell PRIVATE CELIX_INSTALL_DEPRECATED_API)
-endif ()
 
 add_test(NAME test_shell COMMAND test_shell)
 setup_target_for_coverage(test_shell SCAN_DIR ..)

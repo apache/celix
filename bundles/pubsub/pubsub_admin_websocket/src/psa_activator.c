@@ -21,7 +21,6 @@
 #include <pubsub_message_serialization_service.h>
 
 #include "celix_api.h"
-#include "pubsub_serializer.h"
 #include "celix_log_helper.h"
 
 #include "pubsub_admin.h"

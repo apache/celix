@@ -214,26 +214,6 @@ TEST_F(ShellTestSuite, localNameClashTest) {
 
 }
 
-#ifdef CELIX_INSTALL_DEPRECATED_API
-#include "command.h"
-TEST_F(ShellTestSuite, legacyCommandTest) {
-    command_service_t cmdService;
-    cmdService.handle = nullptr;
-    cmdService.executeCommand = [](void *, char* cmdLine, FILE *, FILE *) -> celix_status_t {
-        EXPECT_TRUE(cmdLine != nullptr);
-        return CELIX_SUCCESS;
-    };
-
-    celix_properties_t *props = celix_properties_create();
-    celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "testCommand");
-    long svcId = celix_bundleContext_registerService(ctx.get(), &cmdService, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
-
-    callCommand(ctx, "testCommand", true);
-
-    celix_bundleContext_unregisterService(ctx.get(), svcId);
-}
-#endif
-
 #ifdef CXX_SHELL
 #include "celix/BundleContext.h"
 #include "celix/IShellCommand.h"
