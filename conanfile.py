@@ -37,7 +37,7 @@ class CelixConan(ConanFile):
     generators = "CMakeDeps", "VirtualRunEnv"
     settings = "os", "arch", "compiler", "build_type"
     license = " Apache-2.0"
-    description = "Apache Celix is an implementation of the OSGi specification adapted to C and C++ (C++17). " \
+    description = "Apache Celix is an implementation of the OSGi specification adapted to C and C++ (C++14). " \
                   "It is a framework to develop (dynamic) modular software applications " \
                   "using component and/or service-oriented programming."
 
@@ -47,8 +47,6 @@ class CelixConan(ConanFile):
         "enable_address_sanitizer": False,
         "enable_undefined_sanitizer": False,
         "enable_thread_sanitizer": False,
-        "enable_testing_dependency_manager_for_cxx11": False,
-        "enable_testing_for_cxx14": False,
         "build_all": False,
         "build_http_admin": False,
         "build_log_service": False,
@@ -139,8 +137,6 @@ class CelixConan(ConanFile):
         del self.info.options.build_pubsub_examples
         del self.info.options.build_cxx_rsa_integration
         del self.info.options.build_examples
-        del self.info.options.enable_testing_dependency_manager_for_cxx11
-        del self.info.options.enable_testing_for_cxx14
         del self.info.options.enable_cmake_warning_tests
         del self.info.options.enable_testing_on_ci
         del self.info.options.enable_ccache

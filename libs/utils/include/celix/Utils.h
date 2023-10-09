@@ -102,124 +102,7 @@ namespace celix {
         }
         return result;
     }
-}
 
-#if __cplusplus >= 201703L //C++17 or higher
-namespace celix::impl {
-
-    template<typename T>
-    constexpr typename std::enable_if_t<std::is_constructible_v<std::string, T>, bool>
-    canBeConstructedWithString() { return true; }
-
-    template<typename T>
-    constexpr typename std::enable_if_t<not std::is_constructible_v<std::string, T>, bool>
-    canBeConstructedWithString() { return false; }
-
-    template<typename T>
-    constexpr typename std::enable_if_t<std::is_member_object_pointer_v<decltype(&T::NAME)>, bool>
-    isNameMemberStatic() { return false; }
-
-    template<typename T>
-    constexpr typename std::enable_if_t<!std::is_member_object_pointer_v<decltype(&T::NAME)>, bool>
-    isNameMemberStatic() { return canBeConstructedWithString<decltype(T::NAME)>(); }
-
-    template<typename, typename = void>
-    constexpr bool hasStaticMemberName = false;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-value"
-    /**
-     * Partial specialization only possible (and chosen) when late binding of decltype succeeds ->
-     *  i.e. when T::NAME exists.
-     * note T::NAME is unused, so suppressing unused-value warning
-     */
-    template<typename T>
-    constexpr bool hasStaticMemberName<T, decltype(T::NAME,void())> = isNameMemberStatic<T>();
-#pragma GCC diagnostic pop
-
-    template<typename T>
-    constexpr typename std::enable_if_t<std::is_member_object_pointer_v<decltype(&T::VERSION)>, bool>
-    isVersionMemberStatic() { return false; }
-
-    template<typename T>
-    constexpr typename std::enable_if_t<not std::is_member_object_pointer_v<decltype(&T::VERSION)>, bool>
-    isVersionMemberStatic() { return canBeConstructedWithString<decltype(T::VERSION)>(); }
-
-    template<typename, typename = void>
-    constexpr bool hasStaticMemberVersion = false;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-value"
-    /**
-     * Partial specialization only possible (and chosen) when late binding of decltype succeeds ->
-     *  i.e. when T::VERSION exists.
-     * note T::VERSION is unused, so suppressing unused-value warning
-     */
-    template<typename T>
-    constexpr bool hasStaticMemberVersion<T, decltype(T::VERSION,void())> = isVersionMemberStatic<T>();
-#pragma GCC diagnostic pop
-}
-
-namespace celix {
-    /**
-     * @brief Returns the inferred type name for the template I if the providedTypeName is empty.
-     *
-     * If the a non empty providedTypeName is provided this will be returned.
-     * If the provideTypeName is empty and a static constexpr and accessible member I::NAME exists,
-     * that will be returned.
-     * Otherwise the celix::impl::typeName will be used to infer the type name.
-     * celix::impl::typeName uses the macro __PRETTY_FUNCTION__ to extract a type name.
-     */
-    template<typename I>
-    std::string typeName(std::string_view providedTypeName = "") {
-        if (!providedTypeName.empty()) {
-            return std::string{providedTypeName};
-        } else if constexpr (celix::impl::hasStaticMemberName<I>) {
-            return std::string{I::NAME};
-        } else {
-            return celix::impl::extractTypeName<I>();
-        }
-    }
-
-    /**
-     * @brief Returns the inferred cmp type name for the template T if the providedCmpTypeName is empty.
-     *
-     * If the a non empty providedCmpTypeName is provided this will be returned.
-     * Otherwise the celix::impl::typeName will be used to infer the type name.
-     * celix::impl::typeName uses the macro __PRETTY_FUNCTION__ to extract a type name.
-     */
-    template<typename T>
-    std::string cmpTypeName(std::string_view providedCmpTypeName = "") {
-        if (!providedCmpTypeName.empty()) {
-            return std::string{providedCmpTypeName};
-        } else {
-            return celix::impl::extractTypeName<T>();
-        }
-    }
-
-    /**
-     * @brief Returns the inferred type version for the template I if the providedVersion is empty.
-     *
-     * If the a non empty providedVersion is provided this will be returned.
-     * If the providedVersion is empty and a static constexpr and accessible member I::VERSION exists,
-     * that will be returned.
-     * Otherwise a empty string will be returned.
-     */
-    template<typename I>
-    std::string typeVersion(std::string_view providedVersion = "") {
-        if (!providedVersion.empty()) {
-            return std::string{providedVersion};
-        } else if constexpr (celix::impl::hasStaticMemberVersion<I>) {
-            return std::string{I::VERSION};
-        } else {
-            return "";
-        }
-    }
-}
-
-#else //Assuming at least C++11
-
-namespace celix {
     /**
      * @brief Returns the inferred type name for the template I if the providedTypeName is empty.
      *
@@ -268,7 +151,5 @@ namespace celix {
         }
     }
 }
-
-#endif
 
 #undef CELIX_RTTI_ENABLED

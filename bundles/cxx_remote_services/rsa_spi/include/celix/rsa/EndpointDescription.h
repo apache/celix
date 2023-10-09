@@ -173,7 +173,8 @@ namespace celix::rsa {
             result.set(celix::rsa::SERVICE_IMPORTED, true);
 
             if (result.get(celix::rsa::ENDPOINT_ID).empty()) {
-                result.set(celix::rsa::ENDPOINT_ID, std::string{frameworkUUID} + "-" + serviceProperties.get(celix::SERVICE_ID));
+                std::string value = std::string{frameworkUUID} + "-" + serviceProperties.get(celix::SERVICE_ID);
+                result.set(celix::rsa::ENDPOINT_ID, value);
             }
 
             return result;
