@@ -46,7 +46,6 @@ jobs:
             -DBUILD_EXPERIMENTAL=ON
             -DENABLE_TESTING=ON
             -DRSA_JSON_RPC=ON
-            -DRSA_SHM=ON
             -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON
             -DSHELL_BONJOUR=ON
         run: |

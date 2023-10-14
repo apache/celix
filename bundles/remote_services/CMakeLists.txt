@@ -31,11 +31,6 @@ if (REMOTE_SERVICE_ADMIN)
     add_subdirectory(rsa_rpc_json)
     add_subdirectory(remote_service_admin_shm_v2)
 
-    celix_subproject(RSA_SHM "Option to enable building the Discovery (SHM) bundle" OFF)
-    if (RSA_SHM)
-        add_subdirectory(discovery_shm)
-    endif ()
-
     if (BUILD_RSA_DISCOVERY_ETCD AND BUILD_RSA_REMOTE_SERVICE_ADMIN_DFI AND BUILD_SHELL AND BUILD_SHELL_TUI AND BUILD_LOG_SERVICE AND BUILD_LAUNCHER)
         add_celix_container(remote-services-dfi
                 LAUNCHER Celix::launcher
