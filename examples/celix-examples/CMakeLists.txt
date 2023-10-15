@@ -36,7 +36,7 @@ if (EXAMPLES)
         add_subdirectory(services_example_cxx)
         add_subdirectory(dependency_manager_example_cxx)
     endif ()
-    if (CELIX_CXX17)
+    if (CELIX_CXX14)
         add_subdirectory(readme_cxx_examples)
     endif ()
 

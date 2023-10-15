@@ -126,9 +126,7 @@ if (UTILS)
                 )
         target_link_libraries(utils_cut PUBLIC ${UTILS_PUBLIC_DEPS} ${UTILS_PRIVATE_DEPS})
 
-        if (CELIX_CXX17) #utils tests are C++17
-            add_subdirectory(gtest)
-        endif()
+        add_subdirectory(gtest)
 
         find_package(CppUTest)
 

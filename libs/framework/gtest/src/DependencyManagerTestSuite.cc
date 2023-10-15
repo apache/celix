@@ -1152,19 +1152,18 @@ TEST_F(DependencyManagerTestSuite, testStateToString) {
 
 }
 
-#if __cplusplus >= 201703L //C++17 or higher
-
-class TestInterfaceWithStaticInfo {
+class TestInterface {
 public:
     static constexpr const char * const NAME = "TestName";
     static constexpr const char * const VERSION = "1.2.3";
 };
 
-TEST_F(DependencyManagerTestSuite, ProvideInterfaceWithStaticInfo) {
-    class TestComponent : public TestInterfaceWithStaticInfo {};
+TEST_F(DependencyManagerTestSuite, ProvideInterfaceInfo) {
+    class TestComponent : public TestInterface {};
     celix::dm::DependencyManager dm{ctx};
     auto& cmp = dm.createComponent<TestComponent>();
-    cmp.createProvidedService<TestInterfaceWithStaticInfo>();
+    cmp.createProvidedService<TestInterface>(TestInterface::NAME)
+            .setVersion(TestInterface::VERSION);
     cmp.build();
     EXPECT_EQ(cmp.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
 
@@ -1176,11 +1175,11 @@ TEST_F(DependencyManagerTestSuite, ProvideInterfaceWithStaticInfo) {
     EXPECT_EQ(it->second, "1.2.3");
 }
 
-TEST_F(DependencyManagerTestSuite, CreateInterfaceWithStaticInfo) {
-    class TestComponent : public TestInterfaceWithStaticInfo {};
+TEST_F(DependencyManagerTestSuite, CreateInterfaceInfo) {
+    class TestComponent : public TestInterface {};
     celix::dm::DependencyManager dm{ctx};
     auto& cmp = dm.createComponent<TestComponent>();
-    cmp.addInterface<TestInterfaceWithStaticInfo>();
+    cmp.addInterfaceWithName<TestInterface>(TestInterface::NAME, TestInterface::VERSION);
     cmp.build();
     EXPECT_EQ(cmp.getState(), celix::dm::ComponentState::TRACKING_OPTIONAL);
 
@@ -1196,7 +1195,7 @@ TEST_F(DependencyManagerTestSuite, TestPrintInfo) {
     celix::dm::DependencyManager dm{ctx};
     auto& cmp = dm.createComponent<Cmp1>();
     cmp.addInterface<TestService>();
-    cmp.createServiceDependency<TestInterfaceWithStaticInfo>();
+    cmp.createServiceDependency<TestInterface>(TestInterface::NAME);
     cmp.build();
 
     char* buf = nullptr;
@@ -1255,5 +1254,3 @@ TEST_F(DependencyManagerTestSuite, TestPrintInfo) {
     ss << cmp;
     EXPECT_TRUE(strstr(ss.str().c_str(), "Cmp1"));
 }
-
-#endif

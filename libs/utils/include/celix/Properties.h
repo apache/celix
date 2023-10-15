@@ -37,48 +37,6 @@
 
 namespace celix {
 
-
-#if __cplusplus < 201703L //lower than C++17
-    template<typename T>
-    struct IsIntegralDoubleBoolOrVersion : std::false_type {};
-
-    template <>
-    struct IsIntegralDoubleBoolOrVersion<char> : std::true_type {};
-
-    template <>
-    struct IsIntegralDoubleBoolOrVersion<unsigned char> : std::true_type {};
-
-    template <>
-    struct IsIntegralDoubleBoolOrVersion<short> : std::true_type {};
-
-    template <>
-    struct IsIntegralDoubleBoolOrVersion<unsigned short> : std::true_type {};
-
-    template <>
-    struct IsIntegralDoubleBoolOrVersion<int> : std::true_type {};
-
-    template <>
-    struct IsIntegralDoubleBoolOrVersion<long> : std::true_type {};
-
-    template <>
-    struct IsIntegralDoubleBoolOrVersion<unsigned int> : std::true_type {};
-
-    template<>
-    struct IsIntegralDoubleBoolOrVersion<double> : std::true_type {};
-
-    template<>
-    struct IsIntegralDoubleBoolOrVersion<float> : std::true_type {};
-
-    template<>
-    struct IsIntegralDoubleBoolOrVersion<bool> : std::true_type {};
-
-    template<>
-    struct IsIntegralDoubleBoolOrVersion<celix::Version> : std::true_type {};
-
-    template<>
-    struct IsIntegralDoubleBoolOrVersion<celix_version_t*> : std::true_type {};
-#endif
-
     /**
      * @brief A iterator for celix::Properties.
      */
@@ -140,6 +98,9 @@ namespace celix {
      * @note Not thread safe.
      */
     class Properties {
+    private:
+        template<typename T>
+        using IsString = std::is_same<std::decay_t<T>, std::string>; //Util to check if T is a std::string.
     public:
         using const_iterator = ConstPropertiesIterator; //note currently only a const iterator is supported.
 
@@ -158,11 +119,7 @@ namespace celix {
 
         class ValueRef {
         public:
-#if __cplusplus >= 201703L //C++17 or higher
-            ValueRef(std::shared_ptr<celix_properties_t> _props, std::string_view _key) : props{std::move(_props)}, stringKey{}, charKey{_key.data()} {}
-#else
             ValueRef(std::shared_ptr<celix_properties_t> _props, std::string _key) : props{std::move(_props)}, stringKey{std::move(_key)}, charKey{nullptr} {}
-#endif
             ValueRef(std::shared_ptr<celix_properties_t> _props, const char* _key) : props{std::move(_props)}, stringKey{}, charKey{_key} {}
 
             ValueRef(const ValueRef&) = default;
@@ -170,16 +127,6 @@ namespace celix {
             ValueRef& operator=(const ValueRef&) = default;
             ValueRef& operator=(ValueRef&&) = default;
 
-#if __cplusplus >= 201703L //C++17 or higher
-            ValueRef& operator=(std::string_view value) {
-                if (charKey == nullptr) {
-                    celix_properties_set(props.get(), stringKey.c_str(), value.data());
-                } else {
-                    celix_properties_set(props.get(), charKey, value.data());
-                }
-                return *this;
-            }
-#else
             ValueRef& operator=(const std::string& value) {
                 if (charKey == nullptr) {
                     celix_properties_set(props.get(), stringKey.c_str(), value.c_str());
@@ -188,7 +135,6 @@ namespace celix {
                 }
                 return *this;
             }
-#endif
 
             [[nodiscard]] const char* getValue() const {
                 if (charKey == nullptr) {
@@ -224,19 +170,11 @@ namespace celix {
         Properties(const Properties& rhs) :
             cProps{celix_properties_copy(rhs.cProps.get()), [](celix_properties_t* p) { celix_properties_destroy(p); }} {}
 
-#if __cplusplus >= 201703L //C++17 or higher
-        Properties(std::initializer_list<std::pair<std::string_view, std::string_view>> list) : cProps{celix_properties_create(), [](celix_properties_t* p) { celix_properties_destroy(p); }} {
-            for(auto &entry : list) {
-                set(entry.first, entry.second);
-            }
-        }
-#else
         Properties(std::initializer_list<std::pair<std::string, std::string>> list) : cProps{celix_properties_create(), [](celix_properties_t* p) { celix_properties_destroy(p); }} {
             for(auto &entry : list) {
                 set(entry.first, entry.second);
             }
         }
-#endif
 
         /**
          * @brief Wrap C properties and returns it as const in a shared_ptr,
@@ -279,21 +217,6 @@ namespace celix {
             return cProps.get();
         }
 
-#if __cplusplus >= 201703L //C++17 or higher
-        /**
-         * @brief Get the value for a property key
-         */
-        ValueRef operator[](std::string_view key) {
-            return ValueRef{cProps, key};
-        }
-
-        /**
-         * @brief Get the value for a property key
-         */
-        ValueRef operator[](std::string_view key) const {
-            return ValueRef{cProps, key};
-        }
-#else
         /**
          * @brief Get the value for a property key
          */
@@ -307,7 +230,6 @@ namespace celix {
         ValueRef operator[](std::string key) const {
             return ValueRef{cProps, std::move(key)};
         }
-#endif
 
         /**
          * @brief begin iterator
@@ -337,120 +259,6 @@ namespace celix {
             return ConstPropertiesIterator{celix_properties_end(cProps.get())};
         }
 
-#if __cplusplus >= 201703L //C++17 or higher
-        /**
-         * @brief Get the value for a property key or return the defaultValue if the key does not exists.
-         */
-        [[nodiscard]] std::string get(std::string_view key, std::string_view defaultValue = {}) const {
-            const char* found = celix_properties_get(cProps.get(), key.data(), nullptr);
-            return found == nullptr ? std::string{defaultValue} : std::string{found};
-        }
-
-        /**
-         * @brief Get the value of the property with key as a long.
-         *
-         * @param[in] key The key of the property to get.
-         * @param[in] defaultValue The value to return if the property is not set or if the value cannot be converted
-         *                         to a long.
-         * @return The long value of the property if it exists and can be converted, or the default value otherwise.
-         */
-        [[nodiscard]] long getAsLong(std::string_view key, long defaultValue) const {
-            return celix_properties_getAsLong(cProps.get(), key.data(), defaultValue);
-        }
-
-        /**
-         * @brief Get the value of the property with key as a double.
-         *
-         * @param[in] key The key of the property to get.
-         * @param[in] defaultValue The value to return if the property is not set or if the value cannot be converted
-         *                         to a double.
-         * @return The double value of the property if it exists and can be converted, or the default value otherwise.
-         */
-        [[nodiscard]] double getAsDouble(std::string_view key, double defaultValue) const {
-            return celix_properties_getAsDouble(cProps.get(), key.data(), defaultValue);
-        }
-
-        /**
-         * @brief Get the value of the property with key as a boolean.
-         *
-         * @param[in] key The key of the property to get.
-         * @param[in] defaultValue The value to return if the property is not set or if the value cannot be converted
-         *                         to a boolean.
-         * @return The boolean value of the property if it exists and can be converted, or the default value otherwise.
-         */
-        [[nodiscard]] bool getAsBool(std::string_view key, bool defaultValue) const {
-            return celix_properties_getAsBool(cProps.get(), key.data(), defaultValue);
-        }
-
-        /**
-         * @brief Get the value of the property with key as a Celix version.
-         *
-         * @param[in] key The key of the property to get.
-         * @param[in] defaultValue The value to return if the property is not set or if the value cannot be converted
-         *                         to a Celix version.
-         * @return The Celix version value of the property if it exists and can be converted,
-         *         or the default value otherwise.
-         */
-        [[nodiscard]] celix::Version getAsVersion(std::string_view key, celix::Version defaultValue = {}) {
-            auto* cVersion = celix_properties_getAsVersion(cProps.get(), key.data(), nullptr);
-            if (cVersion) {
-                celix::Version version{
-                    celix_version_getMajor(cVersion),
-                    celix_version_getMinor(cVersion),
-                    celix_version_getMicro(cVersion),
-                    celix_version_getQualifier(cVersion)};
-                celix_version_destroy(cVersion);
-                return version;
-            }
-            return defaultValue;
-        }
-
-        /**
-         * @brief Get the type of the property with key.
-         *
-         * @param[in] key The key of the property to get the type for.
-         * @return The type of the property with the given key, or ValueType::Unset if the property
-         *         does not exist.
-         */
-        [[nodiscard]] ValueType getType(std::string_view key) {
-            return getAndConvertType(cProps, key.data());
-        }
-
-        /**
-         * @brief Set the value of a property.
-         *
-         * @tparam T The type of the value to set. This can be one of: bool, std::string_view, a type that is
-         *           convertible to std::string_view, bool, long, double, celix::Version, or celix_version_t*.
-         * @param[im] key The key of the property to set.
-         * @param[in] value The value to set. If the type of the value is not one of the above types, it will be
-         *            converted to a string using std::to_string before being set.
-         */
-        template<typename T>
-        void set(std::string_view key, T&& value) {
-            using DecayedT = std::decay_t<T>;
-            if constexpr (std::is_same_v<DecayedT, bool>) {
-                celix_properties_setBool(cProps.get(), key.data(), value);
-            } else if constexpr (std::is_same_v<DecayedT, std::string_view>) {
-                celix_properties_set(cProps.get(), key.data(), value.data());
-            } else if constexpr (std::is_convertible_v<T, std::string_view>) {
-                std::string_view view{value};
-                celix_properties_set(cProps.get(), key.data(), view.data());
-            } else if constexpr (std::is_same_v<DecayedT, bool>) {
-                celix_properties_setBool(cProps.get(), key.data(), value);
-            } else if constexpr (std::is_integral_v<DecayedT> and std::is_convertible_v<DecayedT, long>) {
-                celix_properties_setLong(cProps.get(), key.data(), value);
-            } else if constexpr (std::is_convertible_v<DecayedT, double>) {
-                celix_properties_setDouble(cProps.get(), key.data(), value);
-            } else if constexpr (std::is_same_v<DecayedT, celix::Version>) {
-                celix_properties_setVersion(cProps.get(), key.data(), value.getCVersion());
-            } else if constexpr (std::is_same_v<T, celix_version_t*>) {
-                celix_properties_setVersion(cProps.get(), key.data(), value);
-            } else {
-                using namespace std;
-                celix_properties_set(cProps.get(), key.data(), to_string(value).c_str());
-            }
-        }
-#else
         /**
          * @brief Get the value for a property key or return the defaultValue if the key does not exists.
          */
@@ -562,11 +370,10 @@ namespace celix {
          * @param[in] value The value to set for the property.
          */
         template<typename T>
-        typename std::enable_if<!celix::IsIntegralDoubleBoolOrVersion<T>::value, void>::type
+        typename std::enable_if<!::celix::Properties::IsString<T>::value>::type
         set(const std::string& key, T&& value) {
-            std::cout << "Setting with T&&" << std::endl;
             using namespace std;
-            celix_properties_set(cProps.get(), key.data(), to_string(value).c_str());
+            celix_properties_set(cProps.get(), key.c_str(), to_string(value).c_str());
         }
 
         /**
@@ -638,7 +445,15 @@ namespace celix {
         void set(const std::string& key, const celix_version_t* value) {
             celix_properties_setVersion(cProps.get(), key.data(), value);
         }
-#endif
+
+        /**
+         * @brief Sets a String property.
+         */
+        template<typename T>
+        typename std::enable_if<::celix::Properties::IsString<T>::value>::type
+        set(const std::string& key, T&& value) {
+            celix_properties_set(cProps.get(), key.c_str(), value.c_str());
+        }
 
         /**
          * @brief Returns the number of properties in the Properties object.
@@ -757,7 +572,6 @@ namespace celix {
 
         std::shared_ptr<celix_properties_t> cProps;
     };
-
 }
 
 inline std::ostream& operator<<(std::ostream& os, const ::celix::Properties::ValueRef& ref)

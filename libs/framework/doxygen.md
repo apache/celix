@@ -17,7 +17,7 @@ limitations under the License.
 
 # Intro
 
-Apache Celix is a framework for C, C++14 and C++17 to develop dynamic modular software applications using component
+Apache Celix is a framework for C and C++14 to develop dynamic modular software applications using component
 and in-process service-oriented programming.
 Apache Celix is inspired by the [OSGi specification](https://www.osgi.org/) and adapted to C and C++.
 

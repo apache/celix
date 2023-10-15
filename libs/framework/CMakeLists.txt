@@ -86,7 +86,7 @@ if (FRAMEWORK)
     if (ENABLE_TESTING AND EI_TESTS)
         add_subdirectory(error_injector)
     endif ()
-    if (ENABLE_TESTING AND CELIX_CXX17) #framework tests are C++17
+    if (ENABLE_TESTING)
         add_library(framework_cut STATIC ${FRAMEWORK_SRC})
 
         target_include_directories(framework_cut PUBLIC

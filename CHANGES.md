@@ -31,6 +31,9 @@ limitations under the License.
 - Logging v2 api is removed and no longer supported.
 - Bonjour Shell bundle is removed and no longer supported.
 - pubsub_serializer.h is removed and no longer supported. Use pubsub_message_serialization_service.h instead.
+- C++11 support for dm is removed. C++14 is now the minimum required version.
+- C++17 string_view support is removed from the utils and framework lib.
+- pubsub_serializer.h is removed and no longer supported. Use pubsub_message_serialization_service.h instead.
 - C Properties are no longer a direct typedef o `hashmap`. 
 
 ## New Features

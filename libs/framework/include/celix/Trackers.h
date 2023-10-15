@@ -216,19 +216,11 @@ namespace celix {
      */
     class GenericServiceTracker : public AbstractTracker {
     public:
-#if __cplusplus >= 201703L //C++17 or higher
-        GenericServiceTracker(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string_view _svcName,
-                              std::string_view _svcVersionRange, celix::Filter _filter) : AbstractTracker{std::move(_cCtx)}, svcName{_svcName},
-                                                                                   svcVersionRange{_svcVersionRange}, filter{std::move(_filter)} {
-            setupServiceTrackerOptions();
-        }
-#else
         GenericServiceTracker(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _svcName,
                               std::string _svcVersionRange, celix::Filter _filter) : AbstractTracker{std::move(_cCtx)}, svcName{std::move(_svcName)},
                                                                                    svcVersionRange{std::move(_svcVersionRange)}, filter{std::move(_filter)} {
             setupServiceTrackerOptions();
         }
-#endif
 
         ~GenericServiceTracker() override = default;
 
@@ -319,29 +311,6 @@ namespace celix {
          * @return The new service tracker as shared ptr.
          * @throws celix::Exception
          */
-#if __cplusplus >= 201703L //C++17 or higher
-        static std::shared_ptr<ServiceTracker<I>> create(
-                std::shared_ptr<celix_bundle_context_t> cCtx,
-                std::string_view svcName,
-                std::string_view svcVersionRange,
-                celix::Filter filter,
-                std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> setCallbacks,
-                std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> addCallbacks,
-                std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> remCallbacks) {
-            auto tracker = std::shared_ptr<ServiceTracker<I>>{
-                new ServiceTracker<I>{
-                    std::move(cCtx),
-                    svcName,
-                    svcVersionRange,
-                    std::move(filter),
-                    std::move(setCallbacks),
-                    std::move(addCallbacks),
-                    std::move(remCallbacks)},
-                AbstractTracker::delCallback<ServiceTracker<I>>()};
-            tracker->open();
-            return tracker;
-        }
-#else
         static std::shared_ptr<ServiceTracker<I>> create(
                 std::shared_ptr<celix_bundle_context_t> cCtx,
                 std::string svcName,
@@ -363,7 +332,6 @@ namespace celix {
             tracker->open();
             return tracker;
         }
-#endif
 
         /**
          * @brief Get the current highest ranking service tracked by this tracker.
@@ -417,19 +385,7 @@ namespace celix {
             std::shared_ptr<const celix::Bundle> owner;
         };
 
-#if __cplusplus >= 201703L //C++17 or higher
-        ServiceTracker(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string_view _svcName,
-                       std::string_view _svcVersionRange, celix::Filter _filter,
-                       std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> _setCallbacks,
-                       std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> _addCallbacks,
-                       std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> _remCallbacks) :
-                GenericServiceTracker{std::move(_cCtx), _svcName, _svcVersionRange, std::move(_filter)},
-                setCallbacks{std::move(_setCallbacks)},
-                addCallbacks{std::move(_addCallbacks)},
-                remCallbacks{std::move(_remCallbacks)} {
-            setupServiceTrackerOptions();
-        }
-#else
+
         ServiceTracker(std::shared_ptr<celix_bundle_context_t> _cCtx, std::string _svcName,
                        std::string _svcVersionRange, celix::Filter _filter,
                        std::vector<std::function<void(const std::shared_ptr<I>&, const std::shared_ptr<const celix::Properties>&, const std::shared_ptr<const celix::Bundle>&)>> _setCallbacks,
@@ -441,7 +397,6 @@ namespace celix {
                 remCallbacks{std::move(_remCallbacks)} {
             setupServiceTrackerOptions();
         }
-#endif
 
         static std::shared_ptr<SvcEntry> createEntry(void* voidSvc, const celix_properties_t* cProps, const celix_bundle_t* cBnd) {
             long svcId = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_ID, -1L);
@@ -750,23 +705,7 @@ namespace celix {
          * @return The new meta tracker as shared ptr.
          * @throws celix::Exception.
          */
-#if __cplusplus >= 201703L //C++17 or higher
-        static std::shared_ptr<MetaTracker> create(
-                std::shared_ptr<celix_bundle_context_t> cCtx,
-                std::string_view serviceName,
-                std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerCreated,
-                std::vector<std::function<void(const ServiceTrackerInfo&)>> onTrackerDestroyed) {
-            auto tracker = std::shared_ptr<MetaTracker>{
-                    new MetaTracker{
-                            std::move(cCtx),
-                            std::string{serviceName},
-                            std::move(onTrackerCreated),
-                            std::move(onTrackerDestroyed)},
-                    AbstractTracker::delCallback<MetaTracker>()};
-            tracker->open();
-            return tracker;
-        }
-#else
+
         static std::shared_ptr<MetaTracker> create(
                 std::shared_ptr<celix_bundle_context_t> cCtx,
                 std::string serviceName,
@@ -782,7 +721,6 @@ namespace celix {
             tracker->open();
             return tracker;
         }
-#endif
 
         /**
          * @see AbstractTracker::open

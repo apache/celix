@@ -26,7 +26,7 @@ The Apache Celix project is organized into several libraries, bundles, group of 
 ## Core Libraries
 The core of Apache Celix is realized in the following libraries:
 
-* [Framework](../libs/framework) - The Apache Celix framework, an implementation of OSGi adapted to C and C++11.
+* [Framework](../libs/framework) - The Apache Celix framework, an implementation of OSGi adapted to C and C++14.
 * [Utils](../libs/utils/README.md) - The Celix utils library, containing a wide range of general utils and 
                                      OSGi supporting types (properties, version, filter, string utils, file utils, etc).
 
@@ -52,7 +52,7 @@ the Apache Celix functionality. Most of these bundles are based on the OSGi spec
 * [HTTP Admin](../bundles/http_admin/README.md) - An implementation for the OSGi HTTP whiteboard adapted to C and based on civetweb.
 * [Log Service](../bundles/logging/README.md) - A Log Service logging abstraction for Apache Celix.
   * [Syslog Writer](../bundles/logging/log_writers/syslog_writer) - A syslog writer for use in combination with the Log Service.
-* [Shell](../bundles/shell/README.md) - A OSGi C and C++11 shell implementation, which can be extended with shell command services.
+* [Shell](../bundles/shell/README.md) - A OSGi C and C++ shell implementation, which can be extended with shell command services.
 * [Pubsub](../bundles/pubsub/README.md) - An implementation for a publish-subscribe remote message communication system.
 * [Remote Services](../bundles/remote_services) - A C adaption and implementation of the OSGi Remote Service Admin specification.
 * [C++ Remote Services](../bundles/cxx_remote_services/README.md) - A C++17 adaption and implementation of the OSGi Remote Service Admin specification. Requires manually or code-generated import/export factories to work.
