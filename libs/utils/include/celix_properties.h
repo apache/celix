@@ -165,7 +165,8 @@ CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadFromString(const cha
  *
  * @param[in] properties The property set to store.
  * @param[in] file The name of the file to store the properties to.
- * @param[in] header An optional header to write to the file before the properties.
+ * @param[in] header An optional - single line - header to write to the file before the properties.
+ *                   Will be prefix with a '#' character.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_FILE_IO_EXCEPTION if there was an error writing to the
  *         file.
  */
@@ -205,8 +206,9 @@ CELIX_UTILS_EXPORT celix_properties_value_type_e celix_properties_getType(const 
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
  * @param[in] value The value to set the property to.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
  */
-CELIX_UTILS_EXPORT void celix_properties_set(celix_properties_t* properties, const char* key, const char *value);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_set(celix_properties_t* properties, const char* key, const char *value);
 
 /**
  * @brief Set the value of a property without copying the key and value strings.
@@ -227,8 +229,9 @@ CELIX_UTILS_EXPORT void celix_properties_setWithoutCopy(celix_properties_t* prop
  * @param[in] key The key of the property to set.
  * @param[in] entry The entry to set the property to. The entry will be copied, so it can be freed after calling
  *                  this function.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
  */
-CELIX_UTILS_EXPORT void celix_properties_setEntry(celix_properties_t* properties, const char* key, const celix_properties_entry_t* entry);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setEntry(celix_properties_t* properties, const char* key, const celix_properties_entry_t* entry);
 
 /**
  * @brief Unset a property, removing it from the property set.
@@ -265,8 +268,9 @@ CELIX_UTILS_EXPORT long celix_properties_getAsLong(const celix_properties_t* pro
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
  * @param[in] value The long value to set the property to.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
  */
-CELIX_UTILS_EXPORT void celix_properties_setLong(celix_properties_t* properties, const char* key, long value);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setLong(celix_properties_t* properties, const char* key, long value);
 
 /**
  * @brief Get the value of a property as a boolean.
@@ -287,8 +291,9 @@ CELIX_UTILS_EXPORT bool celix_properties_getAsBool(const celix_properties_t* pro
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
  * @param[in] val The boolean value to set the property to.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
  */
-CELIX_UTILS_EXPORT void celix_properties_setBool(celix_properties_t* properties, const char* key, bool val);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setBool(celix_properties_t* properties, const char* key, bool val);
 
 /**
  * @brief Set the value of a property to a double.
@@ -296,8 +301,9 @@ CELIX_UTILS_EXPORT void celix_properties_setBool(celix_properties_t* properties,
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
  * @param[in] val The double value to set the property to.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
  */
-CELIX_UTILS_EXPORT void celix_properties_setDouble(celix_properties_t* properties, const char* key, double val);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setDouble(celix_properties_t* properties, const char* key, double val);
 
 /**
  * @brief Get the value of a property as a double.
@@ -320,8 +326,9 @@ CELIX_UTILS_EXPORT double celix_properties_getAsDouble(const celix_properties_t*
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
  * @param[in] version The value to set. The function will make a copy of this object and store it in the property set.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
  */
-CELIX_UTILS_EXPORT void celix_properties_setVersion(celix_properties_t* properties, const char* key, const celix_version_t* version);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersion(celix_properties_t* properties, const char* key, const celix_version_t* version);
 
 /**
  * @brief Set the value of a property as a Celix version.

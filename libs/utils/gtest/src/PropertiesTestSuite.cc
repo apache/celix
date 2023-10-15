@@ -69,16 +69,35 @@ TEST_F(PropertiesTestSuite, LoadFromStringTest) {
 
 TEST_F(PropertiesTestSuite, StoreTest) {
     const char* propertiesFile = "resources-test/properties_out.txt";
-    auto* properties = celix_properties_create();
-    char keyA[] = "x";
-    char keyB[] = "y";
-    char valueA[] = "1";
-    char valueB[] = "2";
-    celix_properties_set(properties, keyA, valueA);
-    celix_properties_set(properties, keyB, valueB);
+    celix_autoptr(celix_properties_t) properties = celix_properties_create();
+    celix_properties_set(properties, "keyA", "valueA");
+    celix_properties_set(properties, "keyB", "valueB");
     celix_properties_store(properties, propertiesFile, nullptr);
 
-    celix_properties_destroy(properties);
+    celix_autoptr(celix_properties_t) properties2 = celix_properties_load(propertiesFile);
+    EXPECT_EQ(celix_properties_size(properties), celix_properties_size(properties2));
+    EXPECT_STREQ(celix_properties_get(properties, "keyA", ""), celix_properties_get(properties2, "keyA", ""));
+    EXPECT_STREQ(celix_properties_get(properties, "keyB", ""), celix_properties_get(properties2, "keyB", ""));
+}
+
+TEST_F(PropertiesTestSuite, StoreWithHeaderTest) {
+    const char* propertiesFile = "resources-test/properties_with_header_out.txt";
+    celix_autoptr(celix_properties_t) properties = celix_properties_create();
+    celix_properties_set(properties, "keyA", "valueA");
+    celix_properties_set(properties, "keyB", "valueB");
+    celix_properties_store(properties, propertiesFile, "header");
+
+    celix_autoptr(celix_properties_t) properties2 = celix_properties_load(propertiesFile);
+    EXPECT_EQ(celix_properties_size(properties), celix_properties_size(properties2));
+    EXPECT_STREQ(celix_properties_get(properties, "keyA", ""), celix_properties_get(properties2, "keyA", ""));
+    EXPECT_STREQ(celix_properties_get(properties, "keyB", ""), celix_properties_get(properties2, "keyB", ""));
+
+    //check if provided header text is present in file
+    FILE *f = fopen(propertiesFile, "r");
+    char line[1024];
+    fgets(line, sizeof(line), f);
+    EXPECT_STREQ("#header\n", line);
+    fclose(f);
 }
 
 TEST_F(PropertiesTestSuite, GetAsLongTest) {

@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <new>
 #include <map>
 #include <unordered_map>
 #include <memory>
@@ -52,7 +53,7 @@ namespace celix {
             return *this;
         }
 
-        const ConstPropertiesIterator& operator*() {
+        const ConstPropertiesIterator& operator*() const {
             return *this;
         }
 
@@ -101,7 +102,22 @@ namespace celix {
         using IsVersion = std::is_same<std::decay_t<T>, ::celix::Version>; //Util to check if T is a celix::Version.
 
         template<typename T>
-        using IsNotStringOrVersion = std::integral_constant<bool, !IsString<T>::value && !IsVersion<T>::value>; //Util to check if T is not a std::string or celix::Version.
+        using IsIntegral = std::integral_constant<bool, std::is_integral<std::decay_t<T>>::value
+                           && !std::is_same<std::decay_t<T>, bool>::value>; //Util to check if T is an integral type.
+
+        template<typename T>
+        using IsFloatingPoint = std::is_floating_point<std::decay_t<T>>; //Util to check if T is a floating point type.
+
+        template<typename T>
+        using IsBoolean = std::is_same<std::decay_t<T>, bool>; //Util to check if T is a boolean type.
+
+        template<typename T>
+        using IsCharPointer = std::is_same<std::decay_t<T>, const char*>; //Util to check if T is a const char* type.
+
+        template<typename T>
+        using IsNotStringVersionIntegralFloatingPointOrBoolean =
+                std::integral_constant<bool, !IsString<T>::value && !IsVersion<T>::value && !IsCharPointer<T>::value &&
+                !IsIntegral<T>::value && !IsFloatingPoint<T>::value && !IsBoolean<T>::value>;
     public:
         using const_iterator = ConstPropertiesIterator; //note currently only a const iterator is supported.
 
@@ -137,7 +153,7 @@ namespace celix {
                 return *this;
             }
 
-            [[nodiscard]] const char* getValue() const {
+            const char* getValue() const {
                 if (charKey == nullptr) {
                     return celix_properties_get(props.get(), stringKey.c_str(), nullptr);
                 } else {
@@ -156,20 +172,19 @@ namespace celix {
         };
 
 
-        Properties() : cProps{celix_properties_create(), [](celix_properties_t* p) { celix_properties_destroy(p); }} {}
+        Properties() : cProps{createCProps(celix_properties_create())} {}
 
         Properties(Properties&&) = default;
         Properties& operator=(Properties&&) = default;
 
         Properties& operator=(const Properties &rhs) {
             if (this != &rhs) {
-                cProps = std::shared_ptr<celix_properties_t>{celix_properties_copy(rhs.cProps.get()), [](celix_properties_t* p) { celix_properties_destroy(p); }};
+                cProps = createCProps(celix_properties_copy(rhs.cProps.get()));
             }
             return *this;
         }
 
-        Properties(const Properties& rhs) :
-            cProps{celix_properties_copy(rhs.cProps.get()), [](celix_properties_t* p) { celix_properties_destroy(p); }} {}
+        Properties(const Properties& rhs) : cProps{createCProps(celix_properties_copy(rhs.cProps.get()))} {}
 
         Properties(std::initializer_list<std::pair<std::string, std::string>> list) : cProps{celix_properties_create(), [](celix_properties_t* p) { celix_properties_destroy(p); }} {
             for(auto &entry : list) {
@@ -214,7 +229,7 @@ namespace celix {
          * @warning Try not the depend on the C API from a C++ bundle. If features are missing these should be added to
          * the C++ API.
          */
-        [[nodiscard]] celix_properties_t* getCProperties() const {
+        celix_properties_t* getCProperties() const {
             return cProps.get();
         }
 
@@ -235,35 +250,35 @@ namespace celix {
         /**
          * @brief begin iterator
          */
-        [[nodiscard]] const_iterator begin() const noexcept {
+        const_iterator begin() const noexcept {
             return ConstPropertiesIterator{cProps.get()};
         }
 
         /**
          * @brief end iterator
          */
-        [[nodiscard]] const_iterator end() const noexcept {
+        const_iterator end() const noexcept {
             return ConstPropertiesIterator{celix_properties_end(cProps.get())};
         }
 
         /**
          * @brief constant begin iterator
          */
-        [[nodiscard]] const_iterator cbegin() const noexcept {
+        const_iterator cbegin() const noexcept {
             return ConstPropertiesIterator{cProps.get()};
         }
 
         /**
          * @brief constant end iterator
          */
-        [[nodiscard]] const_iterator cend() const noexcept {
+        const_iterator cend() const noexcept {
             return ConstPropertiesIterator{celix_properties_end(cProps.get())};
         }
 
         /**
          * @brief Get the value for a property key or return the defaultValue if the key does not exists.
          */
-        [[nodiscard]] std::string get(const std::string& key, const std::string& defaultValue = {}) const {
+        std::string get(const std::string& key, const std::string& defaultValue = {}) const {
             const char* found = celix_properties_get(cProps.get(), key.c_str(), nullptr);
             return found == nullptr ? std::string{defaultValue} : std::string{found};
         }
@@ -276,7 +291,7 @@ namespace celix {
          *                         to a long.
          * @return The long value of the property if it exists and can be converted, or the default value otherwise.
          */
-        [[nodiscard]] long getAsLong(const std::string& key, long defaultValue) const {
+        long getAsLong(const std::string& key, long defaultValue) const {
             return celix_properties_getAsLong(cProps.get(), key.c_str(), defaultValue);
         }
 
@@ -288,7 +303,7 @@ namespace celix {
          *                         to a double.
          * @return The double value of the property if it exists and can be converted, or the default value otherwise.
          */
-        [[nodiscard]] double getAsDouble(const std::string &key, double defaultValue) const {
+        double getAsDouble(const std::string &key, double defaultValue) const {
             return celix_properties_getAsDouble(cProps.get(), key.c_str(), defaultValue);
         }
 
@@ -300,7 +315,7 @@ namespace celix {
          *                         to a boolean.
          * @return The boolean value of the property if it exists and can be converted, or the default value otherwise.
          */
-        [[nodiscard]] bool getAsBool(const std::string &key, bool defaultValue) const {
+        bool getAsBool(const std::string &key, bool defaultValue) const {
             return celix_properties_getAsBool(cProps.get(), key.c_str(), defaultValue);
         }
 
@@ -315,7 +330,7 @@ namespace celix {
          * @return The value of the property if it is a Celix version, or the default value if the property is not set
          *         or the value is not a Celix version.
          */
-        [[nodiscard]] celix::Version getAsVersion(const std::string& key, celix::Version defaultValue = {}) {
+        celix::Version getAsVersion(const std::string& key, celix::Version defaultValue = {}) {
             auto* cVersion = celix_properties_getAsVersion(cProps.get(), key.data(), nullptr);
             if (cVersion) {
                 celix::Version version{
@@ -330,38 +345,35 @@ namespace celix {
         }
 
         /**
-         * @brief Get the type of the property with key.
-         *
-         * @param[in] key The key of the property to get the type for.
-         * @return The type of the property with the given key, or ValueType::Unset if the property
-         *         does not exist.
-         */
-        [[nodiscard]] ValueType getType(const std::string& key) {
-            return getAndConvertType(cProps, key.data());
-        }
-
-        /**
          * @brief Set the value of a property.
          *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set the property to.
+         * @throws std::bad_alloc If a ENOMEM error occurs while setting the property.
          */
-        void set(const std::string& key, const std::string& value) {
-            celix_properties_set(cProps.get(), key.data(), value.c_str());
+        template<typename T>
+        typename std::enable_if<IsString<T>::value>::type
+        set(const std::string& key, T&& value) {
+            auto status = celix_properties_set(cProps.get(), key.data(), value.c_str());
+            throwIfEnomem(status);
         }
 
         /**
-         * @brief Set the value of a property.
+         * @brief Set string property value for a given key.
          *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set the property to.
+         * @throws std::bad_alloc If a ENOMEM error occurs while setting the property.
          */
-        void set(const std::string& key, const char* value) {
-            celix_properties_set(cProps.get(), key.data(), value);
+        template<typename T>
+        typename std::enable_if<IsCharPointer<T>::value>::type
+        set(const std::string& key, T&& value) {
+            auto status = celix_properties_set(cProps.get(), key.data(), value);
+            throwIfEnomem(status);
         }
 
         /**
-         * @brief Sets a property with a value of type T.
+         * @brief Set a property with a to_string value of type T.
          *
          * This function will use the std::to_string function to convert the value of type T to a string,
          * which will be used as the value for the property.
@@ -369,12 +381,14 @@ namespace celix {
          * @tparam T The type of the value to set.
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set for the property.
+         * @throws std::bad_alloc If a ENOMEM error occurs while setting the property.
          */
         template<typename T>
-        typename std::enable_if<::celix::Properties::IsNotStringOrVersion<T>::value>::type
+        typename std::enable_if<::celix::Properties::IsNotStringVersionIntegralFloatingPointOrBoolean<T>::value>::type
         set(const std::string& key, T&& value) {
             using namespace std;
-            celix_properties_set(cProps.get(), key.c_str(), to_string(value).c_str());
+            auto status = celix_properties_set(cProps.get(), key.c_str(), to_string(value).c_str());
+            throwIfEnomem(status);
         }
 
         /**
@@ -382,11 +396,13 @@ namespace celix {
          *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set for the property.
+         * @throws std::bad_alloc If a ENOMEM error occurs while setting the property.
          */
         template<typename T>
         typename std::enable_if<::celix::Properties::IsVersion<T>::value>::type
         set(const std::string& key, T&& value) {
-            celix_properties_setVersion(cProps.get(), key.data(), value.getCVersion());
+            auto status = celix_properties_setVersion(cProps.get(), key.data(), value.getCVersion());
+            throwIfEnomem(status);
         }
 
         /**
@@ -394,9 +410,13 @@ namespace celix {
          *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set for the property.
+         * @throws std::bad_alloc If a ENOMEM error occurs while setting the property.
          */
-        void set(const std::string& key, bool value) {
-            celix_properties_setBool(cProps.get(), key.data(), value);
+        template<typename T>
+        typename std::enable_if<::celix::Properties::IsBoolean<T>::value>::type
+        set(const std::string& key, T&& value) {
+            auto status = celix_properties_setBool(cProps.get(), key.data(), value);
+            throwIfEnomem(status);
         }
 
         /**
@@ -404,29 +424,13 @@ namespace celix {
          *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set for the property.
+         * @throws std::bad_alloc If a ENOMEM error occurs while setting the property.
          */
-        void set(const std::string& key, long value) {
-            celix_properties_setLong(cProps.get(), key.data(), value);
-        }
-
-        /**
-         * @brief Sets a long property value for a given key.
-         *
-         * @param[in] key The key of the property to set.
-         * @param[in] value The value to set for the property.
-         */
-        void set(const std::string& key, int value) {
-            celix_properties_setLong(cProps.get(), key.data(), value);
-        }
-
-        /**
-         * @brief Sets a long property value for a given key.
-         *
-         * @param[in] key The key of the property to set.
-         * @param[in] value The value to set for the property.
-         */
-        void set(const std::string& key, unsigned int value) {
-            celix_properties_setLong(cProps.get(), key.data(), value);
+        template<typename T>
+        typename std::enable_if<::celix::Properties::IsIntegral<T>::value>::type
+        set(const std::string& key, T&& value) {
+            auto status = celix_properties_setLong(cProps.get(), key.data(), value);
+            throwIfEnomem(status);
         }
 
         /**
@@ -434,9 +438,13 @@ namespace celix {
          *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set for the property.
+         * @throws std::bad_alloc If a ENOMEM error occurs while setting the property.
          */
-        void set(const std::string& key, double value) {
-            celix_properties_setDouble(cProps.get(), key.data(), value);
+        template<typename T>
+        typename std::enable_if<::celix::Properties::IsFloatingPoint<T>::value>::type
+        set(const std::string& key, T&& value) {
+            auto status = celix_properties_setDouble(cProps.get(), key.data(), value);
+            throwIfEnomem(status);
         }
 
         /**
@@ -444,31 +452,35 @@ namespace celix {
          *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set for the property.
+         * @throws std::bad_alloc If a ENOMEM error occurs while setting the property.
          */
         void set(const std::string& key, const celix_version_t* value) {
-            celix_properties_setVersion(cProps.get(), key.data(), value);
-        }
-
-        /**
-         * @brief Sets a String property.
-         */
-        template<typename T>
-        typename std::enable_if<::celix::Properties::IsString<T>::value>::type
-        set(const std::string& key, T&& value) {
-            celix_properties_set(cProps.get(), key.c_str(), value.c_str());
+            auto status = celix_properties_setVersion(cProps.get(), key.data(), value);
+            throwIfEnomem(status);
         }
 
         /**
          * @brief Returns the number of properties in the Properties object.
          */
-        [[nodiscard]] std::size_t size() const {
+        std::size_t size() const {
             return celix_properties_size(cProps.get());
+        }
+
+        /**
+         * @brief Get the type of the property with key.
+         *
+         * @param[in] key The key of the property to get the type for.
+         * @return The type of the property with the given key, or ValueType::Unset if the property
+         *         does not exist.
+         */
+        ValueType getType(const std::string& key) {
+            return getAndConvertType(cProps, key.data());
         }
 
         /**
          * @brief Convert the properties a (new) std::string, std::string map.
          */
-        [[nodiscard]] std::map<std::string, std::string> convertToMap() const {
+        std::map<std::string, std::string> convertToMap() const {
             std::map<std::string, std::string> result{};
             for (const auto& pair : *this) {
                 result[std::string{pair.first}] = pair.second;
@@ -479,7 +491,7 @@ namespace celix {
         /**
          * @brief Convert the properties a (new) std::string, std::string unordered map.
          */
-        [[nodiscard]] std::unordered_map<std::string, std::string> convertToUnorderedMap() const {
+        std::unordered_map<std::string, std::string> convertToUnorderedMap() const {
             std::unordered_map<std::string, std::string> result{};
             for (const auto& pair : *this) {
                 result[std::string{pair.first}] = pair.second;
@@ -507,7 +519,7 @@ namespace celix {
          * If a non-empty header string is provided, it will be written as a comment at the beginning of the file.
          *
          * @param[in] file The file to store the properties to.
-         * @param[in] header An optional header string to include as a comment at the beginning of the file.
+         * @param[in] header An optional (single line) header string to include as a comment at the beginning of the file.
          * @throws celix::IOException If an error occurs while writing to the file.
          */
         void store(const std::string& path, const std::string& header = {}) const {
@@ -525,6 +537,19 @@ namespace celix {
     private:
         Properties(celix_properties_t* props, bool takeOwnership) :
             cProps{props, [takeOwnership](celix_properties_t* p){ if (takeOwnership) { celix_properties_destroy(p); }}} {}
+
+        std::shared_ptr<celix_properties_t> createCProps(celix_properties_t* p) {
+            if (!p) {
+                throw std::bad_alloc();
+            }
+            return std::shared_ptr<celix_properties_t>{p, [](celix_properties_t* p) { celix_properties_destroy(p); }};
+        }
+
+        void throwIfEnomem(int status) {
+            if (status == CELIX_ENOMEM) {
+                throw std::bad_alloc();
+            }
+        }
 
         static celix::Properties::ValueType getAndConvertType(
                 const std::shared_ptr<celix_properties_t>& cProperties,

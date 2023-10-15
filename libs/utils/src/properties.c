@@ -28,6 +28,7 @@
 #include <assert.h>
 #include <math.h>
 
+#include "celix_err.h"
 #include "celix_build_assert.h"
 #include "celix_utils.h"
 #include "celix_string_hash_map.h"
@@ -257,7 +258,7 @@ static celix_properties_entry_t* celix_properties_allocEntry(celix_properties_t*
  * provided key and value strings.
  */
 static celix_properties_entry_t* celix_properties_createEntryWithNoCopy(celix_properties_t *properties,
-                                                                        char *strValue) {
+                                                                        const char *strValue) {
     celix_properties_entry_t* entry = celix_properties_allocEntry(properties);
     if (entry == NULL) {
         return NULL;
@@ -275,7 +276,6 @@ static celix_properties_entry_t* celix_properties_createEntryWithNoCopy(celix_pr
  */
 static celix_properties_entry_t* celix_properties_createEntry(
         celix_properties_t *properties,
-        const char *key,
         const char** strValue,
         const long* longValue,
         const double* doubleValue,
@@ -300,32 +300,66 @@ static celix_properties_entry_t* celix_properties_createEntry(
     return entry;
 }
 
+static void celix_properties_destroyEntry(celix_properties_t* properties, celix_properties_entry_t* entry) {
+    celix_properties_freeString(properties, (char*)entry->value);
+    if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
+        celix_version_destroy(entry->typed.versionValue);
+    }
+    if (entry >= properties->entriesBuffer &&
+        entry <= (properties->entriesBuffer + CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE)) {
+        //entry is part of the properties entries buffer -> nop.
+    } else {
+        free(entry);
+    }
+}
+
 /**
  * Create and add entry and optionally use the short properties optimization buffers.
  * Only 1 of the types values (strValue, LongValue, etc) should be provided.
  */
-static void celix_properties_createAndSetEntry(
+static celix_status_t celix_properties_createAndSetEntry(
         celix_properties_t *properties,
-        const char *key,
+        const char* key,
         const char** strValue,
         const long* longValue,
         const double* doubleValue,
         const bool* boolValue,
         celix_version_t* versionValue) {
-    if (properties == NULL) {
-        return;
+    if (!properties) {
+        return CELIX_SUCCESS; //silently ignore
     }
-    celix_properties_entry_t* entry = celix_properties_createEntry(properties, key, strValue, longValue, doubleValue,
+    if (!key) {
+        celix_err_push("Cannot set property with NULL key");
+        return CELIX_SUCCESS; //print error and ignore
+    }
+
+    celix_properties_entry_t* entry = celix_properties_createEntry(properties, strValue, longValue, doubleValue,
                                                                    boolValue, versionValue);
+    if (!entry) {
+        return CELIX_ENOMEM;
+    }
 
     const char* mapKey = key;
     if (!celix_stringHashMap_hasKey(properties->map, key)) {
         //new entry, needs new allocated key;
         mapKey = celix_properties_createString(properties, key);
+        if (!mapKey) {
+            celix_properties_destroyEntry(properties, entry);
+            return CELIX_ENOMEM;
+        }
     }
-    if (entry != NULL) {
-        celix_stringHashMap_put(properties->map, mapKey, entry);
-    }
+
+    //TODO
+//    celix_status_t status = celix_stringHashMap_put(properties->map, mapKey, entry);
+//    if (status != CELIX_SUCCESS) {
+//        celix_properties_destroyEntry(properties, entry);
+//        if (mapKey != key) {
+//            celix_properties_freeString(properties, (char*)mapKey);
+//        }
+//    }
+
+    celix_stringHashMap_put(properties->map, mapKey, entry);
+    return CELIX_SUCCESS;
 }
 
 static void celix_properties_removeKeyCallback(void* handle, char* key) {
@@ -336,16 +370,7 @@ static void celix_properties_removeKeyCallback(void* handle, char* key) {
 static void celix_properties_removeEntryCallback(void* handle, const char* key __attribute__((unused)), celix_hash_map_value_t val) {
     celix_properties_t* properties = handle;
     celix_properties_entry_t* entry = val.ptrValue;
-    celix_properties_freeString(properties, (char*)entry->value);
-    if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
-        celix_version_destroy(entry->typed.versionValue);
-    }
-    if (entry >= properties->entriesBuffer &&
-            entry <= (properties->entriesBuffer + CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE)) {
-        //entry is part of the properties entries buffer -> nop.
-    } else {
-        free(entry);
-    }
+    celix_properties_destroyEntry(properties, entry);
 }
 
 celix_properties_t* celix_properties_create(void) {
@@ -386,10 +411,11 @@ celix_properties_t* celix_properties_load(const char *filename) {
 }
 
 static void celix_properties_parseLine(const char* line, celix_properties_t *props) {
-    int linePos = 0;
+    int linePos;
+    int outputPos;
+
     bool precedingCharIsBackslash = false;
     bool isComment = false;
-    int outputPos = 0;
     char *output = NULL;
     int key_len = MALLOC_BLOCK_SIZE;
     int value_len = MALLOC_BLOCK_SIZE;
@@ -575,6 +601,19 @@ celix_status_t celix_properties_store(celix_properties_t *properties, const char
     }
 
     int rc = 0;
+
+    if (header && strstr("\n", header)) {
+        celix_err_push("Header cannot contain newlines. Ignoring header.");
+    } else if (header) {
+        rc = fputc('#', file);
+        if (rc != 0) {
+            rc = fputs(header, file);
+        }
+        if (rc != 0) {
+            rc = fputs("\n", file);
+        }
+    }
+
     CELIX_PROPERTIES_ITERATE(properties, iter) {
         const char* val = iter.entry.value;
         if (rc != EOF) {
@@ -640,10 +679,8 @@ celix_properties_entry_t* celix_properties_getEntry(const celix_properties_t* pr
     return entry;
 }
 
-void celix_properties_set(celix_properties_t *properties, const char *key, const char *value) {
-    if (properties != NULL && key != NULL) {
-        celix_properties_createAndSetEntry(properties, key, &value, NULL, NULL, NULL, NULL);
-    }
+celix_status_t celix_properties_set(celix_properties_t *properties, const char *key, const char *value) {
+    return celix_properties_createAndSetEntry(properties, key, &value, NULL, NULL, NULL, NULL);
 }
 
 void celix_properties_setWithoutCopy(celix_properties_t *properties, char *key, char *value) {
@@ -658,26 +695,22 @@ void celix_properties_setWithoutCopy(celix_properties_t *properties, char *key, 
     }
 }
 
-void celix_properties_setEntry(celix_properties_t* properties, const char* key, const celix_properties_entry_t* entry) {
-    if (properties != NULL && key != NULL && entry != NULL) {
+celix_status_t celix_properties_setEntry(celix_properties_t* properties, const char* key, const celix_properties_entry_t* entry) {
+    if (entry) {
         switch (entry->valueType) {
             case CELIX_PROPERTIES_VALUE_TYPE_LONG:
-                celix_properties_setLong(properties, key, entry->typed.longValue);
-                break;
+                return celix_properties_setLong(properties, key, entry->typed.longValue);
             case CELIX_PROPERTIES_VALUE_TYPE_DOUBLE:
-                celix_properties_setDouble(properties, key, entry->typed.doubleValue);
-                break;
+                return celix_properties_setDouble(properties, key, entry->typed.doubleValue);
             case CELIX_PROPERTIES_VALUE_TYPE_BOOL:
-                celix_properties_setBool(properties, key, entry->typed.boolValue);
-                break;
+                return celix_properties_setBool(properties, key, entry->typed.boolValue);
             case CELIX_PROPERTIES_VALUE_TYPE_VERSION:
-                celix_properties_setVersion(properties, key, entry->typed.versionValue);
-                break;
+                return celix_properties_setVersion(properties, key, entry->typed.versionValue);
             default: //STRING
-                celix_properties_set(properties, key, entry->value);
-                break;
+                return celix_properties_set(properties, key, entry->value);
         }
     }
+    return CELIX_SUCCESS; //silently ignore NULL entry
 }
 
 void celix_properties_unset(celix_properties_t *properties, const char *key) {
@@ -702,8 +735,8 @@ long celix_properties_getAsLong(const celix_properties_t *props, const char *key
     return result;
 }
 
-void celix_properties_setLong(celix_properties_t *props, const char *key, long value) {
-    celix_properties_createAndSetEntry(props, key, NULL, &value, NULL, NULL, NULL);
+celix_status_t celix_properties_setLong(celix_properties_t *props, const char *key, long value) {
+    return celix_properties_createAndSetEntry(props, key, NULL, &value, NULL, NULL, NULL);
 }
 
 double celix_properties_getAsDouble(const celix_properties_t *props, const char *key, double defaultValue) {
@@ -722,8 +755,8 @@ double celix_properties_getAsDouble(const celix_properties_t *props, const char 
     return result;
 }
 
-void celix_properties_setDouble(celix_properties_t *props, const char *key, double val) {
-    celix_properties_createAndSetEntry(props, key, NULL, NULL, &val, NULL, NULL);
+celix_status_t celix_properties_setDouble(celix_properties_t *props, const char *key, double val) {
+    return celix_properties_createAndSetEntry(props, key, NULL, NULL, &val, NULL, NULL);
 }
 
 bool celix_properties_getAsBool(const celix_properties_t *props, const char *key, bool defaultValue) {
@@ -744,8 +777,8 @@ bool celix_properties_getAsBool(const celix_properties_t *props, const char *key
     return result;
 }
 
-void celix_properties_setBool(celix_properties_t *props, const char *key, bool val) {
-    celix_properties_createAndSetEntry(props, key, NULL, NULL, NULL, &val, NULL);
+celix_status_t celix_properties_setBool(celix_properties_t *props, const char *key, bool val) {
+    return celix_properties_createAndSetEntry(props, key, NULL, NULL, NULL, &val, NULL);
 }
 
 const celix_version_t* celix_properties_getVersion(
@@ -776,8 +809,8 @@ celix_version_t* celix_properties_getAsVersion(
     return defaultValue == NULL ? NULL : celix_version_copy(defaultValue);
 }
 
-void celix_properties_setVersion(celix_properties_t *properties, const char *key, const celix_version_t* version) {
-    celix_properties_createAndSetEntry(properties, key, NULL, NULL, NULL, NULL, celix_version_copy(version));
+celix_status_t celix_properties_setVersion(celix_properties_t *properties, const char *key, const celix_version_t* version) {
+    return celix_properties_createAndSetEntry(properties, key, NULL, NULL, NULL, NULL, celix_version_copy(version));
 }
 
 void celix_properties_setVersionWithoutCopy(celix_properties_t* properties, const char* key, celix_version_t* version) {
