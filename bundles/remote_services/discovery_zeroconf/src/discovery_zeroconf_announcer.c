@@ -342,8 +342,7 @@ static void discoveryZeroconfAnnouncer_revokeEndpoints(discovery_zeroconf_announ
 static bool discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(discovery_zeroconf_announcer_t *announcer, celix_properties_iterator_t *propIter, TXTRecordRef *txtRecord, uint16_t maxTxtLen, bool splitTxtRecord) {
     const char *key;
     const char *val;
-    while (celix_propertiesIterator_hasNext(propIter)) {
-        celix_propertiesIterator_next(propIter);
+    while (!celix_propertiesIterator_isEnd(propIter)) {
         key = propIter->key;
         val = propIter->entry.value;
         if (key) {
@@ -356,6 +355,7 @@ static bool discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(discovery_zeroc
                 break;
             }
         }
+        celix_propertiesIterator_next(propIter);
     }
     return true;
 }
@@ -373,7 +373,7 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
         }
         char txtBuf[DZC_MAX_TXT_RECORD_SIZE] = {0};
         TXTRecordRef txtRecord;
-        celix_properties_iterator_t propIter = celix_propertiesIterator_construct(entry->properties);
+        celix_properties_iterator_t propIter = celix_properties_begin(entry->properties);
 
         TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
         char propSizeStr[16]= {0};
@@ -410,7 +410,7 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
 
         if (registered) {
             entry->registerRef = dsRef;
-            while (celix_propertiesIterator_hasNext(&propIter)) {
+            while (!celix_propertiesIterator_isEnd(&propIter)) {
                 TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
                 if (!discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(announcer, &propIter, &txtRecord, sizeof(txtBuf), true)) {
                     TXTRecordDeallocate(&txtRecord);
@@ -424,6 +424,7 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
                     break;
                 }
                 TXTRecordDeallocate(&txtRecord);
+                celix_propertiesIterator_next(&propIter);
             }
         }
     }
