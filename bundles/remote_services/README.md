@@ -54,25 +54,9 @@ Provides a RSA implementation that uses JSON to marshal requests and HTTP as tra
 | **Configuration** | `RSA_PORT`: defines the port on which the HTTP server should listen for incoming requests. Defaults to port `8888`; |
 | | `ENDPOINTS`: defines the location in which service endpoints and/or proxies can be found. Defaults to `endpoints` in the current working directory |
 
-#### Shared memory (SHM)
-
-Provides a RSA implementation that uses shared memory for its remote method invocation. Note that this only works when all remote services are located on the same machine.
-
-| **Bundle** | `remote_service_admin_shm.zip` |
-|--|--|
-| **Configuration** | `ENDPOINTS`: defines the location in which service endpoints and/or proxies can be found. Defaults to `endpoints` in the current working directory |
-
 ### Discovery
 
 Actively discovers the presence of remote exported services and provides information about local exported services, as given by the Topology Manager, to others.
-
-#### Shared memory (SHM) based discovery
-
-Provides service discovery for the RSA SHM implementation.
-
-| **Bundle** | `discovery_shm.zip` |
-|--|--|
-| **Configuration** | *None* |
 
 #### Configured discovery
 
@@ -162,11 +146,9 @@ Also the following libraries are required for building and/or using the Remote S
 ## RSA Bundles
 
 * [Remote Service Admin DFI](remote_service_admin_dfi) - A Dynamic Function Interface (DFI) implementation of the RSA.
-* [Remote Service Admin SHM](remote_service_admin_shm) - A shared memory implementation of the RSA.
 * [Topology Manager](topology_manager) - A (scoped) RSA Topology Manager implementation.
 * [Discovery Configured](discovery_configured) - A RSA Discovery implementation using static configuration (xml).
 * [Discovery Etcd](discovery_etcd/README.md) - A RSA Discovery implementation using etcd.
-* [Discovery SHM](discovery_shm) - A RSA Discovery implementation using shared memory.
 
 
 ## Notes
