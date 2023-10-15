@@ -130,6 +130,9 @@ TEST_F(CxxPropertiesTestSuite, CopyCPropsTest) {
 TEST_F(CxxPropertiesTestSuite, GetTypeTest) {
     celix::Properties props{};
 
+    const auto v2 = celix::Version{1, 2, 3};
+    auto v3 = celix::Version{1, 2, 4};
+
     props.set("bool", true);
     props.set("long1", 1l);
     props.set("long2", (int)1); //should lead to long;
@@ -140,7 +143,9 @@ TEST_F(CxxPropertiesTestSuite, GetTypeTest) {
     props.set("long7", (unsigned char)1); //should lead to long;
     props.set("double1", 1.0);
     props.set("double2", 1.0f); //set float should lead to double
-    props.set("version", celix::Version{1, 2, 3});
+    props.set("version1", celix::Version{1, 2, 3});
+    props.set("version2", v2);
+    props.set("version3", v3);
 
     EXPECT_EQ(props.getType("bool"), celix::Properties::ValueType::Bool);
     EXPECT_EQ(props.getType("long1"), celix::Properties::ValueType::Long);
@@ -152,7 +157,9 @@ TEST_F(CxxPropertiesTestSuite, GetTypeTest) {
     EXPECT_EQ(props.getType("long7"), celix::Properties::ValueType::Long);
     EXPECT_EQ(props.getType("double1"), celix::Properties::ValueType::Double);
     EXPECT_EQ(props.getType("double2"), celix::Properties::ValueType::Double);
-    EXPECT_EQ(props.getType("version"), celix::Properties::ValueType::Version);
+    EXPECT_EQ(props.getType("version1"), celix::Properties::ValueType::Version);
+    EXPECT_EQ(props.getType("version2"), celix::Properties::ValueType::Version);
+    EXPECT_EQ(props.getType("version3"), celix::Properties::ValueType::Version);
 }
 
 TEST_F(CxxPropertiesTestSuite, GetAsVersionTest) {

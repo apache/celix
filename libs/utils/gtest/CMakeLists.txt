@@ -20,9 +20,6 @@ add_executable(test_utils
         src/CxxPropertiesTestSuite.cc
         src/CxxFilterTestSuite.cc
         src/CxxVersionTestSuite.cc
-)
-
-add_executable(test_utils
         src/LogTestSuite.cc
         src/LogUtilsTestSuite.cc
         src/VersionRangeTestSuite.cc

@@ -23,12 +23,7 @@
 #include <unordered_map>
 #include <memory>
 #include <string>
-#if __cplusplus >= 201703L //C++17 or higher
-#include <string_view>
-#else
 #include <type_traits>
-#endif
-
 
 #include "celix_properties.h"
 #include "celix_utils.h"
@@ -101,6 +96,12 @@ namespace celix {
     private:
         template<typename T>
         using IsString = std::is_same<std::decay_t<T>, std::string>; //Util to check if T is a std::string.
+
+        template<typename T>
+        using IsVersion = std::is_same<std::decay_t<T>, ::celix::Version>; //Util to check if T is a celix::Version.
+
+        template<typename T>
+        using IsNotStringOrVersion = std::integral_constant<bool, !IsString<T>::value && !IsVersion<T>::value>; //Util to check if T is not a std::string or celix::Version.
     public:
         using const_iterator = ConstPropertiesIterator; //note currently only a const iterator is supported.
 
@@ -370,7 +371,7 @@ namespace celix {
          * @param[in] value The value to set for the property.
          */
         template<typename T>
-        typename std::enable_if<!::celix::Properties::IsString<T>::value>::type
+        typename std::enable_if<::celix::Properties::IsNotStringOrVersion<T>::value>::type
         set(const std::string& key, T&& value) {
             using namespace std;
             celix_properties_set(cProps.get(), key.c_str(), to_string(value).c_str());
@@ -382,7 +383,9 @@ namespace celix {
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set for the property.
          */
-        void set(const std::string& key, celix::Version&& value) {
+        template<typename T>
+        typename std::enable_if<::celix::Properties::IsVersion<T>::value>::type
+        set(const std::string& key, T&& value) {
             celix_properties_setVersion(cProps.get(), key.data(), value.getCVersion());
         }
 
@@ -496,8 +499,6 @@ namespace celix {
         }
 #endif
 
-
-
         /**
          * @brief Store the property set to the given file path.
          *
@@ -509,15 +510,9 @@ namespace celix {
          * @param[in] header An optional header string to include as a comment at the beginning of the file.
          * @throws celix::IOException If an error occurs while writing to the file.
          */
-#if __cplusplus >= 201703L //C++17 or higher
-        void store(std::string_view path, std::string_view header = {}) const {
-            storeTo(path.data(), header.empty() ? nullptr : header.data());
-        }
-#else
         void store(const std::string& path, const std::string& header = {}) const {
             storeTo(path.data(), header.empty() ? nullptr : header.data());
         }
-#endif
 
         /**
          * @brief Loads properties from the file at the given path.
@@ -525,11 +520,7 @@ namespace celix {
          * @return A new Properties object containing the properties from the file.
          * @throws celix::IOException If the file cannot be opened or read.
          */
-#if __cplusplus >= 201703L //C++17 or higher
-        static celix::Properties load(std::string_view path) { return loadFrom(path.data()); }
-#else
         static celix::Properties load(const std::string& path) { return loadFrom(path.data()); }
-#endif
 
     private:
         Properties(celix_properties_t* props, bool takeOwnership) :
