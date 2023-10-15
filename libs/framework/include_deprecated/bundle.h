@@ -26,7 +26,6 @@
 #include "celix_bundle_state.h"
 #include "bundle_archive.h"
 #include "framework.h"
-#include "wire.h"
 #include "module.h"
 #include "service_reference.h"
 #include "celix_log.h"

@@ -139,10 +139,6 @@ void module_destroy(module_pt module) {
 	free(module);
 }
 
-wire_pt module_getWire(module_pt module, const char * serviceName) {
-	return NULL;
-}
-
 version_pt module_getVersion(module_pt module) {
 	return module->version;
 }
