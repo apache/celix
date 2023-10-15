@@ -32,3 +32,5 @@ cmake-build*
 nbproject
 target
 html
+CMakeUserPresets.json
+
