@@ -27,19 +27,6 @@
 #include <assert.h>
 #include <stdint.h>
 
-/**
- * Whether to use realloc - instead of calloc - to resize a hash map.
- *
- * With realloc the memory is increased and the
- * map entries are corrected.
- *
- * With alloc a new buckets array is allocated and
- * entries are moved into the new bucket array.
- * And the old buckets array is freed.
- *
- */
-#define CELIX_HASH_MAP_RESIZE_WITH_REALLOC
-
 static unsigned int DEFAULT_INITIAL_CAPACITY = 16;
 static double DEFAULT_LOAD_FACTOR = 0.75;
 static unsigned int MAXIMUM_CAPACITY = INT32_MAX/10;
@@ -164,7 +151,6 @@ bool celix_hashMap_hasKey(const celix_hash_map_t* map, const char* strKey, long 
     return celix_hashMap_getEntry(map, strKey, longKey) != NULL;
 }
 
-#ifdef CELIX_HASH_MAP_RESIZE_WITH_REALLOC
 static void celix_hashMap_resize(celix_hash_map_t* map, size_t newCapacity) {
     if (map->bucketsSize == MAXIMUM_CAPACITY) {
         return;
@@ -196,34 +182,6 @@ static void celix_hashMap_resize(celix_hash_map_t* map, size_t newCapacity) {
     //update bucketSize to new capacity
     map->bucketsSize = newCapacity;
 }
-#else
-static void celix_hashMap_resize(celix_hash_map_t* map, size_t newCapacity) {
-    celix_hash_map_entry_t** newTable;
-    unsigned int j;
-    if (map->bucketsSize == MAXIMUM_CAPACITY) {
-        return;
-    }
-
-    newTable = calloc(newCapacity, sizeof(celix_hash_map_entry_t*));
-
-    for (j = 0; j < map->bucketsSize; j++) {
-        celix_hash_map_entry_t* entry = map->buckets[j];
-        if (entry != NULL) {
-            map->buckets[j] = NULL;
-            do {
-                celix_hash_map_entry_t* next = entry->next;
-                unsigned int i = celix_hashMap_indexFor(entry->hash, newCapacity);
-                entry->next = newTable[i];
-                newTable[i] = entry;
-                entry = next;
-            } while (entry != NULL);
-        }
-    }
-    free(map->buckets);
-    map->buckets = newTable;
-    map->bucketsSize = newCapacity;
-}
-#endif
 
 static void celix_hashMap_callRemovedCallback(celix_hash_map_t* map, celix_hash_map_entry_t* removedEntry) {
     if (map->simpleRemovedCallback) {
