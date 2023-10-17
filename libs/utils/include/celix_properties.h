@@ -40,8 +40,8 @@
 #include "celix_cleanup.h"
 #include "celix_compiler.h"
 #include "celix_errno.h"
-#include "celix_version.h"
 #include "celix_utils_export.h"
+#include "celix_version.h"
 
 #ifndef CELIX_PROPERTIES_H_
 #define CELIX_PROPERTIES_H_
@@ -61,32 +61,32 @@ typedef struct celix_properties celix_properties_t;
  * @brief Enum representing the possible types of a property value.
  */
 typedef enum celix_properties_value_type {
-    CELIX_PROPERTIES_VALUE_TYPE_UNSET   = 0, /**< Property value is not set. */
-    CELIX_PROPERTIES_VALUE_TYPE_STRING  = 1, /**< Property value is a string. */
-    CELIX_PROPERTIES_VALUE_TYPE_LONG    = 2, /**< Property value is a long integer. */
-    CELIX_PROPERTIES_VALUE_TYPE_DOUBLE  = 3, /**< Property value is a double. */
-    CELIX_PROPERTIES_VALUE_TYPE_BOOL    = 4, /**< Property value is a boolean. */
-    CELIX_PROPERTIES_VALUE_TYPE_VERSION = 5  /**< Property value is a Celix version. */
+    CELIX_PROPERTIES_VALUE_TYPE_UNSET = 0,  /**< Property value is not set. */
+    CELIX_PROPERTIES_VALUE_TYPE_STRING = 1, /**< Property value is a string. */
+    CELIX_PROPERTIES_VALUE_TYPE_LONG = 2,   /**< Property value is a long integer. */
+    CELIX_PROPERTIES_VALUE_TYPE_DOUBLE = 3, /**< Property value is a double. */
+    CELIX_PROPERTIES_VALUE_TYPE_BOOL = 4,   /**< Property value is a boolean. */
+    CELIX_PROPERTIES_VALUE_TYPE_VERSION = 5 /**< Property value is a Celix version. */
 } celix_properties_value_type_e;
 
 /**
  * @brief A structure representing a single value entry in a property set.
  */
 typedef struct celix_properties_entry {
-    const char* value;                          /**< The string value or string representation of a non-string
-                                                     typed value.*/
-    celix_properties_value_type_e valueType;    /**< The type of the value of the entry */
+    const char* value;                       /**< The string value or string representation of a non-string
+                                                  typed value.*/
+    celix_properties_value_type_e valueType; /**< The type of the value of the entry */
 
     union {
-        const char* strValue;                   /**< The string value of the entry. */
-        long longValue;                         /**< The long integer value of the entry. */
-        double doubleValue;                     /**< The double-precision floating point value of the entry. */
-        bool boolValue;                         /**< The boolean value of the entry. */
-        celix_version_t* versionValue;          /**< The Celix version value of the entry. */
-    } typed;                                    /**< The typed values of the entry. Only valid if valueType
-                                                     is not CELIX_PROPERTIES_VALUE_TYPE_UNSET and only the matching
-                                                     value types should be used. E.g typed.boolValue if valueType is
-                                                     CELIX_PROPERTIES_VALUE_TYPE_BOOL. */
+        const char* strValue;                /**< The string value of the entry. */
+        long longValue;                      /**< The long integer value of the entry. */
+        double doubleValue;                  /**< The double-precision floating point value of the entry. */
+        bool boolValue;                      /**< The boolean value of the entry. */
+        const celix_version_t* versionValue; /**< The Celix version value of the entry. */
+    } typed;                                 /**< The typed values of the entry. Only valid if valueType
+                                                  is not CELIX_PROPERTIES_VALUE_TYPE_UNSET and only the matching
+                                                  value types should be used. E.g typed.boolValue if valueType is
+                                                  CELIX_PROPERTIES_VALUE_TYPE_BOOL. */
 } celix_properties_entry_t;
 
 /**
@@ -119,7 +119,7 @@ typedef struct celix_properties_iterator {
  *
  * @return A new empty property set.
  */
-CELIX_UTILS_EXPORT celix_properties_t* celix_properties_create(void);
+CELIX_UTILS_EXPORT celix_properties_t* celix_properties_create();
 
 /**
  * @brief Destroy a property set, freeing all associated resources.
@@ -137,8 +137,7 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_properties_t, celix_properties_destroy)
  * @return A property set containing the properties from the file.
  * @retval NULL If an error occurred (e.g. file not found).
  */
-CELIX_UTILS_EXPORT celix_properties_t* celix_properties_load(const char *filename);
-
+CELIX_UTILS_EXPORT celix_properties_t* celix_properties_load(const char* filename);
 
 /**
  * @brief Load properties from a stream.
@@ -147,7 +146,7 @@ CELIX_UTILS_EXPORT celix_properties_t* celix_properties_load(const char *filenam
  * @return A property set containing the properties from the stream.
  * @retval NULL If an error occurred (e.g. invalid format).
  */
-CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadWithStream(FILE *stream);
+CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadWithStream(FILE* stream);
 
 /**
  * @brief Load properties from a string.
@@ -156,7 +155,7 @@ CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadWithStream(FILE *str
  * @return A property set containing the properties from the string.
  * @retval NULL If an error occurred (e.g. invalid format).
  */
-CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadFromString(const char *input);
+CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadFromString(const char* input);
 
 /**
  * @brief Store properties to a file.
@@ -170,7 +169,9 @@ CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadFromString(const cha
  * @return CELIX_SUCCESS if the operation was successful, CELIX_FILE_IO_EXCEPTION if there was an error writing to the
  *         file.
  */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_store(celix_properties_t* properties, const char* file, const char* header);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_store(celix_properties_t* properties,
+                                                         const char* file,
+                                                         const char* header);
 
 /**
  * @brief Get the entry for a given key in a property set.
@@ -179,7 +180,8 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_store(celix_properties_t* pro
  * @param[in] key The key to search for.
  * @return The entry for the given key, or a NULL if the key is not found.
  */
-CELIX_UTILS_EXPORT celix_properties_entry_t* celix_properties_getEntry(const celix_properties_t* properties, const char* key);
+CELIX_UTILS_EXPORT celix_properties_entry_t* celix_properties_getEntry(const celix_properties_t* properties,
+                                                                       const char* key);
 
 /**
  * @brief Get the value of a property.
@@ -188,8 +190,9 @@ CELIX_UTILS_EXPORT celix_properties_entry_t* celix_properties_getEntry(const cel
  * @param[in] key The key of the property to get.
  * @param[in] defaultValue The value to return if the property is not set.
  * @return The value of the property, or the default value if the property is not set.
-  */
-CELIX_UTILS_EXPORT const char* celix_properties_get(const celix_properties_t* properties, const char* key, const char* defaultValue);
+ */
+CELIX_UTILS_EXPORT const char*
+celix_properties_get(const celix_properties_t* properties, const char* key, const char* defaultValue);
 
 /**
  * @brief Get the type of a property value.
@@ -198,7 +201,8 @@ CELIX_UTILS_EXPORT const char* celix_properties_get(const celix_properties_t* pr
  * @param[in] key The key of the property to get the type of.
  * @return The type of the property value, or CELIX_PROPERTIES_VALUE_TYPE_UNSET if the property is not set.
  */
-CELIX_UTILS_EXPORT celix_properties_value_type_e celix_properties_getType(const celix_properties_t* properties, const char* key);
+CELIX_UTILS_EXPORT celix_properties_value_type_e celix_properties_getType(const celix_properties_t* properties,
+                                                                          const char* key);
 
 /**
  * @brief Set the value of a property.
@@ -208,20 +212,22 @@ CELIX_UTILS_EXPORT celix_properties_value_type_e celix_properties_getType(const 
  * @param[in] value The value to set the property to.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
  */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_set(celix_properties_t* properties, const char* key, const char *value);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_set(celix_properties_t* properties,
+                                                       const char* key,
+                                                       const char* value);
 
 /**
- * @brief Set the value of a property without copying the key and value strings.
- *
- * @note If the setWithoutCopy replaced an exising value, the key will be freed by callee.
+ * @brief Set the value of a property without copying the value string.
  *
  * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set. This string will be used directly, so it must not be freed or modified
- *            after calling this function.
+ * @param[in] key The key of the property to set. This string will be used directly, so it must not be freed or
+*                 modified after calling this function.
  * @param[in] value The value to set the property to. This string will be used directly, so it must not be freed or
- *              modified after calling this function.
+ *                  modified after calling this function.
  */
-CELIX_UTILS_EXPORT void celix_properties_setWithoutCopy(celix_properties_t* properties, char* key, char *value);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setWithoutCopy(celix_properties_t* properties,
+                                                                  char* key,
+                                                                  char* value);
 
 /**
  * @brief Set the value of a property based on the provided property entry, maintaining underlying type.
@@ -231,7 +237,9 @@ CELIX_UTILS_EXPORT void celix_properties_setWithoutCopy(celix_properties_t* prop
  *                  this function.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
  */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setEntry(celix_properties_t* properties, const char* key, const celix_properties_entry_t* entry);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setEntry(celix_properties_t* properties,
+                                                            const char* key,
+                                                            const celix_properties_entry_t* entry);
 
 /**
  * @brief Unset a property, removing it from the property set.
@@ -239,7 +247,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setEntry(celix_properties_t* 
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to unset.
  */
-CELIX_UTILS_EXPORT void celix_properties_unset(celix_properties_t* properties, const char *key);
+CELIX_UTILS_EXPORT void celix_properties_unset(celix_properties_t* properties, const char* key);
 
 /**
  * @brief Make a copy of a property set.
@@ -260,7 +268,8 @@ CELIX_UTILS_EXPORT celix_properties_t* celix_properties_copy(const celix_propert
  *         the value is not a long integer, or if the value cannot be converted to a long integer.
  *         If the value is a string, it will be converted to a long integer if possible.
  */
-CELIX_UTILS_EXPORT long celix_properties_getAsLong(const celix_properties_t* properties, const char* key, long defaultValue);
+CELIX_UTILS_EXPORT long
+celix_properties_getAsLong(const celix_properties_t* properties, const char* key, long defaultValue);
 
 /**
  * @brief Set the value of a property to a long integer.
@@ -283,7 +292,8 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setLong(celix_properties_t* p
  *         boolean, or if the value cannot be converted to a boolean. If the value is a string, it will be converted
  *         to a boolean if possible.
  */
-CELIX_UTILS_EXPORT bool celix_properties_getAsBool(const celix_properties_t* properties, const char* key, bool defaultValue);
+CELIX_UTILS_EXPORT bool
+celix_properties_getAsBool(const celix_properties_t* properties, const char* key, bool defaultValue);
 
 /**
  * @brief Set the value of a property to a boolean.
@@ -303,7 +313,9 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setBool(celix_properties_t* p
  * @param[in] val The double value to set the property to.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
  */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setDouble(celix_properties_t* properties, const char* key, double val);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setDouble(celix_properties_t* properties,
+                                                             const char* key,
+                                                             double val);
 
 /**
  * @brief Get the value of a property as a double.
@@ -316,7 +328,8 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setDouble(celix_properties_t*
  *         a double, or if the value cannot be converted to a double. If the value is a string, it will be converted
  *         to a double if possible.
  */
-CELIX_UTILS_EXPORT double celix_properties_getAsDouble(const celix_properties_t* properties, const char* key, double defaultValue);
+CELIX_UTILS_EXPORT double
+celix_properties_getAsDouble(const celix_properties_t* properties, const char* key, double defaultValue);
 
 /**
  * @brief Set the value of a property as a Celix version.
@@ -328,7 +341,9 @@ CELIX_UTILS_EXPORT double celix_properties_getAsDouble(const celix_properties_t*
  * @param[in] version The value to set. The function will make a copy of this object and store it in the property set.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
  */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersion(celix_properties_t* properties, const char* key, const celix_version_t* version);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersion(celix_properties_t* properties,
+                                                              const char* key,
+                                                              const celix_version_t* version);
 
 /**
  * @brief Set the value of a property as a Celix version.
@@ -341,8 +356,8 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersion(celix_properties_t
  * @param[in] version The value to set. The function will store a reference to this object in the property set and
  *                    takes ownership of the provided version.
  */
-CELIX_UTILS_EXPORT void celix_properties_setVersionWithoutCopy(celix_properties_t* properties, const char* key, celix_version_t* version);
-
+CELIX_UTILS_EXPORT void
+celix_properties_setVersionWithoutCopy(celix_properties_t* properties, const char* key, celix_version_t* version);
 
 /**
  * @brief Get the Celix version value of a property.
@@ -355,10 +370,8 @@ CELIX_UTILS_EXPORT void celix_properties_setVersionWithoutCopy(celix_properties_
  * @return The value of the property if it is a Celix version, or the default value if the property is not set or the
  *         value is not a Celix version.
  */
-CELIX_UTILS_EXPORT const celix_version_t* celix_properties_getVersion(
-        const celix_properties_t* properties,
-        const char* key,
-        const celix_version_t* defaultValue);
+CELIX_UTILS_EXPORT const celix_version_t*
+celix_properties_getVersion(const celix_properties_t* properties, const char* key, const celix_version_t* defaultValue);
 
 /**
  * @brief Get the value of a property as a Celix version.
@@ -377,10 +390,9 @@ CELIX_UTILS_EXPORT const celix_version_t* celix_properties_getVersion(
  *         is not a valid Celix version.
  * @retval NULL if version cannot be found/converted and the defaultValue is NULL.
  */
-CELIX_UTILS_EXPORT celix_version_t* celix_properties_getAsVersion(
-        const celix_properties_t* properties,
-        const char* key,
-        const celix_version_t* defaultValue);
+CELIX_UTILS_EXPORT celix_version_t* celix_properties_getAsVersion(const celix_properties_t* properties,
+                                                                  const char* key,
+                                                                  const celix_version_t* defaultValue);
 
 /**
  * @brief Get the number of properties in a property set.
@@ -433,7 +445,8 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_isEnd(const celix_properties_it
  * @param[in] b The second iterator to compare.
  * @return true if the iterators are equal, false otherwise.
  */
-CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_iterator_t* a, const celix_properties_iterator_t* b);
+CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_iterator_t* a,
+                                                        const celix_properties_iterator_t* b);
 
 /**
  * @brief Iterate over the entries in the specified celix_properties_t object.
@@ -454,9 +467,10 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_i
  * }
  * @endcode
  */
-#define CELIX_PROPERTIES_ITERATE(props, iterName) \
-    for (celix_properties_iterator_t iterName = celix_properties_begin((props)); \
-    !celix_propertiesIterator_isEnd(&(iterName)); celix_propertiesIterator_next(&(iterName)))
+#define CELIX_PROPERTIES_ITERATE(props, iterName)                                                                      \
+    for (celix_properties_iterator_t iterName = celix_properties_begin((props));                                       \
+         !celix_propertiesIterator_isEnd(&(iterName));                                                                 \
+         celix_propertiesIterator_next(&(iterName)))
 
 #ifdef __cplusplus
 }

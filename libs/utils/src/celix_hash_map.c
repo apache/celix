@@ -367,7 +367,6 @@ static void celix_hashMap_clear(celix_hash_map_t* map) {
         while (entry != NULL) {
             celix_hash_map_entry_t* removedEntry = entry;
             entry = entry->next;
-            \
             char* removedKey = NULL;
             if (map->keyType == CELIX_HASH_MAP_STRING_KEY) {
                 removedKey = (char*)removedEntry->key.strKey;
@@ -426,17 +425,18 @@ celix_string_hash_map_t* celix_stringHashMap_createWithOptions(const celix_strin
 
     unsigned int cap = opts->initialCapacity > 0 ? opts->initialCapacity : DEFAULT_INITIAL_CAPACITY;
     double fac = opts->loadFactor > 0 ? opts->loadFactor : DEFAULT_LOAD_FACTOR;
+    celix_status_t status = celix_hashMap_init(&map->genericMap, CELIX_HASH_MAP_STRING_KEY, cap, fac, celix_stringHashMap_hash, celix_stringHashMap_equals);
+    if (status != CELIX_SUCCESS) {
+        celix_err_push("Cannot initialize hash map");
+        return NULL;
+    }
+
     map->genericMap.simpleRemovedCallback = opts->simpleRemovedCallback;
     map->genericMap.removedCallbackData = opts->removedCallbackData;
     map->genericMap.removedStringEntryCallback = opts->removedCallback;
     map->genericMap.removedStringKeyCallback = opts->removedKeyCallback;
     map->genericMap.storeKeysWeakly = opts->storeKeysWeakly;
 
-    celix_status_t status = celix_hashMap_init(&map->genericMap, CELIX_HASH_MAP_STRING_KEY, cap, fac, celix_stringHashMap_hash, celix_stringHashMap_equals);
-    if (status != CELIX_SUCCESS) {
-        celix_err_push("Cannot initialize hash map");
-        return NULL;
-    }
     return celix_steal_ptr(map);
 }
 
@@ -447,22 +447,25 @@ celix_string_hash_map_t* celix_stringHashMap_create() {
 
 celix_long_hash_map_t* celix_longHashMap_createWithOptions(const celix_long_hash_map_create_options_t* opts) {
     celix_autofree celix_long_hash_map_t* map = calloc(1, sizeof(*map));
+
     if (!map) {
         celix_err_push("Cannot allocate memory for hash map");
         return NULL;
     }
+
     unsigned int cap = opts->initialCapacity > 0 ? opts->initialCapacity : DEFAULT_INITIAL_CAPACITY;
     double fac = opts->loadFactor > 0 ? opts->loadFactor : DEFAULT_LOAD_FACTOR;
-    map->genericMap.simpleRemovedCallback = opts->simpleRemovedCallback;
-    map->genericMap.removedCallbackData = opts->removedCallbackData;
-    map->genericMap.removedLongEntryCallback = opts->removedCallback;
-    map->genericMap.storeKeysWeakly = false;
-
     celix_status_t status = celix_hashMap_init(&map->genericMap, CELIX_HASH_MAP_LONG_KEY, cap, fac, celix_longHashMap_hash, celix_longHashMap_equals);
     if (status != CELIX_SUCCESS) {
         celix_err_push("Cannot initialize hash map");
         return NULL;
     }
+
+    map->genericMap.simpleRemovedCallback = opts->simpleRemovedCallback;
+    map->genericMap.removedCallbackData = opts->removedCallbackData;
+    map->genericMap.removedLongEntryCallback = opts->removedCallback;
+    map->genericMap.storeKeysWeakly = false;
+
     return celix_steal_ptr(map);
 }
 
