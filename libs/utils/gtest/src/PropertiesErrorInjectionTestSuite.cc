@@ -25,7 +25,7 @@
 #include "celix/Properties.h"
 
 #include "malloc_ei.h"
-#include "celix_hash_map_ei.h"
+#include "celix_string_hash_map_ei.h"
 #include "celix_utils_ei.h"
 
 class PropertiesErrorInjectionTestSuite : public ::testing::Test {
@@ -33,7 +33,7 @@ public:
     PropertiesErrorInjectionTestSuite() = default;
     ~PropertiesErrorInjectionTestSuite() override {
         celix_ei_expect_malloc(nullptr, 0, nullptr);
-        celix_ei_expect_celix_stringHashMap_createWithOptions(nullptr, 0, nullptr);
+        celix_ei_expect_celix_stringHashMap_create(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
     }
 };
@@ -74,13 +74,18 @@ TEST_F(PropertiesErrorInjectionTestSuite, SetFailureTest) {
         celix_properties_set(props, key, val);
     }
 
-    //When a malloc error injection is set for celix_properties_set with level 2 (during alloc entry)
+    //When a malloc error injection is set for celix_properties_set with level 3 (during alloc entry)
     celix_ei_expect_malloc((void *)celix_properties_set, 3, nullptr);
     //Then the celix_properties_set call fails
     ASSERT_EQ(celix_properties_set(props, "key", "value"), CELIX_ENOMEM);
 
     //When a celix_utils_strdup error injection is set for celix_properties_set with level 4 (during strdup key)
     celix_ei_expect_celix_utils_strdup((void *)celix_properties_set, 4, nullptr);
+    //Then the celix_properties_set call fails
+    ASSERT_EQ(celix_properties_set(props, "key", "value"), CELIX_ENOMEM);
+
+    //When a celix_stringHashMap_put error injection is set for celix_properties_set with level 1 (during put)
+    celix_ei_expect_celix_stringHashMap_put((void *)celix_properties_set, 1, CELIX_ENOMEM);
     //Then the celix_properties_set call fails
     ASSERT_EQ(celix_properties_set(props, "key", "value"), CELIX_ENOMEM);
 

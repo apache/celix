@@ -15,12 +15,17 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(hash_map_ei STATIC src/celix_hash_map_ei.cc)
+add_library(string_hash_map_ei STATIC src/celix_string_hash_map_ei.cc)
 
-target_include_directories(hash_map_ei PUBLIC include)
-target_link_libraries(hash_map_ei PUBLIC Celix::error_injector Celix::utils)
-target_link_options(hash_map_ei INTERFACE
+target_include_directories(string_hash_map_ei PUBLIC include)
+target_link_libraries(string_hash_map_ei PUBLIC Celix::error_injector Celix::utils)
+
+target_link_options(string_hash_map_ei INTERFACE
         LINKER:--wrap,celix_stringHashMap_create
         LINKER:--wrap,celix_stringHashMap_createWithOptions
-)
-add_library(Celix::hash_map_ei ALIAS hash_map_ei)
+        LINKER:--wrap,celix_stringHashMap_put
+        LINKER:--wrap,celix_stringHashMap_putLong
+        LINKER:--wrap,celix_stringHashMap_putDouble
+        LINKER:--wrap,celix_stringHashMap_putBool
+        )
+add_library(Celix::string_hash_map_ei ALIAS string_hash_map_ei)

@@ -23,6 +23,7 @@
 #include "celix_cleanup.h"
 #include "celix_hash_map_value.h"
 #include "celix_utils_export.h"
+#include "celix_errno.h"
 
 /**
  * @brief Init macro so that the opts are correctly initialized for C++ compilers
@@ -173,52 +174,62 @@ CELIX_UTILS_EXPORT size_t celix_longHashMap_size(const celix_long_hash_map_t* ma
 /**
  * @brief Add pointer entry the string hash map.
  *
- * @note The returned previous value can be already freed by a removed callback (if configured).
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @param[in] map The hashmap
  * @param[in] key  The key to use.
  * @param[in] value The value to store with the key
- * @return The previous value or NULL of no value was set for th provided key.
- *         Note also returns NULL if the previous value for the key was NULL.
+ * @return celix_status_t CELIX_SUCCESS if the entry was added, CELIX_ENOMEM if no memory could be allocated for the
+ *         entry.
  */
-CELIX_UTILS_EXPORT void* celix_longHashMap_put(celix_long_hash_map_t* map, long key, void* value);
+CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_put(celix_long_hash_map_t* map, long key, void* value);
 
 /**
  * @brief add long entry the long hash map.
  *
+ * If the return status is an error, a error message is logged to celix_err.
+ *
  * @param map The hashmap
  * @param key  The key to use.
  * @param value The value to store with the key.
- * @return True if a previous value with the provided has been replaced.
+ * @return celix_status_t CELIX_SUCCESS if the entry was added, CELIX_ENOMEM if no memory could be allocated for the
+ *         entry.
  */
-CELIX_UTILS_EXPORT bool celix_longHashMap_putLong(celix_long_hash_map_t* map, long key, long value);
+CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_putLong(celix_long_hash_map_t* map, long key, long value);
 
 /**
  * @brief add double entry the long hash map.
  *
- * @param map The hashmap
- * @param key  The key to use.
- * @param value The value to store with the key.
- * @return True if a previous value with the provided has been replaced.
- */
-CELIX_UTILS_EXPORT bool celix_longHashMap_putDouble(celix_long_hash_map_t* map, long key, double value);
-
-/**
- * @brief add bool entry the long hash map.
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @param map The hashmap
  * @param key  The key to use.
  * @param value The value to store with the key.
- * @return True if a previous value with the provided has been replaced.
+ * @return celix_status_t CELIX_SUCCESS if the entry was added, CELIX_ENOMEM if no memory could be allocated for the
+ *         entry.
  */
-CELIX_UTILS_EXPORT bool celix_longHashMap_putBool(celix_long_hash_map_t* map, long key, bool value);
+CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_putDouble(celix_long_hash_map_t* map, long key, double value);
+
+/**
+ * @brief add bool entry the long hash map.
+ *
+ * If the return status is an error, a error message is logged to celix_err.
+ *
+ * @param map The hashmap
+ * @param key  The key to use.
+ * @param value The value to store with the key.
+ * @return celix_status_t CELIX_SUCCESS if the entry was added, CELIX_ENOMEM if no memory could be allocated for the
+ *         entry.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_putBool(celix_long_hash_map_t* map, long key, bool value);
 
 /**
  * @brief Returns the value for the provided key.
  *
  * @param map The hashmap.
  * @param key The key to lookup.
- * @return Return the pointer value for the key or NULL. Note will also return NULL if the pointer value for the provided key is NULL.
+ * @return Return the pointer value for the key or NULL. Note will also return NULL if the pointer value for
+ *         the provided key is NULL.
  */
 CELIX_UTILS_EXPORT void* celix_longHashMap_get(const celix_long_hash_map_t* map, long key);
 

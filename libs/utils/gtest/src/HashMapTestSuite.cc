@@ -293,45 +293,29 @@ void testMapsWithValues(const std::vector<std::tuple<std::string, long, T>>& val
     //test hashmap put
     for (const auto& tuple : values) {
         if constexpr (std::is_same_v<void*, T>) {
-            void* prev = celix_stringHashMap_put(sMap, std::get<0>(tuple).c_str(), std::get<2>(tuple));
-            EXPECT_EQ(prev, nullptr);
-            prev = celix_stringHashMap_put(sMap, std::get<0>(tuple).c_str(), std::get<2>(tuple));
-            EXPECT_EQ(prev, std::get<2>(tuple));
+            auto status = celix_stringHashMap_put(sMap, std::get<0>(tuple).c_str(), std::get<2>(tuple));
+            EXPECT_EQ(status, CELIX_SUCCESS);
 
-            prev = celix_longHashMap_put(lMap, std::get<1>(tuple), std::get<2>(tuple));
-            EXPECT_EQ(prev, nullptr);
-            prev = celix_longHashMap_put(lMap, std::get<1>(tuple), std::get<2>(tuple));
-            EXPECT_EQ(prev, std::get<2>(tuple));
+            status = celix_longHashMap_put(lMap, std::get<1>(tuple), std::get<2>(tuple));
+            EXPECT_EQ(status, CELIX_SUCCESS);
         } else if constexpr (std::is_same_v<long, T>) {
-            bool replaced = celix_stringHashMap_putLong(sMap, std::get<0>(tuple).c_str(), std::get<2>(tuple));
-            EXPECT_FALSE(replaced);
-            replaced = celix_stringHashMap_putLong(sMap, std::get<0>(tuple).c_str(), std::get<2>(tuple));
-            EXPECT_TRUE(replaced);
+            auto status = celix_stringHashMap_putLong(sMap, std::get<0>(tuple).c_str(), std::get<2>(tuple));
+            EXPECT_EQ(status, CELIX_SUCCESS);
 
-            replaced = celix_longHashMap_putLong(lMap, std::get<1>(tuple), std::get<2>(tuple));
-            EXPECT_FALSE(replaced);
-            replaced = celix_longHashMap_putLong(lMap, std::get<1>(tuple), std::get<2>(tuple));
-            EXPECT_TRUE(replaced);
+            status = celix_longHashMap_putLong(lMap, std::get<1>(tuple), std::get<2>(tuple));
+            EXPECT_EQ(status, CELIX_SUCCESS);
         } else if constexpr (std::is_same_v<double, T>) {
-            bool replaced = celix_stringHashMap_putDouble(sMap, std::get<0>(tuple).c_str(), std::get<2>(tuple));
-            EXPECT_FALSE(replaced);
-            replaced = celix_stringHashMap_putDouble(sMap, std::get<0>(tuple).c_str(), std::get<2>(tuple));
-            EXPECT_TRUE(replaced);
+            auto status = celix_stringHashMap_putDouble(sMap, std::get<0>(tuple).c_str(), std::get<2>(tuple));
+            EXPECT_EQ(status, CELIX_SUCCESS);
 
-            replaced = celix_longHashMap_putDouble(lMap, std::get<1>(tuple), std::get<2>(tuple));
-            EXPECT_FALSE(replaced);
-            replaced = celix_longHashMap_putDouble(lMap, std::get<1>(tuple), std::get<2>(tuple));
-            EXPECT_TRUE(replaced);
+            status = celix_longHashMap_putDouble(lMap, std::get<1>(tuple), std::get<2>(tuple));
+            EXPECT_EQ(status, CELIX_SUCCESS);
         } else if constexpr (std::is_same_v<bool, T>) {
-            bool replaced = celix_stringHashMap_putBool(sMap, std::get<0>(tuple).c_str(), std::get<2>(tuple));
-            EXPECT_FALSE(replaced);
-            replaced = celix_stringHashMap_putBool(sMap, std::get<0>(tuple).c_str(), std::get<2>(tuple));
-            EXPECT_TRUE(replaced);
+            auto status = celix_stringHashMap_putBool(sMap, std::get<0>(tuple).c_str(), std::get<2>(tuple));
+            EXPECT_EQ(status, CELIX_SUCCESS);
 
-            replaced = celix_longHashMap_putBool(lMap, std::get<1>(tuple), std::get<2>(tuple));
-            EXPECT_FALSE(replaced);
-            replaced = celix_longHashMap_putBool(lMap, std::get<1>(tuple), std::get<2>(tuple));
-            EXPECT_TRUE(replaced);
+            status = celix_longHashMap_putBool(lMap, std::get<1>(tuple), std::get<2>(tuple));
+            EXPECT_EQ(status, CELIX_SUCCESS);
         } else {
             FAIL() << "expected of the following value types: void*, long, double or bool";
         }

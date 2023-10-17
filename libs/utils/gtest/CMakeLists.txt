@@ -98,6 +98,7 @@ if (EI_TESTS)
             src/ErrErrorInjectionTestSuite.cc
             src/PropertiesErrorInjectionTestSuite.cc
             src/VersionErrorInjectionTestSuite.cc
+            src/HashMapErrorInjectionTestSuite.cc
     )
     target_link_libraries(test_utils_with_ei PRIVATE
             Celix::zip_ei
@@ -109,7 +110,8 @@ if (EI_TESTS)
             Celix::ifaddrs_ei
             Celix::threads_ei
             Celix::malloc_ei
-            Celix::hash_map_ei
+            Celix::string_hash_map_ei
+            Celix::long_hash_map_ei
             GTest::gtest GTest::gtest_main
     )
     target_include_directories(test_utils_with_ei PRIVATE ../src) #for version_private (needs refactoring of test)

@@ -349,17 +349,14 @@ static celix_status_t celix_properties_createAndSetEntry(
         }
     }
 
-    //TODO
-//    celix_status_t status = celix_stringHashMap_put(properties->map, mapKey, entry);
-//    if (status != CELIX_SUCCESS) {
-//        celix_properties_destroyEntry(properties, entry);
-//        if (mapKey != key) {
-//            celix_properties_freeString(properties, (char*)mapKey);
-//        }
-//    }
-
-    celix_stringHashMap_put(properties->map, mapKey, entry);
-    return CELIX_SUCCESS;
+    celix_status_t status = celix_stringHashMap_put(properties->map, mapKey, entry);
+    if (status != CELIX_SUCCESS) {
+        celix_properties_destroyEntry(properties, entry);
+        if (mapKey != key) {
+            celix_properties_freeString(properties, (char*)mapKey);
+        }
+    }
+    return status;
 }
 
 static void celix_properties_removeKeyCallback(void* handle, char* key) {

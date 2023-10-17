@@ -24,7 +24,7 @@
 #include "celix_bundle_cache.h"
 #include "celix_constants.h"
 #include "celix_file_utils.h"
-#include "celix_hash_map_ei.h"
+#include "celix_string_hash_map_ei.h"
 #include "celix_log.h"
 #include "celix_properties.h"
 #include "celix_utils_ei.h"

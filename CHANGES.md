@@ -35,6 +35,8 @@ limitations under the License.
 - C++17 string_view support is removed from the utils and framework lib.
 - pubsub_serializer.h is removed and no longer supported. Use pubsub_message_serialization_service.h instead.
 - C Properties are no longer a direct typedef o `hashmap`. 
+- celix_string/long_hashmap put functions now return a celix_status_t instead of bool (value replaced). 
+  THe celix_status_t is used to indicate an ENOMEM error.
 
 ## New Features
 
