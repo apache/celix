@@ -145,7 +145,7 @@ static celix_filter_t * filter_parseAndOrOr(char * filterString, celix_filter_op
             filter_destroy(f);
         }
         celix_arrayList_destroy(children);
-        children = NULL;
+        return NULL;
     }
 
     celix_filter_t * filter = (celix_filter_t *) calloc(1, sizeof(*filter));
@@ -165,7 +165,9 @@ static celix_filter_t * filter_parseNot(char * filterString, int * pos) {
     }
 
     child = filter_parseFilter(filterString, pos);
-
+    if(child == NULL){
+        return NULL;
+    }
     celix_array_list_t* children = celix_arrayList_create();
     celix_arrayList_add(children, child);
 
