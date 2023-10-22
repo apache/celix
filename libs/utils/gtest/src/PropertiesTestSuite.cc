@@ -613,3 +613,8 @@ TEST_F(PropertiesTestSuite, DeprecatedApiTest) {
 TEST_F(PropertiesTestSuite, PropertiesAutoCleanupTest) {
     celix_autoptr(celix_properties_t) props = celix_properties_create();
 }
+
+TEST_F(PropertiesTestSuite, NullArgumentsTest) {
+    auto props = celix_properties_loadWithStream(nullptr);
+    EXPECT_EQ(nullptr, props);
+}

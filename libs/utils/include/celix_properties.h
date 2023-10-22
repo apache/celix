@@ -224,6 +224,8 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_set(celix_properties_t* prope
 *                 modified after calling this function.
  * @param[in] value The value to set the property to. This string will be used directly, so it must not be freed or
  *                  modified after calling this function.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
+ *         When CELIX_ENOMEM is returned, the key and value strings are not used and freed by this function.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_setWithoutCopy(celix_properties_t* properties,
                                                                   char* key,

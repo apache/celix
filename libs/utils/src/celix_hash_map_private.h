@@ -16,6 +16,12 @@
  *specific language governing permissions and limitations
  *under the License.
  */
+
+/**
+ * @file celix_hash_map_private.h
+ * @brief Private header for celix_hash_map, with function used for whitebox testing.
+ */
+
 #ifndef CELIX_CELIX_HASH_MAP_PRIVATE_H
 #define CELIX_CELIX_HASH_MAP_PRIVATE_H
 
@@ -25,10 +31,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * @file Private header for celix_hash_map, with function used for whitebox testing.
- */
 
 typedef struct celix_hash_map celix_hash_map_t;             // opaque
 typedef struct celix_hash_map_entry celix_hash_map_entry_t; // opaque

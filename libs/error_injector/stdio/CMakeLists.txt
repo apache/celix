@@ -28,5 +28,7 @@ target_link_options(stdio_ei INTERFACE
         LINKER:--wrap,fseek
         LINKER:--wrap,ftell
         LINKER:--wrap,fread
+        LINKER:--wrap,fputc
+        LINKER:--wrap,fputs
         )
 add_library(Celix::stdio_ei ALIAS stdio_ei)

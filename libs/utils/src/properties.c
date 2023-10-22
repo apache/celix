@@ -19,6 +19,7 @@
 
 #include "properties.h"
 #include "celix_properties.h"
+#include "celix_properties_private.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -134,7 +135,7 @@ static void updateBuffers(char** key, char** value, char** output, int outputPos
  * Create a new string from the provided str by either using strup or storing the string the short properties
  * optimization string buffer.
  */
-static char* celix_properties_createString(celix_properties_t* properties, const char* str) {
+char* celix_properties_createString(celix_properties_t* properties, const char* str) {
     if (str == NULL) {
         return (char*)CELIX_PROPERTIES_EMPTY_STRVAL;
     }
@@ -227,7 +228,7 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
 /**
  * Allocate entry and optionally use the short properties optimization entries buffer.
  */
-static celix_properties_entry_t* celix_properties_allocEntry(celix_properties_t* properties) {
+celix_properties_entry_t* celix_properties_allocEntry(celix_properties_t* properties) {
     celix_properties_entry_t* entry;
     if (properties->currentEntriesBufferIndex < CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE) {
         entry = &properties->entriesBuffer[properties->currentEntriesBufferIndex++];
@@ -384,6 +385,7 @@ void celix_properties_destroy(celix_properties_t* props) {
 celix_properties_t* celix_properties_load(const char* filename) {
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
+        celix_err_pushf("Cannot open file '%s'", filename);
         return NULL;
     }
     celix_properties_t* props = celix_properties_loadWithStream(file);
@@ -487,21 +489,23 @@ celix_properties_t* celix_properties_loadWithStream(FILE* file) {
         return NULL;
     }
 
-    celix_properties_t* props = celix_properties_create();
-    if (props == NULL) {
+
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    if (!props) {
+        celix_err_push("Failed to create properties");
         return NULL;
     }
 
-    fseek(file, 0, SEEK_END);
-    ssize_t fileSize = ftell(file);
-    fseek(file, 0, SEEK_SET);
-    if (fileSize == 0) {
-        return props;
+    int rc = fseek(file, 0, SEEK_END);
+    if (rc != 0) {
+        celix_err_pushf("Cannot seek to end of file. Got error %i", errno);
+        return NULL;
     }
+    size_t fileSize = ftell(file);
 
     char* fileBuffer = malloc(fileSize + 1);
     if (fileBuffer == NULL) {
-        celix_properties_destroy(props);
+        celix_err_pushf("Cannot allocate memory for file buffer. Got error %i", errno);
         return NULL;
     }
 
@@ -519,7 +523,7 @@ celix_properties_t* celix_properties_loadWithStream(FILE* file) {
     }
     free(fileBuffer);
 
-    return props;
+    return celix_steal_ptr(props);
 }
 
 celix_properties_t* celix_properties_loadFromString(const char* input) {
@@ -571,6 +575,7 @@ celix_status_t celix_properties_store(celix_properties_t* properties, const char
     FILE* file = fopen(filename, "w+");
 
     if (file == NULL) {
+        celix_err_pushf("Cannot open file '%s'", filename);
         return CELIX_FILE_IO_EXCEPTION;
     }
 
@@ -584,7 +589,7 @@ celix_status_t celix_properties_store(celix_properties_t* properties, const char
             rc = fputs(header, file);
         }
         if (rc != 0) {
-            rc = fputs("\n", file);
+            rc = fputc('\n', file);
         }
     }
 
@@ -605,8 +610,14 @@ celix_status_t celix_properties_store(celix_properties_t* properties, const char
     }
     if (rc != EOF) {
         rc = fclose(file);
+    } else {
+        fclose(file);
     }
-    return rc != EOF ? CELIX_SUCCESS : CELIX_FILE_IO_EXCEPTION;
+    if (rc == EOF) {
+        celix_err_push("Failed to write properties to file");
+        return CELIX_FILE_IO_EXCEPTION;
+    }
+    return CELIX_SUCCESS;
 }
 
 celix_properties_t* celix_properties_copy(const celix_properties_t* properties) {
@@ -663,6 +674,7 @@ celix_status_t celix_properties_setWithoutCopy(celix_properties_t* properties, c
         if (!entry) {
             celix_err_push("Failed to create entry for property.");
             free(key);
+            free(value);
             return CELIX_ENOMEM;
         }
 
