@@ -30,6 +30,7 @@
 #include "celix_utils_ei.h"
 #include "malloc_ei.h"
 #include "stdio_ei.h"
+#include "celix_utils_ei.h"
 
 class PropertiesErrorInjectionTestSuite : public ::testing::Test {
   public:
@@ -41,6 +42,7 @@ class PropertiesErrorInjectionTestSuite : public ::testing::Test {
         celix_ei_expect_fopen(nullptr, 0, nullptr);
         celix_ei_expect_fputc(nullptr, 0, 0);
         celix_ei_expect_fseek(nullptr, 0, 0);
+        celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
     }
 
     void fillOptimizationCache(celix_properties_t* props) {
@@ -184,6 +186,14 @@ TEST_F(PropertiesErrorInjectionTestSuite, LoadFailureTest) {
     ASSERT_EQ(1, celix_err_getErrorCount());
     celix_err_resetErrors();
 
+    // When a fseek error injection is set for celix_properties_loadWithStream, ordinal 2
+    celix_ei_expect_fseek((void*)celix_properties_loadWithStream, 0, -1, 2);
+    // Then the celix_properties_loadWithStream call fails
+    props = celix_properties_loadWithStream(memStream);
+    ASSERT_EQ(nullptr, props);
+    // And a celix err msg is set
+    ASSERT_EQ(1, celix_err_getErrorCount());
+    celix_err_resetErrors();
 
     // When a malloc error injection is set for celix_properties_loadWithStream
     celix_ei_expect_malloc((void*)celix_properties_loadWithStream, 0, nullptr);
@@ -218,6 +228,17 @@ TEST_F(PropertiesErrorInjectionTestSuite, SetWithoutCopyFailureTest) {
     // Then the celix_properties_setWithoutCopy call fails
     auto status = celix_properties_setWithoutCopy(props, key, val);
     ASSERT_EQ(status, CELIX_ENOMEM);
+    // And a celix err msg is set
+    ASSERT_EQ(1, celix_err_getErrorCount());
+    celix_err_resetErrors();
+}
+
+TEST_F(PropertiesErrorInjectionTestSuite, LoadFromStringFailureTest) {
+    // When a strdup error injection is set for celix_properties_loadFromString (during strdup)
+    celix_ei_expect_celix_utils_strdup((void*)celix_properties_loadFromString, 0, nullptr);
+    // Then the celix_properties_loadFromString call fails
+    auto props = celix_properties_loadFromString("key=value");
+    ASSERT_EQ(nullptr, props);
     // And a celix err msg is set
     ASSERT_EQ(1, celix_err_getErrorCount());
     celix_err_resetErrors();

@@ -502,6 +502,11 @@ celix_properties_t* celix_properties_loadWithStream(FILE* file) {
         return NULL;
     }
     size_t fileSize = ftell(file);
+    rc = fseek(file, 0, SEEK_SET);
+    if (rc != 0) {
+        celix_err_pushf("Cannot seek to start of file. Got error %i", errno);
+        return NULL;
+    }
 
     char* fileBuffer = malloc(fileSize + 1);
     if (fileBuffer == NULL) {
@@ -527,31 +532,21 @@ celix_properties_t* celix_properties_loadWithStream(FILE* file) {
 }
 
 celix_properties_t* celix_properties_loadFromString(const char* input) {
-    celix_properties_t* props = celix_properties_create();
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_autofree char* in = celix_utils_strdup(input);
+    if (!props || !in) {
+        celix_err_push("Failed to create properties or duplicate input string");
+        return NULL;
+    }
 
-    char* in = strdup(input);
     char* line = NULL;
     char* saveLinePointer = NULL;
-
-    bool firstTime = true;
-    do {
-        if (firstTime) {
-            line = strtok_r(in, "\n", &saveLinePointer);
-            firstTime = false;
-        } else {
-            line = strtok_r(NULL, "\n", &saveLinePointer);
-        }
-
-        if (line == NULL) {
-            break;
-        }
-
+    line = strtok_r(in, "\n", &saveLinePointer);
+    while (line != NULL) {
         celix_properties_parseLine(line, props);
-    } while (line != NULL);
-
-    free(in);
-
-    return props;
+        line = strtok_r(NULL, "\n", &saveLinePointer);
+    }
+    return celix_steal_ptr(props);
 }
 
 /**

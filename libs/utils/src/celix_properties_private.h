@@ -31,8 +31,14 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Alloc new entry for the provided properties. Possible using the properties optimizer cache.
+ */
 celix_properties_entry_t* celix_properties_allocEntry(celix_properties_t* properties);
 
+/**
+ * @brief Create a new string for the provided properties. Possible using the properties optimizer cache.
+ */
 char* celix_properties_createString(celix_properties_t* properties, const char* str);
 
 
