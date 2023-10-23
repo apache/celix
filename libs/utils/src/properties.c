@@ -34,6 +34,7 @@
 #include "celix_string_hash_map.h"
 #include "celix_utils.h"
 #include "celix_stdlib_cleanup.h"
+#include "celix_convert_utils.h"
 
 #define CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE 512
 #define CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE 16
@@ -702,6 +703,25 @@ celix_properties_setEntry(celix_properties_t* properties, const char* key, const
     return CELIX_SUCCESS; // silently ignore NULL entry
 }
 
+static bool celix_properties_entryEquals(const celix_properties_entry_t* entry1,
+                                         const celix_properties_entry_t* entry2) {
+    if (entry1->valueType != entry2->valueType) {
+        return false;
+    }
+    switch (entry1->valueType) {
+    case CELIX_PROPERTIES_VALUE_TYPE_LONG:
+        return entry1->typed.longValue == entry2->typed.longValue;
+    case CELIX_PROPERTIES_VALUE_TYPE_DOUBLE:
+        return entry1->typed.doubleValue == entry2->typed.doubleValue;
+    case CELIX_PROPERTIES_VALUE_TYPE_BOOL:
+        return entry1->typed.boolValue == entry2->typed.boolValue;
+    case CELIX_PROPERTIES_VALUE_TYPE_VERSION:
+        return celix_version_compareTo(entry1->typed.versionValue, entry2->typed.versionValue) == 0;
+    default: // STRING
+        return strcmp(entry1->value, entry2->value) == 0;
+    }
+}
+
 void celix_properties_unset(celix_properties_t* properties, const char* key) {
     if (properties != NULL) {
         celix_stringHashMap_remove(properties->map, key);
@@ -709,19 +729,15 @@ void celix_properties_unset(celix_properties_t* properties, const char* key) {
 }
 
 long celix_properties_getAsLong(const celix_properties_t* props, const char* key, long defaultValue) {
-    long result = defaultValue;
     celix_properties_entry_t* entry = celix_properties_getEntry(props, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG) {
         return entry->typed.longValue;
+    } else if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
+        return (long)entry->typed.doubleValue;
     } else if (entry != NULL) {
-        char* enptr = NULL;
-        errno = 0;
-        long r = strtol(entry->value, &enptr, 10);
-        if (enptr != entry->value && errno == 0) {
-            result = r;
-        }
+        return celix_utils_convertStringToLong(entry->value, defaultValue, NULL);
     }
-    return result;
+    return defaultValue;
 }
 
 celix_status_t celix_properties_setLong(celix_properties_t* props, const char* key, long value) {
@@ -729,19 +745,13 @@ celix_status_t celix_properties_setLong(celix_properties_t* props, const char* k
 }
 
 double celix_properties_getAsDouble(const celix_properties_t* props, const char* key, double defaultValue) {
-    double result = defaultValue;
     celix_properties_entry_t* entry = celix_properties_getEntry(props, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
         return entry->typed.doubleValue;
     } else if (entry != NULL) {
-        char* enptr = NULL;
-        errno = 0;
-        double r = strtod(entry->value, &enptr);
-        if (enptr != entry->value && errno == 0) {
-            result = r;
-        }
+        return celix_utils_convertStringToDouble(entry->value, defaultValue, NULL);
     }
-    return result;
+    return defaultValue;
 }
 
 celix_status_t celix_properties_setDouble(celix_properties_t* props, const char* key, double val) {
@@ -749,21 +759,13 @@ celix_status_t celix_properties_setDouble(celix_properties_t* props, const char*
 }
 
 bool celix_properties_getAsBool(const celix_properties_t* props, const char* key, bool defaultValue) {
-    bool result = defaultValue;
     celix_properties_entry_t* entry = celix_properties_getEntry(props, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL) {
         return entry->typed.boolValue;
     } else if (entry != NULL) {
-        char buf[32];
-        snprintf(buf, 32, "%s", entry->value);
-        char* trimmed = celix_utils_trimInPlace(buf);
-        if (strncasecmp("true", trimmed, strlen("true")) == 0) {
-            result = true;
-        } else if (strncasecmp("false", buf, strlen("false")) == 0) {
-            result = false;
-        }
+        return celix_utils_convertStringToBool(entry->value, defaultValue, NULL);
     }
-    return result;
+    return defaultValue;
 }
 
 celix_status_t celix_properties_setBool(celix_properties_t* props, const char* key, bool val) {
@@ -807,6 +809,25 @@ void celix_properties_setVersionWithoutCopy(celix_properties_t* properties, cons
 
 int celix_properties_size(const celix_properties_t* properties) {
     return (int)celix_stringHashMap_size(properties->map);
+}
+
+bool celix_properties_equals(const celix_properties_t* props1, const celix_properties_t* props2) {
+    if (props1 == NULL && props2 == NULL) {
+        return true;
+    }
+    if (props1 == NULL || props2 == NULL) {
+        return false;
+    }
+    if (celix_properties_size(props1) != celix_properties_size(props2)) {
+        return false;
+    }
+    CELIX_PROPERTIES_ITERATE(props1, iter) {
+        celix_properties_entry_t* entry2 = celix_properties_getEntry(props2, iter.key);
+        if (entry2 == NULL || !celix_properties_entryEquals(&iter.entry, entry2)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 typedef struct {

@@ -314,6 +314,18 @@ CELIX_UTILS_EXPORT bool celix_stringHashMap_remove(celix_string_hash_map_t* map,
 CELIX_UTILS_EXPORT void celix_stringHashMap_clear(celix_string_hash_map_t* map);
 
 /**
+ * @brief Check if the provided string hash maps are equal.
+ *
+ * Equals means that both maps have the same number of entries and that all entries in the first map
+ * are also present in the second map and have the same value.
+ *
+ * @param[in] map1 The first map to compare.
+ * @param[in] map2 The second map to compare.
+ * @return true if the maps are equal, false otherwise.
+ */
+CELIX_UTILS_EXPORT bool celix_stringHashMap_equals(const celix_string_hash_map_t* map1, const celix_string_hash_map_t* map2);
+
+/**
  * @brief Get an iterator pointing to the first element in the map.
  *
  * @param[in] map The map to get the iterator for.
@@ -346,6 +358,7 @@ CELIX_UTILS_EXPORT void celix_stringHashMapIterator_next(celix_string_hash_map_i
 
 /**
  * @brief Compares two celix_string_hash_map_iterator_t objects for equality.
+ *
  * @param[in] iterator The first iterator to compare.
  * @param[in] other The second iterator to compare.
  * @return true if the iterators point to the same entry in the same hash map, false otherwise.

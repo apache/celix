@@ -105,7 +105,7 @@ TEST_F(PropertiesTestSuite, GetAsLongTest) {
     celix_properties_set(props, "t1", "42");
     celix_properties_set(props, "t2", "-42");
     celix_properties_set(props, "t3", "");
-    celix_properties_set(props, "t4", "42 bla"); //converts to 42
+    celix_properties_set(props, "t4", "42 bla"); //does not convert to 42
     celix_properties_set(props, "t5", "bla");
 
     long v = celix_properties_getAsLong(props, "t1", -1);
@@ -118,7 +118,7 @@ TEST_F(PropertiesTestSuite, GetAsLongTest) {
     EXPECT_EQ(-1, v);
 
     v = celix_properties_getAsLong(props, "t4", -1);
-    EXPECT_EQ(42, v);
+    EXPECT_EQ(-1, v);
 
     v = celix_properties_getAsLong(props, "t5", -1);
     EXPECT_EQ(-1, v);
@@ -197,7 +197,7 @@ TEST_F(PropertiesTestSuite, GetLongTest) {
     auto* properties = celix_properties_create();
 
     celix_properties_set(properties, "a", "2");
-    celix_properties_set(properties, "b", "-10032L");
+    celix_properties_set(properties, "b", "-10032");
     celix_properties_set(properties, "c", "");
     celix_properties_set(properties, "d", "garbage");
 
@@ -227,7 +227,7 @@ TEST_F(PropertiesTestSuite, GetAsDoubleTest) {
     auto* properties = celix_properties_create();
 
     celix_properties_set(properties, "a", "2");
-    celix_properties_set(properties, "b", "-10032L");
+    celix_properties_set(properties, "b", "-10032");
     celix_properties_set(properties, "c", "1.2");
     celix_properties_setDouble(properties, "d", 1.4);
     celix_properties_set(properties, "e", "");
@@ -617,4 +617,34 @@ TEST_F(PropertiesTestSuite, PropertiesAutoCleanupTest) {
 TEST_F(PropertiesTestSuite, NullArgumentsTest) {
     auto props = celix_properties_loadWithStream(nullptr);
     EXPECT_EQ(nullptr, props);
+}
+
+TEST_F(PropertiesTestSuite, PropertiesEqualsTest) {
+    EXPECT_TRUE(celix_properties_equals(nullptr, nullptr));
+
+    celix_autoptr(celix_properties_t) prop1 = celix_properties_create();
+    EXPECT_FALSE(celix_properties_equals(prop1, nullptr));
+
+    celix_autoptr(celix_properties_t) prop2 = celix_properties_create();
+    EXPECT_TRUE(celix_properties_equals(prop1, prop2));
+
+    celix_properties_set(prop1, "key1", "value1");
+    celix_properties_setLong(prop1, "key2", 42);
+    celix_properties_set(prop2, "key1", "value1");
+    celix_properties_setLong(prop2, "key2", 42);
+    EXPECT_TRUE(celix_properties_equals(prop1, prop2));
+
+    celix_properties_setBool(prop1, "key3", false);
+    EXPECT_FALSE(celix_properties_equals(prop1, prop2));
+    celix_properties_setBool(prop2, "key3", false);
+    EXPECT_TRUE(celix_properties_equals(prop1, prop2));
+
+    celix_properties_setVersionWithoutCopy(prop1, "key4", celix_version_create(1,2,3, nullptr));
+    EXPECT_FALSE(celix_properties_equals(prop1, prop2));
+    celix_properties_setVersionWithoutCopy(prop2, "key4", celix_version_create(1,2,3, nullptr));
+    EXPECT_TRUE(celix_properties_equals(prop1, prop2));
+
+    celix_properties_setLong(prop1, "key5", 42);
+    celix_properties_setDouble(prop2, "key5", 42.0);
+    EXPECT_FALSE(celix_properties_equals(prop1, prop2)); //different types
 }

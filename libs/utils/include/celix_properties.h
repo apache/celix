@@ -405,6 +405,18 @@ CELIX_UTILS_EXPORT celix_version_t* celix_properties_getAsVersion(const celix_pr
 CELIX_UTILS_EXPORT int celix_properties_size(const celix_properties_t* properties);
 
 /**
+ * @brief Check whether the provided property sets are equal.
+ *
+ * Equals means that both property sets have the same number of properties and that all properties in the first set
+ * are also present in the second set and have the same value.
+ *
+ * @param[in] props1 The first property set to compare.
+ * @param[in] props2 The second property set to compare.
+ * @return true if the property sets are equal, false otherwise.
+ */
+CELIX_UTILS_EXPORT bool celix_properties_equals(const celix_properties_t* props1, const celix_properties_t* props2);
+
+/**
  * @brief Construct an iterator pointing to the first entry in the properties object.
  *
  * @param[in] properties The properties object to iterate over.
