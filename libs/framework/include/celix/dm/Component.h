@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <atomic>
+#include <cstdint>
 #include <mutex>
 #include <memory>
 #include <iostream>
