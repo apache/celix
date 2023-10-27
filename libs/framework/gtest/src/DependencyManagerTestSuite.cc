@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 
 #include "celix/dm/DependencyManager.h"
 #include "celix_framework_factory.h"
