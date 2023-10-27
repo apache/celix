@@ -165,7 +165,7 @@ static celix_filter_t * filter_parseNot(char * filterString, int * pos) {
     }
 
     child = filter_parseFilter(filterString, pos);
-    if(child == NULL){
+    if (child == NULL) {
         return NULL;
     }
     celix_array_list_t* children = celix_arrayList_create();
