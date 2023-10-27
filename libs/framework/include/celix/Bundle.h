@@ -20,6 +20,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <cstdint>
 #include <memory>
 
 #include "celix_bundle.h"

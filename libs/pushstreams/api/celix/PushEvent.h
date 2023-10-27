@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "celix/IllegalStateException.h"
 
 namespace celix {
