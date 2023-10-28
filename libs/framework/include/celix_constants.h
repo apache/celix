@@ -76,8 +76,6 @@ extern "C" {
  */
 #define CELIX_FRAMEWORK_SERVICE_SCOPE_BUNDLE "bundle"
 
-#define CELIX_FRAMEWORK_SERVICE_PID "service.pid"
-
 /**
  * @brief The bundle id (value 0) used to identify the Celix framework.
  */
