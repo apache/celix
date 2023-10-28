@@ -118,7 +118,6 @@ static long getPSProtocol(celix_bundle_context_t *ctx, const char *requested_pro
     } else {
         celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
         opts.serviceName = PUBSUB_PROTOCOL_SERVICE_NAME;
-        opts.ignoreServiceLanguage = true;
 
         //note findService will automatically return the highest ranking service id
         svcId = celix_bundleContext_findServiceWithOptions(ctx, &opts);

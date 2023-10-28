@@ -87,12 +87,6 @@ CELIX_FRAMEWORK_EXPORT void celix_dmServiceDependency_destroy(celix_dm_service_d
 CELIX_FRAMEWORK_EXPORT celix_status_t celix_dmServiceDependency_setRequired(celix_dm_service_dependency_t *dependency, bool required);
 
 /**
- * Specify if the service dependency should add a C language filter for this dependency if no "service.lang" part is found the in the provided filter.
- * Default is false
- */
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t celix_dmServiceDependency_setAddCLanguageFilter(celix_dm_service_dependency_t *dependency, bool addCLangFilter);
-
-/**
  * Specify if the service dependency update strategy.
  *
  * The DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING strategy notifies the component in case the dependencies set
