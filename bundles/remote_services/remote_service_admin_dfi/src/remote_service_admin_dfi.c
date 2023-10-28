@@ -762,7 +762,7 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     char endpoint_uuid[37];
     uuid_unparse_lower(endpoint_uid, endpoint_uuid);
 
-    bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+    bundleContext_getProperty(admin->context, CELIX_FRAMEWORK_FRAMEWORK_UUID, &uuid);
     celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
     celix_properties_set(endpointProperties, OSGI_FRAMEWORK_OBJECTCLASS, interface);
     celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);

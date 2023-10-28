@@ -111,10 +111,7 @@ namespace celix {
      *
      * If not specified ".cache" is used.
      */
-    constexpr const char * const FRAMEWORK_CACHE_DIR = CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR;
-
-    //@deprecated use FRAMEWORK_CACHE_DIR.
-    constexpr const char * const FRAMEWORK_STORAGE = CELIX_FRAMEWORK_FRAMEWORK_STORAGE;
+    constexpr const char * const FRAMEWORK_CACHE_DIR = CELIX_FRAMEWORK_CACHE_DIR;
 
     /**
      * @brief Celix framework environment property (named "org.osgi.framework.uuid") specifying the UUID for the

@@ -53,7 +53,7 @@ extern "C" {
 
 #define CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE_DEFAULT false
 #define CELIX_FRAMEWORK_CACHE_USE_TMP_DIR_DEFAULT false
-#define CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR_DEFAULT ".cache"
+#define CELIX_FRAMEWORK_CACHE_DIR_DEFAULT ".cache"
 
 typedef struct celix_framework_bundle_entry {
     celix_bundle_t *bnd;

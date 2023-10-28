@@ -33,8 +33,8 @@ class EndpointDescriptionUnitTestSuite : public ::testing::Test {
 public:
     EndpointDescriptionUnitTestSuite() {
         auto* props = celix_properties_create();
-        celix_properties_set(props, CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, "true");
-        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_common_test_cache");
+        celix_properties_set(props, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true");
+        celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_common_test_cache");
         fw = std::shared_ptr<celix_framework_t>{celix_frameworkFactory_createFramework(props), [](auto* f) {celix_frameworkFactory_destroyFramework(f);}};
 
         properties = std::shared_ptr<celix_properties_t>(celix_properties_create(), [](celix_properties_t* p) {celix_properties_destroy(p);});

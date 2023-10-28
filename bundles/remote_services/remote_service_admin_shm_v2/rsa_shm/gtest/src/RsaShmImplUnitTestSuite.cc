@@ -53,7 +53,7 @@ public:
     RsaShmUnitTestSuite() {
         auto* props = celix_properties_create();
         celix_properties_set(props, CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, "true");
-        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_shm_impl_test_cache");
+        celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_shm_impl_test_cache");
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
         fw = std::shared_ptr<celix_framework_t>{fwPtr, [](auto* f) {celix_frameworkFactory_destroyFramework(f);}};
@@ -719,7 +719,7 @@ public:
     RsaShmRpcTestSuite() {
         auto* clientProps = celix_properties_create();
         celix_properties_set(clientProps, CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, "true");
-        celix_properties_set(clientProps, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_shm_client_cache");
+        celix_properties_set(clientProps, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_shm_client_cache");
         celix_properties_set(clientProps, "CELIX_FRAMEWORK_EXTENDER_PATH", RESOURCES_DIR);
         auto* clientFwPtr = celix_frameworkFactory_createFramework(clientProps);
         auto* clientCtxPtr = celix_framework_getFrameworkContext(clientFwPtr);
@@ -737,7 +737,7 @@ public:
 
         auto* serverProps = celix_properties_create();
         celix_properties_set(serverProps, CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, "true");
-        celix_properties_set(serverProps, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_shm_server_cache");
+        celix_properties_set(serverProps, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_shm_server_cache");
         celix_properties_set(serverProps, "CELIX_FRAMEWORK_EXTENDER_PATH", RESOURCES_DIR);
         auto* serverFwPtr = celix_frameworkFactory_createFramework(serverProps);
         auto* serverCtxPtr = celix_framework_getFrameworkContext(serverFwPtr);

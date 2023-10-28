@@ -69,16 +69,9 @@ static const char* bundleCache_progamName() {
 static const char* celix_bundleCache_cacheDirPath(celix_framework_t* fw) {
     bool found = false;
     const char* cacheDir = celix_framework_getConfigProperty(fw,
-                                                             CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR,
-                                                             CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR_DEFAULT,
+                                                             CELIX_FRAMEWORK_CACHE_DIR,
+                                                             CELIX_FRAMEWORK_CACHE_DIR_DEFAULT,
                                                              &found);
-    if (!found) {
-        //falling back to old property
-        cacheDir = celix_framework_getConfigProperty(fw,
-                                                     OSGI_FRAMEWORK_FRAMEWORK_STORAGE,
-                                                     CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR_DEFAULT,
-                                                     NULL);
-    }
     return cacheDir;
 }
 
@@ -88,13 +81,6 @@ static bool celix_bundleCache_useTmpDir(celix_framework_t* fw) {
                                                           CELIX_FRAMEWORK_CACHE_USE_TMP_DIR,
                                                           CELIX_FRAMEWORK_CACHE_USE_TMP_DIR_DEFAULT,
                                                           &converted);
-    if (!converted) {
-        //falling back to old property
-        useTmp = celix_framework_getConfigPropertyAsBool(fw,
-                                                         CELIX_FRAMEWORK_STORAGE_USE_TMP_DIR,
-                                                         CELIX_FRAMEWORK_CACHE_USE_TMP_DIR_DEFAULT,
-                                                         NULL);
-    }
     return useTmp;
 }
 
@@ -104,13 +90,6 @@ static bool celix_bundleCache_cleanOnCreate(celix_framework_t* fw) {
                                                                  CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE,
                                                                  CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE_DEFAULT,
                                                                  &converted);
-    if (!converted) {
-        //falling back to old property
-        cleanOnCreate = celix_framework_getConfigPropertyAsBool(fw,
-                                                                CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME,
-                                                                CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE_DEFAULT,
-                                                                NULL);
-    }
     return cleanOnCreate;
 }
 

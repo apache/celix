@@ -66,7 +66,7 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
     act->reg = NULL;
     status = bundleContext_registerService(context, DISC_MOCK_SERVICE_NAME, act->serv, NULL, &act->reg);
 
-    bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+    uuid = celix_bundleContext_getProperty(context, CELIX_FRAMEWORK_FRAMEWORK_UUID, NULL);
 
     if (!uuid) {
         return CELIX_ILLEGAL_STATE;

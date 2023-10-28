@@ -819,7 +819,7 @@ static celix_status_t topologyManager_extendFilter(topology_manager_pt manager, 
 	celix_bundle_context_t *context = manager->context;
 	const char* uuid = NULL;
 
-	status = bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	status = bundleContext_getProperty(context, CELIX_FRAMEWORK_FRAMEWORK_UUID, &uuid);
 
 	if (!uuid) {
 		celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");

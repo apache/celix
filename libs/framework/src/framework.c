@@ -247,7 +247,7 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     uuid_t uid;
     uuid_generate(uid);
     uuid_unparse(uid, uuid);
-    properties_set(framework->configurationMap, (char*) OSGI_FRAMEWORK_FRAMEWORK_UUID, uuid);
+    celix_properties_set(framework->configurationMap, CELIX_FRAMEWORK_FRAMEWORK_UUID, uuid);
 
     //setup framework logger
     const char* logStr = celix_framework_getConfigProperty(framework, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_DEFAULT_VALUE, NULL);
@@ -1839,7 +1839,7 @@ bool celix_framework_isCurrentThreadTheEventLoop(framework_t* fw) {
 
 const char* celix_framework_getUUID(const celix_framework_t *fw) {
     if (fw != NULL) {
-        return celix_properties_get(fw->configurationMap, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
+        return celix_properties_get(fw->configurationMap, CELIX_FRAMEWORK_FRAMEWORK_UUID, NULL);
     }
     return NULL;
 }
