@@ -19,6 +19,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
+# Changes for 2.4.1
+
+## Fixes
+
+- Fix ASAN error celix_filter_create.
+
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 
 ## New Features
