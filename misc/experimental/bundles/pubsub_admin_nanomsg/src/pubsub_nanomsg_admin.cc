@@ -212,7 +212,7 @@ void pubsub_nanomsg_admin::stop() {
 
 void pubsub_nanomsg_admin::addSerializerSvc(void *svc, const celix_properties_t *props) {
     const char *serType = celix_properties_get(props, PUBSUB_SERIALIZER_TYPE_KEY, nullptr);
-    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
 
     if (serType == nullptr) {
         L.INFO("[PSA_NANOMSG] Ignoring serializer service without ", PUBSUB_SERIALIZER_TYPE_KEY, " property");
@@ -232,7 +232,7 @@ void pubsub_nanomsg_admin::addSerializerSvc(void *svc, const celix_properties_t 
 
 
 void pubsub_nanomsg_admin::removeSerializerSvc(void */*svc*/, const celix_properties_t *props) {
-    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
 
     //remove serializer
     // 1) First find entry and
