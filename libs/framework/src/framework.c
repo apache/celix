@@ -827,7 +827,7 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
             status = CELIX_DO_IF(status, serviceReference_getServiceRegistration(ref, &reg));
             status = CELIX_DO_IF(status, serviceRegistration_getProperties(reg, &props));
             if (status == CELIX_SUCCESS) {
-                serviceNameObjectClass = properties_get(props, OSGI_FRAMEWORK_OBJECTCLASS);
+                serviceNameObjectClass = properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME);
                 if (!serviceReference_isAssignableTo(ref, bundle, serviceNameObjectClass)) {
                     serviceReference_release(ref, NULL);
                     arrayList_remove(*references, refIdx);

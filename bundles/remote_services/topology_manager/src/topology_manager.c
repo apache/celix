@@ -227,7 +227,7 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt unus
         service_reference_pt reference = hashMapEntry_getKey(entry);
         const char* serviceId = NULL;
 
-        serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
+        serviceReference_getProperty(reference, CELIX_FRAMEWORK_SERVICE_PID, &serviceId);
 
         scope_getExportProperties(manager->scope, reference, &serviceProperties);
 
@@ -346,7 +346,7 @@ celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr)
 			status = filter_match(filter, props, &found);
 			if (found) {
 				srvRefs[nrFound] = reference;
-				serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
+				serviceReference_getProperty(reference, CELIX_FRAMEWORK_SERVICE_PID, &serviceId);
 				srvIds[nrFound++] = (char*)serviceId;
 			}
 		}
@@ -399,7 +399,7 @@ celix_status_t topologyManager_importScopeChanged(void *handle, char *service_na
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(importedServicesIterator);
 		endpoint = hashMapEntry_getKey(entry);
 
-		entry = hashMap_getEntry(endpoint->properties, (void *) OSGI_FRAMEWORK_OBJECTCLASS);
+		entry = hashMap_getEntry(endpoint->properties, (void *) CELIX_FRAMEWORK_SERVICE_NAME);
 		char* name = (char *) hashMapEntry_getValue(entry);
 		// Test if a service with the same name is imported
 		if (strcmp(name, service_name) == 0) {

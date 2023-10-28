@@ -380,7 +380,7 @@ void pubsub_zmqTopicReceiver_disconnectFrom(pubsub_zmq_topic_receiver_t *receive
 static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props) {
     pubsub_zmq_topic_receiver_t *receiver = handle;
 
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1);
     const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
     if (receiver->scope == NULL) {
         if (subScope != NULL) {
@@ -409,7 +409,7 @@ static void pubsub_zmqTopicReceiver_addSubscriber(void *handle, void *svc, const
 static void pubsub_zmqTopicReceiver_removeSubscriber(void *handle, void *svc, const celix_properties_t *props) {
     pubsub_zmq_topic_receiver_t *receiver = handle;
 
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1);
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
     psa_zmq_subscriber_entry_t *entry = hashMap_remove(receiver->subscribers.map, (void*)svcId);

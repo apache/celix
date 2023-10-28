@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 /**
- * Collection of celix constants. Note that the CELIX_ macros are preferred over the OSGI_ variants.
+ * Collection of celix constants.
  */
 
 /**
@@ -37,7 +37,6 @@ extern "C" {
 * This property is set by the Celix framework when a service is registered.
 */
 #define CELIX_FRAMEWORK_SERVICE_NAME "objectClass"
-#define OSGI_FRAMEWORK_OBJECTCLASS CELIX_FRAMEWORK_SERVICE_NAME
 
 /**
  * @brief Service property (named "service.id") identifying a service's registration number (of type long).
@@ -47,7 +46,6 @@ extern "C" {
  * Celix framework was started.
  */
 #define CELIX_FRAMEWORK_SERVICE_ID "service.id"
-#define OSGI_FRAMEWORK_SERVICE_ID CELIX_FRAMEWORK_SERVICE_ID
 
 /**
  *  @brief Service property (named service.bundleid) identifying the bundle id of the bundle registering the service.
@@ -79,7 +77,6 @@ extern "C" {
 #define CELIX_FRAMEWORK_SERVICE_SCOPE_BUNDLE "bundle"
 
 #define CELIX_FRAMEWORK_SERVICE_PID "service.pid"
-#define OSGI_FRAMEWORK_SERVICE_PID CELIX_FRAMEWORK_SERVICE_PID
 
 /**
  * @brief The bundle id (value 0) used to identify the Celix framework.
@@ -101,7 +98,6 @@ extern "C" {
  * service, whereas a service with a ranking of LONG_MIN is very unlikely to be returned.
  */
 #define CELIX_FRAMEWORK_SERVICE_RANKING "service.ranking"
-#define OSGI_FRAMEWORK_SERVICE_RANKING CELIX_FRAMEWORK_SERVICE_RANKING
 
 /**
  * @brief Service property (named "service.version") specifying the optional version of a service.
@@ -132,11 +128,6 @@ extern "C" {
 #define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_START "celix_bundleActivator_start"
 #define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_STOP "celix_bundleActivator_stop"
 #define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY "celix_bundleActivator_destroy"
-
-#define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_CREATE "bundleActivator_create"
-#define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_START "bundleActivator_start"
-#define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_STOP "bundleActivator_stop"
-#define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_DESTROY "bundleActivator_destroy"
 
 #define CELIX_FRAMEWORK_BUNDLE_SYMBOLICNAME "Bundle-SymbolicName"
 #define CELIX_FRAMEWORK_BUNDLE_NAME "Bundle-Name"

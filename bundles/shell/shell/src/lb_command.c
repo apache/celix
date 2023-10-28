@@ -177,8 +177,8 @@ bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *o
     char *sub_str = NULL;
     char *save_ptr = NULL;
 
-    strtok_r(command_line_str, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-    sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+    strtok_r(command_line_str, CELIX_SHELL_COMMAND_SEPARATOR, &save_ptr);
+    sub_str = strtok_r(NULL, CELIX_SHELL_COMMAND_SEPARATOR, &save_ptr);
     while (sub_str != NULL) {
         if (strcmp(sub_str, "-l") == 0) {
             opts.show_location = true;
@@ -189,7 +189,7 @@ bool lbCommand_execute(void *handle, const char *const_command_line_str, FILE *o
         } else {
             opts.listGroup = strdup(sub_str);
         }
-        sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+        sub_str = strtok_r(NULL, CELIX_SHELL_COMMAND_SEPARATOR, &save_ptr);
     }
 
     lbCommand_listBundles(ctx, &opts, out_ptr);

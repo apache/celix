@@ -82,11 +82,11 @@ static int compareEntries(const void *a, const void *b) {
     const pubsub_serialization_service_entry_t* aEntry = a;
     const pubsub_serialization_service_entry_t* bEntry = b;
 
-    long servIdA = celix_properties_getAsLong(aEntry->properties, OSGI_FRAMEWORK_SERVICE_ID, 0);
-    long servIdB = celix_properties_getAsLong(bEntry->properties, OSGI_FRAMEWORK_SERVICE_ID, 0);
+    long servIdA = celix_properties_getAsLong(aEntry->properties, CELIX_FRAMEWORK_SERVICE_PID, 0);
+    long servIdB = celix_properties_getAsLong(bEntry->properties, CELIX_FRAMEWORK_SERVICE_PID, 0);
 
-    long servRankingA = celix_properties_getAsLong(aEntry->properties, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
-    long servRankingB = celix_properties_getAsLong(bEntry->properties, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
+    long servRankingA = celix_properties_getAsLong(aEntry->properties, CELIX_FRAMEWORK_SERVICE_RANKING, 0);
+    long servRankingB = celix_properties_getAsLong(bEntry->properties, CELIX_FRAMEWORK_SERVICE_RANKING, 0);
 
     return celix_utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
 }
@@ -164,7 +164,7 @@ pubsub_serializer_handler_t* pubsub_serializerHandler_createForMarkerService(cel
     data.logHelper = logHelper;
 
     char filter[32];
-    snprintf(filter, 32, "(%s=%li)", OSGI_FRAMEWORK_SERVICE_ID, pubsubSerializerMarkerSvcId);
+    snprintf(filter, 32, "(%s=%li)", CELIX_FRAMEWORK_SERVICE_PID, pubsubSerializerMarkerSvcId);
     celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
     opts.filter.serviceName = PUBSUB_MESSAGE_SERIALIZATION_MARKER_NAME;
     opts.filter.filter = filter;
@@ -209,7 +209,7 @@ void pubsub_serializerHandler_destroy(pubsub_serializer_handler_t* handler) {
 }
 
 void pubsub_serializerHandler_addSerializationService(pubsub_serializer_handler_t* handler, pubsub_message_serialization_service_t* svc, const celix_properties_t* svcProperties) {
-    long svcId = celix_properties_getAsLong(svcProperties, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    long svcId = celix_properties_getAsLong(svcProperties, CELIX_FRAMEWORK_SERVICE_PID, -1L);
     const char *msgFqn = celix_properties_get(svcProperties, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY, NULL);
     const char *version = celix_properties_get(svcProperties, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_VERSION_PROPERTY, "0.0.0");
     uint32_t msgId = (uint32_t)celix_properties_getAsLong(svcProperties, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, 0L);
@@ -271,7 +271,7 @@ void pubsub_serializerHandler_addSerializationService(pubsub_serializer_handler_
 }
 
 void pubsub_serializerHandler_removeSerializationService(pubsub_serializer_handler_t* handler, pubsub_message_serialization_service_t* svc, const celix_properties_t* svcProperties) {
-    long svcId = celix_properties_getAsLong(svcProperties, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    long svcId = celix_properties_getAsLong(svcProperties, CELIX_FRAMEWORK_SERVICE_PID, -1L);
     const char *msgFqn = celix_properties_get(svcProperties, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY, NULL);
     uint32_t msgId = (uint32_t)celix_properties_getAsLong(svcProperties, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, 0L);
     if (msgId == 0) {

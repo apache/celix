@@ -73,7 +73,7 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
     }
 
     char* scope = NULL;
-    int rc = asprintf(&scope, "(&(%s=*)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+    int rc = asprintf(&scope, "(&(%s=*)(%s=%s))", CELIX_FRAMEWORK_SERVICE_NAME, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
     status = rc < 0 ? CELIX_ENOMEM : CELIX_SUCCESS;
 
     celix_properties_t *props = NULL;

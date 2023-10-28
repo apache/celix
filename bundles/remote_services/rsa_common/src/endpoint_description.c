@@ -51,7 +51,7 @@ celix_status_t endpointDescription_create(celix_properties_t *properties, endpoi
     ep->properties = properties;
     ep->frameworkUUID = (char*)celix_properties_get(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
     ep->id = (char*)celix_properties_get(properties, OSGI_RSA_ENDPOINT_ID, NULL);
-    ep->serviceName = celix_utils_strdup(celix_properties_get(properties, OSGI_FRAMEWORK_OBJECTCLASS, NULL));
+    ep->serviceName = celix_utils_strdup(celix_properties_get(properties, CELIX_FRAMEWORK_SERVICE_NAME, NULL));
     ep->serviceId = celix_properties_getAsLong(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, -1);
 
     if (!(ep->frameworkUUID) || !(ep->id) || !(ep->serviceName) || ep->serviceId < 0) {

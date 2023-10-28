@@ -181,7 +181,7 @@ void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_proper
     pubsub_admin_service_t *psa = (pubsub_admin_service_t *) svc;
 
 
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1L);
     const char* psaType = celix_properties_get(props, PUBSUB_ADMIN_SERVICE_TYPE, "!Error!");
     celix_logHelper_debug(manager->loghelper, "Added %s PSA", psaType);
 
@@ -229,7 +229,7 @@ void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_proper
 void pubsub_topologyManager_psaRemoved(void *handle, void *svc CELIX_UNUSED, const celix_properties_t *props) {
     pubsub_topology_manager_t *manager = handle;
     //pubsub_admin_service_t *psa = (pubsub_admin_service_t*) svc;
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1L);
     const char* psaType = celix_properties_get(props, PUBSUB_ADMIN_SERVICE_TYPE, "!Error!");
     celix_logHelper_debug(manager->loghelper, "Removing %s PSA", psaType);
 
@@ -1156,7 +1156,7 @@ static void *pstm_psaHandlingThread(void *data) {
 
 void pubsub_topologyManager_addMetricsService(void * handle, void *svc, const celix_properties_t *props) {
     pubsub_topology_manager_t *manager = handle;
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1L);
     celixThreadMutex_lock(&manager->psaMetrics.mutex);
     hashMap_put(manager->psaMetrics.map, (void*)svcId, svc);
     celixThreadMutex_unlock(&manager->psaMetrics.mutex);
@@ -1164,7 +1164,7 @@ void pubsub_topologyManager_addMetricsService(void * handle, void *svc, const ce
 
 void pubsub_topologyManager_removeMetricsService(void * handle, void *svc, const celix_properties_t *props) {
     pubsub_topology_manager_t *manager = handle;
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1L);
     celixThreadMutex_lock(&manager->psaMetrics.mutex);
     hashMap_remove(manager->psaMetrics.map, (void*)svcId);
     celixThreadMutex_unlock(&manager->psaMetrics.mutex);

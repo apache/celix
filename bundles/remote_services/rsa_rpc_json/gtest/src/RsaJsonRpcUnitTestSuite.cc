@@ -88,7 +88,7 @@ public:
         EXPECT_TRUE(endpointDesc->properties != nullptr);
         const char *uuid = celix_bundleContext_getProperty(ctx.get(), CELIX_FRAMEWORK_FRAMEWORK_UUID, nullptr);
         celix_properties_set(endpointDesc->properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
-        celix_properties_set(endpointDesc->properties, OSGI_FRAMEWORK_OBJECTCLASS, RSA_RPC_JSON_TEST_SERVICE);
+        celix_properties_set(endpointDesc->properties, CELIX_FRAMEWORK_SERVICE_NAME, RSA_RPC_JSON_TEST_SERVICE);
         celix_properties_set(endpointDesc->properties, CELIX_FRAMEWORK_SERVICE_VERSION, "1.0.0");
         celix_properties_set(endpointDesc->properties, OSGI_RSA_ENDPOINT_ID, "8cf05b2d-421e-4c46-b55e-c3f1900b7cba");
         celix_properties_set(endpointDesc->properties, OSGI_RSA_SERVICE_IMPORTED, "true");

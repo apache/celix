@@ -39,7 +39,7 @@ public:
 
         properties = std::shared_ptr<celix_properties_t>(celix_properties_create(), [](celix_properties_t* p) {celix_properties_destroy(p);});
         celix_properties_set(properties.get(), OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "e7c2a8ab-79a8-40c5-a926-85ae64c9382a");
-        celix_properties_set(properties.get(), OSGI_FRAMEWORK_OBJECTCLASS, "org.example.api.Foo");
+        celix_properties_set(properties.get(), CELIX_FRAMEWORK_SERVICE_NAME, "org.example.api.Foo");
         celix_properties_set(properties.get(), OSGI_RSA_ENDPOINT_ID, "983e0ad8-5de9-44a8-b336-b3dc79d364b5");
         celix_properties_set(properties.get(), OSGI_RSA_ENDPOINT_SERVICE_ID, "100");
     }
@@ -97,7 +97,7 @@ TEST_F(EndpointDescriptionUnitTestSuite, CreateEndpointDescriptionWithInvalidPro
 TEST_F(EndpointDescriptionUnitTestSuite, CreateEndpointDescriptionWithInvalidProperties2) {
     endpoint_description_t* endpointDescription = nullptr;
     celix_properties_t *props = celix_properties_copy(properties.get());
-    celix_properties_unset(props, OSGI_FRAMEWORK_OBJECTCLASS);
+    celix_properties_unset(props, CELIX_FRAMEWORK_SERVICE_NAME);
     auto status = endpointDescription_create(props, &endpointDescription);
     EXPECT_EQ(status, CELIX_BUNDLE_EXCEPTION);
     celix_properties_destroy(props);
