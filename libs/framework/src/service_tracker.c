@@ -441,7 +441,7 @@ static void serviceTracker_checkAndInvokeSetService(void *handle, void *highestS
         //no services available anymore -> unset == call with NULL
         update = true;
     } else {
-        svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1);
+        svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     }
     if (svcId >= 0) {
         celixThreadMutex_lock(&tracker->mutex);

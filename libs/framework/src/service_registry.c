@@ -861,8 +861,8 @@ static int celix_serviceRegistry_compareRegistrations(const void *a, const void 
     serviceRegistration_getProperties((service_registration_t*)regA, &propsA);
     serviceRegistration_getProperties((service_registration_t*)regB, &propsB);
 
-    long servIdA = celix_properties_getAsLong(propsA, CELIX_FRAMEWORK_SERVICE_PID, 0);
-    long servIdB = celix_properties_getAsLong(propsB, CELIX_FRAMEWORK_SERVICE_PID, 0);
+    long servIdA = celix_properties_getAsLong(propsA, CELIX_FRAMEWORK_SERVICE_ID, 0);
+    long servIdB = celix_properties_getAsLong(propsB, CELIX_FRAMEWORK_SERVICE_ID, 0);
 
     long servRankingA = celix_properties_getAsLong(propsA, CELIX_FRAMEWORK_SERVICE_RANKING, 0);
     long servRankingB = celix_properties_getAsLong(propsB, CELIX_FRAMEWORK_SERVICE_RANKING, 0);

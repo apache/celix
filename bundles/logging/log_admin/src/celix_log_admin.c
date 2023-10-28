@@ -286,7 +286,7 @@ static void celix_logAdmin_addSink(void *handle, void *svc, const celix_properti
     celix_log_admin_t* admin = handle;
     celix_log_sink_t* sink = svc;
 
-    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
     const char* sinkName = celix_properties_get(props, CELIX_LOG_SINK_PROPERTY_NAME, NULL);
     char nameBuf[16];
     if (sinkName == NULL) {
@@ -313,7 +313,7 @@ static void celix_logAdmin_addSink(void *handle, void *svc, const celix_properti
 
 static void celix_logAdmin_remSink(void *handle, void *svc CELIX_UNUSED, const celix_properties_t* props) {
     celix_log_admin_t* admin = handle;
-    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
     const char* sinkName = celix_properties_get(props, CELIX_LOG_SINK_PROPERTY_NAME, NULL);
     char nameBuf[16];
     if (sinkName == NULL) {

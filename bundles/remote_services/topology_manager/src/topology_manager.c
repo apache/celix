@@ -227,7 +227,7 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt unus
         service_reference_pt reference = hashMapEntry_getKey(entry);
         const char* serviceId = NULL;
 
-        serviceReference_getProperty(reference, CELIX_FRAMEWORK_SERVICE_PID, &serviceId);
+        serviceReference_getProperty(reference, CELIX_FRAMEWORK_SERVICE_ID, &serviceId);
 
         scope_getExportProperties(manager->scope, reference, &serviceProperties);
 
@@ -346,7 +346,7 @@ celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr)
 			status = filter_match(filter, props, &found);
 			if (found) {
 				srvRefs[nrFound] = reference;
-				serviceReference_getProperty(reference, CELIX_FRAMEWORK_SERVICE_PID, &serviceId);
+				serviceReference_getProperty(reference, CELIX_FRAMEWORK_SERVICE_ID, &serviceId);
 				srvIds[nrFound++] = (char*)serviceId;
 			}
 		}

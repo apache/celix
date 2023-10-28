@@ -235,7 +235,7 @@ static void rsaShm_overlayProperties(celix_properties_t *additionalProperties, c
     const char *servicePropKey = NULL;
     CELIX_PROPERTIES_FOR_EACH(additionalProperties, additionalPropKey) {
         if (strcmp(additionalPropKey,(char*) CELIX_FRAMEWORK_SERVICE_NAME) != 0
-                && strcmp(additionalPropKey,(char*) CELIX_FRAMEWORK_SERVICE_PID) != 0) {
+                && strcmp(additionalPropKey,(char*) CELIX_FRAMEWORK_SERVICE_ID) != 0) {
             bool propKeyCaseEqual = false;
 
             CELIX_PROPERTIES_FOR_EACH(serviceProperties, servicePropKey) {
@@ -294,7 +294,7 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
     celix_array_list_t *references = NULL;
     service_reference_pt reference = NULL;
     char filter[32] = {0};// It is longer than the size of "service.id" + serviceId
-    snprintf(filter, sizeof(filter), "(%s=%s)", (char *) CELIX_FRAMEWORK_SERVICE_PID, serviceId);
+    snprintf(filter, sizeof(filter), "(%s=%s)", (char *) CELIX_FRAMEWORK_SERVICE_ID, serviceId);
     status = bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
     if (status != CELIX_SUCCESS) {
        celix_logHelper_error(admin->logHelper,"Error getting reference for service id %s.", serviceId);
@@ -496,9 +496,9 @@ static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
     celix_properties_unset(endpointProperties,CELIX_FRAMEWORK_SERVICE_NAME);
     celix_properties_unset(endpointProperties,OSGI_RSA_SERVICE_EXPORTED_INTERFACES);
     celix_properties_unset(endpointProperties,OSGI_RSA_SERVICE_EXPORTED_CONFIGS);
-    celix_properties_unset(endpointProperties, CELIX_FRAMEWORK_SERVICE_PID);
+    celix_properties_unset(endpointProperties, CELIX_FRAMEWORK_SERVICE_ID);
 
-    long serviceId = celix_properties_getAsLong(exportedProperties, CELIX_FRAMEWORK_SERVICE_PID, -1);
+    long serviceId = celix_properties_getAsLong(exportedProperties, CELIX_FRAMEWORK_SERVICE_ID, -1);
 
     uuid_t endpoint_uid;
     uuid_generate(endpoint_uid);

@@ -60,7 +60,7 @@ celix_status_t shell_addCommand(shell_t *shell, celix_shell_command_t *svc, cons
         celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command service must contain a '%s' property!", CELIX_SHELL_COMMAND_NAME);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1L);
+        long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
         celixThreadRwlock_writeLock(&shell->lock);
         if (hashMap_containsKey(shell->commandServices, name)) {
             celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command with name %s already registered!", name);
@@ -90,7 +90,7 @@ celix_status_t shell_removeCommand(shell_t *shell, celix_shell_command_t *svc, c
         celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command service must contain a '%s' property!", CELIX_SHELL_COMMAND_NAME);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1L);
+        long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
         celixThreadRwlock_writeLock(&shell->lock);
         if (hashMap_containsKey(shell->commandServices, name)) {
             celix_shell_command_entry_t *entry = hashMap_get(shell->commandServices, name);

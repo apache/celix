@@ -1015,7 +1015,7 @@ bool celix_bundleContext_useServiceWithId(
     celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
 
     char filter[64];
-    snprintf(filter, 64, "(%s=%li)", CELIX_FRAMEWORK_SERVICE_PID, serviceId);
+    snprintf(filter, 64, "(%s=%li)", CELIX_FRAMEWORK_SERVICE_ID, serviceId);
 
     opts.filter.serviceName = serviceName;
     opts.filter.filter = filter;

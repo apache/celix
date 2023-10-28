@@ -144,13 +144,13 @@ TEST_F(CxxBundleContextTestSuite, UseServicesTest) {
         .setTimeout(std::chrono::seconds{1})
         .addUseCallback([&countFromFunction](CInterface&, const celix::Properties& props){
             countFromFunction += 1;
-            auto id = props.getAsLong(CELIX_FRAMEWORK_SERVICE_PID, -1L);
+            auto id = props.getAsLong(CELIX_FRAMEWORK_SERVICE_ID, -1L);
             EXPECT_GT(id, -1L);
         })
         .build();
     count += ctx->useServices<CInterface>().addUseCallback([&countFromFunction](CInterface&, const celix::Properties& props, const celix::Bundle& bnd) {
         countFromFunction += 1;
-        EXPECT_GE(props.getAsLong(CELIX_FRAMEWORK_SERVICE_PID, -1L), 0);
+        EXPECT_GE(props.getAsLong(CELIX_FRAMEWORK_SERVICE_ID, -1L), 0);
         EXPECT_GE(bnd.getId(), -1L);
     }).build();
     EXPECT_EQ(count, 4);

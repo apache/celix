@@ -100,7 +100,7 @@ static celix_status_t serviceRegistration_initializeProperties(service_registrat
 
 
 	snprintf(sId, 32, "%lu", registration->serviceId);
-	properties_set(dictionary, (char *) CELIX_FRAMEWORK_SERVICE_PID, sId);
+	properties_set(dictionary, (char *) CELIX_FRAMEWORK_SERVICE_ID, sId);
 
 	if (properties_get(dictionary, (char *) CELIX_FRAMEWORK_SERVICE_NAME) == NULL) {
 		properties_set(dictionary, (char *) CELIX_FRAMEWORK_SERVICE_NAME, registration->className);

@@ -263,8 +263,8 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 	long id, other_id;
 	const char* id_str;
     const char* other_id_str;
-	serviceReference_getProperty(reference, (char *) CELIX_FRAMEWORK_SERVICE_PID, &id_str);
-	serviceReference_getProperty(compareTo, (char *) CELIX_FRAMEWORK_SERVICE_PID, &other_id_str);
+	serviceReference_getProperty(reference, (char *) CELIX_FRAMEWORK_SERVICE_ID, &id_str);
+	serviceReference_getProperty(compareTo, (char *) CELIX_FRAMEWORK_SERVICE_ID, &other_id_str);
 
 	id = atol(id_str);
 	other_id = atol(other_id_str);

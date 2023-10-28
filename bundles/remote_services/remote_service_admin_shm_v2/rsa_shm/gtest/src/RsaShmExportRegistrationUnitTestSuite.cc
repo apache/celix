@@ -72,7 +72,7 @@ class RsaShmExportRegUnitTestSuite : public ::testing::Test {
 public:
     RsaShmExportRegUnitTestSuite() {
         auto* props = celix_properties_create();
-        celix_properties_set(props, CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, "true");
+        celix_properties_set(props, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true");
         celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_shm_export_reg_test_cache");
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
@@ -144,7 +144,7 @@ public:
     service_reference_pt GetServiceReference() {
         celix_array_list_t *references = nullptr;
         char filter[32] = {0};
-        snprintf(filter, sizeof(filter), "(%s=%ld)", (char *) CELIX_FRAMEWORK_SERVICE_PID, calcSvcId);
+        snprintf(filter, sizeof(filter), "(%s=%ld)", (char *) CELIX_FRAMEWORK_SERVICE_ID, calcSvcId);
         auto status = bundleContext_getServiceReferences(ctx.get(), nullptr, filter, &references);
         EXPECT_EQ(CELIX_SUCCESS, status);
         service_reference_pt reference = (service_reference_pt) celix_arrayList_get(references, 0);

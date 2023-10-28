@@ -611,7 +611,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
         service_reference_pt reference = NULL;
         char filter[256];
 
-        snprintf(filter, 256, "(%s=%s)", (char *) CELIX_FRAMEWORK_SERVICE_PID, serviceId);
+        snprintf(filter, 256, "(%s=%s)", (char *) CELIX_FRAMEWORK_SERVICE_ID, serviceId);
 
         status = bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
 
@@ -745,10 +745,10 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         }
     }
 
-    hash_map_entry_pt entry = hashMap_getEntry(endpointProperties, (void *) CELIX_FRAMEWORK_SERVICE_PID);
+    hash_map_entry_pt entry = hashMap_getEntry(endpointProperties, (void *) CELIX_FRAMEWORK_SERVICE_ID);
 
     char* key = hashMapEntry_getKey(entry);
-    char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) CELIX_FRAMEWORK_SERVICE_PID);
+    char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) CELIX_FRAMEWORK_SERVICE_ID);
     const char *uuid = NULL;
 
     char buf[512];

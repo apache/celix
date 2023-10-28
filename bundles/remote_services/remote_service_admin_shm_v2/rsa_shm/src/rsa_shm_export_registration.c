@@ -241,7 +241,7 @@ static void exportRegistration_addRpcFac(void *handle, void *svc) {
     }
 
     char filter[32] = {0};// It is longer than the size of "service.id" + reqHandlerSvcId
-    (void)snprintf(filter, sizeof(filter), "(%s=%ld)", CELIX_FRAMEWORK_SERVICE_PID,
+    (void)snprintf(filter, sizeof(filter), "(%s=%ld)", CELIX_FRAMEWORK_SERVICE_ID,
             reqHandlerSvcId);
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.filter = filter;

@@ -189,7 +189,7 @@ static void discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix
     assert(props != NULL);
     discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)handle;
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
-    long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1);
+    long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (serviceId == -1) {
         return;
     }
@@ -225,7 +225,7 @@ static void discoveryZeroconfWatcher_removeEPL(void *handle, void *svc, const ce
     assert(props != NULL);
     discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)handle;
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
-    long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1);
+    long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (serviceId == -1) {
         return;
     }

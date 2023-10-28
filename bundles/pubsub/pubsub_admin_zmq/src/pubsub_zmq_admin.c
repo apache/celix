@@ -277,7 +277,7 @@ void pubsub_zmqAdmin_addProtocolSvc(void *handle, void *svc, const celix_propert
     pubsub_zmq_admin_t *psa = handle;
 
     const char *protType = celix_properties_get(props, PUBSUB_PROTOCOL_TYPE_KEY, NULL);
-    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
 
     if (protType == NULL) {
         L_INFO("[PSA_ZMQ] Ignoring protocol service without %s property", PUBSUB_PROTOCOL_TYPE_KEY);
@@ -298,7 +298,7 @@ void pubsub_zmqAdmin_addProtocolSvc(void *handle, void *svc, const celix_propert
 
 void pubsub_zmqAdmin_removeProtocolSvc(void *handle, void *svc, const celix_properties_t *props) {
     pubsub_zmq_admin_t *psa = handle;
-    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_PID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
 
     //remove protocol
     // 1) First find entry and
