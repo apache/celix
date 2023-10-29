@@ -19,6 +19,7 @@
 #include <celix_framework.h>
 #include <celix_framework_factory.h>
 #include <celix_log_helper.h>
+#include <celix_constants.h>
 
 int main() {
     celix_properties_t *properties = NULL;

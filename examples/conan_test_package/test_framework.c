@@ -21,6 +21,7 @@
 #include <celix_framework.h>
 #include <celix_framework_factory.h>
 #include <celix_properties.h>
+#include <celix_constants.h>
 #include <stddef.h>
 
 int main() {
