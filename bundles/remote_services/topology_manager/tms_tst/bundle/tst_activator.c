@@ -49,7 +49,7 @@ static celix_status_t removeImport(void * handle, service_reference_pt reference
 
 static bool IsImported(void *handle);
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **out) {
+celix_status_t celix_bundleActivator_create(celix_bundle_context_t *context, void **out) {
     celix_status_t status = CELIX_SUCCESS;
     struct activator *act = calloc(1, sizeof(*act));
     if (act != NULL) {
@@ -121,7 +121,7 @@ celix_status_t celix_bundleActivator_stop(void * userData, celix_bundle_context_
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
+celix_status_t celix_bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
     struct activator *act = userData;
     if (act != NULL) {
         if (act->tracker != NULL) {
