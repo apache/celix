@@ -166,7 +166,7 @@ celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context
 	activator->endpointListener = endpointListener;
 
 	const char *uuid = NULL;
-	status = bundleContext_getProperty(activator->context, CELIX_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	status = bundleContext_getProperty(activator->context, CELIX_FRAMEWORK_UUID, &uuid);
 	if (!uuid) {
 		celix_logHelper_log(activator->celix_logHelper, CELIX_LOG_LEVEL_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");
 		return CELIX_ILLEGAL_STATE;

@@ -134,7 +134,7 @@ pubsub_zmq_topic_sender_t* pubsub_zmqTopicSender_create(
     sender->admin = admin;
     sender->protocolSvcId = protocolSvcId;
     sender->protocol = prot;
-    const char* uuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    const char* uuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
     if (uuid != NULL) {
         uuid_parse(uuid, sender->fwUUID);
     }

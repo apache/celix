@@ -83,7 +83,7 @@ pubsub_discovery_t* pubsub_discovery_create(celix_bundle_context_t *context, cel
     disc->ttlForEntries = (int)ttl;
     disc->sleepInsecBetweenTTLRefresh = (int)(((float)ttl)/2.0);
     disc->pubsubPath = celix_bundleContext_getProperty(context, PUBSUB_DISCOVERY_SERVER_PATH_KEY, PUBSUB_DISCOVERY_SERVER_PATH_DEFAULT);
-    disc->fwUUID = celix_bundleContext_getProperty(context, CELIX_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    disc->fwUUID = celix_bundleContext_getProperty(context, CELIX_FRAMEWORK_UUID, NULL);
 
     return disc;
 }

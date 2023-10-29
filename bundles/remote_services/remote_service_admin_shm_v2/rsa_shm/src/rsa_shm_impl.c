@@ -114,7 +114,7 @@ celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t
     celix_auto(celix_service_registration_guard_t) reg =
         celix_serviceRegistrationGuard_init(context, ad->reqSenderSvcId);
 
-    const char *fwUuid = celix_bundleContext_getProperty(context, CELIX_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    const char *fwUuid = celix_bundleContext_getProperty(context, CELIX_FRAMEWORK_UUID, NULL);
     if (fwUuid == NULL) {
         celix_logHelper_error(logHelper,"Error Getting cfw uuid for shm rsa admin.");
         return CELIX_BUNDLE_EXCEPTION;
@@ -505,7 +505,7 @@ static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
     char endpoint_uuid[37];
     uuid_unparse_lower(endpoint_uid, endpoint_uuid);
 
-    const char *uuid = celix_bundleContext_getProperty(admin->context, CELIX_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    const char *uuid = celix_bundleContext_getProperty(admin->context, CELIX_FRAMEWORK_UUID, NULL);
     if (uuid == NULL) {
         celix_logHelper_error(admin->logHelper, "Cannot get framework uuid");
         return CELIX_FRAMEWORK_EXCEPTION;

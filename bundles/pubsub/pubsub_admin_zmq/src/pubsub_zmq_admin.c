@@ -112,7 +112,7 @@ pubsub_zmq_admin_t* pubsub_zmqAdmin_create(celix_bundle_context_t *ctx, celix_lo
     psa->ctx = ctx;
     psa->log = logHelper;
     psa->verbose = celix_bundleContext_getPropertyAsBool(ctx, PUBSUB_ZMQ_VERBOSE_KEY, PUBSUB_ZMQ_VERBOSE_DEFAULT);
-    psa->fwUUID = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    psa->fwUUID = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
 
     char *ip = NULL;
     const char *confIp = celix_bundleContext_getProperty(ctx, PUBSUB_ZMQ_PSA_IP_KEY , NULL);

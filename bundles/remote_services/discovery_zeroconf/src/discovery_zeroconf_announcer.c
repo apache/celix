@@ -119,7 +119,7 @@ celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, ce
     celix_autoptr(celix_array_list_t) revokedEndpoints = announcer->revokedEndpoints = celix_arrayList_create();
     assert(announcer->revokedEndpoints != NULL);
 
-    const char *fwUuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    const char *fwUuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
     if (fwUuid == NULL || strlen(fwUuid) >= sizeof(announcer->fwUuid)) {
         celix_logHelper_fatal(logHelper, "Announcer: Failed to get framework uuid.");
         return CELIX_BUNDLE_EXCEPTION;

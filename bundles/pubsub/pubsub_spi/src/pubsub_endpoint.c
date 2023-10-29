@@ -122,7 +122,7 @@ static void retrieveTopicProperties(void *handle, const celix_bundle_t *bnd) {
 celix_properties_t* pubsubEndpoint_createFromSubscriberSvc(bundle_context_t* ctx, long bundleId, const celix_properties_t *svcProps) {
     celix_properties_t *ep = celix_properties_create();
 
-    const char* fwUUID = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    const char* fwUUID = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
     const char* scope = celix_properties_get(svcProps,  PUBSUB_SUBSCRIBER_SCOPE, NULL);
     const char* topic = celix_properties_get(svcProps,  PUBSUB_SUBSCRIBER_TOPIC, NULL);
 
@@ -152,7 +152,7 @@ celix_properties_t* pubsubEndpoint_createFromSubscriberSvc(bundle_context_t* ctx
 celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context_t *ctx, long bundleId, const char *filter) {
     celix_properties_t *ep = celix_properties_create();
 
-    const char* fwUUID= celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    const char* fwUUID= celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
     assert(fwUUID != NULL);
 
     char* topic = NULL;

@@ -96,7 +96,7 @@ celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context
 	struct activator *activator = userData;
 	const char *uuid = NULL;
 
-	status = bundleContext_getProperty(context, CELIX_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	status = bundleContext_getProperty(context, CELIX_FRAMEWORK_UUID, &uuid);
 	if (!uuid) {
         celix_logHelper_debug(activator->loghelper, "no framework UUID defined?!");
 		return CELIX_ILLEGAL_STATE;

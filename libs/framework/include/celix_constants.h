@@ -163,7 +163,7 @@ extern "C" {
  *
  * @note The Celix framework expects framework UUIDs to be unique per process.
  */
-#define CELIX_FRAMEWORK_FRAMEWORK_UUID "org.osgi.framework.uuid"
+#define CELIX_FRAMEWORK_UUID "org.osgi.framework.uuid"
 
 /**
  * @brief Celix framework environment property (named "CELIX_BUNDLES_PATH") which specified a `:` separated

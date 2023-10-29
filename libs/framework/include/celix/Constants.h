@@ -122,7 +122,7 @@ namespace celix {
      *
      * @note The Celix framework expects framework UUIDs to be unique per process.
      */
-    constexpr const char * const FRAMEWORK_UUID = CELIX_FRAMEWORK_FRAMEWORK_UUID;
+    constexpr const char * const FRAMEWORK_UUID = CELIX_FRAMEWORK_UUID;
 
     /**
      * @brief Celix framework environment property (named "CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE") which configures

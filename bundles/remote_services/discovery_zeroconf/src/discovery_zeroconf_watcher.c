@@ -107,7 +107,7 @@ celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celi
     }
     celix_auto(celix_fd_t) eventFd = watcher->eventFd;
 
-    const char *fwUuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    const char *fwUuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
     if (fwUuid == NULL || strlen(fwUuid) >= sizeof(watcher->fwUuid)) {
         celix_logHelper_fatal(logHelper, "Watcher: Failed to get framework uuid.");
         return CELIX_BUNDLE_EXCEPTION;
