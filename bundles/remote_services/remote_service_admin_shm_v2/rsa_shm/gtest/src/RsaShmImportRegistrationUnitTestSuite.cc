@@ -111,7 +111,7 @@ public:
         celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "7f7efba5-500f-4ee9-b733-68de012091da");
         celix_properties_setLong(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, 100);//Set a dummy service id
         celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-        celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, celix_bundleContext_getProperty(ctx.get(), CELIX_FRAMEWORK_FRAMEWORK_UUID, ""));
+        celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, celix_bundleContext_getProperty(ctx.get(), CELIX_FRAMEWORK_UUID, ""));
         celix_properties_set(properties, RSA_SHM_SERVER_NAME_KEY, "ShmServ-dummy");
         endpoint_description_t *endpoint = nullptr;
         auto status = endpointDescription_create(properties, &endpoint);

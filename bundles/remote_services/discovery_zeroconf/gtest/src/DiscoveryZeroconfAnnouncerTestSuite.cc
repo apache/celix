@@ -188,7 +188,7 @@ static void OnServiceBrowseCallback(DNSServiceRef sdRef, DNSServiceFlags flags, 
 static void OnUseServiceCallback(void *handle, void *svc) {
     DiscoveryZeroconfAnnouncerTestSuite *t = (DiscoveryZeroconfAnnouncerTestSuite *)handle;
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
-    const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_FRAMEWORK_UUID, nullptr);
+    const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
     if (t->ifIndex == kDNSServiceInterfaceIndexAny) {
         celix_properties_set(properties, CELIX_RSA_NETWORK_INTERFACES, "all");
@@ -249,7 +249,7 @@ TEST_F(DiscoveryZeroconfAnnouncerTestSuite, AddAndRemoveLocalOnlyEndpoint) {
 static void OnUseServiceCallbackForRegisterServiceFailure(void *handle, void *svc) {
     DiscoveryZeroconfAnnouncerTestSuite *t = (DiscoveryZeroconfAnnouncerTestSuite *)handle;
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
-    const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_FRAMEWORK_UUID, nullptr);
+    const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, "dzc_test_service");
@@ -291,7 +291,7 @@ TEST_F(DiscoveryZeroconfAnnouncerTestSuite, FailedToRegisterService) {
 static void OnUseServiceCallbackForNameConflict(void *handle, void *svc) {
     DiscoveryZeroconfAnnouncerTestSuite *t = (DiscoveryZeroconfAnnouncerTestSuite *)handle;
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
-    const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_FRAMEWORK_UUID, nullptr);
+    const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
     if (t->ifIndex == kDNSServiceInterfaceIndexAny) {
         celix_properties_set(properties, CELIX_RSA_NETWORK_INTERFACES, "all");
@@ -396,7 +396,7 @@ TEST_F(DiscoveryZeroconfAnnouncerTestSuite, AddAndRemoveLoopBackEndpoint) {
 static void OnUseServiceWithJumboEndpointCallback(void *handle, void *svc) {
     DiscoveryZeroconfAnnouncerTestSuite *t = (DiscoveryZeroconfAnnouncerTestSuite *)handle;
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
-    const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_FRAMEWORK_UUID, nullptr);
+    const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
     if (t->ifIndex == kDNSServiceInterfaceIndexAny) {
         celix_properties_set(properties, CELIX_RSA_NETWORK_INTERFACES, "all");
@@ -462,7 +462,7 @@ static void OnUseServiceWithInvalidEndpointCallback(void *handle, void *svc) {
     status = epl->endpointRemoved(epl->handle, nullptr, nullptr);
     EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
 
-    const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_FRAMEWORK_UUID, nullptr);
+    const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, "dzc_test_service");
@@ -500,7 +500,7 @@ TEST_F(DiscoveryZeroconfAnnouncerTestSuite, AddInvalidEndpoint) {
 static void OnUseServiceForAddEndpointENOMEM(void *handle, void *svc) {
     DiscoveryZeroconfAnnouncerTestSuite *t = (DiscoveryZeroconfAnnouncerTestSuite *)handle;
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
-    const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_FRAMEWORK_UUID, nullptr);
+    const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
     if (t->ifIndex == kDNSServiceInterfaceIndexAny) {
         celix_properties_set(properties, CELIX_RSA_NETWORK_INTERFACES, "all");

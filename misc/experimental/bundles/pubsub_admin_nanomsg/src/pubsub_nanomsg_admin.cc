@@ -43,7 +43,7 @@ pubsub_nanomsg_admin::pubsub_nanomsg_admin(celix_bundle_context_t *_ctx):
     ctx{_ctx},
     L{ctx, "pubsub_nanomsg_admin"} {
     verbose = celix_bundleContext_getPropertyAsBool(ctx, PUBSUB_NANOMSG_VERBOSE_KEY, PUBSUB_NANOMSG_VERBOSE_DEFAULT);
-    fwUUID = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_FRAMEWORK_UUID, nullptr);
+    fwUUID = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, nullptr);
 
     char *ip = nullptr;
     const char *confIp = celix_bundleContext_getProperty(ctx, PUBSUB_NANOMSG_PSA_IP_KEY , nullptr);
