@@ -23,7 +23,7 @@
 #include <service_tracker_customizer.h>
 #include <service_tracker.h>
 
-#include "bundle_activator.h"
+#include "celix_bundle_activator.h"
 #include "bundle_context.h"
 #include "service_registration.h"
 #include "service_reference.h"
@@ -36,7 +36,7 @@
 celix_status_t discovery_endpointAdded(void *handle, endpoint_description_t *endpoint, char *matchedFilter);
 celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_t *endpoint, char *matchedFilter);
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **out) {
+celix_status_t celix_bundleActivator_create(celix_bundle_context_t *context, void **out) {
     celix_status_t status = CELIX_SUCCESS;
     struct disc_mock_activator *act = calloc(1, sizeof(*act));
     if (act != NULL) {
@@ -58,7 +58,7 @@ celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **ou
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
+celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context_t *context) {
     celix_status_t status;
     struct disc_mock_activator * act = userData;
     const char *uuid = NULL;
@@ -111,7 +111,7 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
     return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
+celix_status_t celix_bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
     celix_status_t status;
     struct disc_mock_activator * act = userData;
 
@@ -121,7 +121,7 @@ celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *con
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
+celix_status_t celix_bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
     struct disc_mock_activator *act = userData;
     if (act != NULL) {
         discMockService_destroy(act->serv);
