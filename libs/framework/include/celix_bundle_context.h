@@ -170,13 +170,6 @@ typedef struct celix_service_registration_options {
     celix_properties_t *properties CELIX_OPTS_INIT;
 
     /**
-     * @brief The optional service language.
-     *
-     * If this is NULL, CELIX_FRAMEWORK_SERVICE_LANGUAGE_C is used.
-     */
-    const char* serviceLanguage CELIX_OPTS_INIT;
-
-    /**
      * @brief The optional service version (in the form of <MAJOR>.<MINOR>.<MICRO>.<QUALIFIER>).
      *
      * If present consumer of the service can specific which service version range of
@@ -212,7 +205,6 @@ typedef struct celix_service_registration_options {
     .factory = NULL, \
     .serviceName = NULL, \
     .properties = NULL, \
-    .serviceLanguage = NULL, \
     .serviceVersion = NULL, \
     .asyncData = NULL, \
     .asyncCallback = NULL }
@@ -373,26 +365,13 @@ typedef struct celix_service_filter_options {
      * The filter will be applied to all the user provided and framework provided service properties.
      */
     const char* filter CELIX_OPTS_INIT;
-
-    /**
-     * @deprecated This value is not used any more. If a service language filter is still required add it to the
-     * filter.
-     */
-    const char* serviceLanguage CELIX_OPTS_INIT;
-
-
-    /**
-     * @deprecated This value is not used any more. If a service language filter is still required add it to the
-     * filter.
-     */
-    bool ignoreServiceLanguage CELIX_OPTS_INIT;
 } celix_service_filter_options_t;
 
 #ifndef __cplusplus
 /*!
  * @brief C Macro to create a empty celix_service_filter_options_t type.
  */
-#define CELIX_EMPTY_SERVICE_FILTER_OPTIONS {.serviceName = NULL, .versionRange = NULL, .filter = NULL, .serviceLanguage = NULL, .ignoreServiceLanguage = false}
+#define CELIX_EMPTY_SERVICE_FILTER_OPTIONS {.serviceName = NULL, .versionRange = NULL, .filter = NULL}
 #endif
 
 /**
@@ -602,8 +581,6 @@ typedef struct celix_service_tracking_options {
 #define CELIX_EMPTY_SERVICE_TRACKING_OPTIONS { .filter.serviceName = NULL, \
     .filter.versionRange = NULL, \
     .filter.filter = NULL, \
-    .filter.serviceLanguage = NULL, \
-    .filter.ignoreServiceLanguage = false, \
     .callbackHandle = NULL, \
     .set = NULL, \
     .add = NULL, \
@@ -820,7 +797,6 @@ typedef struct celix_service_use_options {
 #define CELIX_EMPTY_SERVICE_USE_OPTIONS {.filter.serviceName = NULL, \
     .filter.versionRange = NULL, \
     .filter.filter = NULL, \
-    .filter.serviceLanguage = NULL, \
     .waitTimeoutInSeconds = 0.0F, \
     .callbackHandle = NULL, \
     .use = NULL, \
@@ -1187,7 +1163,7 @@ CELIX_FRAMEWORK_EXPORT size_t celix_bundleContext_useBundles(
  */
 typedef struct celix_service_tracker_info {
     /**
-     * @brief The parsed service filter, e.g. parsed "(&(objectClass=example_calc)(service.language=C)(meta.info=foo))"
+     * @brief The parsed service filter, e.g. parsed "(&(objectClass=example_calc)(meta.info=foo))"
      */
     celix_filter_t *filter;
 
@@ -1195,12 +1171,6 @@ typedef struct celix_service_tracker_info {
      * @brief The service name filter attribute parsed from the service filter (i.e. the value of the objectClass attribute key)
      */
     const char* serviceName;
-
-    /**
-     * @deprecated
-     * Deprecated. the value will be NULL.
-     */
-    const char* serviceLanguage;
 
     /**
      * @brief Bundle id of the owner of the service tracker.

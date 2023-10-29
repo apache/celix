@@ -79,7 +79,6 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
         opts.removeWithProperties = pubsub_topologyManager_psaRemoved;
         opts.callbackHandle = act->manager;
         opts.filter.serviceName = PUBSUB_ADMIN_SERVICE_NAME;
-        opts.filter.ignoreServiceLanguage = true;
         act->pubsubAdminTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 
@@ -90,7 +89,6 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
         opts.removeWithOwner = pubsub_topologyManager_subscriberRemoved;
         opts.callbackHandle = act->manager;
         opts.filter.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
-        opts.filter.ignoreServiceLanguage = true;
         act->pubsubSubscribersTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 

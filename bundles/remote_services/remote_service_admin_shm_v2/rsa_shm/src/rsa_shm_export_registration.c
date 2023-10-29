@@ -142,7 +142,6 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
     opts.filter.filter = filter;
     opts.filter.serviceName = RSA_RPC_FACTORY_NAME;
     opts.filter.versionRange = RSA_RPC_FACTORY_USE_RANGE;
-    opts.filter.ignoreServiceLanguage = true;
     opts.callbackHandle = export;
     opts.add = exportRegistration_addRpcFac;
     opts.remove = exportRegistration_removeRpcFac;

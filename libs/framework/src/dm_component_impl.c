@@ -906,7 +906,6 @@ static celix_status_t celix_dmComponent_registerServices(celix_dm_component_t *c
             opts.properties = regProps;
             opts.svc = (void*)interface->service;
             opts.serviceName = interface->serviceName;
-            opts.serviceLanguage = celix_properties_get(regProps, CELIX_FRAMEWORK_SERVICE_LANGUAGE, NULL);
             celix_bundleContext_log(component->context, CELIX_LOG_LEVEL_TRACE,
                    "Async registering service %s for component %s (uuid=%s)",
                    interface->serviceName,

@@ -277,7 +277,6 @@ celix_status_t exportRegistration_start(export_registration_t *reg) {
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.filter = reg->filter;
     opts.filter.serviceName = "*";
-    opts.filter.ignoreServiceLanguage = true;
     opts.callbackHandle = reg;
     opts.add = exportRegistration_addServ;
     opts.remove = exportRegistration_removeServ;

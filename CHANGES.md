@@ -35,6 +35,7 @@ limitations under the License.
 - C++17 string_view support is removed from the utils and framework lib.
 - Apache Celix CMake bundle functions without a celix_ prefix or infix are removed.
 - Apache Celix CMake support for creating docker images and creating runtimes dirs is removed.
+- Support and usage of "service.lang" service property is removed. 
 
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 

@@ -105,7 +105,6 @@ celix_status_t celix_bundleActivator_start(void *activatorData, celix_bundle_con
         opts.callbackHandle = activator->shell;
         opts.addWithProperties = (void*) shell_addCommand;
         opts.removeWithProperties = (void*) shell_removeCommand;
-        opts.filter.ignoreServiceLanguage = true;
         opts.filter.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;
         activator->trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
