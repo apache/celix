@@ -118,14 +118,6 @@ extern "C" {
  */
 #define CELIX_FRAMEWORK_SERVICE_VERSION "service.version"
 
-/**
- * The service language property and values are deprecated
- */
-#define CELIX_FRAMEWORK_SERVICE_LANGUAGE "service.lang"
-#define CELIX_FRAMEWORK_SERVICE_C_LANGUAGE "C"
-#define CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE "C++"
-#define CELIX_FRAMEWORK_SERVICE_SHARED_LANGUAGE "shared" //e.g. marker services
-
 #define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR "Bundle-Activator"
 #define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR CELIX_FRAMEWORK_BUNDLE_ACTIVATOR
 

@@ -347,7 +347,6 @@ static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ct
         opts.set = bndSetCalc;
         opts.callbackHandle = act;
         opts.filter.serviceName = CALCULATOR_SERVICE;
-        opts.filter.ignoreServiceLanguage = true;
         act->trackerId1 = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
     {
@@ -355,7 +354,6 @@ static celix_status_t bndStart(struct activator *act, celix_bundle_context_t* ct
         opts.set = bndSetRemoteExample;
         opts.callbackHandle = act;
         opts.filter.serviceName = REMOTE_EXAMPLE_NAME;
-        opts.filter.ignoreServiceLanguage = true;
         act->trackerId2 = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     }
 

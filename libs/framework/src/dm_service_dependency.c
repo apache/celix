@@ -95,15 +95,6 @@ celix_status_t celix_dmServiceDependency_setRequired(celix_dm_service_dependency
 	return status;
 }
 
-celix_status_t serviceDependency_setAddCLanguageFilter(celix_dm_service_dependency_t *dependency, bool addCLangFilter) {
-	return celix_dmServiceDependency_setAddCLanguageFilter(dependency, addCLangFilter);
-}
-
-celix_status_t celix_dmServiceDependency_setAddCLanguageFilter(celix_dm_service_dependency_t *dependency, bool addCLangFilter) {
-    dependency->addCLanguageFilter = addCLangFilter;
-    return CELIX_SUCCESS;
-}
-
 celix_status_t serviceDependency_setStrategy(celix_dm_service_dependency_t *dependency, dm_service_dependency_strategy_t strategy) {
 	return celix_dmServiceDependency_setStrategy(dependency, strategy);
 }
@@ -192,36 +183,30 @@ celix_status_t celix_dmServiceDependency_setComponent(celix_dm_service_dependenc
 	return CELIX_SUCCESS;
 }
 
-celix_status_t celix_dmServiceDependency_enable(celix_dm_service_dependency_t *dependency) {
-    celix_bundle_context_t* ctx = celix_dmComponent_getBundleContext(dependency->component);
+celix_status_t celix_dmServiceDependency_enable(celix_dm_service_dependency_t* dependency) {
+        celix_bundle_context_t* ctx = celix_dmComponent_getBundleContext(dependency->component);
 
-    if (dependency->serviceName == NULL && dependency->filter == NULL) {
-        celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR,
-               "Cannot start a service dependency without a service name and filter");
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
-
-    celixThreadMutex_lock(&dependency->mutex);
-    if (dependency->svcTrackerId == -1L) {
-        celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-        opts.filter.filter = dependency->filter;
-        opts.filter.serviceName = dependency->serviceName;
-        opts.filter.versionRange = dependency->versionRange;
-        opts.callbackHandle = dependency;
-        opts.addWithProperties = serviceDependency_addServiceTrackerCallback;
-        opts.removeWithProperties = serviceDependency_removeServiceTrackerCallback;
-        opts.setWithProperties = serviceDependency_setServiceTrackerCallback;
-        if (dependency->addCLanguageFilter) {
-            opts.filter.ignoreServiceLanguage = false;
-            opts.filter.serviceLanguage = CELIX_FRAMEWORK_SERVICE_C_LANGUAGE;
-        } else {
-            opts.filter.ignoreServiceLanguage = true;
+        if (dependency->serviceName == NULL && dependency->filter == NULL) {
+                celix_bundleContext_log(
+                    ctx, CELIX_LOG_LEVEL_ERROR, "Cannot start a service dependency without a service name and filter");
+                return CELIX_ILLEGAL_ARGUMENT;
         }
-        dependency->svcTrackerId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
-	}
-    celixThreadMutex_unlock(&dependency->mutex);
 
-	return CELIX_SUCCESS;
+        celixThreadMutex_lock(&dependency->mutex);
+        if (dependency->svcTrackerId == -1L) {
+                celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+                opts.filter.filter = dependency->filter;
+                opts.filter.serviceName = dependency->serviceName;
+                opts.filter.versionRange = dependency->versionRange;
+                opts.callbackHandle = dependency;
+                opts.addWithProperties = serviceDependency_addServiceTrackerCallback;
+                opts.removeWithProperties = serviceDependency_removeServiceTrackerCallback;
+                opts.setWithProperties = serviceDependency_setServiceTrackerCallback;
+                dependency->svcTrackerId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
+        }
+        celixThreadMutex_unlock(&dependency->mutex);
+
+        return CELIX_SUCCESS;
 }
 
 static void celix_serviceDependency_stopCallback(void *data) {

@@ -60,7 +60,6 @@ pubsub_interceptors_handler_t* pubsubInterceptorsHandler_create(celix_bundle_con
     // Create service tracker here, and not in the activator
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.serviceName = PUBSUB_INTERCEPTOR_SERVICE_NAME;
-    opts.filter.ignoreServiceLanguage = true;
     opts.callbackHandle = handler;
     opts.addWithProperties = pubsubInterceptorsHandler_addInterceptor;
     opts.removeWithProperties = pubsubInterceptorsHandler_removeInterceptor;
