@@ -321,12 +321,8 @@ celix_bundleCache_createBundleArchivesForSpaceSeparatedList(celix_framework_t* f
 celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t* fw, bool logProgress) {
     celix_status_t status = CELIX_SUCCESS;
 
-    const char* const cosgiKeys[] = {"cosgi.auto.start.0", "cosgi.auto.start.1", "cosgi.auto.start.2",
-                                     "cosgi.auto.start.3", "cosgi.auto.start.4", "cosgi.auto.start.5",
-                                     "cosgi.auto.start.6", NULL};
     const char* const celixKeys[] = {CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3,
                                      CELIX_AUTO_START_4, CELIX_AUTO_START_5, CELIX_AUTO_START_6, NULL};
-    CELIX_BUILD_ASSERT(sizeof(*cosgiKeys) == sizeof(*celixKeys));
     long bndId = CELIX_FRAMEWORK_BUNDLE_ID + 1; //note cleaning cache, so starting bundle id at 1
 
     const char* errorStr = NULL;
@@ -342,9 +338,6 @@ celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t* fw
 
     for (int i = 0; celixKeys[i] != NULL; ++i) {
         const char* autoStart = celix_framework_getConfigProperty(fw, celixKeys[i], NULL, NULL);
-        if (autoStart == NULL) {
-            autoStart = celix_framework_getConfigProperty(fw, cosgiKeys[i], NULL, NULL);
-        }
         if (autoStart) {
             status = celix_bundleCache_createBundleArchivesForSpaceSeparatedList(fw, &bndId, autoStart, logProgress);
             if (status != CELIX_SUCCESS) {
