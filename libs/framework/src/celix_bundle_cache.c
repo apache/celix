@@ -67,30 +67,24 @@ static const char* bundleCache_progamName() {
 }
 
 static const char* celix_bundleCache_cacheDirPath(celix_framework_t* fw) {
-    bool found = false;
-    const char* cacheDir = celix_framework_getConfigProperty(fw,
+    return celix_framework_getConfigProperty(fw,
                                                              CELIX_FRAMEWORK_CACHE_DIR,
                                                              CELIX_FRAMEWORK_CACHE_DIR_DEFAULT,
-                                                             &found);
-    return cacheDir;
+                                                             NULL);
 }
 
 static bool celix_bundleCache_useTmpDir(celix_framework_t* fw) {
-    bool converted = false;
-    bool useTmp = celix_framework_getConfigPropertyAsBool(fw,
+    return celix_framework_getConfigPropertyAsBool(fw,
                                                           CELIX_FRAMEWORK_CACHE_USE_TMP_DIR,
                                                           CELIX_FRAMEWORK_CACHE_USE_TMP_DIR_DEFAULT,
-                                                          &converted);
-    return useTmp;
+                                                          NULL);
 }
 
 static bool celix_bundleCache_cleanOnCreate(celix_framework_t* fw) {
-    bool converted = false;
-    bool cleanOnCreate = celix_framework_getConfigPropertyAsBool(fw,
+    return celix_framework_getConfigPropertyAsBool(fw,
                                                                  CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE,
                                                                  CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE_DEFAULT,
-                                                                 &converted);
-    return cleanOnCreate;
+                                                                 NULL);
 }
 
 celix_status_t celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cache_t** out) {
