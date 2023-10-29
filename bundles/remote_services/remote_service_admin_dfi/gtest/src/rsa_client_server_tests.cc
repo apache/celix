@@ -285,7 +285,6 @@ typedef struct rsa_dfi_exception_test_service {
         celix_service_use_options_t opts{};
         opts.filter.serviceName = RSA_DIF_EXCEPTION_TEST_SERVICE;
         opts.use = testExceptionServiceCallback;
-        opts.filter.ignoreServiceLanguage = true;
         opts.waitTimeoutInSeconds = 2;
         bool called = celix_bundleContext_useServiceWithOptions(clientContext, &opts);
         ASSERT_TRUE(called);
@@ -297,7 +296,6 @@ static void test(F&& f) {
     celix_service_use_options_t opts{};
     opts.filter.serviceName = TST_SERVICE_NAME;
     opts.use = f;
-    opts.filter.ignoreServiceLanguage = true;
     opts.waitTimeoutInSeconds = 2;
     bool called = celix_bundleContext_useServiceWithOptions(clientContext, &opts);
     ASSERT_TRUE(called);

@@ -65,7 +65,6 @@ celix_status_t remoteInterceptorsHandler_create(celix_bundle_context_t *ctx, rem
             // Create service tracker here, and not in the activator
             celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
             opts.filter.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
-            opts.filter.ignoreServiceLanguage = true;
             opts.callbackHandle = *handler;
             opts.addWithProperties = remoteInterceptorsHandler_addInterceptor;
             opts.removeWithProperties = remoteInterceptorsHandler_removeInterceptor;

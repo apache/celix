@@ -113,13 +113,6 @@ void CServiceDependency<T,I>::setupService() {
 }
 
 template<class T, typename I>
-CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addLang) {
-    celix_serviceDependency_setAddCLanguageFilter(this->cServiceDependency(), addLang);
-    this->setupService();
-    return *this;
-}
-
-template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
     celix_dmServiceDependency_setRequired(this->cServiceDependency(), req);
     return *this;
@@ -306,14 +299,6 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setFilter(const std::string &_fi
 template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setVersionRange(const std::string &_versionRange) {
     versionRange = _versionRange;
-    setupService();
-    return *this;
-}
-
-
-template<class T, class I>
-ServiceDependency<T,I>& ServiceDependency<T,I>::setAddLanguageFilter(bool addLang) {
-    this->addCxxLanguageFilter = addLang;
     setupService();
     return *this;
 }
