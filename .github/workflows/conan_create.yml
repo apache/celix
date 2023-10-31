@@ -38,6 +38,7 @@ jobs:
         run: |
           # build profile
           conan profile detect -f
+          sed -i 's/compiler.cppstd=gnu14/compiler.cppstd=gnu17/g' `conan profile path default`
       - name: Conan Cache
         id: cache-conan
         uses: actions/cache@v3
