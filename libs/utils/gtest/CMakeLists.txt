@@ -43,7 +43,7 @@ celix_deprecated_utils_headers(test_utils)
 configure_file(resources/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
 
 if (CELIX_CXX17)
-    add_library(test_utils_cxx17tests STATIC
+    add_library(test_utils_cxx17tests OBJECT
             src/ArrayListTestSuite.cc #Uses constexpr
             src/HashMapTestSuite.cc   #Uses constexpr
     )
