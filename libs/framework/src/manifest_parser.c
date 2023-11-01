@@ -27,15 +27,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "utils.h"
 #include "celix_utils.h"
 #include "celix_constants.h"
 #include "manifest_parser.h"
-#include "capability.h"
-#include "requirement.h"
-#include "hash_map.h"
 #include "celix_errno.h"
-#include "linked_list_iterator.h"
 #include "celix_log.h"
 
 struct manifestParser {

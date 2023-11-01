@@ -53,8 +53,6 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT unsigned int module_hash(void *module);
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT int module_equals(void *module, void *compare);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT wire_pt module_getWire(module_pt module, const char *serviceName);
-
 CELIX_FRAMEWORK_DEPRECATED_EXPORT version_pt module_getVersion(module_pt module);
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t module_getSymbolicName(module_pt module, const char **symbolicName);

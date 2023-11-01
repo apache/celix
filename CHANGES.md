@@ -33,6 +33,9 @@ limitations under the License.
 - pubsub_serializer.h is removed and no longer supported. Use pubsub_message_serialization_service.h instead.
 - C++11 support for dm is removed. C++14 is now the minimum required version.
 - C++17 string_view support is removed from the utils and framework lib.
+- Apache Celix CMake bundle functions without a celix_ prefix or infix are removed.
+- Apache Celix CMake support for creating docker images and creating runtimes dirs is removed.
+- Support and usage of "service.lang" service property is removed. 
 - pubsub_serializer.h is removed and no longer supported. Use pubsub_message_serialization_service.h instead.
 - C Properties are no longer a direct typedef o `hashmap`. 
 - celix_string/long_hashmap put functions now return a celix_status_t instead of bool (value replaced). 

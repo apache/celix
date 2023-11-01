@@ -22,6 +22,7 @@
 #include <optional>
 #include <iostream>
 #include <queue>
+#include <cstdint>
 
 #include "celix/IAutoCloseable.h"
 

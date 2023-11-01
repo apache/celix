@@ -76,7 +76,6 @@ extern "C" {
         celix_service_use_options_t opts{};
         opts.filter.serviceName = OSGI_RSA_REMOTE_SERVICE_ADMIN;
         opts.use = testServicesCallback;
-        opts.filter.ignoreServiceLanguage = true;
         opts.waitTimeoutInSeconds = 0.25;
         bool called = celix_bundleContext_useServiceWithOptions(context, &opts);
         ASSERT_TRUE(called);
@@ -104,7 +103,6 @@ extern "C" {
         celix_service_use_options_t opts{};
         opts.filter.serviceName = OSGI_RSA_REMOTE_SERVICE_ADMIN;
         opts.use = testExportServiceCallback;
-        opts.filter.ignoreServiceLanguage = true;
         opts.waitTimeoutInSeconds = 0.25;
         bool called = celix_bundleContext_useServiceWithOptions(context, &opts);
         ASSERT_TRUE(called);
@@ -141,7 +139,6 @@ extern "C" {
         celix_service_use_options_t opts{};
         opts.filter.serviceName = OSGI_RSA_REMOTE_SERVICE_ADMIN;
         opts.use = testImportServiceCallback;
-        opts.filter.ignoreServiceLanguage = true;
         opts.waitTimeoutInSeconds = 0.25;
 
         //first call -> init

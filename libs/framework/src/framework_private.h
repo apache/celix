@@ -25,7 +25,6 @@
 #include "celix_framework.h"
 #include "framework.h"
 #include "manifest.h"
-#include "wire.h"
 #include "hash_map.h"
 #include "array_list.h"
 #include "celix_errno.h"
