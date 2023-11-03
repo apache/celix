@@ -60,7 +60,7 @@ jobs:
             -o celix/*:enable_ccache=True
         run: |
           #force require libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
-          conan build . celix/ci -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -of build ${CONAN_BUILD_OPTIONS} -b missing -b cpputest
+          conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -of build ${CONAN_BUILD_OPTIONS} -b missing -b cpputest
       - name: Test
         run: |
           cd build
