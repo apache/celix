@@ -84,7 +84,7 @@ jobs:
       - name: Install build dependencies
         run: |
           brew install python ninja
-          pip3 install -U conan==1.59.0
+          pip3 install -U conan==1.61.0
       - name: Setup Conan Profile
         run: |
           conan profile new default --detect
