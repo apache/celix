@@ -2531,21 +2531,22 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
         return -1L; //error logged by celix_scheduledEvent_create
     }
 
+    long id = celix_scheduledEvent_getId(event);
     fw_log(fw->logger,
            CELIX_LOG_LEVEL_DEBUG,
            "Added scheduled event '%s' (id=%li) for bundle '%s' (id=%li).",
            celix_scheduledEvent_getName(event),
-           celix_scheduledEvent_getId(event),
+           id,
            celix_bundle_getSymbolicName(bndEntry->bnd),
            bndId);
     celix_framework_bundleEntry_decreaseUseCount(bndEntry);
 
     celixThreadMutex_lock(&fw->dispatcher.mutex);
-    celix_longHashMap_put(fw->dispatcher.scheduledEvents, celix_scheduledEvent_getId(event), event);
+    celix_longHashMap_put(fw->dispatcher.scheduledEvents, id, event);
     celixThreadCondition_broadcast(&fw->dispatcher.cond); //notify dispatcher thread for newly added scheduled event
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 
-    return celix_scheduledEvent_getId(event);
+    return id;
 }
 
 celix_status_t celix_framework_wakeupScheduledEvent(celix_framework_t* fw, long scheduledEventId) {
