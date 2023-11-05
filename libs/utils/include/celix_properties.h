@@ -99,7 +99,7 @@ typedef struct celix_properties_iterator {
     size_t index;
 
     /**
-     * @brief Te current key.
+     * @brief The current key.
      */
     const char* key;
 

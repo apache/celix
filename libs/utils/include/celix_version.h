@@ -62,10 +62,6 @@ typedef struct celix_version celix_version_t;
  */
 CELIX_UTILS_EXPORT celix_version_t* celix_version_create(int major, int minor, int micro, const char* qualifier);
 
-/**
- * @deprecated Use celix_version_create instead.
- */
-CELIX_UTILS_DEPRECATED_EXPORT celix_version_t* celixversion_createVersion(int major, int minor, int micro, const char* qualifier);
 
 CELIX_UTILS_EXPORT void celix_version_destroy(celix_version_t* version);
 
