@@ -14,10 +14,10 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-cosgi.auto.start.1=@rsa_bundle_file@ @calc_bundle_file@ @remote_example_bundle_file@ @discovery_bundle_file@ @topology_manager_bundle_file@
+CELIX_AUTO_START_1=@rsa_bundle_file@ @calc_bundle_file@ @remote_example_bundle_file@ @discovery_bundle_file@ @topology_manager_bundle_file@
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-org.osgi.framework.storage.clean=onFirstInit
-org.osgi.framework.storage=.cacheServer
+CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE=true
+CELIX_FRAMEWORK_CACHE_DIR=.cacheServer
 
 DISCOVERY_CFG_POLL_INTERVAL=1
 DISCOVERY_CFG_POLL_TIMEOUT=5

@@ -29,7 +29,7 @@
 #include <string.h>
 
 
-#include "bundle_activator.h"
+#include "celix_bundle_activator.h"
 #include "service_tracker.h"
 #include "celix_constants.h"
 
@@ -62,7 +62,7 @@ celix_status_t bundleActivator_createEPLTracker(struct activator *activator, ser
 	return status;
 }
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **userData) {
+celix_status_t celix_bundleActivator_create(celix_bundle_context_t *context, void **userData) {
 	celix_status_t status;
 
 	struct activator* activator = calloc(1,sizeof(struct activator));
@@ -81,7 +81,7 @@ celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **us
 			*userData = activator;
 		}
 		else{
-			bundleActivator_destroy(activator,context);
+			celix_bundleActivator_destroy(activator,context);
 		}
 	}
 	else{
@@ -91,19 +91,19 @@ celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **us
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
+celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context_t *context) {
 	celix_status_t status;
 	struct activator *activator = userData;
 	const char *uuid = NULL;
 
-	status = bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	status = bundleContext_getProperty(context, CELIX_FRAMEWORK_UUID, &uuid);
 	if (!uuid) {
         celix_logHelper_debug(activator->loghelper, "no framework UUID defined?!");
 		return CELIX_ILLEGAL_STATE;
 	}
 
     char* scope = NULL;
-    int rc = asprintf(&scope, "(&(%s=*)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+    int rc = asprintf(&scope, "(&(%s=*)(%s=%s))", CELIX_FRAMEWORK_SERVICE_NAME, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
     status = rc < 0 ? CELIX_ENOMEM : CELIX_SUCCESS;
 
     celix_properties_t *props = NULL;
@@ -147,7 +147,7 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
+celix_status_t celix_bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
 	celix_status_t status;
 	struct activator *activator = userData;
 
@@ -161,7 +161,7 @@ celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *con
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
+celix_status_t celix_bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
 	celix_status_t status;
 	struct activator *activator = userData;
 

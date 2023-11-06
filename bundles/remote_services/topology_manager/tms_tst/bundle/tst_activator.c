@@ -23,7 +23,7 @@
 #include <service_tracker_customizer.h>
 #include <service_tracker.h>
 
-#include "bundle_activator.h"
+#include "celix_bundle_activator.h"
 #include "bundle_context.h"
 #include "service_registration.h"
 #include "service_reference.h"
@@ -49,7 +49,7 @@ static celix_status_t removeImport(void * handle, service_reference_pt reference
 
 static bool IsImported(void *handle);
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *context, void **out) {
+celix_status_t celix_bundleActivator_create(celix_bundle_context_t *context, void **out) {
     celix_status_t status = CELIX_SUCCESS;
     struct activator *act = calloc(1, sizeof(*act));
     if (act != NULL) {
@@ -99,7 +99,7 @@ static celix_status_t removeImport(void * handle, service_reference_pt reference
 
 }
 
-celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *context) {
+celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context_t *context) {
     celix_status_t status;
     struct activator * act = userData;
 
@@ -111,7 +111,7 @@ celix_status_t bundleActivator_start(void * userData, celix_bundle_context_t *co
     return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
+celix_status_t celix_bundleActivator_stop(void * userData, celix_bundle_context_t *context) {
     celix_status_t status;
     struct activator * act = userData;
 
@@ -121,7 +121,7 @@ celix_status_t bundleActivator_stop(void * userData, celix_bundle_context_t *con
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
+celix_status_t celix_bundleActivator_destroy(void * userData, celix_bundle_context_t *context) {
     struct activator *act = userData;
     if (act != NULL) {
         if (act->tracker != NULL) {

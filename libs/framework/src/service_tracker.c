@@ -54,7 +54,7 @@ static inline celix_tracked_entry_t* tracked_create(service_reference_pt ref, vo
     tracked->serviceRanking = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_RANKING, 0);
     tracked->properties = props;
     tracked->serviceOwner = bnd;
-    tracked->serviceName = celix_properties_get(props, OSGI_FRAMEWORK_OBJECTCLASS, "Error");
+    tracked->serviceName = celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME, "Error");
 
     tracked->useCount = 1;
     celixThreadMutex_create(&tracked->mutex, NULL);
@@ -96,7 +96,7 @@ celix_status_t serviceTracker_create(bundle_context_pt context, const char * ser
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
         char *filter = NULL;
-        asprintf(&filter, "(%s=%s)", OSGI_FRAMEWORK_OBJECTCLASS, service);
+        asprintf(&filter, "(%s=%s)", CELIX_FRAMEWORK_SERVICE_NAME, service);
         serviceTracker_createWithFilter(context, filter, customizer, tracker);
         free(filter);
 	}
@@ -441,7 +441,7 @@ static void serviceTracker_checkAndInvokeSetService(void *handle, void *highestS
         //no services available anymore -> unset == call with NULL
         update = true;
     } else {
-        svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
+        svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     }
     if (svcId >= 0) {
         celixThreadMutex_lock(&tracker->mutex);

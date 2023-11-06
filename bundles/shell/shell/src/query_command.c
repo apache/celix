@@ -186,8 +186,8 @@ bool queryCommand_execute(void *_ptr, const char *command_line_str, FILE *sout, 
     char *sub_str = NULL;
     char *save_ptr = NULL;
 
-    strtok_r(commandLine, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-    sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+    strtok_r(commandLine, CELIX_SHELL_COMMAND_SEPARATOR, &save_ptr);
+    sub_str = strtok_r(NULL, CELIX_SHELL_COMMAND_SEPARATOR, &save_ptr);
     while (sub_str != NULL) {
         if (strcmp(sub_str, "-v") == 0) {
             opts.verbose = true;
@@ -221,7 +221,7 @@ bool queryCommand_execute(void *_ptr, const char *command_line_str, FILE *sout, 
 
             }
         }
-        sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+        sub_str = strtok_r(NULL, CELIX_SHELL_COMMAND_SEPARATOR, &save_ptr);
     }
 
     free(commandLine);

@@ -15,6 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cosgi.auto.start.1=@rsa_bundle_file@ @calc_bundle_file@
+CELIX_AUTO_START_1=@rsa_bundle_file@ @calc_bundle_file@
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-org.osgi.framework.storage.clean=onFirstInit
+CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE=true

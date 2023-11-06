@@ -68,7 +68,7 @@ celix_status_t bnd_start(struct activator *act, celix_bundle_context_t *ctx) {
     celix_properties_set(p, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_ID_PROPERTY, "20");
     celix_properties_set(p, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_FQN_PROPERTY, MSG_NAME);
     celix_properties_set(p, PUBSUB_MESSAGE_SERIALIZATION_SERVICE_MSG_VERSION_PROPERTY, "1.0.0");
-    celix_properties_setLong(p, OSGI_FRAMEWORK_SERVICE_RANKING, 20);
+    celix_properties_setLong(p, CELIX_FRAMEWORK_SERVICE_RANKING, 20);
     celix_service_registration_options_t opts;
     opts.svc = &act->svc;
     opts.properties = p;

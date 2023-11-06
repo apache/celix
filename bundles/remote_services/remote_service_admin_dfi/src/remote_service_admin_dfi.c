@@ -611,7 +611,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
         service_reference_pt reference = NULL;
         char filter[256];
 
-        snprintf(filter, 256, "(%s=%s)", (char *) OSGI_FRAMEWORK_SERVICE_ID, serviceId);
+        snprintf(filter, 256, "(%s=%s)", (char *) CELIX_FRAMEWORK_SERVICE_ID, serviceId);
 
         status = bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
 
@@ -638,7 +638,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
         const char *provided = NULL;
         if (status == CELIX_SUCCESS) {
             serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
-            serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &provided);
+            serviceReference_getProperty(reference, (char *) CELIX_FRAMEWORK_SERVICE_NAME, &provided);
 
             if (exports == NULL || provided == NULL || strcmp(exports, provided) != 0) {
                 celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_WARNING, "RSA: No Services to export.");
@@ -740,7 +740,7 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS
             && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0
             && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_CONFIGS) != 0
-            && strcmp(key, (char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
+            && strcmp(key, (char*) CELIX_FRAMEWORK_SERVICE_NAME) != 0) {
             celix_properties_set(endpointProperties, key, value);
         }
     }
@@ -759,9 +759,9 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     char endpoint_uuid[37];
     uuid_unparse_lower(endpoint_uid, endpoint_uuid);
 
-    bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+    bundleContext_getProperty(admin->context, CELIX_FRAMEWORK_UUID, &uuid);
     celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
-    celix_properties_set(endpointProperties, OSGI_FRAMEWORK_OBJECTCLASS, interface);
+    celix_properties_set(endpointProperties, CELIX_FRAMEWORK_SERVICE_NAME, interface);
     celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
     celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
     celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED, "true");

@@ -127,7 +127,7 @@ celix_status_t exportRegistration_createEndpointTracker(export_registration_t *r
 	if (status == CELIX_SUCCESS) {
 		char filter[512];
 
-		snprintf(filter, 512, "(&(%s=%s)(remote.interface=%s))", (char*) OSGI_FRAMEWORK_OBJECTCLASS, (char*) OSGI_RSA_REMOTE_ENDPOINT, registration->endpointDescription->serviceName);
+		snprintf(filter, 512, "(&(%s=%s)(remote.interface=%s))", (char*) CELIX_FRAMEWORK_SERVICE_NAME, (char*) OSGI_RSA_REMOTE_ENDPOINT, registration->endpointDescription->serviceName);
 		status = serviceTracker_createWithFilter(registration->context, filter, customizer, tracker);
 	}
 

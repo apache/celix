@@ -142,7 +142,7 @@ typedef struct rsa_dfi_exception_test_service {
         serverSvcInterceptor->preExportCall = serverServiceInterceptor_preExportCall;
         serverSvcInterceptor->postExportCall = serverServiceInterceptor_postExportCall;
         celix_properties_t *svcInterceptorProps = celix_properties_create();
-        celix_properties_setLong(svcInterceptorProps, OSGI_FRAMEWORK_SERVICE_RANKING, 10);
+        celix_properties_setLong(svcInterceptorProps, CELIX_FRAMEWORK_SERVICE_RANKING, 10);
         celix_service_registration_options_t svcInterceptorOpts{};
         svcInterceptorOpts.svc = serverSvcInterceptor;
         svcInterceptorOpts.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
@@ -158,7 +158,7 @@ typedef struct rsa_dfi_exception_test_service {
         clientSvcInterceptor->preExportCall = clientServiceInterceptor_preExportCall;
         clientSvcInterceptor->postExportCall = clientServiceInterceptor_postExportCall;
         celix_properties_t *clientInterceptorProps = celix_properties_create();
-        celix_properties_setLong(clientInterceptorProps, OSGI_FRAMEWORK_SERVICE_RANKING, 10);
+        celix_properties_setLong(clientInterceptorProps, CELIX_FRAMEWORK_SERVICE_RANKING, 10);
         celix_service_registration_options_t clientInterceptorOpts{};
         clientInterceptorOpts.svc = clientSvcInterceptor;
         clientInterceptorOpts.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;

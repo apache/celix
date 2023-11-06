@@ -38,7 +38,7 @@ struct publisherActivator {
 };
 
 static int pub_start(struct publisherActivator *act, celix_bundle_context_t *ctx) {
-    const char *fwUUID = celix_bundleContext_getProperty(ctx,OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    const char *fwUUID = celix_bundleContext_getProperty(ctx,CELIX_FRAMEWORK_UUID, NULL);
     if (fwUUID == NULL) {
         printf("PUBLISHER: Cannot retrieve fwUUID.\n");
         return CELIX_INVALID_BUNDLE_CONTEXT;

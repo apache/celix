@@ -211,7 +211,7 @@ celix_status_t managedServiceTracker_addingService(void * handle, service_refere
 
     // (1) reference.getPid
 
-    status = serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_PID, &pid);
+    status = serviceReference_getProperty(reference, "service.pid", &pid);
     if (status != CELIX_SUCCESS || pid == NULL) {
         *service = NULL;
         printf(" [ ERROR ]: Tracker - PID is NULL \n");
@@ -286,7 +286,7 @@ celix_status_t managedServiceTracker_removedService(void * handle, service_refer
     bundle_context_pt context;
 
 
-    status = serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_PID, &pid);
+    status = serviceReference_getProperty(reference, "service.pid", &pid);
     if (status != CELIX_SUCCESS || pid == NULL){
 	return CELIX_ILLEGAL_ARGUMENT;
     }

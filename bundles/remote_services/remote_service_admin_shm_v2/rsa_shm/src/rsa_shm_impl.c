@@ -114,7 +114,7 @@ celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t
     celix_auto(celix_service_registration_guard_t) reg =
         celix_serviceRegistrationGuard_init(context, ad->reqSenderSvcId);
 
-    const char *fwUuid = celix_bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    const char *fwUuid = celix_bundleContext_getProperty(context, CELIX_FRAMEWORK_UUID, NULL);
     if (fwUuid == NULL) {
         celix_logHelper_error(logHelper,"Error Getting cfw uuid for shm rsa admin.");
         return CELIX_BUNDLE_EXCEPTION;
@@ -232,8 +232,8 @@ static void rsaShm_overlayProperties(celix_properties_t *additionalProperties, c
     /*The property keys of a service are case-insensitive,while the property keys of the specified additional properties map are case sensitive.
      * A property key in the additional properties map must therefore override any case variant property key in the properties of the specified Service Reference.*/
     CELIX_PROPERTIES_ITERATE(additionalProperties, additionalPropIter) {
-        if (strcmp(additionalPropIter.key,(char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0
-                && strcmp(additionalPropIter.key,(char*) OSGI_FRAMEWORK_SERVICE_ID) != 0) {
+        if (strcmp(additionalPropIter.key,(char*) CELIX_FRAMEWORK_SERVICE_NAME) != 0
+                && strcmp(additionalPropIter.key,(char*) CELIX_FRAMEWORK_SERVICE_ID) != 0) {
             bool propKeyCaseEqual = false;
 
             CELIX_PROPERTIES_ITERATE(serviceProperties, servicePropIter) {
@@ -291,7 +291,7 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
     celix_array_list_t *references = NULL;
     service_reference_pt reference = NULL;
     char filter[32] = {0};// It is longer than the size of "service.id" + serviceId
-    snprintf(filter, sizeof(filter), "(%s=%s)", (char *) OSGI_FRAMEWORK_SERVICE_ID, serviceId);
+    snprintf(filter, sizeof(filter), "(%s=%s)", (char *) CELIX_FRAMEWORK_SERVICE_ID, serviceId);
     status = bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
     if (status != CELIX_SUCCESS) {
        celix_logHelper_error(admin->logHelper,"Error getting reference for service id %s.", serviceId);
@@ -331,9 +331,9 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
     celix_autoptr(celix_array_list_t) registrations = NULL;
     if (rsaShm_isConfigTypeMatched(exportedProperties)) {
         const char *exportsProp = celix_properties_get(exportedProperties, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, NULL);
-        const char *providedProp = celix_properties_get(exportedProperties, (char *) OSGI_FRAMEWORK_OBJECTCLASS, NULL);
+        const char *providedProp = celix_properties_get(exportedProperties, (char *) CELIX_FRAMEWORK_SERVICE_NAME, NULL);
         if (exportsProp == NULL  || providedProp == NULL) {
-            celix_logHelper_error(admin->logHelper, "Error exporting service %s. Missing property %s or %s.", serviceId, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, OSGI_FRAMEWORK_OBJECTCLASS);
+            celix_logHelper_error(admin->logHelper, "Error exporting service %s. Missing property %s or %s.", serviceId, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, CELIX_FRAMEWORK_SERVICE_NAME);
             return CELIX_ILLEGAL_STATE;
         }
         celix_autofree char *exports = celix_utils_trim(exportsProp);
@@ -490,25 +490,25 @@ static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
     assert(description != NULL);
 
     celix_autoptr(celix_properties_t) endpointProperties = celix_properties_copy(exportedProperties);
-    celix_properties_unset(endpointProperties,OSGI_FRAMEWORK_OBJECTCLASS);
+    celix_properties_unset(endpointProperties,CELIX_FRAMEWORK_SERVICE_NAME);
     celix_properties_unset(endpointProperties,OSGI_RSA_SERVICE_EXPORTED_INTERFACES);
     celix_properties_unset(endpointProperties,OSGI_RSA_SERVICE_EXPORTED_CONFIGS);
-    celix_properties_unset(endpointProperties, OSGI_FRAMEWORK_SERVICE_ID);
+    celix_properties_unset(endpointProperties, CELIX_FRAMEWORK_SERVICE_ID);
 
-    long serviceId = celix_properties_getAsLong(exportedProperties, OSGI_FRAMEWORK_SERVICE_ID, -1);
+    long serviceId = celix_properties_getAsLong(exportedProperties, CELIX_FRAMEWORK_SERVICE_ID, -1);
 
     uuid_t endpoint_uid;
     uuid_generate(endpoint_uid);
     char endpoint_uuid[37];
     uuid_unparse_lower(endpoint_uid, endpoint_uuid);
 
-    const char *uuid = celix_bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    const char *uuid = celix_bundleContext_getProperty(admin->context, CELIX_FRAMEWORK_UUID, NULL);
     if (uuid == NULL) {
         celix_logHelper_error(admin->logHelper, "Cannot get framework uuid");
         return CELIX_FRAMEWORK_EXCEPTION;
     }
     celix_properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
-    celix_properties_set(endpointProperties, (char*) OSGI_FRAMEWORK_OBJECTCLASS, interface);
+    celix_properties_set(endpointProperties, (char*) CELIX_FRAMEWORK_SERVICE_NAME, interface);
     celix_properties_setLong(endpointProperties, (char*) OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
     celix_properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
     celix_properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED, "true");
