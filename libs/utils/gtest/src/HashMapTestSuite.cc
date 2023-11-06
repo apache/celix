@@ -615,11 +615,15 @@ TEST_F(HashMapTestSuite, StoreKeysWeaklyTest) {
         free(key);
     };
     auto* sMap = celix_stringHashMap_createWithOptions(&opts);
-    EXPECT_FALSE(celix_stringHashMap_putLong(sMap, celix_utils_strdup("key1"), 1)); // new key -> takes ownership
-    EXPECT_TRUE(celix_stringHashMap_putLong(sMap, "key1", 2));                      // replace key -> takes no ownership
+    EXPECT_FALSE(celix_stringHashMap_hasKey(sMap, "key1"));
+    EXPECT_EQ(CELIX_SUCCESS, celix_stringHashMap_putLong(sMap, celix_utils_strdup("key1"), 1)); // new key -> takes ownership
+    EXPECT_TRUE(celix_stringHashMap_hasKey(sMap, "key1"));
+    EXPECT_EQ(CELIX_SUCCESS, celix_stringHashMap_putLong(sMap, "key1", 2)); // replace key -> takes no ownership
 
-    EXPECT_FALSE(celix_stringHashMap_putLong(sMap, celix_utils_strdup("key2"), 3)); // new key -> takes ownership
-    EXPECT_TRUE(celix_stringHashMap_putLong(sMap, "key2", 4));                      // replace key -> takes no ownership
+    EXPECT_FALSE(celix_stringHashMap_hasKey(sMap, "key2"));
+    EXPECT_EQ(CELIX_SUCCESS, celix_stringHashMap_putLong(sMap, celix_utils_strdup("key2"), 3)); // new key -> takes ownership
+    EXPECT_TRUE(celix_stringHashMap_hasKey(sMap, "key2"));
+    EXPECT_EQ(CELIX_SUCCESS, celix_stringHashMap_putLong(sMap, "key2", 4)); // replace key -> takes no ownership
     celix_stringHashMap_remove(sMap, "key1");
 
     celix_stringHashMap_destroy(sMap);
@@ -639,6 +643,9 @@ TEST_F(HashMapTestSuite, StringHashMapEqualsTest) {
     celix_autoptr(celix_string_hash_map_t) map1 = celix_stringHashMap_create();
     celix_autoptr(celix_string_hash_map_t) map2 = celix_stringHashMap_create();
     EXPECT_TRUE(celix_stringHashMap_equals(map1, map2));
+    EXPECT_FALSE(celix_stringHashMap_equals(map1, nullptr));
+    EXPECT_FALSE(celix_stringHashMap_equals(nullptr, map2));
+    EXPECT_TRUE(celix_stringHashMap_equals(nullptr, nullptr));
 
     celix_stringHashMap_putLong(map1, "key1", 42);
     celix_stringHashMap_putBool(map1, "key2", true);
@@ -657,6 +664,9 @@ TEST_F(HashMapTestSuite, LongHashMapEqualsTest) {
     celix_autoptr(celix_long_hash_map_t) map1 = celix_longHashMap_create();
     celix_autoptr(celix_long_hash_map_t) map2 = celix_longHashMap_create();
     EXPECT_TRUE(celix_longHashMap_equals(map1, map2));
+    EXPECT_FALSE(celix_longHashMap_equals(map1, nullptr));
+    EXPECT_FALSE(celix_longHashMap_equals(nullptr, map2));
+    EXPECT_TRUE(celix_longHashMap_equals(nullptr, nullptr));
 
     celix_longHashMap_putLong(map1, 1, 42);
     celix_longHashMap_putBool(map1, 2, true);

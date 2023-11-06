@@ -592,18 +592,14 @@ void celix_longHashMap_clear(celix_long_hash_map_t* map) {
 }
 
 static bool celix_hashMap_equals(const celix_hash_map_t* map1, const celix_hash_map_t* map2) {
-    if (map1 == NULL && map2 == NULL) {
-        return true;
-    }
-    if (map1 == NULL || map2 == NULL) {
-            return false;
-    }
     if (map1->size != map2->size) {
         return false;
     }
     for (celix_hash_map_entry_t* entry = celix_hashMap_firstEntry(map1); entry != NULL; entry = celix_hashMap_nextEntry(map1, entry)) {
-        void* value = celix_hashMap_get(map2, entry->key.strKey, entry->key.longKey);
-        if (value == NULL || memcmp(&entry->value, value, sizeof(entry->value)) != 0) {
+        celix_hash_map_entry_t* entryMap2 = celix_hashMap_getEntry(map2, entry->key.strKey, entry->key.longKey);
+
+        //note using memcmp, so for void* values the pointer value is compared, not the value itself.
+        if (entryMap2 == NULL || memcmp(&entryMap2->value, &entry->value, sizeof(entryMap2->value)) != 0) {
             return false;
         }
     }
@@ -611,10 +607,25 @@ static bool celix_hashMap_equals(const celix_hash_map_t* map1, const celix_hash_
 }
 
 bool celix_stringHashMap_equals(const celix_string_hash_map_t* map1, const celix_string_hash_map_t* map2) {
+    if (map1 == NULL && map2 == NULL) {
+        return true;
+    }
+    if (map1 == NULL || map2 == NULL) {
+        return false;
+    }
     return celix_hashMap_equals(&map1->genericMap, &map2->genericMap);
 }
 
 bool celix_longHashMap_equals(const celix_long_hash_map_t* map1, const celix_long_hash_map_t* map2) {
+    if (map1 == NULL && map2 == NULL) {
+        return true;
+    }
+    if (map1 == NULL || map2 == NULL) {
+        return false;
+    }
+    if (map1->genericMap.size != map2->genericMap.size) {
+        return false;
+    }
     return celix_hashMap_equals(&map1->genericMap, &map2->genericMap);
 }
 

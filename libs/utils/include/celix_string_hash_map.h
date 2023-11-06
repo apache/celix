@@ -319,6 +319,8 @@ CELIX_UTILS_EXPORT void celix_stringHashMap_clear(celix_string_hash_map_t* map);
  * Equals means that both maps have the same number of entries and that all entries in the first map
  * are also present in the second map and have the same value.
  *
+ * The value are compared using memcpy, so for pointer values the pointer value is compared and not the value itself.
+ *
  * @param[in] map1 The first map to compare.
  * @param[in] map2 The second map to compare.
  * @return true if the maps are equal, false otherwise.
@@ -358,6 +360,8 @@ CELIX_UTILS_EXPORT void celix_stringHashMapIterator_next(celix_string_hash_map_i
 
 /**
  * @brief Compares two celix_string_hash_map_iterator_t objects for equality.
+ *
+ * The value are compared using memcpy, so for pointer values the pointer value is compared and not the value itself.
  *
  * @param[in] iterator The first iterator to compare.
  * @param[in] other The second iterator to compare.
