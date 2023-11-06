@@ -21,6 +21,7 @@
 #include <celix_framework.h>
 #include <celix_framework_factory.h>
 #include <celix_properties.h>
+#include <celix_constants.h>
 #include <stddef.h>
 
 int main() {
@@ -30,8 +31,8 @@ int main() {
 
     properties = celix_properties_create();
     celix_properties_setBool(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", true);
-    celix_properties_setBool(properties, "org.osgi.framework.storage.clean", true);
-    celix_properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
+    celix_properties_setBool(properties, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, true);
+    celix_properties_set(properties, CELIX_FRAMEWORK_CACHE_DIR, ".cacheBundleContextTestFramework");
 
     fw = celix_frameworkFactory_createFramework(properties);
     ctx = celix_framework_getFrameworkContext(fw);

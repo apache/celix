@@ -149,7 +149,7 @@ static celix_status_t endpointDescriptorWriter_writeEndpoint(endpoint_descriptor
             xmlTextWriterStartElement(writer->writer, PROPERTY);
             xmlTextWriterWriteAttribute(writer->writer, NAME, propertyName);
 
-            if (strcmp(OSGI_FRAMEWORK_OBJECTCLASS, (char*) propertyName) == 0) {
+            if (strcmp(CELIX_FRAMEWORK_SERVICE_NAME, (char*) propertyName) == 0) {
             	// objectClass *must* be represented as array of string values...
             	endpointDescriptorWriter_writeArrayValue(writer->writer, propertyValue);
             } else if (strcmp(OSGI_RSA_ENDPOINT_SERVICE_ID, (char*) propertyName) == 0) {

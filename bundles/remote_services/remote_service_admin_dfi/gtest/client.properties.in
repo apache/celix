@@ -1,7 +1,7 @@
-cosgi.auto.start.1=@rsa_bundle_file@ @discovery_bundle_file@ @topology_manager_bundle_file@ @tst_bundle_file@
+CELIX_AUTO_START_1=@rsa_bundle_file@ @discovery_bundle_file@ @topology_manager_bundle_file@ @tst_bundle_file@
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-org.osgi.framework.storage.clean=onFirstInit
-org.osgi.framework.storage=.cacheClient
+CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE=true
+CELIX_FRAMEWORK_CACHE_DIR=.cacheClient
 
 DISCOVERY_CFG_POLL_INTERVAL=1
 DISCOVERY_CFG_POLL_TIMEOUT=5

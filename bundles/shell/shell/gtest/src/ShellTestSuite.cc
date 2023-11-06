@@ -39,7 +39,7 @@ public:
     static std::shared_ptr<celix_bundle_context_t> createFrameworkContext() {
         auto properties = celix_properties_create();
         celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
-        celix_properties_set(properties, "org.osgi.framework.storage", ".cacheShellTestSuite");
+        celix_properties_set(properties, CELIX_FRAMEWORK_CACHE_DIR, ".cacheShellTestSuite");
         celix_properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
 
         //to ensure "query 0" is still a test case for am empty result.

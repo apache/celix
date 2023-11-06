@@ -27,12 +27,13 @@
 #include "celix_framework_factory.h"
 #include "celix_log_service.h"
 #include "celix_log_constants.h"
+#include "celix_constants.h"
 
 class SyslogWriterTestSuite : public ::testing::Test {
 public:
     SyslogWriterTestSuite() {
         auto* properties = celix_properties_create();
-        celix_properties_set(properties, "org.osgi.framework.storage", ".cacheSyslogWriterTestSuite");
+        celix_properties_set(properties, CELIX_FRAMEWORK_CACHE_DIR, ".cacheSyslogWriterTestSuite");
         celix_properties_set(properties, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, "trace");
 
 

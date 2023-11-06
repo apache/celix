@@ -1015,7 +1015,7 @@ bool celix_bundleContext_useServiceWithId(
     celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
 
     char filter[64];
-    snprintf(filter, 64, "(%s=%li)", OSGI_FRAMEWORK_SERVICE_ID, serviceId);
+    snprintf(filter, 64, "(%s=%li)", CELIX_FRAMEWORK_SERVICE_ID, serviceId);
 
     opts.filter.serviceName = serviceName;
     opts.filter.filter = filter;
@@ -1396,8 +1396,8 @@ static celix_status_t bundleContext_callServicedTrackerTrackerCallback(void *han
             memset(&trkInfo, 0, sizeof(trkInfo));
             trkInfo.bundleId = celix_bundle_getId(bnd);
             trkInfo.filter = filter;
-            trkInfo.serviceName = celix_filter_findAttribute(filter, OSGI_FRAMEWORK_OBJECTCLASS);
-            const char *filterSvcName = celix_filter_findAttribute(filter, OSGI_FRAMEWORK_OBJECTCLASS);
+            trkInfo.serviceName = celix_filter_findAttribute(filter, CELIX_FRAMEWORK_SERVICE_NAME);
+            const char *filterSvcName = celix_filter_findAttribute(filter, CELIX_FRAMEWORK_SERVICE_NAME);
 
             bool match = entry->serviceName == NULL || (filterSvcName != NULL && strncmp(filterSvcName, entry->serviceName, 1024*1024) == 0);
 

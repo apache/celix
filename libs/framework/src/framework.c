@@ -247,7 +247,7 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     uuid_t uid;
     uuid_generate(uid);
     uuid_unparse(uid, uuid);
-    properties_set(framework->configurationMap, (char*) OSGI_FRAMEWORK_FRAMEWORK_UUID, uuid);
+    celix_properties_set(framework->configurationMap, CELIX_FRAMEWORK_UUID, uuid);
 
     //setup framework logger
     const char* logStr = celix_framework_getConfigProperty(framework, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_DEFAULT_VALUE, NULL);
@@ -487,15 +487,10 @@ celix_status_t framework_start(celix_framework_t* framework) {
 
 static celix_status_t framework_autoStartConfiguredBundles(celix_framework_t* fw) {
     celix_status_t status = CELIX_SUCCESS;
-    const char* const cosgiKeys[] = {"cosgi.auto.start.0","cosgi.auto.start.1","cosgi.auto.start.2","cosgi.auto.start.3","cosgi.auto.start.4","cosgi.auto.start.5","cosgi.auto.start.6", NULL};
     const char* const celixKeys[] = {CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3, CELIX_AUTO_START_4, CELIX_AUTO_START_5, CELIX_AUTO_START_6, NULL};
-    CELIX_BUILD_ASSERT(sizeof(*cosgiKeys) == sizeof(*celixKeys));
     celix_array_list_t *installedBundles = celix_arrayList_create();
     for (int i = 0; celixKeys[i] != NULL; ++i) {
         const char *autoStart = celix_framework_getConfigProperty(fw, celixKeys[i], NULL, NULL);
-        if (autoStart == NULL) {
-            autoStart = celix_framework_getConfigProperty(fw, cosgiKeys[i], NULL, NULL);
-        }
         if (autoStart != NULL) {
             if (framework_autoInstallConfiguredBundlesForList(fw, autoStart, installedBundles) != CELIX_SUCCESS) {
                 status = CELIX_BUNDLE_EXCEPTION;
@@ -827,7 +822,7 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
             status = CELIX_DO_IF(status, serviceReference_getServiceRegistration(ref, &reg));
             status = CELIX_DO_IF(status, serviceRegistration_getProperties(reg, &props));
             if (status == CELIX_SUCCESS) {
-                serviceNameObjectClass = properties_get(props, OSGI_FRAMEWORK_OBJECTCLASS);
+                serviceNameObjectClass = properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME);
                 if (!serviceReference_isAssignableTo(ref, bundle, serviceNameObjectClass)) {
                     serviceReference_release(ref, NULL);
                     arrayList_remove(*references, refIdx);
@@ -1839,7 +1834,7 @@ bool celix_framework_isCurrentThreadTheEventLoop(framework_t* fw) {
 
 const char* celix_framework_getUUID(const celix_framework_t *fw) {
     if (fw != NULL) {
-        return celix_properties_get(fw->configurationMap, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
+        return celix_properties_get(fw->configurationMap, CELIX_FRAMEWORK_UUID, NULL);
     }
     return NULL;
 }

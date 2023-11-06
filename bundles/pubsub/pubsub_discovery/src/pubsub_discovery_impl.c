@@ -83,7 +83,7 @@ pubsub_discovery_t* pubsub_discovery_create(celix_bundle_context_t *context, cel
     disc->ttlForEntries = (int)ttl;
     disc->sleepInsecBetweenTTLRefresh = (int)(((float)ttl)/2.0);
     disc->pubsubPath = celix_bundleContext_getProperty(context, PUBSUB_DISCOVERY_SERVER_PATH_KEY, PUBSUB_DISCOVERY_SERVER_PATH_DEFAULT);
-    disc->fwUUID = celix_bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    disc->fwUUID = celix_bundleContext_getProperty(context, CELIX_FRAMEWORK_UUID, NULL);
 
     return disc;
 }
@@ -359,7 +359,7 @@ void pubsub_discovery_discoveredEndpointsListenerAdded(void *handle, void *svc, 
     pubsub_discovery_t *disc = handle;
     pubsub_discovered_endpoint_listener_t *listener = svc;
 
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
     celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);
     hashMap_put(disc->discoveredEndpointsListeners, (void*)svcId, listener);
     celixThreadMutex_unlock(&disc->discoveredEndpointsListenersMutex);
@@ -376,7 +376,7 @@ void pubsub_discovery_discoveredEndpointsListenerAdded(void *handle, void *svc, 
 void pubsub_discovery_discoveredEndpointsListenerRemoved(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd) {
     pubsub_discovery_t *disc = handle;
 
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
     celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);
     hashMap_remove(disc->discoveredEndpointsListeners, (void*)svcId);
     celixThreadMutex_unlock(&disc->discoveredEndpointsListenersMutex);

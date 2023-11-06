@@ -44,8 +44,8 @@ public:
     CelixBundleContextServicesTestSuite() {
         properties = celix_properties_create();
         celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
-        celix_properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
-        celix_properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
+        celix_properties_setBool(properties, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, true);
+        celix_properties_set(properties, CELIX_FRAMEWORK_CACHE_DIR, ".cacheBundleContextTestFramework");
         celix_properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
         celix_properties_set(properties, "CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED", "false");
         celix_properties_setLong(properties, CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE,  256); //ensure that the floodEventLoopTest overflows the static event queue size
@@ -1030,12 +1030,12 @@ TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerSetTest) {
 
     //register svc3 should lead to second set call
     properties_t *props3 = celix_properties_create();
-    celix_properties_set(props3, OSGI_FRAMEWORK_SERVICE_RANKING, "10");
+    celix_properties_set(props3, CELIX_FRAMEWORK_SERVICE_RANKING, "10");
     long svcId3 = celix_bundleContext_registerService(ctx, svc3, "NA", props3); //call 2
 
     //register svc4 should lead to no set (lower ranking)
     properties_t *props4 = celix_properties_create();
-    celix_properties_set(props4, OSGI_FRAMEWORK_SERVICE_RANKING, "10");
+    celix_properties_set(props4, CELIX_FRAMEWORK_SERVICE_RANKING, "10");
     long svcId4 = celix_bundleContext_registerService(ctx, svc4, "NA", props4); //no update
 
     //unregister svc3 should lead to set (new highest ranking)
@@ -1088,12 +1088,12 @@ TEST_F(CelixBundleContextServicesTestSuite, TrackerOfAllServicesSetTest) {
 
     //register svc3 should lead to second set call
     properties_t *props3 = celix_properties_create();
-    celix_properties_set(props3, OSGI_FRAMEWORK_SERVICE_RANKING, "10");
+    celix_properties_set(props3, CELIX_FRAMEWORK_SERVICE_RANKING, "10");
     long svcId3 = celix_bundleContext_registerService(ctx, svc3, "NA", props3); //call 2
 
     //register svc4 should lead to no set (lower ranking)
     properties_t *props4 = celix_properties_create();
-    celix_properties_set(props4, OSGI_FRAMEWORK_SERVICE_RANKING, "10");
+    celix_properties_set(props4, CELIX_FRAMEWORK_SERVICE_RANKING, "10");
     long svcId4 = celix_bundleContext_registerService(ctx, svc4, "NA", props4); //no update
 
     //unregister svc3 should lead to set (new highest ranking)

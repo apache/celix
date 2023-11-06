@@ -282,7 +282,7 @@ celix_status_t scope_getExportProperties(scope_pt scope, service_reference_pt re
 
         if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS) {
 //        		&& strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0
-//        		&& strcmp(key, (char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
+//        		&& strcmp(key, (char*) CELIX_FRAMEWORK_SERVICE_NAME) != 0) {
             celix_properties_set(serviceProperties, key, value);
         }
 

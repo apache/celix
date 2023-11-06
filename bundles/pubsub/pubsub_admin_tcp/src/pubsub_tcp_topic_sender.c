@@ -115,7 +115,7 @@ pubsub_tcp_topic_sender_t *pubsub_tcpTopicSender_create(
     sender->admin = admin;
     sender->protocolSvcId = protocolSvcId;
     sender->protocol = protocol;
-    const char *uuid = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    const char *uuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
     if (uuid != NULL) {
         uuid_parse(uuid, sender->fwUUID);
     }

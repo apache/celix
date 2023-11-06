@@ -35,7 +35,19 @@ limitations under the License.
 - C++17 string_view support is removed from the utils and framework lib.
 - Apache Celix CMake bundle functions without a celix_ prefix or infix are removed.
 - Apache Celix CMake support for creating docker images and creating runtimes dirs is removed.
-- Support and usage of "service.lang" service property is removed. 
+- Support and usage of "service.lang" service property is removed.
+- Rename of `CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR` config property to `CELIX_FRAMEWORK_CACHE_DIR`.
+- Rename of `OSGI_FRAMEWORK_FRAMEWORK_UUID` config property to `CELIX_FRAMEWORK_UUID`.
+- Support for OSGI_FRAMEWORK_* config properties are dropped. Use CELIX_FRAMEWORK_* instead. This includes: 
+  Note this includes the `OSGI_FRAMEWORK_FRAMEWORK_STORAGE` ("org.osgi.framework.storage") config property, 
+  which has been replaced with the `CELIX_FRAMEWORK_CACHE_DIR` config property. 
+  - The `OSGI_FRAMEWORK_OBJECTCLASS` ("objectClass") service property, replacement is `CELIX_FRAMEWORK_SERVICE_NAME`. 
+  - The `OSGI_FRAMEWORK_FRAMEWORK_STORAGE` ("org.osgi.framework.storage") config property, replacement is `CELIX_FRAMEWORK_CACHE_DIR`.
+  - The `CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME` ("org.osgi.framework.storage.clean") config property, replacement 
+    is `CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE`.
+  - The `OSGI_FRAMEWORK_UUID` ("org.osgi.framework.uuid") config property, replacement is `CELIX_FRAMEWORK_UUID`.
+- Removed support for bundle activator symbols without a `celix_` prefix.
+- Removed service property constant `CELIX_FRAMEWORK_SERVICE_PID`.
 
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 

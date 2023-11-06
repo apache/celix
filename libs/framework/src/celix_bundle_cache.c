@@ -67,51 +67,24 @@ static const char* bundleCache_progamName() {
 }
 
 static const char* celix_bundleCache_cacheDirPath(celix_framework_t* fw) {
-    bool found = false;
-    const char* cacheDir = celix_framework_getConfigProperty(fw,
-                                                             CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR,
-                                                             CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR_DEFAULT,
-                                                             &found);
-    if (!found) {
-        //falling back to old property
-        cacheDir = celix_framework_getConfigProperty(fw,
-                                                     OSGI_FRAMEWORK_FRAMEWORK_STORAGE,
-                                                     CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR_DEFAULT,
-                                                     NULL);
-    }
-    return cacheDir;
+    return celix_framework_getConfigProperty(fw,
+                                                             CELIX_FRAMEWORK_CACHE_DIR,
+                                                             CELIX_FRAMEWORK_CACHE_DIR_DEFAULT,
+                                                             NULL);
 }
 
 static bool celix_bundleCache_useTmpDir(celix_framework_t* fw) {
-    bool converted = false;
-    bool useTmp = celix_framework_getConfigPropertyAsBool(fw,
+    return celix_framework_getConfigPropertyAsBool(fw,
                                                           CELIX_FRAMEWORK_CACHE_USE_TMP_DIR,
                                                           CELIX_FRAMEWORK_CACHE_USE_TMP_DIR_DEFAULT,
-                                                          &converted);
-    if (!converted) {
-        //falling back to old property
-        useTmp = celix_framework_getConfigPropertyAsBool(fw,
-                                                         CELIX_FRAMEWORK_STORAGE_USE_TMP_DIR,
-                                                         CELIX_FRAMEWORK_CACHE_USE_TMP_DIR_DEFAULT,
-                                                         NULL);
-    }
-    return useTmp;
+                                                          NULL);
 }
 
 static bool celix_bundleCache_cleanOnCreate(celix_framework_t* fw) {
-    bool converted = false;
-    bool cleanOnCreate = celix_framework_getConfigPropertyAsBool(fw,
+    return celix_framework_getConfigPropertyAsBool(fw,
                                                                  CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE,
                                                                  CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE_DEFAULT,
-                                                                 &converted);
-    if (!converted) {
-        //falling back to old property
-        cleanOnCreate = celix_framework_getConfigPropertyAsBool(fw,
-                                                                CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME,
-                                                                CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE_DEFAULT,
-                                                                NULL);
-    }
-    return cleanOnCreate;
+                                                                 NULL);
 }
 
 celix_status_t celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cache_t** out) {
@@ -342,12 +315,8 @@ celix_bundleCache_createBundleArchivesForSpaceSeparatedList(celix_framework_t* f
 celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t* fw, bool logProgress) {
     celix_status_t status = CELIX_SUCCESS;
 
-    const char* const cosgiKeys[] = {"cosgi.auto.start.0", "cosgi.auto.start.1", "cosgi.auto.start.2",
-                                     "cosgi.auto.start.3", "cosgi.auto.start.4", "cosgi.auto.start.5",
-                                     "cosgi.auto.start.6", NULL};
     const char* const celixKeys[] = {CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3,
                                      CELIX_AUTO_START_4, CELIX_AUTO_START_5, CELIX_AUTO_START_6, NULL};
-    CELIX_BUILD_ASSERT(sizeof(*cosgiKeys) == sizeof(*celixKeys));
     long bndId = CELIX_FRAMEWORK_BUNDLE_ID + 1; //note cleaning cache, so starting bundle id at 1
 
     const char* errorStr = NULL;
@@ -363,9 +332,6 @@ celix_status_t celix_bundleCache_createBundleArchivesCache(celix_framework_t* fw
 
     for (int i = 0; celixKeys[i] != NULL; ++i) {
         const char* autoStart = celix_framework_getConfigProperty(fw, celixKeys[i], NULL, NULL);
-        if (autoStart == NULL) {
-            autoStart = celix_framework_getConfigProperty(fw, cosgiKeys[i], NULL, NULL);
-        }
         if (autoStart) {
             status = celix_bundleCache_createBundleArchivesForSpaceSeparatedList(fw, &bndId, autoStart, logProgress);
             if (status != CELIX_SUCCESS) {

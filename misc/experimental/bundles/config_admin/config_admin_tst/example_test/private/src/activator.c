@@ -149,7 +149,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 				configuration->configuration_getProperties(configuration->handle, &dictionary);
 				if (dictionary == NULL) {
 					dictionary = properties_create();
-					properties_set(dictionary, (char *) OSGI_FRAMEWORK_SERVICE_PID, pid);
+					properties_set(dictionary, (char *) CELIX_FRAMEWORK_SERVICE_PID, pid);
 					properties_set(dictionary, (char *) "type", (char*)"default_value");
 				}
 				// the service has to be registered with a properties/dictionary structure that at least contains a pid to assure it
