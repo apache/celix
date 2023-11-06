@@ -36,7 +36,7 @@ public:
     CxxBundleContextTestSuite() {
         auto* properties = celix_properties_create();
         celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
-        celix_properties_set(properties, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "onFirstInit");
+        celix_properties_setBool(properties, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, true);
         celix_properties_set(properties, "CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED", "false");
 
         auto* cfw = celix_frameworkFactory_createFramework(properties);
