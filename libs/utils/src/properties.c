@@ -99,7 +99,7 @@ void properties_store(properties_pt properties, const char* filename, const char
 celix_status_t properties_copy(properties_pt properties, properties_pt* out) {
     celix_properties_t* copy = celix_properties_copy(properties);
     *out = copy;
-    return copy == NULL ? CELIX_BUNDLE_EXCEPTION : CELIX_SUCCESS;
+    return copy == NULL ? CELIX_ENOMEM : CELIX_SUCCESS;
 }
 
 const char* properties_get(properties_pt properties, const char* key) {
@@ -133,7 +133,7 @@ static void updateBuffers(char** key, char** value, char** output, int outputPos
 }
 
 /**
- * Create a new string from the provided str by either using strup or storing the string the short properties
+ * Create a new string from the provided str by either using strdup or storing the string the short properties
  * optimization string buffer.
  */
 char* celix_properties_createString(celix_properties_t* properties, const char* str) {
