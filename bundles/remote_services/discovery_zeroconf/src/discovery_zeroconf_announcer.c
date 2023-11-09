@@ -352,6 +352,7 @@ static bool discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(discovery_zeroc
                 return false;
             }
             if (splitTxtRecord && TXTRecordGetLength(txtRecord) >= maxTxtLen - UINT8_MAX) {
+                celix_propertiesIterator_next(propIter);
                 break;
             }
         }
