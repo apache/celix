@@ -90,7 +90,7 @@ namespace celix {
     /**
      * @brief A collection of strings key values mainly used as meta data for registered services.
      *
-     * @note Provided `const char*` and `std::string_view` values must be null terminated strings.
+     * @note Provided `const char*` values must be null terminated strings.
      * @note Not thread safe.
      */
     class Properties {
@@ -498,18 +498,6 @@ namespace celix {
             }
             return result;
         }
-
-#ifdef CELIX_PROPERTIES_ALLOW_IMPLICIT_MAP_CAST
-        /**
-         * @brief cast the celix::Properties to a std::string, std::string map.
-         * @warning This method is added to ensure backwards compatibility with the celix::dm::Properties, but the
-         * use of this cast should be avoided.
-         * This method will eventually be removed.
-         */
-        operator std::map<std::string, std::string>() const {
-            return convertToMap();
-        }
-#endif
 
         /**
          * @brief Store the property set to the given file path.

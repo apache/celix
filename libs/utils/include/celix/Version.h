@@ -40,7 +40,9 @@ namespace celix {
     class Version {
     public:
 
-        ///@brief Constructs a new empty version with all components set to zero.
+        /**
+         * @brief Constructs a new empty version with all components set to zero.
+         */
         Version() :
             cVersion{createVersion(celix_version_createEmptyVersion())},
             qualifier{celix_version_getQualifier(cVersion.get())} {}
@@ -52,34 +54,40 @@ namespace celix {
          * @param micro The micro component of the version.
          * @param qualifier The qualifier string of the version.
          */
-#if __cplusplus >= 201703L //C++17 or higher
-        Version(int major, int minor, int micro, std::string_view qualifier = {}) :
-            cVersion{createVersion(celix_version_create(major, minor, micro, qualifier.empty() ? "" : qualifier.data()))},
-            qualifier{celix_version_getQualifier(cVersion.get())} {}
-#else
         explicit Version(int major, int minor, int micro, const std::string& qualifier = {}) :
             cVersion{createVersion(celix_version_create(major, minor, micro, qualifier.empty() ? "" : qualifier.c_str()))},
             qualifier{celix_version_getQualifier(cVersion.get())} {}
-#endif
 
-        ///@brief Move-constructs a new version from an existing one.
+        /**
+         * @brief Move-constructs a new version from an existing one.
+         */
         Version(Version&&) = default;
 
-        ///@brief Copy constructor for a Celix Version object.
+        /**
+         * @brief Copy constructor for a Celix Version object.
+         */
         Version(const Version& rhs) = default;
 
-        ///@brief Move assignment operator for the Celix Version class.
+        /**
+         *  @brief Move assignment operator for the Celix Version class.
+         */
         Version& operator=(Version&&) = default;
 
-        ///@brief Copy assignment operator for the Celix Version class.
+        /**
+         * @brief Copy assignment operator for the Celix Version class.
+         */
         Version& operator=(const Version& rhs) = default;
 
-        ///@brief Test whether two Version objects are equal.
+        /**
+         * @brief Test whether two Version objects are equal.
+         */
         bool operator==(const Version& rhs) const {
             return celix_version_compareTo(cVersion.get(), rhs.cVersion.get()) == 0;
         }
 
-        ///@brief Overload the < operator to compare two Version objects.
+        /**
+         * @brief Overload the < operator to compare two Version objects.
+         */
         bool operator<(const Version& rhs) const {
             return celix_version_compareTo(cVersion.get(), rhs.cVersion.get()) < 0;
         }
