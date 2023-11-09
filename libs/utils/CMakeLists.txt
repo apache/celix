@@ -91,10 +91,16 @@ if (UTILS)
             BASE_NAME "CELIX_UTILS"
             EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/utils/celix_utils_export.h")
     target_include_directories(utils PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/utils>)
+    target_include_directories(utils PRIVATE $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/src/utils>)
 
     #Configure celix_err_constant header file
     set(CELIX_ERR_BUFFER_SIZE 512 CACHE STRING "The size of the thread-specific buffer used for library error messages")
     configure_file("${CMAKE_CURRENT_LIST_DIR}/src/celix_err_constants.h.in" "${CMAKE_BINARY_DIR}/celix/gen/includes/utils/celix_err_constants.h" @ONLY)
+
+    #Configure celix_properties_constant (private) header file
+    set(CELIX_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE 128 CACHE STRING "The string optimization buffer size used for properties")
+    set(CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE 16 CACHE STRING "The entries optimization buffer size used for properties")
+    configure_file("${CMAKE_CURRENT_LIST_DIR}/src/celix_properties_constants.h.in" "${CMAKE_BINARY_DIR}/celix/gen/src/utils/celix_properties_constants.h" @ONLY)
 
     install(TARGETS utils EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils)
@@ -122,6 +128,7 @@ if (UTILS)
                 ${CMAKE_CURRENT_LIST_DIR}/include
                 ${MEMSTREAM_INCLUDE_DIR}
                 ${CMAKE_BINARY_DIR}/celix/gen/includes/utils
+                ${CMAKE_BINARY_DIR}/celix/gen/src/utils
                 src include_deprecated
                 )
         target_link_libraries(utils_cut PUBLIC ${UTILS_PUBLIC_DEPS} ${UTILS_PRIVATE_DEPS})

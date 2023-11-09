@@ -35,9 +35,7 @@
 #include "celix_utils.h"
 #include "celix_stdlib_cleanup.h"
 #include "celix_convert_utils.h"
-
-#define CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE 512
-#define CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE 16
+#include "celix_properties_constants.h"
 
 static const char* const CELIX_PROPERTIES_BOOL_TRUE_STRVAL = "true";
 static const char* const CELIX_PROPERTIES_BOOL_FALSE_STRVAL = "false";
@@ -53,7 +51,7 @@ struct celix_properties {
      * @note based on some small testing most services properties seem to max out at 11 entries.
      * So 16 (next factor 2 based value) seems like a good fit.
      */
-    char stringBuffer[CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE];
+    char stringBuffer[CELIX_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE];
 
     /**
      * The current string buffer index.
@@ -67,7 +65,7 @@ struct celix_properties {
      * @note based on some small testing most services properties seem to max around 300 bytes.
      * So 512 (next factor 2 based value) seems like a good fit.
      */
-    celix_properties_entry_t entriesBuffer[CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE];
+    celix_properties_entry_t entriesBuffer[CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE];
 
     /**
      * The current string buffer index.
@@ -141,7 +139,7 @@ char* celix_properties_createString(celix_properties_t* properties, const char* 
         return (char*)CELIX_PROPERTIES_EMPTY_STRVAL;
     }
     size_t len = strnlen(str, CELIX_UTILS_MAX_STRLEN) + 1;
-    size_t left = CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE - properties->currentStringBufferIndex;
+    size_t left = CELIX_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE - properties->currentStringBufferIndex;
     char* result;
     if (len < left) {
         memcpy(&properties->stringBuffer[properties->currentStringBufferIndex], str, len);
@@ -161,7 +159,7 @@ static void celix_properties_freeString(celix_properties_t* properties, char* st
         str == CELIX_PROPERTIES_EMPTY_STRVAL) {
         // str is static const char* const -> nop
     } else if (str >= properties->stringBuffer &&
-               str < (properties->stringBuffer + CELIX_SHORT_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE)) {
+               str < (properties->stringBuffer + CELIX_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE)) {
         // str is part of the properties string buffer -> nop
     } else {
         free(str);
@@ -231,7 +229,7 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
  */
 celix_properties_entry_t* celix_properties_allocEntry(celix_properties_t* properties) {
     celix_properties_entry_t* entry;
-    if (properties->currentEntriesBufferIndex < CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE) {
+    if (properties->currentEntriesBufferIndex < CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE) {
         entry = &properties->entriesBuffer[properties->currentEntriesBufferIndex++];
     } else {
         entry = malloc(sizeof(*entry));
@@ -274,7 +272,7 @@ static celix_properties_entry_t* celix_properties_createEntry(celix_properties_t
         celix_properties_fillEntry(properties, entry, strValue, longValue, doubleValue, boolValue, versionValue);
     if (status != CELIX_SUCCESS) {
         if (entry >= properties->entriesBuffer &&
-            entry <= (properties->entriesBuffer + CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE)) {
+            entry <= (properties->entriesBuffer + CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE)) {
             // entry is part of the properties entries buffer -> nop.
         } else {
             free(entry);
@@ -291,7 +289,7 @@ static void celix_properties_destroyEntry(celix_properties_t* properties, celix_
     }
 
     if (entry >= properties->entriesBuffer &&
-        entry <= (properties->entriesBuffer + CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE)) {
+        entry <= (properties->entriesBuffer + CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE)) {
         // entry is part of the properties entries buffer -> nop.
     } else {
         free(entry);
@@ -361,7 +359,7 @@ celix_properties_t* celix_properties_create() {
     if (props != NULL) {
         celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
         opts.storeKeysWeakly = true;
-        opts.initialCapacity = (unsigned int)ceil(CELIX_SHORT_PROPERTIES_OPTIMIZATION_ENTRIES_SIZE / 0.75);
+        opts.initialCapacity = (unsigned int)ceil(CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE / 0.75);
         opts.removedCallbackData = props;
         opts.removedCallback = celix_properties_removeEntryCallback;
         opts.removedKeyCallback = celix_properties_removeKeyCallback;

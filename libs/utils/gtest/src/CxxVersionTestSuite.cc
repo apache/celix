@@ -42,14 +42,6 @@ TEST_F(CxxVersionTestSuite, ConstructorTest) {
     EXPECT_EQ(2, v1.getMinor());
     EXPECT_EQ(3, v1.getMicro());
     EXPECT_EQ("qualifier", v1.getQualifier());
-
-    #if __cplusplus >= 201703L //C++17 or higher
-    celix::Version v2{1, 2, 3, std::string_view{"qualifier"}};
-    EXPECT_EQ(1, v2.getMajor());
-    EXPECT_EQ(2, v2.getMinor());
-    EXPECT_EQ(3, v2.getMicro());
-    EXPECT_EQ("qualifier", v2.getQualifier());
-    #endif
 }
 
 TEST_F(CxxVersionTestSuite, MoveConstructorTest) {

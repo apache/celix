@@ -25,6 +25,7 @@
 #include "celix_err.h"
 #include "celix_properties.h"
 #include "celix_properties_private.h"
+#include "celix_properties_constants.h"
 
 #include "celix_string_hash_map_ei.h"
 #include "celix_utils_ei.h"
@@ -45,11 +46,20 @@ class PropertiesErrorInjectionTestSuite : public ::testing::Test {
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
     }
 
+    /**
+     * Fills the optimization cache of the given properties object to ensure the next added entries will need
+     * allocation.
+     */
     void fillOptimizationCache(celix_properties_t* props) {
-        for (int i = 0; i < 50; ++i) {
+        int index = 0;
+        size_t written = 0;
+        size_t nrOfEntries = 0;
+        while (written < CELIX_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE ||
+               nrOfEntries++ < CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE) {
             const char* val = "1234567890";
             char key[10];
-            snprintf(key, sizeof(key), "key%i", i);
+            snprintf(key, sizeof(key), "key%i", index++);
+            written += strlen(key) + strlen(val) + 2;
             celix_properties_set(props, key, val);
         }
     }
