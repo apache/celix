@@ -425,7 +425,6 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
                     break;
                 }
                 TXTRecordDeallocate(&txtRecord);
-                celix_propertiesIterator_next(&propIter);
             }
         }
     }
