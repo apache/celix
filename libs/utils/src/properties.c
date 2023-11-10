@@ -35,7 +35,7 @@
 #include "celix_utils.h"
 #include "celix_stdlib_cleanup.h"
 #include "celix_convert_utils.h"
-#include "celix_properties_constants.h"
+#include "celix_utils_private_constants.h"
 
 static const char* const CELIX_PROPERTIES_BOOL_TRUE_STRVAL = "true";
 static const char* const CELIX_PROPERTIES_BOOL_FALSE_STRVAL = "false";

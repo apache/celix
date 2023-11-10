@@ -39,10 +39,7 @@
 static celix_status_t pubsubProtocol_addNetstringEntryToBuffer(char* buffer, size_t bufferSize, size_t* offsetInOut, const char* str) {
     size_t offset = *offsetInOut;
 
-    size_t strLen = strnlen(str, CELIX_UTILS_MAX_STRLEN);
-    if (strLen == CELIX_UTILS_MAX_STRLEN) {
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
+    size_t strLen = celix_utils_strlen(str);
 
     char strLenString[32]; //note the str needed to print the strLen of str.
     int written = snprintf(strLenString, sizeof(strLenString), "%zu", strLen);

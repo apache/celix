@@ -25,7 +25,7 @@
 #include "celix_err.h"
 #include "celix_properties.h"
 #include "celix_properties_private.h"
-#include "celix_properties_constants.h"
+#include "celix_utils_private_constants.h"
 
 #include "celix_string_hash_map_ei.h"
 #include "celix_utils_ei.h"

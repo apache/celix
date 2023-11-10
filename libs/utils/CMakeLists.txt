@@ -97,10 +97,11 @@ if (UTILS)
     set(CELIX_ERR_BUFFER_SIZE 512 CACHE STRING "The size of the thread-specific buffer used for library error messages")
     configure_file("${CMAKE_CURRENT_LIST_DIR}/src/celix_err_constants.h.in" "${CMAKE_BINARY_DIR}/celix/gen/includes/utils/celix_err_constants.h" @ONLY)
 
-    #Configure celix_properties_constant (private) header file
+    #Configure celix_utils_private_constants header file
+    set(CELIX_UTILS_MAX_STRLEN 1073741824 CACHE STRING "The maximum string length used for string util functions")
     set(CELIX_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE 128 CACHE STRING "The string optimization buffer size used for properties")
     set(CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE 16 CACHE STRING "The entries optimization buffer size used for properties")
-    configure_file("${CMAKE_CURRENT_LIST_DIR}/src/celix_properties_constants.h.in" "${CMAKE_BINARY_DIR}/celix/gen/src/utils/celix_properties_constants.h" @ONLY)
+    configure_file("${CMAKE_CURRENT_LIST_DIR}/src/celix_utils_private_constants.h.in" "${CMAKE_BINARY_DIR}/celix/gen/src/utils/celix_utils_private_constants.h" @ONLY)
 
     install(TARGETS utils EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils)

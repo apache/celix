@@ -102,11 +102,13 @@ class CelixConan(ConanFile):
     }
     options = {
         "celix_err_buffer_size": ["ANY"],
+        "celix_utils_max_strlen": ["ANY"],
         "celix_properties_optimization_string_buffer_size": ["ANY"],
         "celix_properties_optimization_entries_buffer_size": ["ANY"],
     }
     default_options = {
         "celix_err_buffer_size": "512",
+        "celix_utils_max_strlen": "1073741824",
         "celix_properties_optimization_string_buffer_size": "128",
         "celix_properties_optimization_entries_buffer_size": "16",
     }
@@ -136,6 +138,7 @@ class CelixConan(ConanFile):
             raise ConanInvalidConfiguration("Celix build_rsa_discovery_zeroconf is only supported for Linux")
 
         self.validate_config_option_is_positive_number("celix_err_buffer_size")
+        self.validate_config_option_is_positive_number("celix_utils_max_strlen")
         self.validate_config_option_is_positive_number("celix_properties_optimization_string_buffer_size")
         self.validate_config_option_is_positive_number("celix_properties_optimization_entries_buffer_size")
 

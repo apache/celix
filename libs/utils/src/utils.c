@@ -25,14 +25,12 @@
 
 #include "utils.h"
 #include "celix_utils.h"
-
+#include "celix_utils_private_constants.h"
 
 #ifdef __APPLE__
 #include "memstream/open_memstream.h"
 #else
 #include <stdio.h>
-#include <assert.h>
-
 #endif
 
 unsigned int utils_stringHash(const void* strPtr) {
@@ -84,7 +82,7 @@ char* celix_utils_makeCIdentifier(const char* s) {
     if (celix_utils_isStringNullOrEmpty(s)) {
         return NULL;
     }
-    size_t len = strnlen(s, CELIX_UTILS_MAX_STRLEN);
+    size_t len = celix_utils_strlen(s);
     char* ns = malloc(len + 2); //+2 for '\0' and an extra _ prefix if needed.
     int i = 0;
     if (isdigit(s[0])) {
@@ -165,7 +163,7 @@ bool utils_isStringEmptyOrNull(const char * const str) {
     bool empty = true;
     if (str != NULL) {
         int i;
-        for (i = 0; i < strnlen(str, 1024 * 1024); i += 1) {
+        for (i = 0; i < celix_utils_strlen(str); i += 1) {
             if (!isspace(str[i])) {
                 empty = false;
                 break;
@@ -315,6 +313,9 @@ char* celix_utils_strdup(const char *str) {
     }
 }
 
+size_t celix_utils_strlen(const char *str) {
+    return str ? strnlen(str, CELIX_UTILS_MAX_STRLEN) : 0;
+}
 
 void celix_utils_extractLocalNameAndNamespaceFromFullyQualifiedName(const char *fullyQualifiedName, const char *namespaceSeparator, char **outLocalName, char **outNamespace) {
     assert(namespaceSeparator != NULL);

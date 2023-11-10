@@ -17,8 +17,15 @@
  * under the License.
  */
 
-#ifndef CELIX_CELIX_PROPERTIES_CONSTANTS_H
-#define CELIX_CELIX_PROPERTIES_CONSTANTS_H
+#ifndef CELIX_UTILS_PRIVATE_CONSTANTS_H
+#define CELIX_UTILS_PRIVATE_CONSTANTS_H
+
+
+/**
+ * @brief The max string length used in celix_utils for Apache Celix variant functions for strlen, strcmp and
+ * strdup.
+ */
+#define CELIX_UTILS_MAX_STRLEN @CELIX_UTILS_MAX_STRLEN@
 
 /**
  * @brief The string optimization buffer size used in celix_properties so store some strings entries (keys and values)
@@ -32,4 +39,4 @@
 */
 #define CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE @CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE@
 
-#endif //CELIX_CELIX_ERR_CONSTANTS_H
+#endif //CELIX_UTILS_PRIVATE_CONSTANTS_H
