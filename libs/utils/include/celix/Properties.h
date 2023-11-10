@@ -248,6 +248,15 @@ namespace celix {
         }
 
         /**
+         * @brief Compare two properties objects for equality.
+         * @param rhs
+         * @return true if the properties are equal, false otherwise.
+         */
+        bool operator==(const Properties& rhs) const {
+            return celix_properties_equals(cProps.get(), rhs.cProps.get());
+        }
+
+        /**
          * @brief begin iterator
          */
         const_iterator begin() const noexcept {
