@@ -265,12 +265,16 @@ static celix_properties_entry_t* celix_properties_createEntry(celix_properties_t
                                                               celix_version_t* versionValue) {
     celix_properties_entry_t* entry = celix_properties_allocEntry(properties);
     if (entry == NULL) {
+        celix_err_pushf("Cannot allocate property entry");
+        celix_version_destroy(versionValue);
         return NULL;
     }
 
     celix_status_t status =
         celix_properties_fillEntry(properties, entry, strValue, longValue, doubleValue, boolValue, versionValue);
     if (status != CELIX_SUCCESS) {
+        celix_err_pushf("Cannot fill property entry");
+        celix_version_destroy(versionValue);
         if (entry >= properties->entriesBuffer &&
             entry <= (properties->entriesBuffer + CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE)) {
             // entry is part of the properties entries buffer -> nop.
@@ -308,11 +312,14 @@ static celix_status_t celix_properties_createAndSetEntry(celix_properties_t* pro
                                                          const bool* boolValue,
                                                          celix_version_t* versionValue) {
     if (!properties) {
+        celix_version_destroy(versionValue);
         return CELIX_SUCCESS; // silently ignore
     }
+
     if (!key) {
-        celix_err_push("Cannot set property with NULL key");
-        return CELIX_SUCCESS; // print error and ignore
+        celix_version_destroy(versionValue);
+        celix_err_pushf("Cannot set property with NULL key");
+        return CELIX_ILLEGAL_ARGUMENT;
     }
 
     celix_properties_entry_t* entry =
@@ -616,25 +623,37 @@ celix_status_t celix_properties_store(celix_properties_t* properties, const char
 
 celix_properties_t* celix_properties_copy(const celix_properties_t* properties) {
     celix_properties_t* copy = celix_properties_create();
-    if (properties == NULL) {
+
+    if (!copy) {
+        celix_err_push("Failed to create properties copy");
+        return NULL;
+    }
+
+    if (!properties) {
         return copy;
     }
 
     CELIX_PROPERTIES_ITERATE(properties, iter) {
+        celix_status_t status;
         if (iter.entry.valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
-            celix_properties_set(copy, iter.key, iter.entry.value);
+            status = celix_properties_set(copy, iter.key, iter.entry.value);
         } else if (iter.entry.valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG) {
-            celix_properties_setLong(copy, iter.key, iter.entry.typed.longValue);
+            status = celix_properties_setLong(copy, iter.key, iter.entry.typed.longValue);
         } else if (iter.entry.valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
-            celix_properties_setDouble(copy, iter.key, iter.entry.typed.doubleValue);
+            status = celix_properties_setDouble(copy, iter.key, iter.entry.typed.doubleValue);
         } else if (iter.entry.valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL) {
-            celix_properties_setBool(copy, iter.key, iter.entry.typed.boolValue);
+            status = celix_properties_setBool(copy, iter.key, iter.entry.typed.boolValue);
         } else /*version*/ {
             assert(iter.entry.valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION);
-            celix_properties_setVersion(copy, iter.key, iter.entry.typed.versionValue);
+            status = celix_properties_setVersion(copy, iter.key, iter.entry.typed.versionValue);
+        }
+        if (status != CELIX_SUCCESS) {
+            celix_err_pushf("Failed to copy property %s", iter.key);
+            celix_properties_destroy(copy);
+            return NULL;
         }
     }
-    return copy;
+    return celix_steal_ptr(copy);
 }
 
 celix_properties_value_type_e celix_properties_getType(const celix_properties_t* properties, const char* key) {
@@ -663,7 +682,13 @@ celix_status_t celix_properties_set(celix_properties_t* properties, const char* 
 }
 
 celix_status_t celix_properties_setWithoutCopy(celix_properties_t* properties, char* key, char* value) {
-    if (properties != NULL && key != NULL && value != NULL) {
+    if (properties) {
+        if (!key || !value) {
+            celix_err_push("Failed to set (without copy) property. Key or value is NULL.");
+            free(key);
+            free(value);
+            return CELIX_ILLEGAL_ARGUMENT;
+        }
         celix_properties_entry_t* entry = celix_properties_createEntryWithNoCopy(properties, value);
         if (!entry) {
             celix_err_push("Failed to create entry for property.");

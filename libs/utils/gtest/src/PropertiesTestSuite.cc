@@ -22,11 +22,15 @@
 #include "celix_properties.h"
 #include "celix_utils.h"
 #include "properties.h"
+#include "celix_err.h"
 
 using ::testing::MatchesRegex;
 
 class PropertiesTestSuite : public ::testing::Test {
 public:
+  PropertiesTestSuite() {
+      celix_err_resetErrors();
+  }
 };
 
 
@@ -648,4 +652,34 @@ TEST_F(PropertiesTestSuite, PropertiesEqualsTest) {
     celix_properties_setLong(prop1, "key5", 42);
     celix_properties_setDouble(prop2, "key5", 42.0);
     EXPECT_FALSE(celix_properties_equals(prop1, prop2)); //different types
+}
+
+TEST_F(PropertiesTestSuite, PropertiesNullArgumentsTest) {
+    //Silently ignore nullptr properties arguments for set* and copy functions
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_set(nullptr, "key", "value"));
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setLong(nullptr, "key", 1));
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setDouble(nullptr, "key", 1.0));
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setBool(nullptr, "key", true));
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setVersion(nullptr, "key", nullptr));
+    celix_autoptr(celix_properties_t) copy = celix_properties_copy(nullptr);
+    EXPECT_NE(nullptr, copy);
+}
+
+TEST_F(PropertiesTestSuite, InvalidArgumentsTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_autoptr(celix_version_t) version = celix_version_create(1,2,3, nullptr);
+
+    //Key cannot be nullptr and set functions should fail
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_set(props, nullptr, "value"));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_setLong(props, nullptr, 1));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_setDouble(props, nullptr, 1.0));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_setBool(props, nullptr, true));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_setVersion(props, nullptr, version));
+    EXPECT_EQ(5, celix_err_getErrorCount());
+
+    celix_err_resetErrors();
+    //Set without copy should fail if a key or value is nullptr
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_setWithoutCopy(props, nullptr, strdup("value")));
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_setWithoutCopy(props, strdup("key"), nullptr));
+    EXPECT_EQ(2, celix_err_getErrorCount());
 }

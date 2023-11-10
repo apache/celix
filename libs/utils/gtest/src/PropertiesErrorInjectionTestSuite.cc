@@ -37,13 +37,15 @@ class PropertiesErrorInjectionTestSuite : public ::testing::Test {
   public:
     PropertiesErrorInjectionTestSuite() = default;
     ~PropertiesErrorInjectionTestSuite() override {
+        celix_err_resetErrors();
         celix_ei_expect_malloc(nullptr, 0, nullptr);
-        celix_ei_expect_celix_stringHashMap_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_stringHashMap_createWithOptions(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_fopen(nullptr, 0, nullptr);
         celix_ei_expect_fputc(nullptr, 0, 0);
         celix_ei_expect_fseek(nullptr, 0, 0);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
+        celix_ei_expect_celix_stringHashMap_put(nullptr, 0, 0);
     }
 
     /**
@@ -77,10 +79,26 @@ TEST_F(PropertiesErrorInjectionTestSuite, CreateFailureTest) {
 
 TEST_F(PropertiesErrorInjectionTestSuite, CopyFailureTest) {
     // C API
+
+    //Given a celix properties object with more entries than the optimization cache
     celix_autoptr(celix_properties_t) prop = celix_properties_create();
     ASSERT_NE(nullptr, prop);
+    fillOptimizationCache(prop);
+    celix_properties_set(prop, "additionalKey", "value");
+
+    // When a hash map create error injection is set for celix_properties_create
     celix_ei_expect_celix_stringHashMap_createWithOptions((void*)celix_properties_create, 0, nullptr);
+    // Then the celix_properties_copy call fails
     ASSERT_EQ(nullptr, celix_properties_copy(prop));
+    ASSERT_EQ(1, celix_err_getErrorCount());
+    celix_err_resetErrors();
+
+    // When a malloc error injection is set for celix_properties_allocEntry (during set)
+    celix_ei_expect_malloc((void*)celix_properties_allocEntry, 0, nullptr);
+    // Then the celix_properties_copy call fails
+    ASSERT_EQ(nullptr, celix_properties_copy(prop));
+    ASSERT_GE(celix_err_getErrorCount(), 1);
+    celix_err_resetErrors();
 
     // C++ API
     const celix::Properties cxxProp{};
@@ -94,7 +112,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, SetFailureTest) {
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     fillOptimizationCache(props);
 
-    // When a malloc error injection is set for celix_properties_set (during alloc entry)
+    // When a malloc error injection is set for celix_properties_allocEntry (during set)
     celix_ei_expect_malloc((void*)celix_properties_allocEntry, 0, nullptr);
     // Then the celix_properties_set call fails
     ASSERT_EQ(celix_properties_set(props, "key", "value"), CELIX_ENOMEM);
