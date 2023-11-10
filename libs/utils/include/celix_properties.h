@@ -117,7 +117,7 @@ typedef struct celix_properties_iterator {
 /**
  * @brief Create a new empty property set.
  *
- * This function will push a error msg to celix_err if the return value is NULL.
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @return A new empty property set.
  */
@@ -135,7 +135,7 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_properties_t, celix_properties_destroy)
 /**
  * @brief Load properties from a file.
  *
- * This function will push a error msg to celix_err if the return value is NULL.
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @param[in] filename The name of the file to load properties from.
  * @return A property set containing the properties from the file.
@@ -146,7 +146,7 @@ CELIX_UTILS_EXPORT celix_properties_t* celix_properties_load(const char* filenam
 /**
  * @brief Load properties from a stream.
  *
- * This function will push a error msg to celix_err if the return value is NULL.
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @param[in,out] stream The stream to load properties from.
  * @return A property set containing the properties from the stream.
@@ -157,7 +157,7 @@ CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadWithStream(FILE* str
 /**
  * @brief Load properties from a string.
  *
- * This function will push a error msg to celix_err if the return value is NULL.
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @param[in] input The string to load properties from.
  * @return A property set containing the properties from the string.
@@ -170,7 +170,7 @@ CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadFromString(const cha
  *
  * @note Properties values are always stored as string values, regardless of their actual underlining types.
  *
- * This function will push a error msg to celix_err if the return code is not CELIX_SUCCESS.
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @param[in] properties The property set to store.
  * @param[in] file The name of the file to store the properties to.
@@ -217,12 +217,13 @@ CELIX_UTILS_EXPORT celix_properties_value_type_e celix_properties_getType(const 
 /**
  * @brief Set the value of a property.
  *
- * This function will push a error msg to celix_err if the return code is not CELIX_SUCCESS.
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
  * @param[in] value The value to set the property to.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_set(celix_properties_t* properties,
                                                        const char* key,
@@ -231,52 +232,20 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_set(celix_properties_t* prope
 /**
  * @brief Set the value of a property without copying the value string.
  *
- * This function will push a error msg to celix_err if the return code is not CELIX_SUCCESS.
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set. This string will be used directly, so it must not be freed or
-*                 modified after calling this function.
- * @param[in] value The value to set the property to. This string will be used directly, so it must not be freed or
- *                  modified after calling this function.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
+ * @param[in] key The key of the property to set. This callee will take ownership of the key, so the key must not be
+ *                used after calling this function. The key should be deallocated with free.
+ * @param[in] value The value to set the property to. This callee will take ownership of the value, so the value must
+ *                  not be used after calling this function. The value should be deallocated with free.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key or value is NULL.
  *         When CELIX_ENOMEM is returned, the key and value strings are not used and freed by this function.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_setWithoutCopy(celix_properties_t* properties,
                                                                   char* key,
                                                                   char* value);
-
-/**
- * @brief Set the value of a property based on the provided property entry, maintaining underlying type.
- *
- * This function will push a error msg to celix_err if the return code is not CELIX_SUCCESS.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] entry The entry to set the property to. The entry will be copied, so it can be freed after calling
- *                  this function.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setEntry(celix_properties_t* properties,
-                                                            const char* key,
-                                                            const celix_properties_entry_t* entry);
-
-/**
- * @brief Unset a property, removing it from the property set.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to unset.
- */
-CELIX_UTILS_EXPORT void celix_properties_unset(celix_properties_t* properties, const char* key);
-
-/**
- * @brief Make a copy of a properties set.
- *
- * This function will push a error msg to celix_err if the return value is NULL.
- *
- * @param[in] properties The property set to copy.
- * @return A copy of the given property set.
- */
-CELIX_UTILS_EXPORT celix_properties_t* celix_properties_copy(const celix_properties_t* properties);
 
 /**
  * @brief Get the value of a property as a long integer.
@@ -295,12 +264,13 @@ celix_properties_getAsLong(const celix_properties_t* properties, const char* key
 /**
  * @brief Set the value of a property to a long integer.
  *
- * This function will push a error msg to celix_err if the return code is not CELIX_SUCCESS.
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
  * @param[in] value The long value to set the property to.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_setLong(celix_properties_t* properties, const char* key, long value);
 
@@ -321,24 +291,26 @@ celix_properties_getAsBool(const celix_properties_t* properties, const char* key
 /**
  * @brief Set the value of a property to a boolean.
  *
- * This function will push a error msg to celix_err if the return code is not CELIX_SUCCESS.
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
  * @param[in] val The boolean value to set the property to.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_setBool(celix_properties_t* properties, const char* key, bool val);
 
 /**
  * @brief Set the value of a property to a double.
  *
- * This function will push a error msg to celix_err if the return code is not CELIX_SUCCESS.
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
  * @param[in] val The double value to set the property to.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_setDouble(celix_properties_t* properties,
                                                              const char* key,
@@ -362,12 +334,13 @@ celix_properties_getAsDouble(const celix_properties_t* properties, const char* k
  * @brief Set the value of a property as a Celix version.
  *
  * This function will make a copy of the provided celix_version_t object and store it in the property set.
- * This function will push a error msg to celix_err if the return code is not CELIX_SUCCESS.
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
  * @param[in] version The value to set. The function will make a copy of this object and store it in the property set.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersion(celix_properties_t* properties,
                                                               const char* key,
@@ -378,14 +351,15 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersion(celix_properties_t
  *
  * This function will store a reference to the provided celix_version_t object in the property set and takes
  * ownership of the provided version.
- * This function will push a error msg to celix_err if the return code is not CELIX_SUCCESS.
+ * If the return status is an error, a error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
  * @param[in] version The value to set. The function will store a reference to this object in the property set and
  *                    takes ownership of the provided version.
+ *
  */
-CELIX_UTILS_EXPORT void
+CELIX_UTILS_EXPORT celix_status_t
 celix_properties_setVersionWithoutCopy(celix_properties_t* properties, const char* key, celix_version_t* version);
 
 /**
@@ -422,6 +396,40 @@ celix_properties_getVersion(const celix_properties_t* properties, const char* ke
 CELIX_UTILS_EXPORT celix_version_t* celix_properties_getAsVersion(const celix_properties_t* properties,
                                                                   const char* key,
                                                                   const celix_version_t* defaultValue);
+
+/**
+ * @brief Set the value of a property based on the provided property entry, maintaining underlying type.
+ *
+ * If the return status is an error, a error message is logged to celix_err.
+ *
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] entry The entry to set the property to. The entry will be copied, so it can be freed after calling
+ *                  this function.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setEntry(celix_properties_t* properties,
+                                                            const char* key,
+                                                            const celix_properties_entry_t* entry);
+
+/**
+ * @brief Unset a property, removing it from the property set.
+ *
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to unset.
+ */
+CELIX_UTILS_EXPORT void celix_properties_unset(celix_properties_t* properties, const char* key);
+
+/**
+ * @brief Make a copy of a properties set.
+ *
+ * If the return status is an error, a error message is logged to celix_err.
+ *
+ * @param[in] properties The property set to copy.
+ * @return A copy of the given property set.
+ */
+CELIX_UTILS_EXPORT celix_properties_t* celix_properties_copy(const celix_properties_t* properties);
 
 /**
  * @brief Get the number of properties in a property set.

@@ -831,8 +831,8 @@ celix_properties_setVersion(celix_properties_t* properties, const char* key, con
     return celix_properties_createAndSetEntry(properties, key, NULL, NULL, NULL, NULL, celix_version_copy(version));
 }
 
-void celix_properties_setVersionWithoutCopy(celix_properties_t* properties, const char* key, celix_version_t* version) {
-    celix_properties_createAndSetEntry(properties, key, NULL, NULL, NULL, NULL, version);
+celix_status_t celix_properties_setVersionWithoutCopy(celix_properties_t* properties, const char* key, celix_version_t* version) {
+    return celix_properties_createAndSetEntry(properties, key, NULL, NULL, NULL, NULL, version);
 }
 
 int celix_properties_size(const celix_properties_t* properties) {

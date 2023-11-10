@@ -311,15 +311,15 @@ TEST_F(PropertiesTestSuite, GetSetOverwrite) {
         free(key);
     }
     EXPECT_STREQ("str1", celix_properties_get(props, "key", ""));
-    celix_properties_set(props, "key", "str2");
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_set(props, "key", "str2"));
     EXPECT_STREQ("str2", celix_properties_get(props, "key", ""));
-    celix_properties_setLong(props, "key", 1);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setLong(props, "key", 1));
     EXPECT_EQ(1, celix_properties_getAsLong(props, "key", -1L));
-    celix_properties_setDouble(props, "key", 2.0);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setDouble(props, "key", 2.0));
     EXPECT_EQ(2.0, celix_properties_getAsLong(props, "key", -2.0));
-    celix_properties_setBool(props, "key", false);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setBool(props, "key", false));
     EXPECT_EQ(false, celix_properties_getAsBool(props, "key", true));
-    celix_properties_setVersionWithoutCopy(props, "key", version);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setVersionWithoutCopy(props, "key", version));
     EXPECT_EQ(version, celix_properties_getVersion(props, "key", nullptr));
     celix_properties_set(props, "key", "last");
 

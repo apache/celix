@@ -117,12 +117,13 @@ typedef struct celix_string_hash_map_create_options {
      * @brief If set to true, the string hash map will not make of copy of the keys and assumes
      * that the keys are in scope/memory for the complete lifecycle of the string hash map.
      *
-     * When keys are stored weakly it is the caller responsibility to check the return value of
-     * celix_stringHashMap_put* function calls.
-     * If a celix_stringHashMap_put* function call returns true, the key is used in the hash map and the key
-     * should never be freed or freed in a configured removedKeyCallback.
-     * If a celix_stringHashMap_put* function call returns false, a value is replaced and the already existing
-     * key is reused. If the needed the caller should free the provided key.
+     * When keys are stored weakly it is the caller responsibility to check if a key is already in use
+     * (celix_stringHashMap_hasKey).
+     *
+     * If the key is already in use, the celix_stringHashMap_put* will not store the provided key and will
+     * instead keep the already existing key. If needed, the caller should free the provided key.
+     * If the key is not already in use, the celix_stringHashMap_put* will store the provided key and the caller
+     * should not free the provided key.
      *
      * @note This changes the default behaviour of the celix_stringHashMap_put* functions.
      *
