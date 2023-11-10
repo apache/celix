@@ -79,32 +79,9 @@ bool celix_requirement_equals(const celix_requirement_t* req1, const celix_requi
         return true;
     }
 
-    if (celix_properties_size(req1->attributes) != celix_properties_size(req2->attributes) ||
-        celix_properties_size(req1->directives) != celix_properties_size(req2->directives)) {
-        return false;
-    }
-
-    if (!celix_utils_stringEquals(req1->ns, req2->ns)) {
-        return false;
-    }
-
-    //compare attributes
-    CELIX_PROPERTIES_ITERATE(req1->attributes, visit) {
-        const char* val2 = celix_properties_get(req2->attributes, visit.key, NULL);
-        if (!celix_utils_stringEquals(visit.entry.value, val2)) {
-            return false;
-        }
-    }
-
-    //compare directives
-    CELIX_PROPERTIES_ITERATE(req1->directives, visit) {
-        const char* val2 = celix_properties_get(req2->directives, visit.key, NULL);
-        if (!celix_utils_stringEquals(visit.entry.value, val2)) {
-            return false;
-        }
-    }
-
-    return true;
+    return  celix_utils_stringEquals(req1->ns, req2->ns) &&
+            celix_properties_equals(req1->directives, req2->directives) &&
+            celix_properties_equals(req1->attributes, req2->attributes);
 }
 
 unsigned int celix_requirement_hashCode(const celix_requirement_t* req) {

@@ -646,6 +646,7 @@ TEST_F(HashMapTestSuite, StringHashMapEqualsTest) {
     EXPECT_FALSE(celix_stringHashMap_equals(map1, nullptr));
     EXPECT_FALSE(celix_stringHashMap_equals(nullptr, map2));
     EXPECT_TRUE(celix_stringHashMap_equals(nullptr, nullptr));
+    EXPECT_TRUE(celix_stringHashMap_equals(map1, map1));
 
     celix_stringHashMap_putLong(map1, "key1", 42);
     celix_stringHashMap_putBool(map1, "key2", true);
@@ -667,6 +668,7 @@ TEST_F(HashMapTestSuite, LongHashMapEqualsTest) {
     EXPECT_FALSE(celix_longHashMap_equals(map1, nullptr));
     EXPECT_FALSE(celix_longHashMap_equals(nullptr, map2));
     EXPECT_TRUE(celix_longHashMap_equals(nullptr, nullptr));
+    EXPECT_TRUE(celix_longHashMap_equals(map1, map1));
 
     celix_longHashMap_putLong(map1, 1, 42);
     celix_longHashMap_putBool(map1, 2, true);

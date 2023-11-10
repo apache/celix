@@ -706,6 +706,7 @@ static bool celix_properties_entryEquals(const celix_properties_entry_t* entry1,
     if (entry1->valueType != entry2->valueType) {
         return false;
     }
+
     switch (entry1->valueType) {
     case CELIX_PROPERTIES_VALUE_TYPE_LONG:
         return entry1->typed.longValue == entry2->typed.longValue;
@@ -810,6 +811,9 @@ int celix_properties_size(const celix_properties_t* properties) {
 }
 
 bool celix_properties_equals(const celix_properties_t* props1, const celix_properties_t* props2) {
+    if (props1 == props2) {
+        return true;
+    }
     if (props1 == NULL && props2 == NULL) {
         return true;
     }

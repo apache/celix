@@ -624,6 +624,7 @@ TEST_F(PropertiesTestSuite, PropertiesEqualsTest) {
 
     celix_autoptr(celix_properties_t) prop1 = celix_properties_create();
     EXPECT_FALSE(celix_properties_equals(prop1, nullptr));
+    EXPECT_TRUE(celix_properties_equals(prop1, prop1));
 
     celix_autoptr(celix_properties_t) prop2 = celix_properties_create();
     EXPECT_TRUE(celix_properties_equals(prop1, prop2));

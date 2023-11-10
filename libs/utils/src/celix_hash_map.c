@@ -592,9 +592,14 @@ void celix_longHashMap_clear(celix_long_hash_map_t* map) {
 }
 
 static bool celix_hashMap_equals(const celix_hash_map_t* map1, const celix_hash_map_t* map2) {
+    if (map1 == map2) {
+        return true;
+    }
+
     if (map1->size != map2->size) {
         return false;
     }
+
     for (celix_hash_map_entry_t* entry = celix_hashMap_firstEntry(map1); entry != NULL; entry = celix_hashMap_nextEntry(map1, entry)) {
         celix_hash_map_entry_t* entryMap2 = celix_hashMap_getEntry(map2, entry->key.strKey, entry->key.longKey);
 

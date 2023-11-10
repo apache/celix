@@ -72,35 +72,9 @@ bool celix_capability_equals(const celix_capability_t* cap1, const celix_capabil
         return true;
     }
 
-    if (celix_properties_size(cap1->attributes) != celix_properties_size(cap2->attributes) ||
-        celix_properties_size(cap1->directives) != celix_properties_size(cap2->directives)) {
-        return false;
-    }
-
-    if (!celix_utils_stringEquals(cap1->ns, cap2->ns)) {
-        return false;
-    }
-
-    //compare attributes
-    bool equals = true;
-    CELIX_PROPERTIES_ITERATE(cap1->attributes, visit) {
-        const char* value2 = celix_properties_get(cap2->attributes, visit.key, NULL);
-        if (!celix_utils_stringEquals(visit.entry.value, value2)) {
-            equals = false;
-            break;
-        }
-    }
-    if (!equals) {
-        return false;
-    }
-    CELIX_PROPERTIES_ITERATE(cap1->directives, visit) {
-        const char* value2 = celix_properties_get(cap2->directives, visit.key, NULL);
-        if (!celix_utils_stringEquals(visit.entry.value, value2)) {
-            equals = false;
-            break;
-        }
-    }
-    return equals;
+    return celix_utils_stringEquals(cap1->ns, cap2->ns) &&
+           celix_properties_equals(cap1->attributes, cap2->attributes) &&
+           celix_properties_equals(cap1->directives, cap2->directives);
 }
 
 unsigned int celix_capability_hashCode(const celix_capability_t* cap) {
