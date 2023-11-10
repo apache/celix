@@ -674,7 +674,11 @@ celix_status_t celix_properties_setWithoutCopy(celix_properties_t* properties, c
 
         bool alreadyExist = celix_stringHashMap_hasKey(properties->map, key);
         celix_status_t status = celix_stringHashMap_put(properties->map, key, entry);
-        if (status == CELIX_SUCCESS && alreadyExist) {
+        if (status != CELIX_SUCCESS) {
+            celix_err_pushf("Failed to put entry for key %s in map.", key);
+            free(key);
+            celix_properties_destroyEntry(properties, entry);
+        } else if (alreadyExist) {
             free(key);
         }
         return status;
