@@ -110,6 +110,7 @@ if (EI_TESTS)
             Celix::ifaddrs_ei
             Celix::threads_ei
             Celix::malloc_ei
+            Celix::asprintf_ei
             Celix::string_hash_map_ei
             Celix::long_hash_map_ei
             GTest::gtest GTest::gtest_main

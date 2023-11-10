@@ -56,7 +56,6 @@ struct celix_hash_map {
     unsigned int size; //nr of total entries
     double loadFactor;
     celix_hash_map_key_type_e keyType;
-    celix_hash_map_value_t emptyValue;
     unsigned int (*hashKeyFunction)(const celix_hash_map_key_t* key);
     bool (*equalsKeyFunction)(const celix_hash_map_key_t* key1, const celix_hash_map_key_t* key2);
     void (*simpleRemovedCallback)(void* value);
@@ -351,7 +350,6 @@ celix_status_t celix_hashMap_init(
     map->size = 0;
     map->bucketsSize = initialCapacity;
     map->keyType = keyType;
-    memset(&map->emptyValue, 0, sizeof(map->emptyValue));
     map->hashKeyFunction = hashKeyFn;
     map->equalsKeyFunction = equalsKeyFn;
     map->simpleRemovedCallback = NULL;

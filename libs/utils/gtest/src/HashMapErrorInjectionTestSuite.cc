@@ -30,7 +30,10 @@
 
 class HashMapErrorInjectionTestSuite : public ::testing::Test {
   public:
-    HashMapErrorInjectionTestSuite() { celix_ei_expect_calloc(nullptr, 0, nullptr); }
+    HashMapErrorInjectionTestSuite() {
+        celix_ei_expect_calloc(nullptr, 0, nullptr);
+        celix_err_resetErrors();
+    }
 };
 
 TEST_F(HashMapErrorInjectionTestSuite, CreateFailureTest) {

@@ -23,16 +23,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "celix_cleanup.h"
 #include "celix_utils_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdbool.h>
-
-#include "celix_cleanup.h"
-#include "celix_utils_export.h"
 
 /**
  * @file celix_version.h
@@ -131,7 +127,7 @@ CELIX_UTILS_EXPORT int celix_version_getMicro(const celix_version_t* version);
  * @brief Gets the version qualifier of a celix version.
  *
  * @param[in] version The celix version.
- * @return The version qualifier, or NULL if no qualifier is present.
+ * @return The version qualifier, or an empty string ("") if no qualifier is present.
  */
 CELIX_UTILS_EXPORT const char* celix_version_getQualifier(const celix_version_t* version);
 

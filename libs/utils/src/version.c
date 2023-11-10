@@ -26,6 +26,7 @@
 #include "version.h"
 #include "celix_errno.h"
 #include "version_private.h"
+#include "celix_err.h"
 
 static const char* const CELIX_VERSION_EMPTY_QUALIFIER = "";
 
@@ -99,12 +100,14 @@ celix_status_t version_isCompatible(version_pt user, version_pt provider, bool* 
 
 celix_version_t* celix_version_create(int major, int minor, int micro, const char* qualifier) {
     if (major < 0 || minor < 0 || micro < 0) {
+        celix_err_push("Invalid version number. Major, minor and micro must be >= 0");
         return NULL;
     }
 
     if (qualifier == NULL) {
         qualifier = CELIX_VERSION_EMPTY_QUALIFIER;
     }
+
     size_t qualifierLen = strlen(qualifier);
     for (int i = 0; i < qualifierLen; i++) {
         char ch = qualifier[i];
@@ -120,20 +123,27 @@ celix_version_t* celix_version_create(int major, int minor, int micro, const cha
         if ((ch == '_') || (ch == '-')) {
             continue;
         }
-        //invalid
+        celix_err_push("Invalid version qualifier. Characters must be [A-Za-z0-9_-]");
         return NULL;
     }
 
     celix_version_t* version = calloc(1, sizeof(*version));
-    if (version != NULL) {
+    if (version) {
         version->major = major;
         version->minor = minor;
         version->micro = micro;
-        version->qualifier = qualifierLen == 0 ? (char*)CELIX_VERSION_EMPTY_QUALIFIER : celix_utils_strdup(qualifier);
-        if (version->qualifier == NULL) {
+        if (qualifierLen == 0) {
+            version->qualifier = (char*)CELIX_VERSION_EMPTY_QUALIFIER;
+        } else {
+            version->qualifier = celix_utils_strdup(qualifier);
+        }
+        if (!version->qualifier) {
             celix_version_destroy(version);
             version = NULL;
         }
+    }
+    if (!version) {
+        celix_err_push("Failed to allocate memory for celix_version_create");
     }
     return version;
 }
@@ -289,10 +299,15 @@ int celix_version_compareTo(const celix_version_t* version, const celix_version_
 
 char* celix_version_toString(const celix_version_t* version) {
     char* string = NULL;
+    int rc;
     if (strlen(version->qualifier) > 0) {
-        asprintf(&string,"%d.%d.%d.%s", version->major, version->minor, version->micro, version->qualifier);
+        rc = asprintf(&string,"%d.%d.%d.%s", version->major, version->minor, version->micro, version->qualifier);
     } else {
-        asprintf(&string, "%d.%d.%d", version->major, version->minor, version->micro);
+        rc = asprintf(&string, "%d.%d.%d", version->major, version->minor, version->micro);
+    }
+    if (rc < 0) {
+        celix_err_push("Failed to allocate memory for celix_version_toString");
+        return NULL;
     }
     return string;
 }

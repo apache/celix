@@ -35,6 +35,9 @@
  *  - celix_version_t*
  */
 
+#ifndef CELIX_PROPERTIES_H_
+#define CELIX_PROPERTIES_H_
+
 #include <stdio.h>
 
 #include "celix_cleanup.h"
@@ -42,9 +45,6 @@
 #include "celix_errno.h"
 #include "celix_utils_export.h"
 #include "celix_version.h"
-
-#ifndef CELIX_PROPERTIES_H_
-#define CELIX_PROPERTIES_H_
 
 #ifdef __cplusplus
 extern "C" {
