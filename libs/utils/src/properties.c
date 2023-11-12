@@ -654,7 +654,7 @@ celix_properties_t* celix_properties_copy(const celix_properties_t* properties) 
             return NULL;
         }
     }
-    return celix_steal_ptr(copy);
+    return copy;
 }
 
 celix_properties_value_type_e celix_properties_getType(const celix_properties_t* properties, const char* key) {
