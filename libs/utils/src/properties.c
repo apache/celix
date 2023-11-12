@@ -20,6 +20,7 @@
 #include "properties.h"
 #include "celix_properties.h"
 #include "celix_properties_private.h"
+#include "celix_properties_internal.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -926,4 +927,8 @@ bool celix_propertiesIterator_equals(const celix_properties_iterator_t* a, const
     celix_properties_iterator_internal_t internalIterB;
     memcpy(&internalIterB, b->_data, sizeof(internalIterB));
     return celix_stringHashMapIterator_equals(&internalIterA.mapIter, &internalIterB.mapIter);
+}
+
+celix_hash_map_statistics_t celix_properties_getStatistics(const celix_properties_t* properties) {
+    return celix_stringHashMap_getStatistics(properties->map);
 }

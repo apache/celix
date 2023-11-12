@@ -114,21 +114,21 @@ typedef struct celix_long_hash_map_create_options {
     unsigned int initialCapacity CELIX_OPTS_INIT;
 
     /**
-     * @brief The hash map load factor, which controls the max ratio between nr of entries in the hash map and the
+     * @brief The hash map max load factor, which controls the max ratio between nr of entries in the hash map and the
      * hash map capacity.
      *
-     * The load factor controls how large the hash map capacity (nr of buckets) is compared to the nr of entries
+     * The max load factor controls how large the hash map capacity (nr of buckets) is compared to the nr of entries
      * in the hash map. The load factor is an important property of the hash map which influences how close the
      * hash map performs to O(1) for its get, has and put operations.
      *
-     * If the nr of entries increases above the loadFactor * capacity, the hash capacity will be doubled.
+     * If the nr of entries increases above the maxLoadFactor * capacity, the hash table capacity will be doubled.
      * For example a hash map with capacity 16 and load factor 0.75 will double its capacity when the 13th entry
      * is added to the hash map.
      *
      * If 0 is provided, the hash map load factor will be 0.75 (default hash map load factor).
      * Default is 0.
      */
-    double loadFactor CELIX_OPTS_INIT;
+    double maxLoadFactor CELIX_OPTS_INIT;
 } celix_long_hash_map_create_options_t;
 
 #ifndef __cplusplus
@@ -140,7 +140,7 @@ typedef struct celix_long_hash_map_create_options {
     .removedCallbackData = NULL,                        \
     .removedCallback = NULL,                            \
     .initialCapacity = 0,                               \
-    .loadFactor = 0                                     \
+    .maxLoadFactor = 0                                  \
 }
 #endif
 
@@ -174,7 +174,7 @@ CELIX_UTILS_EXPORT size_t celix_longHashMap_size(const celix_long_hash_map_t* ma
 /**
  * @brief Add pointer entry the string hash map.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] map The hashmap
  * @param[in] key  The key to use.
@@ -187,7 +187,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_put(celix_long_hash_map_t* m
 /**
  * @brief add long entry the long hash map.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param map The hashmap
  * @param key  The key to use.
@@ -200,7 +200,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_putLong(celix_long_hash_map_
 /**
  * @brief add double entry the long hash map.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param map The hashmap
  * @param key  The key to use.
@@ -213,7 +213,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_putDouble(celix_long_hash_ma
 /**
  * @brief add bool entry the long hash map.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param map The hashmap
  * @param key  The key to use.

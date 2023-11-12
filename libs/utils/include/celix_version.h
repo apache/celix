@@ -48,13 +48,15 @@ typedef struct celix_version celix_version_t;
 /**
  * @brief Create a new celix_version_t* using the supplied arguments.
  *
+ * If the return is NULL, an error message is logged to celix_err.
+ *
  * @param[in] major Major component of the version identifier.
  * @param[in] minor Minor component of the version identifier.
  * @param[in] micro Micro component of the version identifier.
  * @param[in] qualifier Qualifier component of the version identifier. If
  *        <code>NULL</code> is specified, then the qualifier will be set to
  *        the empty string.
- * @return The created version or NULL if the input was incorrect
+ * @return The created version or NULL if the input was incorrect or memory could not be allocated.
  */
 CELIX_UTILS_EXPORT celix_version_t* celix_version_create(int major, int minor, int micro, const char* qualifier);
 
@@ -164,14 +166,16 @@ CELIX_UTILS_EXPORT unsigned int celix_version_hash(const celix_version_t* versio
 /**
  * @brief Return the string representation of <code>version</code> identifier.
  *
- * <p>
  * The format of the version string will be <code>major.minor.micro</code>
  * if qualifier is the empty string or
  * <code>major.minor.micro.qualifier</code> otherwise.
  *
+ * If the return is NULL, an error message is logged to celix_err.
+ *
  * @return The string representation of this version identifier.
  * @param version The <code>celix_version_t*</code> to get the string representation from.
  * @return Pointer to the string (char *) in which the result will be placed. Caller is owner of the string.
+ *         NULL if memory could not be allocated.
  */
 CELIX_UTILS_EXPORT char* celix_version_toString(const celix_version_t* version);
 

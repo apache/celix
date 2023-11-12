@@ -77,6 +77,7 @@ if (UTILS)
 
     target_include_directories(utils PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include_internal> #Note not installed, only for project internal usage
             $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
             )
     target_include_directories(utils PRIVATE src include_deprecated)
@@ -127,6 +128,7 @@ if (UTILS)
         target_compile_definitions(utils_cut PRIVATE CELIX_UTILS_STATIC_DEFINE)
         target_include_directories(utils_cut PUBLIC
                 ${CMAKE_CURRENT_LIST_DIR}/include
+                ${CMAKE_CURRENT_LIST_DIR}/include_internal
                 ${MEMSTREAM_INCLUDE_DIR}
                 ${CMAKE_BINARY_DIR}/celix/gen/includes/utils
                 ${CMAKE_BINARY_DIR}/celix/gen/src/utils

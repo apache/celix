@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include "celix_properties.h"
+#include "celix_properties_internal.h"
 #include "celix_utils.h"
 #include "properties.h"
 #include "celix_err.h"
@@ -30,6 +31,15 @@ class PropertiesTestSuite : public ::testing::Test {
 public:
   PropertiesTestSuite() {
       celix_err_resetErrors();
+  }
+
+  void printStats(const celix_hash_map_statistics_t* stats) {
+      printf("Properties statistics:\n");
+      printf("|- nr of entries: %zu\n", stats->nrOfEntries);
+      printf("|- nr of buckets: %zu\n", stats->nrOfBuckets);
+      printf("|- average nr of entries in bucket: %f\n", stats->averageNrOfEntriesPerBucket);
+      printf("|- stddev nr of entries in bucket: %f\n", stats->stdDeviationNrOfEntriesPerBucket);
+      printf("|- resize count: %zu\n", stats->resizeCount);
   }
 };
 
@@ -682,4 +692,16 @@ TEST_F(PropertiesTestSuite, InvalidArgumentsTest) {
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_setWithoutCopy(props, nullptr, strdup("value")));
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_setWithoutCopy(props, strdup("key"), nullptr));
     EXPECT_EQ(2, celix_err_getErrorCount());
+}
+
+TEST_F(PropertiesTestSuite, GetStatsTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+
+    for (int i = 0; i < 200; ++i) {
+        celix_properties_set(props, std::to_string(i).c_str(), std::to_string(i).c_str());
+    }
+
+    celix_hash_map_statistics_t stats = celix_properties_getStatistics(props);
+    EXPECT_EQ(stats.nrOfEntries, 200);
+    printStats(&stats);
 }

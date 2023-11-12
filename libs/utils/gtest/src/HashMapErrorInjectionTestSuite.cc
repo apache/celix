@@ -93,7 +93,7 @@ TEST_F(HashMapErrorInjectionTestSuite, PutFailureTest) {
 TEST_F(HashMapErrorInjectionTestSuite, ResizeFailureTest) {
     // Given a hashmap with a low load factor
     celix_long_hash_map_create_options_t opts{};
-    opts.loadFactor = 0.1;
+    opts.maxLoadFactor = 0.1;
     celix_autoptr(celix_long_hash_map_t) lProps = celix_longHashMap_createWithOptions(&opts);
 
     // And when the hash map is filled 1 entry before the resize threshold

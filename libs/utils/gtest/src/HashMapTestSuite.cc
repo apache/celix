@@ -19,8 +19,10 @@
 
 #include <gtest/gtest.h>
 
+#include "celix_hash_map_private.h"
 #include "celix_long_hash_map.h"
 #include "celix_string_hash_map.h"
+#include "celix_hash_map_internal.h"
 #include "celix_utils.h"
 #include <atomic>
 #include <random>
@@ -95,6 +97,17 @@ class HashMapTestSuite : public ::testing::Test {
             long rand = keyDistribution(generator);
             EXPECT_EQ(celix_longHashMap_getLong(map, rand, 0), rand);
         }
+    }
+
+
+    void printStats(const char* keyType, const celix_hash_map_statistics_t* stats) {
+        printf("Hashmap statistics:\n");
+        printf("|- key type: %s\n", keyType);
+        printf("|- nr of entries: %zu\n", stats->nrOfEntries);
+        printf("|- nr of buckets: %zu\n", stats->nrOfBuckets);
+        printf("|- average nr of entries in bucket: %f\n", stats->averageNrOfEntriesPerBucket);
+        printf("|- stddev nr of entries in bucket: %f\n", stats->stdDeviationNrOfEntriesPerBucket);
+        printf("|- resize count: %zu\n", stats->resizeCount);
     }
 
   private:
@@ -464,7 +477,7 @@ TEST_F(HashMapTestSuite, IterateStressTest) {
 
 TEST_F(HashMapTestSuite, IterateStressCapacityAndLoadFactorTest) {
     celix_string_hash_map_create_options sOpts{};
-    sOpts.loadFactor = 10; // high load factor to ensure buckets have multiple entries for testing
+    sOpts.maxLoadFactor = 10; // high load factor to ensure buckets have multiple entries for testing
     sOpts.initialCapacity = 5;
     auto* sMap = celix_stringHashMap_createWithOptions(&sOpts);
     fillStringHashMap(sMap, 100);
@@ -479,7 +492,7 @@ TEST_F(HashMapTestSuite, IterateStressCapacityAndLoadFactorTest) {
     celix_stringHashMap_destroy(sMap);
 
     celix_long_hash_map_create_options lOpts{};
-    lOpts.loadFactor = 10; // high load factor to ensure buckets have multiple entries for testing
+    lOpts.maxLoadFactor = 10; // high load factor to ensure buckets have multiple entries for testing
     lOpts.initialCapacity = 5;
     auto* lMap = celix_longHashMap_createWithOptions(&lOpts);
     fillLongHashMap(lMap, 100);
@@ -681,4 +694,22 @@ TEST_F(HashMapTestSuite, LongHashMapEqualsTest) {
 
     celix_longHashMap_putLong(map1, 3, 42);
     EXPECT_TRUE(celix_longHashMap_equals(map1, map2));
+}
+
+TEST_F(HashMapTestSuite, GetStatsTest) {
+    celix_autoptr(celix_long_hash_map_t) map1 = celix_longHashMap_create();
+    celix_autoptr(celix_string_hash_map_t) map2 = celix_stringHashMap_create();
+
+    for (int i = 0; i < 200; ++i) {
+        celix_longHashMap_putLong(map1, i, i);
+        celix_stringHashMap_putLong(map2, std::to_string(i).c_str(), i);
+    }
+
+    celix_hash_map_statistics_t stats = celix_longHashMap_getStatistics(map1);
+    EXPECT_EQ(stats.nrOfEntries, 200);
+    printStats("long", &stats);
+
+    stats = celix_stringHashMap_getStatistics(map2);
+    EXPECT_EQ(stats.nrOfEntries, 200);
+    printStats("string", &stats);
 }

@@ -20,6 +20,7 @@
 /**
  * @file celix_hash_map_private.h
  * @brief Private header for celix_hash_map, with function used for whitebox testing.
+ * The symbols of private headers are not exported and as such cannot be used by other libraries, except for testing.
  */
 
 #ifndef CELIX_CELIX_HASH_MAP_PRIVATE_H
@@ -39,9 +40,9 @@ typedef union celix_hash_map_key celix_hash_map_key_t;      // opaque
 typedef enum celix_hash_map_key_type { CELIX_HASH_MAP_STRING_KEY, CELIX_HASH_MAP_LONG_KEY } celix_hash_map_key_type_e;
 
 /**
- * @brief Resizes the hash map to the given capacity using realloc.
+ * @brief Resizes the hash map to the next allowed size.
  */
-celix_status_t celix_hashMap_resize(celix_hash_map_t* map, size_t newCapacity);
+celix_status_t celix_hashMap_resize(celix_hash_map_t* map);
 
 /**
  * @brief Add a new entry to the hash map.
@@ -58,9 +59,7 @@ celix_status_t celix_hashMap_addEntry(celix_hash_map_t* map,
 celix_status_t celix_hashMap_init(celix_hash_map_t* map,
                                   celix_hash_map_key_type_e keyType,
                                   unsigned int initialCapacity,
-                                  double loadFactor,
-                                  unsigned int (*hashKeyFn)(const celix_hash_map_key_t*),
-                                  bool (*equalsKeyFn)(const celix_hash_map_key_t*, const celix_hash_map_key_t*));
+                                  double maxLoadFactor);
 
 #ifdef __cplusplus
 }

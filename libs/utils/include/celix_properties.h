@@ -117,7 +117,7 @@ typedef struct celix_properties_iterator {
 /**
  * @brief Create a new empty property set.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @return A new empty property set.
  */
@@ -135,7 +135,7 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_properties_t, celix_properties_destroy)
 /**
  * @brief Load properties from a file.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] filename The name of the file to load properties from.
  * @return A property set containing the properties from the file.
@@ -146,7 +146,7 @@ CELIX_UTILS_EXPORT celix_properties_t* celix_properties_load(const char* filenam
 /**
  * @brief Load properties from a stream.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in,out] stream The stream to load properties from.
  * @return A property set containing the properties from the stream.
@@ -157,7 +157,7 @@ CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadWithStream(FILE* str
 /**
  * @brief Load properties from a string.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] input The string to load properties from.
  * @return A property set containing the properties from the string.
@@ -170,7 +170,7 @@ CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadFromString(const cha
  *
  * @note Properties values are always stored as string values, regardless of their actual underlining types.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] properties The property set to store.
  * @param[in] file The name of the file to store the properties to.
@@ -217,7 +217,7 @@ CELIX_UTILS_EXPORT celix_properties_value_type_e celix_properties_getType(const 
 /**
  * @brief Set the value of a property.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
@@ -232,7 +232,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_set(celix_properties_t* prope
 /**
  * @brief Set the value of a property without copying the value string.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set. This callee will take ownership of the key, so the key must not be
@@ -264,7 +264,7 @@ celix_properties_getAsLong(const celix_properties_t* properties, const char* key
 /**
  * @brief Set the value of a property to a long integer.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
@@ -291,7 +291,7 @@ celix_properties_getAsBool(const celix_properties_t* properties, const char* key
 /**
  * @brief Set the value of a property to a boolean.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
@@ -304,7 +304,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setBool(celix_properties_t* p
 /**
  * @brief Set the value of a property to a double.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
@@ -334,7 +334,7 @@ celix_properties_getAsDouble(const celix_properties_t* properties, const char* k
  * @brief Set the value of a property as a Celix version.
  *
  * This function will make a copy of the provided celix_version_t object and store it in the property set.
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
@@ -351,7 +351,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersion(celix_properties_t
  *
  * This function will store a reference to the provided celix_version_t object in the property set and takes
  * ownership of the provided version.
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
@@ -400,7 +400,7 @@ CELIX_UTILS_EXPORT celix_version_t* celix_properties_getAsVersion(const celix_pr
 /**
  * @brief Set the value of a property based on the provided property entry, maintaining underlying type.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
@@ -424,7 +424,7 @@ CELIX_UTILS_EXPORT void celix_properties_unset(celix_properties_t* properties, c
 /**
  * @brief Make a copy of a properties set.
  *
- * If the return status is an error, a error message is logged to celix_err.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] properties The property set to copy.
  * @return A copy of the given property set.
