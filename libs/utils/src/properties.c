@@ -929,6 +929,18 @@ bool celix_propertiesIterator_equals(const celix_properties_iterator_t* a, const
     return celix_stringHashMapIterator_equals(&internalIterA.mapIter, &internalIterB.mapIter);
 }
 
-celix_hash_map_statistics_t celix_properties_getStatistics(const celix_properties_t* properties) {
-    return celix_stringHashMap_getStatistics(properties->map);
+celix_properties_statistics_t celix_properties_getStatistics(const celix_properties_t* properties) {
+    size_t sizeOfKeysAndStringValues = 0;
+    CELIX_PROPERTIES_ITERATE(properties, iter) {
+        sizeOfKeysAndStringValues += celix_utils_strlen(iter.key) + 1;
+        sizeOfKeysAndStringValues += celix_utils_strlen(iter.entry.value) + 1;
+    }
+
+    celix_properties_statistics_t stats;
+    stats.sizeOfKeysAndStringValues = sizeOfKeysAndStringValues;
+    stats.averageSizeOfKeysAndStringValues = (double)sizeOfKeysAndStringValues / celix_properties_size(properties) * 2;
+    stats.fillStringOptimizationBufferPercentage = (double)properties->currentStringBufferIndex / CELIX_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE;
+    stats.fillEntriesOptimizationBufferPercentage = (double)properties->currentEntriesBufferIndex / CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE;
+    stats.mapStatistics = celix_stringHashMap_getStatistics(properties->map);
+    return stats;
 }

@@ -34,10 +34,18 @@
 extern "C" {
 #endif
 
+typedef struct celix_properties_statistics_t {
+    celix_hash_map_statistics_t mapStatistics; /**< The statistics of the underlining hash map. */
+    size_t sizeOfKeysAndStringValues; /**< The size of the keys and string value representations in bytes. */
+    double averageSizeOfKeysAndStringValues; /**< The average size of the keys and string values in bytes. */
+    double fillStringOptimizationBufferPercentage; /**< The percentage of the fill string optimization buffer. */
+    double fillEntriesOptimizationBufferPercentage; /**< The percentage of the fill entries optimization buffer. */
+} celix_properties_statistics_t;
+
 /**
- * @brief Return the statistics for the underlining string hash map of the provided properties set.
+ * @brief Return the statistics for the of the provided properties set.
  */
-CELIX_UTILS_EXPORT celix_hash_map_statistics_t celix_properties_getStatistics(const celix_properties_t* properties);
+CELIX_UTILS_EXPORT celix_properties_statistics_t celix_properties_getStatistics(const celix_properties_t* properties);
 
 #ifdef __cplusplus
 }

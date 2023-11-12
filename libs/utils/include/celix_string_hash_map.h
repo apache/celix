@@ -125,6 +125,8 @@ typedef struct celix_string_hash_map_create_options {
      * If the key is not already in use, the celix_stringHashMap_put* will store the provided key and the caller
      * should not free the provided key.
      *
+     * Uf a celix_stringHashMap_put* returns a error, the caller may free the provided key.
+     *
      * @note This changes the default behaviour of the celix_stringHashMap_put* functions.
      *
      * Default is false.

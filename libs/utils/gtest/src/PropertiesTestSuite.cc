@@ -33,13 +33,17 @@ public:
       celix_err_resetErrors();
   }
 
-  void printStats(const celix_hash_map_statistics_t* stats) {
+  void printStats(const celix_properties_statistics_t* stats) {
       printf("Properties statistics:\n");
-      printf("|- nr of entries: %zu\n", stats->nrOfEntries);
-      printf("|- nr of buckets: %zu\n", stats->nrOfBuckets);
-      printf("|- average nr of entries in bucket: %f\n", stats->averageNrOfEntriesPerBucket);
-      printf("|- stddev nr of entries in bucket: %f\n", stats->stdDeviationNrOfEntriesPerBucket);
-      printf("|- resize count: %zu\n", stats->resizeCount);
+      printf("|- nr of entries: %zu\n", stats->mapStatistics.nrOfEntries);
+      printf("|- nr of buckets: %zu\n", stats->mapStatistics.nrOfBuckets);
+      printf("|- average nr of entries in bucket: %f\n", stats->mapStatistics.averageNrOfEntriesPerBucket);
+      printf("|- stddev nr of entries in bucket: %f\n", stats->mapStatistics.stdDeviationNrOfEntriesPerBucket);
+      printf("|- resize count: %zu\n", stats->mapStatistics.resizeCount);
+      printf("|- size of keys and string values: %zu bytes\n", stats->sizeOfKeysAndStringValues);
+      printf("|- average size of keys and string values: %f bytes\n", stats->averageSizeOfKeysAndStringValues);
+      printf("|- fill string optimization buffer percentage: %f\n", stats->fillStringOptimizationBufferPercentage);
+      printf("|- fill entries optimization buffer percentage: %f\n", stats->fillEntriesOptimizationBufferPercentage);
   }
 };
 
@@ -701,7 +705,7 @@ TEST_F(PropertiesTestSuite, GetStatsTest) {
         celix_properties_set(props, std::to_string(i).c_str(), std::to_string(i).c_str());
     }
 
-    celix_hash_map_statistics_t stats = celix_properties_getStatistics(props);
-    EXPECT_EQ(stats.nrOfEntries, 200);
+    auto stats = celix_properties_getStatistics(props);
+    EXPECT_EQ(stats.mapStatistics.nrOfEntries, 200);
     printStats(&stats);
 }

@@ -222,10 +222,14 @@ static void StringHashmapBenchmark_findEntryFromCelixProperties(benchmark::State
     state.SetItemsProcessed(state.iterations());
 
     auto stats = celix_properties_getStatistics(benchmark.celixProperties);
-    state.counters["nrOfBuckets"] = (double)stats.nrOfBuckets;
-    state.counters["resizeCount"] = (double)stats.resizeCount;
-    state.counters["averageNrOfEntriesPerBucket"] = stats.averageNrOfEntriesPerBucket;
-    state.counters["stdDeviationNrOfEntriesPerBucket"] = stats.stdDeviationNrOfEntriesPerBucket;
+    state.counters["nrOfBuckets"] = (double)stats.mapStatistics.nrOfBuckets;
+    state.counters["resizeCount"] = (double)stats.mapStatistics.resizeCount;
+    state.counters["averageNrOfEntriesPerBucket"] = stats.mapStatistics.averageNrOfEntriesPerBucket;
+    state.counters["stdDeviationNrOfEntriesPerBucket"] = stats.mapStatistics.stdDeviationNrOfEntriesPerBucket;
+    state.counters["sizeOfKeysAndStringValues"] = (double)stats.sizeOfKeysAndStringValues;
+    state.counters["averageSizeOfKeysAndStringValues"] = (double)stats.averageSizeOfKeysAndStringValues;
+    state.counters["fillStringOptimizationBufferPercentage"] = stats.fillStringOptimizationBufferPercentage;
+    state.counters["fillEntriesOptimizationBufferPercentage"] = stats.fillEntriesOptimizationBufferPercentage;
 }
 
 static void StringHashmapBenchmark_fillStdMap(benchmark::State& state) {
@@ -276,8 +280,8 @@ static void StringHashmapBenchmark_fillProperties(benchmark::State& state) {
 }
 
 #define CELIX_BENCHMARK(name) \
-    BENCHMARK(name)->MeasureProcessCPUTime()->UseRealTime()->Unit(benchmark::kMicrosecond) \
-        ->RangeMultiplier(10)->Range(10, 1000000)
+    BENCHMARK(name)->MeasureProcessCPUTime()->UseRealTime()->Unit(benchmark::kNanosecond) \
+        ->RangeMultiplier(10)->Range(10, 100000)
 
 CELIX_BENCHMARK(StringHashmapBenchmark_addEntryToStdMap); //reference
 CELIX_BENCHMARK(StringHashmapBenchmark_addEntryToCelixHashmap);

@@ -122,8 +122,6 @@ static void LongHashmapBenchmark_addEntryToDeprecatedHashmap(benchmark::State& s
         hashMap_put(benchmark.deprecatedHashMap, (void*)42, (void*)42);
     }
     state.SetItemsProcessed(state.iterations());
-    state.counters["average_bucket_size"] = NAN;
-    state.counters["stddev_bucket_size"] = NAN;
 }
 
 static void LongHashmapBenchmark_findEntryFromStdMap(benchmark::State& state) {
@@ -212,7 +210,7 @@ static void LongHashmapBenchmark_fillDeprecatedHashMap(benchmark::State& state) 
 
 #define CELIX_BENCHMARK(name) \
     BENCHMARK(name)->MeasureProcessCPUTime()->UseRealTime()->Unit(benchmark::kNanosecond) \
-        ->RangeMultiplier(10)->Range(10, 1000000)
+        ->RangeMultiplier(10)->Range(10, 100000)
 
 CELIX_BENCHMARK(LongHashmapBenchmark_addEntryToStdMap); //reference
 CELIX_BENCHMARK(LongHashmapBenchmark_addEntryToCelixHashmap);

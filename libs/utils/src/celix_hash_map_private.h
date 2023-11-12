@@ -47,11 +47,8 @@ celix_status_t celix_hashMap_resize(celix_hash_map_t* map);
 /**
  * @brief Add a new entry to the hash map.
  */
-celix_status_t celix_hashMap_addEntry(celix_hash_map_t* map,
-                                      unsigned int hash,
-                                      const celix_hash_map_key_t* key,
-                                      const celix_hash_map_value_t* value,
-                                      unsigned int bucketIndex);
+celix_status_t
+celix_hashMap_addEntry(celix_hash_map_t* map, const celix_hash_map_key_t* key, const celix_hash_map_value_t* value);
 
 /**
  * @brief Initialize the hash map.
