@@ -125,7 +125,7 @@ typedef struct celix_long_hash_map_create_options {
      * For example a hash map with capacity 16 and load factor 0.75 will double its capacity when the 13th entry
      * is added to the hash map.
      *
-     * If 0 is provided, the hash map load factor will be 0.75 (default hash map load factor).
+     * If 0 is provided, the hash map load factor will be 5 (default hash map load factor).
      * Default is 0.
      */
     double maxLoadFactor CELIX_OPTS_INIT;
