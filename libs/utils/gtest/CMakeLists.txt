@@ -113,6 +113,7 @@ if (EI_TESTS)
             Celix::asprintf_ei
             Celix::string_hash_map_ei
             Celix::long_hash_map_ei
+            Celix::version_ei
             GTest::gtest GTest::gtest_main
     )
     target_include_directories(test_utils_with_ei PRIVATE ../src) #for version_private (needs refactoring of test)

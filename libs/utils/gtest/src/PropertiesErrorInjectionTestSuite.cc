@@ -26,12 +26,14 @@
 #include "celix_properties.h"
 #include "celix_properties_private.h"
 #include "celix_utils_private_constants.h"
+#include "celix_version.h"
 
 #include "celix_string_hash_map_ei.h"
 #include "celix_utils_ei.h"
 #include "malloc_ei.h"
 #include "stdio_ei.h"
 #include "celix_utils_ei.h"
+#include "celix_version_ei.h"
 
 class PropertiesErrorInjectionTestSuite : public ::testing::Test {
   public:
@@ -280,6 +282,21 @@ TEST_F(PropertiesErrorInjectionTestSuite, LoadFromStringFailureTest) {
     auto props = celix_properties_loadFromString("key=value");
     ASSERT_EQ(nullptr, props);
     // And a celix err msg is set
+    ASSERT_EQ(1, celix_err_getErrorCount());
+    celix_err_resetErrors();
+}
+
+TEST_F(PropertiesErrorInjectionTestSuite, LoadSetVersionFailureTest) {
+    // Given a celix properties object
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    // And a version object
+    celix_autoptr(celix_version_t) version = celix_version_create(1, 2, 3, "qualifier");
+    // When a celix_version_copy error injection is set for celix_properties_setVersion
+    celix_ei_expect_celix_version_copy((void*)celix_properties_setVersion, 0, nullptr);
+    // Then the celix_properties_setVersion call fails
+    auto status = celix_properties_setVersion(props, "key", version);
+    ASSERT_EQ(status, CELIX_ENOMEM);
+    //And a celix err msg is pushed
     ASSERT_EQ(1, celix_err_getErrorCount());
     celix_err_resetErrors();
 }

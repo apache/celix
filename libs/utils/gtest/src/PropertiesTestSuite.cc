@@ -19,11 +19,13 @@
 
 #include <gtest/gtest.h>
 
+#include <climits>
+
+#include "celix_err.h"
 #include "celix_properties.h"
 #include "celix_properties_internal.h"
 #include "celix_utils.h"
 #include "properties.h"
-#include "celix_err.h"
 
 using ::testing::MatchesRegex;
 
@@ -708,4 +710,17 @@ TEST_F(PropertiesTestSuite, GetStatsTest) {
     auto stats = celix_properties_getStatistics(props);
     EXPECT_EQ(stats.mapStatistics.nrOfEntries, 200);
     printStats(&stats);
+}
+
+TEST_F(PropertiesTestSuite, SetLongMaxMinTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    ASSERT_EQ(CELIX_SUCCESS, celix_properties_setLong(props, "max", LONG_MAX));
+    ASSERT_EQ(CELIX_SUCCESS, celix_properties_setLong(props, "min", LONG_MIN));
+    EXPECT_EQ(LONG_MAX, celix_properties_getAsLong(props, "max", 0));
+    EXPECT_EQ(LONG_MIN, celix_properties_getAsLong(props, "min", 0));
+}
+
+TEST_F(PropertiesTestSuite, SetDoubleWithLargeStringRepresentationTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    ASSERT_EQ(CELIX_SUCCESS, celix_properties_setDouble(props, "large_str_value", 12345678901234567890.1234567890));
 }
