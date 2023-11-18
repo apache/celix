@@ -49,8 +49,9 @@ struct celix_properties {
      * String buffer used to store the first key/value entries,
      * so that in many cases - for usage in service properties - additional memory allocations are not needed.
      *
-     * @note based on some small testing most services properties seem to max out at 11 entries.
-     * So 16 (next factor 2 based value) seems like a good fit.
+     * @note based on some small testing most services properties seem to max around 300 bytes.
+     * So 128 (next factor 2 based value) seems like a good fit.
+     * The size is tunable by changing CMake cache variable CELIX_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE or Conan option celix_properties_optimization_string_buffer_size.
      */
     char stringBuffer[CELIX_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE];
 
@@ -63,8 +64,9 @@ struct celix_properties {
      * Entries buffer used to store the first entries, so that in many cases additional memory allocation
      * can be prevented.
      *
-     * @note based on some small testing most services properties seem to max around 300 bytes.
-     * So 512 (next factor 2 based value) seems like a good fit.
+     * @note based on some small testing most services properties seem to max out at 11 entries.
+     * So 16 (next factor 2 based value) seems like a good fit.
+     * The size is tunable by changing CMake cache variable CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE or Conan option celix_properties_optimization_entries_buffer_size.
      */
     celix_properties_entry_t entriesBuffer[CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE];
 
