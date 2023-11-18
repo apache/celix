@@ -173,7 +173,7 @@ static void celix_properties_freeString(celix_properties_t* properties, char* st
 static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
                                                  celix_properties_entry_t* entry,
                                                  const celix_properties_entry_t* prototype) {
-    char convertedValueBuffer[20];
+    char convertedValueBuffer[21];
     if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
         entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_VERSION;
         entry->typed.versionValue = prototype->typed.versionValue;
