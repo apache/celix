@@ -53,11 +53,12 @@ typedef struct celix_long_hash_map celix_long_hash_map_t;
  * @Brief long hash map iterator, which contains a hash map entry's keu and value.
  */
 typedef struct celix_long_hash_map_iterator {
-    size_t index; //iterator index, starting at 0
-    long key;
-    celix_hash_map_value_t value;
+    size_t index; /**< The index of the iterator. Starts at 0, ends at map size (so beyond the last element). When an
+                                               entry is removed, the index value is not changed. */
+    long key;     /**< The key of the hash map entry. */
+    celix_hash_map_value_t value; /**< The value of the hash map entry. */
 
-    void* _internal[2]; //internal opaque struct
+    void* _internal[2]; /**< internal opaque data, do not use */
 } celix_long_hash_map_iterator_t;
 
 /**
@@ -344,11 +345,11 @@ bool celix_longHashMapIterator_equals(
  *
  * Small example of how to use the celix_longHashMapIterator_remove function:
  * @code{.c}
- * //remove all even entries
+ * //remove all entries except the first 4 entries from hash map
  * celix_long_hash_map_t* map = ...
  * celix_long_hash_map_iterator_t iter = celix_longHashMap_begin(map);
  * while (!celix_longHashMapIterator_isEnd(&iter)) {
- *     if (iter.index % 2 == 0) {
+ *     if (iter.index >= 4) {
  *         celix_longHashMapIterator_remove(&ter);
  *     } else {
  *         celix_longHashMapIterator_next(&iter);

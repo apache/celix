@@ -239,6 +239,27 @@ static celix_properties_entry_t* celix_properties_createEntryWithNoCopy(celix_pr
     return entry;
 }
 
+static void celix_properties_destroyEntry(celix_properties_t* properties, celix_properties_entry_t* entry) {
+    celix_properties_freeString(properties, (char*)entry->value);
+    if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
+        celix_version_destroy((celix_version_t*)entry->typed.versionValue);
+    }
+
+    if (entry >= properties->entriesBuffer &&
+        entry <= (properties->entriesBuffer + CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE)) {
+        if (entry == (properties->entriesBuffer + properties->currentEntriesBufferIndex - 1)) {
+            // entry is part of the properties entries buffer -> decrease the currentEntriesBufferIndex
+            properties->currentEntriesBufferIndex -= 1;
+        } else {
+            // entry is part of the properties entries buffer, but not the last entry -> nop
+        }
+    } else {
+        free(entry);
+    }
+}
+
+
+
 /**
  * Create entry and optionally use the short properties optimization buffers.
  * Only 1 of the types values (strValue, LongValue, etc) should be provided.
@@ -257,33 +278,10 @@ static celix_properties_entry_t* celix_properties_createEntry(celix_properties_t
     celix_status_t status = celix_properties_fillEntry(properties, entry, prototype);
     if (status != CELIX_SUCCESS) {
         celix_err_pushf("Cannot fill property entry");
-        if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
-            celix_version_destroy((celix_version_t*)prototype->typed.versionValue);
-        }
-        if (entry >= properties->entriesBuffer &&
-            entry <= (properties->entriesBuffer + CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE)) {
-            // entry is part of the properties entries buffer -> decrease the currentEntriesBufferIndex
-            properties->currentEntriesBufferIndex -= 1;
-        } else {
-            free(entry);
-        }
-        entry = NULL;
+        celix_properties_destroyEntry(properties, entry);
+        return NULL;
     }
     return entry;
-}
-
-static void celix_properties_destroyEntry(celix_properties_t* properties, celix_properties_entry_t* entry) {
-    celix_properties_freeString(properties, (char*)entry->value);
-    if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
-        celix_version_destroy((celix_version_t*)entry->typed.versionValue);
-    }
-
-    if (entry >= properties->entriesBuffer &&
-        entry <= (properties->entriesBuffer + CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE)) {
-        // entry is part of the properties entries buffer -> nop.
-    } else {
-        free(entry);
-    }
 }
 
 /**
