@@ -187,7 +187,7 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
         entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_LONG;
         entry->typed.longValue = prototype->typed.longValue;
         int written = snprintf(convertedValueBuffer, sizeof(convertedValueBuffer), "%li", entry->typed.longValue);
-        if (written < 0 || written <= sizeof(convertedValueBuffer)) {
+        if (written >= 0 || written < sizeof(convertedValueBuffer)) {
             entry->value = celix_properties_createString(properties, convertedValueBuffer);
         } else {
             //LCOV_EXCL_START
