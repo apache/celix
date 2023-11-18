@@ -241,7 +241,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_set(celix_properties_t* prope
  *                  not be used after calling this function. The value should be deallocated with free.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
  *         and CELIX_ILLEGAL_ARGUMENT if the provided key or value is NULL.
- *         When CELIX_ENOMEM is returned, the key and value strings are not used and freed by this function.
+ *         When an error status is returned, the key and value will be freed by this function.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_setWithoutCopy(celix_properties_t* properties,
                                                                   char* key,
@@ -357,7 +357,9 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersion(celix_properties_t
  * @param[in] key The key of the property to set.
  * @param[in] version The value to set. The function will store a reference to this object in the property set and
  *                    takes ownership of the provided version.
- *
+ @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL. When an error status is returned,
+ *         the version will be destroy with celix_version_destroy by this function.
  */
 CELIX_UTILS_EXPORT celix_status_t
 celix_properties_setVersionWithoutCopy(celix_properties_t* properties, const char* key, celix_version_t* version);
@@ -400,11 +402,15 @@ CELIX_UTILS_EXPORT celix_version_t* celix_properties_getAsVersion(const celix_pr
 /**
  * @brief Set the value of a property based on the provided property entry, maintaining underlying type.
  *
+ * The typed entry value will be copied, which means that this function will use the entry.typed.strValue,
+ * entry.typed.longValue, entry.typed.doubleValue, entry.typed.boolValue or entry.typed.versionValue depending on
+ * the entry.valueType. The entry.strValue will be ignored.
+ *
  * If the return status is an error, an error message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
- * @param[in] entry The entry to set the property to. The entry will be copied, so it can be freed after calling
+ * @param[in] entry The entry to set the property to. The typed entry will be copied, so it can be freed after calling
  *                  this function.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
  *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL.
@@ -437,7 +443,7 @@ CELIX_UTILS_EXPORT celix_properties_t* celix_properties_copy(const celix_propert
  * @param[in] properties The property set to get the size of.
  * @return The number of properties in the property set.
  */
-CELIX_UTILS_EXPORT int celix_properties_size(const celix_properties_t* properties);
+CELIX_UTILS_EXPORT size_t celix_properties_size(const celix_properties_t* properties);
 
 /**
  * @brief Check whether the provided property sets are equal.

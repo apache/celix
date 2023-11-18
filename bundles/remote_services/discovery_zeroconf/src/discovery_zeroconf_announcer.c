@@ -378,7 +378,7 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
 
         TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
         char propSizeStr[16]= {0};
-        sprintf(propSizeStr, "%d", celix_properties_size(entry->properties) + 1);
+        sprintf(propSizeStr, "%zu", celix_properties_size(entry->properties) + 1);
         (void)TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
         if (!discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(announcer, &propIter, &txtRecord, sizeof(txtBuf), splitTxtRecord)) {
             TXTRecordDeallocate(&txtRecord);

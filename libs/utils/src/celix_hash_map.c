@@ -65,9 +65,7 @@ struct celix_hash_map {
     bool storeKeysWeakly;
 
     //statistics
-    size_t modificationsCount;
     size_t resizeCount;
-    size_t collisionsCount;
 };
 
 struct celix_string_hash_map {
@@ -384,10 +382,7 @@ celix_status_t celix_hashMap_init(
     map->removedStringEntryCallback = NULL;
     map->removedStringKeyCallback = NULL;
     map->storeKeysWeakly = false;
-
-    map->modificationsCount = 0;
     map->resizeCount = 0;
-    map->collisionsCount = 0;
 
     map->buckets = calloc(initialCapacity, sizeof(celix_hash_map_entry_t*));
     return map->buckets == NULL ? CELIX_ENOMEM : CELIX_SUCCESS;
@@ -720,7 +715,7 @@ bool celix_longHashMapIterator_isEnd(const celix_long_hash_map_iterator_t* iter)
 void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter) {
     const celix_hash_map_t* map = iter->_internal[0];
     celix_hash_map_entry_t *entry = iter->_internal[1];
-    iter->index += 1;
+    iter->index = iter->index == map->size ? map->size : iter->index + 1; //increment but not beyond size
     entry = celix_hashMap_nextEntry(map, entry);
     if (entry) {
         iter->_internal[1] = entry;
@@ -736,7 +731,7 @@ void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter) {
 void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter) {
     const celix_hash_map_t* map = iter->_internal[0];
     celix_hash_map_entry_t *entry = iter->_internal[1];
-    iter->index += 1;
+    iter->index = iter->index == map->size ? map->size : iter->index + 1; //increment but not beyond size
     entry = celix_hashMap_nextEntry(map, entry);
     if (entry) {
         iter->_internal[1] = entry;

@@ -24,7 +24,6 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,7 +77,7 @@ struct celix_properties {
 
 #define MALLOC_BLOCK_SIZE 5
 
-static void celix_properties_parseLine(const char* line, celix_properties_t* props);
+static celix_status_t celix_properties_parseLine(const char* line, celix_properties_t* props);
 
 properties_pt properties_create(void) { return celix_properties_create(); }
 
@@ -385,28 +384,31 @@ celix_properties_t* celix_properties_load(const char* filename) {
     return props;
 }
 
-static void celix_properties_parseLine(const char* line, celix_properties_t* props) {
+static celix_status_t celix_properties_parseLine(const char* line, celix_properties_t* props) {
     int linePos;
     int outputPos;
 
     bool precedingCharIsBackslash = false;
-    bool isComment = false;
     char* output = NULL;
     int key_len = MALLOC_BLOCK_SIZE;
     int value_len = MALLOC_BLOCK_SIZE;
     linePos = 0;
     precedingCharIsBackslash = false;
-    isComment = false;
     output = NULL;
     outputPos = 0;
 
     // Ignore empty lines
     if (line[0] == '\n' && line[1] == '\0') {
-        return;
+        return CELIX_SUCCESS;
     }
 
-    char* key = calloc(1, key_len);
-    char* value = calloc(1, value_len);
+    celix_autofree char* key = calloc(1, key_len);
+    celix_autofree char* value = calloc(1, value_len);
+    if (!key || !value) {
+        celix_err_pushf("Cannot allocate memory for key or value. Got error %i", errno);
+        return CELIX_ENOMEM;
+    }
+
     key[0] = '\0';
     value[0] = '\0';
 
@@ -431,8 +433,8 @@ static void celix_properties_parseLine(const char* line, celix_properties_t* pro
             } else {
                 if (line[linePos] == '#' || line[linePos] == '!') {
                     if (outputPos == 0) {
-                        isComment = true;
-                        break;
+                        // comment line, ignore
+                        return CELIX_SUCCESS;
                     } else {
                         output[outputPos++] = line[linePos];
                         updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
@@ -466,14 +468,7 @@ static void celix_properties_parseLine(const char* line, celix_properties_t* pro
         output[outputPos] = '\0';
     }
 
-    if (!isComment) {
-        // printf("putting 'key'/'value' '%s'/'%s' in properties\n", utils_stringTrim(key), utils_stringTrim(value));
-        celix_properties_set(props, celix_utils_trimInPlace(key), celix_utils_trimInPlace(value));
-    }
-    if (key) {
-        free(key);
-        free(value);
-    }
+    return celix_properties_set(props, celix_utils_trimInPlace(key), celix_utils_trimInPlace(value));
 }
 
 celix_properties_t* celix_properties_loadWithStream(FILE* file) {
@@ -500,7 +495,7 @@ celix_properties_t* celix_properties_loadWithStream(FILE* file) {
         return NULL;
     }
 
-    char* fileBuffer = malloc(fileSize + 1);
+    celix_autofree char* fileBuffer = malloc(fileSize + 1);
     if (fileBuffer == NULL) {
         celix_err_pushf("Cannot allocate memory for file buffer. Got error %i", errno);
         return NULL;
@@ -508,17 +503,21 @@ celix_properties_t* celix_properties_loadWithStream(FILE* file) {
 
     size_t rs = fread(fileBuffer, sizeof(char), fileSize, file);
     if (rs < fileSize) {
-        fprintf(stderr, "fread read only %zu bytes out of %zu\n", rs, fileSize);
+        celix_err_pushf("fread read only %zu bytes out of %zu\n", rs, fileSize);
+        return NULL;
     }
     fileBuffer[fileSize] = '\0'; // ensure a '\0' at the end of the fileBuffer
 
     char* savePtr = NULL;
     char* line = strtok_r(fileBuffer, "\n", &savePtr);
     while (line != NULL) {
-        celix_properties_parseLine(line, props);
+        celix_status_t status = celix_properties_parseLine(line, props);
+        if (status != CELIX_SUCCESS) {
+            celix_err_pushf("Failed to parse line '%s'", line);
+            return NULL;
+        }
         line = strtok_r(NULL, "\n", &savePtr);
     }
-    free(fileBuffer);
 
     return celix_steal_ptr(props);
 }
@@ -535,7 +534,11 @@ celix_properties_t* celix_properties_loadFromString(const char* input) {
     char* saveLinePointer = NULL;
     line = strtok_r(in, "\n", &saveLinePointer);
     while (line != NULL) {
-        celix_properties_parseLine(line, props);
+        celix_status_t status = celix_properties_parseLine(line, props);
+        if (status != CELIX_SUCCESS) {
+            celix_err_pushf("Failed to parse line '%s'", line);
+            return NULL;
+        }
         line = strtok_r(NULL, "\n", &saveLinePointer);
     }
     return celix_steal_ptr(props);
@@ -713,7 +716,7 @@ celix_properties_setEntry(celix_properties_t* properties, const char* key, const
         case CELIX_PROPERTIES_VALUE_TYPE_VERSION:
             return celix_properties_setVersion(properties, key, entry->typed.versionValue);
         default: // STRING
-            return celix_properties_set(properties, key, entry->value);
+            return celix_properties_set(properties, key, entry->typed.strValue);
         }
     }
     return CELIX_SUCCESS; // silently ignore NULL entry
@@ -845,8 +848,8 @@ celix_status_t celix_properties_setVersionWithoutCopy(celix_properties_t* props,
     return celix_properties_createAndSetEntry(props, key, &prototype);
 }
 
-int celix_properties_size(const celix_properties_t* properties) {
-    return (int)celix_stringHashMap_size(properties->map);
+size_t celix_properties_size(const celix_properties_t* properties) {
+    return celix_stringHashMap_size(properties->map);
 }
 
 bool celix_properties_equals(const celix_properties_t* props1, const celix_properties_t* props2) {
@@ -877,12 +880,14 @@ typedef struct {
 } celix_properties_iterator_internal_t;
 
 celix_properties_iterator_t celix_properties_begin(const celix_properties_t* properties) {
-    CELIX_BUILD_ASSERT(sizeof(celix_properties_iterator_internal_t) <= sizeof(celix_properties_iterator_t));
+    celix_properties_iterator_t iter;
     celix_properties_iterator_internal_t internalIter;
+
+    CELIX_BUILD_ASSERT(sizeof(celix_properties_iterator_internal_t) <= sizeof(iter._data));
+
     internalIter.mapIter = celix_stringHashMap_begin(properties->map);
     internalIter.props = properties;
 
-    celix_properties_iterator_t iter;
     iter.index = 0;
     if (celix_stringHashMapIterator_isEnd(&internalIter.mapIter)) {
         iter.key = NULL;
@@ -947,7 +952,7 @@ celix_properties_statistics_t celix_properties_getStatistics(const celix_propert
 
     celix_properties_statistics_t stats;
     stats.sizeOfKeysAndStringValues = sizeOfKeysAndStringValues;
-    stats.averageSizeOfKeysAndStringValues = (double)sizeOfKeysAndStringValues / celix_properties_size(properties) * 2;
+    stats.averageSizeOfKeysAndStringValues = (double)sizeOfKeysAndStringValues / (double)celix_properties_size(properties) * 2;
     stats.fillStringOptimizationBufferPercentage = (double)properties->currentStringBufferIndex / CELIX_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE;
     stats.fillEntriesOptimizationBufferPercentage = (double)properties->currentEntriesBufferIndex / CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE;
     stats.mapStatistics = celix_stringHashMap_getStatistics(properties->map);

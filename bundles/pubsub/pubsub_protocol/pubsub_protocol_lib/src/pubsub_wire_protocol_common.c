@@ -73,7 +73,7 @@ static celix_status_t pubsubProtocol_addNetstringEntryToBuffer(char* buffer, siz
 }
 
 celix_status_t pubsubProtocol_encodeMetadata(pubsub_protocol_message_t* message, char** bufferInOut, size_t* bufferLengthInOut, size_t* bufferContentLengthOut) {
-    int metadataSize = message->metadata.metadata == NULL ? 0 : celix_properties_size(message->metadata.metadata);
+    size_t metadataSize = message->metadata.metadata == NULL ? 0 : celix_properties_size(message->metadata.metadata);
     bool reallocBuffer = false;
     bool encoded = false;
 
