@@ -350,7 +350,7 @@ celix_properties_t* celix_properties_create() {
     if (props != NULL) {
         celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
         opts.storeKeysWeakly = true;
-        opts.initialCapacity = (unsigned int)ceil(CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE / 0.75);
+        opts.initialCapacity = CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE;
         opts.removedCallbackData = props;
         opts.removedCallback = celix_properties_removeEntryCallback;
         opts.removedKeyCallback = celix_properties_removeKeyCallback;
