@@ -173,10 +173,9 @@ static void celix_properties_freeString(celix_properties_t* properties, char* st
 static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
                                                  celix_properties_entry_t* entry,
                                                  const celix_properties_entry_t* prototype) {
-    char convertedValueBuffer[21];
+    char convertedValueBuffer[21] = {0};
+    *entry = *prototype;
     if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
-        entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_VERSION;
-        entry->typed.versionValue = prototype->typed.versionValue;
         bool written = celix_version_fillString(prototype->typed.versionValue, convertedValueBuffer, sizeof(convertedValueBuffer));
         if (written) {
             entry->value = celix_properties_createString(properties, convertedValueBuffer);
@@ -184,21 +183,12 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
             entry->value = celix_version_toString(prototype->typed.versionValue);
         }
     } else if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG) {
-        entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_LONG;
-        entry->typed.longValue = prototype->typed.longValue;
-        int written = snprintf(convertedValueBuffer, sizeof(convertedValueBuffer), "%li", entry->typed.longValue);
-        if (written >= 0 || written < sizeof(convertedValueBuffer)) {
-            entry->value = celix_properties_createString(properties, convertedValueBuffer);
-        } else {
-            //LCOV_EXCL_START
-            assert(false); // should not happen, LONG_MAX str is 19 chars, LONG_MIN str is 20 chars
-            //LCOV_EXCL_STOP
-        }
+        // LONG_MAX str is 19 chars, LONG_MIN str is 20 chars
+        (void)snprintf(convertedValueBuffer, sizeof(convertedValueBuffer), "%li", entry->typed.longValue);
+        entry->value = celix_properties_createString(properties, convertedValueBuffer);
     } else if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
-        entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_DOUBLE;
-        entry->typed.doubleValue = prototype->typed.doubleValue;
         int written = snprintf(convertedValueBuffer, sizeof(convertedValueBuffer), "%f", entry->typed.doubleValue);
-        if (written < 0 || written <= sizeof(convertedValueBuffer)) {
+        if (written >= 0 || written < sizeof(convertedValueBuffer)) {
             entry->value = celix_properties_createString(properties, convertedValueBuffer);
         } else {
             char* val = NULL;
@@ -206,12 +196,9 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
             entry->value = val;
         }
     } else if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL) {
-        entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_BOOL;
-        entry->typed.boolValue = prototype->typed.boolValue;
         entry->value = entry->typed.boolValue ? CELIX_PROPERTIES_BOOL_TRUE_STRVAL : CELIX_PROPERTIES_BOOL_FALSE_STRVAL;
     } else /*string value*/ {
         assert(prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING);
-        entry->valueType = CELIX_PROPERTIES_VALUE_TYPE_STRING;
         entry->value = celix_properties_createString(properties, prototype->typed.strValue);
         entry->typed.strValue = entry->value;
     }
@@ -675,7 +662,7 @@ celix_properties_entry_t* celix_properties_getEntry(const celix_properties_t* pr
 }
 
 celix_status_t celix_properties_set(celix_properties_t* properties, const char* key, const char* value) {
-    celix_properties_entry_t prototype;
+    celix_properties_entry_t prototype = {0};
     prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_STRING;
     prototype.typed.strValue = value;
     return celix_properties_createAndSetEntry(properties, key, &prototype);
@@ -769,7 +756,7 @@ long celix_properties_getAsLong(const celix_properties_t* props, const char* key
 }
 
 celix_status_t celix_properties_setLong(celix_properties_t* props, const char* key, long value) {
-    celix_properties_entry_t prototype;
+    celix_properties_entry_t prototype = {0};
     prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_LONG;
     prototype.typed.longValue = value;
     return celix_properties_createAndSetEntry(props, key, &prototype);
@@ -786,7 +773,7 @@ double celix_properties_getAsDouble(const celix_properties_t* props, const char*
 }
 
 celix_status_t celix_properties_setDouble(celix_properties_t* props, const char* key, double val) {
-    celix_properties_entry_t prototype;
+    celix_properties_entry_t prototype = {0};
     prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_DOUBLE;
     prototype.typed.doubleValue = val;
     return celix_properties_createAndSetEntry(props, key, &prototype);
@@ -803,7 +790,7 @@ bool celix_properties_getAsBool(const celix_properties_t* props, const char* key
 }
 
 celix_status_t celix_properties_setBool(celix_properties_t* props, const char* key, bool val) {
-    celix_properties_entry_t prototype;
+    celix_properties_entry_t prototype = {0};
     prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_BOOL;
     prototype.typed.boolValue = val;
     return celix_properties_createAndSetEntry(props, key, &prototype);
@@ -843,14 +830,14 @@ celix_properties_setVersion(celix_properties_t* props, const char* key, const ce
         return CELIX_ENOMEM;
     }
 
-    celix_properties_entry_t prototype;
+    celix_properties_entry_t prototype = {0};
     prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_VERSION;
     prototype.typed.versionValue = copy;
     return celix_properties_createAndSetEntry(props, key, &prototype);
 }
 
 celix_status_t celix_properties_setVersionWithoutCopy(celix_properties_t* props, const char* key, celix_version_t* version) {
-    celix_properties_entry_t prototype;
+    celix_properties_entry_t prototype = {0};
     prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_VERSION;
     prototype.typed.versionValue = version;
     return celix_properties_createAndSetEntry(props, key, &prototype);
