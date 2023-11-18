@@ -764,6 +764,7 @@ void celix_stringHashMapIterator_remove(celix_string_hash_map_iterator_t* iter) 
     const char* key = entry->key.strKey;
     celix_stringHashMapIterator_next(iter);
     celix_hashMap_remove(map, key, 0);
+    iter->index -= 1; //decrement index, because of remove
 }
 
 void celix_longHashMapIterator_remove(celix_long_hash_map_iterator_t* iter) {
@@ -772,6 +773,7 @@ void celix_longHashMapIterator_remove(celix_long_hash_map_iterator_t* iter) {
     long key = entry->key.longKey;
     celix_longHashMapIterator_next(iter);
     celix_hashMap_remove(map, NULL, key);
+    iter->index -= 1; //decrement index, because of remove
 }
 
 static int celix_hashMap_nrOfEntriesInBucket(const celix_hash_map_t* map, int bucketIndex) {

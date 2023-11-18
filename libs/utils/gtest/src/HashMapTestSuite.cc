@@ -506,18 +506,18 @@ TEST_F(HashMapTestSuite, IterateStressCapacityAndLoadFactorTest) {
     celix_longHashMap_destroy(lMap);
 }
 
-TEST_F(HashMapTestSuite, IterateWithRemoveTest) {
+TEST_F(HashMapTestSuite, IterateWithRemoveAtIndex0Test) {
     auto* sMap = createStringHashMap(6);
     auto iter1 = celix_stringHashMap_begin(sMap);
     while (!celix_stringHashMapIterator_isEnd(&iter1)) {
-        if (iter1.index % 2 == 0) {
+        if (iter1.index == 0) {
             // note only removing entries where the iter key is even
             celix_stringHashMapIterator_remove(&iter1);
         } else {
-            celix_stringHashMapIterator_next(&iter1);
+            FAIL() << "Should not be reached, because index 0 is always removed";
         }
     }
-    EXPECT_EQ(3, celix_stringHashMap_size(sMap));
+    EXPECT_EQ(0, celix_stringHashMap_size(sMap));
     EXPECT_TRUE(celix_stringHashMapIterator_isEnd(&iter1));
     celix_stringHashMapIterator_next(&iter1);
     EXPECT_TRUE(celix_stringHashMapIterator_isEnd(&iter1));
@@ -530,14 +530,46 @@ TEST_F(HashMapTestSuite, IterateWithRemoveTest) {
             // note only removing entries where the iter index is even
             celix_longHashMapIterator_remove(&iter2);
         } else {
-            celix_longHashMapIterator_next(&iter2);
+            FAIL() << "Should not be reached, because index 0 is always removed";
         }
     }
-    EXPECT_EQ(3, celix_longHashMap_size(lMap));
+    EXPECT_EQ(0, celix_longHashMap_size(lMap));
     EXPECT_TRUE(celix_longHashMapIterator_isEnd(&iter2));
     celix_longHashMapIterator_next(&iter2); // calling next on end iter, does nothing
     EXPECT_TRUE(celix_longHashMapIterator_isEnd(&iter2));
     celix_longHashMap_destroy(lMap);
+}
+
+TEST_F(HashMapTestSuite, IterateWithRemoveAtIndex4Test) {
+    celix_autoptr(celix_string_hash_map_t) sMap = createStringHashMap(6);
+    auto iter1 = celix_stringHashMap_begin(sMap);
+    while (!celix_stringHashMapIterator_isEnd(&iter1)) {
+        if (iter1.index == 4) {
+            // note only removing entries where the iter key is even
+            celix_stringHashMapIterator_remove(&iter1);
+        } else {
+            celix_stringHashMapIterator_next(&iter1);
+        }
+    }
+    EXPECT_EQ(4, celix_stringHashMap_size(sMap));
+    EXPECT_TRUE(celix_stringHashMapIterator_isEnd(&iter1));
+    celix_stringHashMapIterator_next(&iter1);
+    EXPECT_TRUE(celix_stringHashMapIterator_isEnd(&iter1));
+
+    celix_autoptr(celix_long_hash_map_t) lMap = createLongHashMap(6);
+    auto iter2 = celix_longHashMap_begin(lMap);
+    while (!celix_longHashMapIterator_isEnd(&iter2)) {
+        if (iter2.index == 4) {
+            // note only removing entries where the iter index is even
+            celix_longHashMapIterator_remove(&iter2);
+        } else {
+            celix_longHashMapIterator_next(&iter2);
+        }
+    }
+    EXPECT_EQ(4, celix_longHashMap_size(lMap));
+    EXPECT_TRUE(celix_longHashMapIterator_isEnd(&iter2));
+    celix_longHashMapIterator_next(&iter2); // calling next on end iter, does nothing
+    EXPECT_TRUE(celix_longHashMapIterator_isEnd(&iter2));
 }
 
 TEST_F(HashMapTestSuite, IterateEndTest) {
