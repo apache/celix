@@ -32,11 +32,19 @@
 #include "celix_version.h"
 #include "filter.h"
 
+//ignoring clang-tidy recursion warnings for this file, because filter uses recursion
+//NOLINTBEGIN(misc-no-recursion)
+
 struct celix_filter_internal {
     bool convertedToLong;
     long longValue;
+
     bool convertedToDouble;
     double doubleValue;
+
+    bool convertedToBool;
+    bool boolValue;
+
     bool convertedToVersion;
     celix_version_t *versionValue;
 };
@@ -51,8 +59,8 @@ static char * filter_parseAttr(char* filterString, int* pos);
 static char * filter_parseValue(char* filterString, int* pos);
 static celix_array_list_t* filter_parseSubstring(char* filterString, int* pos);
 
-static void filter_skipWhiteSpace(char * filterString, int * pos) {
-    int length;
+static void filter_skipWhiteSpace(char* filterString, int* pos) {
+    size_t length;
     for (length = strlen(filterString); (*pos < length) && isspace(filterString[*pos]);) {
         (*pos)++;
     }
@@ -111,8 +119,10 @@ static celix_filter_t * filter_parseFilterComp(char * filterString, int * pos) {
             (*pos)++;
             return filter_parseNot(filterString, pos);
         }
+        default: {
+            return filter_parseItem(filterString, pos);
+        }
     }
-    return filter_parseItem(filterString, pos);
 }
 
 static celix_filter_t * filter_parseAndOrOr(char * filterString, celix_filter_operand_t andOrOr, int * pos) {
@@ -210,7 +220,6 @@ static celix_filter_t * filter_parseItem(char * filterString, int * pos) {
                 filter->value = filter_parseValue(filterString, pos);
                 return filter;
             }
-            break;
         }
         case '<': {
             if (filterString[*pos + 1] == '=') {
@@ -229,7 +238,6 @@ static celix_filter_t * filter_parseItem(char * filterString, int * pos) {
                 filter->value = filter_parseValue(filterString, pos);
                 return filter;
             }
-            break;
         }
         case '=': {
             celix_filter_t * filter = NULL;
@@ -280,7 +288,7 @@ static char * filter_parseAttr(char * filterString, int * pos) {
     char c;
     int begin = *pos;
     int end = *pos;
-    int length = 0;
+    int length;
 
     filter_skipWhiteSpace(filterString, pos);
     c = filterString[*pos];
@@ -443,6 +451,7 @@ static celix_status_t celix_filter_compile(celix_filter_t* filter) {
             filter->internal->longValue = celix_utils_convertStringToLong(filter->value, 0, &filter->internal->convertedToLong);
             filter->internal->doubleValue = celix_utils_convertStringToDouble(filter->value, 0.0, &filter->internal->convertedToDouble);
             filter->internal->versionValue = celix_utils_convertStringToVersion(filter->value, NULL, &filter->internal->convertedToVersion);
+            filter->internal->boolValue = celix_utils_convertStringToBool(filter->value, false, &filter->internal->convertedToBool);
         }
     }
 
@@ -459,7 +468,7 @@ static celix_status_t celix_filter_compile(celix_filter_t* filter) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t filter_match(celix_filter_t * filter, celix_properties_t *properties, bool *out) {
+celix_status_t filter_match(celix_filter_t* filter, celix_properties_t* properties, bool* out) {
     bool result = celix_filter_match(filter, properties);
     if (out != NULL) {
         *out = result;
@@ -467,64 +476,95 @@ celix_status_t filter_match(celix_filter_t * filter, celix_properties_t *propert
     return CELIX_SUCCESS;
 }
 
+static int celix_filter_cmpLong(long a, long b) {
+    if (a < b) {
+        return -1;
+    } else if (a > b) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+static int celix_filter_cmpDouble(double a, double b) {
+    if (a < b) {
+        return -1;
+    } else if (a > b) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+static int celix_filter_cmpBool(bool a, bool b) {
+    if (a == b) {
+        return 0;
+    } else if (a) {
+        return 1;
+    } else {
+        return -1;
+    }
+}
+
 static int celix_filter_compareAttributeValue(const celix_filter_t* filter, const celix_properties_entry_t* entry) {
-    const char* propertyValue = entry->value;
-    if (!filter->internal->convertedToLong && !filter->internal->convertedToDouble && !filter->internal->convertedToVersion) {
-        return strcmp(propertyValue, filter->value);
+    // not converted, fallback on string compare
+    if (!filter->internal->convertedToLong && !filter->internal->convertedToDouble &&
+        !filter->internal->convertedToBool && !filter->internal->convertedToVersion) {
+        return strcmp(entry->value, filter->value);
     }
 
+    //compare typed values
+    if (filter->internal->convertedToLong && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG) {
+        return celix_filter_cmpLong(entry->typed.longValue, filter->internal->longValue);
+    } else if (filter->internal->convertedToDouble && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
+        return celix_filter_cmpDouble(entry->typed.doubleValue, filter->internal->doubleValue);
+    } else if (filter->internal->convertedToBool && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL) {
+        return celix_filter_cmpBool(entry->typed.boolValue, filter->internal->boolValue);
+    } else if (filter->internal->convertedToVersion && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
+        return celix_version_compareTo(entry->typed.versionValue, filter->internal->versionValue);
+    }
+
+    //check if the property string value can be converted to the filter value type
+    bool propertyConverted;
     if (filter->internal->convertedToLong) {
-        bool propertyValueIsLong = false;
-        long value = celix_utils_convertStringToLong(propertyValue, 0, &propertyValueIsLong);
-        if (propertyValueIsLong) {
-            if (value < filter->internal->longValue)
-                return -1;
-            else if (value > filter->internal->longValue)
-                return 1;
-            else
-                return 0;
+        long val = celix_utils_convertStringToLong(entry->value, 0, &propertyConverted);
+        if (propertyConverted) {
+            return celix_filter_cmpLong(val, filter->internal->longValue);
         }
-    }
-
-    if (filter->internal->convertedToDouble) {
-        bool propertyValueIsDouble = false;
-        double value = celix_utils_convertStringToDouble(propertyValue, 0.0, &propertyValueIsDouble);
-        if (propertyValueIsDouble) {
-            if (value < filter->internal->doubleValue) {
-                return -1;
-            } else if (value > filter->internal->doubleValue) {
-                return 1;
-            } else {
-                return 0;
-            }
+    } else if (filter->internal->convertedToDouble) {
+        double val = celix_utils_convertStringToDouble(entry->value, 0.0, &propertyConverted);
+        if (propertyConverted) {
+            return celix_filter_cmpDouble(val, filter->internal->doubleValue);
         }
-    }
-
-    if (filter->internal->convertedToVersion) {
-        bool propertyValueIsVersion = false;
-        celix_version_t *value = celix_utils_convertStringToVersion(propertyValue, NULL, &propertyValueIsVersion);
-        if (propertyValueIsVersion) {
-            int cmp = celix_version_compareTo(value, filter->internal->versionValue);
-            celix_version_destroy(value);
+    } else if (filter->internal->convertedToBool) {
+        bool val = celix_utils_convertStringToBool(entry->value, false, &propertyConverted);
+        if (propertyConverted) {
+            return celix_filter_cmpBool(val, filter->internal->boolValue);
+        }
+    } else if (filter->internal->convertedToVersion) {
+        celix_version_t* val = celix_utils_convertStringToVersion(entry->value, NULL, &propertyConverted);
+        if (propertyConverted) {
+            int cmp = celix_version_compareTo(val, filter->internal->versionValue);
+            celix_version_destroy(val);
             return cmp;
         }
     }
 
     //fallback on string compare
-    return strcmp(propertyValue, filter->value);
+    return strcmp(entry->value, filter->value);
 }
 
 static bool filter_compareSubString(const celix_filter_t* filter, const celix_properties_entry_t* entry) {
     const char* propertyValue = entry->value;
-    int pos = 0;
+    size_t pos = 0;
     int size = celix_arrayList_size(filter->children);
-    for (int i = 0; i < size; i++) {
-        char * substr = (char *) celix_arrayList_get(filter->children, i);
+    for (size_t i = 0; i < size; i++) {
+        char * substr = (char *) celix_arrayList_get(filter->children, (int)i);
 
         if (i + 1 < size) {
             if (substr == NULL) {
                 unsigned int index;
-                char * substr2 = (char *) celix_arrayList_get(filter->children, i + 1);
+                char * substr2 = (char *) celix_arrayList_get(filter->children, (int)(i + 1));
                 if (substr2 == NULL) {
                         continue;
                 }
@@ -551,8 +591,8 @@ static bool filter_compareSubString(const celix_filter_t* filter, const celix_pr
                 free(region);
             }
         } else {
-            unsigned int len;
-            int begin;
+            size_t len;
+            size_t begin;
 
             if (substr == NULL) {
                 return true;
@@ -590,9 +630,10 @@ static bool celix_filter_matchPropertyEntry(const celix_filter_t* filter, const 
         case CELIX_FILTER_OPERAND_OR:
         case CELIX_FILTER_OPERAND_PRESENT:
         default:
-            assert(false); //should not reach here
+            //LCOV EXCL START
+            return false; //should not happen
+            //LCOV EXCL STOP
     }
-    return false;
 }
 
 celix_status_t filter_getString(celix_filter_t * filter, const char **filterStr) {
@@ -615,7 +656,6 @@ celix_filter_t* celix_filter_create(const char *filterString) {
     celix_autofree char* str = celix_utils_strdup(filterString);
     if (!str) {
         celix_err_push("Failed to create filter string");
-        // TODO test error
         return NULL;
     }
 
@@ -735,8 +775,7 @@ bool celix_filter_match(const celix_filter_t* filter, const celix_properties_t* 
     }
 
     // LCOV_EXCL_START
-    assert(false); // should never happen
-    return false;
+    return false;// should not happen
     // LCOV_EXCL_STOP
 }
 
@@ -888,3 +927,5 @@ static bool hasMandatoryNegatedPresenceAttribute(const celix_filter_t *filter, c
 bool celix_filter_hasMandatoryNegatedPresenceAttribute(const celix_filter_t *filter, const char *attribute) {
     return hasMandatoryNegatedPresenceAttribute(filter, attribute, false, false);
 }
+
+//NOLINTEND(misc-no-recursion)

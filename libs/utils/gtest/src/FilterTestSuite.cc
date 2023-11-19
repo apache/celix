@@ -435,6 +435,33 @@ TEST_F(FilterTestSuite, MissingOperandCreateTest) {
     ASSERT_TRUE(filter == nullptr);
 }
 
+TEST_F(FilterTestSuite, TypedPropertiesAndFilterTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_autoptr(celix_version_t) version = celix_version_createVersionFromString("1.2.3");
+    celix_properties_set(props, "str", "test");
+    celix_properties_setLong(props, "long", 1L);
+    celix_properties_setDouble(props, "double", 0.0);
+    celix_properties_setBool(props, "bool", true);
+    celix_properties_setVersion(props, "version", version);
+
+    celix_autoptr(celix_filter_t) filter1 =
+        celix_filter_create("(&(str=test)(long=1)(double=0.0)(bool=true)(version=1.2.3))");
+    EXPECT_TRUE(celix_filter_match(filter1, props));
+
+    celix_autoptr(celix_filter_t) filter2 =
+        celix_filter_create("(&(str>tes)(long>0)(double>-1.0)(bool>false)(version>1.0.0))");
+    EXPECT_TRUE(celix_filter_match(filter2, props));
+
+    celix_autoptr(celix_filter_t) filter3 =
+                celix_filter_create("(&(str<tesu)(long<2)(double<1.0)(bool<=true)(version<2.0.0))");
+    EXPECT_TRUE(celix_filter_match(filter3, props));
+
+    celix_autoptr(celix_filter_t) filter4 =
+            celix_filter_create("(&(str!=test)(long!=1)(double!=0.0)(bool!=true)(version!=1.2.3))");
+    EXPECT_FALSE(celix_filter_match(filter4, props));
+}
+
+
 TEST_F(FilterTestSuite, SubStringTest) {
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     celix_properties_set(props, "test", "John Bob Doe");
