@@ -24,11 +24,13 @@
 #include <assert.h>
 #include <utils.h>
 
-#include "celix_filter.h"
-#include "filter.h"
-#include "celix_errno.h"
-#include "celix_version.h"
 #include "celix_convert_utils.h"
+#include "celix_err.h"
+#include "celix_errno.h"
+#include "celix_filter.h"
+#include "celix_stdlib_cleanup.h"
+#include "celix_version.h"
+#include "filter.h"
 
 struct celix_filter_internal {
     bool convertedToLong;
@@ -65,33 +67,29 @@ void filter_destroy(celix_filter_t * filter) {
 }
 
 static celix_filter_t * filter_parseFilter(char* filterString, int* pos) {
-    celix_filter_t * filter;
     filter_skipWhiteSpace(filterString, pos);
     if (filterString[*pos] == '\0') {
         //empty filter
-        fprintf(stderr, "Filter Error: Cannot create LDAP filter from an empty string.\n");
+        celix_err_push("Filter Error: Cannot create LDAP filter from an empty string.\n");
         return NULL;
     } else if (filterString[*pos] != '(') {
-        fprintf(stderr, "Filter Error: Missing '(' in filter string '%s'.\n", filterString);
+        celix_err_pushf("Filter Error: Missing '(' in filter string '%s'.\n", filterString);
         return NULL;
     }
     (*pos)++; //eat '('
 
-    filter = filter_parseFilterComp(filterString, pos);
+    celix_autoptr(celix_filter_t) filter = filter_parseFilterComp(filterString, pos);
 
     filter_skipWhiteSpace(filterString, pos);
 
     if (filterString[*pos] != ')') {
-        fprintf(stderr, "Filter Error: Missing ')' in filter string '%s'.\n", filterString);
-        if(filter!=NULL){
-            filter_destroy(filter);
-        }
+        celix_err_pushf("Filter Error: Missing ')' in filter string '%s'.\n", filterString);
         return NULL;
     }
     (*pos)++; //eat ')'
     filter_skipWhiteSpace(filterString, pos);
 
-    return filter;
+    return celix_steal_ptr(filter);
 }
 
 static celix_filter_t * filter_parseFilterComp(char * filterString, int * pos) {
@@ -516,7 +514,7 @@ static int celix_filter_compareAttributeValue(const celix_filter_t* filter, cons
     return strcmp(propertyValue, filter->value);
 }
 
-static celix_status_t filter_compareSubString(const celix_filter_t* filter, const celix_properties_entry_t* entry, bool* out) {
+static bool filter_compareSubString(const celix_filter_t* filter, const celix_properties_entry_t* entry) {
     const char* propertyValue = entry->value;
     int pos = 0;
     int size = celix_arrayList_size(filter->children);
@@ -532,8 +530,7 @@ static celix_status_t filter_compareSubString(const celix_filter_t* filter, cons
                 }
                 index = strcspn(propertyValue+pos, substr2);
                 if (index == strlen(propertyValue+pos)) {
-                        *out = false;
-                        return CELIX_SUCCESS;
+                        return false;
                 }
 
                 pos = index + strlen(substr2);
@@ -542,15 +539,14 @@ static celix_status_t filter_compareSubString(const celix_filter_t* filter, cons
                 }
             } else {
                 unsigned int len = strlen(substr);
-                char * region = (char *)calloc(1, len+1);
+                char * region = (char *)calloc(1, len+1); //TODO refactor filter compile to prevent calloc need
                 strncpy(region, propertyValue+pos, len);
                 region[len]    = '\0';
                 if (strcmp(region, substr) == 0) {
                         pos += len;
                 } else {
                         free(region);
-                        *out = false;
-                        return CELIX_SUCCESS;
+                        return false;
                 }
                 free(region);
             }
@@ -559,62 +555,44 @@ static celix_status_t filter_compareSubString(const celix_filter_t* filter, cons
             int begin;
 
             if (substr == NULL) {
-                *out = true;
-                return CELIX_SUCCESS;
+                return true;
             }
             len = strlen(substr);
             begin = strlen(propertyValue)-len;
-            *out = (strcmp(propertyValue+begin, substr) == 0);
-            return CELIX_SUCCESS;
+            return (strcmp(propertyValue+begin, substr) == 0);
         }
     }
-    *out = true;
-    return CELIX_SUCCESS;
+    return true;
 }
 
-static celix_status_t filter_matchPropertyEntry(const celix_filter_t* filter, const celix_properties_entry_t* entry, bool *out) {
-    celix_status_t  status = CELIX_SUCCESS;
-    bool result = false;
-
+static bool celix_filter_matchPropertyEntry(const celix_filter_t* filter, const celix_properties_entry_t* entry) {
     if (filter == NULL || entry == NULL) {
-        *out = false;
-        return status;
+        return false;
     }
 
     switch (filter->operand) {
         case CELIX_FILTER_OPERAND_SUBSTRING:
-            return filter_compareSubString(filter, entry, out);
+            return filter_compareSubString(filter, entry);
         case CELIX_FILTER_OPERAND_APPROX:
-            *out = strcasecmp(entry->value, filter->value) == 0;
-            return CELIX_SUCCESS;
+            return strcasecmp(entry->value, filter->value) == 0;
         case CELIX_FILTER_OPERAND_EQUAL:
-            *out = (celix_filter_compareAttributeValue(filter, entry) == 0);
-            return CELIX_SUCCESS;
+            return celix_filter_compareAttributeValue(filter, entry) == 0;
         case CELIX_FILTER_OPERAND_GREATER:
-            *out = (celix_filter_compareAttributeValue(filter, entry) > 0);
-            return CELIX_SUCCESS;
+            return celix_filter_compareAttributeValue(filter, entry) > 0;
         case CELIX_FILTER_OPERAND_GREATEREQUAL:
-            *out = (celix_filter_compareAttributeValue(filter, entry) >= 0);
-            return CELIX_SUCCESS;
+            return celix_filter_compareAttributeValue(filter, entry) >= 0;
         case CELIX_FILTER_OPERAND_LESS:
-            *out = (celix_filter_compareAttributeValue(filter, entry) < 0);
-            return CELIX_SUCCESS;
+            return celix_filter_compareAttributeValue(filter, entry) < 0;
         case CELIX_FILTER_OPERAND_LESSEQUAL:
-            *out = (celix_filter_compareAttributeValue(filter, entry) <= 0);
-            return CELIX_SUCCESS;
+            return celix_filter_compareAttributeValue(filter, entry) <= 0;
         case CELIX_FILTER_OPERAND_AND:
         case CELIX_FILTER_OPERAND_NOT:
         case CELIX_FILTER_OPERAND_OR:
         case CELIX_FILTER_OPERAND_PRESENT:
         default:
-            ;
-            /* fall through */
+            assert(false); //should not reach here
     }
-
-    if (out != NULL) {
-        *out = result;
-    }
-    return status;
+    return false;
 }
 
 celix_status_t filter_getString(celix_filter_t * filter, const char **filterStr) {
@@ -625,7 +603,7 @@ celix_status_t filter_getString(celix_filter_t * filter, const char **filterStr)
 }
 
 celix_status_t filter_match_filter(celix_filter_t *src, celix_filter_t *dest, bool *out) {
-    bool result = celix_filter_matchFilter(src, dest);
+    bool result = celix_filter_equals(src, dest);
     if (out != NULL) {
         *out = result;
     }
@@ -634,186 +612,188 @@ celix_status_t filter_match_filter(celix_filter_t *src, celix_filter_t *dest, bo
 
 
 celix_filter_t* celix_filter_create(const char *filterString) {
-    celix_filter_t * filter = NULL;
-    char* filterStr = string_ndup(filterString, 1024*1024);
+    celix_autofree char* str = celix_utils_strdup(filterString);
+    if (!str) {
+        celix_err_push("Failed to create filter string");
+        // TODO test error
+        return NULL;
+    }
+
     int pos = 0;
-    filter = filter_parseFilter(filterStr, &pos);
-    if (filter != NULL && pos != strlen(filterStr)) {
-        fprintf(stderr, "Filter Error: Extraneous trailing characters.\n");
-        filter_destroy(filter);
-        filter = NULL;
-    } else if (filter != NULL) {
-        if (filter->operand != CELIX_FILTER_OPERAND_OR && filter->operand != CELIX_FILTER_OPERAND_AND &&
-            filter->operand != CELIX_FILTER_OPERAND_NOT && filter->operand != CELIX_FILTER_OPERAND_SUBSTRING &&
-            filter->operand != CELIX_FILTER_OPERAND_PRESENT) {
-            if (filter->attribute == NULL || filter->value == NULL) {
-                filter_destroy(filter);
-                filter = NULL;
-            }
+    celix_autoptr(celix_filter_t) filter = filter_parseFilter(str, &pos);
+    if (!filter) {
+        celix_err_push("Failed to parse filter string");
+        return NULL;
+    }
+    if (pos != strlen(filterString)) {
+        celix_err_push("Filter Error: Extraneous trailing characters.\n");
+        return NULL;
+    }
+
+    if (filter->operand != CELIX_FILTER_OPERAND_OR && filter->operand != CELIX_FILTER_OPERAND_AND &&
+        filter->operand != CELIX_FILTER_OPERAND_NOT && filter->operand != CELIX_FILTER_OPERAND_SUBSTRING &&
+        filter->operand != CELIX_FILTER_OPERAND_PRESENT) {
+        if (filter->attribute == NULL || filter->value == NULL) {
+            celix_err_push("Filter Error: Missing attribute or value.\n");
+            return NULL;
         }
     }
 
-    if (filter == NULL) {
-        free(filterStr);
-    } else {
-        filter->filterStr = filterStr;
-        celix_status_t status = celix_filter_compile(filter);
-        if (status != CELIX_SUCCESS) {
-            celix_filter_destroy(filter);
-            filter = NULL;
-        }
+    filter->filterStr = celix_steal_ptr(str);
+    if (celix_filter_compile(filter) != CELIX_SUCCESS) {
+        // TODO test error
+        return NULL;
     }
-
-    return filter;
+    return celix_steal_ptr(filter);
 }
 
-void celix_filter_destroy(celix_filter_t *filter) {
-    if (filter != NULL) {
-        if(filter->children != NULL) {
-            if (filter->operand == CELIX_FILTER_OPERAND_SUBSTRING) {
-                int size = celix_arrayList_size(filter->children);
-                int i = 0;
-                for (i = 0; i < size; i++) {
-                    char *operand = celix_arrayList_get(filter->children, i);
-                    free(operand);
-                }
-                celix_arrayList_destroy(filter->children);
-                filter->children = NULL;
-            } else if (filter->operand == CELIX_FILTER_OPERAND_OR || filter->operand == CELIX_FILTER_OPERAND_AND || filter->operand == CELIX_FILTER_OPERAND_NOT) {
-                int size = celix_arrayList_size(filter->children);
-                int i = 0;
-                for (i = 0; i < size; i++) {
-                    celix_filter_t *f = celix_arrayList_get(filter->children, i);
-                    celix_filter_destroy(f);
-                }
-                celix_arrayList_destroy(filter->children);
-                filter->children = NULL;
-            } else {
-                fprintf(stderr, "Filter Error: Corrupt filter. children has a value, but not an expected operand\n");
-            }
-        }
-        free((char*)filter->value);
-        filter->value = NULL;
-        free((char*)filter->attribute);
-        filter->attribute = NULL;
-        free((char*)filter->filterStr);
-        filter->filterStr = NULL;
-        if (filter->internal != NULL) {
-            celix_version_destroy(filter->internal->versionValue);
-            free(filter->internal);
-        }
-        free(filter);
+void celix_filter_destroy(celix_filter_t* filter) {
+    if (!filter) {
+        return;
     }
+
+    if (filter->children != NULL) {
+        int size = celix_arrayList_size(filter->children);
+        if (filter->operand == CELIX_FILTER_OPERAND_SUBSTRING) {
+            for (int i = 0; i < size; i++) {
+                char* operand = celix_arrayList_get(filter->children, i);
+                free(operand);
+            }
+            celix_arrayList_destroy(filter->children);
+            filter->children = NULL;
+        } else if (filter->operand == CELIX_FILTER_OPERAND_OR || filter->operand == CELIX_FILTER_OPERAND_AND ||
+                   filter->operand == CELIX_FILTER_OPERAND_NOT) {
+            for (int i = 0; i < size; i++) {
+                celix_filter_t* f = celix_arrayList_get(filter->children, i);
+                celix_filter_destroy(f);
+            }
+            celix_arrayList_destroy(filter->children);
+            filter->children = NULL;
+        }
+    }
+    free((char*)filter->value);
+    filter->value = NULL;
+    free((char*)filter->attribute);
+    filter->attribute = NULL;
+    free((char*)filter->filterStr);
+    filter->filterStr = NULL;
+    if (filter->internal != NULL) {
+        celix_version_destroy(filter->internal->versionValue);
+        free(filter->internal);
+    }
+    free(filter);
 }
 
-bool celix_filter_match(const celix_filter_t *filter, const celix_properties_t* properties) {
+bool celix_filter_match(const celix_filter_t* filter, const celix_properties_t* properties) {
     if (filter == NULL) {
-        return true; //matching on null(empty) filter is always true
+        return true; // matching on null(empty) filter is always true
     }
+
     switch (filter->operand) {
-        case CELIX_FILTER_OPERAND_AND: {
-            celix_array_list_t* children = filter->children;
-            for (int i = 0; i < celix_arrayList_size(children); i++) {
-                celix_filter_t * sfilter = (celix_filter_t *) celix_arrayList_get(children, i);
-                bool mresult = celix_filter_match(sfilter, properties);
-                if (!mresult) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        case CELIX_FILTER_OPERAND_OR: {
-            celix_array_list_t* children = filter->children;
-            for (int i = 0; i < celix_arrayList_size(children); i++) {
-                celix_filter_t * sfilter = (celix_filter_t *) celix_arrayList_get(children, i);
-                bool mresult = celix_filter_match(sfilter, properties);
-                if (mresult) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        case CELIX_FILTER_OPERAND_NOT: {
-            celix_filter_t * sfilter = celix_arrayList_get(filter->children, 0);
-            bool mresult = celix_filter_match(sfilter, properties);
-            return !mresult;
-        }
-        case CELIX_FILTER_OPERAND_PRESENT: {
-            char * value = (properties == NULL) ? NULL: (char*)celix_properties_get(properties, filter->attribute, NULL);
-            return value != NULL;
-        }
-        case CELIX_FILTER_OPERAND_SUBSTRING :
-        case CELIX_FILTER_OPERAND_EQUAL :
-        case CELIX_FILTER_OPERAND_GREATER :
-        case CELIX_FILTER_OPERAND_GREATEREQUAL :
-        case CELIX_FILTER_OPERAND_LESS :
-        case CELIX_FILTER_OPERAND_LESSEQUAL :
-        case CELIX_FILTER_OPERAND_APPROX : {
-            celix_properties_entry_t *entry = celix_properties_getEntry(properties, filter->attribute);
-            bool result;
-            celix_status_t status = filter_matchPropertyEntry(filter, entry, &result);
-            if (status != CELIX_SUCCESS) {
-                //TODO handle error
+    case CELIX_FILTER_OPERAND_AND: {
+        celix_array_list_t* childern = filter->children;
+        for (int i = 0; i < celix_arrayList_size(childern); i++) {
+            celix_filter_t* childFilter = (celix_filter_t*)celix_arrayList_get(childern, i);
+            bool childResult = celix_filter_match(childFilter, properties);
+            if (!childResult) {
                 return false;
             }
-            return result;
         }
+        return true;
+    }
+    case CELIX_FILTER_OPERAND_OR: {
+        celix_array_list_t* children = filter->children;
+        for (int i = 0; i < celix_arrayList_size(children); i++) {
+            celix_filter_t* childFilter = (celix_filter_t*)celix_arrayList_get(children, i);
+            bool childResult = celix_filter_match(childFilter, properties);
+            if (childResult) {
+                return true;
+            }
+        }
+        return false;
+    }
+    case CELIX_FILTER_OPERAND_NOT: {
+        celix_filter_t* childFilter = celix_arrayList_get(filter->children, 0);
+        bool childResult = celix_filter_match(childFilter, properties);
+        return !childResult;
+    }
+    case CELIX_FILTER_OPERAND_PRESENT: {
+        char* value = (properties == NULL) ? NULL : (char*)celix_properties_get(properties, filter->attribute, NULL);
+        return value != NULL;
+    }
+    case CELIX_FILTER_OPERAND_SUBSTRING:
+    case CELIX_FILTER_OPERAND_EQUAL:
+    case CELIX_FILTER_OPERAND_GREATER:
+    case CELIX_FILTER_OPERAND_GREATEREQUAL:
+    case CELIX_FILTER_OPERAND_LESS:
+    case CELIX_FILTER_OPERAND_LESSEQUAL:
+    case CELIX_FILTER_OPERAND_APPROX: {
+        const celix_properties_entry_t* entry = celix_properties_getEntry(properties, filter->attribute);
+        bool result = celix_filter_matchPropertyEntry(filter, entry);
+        return result;
+    }
     }
 
-    //LCOV_EXCL_START
-    assert(false); //should never happen
+    // LCOV_EXCL_START
+    assert(false); // should never happen
     return false;
-    //LCOV_EXCL_STOP
+    // LCOV_EXCL_STOP
 }
 
-bool celix_filter_matchFilter(const celix_filter_t *filter1, const celix_filter_t *filter2) {
-    bool result = false;
+bool celix_filter_equals(const celix_filter_t *filter1, const celix_filter_t *filter2) {
     if (filter1 == filter2) {
-        result = true; //NOTE. also means NULL filter are equal
-    } else if (filter1 != NULL && filter2 != NULL && filter1->operand == filter2->operand) {
-        if (filter1->operand == CELIX_FILTER_OPERAND_AND || filter1->operand == CELIX_FILTER_OPERAND_OR || filter1->operand == CELIX_FILTER_OPERAND_NOT) {
-            assert(filter1->children != NULL);
-            assert(filter2->children != NULL);
-            int sizeSrc = celix_arrayList_size(filter1->children);
-            int sizeDest = celix_arrayList_size(filter2->children);
-            if (sizeSrc == sizeDest) {
-                int i;
-                int k;
-                int sameCount = 0;
-                for (i =0; i < sizeSrc; ++i) {
-                    bool same = false;
-                    celix_filter_t *srcPart = celix_arrayList_get(filter1->children, i);
-                    for (k = 0; k < sizeDest; ++k) {
-                        celix_filter_t *destPart = celix_arrayList_get(filter2->children, k);
-                        filter_match_filter(srcPart, destPart, &same);
-                        if (same) {
-                            sameCount += 1;
-                            break;
-                        }
-                    }
-                }
-                result = sameCount == sizeSrc;
-            }
-        } else { //compare attr and value
-            bool attrSame = false;
-            bool valSame = false;
-            if (filter1->attribute == NULL && filter2->attribute == NULL) {
-                attrSame = true;
-            } else if (filter1->attribute != NULL && filter2->attribute != NULL) {
-                attrSame = celix_utils_stringEquals(filter1->attribute, filter2->attribute);
-            }
-
-            if (filter1->value == NULL  && filter2->value == NULL) {
-                valSame = true;
-            } else if (filter1->value != NULL && filter2->value != NULL) {
-                valSame = celix_utils_stringEquals(filter1->value, filter2->value);
-            }
-
-            result = attrSame && valSame;
-        }
+        return true;
+    }
+    if (!filter1 || !filter2) {
+        return false;
+    }
+    if (filter1->operand != filter2->operand) {
+        return false;
     }
 
-    return result;
+
+    if (filter1->operand == CELIX_FILTER_OPERAND_AND || filter1->operand == CELIX_FILTER_OPERAND_OR || filter1->operand == CELIX_FILTER_OPERAND_NOT) {
+        assert(filter1->children != NULL);
+        assert(filter2->children != NULL);
+        int sizeSrc = celix_arrayList_size(filter1->children);
+        int sizeDest = celix_arrayList_size(filter2->children);
+        if (sizeSrc == sizeDest) {
+            int i;
+            int k;
+            int sameCount = 0;
+            for (i =0; i < sizeSrc; ++i) {
+                bool same = false;
+                celix_filter_t *srcPart = celix_arrayList_get(filter1->children, i);
+                for (k = 0; k < sizeDest; ++k) {
+                    celix_filter_t *destPart = celix_arrayList_get(filter2->children, k);
+                    filter_match_filter(srcPart, destPart, &same);
+                    if (same) {
+                        sameCount += 1;
+                        break;
+                    }
+                }
+            }
+            return sameCount == sizeSrc;
+        }
+        return false;
+    }
+
+    //compare attr and value
+    bool attrSame = false;
+    bool valSame = false;
+    if (filter1->attribute == NULL && filter2->attribute == NULL) {
+        attrSame = true;
+    } else if (filter1->attribute != NULL && filter2->attribute != NULL) {
+        attrSame = celix_utils_stringEquals(filter1->attribute, filter2->attribute);
+    }
+
+    if (filter1->value == NULL  && filter2->value == NULL) {
+        valSame = true;
+    } else if (filter1->value != NULL && filter2->value != NULL) {
+        valSame = celix_utils_stringEquals(filter1->value, filter2->value);
+    }
+
+    return attrSame && valSame;
 }
 
 const char* celix_filter_getFilterString(const celix_filter_t *filter) {

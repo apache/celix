@@ -176,10 +176,16 @@ static void FilterBenchmark_versionRangeFilter(benchmark::State& state) {
     benchmark.testFilter(state, filter, true);
 }
 
+static void FilterBenchmark_substringFilter(benchmark::State& state) {
+    FilterBenchmark benchmark{state};
+    celix::Filter filter{"(&(version_key1>=1.0.0)(version_key1<2.0.0))"};
+    benchmark.testFilter(state, filter, true);
+}
+
+
 static void FilterBenchmark_complexFilter(benchmark::State& state) {
     FilterBenchmark benchmark{state};
-    celix::Filter filter{"(&(version_key1>=1.0.0)(version_key1<2.0.0)(str_key1=str_value1)(long_key1=1)(double_key1>=0."
-                         "9)(bool_key1=true))"};
+    celix::Filter filter{"(str_key1=*value1)"};
     benchmark.testFilter(state, filter, true);
 }
 
@@ -206,4 +212,5 @@ CELIX_BENCHMARK(FilterBenchmark_versionGreaterEqualFilter);
 
 //Specials
 CELIX_BENCHMARK(FilterBenchmark_versionRangeFilter);
+CELIX_BENCHMARK(FilterBenchmark_substringFilter);
 CELIX_BENCHMARK(FilterBenchmark_complexFilter);

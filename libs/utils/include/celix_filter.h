@@ -62,6 +62,14 @@ struct celix_filter_struct {
     celix_filter_internal_t* internal; //for internal use only
 };
 
+/**
+ * @brief Create a filter based on the provided filter string.
+ *
+ * If the return status is NULL, an error message is logged to celix_err.
+ *
+ * @param filterStr The filter string.
+ * @return The created filter or NULL if the filter string is invalid.
+ */
 CELIX_UTILS_EXPORT celix_filter_t* celix_filter_create(const char *filterStr);
 
 CELIX_UTILS_EXPORT void celix_filter_destroy(celix_filter_t *filter);
@@ -70,7 +78,7 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_filter_t, celix_filter_destroy)
 
 CELIX_UTILS_EXPORT bool celix_filter_match(const celix_filter_t *filter, const celix_properties_t* props);
 
-CELIX_UTILS_EXPORT bool celix_filter_matchFilter(const celix_filter_t *filter1, const celix_filter_t *filter2);
+CELIX_UTILS_EXPORT bool celix_filter_equals(const celix_filter_t *filter1, const celix_filter_t *filter2);
 
 CELIX_UTILS_EXPORT const char* celix_filter_getFilterString(const celix_filter_t *filter);
 
