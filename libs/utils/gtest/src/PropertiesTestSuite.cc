@@ -677,6 +677,7 @@ TEST_F(PropertiesTestSuite, PropertiesNullArgumentsTest) {
     EXPECT_EQ(CELIX_SUCCESS, celix_properties_setDouble(nullptr, "key", 1.0));
     EXPECT_EQ(CELIX_SUCCESS, celix_properties_setBool(nullptr, "key", true));
     EXPECT_EQ(CELIX_SUCCESS, celix_properties_setVersion(nullptr, "key", nullptr));
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setVersionWithoutCopy(nullptr, "key", nullptr));
     celix_autoptr(celix_properties_t) copy = celix_properties_copy(nullptr);
     EXPECT_NE(nullptr, copy);
 }

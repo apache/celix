@@ -547,11 +547,12 @@ celix_properties_t* celix_properties_loadFromString(const char* input) {
  */
 static int celix_properties_storeEscapedString(FILE* file, const char* str) {
     int rc = 0;
-    for (int i = 0; i < strlen(str); i += 1) {
+    size_t len = strlen(str);
+    for (size_t i = 0; i < len && rc != EOF; i += 1) {
         if (str[i] == '#' || str[i] == '!' || str[i] == '=' || str[i] == ':') {
             rc = fputc('\\', file);
             if (rc == EOF) {
-                break;
+                continue;
             }
         }
         rc = fputc(str[i], file);
