@@ -94,11 +94,6 @@ typedef struct celix_properties_entry {
  */
 typedef struct celix_properties_iterator {
     /**
-     * @brief The index of the current iterator.
-     */
-    size_t index;
-
-    /**
      * @brief The current key.
      */
     const char* key;

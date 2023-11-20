@@ -83,7 +83,7 @@ namespace celix {
             }
         }
 
-        celix_properties_iterator_t iter{.index = 0, .key = nullptr, .entry = {}, ._data = {}};
+        celix_properties_iterator_t iter{.key = nullptr, .entry = {}, ._data = {}};
     };
 
 

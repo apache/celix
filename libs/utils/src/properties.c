@@ -887,7 +887,6 @@ celix_properties_iterator_t celix_properties_begin(const celix_properties_t* pro
     internalIter.mapIter = celix_stringHashMap_begin(properties->map);
     internalIter.props = properties;
 
-    iter.index = 0;
     if (celix_stringHashMapIterator_isEnd(&internalIter.mapIter)) {
         iter.key = NULL;
         memset(&iter.entry, 0, sizeof(iter.entry));
@@ -908,7 +907,6 @@ celix_properties_iterator_t celix_properties_end(const celix_properties_t* prope
 
     celix_properties_iterator_t iter;
     memset(&iter, 0, sizeof(iter));
-    iter.index = internalIter.mapIter.index;
     memcpy(iter._data, &internalIter, sizeof(internalIter));
     return iter;
 }
@@ -918,7 +916,6 @@ void celix_propertiesIterator_next(celix_properties_iterator_t* iter) {
     memcpy(&internalIter, iter->_data, sizeof(internalIter));
     celix_stringHashMapIterator_next(&internalIter.mapIter);
     memcpy(iter->_data, &internalIter, sizeof(internalIter));
-    iter->index = internalIter.mapIter.index;
     if (celix_stringHashMapIterator_isEnd(&internalIter.mapIter)) {
         iter->key = NULL;
         memset(&iter->entry, 0, sizeof(iter->entry));

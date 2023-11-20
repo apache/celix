@@ -550,21 +550,17 @@ TEST_F(PropertiesTestSuite, EndOfPropertiesTest) {
     auto* props = celix_properties_create();
     celix_properties_set(props, "key1", "value1");
     celix_properties_set(props, "key2", "value2");
-
     celix_properties_iterator_t endIter = celix_properties_end(props);
-    EXPECT_EQ(endIter.index, 2);
     EXPECT_TRUE(celix_propertiesIterator_isEnd(&endIter));
-
     celix_properties_destroy(props);
 }
 
 TEST_F(PropertiesTestSuite, EndOfEmptyPropertiesTest) {
     auto* props = celix_properties_create();
-
     celix_properties_iterator_t endIter = celix_properties_end(props);
-    EXPECT_EQ(endIter.index, 0);
     EXPECT_TRUE(celix_propertiesIterator_isEnd(&endIter));
-
+    celix_properties_iterator_t beginIter = celix_properties_begin(props);
+    EXPECT_TRUE(celix_propertiesIterator_isEnd(&beginIter)); //empty properties: begin == end
     celix_properties_destroy(props);
 }
 

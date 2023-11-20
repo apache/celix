@@ -53,8 +53,6 @@ typedef struct celix_long_hash_map celix_long_hash_map_t;
  * @Brief long hash map iterator, which contains a hash map entry's keu and value.
  */
 typedef struct celix_long_hash_map_iterator {
-    size_t index; /**< The index of the iterator. Starts at 0, ends at map size (so beyond the last element). When an
-                                               entry is removed, the index value is not changed. */
     long key;     /**< The key of the hash map entry. */
     celix_hash_map_value_t value; /**< The value of the hash map entry. */
 
