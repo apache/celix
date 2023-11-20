@@ -54,7 +54,7 @@ the Apache Celix functionality. Most of these bundles are based on the OSGi spec
   * [Syslog Writer](../bundles/logging/log_writers/syslog_writer) - A syslog writer for use in combination with the Log Service.
 * [Shell](../bundles/shell/README.md) - A OSGi C and C++ shell implementation, which can be extended with shell command services.
 * [Pubsub](../bundles/pubsub/README.md) - An implementation for a publish-subscribe remote message communication system.
-* [Remote Services](../bundles/remote_services) - A C adaption and implementation of the OSGi Remote Service Admin specification.
+* [Remote Services](../bundles/remote_services/README.md) - A C adaption and implementation of the OSGi Remote Service Admin specification.
 * [C++ Remote Services](../bundles/cxx_remote_services/README.md) - A C++17 adaption and implementation of the OSGi Remote Service Admin specification. Requires manually or code-generated import/export factories to work.
 * [Components Ready Check](../bundles/components_ready_check/README.md) - A bundle which checks if all components are ready.
 

@@ -33,26 +33,25 @@ The topology manager decides which services should be imported and exported acco
 
 ### Remote Service Admin
 
-The Remote Service Admin (RSA) provides the mechanisms to import and export services when instructed to do so by the Topology Manager. 
+The Remote Service Admin (RSA) provides the mechanisms to import and export services when instructed to do so by the Topology Manager.
 
-#### Endpoints and proxies
+#### Remote Service Admin DFI
 
-To delegate a *received* method call to the actual service implementation, the RSA uses an "endpoint" bundle, which has all the knowledge about the marshalling and unmarshalling of data for the service. This endpoint bundle is specific to the used RSA implementation, and as such cannot be reused between various RSA implementations.
+Provides remote service admin using HTTP and JSON. The serialization is done using [libdfi](../../libs/dfi/README.md) to convert function call information into [JSON representation](https://amdatu.atlassian.net/wiki/spaces/AMDATUDEV/pages/21954571/Amdatu+Remote#AmdatuRemote-AdminHTTP%2FJson).
+`libffi` is configured using descriptor files in the bundles. 
 
-Invoking a *remote* method is done by using "proxy" bundles. Similar as to endpoints, proxy bundles encapsulate all knowledge to marshall and unmarshall data for a remote method call and as such can not be shared between RSA implementations.
-
-Both proxy and endpoint bundles are loaded on demand when a service is imported or exported by the RSA. As such, these bundles **must** not be added to the list of "auto started" bundles, but placed in a separate location. By default, `endpoints` is used as location for locating proxy and/or endpoint bundles.
-
-Note that since endpoints and proxies need to be created manually, one has full control about the handling of specifics of marshalling and unmarshalling data and dealing with exceptions. 
-
-#### HTTP/JSON
-
-Provides a RSA implementation that uses JSON to marshal requests and HTTP as transport mechanism for its remote method invocation. It is compatible with the *Remote Service Admin HTTP* implementation provided by [Amdatu Remote](https://amdatu.atlassian.net/wiki/display/AMDATUDEV/Amdatu+Remote).
-
-| **Bundle** | `remote_service_admin_http.zip` |
+| **Bundle** | `rsa_dfi.zip` |
 |--|--|
-| **Configuration** | `RSA_PORT`: defines the port on which the HTTP server should listen for incoming requests. Defaults to port `8888`; |
-| | `ENDPOINTS`: defines the location in which service endpoints and/or proxies can be found. Defaults to `endpoints` in the current working directory |
+| **Configuration** | See [Remote Service Admin DFI](remote_service_admin_dfi/README.md) |
+
+#### Remote Service Admin SHM
+
+Provides remote service admin using shared memory. The serialization implementation is pluggable, and the default serialization is done using [libdfi](../../libs/dfi/README.md) to convert function call information into [JSON representation](https://amdatu.atlassian.net/wiki/spaces/AMDATUDEV/pages/21954571/Amdatu+Remote#AmdatuRemote-AdminHTTP%2FJson).
+`libffi` is configured using descriptor files in the bundles.
+
+| **Bundle**        | `rsa_shm.zip`                                                          |
+|-------------------|------------------------------------------------------------------------|
+| **Configuration** | See [Remote Service Admin SHM](remote_service_admin_shm_v2/README.md)  |
 
 ### Discovery
 
@@ -72,15 +71,22 @@ Provides a service discovery with preconfigured discovery endpoints, allowing a 
 
 Note that for configured discovery, the "Endpoint Description Extender" XML format defined in the OSGi Remote Service Admin specification (section 122.8 of OSGi Enterprise 5.0.0) is used.
 
-See [etcd discovery](discovery_etcd/README.md)
-
 #### etcd discovery 
-
-| **Bundle** | `discovery_etcd.zip` |
 
 Provides a service discovery using etcd distributed key/value store.
 
-See [etcd discovery](discovery_etcd/README.md)
+| **Bundle** | `discovery_etcd.zip` |
+|------------|----------------------|
+| **Configuration** | See [etcd discovery](discovery_etcd/README.md)|
+
+#### Zero configuration discovery
+
+Provides a service discovery using zeroconf (Bonjour).
+
+| **Bundle** | `rsa_discovery_zeroconf.zip` |
+|--|----------------------------|
+| **Configuration** | See  [Zeroconf Discovery](discovery_zeroconf/README.md) |
+
 
 ## Usage
 
@@ -129,7 +135,7 @@ Note that the `RSA_PORT` property needs to be unique for at least the client in 
 
 ## Building
 
-To build the Remote Service Admin Service the CMake build option "`BUILD_REMOTE_SERVICE_ADMIN`" has to be enabled.
+To build the Remote Service Admin Service the CMake build option "`BUILD_REMOTE_SERVICE_ADMIN`" has to be enabled.If you use conan to build it, you should set the conan option `celix:build_remote_service_admin` to true.
 
 ## Dependencies
 
@@ -137,18 +143,19 @@ The Remote Service Admin Service depends on the following subprojects:
 
 - Framework
 - Utils
+- dfi
+- log_helper
 
-Also the following libraries are required for building and/or using the Remote Service Admin Service subproject:
-
-- Jansson (build and runtime)
-- cURL (build and runtime)
 
 ## RSA Bundles
 
-* [Remote Service Admin DFI](remote_service_admin_dfi) - A Dynamic Function Interface (DFI) implementation of the RSA.
-* [Topology Manager](topology_manager) - A (scoped) RSA Topology Manager implementation.
+* [Remote Service Admin DFI](remote_service_admin_dfi/README.md) - A Dynamic Function Interface (DFI) implementation of the RSA.
+* [Remote Service Admin SHM](remote_service_admin_shm_v2/README.md) - A Shared Memory (SHM) implementation of the RSA.
+* [Remote Service Admin RPC Using JSON](rsa_rpc_json/README.md) - A Remote Procedure Call (RPC) implementation of the RSA using JSON.
+* [Topology Manager](topology_manager/README.md) - A (scoped) RSA Topology Manager implementation.
 * [Discovery Configured](discovery_configured) - A RSA Discovery implementation using static configuration (xml).
 * [Discovery Etcd](discovery_etcd/README.md) - A RSA Discovery implementation using etcd.
+* [Discovery Zeroconf](discovery_zeroconf/README.md) - A RSA Discovery implementation using Bonjour.
 
 
 ## Notes

@@ -1,0 +1,51 @@
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+@startuml
+box "consumer process"
+participant service_consumer
+participant c_framework as "consumer framework"
+participant c_rsa as "consumer rsa"
+participant c_rpc as "consumer rpc"
+end box
+
+box "provider process"
+participant p_rsa as "provider rsa"
+participant p_rpc as "provider rpc"
+participant remote_service
+end box
+
+service_consumer->c_framework ++:use/track remote service
+c_framework->c_rpc ++:getService
+c_rpc->c_rpc:create proxy service for remote service
+return proxy service of remote service
+return proxy service of remote service
+
+service_consumer -> c_rpc ++: call proxy service method
+c_rpc -> c_rpc: serialize request data
+c_rpc -> c_rsa++: sendRequest
+c_rsa  -> p_rsa++: IPC(shared memory), send request data
+
+p_rsa->p_rpc++:handleRequest
+p_rpc->p_rpc:deserialize reuqest data
+p_rpc->remote_service++: call remote service
+return response
+p_rpc-->p_rpc:serialize response
+return serialized response
+return IPC(shared memory), serialized response
+return serialized response
+c_rpc --> c_rpc: deserialize response
+return result
+@enduml
