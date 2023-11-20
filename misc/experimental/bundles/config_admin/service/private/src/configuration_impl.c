@@ -202,7 +202,7 @@ celix_status_t configuration_create2(configuration_admin_factory_pt factory, con
 		conf_impl->factoryPid = strdup(value);
 	else
 		conf_impl->factoryPid = NULL;
-	value = properties_get(dictionary, (char *)OSGI_FRAMEWORK_SERVICE_PID);
+	value = properties_get(dictionary, (char *)"service.pid");
 	if (value != NULL)
 		conf_impl->pid = strdup(value);
 	else
@@ -598,7 +598,7 @@ celix_status_t configuration_updateDictionary(configuration_impl_pt configuratio
 
 	if ( newDictionary != NULL ){
 
-		hashMap_remove(newDictionary, (void *) OSGI_FRAMEWORK_SERVICE_PID);
+		hashMap_remove(newDictionary, (void *) "service.pid");
 		hashMap_remove(newDictionary, (void *) SERVICE_FACTORYPID);
 		hashMap_remove(newDictionary, (void *) SERVICE_BUNDLELOCATION);
 	}
@@ -636,8 +636,8 @@ celix_status_t configuration_setAutoProperties(configuration_impl_pt configurati
 	configuration_lock(configuration);
 
 	// (2) set service.pid
-//    if (properties_get(*properties, (char*)OSGI_FRAMEWORK_SERVICE_PID) != NULL) {
-        properties_set(*properties, (char*)OSGI_FRAMEWORK_SERVICE_PID, configuration->pid);
+//    if (properties_get(*properties, (char*)"service.pid") != NULL) {
+        properties_set(*properties, (char*)"service.pid", configuration->pid);
 //    }
 
 	// (3) set factory.pid

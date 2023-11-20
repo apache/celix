@@ -107,7 +107,7 @@ pubsub_tcp_admin_t *pubsub_tcpAdmin_create(celix_bundle_context_t *ctx, celix_lo
     psa->ctx = ctx;
     psa->log = logHelper;
     psa->verbose = celix_bundleContext_getPropertyAsBool(ctx, PUBSUB_TCP_VERBOSE_KEY, PUBSUB_TCP_VERBOSE_DEFAULT);
-    psa->fwUUID = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    psa->fwUUID = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
     long basePort = celix_bundleContext_getPropertyAsLong(ctx, PSA_TCP_BASE_PORT, PSA_TCP_DEFAULT_BASE_PORT);
     psa->basePort = (unsigned int) basePort;
     psa->defaultScore = celix_bundleContext_getPropertyAsDouble(ctx, PSA_TCP_DEFAULT_SCORE_KEY, PSA_TCP_DEFAULT_SCORE);
@@ -217,7 +217,7 @@ void pubsub_tcpAdmin_addProtocolSvc(void *handle, void *svc, const celix_propert
     pubsub_tcp_admin_t *psa = handle;
 
     const char *protType = celix_properties_get(props, PUBSUB_PROTOCOL_TYPE_KEY, NULL);
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
 
     if (protType == NULL) {
         L_INFO("[PSA_tcp] Ignoring protocol service without %s property", PUBSUB_PROTOCOL_TYPE_KEY);
@@ -238,7 +238,7 @@ void pubsub_tcpAdmin_addProtocolSvc(void *handle, void *svc, const celix_propert
 
 void pubsub_tcpAdmin_removeProtocolSvc(void *handle, void *svc, const celix_properties_t *props) {
     pubsub_tcp_admin_t *psa = handle;
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
 
     //remove protocol
     // 1) First find entry and

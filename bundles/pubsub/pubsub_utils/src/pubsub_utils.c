@@ -55,7 +55,7 @@ celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **scop
     celix_autoptr(celix_filter_t) filter = celix_filter_create(filterstr);
     scope = celix_filter_findAttribute(filter, PUBSUB_PUBLISHER_SCOPE);
     topic = celix_filter_findAttribute(filter, PUBSUB_PUBLISHER_TOPIC);
-    objectClass = celix_filter_findAttribute(filter, OSGI_FRAMEWORK_OBJECTCLASS);
+    objectClass = celix_filter_findAttribute(filter, CELIX_FRAMEWORK_SERVICE_NAME);
 
     if (topic != NULL && objectClass != NULL && strncmp(objectClass, PUBSUB_PUBLISHER_SERVICE_NAME, 128) == 0) {
         //NOTE topic must be present, scope can be present in the filter

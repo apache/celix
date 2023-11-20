@@ -23,7 +23,6 @@
 #include <service_tracker_customizer.h>
 #include <service_tracker.h>
 
-#include "bundle_activator.h"
 #include "bundle_context.h"
 #include "service_registration.h"
 #include "service_reference.h"

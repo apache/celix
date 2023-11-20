@@ -173,7 +173,6 @@ pubsub_websocket_topic_receiver_t* pubsub_websocketTopicReceiver_create(celix_bu
         char buf[size+1];
         snprintf(buf, (size_t)size+1, "(%s=%s)", PUBSUB_SUBSCRIBER_TOPIC, topic);
         celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-        opts.filter.ignoreServiceLanguage = true;
         opts.filter.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
         opts.filter.filter = buf;
         opts.callbackHandle = receiver;
@@ -391,7 +390,7 @@ void pubsub_websocketTopicReceiver_disconnectFrom(pubsub_websocket_topic_receive
 static void pubsub_websocketTopicReceiver_addSubscriber(void *handle, void *svc, const celix_properties_t *props) {
     pubsub_websocket_topic_receiver_t *receiver = handle;
 
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     const char *subScope = celix_properties_get(props, PUBSUB_SUBSCRIBER_SCOPE, NULL);
     if (receiver->scope == NULL){
         if (subScope != NULL){
@@ -420,7 +419,7 @@ static void pubsub_websocketTopicReceiver_addSubscriber(void *handle, void *svc,
 static void pubsub_websocketTopicReceiver_removeSubscriber(void *handle, void *svc CELIX_UNUSED, const celix_properties_t *props) {
     pubsub_websocket_topic_receiver_t *receiver = handle;
 
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
 
     celixThreadMutex_lock(&receiver->subscribers.mutex);
     psa_websocket_subscriber_entry_t *entry = hashMap_remove(receiver->subscribers.map, (void*)svcId);

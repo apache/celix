@@ -107,7 +107,7 @@ celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celi
     }
     celix_auto(celix_fd_t) eventFd = watcher->eventFd;
 
-    const char *fwUuid = celix_bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    const char *fwUuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
     if (fwUuid == NULL || strlen(fwUuid) >= sizeof(watcher->fwUuid)) {
         celix_logHelper_fatal(logHelper, "Watcher: Failed to get framework uuid.");
         return CELIX_BUNDLE_EXCEPTION;
@@ -189,7 +189,7 @@ static void discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix
     assert(props != NULL);
     discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)handle;
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
-    long serviceId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
+    long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (serviceId == -1) {
         return;
     }
@@ -225,7 +225,7 @@ static void discoveryZeroconfWatcher_removeEPL(void *handle, void *svc, const ce
     assert(props != NULL);
     discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)handle;
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
-    long serviceId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1);
+    long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (serviceId == -1) {
         return;
     }
@@ -402,7 +402,7 @@ static void discoveryZeroconfWatcher_refreshEndpoints(discovery_zeroconf_watcher
         if (svcEntry->resolved) {
             const char *epFwUuid = celix_properties_get(svcEntry->txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
             if (epFwUuid != NULL && strcmp(epFwUuid, watcher->fwUuid) == 0) {
-                celix_logHelper_debug(watcher->logHelper, "Watcher: Ignore self endpoint for %s.", celix_properties_get(svcEntry->txtRecord, OSGI_FRAMEWORK_OBJECTCLASS, "unknown"));
+                celix_logHelper_debug(watcher->logHelper, "Watcher: Ignore self endpoint for %s.", celix_properties_get(svcEntry->txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, "unknown"));
                 celix_stringHashMapIterator_remove(&svcIter);
                 if (svcEntry->resolveRef) {
                     DNSServiceRefDeallocate(svcEntry->resolveRef);

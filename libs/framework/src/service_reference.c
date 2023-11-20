@@ -263,8 +263,8 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 	long id, other_id;
 	const char* id_str;
     const char* other_id_str;
-	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &id_str);
-	serviceReference_getProperty(compareTo, (char *) OSGI_FRAMEWORK_SERVICE_ID, &other_id_str);
+	serviceReference_getProperty(reference, (char *) CELIX_FRAMEWORK_SERVICE_ID, &id_str);
+	serviceReference_getProperty(compareTo, (char *) CELIX_FRAMEWORK_SERVICE_ID, &other_id_str);
 
 	id = atol(id_str);
 	other_id = atol(other_id_str);
@@ -273,8 +273,8 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 	long rank, other_rank;
 	const char *rank_str;
     const char* other_rank_str;
-	serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_RANKING, &rank_str);
-	serviceReference_getProperty(compareTo, OSGI_FRAMEWORK_SERVICE_RANKING, &other_rank_str);
+	serviceReference_getProperty(reference, CELIX_FRAMEWORK_SERVICE_RANKING, &rank_str);
+	serviceReference_getProperty(compareTo, CELIX_FRAMEWORK_SERVICE_RANKING, &other_rank_str);
 
 	rank = rank_str == NULL ? 0 : atol(rank_str);
 	other_rank = other_rank_str == NULL ? 0 : atol(other_rank_str);

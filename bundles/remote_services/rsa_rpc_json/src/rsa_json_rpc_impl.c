@@ -51,7 +51,7 @@ struct rsa_json_rpc {
 
 static unsigned int rsaJsonRpc_generateSerialProtoId(celix_bundle_t *bnd) {
     const char *bundleSymName = celix_bundle_getSymbolicName(bnd);
-    const char *bundleVer = celix_bundle_getManifestValue(bnd, OSGI_FRAMEWORK_BUNDLE_VERSION);
+    const char *bundleVer = celix_bundle_getManifestValue(bnd, CELIX_FRAMEWORK_BUNDLE_VERSION);
     if (bundleSymName == NULL || bundleVer == NULL) {
         return 0;
     }

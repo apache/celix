@@ -35,8 +35,8 @@ public:
     DependencyManagerTestSuite() {
         properties = celix_properties_create();
         celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
-        celix_properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
-        celix_properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
+        celix_properties_setBool(properties, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, true);
+        celix_properties_set(properties, CELIX_FRAMEWORK_CACHE_DIR, ".cacheBundleContextTestFramework");
         celix_properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
 
 
@@ -404,7 +404,6 @@ TEST_F(DependencyManagerTestSuite, BuildSvcProvide) {
 
     opts.serviceName = "TestService";
     opts.filter = "(key1=value)";
-    opts.ignoreServiceLanguage = true;
     svcId = celix_bundleContext_findServiceWithOptions(ctx, &opts);
     EXPECT_GT(svcId, -1); //found, so properties present
 
@@ -575,7 +574,6 @@ TEST_F(DependencyManagerTestSuite, RequiredDepsAreInjectedDuringStartStop) {
     celix_service_registration_options opts{};
     opts.svc = &svc;
     opts.serviceName = svcName.c_str();
-    opts.serviceLanguage = CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE;
     long svcId = celix_bundleContext_registerServiceWithOptions(dm.bundleContext(), &opts);
     EXPECT_GE(svcId, 0);
 
@@ -867,7 +865,6 @@ TEST_F(DependencyManagerTestSuite, DepsAreInjectedAsSharedPointers) {
     celix_service_registration_options opts{};
     opts.svc = &svc;
     opts.serviceName = svcName.c_str();
-    opts.serviceLanguage = CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE;
     long svcId = celix_bundleContext_registerServiceWithOptions(dm.bundleContext(), &opts);
     EXPECT_GE(svcId, 0);
 
@@ -929,7 +926,6 @@ TEST_F(DependencyManagerTestSuite, DepsNoPropsAreInjectedAsSharedPointers) {
     celix_service_registration_options opts{};
     opts.svc = &svc;
     opts.serviceName = svcName.c_str();
-    opts.serviceLanguage = CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE;
     long svcId = celix_bundleContext_registerServiceWithOptions(dm.bundleContext(), &opts);
     EXPECT_GE(svcId, 0);
 
@@ -987,7 +983,6 @@ TEST_F(DependencyManagerTestSuite, UnneededSuspendIsPrevented) {
     celix_service_registration_options opts{};
     opts.svc = &svc;
     opts.serviceName = svcName.c_str();
-    opts.serviceLanguage = CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE;
     long svcId = celix_bundleContext_registerServiceWithOptions(dm.bundleContext(), &opts);
     EXPECT_GE(svcId, 0);
 

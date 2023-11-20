@@ -70,7 +70,7 @@ int my_get_type(void *handle, char* value) {
 		properties_pt propsRx;
 		act->configuration->configuration_getProperties(act->configuration->handle, &propsRx);
 		if (propsRx != NULL) {
-			printf("[ TEST ]: PROP=%s - VALUE=%s \n", (char*)OSGI_FRAMEWORK_SERVICE_PID, properties_get(propsRx,(char*)OSGI_FRAMEWORK_SERVICE_PID));
+			printf("[ TEST ]: PROP=%s - VALUE=%s \n", (char*)CELIX_FRAMEWORK_SERVICE_PID, properties_get(propsRx,(char*)CELIX_FRAMEWORK_SERVICE_PID));
 			strcpy(value, properties_get(propsRx,"type"));
 		}
 		else {
@@ -141,7 +141,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 
 				properties_pt dictionary;
 				dictionary = properties_create();
-				properties_set(dictionary, (char *) OSGI_FRAMEWORK_SERVICE_PID, pid);
+				properties_set(dictionary, (char *) CELIX_FRAMEWORK_SERVICE_PID, pid);
 				properties_set(dictionary, (char *) "type", (char*)"test2_default_value");
 
 				status = bundleContext_registerService(ctx, (char *) MANAGED_SERVICE_SERVICE_NAME,
@@ -178,7 +178,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 				properties_pt propsRx = properties_create();
 				configuration_getProperties(configuration, &propsRx);
 
-				printf("[ TEST ]: PROP=%s - VALUE=%s \n", (char*)OSGI_FRAMEWORK_SERVICE_PID, properties_get(propsRx,(char*)OSGI_FRAMEWORK_SERVICE_PID));
+				printf("[ TEST ]: PROP=%s - VALUE=%s \n", (char*)CELIX_FRAMEWORK_SERVICE_PID, properties_get(propsRx,(char*)CELIX_FRAMEWORK_SERVICE_PID));
 				printf("[ TEST ]: PROP=%s - VALUE=%s \n", prop1, properties_get(propsRx,prop1));
 
 				printf("/////////////////// END TESTS ///////////////// \n");

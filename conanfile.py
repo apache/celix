@@ -147,7 +147,7 @@ class CelixConan(ConanFile):
             self.test_requires("gtest/1.10.0")
             self.test_requires("cpputest/4.0")
         if self.options.enable_ccache:
-            self.build_requires("ccache/4.6")
+            self.build_requires("ccache/4.7.4")
 
     def configure(self):
         # copy options to options, fill in defaults if not set

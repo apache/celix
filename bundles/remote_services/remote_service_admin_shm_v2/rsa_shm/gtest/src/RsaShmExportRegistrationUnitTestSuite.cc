@@ -72,8 +72,8 @@ class RsaShmExportRegUnitTestSuite : public ::testing::Test {
 public:
     RsaShmExportRegUnitTestSuite() {
         auto* props = celix_properties_create();
-        celix_properties_set(props, CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, "true");
-        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_shm_export_reg_test_cache");
+        celix_properties_set(props, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true");
+        celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_shm_export_reg_test_cache");
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
         fw = std::shared_ptr<celix_framework_t>{fwPtr, [](auto* f) {celix_frameworkFactory_destroyFramework(f);}};
@@ -126,13 +126,13 @@ public:
 
     endpoint_description_t *CreateEndpointDescription() {
         celix_properties_t *properties = celix_properties_create();
-        celix_properties_set(properties, OSGI_FRAMEWORK_OBJECTCLASS, RSA_SHM_CALCULATOR_SERVICE);
+        celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, RSA_SHM_CALCULATOR_SERVICE);
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, RSA_SHM_CALCULATOR_SERVICE_VERSION);
         celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE"," RSA_RPC_TYPE_PREFIX"mock");
         celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "7f7efba5-500f-4ee9-b733-68de012091da");
         celix_properties_setLong(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, calcSvcId);
         celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-        celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, celix_bundleContext_getProperty(ctx.get(), OSGI_FRAMEWORK_FRAMEWORK_UUID, ""));
+        celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, celix_bundleContext_getProperty(ctx.get(), CELIX_FRAMEWORK_UUID, ""));
         celix_properties_set(properties, RSA_SHM_SERVER_NAME_KEY, "ShmServ-dummy");
         endpoint_description_t *endpoint = nullptr;
         auto status = endpointDescription_create(properties, &endpoint);
@@ -144,7 +144,7 @@ public:
     service_reference_pt GetServiceReference() {
         celix_array_list_t *references = nullptr;
         char filter[32] = {0};
-        snprintf(filter, sizeof(filter), "(%s=%ld)", (char *) OSGI_FRAMEWORK_SERVICE_ID, calcSvcId);
+        snprintf(filter, sizeof(filter), "(%s=%ld)", (char *) CELIX_FRAMEWORK_SERVICE_ID, calcSvcId);
         auto status = bundleContext_getServiceReferences(ctx.get(), nullptr, filter, &references);
         EXPECT_EQ(CELIX_SUCCESS, status);
         service_reference_pt reference = (service_reference_pt) celix_arrayList_get(references, 0);

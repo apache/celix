@@ -24,7 +24,7 @@
 #include "celix_bundle_context.h"
 #include "celix_errno.h"
 
-#define OSGI_SHELL_COMMAND_SEPARATOR " "
+#define CELIX_SHELL_COMMAND_SEPARATOR " "
 
 #ifdef __cplusplus
 extern "C" {

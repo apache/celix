@@ -38,7 +38,7 @@ struct publisherActivator {
 };
 
 static int pub_start(struct publisherActivator *act, celix_bundle_context_t *ctx) {
-    const char *fwUUID = celix_bundleContext_getProperty(ctx,OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    const char *fwUUID = celix_bundleContext_getProperty(ctx,CELIX_FRAMEWORK_UUID, NULL);
     if (fwUUID == NULL) {
         printf("PUBLISHER: Cannot retrieve fwUUID.\n");
         return CELIX_INVALID_BUNDLE_CONTEXT;
@@ -70,7 +70,6 @@ static int pub_start(struct publisherActivator *act, celix_bundle_context_t *ctx
         opts.removeWithProperties = publisher_publishSvcRemoved;
         opts.filter.serviceName = PUBSUB_PUBLISHER_SERVICE_NAME;
         opts.filter.filter = filter;
-        opts.filter.ignoreServiceLanguage = true;
         long trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
 
         celix_arrayList_addLong(act->trackerList,trackerId);
