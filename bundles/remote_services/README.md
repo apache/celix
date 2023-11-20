@@ -81,7 +81,7 @@ Provides a service discovery using etcd distributed key/value store.
 
 #### Zero configuration discovery
 
-Provides a service discovery using zeroconf (Bonjour).
+Provides a service discovery using Bonjour.
 
 | **Bundle** | `rsa_discovery_zeroconf.zip` |
 |--|----------------------------|

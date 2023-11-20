@@ -21,7 +21,7 @@ limitations under the License.
 
 ## Discovery Zeroconf
 
-The `Discovery_zeroconf` is implemented based on mDNS, and its operation depends on the mDNS daemon.
+The `Discovery_zeroconf` is implemented based on [Bonjour](https://github.com/apple-oss-distributions/mDNSResponder), and its operation depends on the mDNS daemon.
 
 The mapping between celix and mdns services is as follows:
 
@@ -37,7 +37,7 @@ The mapping between celix and mdns services is as follows:
 
 Because We will perform the mDNS query only using link-local multicast, so we set domain name default value "local".
 
-To reduce the operation of conversion between host name and address info. we set the address info to txt record, and set a dummy value("celix_rpc_dumb_host.local." and "50009") to the host name and port.
+To reduce the operation of conversion between host name and address info. we set the address info to txt record, and set the host name and port to a dummy value("celix_rpc_dumb_host.local." and "50009").
 
 We set the instance name of the mDNS service as `service_name + hash(endpoint uuid)`. If there is a conflict in the instance name, mDNS_daemon will resolve it. Since the maximum size of the mDNS service instance name is 64 bytes, we take the hash of the endpoint uuid here, which also reduces the probability of instance name conflicts.
 
@@ -70,4 +70,4 @@ In the process of discovering remote service endpoints, discovery_zeroconf also 
 
 See the cmake target `remote-services-zeroconf-server` and `remote-services-zeroconf-client`.
 
-**Notes:** Before running the example, you should start the [mDNS](https://github.com/apple-oss-distributions/mDNSResponder) daemon first.
+**Notes:** Before running the example, you should start the mDNS daemon first.You can get the mDNS daemon from bonjour project.

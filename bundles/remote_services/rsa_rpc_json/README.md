@@ -23,7 +23,7 @@ limitations under the License.
 
 Remote service admin RPC does not appear in the OSGI standard document. It is an extraction of the serialization/deserialization functionality from remote service admin. It is part of the remote service admin feature.
 
-rsa_json_rpc is a serialization implementation based on [JSON representation](https://amdatu.atlassian.net/wiki/spaces/AMDATUDEV/pages/21954571/Amdatu+Remote#AmdatuRemote-AdminHTTP%2FJson). It uses `libdfi` to convert function invocation information into JSON messages. The interface description is configured through the description file in the interface consumer/provider. See the [libdfi documentation](../../../libs/dfi/README.md) for the interface description file.
+`rsa_json_rpc` is a serialization implementation based on [JSON representation](https://amdatu.atlassian.net/wiki/spaces/AMDATUDEV/pages/21954571/Amdatu+Remote#AmdatuRemote-AdminHTTP%2FJson). It uses `libdfi` to convert function invocation information into JSON messages. The interface description is configured through the description file in the interface consumer/provider. See the [libdfi documentation](../../../libs/dfi/README.md) for the interface description file.
 
 ### Supported Platform
 - Linux
@@ -43,7 +43,7 @@ rsa_json_rpc is a serialization implementation based on [JSON representation](ht
 
 ### Software Design
 
-The implementation of rsa_json_rpc includes two parts: 1. Creation of remote service endpoints; 2. Creation of remote service proxies
+The implementation of `rsa_json_rpc` includes two parts: 1. Creation of remote service endpoints; 2. Creation of remote service proxies
 
 - Remote service endpoint: It receives remote JSON_RPC requests and calls the corresponding service instances.
 - Remote service proxy: It provides proxy services and serializes service call information (method name, arguments,...) into JSON_RPC requests.

@@ -50,7 +50,7 @@ The ‘rsa_json_rpc’ bundle is used to realize (de)serialization and Creating 
 ### CMake Option
     RSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON           Default is OFF
 
-### Software design
+### Software Design
 
 #### The Relationship Between RSA_SHM And Other RSA Bundles
 
@@ -58,13 +58,13 @@ If you need to complete a remote procedure call, multiple different bundles need
 
 ![rsa_shm_component_diagram](diagrams/rsa_shm_component_diagram.png)
 
-RSA_SHM (Remote Service Admin SHM) has implemented data transmission based on shared memory, and provides a service of remote service admin (`remote_service_admin_service_t`), and a remote request sending service (`rsa_request_sender_service_t`).
+RSA_SHM (Remote Service Admin SHM) has implemented data transmission based on shared memory, and provides a remote service admin service (`remote_service_admin_service_t`), and a remote request sending service (`rsa_request_sender_service_t`).
 
-RSA_RPC (Remote Service Admin RPC) implements the serialization and deserialization for interactive data, and provides a remote service endpoint/proxy factory service (`rsa_rpc_factory_t`), as well as a remote request handler service (`rsa_request_handler_service_t`).
+RSA_RPC (Remote Service Admin RPC) implements the serialization and deserialization for interactive data, and provides an endpoint/proxy factory service (`rsa_rpc_factory_t`) of remote service, as well as a remote request handler service (`rsa_request_handler_service_t`).
 
-During imports/exports remote services, the topology manager imports/exports the remote service endpoint through `remote_service_admin_service_t`. At the same time, RSA_SHM creates a remote service proxy/endpoint through `rsa_rpc_factory_t`.
+During imports/exports remote services, the topology manager imports/exports the remote service endpoint by `remote_service_admin_service_t`. At the same time, RSA_SHM creates a remote service proxy/endpoint by `rsa_rpc_factory_t`.
 
-When a remote procedure call occurs, the remote service proxy sends the request to the remote service endpoint through `rsa_request_sender_service_t`. And the remote service endpoint uses `rsa_request_handler_service_t` to convert the request into a local service call.
+When a remote procedure call occurs, the remote service proxy use `rsa_request_sender_service_t` to send the request to the remote service endpoint. And the remote service endpoint uses `rsa_request_handler_service_t` to convert the request into a local service call.
 
 #### The Remote Service Invocation Sequence
 

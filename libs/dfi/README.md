@@ -69,7 +69,7 @@ The data types supported by the interface description include:
 
 - **Simple Types**
 
-  *Type representation*:
+  *Type schema*:
   
   |**Identifier**|B  |D     |F    |I      |J      |S      |V   |Z             |b    | i      | j      | s      |P     |t     |N  | 
   |---------|---|------|-----|-------|-------|-------|----|--------------|-----|--------|--------|--------|------|------|---|
@@ -78,7 +78,7 @@ The data types supported by the interface description include:
 
 - **Complex Types(Struct)**
 
-  *Type representation*:
+  *Type schema*:
   ~~~
   {[Type]+ [(Name)(SPACE)]+}
   ~~~
@@ -93,7 +93,7 @@ The data types supported by the interface description include:
 
 - **Sequence Type**
 
-  *Type representation*:
+  *Type schema*:
   ~~~
   [(type)
   ~~~
@@ -112,7 +112,7 @@ The data types supported by the interface description include:
   
 - **Typed Pointer**
 
-  *Type representation*:
+  *Type schema*:
   ~~~
   *(Type)
   ~~~
@@ -127,7 +127,7 @@ The data types supported by the interface description include:
 
 - **Reference By Value**
 
-  *Type representation*:
+  *Type schema*:
   ~~~
   l(name);
   ~~~
@@ -152,7 +152,7 @@ The data types supported by the interface description include:
 
 - **Pointer Reference**
 
-  *Type representation*:
+  *Type schema*:
   ~~~
   L(name);//shortcut for *l(name);
   ~~~
@@ -177,7 +177,7 @@ The data types supported by the interface description include:
 
 - **Type Alias（typedef）**
 
-  *Type representation*:
+  *Type schema*:
   ~~~
   T(Name)=Type;
   ~~~
@@ -188,7 +188,7 @@ The data types supported by the interface description include:
   *To C language*:
   ~~~
   struct {
-    typedef {
+    typedef struct {
       double val1;
       double val2;
     }type;
@@ -199,7 +199,7 @@ The data types supported by the interface description include:
   
 - **Meta-Information**  
 
-  *Type representation*:
+  *Type schema*:
   ~~~
   #Name=Value;
   ~~~
@@ -210,7 +210,7 @@ The data types supported by the interface description include:
 
 - **Enumeration**
 
-  *Type representation*:
+  *Type schema*:
   ~~~
   #EnumName=value;E
   ~~~
@@ -228,7 +228,7 @@ The data types supported by the interface description include:
   
 - **Method/Function**
 
-  *Type representation*:
+  *Type schema*:
   ~~~
   (Name)([Type]*)Type
   ~~~
@@ -251,11 +251,11 @@ The data types supported by the interface description include:
   ~~~
   *Notes*
 
-  - The return type of the function must be N, because remote service calls usually return error codes.
-  - Currently, the function only supports one output parameter, so the function cannot be defined in a multi-output parameter form.
+  - For RPC interface, the return type of methods must be N, because remote service calls usually return error codes.
+  - Currently, the method only supports one output parameter, so the method cannot be defined in a multi-output parameter form.
 
 #### Interface Description File
 
-An interface description file is that the interface file written using the interface description language, and its file suffix is ".descriptor". Generally, for the association between the remote service instance and the interface description file, the interface filename tends to match the remote service name."
+An interface description file is that the interface file written using the interface description language, and its file suffix is ".descriptor". Generally, to associate the remote service instance with the interface description file, the interface description filename should be consistent with the remote service name."
 
 The interface description file should exist in the bundle where the interface user or provider is located, and the description information should be consistent with the interface header file in use. When generating a bundle, we usually store the interface description file in the following paths of the bundle: "META-INF/descriptors/", "META-INF/descriptors/services/ ".
