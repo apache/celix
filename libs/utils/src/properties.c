@@ -486,7 +486,13 @@ celix_properties_t* celix_properties_loadWithStream(FILE* file) {
         celix_err_pushf("Cannot seek to end of file. Got error %i", errno);
         return NULL;
     }
-    size_t fileSize = ftell(file);
+
+    long fileSize = ftell(file);
+    if (fileSize < 0) {
+        celix_err_pushf("Cannot get file size. Got error %i", errno);
+        return NULL;
+    }
+
     rc = fseek(file, 0, SEEK_SET);
     if (rc != 0) {
         celix_err_pushf("Cannot seek to start of file. Got error %i", errno);

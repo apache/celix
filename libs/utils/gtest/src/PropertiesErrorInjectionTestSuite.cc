@@ -46,6 +46,7 @@ class PropertiesErrorInjectionTestSuite : public ::testing::Test {
         celix_ei_expect_fopen(nullptr, 0, nullptr);
         celix_ei_expect_fputc(nullptr, 0, 0);
         celix_ei_expect_fseek(nullptr, 0, 0);
+        celix_ei_expect_ftell(nullptr, 0, 0);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_celix_stringHashMap_put(nullptr, 0, 0);
     }
@@ -218,6 +219,15 @@ TEST_F(PropertiesErrorInjectionTestSuite, LoadFailureTest) {
 
     // When a fseek error injection is set for celix_properties_loadWithStream, ordinal 2
     celix_ei_expect_fseek((void*)celix_properties_loadWithStream, 0, -1, 2);
+    // Then the celix_properties_loadWithStream call fails
+    props = celix_properties_loadWithStream(memStream);
+    ASSERT_EQ(nullptr, props);
+    // And a celix err msg is set
+    ASSERT_EQ(1, celix_err_getErrorCount());
+    celix_err_resetErrors();
+
+    // When a ftell error injection is set for celix_properties_loadWithStream
+    celix_ei_expect_ftell((void*)celix_properties_loadWithStream, 0, -1);
     // Then the celix_properties_loadWithStream call fails
     props = celix_properties_loadWithStream(memStream);
     ASSERT_EQ(nullptr, props);
