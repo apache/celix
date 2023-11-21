@@ -379,9 +379,8 @@ static celix_status_t pubsub_websocketAdmin_connectEndpointToReceiver(pubsub_web
 
     if (publisher && (sockAddress == NULL || sockPort < 0)) {
         L_WARN("[PSA WEBSOCKET] Error got endpoint without websocket address/port or endpoint type. Properties:");
-        const char *key = NULL;
-        CELIX_PROPERTIES_FOR_EACH(endpoint, key) {
-            L_WARN("[PSA WEBSOCKET] |- %s=%s\n", key, celix_properties_get(endpoint, key, NULL));
+        CELIX_PROPERTIES_ITERATE(endpoint, iter) {
+            L_WARN("[PSA WEBSOCKET] |- %s=%s\n", iter.key, iter.entry.value);
         }
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
@@ -436,9 +435,8 @@ static celix_status_t pubsub_websocketAdmin_disconnectEndpointFromReceiver(pubsu
 
     if (publisher && (sockAddress == NULL || sockPort < 0)) {
         L_WARN("[PSA WEBSOCKET] Error got endpoint without websocket address/port or endpoint type. Properties:");
-        const char *key = NULL;
-        CELIX_PROPERTIES_FOR_EACH(endpoint, key) {
-            L_WARN("[PSA WEBSOCKET] |- %s=%s\n", key, celix_properties_get(endpoint, key, NULL));
+        CELIX_PROPERTIES_ITERATE(endpoint, iter) {
+            L_WARN("[PSA WEBSOCKET] |- %s=%s\n", iter.key, iter.entry.value);
         }
         status = CELIX_BUNDLE_EXCEPTION;
     } else if (eTopic != NULL && strncmp(eTopic, topic, 1024 * 1024) == 0) {

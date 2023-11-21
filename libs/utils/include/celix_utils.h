@@ -30,10 +30,8 @@ extern "C" {
 
 #include "celix_utils_export.h"
 
-#define CELIX_UTILS_MAX_STRLEN      1024*1024*1024
 #define CELIX_US_IN_SEC (1000000)
 #define CELIX_NS_IN_SEC ((CELIX_US_IN_SEC)*1000)
-
 
 /**
  * Creates a copy of a provided string.
@@ -41,6 +39,13 @@ extern "C" {
  * @return a copy of the string (including null terminator).
  */
 CELIX_UTILS_EXPORT char* celix_utils_strdup(const char *str);
+
+/**
+ * Returns the length of the provided string with a max of CELIX_UTILS_MAX_STRLEN.
+ * @param str The string to get the length from.
+ * @return The length of the string or 0 if the string is NULL.
+ */
+CELIX_UTILS_EXPORT size_t celix_utils_strlen(const char *str);
 
 /**
  * @brief Creates a hash from a string
@@ -101,8 +106,11 @@ CELIX_UTILS_EXPORT bool celix_utils_containsWhitespace(const char* s);
 /**
  * @brief Returns a trimmed string.
  *
- * The trim will remove any leading and trailing whitespaces (' ', '\t', etc based on `isspace`)/
- * Caller is owner of the returned string.
+ * This function will remove any leading and trailing whitespaces (' ', '\t', etc based on isspace) from the
+ * input string.
+ *
+ * @param[in] string The input string to be trimmed.
+ * @return A trimmed version of the input string. The caller is responsible for freeing the memory of this string.
  */
 CELIX_UTILS_EXPORT char* celix_utils_trim(const char* string);
 /**

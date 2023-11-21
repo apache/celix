@@ -745,10 +745,7 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         }
     }
 
-    hash_map_entry_pt entry = hashMap_getEntry(endpointProperties, (void *) CELIX_FRAMEWORK_SERVICE_ID);
-
-    char* key = hashMapEntry_getKey(entry);
-    char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) CELIX_FRAMEWORK_SERVICE_ID);
+    const char* serviceId = celix_properties_get(endpointProperties, CELIX_FRAMEWORK_SERVICE_ID, "-1");
     const char *uuid = NULL;
 
     char buf[512];
@@ -775,12 +772,9 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     }
 
     if (props != NULL) {
-        hash_map_iterator_pt propIter = hashMapIterator_create(props);
-        while (hashMapIterator_hasNext(propIter)) {
-            hash_map_entry_pt entry = hashMapIterator_nextEntry(propIter);
-            celix_properties_set(endpointProperties, (char*)hashMapEntry_getKey(entry), (char*)hashMapEntry_getValue(entry));
+        CELIX_PROPERTIES_ITERATE(props, iter) {
+            celix_properties_set(endpointProperties, iter.key, iter.entry.value);
         }
-        hashMapIterator_destroy(propIter);
     }
 
     *endpoint = calloc(1, sizeof(**endpoint));
@@ -794,8 +788,6 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         (*endpoint)->properties = endpointProperties;
     }
 
-    free(key);
-    free(serviceId);
     free(keys);
 
     return status;
@@ -1002,14 +994,10 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
     } else {
         struct curl_slist *metadataHeader = NULL;
         if (metadata != NULL && celix_properties_size(metadata) > 0) {
-            const char *key = NULL;
-            CELIX_PROPERTIES_FOR_EACH(metadata, key) {
-                const char *val = celix_properties_get(metadata, key, "");
-                size_t length = strlen(key) + strlen(val) + 18; // "X-RSA-Metadata-key: val\0"
-
+            CELIX_PROPERTIES_ITERATE(metadata, iter) {
+                size_t length = strlen(iter.key) + strlen(iter.entry.value) + 18; // "X-RSA-Metadata-key: val\0"
                 char header[length];
-
-                snprintf(header, length, "X-RSA-Metadata-%s: %s", key, val);
+                snprintf(header, length, "X-RSA-Metadata-%s: %s", iter.key, iter.entry.value);
                 metadataHeader = curl_slist_append(metadataHeader, header);
             }
 

@@ -22,5 +22,6 @@ target_link_libraries(version_ei PUBLIC Celix::error_injector Celix::utils)
 # It plays nicely with address sanitizer this way.
 target_link_options(version_ei INTERFACE
         LINKER:--wrap,celix_version_createVersionFromString
+        LINKER:--wrap,celix_version_copy
 )
 add_library(Celix::version_ei ALIAS version_ei)

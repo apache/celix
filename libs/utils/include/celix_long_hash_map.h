@@ -23,6 +23,7 @@
 #include "celix_cleanup.h"
 #include "celix_hash_map_value.h"
 #include "celix_utils_export.h"
+#include "celix_errno.h"
 
 /**
  * @brief Init macro so that the opts are correctly initialized for C++ compilers
@@ -52,11 +53,10 @@ typedef struct celix_long_hash_map celix_long_hash_map_t;
  * @Brief long hash map iterator, which contains a hash map entry's keu and value.
  */
 typedef struct celix_long_hash_map_iterator {
-    size_t index; //iterator index, starting at 0
-    long key;
-    celix_hash_map_value_t value;
+    long key;     /**< The key of the hash map entry. */
+    celix_hash_map_value_t value; /**< The value of the hash map entry. */
 
-    void* _internal[2]; //internal opaque struct
+    void* _internal[2]; /**< internal opaque data, do not use */
 } celix_long_hash_map_iterator_t;
 
 /**
@@ -71,6 +71,9 @@ typedef struct celix_long_hash_map_create_options {
      * only the simpleRemovedCallback will be used.
      *
      * Default is NULL.
+     *
+     * @param[in] removedValue The value that was removed from the hash map. This value is no longer used by the
+     *                         hash map and can be freed.
      */
     void (*simpleRemovedCallback)(void* value) CELIX_OPTS_INIT;
 
@@ -91,6 +94,11 @@ typedef struct celix_long_hash_map_create_options {
      * only the simpleRemovedCallback will be used.
      *
      * Default is NULL.
+     *
+     * @param[in] data The void pointer to the data that was provided when the callback was set as removedCallbackData.
+     * @param[in] removedKey The key of the value that was removed from the hash map.
+     * @param[in] removedValue The value that was removed from the hash map. This value is no longer used by the
+     *                         hash map and can be freed.
      */
     void (*removedCallback)(void* data, long removedKey, celix_hash_map_value_t removedValue) CELIX_OPTS_INIT;
 
@@ -105,21 +113,21 @@ typedef struct celix_long_hash_map_create_options {
     unsigned int initialCapacity CELIX_OPTS_INIT;
 
     /**
-     * @brief The hash map load factor, which controls the max ratio between nr of entries in the hash map and the
+     * @brief The hash map max load factor, which controls the max ratio between nr of entries in the hash map and the
      * hash map capacity.
      *
-     * The load factor controls how large the hash map capacity (nr of buckets) is compared to the nr of entries
+     * The max load factor controls how large the hash map capacity (nr of buckets) is compared to the nr of entries
      * in the hash map. The load factor is an important property of the hash map which influences how close the
      * hash map performs to O(1) for its get, has and put operations.
      *
-     * If the nr of entries increases above the loadFactor * capacity, the hash capacity will be doubled.
+     * If the nr of entries increases above the maxLoadFactor * capacity, the hash table capacity will be doubled.
      * For example a hash map with capacity 16 and load factor 0.75 will double its capacity when the 13th entry
      * is added to the hash map.
      *
-     * If 0 is provided, the hash map load factor will be 0.75 (default hash map load factor).
+     * If 0 is provided, the hash map load factor will be 5 (default hash map load factor).
      * Default is 0.
      */
-    double loadFactor CELIX_OPTS_INIT;
+    double maxLoadFactor CELIX_OPTS_INIT;
 } celix_long_hash_map_create_options_t;
 
 #ifndef __cplusplus
@@ -131,7 +139,7 @@ typedef struct celix_long_hash_map_create_options {
     .removedCallbackData = NULL,                        \
     .removedCallback = NULL,                            \
     .initialCapacity = 0,                               \
-    .loadFactor = 0                                     \
+    .maxLoadFactor = 0                                  \
 }
 #endif
 
@@ -163,51 +171,64 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_long_hash_map_t, celix_longHashMap_destr
 CELIX_UTILS_EXPORT size_t celix_longHashMap_size(const celix_long_hash_map_t* map);
 
 /**
- * @brief add pointer entry the string hash map.
+ * @brief Add pointer entry the string hash map.
  *
- * @param map The hashmap
- * @param key  The key to use.
- * @param value The value to store with the key
- * @return The previous key or NULL of no key was set. Note also returns NULL if the previous value for the key was NULL.
+ * If the return status is an error, an error message is logged to celix_err.
+ *
+ * @param[in] map The hashmap
+ * @param[in] key  The key to use.
+ * @param[in] value The value to store with the key
+ * @return celix_status_t CELIX_SUCCESS if the entry was added, CELIX_ENOMEM if no memory could be allocated for the
+ *         entry.
  */
-CELIX_UTILS_EXPORT void* celix_longHashMap_put(celix_long_hash_map_t* map, long key, void* value);
+CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_put(celix_long_hash_map_t* map, long key, void* value);
 
 /**
  * @brief add long entry the long hash map.
  *
+ * If the return status is an error, an error message is logged to celix_err.
+ *
  * @param map The hashmap
  * @param key  The key to use.
  * @param value The value to store with the key.
- * @return True if a previous value with the provided has been replaced.
+ * @return celix_status_t CELIX_SUCCESS if the entry was added, CELIX_ENOMEM if no memory could be allocated for the
+ *         entry.
  */
-CELIX_UTILS_EXPORT bool celix_longHashMap_putLong(celix_long_hash_map_t* map, long key, long value);
+CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_putLong(celix_long_hash_map_t* map, long key, long value);
 
 /**
  * @brief add double entry the long hash map.
  *
- * @param map The hashmap
- * @param key  The key to use.
- * @param value The value to store with the key.
- * @return True if a previous value with the provided has been replaced.
- */
-CELIX_UTILS_EXPORT bool celix_longHashMap_putDouble(celix_long_hash_map_t* map, long key, double value);
-
-/**
- * @brief add bool entry the long hash map.
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param map The hashmap
  * @param key  The key to use.
  * @param value The value to store with the key.
- * @return True if a previous value with the provided has been replaced.
+ * @return celix_status_t CELIX_SUCCESS if the entry was added, CELIX_ENOMEM if no memory could be allocated for the
+ *         entry.
  */
-CELIX_UTILS_EXPORT bool celix_longHashMap_putBool(celix_long_hash_map_t* map, long key, bool value);
+CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_putDouble(celix_long_hash_map_t* map, long key, double value);
+
+/**
+ * @brief add bool entry the long hash map.
+ *
+ * If the return status is an error, an error message is logged to celix_err.
+ *
+ * @param map The hashmap
+ * @param key  The key to use.
+ * @param value The value to store with the key.
+ * @return celix_status_t CELIX_SUCCESS if the entry was added, CELIX_ENOMEM if no memory could be allocated for the
+ *         entry.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_longHashMap_putBool(celix_long_hash_map_t* map, long key, bool value);
 
 /**
  * @brief Returns the value for the provided key.
  *
  * @param map The hashmap.
  * @param key The key to lookup.
- * @return Return the pointer value for the key or NULL. Note will also return NULL if the pointer value for the provided key is NULL.
+ * @return Return the pointer value for the key or NULL. Note will also return NULL if the pointer value for
+ *         the provided key is NULL.
  */
 CELIX_UTILS_EXPORT void* celix_longHashMap_get(const celix_long_hash_map_t* map, long key);
 
@@ -265,49 +286,68 @@ CELIX_UTILS_EXPORT bool celix_longHashMap_remove(celix_long_hash_map_t* map, lon
 CELIX_UTILS_EXPORT void celix_longHashMap_clear(celix_long_hash_map_t* map);
 
 /**
- * @brief Create and return a hash map iterator for the beginning of the hash map.
+ * @brief Check if the provided string hash maps are equal.
  *
+ * Equals means that both maps have the same number of entries and that all entries in the first map
+ * are also present in the second map and have the same value.
+ *
+ * @param[in] map1 The first map to compare.
+ * @param[in] map2 The second map to compare.
+ * @return true if the maps are equal, false otherwise.
+ */
+CELIX_UTILS_EXPORT bool celix_longHashMap_equals(const celix_long_hash_map_t* map1, const celix_long_hash_map_t* map2);
+
+/**
+ * @brief Get an iterator pointing to the first element in the map.
+ *
+ * @param[in] map The map to get the iterator for.
+ * @return An iterator pointing to the first element in the map.
  */
 CELIX_UTILS_EXPORT celix_long_hash_map_iterator_t celix_longHashMap_begin(const celix_long_hash_map_t* map);
 
 /**
- * @brief Check if the iterator is the end of the hash map.
+ * @brief Get an iterator pointing to the element following the last element in the map.
  *
- * @note the end iterator should not be used to retrieve a key of value.
+ * @param[in] map The map to get the iterator for.
+ * @return An iterator pointing to the element following the last element in the map.
+ */
+celix_long_hash_map_iterator_t celix_longHashMap_end(const celix_long_hash_map_t* map);
+
+/**
  *
- * @return true if the iterator is the end.
+ * @brief Determine if the iterator points to the element following the last element in the map.
+ *
+ * @param[in] iter The iterator to check.
+ * @return true if the iterator points to the element following the last element in the map, false otherwise.
  */
 CELIX_UTILS_EXPORT bool celix_longHashMapIterator_isEnd(const celix_long_hash_map_iterator_t* iter);
 
 /**
- * @brief Moves the provided iterator to the next entry in the hash map.
+ * @brief Advance the iterator to the next element in the map.
+ * @param[in] iter The iterator to advance.
  */
 CELIX_UTILS_EXPORT void celix_longHashMapIterator_next(celix_long_hash_map_iterator_t* iter);
 
 /**
- * @brief Marco to loop over all the entries of a long hash map.
- *
- * Small example of how to use the iterate macro:
- * @code
- * celix_long_hash_map_t* map = ...
- * CELIX_LONG_HASH_MAP_ITERATE(map, iter) {
- *     printf("Visiting hash map entry with key %li\n", inter.key);
- * }
- * @endcode
+ * @brief Compares two celix_long_hash_map_iterator_t objects for equality.
+ * @param[in] iterator The first iterator to compare.
+ * @param[in] other The second iterator to compare.
+ * @return true if the iterators point to the same entry in the same hash map, false otherwise.
  */
-#define CELIX_LONG_HASH_MAP_ITERATE(map, iterName) \
-    for (celix_long_hash_map_iterator_t iterName = celix_longHashMap_begin(map); !celix_longHashMapIterator_isEnd(&(iterName)); celix_longHashMapIterator_next(&(iterName)))
+bool celix_longHashMapIterator_equals(
+        const celix_long_hash_map_iterator_t* iterator,
+        const celix_long_hash_map_iterator_t* other);
 
 /**
  * @brief Remove the hash map entry for the provided iterator and updates the iterator to the next hash map entry
  *
  * Small example of how to use the celix_longHashMapIterator_remove function:
- * @code
- * //remove all even entries
+ * @code{.c}
+ * //remove all entries except the first 4 entries from hash map
  * celix_long_hash_map_t* map = ...
  * celix_long_hash_map_iterator_t iter = celix_longHashMap_begin(map);
  * while (!celix_longHashMapIterator_isEnd(&iter)) {
- *     if (iter.index % 2 == 0) {
+ *     if (iter.index >= 4) {
  *         celix_longHashMapIterator_remove(&ter);
  *     } else {
  *         celix_longHashMapIterator_next(&iter);
@@ -316,6 +356,23 @@ CELIX_UTILS_EXPORT void celix_longHashMapIterator_next(celix_long_hash_map_itera
  * @endcode
  */
 CELIX_UTILS_EXPORT void celix_longHashMapIterator_remove(celix_long_hash_map_iterator_t* iter);
+
+/**
+ * @brief Marco to loop over all the entries of a long hash map.
+ *
+ * Small example of how to use the iterate macro:
+ * @code{.c}
+ * celix_long_hash_map_t* map = ...
+ * CELIX_LONG_HASH_MAP_ITERATE(map, iter) {
+ *     printf("Visiting hash map entry with key %li\n", inter.key);
+ * }
+ * @endcode
+ *
+ * @param map The (const celix_long_hash_map_t*) map to iterate over.
+ * @param iterName A iterName which will be of type celix_long_hash_map_iterator_t to hold the iterator.
+ */
+#define CELIX_LONG_HASH_MAP_ITERATE(map, iterName) \
+    for (celix_long_hash_map_iterator_t iterName = celix_longHashMap_begin(map); !celix_longHashMapIterator_isEnd(&(iterName)); celix_longHashMapIterator_next(&(iterName)))
 
 #ifdef __cplusplus
 }

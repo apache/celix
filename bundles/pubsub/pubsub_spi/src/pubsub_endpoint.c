@@ -44,9 +44,8 @@ static void pubsubEndpoint_setFields(celix_properties_t *ep, const char* fwUUID,
 
     //copy topic properties
     if (topic_props != NULL) {
-        const char *key = NULL;
-        CELIX_PROPERTIES_FOR_EACH((celix_properties_t *) topic_props, key) {
-            celix_properties_set(ep, key, celix_properties_get(topic_props, key, NULL));
+        CELIX_PROPERTIES_ITERATE((celix_properties_t *) topic_props, iter) {
+            celix_properties_set(ep, iter.key, iter.entry.value);
         }
     }
 

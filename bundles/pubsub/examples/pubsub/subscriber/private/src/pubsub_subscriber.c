@@ -62,10 +62,8 @@ int pubsub_subscriber_recv(void* handle, const char* msgType, unsigned int msgTy
     if (metadata == NULL || celix_properties_size(metadata) == 0) {
         printf("No metadata\n");
     } else {
-        const char *key;
-        CELIX_PROPERTIES_FOR_EACH(metadata, key) {
-            const char *val = celix_properties_get(metadata, key, "!Error!");
-            printf("%s=%s\n", key, val);
+        CELIX_PROPERTIES_ITERATE(metadata, iter) {
+            printf("%s=%s\n", iter.key, iter.entry.value);
         }
     }
 

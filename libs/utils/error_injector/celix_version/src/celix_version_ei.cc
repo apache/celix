@@ -19,11 +19,19 @@
 #include "celix_version_ei.h"
 
 extern "C" {
+
 celix_version_t *__real_celix_version_createVersionFromString(const char *versionStr);
 CELIX_EI_DEFINE(celix_version_createVersionFromString, celix_version_t*)
 celix_version_t *__wrap_celix_version_createVersionFromString(const char *versionStr) {
     CELIX_EI_IMPL(celix_version_createVersionFromString);
     return __real_celix_version_createVersionFromString(versionStr);
+}
+
+celix_version_t* __real_celix_version_copy(const celix_version_t* version);
+CELIX_EI_DEFINE(celix_version_copy, celix_version_t*)
+celix_version_t* __wrap_celix_version_copy(const celix_version_t* version) {
+    CELIX_EI_IMPL(celix_version_copy);
+    return __real_celix_version_copy(version);
 }
 
 }

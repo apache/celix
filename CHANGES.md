@@ -48,6 +48,15 @@ limitations under the License.
   - The `OSGI_FRAMEWORK_UUID` ("org.osgi.framework.uuid") config property, replacement is `CELIX_FRAMEWORK_UUID`.
 - Removed support for bundle activator symbols without a `celix_` prefix.
 - Removed service property constant `CELIX_FRAMEWORK_SERVICE_PID`.
+- Support and usage of "service.lang" service property is removed. 
+- pubsub_serializer.h is removed and no longer supported. Use pubsub_message_serialization_service.h instead.
+- C Properties are no longer a direct typedef of `hashmap`. 
+- celix_string/long_hashmap put functions now return a celix_status_t instead of bool (value replaced). 
+  THe celix_status_t is used to indicate an ENOMEM error.
+
+## New Features
+
+- Basic type support for value in celix Properties.
 
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 

@@ -342,11 +342,9 @@ static void discoveryZeroconfAnnouncer_revokeEndpoints(discovery_zeroconf_announ
 static bool discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(discovery_zeroconf_announcer_t *announcer, celix_properties_iterator_t *propIter, TXTRecordRef *txtRecord, uint16_t maxTxtLen, bool splitTxtRecord) {
     const char *key;
     const char *val;
-    celix_properties_t *props;
-    while (celix_propertiesIterator_hasNext(propIter)) {
-        key = celix_propertiesIterator_nextKey(propIter);
-        props = celix_propertiesIterator_properties(propIter);
-        val = celix_properties_get(props, key, "");
+    while (!celix_propertiesIterator_isEnd(propIter)) {
+        key = propIter->key;
+        val = propIter->entry.value;
         if (key) {
             DNSServiceErrorType err = TXTRecordSetValue(txtRecord, key, strlen(val), val);
             if (err != kDNSServiceErr_NoError) {
@@ -354,9 +352,11 @@ static bool discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(discovery_zeroc
                 return false;
             }
             if (splitTxtRecord && TXTRecordGetLength(txtRecord) >= maxTxtLen - UINT8_MAX) {
+                celix_propertiesIterator_next(propIter);
                 break;
             }
         }
+        celix_propertiesIterator_next(propIter);
     }
     return true;
 }
@@ -374,11 +374,11 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
         }
         char txtBuf[DZC_MAX_TXT_RECORD_SIZE] = {0};
         TXTRecordRef txtRecord;
-        celix_properties_iterator_t propIter = celix_propertiesIterator_construct(entry->properties);
+        celix_properties_iterator_t propIter = celix_properties_begin(entry->properties);
 
         TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
         char propSizeStr[16]= {0};
-        sprintf(propSizeStr, "%d", celix_properties_size(entry->properties) + 1);
+        sprintf(propSizeStr, "%zu", celix_properties_size(entry->properties) + 1);
         (void)TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
         if (!discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(announcer, &propIter, &txtRecord, sizeof(txtBuf), splitTxtRecord)) {
             TXTRecordDeallocate(&txtRecord);
@@ -411,7 +411,7 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
 
         if (registered) {
             entry->registerRef = dsRef;
-            while (celix_propertiesIterator_hasNext(&propIter)) {
+            while (!celix_propertiesIterator_isEnd(&propIter)) {
                 TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
                 if (!discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(announcer, &propIter, &txtRecord, sizeof(txtBuf), true)) {
                     TXTRecordDeallocate(&txtRecord);

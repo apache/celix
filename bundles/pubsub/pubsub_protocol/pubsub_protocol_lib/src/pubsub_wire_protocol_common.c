@@ -39,10 +39,7 @@
 static celix_status_t pubsubProtocol_addNetstringEntryToBuffer(char* buffer, size_t bufferSize, size_t* offsetInOut, const char* str) {
     size_t offset = *offsetInOut;
 
-    size_t strLen = strnlen(str, CELIX_UTILS_MAX_STRLEN);
-    if (strLen == CELIX_UTILS_MAX_STRLEN) {
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
+    size_t strLen = celix_utils_strlen(str);
 
     char strLenString[32]; //note the str needed to print the strLen of str.
     int written = snprintf(strLenString, sizeof(strLenString), "%zu", strLen);
@@ -76,7 +73,7 @@ static celix_status_t pubsubProtocol_addNetstringEntryToBuffer(char* buffer, siz
 }
 
 celix_status_t pubsubProtocol_encodeMetadata(pubsub_protocol_message_t* message, char** bufferInOut, size_t* bufferLengthInOut, size_t* bufferContentLengthOut) {
-    int metadataSize = message->metadata.metadata == NULL ? 0 : celix_properties_size(message->metadata.metadata);
+    size_t metadataSize = message->metadata.metadata == NULL ? 0 : celix_properties_size(message->metadata.metadata);
     bool reallocBuffer = false;
     bool encoded = false;
 
@@ -101,19 +98,17 @@ celix_status_t pubsubProtocol_encodeMetadata(pubsub_protocol_message_t* message,
             *bufferInOut = newBuffer;
             *bufferLengthInOut = newLength;
         }
-        const char* key;
         if (metadataSize == 0) {
             encoded = true;
             continue;
         }
         celix_status_t status = CELIX_SUCCESS;
-        CELIX_PROPERTIES_FOR_EACH(message->metadata.metadata, key) {
-            const char *val = celix_properties_get(message->metadata.metadata, key, "");
+        CELIX_PROPERTIES_ITERATE(message->metadata.metadata, iter) {
             if (status == CELIX_SUCCESS) {
-                status = pubsubProtocol_addNetstringEntryToBuffer(*bufferInOut, *bufferLengthInOut, &offset, key);
+                status = pubsubProtocol_addNetstringEntryToBuffer(*bufferInOut, *bufferLengthInOut, &offset, iter.key);
             }
             if (status == CELIX_SUCCESS) {
-                status = pubsubProtocol_addNetstringEntryToBuffer(*bufferInOut, *bufferLengthInOut, &offset, val);
+                status = pubsubProtocol_addNetstringEntryToBuffer(*bufferInOut, *bufferLengthInOut, &offset, iter.entry.value);
             }
         }
         if (status == CELIX_FILE_IO_EXCEPTION) {

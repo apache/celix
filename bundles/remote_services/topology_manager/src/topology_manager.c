@@ -399,8 +399,7 @@ celix_status_t topologyManager_importScopeChanged(void *handle, char *service_na
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(importedServicesIterator);
 		endpoint = hashMapEntry_getKey(entry);
 
-		entry = hashMap_getEntry(endpoint->properties, (void *) CELIX_FRAMEWORK_SERVICE_NAME);
-		char* name = (char *) hashMapEntry_getValue(entry);
+        const char* name = celix_properties_get(endpoint->properties, CELIX_FRAMEWORK_SERVICE_NAME, "");
 		// Test if a service with the same name is imported
 		if (strcmp(name, service_name) == 0) {
 			found = true;

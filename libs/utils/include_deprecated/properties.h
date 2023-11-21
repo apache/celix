@@ -37,8 +37,8 @@
 extern "C" {
 #endif
 
-typedef hash_map_pt properties_pt __attribute__((deprecated("properties is deprecated use celix_properties instead")));
-typedef hash_map_t properties_t __attribute__((deprecated("properties is deprecated use celix_properties instead")));
+typedef struct celix_properties* properties_pt __attribute__((deprecated("properties is deprecated use celix_properties instead")));
+typedef struct celix_properties properties_t __attribute__((deprecated("properties is deprecated use celix_properties instead")));
 
 CELIX_UTILS_DEPRECATED_EXPORT celix_properties_t* properties_create(void);
 
@@ -62,10 +62,11 @@ CELIX_UTILS_DEPRECATED_EXPORT void properties_unset(celix_properties_t *properti
 
 CELIX_UTILS_DEPRECATED_EXPORT celix_status_t properties_copy(celix_properties_t *properties, celix_properties_t **copy);
 
+/** TODO refactor
 #define PROPERTIES_FOR_EACH(props, key) \
     for(hash_map_iterator_t iter = hashMapIterator_construct(props); \
         hashMapIterator_hasNext(&iter), (key) = (const char*)hashMapIterator_nextKey(&iter);)
-
+*/
 
 #ifdef __cplusplus
 }

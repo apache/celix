@@ -397,8 +397,7 @@ extern "C" {
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_t *ep = (endpoint_description_t *) arrayList_get(epList, i);
             celix_properties_t *props = ep->properties;
-            hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
-            char* value = (char*) hashMapEntry_getValue(entry);
+            const char* value = celix_properties_get(props, "key2", "");
             EXPECT_STREQ("inaetics", value);
             /*
             printf("Service: %s ", ep->service);
@@ -433,8 +432,7 @@ extern "C" {
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_t *ep = (endpoint_description_t *) arrayList_get(epList, i);
             celix_properties_t *props = ep->properties;
-            hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
-            char* value = (char*) hashMapEntry_getValue(entry);
+            const char* value = celix_properties_get(props, "key2", "");
             EXPECT_STREQ("inaetics", value);
         }
         printf("End: %s\n", __func__);
@@ -458,8 +456,7 @@ extern "C" {
         for (unsigned int i = 0; i < arrayList_size(epList); i++) {
             endpoint_description_t *ep = (endpoint_description_t *) arrayList_get(epList, i);
             celix_properties_t *props = ep->properties;
-            hash_map_entry_pt entry = hashMap_getEntry(props, (void *)"key2");
-            char* value = (char*) hashMapEntry_getValue(entry);
+            const char* value = celix_properties_get(props, "key2", "");
             EXPECT_STREQ("inaetics", value);
         }
         printf("End: %s\n", __func__);

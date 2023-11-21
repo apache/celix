@@ -102,9 +102,15 @@ class CelixConan(ConanFile):
     }
     options = {
         "celix_err_buffer_size": ["ANY"],
+        "celix_utils_max_strlen": ["ANY"],
+        "celix_properties_optimization_string_buffer_size": ["ANY"],
+        "celix_properties_optimization_entries_buffer_size": ["ANY"],
     }
     default_options = {
         "celix_err_buffer_size": "512",
+        "celix_utils_max_strlen": "1073741824",
+        "celix_properties_optimization_string_buffer_size": "128",
+        "celix_properties_optimization_entries_buffer_size": "16",
     }
 
     for comp in _celix_defaults.keys():
@@ -112,6 +118,14 @@ class CelixConan(ConanFile):
     del comp
 
     _cmake = None
+
+    def validate_config_option_is_positive_number(self, option):
+        try:
+            val = int(self.options.get_safe(option))
+            if val <= 0:
+                raise ValueError
+        except ValueError:
+            raise ConanInvalidConfiguration("{} must be a positive number".format(option))
 
     def validate(self):
         if self.settings.os != "Linux" and self.settings.os != "Macos":
@@ -123,12 +137,10 @@ class CelixConan(ConanFile):
         if self.options.build_rsa_discovery_zeroconf and self.settings.os != "Linux":
             raise ConanInvalidConfiguration("Celix build_rsa_discovery_zeroconf is only supported for Linux")
 
-        try:
-            val = int(self.options.celix_err_buffer_size)
-            if val <= 0:
-                raise ValueError
-        except ValueError:
-            raise ConanInvalidConfiguration("celix_err_buffer_size must be a positive number")
+        self.validate_config_option_is_positive_number("celix_err_buffer_size")
+        self.validate_config_option_is_positive_number("celix_utils_max_strlen")
+        self.validate_config_option_is_positive_number("celix_properties_optimization_string_buffer_size")
+        self.validate_config_option_is_positive_number("celix_properties_optimization_entries_buffer_size")
 
     def package_id(self):
         del self.info.options.build_all
