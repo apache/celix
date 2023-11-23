@@ -180,8 +180,8 @@ static int dynMessage_parseNameValueSection(dyn_message_type *msg, FILE *stream,
     while (peek != ':' && peek != EOF) {
         ungetc(peek, stream);
 
-        char *name;
-        char *value;
+        char *name = NULL;
+        char *value = NULL;
         status = dynCommon_parseNameValue(stream, &name, &value);
 
         if (status == OK) {

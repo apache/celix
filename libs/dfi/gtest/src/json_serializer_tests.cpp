@@ -32,6 +32,7 @@ extern "C" {
 #include "dyn_common.h"
 #include "dyn_type.h"
 #include "json_serializer.h"
+#include "celix_err.h"
 
 static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
 	va_list ap;
@@ -991,6 +992,89 @@ static void parseTests() {
     check_exampleA(inst);
     dynType_free(type, inst);
     dynType_destroy(type);
+
+    //parse ref by value
+    type = nullptr;
+    inst = nullptr;
+    rc = dynType_parseWithStr("Ttype={DD a b};ltype;", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    auto inputStr = R"({"a":1.0, "b":2.0})";
+    json_error_t error;
+    json_auto_t *input = json_loadb(inputStr, strlen(inputStr), JSON_DECODE_ANY, &error);
+    rc = jsonSerializer_deserializeJson(type, input, &inst);
+    ASSERT_EQ(0, rc);
+    struct {
+        double a;
+        double b;
+    } *data = static_cast<decltype(data)>(inst);
+    ASSERT_EQ(1.0, data->a);
+    ASSERT_EQ(2.0, data->b);
+    dynType_free(type, inst);
+    dynType_destroy(type);
+
+    //invalid input
+    type = nullptr;
+    inst = nullptr;
+    rc = dynType_parseWithStr("{DD a b}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    rc = jsonSerializer_deserialize(type, "invalid", strlen("invalid"), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //pointer type mismatch
+    rc = dynType_parseWithStr("{*t a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":1.0})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //text type mismatch
+    rc = dynType_parseWithStr("{t a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":1.0})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //enum type mismatch
+    rc = dynType_parseWithStr("{#v1=1;#v2=2;E a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":1.0})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //enum value unknown
+    rc = dynType_parseWithStr("{#v1=1;#v2=2;E a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":"v3"})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //sequence element type mismatch
+    rc = dynType_parseWithStr("[t", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"([1.0, 2.0])";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //unsupported untyped pointer
+    rc = dynType_parseWithStr("{P a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":1.0})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
 }
 
 /*********** write example 1 ************************/
@@ -1396,6 +1480,88 @@ void writeAvprTest3(void) {
 	free(result);
 }
 
+void writeEnum(void) {
+    dyn_type *type = nullptr;
+    char *result = nullptr;
+    int rc = dynType_parseWithStr(R"(#v1=1;#v2=2;E)", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    enum {
+        v1 = 1,
+        v2 = 2
+    }enumVal = v2;
+    rc = jsonSerializer_serialize(type, &enumVal, &result);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(strstr(result, R"(v2)") != nullptr);
+    free(result);
+    dynType_destroy(type);
+}
+
+void writeRefByVal(void) {
+    dyn_type *type = nullptr;
+    char *result = nullptr;
+    int rc = dynType_parseWithStr(R"(Ttype={DD a b};ltype;)", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    struct {
+        double a;
+        double b;
+    }input{1.0,2.0};
+    rc = jsonSerializer_serialize(type, &input, &result);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(strstr(result, R"("a":1.0)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("b":2.0)") != nullptr);
+    free(result);
+    dynType_destroy(type);
+}
+
+void writeSequenceFailed(void) {
+    dyn_type *type = nullptr;
+    char *result = nullptr;
+    int rc = dynType_parseWithStr(R"([D)", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    double input[] = {1.0,2.0};
+    struct {
+        uint32_t cap;
+        uint32_t len;
+        double *buf;
+    }seq{1,2,input};//cap < len
+    rc = jsonSerializer_serialize(type, &seq, &result);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+}
+
+void writeComplexFailed(void) {
+    dyn_type *type = nullptr;
+    char *result = nullptr;
+    //has unnamed complex element
+    int rc = dynType_parseWithStr(R"({II a})", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    struct {
+        int32_t a;
+        int32_t b;
+    }input{1,2};
+    rc = jsonSerializer_serialize(type, &input, &result);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+}
+
+void writeEnumFailed(void) {
+    dyn_type *type = nullptr;
+    char *result = nullptr;
+    int rc = dynType_parseWithStr(R"(#v1=1;#v2=2;E)", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    enum {
+        v1 = 1,
+        v2 = 2,
+        v3 = 3
+    }enumVal = v3;//schema only has v1 and v2
+    rc = jsonSerializer_serialize(type, &enumVal, &result);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+}
+
 } // extern "C"
 
 
@@ -1437,3 +1603,22 @@ TEST_F(JsonSerializerTests, WriteTest3) {
     writeAvprTest3();
 }
 
+TEST_F(JsonSerializerTests, WriteEnum) {
+    writeEnum();
+}
+
+TEST_F(JsonSerializerTests, WriteRefByVal) {
+    writeRefByVal();
+}
+
+TEST_F(JsonSerializerTests, WriteSequenceFailed) {
+    writeSequenceFailed();
+}
+
+TEST_F(JsonSerializerTests, WriteComplexFailed) {
+    writeComplexFailed();
+}
+
+TEST_F(JsonSerializerTests, WriteEnumFailed) {
+    writeEnumFailed();
+}

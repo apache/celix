@@ -691,7 +691,7 @@ static inline bool dynAvprType_metaEntrySetValue(struct meta_entry * meta_entry_
     if (values_array) {
         const char* enumValue = json_string_value(json_array_get(values_array, index));
         if (!enumValue) {
-            LOG_ERROR("MetaEntrySetValue: could not get the enum value from the \"EnumValues\" list at index %lu", index);
+            LOG_ERROR("MetaEntrySetValue: could not get the enum value from the \"EnumValues\" list at index %zu", index);
             return false;
         }
 
@@ -706,7 +706,7 @@ static inline bool dynAvprType_metaEntrySetValue(struct meta_entry * meta_entry_
         const size_t bufsize = sizeof(index) * CHAR_BIT + 1;
         meta_entry_ptr->value = calloc(bufsize, sizeof(char));
 
-        snprintf(meta_entry_ptr->value, bufsize, "%lu", (long unsigned int) index);
+        snprintf(meta_entry_ptr->value, bufsize, "%zu", index);
     }
 
     return true;
