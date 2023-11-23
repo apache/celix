@@ -88,7 +88,7 @@ int dynType_parse(FILE *descriptorStream, const char *name, struct types_head *r
 
 int dynType_parseWithStr(const char *descriptor, const char *name, struct types_head *refTypes, dyn_type **type) {
     int status = OK;
-    FILE *stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
+    FILE *stream = fmemopen((char *)descriptor, strlen(descriptor) + 1, "r");
     if (stream != NULL) {
         status = dynType_parseWithStream(stream, name, NULL, refTypes, type);
         if (status == OK) {
