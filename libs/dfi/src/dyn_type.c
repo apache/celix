@@ -95,6 +95,8 @@ int dynType_parseWithStr(const char *descriptor, const char *name, struct types_
             int c = fgetc(stream);
             if (c != '\0' && c != EOF) {
                 status = PARSE_ERROR;
+                dynType_destroy(*type);
+                *type = NULL;
                 LOG_ERROR("Expected EOF got %c", c);
             }
         } 
@@ -294,6 +296,14 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
     if (status == OK) {
         TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
             count +=1;
+            struct complex_type_entry *entry2 = NULL;
+            for(entry2 = entry->entries.tqe_next; entry2 != NULL; entry2 = entry2->entries.tqe_next) {
+                if (entry2->name != NULL && entry->name != NULL && strcmp(entry2->name, entry->name) == 0) {
+                    status = PARSE_ERROR;
+                    LOG_ERROR("Error duplicate name '%s'", entry->name);
+                    break;
+                }
+            }
         }
     }
 
@@ -591,12 +601,16 @@ int dynType_alloc(dyn_type *type, void **bufLoc) {
 
 int dynType_complex_indexForName(dyn_type *type, const char *name) {
     assert(type->type == DYN_TYPE_COMPLEX);
+    if (name == NULL) {
+        return -1;
+    }
     int i = 0;
     int index = -1;
     struct complex_type_entry *entry = NULL;
     TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-        if (strcmp(name, entry->name) == 0) {
+        if (entry->name != NULL && strcmp(name, entry->name) == 0) {
             index = i;
+            break;
         }
         i +=1;
     }
@@ -662,7 +676,7 @@ int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap) {
     struct generic_sequence *seq = inst;
     if (seq != NULL) {
         size_t size = dynType_size(type->sequence.itemType);
-        seq->buf = malloc(cap * size);
+        seq->buf = calloc(cap, size);
         if (seq->buf != NULL) {
             seq->cap = cap;
             seq->len = 0;

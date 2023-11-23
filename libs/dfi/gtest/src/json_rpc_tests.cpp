@@ -68,6 +68,73 @@ extern "C" {
         dynFunction_destroy(dynFunc);
     }
 
+    void prepareCharTest(void) {
+        dyn_function_type *dynFunc = nullptr;
+        int rc = dynFunction_parseWithStr("setName(#am=handle;Pt)N", nullptr, &dynFunc);
+        ASSERT_EQ(0, rc);
+
+        char *result = nullptr;
+
+        void *handle = nullptr;
+        char *arg1 = strdup("hello char");
+        void *args[2];
+        args[0] = &handle;
+        args[1] = &arg1;
+
+        rc = jsonRpc_prepareInvokeRequest(dynFunc, "setName", args, &result);
+        ASSERT_EQ(0, rc);
+
+        ASSERT_TRUE(strstr(result, "\"setName\"") != nullptr);
+        ASSERT_TRUE(strstr(result, "hello char") != nullptr);
+
+        free(result);
+        dynFunction_destroy(dynFunc);
+    }
+
+    void prepareConstCharTest(void) {
+        dyn_function_type *dynFunc = nullptr;
+        int rc = dynFunction_parseWithStr("setConstName(#am=handle;P#const=true;t)N", nullptr, &dynFunc);
+        ASSERT_EQ(0, rc);
+
+        char *result = nullptr;
+
+        void *handle = nullptr;
+        const char *arg1 = "hello const char";
+        void *args[2];
+        args[0] = &handle;
+        args[1] = &arg1;
+
+        rc = jsonRpc_prepareInvokeRequest(dynFunc, "setConstName", args, &result);
+        ASSERT_EQ(0, rc);
+
+        ASSERT_TRUE(strstr(result, "\"setConstName\"") != nullptr);
+        ASSERT_TRUE(strstr(result, "hello const char") != nullptr);
+
+        free(result);
+        dynFunction_destroy(dynFunc);
+    }
+
+    void prepareTestFailed(void) {
+        dyn_function_type *dynFunc = nullptr;
+        int rc = dynFunction_parseWithStr("action(#am=handle;PP)N", nullptr, &dynFunc);
+        ASSERT_EQ(0, rc);
+
+        char *result = nullptr;
+
+        void *handle = nullptr;
+        void *arg1 = nullptr;
+        void *args[2];
+        args[0] = &handle;
+        args[1] = &arg1;
+
+        rc = jsonRpc_prepareInvokeRequest(dynFunc, "action", args, &result);
+        ASSERT_EQ(1, rc);
+        celix_err_printErrors(stderr, nullptr, nullptr);
+
+        free(result);
+        dynFunction_destroy(dynFunc);
+    }
+
     void handleTestPre(void) {
         dyn_function_type *dynFunc = nullptr;
         int rc = dynFunction_parseWithStr("add(#am=handle;PDD#am=pre;*D)N", nullptr, &dynFunc);
@@ -86,6 +153,26 @@ extern "C" {
 
         dynFunction_destroy(dynFunc);
     }
+
+
+    void handleTestInvalidReply(void) {
+        dyn_function_type *dynFunc = nullptr;
+        int rc = dynFunction_parseWithStr("add(#am=handle;PDD#am=pre;*D)N", nullptr, &dynFunc);
+        ASSERT_EQ(0, rc);
+
+        double result = -1.0;
+        double *out = &result;
+        void *args[4];
+        args[3] = &out;
+        int rsErrno = 0;
+        rc = jsonRpc_handleReply(dynFunc, "invalid", args, &rsErrno);
+        ASSERT_EQ(1, rc);
+        celix_err_printErrors(stderr, nullptr, nullptr);
+
+        dynFunction_destroy(dynFunc);
+    }
+
+
 
     int add(void*, double a, double b, double *result) {
         *result = a + b;
@@ -175,6 +262,8 @@ extern "C" {
     struct tst_serv_example4 {
         void *handle;
         int (*getName_example4)(void *, char** name);
+        int (*setName_example4)(void *, char* name);
+        int (*setConstName_example4)(void *, const char* name);
     };
 
     void callTestPreAllocated(void) {
@@ -249,6 +338,10 @@ extern "C" {
         ASSERT_EQ(1, rc);
 
         rc = jsonRpc_call(intf, &serv, R"({"a": [1.0,2.0]})", &result);
+        ASSERT_EQ(1, rc);
+
+        //request argument type mismatch
+        rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": [1.0]})", &result);
         ASSERT_EQ(1, rc);
 
         dynInterface_destroy(intf);
@@ -372,6 +465,23 @@ extern "C" {
         ASSERT_EQ(0, rc);
         ASSERT_EQ(33554433, rsErrno);
         ASSERT_EQ(0, result);
+
+        dynInterface_destroy(intf);
+    }
+
+    void callTestUnknownRequest(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/example1.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        char *result = nullptr;
+        tst_serv serv {nullptr, addFailed, nullptr, nullptr, nullptr};
+
+        rc = jsonRpc_call(intf, &serv, R"({"m":"unknown", "a": [1.0,2.0]})", &result);
+        ASSERT_EQ(1, rc);
 
         dynInterface_destroy(intf);
     }
@@ -559,7 +669,7 @@ extern "C" {
         fclose(desc);
 
         char *result = nullptr;
-        tst_serv_example4 serv {nullptr, getName_example4};
+        tst_serv_example4 serv {nullptr, getName_example4, nullptr, nullptr};
 
         rc = jsonRpc_call(intf, &serv, R"({"m": "getName(V)t", "a": []})", &result);
         ASSERT_EQ(0, rc);
@@ -611,6 +721,222 @@ extern "C" {
         free(result);
         dynInterface_destroy(intf);
     }
+
+    void handleTestPreChar(void) {
+        dyn_function_type *dynFunc = nullptr;
+        int rc = dynFunction_parseWithStr("getName(#am=handle;P#am=pre;t)N", nullptr, &dynFunc);
+        ASSERT_EQ(0, rc);
+
+        const char *reply = "{\"r\":\"this is a test pre string\"}";
+        char result[32] = {0};
+        void *out = result;
+        void *args[2];
+        args[0] = nullptr;
+        args[1] = &out;
+        int rsErrno = 0;
+        rc = jsonRpc_handleReply(dynFunc, reply, args, &rsErrno);
+        ASSERT_EQ(0, rc);
+        ASSERT_EQ(0, rsErrno);
+        ASSERT_STREQ("this is a test pre string", result);
+
+        dynFunction_destroy(dynFunc);
+    }
+
+    void callTestChar(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/example4.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        char *result = nullptr;
+        tst_serv_example4 serv {nullptr, nullptr,[](void*, char *name)->int {
+            EXPECT_STREQ(name, "hello");
+            free(name);
+            return 0;
+        }, nullptr};
+
+        rc = jsonRpc_call(intf, &serv, R"({"m": "setName", "a":["hello"]})", &result);
+        ASSERT_EQ(0, rc);
+        free(result);
+
+        dynInterface_destroy(intf);
+    }
+
+    void callTestConstChar(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/example4.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        char *result = nullptr;
+        tst_serv_example4 serv {nullptr, nullptr, nullptr, [](void*, const char *name)->int {
+            EXPECT_STREQ(name, "hello const char");
+            return 0;
+        }};
+
+        rc = jsonRpc_call(intf, &serv, R"({"m": "setConstName", "a":["hello const char"]})", &result);
+        ASSERT_EQ(0, rc);
+        free(result);
+
+        dynInterface_destroy(intf);
+    }
+
+    enum example6_enum{
+            v1 = 1,
+            v2 = 2,
+    };
+
+    struct tst_CptData {
+        double d;
+        char *t;
+        struct tst_seq s;
+        enum example6_enum e;
+    };
+
+    struct tst_serv_example6 {
+        void *handle;
+        int (*cpt)(void *, struct tst_CptData *input, struct tst_CptData *output);
+    };
+
+    void testRequestBackwardCompatibility(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/example6.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+
+        char *result = nullptr;
+
+        tst_serv_example6 serv {nullptr, nullptr};
+
+        serv.cpt = [](void *, struct tst_CptData *input, struct tst_CptData *)->int {
+            EXPECT_EQ(input->d , 0.0);
+            EXPECT_EQ(input->t , nullptr);
+            EXPECT_EQ(input->s.len , 0);
+            EXPECT_EQ(input->s.cap , 0);
+            EXPECT_EQ(input->s.buf , nullptr);
+            EXPECT_EQ(input->e , 0);
+            return 0;
+        };
+        rc = jsonRpc_call(intf, &serv, R"({"m": "compatibility", "a": [{}]})", &result);
+        ASSERT_EQ(0, rc);
+        free(result);
+
+        serv.cpt = [](void *, struct tst_CptData *input, struct tst_CptData *)->int {
+            EXPECT_EQ(input->d , 1.0);
+            EXPECT_EQ(input->t , nullptr);
+            EXPECT_EQ(input->s.len , 0);
+            EXPECT_EQ(input->s.cap , 0);
+            EXPECT_EQ(input->s.buf , nullptr);
+            EXPECT_EQ(input->e , 0);
+            return 0;
+        };
+        rc = jsonRpc_call(intf, &serv, R"({"m": "compatibility", "a": [{"d":1.0}]})", &result);
+        ASSERT_EQ(0, rc);
+        free(result);
+
+        serv.cpt = [](void *, struct tst_CptData *input, struct tst_CptData *)->int {
+            EXPECT_EQ(input->d , 1.0);
+            EXPECT_STREQ(input->t , "hello compatibility");
+            EXPECT_EQ(input->s.len , 0);
+            EXPECT_EQ(input->s.cap , 0);
+            EXPECT_EQ(input->s.buf , nullptr);
+            EXPECT_EQ(input->e , 0);
+            return 0;
+        };
+        rc = jsonRpc_call(intf, &serv, R"({"m": "compatibility", "a": [{"d":1.0, "t":"hello compatibility"}]})", &result);
+        ASSERT_EQ(0, rc);
+        free(result);
+
+        serv.cpt = [](void *, struct tst_CptData *input, struct tst_CptData *)->int {
+            EXPECT_EQ(input->d , 1.0);
+            EXPECT_STREQ(input->t , "hello compatibility");
+            EXPECT_EQ(input->s.len , 3);
+            EXPECT_EQ(input->s.cap , 3);
+            EXPECT_EQ(input->s.buf[0] , 1.0);
+            EXPECT_EQ(input->s.buf[1] , 2.0);
+            EXPECT_EQ(input->s.buf[2] , 3.0);
+            EXPECT_EQ(input->e , 0);
+            return 0;
+        };
+        rc = jsonRpc_call(intf, &serv, R"({"m": "compatibility", "a": [{"d":1.0, "t":"hello compatibility", "s":[1.0,2.0,3.0]}]})", &result);
+        ASSERT_EQ(0, rc);
+        free(result);
+
+
+        serv.cpt = [](void *, struct tst_CptData *input, struct tst_CptData *)->int {
+            EXPECT_EQ(input->d , 1.0);
+            EXPECT_STREQ(input->t , "hello compatibility");
+            EXPECT_EQ(input->s.len , 3);
+            EXPECT_EQ(input->s.cap , 3);
+            EXPECT_EQ(input->s.buf[0] , 1.0);
+            EXPECT_EQ(input->s.buf[1] , 2.0);
+            EXPECT_EQ(input->s.buf[2] , 3.0);
+            EXPECT_EQ(input->e , v2);
+            return 0;
+        };
+        rc = jsonRpc_call(intf, &serv, R"({"m": "compatibility", "a": [{"d":1.0, "t":"hello compatibility", "s":[1.0,2.0,3.0], "e":"v2"}]})", &result);
+        ASSERT_EQ(0, rc);
+        free(result);
+
+
+        dynInterface_destroy(intf);
+    }
+
+    void testResponseForwardCompatibility(void) {
+        dyn_interface_type *intf = nullptr;
+        FILE *desc = fopen("descriptors/example6.descriptor", "r");
+        ASSERT_TRUE(desc != nullptr);
+        int rc = dynInterface_parse(desc, &intf);
+        ASSERT_EQ(0, rc);
+        fclose(desc);
+
+        struct methods_head *head;
+        dynInterface_methods(intf, &head);
+        dyn_function_type *func = nullptr;
+        struct method_entry *entry = nullptr;
+        TAILQ_FOREACH(entry, head, entries) {
+            if (strcmp(entry->name, "compatibility") == 0) {
+                func = entry->dynFunc;
+                break;
+            }
+        }
+        ASSERT_TRUE(func != nullptr);
+
+        struct tst_CptData *cptData{nullptr};
+        void *out = &cptData;
+
+        void *args[3];
+        args[0] = nullptr;
+        args[1] = nullptr;
+        args[2] = &out;
+        int rsErrno = 0;
+
+        //provider has more reply
+        rc = jsonRpc_handleReply(func, R"({"r":{"d":1.0, "t":"hello compatibility", "s":[1.0,2.0,3.0], "e":"v1", "e2":"v2"}})", args, &rsErrno);
+        EXPECT_EQ(0, rc);
+        EXPECT_EQ(0, rsErrno);
+        EXPECT_NE(cptData , nullptr);
+        EXPECT_EQ(cptData->d , 1.0);
+        EXPECT_STREQ(cptData->t , "hello compatibility");
+        EXPECT_EQ(cptData->s.len , 3);
+        EXPECT_EQ(cptData->s.cap , 3);
+        EXPECT_EQ(cptData->s.buf[0] , 1.0);
+        EXPECT_EQ(cptData->s.buf[1] , 2.0);
+        EXPECT_EQ(cptData->s.buf[2] , 3.0);
+        EXPECT_EQ(cptData->e , v1);
+        free(cptData->t);
+        free(cptData->s.buf);
+        free(cptData);
+
+        dynInterface_destroy(intf);
+    }
 }
 
 class JsonRpcTests : public ::testing::Test {
@@ -627,8 +953,24 @@ TEST_F(JsonRpcTests, prepareTest) {
     prepareTest();
 }
 
+TEST_F(JsonRpcTests, prepareCharTest) {
+    prepareCharTest();
+}
+
+TEST_F(JsonRpcTests, prepareConstCharTest) {
+    prepareConstCharTest();
+}
+
+TEST_F(JsonRpcTests, prepareTestFailed) {
+    prepareTestFailed();
+}
+
 TEST_F(JsonRpcTests, handleTestPre) {
     handleTestPre();
+}
+
+TEST_F(JsonRpcTests, handleTestInvalidReply) {
+    handleTestInvalidReply();
 }
 
 TEST_F(JsonRpcTests, handleTestOut) {
@@ -651,6 +993,10 @@ TEST_F(JsonRpcTests, callTestInvalidRequest) {
     callTestInvalidRequest();
 }
 
+TEST_F(JsonRpcTests, callTestUnknownRequest) {
+    callTestUnknownRequest();
+}
+
 TEST_F(JsonRpcTests, handleOutSeq) {
     handleTestOutputSequence();
 }
@@ -661,6 +1007,10 @@ TEST_F(JsonRpcTests, callTestOutChar) {
 
 TEST_F(JsonRpcTests, handleOutChar) {
     handleTestOutChar();
+}
+
+TEST_F(JsonRpcTests, handlePreChar) {
+    handleTestPreChar();
 }
 
 TEST_F(JsonRpcTests, handleReplyError) {
@@ -681,4 +1031,20 @@ TEST_F(JsonRpcTests, handleTestMultiPreOut) {
 
 TEST_F(JsonRpcTests, handleTestMultiOut) {
     handleTestMultiOut();
+}
+
+TEST_F(JsonRpcTests, callTestChar) {
+    callTestChar();
+}
+
+TEST_F(JsonRpcTests, callTestConstChar) {
+    callTestConstChar();
+}
+
+TEST_F(JsonRpcTests, testRequestBackwardCompatibility) {
+    testRequestBackwardCompatibility();
+}
+
+TEST_F(JsonRpcTests, testResponseForwardCompatibility) {
+    testResponseForwardCompatibility();
 }
