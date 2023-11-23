@@ -77,6 +77,7 @@ if (UTILS)
 
     target_include_directories(utils PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include_internal> #Note not installed, only for project internal usage
             $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
             )
     target_include_directories(utils PRIVATE src include_deprecated)
@@ -91,10 +92,17 @@ if (UTILS)
             BASE_NAME "CELIX_UTILS"
             EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/utils/celix_utils_export.h")
     target_include_directories(utils PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/utils>)
+    target_include_directories(utils PRIVATE $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/src/utils>)
 
     #Configure celix_err_constant header file
     set(CELIX_ERR_BUFFER_SIZE 512 CACHE STRING "The size of the thread-specific buffer used for library error messages")
     configure_file("${CMAKE_CURRENT_LIST_DIR}/src/celix_err_constants.h.in" "${CMAKE_BINARY_DIR}/celix/gen/includes/utils/celix_err_constants.h" @ONLY)
+
+    #Configure celix_utils_private_constants header file
+    set(CELIX_UTILS_MAX_STRLEN 1073741824 CACHE STRING "The maximum string length used for string util functions")
+    set(CELIX_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE 128 CACHE STRING "The string optimization buffer size used for properties")
+    set(CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE 16 CACHE STRING "The entries optimization buffer size used for properties")
+    configure_file("${CMAKE_CURRENT_LIST_DIR}/src/celix_utils_private_constants.h.in" "${CMAKE_BINARY_DIR}/celix/gen/src/utils/celix_utils_private_constants.h" @ONLY)
 
     install(TARGETS utils EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/utils)
@@ -120,8 +128,10 @@ if (UTILS)
         target_compile_definitions(utils_cut PRIVATE CELIX_UTILS_STATIC_DEFINE)
         target_include_directories(utils_cut PUBLIC
                 ${CMAKE_CURRENT_LIST_DIR}/include
+                ${CMAKE_CURRENT_LIST_DIR}/include_internal
                 ${MEMSTREAM_INCLUDE_DIR}
                 ${CMAKE_BINARY_DIR}/celix/gen/includes/utils
+                ${CMAKE_BINARY_DIR}/celix/gen/src/utils
                 src include_deprecated
                 )
         target_link_libraries(utils_cut PUBLIC ${UTILS_PUBLIC_DEPS} ${UTILS_PRIVATE_DEPS})
@@ -147,41 +157,19 @@ if (UTILS)
             target_include_directories(linked_list_test PRIVATE include_deprecated)
             target_link_libraries(linked_list_test utils_cut CppUTest pthread)
 
-            add_executable(properties_test private/test/properties_test.cpp)
-            target_include_directories(properties_test PRIVATE include_deprecated)
-            target_link_libraries(properties_test CppUTest CppUTestExt utils_cut pthread)
-
             add_executable(ip_utils_test private/test/ip_utils_test.cpp)
             target_include_directories(ip_utils_test PRIVATE include_deprecated)
             target_link_libraries(ip_utils_test CppUTest  utils_cut pthread)
 
-            add_executable(version_test private/test/version_test.cpp)
-            target_include_directories(version_test PRIVATE include_deprecated)
-            target_link_libraries(version_test CppUTest utils_cut pthread)
-
-
-            if (EI_TESTS)
-                add_executable(version_ei_test private/test/version_ei_test.cc)
-                target_include_directories(version_ei_test PRIVATE include_deprecated)
-                target_link_libraries(version_ei_test CppUTest utils_cut Celix::malloc_ei Celix::utils_ei pthread)
-                add_test(NAME version_ei_test COMMAND version_ei_test)
-            endif ()
-
-            configure_file(private/resources-test/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
-
             add_test(NAME run_array_list_test COMMAND array_list_test)
             add_test(NAME run_hash_map_test COMMAND hash_map_test)
             add_test(NAME run_linked_list_test COMMAND linked_list_test)
-            add_test(NAME run_properties_test COMMAND properties_test)
             add_test(NAME run_ip_utils_test COMMAND ip_utils_test)
-            add_test(NAME version_test COMMAND version_test)
 
-            setup_target_for_coverage(array_list_test)
             setup_target_for_coverage(hash_map_test)
+            setup_target_for_coverage(array_list_test)
             setup_target_for_coverage(linked_list_test)
-            setup_target_for_coverage(properties_test)
             setup_target_for_coverage(ip_utils_test)
-            setup_target_for_coverage(version_test)
         else ()
             message(WARNING "Cannot find CppUTest, deprecated cpputest-based unit test will not be added")
         endif () #end CppUTest_FOUND

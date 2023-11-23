@@ -1,0 +1,42 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+#ifndef CELIX_UTILS_PRIVATE_CONSTANTS_H
+#define CELIX_UTILS_PRIVATE_CONSTANTS_H
+
+
+/**
+ * @brief The max string length used in celix_utils for Apache Celix variant functions for strlen, strcmp and
+ * strdup.
+ */
+#define CELIX_UTILS_MAX_STRLEN @CELIX_UTILS_MAX_STRLEN@
+
+/**
+ * @brief The string optimization buffer size used in celix_properties so store some strings entries (keys and values)
+ * in a buffer instead of allocating memory for each entry.
+ */
+#define CELIX_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE @CELIX_PROPERTIES_OPTIMIZATION_STRING_BUFFER_SIZE@
+
+/**
+* @brief The entries optimization buffer size used in celix_properties so store some properties entries
+* in a buffer instead of allocating memory for each entry.
+*/
+#define CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE @CELIX_PROPERTIES_OPTIMIZATION_ENTRIES_BUFFER_SIZE@
+
+#endif //CELIX_UTILS_PRIVATE_CONSTANTS_H

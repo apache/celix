@@ -23,8 +23,7 @@
 
 class ErrTestSuite : public ::testing::Test {
 public:
-    ErrTestSuite() = default;
-    ~ErrTestSuite() noexcept override {
+    ErrTestSuite() {
         celix_err_resetErrors();
     }
 };

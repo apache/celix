@@ -24,7 +24,18 @@ extern "C" {
 #endif
 #include "celix_error_injector.h"
 #include "celix_long_hash_map.h"
+
 CELIX_EI_DECLARE(celix_longHashMap_create, celix_long_hash_map_t*);
+
+CELIX_EI_DECLARE(celix_longHashMap_createWithOptions, celix_long_hash_map_t*);
+
+CELIX_EI_DECLARE(celix_longHashMap_put, celix_status_t);
+
+CELIX_EI_DECLARE(celix_longHashMap_putLong, celix_status_t);
+
+CELIX_EI_DECLARE(celix_longHashMap_putDouble, celix_status_t);
+
+CELIX_EI_DECLARE(celix_longHashMap_putBool, celix_status_t);
 
 #ifdef __cplusplus
 }

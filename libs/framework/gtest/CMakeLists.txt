@@ -154,7 +154,7 @@ if (EI_TESTS)
             Celix::asprintf_ei
             Celix::dlfcn_ei
             Celix::unistd_ei
-            Celix::hash_map_ei
+            Celix::string_hash_map_ei
             Celix::properties_ei
             Celix::stdlib_ei
             Celix::stat_ei

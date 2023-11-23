@@ -20,9 +20,9 @@
 #include "celix_properties_ei.h"
 
 extern "C" {
-void *__real_celix_properties_create(void);
+void *__real_celix_properties_create();
 CELIX_EI_DEFINE(celix_properties_create, celix_properties_t*)
-void *__wrap_celix_properties_create(void) {
+void *__wrap_celix_properties_create() {
     CELIX_EI_IMPL(celix_properties_create);
     return __real_celix_properties_create();
 }

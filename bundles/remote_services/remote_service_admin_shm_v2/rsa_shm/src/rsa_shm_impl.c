@@ -231,29 +231,26 @@ static void rsaShm_overlayProperties(celix_properties_t *additionalProperties, c
 
     /*The property keys of a service are case-insensitive,while the property keys of the specified additional properties map are case sensitive.
      * A property key in the additional properties map must therefore override any case variant property key in the properties of the specified Service Reference.*/
-    const char *additionalPropKey = NULL;
-    const char *servicePropKey = NULL;
-    CELIX_PROPERTIES_FOR_EACH(additionalProperties, additionalPropKey) {
-        if (strcmp(additionalPropKey,(char*) CELIX_FRAMEWORK_SERVICE_NAME) != 0
-                && strcmp(additionalPropKey,(char*) CELIX_FRAMEWORK_SERVICE_ID) != 0) {
+    CELIX_PROPERTIES_ITERATE(additionalProperties, additionalPropIter) {
+        if (strcmp(additionalPropIter.key,(char*) CELIX_FRAMEWORK_SERVICE_NAME) != 0
+                && strcmp(additionalPropIter.key,(char*) CELIX_FRAMEWORK_SERVICE_ID) != 0) {
             bool propKeyCaseEqual = false;
 
-            CELIX_PROPERTIES_FOR_EACH(serviceProperties, servicePropKey) {
-                if (strcasecmp(additionalPropKey,servicePropKey) == 0) {
-                    const char* val = celix_properties_get(additionalProperties,additionalPropKey,NULL);
-                    celix_properties_set(serviceProperties,servicePropKey,val);
+            CELIX_PROPERTIES_ITERATE(serviceProperties, servicePropIter) {
+                if (strcasecmp(additionalPropIter.key,servicePropIter.key) == 0) {
+                    const char* val = additionalPropIter.entry.value;
+                    celix_properties_set(serviceProperties,servicePropIter.key,val);
                     propKeyCaseEqual = true;
                     break;
                 }
             }
 
             if (!propKeyCaseEqual) {
-                const char* val = celix_properties_get(additionalProperties,additionalPropKey,NULL);
-                celix_properties_set(serviceProperties,additionalPropKey,val);
+                const char* val = additionalPropIter.entry.value;
+                celix_properties_set(serviceProperties,additionalPropIter.key,val);
             }
         }
     }
-    return;
 }
 
 static bool rsaShm_isConfigTypeMatched(celix_properties_t *properties) {
