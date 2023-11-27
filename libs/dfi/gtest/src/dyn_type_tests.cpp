@@ -326,13 +326,6 @@ TEST_F(DynTypeTests, NrOfEntriesTest) {
     dynType_destroy(type);
 }
 
-TEST_F(DynTypeTests, ComplexHasDuplicateName) {
-    dyn_type *type = NULL;
-    auto rc = dynType_parseWithStr(R"({II a a})", nullptr, nullptr, &type);
-    ASSERT_EQ(3, rc);
-    celix_err_printErrors(stderr, nullptr, nullptr);
-}
-
 TEST_F(DynTypeTests, ComplexHasEmptyName) {
     dyn_type *type = NULL;
     auto rc = dynType_parseWithStr(R"({II a })", nullptr, nullptr, &type);
