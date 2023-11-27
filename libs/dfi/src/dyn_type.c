@@ -296,14 +296,6 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
     if (status == OK) {
         TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
             count +=1;
-            struct complex_type_entry *entry2 = NULL;
-            for(entry2 = entry->entries.tqe_next; entry2 != NULL; entry2 = entry2->entries.tqe_next) {
-                if (entry2->name != NULL && entry->name != NULL && strcmp(entry2->name, entry->name) == 0) {
-                    status = PARSE_ERROR;
-                    LOG_ERROR("Error duplicate name '%s'", entry->name);
-                    break;
-                }
-            }
         }
     }
 
