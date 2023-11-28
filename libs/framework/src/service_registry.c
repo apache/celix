@@ -82,7 +82,7 @@ celix_service_registry_t* celix_serviceRegistry_create(framework_pt framework) {
 }
 
 void celix_serviceRegistry_destroy(celix_service_registry_t* registry) {
-    celixThreadRwlock_writeLock(&registry->lock);
+    celixThreadRwlock_destroy(&registry->lock);
 
     //remove service listeners
     int size = celix_arrayList_size(registry->serviceListeners);
