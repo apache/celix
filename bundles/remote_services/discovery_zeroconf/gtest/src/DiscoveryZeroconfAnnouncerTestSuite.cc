@@ -150,7 +150,11 @@ static void OnServiceResolveCallback(DNSServiceRef sdRef, DNSServiceFlags flags,
     (void)context;
     EXPECT_EQ(errorCode, kDNSServiceErr_NoError);
 
-    EXPECT_STREQ(host, DZC_HOST_DEFAULT);
+    char hostname[UINT8_MAX+1] = {0};
+    gethostname(hostname, UINT8_MAX);
+    char expectHost[NI_MAXHOST]= {0};
+    (void)snprintf(expectHost, NI_MAXHOST, "%s.local.", hostname);
+    EXPECT_STREQ(host, expectHost);
     EXPECT_EQ(port, ntohs(DZC_PORT_DEFAULT));
     celix_properties_t *prop = (celix_properties_t *)context;
     int cnt = TXTRecordGetCount(txtLen, txtRecord);

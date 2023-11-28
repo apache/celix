@@ -77,6 +77,7 @@ typedef struct announce_endpoint_entry {
     DNSServiceRef registerRef;
     unsigned int uid;
     int ifIndex;
+    int port;
     const char *serviceName;
     char serviceType[64];
     bool announced;
@@ -260,6 +261,8 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
         entry->ifIndex = DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT;
     }
 
+    entry->port = celix_properties_getAsLong(endpoint->properties, CELIX_RSA_NETWORK_PORT, DZC_PORT_DEFAULT);
+
     const char *serviceSubType = celix_properties_get(endpoint->properties, DZC_SERVICE_TYPE_KEY, NULL);
     if (serviceSubType != NULL) {
         int bytes = snprintf(entry->serviceType, sizeof(entry->serviceType), DZC_SERVICE_PRIMARY_TYPE",%s", serviceSubType);
@@ -275,6 +278,7 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
 
     //Remove properties that remote service does not need
     celix_properties_unset(entry->properties, CELIX_RSA_NETWORK_INTERFACES);
+    celix_properties_unset(entry->properties, CELIX_RSA_NETWORK_PORT);
     celix_properties_unset(entry->properties, DZC_SERVICE_TYPE_KEY);
     entry->serviceName = celix_properties_get(entry->properties, CELIX_FRAMEWORK_SERVICE_NAME, NULL);
     if (entry->serviceName == NULL) {
@@ -398,7 +402,7 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
                 break;
             }
             celix_logHelper_info(announcer->logHelper, "Announcer: Register service %s on interface %d.", instanceName, entry->ifIndex);
-            dnsErr = DNSServiceRegister(&dsRef, kDNSServiceFlagsShareConnection, entry->ifIndex, instanceName, entry->serviceType, "local", DZC_HOST_DEFAULT, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback, announcer);
+            dnsErr = DNSServiceRegister(&dsRef, kDNSServiceFlagsShareConnection, entry->ifIndex, instanceName, entry->serviceType, "local", NULL, htons(entry->port), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback, announcer);
             if (dnsErr == kDNSServiceErr_NoError) {
                 registered = true;
             } else {

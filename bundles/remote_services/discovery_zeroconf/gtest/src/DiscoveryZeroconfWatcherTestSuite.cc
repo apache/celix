@@ -196,7 +196,7 @@ static DNSServiceRef RegisterTestService(void) {
     TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
 
     DNSServiceRef dsRef{};
-    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly, "dzc_test_service", DZC_SERVICE_PRIMARY_TYPE, "local", DZC_HOST_DEFAULT, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback,nullptr);
+    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly, "dzc_test_service", DZC_SERVICE_PRIMARY_TYPE, "local", NULL, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback,nullptr);
     EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
     DNSServiceProcessResult(dsRef);
     return dsRef;
@@ -305,7 +305,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveSelfFrameworkEndpoint) {
     TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
 
     DNSServiceRef dsRef{};
-    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly, "dzc_test_self_fw_service", DZC_SERVICE_PRIMARY_TYPE, "local", DZC_HOST_DEFAULT, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback,
+    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly, "dzc_test_self_fw_service", DZC_SERVICE_PRIMARY_TYPE, "local", NULL, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback,
                                                     nullptr);
     EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
     DNSServiceProcessResult(dsRef);
@@ -333,7 +333,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddTxtRecord) {
     TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
 
     DNSServiceRef dsRef{};
-    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexAny, "dzc_test_service", DZC_SERVICE_PRIMARY_TYPE, "local", DZC_HOST_DEFAULT, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback, nullptr);
+    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexAny, "dzc_test_service", DZC_SERVICE_PRIMARY_TYPE, "local", NULL, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback, nullptr);
     EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
     DNSServiceProcessResult(dsRef);
     TXTRecordDeallocate(&txtRecord);
@@ -379,7 +379,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveEndpointListener) {
     TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
 
     DNSServiceRef dsRef{};
-    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly, "dzc_test_service", DZC_SERVICE_PRIMARY_TYPE, "local", DZC_HOST_DEFAULT, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback,nullptr);
+    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly, "dzc_test_service", DZC_SERVICE_PRIMARY_TYPE, "local", NULL, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback,nullptr);
     EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
     DNSServiceProcessResult(dsRef);
 
