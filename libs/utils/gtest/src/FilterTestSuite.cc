@@ -85,20 +85,19 @@ TEST_F(FilterTestSuite, MissingClosingBracketsCreateTest) {
 }
 
 TEST_F(FilterTestSuite, InvalidClosingBracketsCreateTest) {
-    char* str;
     celix_filter_t* filter;
 
     // test missing closing brackets in substring
-    str = celix_utils_strdup("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3=at(tr3)))");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3=at(tr3)))");
     ASSERT_TRUE(filter == nullptr);
-    free(str);
 
     // test missing closing brackets in value
-    str = celix_utils_strdup("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3>=att(r3)))");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3>=att(r3)))");
     ASSERT_TRUE(filter == nullptr);
-    free(str);
+
+    // test invalid AND ending
+    filter = celix_filter_create("(&(");
+    ASSERT_TRUE(filter == nullptr);
 }
 
 TEST_F(FilterTestSuite, MiscInvalidCreateTest) {
@@ -131,14 +130,14 @@ TEST_F(FilterTestSuite, MiscInvalidCreateTest) {
     filter = celix_filter_create(str5);
     ASSERT_TRUE(filter == nullptr);
 
-    // test parsing a value with a escaped closing bracket "\)"
+    // test parsing a value with an escaped closing parenthesis "\ ")"
     const char* str6 = "(test_attr3>=strWith\\)inIt)";
     filter = celix_filter_create(str6);
     ASSERT_TRUE(filter != nullptr);
     ASSERT_STREQ("strWith)inIt", (char*)filter->value);
     celix_filter_destroy(filter);
 
-    // test parsing a substring with an escaped closing bracket "\)"
+    // test parsing a substring with an escaped closing parenthesis "\"
     const char* str7 = "(test_attr3=strWith\\)inIt)";
     filter = celix_filter_create(str7);
     ASSERT_TRUE(filter != nullptr);
@@ -169,7 +168,7 @@ TEST_F(FilterTestSuite, MatchEqualTest) {
     filter = celix_filter_create(str);
     ASSERT_TRUE(filter == nullptr);
     result = celix_filter_match(filter, props);
-    ASSERT_TRUE(result);
+    ASSERT_FALSE(result);
 
     // cleanup
     celix_properties_destroy(props);
@@ -465,6 +464,7 @@ TEST_F(FilterTestSuite, TypedPropertiesAndFilterTest) {
 TEST_F(FilterTestSuite, SubStringTest) {
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     celix_properties_set(props, "test", "John Bob Doe");
+    celix_properties_set(props, "test2", "*ValueWithStar");
 
     //test filter with matching subInitial
     celix_autoptr(celix_filter_t) filter1 = celix_filter_create("(test=Jo*)");
@@ -487,9 +487,8 @@ TEST_F(FilterTestSuite, SubStringTest) {
     EXPECT_TRUE(celix_filter_match(filter5, props));
 
     //test filter with un-matching subAny
-    //TODO fixme
-//    celix_autoptr(celix_filter_t) filter6 = celix_filter_create("(test=*Boo*)");
-//    EXPECT_FALSE(celix_filter_match(filter6, props));
+    celix_autoptr(celix_filter_t) filter6 = celix_filter_create("(test=*Boo*)");
+    EXPECT_FALSE(celix_filter_match(filter6, props));
 
     //test filter with matching subAny, subInitial and subFinal
     celix_autoptr(celix_filter_t) filter7 = celix_filter_create("(test=Jo*Bob*Doe)");
@@ -497,10 +496,61 @@ TEST_F(FilterTestSuite, SubStringTest) {
 
     //test filter with un-matching subAny, subInitial and subFinal
     celix_autoptr(celix_filter_t) filter8 = celix_filter_create("(test=Jo*Boo*Doe)");
+    EXPECT_FALSE(celix_filter_match(filter8, props));
 
-    //test filter with un-matching overlapping subAny, subInitial and subFinal
+    //test filter with un-matching overlapping subAny and subInitial
     celix_autoptr(celix_filter_t) filter9 = celix_filter_create("(test=John B*Bob*b Doe)");
+    EXPECT_FALSE(celix_filter_match(filter9, props));
+
+    //test filter with un-matching overlapping subAny and subFinal
+    celix_autoptr(celix_filter_t) filter10 = celix_filter_create("(test=*Bob*b Doe)");
+    EXPECT_FALSE(celix_filter_match(filter10, props));
+
+    //test filter with a starting escaped asterisk
+    celix_autoptr(celix_filter_t) filter11 = celix_filter_create("(test2=\\*Value*)");
+    EXPECT_TRUE(celix_filter_match(filter11, props));
+
+    //test filter with an invalid substring
+    celix_autoptr(celix_filter_t) filter12 = celix_filter_create("(test=Bob*");
+    EXPECT_EQ(nullptr, filter12);
 }
+
+TEST_F(FilterTestSuite, CreateEmptyFilter) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+
+    celix_autoptr(celix_filter_t) filter1 = celix_filter_create(nullptr); //fallback to "(|)"
+    EXPECT_TRUE(filter1 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter1, props));
+
+    celix_autoptr(celix_filter_t) filter2 = celix_filter_create(""); //fallback to "(|)"
+    EXPECT_TRUE(filter2 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter2, props));
+
+    celix_autoptr(celix_filter_t) filter3 = celix_filter_create("(|)");
+    EXPECT_TRUE(filter3 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter3, props));
+}
+
+TEST_F(FilterTestSuite, LogicalOperatorsWithNoCriteriaTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+
+    celix_autoptr(celix_filter_t) filter1 = celix_filter_create("(&)");
+    EXPECT_TRUE(filter1 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter1, props));
+
+    celix_autoptr(celix_filter_t) filter2 = celix_filter_create("(|)");
+    EXPECT_TRUE(filter2 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter2, props));
+
+    celix_autoptr(celix_filter_t) filter3 = celix_filter_create("(!)"); //NOT with no criteria is not valid
+    EXPECT_TRUE(filter3 == nullptr);
+}
+
+
+TEST_F(FilterTestSuite, InvalidEscapeTest) {
+    EXPECT_EQ(nullptr, celix_filter_create("(\\")); //escape without following char
+}
+
 
 #include "filter.h"
 TEST_F(FilterTestSuite, DeprecatedApiTest) {

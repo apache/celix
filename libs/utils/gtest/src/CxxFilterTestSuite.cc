@@ -28,15 +28,10 @@ public:
 
 TEST_F(CxxFilterTestSuite, CreateDestroy) {
     celix::Filter filter{};
-    EXPECT_TRUE(filter.empty());
-    EXPECT_TRUE(filter.getCFilter() == nullptr);
-    EXPECT_TRUE(filter.getFilterString().empty());
+    EXPECT_EQ(filter.getFilterString(), "(|)"); //match all filter
 }
 
 TEST_F(CxxFilterTestSuite, FilterString) {
-    celix::Filter filter1{};
-    EXPECT_EQ(std::string{}, filter1.getFilterString());
-
     celix::Filter filter2{"(key=value)"};
     EXPECT_FALSE(filter2.empty());
     EXPECT_EQ(std::string{"(key=value)"}, filter2.getFilterString());

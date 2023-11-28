@@ -114,7 +114,7 @@ typedef struct celix_filter_struct {
  *
  * If the return status is NULL, an error message is logged to celix_err.
  *
- * @param filterStr The filter string.
+ * @param filterStr The filter string. If NULL or "" a match-all "(|)" filter is created.
  * @return The created filter or NULL if the filter string is invalid.
  */
 CELIX_UTILS_EXPORT celix_filter_t* celix_filter_create(const char* filterStr);
@@ -133,7 +133,7 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_filter_t, celix_filter_destroy)
  * @brief Check whether the provided filter matches the provided properties.
  * @param[in] filter The filter.
  * @param[in] props The properties.
- * @return True if the filter matches the properties, false otherwise.
+ * @return True if the filter matches the properties, false otherwise. If filter or props is NULL false is returned.
  */
 CELIX_UTILS_EXPORT bool celix_filter_match(const celix_filter_t* filter, const celix_properties_t* props);
 
