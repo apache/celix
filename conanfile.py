@@ -90,6 +90,7 @@ class CelixConan(ConanFile):
         "build_framework": False,
         "build_rcm": False,
         "build_utils": False,
+        "build_netstring": False,
         "celix_cxx14": True,
         "celix_cxx17": True,
         "celix_install_deprecated_api": False,
@@ -326,6 +327,9 @@ class CelixConan(ConanFile):
 
         if options["build_promises"]:
             options["celix_cxx17"] = True
+
+        if options["build_netstring"]:
+            options["build_utils"] = True
 
         if options["celix_cxx17"]:
             options["celix_cxx14"] = True

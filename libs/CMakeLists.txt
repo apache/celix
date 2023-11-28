@@ -26,6 +26,8 @@ add_subdirectory(pushstreams)
 
 add_subdirectory(framework)
 
+add_subdirectory(netstring)
+
 #launcher
 add_subdirectory(launcher)
 
