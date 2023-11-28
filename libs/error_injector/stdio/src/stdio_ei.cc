@@ -98,4 +98,11 @@ int __wrap_fputs(const char* __s, FILE* __stream) {
     return __real_fputs(__s, __stream);
 }
 
+int __real_fclose(FILE* __stream);
+CELIX_EI_DEFINE(fclose, int)
+int __wrap_fclose(FILE* __stream) {
+    CELIX_EI_IMPL(fclose);
+    return __real_fclose(__stream);
+}
+
 }
