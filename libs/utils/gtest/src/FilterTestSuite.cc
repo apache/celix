@@ -181,187 +181,138 @@ TEST_F(FilterTestSuite, MatchEqualTest) {
 }
 
 TEST_F(FilterTestSuite, MatchTest) {
-    char* str;
     celix_filter_t* filter;
-    celix_properties_t* props = celix_properties_create();
-    char* key = celix_utils_strdup("test_attr1");
-    char* val = celix_utils_strdup("attr1");
-    char* key2 = celix_utils_strdup("test_attr2");
-    char* val2 = celix_utils_strdup("attr2");
-    celix_properties_set(props, key, val);
-    celix_properties_set(props, key2, val2);
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    ASSERT_NE(nullptr, props);
+    celix_properties_set(props, "test_attr1", "attr1");
+    celix_properties_set(props, "test_attr2", "attr2");
 
     // Test EQUALS
-    str = celix_utils_strdup("(test_attr1=attr1)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr1=attr1)");
     bool result = celix_filter_match(filter, props);
     EXPECT_TRUE(result);
+    celix_filter_destroy(filter);
 
     // Test EQUALS false
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr1=falseString)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr1=falseString)");
     result = celix_filter_match(filter, props);
     EXPECT_FALSE(result);
-
     celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr1~=attr1)");
-    filter = celix_filter_create(str);
+
+    filter = celix_filter_create("(test_attr1~=attr1)");
     result = celix_filter_match(filter, props);
     EXPECT_TRUE(result);
-
     celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr1~=ATTR1)");
-    filter = celix_filter_create(str);
+
+    filter = celix_filter_create("(test_attr1~=ATTR1)");
     result = celix_filter_match(filter, props);
     EXPECT_TRUE(result);
+    celix_filter_destroy(filter);
 
     // Test PRESENT
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr1=*)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr1=*)");
     result = celix_filter_match(filter, props);
     EXPECT_TRUE(result);
+    celix_filter_destroy(filter);
 
     // Test NOT PRESENT
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr3=*)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr3=*)");
     result = celix_filter_match(filter, props);
     EXPECT_FALSE(result);
+    celix_filter_destroy(filter);
 
     // Test NOT PRESENT
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(!(test_attr3=*))");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(!(test_attr3=*))");
     result = celix_filter_match(filter, props);
     EXPECT_TRUE(result);
+    celix_filter_destroy(filter);
 
     // Test LESSEQUAL less
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr1<=attr5)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr1<=attr5)");
     result = celix_filter_match(filter, props);
     EXPECT_TRUE(result);
+    celix_filter_destroy(filter);
 
     // Test LESSEQUAL equals
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr2<=attr2)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr2<=attr2)");
     result = celix_filter_match(filter, props);
     EXPECT_TRUE(result);
+    celix_filter_destroy(filter);
 
     // test LESSEQUAL false
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr2<=attr1)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr2<=attr1)");
     result = celix_filter_match(filter, props);
     EXPECT_FALSE(result);
+    celix_filter_destroy(filter);
 
     // test GREATEREQUAL greater
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr2>=attr1)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr2>=attr1)");
     result = celix_filter_match(filter, props);
     EXPECT_TRUE(result);
+    celix_filter_destroy(filter);
 
     // test GREATEREQUAL equals
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr2>=attr2)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr2>=attr2)");
     result = celix_filter_match(filter, props);
     EXPECT_TRUE(result);
+    celix_filter_destroy(filter);
 
     // test GREATEREQUAL false
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr1>=attr5)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr1>=attr5)");
     result = celix_filter_match(filter, props);
     EXPECT_FALSE(result);
+    celix_filter_destroy(filter);
 
     // test LESS less
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr1<attr5)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr1<attr5)");
     result = celix_filter_match(filter, props);
     EXPECT_TRUE(result);
+    celix_filter_destroy(filter);
 
     // test LESS equals
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr2<attr2)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr2<attr2)");
     result = celix_filter_match(filter, props);
     EXPECT_FALSE(result);
+    celix_filter_destroy(filter);
 
     // test LESS false
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr2<attr1)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr2<attr1)");
     result = celix_filter_match(filter, props);
     EXPECT_FALSE(result);
+    celix_filter_destroy(filter);
+
 
     // test GREATER greater
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr2>attr1)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr2>attr1)");
     result = celix_filter_match(filter, props);
     EXPECT_TRUE(result);
+    celix_filter_destroy(filter);
+
 
     // test GREATER equals
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr2>attr2)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr2>attr2)");
     result = celix_filter_match(filter, props);
     EXPECT_FALSE(result);
+    celix_filter_destroy(filter);
+
 
     // test GREATER false
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr1>attr5)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr1>attr5)");
     result = celix_filter_match(filter, props);
     EXPECT_FALSE(result);
+    celix_filter_destroy(filter);
+
 
     // test SUBSTRING equals
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr1=attr*)");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(test_attr1=attr*)");
     result = celix_filter_match(filter, props);
     EXPECT_TRUE(result);
-
     celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr1=attr*charsNotPresent)");
-    filter = celix_filter_create(str);
+
+    filter = celix_filter_create("(test_attr1=attr*charsNotPresent)");
     result = celix_filter_match(filter, props);
     EXPECT_FALSE(result);
-
-    // cleanup
-    celix_properties_destroy(props);
     celix_filter_destroy(filter);
-    free(str);
-    free(key);
-    free(key2);
-    free(val);
-    free(val2);
 }
 
 TEST_F(FilterTestSuite, MatchRecursionTest) {
@@ -383,21 +334,20 @@ TEST_F(FilterTestSuite, MatchRecursionTest) {
 
 TEST_F(FilterTestSuite, FalseMatchTest) {
     auto* str = "(&(test_attr1=attr1)(&(test_attr2=attr2)(test_attr3=attr3)))";
-    celix_filter_t* filter = celix_filter_create(str);
-    celix_properties_t* props = celix_properties_create();
+    celix_autoptr(celix_filter_t) filter = celix_filter_create(str);
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
     auto* key = "test_attr1";
     auto* val = "attr1";
     auto* key2 = "test_attr2";
     auto* val2 = "attr2";
     celix_properties_set(props, key, val);
     celix_properties_set(props, key2, val2);
-
     bool result = celix_filter_match(filter, props);
     ASSERT_FALSE(result);
 
-    // cleanup
-    celix_properties_destroy(props);
-    celix_filter_destroy(filter);
+    celix_autoptr(celix_filter_t) filter2 = celix_filter_create("(|(non-existing=false))");
+    result = celix_filter_match(filter2, props);
+    ASSERT_FALSE(result);
 }
 
 TEST_F(FilterTestSuite, GetStringTest) {
@@ -412,14 +362,20 @@ TEST_F(FilterTestSuite, GetStringTest) {
 }
 
 TEST_F(FilterTestSuite, FilterEqualsTest) {
-    auto* f1 = celix_filter_create("(test_attr1=attr1)");
-    auto* f2 = celix_filter_create("(test_attr1=attr1)");
-    auto* f3 = celix_filter_create("(test_attr1=attr2)");
+    celix_autoptr(celix_filter_t) f1 = celix_filter_create("(test_attr1=attr1)");
+    celix_autoptr(celix_filter_t) f2 = celix_filter_create("(test_attr1=attr1)");
+    celix_autoptr(celix_filter_t) f3 = celix_filter_create("(test_attr1>attr1)");
+    celix_autoptr(celix_filter_t) f4 = celix_filter_create("(&(test_attr1=attr1)(test_attr2=attr2))");
+    celix_autoptr(celix_filter_t) f5 = celix_filter_create("(&(test_attr1=attr1)(test_attr2=attr2))");
+    celix_autoptr(celix_filter_t) f6 = celix_filter_create("(&(test_attr1=attr1)(test_attr2=attr2)(test_attr3=attr3))");
+
+
+    EXPECT_TRUE(celix_filter_equals(f1, f1));
+    EXPECT_FALSE(celix_filter_equals(f1, nullptr));
     EXPECT_TRUE(celix_filter_equals(f1, f2));
     EXPECT_FALSE(celix_filter_equals(f1, f3));
-    celix_filter_destroy(f1);
-    celix_filter_destroy(f2);
-    celix_filter_destroy(f3);
+    EXPECT_TRUE(celix_filter_equals(f4, f5));
+    EXPECT_FALSE(celix_filter_equals(f4, f6));
 }
 
 TEST_F(FilterTestSuite, AutoCleanupTest) {
@@ -441,6 +397,8 @@ TEST_F(FilterTestSuite, TypedPropertiesAndFilterTest) {
     celix_properties_setLong(props, "long", 1L);
     celix_properties_setDouble(props, "double", 0.0);
     celix_properties_setBool(props, "bool", true);
+    celix_properties_setBool(props, "bool2", false);
+    celix_properties_set(props, "strBool", "true");
     celix_properties_setVersion(props, "version", version);
 
     celix_autoptr(celix_filter_t) filter1 =
@@ -456,8 +414,11 @@ TEST_F(FilterTestSuite, TypedPropertiesAndFilterTest) {
     EXPECT_TRUE(celix_filter_match(filter3, props));
 
     celix_autoptr(celix_filter_t) filter4 =
-            celix_filter_create("(&(str!=test)(long!=1)(double!=0.0)(bool!=true)(version!=1.2.3))");
+            celix_filter_create("(&(str!=test)(long!=1)(double!=0.0)(bool!=true)(bool2=true)(version!=1.2.3))");
     EXPECT_FALSE(celix_filter_match(filter4, props));
+
+    celix_autoptr(celix_filter_t) filter5 = celix_filter_create("(strBool=true)");
+    EXPECT_TRUE(celix_filter_match(filter5, props));
 }
 
 
@@ -565,6 +526,10 @@ TEST_F(FilterTestSuite, DeprecatedApiTest) {
     status = filter_getString(f1, &str);
     EXPECT_EQ(status, CELIX_SUCCESS);
     EXPECT_STREQ(str, "(test_attr1=attr1)");
+
+    status = filter_match(f1, nullptr, &result);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    EXPECT_FALSE(result);
 
     filter_destroy(f1);
     filter_destroy(f2);

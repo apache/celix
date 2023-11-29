@@ -24,6 +24,7 @@
 #include "celix_err.h"
 
 #include "celix_array_list_ei.h"
+#include "celix_utils_ei.h"
 #include "malloc_ei.h"
 #include "stdio_ei.h"
 
@@ -35,6 +36,8 @@ class FilterErrorInjectionTestSuite : public ::testing::Test {
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_open_memstream(nullptr, 0, nullptr);
         celix_ei_expect_fclose(nullptr, 0, 0);
+        celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
+        celix_ei_expect_fputc(nullptr, 0, 0);
     }
 
     ~FilterErrorInjectionTestSuite() override {
@@ -137,6 +140,17 @@ TEST_F(FilterErrorInjectionTestSuite, ErrorFcloseTest) {
     filter = celix_filter_create(filterStr);
     EXPECT_EQ(nullptr, filter);
 }
+
+TEST_F(FilterErrorInjectionTestSuite, ErrorStrdupTest) {
+    //Given an error injection for celix_utils_strdup
+    celix_ei_expect_celix_utils_strdup((void*)celix_filter_create, 0, nullptr);
+    //When creating a filter
+    const char* filterStr = "(key1=value1)";
+    //Then the filter creation should fail, because it strdup the filter string
+    celix_filter_t* filter = celix_filter_create(filterStr);
+    EXPECT_EQ(nullptr, filter);
+}
+
 
 TEST_F(FilterErrorInjectionTestSuite, ErrorFputcTest) {
     // Given an error injection for fputc

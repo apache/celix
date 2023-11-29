@@ -743,15 +743,6 @@ celix_filter_t* celix_filter_create(const char* filterString) {
         return NULL;
     }
 
-    if (filter->operand != CELIX_FILTER_OPERAND_OR && filter->operand != CELIX_FILTER_OPERAND_AND &&
-        filter->operand != CELIX_FILTER_OPERAND_NOT && filter->operand != CELIX_FILTER_OPERAND_SUBSTRING &&
-        filter->operand != CELIX_FILTER_OPERAND_PRESENT) {
-        if (filter->attribute == NULL || filter->value == NULL) {
-            celix_err_push("Filter Error: Missing attribute or value.");
-            return NULL;
-        }
-    }
-
     filter->filterStr = celix_steal_ptr(str);
     if (celix_filter_compile(filter) != CELIX_SUCCESS) {
         celix_err_push("Failed to compile filter");
