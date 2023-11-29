@@ -185,8 +185,8 @@ static int dynInterface_parseNameValueSection(dyn_interface_type *intf, FILE *st
     while (peek != ':' && peek != EOF) {
         ungetc(peek, stream);
 
-        char *name;
-        char *value;
+        char *name = NULL;
+        char *value = NULL;
         status = dynCommon_parseNameValue(stream, &name, &value);
 
         if (status == OK) {
@@ -230,7 +230,7 @@ static int dynInterface_parseTypes(dyn_interface_type *intf, FILE *stream) {
     while (peek != ':' && peek != EOF) {
         ungetc(peek, stream);
 
-        char *name;
+        char *name = NULL;
         status = dynCommon_parseName(stream, &name);
 
         if (status == OK) {
@@ -283,7 +283,7 @@ static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream) {
     while (peek != ':' && peek != EOF) {
         ungetc(peek, stream);
 
-        char *id;
+        char *id = NULL;
         status = dynCommon_parseNameAlsoAccept(stream, ".();[{}/", &id);
 
         if (status == OK) {
