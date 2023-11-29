@@ -230,7 +230,7 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 		} else {
             json_object_set_new_nocheck(payload, "e", json_integer(funcCallStatus));
 		}
-		response = json_dumps(payload, JSON_DECODE_ANY);
+		response = json_dumps(payload, JSON_COMPACT | JSON_ENCODE_ANY);//Should use JSON_COMPACT, it can reduce the size of the JSON string.
 		json_decref(payload);
 	}
 
@@ -285,12 +285,15 @@ int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *
 		}
 	}
 
-	char *invokeStr = json_dumps(invoke, JSON_DECODE_ANY);
+	char *invokeStr = json_dumps(invoke, JSON_COMPACT | JSON_ENCODE_ANY);//Should use JSON_COMPACT, it can reduce the size of the JSON string.
 	json_decref(invoke);
 
 	if (status == OK) {
 		*out = invokeStr;
-	}
+	} else {
+        *out = NULL;
+        free(invokeStr);
+    }
 
 	return status;
 }
@@ -315,7 +318,7 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
 			rsError = json_object_get(replyJson, "e");
 			if(rsError != NULL) {
 				//get the invocation error of remote service function
-				*rsErrno = json_integer_value(rsError);
+				*rsErrno = (int)json_integer_value(rsError);
                 replyHasError = true;
 			}
 		}

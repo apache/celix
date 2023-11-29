@@ -24,6 +24,7 @@ extern "C" {
     
     #include "dyn_common.h"
     #include "dyn_type.h"
+    #include "celix_err.h"
 
 	static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
 	    va_list ap;
@@ -323,4 +324,52 @@ TEST_F(DynTypeTests, NrOfEntriesTest) {
     ASSERT_EQ(0, rc);
     ASSERT_EQ(4, dynType_complex_nrOfEntries(type));
     dynType_destroy(type);
+}
+
+TEST_F(DynTypeTests, ComplexHasEmptyName) {
+    dyn_type *type = NULL;
+    auto rc = dynType_parseWithStr(R"({II a })", nullptr, nullptr, &type);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+}
+
+TEST_F(DynTypeTests, SchemaEndsWithoutNullTerminator) {
+    dyn_type *type = NULL;
+    //ends with '-'
+    auto rc = dynType_parseWithStr(R"({II a b}-)", nullptr, nullptr, &type);
+    ASSERT_EQ(3, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+}
+
+TEST_F(DynTypeTests, MetaInfoMissingValue) {
+    dyn_type *type = NULL;
+    auto rc = dynType_parseWithStr(R"(#testMetaInfo=)", nullptr, nullptr, &type);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+}
+
+TEST_F(DynTypeTests, ParseNestedTypeFailed) {
+    dyn_type *type = NULL;
+    //missing '='
+    auto rc = dynType_parseWithStr(R"(Ttype)", nullptr, nullptr, &type);
+    ASSERT_EQ(3, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+
+    //missing value
+    rc = dynType_parseWithStr(R"(Ttype=)", nullptr, nullptr, &type);
+    ASSERT_EQ(3, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+
+    //missing ';'
+    rc = dynType_parseWithStr(R"(Ttype={DD a b})", nullptr, nullptr, &type);
+    ASSERT_EQ(3, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+}
+
+TEST_F(DynTypeTests, ParseReferenceFailed) {
+    dyn_type *type = NULL;
+    //missing ';'
+    auto rc = dynType_parseWithStr(R"(Ttype={DD a b};ltype)", nullptr, nullptr, &type);
+    ASSERT_EQ(3, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
 }

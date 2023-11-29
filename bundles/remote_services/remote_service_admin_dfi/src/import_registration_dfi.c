@@ -190,8 +190,8 @@ static void* importRegistration_getService(void *handle, const celix_bundle_t *r
 void importRegistration_ungetService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties) {
     import_registration_t* import = handle;
     assert(import != NULL);
-    assert(import->proxies != NULL);
     pthread_mutex_lock(&import->proxiesMutex);
+    assert(import->proxies != NULL);
     struct service_proxy *proxy = hashMap_get(import->proxies, requestingBundle);
     if (proxy != NULL) {
         proxy->count -= 1;
