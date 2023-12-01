@@ -133,7 +133,8 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_filter_t, celix_filter_destroy)
  * @brief Check whether the provided filter matches the provided properties.
  * @param[in] filter The filter.
  * @param[in] props The properties.
- * @return True if the filter matches the properties, false otherwise. If filter or props is NULL false is returned.
+ * @return True if the filter matches the properties, false otherwise. If filter is NULL always returns true and
+ *         if props is NULL, the result is the same as if an empty properties set was provided.
  */
 CELIX_UTILS_EXPORT bool celix_filter_match(const celix_filter_t* filter, const celix_properties_t* props);
 

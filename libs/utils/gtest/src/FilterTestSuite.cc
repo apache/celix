@@ -146,38 +146,29 @@ TEST_F(FilterTestSuite, MiscInvalidCreateTest) {
 }
 
 TEST_F(FilterTestSuite, MatchEqualTest) {
-    char* str;
     celix_filter_t* filter;
     celix_properties_t* props = celix_properties_create();
-    char* key = celix_utils_strdup("test_attr1");
-    char* val = celix_utils_strdup("attr1");
-    char* key2 = celix_utils_strdup("test_attr2");
-    char* val2 = celix_utils_strdup("attr2");
+    const char* key = "test_attr1";
+    const char* val = "attr1";
+    const char* key2 = "test_attr2";
+    const char* val2 = "attr2";
     celix_properties_set(props, key, val);
     celix_properties_set(props, key2, val2);
+
     // test AND
-    str = celix_utils_strdup("(&(test_attr1=attr1)(|(test_attr2=attr2)(!(test_attr3=attr3))))");
-    filter = celix_filter_create(str);
+    filter = celix_filter_create("(&(test_attr1=attr1)(|(test_attr2=attr2)(!(test_attr3=attr3))))");
     bool result = celix_filter_match(filter, props);
     ASSERT_TRUE(result);
+    celix_filter_destroy(filter);
 
     // test AND false
-    celix_filter_destroy(filter);
-    free(str);
-    str = celix_utils_strdup("(test_attr1=attr1)(test_attr1=attr2))");
-    filter = celix_filter_create(str);
-    ASSERT_TRUE(filter == nullptr);
+    filter = celix_filter_create("(&(test_attr1=attr1)(test_attr1=attr2))");
     result = celix_filter_match(filter, props);
     ASSERT_FALSE(result);
+    celix_filter_destroy(filter);
 
     // cleanup
     celix_properties_destroy(props);
-    celix_filter_destroy(filter);
-    free(str);
-    free(key);
-    free(key2);
-    free(val);
-    free(val2);
 }
 
 TEST_F(FilterTestSuite, MatchTest) {
@@ -314,6 +305,20 @@ TEST_F(FilterTestSuite, MatchTest) {
     EXPECT_FALSE(result);
     celix_filter_destroy(filter);
 }
+
+TEST_F(FilterTestSuite, MatchWithNullTest) {
+    //match with null filter, should return true
+    EXPECT_TRUE(celix_filter_match(nullptr, nullptr));
+
+    //match with null properties with a valid match all filter, should return true
+    celix_autoptr(celix_filter_t) filter1 = celix_filter_create("(|)");
+    EXPECT_TRUE(celix_filter_match(filter1, nullptr));
+
+    //match with null properties, should return false if an attribute is needed
+    celix_autoptr(celix_filter_t) filter2 = celix_filter_create("(test_attr1=attr1)");
+    EXPECT_FALSE(celix_filter_match(filter2, nullptr));
+}
+
 
 TEST_F(FilterTestSuite, MatchRecursionTest) {
     auto* str = "(&(test_attr1=attr1)(|(&(test_attr2=attr2)(!(&(test_attr1=attr1)(test_attr3=attr3))))(test_attr3=attr3)))";

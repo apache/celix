@@ -789,8 +789,8 @@ void celix_filter_destroy(celix_filter_t* filter) {
 }
 
 bool celix_filter_match(const celix_filter_t* filter, const celix_properties_t* properties) {
-    if (!filter || !properties) {
-        return false; // matching on null filter or property is always false
+    if (!filter) {
+        return true; // if filter is NULL, it matches
     }
 
     if (filter->operand == CELIX_FILTER_OPERAND_PRESENT) {
