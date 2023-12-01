@@ -75,7 +75,6 @@ struct discovery_zeroconf_announcer {
 typedef struct announce_endpoint_entry {
     celix_properties_t *properties;
     DNSServiceRef registerRef;
-    unsigned int uid;
     int ifIndex;
     int port;
     const char *serviceName;
@@ -238,13 +237,6 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
     }
     entry->registerRef = NULL;
     entry->announced = false;
-    // The entry->uid is used in mDNS instance name.
-    // To avoid instance name conflicts on localonly interface,
-    // in our code, the instance name consists of the service name and the UID.
-    // Because the maximum size of an mDNS instance name is 64 bytes, so we use the hash of endpoint->id.
-    // Don't worry about the uniqueness of the endpoint->id hash, it is only used to reduce the probability of instance name conflicts.
-    // If a conflict occurs， mDNS daemon will resolve it.
-    entry->uid = celix_utils_stringHash(endpoint->id);
     const char *ifName = celix_properties_get(endpoint->properties, CELIX_RSA_NETWORK_INTERFACES, NULL);
     if (ifName != NULL) {
         if (strcmp(ifName, "all") == 0) {
@@ -392,11 +384,16 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
         DNSServiceErrorType dnsErr;
         char instanceName[64] = {0};
         bool registered = false;
-        int conflictCnt = 0;
+        int conflictCnt = 1;
         DNSServiceRef dsRef;
         do {
             dsRef = announcer->sharedRef;//DNSServiceRegister will set a new value for dsRef
-            int bytes = snprintf(instanceName, sizeof(instanceName), "%s-%X", entry->serviceName, entry->uid + conflictCnt);
+            int bytes = 0;
+            if (conflictCnt == 1) {
+                bytes = snprintf(instanceName, sizeof(instanceName), "%s", entry->serviceName);
+            } else {
+                bytes = snprintf(instanceName, sizeof(instanceName), "%s(%d)", entry->serviceName, conflictCnt);
+            }
             if (bytes >= sizeof(instanceName)) {
                 celix_logHelper_error(announcer->logHelper, "Announcer: Please reduce the length of service name for %s.", entry->serviceName);
                 break;
