@@ -102,13 +102,25 @@ static void sendMsgWithIpc(const celix::LogHelper& logHelper, int qidSender, con
     }
 }
 
+static int getConsumer2ProviderChannelId(std::string& scope, std::string& topic) {
+    auto c2pChannel = std::string{"c2p"} + "/" + scope + "/" + topic; //client 2 provider channel
+    auto c2pId = (int)celix_utils_stringHash(c2pChannel.c_str());
+    return c2pId;
+}
+
+static long getProvider2ConsumerChannelId(std::string& scope, std::string& topic) {
+    auto p2cChannel = std::string{"p2c"} + "/" + scope + "/" + topic; //provider 2 client channel
+    int p2cId = (int)celix_utils_stringHash(p2cChannel.c_str());
+    return p2cId;
+}
+
 /**
  * A importedCalculater which acts as a pubsub proxy to a imported remote service.
  */
 class ImportedCalculator final : public ICalculator {
 public:
-    explicit ImportedCalculator(celix::LogHelper _logHelper) : logHelper{std::move(_logHelper)} {
-        setupMsgIpc();
+    explicit ImportedCalculator(celix::LogHelper _logHelper, int c2pChannelId, int p2cChannelId) : logHelper{std::move(_logHelper)} {
+        setupMsgIpc(c2pChannelId, p2cChannelId);
     }
 
     ~ImportedCalculator() noexcept override {
@@ -185,9 +197,9 @@ public:
     }
 
 private:
-    void setupMsgIpc() {
-        int keySender = 1234;   // TODO make configurable
-        int keyReceiver = 1235; // TODO make configurable
+    void setupMsgIpc(int c2pChannelId, int p2cChannelId) {
+        int keySender = (int)c2pChannelId;
+        int keyReceiver = (int)p2cChannelId;
         qidSender = msgget(keySender, 0666 | IPC_CREAT);
         qidReceiver = msgget(keyReceiver, 0666 | IPC_CREAT);
 
@@ -306,13 +318,6 @@ public:
     ~CalculatorImportServiceFactory() noexcept override = default;
 
     std::unique_ptr<celix::rsa::IImportRegistration> importService(const celix::rsa::EndpointDescription& endpoint) override {
-        auto topic = endpoint.getProperties().get("endpoint.topic");
-        auto scope = endpoint.getProperties().get("endpoint.topic");
-        if (topic.empty() || scope.empty()) {
-            ctx->logError("Cannot import pubsub endpoint. Endpoint does not have a scope and/or topic");
-            return nullptr;
-        }
-
         auto componentId = createImportedCalculatorComponent(endpoint);
         return std::make_unique<ComponentImportRegistration>(ctx, std::move(componentId));
     }
@@ -327,11 +332,12 @@ public:
 
 private:
     std::string createImportedCalculatorComponent(const celix::rsa::EndpointDescription& endpoint) {
-        auto invokeTopic = endpoint.getProperties().get("endpoint.topic") + "_invoke";
-        auto returnTopic = endpoint.getProperties().get("endpoint.topic") + "_return";
+        auto topic = endpoint.getProperties().get("endpoint.topic");
         auto scope = endpoint.getProperties().get("endpoint.scope");
+        auto c2pChannelId = getConsumer2ProviderChannelId(scope, topic);
+        auto p2cChannelId = getProvider2ConsumerChannelId(scope, topic);
 
-        auto& cmp = ctx->getDependencyManager()->createComponent(std::make_unique<ImportedCalculator>(logHelper));
+        auto& cmp = ctx->getDependencyManager()->createComponent(std::make_unique<ImportedCalculator>(logHelper, c2pChannelId, p2cChannelId));
         cmp.createServiceDependency<celix::PromiseFactory>()
                 .setRequired(true)
                 .setStrategy(DependencyUpdateStrategy::suspend)
@@ -372,8 +378,8 @@ private:
  */
 class ExportedCalculator final {
 public:
-    explicit ExportedCalculator(celix::LogHelper _logHelper) : logHelper{std::move(_logHelper)} {
-        setupMsgIpc();
+    explicit ExportedCalculator(celix::LogHelper _logHelper, int c2pChannelId, int p2cChannelId) : logHelper{std::move(_logHelper)} {
+        setupMsgIpc(c2pChannelId, p2cChannelId);
     }
 
     void setPromiseFactory(const std::shared_ptr<celix::PromiseFactory>& fac) {
@@ -428,10 +434,10 @@ public:
         calculator = calc;
     }
 private:
-    void setupMsgIpc() {
+    void setupMsgIpc(int c2pChannelId, int p2cChannelId) {
         //note reverse order of sender and receiver compared to ImportedCalculator
-        int keySender = 1235;   // TODO make configurable
-        int keyReceiver = 1234; // TODO make configurable
+        int keySender = (int)p2cChannelId;
+        int keyReceiver = (int)c2pChannelId;
         qidSender = msgget(keySender, 0666 | IPC_CREAT);
         qidReceiver = msgget(keyReceiver, 0666 | IPC_CREAT);
 
@@ -520,13 +526,6 @@ public:
     ~CalculatorExportServiceFactory() noexcept override = default;
 
     std::unique_ptr<celix::rsa::IExportRegistration> exportService(const celix::Properties& serviceProperties) override {
-        auto topic = serviceProperties.get("endpoint.topic");
-        auto scope = serviceProperties.get("endpoint.topic");
-        if (topic.empty() || scope.empty()) {
-            ctx->logError("Cannot export remote service pubsub without endpoint configuration. Endpoint does not have a scope and/or topic");
-            return nullptr;
-        }
-
         auto componentId = createExportedCalculatorComponent(serviceProperties);
         return std::make_unique<ComponentExportRegistration>(ctx, std::move(componentId));
     }
@@ -545,12 +544,13 @@ public:
 
 private:
     std::string createExportedCalculatorComponent(const celix::Properties& serviceProperties) {
-        auto invokeTopic = serviceProperties.get("endpoint.topic") + "_invoke";
-        auto returnTopic = serviceProperties.get("endpoint.topic") + "_return";
+        auto topic = serviceProperties.get("endpoint.topic");
         auto scope = serviceProperties.get("endpoint.scope");
+        auto c2pChannelId = getConsumer2ProviderChannelId(scope, topic);
+        auto p2cChannelId = getProvider2ConsumerChannelId(scope, topic);
         auto svcId = serviceProperties.get(celix::SERVICE_ID);
 
-        auto& cmp = ctx->getDependencyManager()->createComponent(std::make_unique<ExportedCalculator>(logHelper));
+        auto& cmp = ctx->getDependencyManager()->createComponent(std::make_unique<ExportedCalculator>(logHelper, c2pChannelId, p2cChannelId));
 
         cmp.createServiceDependency<celix::PromiseFactory>()
                 .setRequired(true)
