@@ -26,15 +26,9 @@
 class RemoteServicesIntegrationTestSuite : public ::testing::Test {
 public:
     RemoteServicesIntegrationTestSuite() {
-        auto pubsubTestReturnIpc = std::string{"ipc:///tmp/pubsub-test-return"};
-        auto pubsubTestInvokeIpc = std::string{"ipc:///tmp/pubsub-test-invoke"};
-
         celix::Properties clientConfig{
                 {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "info"},
                 {celix::FRAMEWORK_CACHE_DIR, ".clientCache"},
-                //Static configuration to let the pubsub zmq operate without discovery
-                {"PSA_ZMQ_STATIC_BIND_URL_FOR_test_invoke_default", pubsubTestInvokeIpc},
-                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_return_default", pubsubTestReturnIpc }
         };
         clientFw = celix::createFramework(clientConfig);
         clientCtx = clientFw->getFrameworkBundleContext();
@@ -42,9 +36,6 @@ public:
         celix::Properties serverConfig{
                 {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "info"},
                 {celix::FRAMEWORK_CACHE_DIR, ".serverCache"},
-                //Static configuration to let the pubsub zmq operate without discovery
-                {"PSA_ZMQ_STATIC_BIND_URL_FOR_test_return_default",  pubsubTestReturnIpc },
-                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_invoke_default", pubsubTestInvokeIpc }
         };
         serverFw = celix::createFramework(serverConfig);
         serverCtx = serverFw->getFrameworkBundleContext();
@@ -52,10 +43,6 @@ public:
 
     static void installSharedBundles(std::shared_ptr<celix::BundleContext>& ctx) {
         auto sharedBundles = {
-                PS_SER_BUNDLE_LOC,
-                PS_PSTM_BUNDLE_LOC,
-                PS_PSA_BUNDLE_LOC,
-                PS_WIRE_BUNDLE_LOC,
                 RS_DISCOVERY_BUNDLE_LOC,
                 RS_FACTORY_BUNDLE_LOC ,
                 RS_RSA_BUNDLE_LOC};

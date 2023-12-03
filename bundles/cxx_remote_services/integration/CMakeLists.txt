@@ -36,9 +36,9 @@ if (CXX_RSA_INTEGRATION)
     target_link_libraries(CalculatorConsumer PRIVATE Celix::Promises Celix::PushStreams Celix::shell_api Celix::RsaConfiguredDiscovery_api)
     target_include_directories(CalculatorConsumer PRIVATE include)
 
-#    if (ENABLE_TESTING)
-#        add_subdirectory(gtest)
-#    endif()
+    if (ENABLE_TESTING)
+        add_subdirectory(gtest)
+    endif()
 
     ################# Integration examples ##################################
 
