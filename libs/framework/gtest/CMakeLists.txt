@@ -31,6 +31,7 @@ add_celix_bundle(simple_cxx_dep_man_bundle SOURCES src/HelloWorldCxxActivatorWit
 add_celix_bundle(cmp_test_bundle SOURCES src/CmpTestBundleActivator.cc VERSION 1.0.0)
 add_celix_bundle(cond_test_bundle SOURCES src/CondTestBundleActivator.cc VERSION 1.0.0)
 add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
+add_celix_bundle(celix_err_test_bundle SOURCES src/activator_with_celix_err.c VERSION 1.0.0)
 
 add_celix_bundle(unresolvable_bundle SOURCES src/nop_activator.c VERSION 1.0.0)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -106,6 +107,8 @@ configure_file(config.properties.in config.properties @ONLY)
 configure_file(framework1.properties.in framework1.properties @ONLY)
 configure_file(framework2.properties.in framework2.properties @ONLY)
 configure_file(install_and_start_bundles.properties.in install_and_start_bundles.properties @ONLY)
+
+celix_target_bundle_set_definition(test_framework NAME CELIX_ERR_TEST_BUNDLE celix_err_test_bundle)
 
 target_compile_definitions(test_framework PRIVATE
         SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
