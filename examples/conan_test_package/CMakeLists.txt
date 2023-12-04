@@ -393,3 +393,9 @@ option(TEST_COMPONENTS_READY_CHECK "Test the components.ready condition checking
 if (TEST_COMPONENTS_READY_CHECK)
     add_celix_container("use_components_ready_check" BUNDLES Celix::components_ready_check hello)
 endif ()
+
+option(TEST_CELIX_NETSTRING "Test Celix Netstring" OFF)
+if (TEST_CELIX_NETSTRING)
+    add_executable(use_celix_netstring test_celix_netstring.c)
+    target_link_libraries(use_celix_netstring PRIVATE Celix::netstring)
+endif ()

@@ -27,7 +27,7 @@ if (NETSTRING)
     set_target_properties(netstring
             PROPERTIES
             VERSION 1.0.0
-            SOVERSION 0
+            SOVERSION 1
             OUTPUT_NAME "celix_netstring")
     celix_target_hide_symbols(netstring)
 
@@ -35,14 +35,10 @@ if (NETSTRING)
             $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
             )
 
-    set(NETSTRING_PUBLIC_DEPS Celix::utils)
-
-    target_link_libraries(netstring PUBLIC ${NETSTRING_PUBLIC_DEPS})
     generate_export_header(netstring
             BASE_NAME "CELIX_NETSTRING"
             EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/netstring/celix_netstring_export.h")
     target_include_directories(netstring PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/netstring>)
-    target_include_directories(netstring PRIVATE $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/src/netstring>)
 
     install(TARGETS netstring EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT netstring
             INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/netstring)
@@ -54,16 +50,15 @@ if (NETSTRING)
     #Alias setup to match external usage
     add_library(Celix::netstring ALIAS netstring)
 
-#    if (ENABLE_TESTING)
-#        add_library(netstring_cut STATIC ${NETSTRING_SRC})
-#        target_include_directories(netstring_cut PUBLIC
-#                ${CMAKE_CURRENT_LIST_DIR}/api
-#                ${CMAKE_BINARY_DIR}/celix/gen/includes/netstring
-#                ${CMAKE_BINARY_DIR}/celix/gen/src/netstring
-#                )
-#        target_link_libraries(netstring_cut PUBLIC ${NETSTRING_PUBLIC_DEPS})
-#
-#        add_subdirectory(gtest)
-#
-#    endif ()
+    if (ENABLE_TESTING)
+        add_library(netstring_cut STATIC ${NETSTRING_SRC})
+        target_include_directories(netstring_cut PUBLIC
+                ${CMAKE_CURRENT_LIST_DIR}/api
+                ${CMAKE_BINARY_DIR}/celix/gen/includes/netstring
+                ${CMAKE_BINARY_DIR}/celix/gen/src/netstring
+                )
+
+        add_subdirectory(gtest)
+
+    endif ()
 endif ()

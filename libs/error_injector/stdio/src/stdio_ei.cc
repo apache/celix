@@ -18,6 +18,7 @@
  */
 
 #include <errno.h>
+#include <stdarg.h>
 #include "stdio_ei.h"
 
 extern "C" {
@@ -87,7 +88,9 @@ size_t __wrap_fread(void* __restrict __ptr, size_t __size, size_t __n, FILE* __r
 int __real_fputc(int __c, FILE* __stream);
 CELIX_EI_DEFINE(fputc, int)
 int __wrap_fputc(int __c, FILE* __stream) {
+    errno = ENOSPC;
     CELIX_EI_IMPL(fputc);
+    errno = 0;
     return __real_fputc(__c, __stream);
 }
 
@@ -96,6 +99,19 @@ CELIX_EI_DEFINE(fputs, int)
 int __wrap_fputs(const char* __s, FILE* __stream) {
     CELIX_EI_IMPL(fputs);
     return __real_fputs(__s, __stream);
+}
+
+int __real_fprintf(FILE *stream, const char *format, ...);
+CELIX_EI_DEFINE(fprintf, int)
+int __wrap_fprintf(FILE *stream, const char *format, ...) {
+    errno = ENOSPC;
+    CELIX_EI_IMPL(fprintf);
+    errno = 0;
+    va_list args;
+    va_start(args, format);
+    int ret = vfprintf(stream, format, args);
+    va_end(args);
+    return ret;
 }
 
 }

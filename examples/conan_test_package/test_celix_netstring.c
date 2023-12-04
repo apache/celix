@@ -16,31 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
-#ifndef CELIX_CELIX_NETSTRING_H
-#define CELIX_CELIX_NETSTRING_H
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "celix_netstring_export.h"
+#include <celix_netstring.h>
 #include <stdio.h>
+#include <string.h>
 #include <stddef.h>
 
-CELIX_NETSTRING_EXPORT
-int celix_netstring_encodef(const char* bytes, size_t bytesSize, FILE* netstringOut);
+int main() {
+    const char *input = "Hello World";
+    size_t inputLen = strlen(input);
 
-CELIX_NETSTRING_EXPORT
-int celix_netstring_encodeb(const char* bytes, size_t bytesSize, char* netstringBufferOut, size_t bufferSize, size_t* bufferOffsetInOut);
-
-CELIX_NETSTRING_EXPORT
-int celix_netstring_decodef(FILE* netstringIn, char** bytes, size_t* bytesSize);
-
-CELIX_NETSTRING_EXPORT
-int celix_netstring_decodeb(const char* bufferIn, size_t bufferInSize, const char** bytes, size_t* bytesSize);
-
-
-#ifdef __cplusplus
+    char buffer[128]={0};
+    size_t offset = 0;
+    int rc = celix_netstring_encodeb(input, inputLen, buffer, sizeof(buffer), &offset);
+    printf("hello netstring, rc = %i\n", rc);
+    return 0;
 }
-#endif
-
-#endif //CELIX_CELIX_NETSTRING_H

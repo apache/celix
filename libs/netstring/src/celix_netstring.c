@@ -20,39 +20,40 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-//TODO add tests and error codes
-celix_status_t celix_netstring_encodef(const char* bytes, size_t bytesSize, FILE* netstringOut) {
+#include <errno.h>
+
+int celix_netstring_encodef(const char* bytes, size_t bytesSize, FILE* netstringOut) {
     if (netstringOut == NULL || (bytes == NULL && bytesSize > 0)) {
-        return CELIX_ILLEGAL_ARGUMENT;
+        return EINVAL;
     }
     int rc = fprintf(netstringOut, "%zu:", bytesSize);
-    if (rc <= 0) {
-        return CELIX_FILE_IO_EXCEPTION;
+    if (rc < 0) {
+        return errno;
     }
     if (bytesSize > 0) {
-        size_t ret  = fwrite(bytes, bytesSize, 1, netstringOut);
-        if (ret != 1) {
-            return CELIX_FILE_IO_EXCEPTION;
+        size_t ret  = fwrite(bytes, sizeof(char), bytesSize, netstringOut);
+        if (ret != bytesSize) {
+            return errno;
         }
     }
-    if (fputc(',', netstringOut) != ',') {
-        return CELIX_FILE_IO_EXCEPTION;
+
+    if (fputc(',', netstringOut) == EOF) {
+        return errno;
     }
 
-    return CELIX_SUCCESS;
-
+    return 0;
 }
 
-celix_status_t celix_netstring_encodeb(const char* bytes, size_t bytesSize, char* netstringBufferOut, size_t bufferSize, size_t* bufferOffsetInOut) {
+int celix_netstring_encodeb(const char* bytes, size_t bytesSize, char* netstringBufferOut, size_t bufferSize, size_t* bufferOffsetInOut) {
     if (netstringBufferOut == NULL || bufferSize == 0 || bufferOffsetInOut == NULL || (bytes == NULL && bytesSize > 0)) {
-        return CELIX_ILLEGAL_ARGUMENT;
+        return EINVAL;
     }
     size_t offset = *bufferOffsetInOut;
     char sz_bytesSize[32] = {0};
     int bytesSizeStrLen = sprintf(sz_bytesSize,  "%zu", bytesSize);//The buffer is large enough, SIZE_MAX is 20 chars
     size_t sizeNeeded = bytesSizeStrLen + 1 /*:*/ + bytesSize + 1 /*,*/;
     if (sizeNeeded > (bufferSize - offset)) {
-        return CELIX_ILLEGAL_ARGUMENT;
+        return ENOMEM;
     }
     memcpy(netstringBufferOut + offset, sz_bytesSize, bytesSizeStrLen);
     offset += bytesSizeStrLen;
@@ -63,65 +64,77 @@ celix_status_t celix_netstring_encodeb(const char* bytes, size_t bytesSize, char
     }
     netstringBufferOut[offset++] = ',';
     *bufferOffsetInOut = offset;
-    return CELIX_SUCCESS;
+    return 0;
 }
 
-celix_status_t celix_netstring_decodef(FILE* netstringIn, char** bytes, size_t* bytesSize) {
+int celix_netstring_decodef(FILE* netstringIn, char** bytes, size_t* bytesSize) {
     if (netstringIn == NULL || bytes == NULL || bytesSize == NULL) {
-        return CELIX_ILLEGAL_ARGUMENT;
+        return EINVAL;
     }
     *bytes = NULL; *bytesSize = 0;
     size_t size = 0;
-    int rc = fscanf(netstringIn, "%9zu:", &size);//>999999999 bytes is bad, compatible with D. J. Bernstein's netstring,https://cr.yp.to/proto/netstrings.txt
-    if (rc < 1) {
-        return CELIX_FILE_IO_EXCEPTION;
+    int c;
+    int digitCnt = 0;
+    while ((c = fgetc(netstringIn)) != EOF && isdigit(c)) {
+        if (++digitCnt > 9) {//>999999999 bytes is bad, compatible with D. J. Bernstein's netstring,https://cr.yp.to/proto/netstrings.txt
+            return EINVAL;
+        }
+        size = size * 10 + (c - '0');
     }
+    if (c == EOF) {
+        return ferror(netstringIn) != 0 ? errno : EINVAL;
+    } else if (c != ':') {
+        return EINVAL;
+    }
+
     if (size > 0) {
-        *bytes = calloc(1, size);
+        *bytes = (char*)malloc(size + 1);
         if (*bytes == NULL) {
-            return CELIX_ENOMEM;
+            return ENOMEM;
         }
         size_t ret = fread(*bytes, sizeof(char), size, netstringIn);
         if (ret < size) {
             free(*bytes);
             *bytes = NULL;
-            return CELIX_FILE_IO_EXCEPTION;
+            return ferror(netstringIn) != 0 ? errno : EINVAL;
         }
+        (*bytes)[size] = '\0';//add null terminator
     }
-    if (fgetc(netstringIn) != ',') {
+    int comma = fgetc(netstringIn);
+    if (comma != ',') {
         free(*bytes);
         *bytes = NULL;
-        return CELIX_FILE_IO_EXCEPTION;
+        return ferror(netstringIn) != 0 ? errno : EINVAL;
     }
     *bytesSize = size;
-    return CELIX_SUCCESS;
+    return 0;
 }
 
-celix_status_t celix_netstring_decodeb(const char* bufferIn, size_t bufferInSize, const char** bytes, size_t* bytesSize) {
+int celix_netstring_decodeb(const char* bufferIn, size_t bufferInSize, const char** bytes, size_t* bytesSize) {
     if (bufferIn == NULL || bufferInSize == 0 || bytes == NULL || bytesSize == NULL) {
-        return CELIX_ILLEGAL_ARGUMENT;
+        return EINVAL;
     }
     *bytes = NULL; *bytesSize = 0;
     size_t offset = 0;
     size_t size = 0;
     while (offset < bufferInSize && isdigit(bufferIn[offset])) {
         if (offset >= 9) {//>999999999 bytes is bad, compatible with D. J. Bernstein's netstring,https://cr.yp.to/proto/netstrings.txt
-            return CELIX_ILLEGAL_ARGUMENT;
+            return EINVAL;
         }
         size = size * 10 + (bufferIn[offset] - '0');
         offset += 1;
     }
     if (offset >= bufferInSize || bufferIn[offset] != ':') {
-        return CELIX_ILLEGAL_ARGUMENT;
+        return EINVAL;
     }
     ++offset;//skip ':'
     if (size + offset + 1 /*,*/ > bufferInSize) {
-        return CELIX_ILLEGAL_ARGUMENT;
+        return EINVAL;
     }
     if (bufferIn[offset + size] != ',') {
-        return CELIX_ILLEGAL_ARGUMENT;
+        return EINVAL;
     }
     *bytes = bufferIn + offset;
     *bytesSize = size;
-    return CELIX_SUCCESS;
+    return 0;
 }
