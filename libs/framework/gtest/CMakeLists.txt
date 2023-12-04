@@ -82,7 +82,9 @@ celix_target_bundle_set_definition(test_framework NAME BUNDLE_TEST_SET
 add_celix_bundle_dependencies(test_framework
         simple_test_bundle1
         simple_test_bundle2 simple_test_bundle3 simple_test_bundle4
-        simple_test_bundle5 bundle_with_exception bundle_with_bad_export unresolvable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle)
+        simple_test_bundle5 bundle_with_exception bundle_with_bad_export
+        unresolvable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle
+        celix_err_test_bundle)
 target_include_directories(test_framework PRIVATE ../src)
 celix_deprecated_utils_headers(test_framework)
 
