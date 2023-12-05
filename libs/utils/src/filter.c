@@ -50,20 +50,19 @@ struct celix_filter_internal {
     celix_version_t* versionValue;
 };
 
-static void celix_filter_skipWhiteSpace(char* filterString, int* pos);
-static celix_filter_t* celix_filter_parseFilter(char* filterString, int* pos);
-static celix_filter_t* celix_filter_parseFilterNode(char* filterString, int* pos);
-static celix_filter_t* celix_filter_parseAndOrOr(char* filterString, celix_filter_operand_t andOrOr, int* pos);
-static celix_filter_t* celix_filter_parseNot(char* filterString, int* pos);
-static celix_filter_t* celix_filter_parseItem(char* filterString, int* pos);
+static void celix_filter_skipWhiteSpace(const char* filterString, int* pos);
+static celix_filter_t* celix_filter_parseFilter(const char* filterString, int* pos);
+static celix_filter_t* celix_filter_parseFilterNode(const char* filterString, int* pos);
+static celix_filter_t* celix_filter_parseAndOrOr(const char* filterString, celix_filter_operand_t andOrOr, int* pos);
+static celix_filter_t* celix_filter_parseNot(const char* filterString, int* pos);
+static celix_filter_t* celix_filter_parseItem(const char* filterString, int* pos);
 static char* celix_filter_parseAttributeOrValue(const char* filterString, int* pos, bool parseAttribute);
-static celix_array_list_t* celix_filter_parseSubstring(char* filterString, int* pos);
+static celix_array_list_t* celix_filter_parseSubstring(const char* filterString, int* pos);
 static bool celix_filter_isSubString(const char* filterString, int startPos);
 static bool celix_filter_isNextNonWhiteSpaceChar(const char* filterString, int pos, char c);
 
-static void celix_filter_skipWhiteSpace(char* filterString, int* pos) {
-    size_t length;
-    for (length = strlen(filterString); (*pos < length) && isspace(filterString[*pos]);) {
+static void celix_filter_skipWhiteSpace(const char* filterString, int* pos) {
+    for (; filterString[*pos] != '\0' && isspace(filterString[*pos]);) {
         (*pos)++;
     }
 }
@@ -81,7 +80,7 @@ celix_filter_t* filter_create(const char* filterString) { return celix_filter_cr
 
 void filter_destroy(celix_filter_t* filter) { return celix_filter_destroy(filter); }
 
-static celix_filter_t* celix_filter_parseFilter(char* filterString, int* pos) {
+static celix_filter_t* celix_filter_parseFilter(const char* filterString, int* pos) {
     celix_filter_skipWhiteSpace(filterString, pos);
     if (filterString[*pos] != '(') {
         celix_err_pushf("Filter Error: Missing '(' in filter string '%s'.", filterString);
@@ -90,6 +89,9 @@ static celix_filter_t* celix_filter_parseFilter(char* filterString, int* pos) {
     (*pos)++; // eat '('
 
     celix_autoptr(celix_filter_t) filter = celix_filter_parseFilterNode(filterString, pos);
+    if (!filter) {
+        return NULL;
+    }
 
     celix_filter_skipWhiteSpace(filterString, pos);
 
@@ -103,7 +105,7 @@ static celix_filter_t* celix_filter_parseFilter(char* filterString, int* pos) {
     return celix_steal_ptr(filter);
 }
 
-static celix_filter_t* celix_filter_parseFilterNode(char* filterString, int* pos) {
+static celix_filter_t* celix_filter_parseFilterNode(const char* filterString, int* pos) {
     char c;
     celix_filter_skipWhiteSpace(filterString, pos);
 
@@ -128,7 +130,7 @@ static celix_filter_t* celix_filter_parseFilterNode(char* filterString, int* pos
     }
 }
 
-static celix_filter_t* celix_filter_parseAndOrOr(char* filterString, celix_filter_operand_t andOrOr, int* pos) {
+static celix_filter_t* celix_filter_parseAndOrOr(const char* filterString, celix_filter_operand_t andOrOr, int* pos) {
     celix_filter_skipWhiteSpace(filterString, pos);
 
     celix_autoptr(celix_filter_t) filter = (celix_filter_t*)calloc(1, sizeof(*filter));
@@ -174,7 +176,7 @@ static celix_filter_t* celix_filter_parseAndOrOr(char* filterString, celix_filte
     return celix_steal_ptr(filter);
 }
 
-static celix_filter_t* celix_filter_parseNot(char* filterString, int* pos) {
+static celix_filter_t* celix_filter_parseNot(const char* filterString, int* pos) {
     celix_filter_skipWhiteSpace(filterString, pos);
 
     char c = filterString[*pos];
@@ -209,7 +211,7 @@ static celix_filter_t* celix_filter_parseNot(char* filterString, int* pos) {
     return filter;
 }
 
-static celix_filter_t* celix_filter_parseItem(char* filterString, int* pos) {
+static celix_filter_t* celix_filter_parseItem(const char* filterString, int* pos) {
     celix_autofree char* attr = celix_filter_parseAttributeOrValue(filterString, pos, true);
     if (!attr) {
         celix_err_push("Filter Error: Missing attr.");
@@ -333,7 +335,6 @@ static char* celix_filter_parseAttributeOrValue(const char* filterString, int* p
         case ')': {
             if (parseAttribute) {
                 celix_err_pushf("Filter Error: Unexpected `)` char while parsing %s.", name);
-                fflush(stream);
                 return NULL;
             }
             keepRunning = false;
@@ -341,12 +342,10 @@ static char* celix_filter_parseAttributeOrValue(const char* filterString, int* p
         }
         case '(': {
             celix_err_pushf("Filter Error: Unexpected `(` char while parsing %s.", name);
-            fflush(stream);
             return NULL;
         }
         case '\0': {
             celix_err_pushf("Filter Error: Unexpected end of string while parsing %s.", name);
-            fflush(stream);
             return NULL;
         }
         case '<':
@@ -363,7 +362,6 @@ static char* celix_filter_parseAttributeOrValue(const char* filterString, int* p
             if (c == '\\') {
                 if (filterString[*pos + 1] == '\0') {
                     celix_err_pushf("Filter Error: Unexpected end of string while parsing %s.", name);
-                    fflush(stream);
                     return NULL;
                 }
                 (*pos)++; // eat '\'
@@ -372,7 +370,6 @@ static char* celix_filter_parseAttributeOrValue(const char* filterString, int* p
             int rc = fputc(c, stream);
             if (rc == EOF) {
                 celix_err_push("Filter Error: Failed to write to stream.");
-                fflush(stream);
                 return NULL;
             }
             (*pos)++;
@@ -385,7 +382,6 @@ static char* celix_filter_parseAttributeOrValue(const char* filterString, int* p
     int rc = fputc('\0', stream);
     if (rc == EOF) {
         celix_err_push("Filter Error: Failed to write to stream.");
-        fflush(stream);
         return NULL;
     }
 
@@ -412,7 +408,7 @@ static bool celix_filter_isSubString(const char* filterString, int startPos) {
     return false;
 }
 
-celix_status_t celix_filter_parseSubstringAny(char* filterString, int* pos, char** out) {
+static celix_status_t celix_filter_parseSubstringAny(const char* filterString, int* pos, char** out) {
     celix_autofree char* any = NULL;
     size_t anySize = 0;
     celix_autoptr(FILE) stream = open_memstream(&any, &anySize);
@@ -471,7 +467,7 @@ celix_status_t celix_filter_parseSubstringAny(char* filterString, int* pos, char
  * - (foo=bar*bar) -> [bar, bar]
  * - (foo=bar*bar*) -> [bar, bar, NULL]
  */
-static celix_array_list_t* celix_filter_parseSubstring(char* filterString, int* pos) {
+static celix_array_list_t* celix_filter_parseSubstring(const char* filterString, int* pos) {
     celix_array_list_t* subs = celix_arrayList_create();
     if (!subs) {
         celix_err_push("Filter Error: Failed to allocate memory.");
@@ -722,18 +718,12 @@ celix_status_t filter_match_filter(celix_filter_t* src, celix_filter_t* dest, bo
 }
 
 celix_filter_t* celix_filter_create(const char* filterString) {
-    if (!filterString || strnlen(filterString, 1) == 0) {
+    if (!filterString || filterString[0] == '\0') {
         filterString = "(|)";
     }
 
-    celix_autofree char* str = celix_utils_strdup(filterString);
-    if (!str) {
-        celix_err_push("Failed to create filter string");
-        return NULL;
-    }
-
     int pos = 0;
-    celix_autoptr(celix_filter_t) filter = celix_filter_parseFilter(str, &pos);
+    celix_autoptr(celix_filter_t) filter = celix_filter_parseFilter(filterString, &pos);
     if (!filter) {
         celix_err_push("Failed to parse filter string");
         return NULL;
@@ -742,10 +732,13 @@ celix_filter_t* celix_filter_create(const char* filterString) {
         celix_err_push("Filter Error: Extraneous trailing characters.");
         return NULL;
     }
-
-    filter->filterStr = celix_steal_ptr(str);
     if (celix_filter_compile(filter) != CELIX_SUCCESS) {
         celix_err_push("Failed to compile filter");
+        return NULL;
+    }
+    filter->filterStr = celix_utils_strdup(filterString);
+    if (NULL == filter->filterStr) {
+        celix_err_push("Failed to create filter string");
         return NULL;
     }
     return celix_steal_ptr(filter);
