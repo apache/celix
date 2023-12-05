@@ -41,6 +41,7 @@
 #include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -60,6 +61,7 @@
 struct discovery_zeroconf_announcer {
     celix_bundle_context_t *ctx;
     celix_log_helper_t *logHelper;
+    pid_t pid;
     char fwUuid[64];
     endpoint_listener_t epListener;
     long epListenerSvcId;
@@ -98,6 +100,7 @@ celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, ce
     }
     announcer->ctx = ctx;
     announcer->logHelper = logHelper;
+    announcer->pid = getpid();
     announcer->sharedRef = NULL;
 
     announcer->eventFd = eventfd(0, 0);
@@ -390,9 +393,9 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
             dsRef = announcer->sharedRef;//DNSServiceRegister will set a new value for dsRef
             int bytes = 0;
             if (conflictCnt == 1) {
-                bytes = snprintf(instanceName, sizeof(instanceName), "%s", entry->serviceName);
+                bytes = snprintf(instanceName, sizeof(instanceName), "%s-%ld", entry->serviceName, (long)announcer->pid);
             } else {
-                bytes = snprintf(instanceName, sizeof(instanceName), "%s(%d)", entry->serviceName, conflictCnt);
+                bytes = snprintf(instanceName, sizeof(instanceName), "%s-%ld(%d)", entry->serviceName, (long)announcer->pid, conflictCnt);
             }
             if (bytes >= sizeof(instanceName)) {
                 celix_logHelper_error(announcer->logHelper, "Announcer: Please reduce the length of service name for %s.", entry->serviceName);
