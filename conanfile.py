@@ -369,7 +369,7 @@ class CelixConan(ConanFile):
         if self.options.build_utils:
             self.requires("libzip/[>=1.7.3 <2.0.0]")
         if self.options.build_framework or self.options.build_pubsub:
-            self.requires("util-linux-libuuid/2.39")
+            self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
         if ((self.options.build_framework and self.options.framework_curlinit)
                 or self.options.build_celix_etcdlib
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
@@ -381,7 +381,7 @@ class CelixConan(ConanFile):
         if self.options.build_cxx_remote_service_admin:
             self.requires("rapidjson/[>=1.1.0 <2.0.0]")
         if self.options.build_pubsub_psa_zmq:
-            self.requires("zeromq/4.3.4")
+            self.requires("zeromq/[>=4.3.4 <5.0.0]")
             self.requires("czmq/4.2.0")
         if self.options.build_http_admin or self.options.build_rsa_discovery_common \
                 or self.options.build_rsa_remote_service_admin_dfi:
