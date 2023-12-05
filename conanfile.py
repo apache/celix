@@ -381,7 +381,6 @@ class CelixConan(ConanFile):
         if self.options.build_cxx_remote_service_admin:
             self.requires("rapidjson/[>=1.1.0 <2.0.0]")
         if self.options.build_pubsub_psa_zmq:
-            self.requires("zeromq/4.3.4")
             self.requires("czmq/4.2.0")
         if self.options.build_http_admin or self.options.build_rsa_discovery_common \
                 or self.options.build_rsa_remote_service_admin_dfi:
