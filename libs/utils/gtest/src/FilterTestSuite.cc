@@ -143,6 +143,16 @@ TEST_F(FilterTestSuite, MiscInvalidCreateTest) {
     ASSERT_TRUE(filter != nullptr);
     ASSERT_STREQ("strWith)inIt", (char*)filter->value);
     celix_filter_destroy(filter);
+
+    // test incomplete substring operator
+    const char* str8 = "(test_attr3=*attr3\\";
+    filter = celix_filter_create(str8);
+    ASSERT_TRUE(filter == nullptr);
+
+    // test incomplete substring operator
+    const char* str9 = "(test_attr3=*attr3";
+    filter = celix_filter_create(str9);
+    ASSERT_TRUE(filter == nullptr);
 }
 
 TEST_F(FilterTestSuite, MatchEqualTest) {

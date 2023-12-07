@@ -33,6 +33,7 @@ class FilterErrorInjectionTestSuite : public ::testing::Test {
     FilterErrorInjectionTestSuite() {
         celix_err_resetErrors();
         celix_ei_expect_celix_arrayList_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_add(nullptr, 0, 0);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_open_memstream(nullptr, 0, nullptr);
         celix_ei_expect_fclose(nullptr, 0, 0);
@@ -63,12 +64,23 @@ TEST_F(FilterErrorInjectionTestSuite, ErrorWithArrayListCreateTest) {
     EXPECT_EQ(nullptr, filter);
 
     //Given an error injection for celix_arrayList_create
-    celix_ei_expect_celix_arrayList_create((void*)celix_filter_create, 4, nullptr);
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_filter_create, 4, nullptr);
     //When creating a filter with a substring
     filterStr = "(key1=*val*)";
     //Then the filter creation should fail, because it cannot create a children list for the substring filter node
     filter = celix_filter_create(filterStr);
     EXPECT_EQ(nullptr, filter);
+}
+
+TEST_F(FilterErrorInjectionTestSuite, ErrorWithArrayListAddTest) {
+    for (int i = 0; i < 3; ++i) {
+        celix_ei_expect_celix_arrayList_add((void*)celix_filter_create, 4, CELIX_ENOMEM, i+1);
+        //When creating a filter with a substring
+        const char* filterStr = "(key1=*val*)";
+        //Then the filter creation should fail, because it cannot add a children to the substring filter node
+        celix_filter_t* filter = celix_filter_create(filterStr);
+        EXPECT_EQ(nullptr, filter);
+    }
 }
 
 TEST_F(FilterErrorInjectionTestSuite, ErrorWithCallocTest) {
@@ -118,6 +130,14 @@ TEST_F(FilterErrorInjectionTestSuite, ErrorMemStreamTest) {
     celix_ei_expect_open_memstream((void*)celix_filter_create, 5, nullptr);
     //When creating a filter with a sub string with an any part
     filterStr = "(key1=*val*)";
+    //Then the filter creation should fail, because it cannot open a memstream to create an any part
+    filter = celix_filter_create(filterStr);
+    EXPECT_EQ(nullptr, filter);
+
+    //Given an error injection for open_memstream
+    celix_ei_expect_open_memstream((void*)celix_filter_create, 5, nullptr, 2);
+    //When creating a filter with a sub string with an any part
+    filterStr = "(key1=*val*v)";
     //Then the filter creation should fail, because it cannot open a memstream to create an any part
     filter = celix_filter_create(filterStr);
     EXPECT_EQ(nullptr, filter);
