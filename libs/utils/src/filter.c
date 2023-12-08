@@ -311,11 +311,7 @@ static char* celix_filter_parseAttributeOrValue(const char* filterString, int* p
     const char* name = parseAttribute ? "attribute" : "attribute value";
     celix_autofree char* value = NULL;
     size_t valueSize = 0;
-    celix_autoptr(FILE) stream = open_memstream(&value, &valueSize);
-    if (!stream) {
-        celix_err_push("Filter Error: Failed to open mem stream.");
-        return NULL;
-    }
+    celix_autoptr(FILE) stream = NULL;
 
     bool keepRunning = true;
     while (keepRunning) {
@@ -357,6 +353,13 @@ static char* celix_filter_parseAttributeOrValue(const char* filterString, int* p
                 (*pos)++; // eat '\'
                 c = filterString[*pos];
             }
+            if (!stream) {
+                stream = open_memstream(&value, &valueSize);
+                if (!stream) {
+                    celix_err_push("Filter Error: Failed to open mem stream.");
+                    return NULL;
+                }
+            }
             int rc = fputc(c, stream);
             if (rc == EOF) {
                 celix_err_push("Filter Error: Failed to write to stream.");
@@ -368,21 +371,14 @@ static char* celix_filter_parseAttributeOrValue(const char* filterString, int* p
         }
     }
 
-    // end with \0
-    int rc = fputc('\0', stream);
-    if (rc == EOF) {
-        celix_err_push("Filter Error: Failed to write to stream.");
+    if (!stream) {
+        celix_err_push("Filter Error: Empty value.\n");
         return NULL;
     }
 
-    rc = fclose(celix_steal_ptr(stream));
+    int rc = fclose(celix_steal_ptr(stream));
     if (rc != 0) {
         celix_err_push("Filter Error: Failed to close stream.");
-        return NULL;
-    }
-
-    if (value[0] == '\0') {
-        celix_err_push("Filter Error: Empty value.\n");
         return NULL;
     }
 
@@ -402,7 +398,6 @@ static celix_status_t celix_filter_parseSubstringAny(const char* filterString, i
     celix_autofree char* any = NULL;
     size_t anySize = 0;
     celix_autoptr(FILE) stream = NULL;
-    int startPos = *pos;
     while (filterString[*pos] != ')' && filterString[*pos] != '*') {
         int rc;
         if (filterString[*pos] == '\\') {
@@ -427,7 +422,7 @@ static celix_status_t celix_filter_parseSubstringAny(const char* filterString, i
         (*pos)++;
     }
 
-    if (startPos == *pos) {
+    if (!stream) {
         // empty any
         *out = NULL;
         return CELIX_SUCCESS;
