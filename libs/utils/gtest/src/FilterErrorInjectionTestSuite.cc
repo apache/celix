@@ -132,6 +132,14 @@ TEST_F(FilterErrorInjectionTestSuite, ErrorWithCallocTest) {
     //Then the filter creation should fail, because it cannot calloc mem for an internal struct (converted types)
     filter = celix_filter_create(filterStr);
     EXPECT_EQ(nullptr, filter);
+
+    //Given an error injection for calloc
+    celix_ei_expect_calloc((void*)celix_filter_create, 2, nullptr);
+    //When creating a filter withAND filter node
+    filterStr = "(&(key1=value1)(key2=value2))";
+    //Then the filter creation should fail, cecause it cannot calloc mem for an internal struct (converted types)
+    filter = celix_filter_create(filterStr);
+    EXPECT_EQ(nullptr, filter);
 }
 
 TEST_F(FilterErrorInjectionTestSuite, ErrorMemStreamTest) {

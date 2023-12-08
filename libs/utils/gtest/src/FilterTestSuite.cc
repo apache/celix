@@ -42,6 +42,7 @@ TEST_F(FilterTestSuite, CreateDestroyTest) {
     ASSERT_TRUE(filter != nullptr);
 
     celix_filter_destroy(filter);
+    celix_filter_destroy(nullptr);
 }
 
 TEST_F(FilterTestSuite, MissingOpenBracketsCreateTest) {
@@ -144,14 +145,29 @@ TEST_F(FilterTestSuite, MiscInvalidCreateTest) {
     ASSERT_STREQ("strWith)inIt", (char*)filter->value);
     celix_filter_destroy(filter);
 
-    // test incomplete substring operator
+    // test parsing incomplete substring operator
     const char* str8 = "(test_attr3=*attr3\\";
     filter = celix_filter_create(str8);
     ASSERT_TRUE(filter == nullptr);
 
-    // test incomplete substring operator
+    // test parsing incomplete substring operator
     const char* str9 = "(test_attr3=*attr3";
     filter = celix_filter_create(str9);
+    ASSERT_TRUE(filter == nullptr);
+
+    // test parsing fiter missing )
+    const char* str10 = "(|(a=b)";
+    filter = celix_filter_create(str10);
+    ASSERT_TRUE(filter == nullptr);
+
+    // test parsing APPROX operator missing value
+    const char* str11 = "(a~=)";
+    filter = celix_filter_create(str11);
+    ASSERT_TRUE(filter == nullptr);
+
+    // test parsing LESS operator missing value
+    const char* str12 = "(a<)";
+    filter = celix_filter_create(str12);
     ASSERT_TRUE(filter == nullptr);
 }
 
