@@ -233,6 +233,34 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
 
     celix_logHelper_info(announcer->logHelper, "Announcer: Add endpoint for %s(%s).", endpoint->serviceName, endpoint->id);
 
+    const char *importedConfigs = celix_properties_get(endpoint->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
+    if (importedConfigs == NULL) {
+        celix_logHelper_error(announcer->logHelper, "Announcer: No imported configs for %s.", endpoint->serviceName);
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    const char *ifName = NULL;
+    int port = DZC_PORT_DEFAULT;
+    celix_autofree char *importedConfigsCopy = celix_utils_strdup(importedConfigs);
+    char *savePtr = NULL;
+    char *token = strtok_r(importedConfigsCopy, ",", &savePtr);
+    while (token != NULL && port == DZC_PORT_DEFAULT) {
+        //We only need to get one imported config, because all imported configs listed in this property must be synonymous(see https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.remoteservices.html#d0e1152).
+        celix_autofree char *importedConfigPortKey = NULL;
+        if(asprintf(&importedConfigPortKey, "%s.port", celix_utils_trimInPlace(token)) < 0) {
+            celix_logHelper_error(announcer->logHelper, "Announcer: Failed to create imported config port key.");
+            return CELIX_ENOMEM;
+        }
+        celix_autofree char *importedConfigIfNameKey = NULL;
+        if(asprintf(&importedConfigIfNameKey, "%s.ifname", celix_utils_trimInPlace(token)) < 0) {
+            celix_logHelper_error(announcer->logHelper, "Announcer: Failed to create imported config ifname key.");
+            return CELIX_ENOMEM;
+        }
+        port = celix_properties_getAsLong(endpoint->properties, importedConfigPortKey, DZC_PORT_DEFAULT);
+        ifName = celix_properties_get(endpoint->properties, importedConfigIfNameKey, NULL);
+        token = strtok_r(NULL, ",", &savePtr);
+    }
+
     celix_autofree announce_endpoint_entry_t *entry = (announce_endpoint_entry_t *)calloc(1, sizeof(*entry));
     if (entry == NULL) {
         celix_logHelper_error(announcer->logHelper, "Announcer:  Failed to alloc endpoint entry.");
@@ -240,7 +268,6 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
     }
     entry->registerRef = NULL;
     entry->announced = false;
-    const char *ifName = celix_properties_get(endpoint->properties, CELIX_RSA_NETWORK_INTERFACES, NULL);
     if (ifName != NULL) {
         if (strcmp(ifName, "all") == 0) {
             entry->ifIndex = kDNSServiceInterfaceIndexAny;
@@ -250,13 +277,15 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
             entry->ifIndex = kDNSServiceInterfaceIndexLocalOnly;
         } else {
             entry->ifIndex = if_nametoindex(ifName);
-            entry->ifIndex = entry->ifIndex == 0 ? DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT : entry->ifIndex;
+            if (entry->ifIndex == 0) {
+                celix_logHelper_error(announcer->logHelper, "Announcer: Invalid network interface name %s.", ifName);
+                return CELIX_ILLEGAL_ARGUMENT;
+            }
         }
     } else {
         entry->ifIndex = DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT;
     }
-
-    entry->port = celix_properties_getAsLong(endpoint->properties, CELIX_RSA_NETWORK_PORT, DZC_PORT_DEFAULT);
+    entry->port = port;
 
     const char *serviceSubType = celix_properties_get(endpoint->properties, DZC_SERVICE_TYPE_KEY, NULL);
     if (serviceSubType != NULL) {
@@ -272,7 +301,7 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
     celix_autoptr(celix_properties_t) properties = entry->properties = celix_properties_copy(endpoint->properties);
 
     //Remove properties that remote service does not need
-    celix_properties_unset(entry->properties, CELIX_RSA_NETWORK_INTERFACES);
+    celix_properties_unset(entry->properties, CELIX_RSA_NETWORK_INTERFACES);//TODO
     celix_properties_unset(entry->properties, CELIX_RSA_NETWORK_PORT);
     celix_properties_unset(entry->properties, DZC_SERVICE_TYPE_KEY);
     entry->serviceName = celix_properties_get(entry->properties, CELIX_FRAMEWORK_SERVICE_NAME, NULL);
@@ -378,7 +407,7 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
         TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
         char propSizeStr[16]= {0};
         sprintf(propSizeStr, "%zu", celix_properties_size(entry->properties) + 1);
-        (void)TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
+        (void)TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);//TODO add txtver
         if (!discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(announcer, &propIter, &txtRecord, sizeof(txtBuf), splitTxtRecord)) {
             TXTRecordDeallocate(&txtRecord);
             continue;

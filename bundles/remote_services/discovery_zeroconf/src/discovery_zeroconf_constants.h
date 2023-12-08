@@ -57,7 +57,7 @@ extern "C" {
  *
  * It is a dummy value, it is used for the remote service that IPC is not network based(eg:shared memory).
  */
-#define DZC_PORT_DEFAULT 50009
+#define DZC_PORT_DEFAULT 65535
 
 /**
  * The size of celix service properties.
