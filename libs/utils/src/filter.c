@@ -520,16 +520,23 @@ static celix_status_t celix_filter_compile(celix_filter_t* filter) {
         if (filter->internal == NULL) {
             celix_err_push("Filter Error: Failed to allocate memory.");
             return CELIX_ENOMEM;
-        } else {
-            filter->internal->longValue =
-                celix_utils_convertStringToLong(filter->value, 0, &filter->internal->convertedToLong);
-            filter->internal->doubleValue =
-                celix_utils_convertStringToDouble(filter->value, 0.0, &filter->internal->convertedToDouble);
-            filter->internal->versionValue =
-                celix_utils_convertStringToVersion(filter->value, NULL, &filter->internal->convertedToVersion);
-            filter->internal->boolValue =
-                celix_utils_convertStringToBool(filter->value, false, &filter->internal->convertedToBool);
         }
+        do {
+            filter->internal->longValue =
+                    celix_utils_convertStringToLong(filter->value, 0, &filter->internal->convertedToLong);
+            filter->internal->doubleValue =
+                    celix_utils_convertStringToDouble(filter->value, 0.0, &filter->internal->convertedToDouble);
+            if (filter->internal->convertedToLong || filter->internal->convertedToDouble) {
+                break;
+            }
+            filter->internal->boolValue =
+                    celix_utils_convertStringToBool(filter->value, false, &filter->internal->convertedToBool);
+            if (filter->internal->convertedToBool) {
+                break;
+            }
+            filter->internal->versionValue =
+                    celix_utils_convertStringToVersion(filter->value, NULL, &filter->internal->convertedToVersion);
+        } while(false);
     }
 
     if (celix_filter_hasFilterChildren(filter)) {
