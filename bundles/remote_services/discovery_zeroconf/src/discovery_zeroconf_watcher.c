@@ -145,6 +145,8 @@ celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celi
     celix_autoptr(celix_string_hash_map_t) watchedEndpoints =
         watcher->watchedEndpoints = celix_stringHashMap_createWithOptions(&epOpts);
     assert(watcher->watchedEndpoints);
+    watcher->watchedHosts = celix_stringHashMap_create();
+    assert(watcher->watchedHosts != NULL);
     celix_string_hash_map_create_options_t svcOpts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
     celix_autoptr(celix_string_hash_map_t) watchedServices =
         watcher->watchedServices = celix_stringHashMap_createWithOptions(&svcOpts);
@@ -195,6 +197,8 @@ void discoveryZeroconfWatcher_destroy(discovery_zeroconf_watcher_t *watcher) {
     celix_longHashMap_destroy(watcher->epls);
     assert(celix_stringHashMap_size(watcher->watchedServices) == 0);
     celix_stringHashMap_destroy(watcher->watchedServices);
+    assert(celix_stringHashMap_size(watcher->watchedHosts) == 0);
+    celix_stringHashMap_destroy(watcher->watchedHosts);
     assert(celix_stringHashMap_size(watcher->watchedEndpoints) == 0);
     celix_stringHashMap_destroy(watcher->watchedEndpoints);
     celixThreadMutex_destroy(&watcher->mutex);
@@ -461,6 +465,12 @@ static void onGetAddrInfoCb (DNSServiceRef sdRef, DNSServiceFlags flags, uint32_
     return;
 }
 
+static watched_host_entry_t *discoveryZeroconfWatcher_getHostEntry(discovery_zeroconf_watcher_t *watcher, const char *hostname, int ifIndex) {
+    char key[256 + 10] = {0};//max hostname length is 255, ifIndex is int
+    (void)snprintf(key, sizeof(key), "%s%d", hostname, ifIndex);
+    return (watched_host_entry_t *)celix_stringHashMap_get(watcher->watchedHosts, key);
+}
+
 static void discoveryZeroconfWatcher_refreshHostsInfo(discovery_zeroconf_watcher_t *watcher) {
     //mark deleted hosts
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedHosts, iter) {
@@ -471,15 +481,13 @@ static void discoveryZeroconfWatcher_refreshHostsInfo(discovery_zeroconf_watcher
     //add new hosts
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedServices, iter) {
         watched_service_entry_t *svcEntry = (watched_service_entry_t *) iter.value.ptrValue;
-        if (svcEntry->resolved && svcEntry->hostname != NULL) {
-            char key[256 + 10] = {0};//max hostname length is 255, ifIndex is int
-            (void)snprintf(key, sizeof(key), "%s%d", svcEntry->hostname, svcEntry->ifIndex);
-            if (celix_stringHashMap_hasKey(watcher->watchedHosts, key)) {
-                watched_host_entry_t *hostEntry = celix_stringHashMap_get(watcher->watchedHosts, key);
+        if (svcEntry->hostname != NULL) {
+            celix_autofree watched_host_entry_t *hostEntry = discoveryZeroconfWatcher_getHostEntry(watcher, svcEntry->hostname, svcEntry->ifIndex);
+            if (hostEntry != NULL) {
                 hostEntry->markDeleted = false;
-                continue;
+                celix_steal_ptr(hostEntry);
             } else {
-                celix_autofree watched_host_entry_t *hostEntry = (watched_host_entry_t *)calloc(1, sizeof(*hostEntry));
+                hostEntry = (watched_host_entry_t *)calloc(1, sizeof(*hostEntry));
                 if (hostEntry == NULL) {
                     celix_logHelper_error(watcher->logHelper, "Watcher: Failed to alloc host entry for %s.", svcEntry->instanceName);
                     continue;
@@ -498,11 +506,15 @@ static void discoveryZeroconfWatcher_refreshHostsInfo(discovery_zeroconf_watcher
                 hostEntry->activeStartTime.tv_sec = INT_MAX;
                 hostEntry->ifIndex = svcEntry->ifIndex;
                 hostEntry->markDeleted = false;
-                if (celix_stringHashMap_put(watcher->watchedHosts, key, hostEntry) == CELIX_SUCCESS) {
-                    celix_steal_ptr(hostname);
-                    celix_steal_ptr(ipAddresses);
-                    celix_steal_ptr(hostEntry);
+                char key[256 + 10] = {0};//max hostname length is 255, ifIndex is int
+                (void)snprintf(key, sizeof(key), "%s%d", svcEntry->hostname, svcEntry->ifIndex);
+                if (celix_stringHashMap_put(watcher->watchedHosts, key, hostEntry) != CELIX_SUCCESS) {
+                    celix_logHelper_error(watcher->logHelper, "Watcher: Failed to add host entry for %s.", svcEntry->instanceName);
+                    continue;
                 }
+                celix_steal_ptr(hostname);
+                celix_steal_ptr(ipAddresses);
+                celix_steal_ptr(hostEntry);
             }
         }
     }
@@ -540,9 +552,7 @@ static void discoveryZeroconfWatcher_refreshHostsInfo(discovery_zeroconf_watcher
 }
 
 static bool discoveryZeroConfWatcher_isHostResolved(discovery_zeroconf_watcher_t *watcher, const char *hostname, int ifIndex) {
-    char key[256 + 10] = {0};//max hostname length is 255, ifIndex is int
-    (void)snprintf(key, sizeof(key), "%s%d", hostname, ifIndex);
-    watched_host_entry_t *hostEntry = (watched_host_entry_t *)celix_stringHashMap_get(watcher->watchedHosts, key);
+    watched_host_entry_t *hostEntry = discoveryZeroconfWatcher_getHostEntry(watcher, hostname, ifIndex);
     if (hostEntry == NULL) {
         return false;
     }
@@ -589,10 +599,8 @@ static int discoveryZeroConfWatcher_createEndpointEntryForService(discovery_zero
     }
 
     //fill ip address list property
-    char key[256 + 10] = {0};//max hostname length is 255, ifIndex is int
-    (void)snprintf(key, sizeof(key), "%s%d", svcEntry->hostname, svcEntry->ifIndex);
     celix_autofree char *ipAddressesStr = NULL;
-    watched_host_entry_t *hostEntry = (watched_host_entry_t *)celix_stringHashMap_get(watcher->watchedHosts, key);
+    watched_host_entry_t *hostEntry = discoveryZeroconfWatcher_getHostEntry(watcher, svcEntry->hostname, svcEntry->ifIndex);
     if (hostEntry != NULL) {
         CELIX_STRING_HASH_MAP_ITERATE(hostEntry->ipAddresses, iter) {
             const char *ip = iter.key;
@@ -682,9 +690,7 @@ static bool discoveryZeroconfWatcher_checkEndpointIpAddressesChanged(discovery_z
     if (endpointEntry->hostname == NULL) {
         return false;
     }
-    char key[256 + 10] = {0};//max hostname length is 255, ifIndex is int
-    (void)snprintf(key, sizeof(key), "%s%d", endpointEntry->hostname, endpointEntry->ifIndex);
-    watched_host_entry_t *hostEntry = (watched_host_entry_t *)celix_stringHashMap_get(watcher->watchedHosts, key);
+    watched_host_entry_t *hostEntry = discoveryZeroconfWatcher_getHostEntry(watcher, endpointEntry->hostname, endpointEntry->ifIndex);
     if (hostEntry == NULL) {
         return true;
     }
@@ -798,6 +804,7 @@ static void discoveryZeroconfWatcher_clearEndpoints(discovery_zeroconf_watcher_t
         watched_endpoint_entry_t *epEntry = (watched_endpoint_entry_t *)iter.value.ptrValue;
         discoveryZeroConfWatcher_informEPLs(watcher, epEntry->endpoint, false);
         endpointDescription_destroy(epEntry->endpoint);
+        free(epEntry->hostname);
         free(epEntry);
     }
     celix_stringHashMap_clear(watcher->watchedEndpoints);
@@ -809,7 +816,7 @@ static void discoveryZeroconfWatcher_closeMDNSConnection(discovery_zeroconf_watc
     if (watcher->sharedRef) {
         DNSServiceRefDeallocate(watcher->sharedRef);
         watcher->sharedRef = NULL;
-        watcher->browseRef = NULL;//no need free entry->browseRef, 'DNSServiceRefDeallocate(watcher->sharedRef)' has do it.
+        watcher->browseRef = NULL;//no need free entry->browseRef, 'DNSServiceRefDeallocate(watcher->sharedRef)' has done it.
     }
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedServices, iter) {
         watched_service_entry_t *svcEntry = (watched_service_entry_t *) iter.value.ptrValue;
@@ -818,6 +825,7 @@ static void discoveryZeroconfWatcher_closeMDNSConnection(discovery_zeroconf_watc
         free(svcEntry->hostname);
         free(svcEntry);
     }
+    celix_stringHashMap_clear(watcher->watchedServices);
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedHosts, iter) {
         watched_host_entry_t *hostEntry = (watched_host_entry_t *) iter.value.ptrValue;
         //no need free hostEntry->sdRef, 'DNSServiceRefDeallocate(watcher->sharedRef)' has done it.
@@ -825,7 +833,7 @@ static void discoveryZeroconfWatcher_closeMDNSConnection(discovery_zeroconf_watc
         free(hostEntry->hostname);
         free(hostEntry);
     }
-    celix_stringHashMap_clear(watcher->watchedServices);
+    celix_stringHashMap_clear(watcher->watchedHosts);
     return;
 }
 
