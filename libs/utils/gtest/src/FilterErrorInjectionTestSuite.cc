@@ -73,12 +73,29 @@ TEST_F(FilterErrorInjectionTestSuite, ErrorWithArrayListCreateTest) {
 }
 
 TEST_F(FilterErrorInjectionTestSuite, ErrorWithArrayListAddTest) {
+    //Given an error injection for celix_arrayList_add
+    celix_ei_expect_celix_arrayList_add((void*)celix_filter_create, 3, CELIX_ENOMEM);
+    //When creating a filter with a And filter node
+    const char* filterStr = "(&(key1=value1)(key2=value2))";
+    //Then the filter creation should fail, because it cannot add a children to the AND filter node
+    celix_filter_t* filter = celix_filter_create(filterStr);
+    EXPECT_EQ(nullptr, filter);
+
+    //Given an error injection for celix_arrayList_add
+    celix_ei_expect_celix_arrayList_add((void*)celix_filter_create, 3, CELIX_ENOMEM);
+    //When creating a filter with a NOT filter node
+    filterStr = "(!(key1=value1))";
+    //Then the filter creation should fail, because it cannot add a children to the NOT filter node
+    filter = celix_filter_create(filterStr);
+    EXPECT_EQ(nullptr, filter);
+
     for (int i = 0; i < 3; ++i) {
+        //Given an error injection for celix_arrayList_add
         celix_ei_expect_celix_arrayList_add((void*)celix_filter_create, 4, CELIX_ENOMEM, i+1);
         //When creating a filter with a substring
-        const char* filterStr = "(key1=*val*)";
+        filterStr = "(key1=*val*)";
         //Then the filter creation should fail, because it cannot add a children to the substring filter node
-        celix_filter_t* filter = celix_filter_create(filterStr);
+        filter = celix_filter_create(filterStr);
         EXPECT_EQ(nullptr, filter);
     }
 }

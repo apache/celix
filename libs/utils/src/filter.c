@@ -158,7 +158,11 @@ static celix_filter_t* celix_filter_parseAndOrOr(const char* filterString, celix
             if (child == NULL) {
                 return NULL;
             }
-            celix_arrayList_add(children, child);
+            if(celix_arrayList_add(children, child) != CELIX_SUCCESS) {
+                celix_err_push("Filter Error: Failed to add filter node.");
+                celix_filter_destroy(child);
+                return NULL;
+            }
         }
     }
 
@@ -177,30 +181,32 @@ static celix_filter_t* celix_filter_parseNot(const char* filterString, int* pos)
         return NULL;
     }
 
-    celix_filter_t* child = celix_filter_parseFilter(filterString, pos);
+    celix_autoptr(celix_filter_t) child = celix_filter_parseFilter(filterString, pos);
     if (!child) {
         return NULL;
     }
 
     celix_array_list_create_options_t ops = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
     ops.simpleRemovedCallback = (void (*)(void*))celix_filter_destroy;
-    celix_array_list_t* children = celix_arrayList_createWithOptions(&ops);
+    celix_autoptr(celix_array_list_t) children = celix_arrayList_createWithOptions(&ops);
     if (!children) {
         celix_err_push("Filter Error: Failed to allocate memory.");
-        celix_filter_destroy(child);
         return NULL;
     }
-    celix_arrayList_add(children, child);
+    if (celix_arrayList_add(children, child) != CELIX_SUCCESS) {
+        celix_err_push("Filter Error: Failed to add NOT filter node.");
+        return NULL;
+    }
+    child = NULL;
 
     celix_filter_t* filter = (celix_filter_t*)calloc(1, sizeof(*filter));
     if (!filter) {
         celix_err_push("Filter Error: Failed to allocate memory.");
-        celix_arrayList_destroy(children);
         return NULL;
     }
 
     filter->operand = CELIX_FILTER_OPERAND_NOT;
-    filter->children = children; //note can be NULL
+    filter->children = celix_steal_ptr(children);
     return filter;
 }
 
