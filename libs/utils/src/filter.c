@@ -139,7 +139,9 @@ static celix_filter_t* celix_filter_parseAndOrOr(const char* filterString, celix
         return NULL;
     }
 
-    celix_autoptr(celix_array_list_t) children = celix_arrayList_create();
+    celix_array_list_create_options_t ops = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    ops.simpleRemovedCallback = (void (*)(void*))celix_filter_destroy;
+    celix_autoptr(celix_array_list_t) children = celix_arrayList_createWithOptions(&ops);
     if (!children) {
         celix_err_push("Filter Error: Failed to allocate memory.");
         return NULL;
@@ -151,22 +153,12 @@ static celix_filter_t* celix_filter_parseAndOrOr(const char* filterString, celix
         celix_err_push("Filter Error: Missing '('.");
         return NULL;
     } else {
-        bool failure = false;
         while (filterString[*pos] == '(') {
             celix_filter_t* child = celix_filter_parseFilter(filterString, pos);
             if (child == NULL) {
-                failure = true;
-                break;
+                return NULL;
             }
             celix_arrayList_add(children, child);
-        }
-
-        if (failure == true) {
-            for (int i = 0; i < celix_arrayList_size(children); ++i) {
-                celix_filter_t* f = celix_arrayList_get(children, i);
-                filter_destroy(f);
-            }
-            return NULL;
         }
     }
 
@@ -190,7 +182,9 @@ static celix_filter_t* celix_filter_parseNot(const char* filterString, int* pos)
         return NULL;
     }
 
-    celix_array_list_t* children = celix_arrayList_create();
+    celix_array_list_create_options_t ops = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    ops.simpleRemovedCallback = (void (*)(void*))celix_filter_destroy;
+    celix_array_list_t* children = celix_arrayList_createWithOptions(&ops);
     if (!children) {
         celix_err_push("Filter Error: Failed to allocate memory.");
         celix_filter_destroy(child);
@@ -201,7 +195,6 @@ static celix_filter_t* celix_filter_parseNot(const char* filterString, int* pos)
     celix_filter_t* filter = (celix_filter_t*)calloc(1, sizeof(*filter));
     if (!filter) {
         celix_err_push("Filter Error: Failed to allocate memory.");
-        celix_filter_destroy(child);
         celix_arrayList_destroy(children);
         return NULL;
     }
@@ -736,19 +729,8 @@ void celix_filter_destroy(celix_filter_t* filter) {
     }
 
     if (filter->children != NULL) {
-        int size = celix_arrayList_size(filter->children);
-        if (filter->operand == CELIX_FILTER_OPERAND_SUBSTRING) {
-            celix_arrayList_destroy(filter->children);
-            filter->children = NULL;
-        } else if (filter->operand == CELIX_FILTER_OPERAND_OR || filter->operand == CELIX_FILTER_OPERAND_AND ||
-                   filter->operand == CELIX_FILTER_OPERAND_NOT) {
-            for (int i = 0; i < size; i++) {
-                celix_filter_t* f = celix_arrayList_get(filter->children, i);
-                celix_filter_destroy(f);
-            }
-            celix_arrayList_destroy(filter->children);
-            filter->children = NULL;
-        }
+        celix_arrayList_destroy(filter->children);
+        filter->children = NULL;
     }
     free((char*)filter->value);
     filter->value = NULL;

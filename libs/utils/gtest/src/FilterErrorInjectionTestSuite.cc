@@ -32,7 +32,7 @@ class FilterErrorInjectionTestSuite : public ::testing::Test {
   public:
     FilterErrorInjectionTestSuite() {
         celix_err_resetErrors();
-        celix_ei_expect_celix_arrayList_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_add(nullptr, 0, 0);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_open_memstream(nullptr, 0, nullptr);
@@ -48,7 +48,7 @@ class FilterErrorInjectionTestSuite : public ::testing::Test {
 
 TEST_F(FilterErrorInjectionTestSuite, ErrorWithArrayListCreateTest) {
     //Given an error injection for celix_arrayList_create
-    celix_ei_expect_celix_arrayList_create((void*)celix_filter_create, 3, nullptr);
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_filter_create, 3, nullptr);
     //When creating a filter with a AND filter node
     const char* filterStr = "(&(key1=value1)(key2=value2))";
     //Then the filter creation should fail, because it cannot create a children list for the AND filter node
@@ -56,7 +56,7 @@ TEST_F(FilterErrorInjectionTestSuite, ErrorWithArrayListCreateTest) {
     EXPECT_EQ(nullptr, filter);
 
     //Given an error injection for celix_arrayList_create
-    celix_ei_expect_celix_arrayList_create((void*)celix_filter_create, 3, nullptr);
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_filter_create, 3, nullptr);
     //When creating a filter with a NOT filter node
     filterStr = "(!(key1=value1))";
     //Then the filter creation should fail, because it cannot create a children list for the NOT filter node
