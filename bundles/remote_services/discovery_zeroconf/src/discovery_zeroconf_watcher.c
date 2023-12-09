@@ -396,17 +396,23 @@ static void OnServiceBrowseCallback(DNSServiceRef sdRef, DNSServiceFlags flags, 
     return;
 }
 
-static void discoveryZeroconfWatcher_resolveServices(discovery_zeroconf_watcher_t *watcher) {
+static void discoveryZeroconfWatcher_resolveServices(discovery_zeroconf_watcher_t *watcher, unsigned int *pNextWorkIntervalTime) {
+    unsigned int nextWorkIntervalTime = *pNextWorkIntervalTime;
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedServices, iter) {
         watched_service_entry_t *svcEntry = (watched_service_entry_t *)iter.value.ptrValue;
         //If resolving is not completed for a long time，then close it, and try again later.
-        if (svcEntry->resolved == false && svcEntry->resolveRef != NULL && celix_elapsedtime(CLOCK_MONOTONIC, svcEntry->resolvedStartTime) > DZC_MAX_RESOLVED_TIMEOUT) {
+        double elapsed = celix_elapsedtime(CLOCK_MONOTONIC, svcEntry->resolvedStartTime);
+        if (svcEntry->resolved == false && svcEntry->resolveRef != NULL && elapsed >= DZC_MAX_RESOLVED_TIMEOUT) {
             DNSServiceRefDeallocate(svcEntry->resolveRef);
             svcEntry->resolveRef = NULL;
             svcEntry->resolvedStartTime.tv_sec = INT_MAX;
             svcEntry->resolvedStartTime.tv_nsec = 0;
             celix_logHelper_error(watcher->logHelper, "Watcher: resolve %s on %d timeout.", svcEntry->instanceName, svcEntry->ifIndex);
+        } else if (svcEntry->resolved == false && svcEntry->resolveRef != NULL) {
+            unsigned int tmp = DZC_MAX_RESOLVED_TIMEOUT - elapsed;
+            nextWorkIntervalTime = nextWorkIntervalTime < tmp ? nextWorkIntervalTime : tmp;
         }
+
         if (watcher->sharedRef && svcEntry->resolveRef == NULL && svcEntry->resolvedCnt < DZC_MAX_RESOLVED_CNT) {
             svcEntry->resolveRef = watcher->sharedRef;
             DNSServiceErrorType dnsErr = DNSServiceResolve(&svcEntry->resolveRef, kDNSServiceFlagsShareConnection , svcEntry->ifIndex, svcEntry->instanceName, DZC_SERVICE_PRIMARY_TYPE, "local", OnServiceResolveCallback, svcEntry);
@@ -416,8 +422,10 @@ static void discoveryZeroconfWatcher_resolveServices(discovery_zeroconf_watcher_
             }
             svcEntry->resolvedStartTime = celix_gettime(CLOCK_MONOTONIC);
             svcEntry->resolvedCnt ++;
+            nextWorkIntervalTime = nextWorkIntervalTime < DZC_MAX_RESOLVED_TIMEOUT ? nextWorkIntervalTime : DZC_MAX_RESOLVED_TIMEOUT;
         }
     }
+    *pNextWorkIntervalTime = nextWorkIntervalTime;
     return;
 }
 
@@ -425,6 +433,7 @@ static void onGetAddrInfoCb (DNSServiceRef sdRef, DNSServiceFlags flags, uint32_
                              const char *hostname, const struct sockaddr *address, uint32_t ttl, void *context) {
     (void)sdRef;//unused
     (void)ttl;//unused
+    (void)hostname;//unused
     watched_host_entry_t *hostEntry = (watched_host_entry_t *)context;
     assert(hostEntry != NULL);
     if (errorCode == kDNSServiceErr_NoSuchRecord) {
@@ -454,7 +463,7 @@ static void onGetAddrInfoCb (DNSServiceRef sdRef, DNSServiceFlags flags, uint32_
         celix_stringHashMap_remove(hostEntry->ipAddresses, ip);
     }
 
-    if (celix_stringHashMap_size(hostEntry->ipAddresses) > 0) {
+    if (!(flags & kDNSServiceFlagsMoreComing) && celix_stringHashMap_size(hostEntry->ipAddresses) > 0) {
         hostEntry->activeStartTime = celix_gettime(CLOCK_MONOTONIC);
         hostEntry->activeStartTime.tv_sec += 2;//If the host information does not change within 2 seconds, we will use the host information to create endpoint description.
     } else {
@@ -471,7 +480,8 @@ static watched_host_entry_t *discoveryZeroconfWatcher_getHostEntry(discovery_zer
     return (watched_host_entry_t *)celix_stringHashMap_get(watcher->watchedHosts, key);
 }
 
-static void discoveryZeroconfWatcher_refreshHostsInfo(discovery_zeroconf_watcher_t *watcher) {
+static void discoveryZeroconfWatcher_refreshHostsInfo(discovery_zeroconf_watcher_t *watcher, unsigned int *pNextWorkIntervalTime) {
+    unsigned int nextWorkIntervalTime = *pNextWorkIntervalTime;
     //mark deleted hosts
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedHosts, iter) {
         watched_host_entry_t *hostEntry = (watched_host_entry_t *)iter.value.ptrValue;
@@ -547,11 +557,21 @@ static void discoveryZeroconfWatcher_refreshHostsInfo(discovery_zeroconf_watcher
                 celix_logHelper_error(watcher->logHelper, "Watcher: Failed to get address info for %s on %d, %d.", hostEntry->hostname, hostEntry->ifIndex, dnsErr);
             }
         }
+        if (hostEntry->activeStartTime.tv_sec != INT_MAX) {
+            double elapsed = celix_elapsedtime(CLOCK_MONOTONIC, hostEntry->activeStartTime);
+            unsigned int tmp = abs((int)elapsed);
+            nextWorkIntervalTime = nextWorkIntervalTime < tmp ? nextWorkIntervalTime : tmp;
+        }
     }
+
+    *pNextWorkIntervalTime = nextWorkIntervalTime;
     return;
 }
 
 static bool discoveryZeroConfWatcher_isHostResolved(discovery_zeroconf_watcher_t *watcher, const char *hostname, int ifIndex) {
+    if (hostname == NULL) {//if no need to resolve host info, then return true
+        return true;
+    }
     watched_host_entry_t *hostEntry = discoveryZeroconfWatcher_getHostEntry(watcher, hostname, ifIndex);
     if (hostEntry == NULL) {
         return false;
@@ -670,6 +690,13 @@ static int discoveryZeroConfWatcher_createEndpointEntryForService(discovery_zero
     return CELIX_SUCCESS;
 }
 
+static void endpointEntry_destroy(watched_endpoint_entry_t *entry) {
+    endpointDescription_destroy(entry->endpoint);
+    free(entry->hostname);
+    free(entry);
+    return;
+}
+
 static void discoveryZeroConfWatcher_informEPLs(discovery_zeroconf_watcher_t *watcher, endpoint_description_t *endpoint, bool epAdded) {
     CELIX_LONG_HASH_MAP_ITERATE(watcher->epls, iter) {
         watched_epl_entry_t *eplEntry = (watched_epl_entry_t *)iter.value.ptrValue;
@@ -719,9 +746,10 @@ static bool discoveryZeroconfWatcher_checkEndpointIpAddressesChanged(discovery_z
     return false;
 }
 
-static void discoveryZeroconfWatcher_refreshEndpoints(discovery_zeroconf_watcher_t *watcher) {
+static void discoveryZeroconfWatcher_refreshEndpoints(discovery_zeroconf_watcher_t *watcher, unsigned int *pNextWorkIntervalTime) {
     watched_endpoint_entry_t *epEntry = NULL;
     watched_service_entry_t *svcEntry = NULL;
+    unsigned int nextWorkIntervalTime = *pNextWorkIntervalTime;
 
     //remove self endpoints
     celix_string_hash_map_iterator_t svcIter = celix_stringHashMap_begin(watcher->watchedServices);
@@ -746,29 +774,28 @@ static void discoveryZeroconfWatcher_refreshEndpoints(discovery_zeroconf_watcher
 
     celixThreadMutex_lock(&watcher->mutex);
 
-    //remove expired endpoint
+    //remove the endpoint which ip address list changed, and mark expired time of the endpoint.
     celix_string_hash_map_iterator_t epIter = celix_stringHashMap_begin(watcher->watchedEndpoints);
     while (!celix_stringHashMapIterator_isEnd(&epIter)) {
         epEntry = (watched_endpoint_entry_t *)epIter.value.ptrValue;
-        if (discoveryZeroconfWatcher_checkEndpointIpAddressesChanged(watcher, epEntry)
-        || celix_elapsedtime(CLOCK_MONOTONIC, epEntry->expiredTime) >= DZC_EP_JITTER_INTERVAL) {
-            epEntry->expiredTime.tv_sec = INT_MAX;
+        if (discoveryZeroconfWatcher_checkEndpointIpAddressesChanged(watcher, epEntry)) {
             celix_logHelper_debug(watcher->logHelper, "Watcher: Remove endpoint for %s on %s.", epEntry->endpoint->serviceName, epEntry->endpoint->frameworkUUID);
-            celix_stringHashMap_remove(watcher->watchedEndpoints, svcEntry->endpointId);
+            celix_stringHashMap_remove(watcher->watchedEndpoints, epEntry->endpoint->id);
             discoveryZeroConfWatcher_informEPLs(watcher, epEntry->endpoint, false);
-            endpointDescription_destroy(epEntry->endpoint);
-            free(epEntry);
-            continue;
-        } else if (epEntry->expiredTime.tv_sec == INT_MAX) {
-            epEntry->expiredTime = celix_gettime(CLOCK_MONOTONIC);
+            endpointEntry_destroy(epEntry);
+        } else {
+            if (epEntry->expiredTime.tv_sec == INT_MAX) {
+                epEntry->expiredTime = celix_gettime(CLOCK_MONOTONIC);
+                epEntry->expiredTime.tv_sec += DZC_EP_JITTER_INTERVAL;
+            }
+            celix_stringHashMapIterator_next(&epIter);
         }
-        celix_stringHashMapIterator_next(&epIter);
     }
 
     //add new endpoint
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedServices, iter) {
         svcEntry = (watched_service_entry_t *)iter.value.ptrValue;
-        if (svcEntry->endpointId != NULL && svcEntry->resolved && (svcEntry->hostname == NULL || discoveryZeroConfWatcher_isHostResolved(watcher, svcEntry->hostname, svcEntry->ifIndex))) {
+        if (svcEntry->endpointId != NULL && svcEntry->resolved && discoveryZeroConfWatcher_isHostResolved(watcher, svcEntry->hostname, svcEntry->ifIndex)) {
             epEntry = (watched_endpoint_entry_t *)celix_stringHashMap_get(watcher->watchedEndpoints, svcEntry->endpointId);
             if (epEntry == NULL) {
                 celix_status_t status = discoveryZeroConfWatcher_createEndpointEntryForService(watcher, svcEntry, &epEntry);
@@ -778,13 +805,11 @@ static void discoveryZeroconfWatcher_refreshEndpoints(discovery_zeroconf_watcher
                     svcEntry->resolved = false;
                     continue;
                 }
-                celix_logHelper_debug(watcher->logHelper, "Watcher: Add endpoint for %s.", svcEntry->instanceName);
+                celix_logHelper_debug(watcher->logHelper, "Watcher: Add endpoint for %s on %s.", epEntry->endpoint->serviceName, epEntry->endpoint->frameworkUUID);
                 if (celix_stringHashMap_put(watcher->watchedEndpoints, epEntry->endpoint->id, epEntry) == CELIX_SUCCESS) {
                     discoveryZeroConfWatcher_informEPLs(watcher, epEntry->endpoint, true);
                 } else {
-                    endpointDescription_destroy(epEntry->endpoint);
-                    free(epEntry->hostname);
-                    free(epEntry);
+                    endpointEntry_destroy(epEntry);
                 }
             } else {
                 epEntry->expiredTime.tv_sec = INT_MAX;
@@ -793,8 +818,28 @@ static void discoveryZeroconfWatcher_refreshEndpoints(discovery_zeroconf_watcher
         }
     }
 
+    //remove expired endpoint
+    epIter = celix_stringHashMap_begin(watcher->watchedEndpoints);
+    while (!celix_stringHashMapIterator_isEnd(&epIter)) {
+        epEntry = (watched_endpoint_entry_t *)epIter.value.ptrValue;
+        double elapsed = celix_elapsedtime(CLOCK_MONOTONIC, epEntry->expiredTime);
+        if (elapsed >= 0) {
+            celix_logHelper_debug(watcher->logHelper, "Watcher: Remove endpoint for %s on %s.", epEntry->endpoint->serviceName, epEntry->endpoint->frameworkUUID);
+            celix_stringHashMapIterator_remove(&epIter);
+            discoveryZeroConfWatcher_informEPLs(watcher, epEntry->endpoint, false);
+            endpointEntry_destroy(epEntry);
+        } else {
+            if (epEntry->expiredTime.tv_sec != INT_MAX) {
+                unsigned int tmp = abs((int)elapsed);
+                nextWorkIntervalTime = nextWorkIntervalTime < tmp ? nextWorkIntervalTime : tmp;
+            }
+            celix_stringHashMapIterator_next(&epIter);
+        }
+    }
+
     celixThreadMutex_unlock(&watcher->mutex);
 
+    *pNextWorkIntervalTime = nextWorkIntervalTime;
     return;
 }
 
@@ -803,9 +848,7 @@ static void discoveryZeroconfWatcher_clearEndpoints(discovery_zeroconf_watcher_t
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedEndpoints, iter) {
         watched_endpoint_entry_t *epEntry = (watched_endpoint_entry_t *)iter.value.ptrValue;
         discoveryZeroConfWatcher_informEPLs(watcher, epEntry->endpoint, false);
-        endpointDescription_destroy(epEntry->endpoint);
-        free(epEntry->hostname);
-        free(epEntry);
+        endpointEntry_destroy(epEntry);
     }
     celix_stringHashMap_clear(watcher->watchedEndpoints);
     celixThreadMutex_unlock(&watcher->mutex);
@@ -857,7 +900,9 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data) {
     eventfd_t val;
     int dsFd;
     int maxFd;
-    struct timeval timeout;
+    struct timeval timeoutVal;
+    struct timeval *timeout = NULL;
+    unsigned int nextWorkIntervalTimeInS = UINT_MAX;
     bool running = watcher->running;
     while (running) {
         if (watcher->sharedRef == NULL) {
@@ -884,15 +929,23 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data) {
             assert(dsFd >= 0);
             FD_SET(dsFd, &readfds);
             maxFd = MAX(maxFd, dsFd);
-            timeout.tv_sec = 1;//TODO get next timeout
-            timeout.tv_usec = 0;
+            if (nextWorkIntervalTimeInS == UINT_MAX) {
+                timeout = NULL;//wait until eventfd or dsFd ready
+            } else {
+                timeoutVal.tv_sec = nextWorkIntervalTimeInS;
+                timeoutVal.tv_usec = 0;
+                timeout = &timeoutVal;
+            }
         } else {
             dsFd = -1;
-            timeout.tv_sec = 5;
-            timeout.tv_usec = 0;
+            //if failed to create connection, then wait 5 seconds to try again.
+            nextWorkIntervalTimeInS = nextWorkIntervalTimeInS < 5 ? nextWorkIntervalTimeInS : 5;
+            timeoutVal.tv_sec = nextWorkIntervalTimeInS;
+            timeoutVal.tv_usec = 0;
+            timeout = &timeoutVal;
         }
 
-        int result = select(maxFd+1, &readfds, NULL, NULL, &timeout);
+        int result = select(maxFd+1, &readfds, NULL, NULL, timeout);
         if (result > 0) {
             if (FD_ISSET(watcher->eventFd, &readfds)) {
                 eventfd_read(watcher->eventFd, &val);
@@ -907,9 +960,10 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data) {
             sleep(1);//avoid busy loop
         }
 
-        discoveryZeroconfWatcher_resolveServices(watcher);
-        discoveryZeroconfWatcher_refreshHostsInfo(watcher);
-        discoveryZeroconfWatcher_refreshEndpoints(watcher);
+        nextWorkIntervalTimeInS = UINT_MAX;
+        discoveryZeroconfWatcher_resolveServices(watcher, &nextWorkIntervalTimeInS);
+        discoveryZeroconfWatcher_refreshHostsInfo(watcher, &nextWorkIntervalTimeInS);
+        discoveryZeroconfWatcher_refreshEndpoints(watcher, &nextWorkIntervalTimeInS);
 
         celixThreadMutex_lock(&watcher->mutex);
         running = watcher->running;
