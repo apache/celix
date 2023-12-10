@@ -2197,8 +2197,8 @@ static void celix_framework_printCelixErrForBundleEntry(celix_framework_t* frame
                celix_bundle_getSymbolicName(bndEntry->bnd),
                bndEntry->bndId);
         int count = 1;
-        while (celix_err_getErrorCount() > 0) {
-            const char* msg = celix_err_popLastError();
+        const char* msg = NULL;
+        while ((msg = celix_err_popLastError())) {
             celix_framework_log(framework->logger, CELIX_LOG_LEVEL_ERROR, NULL, NULL, 0,
                                 "Message nr %i: %s", count++, msg);
         }
