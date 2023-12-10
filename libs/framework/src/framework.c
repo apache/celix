@@ -43,10 +43,10 @@
 #include "bundle_context_private.h"
 #include "bundle_private.h"
 #include "framework_private.h"
-#include "linked_list_iterator.h"
 #include "service_reference_private.h"
 #include "service_registration_private.h"
 #include "celix_scheduled_event.h"
+#include "celix_err.h"
 #include "utils.h"
 
 struct celix_bundle_activator {
@@ -2189,6 +2189,22 @@ void celix_framework_startBundleAsync(celix_framework_t *fw, long bndId) {
     celix_framework_startBundleInternal(fw, bndId, true);
 }
 
+static void celix_framework_printCelixErrForBundleEntry(celix_framework_t* framework,
+                                                        celix_framework_bundle_entry_t* bndEntry) {
+    if (celix_err_getErrorCount() > 0) {
+        celix_framework_log(framework->logger, CELIX_LOG_LEVEL_WARNING, NULL, NULL, 0,
+               "Found unprocessed celix err messages for bundle %s [bndId=%li]. Unprocessed celix err messages:",
+               celix_bundle_getSymbolicName(bndEntry->bnd),
+               bndEntry->bndId);
+        int count = 1;
+        const char* msg = NULL;
+        while ((msg = celix_err_popLastError())) {
+            celix_framework_log(framework->logger, CELIX_LOG_LEVEL_ERROR, NULL, NULL, 0,
+                                "Message nr %i: %s", count++, msg);
+        }
+    }
+}
+
 celix_status_t celix_framework_startBundleEntry(celix_framework_t* framework, celix_framework_bundle_entry_t* bndEntry) {
     assert(!celix_framework_isCurrentThreadTheEventLoop(framework));
     celix_status_t status = CELIX_SUCCESS;
@@ -2272,6 +2288,7 @@ celix_status_t celix_framework_startBundleEntry(celix_framework_t* framework, ce
                         if (activator->start != NULL) {
                             status = CELIX_DO_IF(status, activator->start(userData, context));
                         }
+                        celix_framework_printCelixErrForBundleEntry(framework, bndEntry);
                     }
 
                     status = CELIX_DO_IF(status, bundle_setState(bndEntry->bnd, CELIX_BUNDLE_STATE_ACTIVE));
