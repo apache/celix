@@ -524,9 +524,12 @@ static celix_status_t celix_filter_compile(celix_filter_t* filter) {
         do {
             filter->internal->longValue =
                     celix_utils_convertStringToLong(filter->value, 0, &filter->internal->convertedToLong);
+            if (filter->internal->convertedToLong) {
+                break;
+            }
             filter->internal->doubleValue =
                     celix_utils_convertStringToDouble(filter->value, 0.0, &filter->internal->convertedToDouble);
-            if (filter->internal->convertedToLong || filter->internal->convertedToDouble) {
+            if (filter->internal->convertedToDouble) {
                 break;
             }
             filter->internal->boolValue =
