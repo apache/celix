@@ -902,13 +902,14 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data) {
     int maxFd;
     struct timeval timeoutVal;
     struct timeval *timeout = NULL;
-    unsigned int nextWorkIntervalTimeInS = UINT_MAX;
+    unsigned int timeoutInS = UINT_MAX;
     bool running = watcher->running;
     while (running) {
         if (watcher->sharedRef == NULL) {
             dnsErr = DNSServiceCreateConnection(&watcher->sharedRef);
             if (dnsErr != kDNSServiceErr_NoError) {
                 celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create connection for DNS service, %d.", dnsErr);
+                timeoutInS = MIN(5, timeoutInS);//retry after 5 seconds
             }
         }
 
@@ -918,6 +919,7 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data) {
             if (dnsErr != kDNSServiceErr_NoError) {
                 celix_logHelper_error(watcher->logHelper, "Watcher: Failed to browse DNS service, %d.", dnsErr);
                 watcher->browseRef = NULL;
+                timeoutInS = MIN(5, timeoutInS);//retry after 5 seconds
             }
         }
 
@@ -929,18 +931,14 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data) {
             assert(dsFd >= 0);
             FD_SET(dsFd, &readfds);
             maxFd = MAX(maxFd, dsFd);
-            if (nextWorkIntervalTimeInS == UINT_MAX) {
-                timeout = NULL;//wait until eventfd or dsFd ready
-            } else {
-                timeoutVal.tv_sec = nextWorkIntervalTimeInS;
-                timeoutVal.tv_usec = 0;
-                timeout = &timeoutVal;
-            }
         } else {
             dsFd = -1;
-            //if failed to create connection, then wait 5 seconds to try again.
-            nextWorkIntervalTimeInS = nextWorkIntervalTimeInS < 5 ? nextWorkIntervalTimeInS : 5;
-            timeoutVal.tv_sec = nextWorkIntervalTimeInS;
+        }
+
+        if (timeoutInS == UINT_MAX) {
+            timeout = NULL;//wait until eventfd or dsFd ready
+        } else {
+            timeoutVal.tv_sec = timeoutInS;
             timeoutVal.tv_usec = 0;
             timeout = &timeoutVal;
         }
@@ -960,10 +958,10 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data) {
             sleep(1);//avoid busy loop
         }
 
-        nextWorkIntervalTimeInS = UINT_MAX;
-        discoveryZeroconfWatcher_resolveServices(watcher, &nextWorkIntervalTimeInS);
-        discoveryZeroconfWatcher_refreshHostsInfo(watcher, &nextWorkIntervalTimeInS);
-        discoveryZeroconfWatcher_refreshEndpoints(watcher, &nextWorkIntervalTimeInS);
+        timeoutInS = UINT_MAX;
+        discoveryZeroconfWatcher_resolveServices(watcher, &timeoutInS);
+        discoveryZeroconfWatcher_refreshHostsInfo(watcher, &timeoutInS);
+        discoveryZeroconfWatcher_refreshEndpoints(watcher, &timeoutInS);
 
         celixThreadMutex_lock(&watcher->mutex);
         running = watcher->running;
