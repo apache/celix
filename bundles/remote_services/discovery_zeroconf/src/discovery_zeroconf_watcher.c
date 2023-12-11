@@ -45,8 +45,9 @@
 #include <errno.h>
 #include <arpa/inet.h>
 
-#define DZC_EP_JITTER_INTERVAL 10
-#define DZC_MAX_RESOLVED_CNT 10
+#define DZC_EP_JITTER_INTERVAL 3//The jitter interval for endpoint.Avoid updating endpoint description on all network interfaces when only one network interface is updated.The endpoint description will be removed when the service is removed for 3 seconds.
+#define DZC_MAX_RESOLVED_CNT 10 //Max resolved count for each service when resolve service failed
+#define DZC_MAX_RETRY_INTERVAL 5 //Max retry interval when resolve service failed
 
 #define DZC_MAX_HOSTNAME_LEN 255 //The fully qualified domain name of the host, eg: "MyComputer.local". RFC 1034 specifies that this name is limited to 255 bytes.
 
@@ -97,6 +98,7 @@ typedef struct watched_host_entry {
     int ifIndex;
     celix_string_hash_map_t  *ipAddresses;//key:ip address, val:true(ipv4)/false(ipv6)
     struct timespec activeStartTime;
+    int resolvedCnt;
     bool markDeleted;
 }watched_host_entry_t;
 
@@ -403,7 +405,7 @@ static void discoveryZeroconfWatcher_resolveServices(discovery_zeroconf_watcher_
             if (dnsErr != kDNSServiceErr_NoError) {
                 svcEntry->resolveRef = NULL;
                 celix_logHelper_error(watcher->logHelper, "Watcher: Failed to resolve %s on %d, %d.", svcEntry->instanceName, svcEntry->ifIndex, dnsErr);
-                nextWorkIntervalTime = MIN(nextWorkIntervalTime, 5);//retry resolve after 5 seconds
+                nextWorkIntervalTime = MIN(nextWorkIntervalTime, DZC_MAX_RETRY_INTERVAL);//retry resolve after 5 seconds
             }
             svcEntry->resolvedCnt ++;
         }
@@ -498,6 +500,7 @@ static void discoveryZeroconfWatcher_refreshHostsInfo(discovery_zeroconf_watcher
                 hostEntry->sdRef = NULL;
                 hostEntry->activeStartTime.tv_sec = INT_MAX;
                 hostEntry->ifIndex = svcEntry->ifIndex;
+                hostEntry->resolvedCnt = 0;
                 hostEntry->markDeleted = false;
                 char key[256 + 10] = {0};//max hostname length is 255, ifIndex is int
                 (void)snprintf(key, sizeof(key), "%s%d", svcEntry->hostname, svcEntry->ifIndex);
@@ -532,18 +535,20 @@ static void discoveryZeroconfWatcher_refreshHostsInfo(discovery_zeroconf_watcher
     //resolve hosts
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedHosts, iter1) {
         watched_host_entry_t *hostEntry = (watched_host_entry_t *)iter1.value.ptrValue;
-        if (watcher->sharedRef && hostEntry->sdRef == NULL) {
+        if (watcher->sharedRef && hostEntry->sdRef == NULL && hostEntry->resolvedCnt < DZC_MAX_RESOLVED_CNT) {
             hostEntry->sdRef = watcher->sharedRef;
             DNSServiceErrorType dnsErr = DNSServiceGetAddrInfo(&hostEntry->sdRef, kDNSServiceFlagsShareConnection, hostEntry->ifIndex, kDNSServiceProtocol_IPv4 | kDNSServiceProtocol_IPv6, hostEntry->hostname, onGetAddrInfoCb, hostEntry);
             if (dnsErr != kDNSServiceErr_NoError) {
                 hostEntry->sdRef = NULL;
                 celix_logHelper_error(watcher->logHelper, "Watcher: Failed to get address info for %s on %d, %d.", hostEntry->hostname, hostEntry->ifIndex, dnsErr);
+                nextWorkIntervalTime = MIN(nextWorkIntervalTime, DZC_MAX_RETRY_INTERVAL);//retry resolve after 5 seconds
             }
+            hostEntry->resolvedCnt ++;
         }
-        if (hostEntry->activeStartTime.tv_sec != INT_MAX) {
-            double elapsed = celix_elapsedtime(CLOCK_MONOTONIC, hostEntry->activeStartTime);
+        double elapsed = celix_elapsedtime(CLOCK_MONOTONIC, hostEntry->activeStartTime);
+        if (hostEntry->activeStartTime.tv_sec != INT_MAX && elapsed < 0) {
             unsigned int tmp = abs((int)elapsed);
-            nextWorkIntervalTime = nextWorkIntervalTime < tmp ? nextWorkIntervalTime : tmp;
+            nextWorkIntervalTime = MIN(nextWorkIntervalTime, tmp);
         }
     }
 
@@ -892,7 +897,7 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data) {
             dnsErr = DNSServiceCreateConnection(&watcher->sharedRef);
             if (dnsErr != kDNSServiceErr_NoError) {
                 celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create connection for DNS service, %d.", dnsErr);
-                timeoutInS = MIN(5, timeoutInS);//retry after 5 seconds
+                timeoutInS = MIN(DZC_MAX_RETRY_INTERVAL, timeoutInS);//retry after 5 seconds
             }
         }
 
@@ -902,7 +907,7 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data) {
             if (dnsErr != kDNSServiceErr_NoError) {
                 celix_logHelper_error(watcher->logHelper, "Watcher: Failed to browse DNS service, %d.", dnsErr);
                 watcher->browseRef = NULL;
-                timeoutInS = MIN(5, timeoutInS);//retry after 5 seconds
+                timeoutInS = MIN(DZC_MAX_RETRY_INTERVAL, timeoutInS);//retry after 5 seconds
             }
         }
 
