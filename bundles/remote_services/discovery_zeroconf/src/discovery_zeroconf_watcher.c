@@ -46,7 +46,6 @@
 #include <arpa/inet.h>
 
 #define DZC_EP_JITTER_INTERVAL 10
-#define DZC_MAX_RESOLVED_TIMEOUT 5
 #define DZC_MAX_RESOLVED_CNT 10
 
 #define DZC_MAX_HOSTNAME_LEN 255 //The fully qualified domain name of the host, eg: "MyComputer.local". RFC 1034 specifies that this name is limited to 255 bytes.
@@ -83,7 +82,6 @@ typedef struct watched_service_entry {
     char instanceName[64];//The instanceName must be 1-63 bytes
     char *hostname;
     bool resolved;
-    struct timespec resolvedStartTime;
     int resolvedCnt;
     DNSServiceRef resolveRef;
 }watched_service_entry_t;
@@ -378,7 +376,6 @@ static void OnServiceBrowseCallback(DNSServiceRef sdRef, DNSServiceFlags flags, 
         strcpy(svcEntry->instanceName, instanceName);
         svcEntry->hostname = NULL;
         svcEntry->ifIndex = (int)interfaceIndex;
-        svcEntry->resolvedStartTime.tv_sec = INT_MAX;
         svcEntry->resolvedCnt = 0;
         celix_stringHashMap_put(watcher->watchedServices, key, svcEntry);
     } else {
@@ -400,29 +397,15 @@ static void discoveryZeroconfWatcher_resolveServices(discovery_zeroconf_watcher_
     unsigned int nextWorkIntervalTime = *pNextWorkIntervalTime;
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedServices, iter) {
         watched_service_entry_t *svcEntry = (watched_service_entry_t *)iter.value.ptrValue;
-        //If resolving is not completed for a long time，then close it, and try again later.
-        double elapsed = celix_elapsedtime(CLOCK_MONOTONIC, svcEntry->resolvedStartTime);
-        if (svcEntry->resolved == false && svcEntry->resolveRef != NULL && elapsed >= DZC_MAX_RESOLVED_TIMEOUT) {
-            DNSServiceRefDeallocate(svcEntry->resolveRef);
-            svcEntry->resolveRef = NULL;
-            svcEntry->resolvedStartTime.tv_sec = INT_MAX;
-            svcEntry->resolvedStartTime.tv_nsec = 0;
-            celix_logHelper_error(watcher->logHelper, "Watcher: resolve %s on %d timeout.", svcEntry->instanceName, svcEntry->ifIndex);
-        } else if (svcEntry->resolved == false && svcEntry->resolveRef != NULL) {
-            unsigned int tmp = DZC_MAX_RESOLVED_TIMEOUT - elapsed;
-            nextWorkIntervalTime = nextWorkIntervalTime < tmp ? nextWorkIntervalTime : tmp;
-        }
-
         if (watcher->sharedRef && svcEntry->resolveRef == NULL && svcEntry->resolvedCnt < DZC_MAX_RESOLVED_CNT) {
             svcEntry->resolveRef = watcher->sharedRef;
             DNSServiceErrorType dnsErr = DNSServiceResolve(&svcEntry->resolveRef, kDNSServiceFlagsShareConnection , svcEntry->ifIndex, svcEntry->instanceName, DZC_SERVICE_PRIMARY_TYPE, "local", OnServiceResolveCallback, svcEntry);
             if (dnsErr != kDNSServiceErr_NoError) {
                 svcEntry->resolveRef = NULL;
                 celix_logHelper_error(watcher->logHelper, "Watcher: Failed to resolve %s on %d, %d.", svcEntry->instanceName, svcEntry->ifIndex, dnsErr);
+                nextWorkIntervalTime = MIN(nextWorkIntervalTime, 5);//retry resolve after 5 seconds
             }
-            svcEntry->resolvedStartTime = celix_gettime(CLOCK_MONOTONIC);
             svcEntry->resolvedCnt ++;
-            nextWorkIntervalTime = nextWorkIntervalTime < DZC_MAX_RESOLVED_TIMEOUT ? nextWorkIntervalTime : DZC_MAX_RESOLVED_TIMEOUT;
         }
     }
     *pNextWorkIntervalTime = nextWorkIntervalTime;
