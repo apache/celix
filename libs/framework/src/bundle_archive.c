@@ -66,7 +66,7 @@ static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_arch
     celix_properties_t* bundleStateProperties = NULL;
     bundleStateProperties = celix_properties_load(archive->savedBundleStatePropertiesPath);
     if (bundleStateProperties == NULL) {
-        celix_framework_logTssErrors(archive->fw->logger, CELIX_LOG_LEVEL_DEBUG);
+        celix_framework_logTssErrors(archive->fw->logger, CELIX_LOG_LEVEL_ERROR);
         bundleStateProperties = celix_properties_create();
     }
     if (bundleStateProperties == NULL) {
