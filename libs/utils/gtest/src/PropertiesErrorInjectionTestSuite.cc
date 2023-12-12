@@ -248,6 +248,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, LoadFailureTest) {
     // Then the celix::Properties::load call throws a celix::IOException exception
     EXPECT_THROW(celix::Properties::load("file"), celix::IOException);
     // And a celix err msg is set
+    ASSERT_EQ(1, celix_err_getErrorCount());
     celix_err_resetErrors();
 
     fclose(memStream);
