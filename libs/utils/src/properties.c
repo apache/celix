@@ -374,7 +374,6 @@ void celix_properties_destroy(celix_properties_t* props) {
 celix_properties_t* celix_properties_load(const char* filename) {
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
-        celix_err_pushf("Cannot open file '%s'", filename);
         return NULL;
     }
     celix_properties_t* props = celix_properties_loadWithStream(file);

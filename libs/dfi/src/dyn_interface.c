@@ -31,7 +31,6 @@ DFI_SETUP_LOG(dynInterface);
 static const int OK = 0;
 static const int ERROR = 1;
 
-// Also export for dyn_avpr_interface
 int dynInterface_checkInterface(dyn_interface_type *intf);
 
 static int dynInterface_parseSection(dyn_interface_type *intf, FILE *stream);

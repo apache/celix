@@ -33,7 +33,6 @@ extern "C" {
 #endif
 
 DFI_SETUP_LOG_HEADER(dynInterface);
-DFI_SETUP_LOG_HEADER(dynAvprInterface);
 
 /* Description string
  *
@@ -162,28 +161,6 @@ CELIX_DFI_EXPORT int dynInterface_methods(dyn_interface_type *intf, struct metho
  */
 CELIX_DFI_EXPORT int dynInterface_nrOfMethods(dyn_interface_type *intf);
 
-
-/**
- * @brief Creates a dynamic interface type instance according to the given avpr interface descriptor string.
- *
- * In case of an error, an error message is added to celix_err.
- *
- * @param[in] avpr The avpr interface descriptor string.
- * @return The dynamic interface type instance or NULL if the avpr could not be parsed.
- * @deprecated AVRO is deprecated and will be removed in the future.
- */
-CELIX_DFI_DEPRECATED_EXPORT dyn_interface_type * dynInterface_parseAvprWithStr(const char * avpr);
-
-/**
- * @brief Creates a dynamic interface type instance according to the given avpr interface descriptor stream.
- *
- * In case of an error, an error message is added to celix_err.
- *
- * @param[in] avprStream The avpr interface descriptor stream.
- * @return The dynamic interface type instance or NULL if the avpr could not be parsed.
- * @deprecated AVRO is deprecated and will be removed in the future.
- */
-CELIX_DFI_DEPRECATED_EXPORT dyn_interface_type * dynInterface_parseAvpr(FILE * avprStream);
 
 #ifdef __cplusplus
 }

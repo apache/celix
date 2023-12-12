@@ -20,11 +20,6 @@ celix_bundle_files(rsa_dfi_utils_test_descriptor
         ${CMAKE_CURRENT_SOURCE_DIR}/descriptors/rsa_dfi_utils_test.descriptor
         DESTINATION "META-INF/descriptors"
 )
-celix_bundle_files(rsa_dfi_utils_test_descriptor
-        ${CMAKE_CURRENT_SOURCE_DIR}/descriptors/rsa_dfi_utils_test_avpr.avpr
-        DESTINATION "META-INF/avpr"
-)
-
 
 add_executable(test_rsa_dfi_utils
         src/DfiUtilsTestSuite.cc
