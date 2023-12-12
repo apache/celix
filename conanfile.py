@@ -409,8 +409,6 @@ class CelixConan(ConanFile):
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
-        # 'libzip/1.10.1' requires 'zlib/1.2.13' while 'libcurl/7.64.1' requires 'zlib/1.2.12'
-        self.requires("zlib/1.2.13", override=True)
         # the latest civetweb (1.16) is not ready for openssl3
         self.requires("openssl/1.1.1t", override=True)
         self.validate()
