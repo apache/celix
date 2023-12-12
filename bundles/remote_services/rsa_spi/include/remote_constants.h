@@ -45,10 +45,10 @@ static const char * const OSGI_RSA_SERVICE_LOCATION = "service.location";
  */
 static const char * const CELIX_RSA_NETWORK_INTERFACES = "org.apache.celix.rsa.network.interfaces";
 
-
 /**
- * Remote service admin property identifying the network port of the exported service.
+ * It identify which types of remote service configurations are supported by a distribution provider.
+ * @ref https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.remoteservices.html#i1708968
  */
-#define CELIX_RSA_NETWORK_PORT "org.apache.celix.rsa.network.port"
+#define OSGI_RSA_REMOTE_CONFIGS_SUPPORTED "remote.configs.supported"
 
 #endif /* REMOTE_CONSTANTS_H_ */

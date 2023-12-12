@@ -18,6 +18,7 @@
  */
 #include "discovery_zeroconf_watcher.h"
 #include "discovery_zeroconf_constants.h"
+#include "remote_service_admin.h"
 #include "endpoint_listener.h"
 #include "remote_constants.h"
 #include "celix_bundle_context.h"
@@ -55,9 +56,9 @@ struct discovery_zeroconf_watcher {
     celix_bundle_context_t *ctx;
     celix_log_helper_t *logHelper;
     long epListenerTrkId;
+    long rsaTrkId;
     char fwUuid[64];
     DNSServiceRef sharedRef;
-    DNSServiceRef browseRef;
     int eventFd;
     celix_thread_t watchEPThread;
     celix_string_hash_map_t *watchedServices;//key:instanceName+interfaceId, val:watched_service_entry_t*
@@ -66,6 +67,7 @@ struct discovery_zeroconf_watcher {
     bool running;
     celix_string_hash_map_t *watchedEndpoints;//key:endpoint id, val:watched_endpoint_entry_t*
     celix_long_hash_map_t *epls;//key:service id, val:endpoint listener
+    celix_string_hash_map_t *serviceBrowsers;//key:service subtype(https://www.rfc-editor.org/rfc/rfc6763.html#section-7.1), val:service_browser_entry_t*
 };
 
 typedef struct watched_endpoint_entry {
@@ -82,6 +84,7 @@ typedef struct watched_service_entry {
     int ifIndex;
     char instanceName[64];//The instanceName must be 1-63 bytes
     char *hostname;
+    int port;
     bool resolved;
     int resolvedCnt;
     DNSServiceRef resolveRef;
@@ -91,6 +94,12 @@ typedef struct watched_epl_entry {
     endpoint_listener_t *epl;
     celix_filter_t *filter;
 }watched_epl_entry_t;
+
+typedef struct service_browser_entry {
+    DNSServiceRef browseRef;
+    int refCnt;
+    int resolvedCnt;
+}service_browser_entry_t;
 
 typedef struct watched_host_entry {
     DNSServiceRef sdRef;
@@ -102,9 +111,10 @@ typedef struct watched_host_entry {
     bool markDeleted;
 }watched_host_entry_t;
 
-//TODO  use subtypes to browse
 static void discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix_properties_t *props);
 static void discoveryZeroconfWatcher_removeEPL(void *handle, void *svc, const celix_properties_t *props);
+static void discoveryZeroConfWatcher_addRSA(void *handle, void *svc, const celix_properties_t *props);
+static void discoveryZeroConfWatcher_removeRSA(void *handle, void *svc, const celix_properties_t *props);
 static void OnServiceResolveCallback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *fullname, const char *host, uint16_t port, uint16_t txtLen, const unsigned char *txtRecord, void *context);
 static void OnServiceBrowseCallback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *instanceName, const char *regtype, const char *replyDomain, void *context);
 static void *discoveryZeroconfWatcher_watchEPThread(void *data);
@@ -119,7 +129,6 @@ celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celi
     watcher->logHelper = logHelper;
     watcher->ctx = ctx;
     watcher->sharedRef = NULL;
-    watcher->browseRef = NULL;
     watcher->eventFd = eventfd(0, 0);
     if (watcher->eventFd < 0) {
         celix_logHelper_fatal(logHelper, "Watcher: Failed to open event fd, %d.", errno);
@@ -168,9 +177,23 @@ celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celi
         return CELIX_BUNDLE_EXCEPTION;
     }
 
+    celix_service_tracking_options_t rsaOpts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+    rsaOpts.filter.serviceName = OSGI_RSA_REMOTE_SERVICE_ADMIN;
+    rsaOpts.filter.filter = "(remote.configs.supported=*)";
+    rsaOpts.callbackHandle = watcher;
+    rsaOpts.addWithProperties = discoveryZeroConfWatcher_addRSA;
+    rsaOpts.removeWithProperties = discoveryZeroConfWatcher_removeRSA;
+    watcher->rsaTrkId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &rsaOpts);
+    if (watcher->rsaTrkId < 0) {
+        celix_bundleContext_stopTracker(ctx, watcher->epListenerTrkId);
+        celix_logHelper_fatal(logHelper, "Watcher: Failed to register remote service admin service tracker.");
+        return CELIX_BUNDLE_EXCEPTION;
+    }
+
     watcher->running = true;
     status = celixThread_create(&watcher->watchEPThread,NULL, discoveryZeroconfWatcher_watchEPThread, watcher);
     if (status != CELIX_SUCCESS) {
+        celix_bundleContext_stopTracker(ctx, watcher->rsaTrkId);
         celix_bundleContext_stopTracker(ctx, watcher->epListenerTrkId);
         return status;
     }
@@ -192,8 +215,8 @@ void discoveryZeroconfWatcher_destroy(discovery_zeroconf_watcher_t *watcher) {
     eventfd_t val = 1;
     eventfd_write(watcher->eventFd, val);
     celixThread_join(watcher->watchEPThread, NULL);
-    celix_bundleContext_stopTrackerAsync(watcher->ctx, watcher->epListenerTrkId, NULL, NULL);
-    celix_bundleContext_waitForAsyncStopTracker(watcher->ctx, watcher->epListenerTrkId);
+    celix_bundleContext_stopTracker(watcher->ctx, watcher->rsaTrkId);
+    celix_bundleContext_stopTracker(watcher->ctx, watcher->epListenerTrkId);
     celix_longHashMap_destroy(watcher->epls);
     assert(celix_stringHashMap_size(watcher->watchedServices) == 0);
     celix_stringHashMap_destroy(watcher->watchedServices);
@@ -201,6 +224,10 @@ void discoveryZeroconfWatcher_destroy(discovery_zeroconf_watcher_t *watcher) {
     celix_stringHashMap_destroy(watcher->watchedHosts);
     assert(celix_stringHashMap_size(watcher->watchedEndpoints) == 0);
     celix_stringHashMap_destroy(watcher->watchedEndpoints);
+    CELIX_STRING_HASH_MAP_ITERATE(watcher->serviceBrowsers, iter) {
+        free(iter.value.ptrValue);
+    }
+    celix_stringHashMap_destroy(watcher->serviceBrowsers);
     celixThreadMutex_destroy(&watcher->mutex);
     close(watcher->eventFd);
     free(watcher);
@@ -273,29 +300,110 @@ static void discoveryZeroconfWatcher_removeEPL(void *handle, void *svc, const ce
     return;
 }
 
-static bool shouldResolveHostInfo(celix_properties_t *properties) {
-    const char *importedConfigs = celix_properties_get(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
-    if (importedConfigs == NULL) {
-        return false;
+static void discoveryZeroConfWatcher_addRSA(void *handle, void *svc, const celix_properties_t *props) {
+    assert(handle != NULL);
+    assert(svc != NULL);
+    assert(props != NULL);
+    discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)handle;
+    const char *configsSupported = celix_properties_get(props, OSGI_RSA_REMOTE_CONFIGS_SUPPORTED, NULL);
+    if (configsSupported == NULL) {
+        celix_logHelper_error(watcher->logHelper, "Watcher: No remote configs supported.");
+        return;
     }
-    celix_autofree char *importedConfigsCopy = celix_utils_strdup(importedConfigs);
-    if (importedConfigsCopy == NULL) {
-        return true;
+    celix_autofree char *configsSupportedCopy = celix_utils_strdup(configsSupported);
+    if (configsSupportedCopy == NULL) {
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to dup remote configs supported.");
+        return;
     }
-    char *savePtr = NULL;
-    char *token = strtok_r(importedConfigsCopy, ",", &savePtr);
+    bool refreshBrowsers = false;
+    char *token = strtok(configsSupportedCopy, ",");
     while (token != NULL) {
-        char *configType = celix_utils_trimInPlace(token);
-        celix_autofree char *importedConfigPortKey = NULL;
-        if (asprintf(&importedConfigPortKey, "%s.port", configType) < 0) {
-            return true;
+        token = celix_utils_trimInPlace(token);
+        const char *svcSubType = strrchr(token, '.');//We use the last word of config type as mDNS service subtype
+        if (svcSubType != NULL) {
+            svcSubType += 1;//skip '.'
+        } else {
+            svcSubType = token;
         }
-        if (celix_properties_get(properties, importedConfigPortKey, NULL) != NULL) {
-            return true;
+        size_t subTypeLen = strlen(svcSubType);
+        if (subTypeLen ==0 || subTypeLen > 63) {
+            celix_logHelper_error(watcher->logHelper, "Watcher: Invalid service type for %s.", token);
+        } else {
+            celixThreadMutex_lock(&watcher->mutex);
+            service_browser_entry_t *browserEntry = (service_browser_entry_t *)celix_stringHashMap_get(watcher->serviceBrowsers, svcSubType);
+            if (browserEntry == NULL) {
+                browserEntry = (service_browser_entry_t *)calloc(1, sizeof(*browserEntry));
+                if (browserEntry != NULL) {
+                    browserEntry->refCnt = 1;
+                    browserEntry->resolvedCnt = 0;
+                    browserEntry->browseRef = NULL;
+                    if (celix_stringHashMap_put(watcher->serviceBrowsers, svcSubType, browserEntry) == CELIX_SUCCESS) {
+                        refreshBrowsers = true;
+                    } else {
+                        free(browserEntry);
+                        celix_logHelper_logTssErrors(watcher->logHelper, CELIX_LOG_LEVEL_ERROR);//TODO  check more function
+                        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to put browse entry.");
+                    }
+                } else {
+                    celix_logHelper_error(watcher->logHelper, "Watcher: Failed to alloc browse entry.");
+                }
+            } else {
+                browserEntry->refCnt++;
+            }
+            celixThreadMutex_unlock(&watcher->mutex);
         }
-        token = strtok_r(NULL, ",", &savePtr);
+        token = strtok(NULL, ",");
     }
-    return false;
+
+    if (refreshBrowsers) {
+        eventfd_t val = 1;
+        eventfd_write(watcher->eventFd, val);
+    }
+
+    return;
+}
+
+static void discoveryZeroConfWatcher_removeRSA(void *handle, void *svc, const celix_properties_t *props) {
+    assert(handle != NULL);
+    assert(svc != NULL);
+    assert(props != NULL);
+    discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)handle;
+    const char *configsSupported = celix_properties_get(props, OSGI_RSA_REMOTE_CONFIGS_SUPPORTED, NULL);
+    if (configsSupported == NULL) {
+        celix_logHelper_error(watcher->logHelper, "Watcher: No remote configs supported.");
+        return;
+    }
+
+    celix_autofree char *configsSupportedCopy = celix_utils_strdup(configsSupported);
+    if (configsSupportedCopy == NULL) {
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to dup remote configs supported.");
+        return;
+    }
+    bool refreshBrowsers = false;
+    char *token = strtok(configsSupportedCopy, ",");
+    while (token != NULL) {
+        token = celix_utils_trimInPlace(token);
+        const char *svcSubType = strrchr(token, '.');
+        if (svcSubType != NULL) {
+            svcSubType += 1;//skip '.'
+        } else {
+            svcSubType = token;
+        }
+        celixThreadMutex_lock(&watcher->mutex);
+        service_browser_entry_t *browserEntry = (service_browser_entry_t *)celix_stringHashMap_get(watcher->serviceBrowsers, svcSubType);
+        if ((browserEntry != NULL) && (--browserEntry->refCnt == 0)) {
+                refreshBrowsers = true;
+        }
+        celixThreadMutex_unlock(&watcher->mutex);
+        token = strtok(NULL, ",");
+    }
+
+    if (refreshBrowsers) {
+        eventfd_t val = 1;
+        eventfd_write(watcher->eventFd, val);
+    }
+
+    return;
 }
 
 static void OnServiceResolveCallback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *fullname, const char *host, uint16_t port, uint16_t txtLen, const unsigned char *txtRecord, void *context) {
@@ -327,14 +435,18 @@ static void OnServiceResolveCallback(DNSServiceRef sdRef, DNSServiceFlags flags,
     svcEntry->endpointId = celix_properties_get(properties, OSGI_RSA_ENDPOINT_ID, NULL);
 
     long propSize = celix_properties_getAsLong(properties, DZC_SERVICE_PROPERTIES_SIZE_KEY, 0);
-    if (propSize == celix_properties_size(properties)) {
-        if (shouldResolveHostInfo(properties)) {
+    const char *version = celix_properties_get(properties, DZC_TXT_RECORD_VERSION_KEY, "");
+    if (propSize == celix_properties_size(properties) && strcmp(DZC_CURRENT_TXT_RECORD_VERSION, version) == 0) {
+        //DZC_PORT_DEFAULT is used for the remote service that IPC is not network based(eg:shared memory). No need to resolve host information.
+        if (port != DZC_PORT_DEFAULT) {
             svcEntry->hostname = celix_utils_strdup(host);
             if (svcEntry->hostname == NULL) {
                 return;
             }
         }
+        svcEntry->port = port;
         celix_properties_unset(properties, DZC_SERVICE_PROPERTIES_SIZE_KEY);//Service endpoint do not need it
+        celix_properties_unset(properties, DZC_TXT_RECORD_VERSION_KEY);//Service endpoint do not need it
         svcEntry->resolved = true;
     }
     return;
@@ -392,6 +504,39 @@ static void OnServiceBrowseCallback(DNSServiceRef sdRef, DNSServiceFlags flags, 
             free(svcEntry);
         }
     }
+    return;
+}
+
+static void discoveryZeroconfWatcher_browseServices(discovery_zeroconf_watcher_t *watcher, unsigned int *pNextWorkIntervalTime) {
+    unsigned int nextWorkIntervalTime = *pNextWorkIntervalTime;
+    celixThreadMutex_lock(&watcher->mutex);
+    celix_string_hash_map_iterator_t iter = celix_stringHashMap_begin(watcher->serviceBrowsers);
+    while (!celix_stringHashMapIterator_isEnd(&iter)) {
+        service_browser_entry_t *browserEntry = (service_browser_entry_t *)iter.value.ptrValue;
+        if (watcher->sharedRef != NULL && browserEntry->browseRef == NULL && browserEntry->refCnt > 0 && browserEntry->resolvedCnt < DZC_MAX_RESOLVED_CNT) {
+            browserEntry->browseRef = watcher->sharedRef;
+            char serviceType[128] = {0};//primary type(15bytes) + subtype(63bytes)
+            (void)snprintf(serviceType, sizeof(serviceType), "%s,%s", DZC_SERVICE_PRIMARY_TYPE, iter.key);
+            DNSServiceErrorType dnsErr = DNSServiceBrowse(&browserEntry->browseRef, kDNSServiceFlagsShareConnection, 0, serviceType, "local", OnServiceBrowseCallback, watcher);
+            if (dnsErr != kDNSServiceErr_NoError) {
+                celix_logHelper_error(watcher->logHelper, "Watcher: Failed to browse DNS service, %d.", dnsErr);
+                browserEntry->browseRef = NULL;
+                nextWorkIntervalTime = MIN(nextWorkIntervalTime, DZC_MAX_RETRY_INTERVAL);//retry browse after 5 seconds
+            }
+            browserEntry->resolvedCnt ++;
+        } else if (browserEntry->refCnt == 0) {
+            if (browserEntry->browseRef) {
+                DNSServiceRefDeallocate(browserEntry->browseRef);
+            }
+            celix_stringHashMapIterator_remove(&iter);
+            free(browserEntry);
+            continue;
+        }
+        celix_stringHashMapIterator_next(&iter);
+    }
+    celixThreadMutex_unlock(&watcher->mutex);
+
+    *pNextWorkIntervalTime = nextWorkIntervalTime;
     return;
 }
 
@@ -641,34 +786,28 @@ static int discoveryZeroConfWatcher_createEndpointEntryForService(discovery_zero
     }
     char *savePtr = NULL;
     char *token = strtok_r(importedConfigsCopy, ",", &savePtr);
-    while (token != NULL && ipAddressesStr != NULL) {
+    while (token != NULL) {
         char *configType = celix_utils_trimInPlace(token);
-        celix_autofree char *importedConfigPortKey = NULL;
-        if(asprintf(&importedConfigPortKey, "%s.port", configType) < 0) {
-            celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create imported config port key.");
-            return CELIX_ENOMEM;
+        char key[128] = {0};
+        if(snprintf(key, sizeof(key), "%s.port", configType) >= sizeof(key)) {
+            celix_logHelper_error(watcher->logHelper, "Watcher: The length of imported config type %s is too long.", configType);
+            return CELIX_ILLEGAL_ARGUMENT;
         }
-        celix_autofree char *importedConfigIpAddressListKey = NULL;
-        if(asprintf(&importedConfigIpAddressListKey, "%s.ipaddresses", configType) < 0) {
-            celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create imported config ip address list key.");
-            return CELIX_ENOMEM;
+        status = celix_properties_setLong(properties, key, svcEntry->port);
+        if (status != CELIX_SUCCESS) {
+            celix_logHelper_error(watcher->logHelper, "Watcher: Failed to set imported config port.");
+            return status;
         }
-        //If the service.imported.configs contains the port property, then add the ipaddresses property
-        if (celix_properties_get(properties, importedConfigPortKey, NULL) != NULL) {
-            celix_autofree char *tmp = celix_utils_strdup(ipAddressesStr);
-            if (tmp == NULL) {
-                celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create ip address list.");
-                return CELIX_ENOMEM;
-            }
-            status = celix_properties_setWithoutCopy(properties, importedConfigIpAddressListKey, tmp);
-            if (status != CELIX_SUCCESS) {
-                celix_logHelper_error(watcher->logHelper, "Watcher: Failed to set imported config ip address list.");
-                return status;
-            }
-            epEntry->ipAddressesStr = tmp;
-            celix_steal_ptr(tmp);
-            celix_steal_ptr(importedConfigIpAddressListKey);
+        if(snprintf(key, sizeof(key), "%s.ipaddresses", configType) >= sizeof(key)) {
+            celix_logHelper_error(watcher->logHelper, "Watcher: The length of imported config type %s is too long.", configType);
+            return CELIX_ILLEGAL_ARGUMENT;
         }
+        status = celix_properties_set(properties, key, ipAddressesStr);
+        if (status != CELIX_SUCCESS) {
+            celix_logHelper_error(watcher->logHelper, "Watcher: Failed to set imported config ip address list.");
+            return status;
+        }
+        epEntry->ipAddressesStr = celix_properties_get(properties, key, "");
     }
 
     celix_steal_ptr(hostname);
@@ -847,8 +986,16 @@ static void discoveryZeroconfWatcher_closeMDNSConnection(discovery_zeroconf_watc
     if (watcher->sharedRef) {
         DNSServiceRefDeallocate(watcher->sharedRef);
         watcher->sharedRef = NULL;
-        watcher->browseRef = NULL;//no need free entry->browseRef, 'DNSServiceRefDeallocate(watcher->sharedRef)' has done it.
     }
+
+    celixThreadMutex_lock(&watcher->mutex);
+    CELIX_STRING_HASH_MAP_ITERATE(watcher->serviceBrowsers, iter) {
+        service_browser_entry_t *browseEntry = (service_browser_entry_t *)iter.value.ptrValue;
+        browseEntry->browseRef = NULL;//no need free V->browseRef, 'DNSServiceRefDeallocate(watcher->sharedRef)' has done it.
+        browseEntry->resolvedCnt = 0;
+    }
+    celixThreadMutex_unlock(&watcher->mutex);
+
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedServices, iter) {
         watched_service_entry_t *svcEntry = (watched_service_entry_t *) iter.value.ptrValue;
         //no need free svcEntry->resolveRef, 'DNSServiceRefDeallocate(watcher->sharedRef)' has done it.
@@ -901,15 +1048,7 @@ static void *discoveryZeroconfWatcher_watchEPThread(void *data) {
             }
         }
 
-        if (watcher->sharedRef != NULL && watcher->browseRef == NULL) {
-            watcher->browseRef = watcher->sharedRef;
-            dnsErr = DNSServiceBrowse(&watcher->browseRef, kDNSServiceFlagsShareConnection, 0, DZC_SERVICE_PRIMARY_TYPE, "local", OnServiceBrowseCallback, watcher);
-            if (dnsErr != kDNSServiceErr_NoError) {
-                celix_logHelper_error(watcher->logHelper, "Watcher: Failed to browse DNS service, %d.", dnsErr);
-                watcher->browseRef = NULL;
-                timeoutInS = MIN(DZC_MAX_RETRY_INTERVAL, timeoutInS);//retry after 5 seconds
-            }
-        }
+        discoveryZeroconfWatcher_browseServices(watcher, &timeoutInS);
 
         FD_ZERO(&readfds);
         FD_SET(watcher->eventFd, &readfds);

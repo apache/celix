@@ -770,7 +770,6 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     if (admin->discoveryInterface != NULL) {
         celix_properties_set(endpointProperties, CELIX_RSA_NETWORK_INTERFACES, admin->discoveryInterface);
     }
-    celix_properties_set(endpointProperties, CELIX_RSA_NETWORK_PORT, admin->port);
 
     if (props != NULL) {
         CELIX_PROPERTIES_ITERATE(props, iter) {
