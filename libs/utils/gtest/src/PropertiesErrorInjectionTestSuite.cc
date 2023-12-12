@@ -195,6 +195,8 @@ TEST_F(PropertiesErrorInjectionTestSuite, LoadFailureTest) {
     // Then the celix_properties_load call fails
     auto props = celix_properties_load("file");
     ASSERT_EQ(nullptr, props);
+    // And a celix err msg is set
+    ASSERT_EQ(1, celix_err_getErrorCount());
     celix_err_resetErrors();
 
     // When a malloc error injection is set for celix_properties_loadWithStream (during properties create)
