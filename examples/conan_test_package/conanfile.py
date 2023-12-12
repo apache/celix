@@ -57,7 +57,6 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_PUBSUB_WIRE_PROTOCOL_V1"] = self.options["celix"].build_pubsub_wire_protocol_v1
         cmake.definitions["TEST_PUBSUB_WIRE_PROTOCOL_V2"] = self.options["celix"].build_pubsub_wire_protocol_v2
         cmake.definitions["TEST_PUBSUB_JSON_SERIALIZER"] = self.options["celix"].build_pubsub_json_serializer
-        cmake.definitions["TEST_PUBSUB_AVROBIN_SERIALIZER"] = self.options["celix"].build_pubsub_avrobin_serializer
         cmake.definitions["TEST_CXX_REMOTE_SERVICE_ADMIN"] = self.options["celix"].build_cxx_remote_service_admin
         cmake.definitions["TEST_SHELL_API"] = self.options["celix"].build_shell_api
         cmake.definitions["TEST_CELIX_DFI"] = self.options["celix"].build_celix_dfi
@@ -140,9 +139,6 @@ class TestPackageConan(ConanFile):
             if self.options["celix"].build_pubsub_json_serializer:
                 self.run("./use_pubsub_json_serializer",
                          cwd=os.path.join("deploy", "use_pubsub_json_serializer"), run_environment=True)
-            if self.options["celix"].build_pubsub_avrobin_serializer:
-                self.run("./use_pubsub_avrobin_serializer",
-                         cwd=os.path.join("deploy", "use_pubsub_avrobin_serializer"), run_environment=True)
             if self.options["celix"].build_cxx_remote_service_admin:
                 self.run("./use_cxx_remote_service_admin",
                          cwd=os.path.join("deploy", "use_cxx_remote_service_admin"), run_environment=True)

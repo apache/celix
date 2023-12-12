@@ -67,7 +67,6 @@ class TestPackageConan(ConanFile):
         tc.cache_variables["TEST_PUBSUB_WIRE_PROTOCOL_V1"] = celix_options.build_pubsub_wire_protocol_v1
         tc.cache_variables["TEST_PUBSUB_WIRE_PROTOCOL_V2"] = celix_options.build_pubsub_wire_protocol_v2
         tc.cache_variables["TEST_PUBSUB_JSON_SERIALIZER"] = celix_options.build_pubsub_json_serializer
-        tc.cache_variables["TEST_PUBSUB_AVROBIN_SERIALIZER"] = celix_options.build_pubsub_avrobin_serializer
         tc.cache_variables["TEST_CXX_REMOTE_SERVICE_ADMIN"] = celix_options.build_cxx_remote_service_admin
         tc.cache_variables["TEST_SHELL_API"] = celix_options.build_shell_api
         tc.cache_variables["TEST_CELIX_DFI"] = celix_options.build_celix_dfi
@@ -156,9 +155,6 @@ class TestPackageConan(ConanFile):
                 if celix_options.build_pubsub_json_serializer:
                     self.run("./use_pubsub_json_serializer",
                              cwd=os.path.join("deploy", "use_pubsub_json_serializer"), env="conanrun")
-                if celix_options.build_pubsub_avrobin_serializer:
-                    self.run("./use_pubsub_avrobin_serializer",
-                             cwd=os.path.join("deploy", "use_pubsub_avrobin_serializer"), env="conanrun")
                 if celix_options.build_cxx_remote_service_admin:
                     self.run("./use_cxx_remote_service_admin",
                              cwd=os.path.join("deploy", "use_cxx_remote_service_admin"), env="conanrun")
