@@ -221,17 +221,6 @@ static celix_status_t exportRegistration_findAndParseInterfaceDescriptor(celix_l
         return status;
     }
 
-    status = dfi_findAvprDescriptor(context, bundle, name, &descriptor);
-    if (status == CELIX_SUCCESS && descriptor != NULL) {
-        *out = dynInterface_parseAvpr(descriptor);
-        if (*out == NULL) {
-            celix_logHelper_logTssErrors(helper, CELIX_LOG_LEVEL_WARNING);
-            celix_logHelper_warning(helper, "RSA_AVPR: Error parsing avpr service descriptor for '%s'", name);
-            status = CELIX_BUNDLE_EXCEPTION;
-        }
-        return status;
-    }
-
     celix_logHelper_log(helper, CELIX_LOG_LEVEL_WARNING, "RSA: Error finding service descriptor for '%s'", name);
     return CELIX_BUNDLE_EXCEPTION;
 }

@@ -359,11 +359,6 @@ if (TEST_PUBSUB_JSON_SERIALIZER)
     add_celix_container("use_pubsub_json_serializer" BUNDLES Celix::celix_pubsub_serializer_json hello)
 endif ()
 
-option(TEST_PUBSUB_AVROBIN_SERIALIZER "Test pubsub avrobin serializer" OFF)
-if (TEST_PUBSUB_AVROBIN_SERIALIZER)
-    add_celix_container("use_pubsub_avrobin_serializer" BUNDLES Celix::celix_pubsub_serializer_avrobin hello)
-endif ()
-
 option(TEST_CXX_REMOTE_SERVICE_ADMIN "Test C++ remote service admin" OFF)
 if (TEST_CXX_REMOTE_SERVICE_ADMIN)
     add_celix_container("use_cxx_remote_service_admin" BUNDLES Celix::RemoteServiceAdmin hello)

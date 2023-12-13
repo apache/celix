@@ -26,7 +26,7 @@ add_celix_bundle(topology_manager_test_bundle
         tst_activator.c   
 )
 celix_bundle_files(topology_manager_test_bundle
-    org.apache.celix.test.MyBundle.avpr
+    org.apache.celix.test.MyBundle.descriptor
     DESTINATION .
 )
 

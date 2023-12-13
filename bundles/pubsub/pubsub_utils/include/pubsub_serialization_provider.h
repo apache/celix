@@ -61,7 +61,7 @@ typedef struct {
  *
  * The provider monitors bundles and creates pubsub message serialization services for every unique descriptor found.
  *
- * Descriptors can be DFI descriptors or AVPR descriptors (FIXME #158).
+ * Descriptors can be DFI descriptors.
  *
  * The provider will look for descriptors in META-INF/descriptors directory of every installed bundle.
  * If a framework config CELIX_FRAMEWORK_EXTENDER_PATH is set, this path will also be used to search for descriptor files.

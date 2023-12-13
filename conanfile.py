@@ -57,7 +57,6 @@ class CelixConan(ConanFile):
         "build_pubsub_wire_protocol_v1": False,
         "build_pubsub_wire_protocol_v2": False,
         "build_pubsub_json_serializer": False,
-        "build_pubsub_avrobin_serializer": False,
         "build_pubsub_psa_zmq": False,
         "build_pubsub_examples": False,
         "build_pubsub_integration": False,
@@ -234,7 +233,7 @@ class CelixConan(ConanFile):
         if options["build_pubsub_wire_protocol_v2"]:
             options["build_pubsub"] = True
 
-        if options["build_pubsub_json_serializer"] or options["build_pubsub_avrobin_serializer"]:
+        if options["build_pubsub_json_serializer"]:
             options["build_pubsub"] = True
 
         if options["build_pubsub"]:
