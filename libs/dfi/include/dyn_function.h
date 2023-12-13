@@ -21,7 +21,6 @@
 #define __DYN_FUNCTION_H_
 
 #include "dyn_type.h"
-#include "dfi_log_util.h"
 #include "celix_dfi_export.h"
 
 #ifdef __cplusplus
@@ -44,8 +43,6 @@ extern "C" {
  */
 
 typedef struct _dyn_function_type dyn_function_type;
-
-DFI_SETUP_LOG_HEADER(dynFunction);
 
 enum dyn_function_argument_meta {
     DYN_FUNCTION_ARGUMENT_META__STD = 0,

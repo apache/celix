@@ -33,16 +33,6 @@
 #include "pubsub_endpoint.h"
 #include "pubsub_message_serialization_marker.h"
 
-static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
-    va_list ap;
-    const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-    fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-    va_start(ap, msg);
-    vfprintf(stderr, msg, ap);
-    fprintf(stderr, "\n");
-    va_end(ap);
-}
-
 class PubSubMatchingTestSuite : public ::testing::Test {
 public:
     PubSubMatchingTestSuite() {
@@ -54,8 +44,6 @@ public:
         ctx = std::shared_ptr<celix_bundle_context_t>{ctxPtr, [](auto*){/*nop*/}};
 
         bndId = celix_bundleContext_installBundle(ctx.get(), MATCHING_BUNDLE, true);
-
-        dynMessage_logSetup(stdLog, NULL, 1);
     }
 
     ~PubSubMatchingTestSuite() override {

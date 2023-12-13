@@ -20,21 +20,9 @@
 #include "gtest/gtest.h"
 
 extern "C" {
-    #include <stdarg.h>
-    
     #include "dyn_common.h"
     #include "dyn_type.h"
     #include "celix_err.h"
-
-	static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
-	    va_list ap;
-	    const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-	    fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-	    va_start(ap, msg);
-	    vfprintf(stderr, msg, ap);
-	    fprintf(stderr, "\n");
-	    va_end(ap);
-	}
 
     static void runTest(const char *descriptorStr, const char *exName) {
         dyn_type *type;
@@ -70,7 +58,6 @@ extern "C" {
 class DynTypeTests : public ::testing::Test {
 public:
     DynTypeTests() {
-        dynType_logSetup(stdLog, NULL, 1);
     }
     ~DynTypeTests() override {
     }

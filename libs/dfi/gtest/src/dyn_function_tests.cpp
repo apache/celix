@@ -19,23 +19,11 @@
 
 #include "gtest/gtest.h"
 
-#include <stdarg.h>
 #include "dyn_example_functions.h"
 
 #include "dyn_common.h"
 #include "dyn_function.h"
 #include <ffi.h>
-
-static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
-    va_list ap;
-    const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-    fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-    va_start(ap, msg);
-    vfprintf(stderr, msg, ap);
-    fprintf(stderr, "\n");
-    va_end(ap);
-}
-
 
 #define INVALID_FUNC_DESCRIPTOR "example$[D)V"//$ is an invalid symbol, missing (
 #define INVALID_FUNC_TYPE_DESCRIPTOR "example(H)A"//H and A are invalid types
@@ -44,10 +32,6 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
 class DynFunctionTests : public ::testing::Test {
 public:
     DynFunctionTests() {
-        int lvl = 1;
-        dynFunction_logSetup(stdLog, nullptr, lvl);
-        dynType_logSetup(stdLog, nullptr, lvl);
-        dynCommon_logSetup(stdLog, nullptr, lvl);
     }
     ~DynFunctionTests() override = default;
 

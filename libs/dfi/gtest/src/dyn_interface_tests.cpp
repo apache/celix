@@ -40,16 +40,6 @@ extern "C" {
 #include "fmemopen.h"
 #endif
 
-    static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
-        va_list ap;
-        const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-        fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-        va_start(ap, msg);
-        vfprintf(stderr, msg, ap);
-        fprintf(stderr, "\n");
-        va_end(ap);
-    }
-
     static void checkInterfaceVersion(dyn_interface_type* dynIntf, const char* v) {
         int status;
 
@@ -197,11 +187,6 @@ extern "C" {
 class DynInterfaceTests : public ::testing::Test {
 public:
     DynInterfaceTests() {
-        int level = 1;
-        dynCommon_logSetup(stdLog, NULL, level);
-        dynType_logSetup(stdLog, NULL, level);
-        dynFunction_logSetup(stdLog, NULL, level);
-        dynInterface_logSetup(stdLog, NULL, level);
     }
     ~DynInterfaceTests() override {
     }

@@ -22,15 +22,12 @@
 
 #include "dyn_common.h"
 #include "dyn_type.h"
-#include "dfi_log_util.h"
 #include "celix_version.h"
 #include "celix_dfi_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-DFI_SETUP_LOG_HEADER(dynMessage);
 
 /* Description string
  *

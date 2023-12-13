@@ -25,7 +25,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "dfi_log_util.h"
 #include "celix_dfi_export.h"
 
 #ifdef __cplusplus
@@ -134,9 +133,6 @@ struct meta_entry {
     char *value;
     TAILQ_ENTRY(meta_entry) entries;
 };
-
-//logging
-DFI_SETUP_LOG_HEADER(dynType);
 
 /**
  * Parses a descriptor stream and creates a dyn_type (dynamic type).

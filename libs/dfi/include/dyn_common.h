@@ -25,15 +25,11 @@
 #include <string.h>
 #include <sys/queue.h>
 
-#include "dfi_log_util.h"
 #include "celix_dfi_export.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-//logging
-DFI_SETUP_LOG_HEADER(dynCommon) ;
 
 TAILQ_HEAD(namvals_head, namval_entry);
 

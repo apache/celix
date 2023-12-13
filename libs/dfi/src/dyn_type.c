@@ -18,18 +18,16 @@
  */
 
 #include "dyn_type.h"
+#include "dyn_type_common.h"
+#include "dyn_type_common.h"
+#include "dyn_common.h"
+#include "celix_err.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
 #include <ffi.h>
-#include "dyn_type_common.h"
-
-#include "dyn_type_common.h"
-#include "dyn_common.h"
-
-DFI_SETUP_LOG(dynType)
 
 static const int OK = 0;
 static const int ERROR = 1;
@@ -97,13 +95,13 @@ int dynType_parseWithStr(const char *descriptor, const char *name, struct types_
                 status = PARSE_ERROR;
                 dynType_destroy(*type);
                 *type = NULL;
-                LOG_ERROR("Expected EOF got %c", c);
+                celix_err_pushf("Expected EOF got %c", c);
             }
         } 
         fclose(stream);
     } else {
         status = ERROR;
-        LOG_ERROR("Error creating mem stream for descriptor string. %s", strerror(errno)); 
+        celix_err_pushf("Error creating mem stream for descriptor string. %s", strerror(errno));
     }
     return status;
 }
@@ -121,7 +119,7 @@ static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *par
             type->name = strdup(name);
             if (type->name == NULL) {
                 status = MEM_ERROR;
-                LOG_ERROR("Error strdup'ing name '%s'\n", name);			
+                celix_err_pushf("Error strdup'ing name '%s'\n", name);
             } 
         }
         if (status == OK) {
@@ -134,7 +132,7 @@ static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *par
         }
     } else {
         status = MEM_ERROR;
-        LOG_ERROR("Error allocating memory for type");
+        celix_err_pushf("Error allocating memory for type");
     }
     return status;
 }
@@ -216,7 +214,7 @@ static int dynType_parseMetaInfo(FILE *stream, dyn_type *type) {
         entry->value = value;
         TAILQ_INSERT_TAIL(&type->metaProperties, entry, entries);
     } else {
-        LOG_ERROR("Failed to parse meta properties");
+        celix_err_pushf("Failed to parse meta properties");
         free(name);
         free(value);
         free(entry);
@@ -266,7 +264,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
         } else {
             free(entry);
             status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for type");
+            celix_err_pushf("Error allocating memory for type");
         }
 
         if (status != OK) {
@@ -310,7 +308,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
             }
         } else {
             status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for elements");
+            celix_err_pushf("Error allocating memory for elements");
         }
     }
 
@@ -323,7 +321,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
             }
         } else {
             status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for type");
+            celix_err_pushf("Error allocating memory for type");
         }
     }
 
@@ -351,14 +349,14 @@ static int dynType_parseNestedType(FILE *stream, dyn_type *type) {
         entry->type->name = name;
     } else {
         status = MEM_ERROR;
-        LOG_ERROR("Error allocating entry");
+        celix_err_pushf("Error allocating entry");
     }     
 
     if (status == OK) {
         int c = fgetc(stream);
         if (c != '=') {
             status = PARSE_ERROR;
-            LOG_ERROR("Error parsing nested type expected '=' got '%c'", c);
+            celix_err_pushf("Error parsing nested type expected '=' got '%c'", c);
         }
     }
 
@@ -367,7 +365,7 @@ static int dynType_parseNestedType(FILE *stream, dyn_type *type) {
         int c = fgetc(stream);
         if (c != ';') {
             status = PARSE_ERROR;
-            LOG_ERROR("Expected ';' got '%c'\n", c);
+            celix_err_pushf("Expected ';' got '%c'\n", c);
         }
     }
 
@@ -393,7 +391,7 @@ static int dynType_parseReference(FILE *stream, dyn_type *type) {
         status = dynType_parseRefByValue(stream, subType);
     } else {
         status = MEM_ERROR;
-        LOG_ERROR("Error allocating memory for subtype\n");
+        celix_err_pushf("Error allocating memory for subtype\n");
     }
 
     return status;
@@ -412,7 +410,7 @@ static int dynType_parseRefByValue(FILE *stream, dyn_type *type) {
             type->ref.ref = ref;
         } else {
             status = PARSE_ERROR;
-            LOG_ERROR("Error cannot find type '%s'", name);
+            celix_err_pushf("Error cannot find type '%s'", name);
         }
         free(name);
     } 
@@ -421,7 +419,7 @@ static int dynType_parseRefByValue(FILE *stream, dyn_type *type) {
         int c = fgetc(stream);
         if (c != ';') {
             status = PARSE_ERROR;
-            LOG_ERROR("Error expected ';' got '%c'", c);
+            celix_err_pushf("Error expected ';' got '%c'", c);
         } 
     }
 
@@ -471,7 +469,7 @@ static int dynType_parseSimple(int c, dyn_type *type) {
         type->ffiType = ffiType;
     } else {
         status = PARSE_ERROR;
-        LOG_ERROR("Error unsupported type '%c'", c);
+        celix_err_pushf("Error unsupported type '%c'", c);
     }
 
     return status;
@@ -583,7 +581,7 @@ int dynType_alloc(dyn_type *type, void **bufLoc) {
             *bufLoc = inst;
         } else {
             status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for type '%c'", type->descriptor);
+            celix_err_pushf("Error allocating memory for type '%c'", type->descriptor);
         }
     }
 
@@ -675,11 +673,11 @@ int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap) {
         } else {
             seq->cap = 0;
             status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for buf");
+            celix_err_pushf("Error allocating memory for buf");
         }
     } else {
-            status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for seq");
+        status = MEM_ERROR;
+        celix_err_pushf("Error allocating memory for seq");
     }
     return status;
 }
@@ -696,11 +694,11 @@ int dynType_sequence_reserve(dyn_type *type, void *inst, uint32_t cap) {
         } else {
             seq->cap = 0;
             status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for buf");
+            celix_err_pushf("Error allocating memory for buf");
         }
     } else {
         status = MEM_ERROR;
-        LOG_ERROR("Error allocating memory for seq");
+        celix_err_pushf("Error allocating memory for seq");
     }
     return status;
 }
@@ -737,7 +735,7 @@ void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf) {
                 //nop
                 break;
             default:
-                LOG_ERROR("Unexpected switch case. cannot free dyn type %c\n", type->descriptor);
+                celix_err_pushf("Unexpected switch case. cannot free dyn type %c\n", type->descriptor);
                 break;
         }
 
@@ -785,12 +783,12 @@ int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void *
 
     if (index >= seq->cap) {
         status = ERROR;
-        LOG_ERROR("Requested index (%i) is greater than capacity (%u) of sequence", index, seq->cap);
+        celix_err_pushf("Requested index (%i) is greater than capacity (%u) of sequence", index, seq->cap);
     }
 
     if (index >= seq->len) {
         status = ERROR;
-        LOG_ERROR("Requesting index (%i) outsize defined length (%u) but within capacity", index, seq->len);
+        celix_err_pushf("Requesting index (%i) outsize defined length (%u) but within capacity", index, seq->len);
     }
 
     if (status == OK) {
@@ -811,7 +809,7 @@ int dynType_sequence_increaseLengthAndReturnLastLoc(dyn_type *type, void *seqLoc
         seq->len += 1;
     } else {
         status = ERROR;
-        LOG_ERROR("Cannot increase sequence length beyond capacity (%u)", seq->cap);
+        celix_err_pushf("Cannot increase sequence length beyond capacity (%u)", seq->cap);
     }
 
     if (status == OK) {
@@ -966,7 +964,7 @@ int dynType_text_allocAndInit(dyn_type *type, void *textLoc, const char *value) 
         *loc = str;
     } else {
         status = ERROR;
-        LOG_ERROR("Cannot allocate memory for string");
+        celix_err_pushf("Cannot allocate memory for string");
     }
     return status;
 }

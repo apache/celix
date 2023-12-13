@@ -18,14 +18,13 @@
  */
 
 #include "dyn_message.h"
+#include "celix_err.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 #include "dyn_common.h"
 #include "dyn_type.h"
-
-DFI_SETUP_LOG(dynMessage);
 
 struct _dyn_message_type {
     struct namvals_head header;
@@ -83,19 +82,19 @@ int dynMessage_parse(FILE *descriptor, dyn_message_type **out) {
                 status = msg->msgVersion != NULL ? OK : ERROR;
         	}
         	if (status == ERROR) {
-        		LOG_ERROR("Invalid version (%s) in parsed descriptor\n",version);
+                celix_err_pushf("Invalid version (%s) in parsed descriptor\n",version);
         	}
         }
 
     } else {
         status = ERROR;
-        LOG_ERROR("Error allocating memory for dynamic message\n");
+        celix_err_pushf("Error allocating memory for dynamic message\n");
     }
 
     if (status == OK) {
         *out = msg;
     } else if (msg != NULL) {
-        LOG_ERROR("Error parsing msg\n");
+        celix_err_pushf("Error parsing msg\n");
         dynMessage_destroy(msg);
     }
     return status;
@@ -122,7 +121,7 @@ static int dynMessage_checkMessage(dyn_message_type *msg) {
 
         if (!foundType || !foundVersion || !foundName) {
             status = ERROR;
-            LOG_ERROR("Parse Error. There must be a header section with a type, version and name entry");
+            celix_err_pushf("Parse Error. There must be a header section with a type, version and name entry");
         }
     }
 
@@ -154,7 +153,7 @@ static int dynMessage_parseSection(dyn_message_type *msg, FILE *stream) {
             status = dynMessage_parseMessage(msg, stream);
         } else {
             status = ERROR;
-            LOG_ERROR("unsupported section '%s'", sectionName);
+            celix_err_pushf("unsupported section '%s'", sectionName);
         }
     }
 
@@ -197,7 +196,7 @@ static int dynMessage_parseNameValueSection(dyn_message_type *msg, FILE *stream,
                 TAILQ_INSERT_TAIL(head, entry, entries);
             } else {
                 status = ERROR;
-                LOG_ERROR("Error allocating memory for namval entry");
+                celix_err_pushf("Error allocating memory for namval entry");
             }
         }
 
@@ -249,7 +248,7 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
                 TAILQ_INSERT_TAIL(&msg->types, entry, entries);
             } else {
                 status = ERROR;
-                LOG_ERROR("Error allocating memory for type entry");
+                celix_err_pushf("Error allocating memory for type entry");
             }
         }
 
@@ -347,7 +346,7 @@ static int dynMessage_getEntryForHead(struct namvals_head *head, const char *nam
         *out = value;
     } else {
         status = ERROR;
-        LOG_ERROR("Cannot find '%s' in list", name);
+        celix_err_pushf("Cannot find '%s' in list", name);
     }
     return status;
 }

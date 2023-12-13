@@ -81,18 +81,6 @@ struct pubsub_serialization_provider {
     celix_array_list_t *serializationSvcEntries; //key = pubsub_serialization_entry;
 };
 
-static void dfi_log(void *handle, int level, const char *file, int line, const char *msg, ...) {
-    (void)level;
-    va_list ap;
-    pubsub_serialization_provider_t *provider = handle;
-    char *logStr = NULL;
-    va_start(ap, msg);
-    vasprintf(&logStr, msg, ap);
-    va_end(ap);
-    celix_logHelper_log(provider->logHelper, CELIX_LOG_LEVEL_WARNING, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
-    free(logStr);
-}
-
 static descriptor_type_e getDescriptorType(const char* filename) {
     if (strstr(filename, ".descriptor")) {
         return FIT_DESCRIPTOR;
@@ -609,10 +597,6 @@ pubsub_serialization_provider_t *pubsub_serializationProvider_create(
     provider->deserialize = deserialize;
     provider->freeDeserializeMsg = freeDeserializeMsg;
     provider->logHelper = celix_logHelper_create(ctx, "celix_pubsub_serialization_provider");
-
-    dynFunction_logSetup(dfi_log, provider, 1);
-    dynType_logSetup(dfi_log, provider, 1);
-    dynCommon_logSetup(dfi_log, provider, 1);
 
     {
         //Start bundle tracker and register pubsub_message_serialization services

@@ -21,7 +21,6 @@
 #define __JSON_SERIALIZER_H_
 
 #include <jansson.h>
-#include "dfi_log_util.h"
 #include "dyn_type.h"
 #include "dyn_function.h"
 #include "dyn_interface.h"
@@ -30,9 +29,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-//logging
-DFI_SETUP_LOG_HEADER(jsonSerializer);
 
 /**
  * @brief Deserialize a JSON string to a given type.

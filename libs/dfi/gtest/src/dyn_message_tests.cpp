@@ -40,16 +40,6 @@ extern "C" {
 #include "fmemopen.h"
 #endif
 
-static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
-	va_list ap;
-	const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-	fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-	va_start(ap, msg);
-	vfprintf(stderr, msg, ap);
-	fprintf(stderr, "\n");
-	va_end(ap);
-}
-
 static void checkMessageVersion(dyn_message_type* dynMsg, const char* v){
 	int status = 0;
 
@@ -229,10 +219,6 @@ static void msg_invalid(void) {
 class DynMessageTests : public ::testing::Test {
 public:
     DynMessageTests() {
-        int level = 1;
-        dynCommon_logSetup(stdLog, NULL, level);
-        dynType_logSetup(stdLog, NULL, level);
-        dynMessage_logSetup(stdLog, NULL, level);
     }
     ~DynMessageTests() override {
     }

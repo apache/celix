@@ -34,16 +34,6 @@ extern "C" {
 #include "json_serializer.h"
 #include "celix_err.h"
 
-static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
-	va_list ap;
-	const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-	fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-	va_start(ap, msg);
-	vfprintf(stderr, msg, ap);
-	fprintf(stderr, "\n");
-	va_end(ap);
-}
-
 /*********** example 1 ************************/
 /** struct type ******************************/
 const char *example1_descriptor = "{DJISF a b c d e}";
@@ -780,11 +770,6 @@ void writeEnumFailed(void) {
 class JsonSerializerTests : public ::testing::Test {
 public:
     JsonSerializerTests() {
-        int lvl = 1;
-        dynCommon_logSetup(stdLog, nullptr, lvl);
-        dynType_logSetup(stdLog, nullptr,lvl);
-        dynTypeCommon_logSetup(stdLog, nullptr,lvl);
-        jsonSerializer_logSetup(stdLog, nullptr, lvl);
     }
     ~JsonSerializerTests() override {
     }

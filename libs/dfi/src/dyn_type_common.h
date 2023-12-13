@@ -25,13 +25,10 @@
 
 #include <ffi.h>
 
-#include "dfi_log_util.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-DFI_SETUP_LOG_HEADER(dynTypeCommon);
 
 struct _dyn_type {
     char *name;

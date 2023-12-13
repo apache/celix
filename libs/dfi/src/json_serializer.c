@@ -21,6 +21,7 @@
 #include "dyn_type.h"
 #include "dyn_type_common.h"
 #include "dyn_interface.h"
+#include "celix_err.h"
 
 #include <jansson.h>
 #include <assert.h>
@@ -43,8 +44,6 @@ static int jsonSerializer_writeEnum(dyn_type *type, int32_t enum_value, json_t *
 static int OK = 0;
 static int ERROR = 1;
 
-DFI_SETUP_LOG(jsonSerializer);
-
 int jsonSerializer_deserialize(dyn_type *type, const char *input, size_t length, void **result) {
     assert(dynType_type(type) == DYN_TYPE_COMPLEX || dynType_type(type) == DYN_TYPE_SEQUENCE);
     int status = 0;
@@ -57,11 +56,11 @@ int jsonSerializer_deserialize(dyn_type *type, const char *input, size_t length,
         json_decref(root);
     } else {
         status = ERROR;
-        LOG_ERROR("Error parsing json input '%.*s'. Error is: %s\n", (int)length, input, error.text);
+        celix_err_pushf("Error parsing json input '%.*s'. Error is: %s\n", (int)length, input, error.text);
     }
 
     if (status != OK) {
-        LOG_ERROR("Error cannot deserialize json. Input is '%s'\n", input);
+        celix_err_pushf("Error cannot deserialize json. Input is '%s'\n", input);
     }
     return status;
 }
@@ -84,7 +83,7 @@ static int jsonSerializer_createType(dyn_type *type, json_t *val, void **result)
             *((char**)inst) = strdup(s);
         } else {
             status = ERROR;
-            LOG_ERROR("Expected json_string type got %i\n", json_typeof(val));
+            celix_err_pushf("Expected json_string type got %i\n", json_typeof(val));
         }
     } else {
         status = dynType_alloc(type, &inst);
@@ -229,7 +228,7 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
                 status = jsonSerializer_parseEnum(type, json_string_value(val), E);
             } else {
                 status = ERROR;
-                LOG_ERROR("Expected json string for enum type but got %i", json_typeof(val));
+                celix_err_pushf("Expected json string for enum type but got %i", json_typeof(val));
             }
             break;
         case 't' :
@@ -239,7 +238,7 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
                 dynType_text_allocAndInit(type, loc, json_string_value(val));
             } else {
                 status = ERROR;
-                LOG_ERROR("Expected json string type got %i", json_typeof(val));
+                celix_err_pushf("Expected json string type got %i", json_typeof(val));
             }
             break;
         case '[' :
@@ -247,7 +246,7 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
                 status = jsonSerializer_parseSequence(type, val, loc);
             } else {
                 status = ERROR;
-                LOG_ERROR("Expected json array type got '%i'", json_typeof(val));
+                celix_err_pushf("Expected json array type got '%i'", json_typeof(val));
             }
             break;
         case '{' :
@@ -263,14 +262,14 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
             break;
         case 'P' :
             status = ERROR;
-            LOG_ERROR("Untyped pointer are not supported for serialization");
+            celix_err_pushf("Untyped pointer are not supported for serialization");
             break;
         case 'l':
             status = jsonSerializer_parseAny(type->ref.ref, loc, val);
             break;
         default :
             status = ERROR;
-            LOG_ERROR("Error provided type '%c' not supported for JSON\n", dynType_descriptorType(type));
+            celix_err_pushf("Error provided type '%c' not supported for JSON\n", dynType_descriptorType(type));
             break;
     }
 
@@ -327,7 +326,7 @@ static int jsonSerializer_parseEnum(dyn_type *type, const char* enum_name, int32
         }
     }
 
-    LOG_ERROR("Could not find Enum value %s in enum type", enum_name);
+    celix_err_pushf("Could not find Enum value %s in enum type", enum_name);
     return ERROR;
 }
 
@@ -426,13 +425,13 @@ static int jsonSerializer_writeAny(dyn_type *type, void* input, json_t **out) {
             break;
         case 'P' :
             status = ERROR;
-            LOG_ERROR("Untyped pointer not supported for serialization.");
+            celix_err_pushf("Untyped pointer not supported for serialization.");
             break;
         case 'l':
             status = jsonSerializer_writeAny(type->ref.ref, input, out);
             break;
         default :
-            LOG_ERROR("Unsupported descriptor '%c'", descriptor);
+            celix_err_pushf("Unsupported descriptor '%c'", descriptor);
             status = ERROR;
             break;
     }
@@ -498,7 +497,7 @@ static int jsonSerializer_writeComplex(dyn_type *type, void *input, json_t **out
             dyn_type *subType = NULL;
             index = dynType_complex_indexForName(type, entry->name);
             if (index < 0) {
-                LOG_ERROR("Cannot find index for member '%s'", entry->name);
+                celix_err_pushf("Cannot find index for member '%s'", entry->name);
                 status = ERROR;
             }
             if(status == OK){
@@ -546,6 +545,6 @@ static int jsonSerializer_writeEnum(dyn_type *type, int32_t enum_value, json_t *
         }
     }
 
-    LOG_ERROR("Could not find Enum value %s in enum type", enum_value_str);
+    celix_err_pushf("Could not find Enum value %s in enum type", enum_value_str);
     return ERROR;
 }

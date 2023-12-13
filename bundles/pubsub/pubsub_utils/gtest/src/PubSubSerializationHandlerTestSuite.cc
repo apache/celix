@@ -30,16 +30,6 @@
 #include "celix_framework_factory.h"
 #include "celix_constants.h"
 
-static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
-    va_list ap;
-    const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-    fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-    va_start(ap, msg);
-    vfprintf(stderr, msg, ap);
-    fprintf(stderr, "\n");
-    va_end(ap);
-}
-
 class PubSubSerializationHandlerTestSuite : public ::testing::Test {
 public:
     PubSubSerializationHandlerTestSuite() {
@@ -49,8 +39,6 @@ public:
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
         fw = std::shared_ptr<celix_framework_t>{fwPtr, [](auto* f) {celix_frameworkFactory_destroyFramework(f);}};
         ctx = std::shared_ptr<celix_bundle_context_t>{ctxPtr, [](auto*){/*nop*/}};
-
-        dynMessage_logSetup(stdLog, NULL, 1);
 
         msgSerSvc.handle = this;
         msgSerSvc.serialize = [](void* handle, const void*, struct iovec**, size_t*) -> celix_status_t {

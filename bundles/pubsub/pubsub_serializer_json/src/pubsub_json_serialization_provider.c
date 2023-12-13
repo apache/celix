@@ -29,18 +29,6 @@
 #include "celix_log_helper.h"
 #include "pubsub_message_serialization_service.h"
 
-static void dfi_log(void *handle, int level, const char *file, int line, const char *msg, ...) {
-    va_list ap;
-    celix_log_helper_t *log = handle;
-    char *logStr = NULL;
-    va_start(ap, msg);
-    vasprintf(&logStr, msg, ap);
-    va_end(ap);
-    celix_logHelper_log(log, level, "FILE:%s, LINE:%i, MSG:%s", file, line, logStr);
-    free(logStr);
-}
-
-
 static celix_status_t pubsub_jsonSerializationProvider_serialize(pubsub_serialization_entry_t* entry, const void* msg, struct iovec** output, size_t* outputIovLen) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -108,7 +96,6 @@ static void pubsub_jsonSerializationProvider_freeDeserializeMsg(pubsub_serializa
 
 pubsub_serialization_provider_t* pubsub_jsonSerializationProvider_create(celix_bundle_context_t* ctx)  {
     pubsub_serialization_provider_t* provider = pubsub_serializationProvider_create(ctx, "json", true, 0, pubsub_jsonSerializationProvider_serialize, pubsub_jsonSerializationProvider_freeSerializeMsg, pubsub_jsonSerializationProvider_deserialize, pubsub_jsonSerializationProvider_freeDeserializeMsg);
-    jsonSerializer_logSetup(dfi_log, pubsub_serializationProvider_getLogHelper(provider), 1);;
     return provider;
 }
 

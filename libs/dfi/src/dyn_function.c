@@ -19,6 +19,7 @@
 
 #include "dyn_function.h"
 #include "dyn_function_common.h"
+#include "celix_err.h"
 
 #include <strings.h>
 #include <stdlib.h>
@@ -29,8 +30,6 @@ static const int OK = 0;
 static const int MEM_ERROR = 1;
 static const int PARSE_ERROR = 2;
 static const int ERROR = 2;
-
-DFI_SETUP_LOG(dynFunction)
 
 static int dynFunction_initCif(dyn_function_type *dynFunc);
 static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descriptor);
@@ -51,12 +50,12 @@ int dynFunction_parse(FILE *descriptor, struct types_head *refTypes, dyn_functio
         if (status == 0) {
             int rc = dynFunction_initCif(dynFunc);
             if (rc != 0) {
-                LOG_ERROR("Error initializing cif");
+                celix_err_pushf("Error initializing cif");
                 status = ERROR;
             }
         }
     } else {
-        LOG_ERROR("Error allocating memory for dyn function\n");
+        celix_err_pushf("Error allocating memory for dyn function\n");
         status = MEM_ERROR;
     }
 
@@ -81,7 +80,7 @@ int dynFunction_parse(FILE *descriptor, struct types_head *refTypes, dyn_functio
     if (status == OK) {
         *out = dynFunc;
     }    else {
-        LOG_ERROR("Failed to Create dyn function");
+        celix_err_pushf("Failed to Create dyn function");
         if (dynFunc != NULL) {
             dynFunction_destroy(dynFunc);
         }
@@ -99,7 +98,7 @@ int dynFunction_parseWithStr(const char *descriptor, struct types_head *refTypes
         fclose(stream);
     } else {
         status = MEM_ERROR;
-        LOG_ERROR("Error creating mem stream for descriptor string. %s", strerror(errno)); 
+        celix_err_pushf("Error creating mem stream for descriptor string. %s", strerror(errno));
     }
     return status;
 }
@@ -118,7 +117,7 @@ static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descrip
         int c = fgetc(descriptor);
         if ( c != '(') {
             status = PARSE_ERROR;
-            LOG_ERROR("Expected '(' token got '%c'", c);
+            celix_err_pushf("Expected '(' token got '%c'", c);
         }
     }
 
@@ -143,7 +142,7 @@ static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descrip
 
                 index += 1;
             } else {
-                LOG_ERROR("Error allocating memory");
+                celix_err_pushf("Error allocating memory");
                 status = MEM_ERROR;
             }
         }
