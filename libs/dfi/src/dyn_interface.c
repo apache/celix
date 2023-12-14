@@ -383,11 +383,9 @@ int dynInterface_getName(dyn_interface_type *intf, char **out) {
 }
 
 int dynInterface_getVersion(dyn_interface_type* intf , celix_version_t** version){
-	*version = intf->version;
-	if(*version==NULL){
-		return ERROR;
-	}
-	return OK;
+    // aseert(intf->version != NULL);
+    *version = intf->version;
+    return OK;
 }
 
 int dynInterface_getVersionString(dyn_interface_type *intf, char **version) {
