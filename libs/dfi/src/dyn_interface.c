@@ -44,52 +44,50 @@ static int dynInterface_getEntryForHead(struct namvals_head *head, const char *n
 int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
     int status = OK;
 
-    dyn_interface_type *intf = calloc(1, sizeof(*intf));
-    if (intf != NULL) {
-        TAILQ_INIT(&intf->header);
-        TAILQ_INIT(&intf->annotations);
-        TAILQ_INIT(&intf->types);
-        TAILQ_INIT(&intf->methods);
+    celix_autoptr(dyn_interface_type) intf = calloc(1, sizeof(*intf));
+    if (intf == NULL) {
+        celix_err_pushf("Error allocating memory for dynamic interface");
+        return ERROR;
+    }
 
-        char peek = (char)fgetc(descriptor);
-        while (peek == ':') {
-            ungetc(peek, descriptor);
-            status = dynInterface_parseSection(intf, descriptor);
-            if (status == OK) {
-                peek = (char)fgetc(descriptor);
-            } else {
-                break;
-            }
-        }
+    TAILQ_INIT(&intf->header);
+    TAILQ_INIT(&intf->annotations);
+    TAILQ_INIT(&intf->types);
+    TAILQ_INIT(&intf->methods);
 
+    char peek = (char)fgetc(descriptor);
+    while (peek == ':') {
+        ungetc(peek, descriptor);
+        status = dynInterface_parseSection(intf, descriptor);
         if (status == OK) {
-            status = dynCommon_eatChar(descriptor, EOF);
+            peek = (char)fgetc(descriptor);
+        } else {
+            break;
         }
-
-        if (status == OK) {
-            status = dynInterface_checkInterface(intf);
-        }
-
-        if (status == OK) { /* We are sure that version field is present in the header */
-        	char* version = NULL;
-            dynInterface_getVersionString(intf,&version);
-            if (version != NULL){
-                intf->version = celix_version_createVersionFromString(version);
-                status = intf->version != NULL ? OK : ERROR;
-            }
-            if (status == ERROR) {
-                celix_err_pushf("Invalid version (%s) in parsed descriptor\n",version);
-            }
-        }
-    } else {
-        status = ERROR;
-        celix_err_pushf("Error allocating memory for dynamic interface\n");
     }
 
     if (status == OK) {
-        *out = intf;
-    } else if (intf != NULL) {
-        dynInterface_destroy(intf);
+        status = dynCommon_eatChar(descriptor, EOF);
+    }
+
+    if (status == OK) {
+        status = dynInterface_checkInterface(intf);
+    }
+
+    if (status == OK) { /* We are sure that version field is present in the header */
+        char* version = NULL;
+        dynInterface_getVersionString(intf,&version);
+        if (version != NULL){
+            intf->version = celix_version_createVersionFromString(version);
+            status = intf->version != NULL ? OK : ERROR;
+        }
+        if (status == ERROR) {
+            celix_err_pushf("Invalid version (%s) in parsed descriptor\n",version);
+        }
+    }
+
+    if (status == OK) {
+        *out = celix_steal_ptr(intf);
     }
     return status;
 }

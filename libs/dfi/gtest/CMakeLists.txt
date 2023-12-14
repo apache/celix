@@ -37,3 +37,15 @@ file(COPY ${CMAKE_CURRENT_LIST_DIR}/descriptors DESTINATION ${CMAKE_CURRENT_BINA
 add_test(NAME run_test_dfi COMMAND test_dfi)
 setup_target_for_coverage(test_dfi SCAN_DIR ..)
 
+if (EI_TESTS)
+	add_executable(test_dfi_with_ei
+			src/dyn_interface_ei_tests.cc
+	)
+	target_link_libraries(test_dfi_with_ei PRIVATE
+			dfi_cut
+			Celix::malloc_ei
+			GTest::gtest GTest::gtest_main
+	)
+	add_test(NAME run_test_dfi_with_ei COMMAND test_dfi_with_ei)
+	setup_target_for_coverage(test_dfi_with_ei SCAN_DIR ..)
+endif ()
