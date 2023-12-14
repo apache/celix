@@ -35,11 +35,6 @@ extern "C" {
 #include "dyn_common.h"
 #include "dyn_message.h"
 
-#if NO_MEMSTREAM_AVAILABLE
-#include "open_memstream.h"
-#include "fmemopen.h"
-#endif
-
 static void checkMessageVersion(dyn_message_type* dynMsg, const char* v){
 	int status = 0;
 

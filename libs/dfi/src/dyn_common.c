@@ -25,11 +25,6 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-#if CELIX_UTILS_NO_MEMSTREAM_AVAILABLE
-#include "open_memstream.h"
-#include "fmemopen.h"
-#endif
-
 static const int OK = 0;
 static const int ERROR = 1;
 

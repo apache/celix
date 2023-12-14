@@ -35,11 +35,6 @@ extern "C" {
 #include "dyn_interface.h"
 #include "version.h"
 
-#if NO_MEMSTREAM_AVAILABLE
-#include "open_memstream.h"
-#include "fmemopen.h"
-#endif
-
     static void checkInterfaceVersion(dyn_interface_type* dynIntf, const char* v) {
         int status;
 

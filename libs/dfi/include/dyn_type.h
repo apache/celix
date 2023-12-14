@@ -31,11 +31,6 @@
 extern "C" {
 #endif
 
-#if defined(NO_MEMSTREAM_AVAILABLE)
-#include "memstream/open_memstream.h"
-#include "memstream/fmemopen.h"
-#endif
-
 /**
  * dyn type (dynamic type) represent a structure in memory. It can be used to calculate the needed memory size, the size
  * and offset of struct members and can be used to dynamically alloc, initialize, dealloc, read & write structure

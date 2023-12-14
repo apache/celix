@@ -28,10 +28,6 @@
 #include "celix_threads.h"
 #include "celix_array_list.h"
 
-#ifdef CELIX_UTILS_NO_MEMSTREAM_AVAILABLE
-#include "memstream/open_memstream.h"
-#endif
-
 #define LOG_NAME        "celix_framework"
 
 struct celix_framework_logger {
