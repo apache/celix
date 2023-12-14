@@ -60,9 +60,9 @@ namespace impl {
     template<typename T>
     void waitForExpired(long bndId, std::weak_ptr<celix::BundleContext> &weakCtx, const char *name,
                         std::weak_ptr<T> &observe) {
-        auto start = std::chrono::system_clock::now();
+        auto start = std::chrono::steady_clock::now();
         while (!observe.expired()) {
-            auto now = std::chrono::system_clock::now();
+            auto now = std::chrono::steady_clock::now();
             auto durationInSec = std::chrono::duration_cast<std::chrono::seconds>(now - start);
             if (durationInSec > std::chrono::seconds{5}) {
                 auto msg = std::string{"Cannot destroy bundle "} + std::to_string(bndId) + ". " + name +
