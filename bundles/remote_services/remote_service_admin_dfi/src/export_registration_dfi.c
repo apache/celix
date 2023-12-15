@@ -29,6 +29,8 @@
 #include "dfi_utils.h"
 #include "remote_interceptors_handler.h"
 
+#include <string.h>
+
 struct export_reference {
     endpoint_description_t *endpoint; //owner
     service_reference_pt reference;

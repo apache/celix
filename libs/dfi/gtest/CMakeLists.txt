@@ -29,7 +29,7 @@ add_executable(test_dfi
 
 
 target_include_directories(test_dfi PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../src)
-target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils libffi::libffi jansson::jansson GTest::gtest GTest::gtest_main)
+target_link_libraries(test_dfi PRIVATE dfi_cut Celix::utils libffi::libffi jansson::jansson GTest::gtest GTest::gtest_main)
 celix_deprecated_utils_headers(test_dfi)
 
 file(COPY ${CMAKE_CURRENT_LIST_DIR}/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
@@ -44,6 +44,7 @@ if (EI_TESTS)
 	target_link_libraries(test_dfi_with_ei PRIVATE
 			dfi_cut
 			Celix::malloc_ei
+			Celix::stdio_ei
 			GTest::gtest GTest::gtest_main
 	)
 	add_test(NAME run_test_dfi_with_ei COMMAND test_dfi_with_ei)

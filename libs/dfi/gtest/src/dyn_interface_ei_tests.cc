@@ -18,10 +18,15 @@
  */
 
 #include "dyn_interface.h"
-#include "malloc_ei.h"
+#include "dyn_common.h"
 #include "celix_err.h"
 #include "celix_stdio_cleanup.h"
+#include "malloc_ei.h"
+#include "stdio_ei.h"
 
+#include <errno.h>
+#include <string.h>
+#include <string>
 #include <gtest/gtest.h>
 
 class DynInterfaceErrorInjectionTestSuite : public ::testing::Test {
@@ -30,6 +35,7 @@ public:
 
     ~DynInterfaceErrorInjectionTestSuite() override {
         celix_ei_expect_calloc(nullptr, 0, nullptr);
+        celix_ei_expect_open_memstream(nullptr, 0, nullptr);
     }
 };
 
@@ -65,4 +71,13 @@ TEST_F(DynInterfaceErrorInjectionTestSuite, ParseError) {
     status = dynInterface_parse(desc, &dynIntf);
     ASSERT_NE(0, status);
     ASSERT_STREQ("Error allocating memory for method entry", celix_err_popLastError());
+
+    rewind(desc);
+    // not enough memory for open_memstream
+    celix_ei_expect_open_memstream((void*) dynCommon_parseNameAlsoAccept, 0, nullptr);
+    status = dynInterface_parse(desc, &dynIntf);
+    ASSERT_NE(0, status);
+    std::string msg = "Error creating mem stream for name. ";
+    msg += strerror(ENOMEM);
+    ASSERT_STREQ(msg.c_str(), celix_err_popLastError());
 }

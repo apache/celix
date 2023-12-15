@@ -29,8 +29,9 @@
 #include "celix_build_assert.h"
 #include "celix_long_hash_map.h"
 #include <sys/queue.h>
-#include <stdbool.h>
 #include <assert.h>
+#include <stdbool.h>
+#include <string.h>
 
 struct rsa_json_rpc_proxy_factory {
     celix_bundle_context_t* ctx;

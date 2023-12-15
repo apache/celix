@@ -34,7 +34,8 @@ if (CELIX_DFI)
 	add_library(dfi SHARED ${SOURCES})
 	target_include_directories(dfi PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-			$<INSTALL_INTERFACE:include/celix/dfi>)
+			$<INSTALL_INTERFACE:include/celix/dfi>
+			PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src)
 	target_link_libraries(dfi PRIVATE libffi::libffi)
 	target_link_libraries(dfi PUBLIC jansson::jansson Celix::utils)##The public header file(dyn_interface.h) Celix::utils(celix_version.h)
 	set_target_properties(dfi PROPERTIES
@@ -63,6 +64,7 @@ if (CELIX_DFI)
 		add_library(dfi_cut STATIC ${SOURCES})
 		target_compile_definitions(dfi_cut PUBLIC CELIX_DFI_STATIC_DEFINE)
 		target_include_directories(dfi_cut PUBLIC
+				${CMAKE_CURRENT_LIST_DIR}/src
 				${CMAKE_CURRENT_LIST_DIR}/include
 				${CMAKE_BINARY_DIR}/celix/gen/includes/dfi
 				)

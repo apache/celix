@@ -38,7 +38,6 @@ static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream)
 static int dynInterface_parseTypes(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseHeader(dyn_interface_type *intf, FILE *stream);
-static int dynInterface_parseNameValueSection(dyn_interface_type *intf, FILE *stream, struct namvals_head *head);
 static int dynInterface_getEntryForHead(struct namvals_head *head, const char *name, char **value);
 
 int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
@@ -168,55 +167,11 @@ static int dynInterface_parseSection(dyn_interface_type *intf, FILE *stream) {
 }
 
 static int dynInterface_parseHeader(dyn_interface_type *intf, FILE *stream) {
-    return dynInterface_parseNameValueSection(intf, stream, &intf->header);
+    return dynCommon_parseNameValueSection(stream, &intf->header);
 }
 
 static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream) {
-    return dynInterface_parseNameValueSection(intf, stream, &intf->annotations);
-}
-
-static int dynInterface_parseNameValueSection(dyn_interface_type *intf, FILE *stream, struct namvals_head *head) {
-    int status = OK;
-
-    int peek = fgetc(stream);
-    while (peek != ':' && peek != EOF) {
-        ungetc(peek, stream);
-
-        char *name = NULL;
-        char *value = NULL;
-        status = dynCommon_parseNameValue(stream, &name, &value);
-
-        if (status == OK) {
-            status = dynCommon_eatChar(stream, '\n');
-        }
-
-        struct namval_entry *entry = NULL;
-        if (status == OK) {
-            entry = calloc(1, sizeof(*entry));
-            if (entry != NULL) {
-                entry->name = name;
-                entry->value = value;
-                TAILQ_INSERT_TAIL(head, entry, entries);
-            } else {
-                status = ERROR;
-                celix_err_pushf("Error allocating memory for namval entry");
-            }
-        }
-
-        if (status != OK) {
-            if (name != NULL) {
-                free(name);
-            }
-            if (value != NULL) {
-                free(value);
-            }
-            break;
-        }
-        peek = fgetc(stream);
-    }
-    ungetc(peek, stream);
-
-    return status;
+    return dynCommon_parseNameValueSection(stream, &intf->annotations);
 }
 
 static int dynInterface_parseTypes(dyn_interface_type *intf, FILE *stream) {

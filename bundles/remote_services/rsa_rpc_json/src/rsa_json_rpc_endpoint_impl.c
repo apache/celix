@@ -29,6 +29,7 @@
 #include <sys/uio.h>
 #include <jansson.h>
 #include <assert.h>
+#include <string.h>
 
 struct rsa_json_rpc_endpoint {
     celix_bundle_context_t* ctx;

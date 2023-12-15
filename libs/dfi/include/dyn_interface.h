@@ -20,7 +20,6 @@
 #ifndef __DYN_INTERFACE_H_
 #define __DYN_INTERFACE_H_
 
-#include "dyn_common.h"
 #include "dyn_type.h"
 #include "dyn_function.h"
 #include "celix_cleanup.h"

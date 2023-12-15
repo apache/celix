@@ -25,8 +25,6 @@
 #include <string.h>
 #include <sys/queue.h>
 
-#include "celix_dfi_export.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,7 +49,7 @@ struct namval_entry {
  * @return 0 if successful, otherwise 1.
  * @alsoseee dynCommon_parseNameAlsoAccept
  */
-CELIX_DFI_EXPORT int dynCommon_parseName(FILE *stream, char **result);
+int dynCommon_parseName(FILE *stream, char **result);
 
 /**
  * @brief Parse the name of dynamic type from the given stream.
@@ -66,7 +64,7 @@ CELIX_DFI_EXPORT int dynCommon_parseName(FILE *stream, char **result);
  * @return 0 if successful, otherwise 1.
  * @alsoseee dynCommon_parseName
  */
-CELIX_DFI_EXPORT int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char **result);
+int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char **result);
 
 /**
  * @brief Parse the name and value of a name-value pair from the given stream. The name is only allowed to contain [a-zA-Z0-9_].
@@ -80,7 +78,24 @@ CELIX_DFI_EXPORT int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acc
  * @param[out] value The value of the name-value pair.
  * @return 0 if successful, otherwise 1.
  */
-CELIX_DFI_EXPORT int dynCommon_parseNameValue(FILE *stream, char **name, char **value);
+int dynCommon_parseNameValue(FILE *stream, char **name, char **value);
+
+/**
+ * @brief Parses a section of name-value pairs from the given stream. The name is only allowed to contain [a-zA-Z0-9_].
+ *
+ * This function reads from the provided stream until it encounters a new section or EOF.
+ * Each name-value pair is added to the provided namvals_head structure.
+ *
+ * The caller is responsible for managing the memory of the namvals_head structure.
+ * Use `dynCommon_clearNamValHead` to clear the name-value pairs when they are no longer needed.
+ *
+ * In case of an error, an error message is added to celix_err.
+ *
+ * @param[in] stream The input stream.
+ * @param[out] head The namvals_head structure where the parsed name-value pairs will be stored.
+ * @return 0 if successful, otherwise 1.
+ */
+int dynCommon_parseNameValueSection(FILE *stream, struct namvals_head *head);
 
 /**
  * @brief Eat the given character from the given stream.
@@ -91,14 +106,14 @@ CELIX_DFI_EXPORT int dynCommon_parseNameValue(FILE *stream, char **name, char **
  * @param[in] c The character to be eaten.
  * @return 0 if successful, otherwise 1.
  */
-CELIX_DFI_EXPORT int dynCommon_eatChar(FILE *stream, int c);
+int dynCommon_eatChar(FILE *stream, int c);
 
 /**
  * @brief Clear the given name-value pairs.
  *
  * @param[in] head The name-value pairs to be cleared.
  */
-CELIX_DFI_EXPORT void dynCommon_clearNamValHead(struct namvals_head *head);
+void dynCommon_clearNamValHead(struct namvals_head *head);
 
 #ifdef __cplusplus
 }

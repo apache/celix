@@ -20,7 +20,6 @@
 #ifndef __DYN_MESSAGE_H_
 #define __DYN_MESSAGE_H_
 
-#include "dyn_common.h"
 #include "dyn_type.h"
 #include "celix_version.h"
 #include "celix_dfi_export.h"

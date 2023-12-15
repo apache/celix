@@ -42,7 +42,6 @@ static int dynMessage_parseAnnotations(dyn_message_type *msg, FILE *stream);
 static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream);
 static int dynMessage_parseMessage(dyn_message_type *msg, FILE *stream);
 static int dynMessage_parseHeader(dyn_message_type *msg, FILE *stream);
-static int dynMessage_parseNameValueSection(dyn_message_type *msg, FILE *stream, struct namvals_head *head);
 static int dynMessage_checkMessage(dyn_message_type *msg);
 static int dynMessage_getEntryForHead(struct namvals_head *head, const char *name, char **value);
 
@@ -165,55 +164,11 @@ static int dynMessage_parseSection(dyn_message_type *msg, FILE *stream) {
 }
 
 static int dynMessage_parseHeader(dyn_message_type *msg, FILE *stream) {
-    return dynMessage_parseNameValueSection(msg, stream, &msg->header);
+    return dynCommon_parseNameValueSection(stream, &msg->header);
 }
 
 static int dynMessage_parseAnnotations(dyn_message_type *msg, FILE *stream) {
-    return dynMessage_parseNameValueSection(msg, stream, &msg->annotations);
-}
-
-static int dynMessage_parseNameValueSection(dyn_message_type *msg, FILE *stream, struct namvals_head *head) {
-    int status = OK;
-
-    int peek = fgetc(stream);
-    while (peek != ':' && peek != EOF) {
-        ungetc(peek, stream);
-
-        char *name = NULL;
-        char *value = NULL;
-        status = dynCommon_parseNameValue(stream, &name, &value);
-
-        if (status == OK) {
-            status = dynCommon_eatChar(stream, '\n');
-        }
-
-        struct namval_entry *entry = NULL;
-        if (status == OK) {
-            entry = calloc(1, sizeof(*entry));
-            if (entry != NULL) {
-                entry->name = name;
-                entry->value = value;
-                TAILQ_INSERT_TAIL(head, entry, entries);
-            } else {
-                status = ERROR;
-                celix_err_pushf("Error allocating memory for namval entry");
-            }
-        }
-
-        if (status != OK) {
-            if (name != NULL) {
-                free(name);
-            }
-            if (value != NULL) {
-                free(value);
-            }
-            break;
-        }
-        peek = fgetc(stream);
-    }
-    ungetc(peek, stream);
-
-    return status;
+    return dynCommon_parseNameValueSection(stream, &msg->annotations);
 }
 
 static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
