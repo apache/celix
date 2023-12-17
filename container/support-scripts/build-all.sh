@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,21 +17,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories(
-        ${PROJECT_SOURCE_DIR}/framework/public/include
-        ${PROJECT_SOURCE_DIR}/utils/public/include
-)
+BUILD_TYPE=${1:-Debug}
 
-add_celix_bundle(topology_manager_test_bundle
-    VERSION 0.0.1
-    SOURCES
-        tst_activator.c   
-)
-celix_bundle_files(topology_manager_test_bundle
-    org.apache.celix.test.MyBundle.descriptor
-    DESTINATION .
-)
+cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+      -DCMAKE_INSTALL_PREFIX=../celix-install \
+      -DBUILD_EXPERIMENTAL=ON \
+      -DENABLE_TESTING=ON \
+      -DRSA_JSON_RPC=ON \
+      -DRSA_SHM=ON \
+      -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON \
+      ..
 
-target_link_libraries(topology_manager_test_bundle PRIVATE Celix::c_rsa_spi calculator_api)
-celix_deprecated_utils_headers(topology_manager_test_bundle)
-celix_deprecated_framework_headers(topology_manager_test_bundle)

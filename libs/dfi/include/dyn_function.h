@@ -46,7 +46,6 @@ extern "C" {
 typedef struct _dyn_function_type dyn_function_type;
 
 DFI_SETUP_LOG_HEADER(dynFunction);
-DFI_SETUP_LOG_HEADER(dynAvprFunction);
 
 enum dyn_function_argument_meta {
     DYN_FUNCTION_ARGUMENT_META__STD = 0,
@@ -158,34 +157,6 @@ CELIX_DFI_EXPORT int dynFunction_getFnPointer(dyn_function_type *func, void (**f
  * Will return false if return is void.
  */
 CELIX_DFI_EXPORT bool dynFunction_hasReturn(dyn_function_type *dynFunction);
-
-/**
- * @brief Creates a dyn_function_type according to the given avpr descriptor string.
- *
- * The caller is the owner of the dynFunc and the dynFunc should be freed using dynFunction_destroy.
- *
- * In case of an error, an error message is added to celix_err.
- *
- * @param[in] avpr The string containing the avpr descriptor.
- * @param[in] fqn The fully qualified name of the function.
- * @return The dynamic type instance for function or NULL if the avpr could not be parsed.
- * @deprecated AVRO is deprecated and will be removed in the future.
- */
-CELIX_DFI_DEPRECATED_EXPORT dyn_function_type * dynFunction_parseAvprWithStr(const char * avpr, const char * fqn);
-
-/**
- * @brief Creates a dyn_function_type according to the given avpr descriptor stream.
- *
- * The caller is the owner of the dynFunc and the dynFunc should be freed using dynFunction_destroy.
- *
- * In case of an error, an error message is added to celix_err.
- *
- * @param[in] avprStream The stream containing the avpr descriptor.
- * @param[in] fqn The fully qualified name of the function.
- * @return The dynamic type instance for function or NULL if the avpr could not be parsed.
- * @deprecated AVRO is deprecated and will be removed in the future.
- */
-CELIX_DFI_DEPRECATED_EXPORT dyn_function_type * dynFunction_parseAvpr(FILE * avprStream, const char * fqn);
 
 #ifdef __cplusplus
 }

@@ -20,6 +20,7 @@
 
 /.project
 .DS_Store
+.clion.source.upload.marker
 .idea
 .vscode
 *.iml

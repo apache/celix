@@ -21,6 +21,7 @@ limitations under the License.
 ![Celix MacOS](https://github.com/apache/celix/workflows/Celix%20MacOS/badge.svg)
 [![codecov](https://codecov.io/gh/apache/celix/branch/master/graph/badge.svg)](https://codecov.io/gh/apache/celix)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/6685/badge.svg)](https://scan.coverity.com/projects/6685)
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/apache/celix)
 
 Apache Celix is a framework for C and C++14 to develop dynamic modular software applications using component 
 and in-process service-oriented programming. 

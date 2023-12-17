@@ -57,7 +57,6 @@ class CelixConan(ConanFile):
         "build_pubsub_wire_protocol_v1": False,
         "build_pubsub_wire_protocol_v2": False,
         "build_pubsub_json_serializer": False,
-        "build_pubsub_avrobin_serializer": False,
         "build_pubsub_psa_zmq": False,
         "build_pubsub_examples": False,
         "build_pubsub_integration": False,
@@ -234,7 +233,7 @@ class CelixConan(ConanFile):
         if options["build_pubsub_wire_protocol_v2"]:
             options["build_pubsub"] = True
 
-        if options["build_pubsub_json_serializer"] or options["build_pubsub_avrobin_serializer"]:
+        if options["build_pubsub_json_serializer"]:
             options["build_pubsub"] = True
 
         if options["build_pubsub"]:
@@ -369,19 +368,19 @@ class CelixConan(ConanFile):
         if self.options.build_utils:
             self.requires("libzip/[>=1.7.3 <2.0.0]")
         if self.options.build_framework or self.options.build_pubsub:
-            self.requires("util-linux-libuuid/2.39")
+            self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
         if ((self.options.build_framework and self.options.framework_curlinit)
                 or self.options.build_celix_etcdlib
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
                 or self.options.build_launcher):
-            self.requires("libcurl/[>=7.64.1 <8.0.0]")
+            self.requires("libcurl/[>=8.4.0 <9.0.0]")
         if (self.options.build_rsa_discovery_common
                 or (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
         if self.options.build_cxx_remote_service_admin:
             self.requires("rapidjson/[>=1.1.0 <2.0.0]")
         if self.options.build_pubsub_psa_zmq:
-            self.requires("zeromq/4.3.4")
+            self.requires("zeromq/[>=4.3.4 <5.0.0]")
             self.requires("czmq/4.2.0")
         if self.options.build_http_admin or self.options.build_rsa_discovery_common \
                 or self.options.build_rsa_remote_service_admin_dfi:
