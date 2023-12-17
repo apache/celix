@@ -46,20 +46,8 @@ public:
                 });
         counter++;
     }
-
-    void start() {
-        stream = calculator->result();
-        stream->forEach([](double val) {
-            fprintf(stdout, "calc result stream: %f\n", val);
-        });
-    }
-
-    void stop() {
-        stream.reset();
-    }
 private:
     std::shared_ptr<ICalculator> calculator{};
-    std::shared_ptr<celix::PushStream<double>> stream{};
 };
 
 class CalculatorConsumerActivator {
@@ -71,7 +59,6 @@ public:
                 .setCallbacks(&CalculatorConsumer::setCalculator);
         cmp.createProvidedService<celix::IShellCommand>()
                 .addProperty(celix::IShellCommand::COMMAND_NAME, "calc");
-        cmp.setCallbacks(nullptr, &CalculatorConsumer::start, &CalculatorConsumer::stop, nullptr);
         cmp.build();
 
         //bootstrap own configured import discovery to the configured discovery manager

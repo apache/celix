@@ -102,38 +102,19 @@ static void sendMsgWithIpc(const celix::LogHelper& logHelper, int qidSender, con
     }
 }
 
-static int getConsumer2ProviderChannelId(std::string& scope, std::string& topic) {
-    auto c2pChannel = std::string{"c2p"} + "/" + scope + "/" + topic; //client 2 provider channel
-    auto c2pId = (int)celix_utils_stringHash(c2pChannel.c_str());
-    return c2pId;
-}
-
-static long getProvider2ConsumerChannelId(std::string& scope, std::string& topic) {
-    auto p2cChannel = std::string{"p2c"} + "/" + scope + "/" + topic; //provider 2 client channel
-    int p2cId = (int)celix_utils_stringHash(p2cChannel.c_str());
-    return p2cId;
-}
-
 /**
  * A importedCalculater which acts as a pubsub proxy to a imported remote service.
  */
 class ImportedCalculator final : public ICalculator {
 public:
-    explicit ImportedCalculator(celix::LogHelper _logHelper, int c2pChannelId, int p2cChannelId) : logHelper{std::move(_logHelper)} {
+    explicit ImportedCalculator(celix::LogHelper _logHelper, long c2pChannelId, long p2cChannelId) : logHelper{std::move(_logHelper)} {
         setupMsgIpc(c2pChannelId, p2cChannelId);
     }
 
-    ~ImportedCalculator() noexcept override {
-        //failing al leftover deferreds
-        {
-            std::lock_guard lock{mutex};
-            for (auto& pair : deferreds) {
-                pair.second.fail(celix::rsa::RemoteServicesException{"Shutting down proxy"});
-            }
-        }
-    };
+    ~ImportedCalculator() noexcept override = default;
 
     std::shared_ptr<celix::PushStream<double>> result() override {
+        std::lock_guard lock{mutex};
         return stream;
     }
 
@@ -158,6 +139,7 @@ public:
     }
 
     int start() {
+        std::lock_guard lock{mutex};
         ses = psp->createSynchronousEventSource<double>(factory);
         stream = psp->createStream<double>(ses, factory);
         running.store(true, std::memory_order::memory_order_release);
@@ -176,6 +158,8 @@ public:
         running.store(false, std::memory_order::memory_order_release);
         receiveThread.join();
         receiveThread = {};
+        cleanupDeferreds();
+        std::lock_guard lock{mutex};
         ses->close();
         ses.reset();
         stream.reset();
@@ -197,7 +181,10 @@ public:
     }
 
 private:
-    void setupMsgIpc(int c2pChannelId, int p2cChannelId) {
+    void setupMsgIpc(long c2pChannelId, long p2cChannelId) {
+        logHelper.debug("Creating msg queue for ImportedCalculator with c2pChannelId=%li and p2cChannelId=%li",
+                    c2pChannelId,
+                    p2cChannelId);
         int keySender = (int)c2pChannelId;
         int keyReceiver = (int)p2cChannelId;
         qidSender = msgget(keySender, 0666 | IPC_CREAT);
@@ -205,7 +192,19 @@ private:
 
         if (qidSender == -1 || qidReceiver == -1) {
             throw std::logic_error{"RsaShmClient: Error creating msg queue."};
+        } else {
+            logHelper.info("Created msg queue for ImportedCalculator with qidSender=%i and qidReceiver=%i",
+                           qidSender,
+                           qidReceiver);
         }
+    }
+
+    void cleanupDeferreds() {
+        std::lock_guard lock{mutex};
+        for (auto& pair : deferreds) {
+            pair.second.tryFail(celix::rsa::RemoteServicesException{"Shutting down proxy"});
+        }
+        deferreds.clear();
     }
 
     void receiveMessages() {
@@ -233,9 +232,9 @@ private:
             lock.unlock();
 
             if (ret.hasError) {
-                deferred.fail(celix::rsa::RemoteServicesException{ret.errorMsg});
+                deferred.tryFail(celix::rsa::RemoteServicesException{ret.errorMsg});
             } else {
-                deferred.resolve(ret.result);
+                deferred.tryResolve(ret.result);
             }
         } catch (const IpcException& e) {
             logHelper.error("IpcException: %s", e.what());
@@ -249,6 +248,7 @@ private:
                 return; // no message available (yet)
             }
             auto event = msg.value().mtext;
+            logHelper.trace("Received event %f", event.eventData);
 
             if (event.hasError) {
                 logHelper.error("Received error event %s", event.errorMsg);
@@ -312,7 +312,7 @@ private:
  */
 class CalculatorImportServiceFactory final : public celix::rsa::IImportServiceFactory {
 public:
-    static constexpr const char * const CONFIGS = "pubsub";
+    static constexpr const char * const CONFIGS = "ipc-mq";
 
     explicit CalculatorImportServiceFactory(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)}, logHelper{ctx, "celix::rsa::RemoteServiceFactory"} {}
     ~CalculatorImportServiceFactory() noexcept override = default;
@@ -332,10 +332,11 @@ public:
 
 private:
     std::string createImportedCalculatorComponent(const celix::rsa::EndpointDescription& endpoint) {
-        auto topic = endpoint.getProperties().get("endpoint.topic");
-        auto scope = endpoint.getProperties().get("endpoint.scope");
-        auto c2pChannelId = getConsumer2ProviderChannelId(scope, topic);
-        auto p2cChannelId = getProvider2ConsumerChannelId(scope, topic);
+        for (auto it : endpoint.getProperties()) {
+            logHelper.info("Endpoint property %s=%s", it.first.c_str(), it.second.c_str());
+        }
+        auto c2pChannelId = endpoint.getProperties().getAsLong("endpoint.client.to.provider.channel.id",  -1);
+        auto p2cChannelId = endpoint.getProperties().getAsLong("endpoint.provider.to.client.channel.id",  -1);
 
         auto& cmp = ctx->getDependencyManager()->createComponent(std::make_unique<ImportedCalculator>(logHelper, c2pChannelId, p2cChannelId));
         cmp.createServiceDependency<celix::PromiseFactory>()
@@ -378,7 +379,7 @@ private:
  */
 class ExportedCalculator final {
 public:
-    explicit ExportedCalculator(celix::LogHelper _logHelper, int c2pChannelId, int p2cChannelId) : logHelper{std::move(_logHelper)} {
+    explicit ExportedCalculator(celix::LogHelper _logHelper, long c2pChannelId, long p2cChannelId) : logHelper{std::move(_logHelper)} {
         setupMsgIpc(c2pChannelId, p2cChannelId);
     }
 
@@ -434,7 +435,10 @@ public:
         calculator = calc;
     }
 private:
-    void setupMsgIpc(int c2pChannelId, int p2cChannelId) {
+    void setupMsgIpc(long c2pChannelId, long p2cChannelId) {
+        logHelper.debug("Creating msg queue for ExportCalculator with c2pChannelId=%li and p2cChannelId=%li",
+                        c2pChannelId,
+                        p2cChannelId);
         //note reverse order of sender and receiver compared to ImportedCalculator
         int keySender = (int)p2cChannelId;
         int keyReceiver = (int)c2pChannelId;
@@ -443,6 +447,10 @@ private:
 
         if (qidSender == -1 || qidReceiver == -1) {
             throw std::logic_error{"RsaShmClient: Error creating msg queue."};
+        } else {
+            logHelper.info("Created msg queue for ExportCalculator with qidSender=%i and qidReceiver=%i",
+                           qidSender,
+                           qidReceiver);
         }
     }
 
@@ -518,7 +526,7 @@ private:
  */
 class CalculatorExportServiceFactory final : public celix::rsa::IExportServiceFactory {
 public:
-    static constexpr const char * const CONFIGS = "pubsub";
+    static constexpr const char * const CONFIGS = "ipc-mq";
     static constexpr const char * const INTENTS = "osgi.async";
 
     explicit CalculatorExportServiceFactory(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)},
@@ -544,13 +552,12 @@ public:
 
 private:
     std::string createExportedCalculatorComponent(const celix::Properties& serviceProperties) {
-        auto topic = serviceProperties.get("endpoint.topic");
-        auto scope = serviceProperties.get("endpoint.scope");
-        auto c2pChannelId = getConsumer2ProviderChannelId(scope, topic);
-        auto p2cChannelId = getProvider2ConsumerChannelId(scope, topic);
+        auto c2pChannelId = serviceProperties.getAsLong("endpoint.client.to.provider.channel.id",  -1);
+        auto p2cChannelId = serviceProperties.getAsLong("endpoint.provider.to.client.channel.id",  -1);
         auto svcId = serviceProperties.get(celix::SERVICE_ID);
 
-        auto& cmp = ctx->getDependencyManager()->createComponent(std::make_unique<ExportedCalculator>(logHelper, c2pChannelId, p2cChannelId));
+        auto& cmp = ctx->getDependencyManager()->createComponent(
+            std::make_unique<ExportedCalculator>(logHelper, c2pChannelId, p2cChannelId));
 
         cmp.createServiceDependency<celix::PromiseFactory>()
                 .setRequired(true)

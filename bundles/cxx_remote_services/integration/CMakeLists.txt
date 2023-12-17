@@ -41,39 +41,36 @@ if (CXX_RSA_INTEGRATION)
     endif()
 
     ################# Integration examples ##################################
+    add_celix_container(RemoteCalculatorProvider
+        CXX
+        GROUP rsa
+        PROPERTIES
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=debug
+        BUNDLES
+            Celix::ShellCxx
+            Celix::shell_tui
 
-    if (BUILD_LAUNCHER)
-        add_celix_container(RemoteCalculatorProvider
-            CXX
-            GROUP rsa
-            PROPERTIES
-                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=debug
-            BUNDLES
-                Celix::ShellCxx
-                Celix::shell_tui
+            #Remote Services
+            Celix::RemoteServiceAdmin
+            TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
 
-                #Remote Services
-                Celix::RemoteServiceAdmin
-                TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
+            CalculatorProvider
+    )
 
-                CalculatorProvider
-        )
+    add_celix_container(RemoteCalculatorConsumer
+        CXX
+        GROUP rsa
+        PROPERTIES
+            CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=debug
+        BUNDLES
+            Celix::ShellCxx
+            Celix::shell_tui
 
-        add_celix_container(RemoteCalculatorConsumer
-            CXX
-            GROUP rsa
-            PROPERTIES
-                CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=debug
-            BUNDLES
-                Celix::ShellCxx
-                Celix::shell_tui
+            #Remote Services
+            Celix::RsaConfiguredDiscovery
+            Celix::RemoteServiceAdmin
+            TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
 
-                #Remote Services
-                Celix::RsaConfiguredDiscovery
-                Celix::RemoteServiceAdmin
-                TestExportImportRemoteServiceFactory #needed to be able to create a ExportedService for ICalculator
-
-                CalculatorConsumer
-        )
-    endif ()
+            CalculatorConsumer
+    )
 endif()

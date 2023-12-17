@@ -74,9 +74,6 @@ public:
     }
 
     void invokeRemoteCalcService() {
-        installProviderBundles();
-        installConsumerBundles();
-
         //If a calculator provider bundle is installed I expect a exported calculator interface
         auto count = serverCtx->useService<ICalculator>()
                 .setFilter("(service.exported.interfaces=*)")
@@ -98,8 +95,8 @@ public:
 
         /*
          * Testing the remote service in a while loop till it is successful or 10 seconds has passed.
-         * Note that because pubsub does not guarantee a connection when used, it is possible - and likely -
-         * that the first remote test iteration fails due to not yet completely connected pubsub.
+         * Note that because mq does not guarantee a connection when used, it is possible - and likely -
+         * that the first remote test iteration fails due to not yet completely connected mq.
          */
         auto start = std::chrono::system_clock::now();
         auto now = std::chrono::system_clock::now();
@@ -156,5 +153,7 @@ TEST_F(RemoteServicesIntegrationTestSuite, StartStopFrameworks) {
 }
 
 TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService) {
+    installProviderBundles();
+    installConsumerBundles();
     invokeRemoteCalcService();
 }
