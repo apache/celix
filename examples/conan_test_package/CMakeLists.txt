@@ -262,21 +262,6 @@ if (TEST_LOG_SERVICE_API)
     target_link_libraries(use_log_service_api PRIVATE Celix::log_service_api)
 endif ()
 
-option(TEST_PUBSUB_WIRE_PROTOCOL_V1 "Test pubsub wire protocol v1" OFF)
-if (TEST_PUBSUB_WIRE_PROTOCOL_V1)
-    add_celix_container("use_pubsub_wire_protocol_v1" BUNDLES Celix::celix_pubsub_protocol_wire_v1 hello)
-endif ()
-
-option(TEST_PUBSUB_WIRE_PROTOCOL_V2 "Test pubsub wire protocol v2" OFF)
-if (TEST_PUBSUB_WIRE_PROTOCOL_V2)
-    add_celix_container("use_pubsub_wire_protocol_v2" BUNDLES Celix::celix_pubsub_protocol_wire_v2 hello)
-endif ()
-
-option(TEST_PUBSUB_JSON_SERIALIZER "Test pubsub json serializer" OFF)
-if (TEST_PUBSUB_JSON_SERIALIZER)
-    add_celix_container("use_pubsub_json_serializer" BUNDLES Celix::celix_pubsub_serializer_json hello)
-endif ()
-
 option(TEST_CXX_REMOTE_SERVICE_ADMIN "Test C++ remote service admin" OFF)
 if (TEST_CXX_REMOTE_SERVICE_ADMIN)
     add_celix_container("use_cxx_remote_service_admin" BUNDLES Celix::RemoteServiceAdmin hello)
