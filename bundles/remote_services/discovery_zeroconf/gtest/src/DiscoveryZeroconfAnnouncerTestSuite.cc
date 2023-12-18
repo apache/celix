@@ -32,17 +32,22 @@ extern "C" {
 #include "eventfd_ei.h"
 #include "celix_threads_ei.h"
 #include "celix_bundle_context_ei.h"
+#include "celix_string_hash_map_ei.h"
+#include "celix_array_list_ei.h"
+#include "celix_properties_ei.h"
+#include "celix_utils_ei.h"
 #include "mdnsresponder_ei.h"
 #include "malloc_ei.h"
 #include <gtest/gtest.h>
 #include <netinet/in.h>
 #include <net/if.h>
-#include <sys/types.h>
 #include <netdb.h>
 #include <ifaddrs.h>
 #include <cstring>
 #include <unistd.h>
-#include <stdlib.h>
+#include <cstdlib>
+
+#define DZC_TEST_CONFIG_TYPE "celix.config_type.test"
 
 static int GetLoopBackIfIndex(void);
 
@@ -77,6 +82,10 @@ public:
         celix_ei_expect_DNSServiceProcessResult(nullptr, 0, 0);
         celix_ei_expect_TXTRecordSetValue(nullptr, 0, 0);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
+        celix_ei_expect_celix_stringHashMap_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_properties_copy(nullptr, 0, nullptr);
+        celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
     }
 
     std::shared_ptr<celix_framework_t> fw{};
@@ -134,6 +143,20 @@ TEST_F(DiscoveryZeroconfAnnouncerTestSuite, CreateAnnouncerFailed6) {
     EXPECT_EQ(status, CELIX_ENOMEM);
 }
 
+TEST_F(DiscoveryZeroconfAnnouncerTestSuite, CreateAnnouncerFailed7) {
+    discovery_zeroconf_announcer_t *announcer{nullptr};
+    celix_ei_expect_celix_stringHashMap_create((void*)&discoveryZeroconfAnnouncer_create, 0, nullptr);
+    auto status = discoveryZeroconfAnnouncer_create(ctx.get(), logHelper.get(), &announcer);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+}
+
+TEST_F(DiscoveryZeroconfAnnouncerTestSuite, CreateAnnouncerFailed8) {
+    discovery_zeroconf_announcer_t *announcer{nullptr};
+    celix_ei_expect_celix_arrayList_create((void*)&discoveryZeroconfAnnouncer_create, 0, nullptr);
+    auto status = discoveryZeroconfAnnouncer_create(ctx.get(), logHelper.get(), &announcer);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+}
+
 TEST_F(DiscoveryZeroconfAnnouncerTestSuite, ConnectDNSServiceOneTimeFailure) {
     discovery_zeroconf_announcer_t *announcer{nullptr};
     celix_ei_expect_DNSServiceCreateConnection(CELIX_EI_UNKNOWN_CALLER, 0, kDNSServiceErr_Unknown);
@@ -181,9 +204,9 @@ static void OnServiceBrowseCallback(DNSServiceRef sdRef, DNSServiceFlags flags, 
         EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
         DNSServiceProcessResult(dsRef);
         EXPECT_TRUE(celix_properties_getAsLong(prop, DZC_SERVICE_PROPERTIES_SIZE_KEY, 0) > 0);
-        //The txt record should not include DZC_SERVICE_ANNOUNCED_IF_INDEX_KEY,DZC_SERVICE_TYPE_KEY
-        EXPECT_EQ(nullptr, celix_properties_get(prop, CELIX_RSA_NETWORK_INTERFACES, nullptr));
-        //EXPECT_EQ(nullptr, celix_properties_get(prop, DZC_SERVICE_TYPE_KEY, nullptr));TODO
+        //The txt record should not include ifname and port key
+        EXPECT_EQ(nullptr, celix_properties_get(prop, DZC_TEST_CONFIG_TYPE".ifname", nullptr));
+        EXPECT_EQ(nullptr, celix_properties_get(prop, DZC_TEST_CONFIG_TYPE".port", nullptr));
         DNSServiceRefDeallocate(dsRef);
         celix_properties_destroy(prop);
     }
@@ -195,17 +218,17 @@ static void OnUseServiceCallback(void *handle, void *svc) {
     const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
     if (t->ifIndex == kDNSServiceInterfaceIndexAny) {
-        celix_properties_set(properties, CELIX_RSA_NETWORK_INTERFACES, "all");
+        celix_properties_set(properties, DZC_TEST_CONFIG_TYPE".ifname", "all");
     } else if (t->ifIndex > 0) {
         char ifName[IF_NAMESIZE] = {0};
-        celix_properties_set(properties, CELIX_RSA_NETWORK_INTERFACES, if_indextoname(t->ifIndex, ifName));
+        celix_properties_set(properties, DZC_TEST_CONFIG_TYPE".ifname", if_indextoname(t->ifIndex, ifName));
     }
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, "dzc_test_service");
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "100");
     celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "dzc_test_config_type");
+    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
     endpoint_description_t *endpoint{};
     auto status = endpointDescription_create(properties,&endpoint);
     EXPECT_EQ(status, CELIX_SUCCESS);
@@ -260,7 +283,7 @@ static void OnUseServiceCallbackForRegisterServiceFailure(void *handle, void *sv
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "100");
     celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "dzc_test_config_type");
+    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
     endpoint_description_t *endpoint{};
     auto status = endpointDescription_create(properties,&endpoint);
     EXPECT_EQ(status, CELIX_SUCCESS);
@@ -298,17 +321,17 @@ static void OnUseServiceCallbackForNameConflict(void *handle, void *svc) {
     const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
     if (t->ifIndex == kDNSServiceInterfaceIndexAny) {
-        celix_properties_set(properties, CELIX_RSA_NETWORK_INTERFACES, "all");
+        celix_properties_set(properties, DZC_TEST_CONFIG_TYPE".ifname", "all");
     } else if (t->ifIndex > 0) {
         char ifName[IF_NAMESIZE] = {0};
-        celix_properties_set(properties, CELIX_RSA_NETWORK_INTERFACES, if_indextoname(t->ifIndex, ifName));
+        celix_properties_set(properties, DZC_TEST_CONFIG_TYPE".ifname", if_indextoname(t->ifIndex, ifName));
     }
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, "dzc_test_service");
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "100");
     celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "dzc_test_config_type");
+    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
     endpoint_description_t *endpoint{};
     auto status = endpointDescription_create(properties,&endpoint);
     EXPECT_EQ(status, CELIX_SUCCESS);
@@ -403,17 +426,17 @@ static void OnUseServiceWithJumboEndpointCallback(void *handle, void *svc) {
     const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
     if (t->ifIndex == kDNSServiceInterfaceIndexAny) {
-        celix_properties_set(properties, CELIX_RSA_NETWORK_INTERFACES, "all");
+        celix_properties_set(properties, DZC_TEST_CONFIG_TYPE".ifname", "all");
     } else if (t->ifIndex > 0) {
         char ifName[IF_NAMESIZE] = {0};
-        celix_properties_set(properties, CELIX_RSA_NETWORK_INTERFACES, if_indextoname(t->ifIndex, ifName));
+        celix_properties_set(properties, DZC_TEST_CONFIG_TYPE".ifname", if_indextoname(t->ifIndex, ifName));
     }
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, "dzc_test_service");
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "100");
     celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "dzc_test_config_type");
+    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
     for (int i = 0; i < 500; ++i) {
         char key[20]{};
         sprintf(key,"custom_key%d", i);
@@ -473,8 +496,7 @@ static void OnUseServiceWithInvalidEndpointCallback(void *handle, void *svc) {
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "100");
     celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "dzc_test_config_type");
-    //celix_properties_set(properties, DZC_SERVICE_TYPE_KEY, "invalid_service_type_because_the_size_large_than_48");TODO
+    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "celix.invalid_service_type_because_the_size_large_than_64_----------------");
     endpoint_description_t *endpoint{};
     status = endpointDescription_create(properties,&endpoint);
     EXPECT_EQ(status, CELIX_SUCCESS);
@@ -483,8 +505,32 @@ static void OnUseServiceWithInvalidEndpointCallback(void *handle, void *svc) {
     status = epl->endpointAdded(epl->handle, endpoint, nullptr);
     EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
 
+    //imported config too long
+    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "celix.imported_config_too_long_for_port-----------------------------------------------------------------------------.subtype");
+    status = epl->endpointAdded(epl->handle, endpoint, nullptr);
+    EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "celix.imported_config_too_long_for_ifname-------------------------------------------------------------------------.subtype");
+    status = epl->endpointAdded(epl->handle, endpoint, nullptr);
+    EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+
+    //too many imported configs
+    char configTypes[256] = "config_type";
+    auto offset = strlen(configTypes);
+    int i = 0;
+    while (offset < 256) {
+        offset += snprintf(configTypes + offset, 256 - offset, ",config_type-%d", ++i);
+    }
+    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, configTypes);
+    status = epl->endpointAdded(epl->handle, endpoint, nullptr);
+    EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+
+    //lost imported config
+    celix_properties_unset(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS);
+    status = epl->endpointAdded(epl->handle, endpoint, nullptr);
+    EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+
     //lost service name
-    //celix_properties_unset(properties, DZC_SERVICE_TYPE_KEY);//TODO
+    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
     celix_properties_unset(properties, CELIX_FRAMEWORK_SERVICE_NAME);
     status = epl->endpointAdded(epl->handle, endpoint, nullptr);
     EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
@@ -507,24 +553,54 @@ static void OnUseServiceForAddEndpointENOMEM(void *handle, void *svc) {
     const char *fwUuid = celix_bundleContext_getProperty(t->ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
     if (t->ifIndex == kDNSServiceInterfaceIndexAny) {
-        celix_properties_set(properties, CELIX_RSA_NETWORK_INTERFACES, "all");
+        celix_properties_set(properties, DZC_TEST_CONFIG_TYPE".ifname", "all");
     } else if (t->ifIndex > 0) {
         char ifName[IF_NAMESIZE] = {0};
-        celix_properties_set(properties, CELIX_RSA_NETWORK_INTERFACES, if_indextoname(t->ifIndex, ifName));
+        celix_properties_set(properties, DZC_TEST_CONFIG_TYPE".ifname", if_indextoname(t->ifIndex, ifName));
     }
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, "dzc_test_service");
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
     celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "100");
     celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "dzc_test_config_type");
+    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
     endpoint_description_t *endpoint{};
     auto status = endpointDescription_create(properties,&endpoint);
     EXPECT_EQ(status, CELIX_SUCCESS);
 
+    celix_ei_expect_celix_properties_copy(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    status = epl->endpointAdded(epl->handle, endpoint, nullptr);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    celix_ei_expect_celix_properties_copy(nullptr, 0, nullptr);
+
+    celix_ei_expect_celix_stringHashMap_createWithOptions(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    status = epl->endpointAdded(epl->handle, endpoint, nullptr);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    celix_ei_expect_celix_stringHashMap_createWithOptions(nullptr, 0, nullptr);
+
+    celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    status = epl->endpointAdded(epl->handle, endpoint, nullptr);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
+
+    celix_ei_expect_celix_stringHashMap_put(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM);
+    status = epl->endpointAdded(epl->handle, endpoint, nullptr);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    celix_ei_expect_celix_stringHashMap_put(nullptr, 0, 0);
+
     celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
     status = epl->endpointAdded(epl->handle, endpoint, nullptr);
     EXPECT_EQ(status, CELIX_ENOMEM);
+
+    celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 2);
+    status = epl->endpointAdded(epl->handle, endpoint, nullptr);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
+
+    celix_ei_expect_celix_stringHashMap_put(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM, 2);
+    status = epl->endpointAdded(epl->handle, endpoint, nullptr);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    celix_ei_expect_celix_stringHashMap_put(nullptr, 0, 0);
 
     epl->endpointRemoved(epl->handle, endpoint, nullptr);
 

@@ -55,4 +55,11 @@ celix_status_t __wrap_celix_stringHashMap_putDouble(celix_string_hash_map_t* map
     return __real_celix_stringHashMap_putDouble(map, key, value);
 }
 
+celix_status_t __real_celix_stringHashMap_putBool(celix_string_hash_map_t* map, long key, bool value);
+CELIX_EI_DEFINE(celix_stringHashMap_putBool, celix_status_t)
+celix_status_t __wrap_celix_stringHashMap_putBool(celix_string_hash_map_t* map, long key, bool value) {
+    CELIX_EI_IMPL(celix_stringHashMap_putBool);
+    return __real_celix_stringHashMap_putBool(map, key, value);
+}
+
 }

@@ -22,5 +22,5 @@ find_package(DNSSD)
 target_include_directories(mdnsresponder_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
 target_link_libraries(mdnsresponder_ei PUBLIC Celix::error_injector DNSSD::DNSSD)
 
-target_link_options(mdnsresponder_ei INTERFACE LINKER:--wrap,DNSServiceCreateConnection LINKER:--wrap,DNSServiceProcessResult LINKER:--wrap,DNSServiceRegister LINKER:--wrap,TXTRecordSetValue LINKER:--wrap,DNSServiceBrowse)
+target_link_options(mdnsresponder_ei INTERFACE LINKER:--wrap,DNSServiceCreateConnection LINKER:--wrap,DNSServiceProcessResult LINKER:--wrap,DNSServiceRegister LINKER:--wrap,TXTRecordSetValue LINKER:--wrap,DNSServiceBrowse LINKER:--wrap,DNSServiceResolve LINKER:--wrap,DNSServiceGetAddrInfo)
 add_library(Celix::mdnsresponder_ei ALIAS mdnsresponder_ei)
