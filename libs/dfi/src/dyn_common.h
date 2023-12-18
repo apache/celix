@@ -40,7 +40,7 @@ struct namval_entry {
 /**
  * @brief Parse the name of dynamic type from the given stream. The name is only allowed to contain [a-zA-Z0-9_].
  *
- * The caller is the owner of the dynamic type name and use `free` deallocate the memory.
+ * The caller is the owner of the dynamic type name and use `free` to deallocate the memory.
  *
  * In case of an error, an error message is added to celix_err.
  *
@@ -65,20 +65,6 @@ int dynCommon_parseName(FILE *stream, char **result);
  * @alsoseee dynCommon_parseName
  */
 int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char **result);
-
-/**
- * @brief Parse the name and value of a name-value pair from the given stream. The name is only allowed to contain [a-zA-Z0-9_].
- *
- * The caller is the owner of the name and value and use `free` deallocate the memory.
- *
- * In case of an error, an error message is added to celix_err.
- *
- * @param[in] stream The input stream.
- * @param[out] name The name of the name-value pair.
- * @param[out] value The value of the name-value pair.
- * @return 0 if successful, otherwise 1.
- */
-int dynCommon_parseNameValue(FILE *stream, char **name, char **value);
 
 /**
  * @brief Parses a section of name-value pairs from the given stream. The name is only allowed to contain [a-zA-Z0-9_].

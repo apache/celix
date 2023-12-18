@@ -44,6 +44,8 @@ CELIX_EI_DECLARE(fputc, int);
 
 CELIX_EI_DECLARE(fputs, int);
 
+CELIX_EI_DECLARE(fclose, int);
+
 #ifdef __cplusplus
 }
 #endif

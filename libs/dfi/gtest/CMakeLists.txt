@@ -25,6 +25,7 @@ add_executable(test_dfi
 		src/dyn_message_tests.cpp
 		src/json_serializer_tests.cpp
 		src/json_rpc_tests.cpp
+		src/dyn_common_tests.cc
 )
 
 
@@ -40,6 +41,7 @@ setup_target_for_coverage(test_dfi SCAN_DIR ..)
 if (EI_TESTS)
 	add_executable(test_dfi_with_ei
 			src/dyn_interface_ei_tests.cc
+			src/dyn_common_ei_tests.cc
 	)
 	target_link_libraries(test_dfi_with_ei PRIVATE
 			dfi_cut
