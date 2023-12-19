@@ -31,23 +31,24 @@ extern "C" {
 
 #include "dyn_common.h"
 #include "dyn_interface.h"
-#include "version.h"
+#include "celix_version.h"
 
     static void checkInterfaceVersion(dyn_interface_type* dynIntf, const char* v) {
         int status;
 
-        char *version = NULL;
+        const char *version = NULL;
         status = dynInterface_getVersionString(dynIntf, &version);
         ASSERT_EQ(0, status);
         ASSERT_STREQ(v, version);
-        version_pt msgVersion = NULL, localMsgVersion = NULL;
+        const celix_version_t* msgVersion = NULL;
+        celix_version_t* localMsgVersion = NULL;
         int cmpVersion = -1;
-        version_createVersionFromString(version, &localMsgVersion);
+        localMsgVersion = celix_version_createVersionFromString(version);
         status = dynInterface_getVersion(dynIntf, &msgVersion);
         ASSERT_EQ(0, status);
-        version_compareTo(msgVersion, localMsgVersion, &cmpVersion);
+        cmpVersion = celix_version_compareTo(msgVersion, localMsgVersion);
         ASSERT_EQ(cmpVersion, 0);
-        version_destroy(localMsgVersion);
+        celix_version_destroy(localMsgVersion);
     }
 
     static void test1(void) {
@@ -59,24 +60,24 @@ extern "C" {
         ASSERT_EQ(0, status);
         fclose(desc);
 
-        char *name = NULL;
+        const char *name = NULL;
         status = dynInterface_getName(dynIntf, &name);
         ASSERT_EQ(0, status);
         ASSERT_STREQ("calculator", name);
 
-	checkInterfaceVersion(dynIntf,"1.0.0");
+        checkInterfaceVersion(dynIntf,"1.0.0");
 
-        char *annVal = NULL;
+        const char *annVal = NULL;
         status = dynInterface_getAnnotationEntry(dynIntf, "classname", &annVal);
         ASSERT_EQ(0, status);
         ASSERT_STREQ("org.example.Calculator", annVal);
 
-        char *nonExist = NULL;
+        const char *nonExist = NULL;
         status = dynInterface_getHeaderEntry(dynIntf, "nonExisting", &nonExist);
         ASSERT_TRUE(status != 0);
         ASSERT_TRUE(nonExist == NULL);
 
-        struct methods_head *list = NULL;
+        const struct methods_head *list = NULL;
         status = dynInterface_methods(dynIntf, &list);
         ASSERT_TRUE(status == 0);
         ASSERT_TRUE(list != NULL);
@@ -170,10 +171,15 @@ extern "C" {
         desc = fopen("descriptors/invalids/invalidVersion.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        //dynInterface_destroy(dynIntf);
-        ASSERT_EQ(1, status); //Invalid meta type doesn't generate errors, just warnings
+        ASSERT_EQ(1, status);
         fclose(desc); desc=NULL;
 
+        /* garbage descriptor */
+        desc = fopen("descriptors/invalids/garbage.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_EQ(1, status);
+        fclose(desc); desc=NULL;
     }
 }
 

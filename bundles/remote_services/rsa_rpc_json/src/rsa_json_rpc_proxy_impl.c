@@ -318,7 +318,7 @@ static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxy
         celix_logHelper_error(proxyFactory->logHelper, "Proxy: Error converting service version type. %d.", status);
         return status;
     }
-    celix_version_t *consumerVersion = NULL;
+    const celix_version_t *consumerVersion = NULL;
     bool isCompatible = false;
     dynInterface_getVersion(intfType,&consumerVersion);
     isCompatible = celix_version_isCompatible(consumerVersion, providerVersion);
@@ -337,7 +337,7 @@ static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxy
     }
     celix_autofree void **service = (void **)proxy->service;
     service[0] = proxy;
-    struct methods_head *list = NULL;
+    const struct methods_head *list = NULL;
     dynInterface_methods(intfType, &list);
     struct method_entry *entry = NULL;
     void (*fn)(void) = NULL;

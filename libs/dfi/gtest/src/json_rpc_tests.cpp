@@ -355,7 +355,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        struct methods_head *head;
+        const struct methods_head *head;
         dynInterface_methods(intf, &head);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
@@ -397,7 +397,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        struct methods_head *head;
+        const struct methods_head *head;
         dynInterface_methods(intf, &head);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
@@ -436,7 +436,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        struct methods_head *head;
+        const struct methods_head *head;
         dynInterface_methods(intf, &head);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
@@ -494,7 +494,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        struct methods_head *head;
+        const struct methods_head *head;
         dynInterface_methods(intf, &head);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
@@ -547,7 +547,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        struct methods_head *head;
+        const struct methods_head *head;
         dynInterface_methods(intf, &head);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
@@ -580,7 +580,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        struct methods_head *head;
+        const struct methods_head *head;
         dynInterface_methods(intf, &head);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
@@ -623,7 +623,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        struct methods_head *head;
+        const struct methods_head *head;
         dynInterface_methods(intf, &head);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
@@ -689,7 +689,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        struct methods_head *head;
+        const struct methods_head *head;
         dynInterface_methods(intf, &head);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
@@ -897,7 +897,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        struct methods_head *head;
+        const struct methods_head *head;
         dynInterface_methods(intf, &head);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;

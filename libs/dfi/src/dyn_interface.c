@@ -20,6 +20,7 @@
 #include "dyn_interface.h"
 #include "celix_err.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -38,7 +39,7 @@ static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream)
 static int dynInterface_parseTypes(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseHeader(dyn_interface_type *intf, FILE *stream);
-static int dynInterface_getEntryForHead(struct namvals_head *head, const char *name, char **value);
+static int dynInterface_getEntryForHead(struct namvals_head *head, const char *name, const char **value);
 
 int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
     int status = OK;
@@ -57,38 +58,33 @@ int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
     char peek = (char)fgetc(descriptor);
     while (peek == ':') {
         ungetc(peek, descriptor);
-        status = dynInterface_parseSection(intf, descriptor);
-        if (status == OK) {
-            peek = (char)fgetc(descriptor);
-        } else {
-            break;
+        if ((status = dynInterface_parseSection(intf, descriptor)) != OK) {
+            return status;
         }
+        peek = (char)fgetc(descriptor);
     }
 
-    if (status == OK) {
-        status = dynCommon_eatChar(descriptor, EOF);
+    if (peek != EOF) {
+        celix_err_pushf("Descriptor does not start with ':'");
+        return ERROR;
     }
 
-    if (status == OK) {
-        status = dynInterface_checkInterface(intf);
+    if ((status = dynInterface_checkInterface(intf)) != OK) {
+        return status;
     }
 
-    if (status == OK) { /* We are sure that version field is present in the header */
-        char* version = NULL;
-        dynInterface_getVersionString(intf,&version);
-        if (version != NULL){
-            intf->version = celix_version_createVersionFromString(version);
-            status = intf->version != NULL ? OK : ERROR;
-        }
-        if (status == ERROR) {
-            celix_err_pushf("Invalid version (%s) in parsed descriptor\n",version);
-        }
+    // We are sure that version field is present in the header
+    const char* version = NULL;
+    status = dynInterface_getVersionString(intf,&version);
+    assert(status == OK);
+    assert(version != NULL);
+    intf->version = celix_version_createVersionFromString(version);
+    if (intf->version == NULL) {
+        celix_err_pushf("Invalid version (%s) in parsed descriptor\n",version);
+        return ERROR;
     }
-
-    if (status == OK) {
-        *out = celix_steal_ptr(intf);
-    }
-    return status;
+    *out = celix_steal_ptr(intf);
+    return OK;
 }
 
 int dynInterface_checkInterface(dyn_interface_type *intf) {
@@ -333,29 +329,29 @@ void dynInterface_destroy(dyn_interface_type *intf) {
     } 
 }
 
-int dynInterface_getName(dyn_interface_type *intf, char **out) {
+int dynInterface_getName(dyn_interface_type *intf, const char **out) {
     return dynInterface_getEntryForHead(&intf->header, "name", out);
 }
 
-int dynInterface_getVersion(dyn_interface_type* intf , celix_version_t** version){
+int dynInterface_getVersion(dyn_interface_type* intf , const celix_version_t** version){
     // aseert(intf->version != NULL);
     *version = intf->version;
     return OK;
 }
 
-int dynInterface_getVersionString(dyn_interface_type *intf, char **version) {
+int dynInterface_getVersionString(dyn_interface_type *intf, const char **version) {
     return dynInterface_getEntryForHead(&intf->header, "version", version);
 }
 
-int dynInterface_getHeaderEntry(dyn_interface_type *intf, const char *name, char **value) {
+int dynInterface_getHeaderEntry(dyn_interface_type *intf, const char *name, const char **value) {
     return dynInterface_getEntryForHead(&intf->header, name, value);
 }
 
-int dynInterface_getAnnotationEntry(dyn_interface_type *intf, const char *name, char **value) {
+int dynInterface_getAnnotationEntry(dyn_interface_type *intf, const char *name, const char **value) {
     return dynInterface_getEntryForHead(&intf->annotations, name, value);
 }
 
-static int dynInterface_getEntryForHead(struct namvals_head *head, const char *name, char **out) {
+static int dynInterface_getEntryForHead(struct namvals_head *head, const char *name, const char **out) {
     int status = OK;
     char *value = NULL;
     struct namval_entry *entry = NULL;
@@ -374,7 +370,7 @@ static int dynInterface_getEntryForHead(struct namvals_head *head, const char *n
     return status;
 }
 
-int dynInterface_methods(dyn_interface_type *intf, struct methods_head **list) {
+int dynInterface_methods(dyn_interface_type *intf, const struct methods_head **list) {
     int status = OK;
     *list = &intf->methods;
     return status;

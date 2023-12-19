@@ -173,7 +173,7 @@ static void rsaJsonRpcEndpoint_addSvcWithOwner(void *handle, void *service,
     }
 
     // Check version
-    char *intfVersion = NULL;
+    const char *intfVersion = NULL;
     int ret = dynInterface_getVersionString(intfType, &intfVersion);
     if (ret != 0) {
         celix_logHelper_logTssErrors(endpoint->logHelper, CELIX_LOG_LEVEL_ERROR);
