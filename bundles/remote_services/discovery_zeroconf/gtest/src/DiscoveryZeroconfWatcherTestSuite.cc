@@ -169,7 +169,7 @@ public:
 
     void TestRsaServiceAddAndRemove(void (*beforeAddRsaAction)(void), void (*afterAddRsaAction)(void),
                                     void (*beforeRemoveRsaAction)(void) = nullptr, void (*afterRemoveRsaAction)(void) = nullptr, const char *remoteConfigsSupported = DZC_TEST_CONFIG_TYPE) {
-        celix_bundleContext_unregisterService(ctx.get(), rsaSvcId);//reset rsa service id
+        celix_bundleContext_unregisterService(ctx.get(), rsaSvcId);//reset rsa service
         rsaSvcId = -1;
         discovery_zeroconf_watcher_t *watcher;
         celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
@@ -422,6 +422,20 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToAllocMemoryForBrowserEntry) {
     TestRsaServiceAddAndRemove([](){
         celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
         ExpectMsgOutPut("Watcher: Failed to alloc service browser entry.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(1);
+        EXPECT_FALSE(timeOut);
+    });
+}
+
+TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToCreateServiceMapForBrowserEntry) {
+    celix_ei_expect_DNSServiceCreateConnection(CELIX_EI_UNKNOWN_CALLER, 0, kDNSServiceErr_Unknown);
+    ExpectMsgOutPut("Watcher: Failed to create connection for DNS service, %d.");//it is used for sync work thread
+    TestRsaServiceAddAndRemove([](){
+        auto timeOut  = CheckMsgWithTimeOutInS(1);//wait for work thread run
+        EXPECT_FALSE(timeOut);
+        celix_ei_expect_celix_stringHashMap_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+        ExpectMsgOutPut("Watcher: Failed to create watched services map.");
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(1);
         EXPECT_FALSE(timeOut);
@@ -690,6 +704,8 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, DNSServiceBrowseFailedOnce) {
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, BrowseServicesFailed1) {
+    celix_bundleContext_unregisterService(ctx.get(), rsaSvcId);//reset rsa service
+    rsaSvcId = -1;
     discovery_zeroconf_watcher_t *watcher;
 
     celix_ei_expect_celix_stringHashMap_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 4);
