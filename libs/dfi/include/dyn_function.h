@@ -21,6 +21,7 @@
 #define __DYN_FUNCTION_H_
 
 #include "dyn_type.h"
+#include "celix_cleanup.h"
 #include "celix_dfi_export.h"
 
 #ifdef __cplusplus
@@ -119,6 +120,8 @@ CELIX_DFI_EXPORT dyn_type * dynFunction_returnType(dyn_function_type *dynFunctio
  */
 CELIX_DFI_EXPORT void dynFunction_destroy(dyn_function_type *dynFunc);
 
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(dyn_function_type, dynFunction_destroy);
+
 /**
  * @brief Calls the given dynamic type function.
  * @param[in] dynFunc The dynamic type instance for function.
@@ -154,6 +157,11 @@ CELIX_DFI_EXPORT int dynFunction_getFnPointer(dyn_function_type *func, void (**f
  * Will return false if return is void.
  */
 CELIX_DFI_EXPORT bool dynFunction_hasReturn(dyn_function_type *dynFunction);
+
+/**
+ * @brief Returns the name of the given dynamic function type instance.
+ */
+CELIX_DFI_EXPORT const char* dynFunction_getName(const dyn_function_type *func);
 
 #ifdef __cplusplus
 }

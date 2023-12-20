@@ -35,11 +35,4 @@ int __wrap_jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id,
     return __real_jsonRpc_prepareInvokeRequest(func, id, args, out);
 }
 
-int __real_dynInterface_getVersionString(dyn_interface_type *dynInterface, char **out);
-CELIX_EI_DEFINE(dynInterface_getVersionString, int)
-int __wrap_dynInterface_getVersionString(dyn_interface_type *dynInterface, char **out) {
-    CELIX_EI_IMPL(dynInterface_getVersionString);
-    return __real_dynInterface_getVersionString(dynInterface, out);
-}
-
 }

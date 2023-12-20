@@ -34,18 +34,12 @@ extern "C" {
 #include "celix_version.h"
 
     static void checkInterfaceVersion(dyn_interface_type* dynIntf, const char* v) {
-        int status;
-
-        const char *version = NULL;
-        status = dynInterface_getVersionString(dynIntf, &version);
-        ASSERT_EQ(0, status);
+        const char* version = dynInterface_getVersionString(dynIntf);
         ASSERT_STREQ(v, version);
-        const celix_version_t* msgVersion = NULL;
+        const celix_version_t* msgVersion = dynInterface_getVersion(dynIntf);
         celix_version_t* localMsgVersion = NULL;
         int cmpVersion = -1;
         localMsgVersion = celix_version_createVersionFromString(version);
-        status = dynInterface_getVersion(dynIntf, &msgVersion);
-        ASSERT_EQ(0, status);
         cmpVersion = celix_version_compareTo(msgVersion, localMsgVersion);
         ASSERT_EQ(cmpVersion, 0);
         celix_version_destroy(localMsgVersion);
@@ -60,9 +54,7 @@ extern "C" {
         ASSERT_EQ(0, status);
         fclose(desc);
 
-        const char *name = NULL;
-        status = dynInterface_getName(dynIntf, &name);
-        ASSERT_EQ(0, status);
+        const char *name = dynInterface_getName(dynIntf);
         ASSERT_STREQ("calculator", name);
 
         checkInterfaceVersion(dynIntf,"1.0.0");
@@ -108,7 +100,6 @@ extern "C" {
         FILE *desc = fopen("descriptors/invalids/invalid.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        //dynInterface_destroy(dynIntf);
         ASSERT_EQ(1, status); //Test fails because of a space at the end of the name
         fclose(desc); desc=NULL;
 
@@ -123,15 +114,34 @@ extern "C" {
         desc = fopen("descriptors/invalids/noVersion.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        //dynInterface_destroy(dynIntf);
         ASSERT_EQ(1, status); //Test fails because of missing version field in header section
+        fclose(desc); desc=NULL;
+
+        /* Header without Type */
+        desc = fopen("descriptors/invalids/noType.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_EQ(1, status); //Test fails because of missing type field in header section
+        fclose(desc); desc=NULL;
+
+        /* Header without Name */
+        desc = fopen("descriptors/invalids/noName.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_EQ(1, status); //Test fails because of missing name field in header section
+        fclose(desc); desc=NULL;
+
+        /* Invalid Annotations Section */
+        desc = fopen("descriptors/invalids/invalidInterfaceAnnotations.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_EQ(1, status); //Test fails because of missing name field in annotations section
         fclose(desc); desc=NULL;
 
         /* Invalid section */
         desc = fopen("descriptors/invalids/invalidSection.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        //dynInterface_destroy(dynIntf);
         ASSERT_EQ(1, status); //Test fails because of unknown section type
         fclose(desc); desc=NULL;
 
@@ -139,7 +149,6 @@ extern "C" {
         desc = fopen("descriptors/invalids/invalidMethodReturnType.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        //dynInterface_destroy(dynIntf);
         ASSERT_EQ(1, status); //Test fails because of invalid return type (D instead of N)
         fclose(desc); desc=NULL;
 
@@ -147,16 +156,56 @@ extern "C" {
         desc = fopen("descriptors/invalids/invalidMethod.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        //dynInterface_destroy(dynIntf);
         ASSERT_EQ(1, status); //Test fails because of space at the end of the method
+        fclose(desc); desc=NULL;
+
+        /* Invalid method section missing method id */
+        desc = fopen("descriptors/invalids/invalidMethodMissingId.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_EQ(1, status);
+        fclose(desc); desc=NULL;
+
+        /* Invalid method section missing equality */
+        desc = fopen("descriptors/invalids/invalidMethodMissingEquality.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_EQ(1, status);
+        fclose(desc); desc=NULL;
+
+        /* Invalid method section missing function name */
+        desc = fopen("descriptors/invalids/invalidMethodMissingFunctionName.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_EQ(1, status);
         fclose(desc); desc=NULL;
 
         /* Invalid type */
         desc = fopen("descriptors/invalids/invalidType.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        //dynInterface_destroy(dynIntf);
         ASSERT_EQ(1, status); //Test fails because of space at the end of the type
+        fclose(desc); desc=NULL;
+
+        /* Invalid types section missing type name */
+        desc = fopen("descriptors/invalids/noTypeName.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_EQ(1, status); //Test fails because of missing type name
+        fclose(desc); desc=NULL;
+
+        /* Invalid types section missing equality */
+        desc = fopen("descriptors/invalids/invalidTypeMissingEquality.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_EQ(1, status); //Test fails because of missing equality
+        fclose(desc); desc=NULL;
+
+        /* Invalid types section with unrecognized simple type */
+        desc = fopen("descriptors/invalids/invalidTypeUnrecognizedSimpleType.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_NE(0, status);
         fclose(desc); desc=NULL;
 
         /* Invalid metatype in method description */

@@ -108,4 +108,11 @@ int __wrap_fclose(FILE* __stream) {
     return rc;
 }
 
+int __real_fgetc(FILE* __stream);
+CELIX_EI_DEFINE(fgetc, int)
+int __wrap_fgetc(FILE* __stream) {
+    CELIX_EI_IMPL(fgetc);
+    return __real_fgetc(__stream);
+}
+
 }

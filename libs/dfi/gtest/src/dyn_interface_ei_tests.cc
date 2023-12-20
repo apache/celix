@@ -34,6 +34,7 @@ public:
     DynInterfaceErrorInjectionTestSuite() = default;
 
     ~DynInterfaceErrorInjectionTestSuite() override {
+        celix_ei_expect_fgetc(nullptr, 0, EOF);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_open_memstream(nullptr, 0, nullptr);
     }
@@ -80,4 +81,20 @@ TEST_F(DynInterfaceErrorInjectionTestSuite, ParseError) {
     std::string msg = "Error creating mem stream for name. ";
     msg += strerror(ENOMEM);
     ASSERT_STREQ(msg.c_str(), celix_err_popLastError());
+
+    rewind(desc);
+    // encounter EOF when parsing header section
+    celix_ei_expect_fgetc((void*) dynCommon_eatChar, 0, EOF);
+    status = dynInterface_parse(desc, &dynIntf);
+    ASSERT_NE(0, status);
+    msg = "Error parsing, expected token";
+    ASSERT_TRUE(msg.compare(0, msg.length(), celix_err_popLastError()));
+
+    rewind(desc);
+    // encounter EOF when expecting newline ending a header name
+    celix_ei_expect_fgetc((void*) dynCommon_eatChar, 0, EOF, 2);
+    status = dynInterface_parse(desc, &dynIntf);
+    ASSERT_NE(0, status);
+    msg = "Error parsing, expected token";
+    ASSERT_TRUE(msg.compare(0, msg.length(), celix_err_popLastError()));
 }

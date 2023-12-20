@@ -128,19 +128,18 @@ int dynCommon_parseNameValueSection(FILE *stream, struct namvals_head *head) {
         celix_autofree char *name = NULL;
         celix_autofree char *value = NULL;
         if ((status = dynCommon_parseNameValue(stream, &name, &value)) != OK) {
-            break;
+            return status;
         }
 
         if ((status = dynCommon_eatChar(stream, '\n')) != OK) {
-            break;
+            return status;
         }
 
         struct namval_entry *entry = NULL;
         entry = calloc(1, sizeof(*entry));
         if (entry == NULL) {
-            status = ERROR;
             celix_err_pushf("Error allocating memory for namval entry");
-            break;
+            return ERROR;
         }
 
         entry->name = celix_steal_ptr(name);
@@ -153,5 +152,5 @@ int dynCommon_parseNameValueSection(FILE *stream, struct namvals_head *head) {
         ungetc(peek, stream);
     }
 
-    return status;
+    return OK;
 }

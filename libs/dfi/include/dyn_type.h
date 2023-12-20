@@ -26,6 +26,7 @@
 #include <stdint.h>
 
 #include "celix_dfi_export.h"
+#include "celix_cleanup.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -164,6 +165,8 @@ CELIX_DFI_EXPORT int dynType_parseWithStr(const char *descriptor, const char *na
  * @param type      The dyn type to destroy.
  */
 CELIX_DFI_EXPORT void dynType_destroy(dyn_type *type);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(dyn_type, dynType_destroy);
 
 /**
  * Allocates memory for a type instance described by a dyn type. The memory will be 0 allocated (calloc).

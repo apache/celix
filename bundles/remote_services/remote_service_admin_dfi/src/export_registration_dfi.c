@@ -111,8 +111,7 @@ celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_ref
 
     if (status == CELIX_SUCCESS) {
         /* Add the interface version as a property in the properties_map */
-        const char* intfVersion = NULL;
-        dynInterface_getVersionString(reg->intf, &intfVersion);
+        const char* intfVersion = dynInterface_getVersionString(reg->intf);
         const char *serviceVersion = celix_properties_get(endpoint->properties,(char*) CELIX_FRAMEWORK_SERVICE_VERSION, NULL);
         if (serviceVersion != NULL) {
             if(strcmp(serviceVersion,intfVersion)!=0){
@@ -192,8 +191,7 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
             //printf("calling for '%s'\n");
             if (export->logFile != NULL) {
                 static int callCount = 0;
-                const char *name = NULL;
-                dynInterface_getName(export->intf, &name);
+                const char *name = dynInterface_getName(export->intf);
                 fprintf(export->logFile, "REMOTE CALL %i\n\tservice=%s\n\tservice_id=%s\n\trequest_payload=%s\n\trequest_response=%s\n\tstatus=%i\n", callCount, name, export->servId, data, response, status);
                 fflush(export->logFile);
                 callCount += 1;

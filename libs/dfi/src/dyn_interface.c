@@ -18,28 +18,28 @@
  */
 
 #include "dyn_interface.h"
+#include "dyn_common.h"
+#include "dyn_type.h"
+#include "dyn_interface_common.h"
 #include "celix_err.h"
+#include "celix_stdlib_cleanup.h"
 
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "dyn_common.h"
-#include "dyn_type.h"
-#include "dyn_interface_common.h"
 
 
 static const int OK = 0;
 static const int ERROR = 1;
 
-int dynInterface_checkInterface(dyn_interface_type *intf);
-
+static int dynInterface_checkInterface(dyn_interface_type *intf);
 static int dynInterface_parseSection(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseTypes(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseHeader(dyn_interface_type *intf, FILE *stream);
-static int dynInterface_getEntryForHead(struct namvals_head *head, const char *name, const char **value);
+static int dynInterface_getEntryForHead(const struct namvals_head *head, const char *name, const char **value);
 
 int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
     int status = OK;
@@ -74,9 +74,7 @@ int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
     }
 
     // We are sure that version field is present in the header
-    const char* version = NULL;
-    status = dynInterface_getVersionString(intf,&version);
-    assert(status == OK);
+    const char* version = dynInterface_getVersionString(intf);
     assert(version != NULL);
     intf->version = celix_version_createVersionFromString(version);
     if (intf->version == NULL) {
@@ -87,76 +85,67 @@ int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
     return OK;
 }
 
-int dynInterface_checkInterface(dyn_interface_type *intf) {
-    int status = OK;
-
+static int dynInterface_checkInterface(dyn_interface_type *intf) {
     //check header section
-    if (status == OK) {
-        bool foundType = false;
-        bool foundVersion = false;
-        bool foundName = false;
-        struct namval_entry *entry = NULL;
-        TAILQ_FOREACH(entry, &intf->header, entries) {
-            if (strcmp(entry->name, "type") == 0) {
-                foundType = true;
-            } else if (strcmp(entry->name, "version") == 0) {
-                foundVersion = true;
-            } else if (strcmp(entry->name, "name") == 0) {
-                foundName = true;
-            }
-        }
-
-        if (!foundType || !foundVersion || !foundName) {
-            status = ERROR;
-            celix_err_pushf("Parse Error. There must be a header section with a type, version and name entry");
-        }
-
-        struct method_entry *mEntry = NULL;
-        TAILQ_FOREACH(mEntry, &intf->methods, entries) {
-            dyn_type *type = dynFunction_returnType(mEntry->dynFunc);
-            int descriptor = dynType_descriptorType(type);
-            if (descriptor != 'N') {
-                status = ERROR;
-                celix_err_pushf("Parse Error. Only method with a return type 'N' (native int) are supported. Got return type '%c'\n", descriptor);
-                break;
-            }
+    bool foundType = false;
+    bool foundVersion = false;
+    bool foundName = false;
+    struct namval_entry *entry = NULL;
+    TAILQ_FOREACH(entry, &intf->header, entries) {
+        if (strcmp(entry->name, "type") == 0) {
+            foundType = true;
+        } else if (strcmp(entry->name, "version") == 0) {
+            foundVersion = true;
+        } else if (strcmp(entry->name, "name") == 0) {
+            foundName = true;
         }
     }
 
-    return status;
+    if (!foundType || !foundVersion || !foundName) {
+        celix_err_pushf("Parse Error. There must be a header section with a type, version and name entry");
+        return ERROR;
+    }
+
+    struct method_entry *mEntry = NULL;
+    TAILQ_FOREACH(mEntry, &intf->methods, entries) {
+        dyn_type *type = dynFunction_returnType(mEntry->dynFunc);
+        int descriptor = dynType_descriptorType(type);
+        if (descriptor != 'N') {
+            celix_err_pushf("Parse Error. Only method with a return type 'N' (native int) are supported. Got return type '%c'\n", descriptor);
+            return ERROR;
+        }
+    }
+
+    return OK;
 }
 
 static int dynInterface_parseSection(dyn_interface_type *intf, FILE *stream) {
     int status = OK;
-    char *sectionName = NULL;
+    celix_autofree char *sectionName = NULL;
 
-    status = dynCommon_eatChar(stream, ':');
-
-    if (status == OK) {
-        status = dynCommon_parseName(stream, &sectionName);
+    if ((status = dynCommon_eatChar(stream, ':')) != OK) {
+        return status;
     }
 
-    if (status == OK) {
-        status = dynCommon_eatChar(stream, '\n');
+    if ((status = dynCommon_parseName(stream, &sectionName)) != OK) {
+        return status;
     }
 
-    if (status == OK) {
-        if (strcmp("header", sectionName) == 0) {
-            status = dynInterface_parseHeader(intf, stream);
-        } else if (strcmp("annotations", sectionName) == 0) {
-            status = dynInterface_parseAnnotations(intf, stream);
-        } else if (strcmp("types", sectionName) == 0) {
-            status = dynInterface_parseTypes(intf, stream);
-        } else if (strcmp("methods", sectionName) == 0) {
-            status = dynInterface_parseMethods(intf, stream);
-        } else {
-            status = ERROR;
-            celix_err_pushf("unsupported section '%s'", sectionName);
-        }
+    if ((status = dynCommon_eatChar(stream, '\n')) != OK) {
+        return status;
     }
 
-    if (sectionName != NULL) {
-        free(sectionName);
+    if (strcmp("header", sectionName) == 0) {
+        status = dynInterface_parseHeader(intf, stream);
+    } else if (strcmp("annotations", sectionName) == 0) {
+        status = dynInterface_parseAnnotations(intf, stream);
+    } else if (strcmp("types", sectionName) == 0) {
+        status = dynInterface_parseTypes(intf, stream);
+    } else if (strcmp("methods", sectionName) == 0) {
+        status = dynInterface_parseMethods(intf, stream);
+    } else {
+        status = ERROR;
+        celix_err_pushf("unsupported section '%s'", sectionName);
     }
 
     return status;
@@ -171,55 +160,46 @@ static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream)
 }
 
 static int dynInterface_parseTypes(dyn_interface_type *intf, FILE *stream) {
-    int status = OK;
+    int status;
 
     //expected input (Name)=<Type>\n
     int peek = fgetc(stream);
     while (peek != ':' && peek != EOF) {
         ungetc(peek, stream);
 
-        char *name = NULL;
-        status = dynCommon_parseName(stream, &name);
-
-        if (status == OK) {
-            status = dynCommon_eatChar(stream, '=');
+        celix_autofree char* name = NULL;
+        if ((status = dynCommon_parseName(stream, &name)) != OK) {
+            return status;
         }
 
-        dyn_type *type = NULL;
-        if (status == OK) {
-            dynType_parse(stream, name, &intf->types, &type);
-        }
-        if (name != NULL) {
-            free(name);
+        if ((status = dynCommon_eatChar(stream, '=')) != OK) {
+            return status;
         }
 
-        if (status == OK) {
-            status = dynCommon_eatChar(stream, '\n');
+        celix_autoptr(dyn_type) type = NULL;
+        if ((status = dynType_parse(stream, name, &intf->types, &type)) != OK) {
+            return status;
+        }
+        if ((status = dynCommon_eatChar(stream, '\n')) != OK) {
+            return status;
         }
 
         struct type_entry *entry = NULL;
-        if (status == OK) {
-            entry = calloc(1, sizeof(*entry));
-            if (entry != NULL) {
-                entry->type = type;
-                TAILQ_INSERT_TAIL(&intf->types, entry, entries);
-            } else {
-                status = ERROR;
-                celix_err_pushf("Error allocating memory for type entry");
-            }
+        entry = calloc(1, sizeof(*entry));
+        if (entry == NULL) {
+            celix_err_pushf("Error allocating memory for type entry");
+            return ERROR;
         }
+        entry->type = celix_steal_ptr(type);
+        TAILQ_INSERT_TAIL(&intf->types, entry, entries);
 
-        if (status != OK) {
-            if (type != NULL) {
-                dynType_destroy(type);
-            }
-            break;
-        }
         peek = fgetc(stream);
     }
-    ungetc(peek, stream);
+    if (peek != EOF) {
+        ungetc(peek, stream);
+    }
 
-    return status;
+    return OK;
 }
 
 static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream) {
@@ -231,67 +211,45 @@ static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream) {
     while (peek != ':' && peek != EOF) {
         ungetc(peek, stream);
 
-        char *id = NULL;
-        status = dynCommon_parseNameAlsoAccept(stream, ".();[{}/", &id);
-
-        if (status == OK) {
-            status = dynCommon_eatChar(stream, '=');
+        celix_autofree char* id = NULL;
+        if ((status = dynCommon_parseNameAlsoAccept(stream, ".();[{}/", &id)) != OK) {
+            return status;
         }
 
-
-        dyn_function_type *func = NULL;
-        if (status == OK) {
-            status = dynFunction_parse(stream, &intf->types, &func);
+        if ((status = dynCommon_eatChar(stream, '=')) != OK) {
+            return status;
         }
 
-        if (status == OK) {
-            status = dynCommon_eatChar(stream, '\n');
+        celix_autoptr(dyn_function_type) func = NULL;
+        if ((status = dynFunction_parse(stream, &intf->types, &func)) != OK) {
+            return status;
+        }
+
+        if ((status = dynCommon_eatChar(stream, '\n')) != OK) {
+            return status;
         }
 
         struct method_entry *entry = NULL;
-        if (status == OK) {
-            entry = calloc(1, sizeof(*entry));
-            if (entry != NULL) {
-                entry->index = index++;
-                entry->id = id;
-                entry->dynFunc = func;
-                entry->name = strndup(id, 1024);
-                if (entry->name != NULL) {
-                    int i;
-                    for (i = 0; i < 1024; i += 1) {
-                        if (entry->name[i] == '\0') {
-                            break;
-                        } else if (entry->name[i] == '(') {
-                            entry->name[i] = '\0';
-                            break;
-                        }
-                    }
-                }
-                TAILQ_INSERT_TAIL(&intf->methods, entry, entries);
-            } else {
-                status = ERROR;
-                celix_err_pushf("Error allocating memory for method entry");
-            }
+        entry = calloc(1, sizeof(*entry));
+        if (entry == NULL) {
+            celix_err_pushf("Error allocating memory for method entry");
+            return ERROR;
         }
+        entry->index = index++;
+        entry->id = celix_steal_ptr(id);
+        entry->dynFunc = celix_steal_ptr(func);
+        TAILQ_INSERT_TAIL(&intf->methods, entry, entries);
 
-        if (status != OK) {
-            if (id != NULL) {
-                free(id);
-            }
-            if (func != NULL) {
-                dynFunction_destroy(func);
-                //TODO free strIdentifier, name
-            }
-            break;
-        }
         peek = fgetc(stream);
     }
-    ungetc(peek, stream);
+    if (peek != EOF) {
+        ungetc(peek, stream);
+    }
 
     return status;
 }
 
-void dynInterface_destroy(dyn_interface_type *intf) {
+void dynInterface_destroy(dyn_interface_type* intf) {
     if (intf != NULL) {
         dynCommon_clearNamValHead(&intf->header);
         dynCommon_clearNamValHead(&intf->annotations);
@@ -303,9 +261,6 @@ void dynInterface_destroy(dyn_interface_type *intf) {
             
             if (mTmp->id != NULL) {
                 free(mTmp->id);
-            }
-            if (mTmp->name != NULL) {
-                free(mTmp->name);
             }
             if (mTmp->dynFunc != NULL) {
                 dynFunction_destroy(mTmp->dynFunc);
@@ -322,36 +277,41 @@ void dynInterface_destroy(dyn_interface_type *intf) {
         }
 
         if(intf->version!=NULL){
-        	celix_version_destroy(intf->version);
+            celix_version_destroy(intf->version);
         }
 
         free(intf);
     } 
 }
 
-int dynInterface_getName(dyn_interface_type *intf, const char **out) {
-    return dynInterface_getEntryForHead(&intf->header, "name", out);
+const char* dynInterface_getName(const dyn_interface_type* intf) {
+    const char* name = NULL;
+    // dynInterface_checkInterface ensures that the name is present
+    (void)dynInterface_getEntryForHead(&intf->header, "name", &name);
+    return name;
 }
 
-int dynInterface_getVersion(dyn_interface_type* intf , const celix_version_t** version){
-    // aseert(intf->version != NULL);
-    *version = intf->version;
-    return OK;
+const celix_version_t* dynInterface_getVersion(const dyn_interface_type* intf){
+    // dynInterface_checkInterface ensures that version is present
+    return intf->version;
 }
 
-int dynInterface_getVersionString(dyn_interface_type *intf, const char **version) {
-    return dynInterface_getEntryForHead(&intf->header, "version", version);
+const char* dynInterface_getVersionString(const dyn_interface_type* intf) {
+    const char* version = NULL;
+    // dynInterface_checkInterface ensures that the version is present
+    (void)dynInterface_getEntryForHead(&intf->header, "version", &version);
+    return version;
 }
 
-int dynInterface_getHeaderEntry(dyn_interface_type *intf, const char *name, const char **value) {
+int dynInterface_getHeaderEntry(const dyn_interface_type* intf, const char* name, const char** value) {
     return dynInterface_getEntryForHead(&intf->header, name, value);
 }
 
-int dynInterface_getAnnotationEntry(dyn_interface_type *intf, const char *name, const char **value) {
+int dynInterface_getAnnotationEntry(const dyn_interface_type *intf, const char *name, const char **value) {
     return dynInterface_getEntryForHead(&intf->annotations, name, value);
 }
 
-static int dynInterface_getEntryForHead(struct namvals_head *head, const char *name, const char **out) {
+static int dynInterface_getEntryForHead(const struct namvals_head *head, const char *name, const char **out) {
     int status = OK;
     char *value = NULL;
     struct namval_entry *entry = NULL;
@@ -370,13 +330,13 @@ static int dynInterface_getEntryForHead(struct namvals_head *head, const char *n
     return status;
 }
 
-int dynInterface_methods(dyn_interface_type *intf, const struct methods_head **list) {
+int dynInterface_methods(const dyn_interface_type* intf, const struct methods_head** list) {
     int status = OK;
     *list = &intf->methods;
     return status;
 }
 
-int dynInterface_nrOfMethods(dyn_interface_type *intf) {
+int dynInterface_nrOfMethods(const dyn_interface_type* intf) {
     int count = 0;
     struct method_entry *entry = NULL;
     TAILQ_FOREACH(entry, &intf->methods, entries) {

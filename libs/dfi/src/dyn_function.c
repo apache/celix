@@ -308,3 +308,7 @@ bool dynFunction_hasReturn(dyn_function_type *dynFunction) {
     dyn_type *t = dynFunction_returnType(dynFunction);
     return t->descriptor != 'V';
 }
+
+const char* dynFunction_getName(const dyn_function_type* func) {
+    return func->name;
+}

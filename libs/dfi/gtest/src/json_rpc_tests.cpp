@@ -34,6 +34,7 @@ extern "C" {
 
 #include "dyn_common.h"
 #include "dyn_type.h"
+#include "dyn_function.h"
 #include "json_serializer.h"
 #include "json_rpc.h"
 #include "celix_errno.h"
@@ -360,7 +361,7 @@ extern "C" {
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(entry->name, "stats") == 0) {
+            if (strcmp(dynFunction_getName(entry->dynFunc), "stats") == 0) {
                 func = entry->dynFunc;
                 break;
             }
@@ -402,7 +403,7 @@ extern "C" {
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(entry->name, "stats") == 0) {
+            if (strcmp(dynFunction_getName(entry->dynFunc), "stats") == 0) {
                 func = entry->dynFunc;
                 break;
             }
@@ -441,7 +442,7 @@ extern "C" {
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(entry->name, "add") == 0) {
+            if (strcmp(dynFunction_getName(entry->dynFunc), "add") == 0) {
                 func = entry->dynFunc;
                 break;
             }
@@ -499,7 +500,7 @@ extern "C" {
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(entry->name, "example1") == 0) {
+            if (strcmp(dynFunction_getName(entry->dynFunc), "items") == 0) {
                 func = entry->dynFunc;
                 break;
             }
@@ -552,7 +553,7 @@ extern "C" {
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(entry->name, "action") == 0) {
+            if (strcmp(dynFunction_getName(entry->dynFunc), "action") == 0) {
                 func = entry->dynFunc;
                 break;
             }
@@ -585,7 +586,7 @@ extern "C" {
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(entry->name, "multiPreOut") == 0) {
+            if (strcmp(dynFunction_getName(entry->dynFunc), "multiPreOut") == 0) {
                 func = entry->dynFunc;
                 break;
             }
@@ -628,7 +629,7 @@ extern "C" {
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(entry->name, "multiOut") == 0) {
+            if (strcmp(dynFunction_getName(entry->dynFunc), "multiOut") == 0) {
                 func = entry->dynFunc;
                 break;
             }
@@ -694,7 +695,7 @@ extern "C" {
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(entry->name, "getName") == 0) {
+            if (strcmp(dynFunction_getName(entry->dynFunc), "getName") == 0) {
                 func = entry->dynFunc;
                 break;
             }
@@ -902,7 +903,7 @@ extern "C" {
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(entry->name, "compatibility") == 0) {
+            if (strcmp(dynFunction_getName(entry->dynFunc), "cpt") == 0) {
                 func = entry->dynFunc;
                 break;
             }

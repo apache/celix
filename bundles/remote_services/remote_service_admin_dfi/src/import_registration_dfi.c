@@ -234,9 +234,8 @@ static celix_status_t importRegistration_createProxy(import_registration_t *impo
     }
 
     /* Check if the imported service version is compatible with the one in the consumer descriptor */
-    const celix_version_t* consumerVersion = NULL;
+    const celix_version_t* consumerVersion = dynInterface_getVersion(intf);
     bool isCompatible = false;
-    dynInterface_getVersion(intf,&consumerVersion);
     isCompatible = celix_version_isCompatible(consumerVersion,import->version);
 
     if(!isCompatible){
@@ -327,7 +326,8 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
         int rc = 0;
         //printf("sending request\n");
         celix_properties_t *metadata = NULL;
-        bool cont = remoteInterceptorHandler_invokePreProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, &metadata);
+        bool cont = remoteInterceptorHandler_invokePreProxyCall(import->interceptorsHandler, import->endpoint->properties,
+                                                                dynFunction_getName(entry->dynFunc), &metadata);
         if (cont) {
             status = import->send(import->sendHandle, import->endpoint, invokeRequest, metadata, &reply, &rc);
             //printf("request sended. got reply '%s' with status %i\n", reply, rc);
@@ -346,7 +346,8 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
                 *(int *) returnVal = rc;
             }
 
-            remoteInterceptorHandler_invokePostProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, metadata);
+            remoteInterceptorHandler_invokePostProxyCall(import->interceptorsHandler, import->endpoint->properties,
+                                                         dynFunction_getName(entry->dynFunc), metadata);
         } else {
             *(int *) returnVal = CELIX_INTERCEPTOR_EXCEPTION;
         }
