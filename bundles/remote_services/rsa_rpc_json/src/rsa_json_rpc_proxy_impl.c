@@ -339,8 +339,7 @@ static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxy
     }
     celix_autofree void **service = (void **)proxy->service;
     service[0] = proxy;
-    const struct methods_head *list = NULL;
-    dynInterface_methods(intfType, &list);
+    const struct methods_head* list = dynInterface_methods(intfType);
     struct method_entry *entry = NULL;
     void (*fn)(void) = NULL;
     int index = 0;

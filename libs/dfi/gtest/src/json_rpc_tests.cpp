@@ -356,8 +356,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head *head;
-        dynInterface_methods(intf, &head);
+        const struct methods_head* head = dynInterface_methods(intf);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
@@ -398,8 +397,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head *head;
-        dynInterface_methods(intf, &head);
+        const struct methods_head* head = dynInterface_methods(intf);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
@@ -437,8 +435,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head *head;
-        dynInterface_methods(intf, &head);
+        const struct methods_head* head = dynInterface_methods(intf);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
@@ -495,8 +492,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head *head;
-        dynInterface_methods(intf, &head);
+        const struct methods_head* head = dynInterface_methods(intf);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
@@ -548,8 +544,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head *head;
-        dynInterface_methods(intf, &head);
+        const struct methods_head* head = dynInterface_methods(intf);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
@@ -581,8 +576,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head *head;
-        dynInterface_methods(intf, &head);
+        const struct methods_head* head = dynInterface_methods(intf);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
@@ -624,8 +618,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head *head;
-        dynInterface_methods(intf, &head);
+        const struct methods_head* head = dynInterface_methods(intf);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
@@ -690,8 +683,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head *head;
-        dynInterface_methods(intf, &head);
+        const struct methods_head* head = dynInterface_methods(intf);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {
@@ -898,8 +890,7 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head *head;
-        dynInterface_methods(intf, &head);
+        const struct methods_head* head = dynInterface_methods(intf);
         dyn_function_type *func = nullptr;
         struct method_entry *entry = nullptr;
         TAILQ_FOREACH(entry, head, entries) {

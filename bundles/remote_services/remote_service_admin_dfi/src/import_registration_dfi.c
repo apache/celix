@@ -270,8 +270,7 @@ static celix_status_t importRegistration_createProxy(import_registration_t *impo
         void **serv = proxy->service;
         serv[0] = import;
 
-        const struct methods_head *list = NULL;
-        dynInterface_methods(proxy->intf, &list);
+        const struct methods_head* list = dynInterface_methods(proxy->intf);
         struct method_entry *entry = NULL;
         void (*fn)(void) = NULL;
         int index = 0;

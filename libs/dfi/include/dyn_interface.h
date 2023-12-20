@@ -76,18 +76,21 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(dyn_interface_type, dynInterface_destroy);
 /**
  * @brief Gets the name of the given dynamic interface type instance.
  * The dynamic interface type instance is the owner of the returned string and the string should not be freed.
+ * @note It always returns valid string.
  */
 CELIX_DFI_EXPORT const char* dynInterface_getName(const dyn_interface_type* intf);
 
 /**
  * @brief Gets the version of the given dynamic interface type instance.
  * The dynamic interface type instance is the owner of the version and the version should not be freed.
+ * @note It always returns valid version.
  */
 CELIX_DFI_EXPORT const celix_version_t* dynInterface_getVersion(const dyn_interface_type* intf);
 
 /**
  * @brief Gets the version string of the given dynamic interface type instance.
  * The dynamic interface type instance is the owner of the version string and the version string should not be freed.
+ * @note It always returns valid string.
  */
 CELIX_DFI_EXPORT const char* dynInterface_getVersionString(const dyn_interface_type* intf);
 
@@ -121,14 +124,10 @@ CELIX_DFI_EXPORT int dynInterface_getAnnotationEntry(const dyn_interface_type* i
 
 /**
  * @brief Gets the methods of the given dynamic interface type instance.
- *
  * The dynamic interface type instance is the owner of the list and the list should not be freed.
- *
- * @param[in] intf The dynamic interface type instance.
- * @param[out] list The method list of the dynamic interface type instance.
- * @return 0.
+ * @note It always returns valid methods.
  */
-CELIX_DFI_EXPORT int dynInterface_methods(const dyn_interface_type* intf, const struct methods_head** list);
+CELIX_DFI_EXPORT const struct methods_head* dynInterface_methods(const dyn_interface_type* intf);
 
 /**
  * @brief Returns the number of methods for the given dynamic interface type instance.

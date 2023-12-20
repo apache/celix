@@ -69,9 +69,7 @@ extern "C" {
         ASSERT_TRUE(status != 0);
         ASSERT_TRUE(nonExist == NULL);
 
-        const struct methods_head *list = NULL;
-        status = dynInterface_methods(dynIntf, &list);
-        ASSERT_TRUE(status == 0);
+        const struct methods_head* list = dynInterface_methods(dynIntf);
         ASSERT_TRUE(list != NULL);
 
         int count = dynInterface_nrOfMethods(dynIntf);

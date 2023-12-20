@@ -330,10 +330,8 @@ static int dynInterface_getEntryForHead(const struct namvals_head *head, const c
     return status;
 }
 
-int dynInterface_methods(const dyn_interface_type* intf, const struct methods_head** list) {
-    int status = OK;
-    *list = &intf->methods;
-    return status;
+const struct methods_head* dynInterface_methods(const dyn_interface_type* intf) {
+    return &intf->methods;
 }
 
 int dynInterface_nrOfMethods(const dyn_interface_type* intf) {

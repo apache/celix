@@ -63,8 +63,7 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 		return ERROR;
 	}
 
-	const struct methods_head *methods = NULL;
-	dynInterface_methods(intf, &methods);
+	const struct methods_head* methods = dynInterface_methods(intf);
 	struct method_entry *entry = NULL;
 	struct method_entry *method = NULL;
 	TAILQ_FOREACH(entry, methods, entries) {
