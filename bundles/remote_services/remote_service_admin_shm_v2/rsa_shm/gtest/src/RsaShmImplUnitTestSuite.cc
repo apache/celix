@@ -83,7 +83,8 @@ public:
         celix_properties_t *properties = celix_properties_create();
         celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, RSA_SHM_CALCULATOR_SERVICE);
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, RSA_SHM_CALCULATOR_SERVICE_VERSION);
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE "," RSA_SHM_RPC_TYPE_DEFAULT);
+        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE);
+        celix_properties_set(properties, RSA_SHM_RPC_TYPE_KEY, RSA_SHM_RPC_TYPE_DEFAULT);
 
         calcSvcId = celix_bundleContext_registerService(ctx.get(), &calcService, RSA_SHM_CALCULATOR_SERVICE, properties);
     };
@@ -96,7 +97,8 @@ public:
         celix_properties_t *properties = celix_properties_create();
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, RSA_SHM_CALCULATOR_SERVICE);
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, RSA_SHM_CALCULATOR_SERVICE_VERSION);
-        celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE "," RSA_SHM_RPC_TYPE_DEFAULT);
+        celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE);
+        celix_properties_set(properties, RSA_SHM_RPC_TYPE_KEY, RSA_SHM_RPC_TYPE_DEFAULT);
         celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "7f7efba5-500f-4ee9-b733-68de012091da");
         celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "1234");
         celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
@@ -615,7 +617,7 @@ TEST_F(RsaShmUnitTestSuite, EndpointLostRpcType) {
 
     endpoint_description_t *endpoint = CreateEndpointDescription();
     EXPECT_NE(nullptr, endpoint);
-    celix_properties_set(endpoint->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE);
+    celix_properties_unset(endpoint->properties, RSA_SHM_RPC_TYPE_KEY);
 
     status = rsaShm_importService(admin, endpoint, &regs);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);

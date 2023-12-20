@@ -34,4 +34,11 @@ celix_properties_t *__wrap_celix_properties_copy(const celix_properties_t *prope
     return __real_celix_properties_copy(properties);
 }
 
+celix_status_t __real_celix_properties_set(celix_properties_t *properties, const char *key, const char *value);
+CELIX_EI_DEFINE(celix_properties_set, celix_status_t)
+celix_status_t __wrap_celix_properties_set(celix_properties_t *properties, const char *key, const char *value) {
+    CELIX_EI_IMPL(celix_properties_set);
+    return __real_celix_properties_set(properties, key, value);
+}
+
 }

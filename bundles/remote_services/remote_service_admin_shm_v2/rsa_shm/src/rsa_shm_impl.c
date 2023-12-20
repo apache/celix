@@ -453,34 +453,6 @@ celix_status_t rsaShm_removeExportedService(rsa_shm_t *admin, export_registratio
     return status;
 }
 
-static char *rsaShm_getRpcTypeWithDefault(rsa_shm_t *admin CELIX_UNUSED, const char *serviceExportedConfigs, const char *defaultVal) {
-    char *rpcType = NULL;
-    if (serviceExportedConfigs != NULL) {
-        celix_autofree char *ecCopy = celix_utils_strdup(serviceExportedConfigs);
-        if (ecCopy == NULL) {
-            return NULL;
-        }
-        const char delimiter[2] = ",";
-        char *token, *savePtr;
-
-        token = strtok_r(ecCopy, delimiter, &savePtr);
-        while (token != NULL) {
-            celix_autofree char *tokenTrim = celix_utils_trim(token);
-            if (tokenTrim != NULL && strncmp(tokenTrim, RSA_RPC_TYPE_PREFIX, sizeof(RSA_RPC_TYPE_PREFIX) - 1) == 0) {
-                rpcType = celix_steal_ptr(tokenTrim);
-                break;//TODO Multiple RPC type values may be supported in the future.
-            }
-            token = strtok_r(NULL, delimiter, &savePtr);
-        }
-    }
-    //if rpc type is not exist, then set a default value.
-    if (rpcType == NULL && defaultVal != NULL) {
-        rpcType = celix_utils_strdup(defaultVal);
-    }
-
-    return rpcType;
-}
-
 static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
         celix_properties_t *exportedProperties, char *interface, endpoint_description_t **description) {
     celix_status_t status = CELIX_SUCCESS;
@@ -512,21 +484,11 @@ static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
     celix_properties_setLong(endpointProperties, (char*) OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
     celix_properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
     celix_properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED, "true");
-
-    celix_autofree char *rpcType = rsaShm_getRpcTypeWithDefault(admin, celix_properties_get(exportedProperties,OSGI_RSA_SERVICE_EXPORTED_CONFIGS, NULL),
-            RSA_SHM_RPC_TYPE_DEFAULT);
-    if (rpcType == NULL) {
-        celix_logHelper_error(admin->logHelper, "Failed to get rpc type");
-        return CELIX_ENOMEM;
+    celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, RSA_SHM_CONFIGURATION_TYPE);
+    //If the rpc type of RSA_SHM_CONFIGURATION_TYPE is not set, then set a default value.
+    if (celix_properties_get(endpointProperties, RSA_SHM_RPC_TYPE_KEY, NULL) == NULL) {
+        celix_properties_set(endpointProperties, RSA_SHM_RPC_TYPE_KEY, RSA_SHM_RPC_TYPE_DEFAULT);
     }
-
-    char *importedConfigs = NULL;
-    int bytes = asprintf(&importedConfigs, "%s,%s",RSA_SHM_CONFIGURATION_TYPE, rpcType);
-    if (bytes < 0) {
-        celix_logHelper_error(admin->logHelper, "Failed to create imported configs");
-        return CELIX_ENOMEM;
-    }
-    celix_properties_setWithoutCopy(endpointProperties, strdup(OSGI_RSA_SERVICE_IMPORTED_CONFIGS), importedConfigs);
     celix_properties_set(endpointProperties, (char *) RSA_SHM_SERVER_NAME_KEY, admin->shmServerName);
     status = endpointDescription_create(endpointProperties, description);
     if (status != CELIX_SUCCESS) {
