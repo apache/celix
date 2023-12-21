@@ -97,7 +97,7 @@ CELIX_DFI_EXPORT int dynFunction_nrOfArguments(dyn_function_type *dynFunc);
  * @param[in] argumentNr The argument index.
  * @return The argument type.
  */
-CELIX_DFI_EXPORT dyn_type *dynFunction_argumentTypeForIndex(dyn_function_type *dynFunc, int argumentNr);
+CELIX_DFI_EXPORT const dyn_type* dynFunction_argumentTypeForIndex(dyn_function_type* dynFunc, int argumentNr);
 
 /**
  * @brief Returns the argument meta for the given argument index.
@@ -112,7 +112,7 @@ CELIX_DFI_EXPORT enum dyn_function_argument_meta dynFunction_argumentMetaForInde
  * @param[in] dynFunc The dynamic type instance for function.
  * @return The return value type.
  */
-CELIX_DFI_EXPORT dyn_type * dynFunction_returnType(dyn_function_type *dynFunction);
+CELIX_DFI_EXPORT const dyn_type* dynFunction_returnType(dyn_function_type *dynFunction);
 
 /**
  * @brief Destroys the given dynamic function type instance.

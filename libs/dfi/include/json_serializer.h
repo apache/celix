@@ -58,7 +58,7 @@ CELIX_DFI_EXPORT int jsonSerializer_deserialize(dyn_type *type, const char *inpu
  * @return 0 if successful, otherwise 1.
  *
  */
-CELIX_DFI_EXPORT int jsonSerializer_deserializeJson(dyn_type *type, json_t *input, void **result);
+CELIX_DFI_EXPORT int jsonSerializer_deserializeJson(const dyn_type *type, json_t *input, void **result);
 
 /**
  * @brief Serialize a given type to a JSON string.
@@ -88,7 +88,7 @@ CELIX_DFI_EXPORT int jsonSerializer_serialize(dyn_type *type, const void* input,
  * @return 0 if successful, otherwise 1.
  *
  */
-CELIX_DFI_EXPORT int jsonSerializer_serializeJson(dyn_type *type, const void* input, json_t **out);
+CELIX_DFI_EXPORT int jsonSerializer_serializeJson(const dyn_type *type, const void* input, json_t **out);
 
 #ifdef __cplusplus
 }

@@ -188,10 +188,8 @@ TEST_F(DynTypeTests, AssignTest2) {
     dynType_complex_setValueAt(type, 0,  &inst, &a);
     ASSERT_EQ(2, inst.a);
 
-    void *loc = NULL;
-    dyn_type *subType = NULL;
-    dynType_complex_valLocAt(type, 1, (void *)&inst, &loc);
-    dynType_complex_dynTypeAt(type, 1, &subType);
+    (void)dynType_complex_valLocAt(type, 1, (void *)&inst);
+    const dyn_type* subType = dynType_complex_dynTypeAt(type, 1);
 
     dynType_complex_setValueAt(subType, 0, &inst.b, &b_a);
     ASSERT_EQ(1.1, inst.b.a);

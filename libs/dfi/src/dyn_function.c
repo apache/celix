@@ -286,10 +286,10 @@ int dynFunction_nrOfArguments(dyn_function_type *dynFunc) {
     return count;
 }
 
-dyn_type *dynFunction_argumentTypeForIndex(dyn_function_type *dynFunc, int argumentNr) {
-    dyn_type *result = NULL;
+const dyn_type* dynFunction_argumentTypeForIndex(dyn_function_type* dynFunc, int argumentNr) {
+    dyn_type* result = NULL;
     int index = 0;
-    dyn_function_argument_type *entry = NULL;
+    dyn_function_argument_type* entry = NULL;
     TAILQ_FOREACH(entry, &dynFunc->arguments, entries) {
         if (index == argumentNr) {
             result = entry->type;
@@ -300,12 +300,12 @@ dyn_type *dynFunction_argumentTypeForIndex(dyn_function_type *dynFunc, int argum
     return result;
 }
 
-dyn_type * dynFunction_returnType(dyn_function_type *dynFunction) {
+const dyn_type* dynFunction_returnType(dyn_function_type *dynFunction) {
     return dynFunction->funcReturn;
 }
 
-bool dynFunction_hasReturn(dyn_function_type *dynFunction) {
-    dyn_type *t = dynFunction_returnType(dynFunction);
+bool dynFunction_hasReturn(dyn_function_type* dynFunction) {
+    const dyn_type* t = dynFunction_returnType(dynFunction);
     return t->descriptor != 'V';
 }
 

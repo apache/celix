@@ -28,17 +28,17 @@
 #include <stdint.h>
 #include <string.h>
 
-static int jsonSerializer_createType(dyn_type *type, json_t *object, void **result);
-static int jsonSerializer_parseObject(dyn_type *type, json_t *object, void *inst);
-static int jsonSerializer_parseObjectMember(dyn_type *type, const char *name, json_t *val, void *inst);
-static int jsonSerializer_parseSequence(dyn_type *seq, json_t *array, void *seqLoc);
-static int jsonSerializer_parseAny(dyn_type *type, void *input, json_t *val);
-static int jsonSerializer_parseEnum(dyn_type *type, const char* enum_name, int32_t *out);
+static int jsonSerializer_createType(const dyn_type *type, json_t *object, void **result);
+static int jsonSerializer_parseObject(const dyn_type *type, json_t *object, void *inst);
+static int jsonSerializer_parseObjectMember(const dyn_type *type, const char *name, json_t *val, void *inst);
+static int jsonSerializer_parseSequence(const dyn_type *seq, json_t *array, void *seqLoc);
+static int jsonSerializer_parseAny(const dyn_type *type, void *input, json_t *val);
+static int jsonSerializer_parseEnum(const dyn_type *type, const char* enum_name, int32_t *out);
 
-static int jsonSerializer_writeAny(dyn_type *type, void *input, json_t **val);
-static int jsonSerializer_writeComplex(dyn_type *type, void *input, json_t **val);
-static int jsonSerializer_writeSequence(dyn_type *type, void *input, json_t **out);
-static int jsonSerializer_writeEnum(dyn_type *type, int32_t enum_value, json_t **out);
+static int jsonSerializer_writeAny(const dyn_type *type, void *input, json_t **val);
+static int jsonSerializer_writeComplex(const dyn_type *type, void *input, json_t **val);
+static int jsonSerializer_writeSequence(const dyn_type *type, void *input, json_t **out);
+static int jsonSerializer_writeEnum(const dyn_type *type, int32_t enum_value, json_t **out);
 
 
 static int OK = 0;
@@ -65,11 +65,11 @@ int jsonSerializer_deserialize(dyn_type *type, const char *input, size_t length,
     return status;
 }
 
-int jsonSerializer_deserializeJson(dyn_type *type, json_t *input, void **out) {
+int jsonSerializer_deserializeJson(const dyn_type *type, json_t *input, void **out) {
     return jsonSerializer_createType(type, input, out);
 }
 
-static int jsonSerializer_createType(dyn_type *type, json_t *val, void **result) {
+static int jsonSerializer_createType(const dyn_type *type, json_t *val, void **result) {
     assert(val != NULL);
     int status = OK;
     void *inst = NULL;
@@ -104,7 +104,7 @@ static int jsonSerializer_createType(dyn_type *type, json_t *val, void **result)
     return status;
 }
 
-static int jsonSerializer_parseObject(dyn_type *type, json_t *object, void *inst) {
+static int jsonSerializer_parseObject(const dyn_type *type, json_t *object, void *inst) {
     assert(object != NULL);
     int status = 0;
     json_t *value;
@@ -120,35 +120,25 @@ static int jsonSerializer_parseObject(dyn_type *type, json_t *object, void *inst
     return status;
 }
 
-static int jsonSerializer_parseObjectMember(dyn_type *type, const char *name, json_t *val, void *inst) {
-    int status = OK;
+static int jsonSerializer_parseObjectMember(const dyn_type *type, const char *name, json_t *val, void *inst) {
     void *valp = NULL;
-    dyn_type *valType = NULL;
+    const dyn_type* valType = NULL;
 
     int index = dynType_complex_indexForName(type, name);
     if (index < 0) {
         return OK;//We should ignore unknown name in request or response. Satisfy forward compatibility for responses.
     }
 
-    if (status == OK) {
-        status = dynType_complex_valLocAt(type, index, inst, &valp);
-    }
+    valp = dynType_complex_valLocAt(type, index, inst);
+    valType = dynType_complex_dynTypeAt(type, index);
 
-    if (status == OK ) {
-        status = dynType_complex_dynTypeAt(type, index, &valType);
-    }
-
-    if (status == OK) {
-        status = jsonSerializer_parseAny(valType, valp, val);
-    }
-
-    return status;
+    return jsonSerializer_parseAny(valType, valp, val);
 }
 
-static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
+static int jsonSerializer_parseAny(const dyn_type *type, void *loc, json_t *val) {
     int status = OK;
 
-    dyn_type *subType = NULL;
+    const dyn_type *subType = NULL;
     char c = dynType_descriptorType(type);
 
     /*
@@ -255,10 +245,8 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
             }
             break;
         case '*' :
-            status = dynType_typedPointer_getTypedType(type, &subType);
-            if (status == OK) {
-                status = jsonSerializer_createType(subType, val, (void **) loc);
-            }
+            subType = dynType_typedPointer_getTypedType(type);
+            status = jsonSerializer_createType(subType, val, (void **) loc);
             break;
         case 'P' :
             status = ERROR;
@@ -276,7 +264,7 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
     return status;
 }
 
-static int jsonSerializer_parseSequence(dyn_type *seq, json_t *array, void *seqLoc) {
+static int jsonSerializer_parseSequence(const dyn_type *seq, json_t *array, void *seqLoc) {
     assert(dynType_type(seq) == DYN_TYPE_SEQUENCE);
     int status = OK;
 
@@ -284,7 +272,7 @@ static int jsonSerializer_parseSequence(dyn_type *seq, json_t *array, void *seqL
     status = dynType_sequence_alloc(seq, seqLoc, (int) size);
 
     if (status == OK) {
-        dyn_type *itemType = dynType_sequence_itemType(seq);
+        const dyn_type *itemType = dynType_sequence_itemType(seq);
         size_t index;
         json_t *val;
         json_array_foreach(array, index, val) {
@@ -316,7 +304,7 @@ int jsonSerializer_serialize(dyn_type *type, const void* input, char **output) {
     return status;
 }
 
-static int jsonSerializer_parseEnum(dyn_type *type, const char* enum_name, int32_t *out) {
+static int jsonSerializer_parseEnum(const dyn_type *type, const char* enum_name, int32_t *out) {
     struct meta_entry * entry;
 
     TAILQ_FOREACH(entry, &type->metaProperties, entries) {
@@ -330,16 +318,16 @@ static int jsonSerializer_parseEnum(dyn_type *type, const char* enum_name, int32
     return ERROR;
 }
 
-int jsonSerializer_serializeJson(dyn_type *type, const void* input, json_t **out) {
+int jsonSerializer_serializeJson(const dyn_type *type, const void* input, json_t **out) {
     return jsonSerializer_writeAny(type, (void*)input /*TODO update static function to take const void**/, out);
 }
 
-static int jsonSerializer_writeAny(dyn_type *type, void* input, json_t **out) {
+static int jsonSerializer_writeAny(const dyn_type *type, void* input, json_t **out) {
     int status = OK;
 
     int descriptor = dynType_descriptorType(type);
     json_t *val = NULL;
-    dyn_type *subType = NULL;
+    const dyn_type *subType = NULL;
 
     bool *z;            //Z
     float *f;           //F
@@ -412,10 +400,8 @@ static int jsonSerializer_writeAny(dyn_type *type, void* input, json_t **out) {
             status = jsonSerializer_writeEnum(type, *e, &val);
             break;
         case '*' :
-            status = dynType_typedPointer_getTypedType(type, &subType);
-            if (status == OK) {
-                status = jsonSerializer_writeAny(subType, *(void **)input, &val);
-            }
+            subType = dynType_typedPointer_getTypedType(type);
+            status = jsonSerializer_writeAny(subType, *(void **)input, &val);
             break;
         case '{' :
             status = jsonSerializer_writeComplex(type, input, &val);
@@ -443,12 +429,12 @@ static int jsonSerializer_writeAny(dyn_type *type, void* input, json_t **out) {
     return status;
 }
 
-static int jsonSerializer_writeSequence(dyn_type *type, void *input, json_t **out) {
+static int jsonSerializer_writeSequence(const dyn_type *type, void *input, json_t **out) {
     assert(dynType_type(type) == DYN_TYPE_SEQUENCE);
     int status = OK;
 
     json_t *array = json_array();
-    dyn_type *itemType = dynType_sequence_itemType(type);
+    const dyn_type *itemType = dynType_sequence_itemType(type);
     uint32_t len = dynType_sequence_length(input);
 
     int i = 0;
@@ -480,43 +466,40 @@ static int jsonSerializer_writeSequence(dyn_type *type, void *input, json_t **ou
     return status;
 }
 
-static int jsonSerializer_writeComplex(dyn_type *type, void *input, json_t **out) {
+static int jsonSerializer_writeComplex(const dyn_type *type, void *input, json_t **out) {
     assert(dynType_type(type) == DYN_TYPE_COMPLEX);
     int status = OK;
 
     json_t *val = json_object();
     struct complex_type_entry *entry = NULL;
-    struct complex_type_entries_head *entries = NULL;
+    const struct complex_type_entries_head *entries = dynType_complex_entries(type);
     int index = -1;
 
-    status = dynType_complex_entries(type, &entries);
-    if (status == OK) {
-        TAILQ_FOREACH(entry, entries, entries) {
-            void *subLoc = NULL;
-            json_t *subVal = NULL;
-            dyn_type *subType = NULL;
-            index = dynType_complex_indexForName(type, entry->name);
-            if (index < 0) {
-                celix_err_pushf("Cannot find index for member '%s'", entry->name);
-                status = ERROR;
-            }
-            if(status == OK){
-                status = dynType_complex_valLocAt(type, index, input, &subLoc);
-            }
-            if (status == OK) {
-                status = dynType_complex_dynTypeAt(type, index, &subType);
-            }
-            if (status == OK) {
-                status = jsonSerializer_writeAny(subType, subLoc, &subVal);
-            }
-            if (status == OK) {
-                json_object_set(val, entry->name, subVal);
-                json_decref(subVal);
-            }
+    TAILQ_FOREACH(entry, entries, entries) {
+        void *subLoc = NULL;
+        json_t *subVal = NULL;
+        const dyn_type* subType = NULL;
+        index = dynType_complex_indexForName(type, entry->name);
+        if (index < 0) {
+            celix_err_pushf("Cannot find index for member '%s'", entry->name);
+            status = ERROR;
+        }
+        if(status == OK){
+            subLoc = dynType_complex_valLocAt(type, index, input);
+        }
+        if (status == OK) {
+            subType = dynType_complex_dynTypeAt(type, index);
+        }
+        if (status == OK) {
+            status = jsonSerializer_writeAny(subType, subLoc, &subVal);
+        }
+        if (status == OK) {
+            json_object_set(val, entry->name, subVal);
+            json_decref(subVal);
+        }
 
-            if (status != OK) {
-                break;
-            }
+        if (status != OK) {
+            break;
         }
     }
 
@@ -530,7 +513,7 @@ static int jsonSerializer_writeComplex(dyn_type *type, void *input, json_t **out
     return status;
 }
 
-static int jsonSerializer_writeEnum(dyn_type *type, int32_t enum_value, json_t **out) {
+static int jsonSerializer_writeEnum(const dyn_type* type, int32_t enum_value, json_t **out) {
     struct meta_entry * entry;
 
     // Convert to string

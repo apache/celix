@@ -114,15 +114,15 @@ static bool func_acc() {
     int nrOfArgs = 0;
     bool isStruct = false;
     bool isVoid = false;
-    dyn_type *nonExist = nullptr;
+    const dyn_type *nonExist = nullptr;
     if (rc == 0) {
          nrOfArgs = dynFunction_nrOfArguments(dynFunc);
-        dyn_type *arg1 = dynFunction_argumentTypeForIndex(dynFunc, 1);
+        const dyn_type *arg1 = dynFunction_argumentTypeForIndex(dynFunc, 1);
         if (arg1 != nullptr) {
             isStruct = '{' == dynType_descriptorType(arg1);
         }
         nonExist = dynFunction_argumentTypeForIndex(dynFunc, 10);
-        dyn_type *returnType = dynFunction_returnType(dynFunc);
+        const dyn_type* returnType = dynFunction_returnType(dynFunc);
         if (returnType != nullptr) {
             isVoid = 'V' == dynType_descriptorType(returnType);
         }
