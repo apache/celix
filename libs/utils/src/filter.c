@@ -421,7 +421,7 @@ static celix_status_t celix_filter_parseSubstringAny(const char* filterString, i
         rc = fputc(filterString[*pos], stream);
         if (rc == EOF) {
             celix_err_push("Filter Error: Failed to write to stream.\n");
-            return CELIX_FILE_IO_EXCEPTION;
+            return CELIX_ENOMEM;
         }
         (*pos)++;
     }

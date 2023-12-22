@@ -160,11 +160,16 @@ CELIX_UTILS_EXPORT bool celix_filter_equals(const celix_filter_t* filter1, const
 CELIX_UTILS_EXPORT const char* celix_filter_getFilterString(const celix_filter_t* filter);
 
 /**
- * @brief Find the filter attribute.
+ * @brief Find the first filter attribute value matching the provided attribute name.
+ *
+ * Examples:
+ *  - filter arg: "(key=value)", attribute arg: "key" -> "value"
+ *  - filter arg: "(key1=value1)(key2=value2)", attribute arg: "key2" -> "value2"
+ *  - filter arg: "(|(key1=value1)(key1=value2))", attribute arg: "key1" -> "value1"
  *
  * @param[in] filter The filter.
  * @param[in] attribute The attribute to find.
- * @return The found attribute value or NULL if the attribute is not found. The returned string is owned by the filter,
+ * @return The first found attribute or NULL if the attribute is not found. The returned string is owned by the filter,
  *         must not be freed and is only valid as long as the filter is valid.
  */
 CELIX_UTILS_EXPORT const char* celix_filter_findAttribute(const celix_filter_t* filter, const char* attribute);
