@@ -457,54 +457,76 @@ TEST_F(FilterTestSuite, SubStringTest) {
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     celix_properties_set(props, "test", "John Bob Doe");
     celix_properties_set(props, "test2", "*ValueWithStar");
+    celix_properties_set(props, "test3", " Value");
 
     //test filter with matching subInitial
     celix_autoptr(celix_filter_t) filter1 = celix_filter_create("(test=Jo*)");
+    EXPECT_NE(nullptr, filter1);
     EXPECT_TRUE(celix_filter_match(filter1, props));
 
     //test filter with un-matching subInitial
     celix_autoptr(celix_filter_t) filter2 = celix_filter_create("(test=Joo*)");
+    EXPECT_NE(nullptr, filter2);
     EXPECT_FALSE(celix_filter_match(filter2, props));
 
     //test filter with matching subFinal
     celix_autoptr(celix_filter_t) filter3 = celix_filter_create("(test=*Doe)");
+    EXPECT_NE(nullptr, filter3);
     EXPECT_TRUE(celix_filter_match(filter3, props));
 
     //test filter with un-matching subFinal
     celix_autoptr(celix_filter_t) filter4 = celix_filter_create("(test=*Doo)");
+    EXPECT_NE(nullptr, filter4);
     EXPECT_FALSE(celix_filter_match(filter4, props));
 
     //test filter with matching subAny
     celix_autoptr(celix_filter_t) filter5 = celix_filter_create("(test=*Bob*)");
+    EXPECT_NE(nullptr, filter5);
     EXPECT_TRUE(celix_filter_match(filter5, props));
 
     //test filter with un-matching subAny
     celix_autoptr(celix_filter_t) filter6 = celix_filter_create("(test=*Boo*)");
+    EXPECT_NE(nullptr, filter6);
     EXPECT_FALSE(celix_filter_match(filter6, props));
 
     //test filter with matching subAny, subInitial and subFinal
     celix_autoptr(celix_filter_t) filter7 = celix_filter_create("(test=Jo*Bob*Doe)");
+    EXPECT_NE(nullptr, filter7);
     EXPECT_TRUE(celix_filter_match(filter7, props));
 
     //test filter with un-matching subAny, subInitial and subFinal
     celix_autoptr(celix_filter_t) filter8 = celix_filter_create("(test=Jo*Boo*Doe)");
+    EXPECT_NE(nullptr, filter8);
     EXPECT_FALSE(celix_filter_match(filter8, props));
 
     //test filter with un-matching overlapping subAny and subInitial
     celix_autoptr(celix_filter_t) filter9 = celix_filter_create("(test=John B*Bob*b Doe)");
+    EXPECT_NE(nullptr, filter9);
     EXPECT_FALSE(celix_filter_match(filter9, props));
 
     //test filter with un-matching overlapping subAny and subFinal
     celix_autoptr(celix_filter_t) filter10 = celix_filter_create("(test=*Bob*b Doe)");
+    EXPECT_NE(nullptr, filter10);
     EXPECT_FALSE(celix_filter_match(filter10, props));
 
     //test filter with a starting escaped asterisk
     celix_autoptr(celix_filter_t) filter11 = celix_filter_create("(test2=\\*Value*)");
+    EXPECT_NE(nullptr, filter11);
     EXPECT_TRUE(celix_filter_match(filter11, props));
 
     //test filter with an invalid substring
     celix_autoptr(celix_filter_t) filter12 = celix_filter_create("(test=Bob*");
     EXPECT_EQ(nullptr, filter12);
+
+    //test filter with mathing subInitial beginning with whitespace
+    celix_autoptr(celix_filter_t) filter13 = celix_filter_create("(test3= Value*)");
+    EXPECT_NE(nullptr, filter13);
+    EXPECT_TRUE(celix_filter_match(filter13, props));
+
+    //test filter with matching subInitial consisting of spaces
+    celix_autoptr(celix_filter_t) filter14 = celix_filter_create("(test3= *)");
+    EXPECT_NE(nullptr, filter14);
+    EXPECT_TRUE(celix_filter_match(filter14, props));
 }
 
 TEST_F(FilterTestSuite, CreateEmptyFilter) {

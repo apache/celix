@@ -458,7 +458,6 @@ static celix_array_list_t* celix_filter_parseSubstring(const char* filterString,
         return NULL;
     }
 
-    celix_filter_skipWhiteSpace(filterString, pos);
     if (filterString[*pos] == '*') {
         // initial substring is NULL
         // eat '*'
