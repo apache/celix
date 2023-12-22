@@ -398,14 +398,20 @@ static long celix_bundleContext_registerServiceWithOptionsInternal(bundle_contex
     }
 
     if (opts->serviceVersion != NULL && strncmp("", opts->serviceVersion, 1) != 0) {
-        celix_version_t* version = celix_version_createVersionFromString(opts->serviceVersion);
+        celix_autoptr(celix_version_t) version = celix_version_createVersionFromString(opts->serviceVersion);
         if (!version) {
             celix_framework_logTssErrors(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR);
             fw_log(
                 ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot parse service version %s", opts->serviceVersion);
             return -1;
         }
-        celix_properties_setVersionWithoutCopy(props, CELIX_FRAMEWORK_SERVICE_VERSION, version);
+        celix_status_t rc =
+            celix_properties_setVersionWithoutCopy(props, CELIX_FRAMEWORK_SERVICE_VERSION, celix_steal_ptr(version));
+        if (rc != CELIX_SUCCESS) {
+            celix_framework_logTssErrors(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR);
+            fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot set service version %s", opts->serviceVersion);
+            return -1;
+        }
     }
 
     long svcId;
