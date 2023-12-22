@@ -194,6 +194,14 @@ TEST_F(FilterErrorInjectionTestSuite, ErrorStrdupTest) {
     //Then the filter creation should fail, because it strdup the filter string
     celix_filter_t* filter = celix_filter_create(filterStr);
     EXPECT_EQ(nullptr, filter);
+
+    //Given an error injection for celix_utils_strdup
+    celix_ei_expect_celix_utils_strdup((void*)celix_filter_create, 4, nullptr);
+    //When creating a filter with an empty attribute value
+    filterStr = "(key1=)";
+    //Then the filter creation should fail, because it strdup the filter string
+    filter = celix_filter_create(filterStr);
+    EXPECT_EQ(nullptr, filter);
 }
 
 

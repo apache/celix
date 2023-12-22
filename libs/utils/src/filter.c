@@ -212,7 +212,7 @@ static celix_filter_t* celix_filter_parseNot(const char* filterString, int* pos)
 
 static celix_filter_t* celix_filter_parseItem(const char* filterString, int* pos) {
     celix_autofree char* attr = celix_filter_parseAttributeOrValue(filterString, pos, true);
-    if (!attr) {
+    if (!attr || strlen(attr) == 0) {
         celix_err_push("Filter Error: Missing attr.");
         return NULL;
     }
@@ -371,8 +371,13 @@ static char* celix_filter_parseAttributeOrValue(const char* filterString, int* p
     }
 
     if (!stream) {
-        celix_err_push("Filter Error: Empty value.\n");
-        return NULL;
+        // empty value
+        value = celix_utils_strdup("");
+        if (!value) {
+            celix_err_push("Filter Error: Failed to allocate memory.");
+            return NULL;
+        }
+        return celix_steal_ptr(value);
     }
 
     int rc = fclose(celix_steal_ptr(stream));
@@ -660,7 +665,7 @@ static bool celix_filter_matchSubString(const celix_filter_t* filter, const celi
     for (int i = 1; i < celix_arrayList_size(filter->children) - 1; i++) {
         const char* substr = celix_arrayList_get(filter->children, i);
         const char* found = strstr(currentValue, substr);
-        if (!found || found <= currentValue) {
+        if (!found) {
             return false;
         }
         currentValue = found + celix_utils_strlen(substr);
@@ -668,7 +673,7 @@ static bool celix_filter_matchSubString(const celix_filter_t* filter, const celi
 
     if (final) {
         const char* found = strstr(currentValue, final);
-        if (!found || found <= currentValue || found + celix_utils_strlen(final) != entry->value + strLen) {
+        if (!found || found + celix_utils_strlen(final) != entry->value + strLen) {
             return false;
         }
     }
@@ -838,6 +843,25 @@ bool celix_filter_equals(const celix_filter_t* filter1, const celix_filter_t* fi
                 }
             }
             return sameCount == sizeSrc;
+        }
+        return false;
+    }
+
+    if (filter1->operand == CELIX_FILTER_OPERAND_SUBSTRING) {
+        assert(filter1->children != NULL);
+        assert(filter2->children != NULL);
+        int sizeSrc = celix_arrayList_size(filter1->children);
+        int sizeDest = celix_arrayList_size(filter2->children);
+        if (sizeSrc == sizeDest) {
+            int i;
+            for (i = 0; i < celix_arrayList_size(filter1->children); i++) {
+                const char* srcPart = celix_arrayList_get(filter1->children, i);
+                const char* destPart = celix_arrayList_get(filter2->children, i);
+                if (!celix_utils_stringEquals(srcPart, destPart)) {
+                    break;
+                }
+            }
+            return i == sizeSrc;
         }
         return false;
     }

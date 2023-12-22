@@ -129,7 +129,7 @@ TEST_F(FilterTestSuite, MiscInvalidCreateTest) {
     // test parsing a value of 0 length
     const char* str5 = "(test_attr3>=)";
     filter = celix_filter_create(str5);
-    ASSERT_TRUE(filter == nullptr);
+    ASSERT_FALSE(filter == nullptr);
 
     // test parsing a value with an escaped closing parenthesis "\ ")"
     const char* str6 = "(test_attr3>=strWith\\)inIt)";
@@ -163,12 +163,12 @@ TEST_F(FilterTestSuite, MiscInvalidCreateTest) {
     // test parsing APPROX operator missing value
     const char* str11 = "(a~=)";
     filter = celix_filter_create(str11);
-    ASSERT_TRUE(filter == nullptr);
+    ASSERT_FALSE(filter == nullptr);
 
     // test parsing LESS operator missing value
     const char* str12 = "(a<)";
     filter = celix_filter_create(str12);
-    ASSERT_TRUE(filter == nullptr);
+    ASSERT_FALSE(filter == nullptr);
 }
 
 TEST_F(FilterTestSuite, MatchEqualTest) {
@@ -203,6 +203,7 @@ TEST_F(FilterTestSuite, MatchTest) {
     ASSERT_NE(nullptr, props);
     celix_properties_set(props, "test_attr1", "attr1");
     celix_properties_set(props, "test_attr2", "attr2");
+    celix_properties_set(props, "empty_attr", ""); //note empty string as value
 
     // Test EQUALS
     filter = celix_filter_create("(test_attr1=attr1)");
@@ -224,6 +225,16 @@ TEST_F(FilterTestSuite, MatchTest) {
     filter = celix_filter_create("(test_attr1~=ATTR1)");
     result = celix_filter_match(filter, props);
     EXPECT_TRUE(result);
+    celix_filter_destroy(filter);
+
+    filter = celix_filter_create("(empty_attr=");
+    result = celix_filter_match(filter, props);
+    EXPECT_TRUE(result);
+    celix_filter_destroy(filter);
+
+    filter = celix_filter_create("(empty_attr=val)");
+    result = celix_filter_match(filter, props);
+    EXPECT_FALSE(result);
     celix_filter_destroy(filter);
 
     // Test PRESENT
@@ -399,14 +410,19 @@ TEST_F(FilterTestSuite, FilterEqualsTest) {
     celix_autoptr(celix_filter_t) f4 = celix_filter_create("(&(test_attr1=attr1)(test_attr2=attr2))");
     celix_autoptr(celix_filter_t) f5 = celix_filter_create("(&(test_attr1=attr1)(test_attr2=attr2))");
     celix_autoptr(celix_filter_t) f6 = celix_filter_create("(&(test_attr1=attr1)(test_attr2=attr2)(test_attr3=attr3))");
-
-
     EXPECT_TRUE(celix_filter_equals(f1, f1));
     EXPECT_FALSE(celix_filter_equals(f1, nullptr));
     EXPECT_TRUE(celix_filter_equals(f1, f2));
     EXPECT_FALSE(celix_filter_equals(f1, f3));
     EXPECT_TRUE(celix_filter_equals(f4, f5));
     EXPECT_FALSE(celix_filter_equals(f4, f6));
+
+    // equals with substring test
+    celix_autoptr(celix_filter_t) f7 = celix_filter_create("(test_attr1=*test*)");
+    celix_autoptr(celix_filter_t) f8 = celix_filter_create("(test_attr1=*test*)");
+    celix_autoptr(celix_filter_t) f9 = celix_filter_create("(test_attr1=*test)");
+    EXPECT_TRUE(celix_filter_equals(f7, f8));
+    EXPECT_FALSE(celix_filter_equals(f7, f9));
 }
 
 TEST_F(FilterTestSuite, AutoCleanupTest) {
@@ -527,6 +543,11 @@ TEST_F(FilterTestSuite, SubStringTest) {
     celix_autoptr(celix_filter_t) filter14 = celix_filter_create("(test3= *)");
     EXPECT_NE(nullptr, filter14);
     EXPECT_TRUE(celix_filter_match(filter14, props));
+
+    //test filter with double escaped asterisk on both sides
+    celix_autoptr(celix_filter_t) filter15 = celix_filter_create("(test=*John*)");
+    EXPECT_NE(nullptr, filter15);
+    EXPECT_TRUE(celix_filter_match(filter15, props));
 }
 
 TEST_F(FilterTestSuite, CreateEmptyFilter) {
