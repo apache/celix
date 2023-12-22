@@ -130,6 +130,7 @@ TEST_F(FilterTestSuite, MiscInvalidCreateTest) {
     const char* str5 = "(test_attr3>=)";
     filter = celix_filter_create(str5);
     ASSERT_FALSE(filter == nullptr);
+    celix_filter_destroy(filter);
 
     // test parsing a value with an escaped closing parenthesis "\ ")"
     const char* str6 = "(test_attr3>=strWith\\)inIt)";
@@ -164,11 +165,13 @@ TEST_F(FilterTestSuite, MiscInvalidCreateTest) {
     const char* str11 = "(a~=)";
     filter = celix_filter_create(str11);
     ASSERT_FALSE(filter == nullptr);
+    celix_filter_destroy(filter);
 
     // test parsing LESS operator missing value
     const char* str12 = "(a<)";
     filter = celix_filter_create(str12);
     ASSERT_FALSE(filter == nullptr);
+    celix_filter_destroy(filter);
 }
 
 TEST_F(FilterTestSuite, MatchEqualTest) {
