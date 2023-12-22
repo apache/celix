@@ -55,7 +55,7 @@
  * used together with a set of properties.
  *
  * Internally attribute values will be parsed to a long, double, boolean and Apache Celix version if
- * possible during creation. And these types attribute values will be used in the to-be-matched property value,
+ * possible during creation. And these typed attribute values will be used in the to-be-matched property value,
  * if the property value is of the same type.
  *
  */
@@ -170,8 +170,11 @@ CELIX_UTILS_EXPORT const char* celix_filter_getFilterString(const celix_filter_t
 CELIX_UTILS_EXPORT const char* celix_filter_findAttribute(const celix_filter_t* filter, const char* attribute);
 
 /**
- * @brief Check whether the filter indicates the mandatory presence of an attribute with a specific value for the
- * provided attribute key.
+ * @brief Determines if a filter has a mandatory 'equals' attribute with the provided attribute name.
+ *
+ * This function recursively examines a filter object to determine if it contains  an 'equals' attribute that matches
+ * the specified attribute name. The function takes into account the logical operators AND, OR, and NOT in the
+ * filter structure, and appropriately handles them to assess the presence and name of the attribute.
  *
  * Example:
  *   using this function for attribute key "key1" on filter "(key1=value1)" yields true.
@@ -186,24 +189,26 @@ CELIX_UTILS_EXPORT const char* celix_filter_findAttribute(const celix_filter_t* 
  */
 CELIX_UTILS_EXPORT bool celix_filter_hasMandatoryEqualsValueAttribute(const celix_filter_t* filter,
                                                                       const char* attribute);
-
 /**
- * @brief Check whether the filter indicates the mandatory absence of an attribute, regardless of its value, for the
- * provided attribute key.
+ * @brief Determines if a filter mandates the absence of a specific attribute, irrespective of its value.
  *
- * example:
- *   using this function for attribute key "key1" on the filter "(!(key1=*))" yields true.
- *   using this function for attribute key "key1" on the filter "(key1=*) yields false.
- *   using this function for attribute key "key1" on the filter "(key1=value)" yields false.
- *   using this function for attribute key "key1" on the filter "(|(!(key1=*))(key2=value2))" yields false.
+ * This function recursively examines a filter object to determine if it contains a specification indicating the
+ * mandatory absence of the specified attribute. It takes into account logical operators AND, OR, and NOT in the filter
+ * structure, and appropriately handles them to assess the absence of the attribute.
  *
- * @param[in] filter The filter.
- * @param[in] attribute The attribute to check.
- * @return True if the filter indicates the mandatory absence of an attribute, regardless of its value, for the provided
- *         attribute key, false otherwise.
+ * Examples:
+ *   using this function for attribute key "key1" on filter "(!(key1=*))" yields true.
+ *   using this function for attribute key "key1" on filter "(key1=*)" yields false.
+ *   using this function for attribute key "key1" on filter "(key1=value)" yields false.
+ *   using this function for attribute key "key1" on filter "(|(!(key1=*))(key2=value2))" yields false.
+ *
+ * @param[in] filter The filter to examine.
+ * @param[in] attribute The attribute to check for mandatory absence.
+ * @return True if the filter indicates the mandatory absence of the specified attribute, false otherwise.
  */
 CELIX_UTILS_EXPORT bool celix_filter_hasMandatoryNegatedPresenceAttribute(const celix_filter_t* filter,
                                                                           const char* attribute);
+
 
 #ifdef __cplusplus
 }

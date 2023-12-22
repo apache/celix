@@ -125,7 +125,8 @@ namespace celix {
         }
 
         /**
-         * @brief Check whether the filter indicates the mandatory presence of an attribute with a specific value for the provided attribute key.
+         * @brief Check whether the filter indicates the mandatory presence of an attribute with a specific value for
+         * the provided attribute key.
          *
          * Example:
          *   using this method for attribute key "key1" on filter "(key1=value1)" yields true.
@@ -138,7 +139,8 @@ namespace celix {
         }
 
         /**
-         * @brief Check whether the filter indicates the mandatory absence of an attribute, regardless of its value, for the provided attribute key.
+         * @brief Check whether the filter indicates the mandatory absence of an attribute, regardless of its value, for
+         * the provided attribute key.
          *
          * example:
          *   using this function for attribute key "key1" on the filter "(!(key1=*))" yields true.

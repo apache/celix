@@ -158,7 +158,7 @@ static celix_filter_t* celix_filter_parseAndOrOr(const char* filterString, celix
             if (child == NULL) {
                 return NULL;
             }
-            if(celix_arrayList_add(children, child) != CELIX_SUCCESS) {
+            if (celix_arrayList_add(children, child) != CELIX_SUCCESS) {
                 celix_err_push("Filter Error: Failed to add filter node.");
                 celix_filter_destroy(child);
                 return NULL;
@@ -463,7 +463,7 @@ static celix_array_list_t* celix_filter_parseSubstring(const char* filterString,
         // initial substring is NULL
         // eat '*'
         (*pos)++;
-        if(celix_arrayList_add(subs, NULL) != CELIX_SUCCESS) {
+        if (celix_arrayList_add(subs, NULL) != CELIX_SUCCESS) {
             celix_err_push("Filter Error: Failed to add element to array list.");
             return NULL;
         }
@@ -477,7 +477,7 @@ static celix_array_list_t* celix_filter_parseSubstring(const char* filterString,
             return NULL;
         }
         if (element) {
-            if(celix_arrayList_add(subs, element) != CELIX_SUCCESS) {
+            if (celix_arrayList_add(subs, element) != CELIX_SUCCESS) {
                 free(element);
                 celix_err_push("Filter Error: Failed to add element to array list.");
                 return NULL;
@@ -487,7 +487,7 @@ static celix_array_list_t* celix_filter_parseSubstring(const char* filterString,
             // final substring is NULL
             (*pos)++; // eat '*'
             if (celix_filter_isNextNonWhiteSpaceChar(filterString, *pos, ')')) {
-                if(celix_arrayList_add(subs, NULL) != CELIX_SUCCESS) {
+                if (celix_arrayList_add(subs, NULL) != CELIX_SUCCESS) {
                     celix_err_push("Filter Error: Failed to add element to array list.");
                     return NULL;
                 }
