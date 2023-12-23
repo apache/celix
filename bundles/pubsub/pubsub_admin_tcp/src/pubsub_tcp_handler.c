@@ -29,7 +29,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <array_list.h>
 #include <pthread.h>
 #if defined(__APPLE__)
 #include <sys/types.h>

@@ -27,29 +27,15 @@
 #ifndef array_list_t_PRIVATE_H_
 #define array_list_t_PRIVATE_H_
 
-#include "array_list.h"
-
 struct celix_array_list {
     celix_array_list_entry_t* elementData;
     size_t size;
     size_t capacity;
-
     unsigned int modCount;
-
-    array_list_element_equals_pt equalsDeprecated;
     celix_arrayList_equals_fp  equals;
-
     void (*simpleRemovedCallback)(void* value);
     void* removedCallbackData;
     void (*removedCallback)(void* data, celix_array_list_entry_t entry);
 };
-
-struct celix_array_list_iterator {
-    array_list_pt list;
-    unsigned int cursor;
-    int lastReturned;
-    unsigned int expectedModificationCount;
-};
-
 
 #endif /* array_list_t_PRIVATE_H_ */

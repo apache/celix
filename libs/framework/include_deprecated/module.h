@@ -34,7 +34,6 @@ typedef struct module celix_module_t;
 
 #include "manifest.h"
 #include "version.h"
-#include "array_list.h"
 #include "bundle.h"
 #include "celix_framework_export.h"
 

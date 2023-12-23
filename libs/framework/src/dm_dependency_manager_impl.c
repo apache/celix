@@ -367,13 +367,13 @@ celix_status_t dependencyManager_getInfo(celix_dependency_manager_t *manager, dm
 	celixThreadMutex_lock(&manager->mutex);
 
 	if (info != NULL) {
-		arrayList_create(&info->components);
-		size = arrayList_size(manager->components);
+		celix_arrayList_create(&info->components);
+		size = celix_arrayList_size(manager->components);
 		for (i = 0; i < size; i += 1) {
-			celix_dm_component_t *cmp = arrayList_get(manager->components, i);
+			celix_dm_component_t *cmp = celix_arrayList_get(manager->components, i);
 			cmpInfo = NULL;
 			component_getComponentInfo(cmp, &cmpInfo);
-			arrayList_add(info->components, cmpInfo);
+                        celix_arrayList_add(info->components, cmpInfo);
 		}
 	} else {
 		status = CELIX_ENOMEM;

@@ -110,7 +110,7 @@ static void* send_thread(void* arg) {
     return NULL;
 }
 
-pubsub_sender_t* publisher_create(array_list_pt trackers,const char* ident,long bundleId) {
+pubsub_sender_t* publisher_create(celix_array_list_t* trackers,const char* ident,long bundleId) {
     pubsub_sender_t *publisher = malloc(sizeof(*publisher));
 
     publisher->trackers = trackers;

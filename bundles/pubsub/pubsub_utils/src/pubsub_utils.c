@@ -19,24 +19,20 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdint.h>
 
 #include "celix_constants.h"
 #include "celix_filter.h"
 #include "filter.h"
-
 #include "pubsub/publisher.h"
 #include "pubsub_utils.h"
 #include "bundle_context.h"
-
-#include "array_list.h"
 #include "celix_bundle.h"
-
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <stdint.h>
 #include "celix_utils.h"
+#include "celix_array_list.h"
 
 #define MAX_KEYBUNDLE_LENGTH 256
 
@@ -86,14 +82,14 @@ celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **scop
  * Caller is responsible for freeing the object
  */
 char* pubsub_getKeysBundleDir(celix_bundle_context_t *ctx) {
-    array_list_pt bundles = NULL;
+    celix_array_list_t* bundles = NULL;
     bundleContext_getBundles(ctx, &bundles);
-    uint32_t nrOfBundles = arrayList_size(bundles);
+    uint32_t nrOfBundles = celix_arrayList_size(bundles);
     long bundle_id = -1;
     char* result = NULL;
 
     for (int i = 0; i < nrOfBundles; i++) {
-        celix_bundle_t *b = arrayList_get(bundles, i);
+        celix_bundle_t *b = celix_arrayList_get(bundles, i);
 
         /* Skip bundle 0 (framework bundle) since it has no path nor revisions */
         bundle_getBundleId(b, &bundle_id);
@@ -119,7 +115,7 @@ char* pubsub_getKeysBundleDir(celix_bundle_context_t *ctx) {
         free(dir);
     }
 
-    arrayList_destroy(bundles);
+    celix_arrayList_destroy(bundles);
 
     return result;
 }

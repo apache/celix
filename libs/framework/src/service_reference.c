@@ -313,7 +313,7 @@ unsigned int serviceReference_hashCode(const void *referenceP) {
 }
 
 
-celix_status_t serviceReference_getUsingBundles(service_reference_pt ref, array_list_pt *out) {
+celix_status_t serviceReference_getUsingBundles(service_reference_pt ref, celix_array_list_t** out) {
     celix_status_t status = CELIX_SUCCESS;
     registry_callback_t callback;
 

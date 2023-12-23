@@ -267,11 +267,11 @@ extern "C" {
     /// \TEST_CASE_DESC Checks if 3 bundles are installed after the framework setup
     static void testBundles(void) {
         printf("Begin: %s\n", __func__);
-            array_list_pt bundles = NULL;
+            celix_array_list_t* bundles = NULL;
 
             int rc = bundleContext_getBundles(context, &bundles);
             EXPECT_EQ(0, rc);
-            EXPECT_EQ(5, arrayList_size(bundles)); //framework, scopeService & calc & rsa
+            EXPECT_EQ(5, celix_arrayList_size(bundles)); //framework, scopeService & calc & rsa
 
             /*
             int size = arrayList_size(bundles);
@@ -287,7 +287,7 @@ extern "C" {
                 printf("got bundle with symbolic name '%s'", name);
             }*/
 
-            arrayList_destroy(bundles);
+            celix_arrayList_destroy(bundles);
             printf("End: %s\n", __func__);
     }
 
@@ -384,7 +384,7 @@ extern "C" {
     static void testScope(void) {
         int nr_exported;
         int nr_imported;
-        array_list_pt epList;
+        celix_array_list_t* epList;
 
         printf("\nBegin: %s\n", __func__);
         scopeInit("scope.json", &nr_exported, &nr_imported);
@@ -393,9 +393,9 @@ extern "C" {
 
         discMock->getEPDescriptors(discMock->handle, &epList);
         // We export one service: Calculator, which has DFI bundle info
-        EXPECT_EQ(1, arrayList_size(epList));
-        for (unsigned int i = 0; i < arrayList_size(epList); i++) {
-            endpoint_description_t *ep = (endpoint_description_t *) arrayList_get(epList, i);
+        EXPECT_EQ(1, celix_arrayList_size(epList));
+        for (int i = 0; i < celix_arrayList_size(epList); i++) {
+            endpoint_description_t *ep = (endpoint_description_t *) celix_arrayList_get(epList, i);
             celix_properties_t *props = ep->properties;
             const char* value = celix_properties_get(props, "key2", "");
             EXPECT_STREQ("inaetics", value);
@@ -421,16 +421,16 @@ extern "C" {
     static void testScope2(void) {
         int nr_exported;
         int nr_imported;
-        array_list_pt epList;
+        celix_array_list_t* epList;
         printf("\nBegin: %s\n", __func__);
         scopeInit("scope2.json", &nr_exported, &nr_imported);
         EXPECT_EQ(3, nr_exported);
         EXPECT_EQ(1, nr_imported);
         discMock->getEPDescriptors(discMock->handle, &epList);
         // We export one service: Calculator, which has DFI bundle info
-        EXPECT_EQ(1, arrayList_size(epList));
-        for (unsigned int i = 0; i < arrayList_size(epList); i++) {
-            endpoint_description_t *ep = (endpoint_description_t *) arrayList_get(epList, i);
+        EXPECT_EQ(1, celix_arrayList_size(epList));
+        for (int i = 0; i < celix_arrayList_size(epList); i++) {
+            endpoint_description_t *ep = (endpoint_description_t *) celix_arrayList_get(epList, i);
             celix_properties_t *props = ep->properties;
             const char* value = celix_properties_get(props, "key2", "");
             EXPECT_STREQ("inaetics", value);
@@ -445,16 +445,16 @@ extern "C" {
     static void testScope3(void) {
         int nr_exported;
         int nr_imported;
-        array_list_pt epList;
+        celix_array_list_t* epList;
         printf("\nBegin: %s\n", __func__);
         scopeInit("scope3.json", &nr_exported, &nr_imported);
         EXPECT_EQ(3, nr_exported);
         EXPECT_EQ(1, nr_imported);
         discMock->getEPDescriptors(discMock->handle, &epList);
         // We export one service: Calculator, which has DFI bundle info
-        EXPECT_EQ(1, arrayList_size(epList));
-        for (unsigned int i = 0; i < arrayList_size(epList); i++) {
-            endpoint_description_t *ep = (endpoint_description_t *) arrayList_get(epList, i);
+        EXPECT_EQ(1, celix_arrayList_size(epList));
+        for (int i = 0; i < celix_arrayList_size(epList); i++) {
+            endpoint_description_t *ep = (endpoint_description_t *) celix_arrayList_get(epList, i);
             celix_properties_t *props = ep->properties;
             const char* value = celix_properties_get(props, "key2", "");
             EXPECT_STREQ("inaetics", value);

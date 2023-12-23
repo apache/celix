@@ -198,7 +198,7 @@ bundle_pt module_getBundle(module_pt module) {
 	return module->bundle;
 }
 
-array_list_pt module_getDependentImporters(module_pt module) {
+celix_array_list_t* module_getDependentImporters(module_pt module) {
     return NULL;
 }
 
@@ -210,7 +210,7 @@ void module_removeDependentImporter(module_pt module, module_pt importer) {
 
 //----------------------------------------------------
 //TODO add implementation (functions not implemented but already exported)
-array_list_pt module_getDependentRequirers(module_pt module) {
+celix_array_list_t* module_getDependentRequirers(module_pt module) {
     return NULL;
 }
 
@@ -221,7 +221,7 @@ void module_removeDependentRequirer(module_pt module, module_pt requirer) {
 }
 //----------------------------------------------------
 
-array_list_pt module_getDependents(module_pt module) {
+celix_array_list_t* module_getDependents(module_pt module) {
     return NULL;
 }
 

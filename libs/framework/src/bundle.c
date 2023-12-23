@@ -83,21 +83,19 @@ celix_status_t celix_bundle_createFromArchive(celix_framework_t *framework, bund
 }
 
 celix_status_t bundle_destroy(bundle_pt bundle) {
-	array_list_iterator_pt iter = arrayListIterator_create(bundle->modules);
-	while (arrayListIterator_hasNext(iter)) {
-		module_pt module = arrayListIterator_next(iter);
-		module_destroy(module);
-	}
-	arrayListIterator_destroy(iter);
-	arrayList_destroy(bundle->modules);
+    for (int i = 0; i < celix_arrayList_size(bundle->modules); ++i) {
+        module_pt module = celix_arrayList_get(bundle->modules, i);
+        module_destroy(module);
+    }
+    celix_arrayList_destroy(bundle->modules);
 
-	free(bundle->symbolicName);
+    free(bundle->symbolicName);
     free(bundle->name);
     free(bundle->group);
     free(bundle->description);
-	free(bundle);
+    free(bundle);
 
-	return CELIX_SUCCESS;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_getArchive(const_bundle_pt bundle, bundle_archive_pt *archive) {
@@ -113,16 +111,16 @@ celix_status_t bundle_getArchive(const_bundle_pt bundle, bundle_archive_pt *arch
 celix_status_t bundle_getCurrentModule(const_bundle_pt bundle, module_pt *module) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if (bundle == NULL || arrayList_size(bundle->modules)==0 ) {
+	if (bundle == NULL || celix_arrayList_size(bundle->modules)==0 ) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		*module = arrayList_get(bundle->modules, arrayList_size(bundle->modules) - 1);
+		*module = celix_arrayList_get(bundle->modules, celix_arrayList_size(bundle->modules) - 1);
 	}
 
 	return status;
 }
 
-array_list_pt bundle_getModules(const_bundle_pt bundle) {
+celix_array_list_t* bundle_getModules(const_bundle_pt bundle) {
     return bundle->modules;
 }
 
@@ -345,7 +343,7 @@ celix_status_t bundle_closeRevisions(const_bundle_pt bundle) {
 
 celix_status_t bundle_refresh(bundle_pt bundle) {
     module_pt module;
-    arrayList_clear(bundle->modules);
+    celix_arrayList_clear(bundle->modules);
     celix_status_t status = bundle_createModule(bundle, &module);
     if (status == CELIX_SUCCESS) {
                 status = bundle_addModule(bundle, module);
@@ -370,7 +368,7 @@ celix_status_t bundle_getBundleId(const bundle_t *bundle, long *bndId) {
 	return status;
 }
 
-celix_status_t bundle_getRegisteredServices(bundle_pt bundle, array_list_pt *list) {
+celix_status_t bundle_getRegisteredServices(bundle_pt bundle, celix_array_list_t** list) {
 	celix_status_t status;
 
 	status = fw_getBundleRegisteredServices(bundle->framework, bundle, list);
@@ -380,7 +378,7 @@ celix_status_t bundle_getRegisteredServices(bundle_pt bundle, array_list_pt *lis
 	return status;
 }
 
-celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_list_pt *list) {
+celix_status_t bundle_getServicesInUse(bundle_pt bundle, celix_array_list_t** list) {
 	celix_status_t status;
 
 	status = fw_getBundleServicesInUse(bundle->framework, bundle, list);

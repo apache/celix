@@ -33,7 +33,7 @@
 #include "celix_properties.h"
 #include "celix_constants.h"
 #include "celix_threads.h"
-#include "array_list.h"
+#include "celix_array_list.h"
 #include "utils.h"
 #include "celix_errno.h"
 #include "filter.h"

@@ -49,9 +49,9 @@ static const char * SUB_TOPICS[] = {
 struct ps_websocketActivator {
     pubsub_info_t *pubsub;
     //Publisher vars
-    array_list_t *trackerList;//List<service_tracker_pt>
+    celix_array_list_t *trackerList;//List<service_tracker_pt>
     //Subscriber vars
-    array_list_t *registrationList; //List<service_registration_pt>
+    celix_array_list_t *registrationList; //List<service_registration_pt>
     pubsub_subscriber_t *subsvc;
 };
 
@@ -119,7 +119,7 @@ static int pubsub_start(struct ps_websocketActivator *act, celix_bundle_context_
 #endif
         service_registration_pt reg = NULL;
         bundleContext_registerService(ctx, PUBSUB_SUBSCRIBER_SERVICE_NAME, subsvc, props, &reg);
-        arrayList_add(act->registrationList,reg);
+        celix_arrayList_add(act->registrationList,reg);
     }
 
     subscriber_start((pubsub_receiver_t *) act->subsvc->handle);

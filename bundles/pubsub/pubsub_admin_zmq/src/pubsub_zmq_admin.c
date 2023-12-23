@@ -38,6 +38,7 @@
 #include "pubsub_psa_zmq_constants.h"
 #include "pubsub_zmq_topic_sender.h"
 #include "pubsub_zmq_topic_receiver.h"
+#include "utils.h"
 
 #define L_DEBUG(...) \
     celix_logHelper_log(psa->log, CELIX_LOG_LEVEL_DEBUG, __VA_ARGS__)

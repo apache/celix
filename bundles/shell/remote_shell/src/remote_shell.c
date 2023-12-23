@@ -28,11 +28,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <utils.h>
-#include <array_list.h>
 #include <sys/socket.h>
 
 #include "celix_log_helper.h"
 #include "celix_utils.h"
+#include "celix_array_list.h"
 
 #include "remote_shell.h"
 
@@ -61,24 +61,29 @@ static celix_status_t remoteShell_connection_print(connection_pt connection, cha
 static celix_status_t remoteShell_connection_execute(connection_pt connection, char *command);
 static void* remoteShell_connection_run(void *data);
 
-celix_status_t remoteShell_create(shell_mediator_pt mediator, int maximumConnections, remote_shell_pt *instance) {
-	celix_status_t status = CELIX_SUCCESS;
-	(*instance) = calloc(1, sizeof(**instance));
-	if ((*instance) != NULL) {
-		(*instance)->mediator = mediator;
-		(*instance)->maximumConnections = maximumConnections;
-		(*instance)->connections = NULL;
-		(*instance)->loghelper = &mediator->loghelper;
+celix_status_t remoteShell_create(shell_mediator_pt mediator, int maximumConnections, remote_shell_pt* instance) {
+    celix_status_t status = CELIX_SUCCESS;
+    (*instance) = calloc(1, sizeof(**instance));
+    if ((*instance) != NULL) {
+        (*instance)->mediator = mediator;
+        (*instance)->maximumConnections = maximumConnections;
+        (*instance)->connections = NULL;
+        (*instance)->loghelper = &mediator->loghelper;
 
-		status = celixThreadMutex_create(&(*instance)->mutex, NULL);
+        status = celixThreadMutex_create(&(*instance)->mutex, NULL);
 
-		if (status == CELIX_SUCCESS) {
-			status = arrayList_create(&(*instance)->connections);
-		}
-	} else {
-		status = CELIX_ENOMEM;
-	}
-	return status;
+        if (status == CELIX_SUCCESS) {
+            (*instance)->connections = celix_arrayList_create();
+            if (!(*instance)->connections) {
+                free(*instance);
+                (*instance) = NULL;
+                status = CELIX_ENOMEM;
+            }
+        }
+    } else {
+        status = CELIX_ENOMEM;
+    }
+    return status;
 }
 
 celix_status_t remoteShell_destroy(remote_shell_pt instance) {
@@ -87,7 +92,7 @@ celix_status_t remoteShell_destroy(remote_shell_pt instance) {
 	remoteShell_stopConnections(instance);
 
 	celixThreadMutex_lock(&instance->mutex);
-	arrayList_destroy(instance->connections);
+        celix_arrayList_destroy(instance->connections);
 	celixThreadMutex_unlock(&instance->mutex);
 
 	return status;
@@ -106,9 +111,9 @@ celix_status_t remoteShell_addConnection(remote_shell_pt instance, int socket) {
 
 			celixThreadMutex_lock(&instance->mutex);
 
-			if (arrayList_size(instance->connections) < instance->maximumConnections) {
+			if (celix_arrayList_size(instance->connections) < instance->maximumConnections) {
 				celix_thread_t connectionRunThread = celix_thread_default;
-				arrayList_add(instance->connections, connection);
+                                celix_arrayList_add(instance->connections, connection);
 				status = celixThread_create(&connectionRunThread, NULL, &remoteShell_connection_run, connection);
 			} else {
 				status = CELIX_BUNDLE_EXCEPTION;
@@ -139,10 +144,10 @@ celix_status_t remoteShell_stopConnections(remote_shell_pt instance) {
 	int i = 0;
 
 	celixThreadMutex_lock(&instance->mutex);
-	length = arrayList_size(instance->connections);
+	length = celix_arrayList_size(instance->connections);
 
 	for (i = 0; i < length; i += 1) {
-		connection_pt connection = arrayList_get(instance->connections, i);
+		connection_pt connection = celix_arrayList_get(instance->connections, i);
 		connection->threadRunning = false;
 	}
 
@@ -204,7 +209,7 @@ void *remoteShell_connection_run(void *data) {
 
     celix_logHelper_log(*connection->parent->loghelper, CELIX_LOG_LEVEL_INFO, "REMOTE_SHELL: Closing socket");
 	celixThreadMutex_lock(&connection->parent->mutex);
-	arrayList_removeElement(connection->parent->connections, connection);
+        celix_arrayList_remove(connection->parent->connections, connection);
 	celixThreadMutex_unlock(&connection->parent->mutex);
 
 	fclose(connection->socketStream);

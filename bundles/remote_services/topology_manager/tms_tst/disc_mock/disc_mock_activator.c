@@ -44,12 +44,12 @@ celix_status_t celix_bundleActivator_create(celix_bundle_context_t *context, voi
         discMockService_create(act, &act->serv);
         act->endpointListener = NULL;
         act->endpointListenerService = NULL;
-        status = arrayList_create(&act->endpointList);
+        act->endpointList = celix_arrayList_create();
     } else {
         status = CELIX_ENOMEM;
     }
 
-    if (status == CELIX_SUCCESS) {
+    if (status == CELIX_SUCCESS && act->endpointList) {
         *out = act;
     } else if (act != NULL) {
         free(act);
@@ -127,7 +127,7 @@ celix_status_t celix_bundleActivator_destroy(void * userData, celix_bundle_conte
         discMockService_destroy(act->serv);
 
         free(act->endpointListener);
-        arrayList_destroy(act->endpointList);
+        celix_arrayList_destroy(act->endpointList);
         free(act);
     }
     return CELIX_SUCCESS;
@@ -138,7 +138,7 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_t *end
     struct disc_mock_activator *act = handle;
 
     printf("%s\n", __func__);
-    arrayList_add(act->endpointList, endpoint);
+    celix_arrayList_add(act->endpointList, endpoint);
 
     return status;
 }
@@ -147,7 +147,7 @@ celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_t *e
     celix_status_t status  = CELIX_SUCCESS;
     struct disc_mock_activator *act = handle;
     printf("%s\n", __func__);
-    arrayList_removeElement(act->endpointList, endpoint);
+    celix_arrayList_remove(act->endpointList, endpoint);
 
     return status;
 }

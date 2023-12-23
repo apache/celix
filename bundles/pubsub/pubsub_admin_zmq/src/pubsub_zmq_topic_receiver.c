@@ -22,6 +22,8 @@
 #include <pubsub/subscriber.h>
 #include <memory.h>
 #include <pubsub_constants.h>
+#include "utils.h"
+
 #if !defined(__APPLE__)
     #include <sys/epoll.h>
 #endif

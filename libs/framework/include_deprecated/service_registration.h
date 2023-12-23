@@ -23,7 +23,6 @@
 #include <stdbool.h>
 
 #include "celix_types.h"
-#include "array_list.h"
 #include "bundle.h"
 #include "celix_framework_export.h"
 
