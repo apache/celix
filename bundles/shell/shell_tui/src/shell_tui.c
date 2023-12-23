@@ -51,6 +51,8 @@
 const char * const SHELL_NOT_AVAILABLE_MSG = "[Shell TUI] Shell service not available.";
 
 struct shell_tui {
+    celix_bundle_context_t* ctx;
+
     celix_thread_mutex_t mutex; //protects shell
     celix_shell_t* shell;
     celix_thread_t thread;
@@ -70,7 +72,7 @@ typedef struct shell_context {
     char buffer[LINE_SIZE+1];
     char dline[LINE_SIZE+1];
     int pos;
-    history_t* hist;
+    celix_shell_tui_history_t* hist;
 } shell_context_t;
 
 struct OriginalSettings {
@@ -98,8 +100,9 @@ static void writePrompt(shell_tui_t*);
 // Unfortunately has to be static, it is not possible to pass user defined data to the handler
 static struct OriginalSettings originalSettings;
 
-shell_tui_t* shellTui_create(bool useAnsiControlSequences, int inputFd, int outputFd, int errorFd) {
+shell_tui_t* shellTui_create(celix_bundle_context_t* ctx, bool useAnsiControlSequences, int inputFd, int outputFd, int errorFd) {
     shell_tui_t* result = calloc(1, sizeof(*result));
+    result->ctx = ctx;
     result->inputFd = inputFd;
     result->output = outputFd == STDOUT_FILENO ? stdout : fdopen(outputFd, "a");
     if (result->output == NULL) {
@@ -183,7 +186,7 @@ static void* shellTui_runnable(void *data) {
     //setup shell context
     shell_context_t ctx;
     memset(&ctx, 0, sizeof(ctx));
-    ctx.hist = historyCreate();
+    ctx.hist = celix_shellTuiHistory_create(shellTui->ctx);
 
     struct termios term_new;
     if (shellTui->useAnsiControlSequences && shellTui->inputFd == STDIN_FILENO) {
@@ -246,7 +249,7 @@ static void* shellTui_runnable(void *data) {
         }
     }
 
-    historyDestroy(ctx.hist);
+    celix_shellTuiHistory_destroy(ctx.hist);
     if (shellTui->useAnsiControlSequences && shellTui->inputFd == STDIN_FILENO) {
         tcsetattr(STDIN_FILENO, TCSANOW, &originalSettings.term_org);
         sigaction(SIGINT, &originalSettings.oldSigIntAction, NULL);
@@ -303,26 +306,28 @@ static int shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t*
     char* buffer = ctx->buffer;
     char* in = ctx->in;
     char* dline = ctx->dline;
-    history_t* hist = ctx->hist;
+    celix_shell_tui_history_t* hist = ctx->hist;
     int pos = ctx->pos;
-    char* line = NULL;
+    const char* line = NULL;
 
-    int nr_chars = read(shellTui->inputFd, buffer, LINE_SIZE-pos-1);
+    int nr_chars = (int)read(shellTui->inputFd, buffer, LINE_SIZE-pos-1);
     for(int bufpos = 0; bufpos < nr_chars; bufpos++) {
         if (buffer[bufpos] == KEY_ESC1 && buffer[bufpos+1] == KEY_ESC2) {
             switch (buffer[bufpos+2]) {
                 case KEY_UP:
-                    if(historySize(hist) > 0) {
-                        strncpy(in, historyGetPrevLine(hist), LINE_SIZE);
-                        pos = strlen(in);
-                        writeLine(shellTui, in, pos);
+                    line = celix_shellTuiHistory_getPrevLine(hist);
+                    if (line) {
+                        strncpy(in, line, LINE_SIZE);
+                        pos = (int)strlen(in);
+                        writeLine(shellTui, line, pos);
                     }
                     break;
                 case KEY_DOWN:
-                    if(historySize(hist) > 0) {
-                        strncpy(in, historyGetNextLine(hist), LINE_SIZE);
-                        pos = strlen(in);
-                        writeLine(shellTui, in, pos);
+                    line = celix_shellTuiHistory_getNextLine(hist);
+                    if (line) {
+                        strncpy(in, line, LINE_SIZE);
+                        pos = (int)strlen(in);
+                        writeLine(shellTui, line, pos);
                     }
                     break;
                 case KEY_RIGHT:
@@ -385,7 +390,7 @@ static int shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t*
         writeLine(shellTui, in, pos);
         fprintf(shellTui->output, "\n");
         remove_newlines(in);
-        history_addLine(hist, in);
+        celix_shellTuiHistory_addLine(hist, in);
 
         memset(dline, 0, LINE_SIZE);
         strncpy(dline, in, LINE_SIZE);
@@ -397,7 +402,7 @@ static int shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t*
         if ((strlen(line) == 0)) {
             continue;
         }
-        historyLineReset(hist);
+        celix_shellTuiHistory_lineReset(hist);
         celixThreadMutex_lock(&shellTui->mutex);
         if (shellTui->shell != NULL) {
             shellTui->shell->executeCommand(shellTui->shell->handle, line, shellTui->output, shellTui->error);
@@ -440,7 +445,7 @@ static void writePrompt(shell_tui_t* shellTui) {
 
 static void writeLine(shell_tui_t* shellTui, const char* line, int pos) {
     clearLine(shellTui);
-    fwrite( PROMPT, 1, strlen(PROMPT), shellTui->output);
+    fwrite(PROMPT, 1, strlen(PROMPT), shellTui->output);
     fwrite(line, 1, strlen(line), shellTui->output);
     cursorLeft(shellTui, strlen(line)-pos);
 }

@@ -1998,7 +1998,6 @@ static celix_status_t celix_framework_uninstallBundleEntryImpl(celix_framework_t
 
     if (status == CELIX_SUCCESS) {
         celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
-        (void)bundle_closeModules(bnd);
         (void)bundle_destroy(bnd);
         if(permanent) {
             celix_bundleArchive_invalidate(archive);

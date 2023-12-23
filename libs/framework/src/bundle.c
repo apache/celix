@@ -343,36 +343,18 @@ celix_status_t bundle_closeRevisions(const_bundle_pt bundle) {
     return status;
 }
 
-celix_status_t bundle_closeModules(const_bundle_pt bundle) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    unsigned int i = 0;
-    for (i = 0; i < arrayList_size(bundle->modules); i++) {
-        module_pt module = (module_pt) arrayList_get(bundle->modules, i);
-        module_setWires(module, NULL);
+celix_status_t bundle_refresh(bundle_pt bundle) {
+    module_pt module;
+    arrayList_clear(bundle->modules);
+    celix_status_t status = bundle_createModule(bundle, &module);
+    if (status == CELIX_SUCCESS) {
+                status = bundle_addModule(bundle, module);
+                if (status == CELIX_SUCCESS) {
+                        __atomic_store_n(&bundle->state, CELIX_BUNDLE_STATE_INSTALLED, __ATOMIC_RELEASE);
+                }
     }
 
-    return status;
-}
-
-celix_status_t bundle_refresh(bundle_pt bundle) {
-	celix_status_t status;
-	module_pt module;
-
-	status = bundle_closeModules(bundle);
-	if (status == CELIX_SUCCESS) {
-		arrayList_clear(bundle->modules);
-		status = bundle_createModule(bundle, &module);
-		if (status == CELIX_SUCCESS) {
-			status = bundle_addModule(bundle, module);
-			if (status == CELIX_SUCCESS) {
-                __atomic_store_n(&bundle->state, CELIX_BUNDLE_STATE_INSTALLED, __ATOMIC_RELEASE);
-			}
-		}
-	}
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to refresh bundle");
-
+    framework_logIfError(bundle->framework->logger, status, NULL, "Failed to refresh bundle");
     return status;
 }
 

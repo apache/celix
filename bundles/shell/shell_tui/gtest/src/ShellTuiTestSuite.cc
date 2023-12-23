@@ -22,6 +22,7 @@
 
 #include "celix/FrameworkFactory.h"
 #include "celix/BundleContext.h"
+#include "history.h"
 
 class ShellTuiTestSuite : public ::testing::Test {
 public:
@@ -144,41 +145,40 @@ public:
     int outputWriteFd = -1;
 };
 
-TEST_F(ShellTuiTestSuite, testStartStop) {
+TEST_F(ShellTuiTestSuite, StartStopTest) {
     //simple start/stop bundles, but should not leak
     createFrameworkWithShellBundles();
 }
 
-TEST_F(ShellTuiTestSuite, testExecuteLb) {
+TEST_F(ShellTuiTestSuite, ExecuteLbTest) {
     testExecuteLb(false);
 }
 
-TEST_F(ShellTuiTestSuite, testExecuteLbWithAnsiControlEnabled) {
+TEST_F(ShellTuiTestSuite, ExecuteLbWithAnsiControlEnabledTest) {
     testExecuteLb(true);
 }
 
-TEST_F(ShellTuiTestSuite, testAutoCompleteHelpCommand) {
+TEST_F(ShellTuiTestSuite, AutoCompleteHelpCommandTest) {
     //note incomplete command with a tab -> should complete command to `help`
     testAutoCompleteForCommand("hel\t", "help");
 }
 
-TEST_F(ShellTuiTestSuite, testAutoCompleteCelixLbCommand) {
+TEST_F(ShellTuiTestSuite, AutoCompleteCelixLbCommandTest) {
     //note incomplete command with a tab -> should complete command to `celix::help`
     testAutoCompleteForCommand("celix::hel\t", "celix::help");
 }
 
-TEST_F(ShellTuiTestSuite, testAutoCompleteLbUsageCommand) {
+TEST_F(ShellTuiTestSuite, AutoCompleteLbUsageCommandTest) {
     //note complete help command with a tab -> should print usage
     testAutoCompleteForCommand("help \t", "Usage:");
 }
 
-TEST_F(ShellTuiTestSuite, testAutoCompleteCelixLbUsageCommand) {
+TEST_F(ShellTuiTestSuite, AutoCompleteCelixLbUsageCommandTest) {
     //note complete celix::help command with a tab -> should print usage
     testAutoCompleteForCommand("celix::help \t", "Usage:");
 }
 
-
-TEST_F(ShellTuiTestSuite, testShellTuiWithInvalidFD) {
+TEST_F(ShellTuiTestSuite, ShellTuiWithInvalidFDTest) {
     celix::Properties config{
             {"SHELL_TUI_USE_ANSI_CONTROL_SEQUENCES", "true"},
             {"SHELL_TUI_INPUT_FILE_DESCRIPTOR", "555"}, //note invalid fd
@@ -190,15 +190,15 @@ TEST_F(ShellTuiTestSuite, testShellTuiWithInvalidFD) {
     writeCmd("lb\n");
 }
 
-TEST_F(ShellTuiTestSuite, testShellTuiWithoutShell) {
+TEST_F(ShellTuiTestSuite, ShellTuiWithoutShellTest) {
     testExecuteLbWithoutShell(false);
 }
 
-TEST_F(ShellTuiTestSuite, testShellTuiWithAnsiControlWithoutShell) {
+TEST_F(ShellTuiTestSuite, ShellTuiWithAnsiControlWithoutShellTest) {
     testExecuteLbWithoutShell(true);
 }
 
-TEST_F(ShellTuiTestSuite, testAnsiControl) {
+TEST_F(ShellTuiTestSuite, AnsiControlTest) {
     celix::Properties config{
             {"SHELL_TUI_USE_ANSI_CONTROL_SEQUENCES", "true"}
     };
@@ -235,4 +235,14 @@ TEST_F(ShellTuiTestSuite, testAnsiControl) {
     writeCmd(cmd);
 
     std::cout << readPipeOutput() << std::endl;
+}
+
+TEST_F(ShellTuiTestSuite, WriteMoreThanMaxHistoryLines) {
+    createFrameworkWithShellBundles();
+
+    //WRITE more than hist max lines
+    int maxHist = CELIX_SHELL_TUI_HIST_MAX;
+    for (int i = 0; i < maxHist + 1; ++i) {
+        writeCmd("lb\n");
+    }
 }

@@ -70,7 +70,7 @@ static celix_status_t celix_shellTuiActivator_start(celix_shell_tui_activator_t*
     char *term = getenv("TERM");
     useCommands = term != NULL; //if TERM exist, default is to use commands
     useCommands = celix_bundleContext_getPropertyAsBool(ctx, SHELL_TUI_USE_ANSI_CONTROL_SEQUENCES, useCommands);
-    act->shellTui = shellTui_create(useCommands, inputFd, outputFd, errorFd);
+    act->shellTui = shellTui_create(ctx, useCommands, inputFd, outputFd, errorFd);
 
     {
         celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;

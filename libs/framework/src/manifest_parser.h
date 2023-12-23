@@ -30,7 +30,6 @@
 #include "module.h"
 #include "version.h"
 #include "manifest.h"
-#include "linked_list.h"
 
 typedef struct manifestParser * manifest_parser_pt;
 
