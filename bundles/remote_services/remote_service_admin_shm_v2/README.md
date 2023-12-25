@@ -25,24 +25,24 @@ The Celix Remote Service Admin SHM bundle implement OSGi remote service using sh
 In order to reuse the (de)serialization features of remote service admin,
 the remote service admin will be realized by ‘rsa_shm’ and 'rsa_json_rpc'(see [Remote Service Admin RPC Using JSON](../rsa_rpc_json/README.md)) bundles.
 The ‘rsa_shm’ bundle is used to realize ‘remote_service_admin_service_t’ and IPC.
-The ‘rsa_json_rpc’ bundle is used to realize (de)serialization and Creating service endpoint/proxy.
+The ‘rsa_json_rpc’ bundle is used to realize (de)serialization and creating service endpoint/proxy.
 
 ### Supported Platform
 - Linux
 
 ### Properties/Configuration
 
-| **Properties** | **Type** | **Description**|
-|----------------|----------|----------------|
-| **rsaShmPoolSize**  | long     | The RSA SHM pool size in bytes. Its value should be greater than 8192 bytes.(default 256KB)                                                               |
-| **rsaShmMsgTimeout** | long     | The timeout of remote service invocation in seconds. (default 30s)                                                                                        |
-| **rsaShmCctIvNum**  | long     | The maximum concurrent invocations of the same service. If there are more concurrent invocations than its value,  service invocation will fail.(default 32) |
+| **Properties**                             | **Type** | **Description**| **Default value** |
+|--------------------------------------------|----------|----------------|------------------|
+| **CELIX_RSA_SHM_POOL_SIZE**                | long     | The RSA SHM pool size in bytes. Its value should be greater than or equal to 8192 bytes.| 256KB            |
+| **CELIX_RSA_SHM_MSG_TIMEOUT**                    | long     | The timeout of remote service invocation in seconds. | default 30s      |
+| **CELIX_RSA_SHM_MAX_CONCURRENT_INVOCATIONS_NUM** | long     | The maximum concurrent invocations of the same service. If there are more concurrent invocations than its value,  service invocation will fail.| 32       |
+
+The value of RSA_SHM_POOL_SIZE should be greater than or equal to 8192 bytes, because current memory pool ctrl block(control_t) size is 6536 bytes.
 
 ### Supported service.exported.configs
 
-- **celix.remote.admin.shm** : The IPC type is shared memory, and the serialization type is json.
-
-- **celix.remote.admin.shm,celix.remote.admin.rpc_type.${xxx}** : The IPC type is shared memory, and the serialization type is ${xxx}.
+- **celix.remote.admin.shm** : The IPC type is shared memory, and the default serialization type is json. And remote service can use `celix.remote.admin.shm.rpc_type` property to configure the serialization type(Current only implement json serialization in celix project).The value of `celix.remote.admin.shm.rpc_type` property should be equal to the value of `celix.remote.admin.rpc_type` property of `rsa_rpc_factory_t`.
 
 ### Conan Option
     build_rsa_remote_service_admin_shm_v2=True   Default is False

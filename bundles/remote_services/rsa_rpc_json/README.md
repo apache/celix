@@ -57,7 +57,7 @@ When a service is exported, RSA can use rsa_json_rpc to create a service endpoin
 
 #### The Process Of Creating And Using A Remote Proxy
 
-When a service is imported, RSA can use rsa_json_rpc to create a proxy service factory. When a service is called, the proxy service factory creates the proxy service and gives it to the service caller. Then the service proxy serializes the service call information into an RPC request. And the RPC request will be sent to remote endpoint by RSA. The detailed process is as follows diagram:
+When a service is imported, RSA can use rsa_json_rpc to create a proxy service factory. When a service is requested, the proxy service factory creates the proxy service and gives it to the service requester. Then, when the requested service is called (i.e. the service proxy is called), the service proxy serializes the service call information into an RPC request. And the RPC request will be sent to remote endpoint by RSA. The detailed process is as follows diagram:
 
 ![remote_service_proxy_use_seq.png](diagrams/remote_service_proxy_use_seq.png)
 

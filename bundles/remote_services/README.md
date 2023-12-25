@@ -27,9 +27,9 @@ The Remote Service Admin Service subproject contains an adapted implementation o
 
 The topology manager decides which services should be imported and exported according to a defined policy. Currently, only one policy is implemented in Celix, the *promiscuous* policy, which simply imports and exports all services.
 
-| **Bundle** | `topology_manager.zip` |
-|--|--|
-| **Configuration** | *None* |
+| **Bundle** | `Celix::rsa_topology_manager` |
+|--|-----------------------------------------|
+| **Configuration** | *None*                 |
 
 ### Remote Service Admin
 
@@ -40,8 +40,8 @@ The Remote Service Admin (RSA) provides the mechanisms to import and export serv
 Provides remote service admin using HTTP and JSON. The serialization is done using [libdfi](../../libs/dfi/README.md) to convert function call information into [JSON representation](https://amdatu.atlassian.net/wiki/spaces/AMDATUDEV/pages/21954571/Amdatu+Remote#AmdatuRemote-AdminHTTP%2FJson).
 `libffi` is configured using descriptor files in the bundles. 
 
-| **Bundle** | `rsa_dfi.zip` |
-|--|--|
+| **Bundle** | `Celix::rsa_dfi`                                         |
+|--|--------------------------------------------------------------------|
 | **Configuration** | See [Remote Service Admin DFI](remote_service_admin_dfi/README.md) |
 
 #### Remote Service Admin SHM
@@ -49,7 +49,7 @@ Provides remote service admin using HTTP and JSON. The serialization is done usi
 Provides remote service admin using shared memory. The serialization implementation is pluggable, and the default serialization is done using [libdfi](../../libs/dfi/README.md) to convert function call information into [JSON representation](https://amdatu.atlassian.net/wiki/spaces/AMDATUDEV/pages/21954571/Amdatu+Remote#AmdatuRemote-AdminHTTP%2FJson).
 `libffi` is configured using descriptor files in the bundles.
 
-| **Bundle**        | `rsa_shm.zip`                                                          |
+| **Bundle**        | `Celix::rsa_shm`                                                       |
 |-------------------|------------------------------------------------------------------------|
 | **Configuration** | See [Remote Service Admin SHM](remote_service_admin_shm_v2/README.md)  |
 
@@ -61,7 +61,7 @@ Actively discovers the presence of remote exported services and provides informa
 
 Provides a service discovery with preconfigured discovery endpoints, allowing a static mesh of nodes for remote service invocation to be created. The configured discovery bundle in Celix is compatible with the configured discovery implementation provided by [Amdatu Remote](https://amdatu.atlassian.net/wiki/display/AMDATUDEV/Amdatu+Remote).
 
-| **Bundle** | `discovery_configured.zip` |
+| **Bundle** | `Celix::rsa_discovery` |
 |--|--|
 | **Configuration** | `DISCOVERY_CFG_POLL_ENDPOINTS`: defines a comma-separated list of discovery endpoints that should be used to query for remote services. Defaults to `http://localhost:9999/org.apache.celix.discovery.configured`; |
 | | `DISCOVERY_CFG_POLL_INTERVAL`: defines the interval (in seconds) in which the discovery endpoints should be polled. Defaults to `10` seconds. |
@@ -75,7 +75,7 @@ Note that for configured discovery, the "Endpoint Description Extender" XML form
 
 Provides a service discovery using etcd distributed key/value store.
 
-| **Bundle** | `discovery_etcd.zip` |
+| **Bundle** | `Celix::rsa_discovery_etcd` |
 |------------|----------------------|
 | **Configuration** | See [etcd discovery](discovery_etcd/README.md)|
 
@@ -83,7 +83,7 @@ Provides a service discovery using etcd distributed key/value store.
 
 Provides a service discovery using Bonjour.
 
-| **Bundle** | `rsa_discovery_zeroconf.zip` |
+| **Bundle** | `Celix::rsa_discovery_zeroconf` |
 |--|----------------------------|
 | **Configuration** | See  [Zeroconf Discovery](discovery_zeroconf/README.md) |
 

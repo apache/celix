@@ -25,23 +25,19 @@ The `Discovery_zeroconf` is implemented based on [Bonjour](https://github.com/ap
 
 The mapping between celix and mdns services is as follows:
 
-| **mDNS service** | **celix service**                         |
-|------------------|-------------------------------------------|
-| instance name    | service name+hash(endpoint uuid)          |
-| service type     | "_celix-rpc._udp"+${custom subtype}       |
-| domain name      | "local"                                   |
-| txt record       | service properties                        |
-| host             | "celix_rpc_dumb_host.local."(It is dummy) |
-| port             | 50009(It is dummy)                        |
+| **mDNS service** | **celix service**                                                                                                            |
+|------------------|------------------------------------------------------------------------------------------------------------------------------|
+| instance name    | service name+pid(process id)                                                                                                 |
+| service type     | "${last word of service configuration type}._sub._celix-rpc._udp"                                                            |
+| domain name      | "local"                                                                                                                      |
+| txt record       | service properties                                                                                                           |
+| host             | hostname.                                                                                                                    |
+| port             | The property value of "${service configuration type}.port". If it is not network server, it will be set a dummy value(65535) |
 
 
-Because We will perform the mDNS query only using link-local multicast, so we set domain name default value "local".
+The domain name value is set to "local" , because for remote discovery the mDNS query will only use link-local multicast.
 
-To reduce the operation of conversion between host name and address info. we set the address info to txt record, and set the host name and port to a dummy value("celix_rpc_dumb_host.local." and "50009").
-
-We set the instance name of the mDNS service as `service_name + hash(endpoint uuid)`. If there is a conflict in the instance name, mDNS_daemon will resolve it. Since the maximum size of the mDNS service instance name is 64 bytes, we take the hash of the endpoint uuid here, which also reduces the probability of instance name conflicts.
-
-According to [rfc6763](https://www.rfc-editor.org/rfc/rfc6763.txt) 6.1 and 6.2 section, DNS TXT record can be up to 65535 (0xFFFF) bytes long in mDNS message. and we should keep the size of the TXT record under 1300 bytes(allowing it to fit in a single 1500-byte Ethernet packet). Therefore, `Discovery_zeroconf` announce celix service endpoint using multiple txt records and each txt record max size is 1300 bytes.
+For readability and debuggability of instance names, we set the instance name of the mDNS service as `service_name + pid(process id)`. If there is a conflict in the instance name of same process, we will add a conflict number to the end of the instance name, because the mDNS daemon thinks that services with the same instance name on the same host are the same service. If there is a conflict in the instance name of different host, mDNS daemon will resolve it.
 
 ### Supported Platform
 - Linux
@@ -65,6 +61,15 @@ In the process of publishing remote service endpoints, `discovery_zeroconf` prov
 In the process of discovering remote service endpoints, discovery_zeroconf also establishes a domain socket connection with mDNS_daemon. discovery_zeroconf listens to remote endpoint information through this connection, and updates the listened remote endpoint information to topology_manager. The sequence diagram is as follows:
 
 ![remote_service_endpoint_discovery_process](diagrams/service_discovery_seq.png)
+
+#### Lager txt record(service properties) process
+
+According to [rfc6763](https://www.rfc-editor.org/rfc/rfc6763.txt) 6.1 and 6.2 section, DNS TXT record can be up to 65535 (0xFFFF) bytes long in mDNS message. and we should keep the size of the TXT record under 1300 bytes(allowing it to fit in a single 1500-byte Ethernet packet). Therefore, `Discovery_zeroconf` announce celix service endpoint using multiple txt records and each txt record max size is 1300 bytes. When the service with large properties,the `Discovery_zeroconf` will split the properties into multiple txt records, and mDNS daemon send them to the remote mDNS daemon. The mDNS message snapshot of wireshark is as follows:
+
+![multiple_txt_record_snapshot.png](diagrams/multiple_txt_record_snapshot.png)
+
+As in the above figure, the mDNS message contains multiple txt records, and each txt record message contains the same service instance name, but the service properties in the txt record are different. In addition, to avoid mDNS message packet loss, we set a specific service property `DZC_SVC_PROPS_SIZE_KEY`, which indicates the size of the service properties. When the number of txt records received by remote `Discovery_zeroconf` is equal to the number indicated by `DZC_SVC_PROPS_SIZE_KEY`, the remote `Discovery_zeroconf` will combine the txt records into a service properties.
+
 
 ### Example
 

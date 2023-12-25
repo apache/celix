@@ -71,9 +71,9 @@ The data types supported by the interface description include:
 
   *Type schema*:
   
-  |**Identifier**|B  |D     |F    |I      |J      |S      |V   |Z             |b    | i      | j      | s      |P     |t     |N  | 
-  |---------|---|------|-----|-------|-------|-------|----|--------------|-----|--------|--------|--------|------|------|---|
-  |**Types**|char|double|float|int32_t|int64_t|int16_t|void|boolean(uint8)|uchar|uint32_t|uint64_t|uint16_t|void *|char *|int|
+  |**Identifier**|B  |D     |F    |I      |J      |S      |V   |Z             |b    | i      | j      | s      |P     | t                |N  | 
+  |---------|---|------|-----|-------|-------|-------|----|--------------|-----|--------|--------|--------|------|------------------|---|
+  |**Types**|char|double|float|int32_t|int64_t|int16_t|void|boolean(uint8)|uchar|uint32_t|uint64_t|uint16_t|void *| char *(C string) |int|
 
 
 - **Complex Types(Struct)**
@@ -124,6 +124,8 @@ The data types supported by the interface description include:
   ~~~
   duoble *d;
   ~~~
+
+> **NOTES**: "*B" indicates a pointer to a char, "t" indicates a text type, which is C string.
 
 - **Reference By Value**
 
@@ -249,13 +251,12 @@ The data types supported by the interface description include:
   ~~~
   int add(void* handle,double a, double b, double *ret);
   ~~~
-  *Notes*
-
-  - For RPC interface, the return type of methods must be N, because remote service calls usually return error codes.
-  - Currently, the method only supports one output parameter, so the method cannot be defined in a multi-output parameter form.
+  > **Notes**:
+  > - For RPC interface, the return type of methods must be N, because remote service calls usually return error codes.
+  > - Currently, the method only supports one output parameter, so the method cannot be defined in a multi-output parameter form.
 
 #### Interface Description File
 
-An interface description file is that the interface file written using the interface description language, and its file suffix is ".descriptor". Generally, to associate the remote service instance with the interface description file, the interface description filename should be consistent with the remote service name."
+An interface description file is that the interface file written using the interface description language, and its file suffix is ".descriptor". Generally, to associate the remote service instance with the interface description file, the interface description filename should be consistent with the remote service name.
 
-The interface description file should exist in the bundle where the interface user or provider is located, and the description information should be consistent with the interface header file in use. When generating a bundle, we usually store the interface description file in the following paths of the bundle: "META-INF/descriptors/", "META-INF/descriptors/services/ ".
+The interface description file should exist in the bundle where the interface consumer or provider is located, and the description information should be consistent with the interface header file in use. When generating a bundle, we usually store the interface description file in the following paths of the bundle: "META-INF/descriptors/", "META-INF/descriptors/services/ ".
