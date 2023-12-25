@@ -247,42 +247,19 @@ public:
         discoveryZeroconfWatcher_destroy(watcher);
     }
 
-    void TestGetAddrInfo(void (*beforeRegServiceAction)(void), void (*afterRegServiceAction)(void), int interfaceIndex = kDNSServiceInterfaceIndexAny) {
+    void TestGetAddrInfo(void (*beforeRegServiceAction)(void), void (*afterRegServiceAction)(void)) {
         discovery_zeroconf_watcher_t *watcher;
         celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
         EXPECT_EQ(CELIX_SUCCESS, status);
 
-        char txtBuf[1300] = {0};
-        TXTRecordRef txtRecord;
-        TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
-        TXTRecordSetValue(&txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-        TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
-        TXTRecordSetValue(&txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, strlen("dzc_test_service"), "dzc_test_service");
-        TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_ID, strlen("60f49d89-d105-430c-b12b-93fbb54b1d19"), "60f49d89-d105-430c-b12b-93fbb54b1d19");
-        TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, strlen("100"), "100");
-        TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED, strlen("true"), "true");
-        TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE)-1, DZC_TEST_CONFIG_TYPE);
-        char propSizeStr[16]= {0};
-        sprintf(propSizeStr, "%d", TXTRecordGetCount(TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord)) + 1);
-        TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
-
         beforeRegServiceAction();
 
-        DNSServiceRef dsRef{};
-        DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, interfaceIndex,
-                                                        "dzc_test_service", DZC_TEST_SERVICE_TYPE, "local", NULL,
-                                                        htons(DZC_TEST_SERVICE_PORT),
-                                                        TXTRecordGetLength(&txtRecord),
-                                                        TXTRecordGetBytesPtr(&txtRecord),
-                                                        OnDNSServiceRegisterCallback, nullptr);
-        EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
-        DNSServiceProcessResult(dsRef);
-        TXTRecordDeallocate(&txtRecord);
+        DNSServiceRef dsRef = RegisterTestService();
 
         afterRegServiceAction();
 
         DNSServiceRefDeallocate(dsRef);
-        sleep(2);//wait for service removed from mdnsd, avoid affect other test case
+
         discoveryZeroconfWatcher_destroy(watcher);
     }
 
@@ -480,16 +457,14 @@ static DNSServiceRef RegisterTestService(const char *endpointId, const char *ser
 
     DNSServiceRef dsRef{};
     DNSServiceErrorType dnsErr;
-    int conflictCount = 0;
-    do {
-        conflictCount++;
-        char name[32]={0};
-        snprintf(name, sizeof(name), "dzc_test_service_%d", conflictCount);
-        dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly, name,
-                                    DZC_TEST_SERVICE_TYPE, "local", NULL, htons(DZC_TEST_SERVICE_PORT),
-                                    TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord),
-                                    OnDNSServiceRegisterCallback, nullptr);
-    }while (dnsErr == kDNSServiceErr_NameConflict);
+    static int conflictCount = 0;
+    conflictCount++;//avoid conflict
+    char name[32]={0};
+    snprintf(name, sizeof(name), "dzc_test_service_%d", conflictCount);
+    dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexAny, name,
+                                DZC_TEST_SERVICE_TYPE, "local", NULL, htons(DZC_TEST_SERVICE_PORT),
+                                TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord),
+                                OnDNSServiceRegisterCallback, nullptr);
     EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
     DNSServiceProcessResult(dsRef);
     return dsRef;
@@ -961,16 +936,6 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutIpToHostEntry) {
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
     });
-}
-
-TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutLoopBackIpToHostEntry) {
-    TestGetAddrInfo([](){
-        celix_ei_expect_celix_stringHashMap_putBool(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM);
-        ExpectMsgOutPut("Watcher: Failed to add localhost address. %d.");
-    }, [](){
-        auto timeOut  = CheckMsgWithTimeOutInS(30);
-        EXPECT_FALSE(timeOut);
-    }, kDNSServiceInterfaceIndexLocalOnly);
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, AddTxtRecord) {

@@ -157,6 +157,13 @@ TEST_F(DiscoveryZeroconfAnnouncerTestSuite, CreateAnnouncerFailed8) {
     EXPECT_EQ(status, CELIX_ENOMEM);
 }
 
+TEST_F(DiscoveryZeroconfAnnouncerTestSuite, CreateAnnouncerFailed9) {
+    discovery_zeroconf_announcer_t *announcer{nullptr};
+    celix_ei_expect_celix_stringHashMap_create((void*)&discoveryZeroconfAnnouncer_create, 0, nullptr, 2);
+    auto status = discoveryZeroconfAnnouncer_create(ctx.get(), logHelper.get(), &announcer);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+}
+
 TEST_F(DiscoveryZeroconfAnnouncerTestSuite, ConnectDNSServiceOneTimeFailure) {
     discovery_zeroconf_announcer_t *announcer{nullptr};
     celix_ei_expect_DNSServiceCreateConnection(CELIX_EI_UNKNOWN_CALLER, 0, kDNSServiceErr_Unknown);
@@ -601,6 +608,11 @@ static void OnUseServiceForAddEndpointENOMEM(void *handle, void *svc) {
     status = epl->endpointAdded(epl->handle, endpoint, nullptr);
     EXPECT_EQ(status, CELIX_ENOMEM);
     celix_ei_expect_celix_stringHashMap_put(nullptr, 0, 0);
+
+    celix_ei_expect_celix_stringHashMap_putLong(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM);
+    status = epl->endpointAdded(epl->handle, endpoint, nullptr);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    celix_ei_expect_celix_stringHashMap_putLong(nullptr, 0, 0);
 
     epl->endpointRemoved(epl->handle, endpoint, nullptr);
 

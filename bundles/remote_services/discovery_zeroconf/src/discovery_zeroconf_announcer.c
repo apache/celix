@@ -74,6 +74,7 @@ struct discovery_zeroconf_announcer {
     bool running;
     celix_string_hash_map_t *endpoints;//key:endpoint id, val:announce_endpoint_entry_t*
     celix_array_list_t *revokedEndpoints;
+    celix_string_hash_map_t *conflictCntMap;//key:service name, val:conflictCnt. Use to resolve conflict service name in same host.Because the mDNSResponder does not automatically resolve service name conflicts in the same host.
 };
 
 typedef struct announce_endpoint_entry {
@@ -131,6 +132,12 @@ celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, ce
         return CELIX_ENOMEM;
     }
 
+    celix_autoptr(celix_string_hash_map_t) conflictCntMap = announcer->conflictCntMap = celix_stringHashMap_create();
+    if (conflictCntMap == NULL) {
+        celix_logHelper_fatal(logHelper, "Announcer: Failed to create conflict count map.");
+        return CELIX_ENOMEM;
+    }
+
     const char *fwUuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
     if (fwUuid == NULL || strlen(fwUuid) >= sizeof(announcer->fwUuid)) {
         celix_logHelper_fatal(logHelper, "Announcer: Failed to get framework uuid.");
@@ -168,6 +175,7 @@ celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, ce
     celixThread_setName(&announcer->refreshEPThread, "DiscAnnouncer");
 
     epListenerSvcReg.svcId = -1;
+    celix_steal_ptr(conflictCntMap);
     celix_steal_ptr(revokedEndpoints);
     celix_steal_ptr(endpoints);
     celix_steal_ptr(mutex);
@@ -185,6 +193,7 @@ void discoveryZeroconfAnnouncer_destroy(discovery_zeroconf_announcer_t *announce
     celix_bundleContext_unregisterServiceAsync(announcer->ctx, announcer->epListenerSvcId, NULL, NULL);
     celix_bundleContext_waitForAsyncUnregistration(announcer->ctx, announcer->epListenerSvcId);
 
+    celix_stringHashMap_destroy(announcer->conflictCntMap);
     announce_endpoint_entry_t *entry = NULL;
     int size = celix_arrayList_size(announcer->revokedEndpoints);
     for (int i = 0; i < size; ++i) {
@@ -388,10 +397,18 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
     }
 
     celix_auto(celix_mutex_lock_guard_t) lockGuard = celixMutexLockGuard_init(&announcer->mutex);
+    long conflictCnt = celix_stringHashMap_getLong(announcer->conflictCntMap, entry->serviceName, 0);
+    status = celix_stringHashMap_putLong(announcer->conflictCntMap, entry->serviceName, conflictCnt + 1);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_logTssErrors(announcer->logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to put conflict count for %s.", entry->serviceName);
+        return status;
+    }
     status = celix_stringHashMap_put(announcer->endpoints, endpoint->id, entry);
     if (status == CELIX_SUCCESS) {
         celix_steal_ptr(entry);
     } else {
+        celix_stringHashMap_putLong(announcer->conflictCntMap, entry->serviceName, conflictCnt);
         celix_logHelper_logTssErrors(announcer->logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(announcer->logHelper, "Announcer: Failed to put endpoint entry for %s.", endpoint->id);
         return status;
@@ -498,18 +515,21 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
             continue;
         }
 
+        celixThreadMutex_lock(&announcer->mutex);
+        long conflictCnt = celix_stringHashMap_getLong(announcer->conflictCntMap, entry->serviceName, 0);
+        celixThreadMutex_unlock(&announcer->mutex);
         DNSServiceErrorType dnsErr;
         char instanceName[64] = {0};
         bool registered = false;
-        int conflictCnt = 1;
+        int resolvedConflictCnt = 0;
         DNSServiceRef dsRef;
         do {
             dsRef = announcer->sharedRef;//DNSServiceRegister will set a new value for dsRef
             int bytes = 0;
-            if (conflictCnt == 1) {
+            if (conflictCnt <= 1) {
                 bytes = snprintf(instanceName, sizeof(instanceName), "%s-%ld", entry->serviceName, (long)announcer->pid);
             } else {
-                bytes = snprintf(instanceName, sizeof(instanceName), "%s-%ld(%d)", entry->serviceName, (long)announcer->pid, conflictCnt);
+                bytes = snprintf(instanceName, sizeof(instanceName), "%s-%ld(%ld)", entry->serviceName, (long)announcer->pid, conflictCnt);
             }
             if (bytes >= sizeof(instanceName)) {
                 celix_logHelper_error(announcer->logHelper, "Announcer: Please reduce the length of service name for %s.", entry->serviceName);
@@ -522,8 +542,14 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
             } else {
                 celix_logHelper_error(announcer->logHelper, "Announcer: Failed to announce service, %s. %d", instanceName, dnsErr);
             }
+            if (dnsErr == kDNSServiceErr_NameConflict) {
+                celixThreadMutex_lock(&announcer->mutex);
+                conflictCnt = celix_stringHashMap_getLong(announcer->conflictCntMap, entry->serviceName, 0);
+                celix_stringHashMap_putLong(announcer->conflictCntMap, entry->serviceName, ++conflictCnt);
+                celixThreadMutex_unlock(&announcer->mutex);
+            }
             //LocalOnly service may be return kDNSServiceErr_NameConflict, but mDNS daemon will resolve the instance name conflicts for non-LocalOnly service
-        } while (dnsErr == kDNSServiceErr_NameConflict && conflictCnt++ < DZC_MAX_CONFLICT_CNT);
+        } while (dnsErr == kDNSServiceErr_NameConflict && resolvedConflictCnt++ < DZC_MAX_CONFLICT_CNT);
 
         TXTRecordDeallocate(&txtRecord);
 
