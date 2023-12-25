@@ -33,16 +33,16 @@ extern "C" {
  */
 #define RSA_SHM_SERVER_NAME_KEY             "celix.remote.admin.shm.server_name"
 /**
- * @brief The serializer type of RSA_SHM_CONFIGURATION_TYPE. The value should associated with RSA_RPC_TYPE_KEY of rsa_rpc_factory_t.
+ * @brief The serializer type of RSA_SHM_CONFIGURATION_TYPE. The value should be associated with RSA_RPC_TYPE_KEY of rsa_rpc_factory_t.
  */
 #define RSA_SHM_RPC_TYPE_KEY                "celix.remote.admin.shm.rpc_type"
 
 /**
  * @brief A property of RsaShm bundle that indicates the shared memory pool size.
- *  Its value should be greater than 8192, because the memory pool ctrl block(control_t) size is 6536 bytes.
+ *  Its value should be greater than or equal to 8192, because the memory pool ctrl block(control_t) size is 6536 bytes.
  *
  */
-#define RSA_SHM_MEMORY_POOL_SIZE_KEY "RSA_SHM_POOL_SIZE"
+#define RSA_SHM_MEMORY_POOL_SIZE_KEY "CELIX_RSA_SHM_POOL_SIZE"
 /**
  * @brief Shared memory pool default size
  *
@@ -53,7 +53,7 @@ extern "C" {
  * @brief A property of RsaShm bundle that indicates the timeout of remote service invocation.
  *
  */
-#define RSA_SHM_MSG_TIMEOUT_KEY "RSA_SHM_MSG_TIMEOUT"
+#define RSA_SHM_MSG_TIMEOUT_KEY "CELIX_RSA_SHM_MSG_TIMEOUT"
 /**
  * @brief The default timeout of remote service invocation.
  *
@@ -65,7 +65,7 @@ extern "C" {
  * If there are more concurrent invocations than its value,  service invocation will fail.
  *
  */
-#define RSA_SHM_MAX_CONCURRENT_INVOCATIONS_KEY "RSA_SHM_MAX_CONCURRENT_INVOCATIONS_NUM"
+#define RSA_SHM_MAX_CONCURRENT_INVOCATIONS_KEY "CELIX_RSA_SHM_MAX_CONCURRENT_INVOCATIONS_NUM"
 
 /**
  * @brief The default value of the maximum concurrent invocations, If property RSA_SHM_MAX_CONCURRENT_INVOCATIONS_KEY does not exist, the default value is used
