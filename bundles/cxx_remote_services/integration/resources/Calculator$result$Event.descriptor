@@ -1,9 +1,0 @@
-:header
-type=message
-name=Calculator$result$Event
-version=1.0.0
-:annotations
-classname=Calculator$result$Event
-:types
-:message
-{[Dt optionalReturnValue optionalError}

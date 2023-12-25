@@ -4,12 +4,12 @@
       "endpoint.id": "id-01",
       "service.imported": true,
       "service.imported.configs": [
-        "pubsub"
+        "ipc-mq"
       ],
       "service.exported.interfaces": "ICalculator",
       "endpoint.objectClass": "ICalculator",
-      "endpoint.topic": "test",
-      "endpoint.scope": "default"
+      "endpoint.client.to.provider.channel.id": "1234",
+      "endpoint.provider.to.client.channel.id": "1235"
     }
   ]
 }

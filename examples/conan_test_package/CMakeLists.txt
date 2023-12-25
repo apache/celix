@@ -69,88 +69,6 @@ if (TEST_SYSLOG_WRITER)
     celix_container_bundles(use_syslog_writer LEVEL 2 hello)
 endif ()
 
-option(TEST_PUBSUB "Test PubSub" OFF)
-if (TEST_PUBSUB)
-    add_celix_bundle(my_pubsub_admin
-            SOURCES
-            my_psa_activator.c
-            )
-    target_link_libraries(my_pubsub_admin PRIVATE Celix::framework Celix::dfi Celix::log_helper Celix::utils)
-    target_link_libraries(my_pubsub_admin PRIVATE Celix::pubsub_spi Celix::pubsub_utils )
-    add_celix_container(use_my_psa
-            BUNDLES
-            Celix::celix_pubsub_topology_manager
-            my_pubsub_admin
-            hello
-            PROPERTIES
-            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
-            )
-endif ()
-
-option(TEST_PSA_ZMQ "Test ZeroMQ PubSub Admin" OFF)
-if (TEST_PSA_ZMQ)
-    add_celix_container(use_psa_zmq
-            BUNDLES
-            Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_zmq
-            hello
-            PROPERTIES
-            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
-            )
-endif ()
-
-option(TEST_PSA_TCP "Test TCP PubSub Admin" OFF)
-if (TEST_PSA_TCP)
-    add_celix_container(use_psa_tcp
-            BUNDLES
-            Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_tcp
-            hello
-            PROPERTIES
-            PSA_TCP_VERBOSE=true
-            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
-            )
-endif ()
-
-option(TEST_PSA_WS "Test WebSocket PubSub Admin" OFF)
-if (TEST_PSA_WS)
-    add_celix_container(use_psa_ws
-            BUNDLES
-            Celix::http_admin
-            Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_admin_websocket
-            hello
-            PROPERTIES
-            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
-            )
-endif ()
-
-option(TEST_PSA_DISCOVERY_ETCD "Test the PubSub Discovery (ETCD) bundle" OFF)
-if (TEST_PSA_DISCOVERY_ETCD)
-    add_celix_container(build_psa_discovery_etcd
-            BUNDLES
-            Celix::celix_pubsub_topology_manager
-            Celix::celix_pubsub_discovery_etcd
-            my_pubsub_admin
-            hello
-            PROPERTIES
-            PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
-            )
-    if (TEST_LAUNCHER)
-        add_celix_container(use_psa_discovery_etcd
-                LAUNCHER Celix::launcher
-                BUNDLES
-                Celix::celix_pubsub_topology_manager
-                Celix::celix_pubsub_discovery_etcd
-                my_pubsub_admin
-                hello
-                USE_CONFIG
-                PROPERTIES
-                PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
-        )
-    endif ()
-endif ()
-
 option(TEST_RSA "Test Remote Service Admin" OFF)
 if (TEST_RSA)
     add_celix_bundle(my_rsa
@@ -342,21 +260,6 @@ option(TEST_LOG_SERVICE_API "Test log service api" OFF)
 if (TEST_LOG_SERVICE_API)
     add_executable(use_log_service_api test_log_service_api.c)
     target_link_libraries(use_log_service_api PRIVATE Celix::log_service_api)
-endif ()
-
-option(TEST_PUBSUB_WIRE_PROTOCOL_V1 "Test pubsub wire protocol v1" OFF)
-if (TEST_PUBSUB_WIRE_PROTOCOL_V1)
-    add_celix_container("use_pubsub_wire_protocol_v1" BUNDLES Celix::celix_pubsub_protocol_wire_v1 hello)
-endif ()
-
-option(TEST_PUBSUB_WIRE_PROTOCOL_V2 "Test pubsub wire protocol v2" OFF)
-if (TEST_PUBSUB_WIRE_PROTOCOL_V2)
-    add_celix_container("use_pubsub_wire_protocol_v2" BUNDLES Celix::celix_pubsub_protocol_wire_v2 hello)
-endif ()
-
-option(TEST_PUBSUB_JSON_SERIALIZER "Test pubsub json serializer" OFF)
-if (TEST_PUBSUB_JSON_SERIALIZER)
-    add_celix_container("use_pubsub_json_serializer" BUNDLES Celix::celix_pubsub_serializer_json hello)
 endif ()
 
 option(TEST_CXX_REMOTE_SERVICE_ADMIN "Test C++ remote service admin" OFF)

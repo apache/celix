@@ -60,7 +60,7 @@ public:
             while(!stopThread) {
                 ses->publish((double)counter);
                 counter++;
-                std::this_thread::sleep_for(std::chrono::milliseconds{100});
+                std::this_thread::sleep_for(std::chrono::milliseconds{5000});
             }
         });
         return CELIX_SUCCESS;
@@ -98,8 +98,8 @@ public:
             .setCallbacks(&CalculatorImpl::setPushStreamProvider);
         cmp.createProvidedService<ICalculator>()
                 .addProperty("service.exported.interfaces", celix::typeName<ICalculator>())
-                .addProperty("endpoint.topic", "test")
-                .addProperty("endpoint.scope", "default")
+                .addProperty("endpoint.client.to.provider.channel.id", "1234")
+                .addProperty("endpoint.provider.to.client.channel.id", "1235")
                 .addProperty("service.exported.intents", "osgi.async");
 
         cmp.setCallbacks(&CalculatorImpl::init, &CalculatorImpl::start, &CalculatorImpl::stop, &CalculatorImpl::deinit);

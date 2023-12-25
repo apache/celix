@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,23 +17,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-*~
-*.swp
+BUILD_TYPE=${1:-Debug}
 
-/.project
-.DS_Store
-.clion.source.upload.marker
-.idea
-.vscode
-*.iml
-*.pyc
-*.enc
-*.pub
-
-build
-cmake-build*
-nbproject
-target
-html
-CMakeUserPresets.json
+cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+      -DCMAKE_INSTALL_PREFIX=../celix-install \
+      -DBUILD_EXPERIMENTAL=ON \
+      -DENABLE_TESTING=ON \
+      -DRSA_JSON_RPC=ON \
+      -DRSA_SHM=ON \
+      -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON \
+      ..
 
