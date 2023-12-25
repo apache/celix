@@ -100,7 +100,7 @@ jobs:
           mkdir build install
           cd build
           cmake ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
-          ninja -j && ninja install
+          ninja && ninja install
       - name: Test
         run: |
           cd $GITHUB_WORKSPACE/build
