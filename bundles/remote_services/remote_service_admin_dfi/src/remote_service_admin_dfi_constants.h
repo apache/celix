@@ -37,6 +37,15 @@
 #define RSA_DFI_ENDPOINT_URL            "org.amdatu.remote.admin.http.url"
 
 /**
+ * @brief RSA Configuration type for zeroconf http, it is synonymous(https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.remoteservices.html#i1698916) with RSA_DFI_CONFIGURATION_TYPE, they refer to the same endpoint.
+ */
+#define CELIX_RSA_DFI_ZEROCONF_CONFIGURATION_TYPE       "celix.remote.admin.dfi.zeroconf.http"
+#define CELIX_RSA_DFI_ZEROCONF_ENDPOINT_IFNAME          "celix.remote.admin.dfi.zeroconf.http.ifname"
+#define CELIX_RSA_DFI_ZEROCONF_ENDPOINT_PORT            "celix.remote.admin.dfi.zeroconf.http.port"
+#define CELIX_RSA_DFI_ZEROCONF_ENDPOINT_IPADDRESSES     "celix.remote.admin.dfi.zeroconf.http.ipaddresses"
+#define CELIX_RSA_DFI_ZEROCONF_ENDPOINT_PATH            "celix.remote.admin.dfi.zeroconf.http.path"
+
+/**
  * @brief Remote Service Admin DFI environment property (named "RSA_DFI_USE_CURL_SHARE_HANDLE") which specified
  * whether the RSA DFI should use curl's share handle.
  *

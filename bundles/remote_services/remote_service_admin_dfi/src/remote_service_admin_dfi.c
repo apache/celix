@@ -46,6 +46,8 @@
 
 #include "remote_service_admin_dfi_constants.h"
 #include "celix_bundle_context.h"
+#include "celix_string_hash_map.h"
+#include "celix_stdlib_cleanup.h"
 
 // defines how often the webserver is restarted (with an increased port number)
 #define MAX_NUMBER_OF_RESTARTS 5
@@ -202,16 +204,6 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         const char *interface = celix_bundleContext_getProperty(context, RSA_INTERFACE_KEY, NULL);
         (*admin)->curlShareEnabled = celix_bundleContext_getPropertyAsBool(context, RSA_DFI_USE_CURL_SHARE_HANDLE, RSA_DFI_USE_CURL_SHARE_HANDLE_DEFAULT);
 
-        const char *networkInterfaces = celix_bundleContext_getProperty(context, CELIX_RSA_NETWORK_INTERFACES, NULL);
-        char *interfacesCopy = NULL;
-        if (networkInterfaces != NULL) {
-            interfacesCopy = celix_utils_strdup(networkInterfaces);
-            const char delimiter[2] = ",";
-            char *savePtr;
-            //TODO Supports multiple network interfaces
-            interface = strtok_r(interfacesCopy, delimiter, &savePtr);
-        }
-
         char *discoveryInterface = NULL;
         char *detectedIp = NULL;
         if ((interface != NULL) && (remoteServiceAdmin_getIpAddress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
@@ -222,10 +214,6 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
             discoveryInterface = celix_utils_strdup(interface);
         } else {
             discoveryInterface = remoteServiceAdmin_getIFNameForIP(ip);
-        }
-
-        if (interfacesCopy != NULL) {
-            free(interfacesCopy);
         }
 
         if (ip != NULL) {
@@ -765,11 +753,13 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
     celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
     celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) RSA_DFI_CONFIGURATION_TYPE);
+    celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) RSA_DFI_CONFIGURATION_TYPE","CELIX_RSA_DFI_ZEROCONF_CONFIGURATION_TYPE);
     celix_properties_set(endpointProperties, RSA_DFI_ENDPOINT_URL, url);
     if (admin->discoveryInterface != NULL) {
-        celix_properties_set(endpointProperties, CELIX_RSA_NETWORK_INTERFACES, admin->discoveryInterface);
+        celix_properties_set(endpointProperties, CELIX_RSA_DFI_ZEROCONF_ENDPOINT_IFNAME, admin->discoveryInterface);
     }
+    celix_properties_set(endpointProperties, CELIX_RSA_DFI_ZEROCONF_ENDPOINT_PORT, admin->port);
+    celix_properties_set(endpointProperties, CELIX_RSA_DFI_ZEROCONF_ENDPOINT_PATH, buf);
 
     if (props != NULL) {
         CELIX_PROPERTIES_ITERATE(props, iter) {
@@ -870,6 +860,43 @@ celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t *a
     return status;
 }
 
+static bool checkConfigurationType(endpoint_description_t *endpoint, const char *configType) {
+    bool result = true;
+    if (strncmp(configType, RSA_DFI_CONFIGURATION_TYPE, 1024) == 0) {
+        const char *url = celix_properties_get(endpoint->properties, RSA_DFI_ENDPOINT_URL, NULL);
+        if (url == NULL) {
+            result = false;
+        }
+    } else if (strncmp(configType, CELIX_RSA_DFI_ZEROCONF_CONFIGURATION_TYPE, 1024) == 0) {
+        const char *ip = celix_properties_get(endpoint->properties, CELIX_RSA_DFI_ZEROCONF_ENDPOINT_IPADDRESSES, NULL);//the property is set by the discovery_zeroconf
+        const char *port = celix_properties_get(endpoint->properties, CELIX_RSA_DFI_ZEROCONF_ENDPOINT_PORT, NULL);
+        const char *path = celix_properties_get(endpoint->properties, CELIX_RSA_DFI_ZEROCONF_ENDPOINT_PATH, NULL);
+        if (ip == NULL || port == NULL || path == NULL) {
+            return false;
+        }
+        celix_autofree char *ipCopy = celix_utils_strdup(ip);
+        if (ipCopy == NULL) {
+            return false;
+        }
+        char *savePtr = NULL;
+        char *token = strtok_r(ipCopy, ",", &savePtr);
+        result = (token != NULL);
+        while (token != NULL) {
+            struct sockaddr_in sa;
+            struct sockaddr_in6 sa6;
+            if (inet_pton(AF_INET, token, &sa.sin_addr) != 1 && inet_pton(AF_INET6, token, &sa6.sin6_addr) != 1) {
+                result = false;
+                break;
+            }
+            token = strtok_r(NULL, ",", &savePtr);
+        }
+    } else {
+        result = false;
+    }
+
+    return result;
+}
+
 celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, endpoint_description_t *endpointDescription, import_registration_t **out) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -883,7 +910,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
 
         token = strtok_r(ecCopy, delimiter, &savePtr);
         while (token != NULL) {
-            if (strncmp(celix_utils_trimInPlace(token), RSA_DFI_CONFIGURATION_TYPE, 1024) == 0) {
+            if (checkConfigurationType(endpointDescription, celix_utils_trimInPlace(token))) {
                 importService = true;
                 break;
             }
@@ -954,6 +981,42 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *
 
 static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply, int* replyStatus) {
     remote_service_admin_t * rsa = handle;
+    celix_autoptr(celix_string_hash_map_t) ipAddressMap = NULL;
+    celix_autofree char *ipStrListCopy = NULL;
+    const char *ipaddresses = celix_properties_get(endpointDescription->properties, (char*) CELIX_RSA_DFI_ZEROCONF_ENDPOINT_IPADDRESSES, NULL);
+    if (ipaddresses != NULL) {
+        celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
+        opts.storeKeysWeakly = true;
+        ipAddressMap = celix_stringHashMap_createWithOptions(&opts);
+        if (ipAddressMap == NULL) {
+            celix_logHelper_logTssErrors(rsa->loghelper, CELIX_LOG_LEVEL_ERROR);
+            celix_logHelper_error(rsa->loghelper, "Error creating ip address map");
+            return CELIX_ENOMEM;
+        }
+        ipStrListCopy = celix_utils_strdup(ipaddresses);
+        if (ipStrListCopy == NULL) {
+            return CELIX_ENOMEM;
+        }
+        char *savePtr = NULL;
+        char *token = strtok_r(ipStrListCopy, ",", &savePtr);
+        while (token != NULL) {
+            char *ip = celix_utils_trimInPlace(token);
+            struct sockaddr_in sa;
+            if (inet_pton(AF_INET, ip, &(sa.sin_addr)) == 1) {
+                if (celix_stringHashMap_putBool(ipAddressMap, ip, true) != CELIX_SUCCESS) {//IPV4
+                    celix_logHelper_logTssErrors(rsa->loghelper, CELIX_LOG_LEVEL_WARNING);
+                    celix_logHelper_warning(rsa->loghelper, "Error putting ip address in map");
+                }
+            } else {
+                if (celix_stringHashMap_putBool(ipAddressMap, ip, false) != CELIX_SUCCESS) {//IPV6
+                    celix_logHelper_logTssErrors(rsa->loghelper, CELIX_LOG_LEVEL_WARNING);
+                    celix_logHelper_warning(rsa->loghelper, "Error putting ip address in map");
+                }
+            }
+            token = strtok_r(NULL, ",", &savePtr);
+        }
+    }
+
     struct celix_post_data post;
     post.readptr = request;
     post.size = strlen(request);
@@ -990,6 +1053,8 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
 
     curl = curl_easy_init();
     if(!curl) {
+        fclose(get.stream);
+        free(get.buf);
         status = CELIX_ILLEGAL_STATE;
     } else {
         struct curl_slist *metadataHeader = NULL;
@@ -1006,7 +1071,6 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
 
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
-        curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
         curl_easy_setopt(curl, CURLOPT_READFUNCTION, remoteServiceAdmin_readCallback);
         curl_easy_setopt(curl, CURLOPT_READDATA, &post);
@@ -1016,7 +1080,27 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
         if (rsa->curlShareEnabled) {
             curl_easy_setopt(curl, CURLOPT_SHARE, rsa->curlShare);
         }
-        res = curl_easy_perform(curl);
+        if (ipAddressMap == NULL || celix_stringHashMap_size(ipAddressMap) == 0) {//no zeroconf addresses found, use org.amdatu.remote.admin.http.url
+            curl_easy_setopt(curl, CURLOPT_URL, url);
+            res = curl_easy_perform(curl);
+        } else {
+            const char *port = celix_properties_get(endpointDescription->properties, (char*) CELIX_RSA_DFI_ZEROCONF_ENDPOINT_PORT, "");
+            const char *path = celix_properties_get(endpointDescription->properties, (char*) CELIX_RSA_DFI_ZEROCONF_ENDPOINT_PATH, "");
+            CELIX_STRING_HASH_MAP_ITERATE(ipAddressMap, iter) {
+                const char *ip = iter.key;
+                bool ipv4 = iter.value.boolValue;
+                if (ipv4) {
+                    snprintf(url, sizeof(url), "http://%s:%s%s", ip, port, path);
+                } else {
+                    snprintf(url, sizeof(url), "http://[%s]:%s%s", ip, port, path);
+                }
+                curl_easy_setopt(curl, CURLOPT_URL, url);
+                res = curl_easy_perform(curl);
+                if (res != CURLE_COULDNT_CONNECT) {//TODO cache the ip address and use it for the next call
+                    break;
+                }
+            }
+        }
 
         fputc('\0', get.stream);
         fclose(get.stream);
