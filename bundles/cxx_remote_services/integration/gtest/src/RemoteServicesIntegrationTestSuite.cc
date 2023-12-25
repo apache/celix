@@ -26,15 +26,9 @@
 class RemoteServicesIntegrationTestSuite : public ::testing::Test {
 public:
     RemoteServicesIntegrationTestSuite() {
-        auto pubsubTestReturnIpc = std::string{"ipc:///tmp/pubsub-test-return"};
-        auto pubsubTestInvokeIpc = std::string{"ipc:///tmp/pubsub-test-invoke"};
-
         celix::Properties clientConfig{
                 {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "info"},
                 {celix::FRAMEWORK_CACHE_DIR, ".clientCache"},
-                //Static configuration to let the pubsub zmq operate without discovery
-                {"PSA_ZMQ_STATIC_BIND_URL_FOR_test_invoke_default", pubsubTestInvokeIpc},
-                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_return_default", pubsubTestReturnIpc }
         };
         clientFw = celix::createFramework(clientConfig);
         clientCtx = clientFw->getFrameworkBundleContext();
@@ -42,9 +36,6 @@ public:
         celix::Properties serverConfig{
                 {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "info"},
                 {celix::FRAMEWORK_CACHE_DIR, ".serverCache"},
-                //Static configuration to let the pubsub zmq operate without discovery
-                {"PSA_ZMQ_STATIC_BIND_URL_FOR_test_return_default",  pubsubTestReturnIpc },
-                {"PSA_ZMQ_STATIC_CONNECT_URL_FOR_test_invoke_default", pubsubTestInvokeIpc }
         };
         serverFw = celix::createFramework(serverConfig);
         serverCtx = serverFw->getFrameworkBundleContext();
@@ -52,10 +43,6 @@ public:
 
     static void installSharedBundles(std::shared_ptr<celix::BundleContext>& ctx) {
         auto sharedBundles = {
-                PS_SER_BUNDLE_LOC,
-                PS_PSTM_BUNDLE_LOC,
-                PS_PSA_BUNDLE_LOC,
-                PS_WIRE_BUNDLE_LOC,
                 RS_DISCOVERY_BUNDLE_LOC,
                 RS_FACTORY_BUNDLE_LOC ,
                 RS_RSA_BUNDLE_LOC};
@@ -87,9 +74,6 @@ public:
     }
 
     void invokeRemoteCalcService() {
-        installProviderBundles();
-        installConsumerBundles();
-
         //If a calculator provider bundle is installed I expect a exported calculator interface
         auto count = serverCtx->useService<ICalculator>()
                 .setFilter("(service.exported.interfaces=*)")
@@ -111,8 +95,8 @@ public:
 
         /*
          * Testing the remote service in a while loop till it is successful or 10 seconds has passed.
-         * Note that because pubsub does not guarantee a connection when used, it is possible - and likely -
-         * that the first remote test iteration fails due to not yet completely connected pubsub.
+         * Note that because mq does not guarantee a connection when used, it is possible - and likely -
+         * that the first remote test iteration fails due to not yet completely connected mq.
          */
         auto start = std::chrono::system_clock::now();
         auto now = std::chrono::system_clock::now();
@@ -169,5 +153,7 @@ TEST_F(RemoteServicesIntegrationTestSuite, StartStopFrameworks) {
 }
 
 TEST_F(RemoteServicesIntegrationTestSuite, InvokeRemoteCalcService) {
+    installProviderBundles();
+    installConsumerBundles();
     invokeRemoteCalcService();
 }

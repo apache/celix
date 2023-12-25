@@ -18,6 +18,8 @@
  */
 
 #include <unordered_map>
+#include <optional>
+#include <sys/msg.h>
 
 #include "celix/PromiseFactory.h"
 #include "celix/PushStream.h"
@@ -28,148 +30,136 @@
 #include "celix/LogHelper.h"
 
 #include "ICalculator.h"
-#include "pubsub/publisher.h"
-#include "pubsub/subscriber.h"
 
 constexpr auto INVOKE_TIMEOUT = std::chrono::milliseconds {500};
 
 struct Calculator$add$Invoke {
-    double arg1{};
-    double arg2{};
+    long invokeId;
+    double arg1;
+    double arg2;
 };
 
 struct Calculator$add$Return {
-    struct {
-        uint32_t cap{};
-        uint32_t len{};
-        double* buf{};
-    } optionalReturnValue{};
-    char* optionalError{};
+    long invokeId;
+    double result;
+    bool hasError;
+    char errorMsg[512];
 };
 
 struct Calculator$result$Event {
-    struct {
-        uint32_t cap{};
-        uint32_t len{};
-        double* buf{};
-    } optionalReturnValue{};
-    char* optionalError{};
+    double eventData;
+    bool hasError;
+    char errorMsg[512];
 };
+
+struct Calculator$add$InvokeIpcMsg {
+    long mtype;  //1
+    Calculator$add$Invoke mtext;
+};
+
+struct Calculator$add$ReturnIpcMsg {
+    long mtype; //2
+    Calculator$add$Return mtext;
+};
+
+struct Calculator$result$EventIpcMsg {
+    long mtype; //3
+    Calculator$result$Event mtext;
+};
+
+class IpcException : public std::runtime_error {
+  public:
+    using std::runtime_error::runtime_error;
+};
+
+template<typename T>
+static std::optional<T> receiveMsgFromIpc(const celix::LogHelper& logHelper, int qidReceiver, long mtype) {
+    T msg{};
+    msg.mtype = mtype;
+    int rc = msgrcv(qidReceiver, &msg, sizeof(msg.mtext), mtype, MSG_NOERROR | IPC_NOWAIT);
+    if (rc == -1) {
+        if (errno != ENOMSG) {
+            throw IpcException{std::string{"Error receiving message from queue: "} + strerror(errno)};
+        } else {
+            logHelper.trace("No message available for msgrcv()");
+        }
+        return {};
+    } else if (rc != sizeof(msg.mtext)) {
+        throw IpcException{
+            "Error receiving message from queue: Received message size does not match expected size. Got " +
+            std::to_string(rc) + " expected " + std::to_string(sizeof(msg.mtext))};
+    }
+    return msg;
+}
+
+template<typename T>
+static void sendMsgWithIpc(const celix::LogHelper& logHelper, int qidSender, const T& msg) {
+    int rc = msgsnd(qidSender, &msg, sizeof(msg.mtext), IPC_NOWAIT);
+    if (rc == EAGAIN) {
+        logHelper.warning("Cannot send message to queue. Queue is full.");
+    } else if (rc == -1) {
+        logHelper.error("Error sending message to queue: %s", strerror(errno));
+    }
+}
 
 /**
  * A importedCalculater which acts as a pubsub proxy to a imported remote service.
  */
 class ImportedCalculator final : public ICalculator {
 public:
-    explicit ImportedCalculator(celix::LogHelper _logHelper) : logHelper{std::move(_logHelper)} {}
+    explicit ImportedCalculator(celix::LogHelper _logHelper, long c2pChannelId, long p2cChannelId) : logHelper{std::move(_logHelper)} {
+        setupMsgIpc(c2pChannelId, p2cChannelId);
+    }
 
-    ~ImportedCalculator() noexcept override {
-        //failing al leftover deferreds
-        {
-            std::lock_guard lock{mutex};
-            for (auto& pair : deferreds) {
-                pair.second.fail(celix::rsa::RemoteServicesException{"Shutting down proxy"});
-            }
-        }
-    };
-public:
+    ~ImportedCalculator() noexcept override = default;
 
     std::shared_ptr<celix::PushStream<double>> result() override {
+        std::lock_guard lock{mutex};
         return stream;
     }
 
     celix::Promise<double> add(double a, double b) override {
-        //setup msg id
-        thread_local unsigned int invokeMsgId = 0;
-        if (invokeMsgId == 0) {
-            publisher->localMsgTypeIdForMsgType(publisher->handle, "Calculator$add$Invoke", &invokeMsgId);
-        }
+        //sending Calculator$add$Invoke (mtype=1) to qidSender
+        Calculator$add$InvokeIpcMsg msg{};
+        msg.mtype = 1;
+        msg.mtext.invokeId = nextInvokeId++;
+        msg.mtext.arg1 = a;
+        msg.mtext.arg2 = b;
 
-        long invokeId = nextInvokeId++;
+        sendMsgWithIpc(logHelper, qidSender, msg);
+
         std::lock_guard lck{mutex};
         auto deferred = factory->deferred<double>();
-        deferreds.emplace(invokeId, deferred);
-        if (invokeMsgId > 0) {
-            Calculator$add$Invoke invoke;
-            invoke.arg1 = a;
-            invoke.arg2 = b;
-            auto* meta = celix_properties_create();
-            celix_properties_setLong(meta, "invoke.id", invokeId);
-            int rc = publisher->send(publisher->handle, invokeMsgId, &invoke, meta);
-            if (rc != 0) {
-                constexpr auto msg = "error sending invoke msg";
-                logHelper.error(msg);
-                deferred.fail(celix::rsa::RemoteServicesException{msg});
-            }
-        } else {
-            constexpr auto msg = "error getting msg id for invoke msg";
-            logHelper.error(msg);
-            deferred.fail(celix::rsa::RemoteServicesException{msg});
-        }
+        deferreds.emplace(msg.mtext.invokeId, deferred);
         return deferred.getPromise().setTimeout(INVOKE_TIMEOUT);
     }
 
-    void receive(const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t* meta) {
-        //setup message ids
-        thread_local unsigned int returnAddMsgId = 0;
-        thread_local unsigned int streamResultMsgId = 0;
-
-        if (returnAddMsgId == 0 && celix_utils_stringEquals(msgType, "Calculator$add$Return")) {
-            returnAddMsgId = msgTypeId;
-        }
-        if (streamResultMsgId == 0 && celix_utils_stringEquals(msgType, "Calculator$result$Event")) {
-            streamResultMsgId = msgTypeId;
-        }
-
-        //handle incoming messages
-        if (streamResultMsgId != 0 && streamResultMsgId == msgTypeId) {
-            long invokeId = celix_properties_getAsLong(meta, "invoke.id", -1);
-            if (invokeId == -1) {
-                logHelper.error("Cannot find invoke id on metadata");
-                return;
-            }
-            auto* result = static_cast<Calculator$result$Event*>(msg);
-            if (result->optionalReturnValue.len == 1) {
-                ses->publish(result->optionalReturnValue.buf[0]);
-            } else {
-                ses->close();
-            }
-        } else if (returnAddMsgId != 0 && returnAddMsgId == msgTypeId) {
-            long invokeId = celix_properties_getAsLong(meta, "invoke.id", -1);
-            if (invokeId == -1) {
-                logHelper.error("Cannot find invoke id on metadata");
-                return;
-            }
-            auto* result = static_cast<Calculator$add$Return*>(msg);
-            std::unique_lock lock{mutex};
-            auto it = deferreds.find(invokeId);
-            if (it == end(deferreds)) {
-                logHelper.error("Cannot find deferred for invoke id %li", invokeId);
-                return;
-            }
-            auto deferred = it->second;
-            deferreds.erase(it);
-            lock.unlock();
-            if (result->optionalReturnValue.len == 1) {
-                deferred.resolve(result->optionalReturnValue.buf[0]);
-            } else {
-                deferred.fail(celix::rsa::RemoteServicesException{"Failed resolving remote promise"});
-            }
-        } else {
-            logHelper.warning("Unexpected message type %s", msgType);
-        }
-    }
     int init() {
         return CELIX_SUCCESS;
     }
 
     int start() {
+        std::lock_guard lock{mutex};
         ses = psp->createSynchronousEventSource<double>(factory);
         stream = psp->createStream<double>(ses, factory);
+        running.store(true, std::memory_order::memory_order_release);
+        receiveThread = std::thread{[this]{
+            while (running.load(std::memory_order::memory_order_consume)) {
+                receiveMessages();
+                cleanupResolvedDeferreds();
+                //note for example purposes, sleep instead of blocking with cond is used.
+                std::this_thread::sleep_for(std::chrono::milliseconds{10});
+            }
+        }};
         return CELIX_SUCCESS;
     }
 
     int stop() {
+        running.store(false, std::memory_order::memory_order_release);
+        receiveThread.join();
+        receiveThread = {};
+        cleanupDeferreds();
+        std::lock_guard lock{mutex};
         ses->close();
         ses.reset();
         stream.reset();
@@ -178,11 +168,6 @@ public:
 
     int deinit() {
         return CELIX_SUCCESS;
-    }
-
-    void setPublisher(const std::shared_ptr<pubsub_publisher>& pub) {
-        std::lock_guard lock{mutex};
-        publisher = pub;
     }
 
     void setPromiseFactory(const std::shared_ptr<celix::PromiseFactory>& fac) {
@@ -196,15 +181,113 @@ public:
     }
 
 private:
+    void setupMsgIpc(long c2pChannelId, long p2cChannelId) {
+        logHelper.debug("Creating msg queue for ImportedCalculator with c2pChannelId=%li and p2cChannelId=%li",
+                    c2pChannelId,
+                    p2cChannelId);
+        int keySender = (int)c2pChannelId;
+        int keyReceiver = (int)p2cChannelId;
+        qidSender = msgget(keySender, 0666 | IPC_CREAT);
+        qidReceiver = msgget(keyReceiver, 0666 | IPC_CREAT);
+
+        if (qidSender == -1 || qidReceiver == -1) {
+            throw std::logic_error{"RsaShmClient: Error creating msg queue."};
+        } else {
+            logHelper.info("Created msg queue for ImportedCalculator with qidSender=%i and qidReceiver=%i",
+                           qidSender,
+                           qidReceiver);
+        }
+    }
+
+    void cleanupDeferreds() {
+        std::lock_guard lock{mutex};
+        for (auto& pair : deferreds) {
+            pair.second.tryFail(celix::rsa::RemoteServicesException{"Shutting down proxy"});
+        }
+        deferreds.clear();
+    }
+
+    void receiveMessages() {
+        receiveCalculator$add$Return();
+        receiveCalculator$result$Event();
+    }
+
+    void receiveCalculator$add$Return() {
+        //receiving Calculator$add$Return (mtype=2) from qidReceiver
+        try {
+            auto msg = receiveMsgFromIpc<Calculator$add$ReturnIpcMsg>(logHelper, qidReceiver, 2);
+            if (!msg) {
+                return; // no message available (yet)
+            }
+            auto& ret = msg.value().mtext;
+
+            std::unique_lock lock{mutex};
+            auto it = deferreds.find(ret.invokeId);
+            if (it == end(deferreds)) {
+                logHelper.error("Cannot find deferred for invoke id %li", ret.invokeId);
+                return;
+            }
+            auto deferred = it->second;
+            deferreds.erase(it);
+            lock.unlock();
+
+            if (ret.hasError) {
+                deferred.tryFail(celix::rsa::RemoteServicesException{ret.errorMsg});
+            } else {
+                deferred.tryResolve(ret.result);
+            }
+        } catch (const IpcException& e) {
+            logHelper.error("IpcException: %s", e.what());
+        }
+    }
+
+    void receiveCalculator$result$Event() {
+        try {
+            auto msg = receiveMsgFromIpc<Calculator$result$EventIpcMsg>(logHelper, qidReceiver, 3);
+            if (!msg) {
+                return; // no message available (yet)
+            }
+            auto event = msg.value().mtext;
+            logHelper.trace("Received event %f", event.eventData);
+
+            if (event.hasError) {
+                logHelper.error("Received error event %s", event.errorMsg);
+                ses->close();
+            } else {
+                ses->publish(event.eventData);
+            }
+        } catch (const IpcException& e) {
+            logHelper.error("IpcException: %s", e.what());
+        }
+    }
+
+    /**
+     * @brief Clean up deferreds which are resolved (because of a timeout).
+     */
+    void cleanupResolvedDeferreds() {
+        std::lock_guard lock{mutex};
+        for (auto it = begin(deferreds); it != end(deferreds);) {
+            if (it->second.getPromise().isDone()) {
+                it = deferreds.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
     celix::LogHelper logHelper;
     std::atomic<long> nextInvokeId{0};
+    std::atomic<bool> running{false};
+    std::thread receiveThread{};
     std::mutex mutex{}; //protects below
     std::shared_ptr<celix::PromiseFactory> factory{};
-    std::shared_ptr<pubsub_publisher> publisher{};
     std::unordered_map<long, celix::Deferred<double>> deferreds{};
     std::shared_ptr<celix::PushStreamProvider> psp {};
     std::shared_ptr<celix::SynchronousPushEventSource<double>> ses{};
     std::shared_ptr<celix::PushStream<double>> stream{};
+
+    int qidSender{-1};
+    int qidReceiver{-1};
 };
 
 /**
@@ -229,19 +312,12 @@ private:
  */
 class CalculatorImportServiceFactory final : public celix::rsa::IImportServiceFactory {
 public:
-    static constexpr const char * const CONFIGS = "pubsub";
+    static constexpr const char * const CONFIGS = "ipc-mq";
 
     explicit CalculatorImportServiceFactory(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)}, logHelper{ctx, "celix::rsa::RemoteServiceFactory"} {}
     ~CalculatorImportServiceFactory() noexcept override = default;
 
     std::unique_ptr<celix::rsa::IImportRegistration> importService(const celix::rsa::EndpointDescription& endpoint) override {
-        auto topic = endpoint.getProperties().get("endpoint.topic");
-        auto scope = endpoint.getProperties().get("endpoint.topic");
-        if (topic.empty() || scope.empty()) {
-            ctx->logError("Cannot import pubsub endpoint. Endpoint does not have a scope and/or topic");
-            return nullptr;
-        }
-
         auto componentId = createImportedCalculatorComponent(endpoint);
         return std::make_unique<ComponentImportRegistration>(ctx, std::move(componentId));
     }
@@ -256,16 +332,13 @@ public:
 
 private:
     std::string createImportedCalculatorComponent(const celix::rsa::EndpointDescription& endpoint) {
-        auto invokeTopic = endpoint.getProperties().get("endpoint.topic") + "_invoke";
-        auto returnTopic = endpoint.getProperties().get("endpoint.topic") + "_return";
-        auto scope = endpoint.getProperties().get("endpoint.scope");
+        for (auto it : endpoint.getProperties()) {
+            logHelper.info("Endpoint property %s=%s", it.first.c_str(), it.second.c_str());
+        }
+        auto c2pChannelId = endpoint.getProperties().getAsLong("endpoint.client.to.provider.channel.id",  -1);
+        auto p2cChannelId = endpoint.getProperties().getAsLong("endpoint.provider.to.client.channel.id",  -1);
 
-        auto& cmp = ctx->getDependencyManager()->createComponent(std::make_unique<ImportedCalculator>(logHelper));
-        cmp.createServiceDependency<pubsub_publisher>(PUBSUB_PUBLISHER_SERVICE_NAME)
-                .setRequired(true)
-                .setStrategy(DependencyUpdateStrategy::suspend)
-                .setFilter(std::string{"(&(topic="}.append(invokeTopic).append(")(scope=").append(scope).append("))"))
-                .setCallbacks(&ImportedCalculator::setPublisher);
+        auto& cmp = ctx->getDependencyManager()->createComponent(std::make_unique<ImportedCalculator>(logHelper, c2pChannelId, p2cChannelId));
         cmp.createServiceDependency<celix::PromiseFactory>()
                 .setRequired(true)
                 .setStrategy(DependencyUpdateStrategy::suspend)
@@ -276,22 +349,6 @@ private:
                 .setCallbacks(&ImportedCalculator::setPushStreamProvider);
 
         cmp.setCallbacks(&ImportedCalculator::init, &ImportedCalculator::start, &ImportedCalculator::stop, &ImportedCalculator::deinit);
-
-        auto subscriber = std::make_shared<pubsub_subscriber_t>();
-        subscriber->handle = &cmp.getInstance();
-        subscriber->receive = [](void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool */*release*/) ->  int {
-            auto* inst = static_cast<ImportedCalculator*>(handle);
-            try {
-                inst->receive(msgType, msgTypeId, msg, metadata);
-            } catch (...) {
-                return -1;
-            }
-            return 0;
-        };
-        cmp.addContext(subscriber);
-        cmp.createProvidedCService<pubsub_subscriber_t>(subscriber.get(), PUBSUB_SUBSCRIBER_SERVICE_NAME)
-                .addProperty("topic", returnTopic)
-                .addProperty("scope", scope);
 
         //Adding the imported service as provide
         celix::Properties svcProps{};
@@ -322,72 +379,8 @@ private:
  */
 class ExportedCalculator final {
 public:
-    explicit ExportedCalculator(celix::LogHelper _logHelper) : logHelper{std::move(_logHelper)} {
-
-    }
-
-    void receive(const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t* meta) {
-        //setup message ids
-        thread_local unsigned int invokeAddMsgId = 0;
-        if (invokeAddMsgId == 0 && celix_utils_stringEquals(msgType, "Calculator$add$Invoke")) {
-            invokeAddMsgId = msgTypeId;
-        }
-        thread_local unsigned int returnMsgId = 0;
-        if (returnMsgId == 0) {
-            publisher->localMsgTypeIdForMsgType(publisher->handle, "Calculator$add$Return", &returnMsgId);
-        }
-
-        //handle incoming messages
-        if (invokeAddMsgId != 0 && invokeAddMsgId == msgTypeId) {
-            auto* invoke = static_cast<Calculator$add$Invoke*>(msg);
-            long invokeId = celix_properties_getAsLong(meta, "invoke.id", -1);
-            if (invokeId == -1) {
-                logHelper.error("Cannot find invoke id on metadata");
-                return;
-            }
-
-            auto* metaProps = celix_properties_create();
-            celix_properties_set(metaProps, "invoke.id", std::to_string(invokeId).c_str());
-            std::lock_guard lock{mutex};
-            auto promise = calculator->add(invoke->arg1, invoke->arg2);
-            promise
-            .onFailure([logHelper = logHelper, weakPub = std::weak_ptr<pubsub_publisher>{publisher}, msgId = returnMsgId, metaProps](const auto& exp) {
-                    auto pub = weakPub.lock();
-                    if (pub) {
-                        Calculator$add$Return ret;
-                        ret.optionalReturnValue.buf = nullptr;
-                        ret.optionalReturnValue.len = 0;
-                        ret.optionalReturnValue.cap = 0;
-                        ret.optionalError = celix_utils_strdup(exp.what());
-                        pub->send(pub->handle, msgId, &ret, metaProps);
-                    } else {
-                        logHelper.error("publisher is gone");
-                    }
-                })
-                .onSuccess([logHelper = logHelper, weakSvc = std::weak_ptr<ICalculator>{calculator}, weakPub = std::weak_ptr<pubsub_publisher>{publisher}, msgId = returnMsgId, metaProps](auto val) {
-                    auto pub = weakPub.lock();
-                    auto svc = weakSvc.lock();
-                    if (pub && svc) {
-                        Calculator$add$Return ret;
-                        ret.optionalReturnValue.buf = (double *) malloc(sizeof(*ret.optionalReturnValue.buf));
-                        ret.optionalReturnValue.len = 1;
-                        ret.optionalReturnValue.cap = 1;
-                        ret.optionalReturnValue.buf[0] = val;
-                        ret.optionalError = nullptr;
-                        pub->send(pub->handle, msgId, &ret, metaProps);
-                        free(ret.optionalReturnValue.buf);
-                    } else {
-                        logHelper.error("publisher is gone");
-                    }
-                });
-        } else {
-            logHelper.warning("Unexpected message type %s", msgType);
-        }
-    }
-
-    void setPublisher(const std::shared_ptr<pubsub_publisher>& pub) {
-        std::lock_guard lock{mutex};
-        publisher = pub;
+    explicit ExportedCalculator(celix::LogHelper _logHelper, long c2pChannelId, long p2cChannelId) : logHelper{std::move(_logHelper)} {
+        setupMsgIpc(c2pChannelId, p2cChannelId);
     }
 
     void setPromiseFactory(const std::shared_ptr<celix::PromiseFactory>& fac) {
@@ -401,33 +394,33 @@ public:
 
     int start() {
         resultStream = calculator->result();
-        auto streamEnded = resultStream->forEach([logHelper = logHelper, weakSvc = std::weak_ptr<ICalculator>{calculator}, weakPub = std::weak_ptr<pubsub_publisher>{publisher}](const double& event){
-            auto pub = weakPub.lock();
+        auto streamEnded = resultStream->forEach([lh = logHelper, weakSvc = std::weak_ptr<ICalculator>{calculator}, qidSnd = qidSender](const double& event) {
             auto svc = weakSvc.lock();
-            if (pub && svc) {
-                thread_local unsigned int eventMsgId = 0;
-                if (eventMsgId == 0) {
-                    pub->localMsgTypeIdForMsgType(pub->handle, "Calculator$result$Event", &eventMsgId);
-                }
-
-                auto* metaProps = celix_properties_create();
-                celix_properties_set(metaProps, "invoke.id", std::to_string(0).c_str());
-                Calculator$result$Event wireEvent;
-                wireEvent.optionalReturnValue.buf = (double *) malloc(sizeof(*wireEvent.optionalReturnValue.buf));
-                wireEvent.optionalReturnValue.len = 1;
-                wireEvent.optionalReturnValue.cap = 1;
-                wireEvent.optionalReturnValue.buf[0] = event;
-                wireEvent.optionalError = nullptr;
-                pub->send(pub->handle, eventMsgId, &wireEvent, metaProps);
-                free(wireEvent.optionalReturnValue.buf);
+            if (qidSnd != -1 && svc) {
+                Calculator$result$EventIpcMsg msg{};
+                msg.mtype = 3;
+                msg.mtext.eventData = event;
+                msg.mtext.hasError = false;
+                sendMsgWithIpc(lh, qidSnd, msg);
             } else {
-                logHelper.error("publisher is gone");
+                lh.error("Cannot send event, qidSender is -1 or service is gone");
             }
         });
+        running.store(true, std::memory_order::memory_order_release);
+        receiveThread = std::thread{[this]{
+            while (running.load(std::memory_order::memory_order_consume)) {
+                receiveMessages();
+                //note for example purposes, sleep instead of blocking with cond is used.
+                std::this_thread::sleep_for(std::chrono::milliseconds{10});
+            }
+        }};
         return CELIX_SUCCESS;
     }
 
     int stop() {
+        running.store(false, std::memory_order::memory_order_release);
+        receiveThread.join();
+        receiveThread = {};
         resultStream->close();
         resultStream.reset();
         return CELIX_SUCCESS;
@@ -442,14 +435,73 @@ public:
         calculator = calc;
     }
 private:
+    void setupMsgIpc(long c2pChannelId, long p2cChannelId) {
+        logHelper.debug("Creating msg queue for ExportCalculator with c2pChannelId=%li and p2cChannelId=%li",
+                        c2pChannelId,
+                        p2cChannelId);
+        //note reverse order of sender and receiver compared to ImportedCalculator
+        int keySender = (int)p2cChannelId;
+        int keyReceiver = (int)c2pChannelId;
+        qidSender = msgget(keySender, 0666 | IPC_CREAT);
+        qidReceiver = msgget(keyReceiver, 0666 | IPC_CREAT);
+
+        if (qidSender == -1 || qidReceiver == -1) {
+            throw std::logic_error{"RsaShmClient: Error creating msg queue."};
+        } else {
+            logHelper.info("Created msg queue for ExportCalculator with qidSender=%i and qidReceiver=%i",
+                           qidSender,
+                           qidReceiver);
+        }
+    }
+
+    void receiveMessages() {
+        receiveCalculator$add$Invoke();
+    }
+
+    void receiveCalculator$add$Invoke() {
+        try {
+            auto msg = receiveMsgFromIpc<Calculator$add$InvokeIpcMsg>(logHelper, qidReceiver, 1);
+            if (!msg) {
+                return; // no message available (yet)
+            }
+            auto& invoke = msg->mtext;
+
+            auto promise = calculator->add(invoke.arg1, invoke.arg2);
+            promise.onFailure([lh = logHelper, id = invoke.invokeId, qidSnd = qidSender](const auto& exp) {
+                    //sending Calculator$add$Return (mtype=2) to qidSender
+                    Calculator$add$ReturnIpcMsg msg{};
+                    msg.mtype = 2;
+                    msg.mtext.invokeId = id;
+                    msg.mtext.result = 0.0;
+                    msg.mtext.hasError = true;
+                    snprintf(msg.mtext.errorMsg, sizeof(msg.mtext.errorMsg), "%s", exp.what());
+                    sendMsgWithIpc(lh, qidSnd, msg);
+                });
+            promise.onSuccess([lh = logHelper, id = invoke.invokeId, qidSnd = qidSender](const auto& val) {
+                    //sending Calculator$add$Return (mtype=2) to qidSender
+                    Calculator$add$ReturnIpcMsg msg{};
+                    msg.mtype = 2;
+                    msg.mtext.invokeId = id;
+                    msg.mtext.result = val;
+                    msg.mtext.hasError = false;
+                    sendMsgWithIpc(lh, qidSnd, msg);
+                });
+        } catch (const IpcException& e) {
+            logHelper.error("IpcException: %s", e.what());
+        }
+    }
+
     celix::LogHelper logHelper;
-    std::atomic<long> nextInvokeId{0};
+    std::atomic<bool> running{false};
+    std::thread receiveThread{};
     std::mutex mutex{}; //protects below
     std::shared_ptr<ICalculator> calculator{};
     std::shared_ptr<celix::PromiseFactory> factory{};
-    std::shared_ptr<pubsub_publisher> publisher{};
     std::unordered_map<long, celix::Deferred<double>> deferreds{};
     std::shared_ptr<celix::PushStream<double>> resultStream{};
+
+    int qidSender{-1};
+    int qidReceiver{-1};
 };
 
 /**
@@ -474,7 +526,7 @@ private:
  */
 class CalculatorExportServiceFactory final : public celix::rsa::IExportServiceFactory {
 public:
-    static constexpr const char * const CONFIGS = "pubsub";
+    static constexpr const char * const CONFIGS = "ipc-mq";
     static constexpr const char * const INTENTS = "osgi.async";
 
     explicit CalculatorExportServiceFactory(std::shared_ptr<celix::BundleContext> _ctx) : ctx{std::move(_ctx)},
@@ -482,13 +534,6 @@ public:
     ~CalculatorExportServiceFactory() noexcept override = default;
 
     std::unique_ptr<celix::rsa::IExportRegistration> exportService(const celix::Properties& serviceProperties) override {
-        auto topic = serviceProperties.get("endpoint.topic");
-        auto scope = serviceProperties.get("endpoint.topic");
-        if (topic.empty() || scope.empty()) {
-            ctx->logError("Cannot export remote service pubsub without endpoint configuration. Endpoint does not have a scope and/or topic");
-            return nullptr;
-        }
-
         auto componentId = createExportedCalculatorComponent(serviceProperties);
         return std::make_unique<ComponentExportRegistration>(ctx, std::move(componentId));
     }
@@ -507,17 +552,12 @@ public:
 
 private:
     std::string createExportedCalculatorComponent(const celix::Properties& serviceProperties) {
-        auto invokeTopic = serviceProperties.get("endpoint.topic") + "_invoke";
-        auto returnTopic = serviceProperties.get("endpoint.topic") + "_return";
-        auto scope = serviceProperties.get("endpoint.scope");
+        auto c2pChannelId = serviceProperties.getAsLong("endpoint.client.to.provider.channel.id",  -1);
+        auto p2cChannelId = serviceProperties.getAsLong("endpoint.provider.to.client.channel.id",  -1);
         auto svcId = serviceProperties.get(celix::SERVICE_ID);
 
-        auto& cmp = ctx->getDependencyManager()->createComponent(std::make_unique<ExportedCalculator>(logHelper));
-        cmp.createServiceDependency<pubsub_publisher>(PUBSUB_PUBLISHER_SERVICE_NAME)
-                .setRequired(true)
-                .setStrategy(DependencyUpdateStrategy::suspend)
-                .setFilter(std::string{"(&(topic="}.append(returnTopic).append(")(scope=").append(scope).append("))"))
-                .setCallbacks(&ExportedCalculator::setPublisher);
+        auto& cmp = ctx->getDependencyManager()->createComponent(
+            std::make_unique<ExportedCalculator>(logHelper, c2pChannelId, p2cChannelId));
 
         cmp.createServiceDependency<celix::PromiseFactory>()
                 .setRequired(true)
@@ -531,23 +571,6 @@ private:
                 .setCallbacks(&ExportedCalculator::setICalculator);
 
         cmp.setCallbacks(&ExportedCalculator::init, &ExportedCalculator::start, &ExportedCalculator::stop, &ExportedCalculator::deinit);
-
-
-        auto subscriber = std::make_shared<pubsub_subscriber_t>();
-        subscriber->handle = &cmp.getInstance();
-        subscriber->receive = [](void *handle, const char *msgType, unsigned int msgTypeId, void *msg, const celix_properties_t *metadata, bool */*release*/) ->  int {
-            auto* inst = static_cast<ExportedCalculator*>(handle);
-            try {
-                inst->receive(msgType, msgTypeId, msg, metadata);
-            } catch (...) {
-                return -1;
-            }
-            return 0;
-        };
-        cmp.addContext(subscriber);
-        cmp.createProvidedCService<pubsub_subscriber_t>(subscriber.get(), PUBSUB_SUBSCRIBER_SERVICE_NAME)
-                .addProperty("topic", invokeTopic)
-                .addProperty("scope", scope);
 
         cmp.buildAsync();
 
