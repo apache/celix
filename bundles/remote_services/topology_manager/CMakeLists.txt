@@ -24,6 +24,7 @@ add_celix_bundle(rsa_topology_manager
     SYMBOLIC_NAME "apache_celix_rs_topology_manager"
     GROUP "Celix/RSA"
     NAME "Apache Celix RS Topology Manager"
+    FILENAME celix_rsa_topology_manager
 )
 target_include_directories(rsa_topology_manager PRIVATE src)
 target_include_directories(rsa_topology_manager PRIVATE include)

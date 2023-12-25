@@ -40,6 +40,7 @@ if (RSA_DISCOVERY_ZEROCONF)
         VERSION "2.0.0"
         NAME "Apache Celix Multicast zeroconf service discovery"
         GROUP "Celix/RSA"
+        FILENAME celix_rsa_discovery_zeroconf
         SOURCES
         ${RSA_DISCOVERY_ZEROCONF_SRC}
     )

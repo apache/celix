@@ -21,6 +21,7 @@ if (RSA_DISCOVERY_CONFIGURED)
             VERSION 0.9.0
             SYMBOLIC_NAME "apache_celix_rsa_discovery"
             NAME "Apache Celix RSA Configured Discovery"
+            FILENAME celix_rsa_discovery_configured
             SOURCES
             src/discovery_impl.c
             )
