@@ -46,7 +46,6 @@ public:
                 });
         counter++;
     }
-
 private:
     std::shared_ptr<ICalculator> calculator{};
 };

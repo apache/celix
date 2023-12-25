@@ -119,7 +119,6 @@ jobs:
           cmake \
           libffi-dev \
           libxml2-dev \
-          libczmq-dev \
           libcpputest-dev \
           rapidjson-dev \
           libavahi-compat-libdnssd-dev \

@@ -30,11 +30,6 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_HTTP_ADMIN"] = self.options["celix"].build_http_admin
         cmake.definitions["TEST_LOG_SERVICE"] = self.options["celix"].build_log_service
         cmake.definitions["TEST_SYSLOG_WRITER"] = self.options["celix"].build_syslog_writer
-        cmake.definitions["TEST_PUBSUB"] = self.options["celix"].build_pubsub
-        cmake.definitions["TEST_PSA_ZMQ"] = self.options["celix"].build_pubsub_psa_zmq
-        cmake.definitions["TEST_PSA_TCP"] = self.options["celix"].build_pubsub_psa_tcp
-        cmake.definitions["TEST_PSA_WS"] = self.options["celix"].build_pubsub_psa_ws
-        cmake.definitions["TEST_PSA_DISCOVERY_ETCD"] = self.options["celix"].build_pubsub_discovery_etcd
         cmake.definitions["TEST_RSA"] = self.options["celix"].build_remote_service_admin
         cmake.definitions["TEST_RSA_DFI"] = self.options["celix"].build_rsa_remote_service_admin_dfi
         cmake.definitions["TEST_RSA_SHM_V2"] = self.options["celix"].build_rsa_remote_service_admin_shm_v2
@@ -54,9 +49,6 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_PUSHSTREAMS"] = self.options["celix"].build_pushstreams
         cmake.definitions["TEST_LOG_HELPER"] = self.options["celix"].build_log_helper
         cmake.definitions["TEST_LOG_SERVICE_API"] = self.options["celix"].build_log_service_api
-        cmake.definitions["TEST_PUBSUB_WIRE_PROTOCOL_V1"] = self.options["celix"].build_pubsub_wire_protocol_v1
-        cmake.definitions["TEST_PUBSUB_WIRE_PROTOCOL_V2"] = self.options["celix"].build_pubsub_wire_protocol_v2
-        cmake.definitions["TEST_PUBSUB_JSON_SERIALIZER"] = self.options["celix"].build_pubsub_json_serializer
         cmake.definitions["TEST_CXX_REMOTE_SERVICE_ADMIN"] = self.options["celix"].build_cxx_remote_service_admin
         cmake.definitions["TEST_SHELL_API"] = self.options["celix"].build_shell_api
         cmake.definitions["TEST_CELIX_DFI"] = self.options["celix"].build_celix_dfi
@@ -81,17 +73,6 @@ class TestPackageConan(ConanFile):
                 self.run("./use_log_writer", cwd=os.path.join("deploy", "use_log_writer"), run_environment=True)
             if self.options["celix"].build_syslog_writer:
                 self.run("./use_syslog_writer", cwd=os.path.join("deploy", "use_syslog_writer"), run_environment=True)
-            if self.options["celix"].build_pubsub:
-                self.run("./use_my_psa", cwd=os.path.join("deploy", "use_my_psa"), run_environment=True)
-            if self.options["celix"].build_pubsub_psa_zmq:
-                self.run("./use_psa_zmq", cwd=os.path.join("deploy", "use_psa_zmq"), run_environment=True)
-            if self.options["celix"].build_pubsub_psa_tcp:
-                self.run("./use_psa_tcp", cwd=os.path.join("deploy", "use_psa_tcp"), run_environment=True)
-            if self.options["celix"].build_pubsub_psa_ws:
-                self.run("./use_psa_ws", cwd=os.path.join("deploy", "use_psa_ws"), run_environment=True)
-            if self.options["celix"].build_pubsub_discovery_etcd and self.options["celix"].build_launcher:
-                self.run("./use_psa_discovery_etcd",
-                         cwd=os.path.join("deploy", "use_psa_discovery_etcd"), run_environment=True)
             if self.options["celix"].build_remote_service_admin:
                 self.run("./use_my_rsa", cwd=os.path.join("deploy", "use_my_rsa"), run_environment=True)
                 self.run("./use_c_rsa_spi", run_environment=True)
@@ -130,15 +111,6 @@ class TestPackageConan(ConanFile):
                 self.run("./use_log_helper", run_environment=True)
             if self.options["celix"].build_log_service_api:
                 self.run("./use_log_service_api", run_environment=True)
-            if self.options["celix"].build_pubsub_wire_protocol_v1:
-                self.run("./use_pubsub_wire_protocol_v1",
-                         cwd=os.path.join("deploy", "use_pubsub_wire_protocol_v1"), run_environment=True)
-            if self.options["celix"].build_pubsub_wire_protocol_v2:
-                self.run("./use_pubsub_wire_protocol_v2",
-                         cwd=os.path.join("deploy", "use_pubsub_wire_protocol_v2"), run_environment=True)
-            if self.options["celix"].build_pubsub_json_serializer:
-                self.run("./use_pubsub_json_serializer",
-                         cwd=os.path.join("deploy", "use_pubsub_json_serializer"), run_environment=True)
             if self.options["celix"].build_cxx_remote_service_admin:
                 self.run("./use_cxx_remote_service_admin",
                          cwd=os.path.join("deploy", "use_cxx_remote_service_admin"), run_environment=True)
