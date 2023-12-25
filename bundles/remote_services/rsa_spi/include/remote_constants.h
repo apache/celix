@@ -37,15 +37,6 @@ static const char * const OSGI_RSA_SERVICE_EXPORTED_CONFIGS = "service.exported.
 static const char * const OSGI_RSA_SERVICE_LOCATION = "service.location";
 
 /**
- * Remote service admin property identifying the network interfaces that announce service.
- * The property value is network interfaces name, it Can be a comma separated list of CIDR notation,eg:"eth0,en0".
- * Default value is "", and the loopback interface will be used. Its exported service will be discovered
- * only by other local clients on the same machine.
- * If want to bound service to all network interfaces, we can set the property value to "all".
- */
-static const char * const CELIX_RSA_NETWORK_INTERFACES = "org.apache.celix.rsa.network.interfaces";
-
-/**
  * It identify which types of remote service configurations are supported by a distribution provider.
  * @ref https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.remoteservices.html#i1708968
  */
