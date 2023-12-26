@@ -29,6 +29,8 @@ extern "C" {
 
 CELIX_EI_DECLARE(strndup, char *);
 
+CELIX_EI_DECLARE(strdup, char *);
+
 #ifdef __cplusplus
 }
 #endif

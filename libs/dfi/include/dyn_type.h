@@ -146,6 +146,12 @@ struct meta_entry {
 CELIX_DFI_EXPORT int dynType_parse(FILE* descriptorStream, const char* name, const struct types_head* refTypes, dyn_type** type);
 
 /**
+ * @brief Parses a descriptor stream and creates a dyn_type (dynamic type) of a given name.
+ * Similar to dynType_parse except that the ownership of the given name is taken by the dyn type.
+ */
+CELIX_DFI_EXPORT int dynType_parseOfName(FILE* descriptorStream, char* name, const struct types_head* refTypes, dyn_type** type);
+
+/**
  * Parses a descriptor string and creates a dyn_type (dynamic type).
  * If successful the type output argument points to the newly created dyn type.
  * The caller is the owner of the dyn type and use dynType_destroy to deallocate the memory.

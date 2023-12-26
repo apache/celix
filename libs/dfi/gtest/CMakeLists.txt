@@ -42,11 +42,13 @@ if (EI_TESTS)
 	add_executable(test_dfi_with_ei
 			src/dyn_interface_ei_tests.cc
 			src/dyn_common_ei_tests.cc
+			src/dyn_type_ei_tests.cc
 	)
 	target_link_libraries(test_dfi_with_ei PRIVATE
 			dfi_cut
 			Celix::malloc_ei
 			Celix::stdio_ei
+			Celix::string_ei
 			GTest::gtest GTest::gtest_main
 	)
 	add_test(NAME run_test_dfi_with_ei COMMAND test_dfi_with_ei)

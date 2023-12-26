@@ -48,6 +48,8 @@ CELIX_EI_DECLARE(fclose, int);
 
 CELIX_EI_DECLARE(fgetc, int);
 
+CELIX_EI_DECLARE(fmemopen, FILE *);
+
 #ifdef __cplusplus
 }
 #endif

@@ -177,7 +177,7 @@ static int dynInterface_parseTypes(dyn_interface_type *intf, FILE *stream) {
         }
 
         celix_autoptr(dyn_type) type = NULL;
-        if ((status = dynType_parse(stream, name, &intf->types, &type)) != OK) {
+        if ((status = dynType_parseOfName(stream, celix_steal_ptr(name), &intf->types, &type)) != OK) {
             return status;
         }
         if ((status = dynCommon_eatChar(stream, '\n')) != OK) {

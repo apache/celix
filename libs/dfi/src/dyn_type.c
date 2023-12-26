@@ -19,9 +19,10 @@
 
 #include "dyn_type.h"
 #include "dyn_type_common.h"
-#include "dyn_type_common.h"
 #include "dyn_common.h"
 #include "celix_err.h"
+#include "celix_stdio_cleanup.h"
+#include "celix_stdlib_cleanup.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -35,6 +36,7 @@ static const int MEM_ERROR = 2;
 static const int PARSE_ERROR = 3;
 
 static int dynType_parseWithStream(FILE* stream, const char* name, dyn_type* parent, const struct types_head* refTypes, dyn_type** result);
+static int dynType_parseWithStreamOfName(FILE* stream, char* name, dyn_type* parent, const struct types_head* refTypes, dyn_type** result);
 static void dynType_clear(dyn_type* type);
 static void dynType_clearComplex(dyn_type* type);
 static void dynType_clearSequence(dyn_type* type);
@@ -84,56 +86,59 @@ int dynType_parse(FILE* descriptorStream, const char* name, const struct types_h
     return dynType_parseWithStream(descriptorStream, name, NULL, refTypes, type);
 }
 
+
+int dynType_parseOfName(FILE* descriptorStream, char* name, const struct types_head* refTypes, dyn_type** type) {
+    return dynType_parseWithStreamOfName(descriptorStream, name, NULL, refTypes, type);
+}
+
 int dynType_parseWithStr(const char* descriptor, const char* name, const struct types_head* refTypes, dyn_type** type) {
     int status = OK;
-    FILE* stream = fmemopen((char *)descriptor, strlen(descriptor) + 1, "r");
-    if (stream != NULL) {
-        status = dynType_parseWithStream(stream, name, NULL, refTypes, type);
-        if (status == OK) {
-            int c = fgetc(stream);
-            if (c != '\0' && c != EOF) {
-                status = PARSE_ERROR;
-                dynType_destroy(*type);
-                *type = NULL;
-                celix_err_pushf("Expected EOF got %c", c);
-            }
-        } 
-        fclose(stream);
-    } else {
-        status = ERROR;
+    celix_autoptr(FILE) stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
+    if (stream == NULL) {
         celix_err_pushf("Error creating mem stream for descriptor string. %s", strerror(errno));
+        return ERROR;
     }
+    celix_autoptr(dyn_type) result = NULL;
+    if ((status = dynType_parseWithStream(stream, name, NULL, refTypes, &result)) != OK) {
+        return status;
+    }
+    if (dynCommon_eatChar(stream, EOF) != 0) {
+        return PARSE_ERROR;
+    }
+    *type = celix_steal_ptr(result);
     return status;
 }
 
 static int dynType_parseWithStream(FILE* stream, const char* name, dyn_type* parent, const struct types_head* refTypes, dyn_type** result) {
-    int status = OK;
-    dyn_type* type = calloc(1, sizeof(*type));
-    if (type != NULL) {
-        type->parent = parent;
-        type->type = DYN_TYPE_INVALID;
-        type->referenceTypes = refTypes;
-        TAILQ_INIT(&type->nestedTypesHead);
-        TAILQ_INIT(&type->metaProperties);
-        if (name != NULL) {
-            type->name = strdup(name);
-            if (type->name == NULL) {
-                status = MEM_ERROR;
-                celix_err_pushf("Error strdup'ing name '%s'\n", name);
-            } 
+    char* typeName = NULL;
+    if (name != NULL) {
+        typeName = strdup(name);
+        if (typeName == NULL) {
+            celix_err_pushf("Error strdup'ing name '%s'", name);
+            return MEM_ERROR;
         }
-        if (status == OK) {
-            status = dynType_parseAny(stream, type);        
-        }
-        if (status == OK) {
-            *result = type;
-        } else {
-            dynType_destroy(type);
-        }
-    } else {
-        status = MEM_ERROR;
-        celix_err_pushf("Error allocating memory for type");
     }
+    return dynType_parseWithStreamOfName(stream, typeName, parent, refTypes, result);
+}
+
+static int dynType_parseWithStreamOfName(FILE* stream, char* name, dyn_type* parent, const struct types_head* refTypes, dyn_type** result) {
+    int status = OK;
+    celix_autofree char* typeName = name;
+    celix_autoptr(dyn_type) type = calloc(1, sizeof(*type));
+    if (type == NULL) {
+        celix_err_push("Error allocating memory for type");
+        return MEM_ERROR;
+    }
+    type->parent = parent;
+    type->type = DYN_TYPE_INVALID;
+    type->referenceTypes = refTypes;
+    TAILQ_INIT(&type->nestedTypesHead);
+    TAILQ_INIT(&type->metaProperties);
+    type->name = celix_steal_ptr(typeName);
+    if ((status = dynType_parseAny(stream, type)) != OK) {
+        return status;
+    }
+    *result = celix_steal_ptr(type);
     return status;
 }
 

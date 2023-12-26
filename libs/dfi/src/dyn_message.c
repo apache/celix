@@ -19,6 +19,7 @@
 
 #include "dyn_message.h"
 #include "celix_err.h"
+#include "celix_stdlib_cleanup.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -179,7 +180,7 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
     while (peek != ':' && peek != EOF) {
         ungetc(peek, stream);
 
-        char *name = NULL;
+        celix_autofree char* name = NULL;
         status = dynCommon_parseName(stream, &name);
 
         if (status == OK) {
@@ -188,7 +189,7 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
 
         dyn_type *type = NULL;
         if (status == OK) {
-            status = dynType_parse(stream, name, &msg->types, &type);
+            status = dynType_parseOfName(stream, celix_steal_ptr(name), &msg->types, &type);
         }
 
         if (status == OK) {
@@ -205,10 +206,6 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
                 status = ERROR;
                 celix_err_pushf("Error allocating memory for type entry");
             }
-        }
-
-        if (name != NULL) {
-            free(name);
         }
 
         if (status != OK) {

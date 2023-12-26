@@ -22,5 +22,6 @@ target_link_libraries(string_ei PUBLIC Celix::error_injector)
 
 target_link_options(string_ei INTERFACE
         LINKER:--wrap,strndup
+        LINKER:--wrap,strdup
         )
 add_library(Celix::string_ei ALIAS string_ei)
