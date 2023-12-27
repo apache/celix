@@ -43,7 +43,7 @@
 #include "celix_array_list.h"
 #include "celix_convert_utils.h"
 
-static celix_status_t bundleContext_bundleChanged(void *handle, bundle_event_t *event);
+static celix_status_t bundleContext_bundleChanged(void* listenerSvc, bundle_event_t* event);
 static void bundleContext_cleanupBundleTrackers(bundle_context_t *ct);
 static void bundleContext_cleanupServiceTrackers(bundle_context_t *ctx);
 static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t *ctx);
@@ -147,7 +147,10 @@ celix_status_t bundleContext_installBundle(bundle_context_pt context, const char
     return bundleContext_installBundle2(context, location, NULL, bundle);
 }
 
-celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char *location, const char *inputFile, bundle_pt *bundle) {
+celix_status_t bundleContext_installBundle2(bundle_context_pt context,
+                                            const char* location,
+                                            const char* inputFile __attribute__((unused)),
+                                            bundle_pt* bundle) {
     celix_status_t status = CELIX_SUCCESS;
     long id = -1L;
     if (context == NULL || location == NULL || bundle == NULL) {
@@ -389,15 +392,29 @@ static long celix_bundleContext_registerServiceWithOptionsInternal(bundle_contex
     }
 
     //set properties
-    celix_properties_t *props = opts->properties;
+    celix_autoptr(celix_properties_t) props = opts->properties;
     if (props == NULL) {
         props = celix_properties_create();
     }
+
     if (opts->serviceVersion != NULL && strncmp("", opts->serviceVersion, 1) != 0) {
-        celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_VERSION, opts->serviceVersion);
+        celix_autoptr(celix_version_t) version = celix_version_createVersionFromString(opts->serviceVersion);
+        if (!version) {
+            celix_framework_logTssErrors(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR);
+            fw_log(
+                ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot parse service version %s", opts->serviceVersion);
+            return -1;
+        }
+        celix_status_t rc =
+            celix_properties_setVersionWithoutCopy(props, CELIX_FRAMEWORK_SERVICE_VERSION, celix_steal_ptr(version));
+        if (rc != CELIX_SUCCESS) {
+            celix_framework_logTssErrors(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR);
+            fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot set service version %s", opts->serviceVersion);
+            return -1;
+        }
     }
 
-    long svcId = -1;
+    long svcId;
     if (!async && celix_framework_isCurrentThreadTheEventLoop(ctx->framework)) {
         /*
          * Note already on event loop, cannot register the service async, because we cannot wait a future event (the
@@ -407,20 +424,17 @@ static long celix_bundleContext_registerServiceWithOptionsInternal(bundle_contex
          * registrations versions on the event loop thread
          */
 
-        svcId = celix_framework_registerService(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, opts->factory, props);
+        svcId = celix_framework_registerService(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, opts->factory, celix_steal_ptr(props));
     } else {
         void (*asyncCallback)(void *data, long serviceId) = async ? opts->asyncCallback : NULL; //NOTE for not async call do not use the callback.
-        svcId = celix_framework_registerServiceAsync(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, opts->factory, props, opts->asyncData, asyncCallback, NULL, NULL);
+        svcId = celix_framework_registerServiceAsync(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, opts->factory, celix_steal_ptr(props), opts->asyncData, asyncCallback, NULL, NULL);
         if (!async && svcId >= 0) {
             //note on event loop thread, but in a sync call, so waiting till service registration is concluded
             celix_bundleContext_waitForAsyncRegistration(ctx, svcId);
         }
     }
 
-
-    if (svcId < 0) {
-        properties_destroy(props);
-    } else {
+    if (svcId >= 0) {
         celixThreadMutex_lock(&ctx->mutex);
         celix_arrayList_addLong(ctx->svcRegistrations, svcId);
         celixThreadMutex_unlock(&ctx->mutex);
@@ -519,19 +533,18 @@ celix_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_cont
     return result;
 }
 
-static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_event_t *event) {
-    celix_status_t status = CELIX_SUCCESS;
-    bundle_listener_t *listener = listenerSvc;
-    celix_bundle_context_bundle_tracker_entry_t *tracker = listener->handle;
+static celix_status_t bundleContext_bundleChanged(void* listenerSvc, bundle_event_t* event) {
+    bundle_listener_t* listener = listenerSvc;
+    celix_bundle_context_bundle_tracker_entry_t* tracker = listener->handle;
 
     bool handleEvent = true;
     long bndId = celix_bundle_getId(event->bnd);
-    if (bndId == 0 /*framework bundle*/)  {
+    if (bndId == 0 /*framework bundle*/) {
         handleEvent = tracker->opts.includeFrameworkBundle;
     }
 
     if (handleEvent) {
-        void *callbackHandle = tracker->opts.callbackHandle;
+        void* callbackHandle = tracker->opts.callbackHandle;
 
         if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED && tracker->opts.onInstalled != NULL) {
             tracker->opts.onInstalled(callbackHandle, event->bnd);
@@ -545,7 +558,7 @@ static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_even
             tracker->opts.onBundleEvent(callbackHandle, event);
         }
     }
-    return status;
+    return CELIX_SUCCESS;
 }
 
 void celix_bundleContext_trackBundlesWithOptionsCallback(void *data) {
@@ -571,7 +584,6 @@ static long celix_bundleContext_trackBundlesWithOptionsInternal(
         bundle_context_t* ctx,
         const celix_bundle_tracking_options_t *opts,
         bool async) {
-    long trackerId = -1;
     celix_bundle_context_bundle_tracker_entry_t *entry = calloc(1, sizeof(*entry));
     memcpy(&entry->opts, opts, sizeof(*opts));
     entry->ctx = ctx;
@@ -582,7 +594,7 @@ static long celix_bundleContext_trackBundlesWithOptionsInternal(
     celixThreadMutex_lock(&ctx->mutex);
     entry->trackerId = ctx->nextTrackerId++;
     hashMap_put(ctx->bundleTrackers, (void*)(entry->trackerId), entry);
-    trackerId = entry->trackerId;
+    long trackerId = entry->trackerId;
     celixThreadMutex_unlock(&ctx->mutex);
 
     if (!async) { //note only using the async callback if this is a async call.

@@ -98,4 +98,14 @@ int __wrap_fputs(const char* __s, FILE* __stream) {
     return __real_fputs(__s, __stream);
 }
 
+int __real_fclose(FILE* __stream);
+CELIX_EI_DEFINE(fclose, int)
+int __wrap_fclose(FILE* __stream) {
+    int rc = __real_fclose(__stream); //note always call real fclose to ensure the stream is closed.
+    errno = ENOSPC;
+    CELIX_EI_IMPL(fclose);
+    errno = 0;
+    return rc;
+}
+
 }

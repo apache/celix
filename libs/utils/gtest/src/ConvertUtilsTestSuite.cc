@@ -201,6 +201,15 @@ TEST_F(ConvertUtilsTestSuite, ConvertToBoolTest) {
     result = celix_utils_convertStringToBool("\t false \t\n", 0, &converted);
     EXPECT_FALSE(result);
     EXPECT_TRUE(converted);
+
+    //test for a convert with nullptr for the val parameter
+    result = celix_utils_convertStringToBool(nullptr, true, &converted);
+    EXPECT_TRUE(result);
+    EXPECT_FALSE(converted);
+
+    result = celix_utils_convertStringToBool(nullptr, false, &converted);
+    EXPECT_FALSE(result);
+    EXPECT_FALSE(converted);
 }
 
 TEST_F(ConvertUtilsTestSuite, ConvertToVersionTest) {
