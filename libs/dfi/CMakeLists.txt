@@ -29,6 +29,7 @@ if (CELIX_DFI)
 			src/dyn_message.c
 			src/json_serializer.c
 			src/json_rpc.c
+			src/dyn_descriptor.c
 	)
 
 	add_library(dfi SHARED ${SOURCES})

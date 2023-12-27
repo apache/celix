@@ -227,6 +227,13 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status);
         fclose(desc); desc=NULL;
+
+        /* invalid extra section */
+        desc = fopen("descriptors/invalids/invalidExtraSection.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_EQ(1, status);
+        fclose(desc); desc=NULL;
     }
 }
 

@@ -32,8 +32,8 @@ extern "C" {
 TAILQ_HEAD(namvals_head, namval_entry);
 
 struct namval_entry {
-    char *name;
-    char *value;
+    char* name;
+    char* value;
     TAILQ_ENTRY(namval_entry) entries;
 };
 
@@ -49,7 +49,7 @@ struct namval_entry {
  * @return 0 if successful, otherwise 1.
  * @alsoseee dynCommon_parseNameAlsoAccept
  */
-int dynCommon_parseName(FILE *stream, char **result);
+int dynCommon_parseName(FILE* stream, char** result);
 
 /**
  * @brief Parse the name of dynamic type from the given stream.
@@ -64,7 +64,7 @@ int dynCommon_parseName(FILE *stream, char **result);
  * @return 0 if successful, otherwise 1.
  * @alsoseee dynCommon_parseName
  */
-int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char **result);
+int dynCommon_parseNameAlsoAccept(FILE* stream, const char* acceptedChars, char** result);
 
 /**
  * @brief Parses a section of name-value pairs from the given stream. The name is only allowed to contain [a-zA-Z0-9_].
@@ -81,7 +81,7 @@ int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char 
  * @param[out] head The namvals_head structure where the parsed name-value pairs will be stored.
  * @return 0 if successful, otherwise 1.
  */
-int dynCommon_parseNameValueSection(FILE *stream, struct namvals_head *head);
+int dynCommon_parseNameValueSection(FILE* stream, struct namvals_head* head);
 
 /**
  * @brief Eat the given character from the given stream.
@@ -92,14 +92,16 @@ int dynCommon_parseNameValueSection(FILE *stream, struct namvals_head *head);
  * @param[in] c The character to be eaten.
  * @return 0 if successful, otherwise 1.
  */
-int dynCommon_eatChar(FILE *stream, int c);
+int dynCommon_eatChar(FILE* stream, int c);
 
 /**
  * @brief Clear the given name-value pairs.
  *
  * @param[in] head The name-value pairs to be cleared.
  */
-void dynCommon_clearNamValHead(struct namvals_head *head);
+void dynCommon_clearNamValHead(struct namvals_head* head);
+
+int dynCommon_getEntryForHead(const struct namvals_head* head, const char* name, const char** out);
 
 #ifdef __cplusplus
 }

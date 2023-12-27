@@ -31,12 +31,12 @@ static const int OK = 0;
 static const int ERROR = 1;
 
 
-int dynCommon_parseName(FILE *stream, char **result) {
+int dynCommon_parseName(FILE* stream, char** result) {
     return dynCommon_parseNameAlsoAccept(stream, NULL, result);
 }
 
-int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char **result) {
-    celix_autofree char *buf = NULL;
+int dynCommon_parseNameAlsoAccept(FILE* stream, const char* acceptedChars, char** result) {
+    celix_autofree char* buf = NULL;
     size_t size = 0;
     celix_autoptr(FILE) name = open_memstream(&buf, &size);
     if (name == NULL) {
@@ -70,10 +70,10 @@ int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char 
     return OK;
 }
 
-static int dynCommon_parseNameValue(FILE *stream, char **outName, char **outValue) {
+static int dynCommon_parseNameValue(FILE* stream, char** outName, char** outValue) {
     int status;
-    celix_autofree char *name = NULL;
-    celix_autofree char *value = NULL;
+    celix_autofree char* name = NULL;
+    celix_autofree char* value = NULL;
     do {
         if ((status = dynCommon_parseName(stream, &name)) != OK) {
             break;
@@ -92,7 +92,7 @@ static int dynCommon_parseNameValue(FILE *stream, char **outName, char **outValu
     return status;
 }
 
-int dynCommon_eatChar(FILE *stream, int expected) {
+int dynCommon_eatChar(FILE* stream, int expected) {
     int status = OK;
     int c = fgetc(stream);
     if (c != expected) {
@@ -102,8 +102,8 @@ int dynCommon_eatChar(FILE *stream, int expected) {
     return status;
 }
 
-void dynCommon_clearNamValHead(struct namvals_head *head) {
-    struct namval_entry *entry = TAILQ_FIRST(head);
+void dynCommon_clearNamValHead(struct namvals_head* head) {
+    struct namval_entry* entry = TAILQ_FIRST(head);
     while (entry != NULL) {
         struct namval_entry *tmp = entry;
 
@@ -118,15 +118,15 @@ void dynCommon_clearNamValHead(struct namvals_head *head) {
     }
 }
 
-int dynCommon_parseNameValueSection(FILE *stream, struct namvals_head *head) {
+int dynCommon_parseNameValueSection(FILE* stream, struct namvals_head* head) {
     int status = OK;
 
     int peek = fgetc(stream);
     while (peek != ':' && peek != EOF) {
         ungetc(peek, stream);
 
-        celix_autofree char *name = NULL;
-        celix_autofree char *value = NULL;
+        celix_autofree char* name = NULL;
+        celix_autofree char* value = NULL;
         if ((status = dynCommon_parseNameValue(stream, &name, &value)) != OK) {
             return status;
         }
@@ -135,7 +135,7 @@ int dynCommon_parseNameValueSection(FILE *stream, struct namvals_head *head) {
             return status;
         }
 
-        struct namval_entry *entry = NULL;
+        struct namval_entry* entry = NULL;
         entry = calloc(1, sizeof(*entry));
         if (entry == NULL) {
             celix_err_pushf("Error allocating memory for namval entry");
@@ -153,4 +153,23 @@ int dynCommon_parseNameValueSection(FILE *stream, struct namvals_head *head) {
     }
 
     return OK;
+}
+
+int dynCommon_getEntryForHead(const struct namvals_head* head, const char* name, const char** out) {
+    int status = OK;
+    char* value = NULL;
+    struct namval_entry* entry = NULL;
+    TAILQ_FOREACH(entry, head, entries) {
+        if (strcmp(name, entry->name) == 0) {
+            value = entry->value;
+            break;
+        }
+    }
+    if (value != NULL) {
+        *out = value;
+    } else {
+        status = ERROR;
+        celix_err_pushf("Cannot find '%s' in list", name);
+    }
+    return status;
 }

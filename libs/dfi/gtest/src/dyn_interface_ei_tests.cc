@@ -18,6 +18,7 @@
  */
 
 #include "dyn_interface.h"
+#include "dyn_descriptor.h"
 #include "dyn_common.h"
 #include "celix_err.h"
 #include "celix_stdio_cleanup.h"
@@ -61,14 +62,14 @@ TEST_F(DynInterfaceErrorInjectionTestSuite, ParseError) {
 
     rewind(desc);
     // not enough memory for type_entry when parsing types section
-    celix_ei_expect_calloc((void*) dynInterface_parse, 2, nullptr, 1);
+    celix_ei_expect_calloc((void*) celix_dynDescriptor_parse, 2, nullptr, 5);
     status = dynInterface_parse(desc, &dynIntf);
     ASSERT_NE(0, status);
     ASSERT_STREQ("Error allocating memory for type entry", celix_err_popLastError());
 
     rewind(desc);
     // not enough memory for method_entry when parsing methods section
-    celix_ei_expect_calloc((void*) dynInterface_parse, 2, nullptr, 2);
+    celix_ei_expect_calloc((void*) celix_dynDescriptor_parse, 3, nullptr, 1);
     status = dynInterface_parse(desc, &dynIntf);
     ASSERT_NE(0, status);
     ASSERT_STREQ("Error allocating memory for method entry", celix_err_popLastError());
