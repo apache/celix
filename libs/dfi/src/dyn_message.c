@@ -35,7 +35,7 @@ struct _dyn_message_type {
 static const int OK = 0;
 static const int ERROR = 1;
 
-static int dynMessage_parseSection(dyn_message_type* msg, const char* secName, FILE* stream);
+static int dynMessage_parseSection(celix_descriptor_t* desc, const char* secName, FILE* stream);
 static int dynMessage_parseMessage(dyn_message_type* msg, FILE* stream);
 
 int dynMessage_parse(FILE* descriptor, dyn_message_type** out) {
@@ -50,8 +50,7 @@ int dynMessage_parse(FILE* descriptor, dyn_message_type** out) {
     TAILQ_INIT(&msg->annotations);
     TAILQ_INIT(&msg->types);
 
-    if ((status = celix_dynDescriptor_parse((celix_descriptor_t*)msg, descriptor,
-                                            (int (*)(celix_descriptor_t*, const char*, FILE*))dynMessage_parseSection)) != OK) {
+    if ((status = celix_dynDescriptor_parse((celix_descriptor_t*)msg, descriptor, dynMessage_parseSection)) != OK) {
         return status;
     }
 
@@ -59,7 +58,8 @@ int dynMessage_parse(FILE* descriptor, dyn_message_type** out) {
     return status;
 }
 
-static int dynMessage_parseSection(dyn_message_type* msg, const char* secName, FILE* stream) {
+static int dynMessage_parseSection(celix_descriptor_t* desc, const char* secName, FILE* stream) {
+    dyn_message_type* msg = (dyn_message_type*)desc;
     if (strcmp("message", secName) != 0) {
         celix_err_pushf("unsupported section '%s'", secName);
         return ERROR;

@@ -34,7 +34,7 @@ static const int OK = 0;
 static const int ERROR = 1;
 
 static int dynInterface_checkInterface(dyn_interface_type* intf);
-static int dynInterface_parseSection(dyn_interface_type* intf, const char* secName, FILE* stream);
+static int dynInterface_parseSection(celix_descriptor_t* desc, const char* secName, FILE* stream);
 static int dynInterface_parseMethods(dyn_interface_type* intf, FILE* stream);
 
 int dynInterface_parse(FILE* descriptor, dyn_interface_type** out) {
@@ -51,8 +51,7 @@ int dynInterface_parse(FILE* descriptor, dyn_interface_type** out) {
     TAILQ_INIT(&intf->types);
     TAILQ_INIT(&intf->methods);
 
-    if ((status = celix_dynDescriptor_parse((celix_descriptor_t*)intf, descriptor,
-                                            (int (*)(celix_descriptor_t*, const char*, FILE *))dynInterface_parseSection)) != OK) {
+    if ((status = celix_dynDescriptor_parse((celix_descriptor_t*)intf, descriptor, dynInterface_parseSection)) != OK) {
         return status;
     }
 
@@ -78,7 +77,8 @@ static int dynInterface_checkInterface(dyn_interface_type* intf) {
     return OK;
 }
 
-static int dynInterface_parseSection(dyn_interface_type* intf, const char* secName, FILE* stream) {
+static int dynInterface_parseSection(celix_descriptor_t* desc, const char* secName, FILE* stream) {
+    dyn_interface_type* intf = (dyn_interface_type*)desc;
     if (strcmp("methods", secName) != 0) {
         celix_err_pushf("unsupported section '%s'", secName);
         return ERROR;
