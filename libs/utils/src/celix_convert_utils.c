@@ -42,29 +42,31 @@ static bool celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(const char*
 }
 
 bool celix_utils_convertStringToBool(const char* val, bool defaultValue, bool* converted) {
-    bool result = defaultValue;
+    bool result;
     if (converted != NULL) {
         *converted = false;
     }
-    if (val != NULL) {
-        char buf[32];
-        char* valCopy = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s", val);
-        if (valCopy == NULL) {
-            return result;
-        }
-        char *trimmed = celix_utils_trimInPlace(valCopy);
-        if (strcasecmp("true", trimmed) == 0) {
-            result = true;
-            if (converted) {
-                *converted = true;
-            }
-        } else if (strcasecmp("false", trimmed) == 0) {
-            result = false;
-            if (converted) {
-                *converted = true;
-            }
-        }
-        celix_utils_freeStringIfNotEqual(buf, valCopy);
+    if (val == NULL) {
+        return defaultValue;
+    }
+    const char* p = val;
+    while (isspace(*p)) {
+        p++;
+    }
+    if (strncasecmp("true", p, 4) == 0) {
+        p += 4;
+        result = true;
+    } else if (strncasecmp("false", p, 5) == 0) {
+        p += 5;
+        result = false;
+    } else {
+        return defaultValue;
+    }
+    if (!celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(p)) {
+        return defaultValue;
+    }
+    if (converted != NULL) {
+        *converted = true;
     }
     return result;
 }

@@ -37,6 +37,48 @@ Also note that for Celix - in contrast with Java OSGi - it is only possible to r
 per service registration in the Apache Celix Framework. This restriction was added because C does not 
 (natively) supports multiple interfaces (struct with function pointers) on a single object/pointer.  
 
+## Service Properties
+As mentioned, a service is always registered with a set of properties (metadata). 
+The service properties are represented as a `celix_properties_t` for C and as a `celix::Properties` for C++.
+Service properties are used to classify and select services.
+
+Apache Celix properties store key/value pairs and the key is always a string, but the value can be a string,
+a long, a double, a bool or `celix_version_t` (`celix::Version` for C++). Next to the actual typed value a property
+entry always stores a string representation of the value.
+
+The following C functions can be used to create and manipulate properties:
+- `celix_properties_create` - Create a new properties object.
+- `celix_properties_destroy` - Destroy a properties object.
+- `celix_properties_set` - Set a string property value.
+- `celix_properties_setLong` - Set a long property value.
+- `celix_properties_setDouble` - Set a double property value.
+- `celix_properties_setBool` - Set a bool property value.
+- `celix_properties_setVersion` - Set a version property value.
+- `celix_properties_get` - Get a string or string representation of the property value.
+- `celix_properties_getAsLong` - Get a long property value or string value parsed as long.
+- `celix_properties_getAsDouble` - Get a double property value or string value parsed as double.
+- `celix_properties_getAsBool` - Get a bool property value or string value parsed as bool.
+- `celix_properties_getVersion` - Get a pointer to the version property if the property value is a version or was
+                                  parsable as a version. Note there is also a `celix_properties_getAsVersion` 
+                                  function which return a new version object, but this is less efficient and
+                                  requires a memory allocation.
+
+The following C++ methods can be used to create and manipulate properties:
+- `celix::Properties::Properties` - Construct a new properties object.
+- `celix::Properties::set` - Set a string property value. Uses template argument deduction to determine the type.
+- `celix::Properties::get` - Get a string or string representation of the property value.
+- `celix::Properties::getAsLong` - Get a long property value or string value parsed as long.
+- `celix::Properties::getAsDouble` - Get a double property value or string value parsed as double.
+- `celix::Properties::getAsBool` - Get a bool property value or string value parsed as bool.
+- `celix::Properties::getAsVersion` - Get a version property value or string value parsed as version.
+
+The following service properties are set by the Celix framework when registering a service:
+- `objectClass` - The service name.
+- `service.id` - The service id (long).
+- `service.bundleid` - The bundle id (long) of the bundle registering the service.
+- `service.scope` - The service scope (string, "singleton", "prototype" or "bundle").
+- `service.version` - The service version (celix_version_t), if provided by the user.
+
 ## A C service example
 As mentioned an Apache Celix C service is a registered pointer to a struct with function pointers. 
 This struct ideally contains a handle pointer, a set of function pointers and should be well documented to
@@ -358,9 +400,16 @@ Services can be used directly using the bundle context C functions or C++ method
 - `celix::BundleContext::useService`
 - `celix::BundleContext::useServices`
 
-These functions and methods work by providing a callback function which will be called by the Celix framework with the 
-matching service or services.
-when a "use service" function/method returns the callback function can can be safely deallocated. 
+These functions and methods work by providing a serviceName, optional filter and callback function which will be 
+called by the Celix framework with the matching service or services.
+
+An Apache Celix filter is an [LDAP filter](https://tools.ietf.org/html/rfc4515) and can be used to select services based
+on their properties.
+The filter can be provided as a string and the Celix framework will parse the string to a `celix_filter_t` or (for C++)
+a `celix::Filter` object. For example the filter `(command.name=my_command)` will match all services with a
+`command.name` property with value `my_command`.
+
+When a "use service" function/method returns the callback function can can be safely deallocated. 
 A "use service" function/method return value will indicate if a matching service is found or how many matching services 
 are found.
 

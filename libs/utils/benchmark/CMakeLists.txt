@@ -40,4 +40,11 @@ if (UTILS_BENCHMARK)
     target_link_libraries(celix_long_hashmap_benchmark PRIVATE Celix::utils benchmark::benchmark)
     target_compile_options(celix_long_hashmap_benchmark PRIVATE -Wno-unused-function)
     celix_deprecated_utils_headers(celix_long_hashmap_benchmark)
+
+    add_executable(celix_filter_benchmark
+            src/BenchmarkMain.cc
+            src/FilterBenchmark.cc
+    )
+    target_link_libraries(celix_filter_benchmark PRIVATE Celix::utils benchmark::benchmark)
+    target_compile_options(celix_filter_benchmark PRIVATE -Wno-unused-function)
 endif ()
