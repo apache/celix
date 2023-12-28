@@ -42,7 +42,7 @@
 #include <netinet/in.h>
 #include <semaphore.h>
 #include <ctime>
-#include <stdlib.h>
+#include <cstdlib>
 #include <gtest/gtest.h>
 
 #define DZC_TEST_CONFIG_TYPE "celix.config_type.test"
@@ -53,7 +53,7 @@ static const char *DZC_TEST_ENDPOINT_FW_UUID = "61EC83D5-A808-DA12-3615-B68376C3
 
 
 static void OnDNSServiceRegisterCallback(DNSServiceRef sdRef, DNSServiceFlags flags, DNSServiceErrorType errorCode, const char *instanceName, const char *serviceType, const char *domain, void *data);
-static DNSServiceRef RegisterTestService(const char *endpointId = "60f49d89-d105-430c-b12b-93fbb54b1d19", const char *serviceId = "100");
+static DNSServiceRef RegisterTestService(int ifIndex = kDNSServiceInterfaceIndexLocalOnly, const char *endpointId = "60f49d89-d105-430c-b12b-93fbb54b1d19", const char *serviceId = "100");
 
 static const char *expectErrMsg = nullptr;
 static sem_t msgSyncSem;
@@ -167,6 +167,37 @@ public:
         celix_bundleContext_unregisterService(ctx.get(), eplId);
     }
 
+    long TrackRsaService(discovery_zeroconf_watcher_t *watcher) {
+        celix_service_tracking_options_t opts{};
+        opts.filter.serviceName = OSGI_RSA_REMOTE_SERVICE_ADMIN;
+        opts.filter.filter = "(remote.configs.supported=*)";
+        opts.callbackHandle = watcher;
+        opts.addWithProperties = [](void *handle, void *svc, const celix_properties_t *props) {
+            discoveryZeroConfWatcher_addRSA(handle, svc, props);
+        };
+        opts.removeWithProperties = [](void *handle, void *svc, const celix_properties_t *props) {
+            discoveryZeroConfWatcher_removeRSA(handle, svc, props);
+        };
+        auto id =  celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
+        EXPECT_GT(id, 0);
+        return id;
+    }
+
+    long TrackEndpointListenerService(discovery_zeroconf_watcher_t *watcher) {
+        celix_service_tracking_options_t opts{};
+        opts.filter.serviceName = OSGI_ENDPOINT_LISTENER_SERVICE;
+        opts.callbackHandle = watcher;
+        opts.addWithProperties = [](void *handle, void *svc, const celix_properties_t *props) {
+            discoveryZeroconfWatcher_addEPL(handle, svc, props);
+        };
+        opts.removeWithProperties = [](void *handle, void *svc, const celix_properties_t *props) {
+            discoveryZeroconfWatcher_removeEPL(handle, svc, props);
+        };
+        auto id = celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
+        EXPECT_GT(id, 0);
+        return id;
+    }
+
     void TestRsaServiceAddAndRemove(void (*beforeAddRsaAction)(void), void (*afterAddRsaAction)(void),
                                     void (*beforeRemoveRsaAction)(void) = nullptr, void (*afterRemoveRsaAction)(void) = nullptr, const char *remoteConfigsSupported = DZC_TEST_CONFIG_TYPE) {
         celix_bundleContext_unregisterService(ctx.get(), rsaSvcId);//reset rsa service
@@ -174,7 +205,6 @@ public:
         discovery_zeroconf_watcher_t *watcher;
         celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
         EXPECT_EQ(CELIX_SUCCESS, status);
-        celix_bundleContext_waitForEvents(ctx.get());
 
         beforeAddRsaAction();
 
@@ -182,6 +212,7 @@ public:
         celix_properties_set(rsaSvcProps, OSGI_RSA_REMOTE_CONFIGS_SUPPORTED, remoteConfigsSupported);
         auto rsaId = celix_bundleContext_registerService(ctx.get(), (void*)"dummy_service", OSGI_RSA_REMOTE_SERVICE_ADMIN, rsaSvcProps);
         EXPECT_LE(0, rsaId);
+        auto trkId = TrackRsaService(watcher);
 
         afterAddRsaAction();
 
@@ -189,6 +220,7 @@ public:
             beforeRemoveRsaAction();
         }
 
+        celix_bundleContext_stopTracker(ctx.get(), trkId);
         celix_bundleContext_unregisterService(ctx.get(), rsaId);
 
         if (afterRemoveRsaAction != nullptr) {
@@ -199,20 +231,24 @@ public:
 
     }
 
-    void TestAddEndpoint(void (*beforeAddEndpoint)(void), void (*afterAddEndpoint)(void)) {
+    void TestAddEndpoint(void (*beforeAddEndpoint)(void), void (*afterAddEndpoint)(void), int ifIndex = kDNSServiceInterfaceIndexLocalOnly) {
         discovery_zeroconf_watcher_t *watcher;
         celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
         EXPECT_EQ(CELIX_SUCCESS, status);
-        celix_bundleContext_waitForEvents(ctx.get());
+        auto eplTrkId = TrackEndpointListenerService(watcher);
 
         beforeAddEndpoint();
 
-        auto dsRef = RegisterTestService();
+        auto rsaTrkId = TrackRsaService(watcher);
+
+        auto dsRef = RegisterTestService(ifIndex);
 
         afterAddEndpoint();
 
         DNSServiceRefDeallocate(dsRef);
 
+        celix_bundleContext_stopTracker(ctx.get(), eplTrkId);
+        celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
         discoveryZeroconfWatcher_destroy(watcher);
     }
 
@@ -220,7 +256,7 @@ public:
         discovery_zeroconf_watcher_t *watcher;
         celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
         EXPECT_EQ(CELIX_SUCCESS, status);
-        celix_bundleContext_waitForEvents(ctx.get());
+        auto rsaTrkId = TrackRsaService(watcher);
 
         char txtBuf[1300] = {0};
         TXTRecordRef txtRecord;
@@ -234,7 +270,7 @@ public:
         DNSServiceRef dsRef{};
         DNSServiceErrorType dnsErr;
         dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly, "dzc_test_service",
-                                    DZC_TEST_SERVICE_TYPE, "local", NULL, htons(DZC_TEST_SERVICE_PORT),
+                                    DZC_TEST_SERVICE_TYPE, "local", nullptr, htons(DZC_TEST_SERVICE_PORT),
                                     TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord),
                                     OnDNSServiceRegisterCallback, nullptr);
         EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
@@ -244,6 +280,7 @@ public:
 
         DNSServiceRefDeallocate(dsRef);
 
+        celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
         discoveryZeroconfWatcher_destroy(watcher);
     }
 
@@ -251,15 +288,19 @@ public:
         discovery_zeroconf_watcher_t *watcher;
         celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
         EXPECT_EQ(CELIX_SUCCESS, status);
+        auto rsaTrkId = TrackRsaService(watcher);
+        auto eplTrkId = TrackEndpointListenerService(watcher);
 
         beforeRegServiceAction();
 
-        DNSServiceRef dsRef = RegisterTestService();
+        DNSServiceRef dsRef = RegisterTestService(kDNSServiceInterfaceIndexAny);
 
         afterRegServiceAction();
 
         DNSServiceRefDeallocate(dsRef);
 
+        celix_bundleContext_stopTracker(ctx.get(), eplTrkId);
+        celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
         discoveryZeroconfWatcher_destroy(watcher);
     }
 
@@ -307,12 +348,6 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, CreateWatcherFailed2) {
     EXPECT_EQ(CELIX_ENOMEM, status);
 }
 
-TEST_F(DiscoveryZeroconfWatcherTestSuite, CreateWatcherFailed3) {
-    discovery_zeroconf_watcher_t *watcher;
-    celix_ei_expect_celix_bundleContext_trackServicesWithOptionsAsync((void*)&discoveryZeroconfWatcher_create, 0, -1);
-    celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
-    EXPECT_EQ(CELIX_BUNDLE_EXCEPTION, status);
-}
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, CreateWatcherFailed4) {
     discovery_zeroconf_watcher_t *watcher;
@@ -363,12 +398,6 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, CreateWatcherFailed10) {
     EXPECT_EQ(CELIX_ENOMEM, status);
 }
 
-TEST_F(DiscoveryZeroconfWatcherTestSuite, CreateWatcherFailed11) {
-    discovery_zeroconf_watcher_t *watcher;
-    celix_ei_expect_celix_bundleContext_trackServicesWithOptionsAsync((void*)&discoveryZeroconfWatcher_create, 0, -1, 2);
-    celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
-    EXPECT_EQ(CELIX_BUNDLE_EXCEPTION, status);
-}
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, AddRsaServiceWithOutRemoteConfigsSupported) {
     TestRsaServiceAddAndRemove([](){
@@ -429,6 +458,14 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutBrowserEntryToCache) {
     });
 }
 
+TEST_F(DiscoveryZeroconfWatcherTestSuite, AddRsaServiceWithNoNameSpaceConfigType) {
+    TestRsaServiceAddAndRemove([](){}, [](){}, nullptr, nullptr, "config_type_without_namespace");
+}
+
+TEST_F(DiscoveryZeroconfWatcherTestSuite, AddRsaServiceWithMultiConfigTypes) {
+    TestRsaServiceAddAndRemove([](){}, [](){}, nullptr, nullptr, "celix.test1.http,celix.test1.http-json,celix.test2.http,celix.test2.http-json");
+}
+
 static void OnDNSServiceRegisterCallback(DNSServiceRef sdRef, DNSServiceFlags flags, DNSServiceErrorType errorCode, const char *instanceName, const char *serviceType, const char *domain, void *data) {
     (void)sdRef;//unused
     (void)data;//unused
@@ -440,7 +477,7 @@ static void OnDNSServiceRegisterCallback(DNSServiceRef sdRef, DNSServiceFlags fl
     return;
 }
 
-static DNSServiceRef RegisterTestService(const char *endpointId, const char *serviceId) {
+static DNSServiceRef RegisterTestService(int ifIndex, const char *endpointId, const char *serviceId) {
     char txtBuf[1300] = {0};
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
@@ -461,8 +498,8 @@ static DNSServiceRef RegisterTestService(const char *endpointId, const char *ser
     conflictCount++;//avoid conflict
     char name[32]={0};
     snprintf(name, sizeof(name), "dzc_test_service_%d", conflictCount);
-    dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexAny, name,
-                                DZC_TEST_SERVICE_TYPE, "local", NULL, htons(DZC_TEST_SERVICE_PORT),
+    dnsErr = DNSServiceRegister(&dsRef, 0, ifIndex /*kDNSServiceInterfaceIndexAny*/, name,
+                                DZC_TEST_SERVICE_TYPE, "local", nullptr, htons(DZC_TEST_SERVICE_PORT),
                                 TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord),
                                 OnDNSServiceRegisterCallback, nullptr);
     EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
@@ -483,12 +520,13 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddMultiEndpoint) {
     discovery_zeroconf_watcher_t *watcher;
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
-    celix_bundleContext_waitForEvents(ctx.get());
+    auto rsaTrkId = TrackRsaService(watcher);
+    auto eplTrkId = TrackEndpointListenerService(watcher);
 
     ExpectMsgOutPut("Endpoint added: %s.");
 
-    auto dsRef1 = RegisterTestService();
-    auto dsRef2 = RegisterTestService("65d17a8c-f31b-478c-b13e-da743c96ab51", "101");
+    auto dsRef1 = RegisterTestService(kDNSServiceInterfaceIndexAny);
+    auto dsRef2 = RegisterTestService(kDNSServiceInterfaceIndexAny, "65d17a8c-f31b-478c-b13e-da743c96ab51", "101");
 
     //wait for endpoint1 added
     auto timeOut  = CheckMsgWithTimeOutInS(30);
@@ -512,6 +550,8 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddMultiEndpoint) {
     timeOut  = CheckMsgWithTimeOutInS(30);
     EXPECT_FALSE(timeOut);
 
+    celix_bundleContext_stopTracker(ctx.get(), eplTrkId);
+    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
     discoveryZeroconfWatcher_destroy(watcher);
 }
 
@@ -527,6 +567,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToCopyEndpointProperties) {
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToAllocMemoryForEndpointEntry) {
     TestAddEndpoint([](){
+        //first calloc:service_browser_entry_t; second calloc:watched_service_entry_t; third calloc: endpointDescription_create
         celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 4);
         ExpectMsgOutPut("Watcher: Failed to alloc endpoint entry.");
     }, [](){
@@ -537,8 +578,9 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToAllocMemoryForEndpointEntry) {
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToCopyHostNameForEndpointEntry) {
     TestAddEndpoint([](){
+        //celix_utils_strdup call: first:addRsa; second:OnServiceResolveCallback; third: endpointDescription_create
         celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 4);
-        ExpectMsgOutPut("Watcher: Failed to create hostname for endpoint %s.");
+        ExpectMsgOutPut("Watcher: Failed to dup hostname for endpoint %s.");
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
@@ -548,11 +590,22 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToCopyHostNameForEndpointEntry) 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToGetHostIpAddressesWhenCreateEndpoint) {
     TestAddEndpoint([](){
         celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 5);
-        ExpectMsgOutPut("Watcher: Failed to create ip address list.");
+        ExpectMsgOutPut("Watcher: Failed to create endpoint for %s. %d.");
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
-    });
+    }, kDNSServiceInterfaceIndexAny);
+    sleep(2);//wait for mdnsd remove service, avoid affect other test case
+}
+
+TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToGetLocalHostIpAddressesWhenCreateEndpoint) {
+    TestAddEndpoint([](){
+        celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 5);
+        ExpectMsgOutPut("Watcher: Failed to create endpoint for %s. %d.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(30);
+        EXPECT_FALSE(timeOut);
+    }, kDNSServiceInterfaceIndexLocalOnly);
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToDupImportedConfigsWhenCreateEndpoint) {
@@ -566,7 +619,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToDupImportedConfigsWhenCreateEn
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutEndpointToCache) {
-    celix_ei_expect_celix_stringHashMap_put(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM, 5);
+    celix_ei_expect_celix_stringHashMap_put(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM, 4);
     TestAddEndpoint([](){
         ExpectMsgOutPut("Watcher: Failed to add endpoint for %s.");
     }, [](){
@@ -583,7 +636,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, InvalidEndpoint) {
         TXTRecordSetValue(txtRecord, OSGI_RSA_SERVICE_IMPORTED, sizeof("true")-1, "true");
         TXTRecordSetValue(txtRecord, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE)-1, DZC_TEST_CONFIG_TYPE);
         //No endpoint framework uuid
-        ExpectMsgOutPut("Watcher: Failed to create endpoint description.");
+        ExpectMsgOutPut("Watcher: Failed to create endpoint description. %d.");
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
@@ -593,7 +646,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, InvalidEndpoint) {
 TEST_F(DiscoveryZeroconfWatcherTestSuite, NoImportedConfigs) {
     TestInvalidTxtRecord([](TXTRecordRef *txtRecord){
         TXTRecordSetValue(txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, sizeof(DZC_TEST_ENDPOINT_FW_UUID)-1, DZC_TEST_ENDPOINT_FW_UUID);
+        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
         TXTRecordSetValue(txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, sizeof("dzc_test_service")-1, "dzc_test_service");
         TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
         TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "100");
@@ -609,7 +662,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, NoImportedConfigs) {
 TEST_F(DiscoveryZeroconfWatcherTestSuite, InvalidImportedConfigs1) {
     TestInvalidTxtRecord([](TXTRecordRef *txtRecord){
         TXTRecordSetValue(txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, sizeof(DZC_TEST_ENDPOINT_FW_UUID)-1, DZC_TEST_ENDPOINT_FW_UUID);
+        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
         TXTRecordSetValue(txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, sizeof("dzc_test_service")-1, "dzc_test_service");
         TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
         TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "100");
@@ -627,7 +680,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, InvalidImportedConfigs1) {
 TEST_F(DiscoveryZeroconfWatcherTestSuite, InvalidImportedConfigs2) {
     TestInvalidTxtRecord([](TXTRecordRef *txtRecord){
         TXTRecordSetValue(txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, sizeof(DZC_TEST_ENDPOINT_FW_UUID)-1, DZC_TEST_ENDPOINT_FW_UUID);
+        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
         TXTRecordSetValue(txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, sizeof("dzc_test_service")-1, "dzc_test_service");
         TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
         TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "100");
@@ -650,6 +703,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, CreateDNSServiceConnectionFailedOnce) 
 
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
+    auto rsaTrkId = TrackRsaService(watcher);
 
     auto dsRef = RegisterTestService();
 
@@ -657,6 +711,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, CreateDNSServiceConnectionFailedOnce) 
     EXPECT_FALSE(timeOut);
 
     DNSServiceRefDeallocate(dsRef);
+    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
     discoveryZeroconfWatcher_destroy(watcher);
 }
 
@@ -668,6 +723,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, DNSServiceBrowseFailedOnce) {
 
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
+    auto rsaTrkId = TrackRsaService(watcher);
 
     auto dsRef = RegisterTestService();
 
@@ -675,12 +731,11 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, DNSServiceBrowseFailedOnce) {
     EXPECT_FALSE(timeOut);
 
     DNSServiceRefDeallocate(dsRef);
+    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
     discoveryZeroconfWatcher_destroy(watcher);
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, BrowseServicesFailed1) {
-    celix_bundleContext_unregisterService(ctx.get(), rsaSvcId);//reset rsa service
-    rsaSvcId = -1;
     discovery_zeroconf_watcher_t *watcher;
 
     celix_ei_expect_celix_stringHashMap_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 4);
@@ -688,13 +743,12 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, BrowseServicesFailed1) {
 
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
-
-    auto dsRef = RegisterTestService();
+    auto rsaTrkId = TrackRsaService(watcher);
 
     auto timeOut  = CheckMsgWithTimeOutInS(30);
     EXPECT_FALSE(timeOut);
 
-    DNSServiceRefDeallocate(dsRef);
+    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
     discoveryZeroconfWatcher_destroy(watcher);
 }
 
@@ -706,6 +760,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, BrowseServicesFailed2) {
 
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
+    auto rsaTrkId = TrackRsaService(watcher);
 
     auto dsRef = RegisterTestService();
 
@@ -713,14 +768,17 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, BrowseServicesFailed2) {
     EXPECT_FALSE(timeOut);
 
     DNSServiceRefDeallocate(dsRef);
+    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
     discoveryZeroconfWatcher_destroy(watcher);
 }
 
-TEST_F(DiscoveryZeroconfWatcherTestSuite, BrowseServicesFailed3) {
+TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToDeleteServiceBrowser) {
     discovery_zeroconf_watcher_t *watcher;
 
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
+    auto rsaTrkId = TrackRsaService(watcher);
+    auto eplTrkId = TrackEndpointListenerService(watcher);
 
     ExpectMsgOutPut("Endpoint added: %s.");
 
@@ -732,19 +790,30 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, BrowseServicesFailed3) {
     celix_ei_expect_celix_stringHashMap_put(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM);
     ExpectMsgOutPut("Watcher: Failed to put browse entry, %d.");
 
-    celix_bundleContext_unregisterService(ctx.get(), rsaSvcId);
-    rsaSvcId = -1;
+    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
 
     timeOut  = CheckMsgWithTimeOutInS(30);
     EXPECT_FALSE(timeOut);
 
     DNSServiceRefDeallocate(dsRef);
+
+    celix_bundleContext_stopTracker(ctx.get(), eplTrkId);
     discoveryZeroconfWatcher_destroy(watcher);
+}
+
+TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutWatchedServiceToCache) {
+    TestAddEndpoint([](){
+        celix_ei_expect_celix_stringHashMap_putLong(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM);
+        ExpectMsgOutPut("Watcher: Failed to cache service instance name, %d.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(30);
+        EXPECT_FALSE(timeOut);
+    });
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToAllocMemoryForSvcEntry) {
     TestAddEndpoint([](){
-        celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+        celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 2);//first calloc:service_browser_entry_t
         ExpectMsgOutPut("Watcher: Failed to alloc service entry.");
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
@@ -772,11 +841,33 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutSvcEntryToCache) {
     });
 }
 
+TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToSetTxtRecordToSvcEntry) {
+    TestAddEndpoint([](){
+        celix_ei_expect_celix_properties_set(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM);
+        ExpectMsgOutPut("Watcher: Failed to set txt record item(%s), %d.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(30);
+        EXPECT_FALSE(timeOut);
+    });
+}
+
+TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToDupHostNameForSvcEntry) {
+    TestAddEndpoint([](){
+        celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 2);
+        ExpectMsgOutPut("Watcher: Failed to dup hostname.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(30);
+        EXPECT_FALSE(timeOut);
+    });
+}
+
 TEST_F(DiscoveryZeroconfWatcherTestSuite, UnregisterRsaWhenBrowseServices) {
     discovery_zeroconf_watcher_t *watcher;
 
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
+    auto rsaTrkId = TrackRsaService(watcher);
+    auto eplTrkId = TrackEndpointListenerService(watcher);
 
     ExpectMsgOutPut("Endpoint added: %s.");
 
@@ -785,10 +876,10 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, UnregisterRsaWhenBrowseServices) {
     auto timeOut  = CheckMsgWithTimeOutInS(30);
     EXPECT_FALSE(timeOut);
 
-    celix_bundleContext_unregisterService(ctx.get(), rsaSvcId);
-    rsaSvcId = -1;
+    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
 
     DNSServiceRefDeallocate(dsRef);
+    celix_bundleContext_stopTracker(ctx.get(), eplTrkId);
     discoveryZeroconfWatcher_destroy(watcher);
 }
 
@@ -802,10 +893,12 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, DNSServiceResultProcessFailed1) {
 
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
+    auto rsaTrkId = TrackRsaService(watcher);
 
     auto timeOut  = CheckMsgWithTimeOutInS(30);
     EXPECT_FALSE(timeOut);
 
+    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
     discoveryZeroconfWatcher_destroy(watcher);
     DNSServiceRefDeallocate(dsRef);
 }
@@ -820,10 +913,12 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, DNSServiceResultProcessFailed2) {
 
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
+    auto rsaTrkId = TrackRsaService(watcher);
 
     auto timeOut  = CheckMsgWithTimeOutInS(30);
     EXPECT_FALSE(timeOut);
 
+    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
     discoveryZeroconfWatcher_destroy(watcher);
     DNSServiceRefDeallocate(dsRef);
 }
@@ -832,6 +927,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, DNSServiceResolveFailedOnce) {
     discovery_zeroconf_watcher_t *watcher;
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
+    auto rsaTrkId = TrackRsaService(watcher);
 
     celix_ei_expect_DNSServiceResolve(CELIX_EI_UNKNOWN_CALLER, 0, kDNSServiceErr_NoMemory);
     ExpectMsgOutPut("Watcher: Failed to resolve %s on %d, %d.");
@@ -841,6 +937,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, DNSServiceResolveFailedOnce) {
     EXPECT_FALSE(timeOut);
 
     DNSServiceRefDeallocate(dsRef);
+    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
     discoveryZeroconfWatcher_destroy(watcher);
 }
 
@@ -848,6 +945,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveSelfFrameworkEndpoint) {
     discovery_zeroconf_watcher_t *watcher;
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
+    auto rsaTrkId = TrackRsaService(watcher);
 
     char txtBuf[1300] = {0};
     TXTRecordRef txtRecord;
@@ -867,8 +965,9 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveSelfFrameworkEndpoint) {
     ExpectMsgOutPut("Watcher: Ignore self endpoint for %s.");
 
     DNSServiceRef dsRef{};
-    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly, "dzc_test_self_fw_service", DZC_TEST_SERVICE_TYPE, "local", NULL, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback,
-                                                    nullptr);
+    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly,
+     "dzc_test_self_fw_service", DZC_TEST_SERVICE_TYPE, "local", nullptr, htons(DZC_PORT_DEFAULT),
+            TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback,nullptr);
     EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
     DNSServiceProcessResult(dsRef);
 
@@ -876,6 +975,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveSelfFrameworkEndpoint) {
     EXPECT_FALSE(timeOut);
 
     DNSServiceRefDeallocate(dsRef);
+    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
     discoveryZeroconfWatcher_destroy(watcher);
 }
 
@@ -886,27 +986,27 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, DNSServiceGetAddrInfoFailedOnce) {
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
-    });
+    }, kDNSServiceInterfaceIndexAny);
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToAllocMemoryForHostEntry) {
     TestAddEndpoint([](){
-        celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 2);
+        celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 3);//first calloc:service_browser_entry_t; second calloc:watched_service_entry_t
         ExpectMsgOutPut("Watcher: Failed to alloc host entry for %s.");
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
-    });
+    }, kDNSServiceInterfaceIndexAny);
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToDupHostNameForHostEntry) {
     TestAddEndpoint([](){
-        celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 2);
-        ExpectMsgOutPut("Watcher: Failed to create hostname for endpoint %s.");
+        celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 3);
+        ExpectMsgOutPut("Watcher: Failed to dup hostname for %s.");
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
-    });
+    }, kDNSServiceInterfaceIndexAny);
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutHostEntryToCache) {
@@ -916,7 +1016,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutHostEntryToCache) {
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
-    });
+    }, kDNSServiceInterfaceIndexAny);
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, GetAddrInfo) {
@@ -942,6 +1042,8 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddTxtRecord) {
     discovery_zeroconf_watcher_t *watcher;
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
+    auto rsaTrkId = TrackRsaService(watcher);
+    auto eplTrkId = TrackEndpointListenerService(watcher);
 
     char txtBuf[1300] = {0};
     TXTRecordRef txtRecord;
@@ -960,7 +1062,9 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddTxtRecord) {
     ExpectMsgOutPut("Endpoint added: %s.");
 
     DNSServiceRef dsRef{};
-    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexAny, "dzc_test_service", DZC_TEST_SERVICE_TYPE, "local", NULL, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback, nullptr);
+    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexAny, "dzc_test_service",
+                 DZC_TEST_SERVICE_TYPE, "local", nullptr, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord),
+                 TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback, nullptr);
     EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
     DNSServiceProcessResult(dsRef);
     TXTRecordDeallocate(&txtRecord);
@@ -984,6 +1088,8 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddTxtRecord) {
     EXPECT_FALSE(timeOut);
 
     DNSServiceRefDeallocate(dsRef);
+    celix_bundleContext_stopTracker(ctx.get(), eplTrkId);
+    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
     discoveryZeroconfWatcher_destroy(watcher);
 }
 
@@ -991,6 +1097,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveEndpointListener) {
     discovery_zeroconf_watcher_t *watcher;
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
+    auto rsaTrkId = TrackRsaService(watcher);
 
     char txtBuf[1300] = {0};
     TXTRecordRef txtRecord;
@@ -1006,26 +1113,40 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveEndpointListener) {
     sprintf(propSizeStr, "%d", TXTRecordGetCount(TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord)) + 1);
     TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
 
-    ExpectMsgOutPut("Endpoint added: %s.");
-
     DNSServiceRef dsRef{};
-    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly, "dzc_test_service", DZC_TEST_SERVICE_TYPE, "local", NULL, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback,nullptr);
+    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly, "dzc_test_service",
+      DZC_TEST_SERVICE_TYPE, "local", nullptr, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord),
+      TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback,nullptr);
     EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
     DNSServiceProcessResult(dsRef);
 
+    ExpectMsgOutPut("Endpoint added: %s.");
+    auto eplTrkId = TrackEndpointListenerService(watcher);
     auto timeOut  = CheckMsgWithTimeOutInS(30);
     EXPECT_FALSE(timeOut);
 
-    endpoint_listener_t epListener{logHelper.get(),discoveryZeroconfWatcherTest_endpointAdded, discoveryZeroconfWatcherTest_endpointRemoved};
-
-    long listenerId = celix_bundleContext_registerService(ctx.get(), &epListener, OSGI_ENDPOINT_LISTENER_SERVICE, nullptr);
-    EXPECT_LE(0, listenerId);
-
+    ExpectMsgOutPut("Endpoint removed: %s.");
+    celix_bundleContext_stopTracker(ctx.get(), eplTrkId);
     timeOut  = CheckMsgWithTimeOutInS(30);
     EXPECT_FALSE(timeOut);
 
-    celix_bundleContext_unregisterService(ctx.get(), listenerId);
-
     DNSServiceRefDeallocate(dsRef);
+    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
+    discoveryZeroconfWatcher_destroy(watcher);
+}
+
+TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToAllocMemoryForEPL) {
+    discovery_zeroconf_watcher_t *watcher;
+    celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    ExpectMsgOutPut("Watcher: Failed to alloc endpoint listener entry.");
+    celix_ei_expect_calloc((void*)&discoveryZeroconfWatcher_addEPL, 0, nullptr);
+    auto eplTrkId = TrackEndpointListenerService(watcher);
+    auto timeOut  = CheckMsgWithTimeOutInS(30);
+    EXPECT_FALSE(timeOut);
+
+    celix_bundleContext_stopTracker(ctx.get(), eplTrkId);
+
     discoveryZeroconfWatcher_destroy(watcher);
 }

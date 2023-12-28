@@ -31,5 +31,6 @@ target_link_options(bundle_ctx_ei INTERFACE
         LINKER:--wrap,celix_bundleContext_registerServiceAsync
         LINKER:--wrap,celix_bundleContext_registerServiceFactoryAsync
         LINKER:--wrap,celix_bundleContext_scheduleEvent
+        LINKER:--wrap,celix_bundleContext_getDependencyManager
         )
 add_library(Celix::bundle_ctx_ei ALIAS bundle_ctx_ei)

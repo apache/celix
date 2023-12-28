@@ -17,28 +17,20 @@
  * under the License.
  */
 
-#ifndef CELIX_BUNDLE_CONTEXT_EI_H
-#define CELIX_BUNDLE_CONTEXT_EI_H
+#ifndef CELIX_CELIX_DM_COMPONENT_EI_H
+#define CELIX_CELIX_DM_COMPONENT_EI_H
 #ifdef __cplusplus
 extern "C" {
 #endif
 #include "celix_error_injector.h"
-#include "celix_errno.h"
-#include "celix_bundle_context.h"
+#include "celix_dm_component.h"
+#include "celix_dm_service_dependency.h"
 
-CELIX_EI_DECLARE(celix_bundleContext_getProperty, const char*);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_trackServicesWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_getBundleId, long);
-CELIX_EI_DECLARE(bundleContext_getServiceReferences, celix_status_t);
-CELIX_EI_DECLARE(bundleContext_retainServiceReference, celix_status_t);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceFactoryAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_scheduleEvent, long);
-CELIX_EI_DECLARE(celix_bundleContext_getDependencyManager, celix_dependency_manager_t*);
+CELIX_EI_DECLARE(celix_dmComponent_create, celix_dm_component_t*);
+CELIX_EI_DECLARE(celix_dmServiceDependency_create, celix_dm_service_dependency_t*);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //CELIX_BUNDLE_CONTEXT_EI_H
+#endif //CELIX_CELIX_DM_COMPONENT_EI_H

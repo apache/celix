@@ -18,7 +18,6 @@
  */
 #include "discovery_zeroconf_watcher.h"
 #include "discovery_zeroconf_constants.h"
-#include "remote_service_admin.h"
 #include "endpoint_listener.h"
 #include "remote_constants.h"
 #include "celix_bundle_context.h"
@@ -57,13 +56,11 @@
 struct discovery_zeroconf_watcher {
     celix_bundle_context_t *ctx;
     celix_log_helper_t *logHelper;
-    long epListenerTrkId;
-    long rsaTrkId;
     char fwUuid[64];
     DNSServiceRef sharedRef;
     int eventFd;
     celix_thread_t watchEPThread;
-    celix_string_hash_map_t *watchedServices;//key:instanceName+interfaceIndex, val:watched_service_entry_t*
+    celix_string_hash_map_t *watchedServices;//key:instanceName+'/'+interfaceIndex, val:watched_service_entry_t*
     celix_string_hash_map_t *watchedHosts;//key:hostname+interfaceIndex, val:watched_host_entry_t*
     celix_thread_mutex_t mutex;//projects below
     bool running;
@@ -120,10 +117,6 @@ typedef struct watched_host_entry {
     bool markDeleted;
 }watched_host_entry_t;
 
-static void discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix_properties_t *props);
-static void discoveryZeroconfWatcher_removeEPL(void *handle, void *svc, const celix_properties_t *props);
-static void discoveryZeroConfWatcher_addRSA(void *handle, void *svc, const celix_properties_t *props);
-static void discoveryZeroConfWatcher_removeRSA(void *handle, void *svc, const celix_properties_t *props);
 static void OnServiceResolveCallback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *fullname, const char *host, uint16_t port, uint16_t txtLen, const unsigned char *txtRecord, void *context);
 static void OnServiceBrowseCallback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *instanceName, const char *regtype, const char *replyDomain, void *context);
 static void *discoveryZeroconfWatcher_watchEPThread(void *data);
@@ -194,36 +187,9 @@ celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celi
         return CELIX_ENOMEM;
     }
 
-    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    opts.filter.serviceName = OSGI_ENDPOINT_LISTENER_SERVICE;
-    opts.filter.filter = "(!(DISCOVERY=true))";
-    opts.callbackHandle = watcher;
-    opts.addWithProperties = discoveryZeroconfWatcher_addEPL;
-    opts.removeWithProperties = discoveryZeroconfWatcher_removeEPL;
-    watcher->epListenerTrkId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
-    if (watcher->epListenerTrkId < 0) {
-        celix_logHelper_fatal(logHelper, "Watcher: Failed to register endpoint listener service.");
-        return CELIX_BUNDLE_EXCEPTION;
-    }
-
-    celix_service_tracking_options_t rsaOpts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    rsaOpts.filter.serviceName = OSGI_RSA_REMOTE_SERVICE_ADMIN;
-    rsaOpts.filter.filter = "(remote.configs.supported=*)";
-    rsaOpts.callbackHandle = watcher;
-    rsaOpts.addWithProperties = discoveryZeroConfWatcher_addRSA;
-    rsaOpts.removeWithProperties = discoveryZeroConfWatcher_removeRSA;
-    watcher->rsaTrkId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &rsaOpts);
-    if (watcher->rsaTrkId < 0) {
-        celix_bundleContext_stopTracker(ctx, watcher->epListenerTrkId);
-        celix_logHelper_fatal(logHelper, "Watcher: Failed to register remote service admin service tracker.");
-        return CELIX_BUNDLE_EXCEPTION;
-    }
-
     watcher->running = true;
     status = celixThread_create(&watcher->watchEPThread,NULL, discoveryZeroconfWatcher_watchEPThread, watcher);
     if (status != CELIX_SUCCESS) {
-        celix_bundleContext_stopTracker(ctx, watcher->rsaTrkId);
-        celix_bundleContext_stopTracker(ctx, watcher->epListenerTrkId);
         return status;
     }
     celixThread_setName(&watcher->watchEPThread, "DiscWatcher");
@@ -246,8 +212,6 @@ void discoveryZeroconfWatcher_destroy(discovery_zeroconf_watcher_t *watcher) {
     eventfd_t val = 1;
     eventfd_write(watcher->eventFd, val);
     celixThread_join(watcher->watchEPThread, NULL);
-    celix_bundleContext_stopTracker(watcher->ctx, watcher->rsaTrkId);
-    celix_bundleContext_stopTracker(watcher->ctx, watcher->epListenerTrkId);
     celix_longHashMap_destroy(watcher->epls);
     assert(celix_stringHashMap_size(watcher->watchedServices) == 0);
     celix_stringHashMap_destroy(watcher->watchedServices);
@@ -267,7 +231,7 @@ void discoveryZeroconfWatcher_destroy(discovery_zeroconf_watcher_t *watcher) {
     return;
 }
 
-static void discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix_properties_t *props) {
+int discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix_properties_t *props) {
     assert(handle != NULL);
     assert(svc != NULL);
     assert(props != NULL);
@@ -275,12 +239,13 @@ static void discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
     long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (serviceId == -1) {
-        return;
+        return CELIX_ILLEGAL_ARGUMENT;
     }
 
     watched_epl_entry_t *eplEntry = (watched_epl_entry_t *)calloc(1, sizeof(*eplEntry));
     if (eplEntry == NULL) {
-        return;
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to alloc endpoint listener entry.");
+        return CELIX_ENOMEM;
     }
 
     const char *scope = celix_properties_get(props, OSGI_ENDPOINT_LISTENER_SCOPE, NULL);//matching on empty filter is always true
@@ -300,10 +265,10 @@ static void discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix
     celix_longHashMap_put(watcher->epls, serviceId, eplEntry);
     celixThreadMutex_unlock(&watcher->mutex);
 
-    return;
+    return CELIX_SUCCESS;
 }
 
-static void discoveryZeroconfWatcher_removeEPL(void *handle, void *svc, const celix_properties_t *props) {
+int discoveryZeroconfWatcher_removeEPL(void *handle, void *svc, const celix_properties_t *props) {
     assert(handle != NULL);
     assert(svc != NULL);
     assert(props != NULL);
@@ -311,7 +276,7 @@ static void discoveryZeroconfWatcher_removeEPL(void *handle, void *svc, const ce
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
     long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (serviceId == -1) {
-        return;
+        return CELIX_ILLEGAL_ARGUMENT;
     }
 
     celixThreadMutex_lock(&watcher->mutex);
@@ -330,10 +295,10 @@ static void discoveryZeroconfWatcher_removeEPL(void *handle, void *svc, const ce
     }
     celixThreadMutex_unlock(&watcher->mutex);
 
-    return;
+    return CELIX_SUCCESS;
 }
 
-static void discoveryZeroConfWatcher_addRSA(void *handle, void *svc, const celix_properties_t *props) {
+int discoveryZeroConfWatcher_addRSA(void *handle, void *svc, const celix_properties_t *props) {
     assert(handle != NULL);
     assert(svc != NULL);
     assert(props != NULL);
@@ -342,7 +307,7 @@ static void discoveryZeroConfWatcher_addRSA(void *handle, void *svc, const celix
     celix_autofree char *configsSupportedCopy = celix_utils_strdup(configsSupported);
     if (configsSupportedCopy == NULL) {
         celix_logHelper_error(watcher->logHelper, "Watcher: Failed to dup remote configs supported.");
-        return;
+        return CELIX_ENOMEM;
     }
     bool refreshBrowsers = false;
     char *token = strtok(configsSupportedCopy, ",");
@@ -356,7 +321,7 @@ static void discoveryZeroConfWatcher_addRSA(void *handle, void *svc, const celix
         }
         do {
             size_t subTypeLen = strlen(svcSubType);
-            if (subTypeLen > 63) {
+            if (subTypeLen > 63) {//the subtype identifier is allowed to be up to 63 bytes,https://www.rfc-editor.org/rfc/rfc6763.txt#section-7.2
                 celix_logHelper_error(watcher->logHelper, "Watcher: Invalid service type for %s.", token);
                 break;
             }
@@ -400,10 +365,10 @@ static void discoveryZeroConfWatcher_addRSA(void *handle, void *svc, const celix
         eventfd_write(watcher->eventFd, val);
     }
 
-    return;
+    return CELIX_SUCCESS;
 }
 
-static void discoveryZeroConfWatcher_removeRSA(void *handle, void *svc, const celix_properties_t *props) {
+int discoveryZeroConfWatcher_removeRSA(void *handle, void *svc, const celix_properties_t *props) {
     assert(handle != NULL);
     assert(svc != NULL);
     assert(props != NULL);
@@ -412,7 +377,7 @@ static void discoveryZeroConfWatcher_removeRSA(void *handle, void *svc, const ce
     celix_autofree char *configsSupportedCopy = celix_utils_strdup(configsSupported);
     if (configsSupportedCopy == NULL) {
         celix_logHelper_error(watcher->logHelper, "Watcher: Failed to dup remote configs supported.");
-        return;
+        return CELIX_ENOMEM;
     }
     bool refreshBrowsers = false;
     char *token = strtok(configsSupportedCopy, ",");
@@ -427,13 +392,7 @@ static void discoveryZeroConfWatcher_removeRSA(void *handle, void *svc, const ce
         celixThreadMutex_lock(&watcher->mutex);
         service_browser_entry_t *browserEntry = (service_browser_entry_t *)celix_stringHashMap_get(watcher->serviceBrowsers, svcSubType);
         if ((browserEntry != NULL) && (--browserEntry->refCnt == 0)) {
-            if (browserEntry->browseRef == NULL) {//if browser is not browsing, remove it directly, otherwise, let the watchEPThread remove it
-                celix_stringHashMap_remove(watcher->serviceBrowsers, svcSubType);
-                celix_stringHashMap_destroy(browserEntry->watchedServices);//TODO fix bug
-                free(browserEntry);
-            } else {
-                refreshBrowsers = true;
-            }
+            refreshBrowsers = true;
         }
         celixThreadMutex_unlock(&watcher->mutex);
         token = strtok(NULL, ",");
@@ -444,13 +403,12 @@ static void discoveryZeroConfWatcher_removeRSA(void *handle, void *svc, const ce
         eventfd_write(watcher->eventFd, val);
     }
 
-    return;
+    return CELIX_SUCCESS;
 }
 
 static void OnServiceResolveCallback(DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *fullname, const char *host, uint16_t port, uint16_t txtLen, const unsigned char *txtRecord, void *context) {
     (void)sdRef;//unused
     (void)flags;//unused
-    (void)interfaceIndex;//unused
     (void)port;//unused
     (void)fullname;//unused
     watched_service_entry_t *svcEntry = (watched_service_entry_t *)context;
@@ -491,6 +449,7 @@ static void OnServiceResolveCallback(DNSServiceRef sdRef, DNSServiceFlags flags,
     if (propSize == celix_properties_size(properties) && strcmp(DZC_CURRENT_TXT_RECORD_VERSION, version) == 0) {
         svcEntry->port = ntohs(port);
         if (svcEntry->ifIndex != kDNSServiceInterfaceIndexLocalOnly || svcEntry->port != DZC_PORT_DEFAULT) {//if it is not network service, no need to resolve ip address
+            free(svcEntry->hostname);//free old hostname
             svcEntry->hostname = celix_utils_strdup(host);
             if (svcEntry->hostname == NULL) {
                 celix_logHelper_error(svcEntry->logHelper, "Watcher: Failed to dup hostname.");
@@ -633,6 +592,7 @@ static void discoveryZeroconfWatcher_resolveServices(discovery_zeroconf_watcher_
                 svcEntry->resolveRef = NULL;
             }
             svcEntry->resolvedCnt = 0;
+            svcEntry->resolved = false;
             nextWorkIntervalTime = MIN(nextWorkIntervalTime, DZC_MAX_RETRY_INTERVAL);//retry resolve after 5 seconds
         }
     }
@@ -770,7 +730,7 @@ static watched_host_entry_t *discoveryZeroconfWatcher_getHostEntry(discovery_zer
     return (watched_host_entry_t *)celix_stringHashMap_get(watcher->watchedHosts, key);
 }
 
-static void discoveryZeroconfWatcher_addHosts(discovery_zeroconf_watcher_t *watcher, unsigned int *pNextWorkIntervalTime) {
+static void discoveryZeroconfWatcher_updateWatchedHosts(discovery_zeroconf_watcher_t *watcher, unsigned int *pNextWorkIntervalTime) {
     unsigned int nextWorkIntervalTime = *pNextWorkIntervalTime;
     //mark deleted hosts
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedHosts, iter) {
@@ -802,7 +762,7 @@ static void discoveryZeroconfWatcher_addHosts(discovery_zeroconf_watcher_t *watc
                 celix_autofree char *hostname = hostEntry->hostname = celix_utils_strdup(svcEntry->hostname);
                 if (hostname == NULL) {
                     nextWorkIntervalTime = MIN(nextWorkIntervalTime, DZC_MAX_RETRY_INTERVAL);//retry after 5 seconds
-                    celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create hostname for endpoint %s.", svcEntry->instanceName);
+                    celix_logHelper_error(watcher->logHelper, "Watcher: Failed to dup hostname for %s.", svcEntry->instanceName);
                     continue;
                 }
                 hostEntry->sdRef = NULL;
@@ -825,14 +785,6 @@ static void discoveryZeroconfWatcher_addHosts(discovery_zeroconf_watcher_t *watc
             }
         }
     }
-    *pNextWorkIntervalTime = nextWorkIntervalTime;
-    return;
-}
-
-static void discoveryZeroconfWatcher_refreshHostsInfo(discovery_zeroconf_watcher_t *watcher, unsigned int *pNextWorkIntervalTime) {
-    unsigned int nextWorkIntervalTime = *pNextWorkIntervalTime;
-
-    discoveryZeroconfWatcher_addHosts(watcher, &nextWorkIntervalTime);
 
     //delete hosts
     celix_string_hash_map_iterator_t iter = celix_stringHashMap_begin(watcher->watchedHosts);
@@ -850,6 +802,15 @@ static void discoveryZeroconfWatcher_refreshHostsInfo(discovery_zeroconf_watcher
             celix_stringHashMapIterator_next(&iter);
         }
     }
+
+    *pNextWorkIntervalTime = nextWorkIntervalTime;
+    return;
+}
+
+static void discoveryZeroconfWatcher_refreshHostsInfo(discovery_zeroconf_watcher_t *watcher, unsigned int *pNextWorkIntervalTime) {
+    unsigned int nextWorkIntervalTime = *pNextWorkIntervalTime;
+
+    discoveryZeroconfWatcher_updateWatchedHosts(watcher, &nextWorkIntervalTime);
 
     //resolve hosts
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedHosts, iter1) {
@@ -902,7 +863,6 @@ static int discoveryZeroConfWatcher_getHostIpAddresses(discovery_zeroconf_watche
                 asprintf(&tmp, "%s,%s", ipAddressesStr, ip);
             }
             if (tmp == NULL) {
-                celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create ip address list.");
                 return CELIX_ENOMEM;
             }
             free(ipAddressesStr);
@@ -910,7 +870,6 @@ static int discoveryZeroConfWatcher_getHostIpAddresses(discovery_zeroconf_watche
         }
     }
     if (ipAddressesStr == NULL) {
-        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to get ip address list.");
         return CELIX_ILLEGAL_STATE;
     }
     *ipAddressesStrOut = celix_steal_ptr(ipAddressesStr);
@@ -926,7 +885,7 @@ static int discoveryZeroConfWatcher_createEndpointEntryForService(discovery_zero
     celix_autoptr(endpoint_description_t) ep = NULL;
     int status = endpointDescription_create(properties, &ep);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create endpoint description.");
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create endpoint description. %d.", status);
         return status;
     }
     celix_steal_ptr(properties);//properties now owned by ep
@@ -950,7 +909,7 @@ static int discoveryZeroConfWatcher_createEndpointEntryForService(discovery_zero
 
     celix_autofree char *hostname = epEntry->hostname = celix_utils_strdup(svcEntry->hostname);
     if (hostname == NULL) {
-        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create hostname for endpoint %s.", svcEntry->instanceName);
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to dup hostname for endpoint %s.", svcEntry->instanceName);
         return CELIX_ENOMEM;
     }
 
@@ -1037,6 +996,18 @@ static void discoveryZeroconfWatcher_filterSameFrameWorkServices(discovery_zeroc
             if (epFwUuid != NULL && strcmp(epFwUuid, watcher->fwUuid) == 0) {
                 celix_logHelper_debug(watcher->logHelper, "Watcher: Ignore self endpoint for %s.", celix_properties_get(svcEntry->txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, "unknown"));
                 celix_stringHashMapIterator_remove(&iter);
+
+                //remove service instance name from service browser
+                char instanceNameKey[128]={0};
+                (void)snprintf(instanceNameKey, sizeof(instanceNameKey), "%s/%d", svcEntry->instanceName, svcEntry->ifIndex);
+                celixThreadMutex_lock(&watcher->mutex);
+                CELIX_STRING_HASH_MAP_ITERATE(watcher->serviceBrowsers, iter2) {
+                    service_browser_entry_t *browserEntry = (service_browser_entry_t *)iter2.value.ptrValue;
+                    celix_stringHashMap_remove(browserEntry->watchedServices, instanceNameKey);
+                }
+                celixThreadMutex_unlock(&watcher->mutex);
+
+                //release service info
                 if (svcEntry->resolveRef) {
                     DNSServiceRefDeallocate(svcEntry->resolveRef);
                 }
@@ -1069,9 +1040,8 @@ static bool discoveryZeroconfWatcher_checkEndpointIpAddressesChanged(discovery_z
         int i = 0;
         int ipCnt = 0;
         while (p <= end && i < INET6_ADDRSTRLEN){
-            ip[i++] = *p;
-            if (*p == ',' || *p == '\0') {
-                ip[i] = '\0';
+            ip[i] = (*p == ',') ? '\0' : *p;
+            if (ip[i++] == '\0') {
                 if (!celix_stringHashMap_hasKey(hostEntry->ipAddresses, ip)) {
                     return true;
                 }
@@ -1087,6 +1057,19 @@ static bool discoveryZeroconfWatcher_checkEndpointIpAddressesChanged(discovery_z
     return false;
 }
 
+static bool endpointEntry_matchServiceEntry(watched_endpoint_entry_t *epEntry, watched_service_entry_t *svcEntry) {
+    if (epEntry->ifIndex != svcEntry->ifIndex) {
+        return false;
+    }
+    if (epEntry->hostname == NULL && svcEntry->hostname == NULL) {
+        return true;
+    }
+    if (epEntry->hostname != NULL && svcEntry->hostname != NULL && strcmp(epEntry->hostname, svcEntry->hostname) == 0) {
+        return true;
+    }
+    return false;
+}
+
 static void discoveryZeroconfWatcher_refreshEndpoints(discovery_zeroconf_watcher_t *watcher, unsigned int *pNextWorkIntervalTime) {
     watched_endpoint_entry_t *epEntry = NULL;
     watched_service_entry_t *svcEntry = NULL;
@@ -1094,12 +1077,14 @@ static void discoveryZeroconfWatcher_refreshEndpoints(discovery_zeroconf_watcher
 
     celix_auto(celix_mutex_lock_guard_t) lockGuard = celixMutexLockGuard_init(&watcher->mutex);
 
-    //remove the endpoint which ip address list changed, and mark expired time of the endpoint.
+    struct timespec now = celix_gettime(CLOCK_MONOTONIC);
+    //remove the endpoint which ip address list changed and expired endpoint, and mark expired time of the endpoint.
     celix_string_hash_map_iterator_t epIter = celix_stringHashMap_begin(watcher->watchedEndpoints);
     while (!celix_stringHashMapIterator_isEnd(&epIter)) {
         epEntry = (watched_endpoint_entry_t *)epIter.value.ptrValue;
-        if (discoveryZeroconfWatcher_checkEndpointIpAddressesChanged(watcher, epEntry)) {
-            celix_logHelper_debug(watcher->logHelper, "Watcher: Remove ip changed endpoint for %s on %d.", epEntry->endpoint->serviceName, epEntry->ifIndex);
+        if (discoveryZeroconfWatcher_checkEndpointIpAddressesChanged(watcher, epEntry)
+            || celix_compareTime(&now, &epEntry->expiredTime) >= 0) {
+            celix_logHelper_debug(watcher->logHelper, "Watcher: Remove endpoint for %s on %d.", epEntry->endpoint->serviceName, epEntry->ifIndex);
             celix_stringHashMapIterator_remove(&epIter);
             discoveryZeroConfWatcher_informEPLs(watcher, epEntry->endpoint, false);
             endpointEntry_destroy(epEntry);
@@ -1127,6 +1112,7 @@ static void discoveryZeroconfWatcher_refreshEndpoints(discovery_zeroconf_watcher
                     } else {
                         nextWorkIntervalTime = MIN(nextWorkIntervalTime, DZC_MAX_RETRY_INTERVAL);//retry after 5 seconds
                     }
+                    celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create endpoint for %s. %d.", svcEntry->instanceName, status);
                     continue;
                 }
                 celix_logHelper_debug(watcher->logHelper, "Watcher: Add endpoint for %s on %d.", epEntry->endpoint->serviceName, epEntry->ifIndex);
@@ -1138,29 +1124,20 @@ static void discoveryZeroconfWatcher_refreshEndpoints(discovery_zeroconf_watcher
                     endpointEntry_destroy(epEntry);
                     nextWorkIntervalTime = MIN(nextWorkIntervalTime, DZC_MAX_RETRY_INTERVAL);//retry after 5 seconds
                 }
-            } else if (epEntry != NULL) {
+            } else if (epEntry != NULL && endpointEntry_matchServiceEntry(epEntry, svcEntry)) {
                 epEntry->expiredTime.tv_sec = INT_MAX;
                 epEntry->expiredTime.tv_nsec = 0;
             }
         }
     }
 
-    //remove expired endpoint
-    epIter = celix_stringHashMap_begin(watcher->watchedEndpoints);
-    while (!celix_stringHashMapIterator_isEnd(&epIter)) {
-        epEntry = (watched_endpoint_entry_t *)epIter.value.ptrValue;
-        int elapsed = (int)celix_elapsedtime(CLOCK_MONOTONIC, epEntry->expiredTime);
-        if (elapsed >= 0) {
-            celix_logHelper_debug(watcher->logHelper, "Watcher: Remove expired endpoint for %s on %d.", epEntry->endpoint->serviceName, epEntry->ifIndex);
-            celix_stringHashMapIterator_remove(&epIter);
-            discoveryZeroConfWatcher_informEPLs(watcher, epEntry->endpoint, false);
-            endpointEntry_destroy(epEntry);
-        } else {
-            if (epEntry->expiredTime.tv_sec != INT_MAX) {
-                unsigned int tmp = abs(elapsed);
-                nextWorkIntervalTime = nextWorkIntervalTime < tmp ? nextWorkIntervalTime : tmp;
-            }
-            celix_stringHashMapIterator_next(&epIter);
+    //calculate next work time
+    CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedEndpoints, iter) {
+        epEntry = (watched_endpoint_entry_t *)iter.value.ptrValue;
+        if (epEntry->expiredTime.tv_sec != INT_MAX) {
+            int timeOut = celix_difftime(&now, &epEntry->expiredTime) + 1;
+            assert(timeOut >= 0);//We have removed expired endpoint before.
+            nextWorkIntervalTime = MIN(nextWorkIntervalTime, timeOut);
         }
     }
 
