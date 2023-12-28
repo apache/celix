@@ -44,7 +44,7 @@ public:
     DynTypeErrorInjectionTestSuite& operator=(DynTypeErrorInjectionTestSuite&&) = delete;
 };
 
-TEST_F(DynTypeErrorInjectionTestSuite, ParseTypeErrors) {
+TEST_F(DynTypeErrorInjectionTestSuite, ParseComplexTypeErrors) {
     dyn_type *type = NULL;
     const char* descriptor = "{D{DD b_1 b_2}I a b c}";
 
@@ -67,4 +67,26 @@ TEST_F(DynTypeErrorInjectionTestSuite, ParseTypeErrors) {
     status = dynType_parseWithStr(descriptor, "hello", NULL, &type);
     ASSERT_NE(0, status);
     ASSERT_STREQ("Error strdup'ing name 'hello'", celix_err_popLastError());
+}
+
+TEST_F(DynTypeErrorInjectionTestSuite, ParseNestedTypeErrors) {
+    dyn_type *type = NULL;
+    const char* descriptor = "Tnode={Lnode;Lnode; left right};{Lnode; head}";
+    int status = 0;
+
+    // fail to allocate type_entry
+    celix_ei_expect_calloc((void*)dynType_parseWithStr, 4, nullptr);
+    status = dynType_parseWithStr(descriptor, NULL, NULL, &type);
+    ASSERT_NE(0, status);
+    ASSERT_STREQ("Error allocating entry", celix_err_popLastError());
+}
+
+TEST_F(DynTypeErrorInjectionTestSuite, ParseEnumTypeErrors) {
+    dyn_type *type = NULL;
+    int rc = 0;
+    // fail to allocate meta_entry
+    celix_ei_expect_calloc((void*)dynType_parseWithStr, 4, nullptr, 1);
+    rc = dynType_parseWithStr("#v1=0;#v2=1;E", NULL, NULL, &type);
+    ASSERT_NE(0, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
 }

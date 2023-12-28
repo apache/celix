@@ -61,7 +61,7 @@ int dynCommon_parseNameAlsoAccept(FILE* stream, const char* acceptedChars, char*
     }
 
     if (size == 0) {
-        celix_err_pushf("Parsed empty name");
+        celix_err_push("Parsed empty name");
         return ERROR;
     }
 

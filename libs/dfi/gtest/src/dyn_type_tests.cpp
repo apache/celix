@@ -60,6 +60,7 @@ public:
     DynTypeTests() {
     }
     ~DynTypeTests() override {
+        celix_err_resetErrors();
     }
 
 };
@@ -326,10 +327,32 @@ TEST_F(DynTypeTests, SchemaEndsWithoutNullTerminator) {
     celix_err_printErrors(stderr, nullptr, nullptr);
 }
 
+TEST_F(DynTypeTests, MetaInfoMissingName) {
+    dyn_type *type = NULL;
+    auto rc = dynType_parseWithStr(R"(#=1;)", nullptr, nullptr, &type);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Failed to parse meta properties", celix_err_popLastError());
+    ASSERT_STREQ("Parsed empty name", celix_err_popLastError());
+}
+
+TEST_F(DynTypeTests, MetaInfoMissingEquality) {
+    dyn_type *type = NULL;
+    auto rc = dynType_parseWithStr(R"(#testMetaInfo 1;)", nullptr, nullptr, &type);
+    ASSERT_NE(0, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+}
+
+TEST_F(DynTypeTests, MetaInfoMissingSemicolon) {
+    dyn_type *type = NULL;
+    auto rc = dynType_parseWithStr(R"(#testMetaInfo=1 )", nullptr, nullptr, &type);
+    ASSERT_NE(0, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+}
+
 TEST_F(DynTypeTests, MetaInfoMissingValue) {
     dyn_type *type = NULL;
-    auto rc = dynType_parseWithStr(R"(#testMetaInfo=)", nullptr, nullptr, &type);
-    ASSERT_EQ(1, rc);
+    auto rc = dynType_parseWithStr(R"(#testMetaInfo=;)", nullptr, nullptr, &type);
+    ASSERT_NE(0, rc);
     celix_err_printErrors(stderr, nullptr, nullptr);
 }
 
@@ -357,4 +380,15 @@ TEST_F(DynTypeTests, ParseReferenceFailed) {
     auto rc = dynType_parseWithStr(R"(Ttype={DD a b};ltype)", nullptr, nullptr, &type);
     ASSERT_EQ(3, rc);
     celix_err_printErrors(stderr, nullptr, nullptr);
+    //missing ';'
+    rc = dynType_parseWithStr(R"(Ttype={DD a b};Ltype)", nullptr, nullptr, &type);
+    ASSERT_EQ(3, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+}
+
+TEST_F(DynTypeTests, ParseSequenceFailed) {
+    dyn_type *type = NULL;
+    int rc = 0;
+    rc = dynType_parseWithStr("Tval={DD a b};Titem={Jtlval;DDJ a text val c d e};**[Lite;", NULL, NULL, &type);
+    ASSERT_NE(0, rc);
 }
