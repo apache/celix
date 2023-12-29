@@ -264,7 +264,6 @@ TEST_F(DiscoveryZeroconfAnnouncerTestSuite, AddAndRemoveEndpointOnSpecificInterf
     EXPECT_EQ(status, CELIX_SUCCESS);
     int ifIndex = 0;
     struct ifaddrs *ifaddr, *ifa;
-    char host[NI_MAXHOST];
     if (getifaddrs(&ifaddr) != -1)
     {
         for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next)
@@ -272,11 +271,9 @@ TEST_F(DiscoveryZeroconfAnnouncerTestSuite, AddAndRemoveEndpointOnSpecificInterf
             if (ifa->ifa_addr == nullptr)
                 continue;
 
-            if ((getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in), host, NI_MAXHOST, nullptr, 0, NI_NUMERICHOST) == 0)) {
-                if (strcmp(host, "127.0.0.1") != 0) {
-                    ifIndex = (int)if_nametoindex(ifa->ifa_name);
-                    break;
-                }
+            ifIndex = (int)if_nametoindex(ifa->ifa_name);// use non-loopback interface first, if not exist, use loopback interface
+            if (!(ifa->ifa_flags & IFF_LOOPBACK)) {
+                break;
             }
         }
         freeifaddrs(ifaddr);

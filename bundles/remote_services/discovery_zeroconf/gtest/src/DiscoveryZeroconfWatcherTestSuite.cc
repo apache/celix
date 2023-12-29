@@ -44,6 +44,9 @@
 #include <ctime>
 #include <cstdlib>
 #include <gtest/gtest.h>
+#include <ifaddrs.h>
+#include <netdb.h>
+#include <net/if.h>
 
 #define DZC_TEST_CONFIG_TYPE "celix.config_type.test"
 #define DZC_TEST_SERVICE_TYPE DZC_SERVICE_PRIMARY_TYPE",test" //use the last word of config type as service subtype
@@ -98,6 +101,26 @@ static  celix_status_t discoveryZeroconfWatcherTest_endpointRemoved(void *handle
     (void)matchedFilter;
     celix_logHelper_info(logHelper, "Endpoint removed: %s.", endpoint->id);
     return CELIX_SUCCESS;
+}
+
+static int GetTestNetInterfaceIndex() {
+    int ifIndex = 0;
+    struct ifaddrs *ifaddr, *ifa;
+    if (getifaddrs(&ifaddr) != -1)
+    {
+        for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next)
+        {
+            if (ifa->ifa_addr == nullptr)
+                continue;
+
+            ifIndex = (int)if_nametoindex(ifa->ifa_name);// use non-loopback interface first, if not exist, use loopback interface
+            if (!(ifa->ifa_flags & IFF_LOOPBACK)) {
+                break;
+            }
+        }
+        freeifaddrs(ifaddr);
+    }
+    return ifIndex;
 }
 
 
@@ -498,7 +521,7 @@ static DNSServiceRef RegisterTestService(int ifIndex, const char *endpointId, co
     conflictCount++;//avoid conflict
     char name[32]={0};
     snprintf(name, sizeof(name), "dzc_test_service_%d", conflictCount);
-    dnsErr = DNSServiceRegister(&dsRef, 0, ifIndex /*kDNSServiceInterfaceIndexAny*/, name,
+    dnsErr = DNSServiceRegister(&dsRef, 0, ifIndex, name,
                                 DZC_TEST_SERVICE_TYPE, "local", nullptr, htons(DZC_TEST_SERVICE_PORT),
                                 TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord),
                                 OnDNSServiceRegisterCallback, nullptr);
@@ -594,7 +617,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToGetHostIpAddressesWhenCreateEn
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
-    }, kDNSServiceInterfaceIndexAny);
+    }, GetTestNetInterfaceIndex());
     sleep(2);//wait for mdnsd remove service, avoid affect other test case
 }
 
@@ -996,7 +1019,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToAllocMemoryForHostEntry) {
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
-    }, kDNSServiceInterfaceIndexAny);
+    }, GetTestNetInterfaceIndex());
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToDupHostNameForHostEntry) {
@@ -1006,7 +1029,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToDupHostNameForHostEntry) {
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
-    }, kDNSServiceInterfaceIndexAny);
+    }, GetTestNetInterfaceIndex());
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutHostEntryToCache) {
@@ -1016,7 +1039,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutHostEntryToCache) {
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
-    }, kDNSServiceInterfaceIndexAny);
+    }, GetTestNetInterfaceIndex());
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, GetAddrInfo) {
