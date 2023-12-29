@@ -1010,6 +1010,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, DNSServiceGetAddrInfoFailedOnce) {
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
     }, kDNSServiceInterfaceIndexAny);
+    sleep(2);//wait for mdnsd remove service, avoid affect other test case
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToAllocMemoryForHostEntry) {
