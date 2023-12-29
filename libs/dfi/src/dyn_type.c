@@ -237,6 +237,7 @@ static int dynType_parseEnum(FILE* stream, dyn_type* type) {
 }
 
 static int dynType_parseComplex(FILE* stream, dyn_type* type) {
+    size_t nbEntries = 0;
     int status = OK;
     type->type = DYN_TYPE_COMPLEX;
     type->descriptor = '{';
@@ -254,69 +255,55 @@ static int dynType_parseComplex(FILE* stream, dyn_type* type) {
         }
         entry = calloc(1, sizeof(*entry));
         if (entry == NULL) {
-            celix_err_pushf("Error allocating memory for type");
+            celix_err_push("Error allocating memory for complex_type_entry");
             return MEM_ERROR;
         }
         entry->type = celix_steal_ptr(subType);
         TAILQ_INSERT_TAIL(&type->complex.entriesHead, entry, entries);
+        nbEntries += 1;
         c = fgetc(stream);
     }
 
     // loop over names
-    if (status == OK) {
-        entry = TAILQ_FIRST(&type->complex.entriesHead);
-        char* name = NULL;
-        while (c == ' ' && entry != NULL) {
-            status = dynCommon_parseName(stream, &name);
-            if (status == OK) {
-                entry->name = name;
-                entry = TAILQ_NEXT(entry, entries);
-            } else {
-                break;
-            }
-            c = getc(stream); 
+    entry = TAILQ_FIRST(&type->complex.entriesHead);
+    char* name = NULL;
+    // the current implementation permits trailing unnamed fields, i.e. number of names is less than number of fields
+    while (c == ' ' && entry != NULL) {
+        if ((status = dynCommon_parseName(stream, &name)) != OK) {
+            return status;
         }
+        entry->name = name;
+        entry = TAILQ_NEXT(entry, entries);
+        c = getc(stream);
+    }
+    if (c != '}') {
+        celix_err_push("Error parsing complex type, expected '}'");
+        return PARSE_ERROR;
     }
 
-    int count = 0;
-    if (status == OK) {
-        TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-            count +=1;
-        }
+    type->complex.structType.type =  FFI_TYPE_STRUCT;
+    type->complex.structType.elements = calloc(nbEntries + 1, sizeof(ffi_type*));
+    if (type->complex.structType.elements == NULL) {
+        celix_err_push("Error allocating memory for ffi_type elements");
+        return MEM_ERROR;
+    }
+    type->complex.structType.elements[nbEntries] = NULL;
+    int index = 0;
+    TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
+        type->complex.structType.elements[index++] = dynType_ffiType(entry->type);
     }
 
-    if (status == OK) {
-        type->complex.structType.type =  FFI_TYPE_STRUCT;
-        type->complex.structType.elements = calloc(count + 1, sizeof(ffi_type*));
-        if (type->complex.structType.elements != NULL) {
-            type->complex.structType.elements[count] = NULL;
-            int index = 0;
-            TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-                type->complex.structType.elements[index++] = dynType_ffiType(entry->type);
-            }
-        } else {
-            status = MEM_ERROR;
-            celix_err_pushf("Error allocating memory for elements");
-        }
+    type->complex.types = calloc(nbEntries, sizeof(dyn_type *));
+    if (type->complex.types == NULL) {
+        celix_err_pushf("Error allocating memory for complex types");
+        return MEM_ERROR;
+    }
+    index = 0;
+    TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
+        type->complex.types[index++] = entry->type;
     }
 
-    if (status == OK) {
-        type->complex.types = calloc(count, sizeof(dyn_type *));
-        if (type->complex.types != NULL) {
-            int index = 0;
-            TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-                type->complex.types[index++] = entry->type;
-            }
-        } else {
-            status = MEM_ERROR;
-            celix_err_pushf("Error allocating memory for type");
-        }
-    }
-
-    if (status == OK) {
-        (void)ffi_get_struct_offsets(FFI_DEFAULT_ABI, type->ffiType, NULL);
-    }
-
+    (void)ffi_get_struct_offsets(FFI_DEFAULT_ABI, type->ffiType, NULL);
 
     return status;
 }

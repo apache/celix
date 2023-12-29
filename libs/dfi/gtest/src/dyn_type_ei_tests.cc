@@ -67,6 +67,24 @@ TEST_F(DynTypeErrorInjectionTestSuite, ParseComplexTypeErrors) {
     status = dynType_parseWithStr(descriptor, "hello", NULL, &type);
     ASSERT_NE(0, status);
     ASSERT_STREQ("Error strdup'ing name 'hello'", celix_err_popLastError());
+
+    // fail to allocate complex_type_entry
+    celix_ei_expect_calloc((void*)dynType_parseWithStr, 4, nullptr);
+    status = dynType_parseWithStr(descriptor, NULL, NULL, &type);
+    ASSERT_NE(0, status);
+    ASSERT_STREQ("Error allocating memory for complex_type_entry", celix_err_popLastError());
+
+    // fail to allocate ffi_type elements
+    celix_ei_expect_calloc((void*)dynType_parseWithStr, 4, nullptr, 4);
+    status = dynType_parseWithStr(descriptor, NULL, NULL, &type);
+    ASSERT_NE(0, status);
+    ASSERT_STREQ("Error allocating memory for ffi_type elements", celix_err_popLastError());
+
+    // fail to allocate complex types
+    celix_ei_expect_calloc((void*)dynType_parseWithStr, 4, nullptr, 5);
+    status = dynType_parseWithStr(descriptor, NULL, NULL, &type);
+    ASSERT_NE(0, status);
+    ASSERT_STREQ("Error allocating memory for complex types", celix_err_popLastError());
 }
 
 TEST_F(DynTypeErrorInjectionTestSuite, ParseNestedTypeErrors) {

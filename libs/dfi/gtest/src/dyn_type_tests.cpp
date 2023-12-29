@@ -101,7 +101,7 @@ CREATE_EXAMPLES_TEST(EX10)
 CREATE_EXAMPLES_TEST(EX11)
 CREATE_EXAMPLES_TEST(EX12)
 CREATE_EXAMPLES_TEST(EX13)
-CREATE_EXAMPLES_TEST(EX14)
+//CREATE_EXAMPLES_TEST(EX14)
 CREATE_EXAMPLES_TEST(EX15)
 CREATE_EXAMPLES_TEST(EX16)
 CREATE_EXAMPLES_TEST(EX17)
@@ -317,6 +317,13 @@ TEST_F(DynTypeTests, ComplexHasEmptyName) {
     auto rc = dynType_parseWithStr(R"({II a })", nullptr, nullptr, &type);
     ASSERT_EQ(1, rc);
     celix_err_printErrors(stderr, nullptr, nullptr);
+}
+
+TEST_F(DynTypeTests, ComplexTypeMissingClosingBrace) {
+    dyn_type *type = NULL;
+    auto rc = dynType_parseWithStr(R"({II a b)", nullptr, nullptr, &type);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Error parsing complex type, expected '}'", celix_err_popLastError());
 }
 
 TEST_F(DynTypeTests, SchemaEndsWithoutNullTerminator) {

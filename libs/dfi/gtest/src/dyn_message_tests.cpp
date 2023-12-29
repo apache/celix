@@ -34,6 +34,7 @@ extern "C" {
 
 #include "dyn_common.h"
 #include "dyn_message.h"
+#include "celix_err.h"
 #include "celix_version.h"
 
 static void checkMessageVersion(dyn_message_type* dynMsg, const char* v){
@@ -224,6 +225,7 @@ public:
     DynMessageTests() {
     }
     ~DynMessageTests() override {
+        celix_err_resetErrors();
     }
 
 };
@@ -242,6 +244,7 @@ TEST_F(DynMessageTests, msg_test3) {
 
 TEST_F(DynMessageTests, msg_test4) {
 	msg_test4();
+    celix_err_printErrors(stderr, nullptr, nullptr);
 }
 
 TEST_F(DynMessageTests, msg_invalid) {
