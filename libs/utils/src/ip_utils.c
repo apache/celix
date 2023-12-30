@@ -16,110 +16,151 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * ip_utils.c
- *
- *  \date       Jun 24, 2019
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
-#include "ip_utils.h"
+#include "celix_ip_utils.h"
+
+#include "celix_err.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
-
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
-#include <math.h>
+#include "celix_convert_utils.h"
 
 #include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netdb.h>
+#include <errno.h>
 #include <ifaddrs.h>
-#include <unistd.h>
+#include <limits.h>
+#include <math.h>
+#include <netdb.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
 
-unsigned int ipUtils_ipToUnsignedInt(char *ip) {
-    unsigned int ipAsUint = 0;
+uint32_t celix_utils_convertIpToUint(const char* ip, bool* converted) {
+    if (converted) {
+        *converted = false;
+    }
 
-    char *partOfIp = NULL, *savePtr = NULL;
-    char *input = strdup(ip); // Make a copy because otherwise strtok_r manipulates the input string
-    partOfIp = strtok_r(input, ".\0", &savePtr); ipAsUint += strtoul(partOfIp, NULL, 10) * (unsigned int) pow(256, 3);
-    partOfIp = strtok_r(NULL, ".\0", &savePtr);  ipAsUint += strtoul(partOfIp, NULL, 10) * (unsigned int) pow(256, 2);
-    partOfIp = strtok_r(NULL, ".\0", &savePtr);  ipAsUint += strtoul(partOfIp, NULL, 10) * (unsigned int) pow(256, 1);
-    partOfIp = strtok_r(NULL, ".\0", &savePtr);  ipAsUint += strtoul(partOfIp, NULL, 10) * (unsigned int) pow(256, 0);
-    free(input);
+    // copy for strtok_r
+    celix_autofree char* input = strdup(ip);
+    if (!input) {
+        celix_err_push("Failed to duplicate input string for IP conversion");
+        return 0;
+    }
 
+    uint32_t ipAsUint = 0;
+    char* partOfIp = NULL;
+    char* savePtr = NULL;
+    int count = 0;
+    while ((partOfIp = strtok_r(partOfIp == NULL ? input : NULL, ".\0", &savePtr)) != NULL) {
+        if (count > 3) {
+            celix_err_pushf("Failed to convert IP address %s to unsigned int, to many parts", ip);
+            return 0;
+        }
+        bool longConverted = false;
+        long partAsLong = celix_utils_convertStringToLong(partOfIp, ULONG_MAX, &longConverted);
+        if (!longConverted) {
+            celix_err_pushf("Failed to convert IP address %s to unsigned int, part `%s` is not a number", ip, partOfIp);
+            return 0;
+        } else if (partAsLong > 255 || partAsLong < 0) {
+            celix_err_pushf("Failed to convert IP address %s to unsigned int, part `%s` is out of range", ip, partOfIp);
+            return 0;
+        }
+        ipAsUint += (uint32_t)(partAsLong * powl(256, 3 - count++));
+    }
+
+    if (converted) {
+        *converted = true;
+    }
     return ipAsUint;
 }
 
-char *ipUtils_unsignedIntToIp(unsigned int ip) {
-    char *ipStr = calloc(16, sizeof(char));
+char* celix_utils_convertUintToIp(uint32_t ip) {
+    char* ipStr = calloc(16, sizeof(char));
+    if (!ipStr) {
+        celix_err_push("Failed to allocate memory for IP address string");
+        return NULL;
+    }
 
-    int ipPart1 = ip / (int) pow(256, 3); ip -= ipPart1 * (int) pow(256, 3);
-    int ipPart2 = ip / (int) pow(256, 2); ip -= ipPart2 * (int) pow(256, 2);
-    int ipPart3 = ip / (int) pow(256, 1); ip -= ipPart3 * (int) pow(256, 1);
-    int ipPart4 = ip / (int) pow(256, 0);
+    int64_t ipPart1 = ip / (int64_t)pow(256, 3);
+    ip -= ipPart1 * (int64_t)pow(256, 3);
+    int64_t ipPart2 = ip / (int64_t)pow(256, 2);
+    ip -= ipPart2 * (int64_t)pow(256, 2);
+    int64_t ipPart3 = ip / (int64_t)pow(256, 1);
+    ip -= ipPart3 * (int64_t)pow(256, 1);
+    int64_t ipPart4 = ip / (int64_t)pow(256, 0);
 
-    snprintf(ipStr, 16, "%d.%d.%d.%d", ipPart1, ipPart2, ipPart3, ipPart4);
+    snprintf(ipStr, 16, "%li.%li.%li.%li", ipPart1, ipPart2, ipPart3, ipPart4);
 
     return ipStr;
 }
 
-unsigned int ipUtils_prefixToBitmask(unsigned int prefix) {
-    return (0xFFFFFFFF << (32 - prefix)) & 0xFFFFFFFF;
+uint32_t celix_utils_ipPrefixLengthToBitmask(int prefix) {
+    if (prefix > 32 || prefix <= 0) {
+        return 0;
+    }
+    return (uint32_t )((0xFFFFFFFF << (32 - prefix)) & 0xFFFFFFFF);
 }
 
-int ipUtils_netmaskToPrefix(const char *netmask) {
+int celix_utils_ipNetmaskToPrefixLength(const char* netmask) {
     // Convert netmask to in_addr object
     struct in_addr in;
     int ret = inet_pton(AF_INET, netmask, &in);
     if (ret != 1) {
+        celix_err_pushf("Failed to convert netmask %s to in_addr object", netmask);
         return -1;
     }
 
     // Now convert the mask to a prefix
     int prefix = 0;
-    bool processed_one = false;
-    unsigned int i = ntohl(in.s_addr);
+    uint32_t i = ntohl(in.s_addr);
 
     while (i > 0) {
         if (i & 1) {
             prefix++;
-            processed_one = true;
-        } else {
-            if (processed_one) return -1;
         }
-
         i >>= 1;
     }
 
     return prefix;
 }
 
-/** Finds an IP of the available network interfaces of the machine by specifying an CIDR subnet.
- *
- * @param ipWithPrefix  IP with prefix, e.g. 192.168.1.0/24
- * @return ip           In case a matching interface could be found, an allocated string containing the IP of the
- *                      interface will be returned, e.g. 192.168.1.16. Memory for the new string can be freed with free().
- *                      When no matching interface is found NULL will be returned.
- */
-char *ipUtils_findIpBySubnet(const char *ipWithPrefix) {
-    char *ip = NULL;
+char* celix_utils_findIpInSubnet(const char* subnetCidrNotation) {
+    char* ip = NULL;
 
-    char *input = celix_utils_strdup(ipWithPrefix); // Make a copy as otherwise strtok_r manipulates the input string
-    if (input == NULL) {
-        goto strdup_failed;
+    //create copy for strtok_r
+    celix_autofree char* input = celix_utils_strdup(subnetCidrNotation);
+    if (!input) {
+        celix_err_push("Failed to duplicate input string for subnet search");
+        return NULL;
     }
 
-    char *savePtr;
-    char *inputIp = strtok_r(input, "/", &savePtr);
-    char *inputPrefixStr = strtok_r(NULL, "\0", &savePtr);
-    unsigned int inputPrefix = (unsigned int) strtoul(inputPrefixStr, NULL, 10);
+    char* savePtr;
+    char* inputIp = strtok_r(input, "/", &savePtr);
+    char* inputPrefixStr = strtok_r(NULL, "\0", &savePtr);
 
-    unsigned int ipAsUint = ipUtils_ipToUnsignedInt(inputIp);
-    unsigned int bitmask = ipUtils_prefixToBitmask(inputPrefix);
+    if (!inputPrefixStr) {
+        celix_err_pushf("Failed to parse IP address with prefix %s. Missing a '/'", subnetCidrNotation);
+        return NULL;
+    }
+
+    bool convertedLong = false;
+    int inputPrefix = (int)celix_utils_convertStringToLong(inputPrefixStr, INT_MAX, &convertedLong);
+    if (!convertedLong) {
+        celix_err_pushf("Failed to parse prefix in IP address with prefix %s", subnetCidrNotation);
+        return NULL;
+    } else if (inputPrefix > 32 || inputPrefix < 0) {
+        celix_err_pushf(
+            "Failed to parse IP address with prefix %s. Prefix %s is out of range", subnetCidrNotation, inputPrefixStr);
+        return NULL;
+    }
+
+    bool converted;
+    uint32_t ipAsUint = celix_utils_convertIpToUint(inputIp, &converted);
+    if (!converted) {
+        return NULL;
+    }
+    uint32_t bitmask = celix_utils_ipPrefixLengthToBitmask(inputPrefix);
 
     unsigned int ipRangeStart = ipAsUint & bitmask;
     unsigned int ipRangeStop = ipAsUint | ~bitmask;
@@ -127,44 +168,47 @@ char *ipUtils_findIpBySubnet(const char *ipWithPrefix) {
     // Requested IP range is known now, now loop through network interfaces
     struct ifaddrs *ifap, *ifa;
 
-    if(getifaddrs (&ifap) == -1) {
-        goto getifaddrs_failed;
+    if (getifaddrs(&ifap) == -1) {
+        celix_err_push("Failed to get network interfaces");
+        return NULL;
     }
-    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-        if (ifa->ifa_addr == NULL)
-            continue;
 
-        if (ifa->ifa_addr->sa_family != AF_INET)
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL) {
             continue;
+        }
+
+        if (ifa->ifa_addr->sa_family != AF_INET) {
+            continue;
+        }
 
         // Retrieve IP address for interface
         char if_addr[NI_MAXHOST];
-        int rv = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in),
-                             if_addr, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+        int rv = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), if_addr, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
 
         if (rv != 0) {
-            printf("getnameinfo() failed: %s\n", gai_strerror(rv));
+            celix_err_pushf("Failed to get IP address for interface %s: %s", ifa->ifa_name, gai_strerror(rv));
             continue;
         }
 
         // Retrieve netmask
-        struct sockaddr_in *sa = (struct sockaddr_in *) ifa->ifa_netmask;
-        char *if_netmask = inet_ntoa(sa->sin_addr);
+        struct sockaddr_in* sa = (struct sockaddr_in*)ifa->ifa_netmask;
+        char* if_netmask = inet_ntoa(sa->sin_addr);
 
-        unsigned int ifIpAsUint = ipUtils_ipToUnsignedInt(if_addr);
-        int ifPrefix = ipUtils_netmaskToPrefix(if_netmask);
+        uint32_t ifIpAsUint = celix_utils_convertIpToUint(if_addr, NULL);
+        int ifPrefix = celix_utils_ipNetmaskToPrefixLength(if_netmask);
         if (ifPrefix == -1) {
             break;
         }
 
         if (ifIpAsUint >= ipRangeStart && ifIpAsUint <= ipRangeStop && inputPrefix >= ifPrefix) {
-            ip = strndup(if_addr, 1024);
+            ip = celix_utils_strdup(if_addr);
+            if (!ip) {
+                celix_err_push("Failed to duplicate IP address");
+                break;
+            }
             break;
         }
     }
-    freeifaddrs(ifap);
-getifaddrs_failed:
-    free(input);
-strdup_failed:
     return ip;
 }

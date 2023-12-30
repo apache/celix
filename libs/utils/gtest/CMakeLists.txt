@@ -34,6 +34,7 @@ add_executable(test_utils
         src/ThreadsTestSuite.cc
         src/CelixErrnoTestSuite.cc
         src/CelixUtilsAutoCleanupTestSuite.cc
+        src/IpUtilsTestSuite.cc
         src/DeprecatedHashmapTestSuite.cc
 )
 
