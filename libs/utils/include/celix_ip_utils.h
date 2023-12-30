@@ -28,10 +28,11 @@
 #ifndef CELIX_IP_UTILS_H
 #define CELIX_IP_UTILS_H
 
+#include "celix_errno.h"
 #include "celix_utils_export.h"
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +43,8 @@ extern "C" {
  *
  * This function takes an IP address as a string and converts it to
  * its corresponding unsigned integer representation.
+ *
+ * If the conversation failed, an error message is logged to celix_err.
  *
  * @param[in] ip The IP address in string format (e.g., "192.168.0.1").
  * @param[out] converted A boolean indicating whether the conversion was successful. Can be NULL.
@@ -77,6 +80,8 @@ uint32_t celix_utils_ipPrefixLengthToBitmask(int prefix);
  * This function converts a netmask in string format (e.g., "255.255.255.0")
  * to its corresponding prefix length.
  *
+ * If the conversation failed, an error message is logged to celix_err.
+ *
  * @param[in] netmask The netmask in string format.
  * @return The prefix length or -1 if the conversion fails.
  */
@@ -94,12 +99,16 @@ int celix_utils_ipNetmaskToPrefixLength(const char* netmask);
  * CIDR notation is a concise format for specifying IP addresses ranges using IP address and subnet prefix length.
  * It takes the form of 'IP_ADDRESS/PREFIX_LENGTH' (e.g., "192.168.0.1/24").
  *
+ * If an error occurred, an error message is logged to celix_err.
+ *
  * @param[in] subnetCidrNotation The IP address with subnet prefix.
- * @return A string containing an IP address within the specified subnet that is also
+ * @param[out] foundIp A string containing an IP address within the specified subnet that is also
  * assigned to a network interface on the host, or NULL if no matching IP address is found. The caller is owner of the
  * returned string.
+ * @return CELIX_SUCCESS if the IP address was found, CELIX_ILLEGAL_ARGUMENT if the subnet is invalid, CELIX_ENOMEM if
+ * an error occurred or a errno value set by getifaddrs.
  */
-char* celix_utils_findIpInSubnet(const char* subnetCidrNotation);
+celix_status_t celix_utils_findIpInSubnet(const char* subnetCidrNotation, char** foundIp);
 
 #ifdef __cplusplus
 }

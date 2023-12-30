@@ -108,18 +108,20 @@ TEST_F(IpUtilsTestSuite, NetmaskToPrefixTest) {
 }
 
 TEST_F(IpUtilsTestSuite, FindIpInSubnetWithInvalidInputTest) {
-    EXPECT_EQ(nullptr, celix_utils_findIpInSubnet("198.168.0.1")); // missing subnet
+    char* ipAddr = nullptr;
+
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_utils_findIpInSubnet("198.168.0.1", &ipAddr)); // missing subnet
     EXPECT_EQ(1, celix_err_getErrorCount());
 
-    EXPECT_EQ(nullptr, celix_utils_findIpInSubnet("198.168.0.1/abc")); // invalid subnet
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_utils_findIpInSubnet("198.168.0.1/abc", &ipAddr)); // invalid subnet
     EXPECT_EQ(2, celix_err_getErrorCount());
 
-    EXPECT_EQ(nullptr, celix_utils_findIpInSubnet("198.168.0.1/40")); // out of range subnet
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_utils_findIpInSubnet("198.168.0.1/40", &ipAddr)); // out of range subnet
     EXPECT_EQ(3, celix_err_getErrorCount());
 
-    EXPECT_EQ(nullptr, celix_utils_findIpInSubnet("198.168.0.1/-1")); // out of range subnet
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_utils_findIpInSubnet("198.168.0.1/-1", &ipAddr)); // out of range subnet
     EXPECT_EQ(4, celix_err_getErrorCount());
 
-    EXPECT_EQ(nullptr, celix_utils_findIpInSubnet("a.b.c.d/8")); // invalid ip
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_utils_findIpInSubnet("a.b.c.d/8", &ipAddr)); // invalid ip
     EXPECT_EQ(5, celix_err_getErrorCount());
 }

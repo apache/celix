@@ -25,6 +25,7 @@
 #include "celix_convert_utils.h"
 
 #include <arpa/inet.h>
+#include <assert.h>
 #include <errno.h>
 #include <ifaddrs.h>
 #include <limits.h>
@@ -42,7 +43,7 @@ uint32_t celix_utils_convertIpToUint(const char* ip, bool* converted) {
     }
 
     // copy for strtok_r
-    celix_autofree char* input = strdup(ip);
+    celix_autofree char* input = celix_utils_strdup(ip);
     if (!input) {
         celix_err_push("Failed to duplicate input string for IP conversion");
         return 0;
@@ -125,14 +126,17 @@ int celix_utils_ipNetmaskToPrefixLength(const char* netmask) {
     return prefix;
 }
 
-char* celix_utils_findIpInSubnet(const char* subnetCidrNotation) {
-    char* ip = NULL;
+celix_status_t celix_utils_findIpInSubnet(const char* subnetCidrNotation, char** foundIp) {
+    assert(subnetCidrNotation);
+    assert(foundIp);
+
+    *foundIp = NULL;
 
     //create copy for strtok_r
     celix_autofree char* input = celix_utils_strdup(subnetCidrNotation);
     if (!input) {
         celix_err_push("Failed to duplicate input string for subnet search");
-        return NULL;
+        return CELIX_ENOMEM;
     }
 
     char* savePtr;
@@ -141,24 +145,24 @@ char* celix_utils_findIpInSubnet(const char* subnetCidrNotation) {
 
     if (!inputPrefixStr) {
         celix_err_pushf("Failed to parse IP address with prefix %s. Missing a '/'", subnetCidrNotation);
-        return NULL;
+        return CELIX_ILLEGAL_ARGUMENT;
     }
 
     bool convertedLong = false;
     int inputPrefix = (int)celix_utils_convertStringToLong(inputPrefixStr, INT_MAX, &convertedLong);
     if (!convertedLong) {
         celix_err_pushf("Failed to parse prefix in IP address with prefix %s", subnetCidrNotation);
-        return NULL;
+        return CELIX_ILLEGAL_ARGUMENT;
     } else if (inputPrefix > 32 || inputPrefix < 0) {
         celix_err_pushf(
             "Failed to parse IP address with prefix %s. Prefix %s is out of range", subnetCidrNotation, inputPrefixStr);
-        return NULL;
+        return CELIX_ILLEGAL_ARGUMENT;
     }
 
     bool converted;
     uint32_t ipAsUint = celix_utils_convertIpToUint(inputIp, &converted);
     if (!converted) {
-        return NULL;
+        return CELIX_ILLEGAL_ARGUMENT;
     }
     uint32_t bitmask = celix_utils_ipPrefixLengthToBitmask(inputPrefix);
 
@@ -169,8 +173,9 @@ char* celix_utils_findIpInSubnet(const char* subnetCidrNotation) {
     struct ifaddrs *ifap, *ifa;
 
     if (getifaddrs(&ifap) == -1) {
+        celix_status_t status = errno;
         celix_err_push("Failed to get network interfaces");
-        return NULL;
+        return status;
     }
 
     for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
@@ -202,13 +207,14 @@ char* celix_utils_findIpInSubnet(const char* subnetCidrNotation) {
         }
 
         if (ifIpAsUint >= ipRangeStart && ifIpAsUint <= ipRangeStop && inputPrefix >= ifPrefix) {
-            ip = celix_utils_strdup(if_addr);
+            char* ip = celix_utils_strdup(if_addr);
             if (!ip) {
                 celix_err_push("Failed to duplicate IP address");
-                break;
+                return CELIX_ENOMEM;
             }
+            *foundIp = ip;
             break;
         }
     }
-    return ip;
+    return CELIX_SUCCESS;
 }
