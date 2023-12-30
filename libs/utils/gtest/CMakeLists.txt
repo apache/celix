@@ -34,6 +34,7 @@ add_executable(test_utils
         src/ThreadsTestSuite.cc
         src/CelixErrnoTestSuite.cc
         src/CelixUtilsAutoCleanupTestSuite.cc
+        src/DeprecatedHashmapTestSuite.cc
 )
 
 target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::zip)
