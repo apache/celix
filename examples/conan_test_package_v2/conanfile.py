@@ -40,11 +40,6 @@ class TestPackageConan(ConanFile):
         tc.cache_variables["TEST_HTTP_ADMIN"] = celix_options.build_http_admin
         tc.cache_variables["TEST_LOG_SERVICE"] = celix_options.build_log_service
         tc.cache_variables["TEST_SYSLOG_WRITER"] = celix_options.build_syslog_writer
-        tc.cache_variables["TEST_PUBSUB"] = celix_options.build_pubsub
-        tc.cache_variables["TEST_PSA_ZMQ"] = celix_options.build_pubsub_psa_zmq
-        tc.cache_variables["TEST_PSA_TCP"] = celix_options.build_pubsub_psa_tcp
-        tc.cache_variables["TEST_PSA_WS"] = celix_options.build_pubsub_psa_ws
-        tc.cache_variables["TEST_PSA_DISCOVERY_ETCD"] = celix_options.build_pubsub_discovery_etcd
         tc.cache_variables["TEST_RSA"] = celix_options.build_remote_service_admin
         tc.cache_variables["TEST_RSA_DFI"] = celix_options.build_rsa_remote_service_admin_dfi
         tc.cache_variables["TEST_RSA_SHM_V2"] = celix_options.build_rsa_remote_service_admin_shm_v2
@@ -64,9 +59,6 @@ class TestPackageConan(ConanFile):
         tc.cache_variables["TEST_PUSHSTREAMS"] = celix_options.build_pushstreams
         tc.cache_variables["TEST_LOG_HELPER"] = celix_options.build_log_helper
         tc.cache_variables["TEST_LOG_SERVICE_API"] = celix_options.build_log_service_api
-        tc.cache_variables["TEST_PUBSUB_WIRE_PROTOCOL_V1"] = celix_options.build_pubsub_wire_protocol_v1
-        tc.cache_variables["TEST_PUBSUB_WIRE_PROTOCOL_V2"] = celix_options.build_pubsub_wire_protocol_v2
-        tc.cache_variables["TEST_PUBSUB_JSON_SERIALIZER"] = celix_options.build_pubsub_json_serializer
         tc.cache_variables["TEST_CXX_REMOTE_SERVICE_ADMIN"] = celix_options.build_cxx_remote_service_admin
         tc.cache_variables["TEST_SHELL_API"] = celix_options.build_shell_api
         tc.cache_variables["TEST_CELIX_DFI"] = celix_options.build_celix_dfi
@@ -97,17 +89,6 @@ class TestPackageConan(ConanFile):
                     self.run("./use_log_writer", cwd=os.path.join("deploy", "use_log_writer"), env="conanrun")
                 if celix_options.build_syslog_writer:
                     self.run("./use_syslog_writer", cwd=os.path.join("deploy", "use_syslog_writer"), env="conanrun")
-                if celix_options.build_pubsub:
-                    self.run("./use_my_psa", cwd=os.path.join("deploy", "use_my_psa"), env="conanrun")
-                if celix_options.build_pubsub_psa_zmq:
-                    self.run("./use_psa_zmq", cwd=os.path.join("deploy", "use_psa_zmq"), env="conanrun")
-                if celix_options.build_pubsub_psa_tcp:
-                    self.run("./use_psa_tcp", cwd=os.path.join("deploy", "use_psa_tcp"), env="conanrun")
-                if celix_options.build_pubsub_psa_ws:
-                    self.run("./use_psa_ws", cwd=os.path.join("deploy", "use_psa_ws"), env="conanrun")
-                if celix_options.build_pubsub_discovery_etcd and celix_options.build_launcher:
-                    self.run("./use_psa_discovery_etcd",
-                             cwd=os.path.join("deploy", "use_psa_discovery_etcd"), env="conanrun")
                 if celix_options.build_remote_service_admin:
                     self.run("./use_my_rsa", cwd=os.path.join("deploy", "use_my_rsa"), env="conanrun")
                     self.run("./conan_test_package/use_c_rsa_spi", env="conanrun")
@@ -146,15 +127,6 @@ class TestPackageConan(ConanFile):
                     self.run("./conan_test_package/use_log_helper", env="conanrun")
                 if celix_options.build_log_service_api:
                     self.run("./conan_test_package/use_log_service_api", env="conanrun")
-                if celix_options.build_pubsub_wire_protocol_v1:
-                    self.run("./use_pubsub_wire_protocol_v1",
-                             cwd=os.path.join("deploy", "use_pubsub_wire_protocol_v1"), env="conanrun")
-                if celix_options.build_pubsub_wire_protocol_v2:
-                    self.run("./use_pubsub_wire_protocol_v2",
-                             cwd=os.path.join("deploy", "use_pubsub_wire_protocol_v2"), env="conanrun")
-                if celix_options.build_pubsub_json_serializer:
-                    self.run("./use_pubsub_json_serializer",
-                             cwd=os.path.join("deploy", "use_pubsub_json_serializer"), env="conanrun")
                 if celix_options.build_cxx_remote_service_admin:
                     self.run("./use_cxx_remote_service_admin",
                              cwd=os.path.join("deploy", "use_cxx_remote_service_admin"), env="conanrun")

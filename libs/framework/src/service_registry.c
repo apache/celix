@@ -974,6 +974,7 @@ celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t
         filter = celix_filter_create(stringFilter);
         if (filter == NULL) {
             fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot add service listener filter '%s' is invalid", stringFilter);
+            celix_framework_logTssErrors(registry->framework->logger, CELIX_LOG_LEVEL_ERROR);
             return CELIX_ILLEGAL_ARGUMENT;
         }
     }
