@@ -361,10 +361,6 @@ Optional Arguments:
 - C: With this option the generated Celix launcher (if used) will be a C source. Only one of the C or CXX options can
   be provided.
   Default is CXX
-- FAT: With this option only embedded bundles are allowed to be added to the container. Ensuring a container executable
-  this is not dependent on external bundle zip files.
-  Note that this option does not change anything to the container, it just ensure that all added bundles are embedded
-  bundles.
 - USE_CONFIG: With this option the config properties are generated in a 'config.properties' instead of embedded in
   the Celix launcher.
 - GROUP: If configured the build location will be prefixed the GROUP. Default is empty.
@@ -374,12 +370,6 @@ Optional Arguments:
 - BUNDLES: A list of bundles for the Celix container to install and start.
   These bundle will be configured for run level 3. See 'celix_container_bundles' for more info.
 - INSTALL_BUNDLES: A list of bundles for the Celix container to install (but not start).
-- EMBEDDED_BUNDLES: A list of bundles to embed in the Celix container (inject as binary in the executable) and
-  to install and start for the Celix container.
-  See `celix_target_embedded_bundle` for more info about embedded bundles.
-- INSTALL_EMBEDDED_BUNDLES: A list of bundles to embed in the Celix container (inject as binary in the executable) and
-  to install (but not start) for the Celix container.
-  See `celix_target_embedded_bundle` for more info about embedded bundles.
 - PROPERTIES: A list of configuration properties, these can be used to configure the Celix framework and/or bundles.
   Normally this will be EMBEDED_PROPERTIES, but if the USE_CONFIG option is used this will be RUNTIME_PROPERTIES.
   See the framework library or bundles documentation about the available configuration options.
@@ -392,15 +382,12 @@ add_celix_container(<celix_container_name>
     [NO_COPY]
     [CXX]
     [C]
-    [FAT]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
     [DIR dir]
     [BUNDLES <bundle1> <bundle2> ...]
     [INSTALL_BUNDLES <bundle1> <bundle2> ...]
-    [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
-    [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -414,15 +401,12 @@ add_celix_container(<celix_container_name>
     [NO_COPY]
     [CXX]
     [C]
-    [FAT]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
     [DIR dir]
     [BUNDLES <bundle1> <bundle2> ...]
     [INSTALL_BUNDLES <bundle1> <bundle2> ...]
-    [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
-    [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -436,15 +420,12 @@ add_celix_container(<celix_container_name>
     [NO_COPY]
     [CXX]
     [C]
-    [FAT]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
     [DIR dir]
     [BUNDLES <bundle1> <bundle2> ...]
     [INSTALL_BUNDLES <bundle1> <bundle2> ...]
-    [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
-    [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -463,20 +444,6 @@ add_celix_container(simple_container
     PROPERTIES
         CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=debug
 )
-```
-
-```CMake
-#Creates a "fat" Celix container in ${CMAKE_BINARY_DIR}/deploy/simple_fat_container which starts 3 bundles embedded
-#in the container executable.
-add_celix_container(simple_fat_container
-        FAT
-        EMBEDDED_BUNDLES
-        Celix::shell
-        Celix::shell_tui
-        Celix::log_admin
-        PROPERTIES
-        CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=debug
-        )
 ```
 
 ## celix_container_bundles
@@ -515,40 +482,6 @@ Optional Arguments:
   NO_COPY option used in the add_celix_container call.
 - NO_COPY: If this option is present, the install/start bundles will be configured using a absolute path to the
   bundle. This option overrides optional COPY option used in the add_celix_container call.
-
-## celix_container_embedded_bundles
-Embed a selection of bundles to the Celix container.
-
-```CMake
-celix_container_embedded_bundles(<celix_container_target_name>
-    [LEVEL (0..6)]
-    [INSTALL]
-    bundle1
-    bundle2
-    ...
-)
-```
-
-Example:
-```CMake
-celix_container_embedded_bundles(my_container Celix::shell Celix::shell_tui)
-```
-
-The selection of bundles are embedded in the container executable using the
-`celix_target_embedded_bundle` Celix CMake command and are added to the configuration properties so that they are
-installed and started when the Celix container is executed.
-
-See `celix_target_embedded_bundle` for how bundle is embedded in a executable.
-
-The Celix framework supports 7 (0 - 6) run levels. Run levels can be used to control the start and stop order of bundles.
-Bundles in run level 0 are started first and bundles in run level 6 are started last.
-When stopping bundles in run level 6 are stopped first and bundles in run level 0 are stopped last.
-Within a run level the order of configured decides the start order; bundles added earlier are started first.
-
-Optional Arguments:
-- LEVEL: The run level for the added bundles. Default is 3.
-- INSTALL: If this option is present, the bundles will only be installed instead of the default install and start.
-  The bundles will be installed after all bundle in LEVEL 0..6 are installed and started.
 
 ## celix_container_properties
 Add the provided properties to the target Celix container config properties.
@@ -606,67 +539,6 @@ add_celix_bundle_dependencies(<cmake_target>
 ```CMake
 add_celix_bundle_dependencies(my_exec my_bundle1 my_bundle2)
 ```
-
-## celix_target_embedded_bundle
-Embeds a Celix bundle into a CMake target.
-
-```CMake
-celix_target_embedded_bundle(<cmake_target>
-        BUNDLE <bundle>
-        [NAME <name>]
-        )
-```
-
-Example:
-```CMake
-celix_target_embedded_bundle(my_executable
-        BUNDLE Celix::shell
-        NAME celix_shell
-        )
-# result in the symbols:
-# - celix_embedded_bundle_celix_shell_start
-# - celix_embedded_bundle_celix_shell_end
-# - celix_embedded_bundles = "embedded://celix_shell"
-# to be added to `my_executable`
-```
-
-The Celix bundle will be embedded into the CMake target between the symbols: `celix_embedded_bundle_${NAME}_start` and
-`celix_embedded_bundle_${NAME}_end`.
-
-Also a `const char * const` symbol with the name `celix_embedded_bundles` will be added or updated containing a `,`
-seperated list of embedded Celix bundle urls. The url will be: `embedded://${NAME}`.
-
-For Linux the linking flag `--export-dynamic` is added to ensure that the previous mentioned symbols can be retrieved
-using `dlsym`.
-
-Mandatory Arguments:
-- BUNDLE: The bundle target or bundle file (absolute path) to embed in the CMake target.
-
-Optional Arguments:
-- NAME: The name to use when embedding the Celix bundle. This name is used in the _start and _end symbol, but also
-  for the embedded bundle url.
-  For a bundle CMake target the default is the bundle symbolic name and for a bundle file the default is the
-  bundle filename without extension. The NAME must be a valid C identifier.
-
-Bundles embedded in an executable can be installed/started using the bundle url: "embedded://${NAME}" in
-combination with `celix_bundleContext_installBundle` (C) or `celix::BundleContext::installBundle` (C++).
-All embedded bundle can be installed using the framework utils function
-`celix_framework_utils_installEmbeddedBundles` (C) or `celix::installEmbeddedBundles` (C++).
-
-## celix_target_embedded_bundles
-Embed multiple Celix bundles into a CMake target.
-
-```CMake
-celix_target_embedded_bundles(<cmake_target> [<bundle1> <bundle2> ...])
-```
-
-Example:
-```CMake
-celix_target_embedded_bundles(my_executable Celix::shell Celix::shell_tui)
-```
-
-The bundles will be embedded using their symbolic name if the bundle is a CMake target or their filename (without
-extension) if the bundle is a file (absolute path).
 
 ## celix_target_bundle_set_definition
 Add a compile-definition with a set of comma seperated bundles paths to a target and also adds the bundles as 

@@ -43,7 +43,6 @@ static celix_properties_t* celixLauncher_createConfig(const char* configFile, ce
 
 static void celixLauncher_printUsage(char* progName);
 static void celixLauncher_printProperties(celix_properties_t *embeddedProps, const char* configFile);
-static void celixLauncher_printEmbeddedBundles();
 static int celixLauncher_createBundleCache(celix_properties_t* embeddedProperties, const char* configFile);
 
 #define DEFAULT_CONFIG_FILE "config.properties"
@@ -65,75 +64,70 @@ int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], celix_propert
     return rc;
 }
 
-int celixLauncher_launchWithArgv(int argc, char *argv[], celix_properties_t* embeddedConfig, celix_framework_t** frameworkOut) {
-	celix_framework_t* framework = NULL;
+int celixLauncher_launchWithArgv(int argc,
+                                 char* argv[],
+                                 celix_properties_t* embeddedConfig,
+                                 celix_framework_t** frameworkOut) {
+    celix_framework_t* framework = NULL;
 
-	// Perform some minimal command-line option parsing...
-	char *opt = NULL;
-	char* configFile = NULL;
-	bool showProps = false;
-    bool showEmbeddedBundles = false;
+    // Perform some minimal command-line option parsing...
+    char* opt = NULL;
+    char* configFile = NULL;
+    bool showProps = false;
     bool createCache = false;
-	for (int i = 1; i < argc; ++i) {
-		opt = argv[i];
-		// Check whether the user wants some help...
-        if (strncmp("-?", opt, sizeof("-?")) == 0 || strncmp("-h", opt, sizeof("-h")) == 0 || strncmp("--help", opt, sizeof("--help")) == 0) {
+    for (int i = 1; i < argc; ++i) {
+        opt = argv[i];
+        // Check whether the user wants some help...
+        if (strncmp("-?", opt, sizeof("-?")) == 0 || strncmp("-h", opt, sizeof("-h")) == 0 ||
+            strncmp("--help", opt, sizeof("--help")) == 0) {
             celixLauncher_printUsage(argv[0]);
             celix_properties_destroy(embeddedConfig);
             return CELIX_LAUNCHER_OK_EXIT_CODE;
         } else if (strncmp("-p", opt, sizeof("-p")) == 0 || strncmp("--props", opt, sizeof("--props")) == 0) {
             showProps = true;
-        } else if (strncmp("-c", opt, sizeof("-c")) == 0 || strncmp("--create-bundle-cache", opt, sizeof("--create-bundle-cache")) == 0) {
+        } else if (strncmp("-c", opt, sizeof("-c")) == 0 ||
+                   strncmp("--create-bundle-cache", opt, sizeof("--create-bundle-cache")) == 0) {
             createCache = true;
-        } else if (strncmp("--embedded_bundles", opt, sizeof("--embedded_bundles")) == 0) {
-            showEmbeddedBundles = true;
-		} else {
+        } else {
             configFile = opt;
-		}
-	}
+        }
+    }
 
-	if (configFile == NULL) {
+    if (configFile == NULL) {
         configFile = DEFAULT_CONFIG_FILE;
-	}
+    }
 
-	if (embeddedConfig == NULL) {
+    if (embeddedConfig == NULL) {
         embeddedConfig = celix_properties_create();
-	}
+    }
 
-	if (showProps) {
+    if (showProps) {
         celixLauncher_printProperties(embeddedConfig, configFile);
-		celix_properties_destroy(embeddedConfig);
-		return CELIX_LAUNCHER_OK_EXIT_CODE;
-	}
+        celix_properties_destroy(embeddedConfig);
+        return CELIX_LAUNCHER_OK_EXIT_CODE;
+    }
 
     if (createCache) {
         return celixLauncher_createBundleCache(embeddedConfig, configFile);
     }
 
-    if (showEmbeddedBundles) {
-        celixLauncher_printEmbeddedBundles();
-        celix_properties_destroy(embeddedConfig);
-        return CELIX_LAUNCHER_OK_EXIT_CODE;
+    struct sigaction sigact;
+    memset(&sigact, 0, sizeof(sigact));
+    sigact.sa_handler = celixLauncher_shutdownFramework;
+    sigaction(SIGINT, &sigact, NULL);
+    sigaction(SIGTERM, &sigact, NULL);
+
+    memset(&sigact, 0, sizeof(sigact));
+    sigact.sa_handler = celixLauncher_ignore;
+    sigaction(SIGUSR1, &sigact, NULL);
+    sigaction(SIGUSR2, &sigact, NULL);
+
+    int rc = celixLauncher_launchWithConfigAndProps(configFile, &framework, embeddedConfig);
+    if (rc == CELIX_LAUNCHER_OK_EXIT_CODE) {
+        g_fw = framework;
+        *frameworkOut = framework;
     }
-
-	struct sigaction sigact;
-	memset(&sigact, 0, sizeof(sigact));
-	sigact.sa_handler = celixLauncher_shutdownFramework;
-	sigaction(SIGINT,  &sigact, NULL);
-	sigaction(SIGTERM, &sigact, NULL);
-
-	memset(&sigact, 0, sizeof(sigact));
-	sigact.sa_handler = celixLauncher_ignore;
-	sigaction(SIGUSR1,  &sigact, NULL);
-	sigaction(SIGUSR2,  &sigact, NULL);
-
-
-	int rc = celixLauncher_launchWithConfigAndProps(configFile, &framework, embeddedConfig);
-	if (rc == CELIX_LAUNCHER_OK_EXIT_CODE) {
-		g_fw = framework;
-		*frameworkOut = framework;
-	}
-	return rc;
+    return rc;
 }
 
 static void celixLauncher_shutdownFramework(int signal) {
@@ -241,20 +235,6 @@ static void celixLauncher_printProperties(celix_properties_t *embeddedProps, con
 		celix_properties_destroy(runtimeProps);
 	}
 	celix_properties_destroy(keys);
-}
-
-static void celixLauncher_printEmbeddedBundles() {
-    celix_array_list_t* embeddedBundles = celix_framework_utils_listEmbeddedBundles();
-    printf("Embedded bundles:\n");
-    for (int i = 0; i < celix_arrayList_size(embeddedBundles); ++i) {
-        char* bundle = celix_arrayList_get(embeddedBundles, i);
-        printf("|- %02i: %s\n", (i+1), bundle);
-        free(bundle);
-    }
-    if (celix_arrayList_size(embeddedBundles) == 0) {
-        printf("|- no embedded bundles\n");
-    }
-    celix_arrayList_destroy(embeddedBundles);
 }
 
 static int celixLauncher_createBundleCache(celix_properties_t* embeddedProperties, const char* configFile) {
