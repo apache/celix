@@ -66,10 +66,6 @@ Optional Arguments:
 - C: With this option the generated Celix launcher (if used) will be a C source. Only one of the C or CXX options can
   be provided.
   Default is CXX
-- FAT: With this option only embedded bundles are allowed to be added to the container. Ensuring a container executable
-  this is not dependent on external bundle zip files.
-  Note that this option does not change anything to the container, it just ensure that all added bundles are embedded
-  bundles.
 - USE_CONFIG: With this option the config properties are generated in a 'config.properties' instead of embedded in
   the Celix launcher.
 - GROUP: If configured the build location will be prefixed the GROUP. Default is empty.
@@ -79,14 +75,8 @@ Optional Arguments:
 - BUNDLES: A list of bundles for the Celix container to install and start.
   These bundle will be configured for run level 3. See 'celix_container_bundles' for more info.
 - INSTALL_BUNDLES: A list of bundles for the Celix container to install (but not start).
-- EMBEDDED_BUNDLES: A list of bundles to embed in the Celix container (inject as binary in the executable) and
-  to install and start for the Celix container.
-  See `celix_target_embedded_bundle` for more info about embedded bundles.
-- INSTALL_EMBEDDED_BUNDLES: A list of bundles to embed in the Celix container (inject as binary in the executable) and
-  to install (but not start) for the Celix container.
-  See `celix_target_embedded_bundle` for more info about embedded bundles.
 - PROPERTIES: A list of configuration properties, these can be used to configure the Celix framework and/or bundles.
-  Normally this will be EMBEDED_PROPERTIES, but if the USE_CONFIG option is used this will be RUNTIME_PROPERTIES.
+  Normally this will be EMBEDDED_PROPERTIES, but if the USE_CONFIG option is used this will be RUNTIME_PROPERTIES.
   See the framework library or bundles documentation about the available configuration options.
 - EMBEDDED_PROPERTIES: A list of configuration properties which will be used in the generated Celix launcher.
 - RUNTIME_PROPERTIES: A list of configuration properties which will be used in the generated config.properties file.
@@ -97,15 +87,12 @@ add_celix_container(<celix_container_name>
     [NO_COPY]
     [CXX]
     [C]
-    [FAT]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
     [DIR dir]
     [BUNDLES <bundle1> <bundle2> ...]
     [INSTALL_BUNDLES <bundle1> <bundle2> ...]
-    [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
-    [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -119,15 +106,12 @@ add_celix_container(<celix_container_name>
     [NO_COPY]
     [CXX]
     [C]
-    [FAT]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
     [DIR dir]
     [BUNDLES <bundle1> <bundle2> ...]
     [INSTALL_BUNDLES <bundle1> <bundle2> ...]
-    [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
-    [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -141,15 +125,12 @@ add_celix_container(<celix_container_name>
     [NO_COPY]
     [CXX]
     [C]
-    [FAT]
     [USE_CONFIG]
     [GROUP group_name]
     [NAME celix_container_name]
     [DIR dir]
     [BUNDLES <bundle1> <bundle2> ...]
     [INSTALL_BUNDLES <bundle1> <bundle2> ...]
-    [EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
-    [INSTALL_EMBEDDED_BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
     [EMBEDDED_PROPERTIES "prop1=val1" "prop2=val2" ...]
     [RUNTIME_PROPERTIES "prop1=val1" "prop2=val2" ...]
@@ -169,20 +150,6 @@ add_celix_container(simple_container
         CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=debug
 )
 ```
-
-```CMake
-#Creates a "fat" Celix container in ${CMAKE_BINARY_DIR}/deploy/simple_fat_container which starts 3 bundles embedded
-#in the container executable.
-add_celix_container(simple_fat_container
-    FAT
-    EMBEDDED_BUNDLES
-        Celix::shell
-        Celix::shell_tui
-        Celix::log_admin
-    PROPERTIES
-        CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=debug
-)
-```
 ]]
 function(add_celix_container)
     list(GET ARGN 0 CONTAINER_TARGET)
@@ -190,7 +157,7 @@ function(add_celix_container)
 
     set(OPTIONS COPY NO_COPY C CXX FAT USE_CONFIG)
     set(ONE_VAL_ARGS GROUP NAME LAUNCHER LAUNCHER_SRC DIR)
-    set(MULTI_VAL_ARGS BUNDLES INSTALL_BUNDLES EMBEDDED_BUNDLES INSTALL_EMBEDDED_BUNDLES PROPERTIES EMBEDDED_PROPERTIES RUNTIME_PROPERTIES)
+    set(MULTI_VAL_ARGS BUNDLES INSTALL_BUNDLES PROPERTIES EMBEDDED_PROPERTIES RUNTIME_PROPERTIES)
     cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##### Check arguments #####
@@ -370,7 +337,6 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_6" "") #bundles to deploy for the container for startup level 6
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_INSTALL" "") #bundles to install for the container
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_COPY_BUNDLES" ${CONTAINER_COPY}) #copy bundles in bundle dir or link using abs paths. NOTE this cannot be changed after a add_deploy command
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_IS_FAT" ${CONTAINER_FAT}) #Whether this is a fat container, so a container with only embedded bundles.
 
     #deploy specific
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_NAME" "${CONTAINER_NAME}")
@@ -382,9 +348,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_RUNTIME_PROPERTIES>,
     #####
 
     celix_container_bundles(${CONTAINER_TARGET} LEVEL 3 ${CONTAINER_BUNDLES})
-    celix_container_embedded_bundles(${CONTAINER_TARGET} LEVEL 3 ${CONTAINER_EMBEDDED_BUNDLES})
     celix_container_bundles(${CONTAINER_TARGET} INSTALL ${CONTAINER_INSTALL_BUNDLES})
-    celix_container_embedded_bundles(${CONTAINER_TARGET} INSTALL ${CONTAINER_INSTALL_EMBEDDED_BUNDLES})
     if (CONTAINER_USE_CONFIG)
         celix_container_runtime_properties(${CONTAINER_TARGET} ${CONTAINER_PROPERTIES})
     else ()
@@ -560,7 +524,6 @@ function(celix_container_bundles)
         get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")
     endif ()
     get_target_property(COPY ${CONTAINER_TARGET} "CONTAINER_COPY_BUNDLES")
-    get_target_property(IS_FAT ${CONTAINER_TARGET} "CONTAINER_IS_FAT")
 
     if (BUNDLES_COPY)
         set(COPY TRUE)
@@ -569,10 +532,6 @@ function(celix_container_bundles)
     endif ()
 
     foreach(BUNDLE IN ITEMS ${BUNDLES_LIST})
-        if (IS_FAT)
-            message(FATAL_ERROR "Cannot add bundle ${BUNDLE} to Celix container ${CONTAINER_TARGET}. ${CONTAINER_TARGET} is configured as a fat container, so only embedded bundles are allowed. Use EMBEDDED_BUNDLES instead of BUNDLES in the add_celix_container CMake command.")
-        endif ()
-
         if (TARGET ${BUNDLE})
            get_target_property(TARGET_TYPE ${BUNDLE} TYPE)
            if (TARGET_TYPE STREQUAL "INTERFACE_LIBRARY")
@@ -641,90 +600,6 @@ function(_celix_container_check_duplicate_bundles)
             message(WARNING "${PARTIAL_MSG} ${BUNDLE_LEVEL}.")
         endif()
     endforeach()
-endfunction()
-
-#[[
-Embed a selection of bundles to the Celix container.
-
-```CMake
-celix_container_embedded_bundles(<celix_container_target_name>
-    [LEVEL (0..6)]
-    [INSTALL]
-    bundle1
-    bundle2
-    ...
-)
-```
-
-Example:
-```CMake
-celix_container_embedded_bundles(my_container Celix::shell Celix::shell_tui)
-```
-
-The selection of bundles are embedded in the container executable using the
-`celix_target_embedded_bundle` Celix CMake command and are added to the configuration properties so that they are
-installed and started when the Celix container is executed.
-
-See `celix_target_embedded_bundle` for how bundle is embedded in a executable.
-
-The Celix framework supports 7 (0 - 6) run levels. Run levels can be used to control the start and stop order of bundles.
-Bundles in run level 0 are started first and bundles in run level 6 are started last.
-When stopping bundles in run level 6 are stopped first and bundles in run level 0 are stopped last.
-Within a run level the order of configured decides the start order; bundles added earlier are started first.
-
-Optional Arguments:
-- LEVEL: The run level for the added bundles. Default is 3.
-- INSTALL: If this option is present, the bundles will only be installed instead of the default install and start.
-           The bundles will be installed after all bundle in LEVEL 0..6 are installed and started.
-]]
-function(celix_container_embedded_bundles)
-    #0 is container TARGET
-    list(GET ARGN 0 CONTAINER_TARGET)
-    list(REMOVE_AT ARGN 0)
-
-    set(OPTIONS INSTALL)
-    set(ONE_VAL_ARGS LEVEL)
-    set(MULTI_VAL_ARGS )
-    cmake_parse_arguments(BUNDLES "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
-    set(BUNDLES_LIST ${BUNDLES_UNPARSED_ARGUMENTS})
-
-    if (NOT DEFINED BUNDLES_LEVEL)
-        set(BUNDLES_LEVEL 3)
-    endif ()
-
-    if (BUNDLES_INSTALL)
-        get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_INSTALL")
-    else () #bundle level 0,1,2,3,4,5 or 6
-        get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")
-    endif ()
-
-    foreach(BUNDLE IN ITEMS ${BUNDLES_LIST})
-        if (TARGET ${BUNDLE})
-            celix_get_bundle_symbolic_name(${BUNDLE} NAME)
-            add_celix_bundle_dependencies(${CONTAINER_TARGET} ${BUNDLE})
-        elseif (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
-            get_filename_component(RAW_NAME ${BUNDLE} NAME_WE)
-            string(MAKE_C_IDENTIFIER ${RAW_NAME} NAME)
-        else()
-            message(FATAL_ERROR "Cannot add bundle `${BUNDLE}` to container target ${CONTAINER_TARGET}. Argument is not a path or cmake target")
-        endif ()
-        celix_target_embedded_bundle(${CONTAINER_TARGET} BUNDLE ${BUNDLE} NAME ${NAME})
-        set(BUNDLE_TO_ADD "embedded://${NAME}")
-
-        list(FIND BUNDLES ${BUNDLE_TO_ADD} INDEX)
-        if (INDEX EQUAL -1) #Note this ignores the same bundle for the same level
-            _celix_container_check_duplicate_bundles(${CONTAINER_TARGET} ${BUNDLE_TO_ADD} ${BUNDLES_LEVEL})
-            list(APPEND BUNDLES ${BUNDLE_TO_ADD})
-        endif ()
-    endforeach()
-
-
-
-    if (BUNDLES_INSTALL)
-        set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_INSTALL" "${BUNDLES}")
-    else () #bundle level 0,1,2,3,4,5 or 6
-        set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}" "${BUNDLES}")
-    endif ()
 endfunction()
 
 function(deploy_properties)
