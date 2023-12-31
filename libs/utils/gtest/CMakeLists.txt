@@ -92,12 +92,24 @@ setup_target_for_coverage(test_utils SCAN_DIR ..)
 
 
 if (EI_TESTS)
+    #Note testing celix err separated, otherwise celix err tss can already be initialized by another util function
+    add_executable(test_celix_err_with_ei
+            src/ErrErrorInjectionTestSuite.cc
+    )
+    target_link_libraries(test_celix_err_with_ei PRIVATE
+            utils_cut
+            Celix::malloc_ei
+            Celix::threads_ei
+            GTest::gtest GTest::gtest_main
+    )
+    add_test(NAME test_celix_err_with_ei COMMAND test_celix_err_with_ei)
+    setup_target_for_coverage(test_celix_err_with_ei SCAN_DIR ..)
+
     add_executable(test_utils_with_ei
             src/FileUtilsErrorInjectionTestSuite.cc
             src/ConvertUtilsErrorInjectionTestSuite.cc
             src/IpUtilsErrorInjectionTestSuite.cc
             src/ArrayListErrorInjectionTestSuite.cc
-            src/ErrErrorInjectionTestSuite.cc
             src/PropertiesErrorInjectionTestSuite.cc
             src/VersionErrorInjectionTestSuite.cc
             src/HashMapErrorInjectionTestSuite.cc
