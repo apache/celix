@@ -677,7 +677,7 @@ size_t serviceRegistry_nrOfHooks(service_registry_pt registry) {
 }
 
 static celix_status_t serviceRegistry_getUsingBundles(service_registry_pt registry, service_registration_pt registration, celix_array_list_t** out) {
-    celix_status_t status;
+    celix_status_t status = CELIX_SUCCESS;
     celix_array_list_t* bundles = NULL;
     hash_map_iterator_pt iter;
 

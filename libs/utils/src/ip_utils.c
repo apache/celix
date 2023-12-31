@@ -91,7 +91,7 @@ char* celix_utils_convertUintToIp(uint32_t ip) {
     ip -= ipPart3 * (int64_t)pow(256, 1);
     int64_t ipPart4 = ip / (int64_t)pow(256, 0);
 
-    snprintf(ipStr, 16, "%li.%li.%li.%li", ipPart1, ipPart2, ipPart3, ipPart4);
+    snprintf(ipStr, 16, "%i.%i.%i.%i", (int)ipPart1, (int)ipPart2, (int)ipPart3, (int)ipPart4);
 
     return ipStr;
 }
