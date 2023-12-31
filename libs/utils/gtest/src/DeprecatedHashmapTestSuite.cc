@@ -102,10 +102,10 @@ TEST_F(DeprecatedHashmapTestSuite, create){
     EXPECT_TRUE(defaultMap != nullptr);
     EXPECT_EQ(0, defaultMap->size);
     // This fails on windows due to dllimport providing a proxy for exported functions.
-    EXPECT_EQ(hashMap_equals, defaultMap->equalsKey);
-    EXPECT_EQ(hashMap_equals, defaultMap->equalsValue);
-    EXPECT_EQ(hashMap_hashCode, defaultMap->hashKey);
-    EXPECT_EQ(hashMap_hashCode, defaultMap->hashValue);
+    EXPECT_TRUE(hashMap_equals == defaultMap->equalsKey);
+    EXPECT_TRUE(hashMap_equals == defaultMap->equalsValue);
+    EXPECT_TRUE(hashMap_hashCode == defaultMap->hashKey);
+    EXPECT_TRUE(hashMap_hashCode == defaultMap->hashValue);
 }
 
 TEST_F(DeprecatedHashmapTestSuite, size){
