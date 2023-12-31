@@ -32,7 +32,7 @@
 #include "service_reference_private.h"
 #include "framework_private.h"
 
-static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, properties_pt dictionary, long reservedId, enum celix_service_type svcType, service_registration_pt *registration);
+static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, celix_properties_t* dictionary, long reservedId, enum celix_service_type svcType, service_registration_pt *registration);
 static celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, bundle_pt bundle, service_registration_pt registration);
 static bool serviceRegistry_tryRemoveServiceReference(service_registry_pt registry, service_reference_pt ref);
 static celix_status_t serviceRegistry_addHooks(service_registry_pt registry, const char* serviceName, const void *serviceObject, service_registration_pt registration);
@@ -169,15 +169,15 @@ celix_status_t serviceRegistry_getRegisteredServices(service_registry_pt registr
     return status;
 }
 
-celix_status_t serviceRegistry_registerService(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void* serviceObject, properties_pt dictionary, service_registration_pt *registration) {
+celix_status_t serviceRegistry_registerService(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void* serviceObject, celix_properties_t* dictionary, service_registration_pt *registration) {
     return serviceRegistry_registerServiceInternal(registry, bundle, serviceName, serviceObject, dictionary, 0 /*TODO*/, CELIX_PLAIN_SERVICE, registration);
 }
 
-celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt registry, bundle_pt bundle, const char* serviceName, service_factory_pt factory, properties_pt dictionary, service_registration_pt *registration) {
+celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt registry, bundle_pt bundle, const char* serviceName, service_factory_pt factory, celix_properties_t* dictionary, service_registration_pt *registration) {
     return serviceRegistry_registerServiceInternal(registry, bundle, serviceName, (const void *) factory, dictionary, 0 /*TODO*/, CELIX_DEPRECATED_FACTORY_SERVICE, registration);
 }
 
-static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, properties_pt dictionary, long reservedId, enum celix_service_type svcType, service_registration_pt *registration) {
+static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, celix_properties_t* dictionary, long reservedId, enum celix_service_type svcType, service_registration_pt *registration) {
     array_list_pt regs;
     long svcId = reservedId > 0 ? reservedId : celix_serviceRegistry_nextSvcId(registry);
 
@@ -341,7 +341,7 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
 		unsigned int regIdx;
 		for (regIdx = 0; (regs != NULL) && regIdx < arrayList_size(regs); regIdx++) {
 			service_registration_pt registration = (service_registration_pt) arrayList_get(regs, regIdx);
-			properties_pt props = NULL;
+			celix_properties_t* props = NULL;
 
 			status = serviceRegistration_getProperties(registration, &props);
 			if (status == CELIX_SUCCESS) {
@@ -1000,7 +1000,7 @@ celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t
         celix_array_list_t *regs = (array_list_pt) hashMapIterator_nextValue(&iter);
         for (int regIdx = 0; (regs != NULL) && regIdx < celix_arrayList_size(regs); ++regIdx) {
             service_registration_pt registration = celix_arrayList_get(regs, regIdx);
-            properties_pt props = NULL;
+            celix_properties_t* props = NULL;
             serviceRegistration_getProperties(registration, &props);
             if (celix_filter_match(filter, props)) {
                 long svcId = serviceRegistration_getServiceId(registration);

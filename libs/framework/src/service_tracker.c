@@ -41,7 +41,7 @@ static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_trac
 static celix_status_t serviceTracker_invokeAddingService(service_tracker_t *tracker, service_reference_pt ref, void **svcOut);
 static celix_status_t serviceTracker_invokeAddService(service_tracker_t *tracker, celix_tracked_entry_t *tracked);
 static celix_status_t serviceTracker_invokeRemovingService(service_tracker_t *tracker, celix_tracked_entry_t *tracked);
-static void serviceTracker_checkAndInvokeSetService(void *handle, void *highestSvc, const properties_t *props, const bundle_t *bnd);
+static void serviceTracker_checkAndInvokeSetService(void *handle, void *highestSvc, const celix_properties_t *props, const bundle_t *bnd);
 
 static void serviceTracker_serviceChanged(void *handle, celix_service_event_t *event);
 
@@ -400,7 +400,7 @@ static celix_status_t serviceTracker_track(service_tracker_t* tracker, service_r
             assert(reference != NULL);
 
             service_registration_t *reg = NULL;
-            properties_t *props = NULL;
+            celix_properties_t *props = NULL;
             bundle_t *bnd = NULL;
 
             serviceReference_getBundle(reference, &bnd);

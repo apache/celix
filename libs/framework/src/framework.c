@@ -371,7 +371,7 @@ celix_status_t framework_destroy(framework_pt framework) {
 
     celix_frameworkLogger_destroy(framework->logger);
 
-    properties_destroy(framework->configurationMap);
+    celix_properties_destroy(framework->configurationMap);
 
     free(framework->dispatcher.eventQueue);
     free(framework);
@@ -778,7 +778,7 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
 	return status;
 }
 
-celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt *registration, long bndId, const char* serviceName, service_factory_pt factory, properties_pt properties) {
+celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt *registration, long bndId, const char* serviceName, service_factory_pt factory,  celix_properties_t* properties) {
     celix_status_t status = CELIX_SUCCESS;
     char *error = NULL;
     if (serviceName == NULL || factory == NULL) {
@@ -816,11 +816,11 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
             service_reference_pt ref = (service_reference_pt) arrayList_get(*references, refIdx);
             service_registration_pt reg = NULL;
             const char* serviceNameObjectClass;
-            properties_pt props = NULL;
+            celix_properties_t* props = NULL;
             status = CELIX_DO_IF(status, serviceReference_getServiceRegistration(ref, &reg));
             status = CELIX_DO_IF(status, serviceRegistration_getProperties(reg, &props));
             if (status == CELIX_SUCCESS) {
-                serviceNameObjectClass = properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME);
+                serviceNameObjectClass = celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_NAME, NULL);
                 if (!serviceReference_isAssignableTo(ref, bundle, serviceNameObjectClass)) {
                     serviceReference_release(ref, NULL);
                     arrayList_remove(*references, refIdx);
