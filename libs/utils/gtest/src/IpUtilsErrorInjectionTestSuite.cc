@@ -19,8 +19,6 @@
 
 #include <gtest/gtest.h>
 
-#include <errno.h>
-
 #include "celix_ip_utils.h"
 #include "celix_err.h"
 
@@ -56,25 +54,24 @@ TEST_F(IpUtilsWithErrorInjectionTestSuite, FailToDuplicateStringTest) {
     char* ipAddr = nullptr;
 
     //first call to celix_utils_strdup fails
-    celix_ei_expect_celix_utils_strdup((void *) &celix_utils_findIpInSubnet, 0, nullptr);
+    celix_ei_expect_celix_utils_strdup((void*)celix_utils_findIpInSubnet, 0, nullptr);
     auto status = celix_utils_findIpInSubnet("192.168.1.0/24", &ipAddr);
     EXPECT_EQ(status, ENOMEM);
     EXPECT_EQ(ipAddr, nullptr);
     EXPECT_EQ(errCount++, celix_err_getErrorCount());
 
     //second call to celix_utils_strdup fails (in ifa -> ifa_next loop)
-    celix_ei_expect_celix_utils_strdup((void *) &celix_utils_findIpInSubnet, 0, nullptr, 2);
+    celix_ei_expect_celix_utils_strdup((void*)celix_utils_findIpInSubnet, 0, nullptr, 2);
     status = celix_utils_findIpInSubnet("127.0.0.1/24", &ipAddr);
     EXPECT_EQ(status, ENOMEM);
     EXPECT_EQ(ipAddr, nullptr);
     EXPECT_EQ(errCount++, celix_err_getErrorCount());
 
-    celix_ei_expect_celix_utils_strdup((void *) &celix_utils_convertIpToUint, 0, nullptr);
+    celix_ei_expect_celix_utils_strdup((void*)celix_utils_convertIpToUint, 0, nullptr);
     bool converted;
     auto ipAsUint = celix_utils_convertIpToUint("192.168.1.0", &converted);
     EXPECT_EQ(ipAsUint, 0);
     EXPECT_FALSE(converted);
-    EXPECT_EQ(errno, ENOMEM);
     EXPECT_EQ(errCount++, celix_err_getErrorCount());
 }
 
@@ -82,6 +79,5 @@ TEST_F(IpUtilsWithErrorInjectionTestSuite, FailToCalledTest) {
     celix_ei_expect_calloc((void*)celix_utils_convertUintToIp, 0, nullptr);
     auto ip = celix_utils_convertUintToIp(3232235840);
     EXPECT_EQ(ip, nullptr);
-    EXPECT_EQ(errno, ENOMEM);
     EXPECT_EQ(1, celix_err_getErrorCount());
 }

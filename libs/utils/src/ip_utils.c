@@ -209,6 +209,7 @@ celix_status_t celix_utils_findIpInSubnet(const char* subnetCidrNotation, char**
         if (ifIpAsUint >= ipRangeStart && ifIpAsUint <= ipRangeStop && inputPrefix >= ifPrefix) {
             char* ip = celix_utils_strdup(if_addr);
             if (!ip) {
+                freeifaddrs(ifap);
                 celix_err_push("Failed to duplicate IP address");
                 return CELIX_ENOMEM;
             }
@@ -216,5 +217,6 @@ celix_status_t celix_utils_findIpInSubnet(const char* subnetCidrNotation, char**
             break;
         }
     }
+    freeifaddrs(ifap);
     return CELIX_SUCCESS;
 }
