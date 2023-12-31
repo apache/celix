@@ -326,6 +326,13 @@ TEST_F(DynTypeTests, ComplexTypeMissingClosingBrace) {
     ASSERT_STREQ("Error parsing complex type, expected '}'", celix_err_popLastError());
 }
 
+TEST_F(DynTypeTests, ComplexTypeWithMoreNamesThanFields) {
+    dyn_type *type = NULL;
+    auto rc = dynType_parseWithStr(R"({II a b c})", nullptr, nullptr, &type);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Error parsing complex type, expected '}'", celix_err_popLastError());
+}
+
 TEST_F(DynTypeTests, SchemaEndsWithoutNullTerminator) {
     dyn_type *type = NULL;
     //ends with '-'
@@ -365,8 +372,14 @@ TEST_F(DynTypeTests, MetaInfoMissingValue) {
 
 TEST_F(DynTypeTests, ParseNestedTypeFailed) {
     dyn_type *type = NULL;
+    int rc;
+    //missing name
+    rc = dynType_parseWithStr(R"(T={DD a b};)", nullptr, nullptr, &type);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Parsed empty name", celix_err_popLastError());
+
     //missing '='
-    auto rc = dynType_parseWithStr(R"(Ttype)", nullptr, nullptr, &type);
+    rc = dynType_parseWithStr(R"(Ttype)", nullptr, nullptr, &type);
     ASSERT_EQ(3, rc);
     celix_err_printErrors(stderr, nullptr, nullptr);
 
@@ -383,8 +396,13 @@ TEST_F(DynTypeTests, ParseNestedTypeFailed) {
 
 TEST_F(DynTypeTests, ParseReferenceFailed) {
     dyn_type *type = NULL;
+    int rc;
+    // missing name
+    rc = dynType_parseWithStr(R"(Ttype={DD a b};l;)", nullptr, nullptr, &type);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Parsed empty name", celix_err_popLastError());
     //missing ';'
-    auto rc = dynType_parseWithStr(R"(Ttype={DD a b};ltype)", nullptr, nullptr, &type);
+    rc = dynType_parseWithStr(R"(Ttype={DD a b};ltype)", nullptr, nullptr, &type);
     ASSERT_EQ(3, rc);
     celix_err_printErrors(stderr, nullptr, nullptr);
     //missing ';'

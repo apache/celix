@@ -427,10 +427,7 @@ static void dynType_clear(dyn_type* type) {
     while (entry != NULL) {
         tmp = entry;
         entry = TAILQ_NEXT(entry, entries);
-        if (tmp->type != NULL) {
-            dynType_destroy(tmp->type);
-            tmp->type = NULL;
-        }
+        dynType_destroy(tmp->type);
         free(tmp);
     }
 
@@ -499,21 +496,19 @@ static void dynType_clearTypedPointer(dyn_type* type) {
 }
 
 int dynType_alloc(const dyn_type* type, void** bufLoc) {
-    int status = OK;
+    const dyn_type* current = type;
 
-    if (type->type == DYN_TYPE_REF) {
-        status = dynType_alloc(type->ref.ref, bufLoc);
-    } else {
-        void* inst = calloc(1, type->ffiType->size);
-        if (inst != NULL) {
-            *bufLoc = inst;
-        } else {
-            status = MEM_ERROR;
-            celix_err_pushf("Error allocating memory for type '%c'", type->descriptor);
-        }
+    while (current->type == DYN_TYPE_REF) {
+        current = current->ref.ref;
     }
+    void* inst = calloc(1, current->ffiType->size);
+    if (inst == NULL) {
+        celix_err_pushf("Error allocating memory for type '%c'", current->descriptor);
+        return MEM_ERROR;
+    }
+    *bufLoc = inst;
 
-    return status;
+    return OK;
 }
 
 

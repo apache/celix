@@ -108,3 +108,15 @@ TEST_F(DynTypeErrorInjectionTestSuite, ParseEnumTypeErrors) {
     ASSERT_NE(0, rc);
     celix_err_printErrors(stderr, nullptr, nullptr);
 }
+
+TEST_F(DynTypeErrorInjectionTestSuite, AllocateErrors) {
+    celix_autoptr(dyn_type) type = NULL;
+    int rc = 0;
+    rc = dynType_parseWithStr("#v1=0;#v2=1;E", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    celix_ei_expect_calloc((void*)dynType_alloc, 0, nullptr);
+    void* buf = nullptr;
+    rc = dynType_alloc(type, &buf);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Error allocating memory for type 'E'", celix_err_popLastError());
+}
