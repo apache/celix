@@ -93,7 +93,6 @@ if (EI_TESTS)
     add_executable(test_utils_with_ei
             src/FileUtilsErrorInjectionTestSuite.cc
             src/ConvertUtilsErrorInjectionTestSuite.cc
-            src/IpUtilsErrorInjectionTestSuite.cc
             src/ArrayListErrorInjectionTestSuite.cc
             src/ErrErrorInjectionTestSuite.cc
             src/PropertiesErrorInjectionTestSuite.cc

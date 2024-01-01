@@ -40,7 +40,6 @@ if (UTILS)
             src/version_range.c
             src/properties.c
             src/utils.c
-            src/ip_utils.c
             src/filter.c
             src/celix_log_level.c
             src/celix_log_utils.c
@@ -156,10 +155,6 @@ if (UTILS)
             add_executable(linked_list_test private/test/linked_list_test.cpp)
             target_include_directories(linked_list_test PRIVATE include_deprecated)
             target_link_libraries(linked_list_test utils_cut CppUTest pthread)
-
-            add_executable(ip_utils_test private/test/ip_utils_test.cpp)
-            target_include_directories(ip_utils_test PRIVATE include_deprecated)
-            target_link_libraries(ip_utils_test CppUTest  utils_cut pthread)
 
             add_test(NAME run_array_list_test COMMAND array_list_test)
             add_test(NAME run_hash_map_test COMMAND hash_map_test)
