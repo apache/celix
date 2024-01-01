@@ -1044,8 +1044,8 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutHostEntryToCache) {
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, GetAddrInfo) {
+    ExpectMsgOutPut("Endpoint added: %s.");
     TestGetAddrInfo([](){
-        ExpectMsgOutPut("Endpoint added: %s.");
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
