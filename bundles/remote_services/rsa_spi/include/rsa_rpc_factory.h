@@ -33,6 +33,12 @@ extern "C" {
  */
 #define RSA_RPC_TYPE_KEY "celix.remote.admin.rpc_type"
 
+/**
+ * @brief The prefix for RPC type value, and the RPC type value belongs to `service.exported.configs`.
+ * A whole RPC type value as follows: celix.remote.admin.rpc_type.json,celix.remote.admin.rpc_type.avpr.
+ */
+#define RSA_RPC_TYPE_PREFIX "celix.remote.admin.rpc_type."
+
 #define RSA_RPC_FACTORY_NAME "rsa_rpc_factory"
 #define RSA_RPC_FACTORY_VERSION "1.0.0"
 #define RSA_RPC_FACTORY_USE_RANGE "[1.0.0,2.0.0)"

@@ -1,0 +1,9 @@
+:header
+type=interface
+name=MyBundle
+version=1.0.0
+:annotations
+classname="org.apache.celix.test.MyBundle
+:types
+:methods
+add(DD)D=add(#am=handle;PDD#am=pre;*D)N

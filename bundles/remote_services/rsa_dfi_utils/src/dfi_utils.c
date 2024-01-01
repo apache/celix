@@ -80,33 +80,6 @@ static celix_status_t dfi_findFileForBundle(const celix_bundle_t *bundle, const 
     return status;
 }
 
-static celix_status_t dfi_findAvprFileForBundle(const celix_bundle_t *bundle, const char* fileName, FILE **out) {
-    celix_status_t status = CELIX_SUCCESS;
-    char* path = celix_bundle_getEntry(bundle, fileName);
-
-    char metaInfFileName[512];
-
-    if (path == NULL) {
-        snprintf(metaInfFileName, sizeof(metaInfFileName), "META-INF/avpr/%s", fileName);
-        path = celix_bundle_getEntry(bundle, metaInfFileName);
-    }
-
-    if (path != NULL) {
-        FILE *df = fopen(path, "r");
-        if (df == NULL)  {
-            status = CELIX_FILE_IO_EXCEPTION;
-        }
-        else {
-            *out = df;
-        }
-    } else {
-        status = CELIX_FILE_IO_EXCEPTION;
-    }
-
-    free(path);
-    return status;
-}
-
 celix_status_t dfi_findDescriptor(celix_bundle_context_t *context, const celix_bundle_t *bundle, const char *name, FILE **out) {
     char fileName[128];
     snprintf(fileName, 128, "%s.descriptor", name);
@@ -121,23 +94,6 @@ celix_status_t dfi_findDescriptor(celix_bundle_context_t *context, const celix_b
         status = dfi_findFileForBundle(bundle, fileName, out);
     }
 
-
-    return status;
-}
-
-celix_status_t dfi_findAvprDescriptor(celix_bundle_context_t *context, const celix_bundle_t *bundle, const char *name, FILE **out) {
-    char fileName[128];
-    snprintf(fileName, 128, "%s.avpr", name);
-    long id = celix_bundle_getId(bundle);
-
-    celix_status_t status;
-    if (id == 0) {
-        //framework bundle
-        status = dfi_findFileForFramework(context, fileName, out);
-    } else {
-        //normal bundle
-        status = dfi_findAvprFileForBundle(bundle, fileName, out);
-    }
 
     return status;
 }
@@ -163,19 +119,7 @@ celix_status_t dfi_findAndParseInterfaceDescriptor(celix_log_helper_t *logHelper
         return status;
     }
 
-    status = dfi_findAvprDescriptor(ctx, svcOwner, name, &descriptor);
-    if (status == CELIX_SUCCESS && descriptor != NULL) {
-        *intfOut = dynInterface_parseAvpr(descriptor);
-        fclose(descriptor);
-        if (*intfOut == NULL) {
-            celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
-            celix_logHelper_error(logHelper, "Cannot parse avpr descriptor for '%s'", name);
-            status = CELIX_BUNDLE_EXCEPTION;
-        }
-        return status;
-    }
-
-    celix_logHelper_error(logHelper, "Cannot find/open any valid (avpr) descriptor files for '%s'", name);
+    celix_logHelper_error(logHelper, "Cannot find/open any valid descriptor files for '%s'", name);
     return CELIX_BUNDLE_EXCEPTION;
 }
 

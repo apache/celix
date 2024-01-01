@@ -88,13 +88,15 @@ int dynType_parse(FILE *descriptorStream, const char *name, struct types_head *r
 
 int dynType_parseWithStr(const char *descriptor, const char *name, struct types_head *refTypes, dyn_type **type) {
     int status = OK;
-    FILE *stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
+    FILE *stream = fmemopen((char *)descriptor, strlen(descriptor) + 1, "r");
     if (stream != NULL) {
         status = dynType_parseWithStream(stream, name, NULL, refTypes, type);
         if (status == OK) {
             int c = fgetc(stream);
             if (c != '\0' && c != EOF) {
                 status = PARSE_ERROR;
+                dynType_destroy(*type);
+                *type = NULL;
                 LOG_ERROR("Expected EOF got %c", c);
             }
         } 
@@ -591,12 +593,16 @@ int dynType_alloc(dyn_type *type, void **bufLoc) {
 
 int dynType_complex_indexForName(dyn_type *type, const char *name) {
     assert(type->type == DYN_TYPE_COMPLEX);
+    if (name == NULL) {
+        return -1;
+    }
     int i = 0;
     int index = -1;
     struct complex_type_entry *entry = NULL;
     TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-        if (strcmp(name, entry->name) == 0) {
+        if (entry->name != NULL && strcmp(name, entry->name) == 0) {
             index = i;
+            break;
         }
         i +=1;
     }
@@ -662,7 +668,7 @@ int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap) {
     struct generic_sequence *seq = inst;
     if (seq != NULL) {
         size_t size = dynType_size(type->sequence.itemType);
-        seq->buf = malloc(cap * size);
+        seq->buf = calloc(cap, size);
         if (seq->buf != NULL) {
             seq->cap = cap;
             seq->len = 0;

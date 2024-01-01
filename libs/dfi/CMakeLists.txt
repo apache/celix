@@ -24,16 +24,12 @@ if (CELIX_DFI)
 			src/dyn_common.c
 			src/dyn_type_common.c
 			src/dyn_type.c
-			src/dyn_avpr_type.c
-			src/dyn_function.c
-			src/dyn_avpr_function.c
+            src/dyn_function.c
 			src/dyn_interface.c
-			src/dyn_avpr_interface.c
 			src/dyn_message.c
 			src/json_serializer.c
 			src/json_rpc.c
-			src/avrobin_serializer.c
-			)
+	)
 
 	add_library(dfi SHARED ${SOURCES})
 	target_include_directories(dfi PUBLIC

@@ -1,0 +1,9 @@
+:header
+type=interface
+name=example6
+version=1.0.0
+:annotations
+:types
+CptData={Dt[D#v1=1;#v2=2;E d t s e}
+:methods
+compatibility=cpt(#am=handle;PLCptData;#am=out;*LCptData;)N

@@ -18,18 +18,13 @@
 
 add_executable(test_dfi
 		src/dyn_example_functions.c
-		src/dyn_avpr_tests.cpp
-		src/dyn_type_tests.cpp
+        src/dyn_type_tests.cpp
 		src/dyn_function_tests.cpp
 		src/dyn_closure_tests.cpp
-		src/dyn_avpr_function_tests.cpp
 		src/dyn_interface_tests.cpp
-		src/dyn_avpr_interface_tests.cpp
 		src/dyn_message_tests.cpp
 		src/json_serializer_tests.cpp
 		src/json_rpc_tests.cpp
-		src/json_rpc_avpr_tests.cpp
-		src/avrobin_serialization_tests.cpp
 )
 
 
@@ -37,7 +32,6 @@ target_include_directories(test_dfi PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../src)
 target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils libffi::libffi jansson::jansson GTest::gtest GTest::gtest_main)
 celix_deprecated_utils_headers(test_dfi)
 
-file(COPY ${CMAKE_CURRENT_LIST_DIR}/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${CMAKE_CURRENT_LIST_DIR}/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 add_test(NAME run_test_dfi COMMAND test_dfi)

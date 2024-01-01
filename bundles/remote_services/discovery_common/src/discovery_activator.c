@@ -106,7 +106,7 @@ celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context
     int rc = asprintf(&scope, "(&(%s=*)(%s=%s))", CELIX_FRAMEWORK_SERVICE_NAME, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
     status = rc < 0 ? CELIX_ENOMEM : CELIX_SUCCESS;
 
-    celix_properties_t *props = NULL;
+    celix_autoptr(celix_properties_t) props = NULL;
     if (status == CELIX_SUCCESS) {
         celix_logHelper_debug(activator->loghelper, "using scope %s.", scope);
 
@@ -131,16 +131,14 @@ celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context
 			endpointListener->endpointAdded = discovery_endpointAdded;
 			endpointListener->endpointRemoved = discovery_endpointRemoved;
 
-			status = bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props, &activator->endpointListenerService);
+			status = bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener,
+                                                   celix_steal_ptr(props), &activator->endpointListenerService);
 
 			if (status == CELIX_SUCCESS) {
 				activator->endpointListener = endpointListener;
 			}
 		}
-	} else {
-        celix_properties_destroy(props);
-    }
-
+	}
 	// We can release the scope, as celix_properties_set makes a copy of the key & value...
 	free(scope);
 

@@ -351,3 +351,21 @@ TEST_F(FrameworkFactoryTestSuite, LaunchFrameworkWithConfigTest) {
     framework_waitForStop(fw);
     framework_destroy(fw);
 }
+
+TEST_F(FrameworkFactoryTestSuite, BundleWithErrMessageTest) {
+    // Given a framework
+    auto* fw = celix_frameworkFactory_createFramework(nullptr);
+    ASSERT_TRUE(fw != nullptr);
+
+    // When installing a bundle with an activator that pushes an error message to celix err and returns an error
+    // during stop if there is still a message in the celix err queue.
+    long bndId = celix_framework_installBundle(fw, CELIX_ERR_TEST_BUNDLE, true);
+
+    // Then the bundle installs
+    EXPECT_GT(bndId, CELIX_FRAMEWORK_BUNDLE_ID);
+
+    // And the bundle stops without an error return code, because the celix err message count is 0 -> error is printed
+    // by the framework
+    bool stopped = celix_framework_stopBundle(fw, bndId);
+    EXPECT_TRUE(stopped);
+}

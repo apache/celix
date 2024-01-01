@@ -32,6 +32,7 @@
 #include "celix_file_utils.h"
 #include "celix_framework_utils_private.h"
 #include "celix_utils_api.h"
+#include "celix_log.h"
 
 #include "bundle_archive_private.h"
 #include "bundle_revision_private.h"
@@ -65,6 +66,7 @@ static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_arch
     celix_properties_t* bundleStateProperties = NULL;
     bundleStateProperties = celix_properties_load(archive->savedBundleStatePropertiesPath);
     if (bundleStateProperties == NULL) {
+        celix_framework_logTssErrors(archive->fw->logger, CELIX_LOG_LEVEL_ERROR);
         bundleStateProperties = celix_properties_create();
     }
     if (bundleStateProperties == NULL) {

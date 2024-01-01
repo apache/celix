@@ -32,6 +32,7 @@ extern "C" {
 #include "dyn_common.h"
 #include "dyn_type.h"
 #include "json_serializer.h"
+#include "celix_err.h"
 
 static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
 	va_list ap;
@@ -46,60 +47,6 @@ static void stdLog(void*, int level, const char *file, int line, const char *msg
 /*********** example 1 ************************/
 /** struct type ******************************/
 const char *example1_descriptor = "{DJISF a b c d e}";
-
-static const char *avpr_example1_descriptor = "{\
-                \"protocol\" : \"types\", \
-                \"namespace\" : \"test.ns\", \
-                \"version\" : \"1.0.0\", \
-                \"types\" : [ { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Double\", \
-                    \"size\" : 8, \
-                    \"alias\" : \"double\" \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Slong\", \
-                    \"size\" : 8, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Sint\", \
-                    \"size\" : 4, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Short\", \
-                    \"size\" : 2, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Float\", \
-                    \"size\" : 4, \
-                    \"alias\" : \"float\" \
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"structA\", \
-                    \"fields\" : [{\
-                        \"name\" : \"a\", \
-                        \"type\" : \"Double\" \
-                    }, {\
-                        \"name\" : \"b\", \
-                        \"type\" : \"Slong\" \
-                    }, {\
-                        \"name\" : \"c\", \
-                        \"type\" : \"Sint\" \
-                    }, {\
-                        \"name\" : \"d\", \
-                        \"type\" : \"Short\" \
-                    }, {\
-                        \"name\" : \"e\", \
-                        \"type\" : \"Float\" \
-                    }]\
-                }], \
-                \"messages\" : {} \
-            }";
-
-static const char *avpr_example1_fqn = "test.ns.structA";
 
 const char *example1_input = "{ \
     \"a\" : 1.0, \
@@ -128,58 +75,6 @@ static void check_example1(void *data) {
 
 /*********** example 2 ************************/
 const char *example2_descriptor = "{BJJDFD byte long1 long2 double1 float1 double2}";
-
-static const char *avpr_example2_descriptor = "{\
-                \"protocol\" : \"types\", \
-                \"namespace\" : \"test.ns\", \
-                \"version\" : \"1.0.0\", \
-                \"types\" : [ { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Byte\", \
-                    \"size\" : 1, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Slong\", \
-                    \"size\" : 8, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Double\", \
-                    \"size\" : 8, \
-                    \"alias\" : \"double\" \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Float\", \
-                    \"size\" : 4, \
-                    \"alias\" : \"float\" \
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"structB\", \
-                    \"fields\" : [{\
-                        \"name\" : \"byte\", \
-                        \"type\" : \"Byte\" \
-                    }, {\
-                        \"name\" : \"long1\", \
-                        \"type\" : \"Slong\" \
-                    }, {\
-                        \"name\" : \"long2\", \
-                        \"type\" : \"Slong\" \
-                    }, {\
-                        \"name\" : \"double1\", \
-                        \"type\" : \"Double\" \
-                    }, {\
-                        \"name\" : \"float1\", \
-                        \"type\" : \"Float\" \
-                    }, {\
-                        \"name\" : \"double2\", \
-                        \"type\" : \"Double\" \
-                    }]\
-                }], \
-                \"messages\" : {} \
-            }";
-
-static const char *avpr_example2_fqn = "test.ns.structB";
 
 const char *example2_input = "{ \
     \"byte\" : 42, \
@@ -214,32 +109,6 @@ static void check_example2(void *data) {
 /** sequence with a simple type **************/
 const char *example3_descriptor = "{[I numbers}";
 
-static const char *avpr_example3_descriptor = "{\
-                \"protocol\" : \"types\", \
-                \"namespace\" : \"test.ns\", \
-                \"version\" : \"1.0.0\", \
-                \"types\" : [ { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Sint\", \
-                    \"size\" : 4, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"structC\", \
-                    \"fields\" : [{\
-                        \"name\" : \"numbers\", \
-                        \"type\" : {\
-                            \"type\" : \"array\", \
-                            \"items\" : \"Sint\", \
-                            \"static\" : 3 \
-                        }\
-                    }]\
-                }], \
-                \"messages\" : {} \
-            }";
-
-static const char *avpr_example3_fqn = "test.ns.structC";
-
 const char *example3_input = "{ \
     \"numbers\" : [22,32,42] \
 }";
@@ -263,50 +132,6 @@ static void check_example3(void *data) {
 /*********** example 4 ************************/
 /** structs within a struct (by reference)*******/
 const char *example4_descriptor = "{{IDD index val1 val2}{IDD index val1 val2} left right}";
-
-static const char *avpr_example4_descriptor = "{\
-                \"protocol\" : \"types\", \
-                \"namespace\" : \"test.ns\", \
-                \"version\" : \"1.0.0\", \
-                \"types\" : [ { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Int32\", \
-                    \"size\" : 4, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Double\", \
-                    \"size\" : 8, \
-                    \"alias\" : \"double\" \
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"leaf\", \
-                    \"namespace\" : \"details\", \
-                    \"fields\" : [{\
-                        \"name\" : \"index\", \
-                        \"type\" : \"test.ns.Int32\" \
-                    }, {\
-                        \"name\" : \"val1\", \
-                        \"type\" : \"test.ns.Double\" \
-                    }, {\
-                        \"name\" : \"val2\", \
-                        \"type\" : \"test.ns.Double\" \
-                    }]\
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"structD\", \
-                    \"fields\" : [{\
-                        \"name\" : \"left\", \
-                        \"type\" : \"details.leaf\" \
-                    }, {\
-                        \"name\" : \"right\", \
-                        \"type\" : \"details.leaf\" \
-                    }]\
-                }], \
-                \"messages\" : {} \
-            }";
-
-static const char *avpr_example4_fqn = "test.ns.structD";
 
 static const char *example4_input =  "{ \
     \"left\" : {\"index\":1, \"val1\":1.0, \"val2\":2.0 }, \
@@ -338,60 +163,6 @@ static void check_example4(void *data) {
 /*********** example 5 ************************/
 /** structs within a struct (by reference)*******/
 const char *example5_descriptor = "Tleaf={ts name age};Tnode={Lnode;Lnode;Lleaf; left right value};{Lnode; head}";
-
-static const char *avpr_example5_descriptor = "{\
-                \"protocol\" : \"types\", \
-                \"namespace\" : \"test.ns\", \
-                \"version\" : \"1.0.0\", \
-                \"types\" : [ { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Char\", \
-                    \"size\" : 2 \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Str\", \
-                    \"size\" : 8, \
-                    \"alias\" : \"string\" \
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"leaf\", \
-                    \"namespace\" : \"details\", \
-                    \"fields\" : [{\
-                        \"name\" : \"name\", \
-                        \"type\" : \"test.ns.Str\" \
-                    }, {\
-                        \"name\" : \"age\", \
-                        \"type\" : \"test.ns.Char\" \
-                    }]\
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"node\", \
-                    \"fields\" : [{\
-                        \"name\" : \"left\", \
-                        \"type\" : \"node\", \
-                        \"ptr\" : true \
-                    }, {\
-                        \"name\" : \"right\", \
-                        \"type\" : \"node\", \
-                        \"ptr\" : true \
-                    }, {\
-                        \"name\" : \"value\", \
-                        \"type\" : \"details.leaf\", \
-                        \"ptr\" : true \
-                    }]\
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"structE\", \
-                    \"fields\" : [{\
-                        \"name\" : \"head\", \
-                        \"type\" : \"node\", \
-                        \"ptr\" : true \
-                    }]\
-                }], \
-                \"messages\" : {} \
-            }";
-
-static const char *avpr_example5_fqn = "test.ns.structE";
 
 static const char *example5_input =  "{ \
     \"head\" : {\
@@ -456,44 +227,7 @@ static void check_example5(void *data) {
 /*********** example 6 ************************/
 static const char *example6_descriptor = "Tsample={DD v1 v2};[lsample;";
 
-static const char *avpr_example6_descriptor = "{\
-                \"protocol\" : \"types\", \
-                \"namespace\" : \"test.ns\", \
-                \"version\" : \"1.0.0\", \
-                \"types\" : [ { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Double\", \
-                    \"alias\" : \"double\", \
-                    \"size\" : 8 \
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"sample\", \
-                    \"fields\" : [{\
-                        \"name\" : \"v1\", \
-                        \"type\" : \"Double\" \
-                    }, {\
-                        \"name\" : \"v2\", \
-                        \"type\" : \"Double\" \
-                    }]\
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"structF\", \
-                    \"fields\" : [{\
-                        \"name\" : \"samples\", \
-                        \"type\" : { \
-                            \"type\" : \"array\",\
-                            \"items\" : \"sample\"\
-                        }\
-                    }]\
-                }], \
-                \"messages\" : {} \
-            }";
-static const char *avpr_example6_fqn = "test.ns.structF";
-
 static const char *example6_input = R"([{"v1":0.1,"v2":0.2},{"v1":1.1,"v2":1.2},{"v1":2.1,"v2":2.2}])";
-static const char *avpr_example6_input = R"({
-    "samples" : [{"v1":0.1,"v2":0.2},{"v1":1.1,"v2":1.2},{"v1":2.1,"v2":2.2}]
-})";
 
 struct ex6_sample {
 	double v1;
@@ -504,10 +238,6 @@ struct ex6_sequence {
 	uint32_t cap;
 	uint32_t len;
 	struct ex6_sample *buf;
-};
-
-struct ex6_avpr_struct {
-    struct ex6_sequence samples;
 };
 
 static void check_example6(struct ex6_sequence seq) {
@@ -521,43 +251,8 @@ static void check_example6(struct ex6_sequence seq) {
 	ASSERT_EQ(2.2, seq.buf[2].v2);
 }
 
-static void check_example6_avpr(void *data) {
-    auto ex = static_cast<ex6_avpr_struct*>(data);
-	ASSERT_EQ(3, ex->samples.cap);
-	ASSERT_EQ(3, ex->samples.len);
-	ASSERT_EQ(0.1, ex->samples.buf[0].v1);
-	ASSERT_EQ(0.2, ex->samples.buf[0].v2);
-	ASSERT_EQ(1.1, ex->samples.buf[1].v1);
-	ASSERT_EQ(1.2, ex->samples.buf[1].v2);
-	ASSERT_EQ(2.1, ex->samples.buf[2].v1);
-	ASSERT_EQ(2.2, ex->samples.buf[2].v2);
-}
-
 /*********** example 7 ************************/
 const char *example7_descriptor = "{t a}";
-
-static const char *avpr_example7_descriptor = "{\
-                \"protocol\" : \"types\", \
-                \"namespace\" : \"test.ns\", \
-                \"version\" : \"1.0.0\", \
-                \"types\" : [ { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Str\", \
-                    \"size\" : 8, \
-                    \"alias\" : \"string\" \
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"structG\", \
-                    \"fields\" : [{\
-                        \"name\" : \"a\", \
-                        \"type\" : \"Str\" \
-                    }]\
-                }], \
-                \"messages\" : {} \
-            }";
-
-
-static const char *avpr_example7_fqn = "test.ns.structG";
 
 const char *example7_input = "{ \
     \"a\" : \"apache celix\" \
@@ -576,66 +271,6 @@ static void check_example7(void *data) {
 /*********** example 8 ************************/
 
 const char *example8_descriptor = "{ZbijNP a b c d e f}";
-
-static const char *avpr_example8_descriptor = "{\
-                \"protocol\" : \"types\", \
-                \"namespace\" : \"test.ns\", \
-                \"version\" : \"1.0.0\", \
-                \"types\" : [ { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Bool\", \
-                    \"alias\" : \"boolean\", \
-                    \"size\" : 1 \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"UChar\", \
-                    \"size\" : 1 \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Uint\", \
-                    \"size\" : 4 \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Ulong\", \
-                    \"size\" : 8 \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Sint\", \
-                    \"size\" : 4, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"VoidPtr\", \
-                    \"size\" : 1, \
-                    \"alias\" : \"void_ptr\" \
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"structH\", \
-                    \"fields\" : [{\
-                        \"name\" : \"a\", \
-                        \"type\" : \"Bool\" \
-                    }, {\
-                        \"name\" : \"b\", \
-                        \"type\" : \"UChar\" \
-                    }, {\
-                        \"name\" : \"c\", \
-                        \"type\" : \"Uint\" \
-                    }, {\
-                        \"name\" : \"d\", \
-                        \"type\" : \"Ulong\" \
-                    }, {\
-                        \"name\" : \"e\", \
-                        \"type\" : \"Sint\" \
-                    }, {\
-                        \"name\" : \"f\", \
-                        \"type\" : \"VoidPtr\" \
-                    }]\
-                }], \
-                \"messages\" : {} \
-            }";
-
-
-static const char *avpr_example8_fqn = "test.ns.structH";
 
 const char *example8_input = "{ \
     \"a\" : true, \
@@ -666,44 +301,6 @@ static void check_example8(void *data) {
 
 /*********** example 9 ************************/
 const char *example9_descriptor = "{It#OK=0;#NOK=1;#MAYBE=2;E id name result}";
-
-static const char *avpr_example9_descriptor = "{\
-                \"protocol\" : \"types\", \
-                \"namespace\" : \"test.ns\", \
-                \"version\" : \"2.0.0\", \
-                \"types\" : [ { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Sint\", \
-                    \"size\" : 4, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"String\", \
-                    \"alias\" : \"string\", \
-                    \"size\" : 8 \
-                }, { \
-                    \"type\" : \"enum\", \
-                    \"name\" : \"ResultEnum\", \
-                    \"EnumValues\" : [ \"OK = 0\", \"NOK=  1\", \"MAYBE  =2\" ],\
-                    \"symbols\" : [\"OK\", \"NOK\", \"MAYBE\" ]\
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"structI\", \
-                    \"fields\" : [{\
-                        \"name\" : \"id\", \
-                        \"type\" : \"Sint\" \
-                    }, {\
-                        \"name\" : \"name\", \
-                        \"type\" : \"String\" \
-                    }, {\
-                        \"name\" : \"result\", \
-                        \"type\" : \"ResultEnum\" \
-                    }]\
-                }], \
-                \"messages\" : {} \
-            }";
-
-static const char *avpr_example9_fqn = "test.ns.structI";
 
 const char *example9_input_1 = "{\
                                 \"id\"   : 1000, \
@@ -750,12 +347,6 @@ static void check_example9_2(void *data) {
     ASSERT_EQ(RE_MAYBE, ex->result);
 }
 
-static void check_example9_3(void *data) {
-    auto ex = static_cast<example9*>(data);
-    ASSERT_EQ(1001, ex->id);
-    ASSERT_STREQ("your_name", ex->name);
-    ASSERT_EQ(RE_OK, ex->result);
-}
 /*********** example A ************************/
 const char *exampleA_descriptor = "TPoint={DD x y};{lPoint;lPoint;t point_a point_b name}";
 
@@ -786,102 +377,6 @@ static void check_exampleA(void *data) {
 	ASSERT_STREQ("this_is_my_name", inp->name);
 }
 
-
-static void parseAvprTests() {
-	dyn_type *type;
-	void *inst;
-    int rc;
-
-    inst = nullptr;
-    type = dynType_parseAvprWithStr(avpr_example1_descriptor, avpr_example1_fqn);
-    ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example1_input, strlen(example1_input), &inst);
-	ASSERT_EQ(0, rc);
-	check_example1(inst);
-	dynType_free(type, inst);
-	dynType_destroy(type);
-
-    inst = nullptr;
-    type = dynType_parseAvprWithStr(avpr_example2_descriptor, avpr_example2_fqn);
-    ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example2_input, strlen(example2_input), &inst);
-	ASSERT_EQ(0, rc);
-	check_example2(inst);
-	dynType_free(type, inst);
-	dynType_destroy(type);
-
-    inst = nullptr;
-    type = dynType_parseAvprWithStr(avpr_example3_descriptor, avpr_example3_fqn);
-    ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example3_input, strlen(example3_input), &inst);
-	ASSERT_EQ(0, rc);
-	check_example3(inst);
-	dynType_free(type, inst);
-	dynType_destroy(type);
-
-    inst = nullptr;
-    type = dynType_parseAvprWithStr(avpr_example4_descriptor, avpr_example4_fqn);
-    ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example4_input, strlen(example4_input), &inst);
-	ASSERT_EQ(0, rc);
-	check_example4(inst);
-	dynType_free(type, inst);
-	dynType_destroy(type);
-
-    inst = nullptr;
-    type = dynType_parseAvprWithStr(avpr_example5_descriptor, avpr_example5_fqn);
-    ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example5_input, strlen(example5_input), &inst);
-	ASSERT_EQ(0, rc);
-	check_example5(inst);
-	dynType_free(type, inst);
-	dynType_destroy(type);
-
-    // Test 6 has custom checker because avdl does not allow an array to be a type on its own
-    inst = nullptr;
-    type = dynType_parseAvprWithStr(avpr_example6_descriptor, avpr_example6_fqn);
-    ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, avpr_example6_input, strlen(avpr_example6_input), &inst);
-	ASSERT_EQ(0, rc);
-	check_example6_avpr(inst);
-	dynType_free(type, inst);
-	dynType_destroy(type);
-
-    inst = nullptr;
-    type = dynType_parseAvprWithStr(avpr_example7_descriptor, avpr_example7_fqn);
-    ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example7_input, strlen(example7_input), &inst);
-	ASSERT_EQ(0, rc);
-	check_example7(inst);
-	dynType_free(type, inst);
-	dynType_destroy(type);
-
-    inst = nullptr;
-    type = dynType_parseAvprWithStr(avpr_example8_descriptor, avpr_example8_fqn);
-    ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example8_input, strlen(example8_input), &inst);
-	ASSERT_EQ(0, rc);
-	check_example8(inst);
-	dynType_free(type, inst);
-	dynType_destroy(type);
-
-    inst = nullptr;
-    type = dynType_parseAvprWithStr(avpr_example9_descriptor, avpr_example9_fqn);
-    ASSERT_TRUE(type != nullptr);
-	rc = jsonSerializer_deserialize(type, example9_input_1, strlen(example9_input_1), &inst);
-	ASSERT_EQ(0, rc);
-	check_example9_1(inst);
-	dynType_free(type, inst);
-	rc = jsonSerializer_deserialize(type, example9_input_2, strlen(example9_input_2), &inst);
-	ASSERT_EQ(0, rc);
-	check_example9_2(inst);
-	dynType_free(type, inst);
-    rc = jsonSerializer_deserialize(type, example9_input_3, strlen(example9_input_3), &inst);
-    ASSERT_EQ(0, rc);
-    check_example9_3(inst);
-    dynType_free(type, inst);
-	dynType_destroy(type);
-}
 
 static void parseTests() {
 	dyn_type *type;
@@ -991,116 +486,93 @@ static void parseTests() {
     check_exampleA(inst);
     dynType_free(type, inst);
     dynType_destroy(type);
+
+    //parse ref by value
+    type = nullptr;
+    inst = nullptr;
+    rc = dynType_parseWithStr("Ttype={DD a b};ltype;", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    auto inputStr = R"({"a":1.0, "b":2.0})";
+    json_error_t error;
+    json_auto_t *input = json_loadb(inputStr, strlen(inputStr), JSON_DECODE_ANY, &error);
+    rc = jsonSerializer_deserializeJson(type, input, &inst);
+    ASSERT_EQ(0, rc);
+    struct {
+        double a;
+        double b;
+    } *data = static_cast<decltype(data)>(inst);
+    ASSERT_EQ(1.0, data->a);
+    ASSERT_EQ(2.0, data->b);
+    dynType_free(type, inst);
+    dynType_destroy(type);
+
+    //invalid input
+    type = nullptr;
+    inst = nullptr;
+    rc = dynType_parseWithStr("{DD a b}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    rc = jsonSerializer_deserialize(type, "invalid", strlen("invalid"), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //pointer type mismatch
+    rc = dynType_parseWithStr("{*t a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":1.0})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //text type mismatch
+    rc = dynType_parseWithStr("{t a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":1.0})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //enum type mismatch
+    rc = dynType_parseWithStr("{#v1=1;#v2=2;E a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":1.0})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //enum value unknown
+    rc = dynType_parseWithStr("{#v1=1;#v2=2;E a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":"v3"})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //sequence element type mismatch
+    rc = dynType_parseWithStr("[t", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"([1.0, 2.0])";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //unsupported untyped pointer
+    rc = dynType_parseWithStr("{P a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":1.0})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
 }
 
 /*********** write example 1 ************************/
 const char *write_example1_descriptor = "{BSIJsijFDNZb a b c d e f g h i j k l}";
-
-const char *avpr_write_example1_descriptor = "{\
-                \"protocol\" : \"types\", \
-                \"namespace\" : \"test.ns\", \
-                \"version\" : \"1.0.0\", \
-                \"types\" : [ { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"SChar\", \
-                    \"signed\" : true, \
-                    \"size\" : 1 \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Short\", \
-                    \"size\" : 2, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Sint\", \
-                    \"size\" : 4, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Slong\", \
-                    \"size\" : 8, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"UShort\", \
-                    \"size\" : 2 \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Uint\", \
-                    \"size\" : 4 \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Ulong\", \
-                    \"size\" : 8 \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Float\", \
-                    \"size\" : 4, \
-                    \"alias\" : \"float\" \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Double\", \
-                    \"size\" : 8, \
-                    \"alias\" : \"double\" \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"NativeInt\", \
-                    \"size\" : 4, \
-                    \"alias\" : \"native_int\" \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Bool\", \
-                    \"size\" : 1, \
-                    \"alias\" : \"boolean\" \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"UChar\", \
-                    \"size\" : 1 \
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"structAW\", \
-                    \"fields\" : [{\
-                        \"name\" : \"a\", \
-                        \"type\" : \"SChar\" \
-                    }, {\
-                        \"name\" : \"b\", \
-                        \"type\" : \"Short\" \
-                    }, {\
-                        \"name\" : \"c\", \
-                        \"type\" : \"Sint\" \
-                    }, {\
-                        \"name\" : \"d\", \
-                        \"type\" : \"Slong\" \
-                    }, {\
-                        \"name\" : \"e\", \
-                        \"type\" : \"UShort\" \
-                    }, {\
-                        \"name\" : \"f\", \
-                        \"type\" : \"Uint\" \
-                    }, {\
-                        \"name\" : \"g\", \
-                        \"type\" : \"Ulong\" \
-                    }, {\
-                        \"name\" : \"h\", \
-                        \"type\" : \"Float\" \
-                    }, {\
-                        \"name\" : \"i\", \
-                        \"type\" : \"Double\" \
-                    }, {\
-                        \"name\" : \"j\", \
-                        \"type\" : \"NativeInt\" \
-                    }, {\
-                        \"name\" : \"k\", \
-                        \"type\" : \"Bool\" \
-                    }, {\
-                        \"name\" : \"l\", \
-                        \"type\" : \"UChar\" \
-                    }]\
-                }], \
-                \"messages\" : {} \
-            }";
-
-const char *avpr_write_example1_fqn = "test.ns.structAW";
 
 struct write_example1 {
 	char a;
@@ -1143,86 +615,8 @@ void writeTest1(void) {
 	free(result);
 }
 
-void writeAvprTest1(void) {
-	write_example1 ex1 {1,2,3,4,5,6,7,8.8f,9.9,10,true,12};
-
-	char *result = nullptr;
-	dyn_type *type = dynType_parseAvprWithStr(avpr_write_example1_descriptor, avpr_write_example1_fqn);
-	ASSERT_TRUE(type != nullptr);
-
-	int rc = jsonSerializer_serialize(type, &ex1, &result);
-	ASSERT_EQ(0, rc);
-
-	ASSERT_TRUE(strstr(result, R"("a":1)") != nullptr);
-    ASSERT_TRUE(strstr(result, R"("b":2)") != nullptr);
-    ASSERT_TRUE(strstr(result, R"("c":3)") != nullptr);
-    ASSERT_TRUE(strstr(result, R"("d":4)") != nullptr);
-    ASSERT_TRUE(strstr(result, R"("e":5)") != nullptr);
-    ASSERT_TRUE(strstr(result, R"("f":6)") != nullptr);
-    ASSERT_TRUE(strstr(result, R"("g":7)") != nullptr);
-    ASSERT_TRUE(strstr(result, R"("h":8.8)") != nullptr);
-    ASSERT_TRUE(strstr(result, R"("i":9.9)") != nullptr);
-    ASSERT_TRUE(strstr(result, R"("j":10)") != nullptr);
-    ASSERT_TRUE(strstr(result, R"("k":true)") != nullptr);
-    ASSERT_TRUE(strstr(result, R"("l":12)") != nullptr);
-
-	dynType_destroy(type);
-	free(result);
-}
-
 /*********** write example 2 ************************/
 const char *write_example2_descriptor = "{*{JJ a b}{SS c d} sub1 sub2}";
-
-const char *avpr_write_example2_descriptor = "{\
-                \"protocol\" : \"types\", \
-                \"namespace\" : \"test.ns\", \
-                \"version\" : \"1.0.0\", \
-                \"types\" : [ { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Short\", \
-                    \"size\" : 2, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Slong\", \
-                    \"size\" : 8, \
-                    \"signed\" : true \
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"SubPtr\", \
-                    \"fields\" : [{\
-                        \"name\" : \"a\", \
-                        \"type\" : \"Slong\" \
-                    }, {\
-                        \"name\" : \"b\", \
-                        \"type\" : \"Slong\" \
-                    }]\
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"Sub\", \
-                    \"fields\" : [{\
-                        \"name\" : \"c\", \
-                        \"type\" : \"Short\" \
-                    }, {\
-                        \"name\" : \"d\", \
-                        \"type\" : \"Short\" \
-                    }]\
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"structBW\", \
-                    \"fields\" : [{\
-                        \"name\" : \"sub1\", \
-                        \"ptr\" : true, \
-                        \"type\" : \"SubPtr\" \
-                    }, {\
-                        \"name\" : \"sub2\", \
-                        \"type\" : \"Sub\" \
-                    }]\
-                }], \
-                \"messages\" : {} \
-            }";
-
-const char *avpr_write_example2_fqn = "test.ns.structBW";
 
 struct write_example2_sub {
 	int64_t a;
@@ -1256,77 +650,8 @@ void writeTest2(void) {
 	free(result);
 }
 
-void writeAvprTest2(void) {
-    write_example2_sub sub1 {0,0};
-    write_example2 ex {&sub1, {3, 4}};
-    ex.sub1->a = 1;
-    ex.sub1->b = 2;
-
-	char *result = nullptr;
-	dyn_type *type = dynType_parseAvprWithStr(avpr_write_example2_descriptor, avpr_write_example2_fqn);
-	ASSERT_TRUE(type != nullptr);
-
-	int rc = jsonSerializer_serialize(type, &ex, &result);
-	ASSERT_EQ(0, rc);
-
-	ASSERT_TRUE(strstr(result, "\"a\":1") != nullptr);
-    ASSERT_TRUE(strstr(result, "\"b\":2") != nullptr);
-    ASSERT_TRUE(strstr(result, "\"c\":3") != nullptr);
-    ASSERT_TRUE(strstr(result, "\"d\":4") != nullptr);
-
-	dynType_destroy(type);
-	free(result);
-}
-
 /*********** write example 3 ************************/
 const char *write_example3_descriptor = "Tperson={ti name age};[Lperson;";
-
-const char *avpr_write_example3_descriptor = "{\
-                \"protocol\" : \"types\", \
-                \"namespace\" : \"test.ns\", \
-                \"version\" : \"1.0.0\", \
-                \"types\" : [ { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Str\", \
-                    \"size\" : 8, \
-                    \"alias\" : \"string\" \
-                }, { \
-                    \"type\" : \"fixed\", \
-                    \"name\" : \"Uint\", \
-                    \"size\" : 4 \
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"PersonPtr\", \
-                    \"fields\" : [{\
-                        \"name\" : \"p\", \
-                        \"type\" : \"Person\", \
-                        \"ptr\" : true \
-                    }]\
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"Person\", \
-                    \"fields\" : [{\
-                        \"name\" : \"name\", \
-                        \"type\" : \"Str\" \
-                    }, {\
-                        \"name\" : \"age\", \
-                        \"type\" : \"Uint\" \
-                    }]\
-                }, { \
-                    \"type\" : \"record\", \
-                    \"name\" : \"structCW\", \
-                    \"fields\" : [{\
-                        \"name\" : \"persons\", \
-                        \"type\" : { \
-                            \"type\" : \"array\",\
-                            \"items\" : \"PersonPtr\"\
-                        }\
-                    }]\
-                }], \
-                \"messages\" : {} \
-            }";
-
-const char *avpr_write_example3_fqn = "test.ns.structCW";
 
 struct write_example3_person {
 	const char *name;
@@ -1367,33 +692,86 @@ void writeTest3(void) {
 	free(result);
 }
 
-void writeAvprTest3(void) {
-    write_example3_person p1 {"John", 33};
-    write_example3_person p2 {"Peter", 44};
-    write_example3_person p3 {"Carol", 55};
-    write_example3_person p4 {"Elton", 66};
+void writeEnum(void) {
+    dyn_type *type = nullptr;
+    char *result = nullptr;
+    int rc = dynType_parseWithStr(R"(#v1=1;#v2=2;E)", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    enum {
+        v1 = 1,
+        v2 = 2
+    }enumVal = v2;
+    rc = jsonSerializer_serialize(type, &enumVal, &result);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(strstr(result, R"(v2)") != nullptr);
+    free(result);
+    dynType_destroy(type);
+}
 
-    write_example3 seq {4, 4, (write_example3_person **) calloc(4, sizeof(void *))};
-    seq.buf[0] = &p1;
-    seq.buf[1] = &p2;
-    seq.buf[2] = &p3;
-    seq.buf[3] = &p4;
+void writeRefByVal(void) {
+    dyn_type *type = nullptr;
+    char *result = nullptr;
+    int rc = dynType_parseWithStr(R"(Ttype={DD a b};ltype;)", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    struct {
+        double a;
+        double b;
+    }input{1.0,2.0};
+    rc = jsonSerializer_serialize(type, &input, &result);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(strstr(result, R"("a":1.0)") != nullptr);
+    ASSERT_TRUE(strstr(result, R"("b":2.0)") != nullptr);
+    free(result);
+    dynType_destroy(type);
+}
 
-	char *result = nullptr;
-	dyn_type *type = dynType_parseAvprWithStr(avpr_write_example3_descriptor, avpr_write_example3_fqn);
-    ASSERT_TRUE(type != nullptr);
+void writeSequenceFailed(void) {
+    dyn_type *type = nullptr;
+    char *result = nullptr;
+    int rc = dynType_parseWithStr(R"([D)", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    double input[] = {1.0,2.0};
+    struct {
+        uint32_t cap;
+        uint32_t len;
+        double *buf;
+    }seq{1,2,input};//cap < len
+    rc = jsonSerializer_serialize(type, &seq, &result);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+}
 
-	int rc = jsonSerializer_serialize(type, &seq, &result);
-	ASSERT_EQ(0, rc);
+void writeComplexFailed(void) {
+    dyn_type *type = nullptr;
+    char *result = nullptr;
+    //has unnamed complex element
+    int rc = dynType_parseWithStr(R"({II a})", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    struct {
+        int32_t a;
+        int32_t b;
+    }input{1,2};
+    rc = jsonSerializer_serialize(type, &input, &result);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+}
 
-    ASSERT_TRUE(strstr(result, "\"age\":33") != nullptr);
-    ASSERT_TRUE(strstr(result, "\"age\":44") != nullptr);
-    ASSERT_TRUE(strstr(result, "\"age\":55") != nullptr);
-    ASSERT_TRUE(strstr(result, "\"age\":66") != nullptr);
-
-	free(seq.buf);
-	dynType_destroy(type);
-	free(result);
+void writeEnumFailed(void) {
+    dyn_type *type = nullptr;
+    char *result = nullptr;
+    int rc = dynType_parseWithStr(R"(#v1=1;#v2=2;E)", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    enum {
+        v1 = 1,
+        v2 = 2,
+        v3 = 3
+    }enumVal = v3;//schema only has v1 and v2
+    rc = jsonSerializer_serialize(type, &enumVal, &result);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
 }
 
 } // extern "C"
@@ -1405,7 +783,6 @@ public:
         int lvl = 1;
         dynCommon_logSetup(stdLog, nullptr, lvl);
         dynType_logSetup(stdLog, nullptr,lvl);
-        dynAvprType_logSetup(stdLog, nullptr,lvl);
         dynTypeCommon_logSetup(stdLog, nullptr,lvl);
         jsonSerializer_logSetup(stdLog, nullptr, lvl);
     }
@@ -1418,22 +795,34 @@ TEST_F(JsonSerializerTests, ParseTests) {
 	parseTests();
 }
 
-TEST_F(JsonSerializerTests, ParseAvprTests) {
-    parseAvprTests();
-}
-
 TEST_F(JsonSerializerTests, WriteTest1) {
 	writeTest1();
-    writeAvprTest1();
 }
 
 TEST_F(JsonSerializerTests, WriteTest2) {
 	writeTest2();
-    writeAvprTest2();
 }
 
 TEST_F(JsonSerializerTests, WriteTest3) {
 	writeTest3();
-    writeAvprTest3();
 }
 
+TEST_F(JsonSerializerTests, WriteEnum) {
+    writeEnum();
+}
+
+TEST_F(JsonSerializerTests, WriteRefByVal) {
+    writeRefByVal();
+}
+
+TEST_F(JsonSerializerTests, WriteSequenceFailed) {
+    writeSequenceFailed();
+}
+
+TEST_F(JsonSerializerTests, WriteComplexFailed) {
+    writeComplexFailed();
+}
+
+TEST_F(JsonSerializerTests, WriteEnumFailed) {
+    writeEnumFailed();
+}

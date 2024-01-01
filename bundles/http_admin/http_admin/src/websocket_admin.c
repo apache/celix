@@ -35,7 +35,7 @@ struct websocket_admin_manager {
     struct mg_context *mg_ctx;
 
     service_tree_t sock_svc_tree;
-    celix_thread_mutex_t admin_lock;
+    celix_thread_rwlock_t admin_lock;
 };
 
 websocket_admin_manager_t *websocketAdmin_create(celix_bundle_context_t *context, struct mg_context *svr_ctx) {
@@ -49,7 +49,7 @@ websocket_admin_manager_t *websocketAdmin_create(celix_bundle_context_t *context
 
     admin->context = context;
     admin->mg_ctx = svr_ctx;
-    status = celixThreadMutex_create(&admin->admin_lock, NULL);
+    status = celixThreadRwlock_create(&admin->admin_lock, NULL);
 
     if(status != CELIX_SUCCESS) {
         //No need to destroy other things
@@ -60,14 +60,14 @@ websocket_admin_manager_t *websocketAdmin_create(celix_bundle_context_t *context
 }
 
 void websocketAdmin_destroy(websocket_admin_manager_t *admin) {
-    celixThreadMutex_lock(&(admin->admin_lock));
+    celixThreadRwlock_writeLock(&(admin->admin_lock));
 
     //Destroy tree with services
     destroyServiceTree(&admin->sock_svc_tree);
 
-    celixThreadMutex_unlock(&(admin->admin_lock));
+    celixThreadRwlock_unlock(&(admin->admin_lock));
 
-    celixThreadMutex_destroy(&(admin->admin_lock));
+    celixThreadRwlock_destroy(&(admin->admin_lock));
 
     free(admin);
 }
@@ -79,14 +79,13 @@ void websocket_admin_addWebsocketService(void *handle, void *svc, const celix_pr
     const char *uri = celix_properties_get(props, WEBSOCKET_ADMIN_URI, NULL);
 
     if(uri != NULL) {
-        celixThreadMutex_lock(&(admin->admin_lock));
+        celix_auto(celix_rwlock_wlock_guard_t) lock = celixRwlockWlockGuard_init(&(admin->admin_lock));
         if(addServiceNode(&admin->sock_svc_tree, uri, websockSvc)) {
             mg_set_websocket_handler(admin->mg_ctx, uri, websocket_connect_handler, websocket_ready_handler,
                                      websocket_data_handler, websocket_close_handler, admin);
         } else {
             printf("Websocket service with URI %s already exists!\n", uri);
         }
-        celixThreadMutex_unlock(&(admin->admin_lock));
     }
 }
 
@@ -96,7 +95,7 @@ void websocket_admin_removeWebsocketService(void *handle, void *svc CELIX_UNUSED
     const char *uri = celix_properties_get(props, WEBSOCKET_ADMIN_URI, NULL);
 
     if(uri != NULL) {
-        celixThreadMutex_lock(&(admin->admin_lock));
+        celix_auto(celix_rwlock_wlock_guard_t) lock = celixRwlockWlockGuard_init(&(admin->admin_lock));
         service_tree_node_t *node = NULL;
 
         node = findServiceNodeInTree(&admin->sock_svc_tree, uri);
@@ -107,7 +106,6 @@ void websocket_admin_removeWebsocketService(void *handle, void *svc CELIX_UNUSED
             printf("Couldn't remove websocket service with URI: %s, it doesn't exist\n", uri);
         }
 
-        celixThreadMutex_unlock(&(admin->admin_lock));
     }
 }
 
@@ -120,6 +118,7 @@ int websocket_connect_handler(const struct mg_connection *connection, void *hand
         const char *req_uri = ri->request_uri;
         service_tree_node_t *node = NULL;
 
+        celix_auto(celix_rwlock_rlock_guard_t) lock = celixRwlockRlockGuard_init(&(admin->admin_lock));
         node = findServiceNodeInTree(&admin->sock_svc_tree, req_uri);
 
         if(node != NULL) {
@@ -147,6 +146,7 @@ void websocket_ready_handler(struct mg_connection *connection, void *handle) {
         const char *req_uri = ri->request_uri;
         service_tree_node_t *node = NULL;
 
+        celix_auto(celix_rwlock_rlock_guard_t) lock = celixRwlockRlockGuard_init(&(admin->admin_lock));
         node = findServiceNodeInTree(&admin->sock_svc_tree, req_uri);
 
         if(node != NULL) {
@@ -169,6 +169,7 @@ int websocket_data_handler(struct mg_connection *connection, int op_code, char *
         const char *req_uri = ri->request_uri;
         service_tree_node_t *node = NULL;
 
+        celix_auto(celix_rwlock_rlock_guard_t) lock = celixRwlockRlockGuard_init(&(admin->admin_lock));
         node = findServiceNodeInTree(&admin->sock_svc_tree, req_uri);
 
         if(node != NULL) {
@@ -192,6 +193,7 @@ void websocket_close_handler(const struct mg_connection *connection, void *handl
         const char *req_uri = ri->request_uri;
         service_tree_node_t *node = NULL;
 
+        celix_auto(celix_rwlock_rlock_guard_t) lock = celixRwlockRlockGuard_init(&(admin->admin_lock));
         node = findServiceNodeInTree(&admin->sock_svc_tree, req_uri);
 
         if(node != NULL) {

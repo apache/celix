@@ -137,7 +137,6 @@ The following packages (libraries + headers) should be installed on your system:
     * libffi (for libdfi)
     * libxml2 (for remote services and bonjour shell)
     * rapidjson (for C++ remote service discovery)
-    * libczmq (for PubSubAdmin ZMQ)
 	
 
 For Ubuntu 22.04, use the following commands:
@@ -155,7 +154,6 @@ sudo apt-get install -yq --no-install-recommends \
     libffi-dev \
     libzip-dev \
     libxml2-dev \
-    libczmq-dev \
     libcpputest-dev \
     rapidjson-dev
 ```
@@ -163,7 +161,7 @@ sudo apt-get install -yq --no-install-recommends \
 For OSX systems with brew installed, use the following commands:
 ```bash
 brew update && \
-brew install lcov libffi libzip czmq rapidjson libxml2 cmake jansson && \
+brew install lcov libffi libzip rapidjson libxml2 cmake jansson && \
 brew link --force libffi
 ``` 
 

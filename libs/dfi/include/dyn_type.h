@@ -137,7 +137,6 @@ struct meta_entry {
 
 //logging
 DFI_SETUP_LOG_HEADER(dynType);
-DFI_SETUP_LOG_HEADER(dynAvprType);
 
 /**
  * Parses a descriptor stream and creates a dyn_type (dynamic type).
@@ -373,31 +372,6 @@ CELIX_DFI_EXPORT int dynType_text_allocAndInit(dyn_type *type, void *textLoc, co
  * @param[in] in   The value to set.
  */
 CELIX_DFI_EXPORT void dynType_simple_setValue(dyn_type *type, void *inst, void *in);
-
-/**
- * @brief Creates a dyn type for a given avpr stream.
- *
- * In case of an error, an error message is added to celix_err.
- *
- * @param[in] avprStream The avpr stream.
- * @param[in] fqn The fully qualified name of the type.
- * @return The dynamic type instance or NULL if the avpr could not be parsed.
- * @deprecated AVRO is deprecated and will be removed in the future.
- */
-CELIX_DFI_DEPRECATED_EXPORT dyn_type * dynType_parseAvpr(FILE *avprStream, const char *fqn);
-
-/**
- * @brief Creates a dyn type for a given avpr string.
- *
- * In case of an error, an error message is added to celix_err.
- *
- * @param[in] avpr The avpr string.
- * @param[in] fqn The fully qualified name of the type.
- * @return The dynamic type instance or NULL if the avpr could not be parsed.
- * @deprecated AVRO is deprecated and will be removed in the future.
- */
-CELIX_DFI_DEPRECATED_EXPORT dyn_type * dynType_parseAvprWithStr(const char *avpr, const char *fqn);
-
 
 #ifdef __cplusplus
 }

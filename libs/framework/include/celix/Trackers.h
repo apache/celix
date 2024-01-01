@@ -424,9 +424,9 @@ namespace celix {
 
         template<typename U>
         void waitForExpired(std::weak_ptr<U> observe, long svcId, const char* objName) {
-            auto start = std::chrono::system_clock::now();
+            auto start = std::chrono::steady_clock::now();
             while (!observe.expired()) {
-                auto now = std::chrono::system_clock::now();
+                auto now = std::chrono::steady_clock::now();
                 auto durationInMilli = std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
                 if (durationInMilli > warningTimoutForNonExpiredSvcObject) {
                     celix_bundleContext_log(cCtx.get(), CELIX_LOG_LEVEL_WARNING, "Cannot remove %s associated with service.id %li, because it is still in use. Current shared_ptr use count is %i\n", objName, svcId, (int)observe.use_count());

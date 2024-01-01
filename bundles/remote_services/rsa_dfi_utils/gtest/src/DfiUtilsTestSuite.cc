@@ -65,12 +65,6 @@ TEST_F(DfiUtilsTestSuite, ParseDescriptor) {
     EXPECT_TRUE(found);
 }
 
-TEST_F(DfiUtilsTestSuite, ParseAvprDescriptor) {
-    curTestDescFile = "rsa_dfi_utils_test_avpr";
-    bool found = celix_bundleContext_useBundle(ctx.get(), descBundleId, this, useBundleCallback);
-    EXPECT_TRUE(found);
-}
-
 TEST_F(DfiUtilsTestSuite, ParseDescriptorForFw) {
     curTestDescFile = "rsa_dfi_utils_test";
     bool found = celix_bundleContext_useBundle(ctx.get(), 0, this, useBundleCallback);
