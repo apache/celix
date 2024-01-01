@@ -51,7 +51,7 @@ TEST_F(VersionRangeTestSuite, cleanup) {
 TEST_F(VersionRangeTestSuite, createInfinite) {
     celix_status_t status = CELIX_SUCCESS;
     version_range_pt range = nullptr;
-    version_pt version = celix_version_createVersion(1,2, 3, nullptr);
+    version_pt version = celix_version_create(1,2, 3, nullptr);
 
     status = versionRange_createInfiniteVersionRange(&range);
     EXPECT_EQ(CELIX_SUCCESS, status);
@@ -70,7 +70,7 @@ TEST_F(VersionRangeTestSuite, createInfinite) {
 
 TEST_F(VersionRangeTestSuite, isInRange) {
     bool result;
-    version_pt version = celix_version_createVersion(1, 2, 3, nullptr);
+    version_pt version = celix_version_create(1, 2, 3, nullptr);
 
     {
         version_range_pt range = nullptr;
@@ -418,8 +418,8 @@ TEST_F(VersionRangeTestSuite, createLdapFilterInPlaceInfiniteHigh) {
 }
 
 TEST_F(VersionRangeTestSuite, createLdapFilterWithQualifier) {
-    celix_autoptr(celix_version_t) low = celix_version_createVersion(1, 2, 2, "0");
-    celix_autoptr(celix_version_t) high = celix_version_createVersion(1, 2, 2, "0");
+    celix_autoptr(celix_version_t) low = celix_version_create(1, 2, 2, "0");
+    celix_autoptr(celix_version_t) high = celix_version_create(1, 2, 2, "0");
 
     celix_autoptr(celix_version_range_t) range = celix_versionRange_createVersionRange(celix_steal_ptr(low), true,
                                                                                        celix_steal_ptr(high), true);

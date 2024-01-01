@@ -55,17 +55,17 @@ add_celix_bundle_dependencies(test_tm_scoped Celix::rsa_dfi Celix::rsa_topology_
 file(GENERATE 
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config.properties"
     CONTENT "
-cosgi.auto.start.1=$<TARGET_PROPERTY:Celix::rsa_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:Celix::rsa_topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_disc_mock_bundle,BUNDLE_FILE>
+CELIX_AUTO_START_1=$<TARGET_PROPERTY:Celix::rsa_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:Celix::rsa_topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_disc_mock_bundle,BUNDLE_FILE>
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-org.osgi.framework.storage.clean=onFirstInit
+CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE=true
 ")
 
 file(GENERATE 
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config_import.properties"
     CONTENT "
-cosgi.auto.start.1=$<TARGET_PROPERTY:Celix::rsa_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:Celix::rsa_topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_test_bundle,BUNDLE_FILE>
+CELIX_AUTO_START_1=$<TARGET_PROPERTY:Celix::rsa_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:Celix::rsa_topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_test_bundle,BUNDLE_FILE>
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-org.osgi.framework.storage.clean=onFirstInit
+CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE=true
 ")
 
 configure_file("scope.json" "scope.json")

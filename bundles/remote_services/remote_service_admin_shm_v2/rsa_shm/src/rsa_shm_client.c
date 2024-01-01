@@ -257,7 +257,6 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
             || response == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    const char *key = NULL;
     size_t metadataStringSize = 0;
     FILE *fp = NULL;
     rsa_shm_msg_control_t *msgCtrl = NULL;
@@ -279,9 +278,8 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
         return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
     }
     if (metadata != NULL) {
-        CELIX_PROPERTIES_FOR_EACH(metadata, key) {
-            const char * value = celix_properties_get(metadata, key,"");
-            fprintf(fp,"%s=%s\n", key, value);
+        CELIX_PROPERTIES_ITERATE(metadata, iter) {
+            fprintf(fp,"%s=%s\n", iter.key, iter.entry.value);
         }
     }
     fclose(fp);

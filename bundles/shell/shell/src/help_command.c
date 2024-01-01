@@ -47,8 +47,8 @@ static void printHelp(void *handle, void *svc) {
 
     memset(out_str, 0, sizeof(out_str));
 
-    strtok_r(cmdLine, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-    sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+    strtok_r(cmdLine, CELIX_SHELL_COMMAND_SEPARATOR, &save_ptr);
+    sub = strtok_r(NULL, CELIX_SHELL_COMMAND_SEPARATOR, &save_ptr);
 
     if (sub == NULL) {
         unsigned int i;

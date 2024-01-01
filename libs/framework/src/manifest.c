@@ -72,9 +72,8 @@ manifest_pt manifest_clone(manifest_pt manifest) {
     celix_auto(manifest_pt) clone = NULL;
     status = manifest_create(&clone);
     if (status == CELIX_SUCCESS) {
-        const char* key = NULL;
-        CELIX_PROPERTIES_FOR_EACH(manifest->mainAttributes, key) {
-            celix_properties_set(clone->mainAttributes, key, celix_properties_get(manifest->mainAttributes, key, NULL));
+        CELIX_PROPERTIES_ITERATE(manifest->mainAttributes, visit) {
+            celix_properties_set(clone->mainAttributes, visit.key, visit.entry.value);
         }
         hash_map_iterator_t iter = hashMapIterator_construct(manifest->attributes);
         while (hashMapIterator_hasNext(&iter)) {

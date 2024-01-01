@@ -35,8 +35,8 @@ class RsaRequestSenderTrackerUnitTestSuite : public ::testing::Test {
 public:
     RsaRequestSenderTrackerUnitTestSuite() {
         auto* props = celix_properties_create();
-        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_json_rpc_impl_cache");
-        celix_properties_set(props, OSGI_FRAMEWORK_BUNDLE_VERSION, "1.0.0");
+        celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_json_rpc_impl_cache");
+        celix_properties_set(props, CELIX_FRAMEWORK_BUNDLE_VERSION, "1.0.0");
         celix_properties_set(props, RSA_JSON_RPC_LOG_CALLS_KEY, "true");
         celix_properties_set(props, "CELIX_FRAMEWORK_EXTENDER_PATH", RESOURCES_DIR);
         auto* fwPtr = celix_frameworkFactory_createFramework(props);

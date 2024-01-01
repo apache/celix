@@ -37,7 +37,7 @@ struct http_admin_manager {
     struct mg_context *mgCtx;
     char *root;
 
-    celix_thread_mutex_t admin_lock;  //protects below
+    celix_thread_rwlock_t admin_lock;  //protects below
 
     celix_http_info_service_t infoSvc;
     long infoSvcId;
@@ -70,7 +70,7 @@ http_admin_manager_t *httpAdmin_create(celix_bundle_context_t *context, char *ro
     admin->root = root;
     admin->infoSvcId = -1L;
 
-    status = celixThreadMutex_create(&admin->admin_lock, NULL);
+    status = celixThreadRwlock_create(&admin->admin_lock, NULL);
     admin->aliasList = celix_arrayList_create();
 
     if (status == CELIX_SUCCESS) {
@@ -93,7 +93,7 @@ http_admin_manager_t *httpAdmin_create(celix_bundle_context_t *context, char *ro
         if (admin->mgCtx != NULL) {
             mg_stop(admin->mgCtx);
         }
-        celixThreadMutex_destroy(&admin->admin_lock);
+        celixThreadRwlock_destroy(&admin->admin_lock);
 
         celix_arrayList_destroy(admin->aliasList);
         free(admin);
@@ -103,14 +103,13 @@ http_admin_manager_t *httpAdmin_create(celix_bundle_context_t *context, char *ro
 }
 
 void httpAdmin_destroy(http_admin_manager_t *admin) {
-    celixThreadMutex_lock(&(admin->admin_lock));
 
     if(admin->mgCtx != NULL) {
         mg_stop(admin->mgCtx);
     }
 
+    celixThreadRwlock_writeLock(&(admin->admin_lock));
     celix_bundleContext_unregisterService(admin->context, admin->infoSvcId);
-
     destroyServiceTree(&admin->http_svc_tree);
 
     //Destroy alias map by removing symbolic links first.
@@ -129,8 +128,8 @@ void httpAdmin_destroy(http_admin_manager_t *admin) {
     }
     celix_arrayList_destroy(admin->aliasList);
 
-    celixThreadMutex_unlock(&(admin->admin_lock));
-    celixThreadMutex_destroy(&(admin->admin_lock));
+    celixThreadRwlock_unlock(&(admin->admin_lock));
+    celixThreadRwlock_destroy(&(admin->admin_lock));
 
     free(admin->root);
     free(admin);
@@ -147,11 +146,10 @@ void http_admin_addHttpService(void *handle, void *svc, const celix_properties_t
     const char *uri = celix_properties_get(props, HTTP_ADMIN_URI, NULL);
 
     if(uri != NULL) {
-        celixThreadMutex_lock(&(admin->admin_lock));
+        celix_auto(celix_rwlock_wlock_guard_t) lock = celixRwlockWlockGuard_init(&(admin->admin_lock));
         if(!addServiceNode(&admin->http_svc_tree, uri, httpSvc)) {
             printf("HTTP service with URI %s already exists!\n", uri);
         }
-        celixThreadMutex_unlock(&(admin->admin_lock));
     }
 }
 
@@ -161,7 +159,7 @@ void http_admin_removeHttpService(void *handle, void *svc CELIX_UNUSED, const ce
     const char *uri = celix_properties_get(props, HTTP_ADMIN_URI, NULL);
 
     if(uri != NULL) {
-        celixThreadMutex_lock(&(admin->admin_lock));
+        celix_auto(celix_rwlock_wlock_guard_t) lock = celixRwlockWlockGuard_init(&(admin->admin_lock));
         service_tree_node_t *node = NULL;
 
         node = findServiceNodeInTree(&admin->http_svc_tree, uri);
@@ -171,8 +169,6 @@ void http_admin_removeHttpService(void *handle, void *svc CELIX_UNUSED, const ce
         } else {
             printf("Couldn't remove HTTP service with URI: %s, it doesn't exist\n", uri);
         }
-
-        celixThreadMutex_unlock(&(admin->admin_lock));
     }
 }
 
@@ -189,6 +185,7 @@ int http_request_handle(struct mg_connection *connection) {
             ret_status = 0; //... so return zero to let the civetweb server handle the request.
         }
         else {
+            celix_auto(celix_rwlock_rlock_guard_t) lock = celixRwlockRlockGuard_init(&(admin->admin_lock));
             const char *req_uri = ri->request_uri;
             node = findServiceNodeInTree(&admin->http_svc_tree, req_uri);
 
@@ -367,7 +364,7 @@ static void httpAdmin_updateInfoSvc(http_admin_manager_t *admin) {
     }
     fclose(stream);
 
-    celixThreadMutex_lock(&admin->admin_lock);
+    celix_auto(celix_rwlock_wlock_guard_t) lock = celixRwlockWlockGuard_init(&(admin->admin_lock));
     celix_bundleContext_unregisterService(admin->context, admin->infoSvcId);
 
     celix_properties_t *properties = celix_properties_create();
@@ -376,8 +373,6 @@ static void httpAdmin_updateInfoSvc(http_admin_manager_t *admin) {
         celix_properties_set(properties, HTTP_ADMIN_INFO_RESOURCE_URLS, resources_urls);
     }
     admin->infoSvcId = celix_bundleContext_registerService(admin->context, &admin->infoSvc, HTTP_ADMIN_INFO_SERVICE_NAME, properties);
-
-    celixThreadMutex_unlock(&admin->admin_lock);
 
     free(resources_urls);
 }

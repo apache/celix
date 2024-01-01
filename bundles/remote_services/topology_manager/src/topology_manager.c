@@ -227,7 +227,7 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt unus
         service_reference_pt reference = hashMapEntry_getKey(entry);
         const char* serviceId = NULL;
 
-        serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
+        serviceReference_getProperty(reference, CELIX_FRAMEWORK_SERVICE_ID, &serviceId);
 
         scope_getExportProperties(manager->scope, reference, &serviceProperties);
 
@@ -346,7 +346,7 @@ celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr)
 			status = filter_match(filter, props, &found);
 			if (found) {
 				srvRefs[nrFound] = reference;
-				serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
+				serviceReference_getProperty(reference, CELIX_FRAMEWORK_SERVICE_ID, &serviceId);
 				srvIds[nrFound++] = (char*)serviceId;
 			}
 		}
@@ -399,8 +399,7 @@ celix_status_t topologyManager_importScopeChanged(void *handle, char *service_na
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(importedServicesIterator);
 		endpoint = hashMapEntry_getKey(entry);
 
-		entry = hashMap_getEntry(endpoint->properties, (void *) OSGI_FRAMEWORK_OBJECTCLASS);
-		char* name = (char *) hashMapEntry_getValue(entry);
+        const char* name = celix_properties_get(endpoint->properties, CELIX_FRAMEWORK_SERVICE_NAME, "");
 		// Test if a service with the same name is imported
 		if (strcmp(name, service_name) == 0) {
 			found = true;
@@ -819,7 +818,7 @@ static celix_status_t topologyManager_extendFilter(topology_manager_pt manager, 
 	celix_bundle_context_t *context = manager->context;
 	const char* uuid = NULL;
 
-	status = bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	status = bundleContext_getProperty(context, CELIX_FRAMEWORK_UUID, &uuid);
 
 	if (!uuid) {
 		celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");

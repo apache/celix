@@ -400,10 +400,10 @@ namespace celix {
         }
 
         static std::shared_ptr<SvcEntry> createEntry(void* voidSvc, const celix_properties_t* cProps, const celix_bundle_t* cBnd) {
-            long svcId = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_ID, -1L);
-            long svcRanking = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
+            long svcId = celix_properties_getAsLong(cProps, CELIX_FRAMEWORK_SERVICE_ID, -1L);
+            long svcRanking = celix_properties_getAsLong(cProps, CELIX_FRAMEWORK_SERVICE_RANKING, 0);
             auto svc = std::shared_ptr<I>{static_cast<I*>(voidSvc), [](I*){/*nop*/}};
-            auto props = celix::Properties::wrap(cProps);
+            auto props = std::make_shared<const celix::Properties>(celix::Properties::wrap(cProps));
             auto owner = std::make_shared<celix::Bundle>(const_cast<celix_bundle_t*>(cBnd));
             return std::make_shared<SvcEntry>(svcId, svcRanking, svc, props, owner);
         }
@@ -424,9 +424,9 @@ namespace celix {
 
         template<typename U>
         void waitForExpired(std::weak_ptr<U> observe, long svcId, const char* objName) {
-            auto start = std::chrono::system_clock::now();
+            auto start = std::chrono::steady_clock::now();
             while (!observe.expired()) {
-                auto now = std::chrono::system_clock::now();
+                auto now = std::chrono::steady_clock::now();
                 auto durationInMilli = std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
                 if (durationInMilli > warningTimoutForNonExpiredSvcObject) {
                     celix_bundleContext_log(cCtx.get(), CELIX_LOG_LEVEL_WARNING, "Cannot remove %s associated with service.id %li, because it is still in use. Current shared_ptr use count is %i\n", objName, svcId, (int)observe.use_count());
@@ -523,7 +523,7 @@ namespace celix {
             };
             opts.removeWithOwner = [](void *handle, void*, const celix_properties_t* cProps, const celix_bundle_t*) {
                 auto tracker = static_cast<ServiceTracker<I>*>(handle);
-                long svcId = celix_properties_getAsLong(cProps, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+                long svcId = celix_properties_getAsLong(cProps, CELIX_FRAMEWORK_SERVICE_ID, -1L);
                 std::shared_ptr<SvcEntry> entry{};
                 {
                     std::lock_guard<std::mutex> lck{tracker->mutex};

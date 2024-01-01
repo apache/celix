@@ -19,13 +19,14 @@
 #include <celix_framework.h>
 #include <celix_framework_factory.h>
 #include <celix_log_helper.h>
+#include <celix_constants.h>
 
 int main() {
     celix_properties_t *properties = NULL;
     properties = celix_properties_create();
     celix_properties_setBool(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", true);
-    celix_properties_setBool(properties, "org.osgi.framework.storage.clean", true);
-    celix_properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
+    celix_properties_setBool(properties, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, true);
+    celix_properties_set(properties, CELIX_FRAMEWORK_CACHE_DIR, ".cacheBundleContextTestFramework");
     celix_framework_t *fw = celix_frameworkFactory_createFramework(properties);
     celix_bundle_context_t *ctx = celix_framework_getFrameworkContext(fw);
     celix_log_helper_t *logHelper = celix_logHelper_create(ctx, "example_log_helper");

@@ -221,12 +221,6 @@ namespace celix { namespace dm {
         );
 
         /**
-         * Specify if the service dependency should add a service.lang filter part if it is not already present
-         * For C service dependencies 'service.lang=C' will be added.
-         */
-        CServiceDependency<T,I>& setAddLanguageFilter(bool addLang);
-
-        /**
          * "Build" the service dependency.
          * When build the service dependency is active and the service tracker is created.
          *
@@ -421,16 +415,6 @@ namespace celix { namespace dm {
          * @return the service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setStrategy(DependencyUpdateStrategy strategy);
-
-        /**
-         * Specify if the service dependency should add a service.lang filter part if it is not already present
-         * For C++ service dependencies 'service.lang=C++' will be added.
-         * Should be called before
-         *
-         * @return the service dependency reference for chaining (fluent API)
-         */
-        ServiceDependency<T,I>& setAddLanguageFilter(bool addLang);
-
 
         /**
          * "Build" the service dependency.

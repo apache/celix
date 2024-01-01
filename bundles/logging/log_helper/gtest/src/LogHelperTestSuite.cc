@@ -32,7 +32,7 @@ class LogHelperTestSuite : public ::testing::Test {
 public:
     LogHelperTestSuite() {
         celix::Properties properties{};
-        properties.set("org.osgi.framework.storage", ".cacheLogHelperTestSuite");
+        properties.set(CELIX_FRAMEWORK_CACHE_DIR, ".cacheLogHelperTestSuite");
         properties.set(CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, "debug");
         fw = celix::createFramework(properties);
         ctx = fw->getFrameworkBundleContext();

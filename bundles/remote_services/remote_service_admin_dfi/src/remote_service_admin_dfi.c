@@ -611,7 +611,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
         service_reference_pt reference = NULL;
         char filter[256];
 
-        snprintf(filter, 256, "(%s=%s)", (char *) OSGI_FRAMEWORK_SERVICE_ID, serviceId);
+        snprintf(filter, 256, "(%s=%s)", (char *) CELIX_FRAMEWORK_SERVICE_ID, serviceId);
 
         status = bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
 
@@ -638,7 +638,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
         const char *provided = NULL;
         if (status == CELIX_SUCCESS) {
             serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
-            serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &provided);
+            serviceReference_getProperty(reference, (char *) CELIX_FRAMEWORK_SERVICE_NAME, &provided);
 
             if (exports == NULL || provided == NULL || strcmp(exports, provided) != 0) {
                 celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_WARNING, "RSA: No Services to export.");
@@ -740,15 +740,12 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS
             && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0
             && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_CONFIGS) != 0
-            && strcmp(key, (char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
+            && strcmp(key, (char*) CELIX_FRAMEWORK_SERVICE_NAME) != 0) {
             celix_properties_set(endpointProperties, key, value);
         }
     }
 
-    hash_map_entry_pt entry = hashMap_getEntry(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
-
-    char* key = hashMapEntry_getKey(entry);
-    char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
+    const char* serviceId = celix_properties_get(endpointProperties, CELIX_FRAMEWORK_SERVICE_ID, "-1");
     const char *uuid = NULL;
 
     char buf[512];
@@ -762,9 +759,9 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     char endpoint_uuid[37];
     uuid_unparse_lower(endpoint_uid, endpoint_uuid);
 
-    bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+    bundleContext_getProperty(admin->context, CELIX_FRAMEWORK_UUID, &uuid);
     celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
-    celix_properties_set(endpointProperties, OSGI_FRAMEWORK_OBJECTCLASS, interface);
+    celix_properties_set(endpointProperties, CELIX_FRAMEWORK_SERVICE_NAME, interface);
     celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
     celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
     celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED, "true");
@@ -775,12 +772,9 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     }
 
     if (props != NULL) {
-        hash_map_iterator_pt propIter = hashMapIterator_create(props);
-        while (hashMapIterator_hasNext(propIter)) {
-            hash_map_entry_pt entry = hashMapIterator_nextEntry(propIter);
-            celix_properties_set(endpointProperties, (char*)hashMapEntry_getKey(entry), (char*)hashMapEntry_getValue(entry));
+        CELIX_PROPERTIES_ITERATE(props, iter) {
+            celix_properties_set(endpointProperties, iter.key, iter.entry.value);
         }
-        hashMapIterator_destroy(propIter);
     }
 
     *endpoint = calloc(1, sizeof(**endpoint));
@@ -794,8 +788,6 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         (*endpoint)->properties = endpointProperties;
     }
 
-    free(key);
-    free(serviceId);
     free(keys);
 
     return status;
@@ -1002,14 +994,10 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
     } else {
         struct curl_slist *metadataHeader = NULL;
         if (metadata != NULL && celix_properties_size(metadata) > 0) {
-            const char *key = NULL;
-            CELIX_PROPERTIES_FOR_EACH(metadata, key) {
-                const char *val = celix_properties_get(metadata, key, "");
-                size_t length = strlen(key) + strlen(val) + 18; // "X-RSA-Metadata-key: val\0"
-
+            CELIX_PROPERTIES_ITERATE(metadata, iter) {
+                size_t length = strlen(iter.key) + strlen(iter.entry.value) + 18; // "X-RSA-Metadata-key: val\0"
                 char header[length];
-
-                snprintf(header, length, "X-RSA-Metadata-%s: %s", key, val);
+                snprintf(header, length, "X-RSA-Metadata-%s: %s", iter.key, iter.entry.value);
                 metadataHeader = curl_slist_append(metadataHeader, header);
             }
 

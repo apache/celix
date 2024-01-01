@@ -57,9 +57,6 @@ celix_bundle_activator_create_fp celix_libloader_findBundleActivatorCreate(celix
     celix_bundle_activator_create_fp result = NULL;
     if (bundleActivatorHandle != NULL) {
         result = (celix_bundle_activator_create_fp) dlsym(bundleActivatorHandle, CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE);
-        if (result == NULL) {
-            result = (celix_bundle_activator_create_fp) dlsym(bundleActivatorHandle, OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_CREATE);
-        }
     }
     return result;
 }
@@ -68,9 +65,6 @@ celix_bundle_activator_start_fp celix_libloader_findBundleActivatorStart(celix_l
     celix_bundle_activator_start_fp result = NULL;
     if (bundleActivatorHandle != NULL) {
         result = (celix_bundle_activator_start_fp) dlsym(bundleActivatorHandle, CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_START);
-        if (result == NULL) {
-            result = (celix_bundle_activator_start_fp) dlsym(bundleActivatorHandle, OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_START);
-        }
     }
     return result;
 }
@@ -79,9 +73,6 @@ celix_bundle_activator_stop_fp celix_libloader_findBundleActivatorStop(celix_lib
     celix_bundle_activator_stop_fp result = NULL;
     if (bundleActivatorHandle != NULL) {
         result = (celix_bundle_activator_stop_fp) dlsym(bundleActivatorHandle, CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_STOP);
-        if (result == NULL) {
-            result = (celix_bundle_activator_stop_fp) dlsym(bundleActivatorHandle, OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_STOP);
-        }
     }
     return result;
 }
@@ -90,9 +81,6 @@ celix_bundle_activator_destroy_fp celix_libloader_findBundleActivatorDestroy(cel
     celix_bundle_activator_destroy_fp result = NULL;
     if (bundleActivatorHandle != NULL) {
         result = (celix_bundle_activator_destroy_fp) dlsym(bundleActivatorHandle, CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY);
-        if (result == NULL) {
-            result = (celix_bundle_activator_destroy_fp) dlsym(bundleActivatorHandle, OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_DESTROY);
-        }
     }
     return result;
 }

@@ -28,12 +28,13 @@
 #include "celix_framework_factory.h"
 #include "celix_log_service.h"
 #include "celix_shell_command.h"
+#include "celix_constants.h"
 
 class LogBundleTestSuite : public ::testing::Test {
 public:
     LogBundleTestSuite() {
         auto* properties = celix_properties_create();
-        celix_properties_set(properties, "org.osgi.framework.storage", ".cacheLogBundleTestSuite");
+        celix_properties_set(properties, CELIX_FRAMEWORK_CACHE_DIR, ".cacheLogBundleTestSuite");
 
 
         auto* fwPtr = celix_frameworkFactory_createFramework(properties);

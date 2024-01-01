@@ -52,8 +52,8 @@ class RsaShmUnitTestSuite : public ::testing::Test {
 public:
     RsaShmUnitTestSuite() {
         auto* props = celix_properties_create();
-        celix_properties_set(props, CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, "true");
-        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_shm_impl_test_cache");
+        celix_properties_set(props, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true");
+        celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_shm_impl_test_cache");
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
         fw = std::shared_ptr<celix_framework_t>{fwPtr, [](auto* f) {celix_frameworkFactory_destroyFramework(f);}};
@@ -94,7 +94,7 @@ public:
 
     endpoint_description_t *CreateEndpointDescription() {
         celix_properties_t *properties = celix_properties_create();
-        celix_properties_set(properties, OSGI_FRAMEWORK_OBJECTCLASS, RSA_SHM_CALCULATOR_SERVICE);
+        celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, RSA_SHM_CALCULATOR_SERVICE);
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, RSA_SHM_CALCULATOR_SERVICE_VERSION);
         celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE "," RSA_SHM_RPC_TYPE_DEFAULT);
         celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "7f7efba5-500f-4ee9-b733-68de012091da");
@@ -218,7 +218,7 @@ TEST_F(RsaShmUnitTestSuite, ExportService) {
         EXPECT_EQ(CELIX_SUCCESS, status);
         EXPECT_STREQ("AdditionValue", celix_properties_get(endpoint->properties, "AdditionKey", nullptr));
         EXPECT_EQ(nullptr, celix_properties_get(endpoint->properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, nullptr));
-        EXPECT_STREQ(RSA_SHM_CALCULATOR_SERVICE, celix_properties_get(endpoint->properties, OSGI_FRAMEWORK_OBJECTCLASS, nullptr));
+        EXPECT_STREQ(RSA_SHM_CALCULATOR_SERVICE, celix_properties_get(endpoint->properties, CELIX_FRAMEWORK_SERVICE_NAME, nullptr));
         EXPECT_STREQ("true", celix_properties_get(endpoint->properties, OSGI_RSA_SERVICE_IMPORTED, nullptr));
         EXPECT_EQ(calcSvcId, celix_properties_getAsLong(endpoint->properties, OSGI_RSA_ENDPOINT_SERVICE_ID, -1));
         free(ref);
@@ -718,8 +718,8 @@ class RsaShmRpcTestSuite : public ::testing::Test {
 public:
     RsaShmRpcTestSuite() {
         auto* clientProps = celix_properties_create();
-        celix_properties_set(clientProps, CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, "true");
-        celix_properties_set(clientProps, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_shm_client_cache");
+        celix_properties_set(clientProps, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true");
+        celix_properties_set(clientProps, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_shm_client_cache");
         celix_properties_set(clientProps, "CELIX_FRAMEWORK_EXTENDER_PATH", RESOURCES_DIR);
         auto* clientFwPtr = celix_frameworkFactory_createFramework(clientProps);
         auto* clientCtxPtr = celix_framework_getFrameworkContext(clientFwPtr);
@@ -736,8 +736,8 @@ public:
 
 
         auto* serverProps = celix_properties_create();
-        celix_properties_set(serverProps, CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, "true");
-        celix_properties_set(serverProps, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_shm_server_cache");
+        celix_properties_set(serverProps, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true");
+        celix_properties_set(serverProps, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_shm_server_cache");
         celix_properties_set(serverProps, "CELIX_FRAMEWORK_EXTENDER_PATH", RESOURCES_DIR);
         auto* serverFwPtr = celix_frameworkFactory_createFramework(serverProps);
         auto* serverCtxPtr = celix_framework_getFrameworkContext(serverFwPtr);

@@ -65,7 +65,6 @@ celix_status_t remoteInterceptorsHandler_create(celix_bundle_context_t *ctx, rem
             // Create service tracker here, and not in the activator
             celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
             opts.filter.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
-            opts.filter.ignoreServiceLanguage = true;
             opts.callbackHandle = *handler;
             opts.addWithProperties = remoteInterceptorsHandler_addInterceptor;
             opts.removeWithProperties = remoteInterceptorsHandler_removeInterceptor;
@@ -203,11 +202,11 @@ int referenceCompare(const void *a, const void *b) {
     const entry_t *aEntry = a;
     const entry_t *bEntry = b;
 
-    long servIdA = celix_properties_getAsLong(aEntry->properties, OSGI_FRAMEWORK_SERVICE_ID, 0);
-    long servIdB = celix_properties_getAsLong(bEntry->properties, OSGI_FRAMEWORK_SERVICE_ID, 0);
+    long servIdA = celix_properties_getAsLong(aEntry->properties, CELIX_FRAMEWORK_SERVICE_ID, 0);
+    long servIdB = celix_properties_getAsLong(bEntry->properties, CELIX_FRAMEWORK_SERVICE_ID, 0);
 
-    long servRankingA = celix_properties_getAsLong(aEntry->properties, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
-    long servRankingB = celix_properties_getAsLong(bEntry->properties, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
+    long servRankingA = celix_properties_getAsLong(aEntry->properties, CELIX_FRAMEWORK_SERVICE_RANKING, 0);
+    long servRankingB = celix_properties_getAsLong(bEntry->properties, CELIX_FRAMEWORK_SERVICE_RANKING, 0);
 
     return celix_utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
 }

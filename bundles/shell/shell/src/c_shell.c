@@ -36,7 +36,6 @@ shell_t* shell_create(celix_bundle_context_t *ctx) {
     
     celixThreadRwlock_create(&shell->lock, NULL);
     shell->commandServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-    shell->legacyCommandServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
     return shell;
 }
@@ -45,7 +44,6 @@ void shell_destroy(shell_t *shell) {
     if (shell != NULL) {
         celixThreadRwlock_writeLock(&shell->lock);
         hashMap_destroy(shell->commandServices, false, false);
-        hashMap_destroy(shell->legacyCommandServices, false, false);
         celixThreadRwlock_unlock(&shell->lock);
         celixThreadRwlock_destroy(&shell->lock);
         celix_logHelper_destroy(shell->logHelper);
@@ -62,7 +60,7 @@ celix_status_t shell_addCommand(shell_t *shell, celix_shell_command_t *svc, cons
         celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command service must contain a '%s' property!", CELIX_SHELL_COMMAND_NAME);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+        long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
         celixThreadRwlock_writeLock(&shell->lock);
         if (hashMap_containsKey(shell->commandServices, name)) {
             celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command with name %s already registered!", name);
@@ -92,7 +90,7 @@ celix_status_t shell_removeCommand(shell_t *shell, celix_shell_command_t *svc, c
         celix_logHelper_log(shell->logHelper, CELIX_LOG_LEVEL_WARNING, "Command service must contain a '%s' property!", CELIX_SHELL_COMMAND_NAME);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+        long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
         celixThreadRwlock_writeLock(&shell->lock);
         if (hashMap_containsKey(shell->commandServices, name)) {
             celix_shell_command_entry_t *entry = hashMap_get(shell->commandServices, name);
@@ -123,12 +121,6 @@ celix_status_t shell_getCommands(shell_t *shell, celix_array_list_t **outCommand
         const char *name = hashMapIterator_nextKey(&iter);
         celix_arrayList_add(result, strndup(name, 1024*1024*10));
     }
-
-    iter = hashMapIterator_construct(shell->legacyCommandServices);
-    while (hashMapIterator_hasNext(&iter)) {
-        const char *name = hashMapIterator_nextKey(&iter);
-        celix_arrayList_add(result, strndup(name, 1024*1024*10));
-    }
     celixThreadRwlock_unlock(&shell->lock);
 
     *outCommands = result;
@@ -142,12 +134,8 @@ celix_status_t shell_getCommandUsage(shell_t *shell, const char *commandName, ch
 
     celixThreadRwlock_readLock(&shell->lock);
     celix_shell_command_entry_t *entry = hashMap_get(shell->commandServices, commandName);
-    celix_legacy_command_entry_t *legacyEntry = hashMap_get(shell->legacyCommandServices, commandName);
     if (entry != NULL) {
         const char *usage = celix_properties_get(entry->props, CELIX_SHELL_COMMAND_USAGE, "N/A");
-        *outUsage = celix_utils_strdup(usage);
-    } else if (legacyEntry != NULL ){
-        const char *usage = celix_properties_get(legacyEntry->props, OSGI_SHELL_COMMAND_USAGE, "N/A");
         *outUsage = celix_utils_strdup(usage);
     } else {
         *outUsage = NULL;
@@ -162,12 +150,8 @@ celix_status_t shell_getCommandDescription(shell_t *shell, const char *commandNa
 
     celixThreadRwlock_readLock(&shell->lock);
     celix_shell_command_entry_t *entry = hashMap_get(shell->commandServices, commandName);
-    celix_legacy_command_entry_t *legacyEntry = hashMap_get(shell->legacyCommandServices, commandName);
     if (entry != NULL) {
         const char *desc = celix_properties_get(entry->props, CELIX_SHELL_COMMAND_DESCRIPTION, "N/A");
-        *outDescription = celix_utils_strdup(desc);
-    } else if (legacyEntry != NULL) {
-        const char *desc = celix_properties_get(legacyEntry->props, OSGI_SHELL_COMMAND_DESCRIPTION, "N/A");
         *outDescription = celix_utils_strdup(desc);
     } else {
         *outDescription = NULL;
@@ -215,13 +199,9 @@ celix_status_t shell_executeCommand(shell_t *shell, const char *commandLine, FIL
 
     celixThreadRwlock_readLock(&shell->lock);
     celix_shell_command_entry_t *entry = shell_findEntry(shell, commandName, err);
-    celix_legacy_command_entry_t *legacyEntry = hashMap_get(shell->legacyCommandServices, commandName);
     if (entry != NULL) {
         bool succeeded = entry->svc->executeCommand(entry->svc->handle, commandLine, out, err);
         status = succeeded ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
-    } else if (legacyEntry != NULL) {
-        char *cl = (void*)commandLine; //NOTE this is needed for the legacy command services (also the reason why it is legacy/deprecated)
-        status = legacyEntry->svc->executeCommand(legacyEntry->svc->handle, cl, out, err);
     } else {
         fprintf(err, "No command '%s'. Provided command line: %s\n", commandName, commandLine);
         status = CELIX_BUNDLE_EXCEPTION;

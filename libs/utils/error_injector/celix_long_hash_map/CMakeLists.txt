@@ -22,5 +22,10 @@ target_link_libraries(long_hash_map_ei PUBLIC Celix::error_injector Celix::utils
 
 target_link_options(long_hash_map_ei INTERFACE
         LINKER:--wrap,celix_longHashMap_create
+        LINKER:--wrap,celix_longHashMap_createWithOptions
+        LINKER:--wrap,celix_longHashMap_put
+        LINKER:--wrap,celix_longHashMap_putLong
+        LINKER:--wrap,celix_longHashMap_putDouble
+        LINKER:--wrap,celix_longHashMap_putBool
         )
 add_library(Celix::long_hash_map_ei ALIAS long_hash_map_ei)

@@ -19,6 +19,7 @@
 
 #include <gtest/gtest.h>
 
+#include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
 #include "utils.h"
 
@@ -314,4 +315,13 @@ TEST_F(UtilsTestSuite, WriteOrCreateStringTest) {
     celix_utils_freeStringIfNotEqual(buffer2, out2);
 }
 
+TEST_F(UtilsTestSuite, StrDupAndStrLenTest) {
+    celix_autofree char* str = celix_utils_strdup("abc");
+    ASSERT_NE(nullptr, str);
+    EXPECT_STREQ("abc", str);
 
+    size_t len = celix_utils_strlen(str);
+    EXPECT_EQ(3, len);
+
+    EXPECT_EQ(nullptr, celix_utils_strdup(nullptr));
+}

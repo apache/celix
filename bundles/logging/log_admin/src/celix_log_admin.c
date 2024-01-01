@@ -217,7 +217,7 @@ static void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char
             celix_properties_set(props, CELIX_LOG_SERVICE_PROPERTY_NAME, newEntry->name);
             if (celix_utils_stringEquals(newEntry->name, CELIX_LOG_ADMIN_DEFAULT_LOG_NAME) == 0) {
                 //ensure that the default log service is found when no name filter is used.
-                celix_properties_setLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, 100);
+                celix_properties_setLong(props, CELIX_FRAMEWORK_SERVICE_RANKING, 100);
             }
 
             celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
@@ -286,7 +286,7 @@ static void celix_logAdmin_addSink(void *handle, void *svc, const celix_properti
     celix_log_admin_t* admin = handle;
     celix_log_sink_t* sink = svc;
 
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
     const char* sinkName = celix_properties_get(props, CELIX_LOG_SINK_PROPERTY_NAME, NULL);
     char nameBuf[16];
     if (sinkName == NULL) {
@@ -313,7 +313,7 @@ static void celix_logAdmin_addSink(void *handle, void *svc, const celix_properti
 
 static void celix_logAdmin_remSink(void *handle, void *svc CELIX_UNUSED, const celix_properties_t* props) {
     celix_log_admin_t* admin = handle;
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
     const char* sinkName = celix_properties_get(props, CELIX_LOG_SINK_PROPERTY_NAME, NULL);
     char nameBuf[16];
     if (sinkName == NULL) {

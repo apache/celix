@@ -29,7 +29,7 @@ class DfiUtilsTestSuite : public ::testing::Test {
 public:
     DfiUtilsTestSuite() {
         auto* props = celix_properties_create();
-        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_dfi_utils_cache");
+        celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_dfi_utils_cache");
         celix_properties_set(props, "CELIX_FRAMEWORK_EXTENDER_PATH", DESCRIPTOR_FILE_PATH);
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
@@ -61,12 +61,6 @@ static void useBundleCallback(void *handle, const celix_bundle_t *bundle) {
 
 TEST_F(DfiUtilsTestSuite, ParseDescriptor) {
     curTestDescFile = "rsa_dfi_utils_test";
-    bool found = celix_bundleContext_useBundle(ctx.get(), descBundleId, this, useBundleCallback);
-    EXPECT_TRUE(found);
-}
-
-TEST_F(DfiUtilsTestSuite, ParseAvprDescriptor) {
-    curTestDescFile = "rsa_dfi_utils_test_avpr";
     bool found = celix_bundleContext_useBundle(ctx.get(), descBundleId, this, useBundleCallback);
     EXPECT_TRUE(found);
 }

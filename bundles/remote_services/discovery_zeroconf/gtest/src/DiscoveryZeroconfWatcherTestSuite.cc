@@ -81,8 +81,8 @@ public:
 
     DiscoveryZeroconfWatcherTestSuite() {
         auto* props = celix_properties_create();
-        celix_properties_set(props, CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, "true");
-        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".dzc_watcher_test_cache");
+        celix_properties_set(props, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true");
+        celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, ".dzc_watcher_test_cache");
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
         fw = std::shared_ptr<celix_framework_t>{fwPtr, [](auto* f) {celix_frameworkFactory_destroyFramework(f);}};
@@ -186,7 +186,7 @@ static DNSServiceRef RegisterTestService(void) {
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
     TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
-    TXTRecordSetValue(&txtRecord, OSGI_FRAMEWORK_OBJECTCLASS, strlen("dzc_test_service"), "dzc_test_service");
+    TXTRecordSetValue(&txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, strlen("dzc_test_service"), "dzc_test_service");
     TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_ID, strlen("60f49d89-d105-430c-b12b-93fbb54b1d19"), "60f49d89-d105-430c-b12b-93fbb54b1d19");
     TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, strlen("100"), "100");
     TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED, strlen("true"), "true");
@@ -293,9 +293,9 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveSelfFrameworkEndpoint) {
     char txtBuf[1300] = {0};
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
-    const char *fwUuid = celix_bundleContext_getProperty(ctx.get(), OSGI_FRAMEWORK_FRAMEWORK_UUID, nullptr);
+    const char *fwUuid = celix_bundleContext_getProperty(ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
     TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid == nullptr ? 0 : strlen(fwUuid), fwUuid);
-    TXTRecordSetValue(&txtRecord, OSGI_FRAMEWORK_OBJECTCLASS, strlen("dzc_test_self_fw_service"), "dzc_test_self_fw_service");
+    TXTRecordSetValue(&txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, strlen("dzc_test_self_fw_service"), "dzc_test_self_fw_service");
     TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_ID, strlen("60f49d89-d105-430c-b12b-93fbb54b1d19"), "60f49d89-d105-430c-b12b-93fbb54b1d19");
     TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, strlen("100"), "100");
     TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED, strlen("true"), "true");
@@ -323,7 +323,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddTxtRecord) {
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
     TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
-    TXTRecordSetValue(&txtRecord, OSGI_FRAMEWORK_OBJECTCLASS, strlen("dzc_test_service"), "dzc_test_service");
+    TXTRecordSetValue(&txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, strlen("dzc_test_service"), "dzc_test_service");
     TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_ID, strlen("60f49d89-d105-430c-b12b-93fbb54b1d19"), "60f49d89-d105-430c-b12b-93fbb54b1d19");
     TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, strlen("100"), "100");
     TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED, strlen("true"), "true");
@@ -369,7 +369,7 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveEndpointListener) {
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
     TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
-    TXTRecordSetValue(&txtRecord, OSGI_FRAMEWORK_OBJECTCLASS, strlen("dzc_test_service"), "dzc_test_service");
+    TXTRecordSetValue(&txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, strlen("dzc_test_service"), "dzc_test_service");
     TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_ID, strlen("60f49d89-d105-430c-b12b-93fbb54b1d19"), "60f49d89-d105-430c-b12b-93fbb54b1d19");
     TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, strlen("100"), "100");
     TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED, strlen("true"), "true");

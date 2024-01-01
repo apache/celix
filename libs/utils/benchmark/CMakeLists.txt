@@ -25,11 +25,26 @@ celix_subproject(UTILS_BENCHMARK "Option to enable Celix framework benchmark" ${
 if (UTILS_BENCHMARK)
     find_package(benchmark REQUIRED)
 
-    add_executable(celix_utils_benchmark
+    add_executable(celix_string_hashmap_benchmark
             src/BenchmarkMain.cc
             src/StringHashmapBenchmark.cc
+    )
+    target_link_libraries(celix_string_hashmap_benchmark PRIVATE Celix::utils benchmark::benchmark)
+    target_compile_options(celix_string_hashmap_benchmark PRIVATE -Wno-unused-function)
+    celix_deprecated_utils_headers(celix_string_hashmap_benchmark)
+
+    add_executable(celix_long_hashmap_benchmark
+            src/BenchmarkMain.cc
             src/LongHashmapBenchmark.cc
     )
-    target_link_libraries(celix_utils_benchmark PRIVATE Celix::utils benchmark::benchmark)
-    celix_deprecated_utils_headers(celix_utils_benchmark)
+    target_link_libraries(celix_long_hashmap_benchmark PRIVATE Celix::utils benchmark::benchmark)
+    target_compile_options(celix_long_hashmap_benchmark PRIVATE -Wno-unused-function)
+    celix_deprecated_utils_headers(celix_long_hashmap_benchmark)
+
+    add_executable(celix_filter_benchmark
+            src/BenchmarkMain.cc
+            src/FilterBenchmark.cc
+    )
+    target_link_libraries(celix_filter_benchmark PRIVATE Celix::utils benchmark::benchmark)
+    target_compile_options(celix_filter_benchmark PRIVATE -Wno-unused-function)
 endif ()

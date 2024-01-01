@@ -40,6 +40,12 @@ CELIX_EI_DECLARE(ftell, long);
 
 CELIX_EI_DECLARE(fread, size_t);
 
+CELIX_EI_DECLARE(fputc, int);
+
+CELIX_EI_DECLARE(fputs, int);
+
+CELIX_EI_DECLARE(fclose, int);
+
 #ifdef __cplusplus
 }
 #endif

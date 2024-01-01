@@ -221,17 +221,6 @@ static celix_status_t exportRegistration_findAndParseInterfaceDescriptor(celix_l
         return status;
     }
 
-    status = dfi_findAvprDescriptor(context, bundle, name, &descriptor);
-    if (status == CELIX_SUCCESS && descriptor != NULL) {
-        *out = dynInterface_parseAvpr(descriptor);
-        if (*out == NULL) {
-            celix_logHelper_logTssErrors(helper, CELIX_LOG_LEVEL_WARNING);
-            celix_logHelper_warning(helper, "RSA_AVPR: Error parsing avpr service descriptor for '%s'", name);
-            status = CELIX_BUNDLE_EXCEPTION;
-        }
-        return status;
-    }
-
     celix_logHelper_log(helper, CELIX_LOG_LEVEL_WARNING, "RSA: Error finding service descriptor for '%s'", name);
     return CELIX_BUNDLE_EXCEPTION;
 }
@@ -277,7 +266,6 @@ celix_status_t exportRegistration_start(export_registration_t *reg) {
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.filter = reg->filter;
     opts.filter.serviceName = "*";
-    opts.filter.ignoreServiceLanguage = true;
     opts.callbackHandle = reg;
     opts.add = exportRegistration_addServ;
     opts.remove = exportRegistration_removeServ;

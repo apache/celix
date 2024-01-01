@@ -197,23 +197,28 @@ celix_status_t serviceReference_getProperty(service_reference_pt ref, const char
 }
 
 celix_status_t serviceReference_getPropertyKeys(service_reference_pt ref, char **keys[], unsigned int *size) {
-    celix_status_t status = CELIX_SUCCESS;
-    properties_pt props = NULL;
-
-    status = serviceRegistration_getProperties(ref->registration, &props);
-    assert(status == CELIX_SUCCESS);
-    hash_map_iterator_pt it;
-    int i = 0;
-    int vsize = hashMap_size(props);
-    *size = (unsigned int)vsize;
-    *keys = malloc(vsize * sizeof(**keys));
-    it = hashMapIterator_create(props);
-    while (hashMapIterator_hasNext(it)) {
-        (*keys)[i] = hashMapIterator_nextKey(it);
-        i++;
+    if (!keys || !size) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-    hashMapIterator_destroy(it);
-    return status;
+
+    celix_properties_t* props = NULL;
+    celix_status_t status = serviceRegistration_getProperties(ref->registration, &props);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+
+    *size = (unsigned int)celix_properties_size(props);
+    *keys = malloc((*size) * sizeof(**keys));
+    if (!*keys) {
+        return ENOMEM;
+    }
+
+    int i = 0;
+    CELIX_PROPERTIES_ITERATE(props, entry) {
+        (*keys)[i++] = (char*)entry.key;
+    }
+
+    return CELIX_SUCCESS;
 }
 
 celix_status_t serviceReference_invalidateCache(service_reference_pt reference) {
@@ -263,8 +268,8 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 	long id, other_id;
 	const char* id_str;
     const char* other_id_str;
-	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &id_str);
-	serviceReference_getProperty(compareTo, (char *) OSGI_FRAMEWORK_SERVICE_ID, &other_id_str);
+	serviceReference_getProperty(reference, (char *) CELIX_FRAMEWORK_SERVICE_ID, &id_str);
+	serviceReference_getProperty(compareTo, (char *) CELIX_FRAMEWORK_SERVICE_ID, &other_id_str);
 
 	id = atol(id_str);
 	other_id = atol(other_id_str);
@@ -273,8 +278,8 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 	long rank, other_rank;
 	const char *rank_str;
     const char* other_rank_str;
-	serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_RANKING, &rank_str);
-	serviceReference_getProperty(compareTo, OSGI_FRAMEWORK_SERVICE_RANKING, &other_rank_str);
+	serviceReference_getProperty(reference, CELIX_FRAMEWORK_SERVICE_RANKING, &rank_str);
+	serviceReference_getProperty(compareTo, CELIX_FRAMEWORK_SERVICE_RANKING, &other_rank_str);
 
 	rank = rank_str == NULL ? 0 : atol(rank_str);
 	other_rank = other_rank_str == NULL ? 0 : atol(other_rank_str);

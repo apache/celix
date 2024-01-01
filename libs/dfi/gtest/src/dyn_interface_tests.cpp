@@ -128,6 +128,12 @@ extern "C" {
         ASSERT_EQ(1, status); //Test fails because of a space at the end of the name
         fclose(desc); desc=NULL;
 
+        /* Invalid header */
+        desc = fopen("descriptors/invalids/invalidHeader.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_EQ(1, status); //Test fails because of missing name value
+        fclose(desc); desc=NULL;
 
         /* Header without Version */
         desc = fopen("descriptors/invalids/noVersion.descriptor", "r");

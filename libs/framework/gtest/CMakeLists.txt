@@ -31,6 +31,7 @@ add_celix_bundle(simple_cxx_dep_man_bundle SOURCES src/HelloWorldCxxActivatorWit
 add_celix_bundle(cmp_test_bundle SOURCES src/CmpTestBundleActivator.cc VERSION 1.0.0)
 add_celix_bundle(cond_test_bundle SOURCES src/CondTestBundleActivator.cc VERSION 1.0.0)
 add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
+add_celix_bundle(celix_err_test_bundle SOURCES src/activator_with_celix_err.c VERSION 1.0.0)
 
 add_celix_bundle(unresolvable_bundle SOURCES src/nop_activator.c VERSION 1.0.0)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -66,10 +67,6 @@ add_executable(test_framework ${CELIX_FRAMEWORK_TEST_SOURCES})
 target_link_libraries(test_framework PRIVATE framework_cut GTest::gtest GTest::gtest_main)
 celix_deprecated_framework_headers(test_framework)
 
-
-#embed bundle in the test_framework executable
-celix_target_embedded_bundles(test_framework simple_test_bundle1 simple_test_bundle2)
-
 #Create bundle set definitions
 celix_target_bundle_set_definition(test_framework NAME BUNDLE_EMPTY_TEST_SET)
 celix_target_bundle_set_definition(test_framework NAME BUNDLE_TEST_SET
@@ -81,7 +78,9 @@ celix_target_bundle_set_definition(test_framework NAME BUNDLE_TEST_SET
 add_celix_bundle_dependencies(test_framework
         simple_test_bundle1
         simple_test_bundle2 simple_test_bundle3 simple_test_bundle4
-        simple_test_bundle5 bundle_with_exception bundle_with_bad_export unresolvable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle)
+        simple_test_bundle5 bundle_with_exception bundle_with_bad_export
+        unresolvable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle
+        celix_err_test_bundle)
 target_include_directories(test_framework PRIVATE ../src)
 celix_deprecated_utils_headers(test_framework)
 
@@ -106,6 +105,8 @@ configure_file(config.properties.in config.properties @ONLY)
 configure_file(framework1.properties.in framework1.properties @ONLY)
 configure_file(framework2.properties.in framework2.properties @ONLY)
 configure_file(install_and_start_bundles.properties.in install_and_start_bundles.properties @ONLY)
+
+celix_target_bundle_set_definition(test_framework NAME CELIX_ERR_TEST_BUNDLE celix_err_test_bundle)
 
 target_compile_definitions(test_framework PRIVATE
         SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"
@@ -145,7 +146,6 @@ if (EI_TESTS)
             SIMPLE_CXX_BUNDLE_LOC="${SIMPLE_CXX_BUNDLE_LOC}"
     )
     add_celix_bundle_dependencies(test_framework_with_ei simple_test_bundle1 simple_cxx_bundle)
-    celix_target_embedded_bundles(test_framework_with_ei simple_test_bundle1)
     celix_deprecated_utils_headers(test_framework_with_ei)
     target_link_libraries(test_framework_with_ei PRIVATE
             framework_cut
@@ -154,7 +154,7 @@ if (EI_TESTS)
             Celix::asprintf_ei
             Celix::dlfcn_ei
             Celix::unistd_ei
-            Celix::hash_map_ei
+            Celix::string_hash_map_ei
             Celix::properties_ei
             Celix::stdlib_ei
             Celix::stat_ei

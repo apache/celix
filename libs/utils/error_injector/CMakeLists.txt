@@ -16,8 +16,8 @@
 # under the License.
 
 add_subdirectory(celix_array_list)
-add_subdirectory(celix_hash_map)
 add_subdirectory(celix_long_hash_map)
+add_subdirectory(celix_string_hash_map)
 add_subdirectory(celix_properties)
 add_subdirectory(celix_threads)
 add_subdirectory(celix_utils)

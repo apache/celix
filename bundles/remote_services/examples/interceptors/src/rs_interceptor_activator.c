@@ -51,7 +51,7 @@ static int interceptor_start(struct interceptorActivator *act, celix_bundle_cont
     act->interceptor = interceptor;
 
     celix_properties_t *props = celix_properties_create();
-    celix_properties_setLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, 10);
+    celix_properties_setLong(props, CELIX_FRAMEWORK_SERVICE_RANKING, 10);
 
     celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
     opts.svc = interceptorSvc;
@@ -75,7 +75,7 @@ static int interceptor_start(struct interceptorActivator *act, celix_bundle_cont
     act->secondInterceptor = secondInterceptor;
 
     celix_properties_t *secondProps = celix_properties_create();
-    celix_properties_setLong(secondProps, OSGI_FRAMEWORK_SERVICE_RANKING, 20);
+    celix_properties_setLong(secondProps, CELIX_FRAMEWORK_SERVICE_RANKING, 20);
 
     celix_service_registration_options_t secondOpts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
     secondOpts.svc = secondInterceptorSvc;

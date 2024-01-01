@@ -1,8 +1,0 @@
-:header
-type=message
-name=poiCmd
-version=1.0.0
-:annotations
-classname=org.example.PointOfInterestCommand
-:message
-{t command}

@@ -166,19 +166,19 @@ celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context
 	activator->endpointListener = endpointListener;
 
 	const char *uuid = NULL;
-	status = bundleContext_getProperty(activator->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	status = bundleContext_getProperty(activator->context, CELIX_FRAMEWORK_UUID, &uuid);
 	if (!uuid) {
 		celix_logHelper_log(activator->celix_logHelper, CELIX_LOG_LEVEL_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");
 		return CELIX_ILLEGAL_STATE;
 	}
 
-	size_t len = 14 + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + strlen(OSGI_RSA_ENDPOINT_FRAMEWORK_UUID) + strlen(uuid);
+	size_t len = 14 + strlen(CELIX_FRAMEWORK_SERVICE_NAME) + strlen(OSGI_RSA_ENDPOINT_FRAMEWORK_UUID) + strlen(uuid);
 	char *scope = malloc(len);
 	if (!scope) {
 		return CELIX_ENOMEM;
 	}
 
-	snprintf(scope, len, "(&(%s=*)(!(%s=%s)))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+	snprintf(scope, len, "(&(%s=*)(!(%s=%s)))", CELIX_FRAMEWORK_SERVICE_NAME, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 
 	celix_logHelper_log(activator->celix_logHelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: endpoint listener scope is %s", scope);
 

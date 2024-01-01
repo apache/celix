@@ -23,6 +23,7 @@
 #include "celix_cleanup.h"
 #include "celix_hash_map_value.h"
 #include "celix_utils_export.h"
+#include "celix_errno.h"
 
 /**
  * @brief Init macro so that the opts are correctly initialized for C++ compilers
@@ -48,14 +49,13 @@ extern "C" {
 typedef struct celix_string_hash_map celix_string_hash_map_t;
 
 /**
- * @Brief long hash map iterator, which contains a hash map entry's keu and value.
+ * @Brief string hash map iterator, which contains a hash map entry's keu and value.
  */
 typedef struct celix_string_hash_map_iterator {
-    size_t index; //iterator index, starting at 0
-    const char* key;
-    celix_hash_map_value_t value;
+    const char* key; /**< The key of the hash map entry. */
+    celix_hash_map_value_t value; /**< The value of the hash map entry. */
 
-    void* _internal[2]; //internal opaque struct
+    void* _internal[2]; /**< internal opaque data, do not use */
 } celix_string_hash_map_iterator_t;
 
 /**
@@ -70,11 +70,14 @@ typedef struct celix_string_hash_map_create_options {
      * only the simpledRemoveCallback will be used.
      *
      * Default is NULL.
+     *
+     * @param[in] removedValue The value that was removed from the hash map. This value is no longer used by the
+     *                         hash map and can be freed.
      */
-    void (*simpleRemovedCallback)(void* value) CELIX_OPTS_INIT;
+    void (*simpleRemovedCallback)(void* removedValue) CELIX_OPTS_INIT;
 
     /**
-     * Optional callback data, which will be provided to the removedCallback callback.
+     * Optional callback data, which will be provided to the removedCallback and removedKeyCallback callback.
      *
      * Default is NULL.
      */
@@ -90,14 +93,40 @@ typedef struct celix_string_hash_map_create_options {
      * only the simpledRemoveCallback will be used.
      *
      * Default is NULL.
+     *
+     * @param[in] data The void pointer to the data that was provided when the callback was set as removedCallbackData.
+     * @param[in] removedKey The key of the value that was removed from the hash map.
+     *                       Note that the removedKey can still be in use if the a value entry for the same key is
+     *                       replaced, so this callback should not free the removedKey.
+     * @param[in] removedValue The value that was removed from the hash map. This value is no longer used by the
+     *                         hash map and can be freed.
      */
     void (*removedCallback)(void* data, const char* removedKey, celix_hash_map_value_t removedValue) CELIX_OPTS_INIT;
+
+    /**
+     * @brief A removed key callback, which if provided will be called if a key is no longer used in the hash map.
+     *
+     * @param[in] data The void pointer to the data that was provided when the callback was set as removedCallbackData.
+     * @param[in] key The key that is no longer used in the hash map. if `storeKeysWeakly` was configured as true,
+     *                the key can be freed.
+     */
+    void (*removedKeyCallback)(void* data, char* key) CELIX_OPTS_INIT;
 
     /**
      * @brief If set to true, the string hash map will not make of copy of the keys and assumes
      * that the keys are in scope/memory for the complete lifecycle of the string hash map.
      *
-     * Note that this changes the default behaviour of the celix_stringHashMap_put* functions.
+     * When keys are stored weakly it is the caller responsibility to check if a key is already in use
+     * (celix_stringHashMap_hasKey).
+     *
+     * If the key is already in use, the celix_stringHashMap_put* will not store the provided key and will
+     * instead keep the already existing key. If needed, the caller may free the provided key.
+     * If the key is not already in use, the celix_stringHashMap_put* will store the provided key and the caller
+     * should not free the provided key.
+     *
+     * Uf a celix_stringHashMap_put* returns a error, the caller may free the provided key.
+     *
+     * @note This changes the default behaviour of the celix_stringHashMap_put* functions.
      *
      * Default is false.
      */
@@ -114,21 +143,21 @@ typedef struct celix_string_hash_map_create_options {
      unsigned int initialCapacity CELIX_OPTS_INIT;
 
      /**
-      * @brief The hash map load factor, which controls the max ratio between nr of entries in the hash map and the
+      * @brief The hash map max load factor, which controls the max ratio between nr of entries in the hash map and the
       * hash map capacity.
       *
-      * The load factor controls how large the hash map capacity (nr of buckets) is compared to the nr of entries
+      * The max load factor controls how large the hash map capacity (nr of buckets) is compared to the nr of entries
       * in the hash map. The load factor is an important property of the hash map which influences how close the
       * hash map performs to O(1) for its get, has and put operations.
       *
-      * If the nr of entries increases above the loadFactor * capacity, the hash capacity will be doubled.
+      * If the nr of entries increases above the maxLoadFactor * capacity, the hash table capacity will be doubled.
       * For example a hash map with capacity 16 and load factor 0.75 will double its capacity when the 13th entry
       * is added to the hash map.
       *
       * If 0 is provided, the hash map load factor will be 0.75 (default hash map load factor).
       * Default is 0.
       */
-     double loadFactor CELIX_OPTS_INIT;
+     double maxLoadFactor CELIX_OPTS_INIT;
 } celix_string_hash_map_create_options_t;
 
 #ifndef __cplusplus
@@ -139,9 +168,10 @@ typedef struct celix_string_hash_map_create_options {
     .simpleRemovedCallback = NULL,                      \
     .removedCallbackData = NULL,                        \
     .removedCallback = NULL,                            \
+    .removedKeyCallback = NULL,                         \
     .storeKeysWeakly = false,                           \
     .initialCapacity = 0,                               \
-    .loadFactor = 0                                     \
+    .maxLoadFactor = 0                                  \
 }
 #endif
 
@@ -173,43 +203,55 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_string_hash_map_t, celix_stringHashMap_d
 CELIX_UTILS_EXPORT size_t celix_stringHashMap_size(const celix_string_hash_map_t* map);
 
 /**
- * @brief add pointer entry the string hash map.
+ * @brief Add pointer entry the string hash map.
  *
- * @param map The hashmap.
- * @param key  The key to use. The hashmap will create a copy if needed.
- * @param value The value to store with the key.
- * @return The previous key or NULL of no key was set. Note also returns NULL if the previous value for the key was NULL.
+ * If the return status is an error, an error message is logged to celix_err.
+ *
+ * @param[in] map The hashmap.
+ * @param[in] key  The key to use. The hashmap will create a copy if needed.
+ * @param[in] value The value to store with the key.
+ * @return celix_status_t CELIX_SUCCESS if the entry was added, CELIX_ENOMEM if no memory could be allocated for the
+ *         entry.
  */
-CELIX_UTILS_EXPORT void* celix_stringHashMap_put(celix_string_hash_map_t* map, const char* key, void* value);
+CELIX_UTILS_EXPORT celix_status_t celix_stringHashMap_put(celix_string_hash_map_t* map, const char* key, void* value);
 
 /**
  * @brief add long entry the string hash map.
  *
+ * If the return status is an error, an error message is logged to celix_err.
+ *
  * @param map The hashmap.
  * @param key  The key to use. The hashmap will create a copy if needed.
  * @param value The value to store with the key.
- * @return True if a previous value with the provided has been replaced.
+ * @return celix_status_t CELIX_SUCCESS if the entry was added, CELIX_ENOMEM if no memory could be allocated for the
+ *         entry.
  */
-CELIX_UTILS_EXPORT bool celix_stringHashMap_putLong(celix_string_hash_map_t* map, const char* key, long value);
+CELIX_UTILS_EXPORT celix_status_t celix_stringHashMap_putLong(celix_string_hash_map_t* map, const char* key, long value);
 
 /**
  * @brief add double entry the string hash map.
  *
+ * If the return status is an error, an error message is logged to celix_err.
+ *
  * @param map The hashmap.
  * @param key  The key to use. The hashmap will create a copy if needed.
- * @return True if a previous value with the provided has been replaced.
+ * @return celix_status_t CELIX_SUCCESS if the entry was added, CELIX_ENOMEM if no memory could be allocated for the
+ *         entry.
  */
-CELIX_UTILS_EXPORT bool celix_stringHashMap_putDouble(celix_string_hash_map_t* map, const char* key, double value);
+CELIX_UTILS_EXPORT celix_status_t celix_stringHashMap_putDouble(celix_string_hash_map_t* map, const char* key, double value);
 
 /**
  * @brief add bool entry the string hash map.
  *
+ * If the return status is an error, an error message is logged to celix_err.
+ *
  * @param map The hashmap.
  * @param key  The key to use. The hashmap will create a copy if needed.
  * @param value The value to store with the key.
- * @return True if a previous value with the provided has been replaced.
+ * @return celix_status_t CELIX_SUCCESS if the entry was added, CELIX_ENOMEM if no memory could be allocated for the
+ *         entry.
  */
-CELIX_UTILS_EXPORT bool celix_stringHashMap_putBool(celix_string_hash_map_t* map, const char* key, bool value);
+CELIX_UTILS_EXPORT celix_status_t celix_stringHashMap_putBool(celix_string_hash_map_t* map, const char* key, bool value);
 
 /**
  * @brief Returns the value for the provided key.
@@ -274,48 +316,73 @@ CELIX_UTILS_EXPORT bool celix_stringHashMap_remove(celix_string_hash_map_t* map,
 CELIX_UTILS_EXPORT void celix_stringHashMap_clear(celix_string_hash_map_t* map);
 
 /**
- * @brief Create and return a hash map iterator for the beginning of the hash map.
+ * @brief Check if the provided string hash maps are equal.
+ *
+ * Equals means that both maps have the same number of entries and that all entries in the first map
+ * are also present in the second map and have the same value.
+ *
+ * The value are compared using memcpy, so for pointer values the pointer value is compared and not the value itself.
+ *
+ * @param[in] map1 The first map to compare.
+ * @param[in] map2 The second map to compare.
+ * @return true if the maps are equal, false otherwise.
+ */
+CELIX_UTILS_EXPORT bool celix_stringHashMap_equals(const celix_string_hash_map_t* map1, const celix_string_hash_map_t* map2);
+
+/**
+ * @brief Get an iterator pointing to the first element in the map.
+ *
+ * @param[in] map The map to get the iterator for.
+ * @return An iterator pointing to the first element in the map.
  */
 CELIX_UTILS_EXPORT celix_string_hash_map_iterator_t celix_stringHashMap_begin(const celix_string_hash_map_t* map);
 
 /**
- * @brief Check if the iterator is the end of the hash map.
+ * @brief Get an iterator pointing to the element following the last element in the map.
  *
- * @note the end iterator should not be used to retrieve a key of value.
+ * @param[in] map The map to get the iterator for.
+ * @return An iterator pointing to the element following the last element in the map.
+ */
+celix_string_hash_map_iterator_t celix_stringHashMap_end(const celix_string_hash_map_t* map);
+
+/**
  *
- * @return true if the iterator is the end.
+ * @brief Determine if the iterator points to the element following the last element in the map.
+ *
+ * @param[in] iter The iterator to check.
+ * @return true if the iterator points to the element following the last element in the map, false otherwise.
  */
 CELIX_UTILS_EXPORT bool celix_stringHashMapIterator_isEnd(const celix_string_hash_map_iterator_t* iter);
 
 /**
- * @brief Moves the provided iterator to the next entry in the hash map.
+ * @brief Advance the iterator to the next element in the map.
+ * @param[in] iter The iterator to advance.
  */
 CELIX_UTILS_EXPORT void celix_stringHashMapIterator_next(celix_string_hash_map_iterator_t* iter);
 
 /**
- * @brief Marco to loop over all the entries of a string hash map.
+ * @brief Compares two celix_string_hash_map_iterator_t objects for equality.
  *
- * Small example of how to use the iterate macro:
- * @code
- * celix_string_hash_map_t* map = ...
- * CELIX_STRING_HASH_MAP_ITERATE(map, iter) {
- *     printf("Visiting hash map entry with key %s\n", inter.key);
- * }
- * @endcode
+ * The value are compared using memcpy, so for pointer values the pointer value is compared and not the value itself.
+ *
+ * @param[in] iterator The first iterator to compare.
+ * @param[in] other The second iterator to compare.
+ * @return true if the iterators point to the same entry in the same hash map, false otherwise.
  */
-#define CELIX_STRING_HASH_MAP_ITERATE(map, iterName) \
-    for (celix_string_hash_map_iterator_t iterName = celix_stringHashMap_begin(map); !celix_stringHashMapIterator_isEnd(&(iterName)); celix_stringHashMapIterator_next(&(iterName)))
+bool celix_stringHashMapIterator_equals(
+        const celix_string_hash_map_iterator_t* iterator,
+        const celix_string_hash_map_iterator_t* other);
 
 /**
  * @brief Remove the hash map entry for the provided iterator and updates the iterator to the next hash map entry
  *
  * Small example of how to use the celix_stringHashMapIterator_remove function:
- * @code
- * //remove all even entries from hash map
+ * @code{.c}
+ * //remove all entries except the first 4 entries from hash map
  * celix_string_hash_map_t* map = ...
  * celix_string_hash_map_iterator_t iter = celix_stringHashMap_begin(map);
  * while (!celix_stringHashMapIterator_isEnd(&iter)) {
- *     if (iter.index % 2 == 0) {
+ *     if (iter.index >= 4) {
  *         celix_stringHashMapIterator_remove(&ter);
  *     } else {
  *         celix_stringHashMapIterator_next(&iter);
@@ -324,6 +391,24 @@ CELIX_UTILS_EXPORT void celix_stringHashMapIterator_next(celix_string_hash_map_i
  * @endcode
  */
 CELIX_UTILS_EXPORT void celix_stringHashMapIterator_remove(celix_string_hash_map_iterator_t* iter);
+
+/**
+ * @brief Marco to loop over all the entries of a string hash map.
+ *
+ * Small example of how to use the iterate macro:
+ * @code{.c}
+ * celix_string_hash_map_t* map = ...
+ * CELIX_STRING_HASH_MAP_ITERATE(map, iter) {
+ *     printf("Visiting hash map entry with key %s\n", inter.key);
+ * }
+ * @endcode
+ *
+ * @param map The (const celix_string_hash_map_t*) map to iterate over.
+ * @param iterName A iterName which will be of type celix_string_hash_map_iterator_t to hold the iterator.
+ */
+#define CELIX_STRING_HASH_MAP_ITERATE(map, iterName) \
+    for (celix_string_hash_map_iterator_t iterName = celix_stringHashMap_begin(map); !celix_stringHashMapIterator_isEnd(&(iterName)); celix_stringHashMapIterator_next(&(iterName)))
+
 
 #ifdef __cplusplus
 }

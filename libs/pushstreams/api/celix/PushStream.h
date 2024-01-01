@@ -66,7 +66,7 @@ namespace celix {
          * @param func The action to perform
          * @return promise that is resolved when the channel closes
          */
-        [[nodiscard]] Promise<void> forEach(ForEachFunction func);
+        [[maybe_unused]] Promise<void> forEach(ForEachFunction func);
 
         /**
          * @brief only pass events downstream when the predicate tests true.

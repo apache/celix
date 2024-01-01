@@ -31,8 +31,8 @@ bool bundleCommand_execute(void *handle, const char *constCommandLine, FILE *out
     char* sub = NULL;
     char* savePtr = NULL;
     celix_autofree char* command = celix_utils_strdup(constCommandLine);
-    strtok_r(command, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr); //ignore command name
-    sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr);
+    strtok_r(command, CELIX_SHELL_COMMAND_SEPARATOR, &savePtr); //ignore command name
+    sub = strtok_r(NULL, CELIX_SHELL_COMMAND_SEPARATOR, &savePtr);
     celix_autoptr(celix_array_list_t) bundleIds = celix_arrayList_create();
 
     if (sub == NULL) {
@@ -40,7 +40,7 @@ bool bundleCommand_execute(void *handle, const char *constCommandLine, FILE *out
         return false;
     }
 
-    for (; sub != NULL; sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &savePtr)) {
+    for (; sub != NULL; sub = strtok_r(NULL, CELIX_SHELL_COMMAND_SEPARATOR, &savePtr)) {
         bool converted;
         long bndId = celix_utils_convertStringToLong(sub, 0, &converted);
         if (!converted) {

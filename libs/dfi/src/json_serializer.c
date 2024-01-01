@@ -128,8 +128,7 @@ static int jsonSerializer_parseObjectMember(dyn_type *type, const char *name, js
 
     int index = dynType_complex_indexForName(type, name);
     if (index < 0) {
-        LOG_ERROR("Cannot find index for member '%s'", name);
-        status = ERROR;
+        return OK;//We should ignore unknown name in request or response. Satisfy forward compatibility for responses.
     }
 
     if (status == OK) {
@@ -311,7 +310,7 @@ int jsonSerializer_serialize(dyn_type *type, const void* input, char **output) {
     status = jsonSerializer_serializeJson(type, input, &root);
 
     if (status == OK) {
-        *output = json_dumps(root, JSON_COMPACT);
+        *output = json_dumps(root, JSON_COMPACT | JSON_ENCODE_ANY);
         json_decref(root);
     }
 
@@ -411,7 +410,7 @@ static int jsonSerializer_writeAny(dyn_type *type, void* input, json_t **out) {
             break;
         case 'E':
             e = input;
-            jsonSerializer_writeEnum(type, *e, &val);
+            status = jsonSerializer_writeEnum(type, *e, &val);
             break;
         case '*' :
             status = dynType_typedPointer_getTypedType(type, &subType);
@@ -474,6 +473,9 @@ static int jsonSerializer_writeSequence(dyn_type *type, void *input, json_t **ou
 
     if (status == OK && array != NULL) {
         *out = array;
+    } else {
+        *out = NULL;
+        json_decref(array);
     }
 
     return status;
@@ -521,6 +523,9 @@ static int jsonSerializer_writeComplex(dyn_type *type, void *input, json_t **out
 
     if (status == OK && val != NULL) {
         *out = val;
+    } else {
+        *out = NULL;
+        json_decref(val);
     }
 
     return status;

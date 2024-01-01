@@ -19,4 +19,4 @@ add_library(calculator_api INTERFACE)
 target_include_directories(calculator_api INTERFACE include)
 set_target_properties(calculator_api PROPERTIES
     "INTERFACE_DESCRIPTOR"
-    "${CMAKE_CURRENT_LIST_DIR}/org.apache.celix.calc.api.Calculator.avpr")
+    "${CMAKE_CURRENT_LIST_DIR}/org.apache.celix.calc.api.Calculator.descriptor")

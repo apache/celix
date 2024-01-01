@@ -35,32 +35,31 @@ extern "C" {
 #include "dm_component.h"
 
 struct celix_dm_service_dependency_svc_entry {
-    void *svc;
+    void* svc;
     const celix_properties_t* props;
 };
 
 struct celix_dm_service_dependency {
-	celix_dm_service_update_fp set;
-	celix_dm_service_update_fp add;
-	celix_dm_service_update_fp remove;
+    celix_dm_service_update_fp set;
+    celix_dm_service_update_fp add;
+    celix_dm_service_update_fp remove;
 
-	celix_dm_service_update_with_props_fp setWithProperties;
-	celix_dm_service_update_with_props_fp addWithProperties;
-	celix_dm_service_update_with_props_fp remWithProperties;
+    celix_dm_service_update_with_props_fp setWithProperties;
+    celix_dm_service_update_with_props_fp addWithProperties;
+    celix_dm_service_update_with_props_fp remWithProperties;
 
-	char *serviceName;
-    char *filter;
-    char *versionRange;
+    char* serviceName;
+    char* filter;
+    char* versionRange;
     bool required;
     dm_service_dependency_strategy_t strategy;
-    bool addCLanguageFilter;
-    celix_dm_component_t *component;
+    celix_dm_component_t* component;
 
-    celix_thread_mutex_t mutex; //protects below
-    long svcTrackerId; //active tracker id
-    size_t nrOfActiveStoppingTrackers; //nr of async stop tracker still active (should be 0 or 1)
+    celix_thread_mutex_t mutex;        // protects below
+    long svcTrackerId;                 // active tracker id
+    size_t nrOfActiveStoppingTrackers; // nr of async stop tracker still active (should be 0 or 1)
     size_t trackedSvcCount;
-    void* callbackHandle; //This handle can be set to be used instead of the component implementation
+    void* callbackHandle; // This handle can be set to be used instead of the component implementation
 };
 
 celix_status_t celix_dmServiceDependency_enable(celix_dm_service_dependency_t *dependency);

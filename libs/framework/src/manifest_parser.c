@@ -52,7 +52,7 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, mani
 		parser->manifest = manifest;
 		parser->owner = owner;
 
-		bundleVersion = manifest_getValue(manifest, OSGI_FRAMEWORK_BUNDLE_VERSION);
+		bundleVersion = manifest_getValue(manifest, CELIX_FRAMEWORK_BUNDLE_VERSION);
 		if (bundleVersion != NULL) {
 			parser->bundleVersion = NULL;
 			version_createVersionFromString(bundleVersion, &parser->bundleVersion);
@@ -99,7 +99,7 @@ celix_status_t manifestParser_getAndDuplicateGroup(manifest_parser_pt parser, ch
 }
 
 celix_status_t manifestParser_getAndDuplicateSymbolicName(manifest_parser_pt parser, char **symbolicName) {
-    return manifestParser_getDuplicateEntry(parser, OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME, symbolicName);
+    return manifestParser_getDuplicateEntry(parser, CELIX_FRAMEWORK_BUNDLE_SYMBOLICNAME, symbolicName);
 }
 
 celix_status_t manifestParser_getAndDuplicateName(manifest_parser_pt parser, char **name) {

@@ -20,47 +20,61 @@
 #ifndef CELIX_CELIX_VERSION_H
 #define CELIX_CELIX_VERSION_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "celix_cleanup.h"
 #include "celix_utils_export.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
- * The definition of the celix_version_t* abstract data type.
+ * @file celix_version.h
+ * @brief Header file for the Celix Version API.
+ *
+ * The Celix Version API provides a means for storing and manipulating version information, which consists of
+ * three non-negative integers for the major, minor, and micro version, and an optional string for the qualifier.
+ * This implementation is based on the Semantic Versioning specification (SemVer).
+ * Functions are provided for creating and destroying version objects, comparing versions, and extracting the individual version components.
+ */
+
+/**
+ * @brief The definition of the celix_version_t* abstract data type.
  */
 typedef struct celix_version celix_version_t;
 
 /**
- * Creates a new celix_version_t* using the supplied arguments.
+ * @brief Create a new celix_version_t* using the supplied arguments.
  *
- * @param major Major component of the version identifier.
- * @param minor Minor component of the version identifier.
- * @param micro Micro component of the version identifier.
- * @param qualifier Qualifier component of the version identifier. If
- *        <code>null</code> is specified, then the qualifier will be set to
+ * If the return is NULL, an error message is logged to celix_err.
+ *
+ * @param[in] major Major component of the version identifier.
+ * @param[in] minor Minor component of the version identifier.
+ * @param[in] micro Micro component of the version identifier.
+ * @param[in] qualifier Qualifier component of the version identifier. If
+ *        <code>NULL</code> is specified, then the qualifier will be set to
  *        the empty string.
- * @return The created version or NULL if the input was incorrect
+ * @return The created version or NULL if the input was incorrect or memory could not be allocated.
  */
-CELIX_UTILS_EXPORT celix_version_t* celix_version_createVersion(int major, int minor, int micro, const char* qualifier);
+CELIX_UTILS_EXPORT celix_version_t* celix_version_create(int major, int minor, int micro, const char* qualifier);
+
 
 CELIX_UTILS_EXPORT void celix_version_destroy(celix_version_t* version);
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_version_t, celix_version_destroy)
 
 /**
- * Creates a copy of <code>version</code>.
+ * @brief Create a copy of <code>version</code>.
  *
- * @param version The version to copy
+ * @param[in] version The version to copy
  * @return the copied version
  */
 CELIX_UTILS_EXPORT celix_version_t* celix_version_copy(const celix_version_t* version);
 
 /**
- * Creates a version identifier from the specified string.
+ * @brief Create a version identifier from the specified string.
  *
  * <p>
  * Here is the grammar for version strings.
@@ -77,27 +91,50 @@ CELIX_UTILS_EXPORT celix_version_t* celix_version_copy(const celix_version_t* ve
  *
  * There must be no whitespace in version.
  *
- * @param versionStr String representation of the version identifier.
+ * @param[in] versionStr String representation of the version identifier.
  * @return The created version or NULL if the input was invalid.
  */
 CELIX_UTILS_EXPORT celix_version_t* celix_version_createVersionFromString(const char *versionStr);
 
 /**
- * The empty version "0.0.0".
- *
+ * @brief Create empty version "0.0.0".
  */
 CELIX_UTILS_EXPORT celix_version_t* celix_version_createEmptyVersion();
 
+/**
+ * @brief Gets the major version number of a celix version.
+ *
+ * @param[in] version The celix version.
+ * @return The major version number.
+ */
 CELIX_UTILS_EXPORT int celix_version_getMajor(const celix_version_t* version);
 
+/**
+ * @brief Gets the minor version number of a celix version.
+ *
+ * @param[in] version The celix version.
+ * @return The minor version number.
+ */
 CELIX_UTILS_EXPORT int celix_version_getMinor(const celix_version_t* version);
 
+/**
+ * @brief Gets the micro version number of a celix version.
+ *
+ * @param[in] version The celix version.
+ * @return The micro version number.
+ */
 CELIX_UTILS_EXPORT int celix_version_getMicro(const celix_version_t* version);
 
+/**
+ * @brief Gets the version qualifier of a celix version.
+ *
+ * @param[in] version The celix version.
+ * @return The version qualifier, or an empty string ("") if no qualifier is present.
+ */
 CELIX_UTILS_EXPORT const char* celix_version_getQualifier(const celix_version_t* version);
 
 /**
- * Compares this <code>Version</code> object to another object.
+ * @brief Compare this <code>Version</code> object to another object.
  *
  * <p>
  * A version is considered to be <b>less than </b> another version if its
@@ -122,26 +159,38 @@ CELIX_UTILS_EXPORT const char* celix_version_getQualifier(const celix_version_t*
 CELIX_UTILS_EXPORT int celix_version_compareTo(const celix_version_t* version, const celix_version_t* compare);
 
 /**
- * Creates a hash of the version
+ * @brief Create a hash of the version
  */
 CELIX_UTILS_EXPORT unsigned int celix_version_hash(const celix_version_t* version);
 
 /**
- * Returns the string representation of <code>version</code> identifier.
+ * @brief Return the string representation of <code>version</code> identifier.
  *
- * <p>
  * The format of the version string will be <code>major.minor.micro</code>
  * if qualifier is the empty string or
  * <code>major.minor.micro.qualifier</code> otherwise.
  *
+ * If the return is NULL, an error message is logged to celix_err.
+ *
  * @return The string representation of this version identifier.
  * @param version The <code>celix_version_t*</code> to get the string representation from.
  * @return Pointer to the string (char *) in which the result will be placed. Caller is owner of the string.
+ *         NULL if memory could not be allocated.
  */
 CELIX_UTILS_EXPORT char* celix_version_toString(const celix_version_t* version);
 
 /**
- * Check if two versions are semantically compatible.
+ * @brief Fill a given string with the string representation of the given version.
+ *
+ * @param[in] version The version to fill the string with.
+ * @param[out] str The string to fill.
+ * @param[in] strLen The length of the string.
+ * @return true if the string was filled successfully, false otherwise.
+ */
+CELIX_UTILS_EXPORT bool celix_version_fillString(const celix_version_t* version, char *str, size_t strLen);
+
+/**
+ * @brief Check if two versions are semantically compatible.
  *
  * <p>
  * The user version is compatible with the provider version if the provider version is in the range
@@ -154,7 +203,7 @@ CELIX_UTILS_EXPORT char* celix_version_toString(const celix_version_t* version);
 CELIX_UTILS_EXPORT bool celix_version_isCompatible(const celix_version_t* user, const celix_version_t* provider);
 
 /**
- * Check if two versions are semantically compatible.
+ * @brief Check if two versions are semantically compatible.
  *
  * <p>
  * The user version is compatible with the provider version if the provider version is in the range
@@ -168,7 +217,7 @@ CELIX_UTILS_EXPORT bool celix_version_isCompatible(const celix_version_t* user, 
 CELIX_UTILS_EXPORT bool celix_version_isUserCompatible(const celix_version_t* user, int providerMajorVersionPart, int provideMinorVersionPart);
 
 /**
- * Compare a provider celix version is with a provided major and minor version. Ignoring the patch version part.
+ * @brief Compare a provider celix version is with a provided major and minor version. Ignoring the patch version part.
  *
  * @param version The version to compare.
  * @param majorVersionPart The major version part to compare.

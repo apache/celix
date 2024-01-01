@@ -71,8 +71,8 @@ static void gccExample(activator_data_t *data) {
 
     void use(void *handle, void *svc, const celix_properties_t *props) {
         example_calc_t *calc = svc;
-        rank = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, -1L);
-        svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+        rank = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_RANKING, -1L);
+        svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
         result = calc->calc(calc->handle, 1);
     }
 
@@ -102,8 +102,8 @@ static void removeSvc(activator_data_t *data, void *svc CELIX_UNUSED) {
 
 static void useHighest(activator_data_t *data CELIX_UNUSED, example_calc_t *svc, const celix_properties_t *props) {
     int result = svc->calc(svc->handle, 2);
-    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
-    long rank = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, -1L);
+    long svcId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
+    long rank = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_RANKING, -1L);
     printf("Called highest ranking service. Result is %i, svc id is %li, svc ranking is %li\n", result, svcId, rank);
 }
 

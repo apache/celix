@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 /**
- * Collection of celix constants. Note that the CELIX_ macros are preferred over the OSGI_ variants.
+ * Collection of celix constants.
  */
 
 /**
@@ -37,7 +37,6 @@ extern "C" {
 * This property is set by the Celix framework when a service is registered.
 */
 #define CELIX_FRAMEWORK_SERVICE_NAME "objectClass"
-#define OSGI_FRAMEWORK_OBJECTCLASS CELIX_FRAMEWORK_SERVICE_NAME
 
 /**
  * @brief Service property (named "service.id") identifying a service's registration number (of type long).
@@ -47,7 +46,6 @@ extern "C" {
  * Celix framework was started.
  */
 #define CELIX_FRAMEWORK_SERVICE_ID "service.id"
-#define OSGI_FRAMEWORK_SERVICE_ID CELIX_FRAMEWORK_SERVICE_ID
 
 /**
  *  @brief Service property (named service.bundleid) identifying the bundle id of the bundle registering the service.
@@ -78,9 +76,6 @@ extern "C" {
  */
 #define CELIX_FRAMEWORK_SERVICE_SCOPE_BUNDLE "bundle"
 
-#define CELIX_FRAMEWORK_SERVICE_PID "service.pid"
-#define OSGI_FRAMEWORK_SERVICE_PID CELIX_FRAMEWORK_SERVICE_PID
-
 /**
  * @brief The bundle id (value 0) used to identify the Celix framework.
  */
@@ -101,7 +96,6 @@ extern "C" {
  * service, whereas a service with a ranking of LONG_MIN is very unlikely to be returned.
  */
 #define CELIX_FRAMEWORK_SERVICE_RANKING "service.ranking"
-#define OSGI_FRAMEWORK_SERVICE_RANKING CELIX_FRAMEWORK_SERVICE_RANKING
 
 /**
  * @brief Service property (named "service.version") specifying the optional version of a service.
@@ -118,30 +112,12 @@ extern "C" {
  */
 #define CELIX_FRAMEWORK_SERVICE_VERSION "service.version"
 
-/**
- * The service language property and values are deprecated
- */
-#define CELIX_FRAMEWORK_SERVICE_LANGUAGE "service.lang"
-#define CELIX_FRAMEWORK_SERVICE_C_LANGUAGE "C"
-#define CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE "C++"
-#define CELIX_FRAMEWORK_SERVICE_SHARED_LANGUAGE "shared" //e.g. marker services
-
 #define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR "Bundle-Activator"
-#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR CELIX_FRAMEWORK_BUNDLE_ACTIVATOR
 
 #define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE "celix_bundleActivator_create"
 #define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_START "celix_bundleActivator_start"
 #define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_STOP "celix_bundleActivator_stop"
 #define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY "celix_bundleActivator_destroy"
-#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE
-#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_START
-#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_STOP
-#define OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY
-
-#define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_CREATE "bundleActivator_create"
-#define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_START "bundleActivator_start"
-#define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_STOP "bundleActivator_stop"
-#define OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_DESTROY "bundleActivator_destroy"
 
 #define CELIX_FRAMEWORK_BUNDLE_SYMBOLICNAME "Bundle-SymbolicName"
 #define CELIX_FRAMEWORK_BUNDLE_NAME "Bundle-Name"
@@ -151,11 +127,6 @@ extern "C" {
 #define CELIX_FRAMEWORK_PRIVATE_LIBRARY "Private-Library"
 #define CELIX_FRAMEWORK_EXPORT_LIBRARY "Export-Library"
 #define CELIX_FRAMEWORK_IMPORT_LIBRARY "Import-Library"
-#define OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME CELIX_FRAMEWORK_BUNDLE_SYMBOLICNAME
-#define OSGI_FRAMEWORK_BUNDLE_VERSION CELIX_FRAMEWORK_BUNDLE_VERSION
-#define OSGI_FRAMEWORK_PRIVATE_LIBRARY CELIX_FRAMEWORK_PRIVATE_LIBRARY
-#define OSGI_FRAMEWORK_EXPORT_LIBRARY CELIX_FRAMEWORK_EXPORT_LIBRARY
-#define OSGI_FRAMEWORK_IMPORT_LIBRARY CELIX_FRAMEWORK_IMPORT_LIBRARY
 
 /**
  * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CACHE_DIR") specifying the cache
@@ -165,13 +136,7 @@ extern "C" {
  *
  * Default value is ".cache".
  */
-#define CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR "CELIX_FRAMEWORK_CACHE_DIR"
-
-//@deprecated use CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR
-#define CELIX_FRAMEWORK_FRAMEWORK_STORAGE   "CELIX_FRAMEWORK_CACHE_DIR"
-
-//@deprecated use CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR
-#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE    "org.osgi.framework.storage"
+#define CELIX_FRAMEWORK_CACHE_DIR "CELIX_FRAMEWORK_CACHE_DIR"
 
 /**
  * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CACHE_USE_TMP_DIR") specifying the
@@ -181,9 +146,6 @@ extern "C" {
  */
 #define CELIX_FRAMEWORK_CACHE_USE_TMP_DIR "CELIX_FRAMEWORK_CACHE_USE_TMP_DIR"
 
-//@deprecated use CELIX_FRAMEWORK_CACHE_USE_TMP_DIR
-#define CELIX_FRAMEWORK_STORAGE_USE_TMP_DIR "org.osgi.framework.storage.use.tmp.dir"
-
 /**
  * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE") specifying
  * whether to delete the cache dir on framework creation.
@@ -191,21 +153,6 @@ extern "C" {
  * The default value is false
  */
 #define CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE "CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE"
-
-//@deprecated use CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE
-#define CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME "org.osgi.framework.storage.clean"
-
-//@deprecated use CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE
-#define CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT true
-
-//@deprecated use CELIX_FRAMEWORK_CACHE_USE_TMP_DIR
-#define OSGI_FRAMEWORK_STORAGE_USE_TMP_DIR CELIX_FRAMEWORK_STORAGE_USE_TMP_DIR
-
-//@deprecated use CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE
-#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME
-
-//@deprecated use CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE
-#define OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_DEFAULT
 
 /**
  * @brief Celix framework environment property (named "org.osgi.framework.uuid") specifying the UUID for the
@@ -216,8 +163,7 @@ extern "C" {
  *
  * @note The Celix framework expects framework UUIDs to be unique per process.
  */
-#define CELIX_FRAMEWORK_FRAMEWORK_UUID "org.osgi.framework.uuid"
-#define OSGI_FRAMEWORK_FRAMEWORK_UUID CELIX_FRAMEWORK_FRAMEWORK_UUID
+#define CELIX_FRAMEWORK_UUID "org.osgi.framework.uuid"
 
 /**
  * @brief Celix framework environment property (named "CELIX_BUNDLES_PATH") which specified a `:` separated

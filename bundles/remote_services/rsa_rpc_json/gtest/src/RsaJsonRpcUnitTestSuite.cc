@@ -53,8 +53,8 @@ class RsaJsonRpcUnitTestSuite : public ::testing::Test {
 public:
     RsaJsonRpcUnitTestSuite() {
         auto* props = celix_properties_create();
-        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_json_rpc_impl_cache");
-        celix_properties_set(props, OSGI_FRAMEWORK_BUNDLE_VERSION, "1.0.0");
+        celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_json_rpc_impl_cache");
+        celix_properties_set(props, CELIX_FRAMEWORK_BUNDLE_VERSION, "1.0.0");
         celix_properties_set(props, RSA_JSON_RPC_LOG_CALLS_KEY, "true");
         celix_properties_set(props, "CELIX_FRAMEWORK_EXTENDER_PATH", RESOURCES_DIR);
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
@@ -86,9 +86,9 @@ public:
         EXPECT_NE(endpointDesc, nullptr);
         endpointDesc->properties = celix_properties_create();
         EXPECT_TRUE(endpointDesc->properties != nullptr);
-        const char *uuid = celix_bundleContext_getProperty(ctx.get(), OSGI_FRAMEWORK_FRAMEWORK_UUID, nullptr);
+        const char *uuid = celix_bundleContext_getProperty(ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
         celix_properties_set(endpointDesc->properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
-        celix_properties_set(endpointDesc->properties, OSGI_FRAMEWORK_OBJECTCLASS, RSA_RPC_JSON_TEST_SERVICE);
+        celix_properties_set(endpointDesc->properties, CELIX_FRAMEWORK_SERVICE_NAME, RSA_RPC_JSON_TEST_SERVICE);
         celix_properties_set(endpointDesc->properties, CELIX_FRAMEWORK_SERVICE_VERSION, "1.0.0");
         celix_properties_set(endpointDesc->properties, OSGI_RSA_ENDPOINT_ID, "8cf05b2d-421e-4c46-b55e-c3f1900b7cba");
         celix_properties_set(endpointDesc->properties, OSGI_RSA_SERVICE_IMPORTED, "true");

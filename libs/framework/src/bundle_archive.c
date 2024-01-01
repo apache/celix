@@ -32,6 +32,7 @@
 #include "celix_file_utils.h"
 #include "celix_framework_utils_private.h"
 #include "celix_utils_api.h"
+#include "celix_log.h"
 
 #include "bundle_archive_private.h"
 #include "bundle_revision_private.h"
@@ -65,6 +66,7 @@ static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_arch
     celix_properties_t* bundleStateProperties = NULL;
     bundleStateProperties = celix_properties_load(archive->savedBundleStatePropertiesPath);
     if (bundleStateProperties == NULL) {
+        celix_framework_logTssErrors(archive->fw->logger, CELIX_LOG_LEVEL_ERROR);
         bundleStateProperties = celix_properties_create();
     }
     if (bundleStateProperties == NULL) {
@@ -216,13 +218,13 @@ static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt
     }
 
     //populate bundle symbolic name and version from manifest
-    archive->bundleSymbolicName = celix_utils_strdup(manifest_getValue(*manifestOut, OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME));
+    archive->bundleSymbolicName = celix_utils_strdup(manifest_getValue(*manifestOut, CELIX_FRAMEWORK_BUNDLE_SYMBOLICNAME));
     if (archive->bundleSymbolicName == NULL) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Cannot read bundle symbolic name.");
         manifest_destroy(*manifestOut);
         return CELIX_BUNDLE_EXCEPTION;
     }
-    archive->bundleVersion = celix_utils_strdup(manifest_getValue(*manifestOut, OSGI_FRAMEWORK_BUNDLE_VERSION));
+    archive->bundleVersion = celix_utils_strdup(manifest_getValue(*manifestOut, CELIX_FRAMEWORK_BUNDLE_VERSION));
     if (archive->bundleVersion == NULL) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Cannot read bundle version.");
         manifest_destroy(*manifestOut);

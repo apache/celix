@@ -28,16 +28,8 @@ public:
     }
 };
 
-TEST_F(ConvertUtilsWithErrorInjectionTestSuite, CovertToBoolTest) {
-    bool converted;
-    celix_ei_expect_celix_utils_writeOrCreateString(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
-    bool result = celix_utils_convertStringToBool("true", false, &converted);
-    EXPECT_EQ(false, result);
-    EXPECT_FALSE(converted);
-}
-
 TEST_F(ConvertUtilsWithErrorInjectionTestSuite, ConvertToVersionTest) {
-    celix_version_t* defaultVersion = celix_version_createVersion(1, 2, 3, "B");
+    celix_version_t* defaultVersion = celix_version_create(1, 2, 3, "B");
     celix_ei_expect_celix_utils_writeOrCreateString(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
     celix_version_t* result = celix_utils_convertStringToVersion("1.2.3", nullptr, nullptr);
     EXPECT_EQ(nullptr, result);

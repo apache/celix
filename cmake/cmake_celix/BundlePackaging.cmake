@@ -101,12 +101,6 @@ function(check_bundle BUNDLE)
     endif ()
 endfunction()
 
-
-function(add_bundle)
-    message(DEPRECATION "add_bundle is deprecated, use add_celix_bundle instead.")
-    add_celix_bundle(${ARGN})
-endfunction()
-
 #[[
 Add a Celix bundle to the project.
 
@@ -391,11 +385,6 @@ function(add_celix_bundle)
     celix_bundle_headers(${BUNDLE_TARGET_NAME} ${BUNDLE_HEADERS})
 endfunction()
 
-function(bundle_export_libs)
-    message(DEPRECATION "bundle_export_libs is deprecated, use celix_bundle_export_libs instead.")
-    celix_bundle_export_libs(${ARGN})
-endfunction()
-
 #[[
 Adds a export lib to the Celix bundle.
 
@@ -405,11 +394,6 @@ function(celix_bundle_export_libs)
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
     celix_bundle_libs(${BUNDLE} "EXPORT" TRUE ${ARGN})
-endfunction()
-
-function(bundle_private_libs)
-    message(DEPRECATION "bundle_private_libs is deprecated, use celix_bundle_private_libs instead.")
-    celix_bundle_private_libs(${ARGN})
 endfunction()
 
 #[[
@@ -452,10 +436,6 @@ function(celix_bundle_private_libs)
     celix_bundle_libs(${BUNDLE} "PRIVATE" FALSE ${ARGN})
 endfunction()
 
-function(bundle_libs)
-    message(DEPRECATION "bundle_libs is deprecated, use celix_bundle_libs instead.")
-    celix_bundle_libs(${ARGN})
-endfunction()
 function(celix_bundle_libs)
     #0 is bundle TARGET
     #1 is TYPE, e.g PRIVATE,EXPORT or IMPORT
@@ -544,11 +524,6 @@ function(celix_bundle_libs)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_LIB_TARGETS" "${LIB_TARGETS}")
 endfunction()
 
-function(bundle_import_libs)
-    message(DEPRECATION "bundle_import_libs is deprecated, use celix_bundle_import_libs instead.")
-    celix_bundle_import_libs(${ARGN})
-endfunction()
-
 #[[
 Adds a import lib to the Celix bundle.
 
@@ -578,11 +553,6 @@ function(celix_bundle_import_libs)
 
 
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_IMPORT_LIBS" "${LIBS}")
-endfunction()
-
-function(bundle_files)
-    message(DEPRECATION "bundle_files is deprecated, use celix_bundle_files instead.")
-    celix_bundle_files(${ARGN})
 endfunction()
 
 #[[
@@ -767,11 +737,6 @@ function(celix_bundle_add_files)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_DEPEND_TARGETS" "${DEPS}")
 endfunction()
 
-function(bundle_headers)
-    message(DEPRECATION "bundle_headers is deprecated, use celix_bundle_headers instead.")
-    celix_bundle_headers(${ARGN})
-endfunction()
-
 #[[
 Append the provided headers to the target bundle manifest.
 
@@ -796,11 +761,6 @@ function(celix_bundle_headers)
     endforeach ()
 
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_HEADERS" "${HEADERS}")
-endfunction()
-
-function(bundle_symbolic_name)
-    message(DEPRECATION "bundle_symbolic_name is deprecated, use celix_bundle_symbolic_name instead.")
-    celix_bundle_symbolic_name(${ARGN})
 endfunction()
 
 #[[
@@ -845,11 +805,6 @@ function(celix_get_bundle_symbolic_name)
     endif ()
 endfunction()
 
-function(bundle_name)
-    message(DEPRECATION "bundle_name is deprecated, use celix_bundle_name instead.")
-    celix_bundle_name(${ARGN})
-endfunction()
-
 #[[
 Set bundle name
 
@@ -861,11 +816,6 @@ function(celix_bundle_name BUNDLE NAME)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_NAME" ${NAME})
 endfunction()
 
-function(bundle_version)
-    message(DEPRECATION "bundle_version is deprecated, use celix_bundle_version instead.")
-    celix_bundle_version(${ARGN})
-endfunction()
-
 #[[
 Set bundle version
 
@@ -875,11 +825,6 @@ celix_bundle_version(<bundle_target> version)
 ]]
 function(celix_bundle_version BUNDLE VERSION)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_VERSION" ${VERSION})
-endfunction()
-
-function(bundle_description)
-    message(DEPRECATION "bundle_description is deprecated, use celix_bundle_description instead.")
-    celix_bundle_description(${ARGN})
 endfunction()
 
 #[[
@@ -965,11 +910,6 @@ function(celix_get_bundle_file)
     else ()
         message(FATAL_ERROR "Provided argument is not a CMake target: ${ARGV0}")
     endif ()
-endfunction()
-
-function(install_bundle)
-    message(DEPRECATION "install_bundle is deprecated, use install_celix_bundle instead.")
-    install_celix_bundle(${ARGN})
 endfunction()
 
 #[[

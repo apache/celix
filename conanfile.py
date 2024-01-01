@@ -53,17 +53,6 @@ class CelixConan(ConanFile):
         "build_log_helper": False,
         "build_log_service_api": False,
         "build_syslog_writer": False,
-        "build_pubsub": False,
-        "build_pubsub_wire_protocol_v1": False,
-        "build_pubsub_wire_protocol_v2": False,
-        "build_pubsub_json_serializer": False,
-        "build_pubsub_avrobin_serializer": False,
-        "build_pubsub_psa_zmq": False,
-        "build_pubsub_examples": False,
-        "build_pubsub_integration": False,
-        "build_pubsub_psa_tcp": False,
-        "build_pubsub_psa_ws": False,
-        "build_pubsub_discovery_etcd": False,
         "build_cxx_remote_service_admin": False,
         "build_cxx_rsa_integration": False,
         "build_remote_service_admin": False,
@@ -102,9 +91,15 @@ class CelixConan(ConanFile):
     }
     options = {
         "celix_err_buffer_size": ["ANY"],
+        "celix_utils_max_strlen": ["ANY"],
+        "celix_properties_optimization_string_buffer_size": ["ANY"],
+        "celix_properties_optimization_entries_buffer_size": ["ANY"],
     }
     default_options = {
         "celix_err_buffer_size": "512",
+        "celix_utils_max_strlen": "1073741824",
+        "celix_properties_optimization_string_buffer_size": "128",
+        "celix_properties_optimization_entries_buffer_size": "16",
     }
 
     for comp in _celix_defaults.keys():
@@ -112,6 +107,14 @@ class CelixConan(ConanFile):
     del comp
 
     _cmake = None
+
+    def validate_config_option_is_positive_number(self, option):
+        try:
+            val = int(self.options.get_safe(option))
+            if val <= 0:
+                raise ValueError
+        except ValueError:
+            raise ConanInvalidConfiguration("{} must be a positive number".format(option))
 
     def validate(self):
         if self.settings.os != "Linux" and self.settings.os != "Macos":
@@ -123,18 +126,14 @@ class CelixConan(ConanFile):
         if self.options.build_rsa_discovery_zeroconf and self.settings.os != "Linux":
             raise ConanInvalidConfiguration("Celix build_rsa_discovery_zeroconf is only supported for Linux")
 
-        try:
-            val = int(self.options.celix_err_buffer_size)
-            if val <= 0:
-                raise ValueError
-        except ValueError:
-            raise ConanInvalidConfiguration("celix_err_buffer_size must be a positive number")
+        self.validate_config_option_is_positive_number("celix_err_buffer_size")
+        self.validate_config_option_is_positive_number("celix_utils_max_strlen")
+        self.validate_config_option_is_positive_number("celix_properties_optimization_string_buffer_size")
+        self.validate_config_option_is_positive_number("celix_properties_optimization_entries_buffer_size")
 
     def package_id(self):
         del self.info.options.build_all
         # the followings are not installed
-        del self.info.options.build_pubsub_integration
-        del self.info.options.build_pubsub_examples
         del self.info.options.build_cxx_rsa_integration
         del self.info.options.build_examples
         del self.info.options.enable_cmake_warning_tests
@@ -147,7 +146,7 @@ class CelixConan(ConanFile):
             self.test_requires("gtest/1.10.0")
             self.test_requires("cpputest/4.0")
         if self.options.enable_ccache:
-            self.build_requires("ccache/4.6")
+            self.build_requires("ccache/4.7.4")
 
     def configure(self):
         # copy options to options, fill in defaults if not set
@@ -183,54 +182,6 @@ class CelixConan(ConanFile):
             options["build_shell"] = True
             options["build_shell_tui"] = True
             options["build_shell_api"] = True
-            options["build_pubsub"] = True
-            options["build_pubsub_wire_protocol_v2"] = True
-            options["build_pubsub_json_serializer"] = True
-            options["build_pubsub_psa_zmq"] = True
-            options["build_pubsub_discovery_etcd"] = True
-
-        if options["build_pubsub_integration"]:
-            options["build_pubsub"] = True
-            options["build_shell_tui"] = True
-            options["build_pubsub_json_serializer"] = True
-            options["build_pubsub_wire_protocol_v2"] = True
-            options["build_pubsub_wire_protocol_v1"] = True
-            options["enable_testing"] = True
-
-        if options["build_pubsub_examples"]:
-            options["build_log_service"] = True
-            options["build_shell_tui"] = True
-            options["build_pubsub_json_serializer"] = True
-            options["build_pubsub_discovery_etcd"] = True
-            options["build_pubsub_wire_protocol_v2"] = True
-            options["build_pubsub_wire_protocol_v1"] = True
-
-        if options["build_pubsub_discovery_etcd"]:
-            options["build_pubsub"] = True
-            options["build_celix_etcdlib"] = True
-
-        if options["build_pubsub_psa_ws"]:
-            options["build_http_admin"] = True
-            options["build_pubsub"] = True
-
-        if options["build_pubsub_psa_zmq"] or options["build_pubsub_psa_tcp"]:
-            options["build_pubsub"] = True
-
-        if options["build_pubsub_wire_protocol_v1"]:
-            options["build_pubsub"] = True
-
-        if options["build_pubsub_wire_protocol_v2"]:
-            options["build_pubsub"] = True
-
-        if options["build_pubsub_json_serializer"] or options["build_pubsub_avrobin_serializer"]:
-            options["build_pubsub"] = True
-
-        if options["build_pubsub"]:
-            options["build_framework"] = True
-            options["build_celix_dfi"] = True
-            options["build_shell_api"] = True
-            options["build_log_helper"] = True
-            options["celix_install_deprecated_api"] = True
 
         if options["build_cxx_remote_service_admin"]:
             options["build_framework"] = True
@@ -326,7 +277,7 @@ class CelixConan(ConanFile):
         # https://github.com/conan-io/conan/issues/14528#issuecomment-1685344080
         if self.options.build_utils:
             self.options['libzip'].shared = True
-        if self.options.build_framework or self.options.build_pubsub:
+        if self.options.build_framework:
             self.options['util-linux-libuuid'].shared = True
         if ((self.options.build_framework and self.options.framework_curlinit)
                 or self.options.build_celix_etcdlib
@@ -341,9 +292,6 @@ class CelixConan(ConanFile):
         if (self.options.build_rsa_discovery_common
                 or (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.options['libxml2'].shared = True
-        if self.options.build_pubsub_psa_zmq:
-            self.options['zeromq'].shared = True
-            self.options['czmq'].shared = True
         if self.options.build_http_admin or self.options.build_rsa_discovery_common \
                 or self.options.build_rsa_remote_service_admin_dfi:
             self.options['civetweb'].shared = True
@@ -356,21 +304,18 @@ class CelixConan(ConanFile):
     def requirements(self):
         if self.options.build_utils:
             self.requires("libzip/[>=1.7.3 <2.0.0]")
-        if self.options.build_framework or self.options.build_pubsub:
-            self.requires("util-linux-libuuid/2.39")
+        if self.options.build_framework:
+            self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
         if ((self.options.build_framework and self.options.framework_curlinit)
                 or self.options.build_celix_etcdlib
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
                 or self.options.build_launcher):
-            self.requires("libcurl/[>=7.64.1 <8.0.0]")
+            self.requires("libcurl/[>=8.4.0 <9.0.0]")
         if (self.options.build_rsa_discovery_common
                 or (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
         if self.options.build_cxx_remote_service_admin:
             self.requires("rapidjson/[>=1.1.0 <2.0.0]")
-        if self.options.build_pubsub_psa_zmq:
-            self.requires("zeromq/4.3.4")
-            self.requires("czmq/4.2.0")
         if self.options.build_http_admin or self.options.build_rsa_discovery_common \
                 or self.options.build_rsa_remote_service_admin_dfi:
             self.requires("civetweb/1.16")

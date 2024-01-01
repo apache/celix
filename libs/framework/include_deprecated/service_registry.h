@@ -140,8 +140,6 @@ CELIX_FRAMEWORK_EXPORT void celix_serviceRegistry_unregisterService(celix_servic
  * @param serviceName       The optional service name
  * @param versionRange      The optional version range
  * @param filter            The optional filter
- * @param serviceLanguage   The optional service lang. if NULL, lang C will be used.
- * @param ignoreServiceLanguage   The whether the service lang filter needs to be added to the filter.
  * @return a LDAP filter. Caller is responsible for freeing the filter.
  */
 CELIX_FRAMEWORK_EXPORT char* celix_serviceRegistry_createFilterFor(

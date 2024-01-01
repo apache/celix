@@ -24,20 +24,19 @@ jobs:
       - name: Install conan
         run: |
           brew install python ninja
-          pip3 install -U conan==1.59.0
+          pip3 install -U conan
       - name: Setup Conan Profile
         run: |
-          conan profile new default --detect
-          conan profile update settings.build_type=Release default
+          conan profile detect -f
       - name: Conan Cache
         id: cache-conan
         uses: actions/cache@v3
         env:
-          cache-name: cache-conan-modules
+          cache-name: cache-conan2-modules
         with:
-          path: ${{ env.CONAN_USER_HOME }}
-          key: ${{ runner.os }}-test-builder-${{ env.cache-name }}-${{ hashFiles('conanfile.py') }}
-          restore-keys: ${{ runner.os }}-test-builder-${{ env.cache-name }}-
+          path: ${{ env.CONAN_HOME }}
+          key: ${{ runner.os }}-test-builder-${{ env.cache-name }}-Release-${{ hashFiles('conanfile.py') }}
+          restore-keys: ${{ runner.os }}-test-builder-${{ env.cache-name }}-Release-
       - name: Prepare ccache timestamp
         id: ccache_cache_timestamp
         run: |
@@ -49,23 +48,18 @@ jobs:
           key: ${{ runner.os }}-test-ccache-Release-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
           restore-keys: |
             ${{ runner.os }}-test-ccache-Release-
-      - name: Install Dependencies
+      - name: Install Dependencies and Build
         env:
           CONAN_BUILD_OPTIONS: |
-            -o celix:enable_testing=True
-            -o celix:enable_address_sanitizer=True
-            -o celix:build_all=True
-            -o celix:enable_cmake_warning_tests=True
-            -o celix:enable_testing_on_ci=True
-            -o celix:framework_curlinit=False
-            -o celix:enable_ccache=True
+            -o celix/*:enable_testing=True
+            -o celix/*:enable_address_sanitizer=True
+            -o celix/*:build_all=True
+            -o celix/*:enable_cmake_warning_tests=True
+            -o celix/*:enable_testing_on_ci=True
+            -o celix/*:framework_curlinit=False
+            -o celix/*:enable_ccache=True
         run: |
-          #force require libcurl 7.64.1, due to a sha256 verify issue in libcurl/7.87.0
-          conan install . celix/ci -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b default -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing -b cpputest --require-override=libcurl/7.64.1 --require-override=openssl/1.1.1s
-      - name: Build
-        run: |
-          conan build . -bf build
-
+          conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -of build ${CONAN_BUILD_OPTIONS} -b missing -b cpputest
       - name: Test
         run: |
           cd build
@@ -81,7 +75,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Install dependencies
         run: |
-          brew install lcov zeromq czmq cpputest jansson rapidjson libzip ccache
+          brew install lcov cpputest jansson rapidjson libzip ccache ninja
       - name: Prepare ccache timestamp
         id: ccache_cache_timestamp
         run: |
@@ -101,11 +95,12 @@ jobs:
             -DENABLE_TESTING_ON_CI=ON
             -DCMAKE_BUILD_TYPE=Release
             -DENABLE_CCACHE=ON
+            -G Ninja
         run: |
           mkdir build install
           cd build
           cmake ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
-          make -j && make install
+          ninja && ninja install
       - name: Test
         run: |
           cd $GITHUB_WORKSPACE/build

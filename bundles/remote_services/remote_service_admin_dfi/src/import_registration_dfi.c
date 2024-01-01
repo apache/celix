@@ -190,8 +190,8 @@ static void* importRegistration_getService(void *handle, const celix_bundle_t *r
 void importRegistration_ungetService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties) {
     import_registration_t* import = handle;
     assert(import != NULL);
-    assert(import->proxies != NULL);
     pthread_mutex_lock(&import->proxiesMutex);
+    assert(import->proxies != NULL);
     struct service_proxy *proxy = hashMap_get(import->proxies, requestingBundle);
     if (proxy != NULL) {
         proxy->count -= 1;
@@ -217,18 +217,7 @@ static celix_status_t importRegistration_findAndParseInterfaceDescriptor(celix_b
         return status;
     }
 
-    status = dfi_findAvprDescriptor(context, bundle, name, &descriptor);
-    if (status == CELIX_SUCCESS && descriptor != NULL) {
-        *out = dynInterface_parseAvpr(descriptor);
-        fclose(descriptor);
-        if (*out == NULL) {
-            fprintf(stderr, "RSA_AVPR: Cannot parse avpr descriptor for '%s'", name);
-            status = CELIX_BUNDLE_EXCEPTION;
-        }
-        return status;
-    }
-
-    fprintf(stdout, "RSA: Cannot find/open any valid (avpr) descriptor files for '%s'", name);
+    fprintf(stdout, "RSA: Cannot find/open any valid descriptor files for '%s'", name);
     return CELIX_BUNDLE_EXCEPTION;
 }
 

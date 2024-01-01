@@ -83,4 +83,29 @@ size_t __wrap_fread(void* __restrict __ptr, size_t __size, size_t __n, FILE* __r
     CELIX_EI_IMPL(fread);
     return __real_fread(__ptr, __size, __n, __s);
 }
+
+int __real_fputc(int __c, FILE* __stream);
+CELIX_EI_DEFINE(fputc, int)
+int __wrap_fputc(int __c, FILE* __stream) {
+    CELIX_EI_IMPL(fputc);
+    return __real_fputc(__c, __stream);
+}
+
+int __real_fputs(const char* __s, FILE* __stream);
+CELIX_EI_DEFINE(fputs, int)
+int __wrap_fputs(const char* __s, FILE* __stream) {
+    CELIX_EI_IMPL(fputs);
+    return __real_fputs(__s, __stream);
+}
+
+int __real_fclose(FILE* __stream);
+CELIX_EI_DEFINE(fclose, int)
+int __wrap_fclose(FILE* __stream) {
+    int rc = __real_fclose(__stream); //note always call real fclose to ensure the stream is closed.
+    errno = ENOSPC;
+    CELIX_EI_IMPL(fclose);
+    errno = 0;
+    return rc;
+}
+
 }

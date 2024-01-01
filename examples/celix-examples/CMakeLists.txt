@@ -41,7 +41,6 @@ if (EXAMPLES)
     endif ()
 
     add_subdirectory(http_example)
-    add_subdirectory(embedding)
     add_subdirectory(track_tracker_example)
     add_subdirectory(log_service_example)
     add_subdirectory(bundle_with_private_lib)

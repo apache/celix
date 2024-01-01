@@ -36,7 +36,7 @@ public:
     CxxBundleContextTestSuite() {
         auto* properties = celix_properties_create();
         celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
-        celix_properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
+        celix_properties_setBool(properties, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, true);
         celix_properties_set(properties, "CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED", "false");
 
         auto* cfw = celix_frameworkFactory_createFramework(properties);
@@ -144,13 +144,13 @@ TEST_F(CxxBundleContextTestSuite, UseServicesTest) {
         .setTimeout(std::chrono::seconds{1})
         .addUseCallback([&countFromFunction](CInterface&, const celix::Properties& props){
             countFromFunction += 1;
-            auto id = props.getAsLong(OSGI_FRAMEWORK_SERVICE_ID, -1L);
+            auto id = props.getAsLong(CELIX_FRAMEWORK_SERVICE_ID, -1L);
             EXPECT_GT(id, -1L);
         })
         .build();
     count += ctx->useServices<CInterface>().addUseCallback([&countFromFunction](CInterface&, const celix::Properties& props, const celix::Bundle& bnd) {
         countFromFunction += 1;
-        EXPECT_GE(props.getAsLong(OSGI_FRAMEWORK_SERVICE_ID, -1L), 0);
+        EXPECT_GE(props.getAsLong(CELIX_FRAMEWORK_SERVICE_ID, -1L), 0);
         EXPECT_GE(bnd.getId(), -1L);
     }).build();
     EXPECT_EQ(count, 4);

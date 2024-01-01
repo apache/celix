@@ -21,10 +21,7 @@ include(CMakeParseArguments)
 set(CELIX_CMAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CELIX_CMAKE_DIRECTORY}/../Modules")
 
-
 #Celix CMake function
 include(${CELIX_CMAKE_DIRECTORY}/BundlePackaging.cmake)
 include(${CELIX_CMAKE_DIRECTORY}/ContainerPackaging.cmake)
-include(${CELIX_CMAKE_DIRECTORY}/DockerPackaging.cmake)
-include(${CELIX_CMAKE_DIRECTORY}/Runtimes.cmake)
 include(${CELIX_CMAKE_DIRECTORY}/Generic.cmake)

@@ -29,8 +29,8 @@ class RsaShmActivatorUnitTestSuite : public ::testing::Test {
 public:
     RsaShmActivatorUnitTestSuite() {
         auto* props = celix_properties_create();
-        celix_properties_set(props, CELIX_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_NAME, "onFirstInit");
-        celix_properties_set(props, OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".rsa_shm_cache");
+        celix_properties_setBool(props, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, true);
+        celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_shm_cache");
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
         auto* ctxPtr = celix_framework_getFrameworkContext(fwPtr);
         fw = std::shared_ptr<celix_framework_t>{fwPtr, [](auto* f) {celix_frameworkFactory_destroyFramework(f);}};

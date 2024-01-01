@@ -42,9 +42,8 @@ protected:
     }
     void CheckPropertiesEqual(const celix_properties_t* prop1, const celix_properties_t* prop2) {
         EXPECT_EQ(celix_properties_size(prop1), celix_properties_size(prop2));
-        const char* key = nullptr;
-        CELIX_PROPERTIES_FOR_EACH(prop1, key) {
-            EXPECT_STREQ(celix_properties_get(prop1, key, nullptr), celix_properties_get(prop2, key, nullptr));
+        CELIX_PROPERTIES_ITERATE(prop1, iter) {
+            EXPECT_STREQ(celix_properties_get(prop1, iter.key, nullptr), celix_properties_get(prop2, iter.key, nullptr));
         }
     }
     void CheckManifestEqual(const manifest_pt manifest1, const manifest_pt manifest2) {

@@ -35,7 +35,7 @@ extern "C" {
 
 /**
  * @brief The prefix for RPC type value, and the RPC type value belongs to `service.exported.configs`.
- * A whole RPC type value as follows: celix.remote.admin.rpc_type.json,celix.remote.admin.rpc_type.avpr.
+ * A whole RPC type value as follows: celix.remote.admin.rpc_type.json.
  */
 #define RSA_RPC_TYPE_PREFIX "celix.remote.admin.rpc_type."
 

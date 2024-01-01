@@ -93,7 +93,7 @@ int dynFunction_parse(FILE *descriptor, struct types_head *refTypes, dyn_functio
 
 int dynFunction_parseWithStr(const char *descriptor, struct types_head *refTypes, dyn_function_type **out)  {
     int status = OK;
-    FILE *stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
+    FILE *stream = fmemopen((char *)descriptor, strlen(descriptor) + 1, "r");
     if (stream != NULL) {
         status = dynFunction_parse(stream, refTypes, out);
         fclose(stream);

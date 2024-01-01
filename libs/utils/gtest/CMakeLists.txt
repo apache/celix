@@ -19,6 +19,7 @@ add_executable(test_utils
         src/CxxUtilsTestSuite.cc
         src/CxxPropertiesTestSuite.cc
         src/CxxFilterTestSuite.cc
+        src/CxxVersionTestSuite.cc
         src/LogTestSuite.cc
         src/LogUtilsTestSuite.cc
         src/VersionRangeTestSuite.cc
@@ -27,6 +28,8 @@ add_executable(test_utils
         src/FilterTestSuite.cc
         src/CelixUtilsTestSuite.cc
         src/ConvertUtilsTestSuite.cc
+        src/PropertiesTestSuite.cc
+        src/VersionTestSuite.cc
         src/ErrTestSuite.cc
         src/ThreadsTestSuite.cc
         src/CelixErrnoTestSuite.cc
@@ -37,9 +40,10 @@ target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTe
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
 celix_deprecated_utils_headers(test_utils)
 
+configure_file(resources/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
 
 if (CELIX_CXX17)
-    add_library(test_utils_cxx17tests STATIC
+    add_library(test_utils_cxx17tests OBJECT
             src/ArrayListTestSuite.cc #Uses constexpr
             src/HashMapTestSuite.cc   #Uses constexpr
     )
@@ -93,6 +97,9 @@ if (EI_TESTS)
             src/ArrayListErrorInjectionTestSuite.cc
             src/ErrErrorInjectionTestSuite.cc
             src/PropertiesErrorInjectionTestSuite.cc
+            src/VersionErrorInjectionTestSuite.cc
+            src/HashMapErrorInjectionTestSuite.cc
+            src/FilterErrorInjectionTestSuite.cc
     )
     target_link_libraries(test_utils_with_ei PRIVATE
             Celix::zip_ei
@@ -104,7 +111,11 @@ if (EI_TESTS)
             Celix::ifaddrs_ei
             Celix::threads_ei
             Celix::malloc_ei
-            Celix::hmap_ei
+            Celix::asprintf_ei
+            Celix::string_hash_map_ei
+            Celix::long_hash_map_ei
+            Celix::version_ei
+            Celix::array_list_ei
             GTest::gtest GTest::gtest_main
     )
     target_include_directories(test_utils_with_ei PRIVATE ../src) #for version_private (needs refactoring of test)

@@ -146,7 +146,6 @@ namespace celix {
         std::size_t build() {
             celix_service_use_options_t opts{};
             opts.filter.serviceName = name.empty() ? nullptr : name.c_str();
-            opts.filter.ignoreServiceLanguage = true;
             opts.filter.filter = filter.empty() ? nullptr : filter.getFilterCString();
             opts.filter.versionRange = versionRange.empty() ? nullptr : versionRange.c_str();
             opts.waitTimeoutInSeconds = timeoutInSeconds;
@@ -160,10 +159,10 @@ namespace celix {
                     func(*svc);
                 }
                 for (const auto& func : builder->callbacksWithProperties) {
-                    func(*svc, *props);
+                    func(*svc, props);
                 }
                 for (const auto& func : builder->callbacksWithOwner) {
-                    func(*svc, *props, bnd);
+                    func(*svc, props, bnd);
                 }
             };
 

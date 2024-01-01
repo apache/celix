@@ -82,7 +82,7 @@ celix_service_registry_t* celix_serviceRegistry_create(framework_pt framework) {
 }
 
 void celix_serviceRegistry_destroy(celix_service_registry_t* registry) {
-    celixThreadRwlock_writeLock(&registry->lock);
+    celixThreadRwlock_destroy(&registry->lock);
 
     //remove service listeners
     int size = celix_arrayList_size(registry->serviceListeners);
@@ -470,7 +470,7 @@ static void serviceRegistry_logWarningServiceReferenceUsageCount(service_registr
         const char* service_name = "unknown";
         const char* bundle_provider_name = "unknown";
         if (refCount > 0 && ref != NULL) {
-            serviceReference_getProperty(ref, OSGI_FRAMEWORK_OBJECTCLASS, &service_name);
+            serviceReference_getProperty(ref, CELIX_FRAMEWORK_SERVICE_NAME, &service_name);
             service_registration_pt reg = NULL;
             bundle_pt providedBnd = NULL;
             serviceReference_getServiceRegistration(ref, &reg);
@@ -840,13 +840,13 @@ char* celix_serviceRegistry_createFilterFor(celix_service_registry_t* registry, 
 
     //setting filter
     if (additionalFilterIn != NULL && versionRange != NULL) {
-        asprintf(&filter, "(&(%s=%s)%s%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, versionRange, additionalFilterIn);
+        asprintf(&filter, "(&(%s=%s)%s%s)", CELIX_FRAMEWORK_SERVICE_NAME, serviceName, versionRange, additionalFilterIn);
     } else if (versionRange != NULL) {
-        asprintf(&filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, versionRange);
+        asprintf(&filter, "(&(%s=%s)%s)", CELIX_FRAMEWORK_SERVICE_NAME, serviceName, versionRange);
     } else if (additionalFilterIn != NULL) {
-        asprintf(&filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, additionalFilterIn);
+        asprintf(&filter, "(&(%s=%s)%s)", CELIX_FRAMEWORK_SERVICE_NAME, serviceName, additionalFilterIn);
     } else {
-        asprintf(&filter, "(&(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, serviceName);
+        asprintf(&filter, "(&(%s=%s))", CELIX_FRAMEWORK_SERVICE_NAME, serviceName);
     }
 
     return filter;
@@ -861,11 +861,11 @@ static int celix_serviceRegistry_compareRegistrations(const void *a, const void 
     serviceRegistration_getProperties((service_registration_t*)regA, &propsA);
     serviceRegistration_getProperties((service_registration_t*)regB, &propsB);
 
-    long servIdA = celix_properties_getAsLong(propsA, OSGI_FRAMEWORK_SERVICE_ID, 0);
-    long servIdB = celix_properties_getAsLong(propsB, OSGI_FRAMEWORK_SERVICE_ID, 0);
+    long servIdA = celix_properties_getAsLong(propsA, CELIX_FRAMEWORK_SERVICE_ID, 0);
+    long servIdB = celix_properties_getAsLong(propsB, CELIX_FRAMEWORK_SERVICE_ID, 0);
 
-    long servRankingA = celix_properties_getAsLong(propsA, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
-    long servRankingB = celix_properties_getAsLong(propsB, OSGI_FRAMEWORK_SERVICE_RANKING, 0);
+    long servRankingA = celix_properties_getAsLong(propsA, CELIX_FRAMEWORK_SERVICE_RANKING, 0);
+    long servRankingB = celix_properties_getAsLong(propsB, CELIX_FRAMEWORK_SERVICE_RANKING, 0);
 
     return celix_utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
 }
@@ -976,6 +976,7 @@ celix_status_t celix_serviceRegistry_addServiceListener(celix_service_registry_t
         filter = celix_filter_create(stringFilter);
         if (filter == NULL) {
             fw_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot add service listener filter '%s' is invalid", stringFilter);
+            celix_framework_logTssErrors(registry->framework->logger, CELIX_LOG_LEVEL_ERROR);
             return CELIX_ILLEGAL_ARGUMENT;
         }
     }

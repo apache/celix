@@ -33,7 +33,6 @@ extern "C" {
 
 
 celix_status_t dfi_findDescriptor(celix_bundle_context_t *context, const celix_bundle_t *bundle, const char *name, FILE **out);
-celix_status_t dfi_findAvprDescriptor(celix_bundle_context_t *context, const celix_bundle_t *bundle, const char *name, FILE **out);
 
 celix_status_t dfi_findAndParseInterfaceDescriptor(celix_log_helper_t *logHelper,
         celix_bundle_context_t *ctx, const celix_bundle_t *svcOwner, const char *name,

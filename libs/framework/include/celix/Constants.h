@@ -111,10 +111,7 @@ namespace celix {
      *
      * If not specified ".cache" is used.
      */
-    constexpr const char * const FRAMEWORK_CACHE_DIR = CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR;
-
-    //@deprecated use FRAMEWORK_CACHE_DIR.
-    constexpr const char * const FRAMEWORK_STORAGE = CELIX_FRAMEWORK_FRAMEWORK_STORAGE;
+    constexpr const char * const FRAMEWORK_CACHE_DIR = CELIX_FRAMEWORK_CACHE_DIR;
 
     /**
      * @brief Celix framework environment property (named "org.osgi.framework.uuid") specifying the UUID for the
@@ -125,7 +122,7 @@ namespace celix {
      *
      * @note The Celix framework expects framework UUIDs to be unique per process.
      */
-    constexpr const char * const FRAMEWORK_UUID = CELIX_FRAMEWORK_FRAMEWORK_UUID;
+    constexpr const char * const FRAMEWORK_UUID = CELIX_FRAMEWORK_UUID;
 
     /**
      * @brief Celix framework environment property (named "CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE") which configures
