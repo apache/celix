@@ -163,7 +163,6 @@ if (UTILS)
             setup_target_for_coverage(hash_map_test)
             setup_target_for_coverage(array_list_test)
             setup_target_for_coverage(linked_list_test)
-            setup_target_for_coverage(ip_utils_test)
         else ()
             message(WARNING "Cannot find CppUTest, deprecated cpputest-based unit test will not be added")
         endif () #end CppUTest_FOUND
