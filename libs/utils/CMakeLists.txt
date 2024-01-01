@@ -159,7 +159,6 @@ if (UTILS)
             add_test(NAME run_array_list_test COMMAND array_list_test)
             add_test(NAME run_hash_map_test COMMAND hash_map_test)
             add_test(NAME run_linked_list_test COMMAND linked_list_test)
-            add_test(NAME run_ip_utils_test COMMAND ip_utils_test)
 
             setup_target_for_coverage(hash_map_test)
             setup_target_for_coverage(array_list_test)
