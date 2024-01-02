@@ -38,11 +38,6 @@
 #include "framework_private.h"
 
 #define FILE_URL_SCHEME "file://"
-#define EMBEDDED_URL_SCHEME  "embedded://"
-static const char * const EMBEDDED_BUNDLES_SYMBOL = "celix_embedded_bundles";
-static const char * const EMBEDDED_BUNDLE_PREFIX = "celix_embedded_bundle_";
-static const char * const EMBEDDED_BUNDLE_START_POSTFIX = "_start";
-static const char * const EMBEDDED_BUNDLE_END_POSTFIX = "_end";
 
 #define FW_LOG(level, ...) do {                                                                                                 \
     if (fw) {                                                                                                                   \
@@ -99,59 +94,6 @@ error_out:
     return result;
 }
 
-static celix_status_t celix_framework_utils_locateEmbeddedBundle(celix_framework_t *fw, const char* bundleURL, void **start, void **end, bool silent) {
-    const char *errStr = NULL;
-    celix_status_t status = CELIX_SUCCESS;
-    char* startSymbol = NULL;
-    char* endSymbol = NULL;
-    void* prog = NULL;
-    size_t offset = sizeof(EMBEDDED_URL_SCHEME)-1; //offset to remove the EMBEDDED_URL_SCHEME part.
-    if(asprintf(&startSymbol, "%s%s%s", EMBEDDED_BUNDLE_PREFIX, bundleURL+offset, EMBEDDED_BUNDLE_START_POSTFIX) == -1) {
-        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
-        errStr = strerror(errno);
-        goto start_asprintf_error;
-    }
-    if(asprintf(&endSymbol, "%s%s%s", EMBEDDED_BUNDLE_PREFIX, bundleURL+offset, EMBEDDED_BUNDLE_END_POSTFIX) == -1) {
-        status = CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO,errno);
-        errStr = strerror(errno);
-        goto end_asprintf_error;
-    }
-
-    prog = dlopen(NULL, RTLD_NOW);
-    if (prog == NULL) {
-        status = CELIX_FRAMEWORK_EXCEPTION;
-        errStr = dlerror();
-        goto dlopen_error;
-    }
-    void *_start = dlsym(prog, startSymbol);
-    void *_end = dlsym(prog, endSymbol);
-
-    if (_start == NULL || _end == NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-        errStr = dlerror();
-        goto missing_symbol;
-    }
-    if (start != NULL) {
-        *start = _start;
-    }
-    if (end != NULL) {
-        *end = _end;
-    }
-missing_symbol:
-dlopen_error:
-    free(endSymbol);
-end_asprintf_error:
-    free(startSymbol);
-start_asprintf_error:
-    if (!silent) {
-        framework_logIfError(fw->logger, status, errStr, "Failed to locate embedded bundle symbols for bundle '%s'.", bundleURL);
-    }
-    if (prog) {
-        dlclose(prog); // dlclose() will invalidate previous `errStr = dlerror()`
-    }
-    return status;
-}
-
 static bool celix_framework_utils_isBundlePathNewerThan(celix_framework_t *fw, const char* bundlePath, const struct timespec* time) {
     struct timespec bundleModTime;
     char pathBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
@@ -174,11 +116,8 @@ bool celix_framework_utils_isBundleUrlNewerThan(celix_framework_t* fw, const cha
     char* trimmedUrl = celix_utils_trim(bundleURL);
     bool newer;
     size_t fileSchemeLen = sizeof(FILE_URL_SCHEME)-1;
-    size_t embeddedSchemeLen = sizeof(EMBEDDED_URL_SCHEME)-1;
     if (strncasecmp(FILE_URL_SCHEME, trimmedUrl, fileSchemeLen) == 0) {
         newer = celix_framework_utils_isBundlePathNewerThan(fw, trimmedUrl + fileSchemeLen, time); //skip the file:// part
-    } else if (strncasecmp(EMBEDDED_URL_SCHEME, trimmedUrl, embeddedSchemeLen) == 0) {
-        newer = true; //for now embedded zip always considered newer
     } else {
         newer = celix_framework_utils_isBundlePathNewerThan(fw, trimmedUrl, time);
     }
@@ -219,21 +158,6 @@ static celix_status_t celix_framework_utils_extractBundlePath(celix_framework_t 
     return status;
 }
 
-static celix_status_t celix_framework_utils_extractBundleEmbedded(celix_framework_t *fw, const char* embeddedBundle, const char* extractPath) {
-    FW_LOG(CELIX_LOG_LEVEL_TRACE, "Extracting embedded bundle `%s` to dir `%s`", embeddedBundle, extractPath);
-    void *start = NULL;
-    void *end = NULL;
-    const char* err = NULL;
-
-    celix_status_t status = celix_framework_utils_locateEmbeddedBundle(fw, embeddedBundle, &start, &end, true);
-    status = CELIX_DO_IF(status, celix_utils_extractZipData(start, end-start, extractPath, &err));
-    if (status == CELIX_SUCCESS) {
-        FW_LOG(CELIX_LOG_LEVEL_TRACE, "Embedded bundle zip `%s` extracted to `%s`", embeddedBundle, extractPath);
-    }
-    framework_logIfError(fw->logger, status, err, "Could not extract embedded bundle zip `%s` to `%s`", embeddedBundle, extractPath);
-    return status;
-}
-
 celix_status_t celix_framework_utils_extractBundle(celix_framework_t *fw, const char *bundleURL,  const char* extractPath) {
     if (!celix_framework_utils_isBundleUrlValid(fw, bundleURL, false)) {
         return CELIX_ILLEGAL_ARGUMENT;
@@ -242,11 +166,8 @@ celix_status_t celix_framework_utils_extractBundle(celix_framework_t *fw, const 
 
     celix_status_t status;
     size_t fileSchemeLen = sizeof(FILE_URL_SCHEME)-1;
-    size_t embeddedSchemeLen = sizeof(EMBEDDED_URL_SCHEME)-1;
     if (strncasecmp(FILE_URL_SCHEME, trimmedUrl, fileSchemeLen) == 0) {
         status = celix_framework_utils_extractBundlePath(fw, trimmedUrl + fileSchemeLen, extractPath);
-    } else if (strncasecmp(EMBEDDED_URL_SCHEME, trimmedUrl, embeddedSchemeLen) == 0) {
-        status = celix_framework_utils_extractBundleEmbedded(fw, trimmedUrl, extractPath);
     } else {
         status = celix_framework_utils_extractBundlePath(fw, trimmedUrl, extractPath);
     }
@@ -267,13 +188,10 @@ bool celix_framework_utils_isBundleUrlValid(celix_framework_t *fw, const char *b
     bool valid;
     char buffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
     size_t fileSchemeLen = sizeof(FILE_URL_SCHEME)-1;
-    size_t embeddedSchemeLen = sizeof(EMBEDDED_URL_SCHEME)-1;
     if (strncasecmp(FILE_URL_SCHEME, trimmedUrl, fileSchemeLen) == 0) {
         char* loc = celix_framework_utils_resolveFileBundleUrl(buffer, sizeof(buffer), fw, trimmedUrl + fileSchemeLen, silent);
         valid = loc != NULL;
         celix_utils_freeStringIfNotEqual(buffer, loc);
-    } else if (strncasecmp(EMBEDDED_URL_SCHEME, trimmedUrl, embeddedSchemeLen) == 0) {
-        valid = (celix_framework_utils_locateEmbeddedBundle(fw, trimmedUrl, NULL, NULL, silent) == CELIX_SUCCESS);
     } else if (strcasestr(trimmedUrl, "://")) {
         valid = false;
         if (!silent) {
@@ -287,47 +205,6 @@ bool celix_framework_utils_isBundleUrlValid(celix_framework_t *fw, const char *b
     free(trimmedUrl);
 
     return valid;
-}
-
-celix_array_list_t* celix_framework_utils_listEmbeddedBundles() {
-    celix_array_list_t* list = celix_arrayList_create();
-    void* prog = dlopen(NULL, RTLD_NOW);
-    const char** embeddedBundles = dlsym(prog, EMBEDDED_BUNDLES_SYMBOL);
-    if (embeddedBundles != NULL) {
-        char delims[] = ",";
-        char *savePtr = NULL;
-        char *bundles = celix_utils_strdup(*embeddedBundles);
-        for (char *url = strtok_r(bundles, delims, &savePtr); url != NULL; url = strtok_r(NULL, delims, &savePtr)) {
-            celix_arrayList_add(list, celix_utils_strdup(url));
-        }
-        free(bundles);
-    }
-    dlclose(prog);
-    return list;
-}
-
-size_t celix_framework_utils_installEmbeddedBundles(celix_framework_t* fw, bool autoStart) {
-    size_t nrOfBundlesInstalled = 0;
-    celix_array_list_t* list = celix_framework_utils_listEmbeddedBundles();
-    celix_array_list_t* bundleIds = celix_arrayList_create();
-    for (int i = 0; i < celix_arrayList_size(list); ++i) {
-        char* url = celix_arrayList_get(list, i);
-        long bndId = celix_framework_installBundle(fw, url, false);
-        if (bndId > 0) {
-            nrOfBundlesInstalled += 1;
-            celix_arrayList_addLong(bundleIds, bndId);
-        }
-        free(url);
-    }
-    celix_arrayList_destroy(list);
-
-    for (int i = 0; i < celix_arrayList_size(bundleIds) && autoStart; ++i) {
-        long bndId = celix_arrayList_getLong(bundleIds, i);
-        celix_framework_startBundle(fw, bndId);
-    }
-    celix_arrayList_destroy(bundleIds);
-
-    return nrOfBundlesInstalled;
 }
 
 size_t celix_framework_utils_installBundleSet(celix_framework_t* fw, const char* bundleSet, bool autoStart) {

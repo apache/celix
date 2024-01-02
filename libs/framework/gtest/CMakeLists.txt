@@ -67,10 +67,6 @@ add_executable(test_framework ${CELIX_FRAMEWORK_TEST_SOURCES})
 target_link_libraries(test_framework PRIVATE framework_cut GTest::gtest GTest::gtest_main)
 celix_deprecated_framework_headers(test_framework)
 
-
-#embed bundle in the test_framework executable
-celix_target_embedded_bundles(test_framework simple_test_bundle1 simple_test_bundle2)
-
 #Create bundle set definitions
 celix_target_bundle_set_definition(test_framework NAME BUNDLE_EMPTY_TEST_SET)
 celix_target_bundle_set_definition(test_framework NAME BUNDLE_TEST_SET
@@ -150,7 +146,6 @@ if (EI_TESTS)
             SIMPLE_CXX_BUNDLE_LOC="${SIMPLE_CXX_BUNDLE_LOC}"
     )
     add_celix_bundle_dependencies(test_framework_with_ei simple_test_bundle1 simple_cxx_bundle)
-    celix_target_embedded_bundles(test_framework_with_ei simple_test_bundle1)
     celix_deprecated_utils_headers(test_framework_with_ei)
     target_link_libraries(test_framework_with_ei PRIVATE
             framework_cut

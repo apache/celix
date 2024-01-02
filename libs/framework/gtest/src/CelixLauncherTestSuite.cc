@@ -63,19 +63,6 @@ TEST_F(CelixLauncherTestSuite, PrintHelpTest) {
     free(arg2);
 }
 
-TEST_F(CelixLauncherTestSuite, PrintEmbeddedBundlesTest) {
-    //When I run the celixLauncher with "--embedded_bundles" argument
-    char* arg1 = celix_utils_strdup("programName");
-    char* arg2 = celix_utils_strdup("--embedded_bundles");
-    char* argv[] = {arg1, arg2};
-    int rc = celixLauncher_launchAndWaitForShutdown(2, argv, nullptr);
-
-    //Then it will print the embedded bundles and exit with 0
-    EXPECT_EQ(rc, 0);
-    free(arg1);
-    free(arg2);
-}
-
 TEST_F(CelixLauncherTestSuite, ExtractBundlesTest) {
     //launch framework with bundle configured to start
     //Given a properties set with 2 bundles configured for start
