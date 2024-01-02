@@ -58,7 +58,7 @@ The following C functions can be used to create and manipulate properties:
 - `celix_properties_getAsLong` - Get a long property value or string value parsed as long.
 - `celix_properties_getAsDouble` - Get a double property value or string value parsed as double.
 - `celix_properties_getAsBool` - Get a bool property value or string value parsed as bool.
-- `celix_properties_getVersion` - Get a pointer to the version property if the property value is a version or was
+- `celix_properties_getAsVersion` - Get a pointer to the version property if the property value is a version or was
                                   parsable as a version. Note there is also a `celix_properties_getAsVersion` 
                                   function which return a new version object, but this is less efficient and
                                   requires a memory allocation.

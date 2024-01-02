@@ -806,7 +806,7 @@ celix_status_t celix_properties_setBool(celix_properties_t* props, const char* k
     return celix_properties_createAndSetEntry(props, key, &prototype);
 }
 
-const celix_version_t* celix_properties_getVersion(const celix_properties_t* properties,
+const celix_version_t* celix_properties_peekVersion(const celix_properties_t* properties,
                                                    const char* key,
                                                    const celix_version_t* defaultValue) {
     celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
@@ -846,11 +846,12 @@ celix_properties_setVersion(celix_properties_t* props, const char* key, const ce
     return celix_properties_createAndSetEntry(props, key, &prototype);
 }
 
-celix_status_t celix_properties_setVersionWithoutCopy(celix_properties_t* props, const char* key, celix_version_t* version) {
+celix_status_t
+celix_properties_assignVersion(celix_properties_t* properties, const char* key, celix_version_t* version) {
     celix_properties_entry_t prototype = {0};
     prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_VERSION;
     prototype.typed.versionValue = version;
-    return celix_properties_createAndSetEntry(props, key, &prototype);
+    return celix_properties_createAndSetEntry(properties, key, &prototype);
 }
 
 size_t celix_properties_size(const celix_properties_t* properties) {

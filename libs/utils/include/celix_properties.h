@@ -342,7 +342,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersion(celix_properties_t
                                                               const celix_version_t* version);
 
 /**
- * @brief Set the value of a property as a Celix version.
+ * @brief Assign the value of a property with the provided Celix version pointer.
  *
  * This function will store a reference to the provided celix_version_t object in the property set and takes
  * ownership of the provided version.
@@ -350,33 +350,37 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersion(celix_properties_t
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
- * @param[in] version The value to set. The function will store a reference to this object in the property set and
+ * @param[in] version The value to assign. The function will store a reference to this object in the property set and
  *                    takes ownership of the provided version.
  @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
  *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL. When an error status is returned,
  *         the version will be destroy with celix_version_destroy by this function.
  */
-CELIX_UTILS_EXPORT celix_status_t
-celix_properties_setVersionWithoutCopy(celix_properties_t* properties, const char* key, celix_version_t* version);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_assignVersion(celix_properties_t* properties,
+                                                                 const char* key,
+                                                                 celix_version_t* version);
 
 /**
- * @brief Get the Celix version value of a property.
+ * @brief Peek at the Celix version value of a property without copying.
  *
- * This function does not convert a string property value to a Celix version automatically.
+ * This function provides a non-owning, read-only access to a Celix version contained in the properties.
+ * It returns a const pointer to the Celix version value associated with the specified key.
+ * This function does not perform any conversion from a string property value to a Celix version.
  *
  * @param[in] properties The property set to search.
- * @param[in] key The key of the property to get.
+ * @param[in] key The key of the property to peek at.
  * @param[in] defaultValue The value to return if the property is not set or if the value is not a Celix version.
- * @return The value of the property if it is a Celix version, or the default value if the property is not set or the
- *         value is not a Celix version.
+ * @return A const pointer to the Celix version if it is present and valid, or the provided default value if the
+ * property is not set or the value is not a valid Celix version. The returned pointer should not be modified or freed.
  */
-CELIX_UTILS_EXPORT const celix_version_t*
-celix_properties_getVersion(const celix_properties_t* properties, const char* key, const celix_version_t* defaultValue);
+CELIX_UTILS_EXPORT const celix_version_t* celix_properties_peekVersion(const celix_properties_t* properties,
+                                                                       const char* key,
+                                                                       const celix_version_t* defaultValue);
 
 /**
- * @brief Get the value of a property as a Celix version.
+ * @brief Get a value of a property as a copied Celix version.
  *
- * If the property value is a Celix version, a copy of this version will be returned.
+ * If the property value is a Celix version, a copy of the found version will be returned.
  * If the property value is a string, this function will attempt to convert it to a new Celix version.
  * If the property is not set or is not a valid Celix version string, a copy of the provided defaultValue is returned.
  *

@@ -340,14 +340,13 @@ namespace celix {
          *         or the value is not a Celix version.
          */
         celix::Version getAsVersion(const std::string& key, celix::Version defaultValue = {}) {
-            auto* cVersion = celix_properties_getAsVersion(cProps.get(), key.data(), nullptr);
+            const auto* cVersion = celix_properties_peekVersion(cProps.get(), key.data(), nullptr);
             if (cVersion) {
                 celix::Version version{
                     celix_version_getMajor(cVersion),
                     celix_version_getMinor(cVersion),
                     celix_version_getMicro(cVersion),
                     celix_version_getQualifier(cVersion)};
-                celix_version_destroy(cVersion);
                 return version;
             }
             return defaultValue;

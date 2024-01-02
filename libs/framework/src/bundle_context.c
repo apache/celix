@@ -406,7 +406,7 @@ static long celix_bundleContext_registerServiceWithOptionsInternal(bundle_contex
             return -1;
         }
         celix_status_t rc =
-            celix_properties_setVersionWithoutCopy(props, CELIX_FRAMEWORK_SERVICE_VERSION, celix_steal_ptr(version));
+            celix_properties_assignVersion(props, CELIX_FRAMEWORK_SERVICE_VERSION, celix_steal_ptr(version));
         if (rc != CELIX_SUCCESS) {
             celix_framework_logTssErrors(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR);
             fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot set service version %s", opts->serviceVersion);
