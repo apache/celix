@@ -252,88 +252,83 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
 
 celix_status_t
 endpointDiscoveryPoller_poll(endpoint_discovery_poller_t* poller, char* url, celix_array_list_t* currentEndpoints) {
-    celix_status_t status;
-    celix_array_list_t* updatedEndpoints = NULL;
-
     // create an arraylist with a custom equality test to ensure we can find endpoints properly...
-    updatedEndpoints = celix_arrayList_createWithEquals(endpointDiscoveryPoller_endpointDescriptionEquals);
-    status = endpointDiscoveryPoller_getEndpoints(poller, url, &updatedEndpoints);
+    celix_array_list_t* updatedEndpoints = celix_arrayList_createWithEquals(endpointDiscoveryPoller_endpointDescriptionEquals);
+    if (!updatedEndpoints) {
+        return CELIX_ENOMEM;
+    }
 
-    if (updatedEndpoints && status == CELIX_SUCCESS) {
-        if (updatedEndpoints != NULL) {
-            for (int i = celix_arrayList_size(currentEndpoints); i > 0; i--) {
-                endpoint_description_t* endpoint = celix_arrayList_get(currentEndpoints, i - 1);
+    celix_status_t status = endpointDiscoveryPoller_getEndpoints(poller, url, &updatedEndpoints);
+    if (status == CELIX_SUCCESS) {
+        for (int i = celix_arrayList_size(currentEndpoints); i > 0; i--) {
+            endpoint_description_t* endpoint = celix_arrayList_get(currentEndpoints, i - 1);
 
-                celix_array_list_entry_t entry;
-                memset(&entry, 0, sizeof(entry));
-                entry.voidPtrVal = endpoint;
+            celix_array_list_entry_t entry;
+            memset(&entry, 0, sizeof(entry));
+            entry.voidPtrVal = endpoint;
 
-                if (celix_arrayList_indexOf(updatedEndpoints, entry) < 0) {
-                    status = discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
-                    celix_arrayList_removeAt(currentEndpoints, i - 1);
-                    endpointDescription_destroy(endpoint);
-                }
+            if (celix_arrayList_indexOf(updatedEndpoints, entry) < 0) {
+                status = discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
+                celix_arrayList_removeAt(currentEndpoints, i - 1);
+                endpointDescription_destroy(endpoint);
             }
+        }
 
-            for (int i = 0; i < celix_arrayList_size(updatedEndpoints); i++) {
-                endpoint_description_t* endpoint = celix_arrayList_get(updatedEndpoints, i);
-                celix_array_list_entry_t entry;
-                memset(&entry, 0, sizeof(entry));
-                entry.voidPtrVal = endpoint;
-                if (celix_arrayList_indexOf(currentEndpoints, entry) < 0) {
-                    celix_arrayList_add(currentEndpoints, endpoint);
-                    status = discovery_addDiscoveredEndpoint(poller->discovery, endpoint);
-                } else {
-                    endpointDescription_destroy(endpoint);
-                }
+        for (int i = 0; i < celix_arrayList_size(updatedEndpoints); i++) {
+            endpoint_description_t* endpoint = celix_arrayList_get(updatedEndpoints, i);
+            celix_array_list_entry_t entry;
+            memset(&entry, 0, sizeof(entry));
+            entry.voidPtrVal = endpoint;
+            if (celix_arrayList_indexOf(currentEndpoints, entry) < 0) {
+                celix_arrayList_add(currentEndpoints, endpoint);
+                status = discovery_addDiscoveredEndpoint(poller->discovery, endpoint);
+            } else {
+                endpointDescription_destroy(endpoint);
             }
-            celix_arrayList_clear(updatedEndpoints);
         }
     }
 
-    if (updatedEndpoints != NULL) {
+    if (updatedEndpoints) {
         celix_arrayList_destroy(updatedEndpoints);
     }
 
     return status;
 }
 
-static void *endpointDiscoveryPoller_performPeriodicPoll(void *data) {
-	endpoint_discovery_poller_t *poller = (endpoint_discovery_poller_t *) data;
+static void* endpointDiscoveryPoller_performPeriodicPoll(void* data) {
+    endpoint_discovery_poller_t* poller = (endpoint_discovery_poller_t*)data;
 
-	useconds_t interval = (useconds_t) (poller->poll_interval * 1000000L);
+    useconds_t interval = (useconds_t)(poller->poll_interval * 1000000L);
 
-	while (poller->running) {
-		usleep(interval);
-		celix_status_t status = celixThreadMutex_lock(&poller->pollerLock);
+    while (poller->running) {
+        usleep(interval);
+        celix_status_t status = celixThreadMutex_lock(&poller->pollerLock);
 
-		if (status != CELIX_SUCCESS) {
+        if (status != CELIX_SUCCESS) {
             celix_logHelper_warning(*poller->loghelper, "ENDPOINT_POLLER: failed to obtain lock; retrying...");
-		} else {
-			hash_map_iterator_pt iterator = hashMapIterator_create(poller->entries);
+        } else {
+            hash_map_iterator_pt iterator = hashMapIterator_create(poller->entries);
 
-			while (hashMapIterator_hasNext(iterator)) {
-				hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
+            while (hashMapIterator_hasNext(iterator)) {
+                hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
 
-				char *url = hashMapEntry_getKey(entry);
-                                celix_array_list_t* currentEndpoints = hashMapEntry_getValue(entry);
+                char* url = hashMapEntry_getKey(entry);
+                celix_array_list_t* currentEndpoints = hashMapEntry_getValue(entry);
 
-				endpointDiscoveryPoller_poll(poller, url, currentEndpoints);
-			}
+                endpointDiscoveryPoller_poll(poller, url, currentEndpoints);
+            }
 
-			hashMapIterator_destroy(iterator);
-		}
+            hashMapIterator_destroy(iterator);
+        }
 
-		status = celixThreadMutex_unlock(&poller->pollerLock);
-		if (status != CELIX_SUCCESS) {
+        status = celixThreadMutex_unlock(&poller->pollerLock);
+        if (status != CELIX_SUCCESS) {
             celix_logHelper_warning(*poller->loghelper, "ENDPOINT_POLLER: failed to release lock; retrying...");
-		}
-	}
+        }
+    }
 
-	return NULL;
+    return NULL;
 }
-
-
 
 struct MemoryStruct {
 	char *memory;
