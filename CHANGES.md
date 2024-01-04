@@ -54,6 +54,10 @@ limitations under the License.
 - celix_string/long_hashmap put functions now return a celix_status_t instead of bool (value replaced). 
   THe celix_status_t is used to indicate an ENOMEM error.
 - Embedded bundles are no longer supported.
+- properties.h is removed and no longer supported. Use celix_properties.h instead.
+- linked_list.h is removed and no longer supported. Use celix_array_list.h instead.
+- ip_utils.h is removed and no longer supported.  
+- array_list.h is removed and no longer supported. Use celix_array_list.h instead.
 
 ## New Features
 

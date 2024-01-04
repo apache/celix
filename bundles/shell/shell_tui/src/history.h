@@ -16,25 +16,21 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * history.h
- *
- *  \date       Jan 16, 2016
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef SHELL_TUI_HISTORY
 #define SHELL_TUI_HISTORY
 
-typedef struct history history_t;
+#include "celix_bundle_context.h"
 
-history_t *historyCreate();
-void historyDestroy(history_t *hist);
-void history_addLine(history_t *hist, const char *line);
-char *historyGetPrevLine(history_t *hist);
-char *historyGetNextLine(history_t *hist);
-void historyLineReset(history_t *hist);
-unsigned int historySize(history_t *hist);
+#define CELIX_SHELL_TUI_HIST_MAX 32
+
+typedef struct celix_shell_tui_history celix_shell_tui_history_t;
+
+celix_shell_tui_history_t* celix_shellTuiHistory_create(celix_bundle_context_t* ctx);
+void celix_shellTuiHistory_destroy(celix_shell_tui_history_t* hist);
+void celix_shellTuiHistory_addLine(celix_shell_tui_history_t* hist, const char* line);
+const char* celix_shellTuiHistory_getPrevLine(celix_shell_tui_history_t* hist);
+const char* celix_shellTuiHistory_getNextLine(celix_shell_tui_history_t* hist);
+void celix_shellTuiHistory_lineReset(celix_shell_tui_history_t* hist);
 
 #endif // SHELL_TUI_HISTORY

@@ -31,7 +31,7 @@
 #include "disc_mock_service.h"
 
 
-celix_status_t test(void *handle, array_list_pt *descrList);
+celix_status_t test(void *handle, celix_array_list_t** descrList);
 
 celix_status_t discMockService_create(void *handle, disc_mock_service_t **serv) {
 	*serv = calloc(1, sizeof(struct disc_mock_service));
@@ -49,7 +49,7 @@ celix_status_t discMockService_destroy(disc_mock_service_t *serv) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t test(void *handle, array_list_pt *descrList) {
+celix_status_t test(void *handle, celix_array_list_t** descrList) {
     struct disc_mock_activator *act = handle;
     *descrList = act->endpointList;
 

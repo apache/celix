@@ -25,7 +25,6 @@
 #include "celix_properties.h"
 #include "celix_properties_internal.h"
 #include "celix_utils.h"
-#include "properties.h"
 
 using ::testing::MatchesRegex;
 
@@ -620,33 +619,6 @@ TEST_F(PropertiesTestSuite, SetEntryTest) {
 
     celix_properties_destroy(props1);
     celix_properties_destroy(props2);
-}
-
-TEST_F(PropertiesTestSuite, DeprecatedApiTest) {
-    //Check if the deprecated api can still be used
-    auto* props = properties_create();
-    properties_set(props, "key", "value");
-    EXPECT_EQ(1, celix_properties_size(props));
-    EXPECT_STREQ("value", properties_get(props, "key"));
-    EXPECT_STREQ("notfound", properties_getWithDefault(props, "non-existing", "notfound"));
-    properties_unset(props, "key");
-    EXPECT_EQ(0, celix_properties_size(props));
-    celix_properties_t * copy = nullptr;
-    EXPECT_EQ(CELIX_SUCCESS, properties_copy(props, &copy));
-    properties_destroy(copy);
-
-
-    properties_store(props, "deprecated-api-stored.properties", "");
-    auto* loaded = properties_load("deprecated-api-stored.properties");
-    EXPECT_NE(nullptr, loaded);
-    properties_destroy(loaded);
-
-    loaded = properties_loadFromString("key=value");
-    EXPECT_EQ(1, celix_properties_size(loaded));
-    properties_destroy(loaded);
-
-
-    properties_destroy(props);
 }
 
 TEST_F(PropertiesTestSuite, PropertiesAutoCleanupTest) {

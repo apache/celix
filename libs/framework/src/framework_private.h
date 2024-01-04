@@ -26,7 +26,7 @@
 #include "framework.h"
 #include "manifest.h"
 #include "hash_map.h"
-#include "array_list.h"
+#include "celix_array_list.h"
 #include "celix_errno.h"
 #include "service_factory.h"
 #include "bundle_archive.h"
@@ -135,10 +135,10 @@ struct celix_framework {
     long bundleId; //the bundle id of the framework (normally 0)
     hash_map_pt installRequestMap;
 
-    array_list_pt frameworkListeners;
+    celix_array_list_t* frameworkListeners;
     celix_thread_mutex_t frameworkListenersLock;
 
-    array_list_pt bundleListeners;
+    celix_array_list_t* bundleListeners;
     celix_thread_mutex_t bundleListenerLock;
 
     long currentBundleId; //atomic
@@ -162,7 +162,7 @@ struct celix_framework {
     } installedBundles;
 
 
-    properties_pt configurationMap;
+    celix_properties_t* configurationMap;
 
 
     struct {
@@ -264,12 +264,12 @@ bool celix_framework_getConfigPropertyAsBool(celix_framework_t* framework, const
 
 celix_status_t celix_framework_installBundleInternal(celix_framework_t* framework, const char* bndLoc, long* bndId);
 
-celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, const void* svcObj, properties_pt properties);
-celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, service_factory_pt factory, properties_pt properties);
+celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, const void* svcObj, celix_properties_t* properties);
+celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, service_factory_pt factory, celix_properties_t* properties);
 
-celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *references, bundle_pt bundle, const char* serviceName, const char* filter);
-celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, array_list_pt *services);
-celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundle, array_list_pt *services);
+celix_status_t fw_getServiceReferences(framework_pt framework, celix_array_list_t** references, bundle_pt bundle, const char* serviceName, const char* filter);
+celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, celix_array_list_t** services);
+celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundle, celix_array_list_t** services);
 
 void fw_addServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener, const char* filter);
 void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener);
@@ -280,7 +280,7 @@ celix_status_t fw_removeBundleListener(framework_pt framework, bundle_pt bundle,
 celix_status_t fw_addFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener);
 celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener);
 
-array_list_pt framework_getBundles(framework_pt framework) __attribute__((deprecated("not thread safe, use celix_framework_useBundles instead")));
+celix_array_list_t* framework_getBundles(framework_pt framework) __attribute__((deprecated("not thread safe, use celix_framework_useBundles instead")));
 long framework_getBundle(framework_pt framework, const char* location);
 bundle_pt framework_getBundleById(framework_pt framework, long id);
 

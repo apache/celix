@@ -24,13 +24,12 @@
 
 #include "celix_errno.h"
 #include "celix_threads.h"
-#include "array_list.h"
+#include "celix_array_list.h"
 #include "hash_map.h"
-#include "properties.h"
+#include "celix_properties.h"
 #include "utils.h"
 #include "celix_utils.h"
-#include "version.h"
-#include "version_range.h"
+#include "celix_version.h"
 
 #if defined(NO_MEMSTREAM_AVAILABLE)
 #include "memstream/open_memstream.h"

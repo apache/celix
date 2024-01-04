@@ -18,7 +18,6 @@
  */
 
 #include <benchmark/benchmark.h>
-#include <celix_utils_api.h>
 #include <unordered_map>
 #include <random>
 #include <iostream>
@@ -29,6 +28,7 @@
 #include "celix_string_hash_map.h"
 #include "celix_hash_map_internal.h"
 #include "celix_properties_internal.h"
+#include "utils.h"
 
 class StringHashmapBenchmark {
 public:

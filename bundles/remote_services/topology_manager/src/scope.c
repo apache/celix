@@ -26,6 +26,8 @@
 #include "utils.h"
 #include "filter.h"
 
+static bool import_equal(celix_array_list_entry_t src, celix_array_list_entry_t dest);
+
 struct scope_item {
     celix_properties_t *props;
 };
@@ -36,13 +38,11 @@ struct scope {
     hash_map_pt exportScopes;           // key is filter, value is scope_item (properties set)
 
     celix_thread_mutex_t importScopeLock;
-    array_list_pt importScopes;			// list of filters
+    celix_array_list_t* importScopes;			// list of filters
 
     celix_status_t (*exportScopeChangedHandler)(void* manager, char *filter);
     celix_status_t (*importScopeChangedHandler)(void* manager, char *filter);
 };
-
-static celix_status_t import_equal(const void *, const void *, bool *equals);
 
 /*
  * SERVICES
@@ -120,10 +120,13 @@ celix_status_t tm_addImportScope(void *handle, char *filter) {
         return CELIX_ILLEGAL_ARGUMENT; // filter not parsable
     }
     if (celixThreadMutex_lock(&scope->importScopeLock) == CELIX_SUCCESS) {
-        int index = arrayList_indexOf(scope->importScopes, new);
-        filter_pt present = (filter_pt) arrayList_get(scope->importScopes, index);
+        celix_array_list_entry_t entry;
+        memset(&entry, 0, sizeof(entry));
+        entry.voidPtrVal = new;
+        int index = celix_arrayList_indexOf(scope->importScopes, entry);
+        filter_pt present = (filter_pt) celix_arrayList_get(scope->importScopes, index);
         if (present == NULL) {
-            arrayList_add(scope->importScopes, celix_steal_ptr(new));
+            celix_arrayList_add(scope->importScopes, celix_steal_ptr(new));
         } else {
             status = CELIX_ILLEGAL_ARGUMENT;
         }
@@ -150,12 +153,15 @@ celix_status_t tm_removeImportScope(void *handle, char *filter) {
     }
 
     if (celixThreadMutex_lock(&scope->importScopeLock) == CELIX_SUCCESS) {
-        int index = arrayList_indexOf(scope->importScopes, new);
-        filter_pt present = (filter_pt) arrayList_get(scope->importScopes, index);
+        celix_array_list_entry_t entry;
+        memset(&entry, 0, sizeof(entry));
+        entry.voidPtrVal = new;
+        int index = celix_arrayList_indexOf(scope->importScopes, entry);
+        filter_pt present = (filter_pt) celix_arrayList_get(scope->importScopes, index);
         if (present == NULL)
             status = CELIX_ILLEGAL_ARGUMENT;
         else {
-            arrayList_removeElement(scope->importScopes, present);
+            celix_arrayList_remove(scope->importScopes, present);
             filter_destroy(present);
         }
         celixThreadMutex_unlock(&scope->importScopeLock);
@@ -193,7 +199,9 @@ celix_status_t scope_scopeCreate(void *handle, scope_pt *scope) {
     celixThreadMutex_create(&(*scope)->importScopeLock, NULL);
 
     (*scope)->exportScopes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-    arrayList_createWithEquals(import_equal, &((*scope)->importScopes));
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    opts.equalsCallback = import_equal;
+    (*scope)->importScopes = celix_arrayList_createWithOptions(&opts);
     (*scope)->exportScopeChangedHandler = NULL;
 
     return status;
@@ -215,14 +223,11 @@ celix_status_t scope_scopeDestroy(scope_pt scope) {
     }
 
     if (celixThreadMutex_lock(&scope->importScopeLock) == CELIX_SUCCESS) {
-        array_list_iterator_pt imp_iter = arrayListIterator_create(scope->importScopes);
-        while (arrayListIterator_hasNext(imp_iter)) {
-            filter_pt element = (filter_pt) arrayListIterator_next(imp_iter);
+        for (int i = 0; i < celix_arrayList_size(scope->importScopes); i++) {
+            filter_pt element = (filter_pt) celix_arrayList_get(scope->importScopes, i);
             filter_destroy(element);
-            // no need to call arrayList_removeElement(element) because complete list is destroyed
         }
-        arrayListIterator_destroy(imp_iter);
-        arrayList_destroy(scope->importScopes);
+        celix_arrayList_destroy(scope->importScopes);
         celixThreadMutex_unlock(&scope->importScopeLock);
     }
 
@@ -235,29 +240,30 @@ celix_status_t scope_scopeDestroy(scope_pt scope) {
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static celix_status_t import_equal(const void *src, const void *dest, bool *equals) {
+static bool import_equal(celix_array_list_entry_t src, celix_array_list_entry_t dest) {
     celix_status_t status;
 
-    filter_pt src_filter = (filter_pt) src;
-    filter_pt dest_filter = (filter_pt) dest;
-    status = filter_match_filter(src_filter, dest_filter, equals);
-    return status;
+    filter_pt src_filter = (filter_pt) src.voidPtrVal;
+    filter_pt dest_filter = (filter_pt) dest.voidPtrVal;
+    bool result;
+    status = filter_match_filter(src_filter, dest_filter, &result);
+    return (status == CELIX_SUCCESS) && result;
 }
 
 bool scope_allowImport(scope_pt scope, endpoint_description_t *endpoint) {
     bool allowImport = false;
-    array_list_iterator_pt iter;
 
     if (celixThreadMutex_lock(&(scope->importScopeLock)) == CELIX_SUCCESS) {
-        if (arrayList_size(scope->importScopes) == 0) {
+        if (celix_arrayList_size(scope->importScopes) == 0) {
             allowImport = true;
         } else {
-            iter = arrayListIterator_create(scope->importScopes);
-            while ((allowImport == false) && arrayListIterator_hasNext(iter)) {
-                filter_pt element = (filter_pt) arrayListIterator_next(iter);
+            for (int i = 0; i < celix_arrayList_size(scope->importScopes); i++) {
+                filter_pt element = (filter_pt) celix_arrayList_get(scope->importScopes, i);
                 filter_match(element, endpoint->properties, &allowImport);
+                if (allowImport) {
+                    break;
+                }
             }
-            arrayListIterator_destroy(iter);
         }
         celixThreadMutex_unlock(&scope->importScopeLock);
     }

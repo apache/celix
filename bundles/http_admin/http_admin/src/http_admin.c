@@ -17,9 +17,10 @@
  * under the License.
  */
 
-#include <stdlib.h>
-#include <memory.h>
+#include <ctype.h>
 #include <limits.h>
+#include <memory.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "http_admin.h"
@@ -355,9 +356,9 @@ static void httpAdmin_updateInfoSvc(http_admin_manager_t *admin) {
     size_t resources_urls_size;
     FILE *stream = open_memstream(&resources_urls, &resources_urls_size);
 
-    unsigned int size = arrayList_size(admin->aliasList);
+    unsigned int size = celix_arrayList_size(admin->aliasList);
     for (unsigned int i = 0; i < size; ++i) {
-        http_alias_t *alias = arrayList_get(admin->aliasList, i);
+        http_alias_t *alias = celix_arrayList_get(admin->aliasList, i);
         bool isLast = (i == size-1);
         const char *separator = isLast ? "" : ",";
         fprintf(stream, "%s%s", alias->url, separator);
@@ -456,9 +457,9 @@ static void createAliasesSymlink(const char *aliases, const char *admin_root, co
  * @return true if alias is already in the list, false if not.
  */
 static bool aliasList_containsAlias(celix_array_list_t *alias_list, const char *alias) {
-    unsigned int size = arrayList_size(alias_list);
+    unsigned int size = celix_arrayList_size(alias_list);
     for(unsigned int i = 0; i < size; i++) {
-        http_alias_t *http_alias = arrayList_get(alias_list, i);
+        http_alias_t *http_alias = celix_arrayList_get(alias_list, i);
         if(strcmp(http_alias->alias_path, alias) == 0) {
             return true;
         }
@@ -492,9 +493,9 @@ void http_admin_stopBundle(void *data, const celix_bundle_t *bundle) {
     long bundle_id = celix_bundle_getId(bundle);
 
     //Remove all aliases which are connected to this bundle
-    unsigned int size = arrayList_size(admin->aliasList);
+    unsigned int size = celix_arrayList_size(admin->aliasList);
     for (unsigned int i = (size - 1); i < size; i--) {
-        http_alias_t *alias = arrayList_get(admin->aliasList, i);
+        http_alias_t *alias = celix_arrayList_get(admin->aliasList, i);
         if(alias->bundle_id == bundle_id) {
             remove(alias->alias_path); //Delete alias in cache directory
             free(alias->url);
