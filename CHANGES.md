@@ -55,7 +55,7 @@ limitations under the License.
   THe celix_status_t is used to indicate an ENOMEM error.
 - Embedded bundles are no longer supported.
 - linked_list.h is removed and no longer supported. Use celix_array_list.h instead.
-- IP utils is refactored and the API is changed and all IP utils functions are now prefixed with `celix_utils_`.
+- ip_utils.h is removed and no longer supported.  
 - array_list.h is removed and no longer supported. Use celix_array_list.h instead.
 
 ## New Features

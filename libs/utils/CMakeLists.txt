@@ -38,7 +38,6 @@ if (UTILS)
             src/version_range.c
             src/properties.c
             src/utils.c
-            src/ip_utils.c
             src/filter.c
             src/celix_log_level.c
             src/celix_log_utils.c

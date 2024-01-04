@@ -34,7 +34,6 @@ add_executable(test_utils
         src/ThreadsTestSuite.cc
         src/CelixErrnoTestSuite.cc
         src/CelixUtilsAutoCleanupTestSuite.cc
-        src/IpUtilsTestSuite.cc
         src/DeprecatedHashmapTestSuite.cc
 )
 
@@ -108,7 +107,6 @@ if (EI_TESTS)
     add_executable(test_utils_with_ei
             src/FileUtilsErrorInjectionTestSuite.cc
             src/ConvertUtilsErrorInjectionTestSuite.cc
-            src/IpUtilsErrorInjectionTestSuite.cc
             src/ArrayListErrorInjectionTestSuite.cc
             src/PropertiesErrorInjectionTestSuite.cc
             src/VersionErrorInjectionTestSuite.cc
