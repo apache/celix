@@ -282,7 +282,7 @@ celix_status_t celix_dmComponent_addServiceDependency(celix_dm_component_t *comp
     celix_dmServiceDependency_setComponent(dep, component);
 
     celixThreadMutex_lock(&component->mutex);
-    arrayList_add(component->dependencies, dep);
+    celix_arrayList_add(component->dependencies, dep);
     bool startDep = celix_dmComponent_currentState(component) != CELIX_DM_CMP_STATE_INACTIVE;
     if (startDep) {
         celix_dmServiceDependency_enable(dep);
@@ -699,7 +699,7 @@ static celix_status_t celix_dmComponent_handleSet(celix_dm_component_t *componen
  */
 static celix_status_t celix_dmComponent_enableDependencies(celix_dm_component_t *component) {
     for (int i = 0; i < celix_arrayList_size(component->dependencies); i++) {
-        celix_dm_service_dependency_t *dependency = arrayList_get(component->dependencies, i);
+        celix_dm_service_dependency_t *dependency = celix_arrayList_get(component->dependencies, i);
         celix_dmServiceDependency_enable(dependency);
     }
     return CELIX_SUCCESS;
@@ -710,7 +710,7 @@ static celix_status_t celix_dmComponent_enableDependencies(celix_dm_component_t 
  */
 static celix_status_t celix_dmComponent_disableDependencies(celix_dm_component_t *component) {
     for (int i = 0; i < celix_arrayList_size(component->dependencies); i++) {
-        celix_dm_service_dependency_t *dependency = arrayList_get(component->dependencies, i);
+        celix_dm_service_dependency_t *dependency = celix_arrayList_get(component->dependencies, i);
         celix_dmServiceDependency_disable(dependency);
     }
     return CELIX_SUCCESS;
@@ -920,7 +920,7 @@ static celix_status_t celix_dmComponent_registerServices(celix_dm_component_t *c
         celixThreadMutex_lock(&component->mutex);
     }
     for (int i = 0; i < celix_arrayList_size(component->providedInterfaces); i++) {
-        dm_interface_t *interface = arrayList_get(component->providedInterfaces, i);
+        dm_interface_t *interface = celix_arrayList_get(component->providedInterfaces, i);
         if (interface->svcId == -1L) {
             celix_properties_t *regProps = celix_properties_copy(interface->properties);
             celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
@@ -955,7 +955,7 @@ static celix_status_t celix_dmComponent_unregisterServices(celix_dm_component_t 
     }
     celix_array_list_t* ids = NULL;
     for (int i = 0; i < celix_arrayList_size(component->providedInterfaces); ++i) {
-	    dm_interface_t *interface = arrayList_get(component->providedInterfaces, i);
+	    dm_interface_t *interface = celix_arrayList_get(component->providedInterfaces, i);
 	    if (interface->svcId == -1) {
 	        continue;
 	    }

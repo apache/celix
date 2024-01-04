@@ -27,9 +27,6 @@
 #ifndef ENDPOINT_LISTENER_H_
 #define ENDPOINT_LISTENER_H_
 
-#include "array_list.h"
-#include "celix_properties.h"
-
 #include "endpoint_description.h"
 
 static const char * const OSGI_ENDPOINT_LISTENER_SERVICE = "endpoint_listener";

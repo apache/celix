@@ -21,6 +21,7 @@ add_executable(test_shell_tui
 
 target_link_libraries(test_shell_tui PRIVATE Celix::framework GTest::gtest GTest::gtest_main)
 add_celix_bundle_dependencies(test_shell_tui Celix::shell Celix::shell_tui)
+target_include_directories(test_shell_tui PRIVATE ../src)
 target_compile_definitions(test_shell_tui PRIVATE -DSHELL_BUNDLE_LOCATION=\"$<TARGET_PROPERTY:shell,BUNDLE_FILE>\")
 target_compile_definitions(test_shell_tui PRIVATE -DSHELL_TUI_BUNDLE_LOCATION=\"$<TARGET_PROPERTY:shell_tui,BUNDLE_FILE>\")
 

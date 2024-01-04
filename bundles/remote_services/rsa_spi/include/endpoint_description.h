@@ -28,7 +28,7 @@
 #define ENDPOINT_DESCRIPTION_H_
 
 #include "celix_properties.h"
-#include "array_list.h"
+#include "celix_array_list.h"
 #include "celix_cleanup.h"
 #include <stdbool.h>
 

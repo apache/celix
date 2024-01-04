@@ -30,7 +30,6 @@
 #include "celix_types.h"
 
 #include "celix_errno.h"
-#include "array_list.h"
 #include "celix_dm_info.h"
 #include "celix_framework_export.h"
 

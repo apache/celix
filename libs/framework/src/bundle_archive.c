@@ -37,7 +37,6 @@
 #include "bundle_archive_private.h"
 #include "bundle_revision_private.h"
 #include "framework_private.h"
-#include "linked_list_iterator.h"
 
 /**
  * The bundle archive which is used to store the bundle data and can be reused when a framework is restarted.

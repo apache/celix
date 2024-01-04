@@ -181,7 +181,7 @@ celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, c
     return fw_registerServiceFactory(context->framework, service_registration, bndId, serviceName, factory, properties);
 }
 
-celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, const char * filter, array_list_pt *service_references) {
+celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, const char * filter, celix_array_list_t** service_references) {
     if (context == NULL || service_references == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
@@ -190,20 +190,20 @@ celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, con
 
 celix_status_t bundleContext_getServiceReference(bundle_context_pt context, const char * serviceName, service_reference_pt *service_reference) {
     service_reference_pt reference = NULL;
-    array_list_pt services = NULL;
+    celix_array_list_t* services = NULL;
     celix_status_t status = CELIX_SUCCESS;
 
     if (serviceName != NULL) {
         if (bundleContext_getServiceReferences(context, serviceName, NULL, &services) == CELIX_SUCCESS) {
-            unsigned int size = arrayList_size(services);
+            unsigned int size = celix_arrayList_size(services);
             for(unsigned int i = 0; i < size; i++) {
                 if(i == 0) {
-                    reference = arrayList_get(services, 0);
+                    reference = celix_arrayList_get(services, 0);
                 } else {
-                    bundleContext_ungetServiceReference(context, arrayList_get(services, i));
+                    bundleContext_ungetServiceReference(context, celix_arrayList_get(services, i));
                 }
             }
-            arrayList_destroy(services);
+            celix_arrayList_destroy(services);
             *service_reference = reference;
         } else {
             status = CELIX_ILLEGAL_ARGUMENT;
@@ -254,7 +254,7 @@ celix_status_t bundleContext_ungetService(bundle_context_pt context, service_ref
     return serviceReference_ungetService(reference, result);
 }
 
-celix_status_t bundleContext_getBundles(bundle_context_pt context, array_list_pt *bundles) {
+celix_status_t bundleContext_getBundles(bundle_context_pt context, celix_array_list_t** bundles) {
     if (context == NULL || bundles == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
@@ -1399,7 +1399,7 @@ static celix_status_t bundleContext_callServicedTrackerTrackerCallback(void *han
     if (entry != NULL) {
         size_t size = celix_arrayList_size(listeners);
         for (unsigned int i = 0; i < size; ++i) {
-            listener_hook_info_pt info = arrayList_get(listeners, i);
+            listener_hook_info_pt info = celix_arrayList_get(listeners, i);
             celix_bundle_t *bnd = NULL;
             bundleContext_getBundle(info->context, &bnd);
 

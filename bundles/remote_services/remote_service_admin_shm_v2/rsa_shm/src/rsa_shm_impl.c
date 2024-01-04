@@ -380,9 +380,9 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
         }
 
         // Create export registrations for its interfaces.
-        size_t interfaceNum = arrayList_size(interfaces);
+        size_t interfaceNum = celix_arrayList_size(interfaces);
         for (int iter = 0; iter < interfaceNum; iter++) {
-            char *interface = arrayList_get(interfaces, iter);
+            char *interface = celix_arrayList_get(interfaces, iter);
             celix_autoptr(endpoint_description_t) endpointDescription = NULL;
             export_registration_t *registration = NULL;
             int ret = CELIX_SUCCESS;
@@ -538,13 +538,13 @@ static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
 }
 
 //LCOV_EXCL_START
-celix_status_t rsaShm_getExportedServices(rsa_shm_t *admin CELIX_UNUSED, array_list_pt *services CELIX_UNUSED) {
+celix_status_t rsaShm_getExportedServices(rsa_shm_t *admin CELIX_UNUSED, celix_array_list_t** services CELIX_UNUSED) {
     celix_status_t status = CELIX_SUCCESS;
     //It is stub and will not be called at present.
     return status;
 }
 
-celix_status_t rsaShm_getImportedEndpoints(rsa_shm_t *admin CELIX_UNUSED, array_list_pt *services CELIX_UNUSED) {
+celix_status_t rsaShm_getImportedEndpoints(rsa_shm_t *admin CELIX_UNUSED, celix_array_list_t** services CELIX_UNUSED) {
     celix_status_t status = CELIX_SUCCESS;
     //It is stub and will not be called at present.
     return status;

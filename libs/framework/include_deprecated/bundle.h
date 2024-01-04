@@ -82,8 +82,6 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundle_revise(celix_bundle_t *b
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundle_addModule(celix_bundle_t *bundle, module_pt module);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundle_closeModules(const celix_bundle_t *bundle);
-
 // Service Reference Functions
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_array_list_t *getUsingBundles(service_reference_pt reference);
 
