@@ -33,7 +33,7 @@ extern "C" {
 
 #include "dyn_common.h"
 #include "dyn_interface.h"
-#include "version.h"
+#include "celix_version.h"
 
 #if NO_MEMSTREAM_AVAILABLE
 #include "open_memstream.h"
@@ -57,14 +57,13 @@ extern "C" {
         status = dynInterface_getVersionString(dynIntf, &version);
         ASSERT_EQ(0, status);
         ASSERT_STREQ(v, version);
-        version_pt msgVersion = NULL, localMsgVersion = NULL;
-        int cmpVersion = -1;
-        version_createVersionFromString(version, &localMsgVersion);
+        celix_version_t* msgVersion = nullptr;
+        celix_version_t* localMsgVersion = localMsgVersion = celix_version_createVersionFromString(version);
         status = dynInterface_getVersion(dynIntf, &msgVersion);
         ASSERT_EQ(0, status);
-        version_compareTo(msgVersion, localMsgVersion, &cmpVersion);
+        int cmpVersion = celix_version_compareTo(msgVersion, localMsgVersion);
         ASSERT_EQ(cmpVersion, 0);
-        version_destroy(localMsgVersion);
+        celix_version_destroy(localMsgVersion);
     }
 
     static void test1(void) {

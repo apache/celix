@@ -20,7 +20,7 @@
 #include "gtest/gtest.h"
 
 #include <stdarg.h>
-#include "version.h"
+#include "celix_version.h"
 
 
 extern "C" {
@@ -57,15 +57,13 @@ static void checkMessageVersion(dyn_message_type* dynMsg, const char* v){
 	status = dynMessage_getVersionString(dynMsg, &version);
 	ASSERT_EQ(0, status);
 	ASSERT_STREQ(v, version);
-	version_pt msgVersion = NULL, localMsgVersion = NULL;
-	int cmpVersion = -1;
-	version_createVersionFromString(version,&localMsgVersion);
+	celix_version_t* msgVersion = nullptr;
+        celix_version_t* localMsgVersion = celix_version_createVersionFromString(version);
 	status = dynMessage_getVersion(dynMsg,&msgVersion);
 	ASSERT_EQ(0, status);
-	version_compareTo(msgVersion,localMsgVersion,&cmpVersion);
+        int cmpVersion = celix_version_compareTo(msgVersion, localMsgVersion);
 	ASSERT_EQ(cmpVersion,0);
-	version_destroy(localMsgVersion);
-
+	celix_version_destroy(localMsgVersion);
 }
 
 

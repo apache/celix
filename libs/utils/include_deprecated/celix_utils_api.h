@@ -29,8 +29,8 @@
 #include "celix_properties.h"
 #include "utils.h"
 #include "celix_utils.h"
-#include "version.h"
-#include "version_range.h"
+#include "celix_version.h"
+#include "celix_version_range.h"
 
 #if defined(NO_MEMSTREAM_AVAILABLE)
 #include "memstream/open_memstream.h"

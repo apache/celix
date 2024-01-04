@@ -28,7 +28,7 @@
 #define MANIFEST_PARSER_H_
 
 #include "module.h"
-#include "version.h"
+#include "celix_version.h"
 #include "manifest.h"
 #include "linked_list.h"
 
@@ -40,7 +40,7 @@ celix_status_t manifestParser_destroy(manifest_parser_pt mp);
 celix_status_t manifestParser_getAndDuplicateSymbolicName(manifest_parser_pt parser, char **symbolicName);
 celix_status_t manifestParser_getAndDuplicateName(manifest_parser_pt parser, char **name);
 celix_status_t manifestParser_getAndDuplicateDescription(manifest_parser_pt parser, char **description);
-celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, version_pt *version);
+celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, celix_version_t **version);
 celix_status_t manifestParser_getAndDuplicateGroup(manifest_parser_pt parser, char **group);
 
 #endif /* MANIFEST_PARSER_H_ */

@@ -830,7 +830,7 @@ char* celix_serviceRegistry_createFilterFor(celix_service_registry_t* registry, 
                           "Error incorrect version range.");
             return NULL;
         }
-        versionRange = versionRange_createLDAPFilter(range, CELIX_FRAMEWORK_SERVICE_VERSION);
+        versionRange = celix_versionRange_createLDAPFilter(range, CELIX_FRAMEWORK_SERVICE_VERSION);
         if (versionRange == NULL) {
             celix_framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
                           "Error creating LDAP filter.");

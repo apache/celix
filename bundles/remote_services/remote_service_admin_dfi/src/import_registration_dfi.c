@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <json_rpc.h>
 #include <assert.h>
-#include "version.h"
+#include "celix_version.h"
 #include "dyn_interface.h"
 #include "import_registration.h"
 #include "import_registration_dfi.h"
@@ -32,7 +32,7 @@ struct import_registration {
     celix_bundle_context_t *context;
     endpoint_description_t * endpoint; //TODO owner? -> free when destroyed
     const char *classObject; //NOTE owned by endpoint
-    version_pt version;
+    celix_version_t* version;
 
     send_func_type send;
     void *sendHandle;
@@ -75,7 +75,6 @@ celix_status_t importRegistration_create(
         void* sendFnHandle,
         FILE *logFile,
         import_registration_t **out) {
-    celix_status_t status = CELIX_SUCCESS;
     import_registration_t *reg = calloc(1, sizeof(*reg));
     reg->context = context;
     reg->endpoint = endpoint;
@@ -87,7 +86,7 @@ celix_status_t importRegistration_create(
     remoteInterceptorsHandler_create(context, &reg->interceptorsHandler);
 
     celixThreadMutex_create(&reg->proxiesMutex, NULL);
-    status = version_createVersionFromString((char*)serviceVersion,&(reg->version));
+    reg->version = celix_version_createVersionFromString((char*)serviceVersion);
 
     reg->factorySvcId = -1;
     reg->factory.handle = reg;
@@ -96,14 +95,15 @@ celix_status_t importRegistration_create(
     reg->logFile = logFile;
 
 
-    if (status == CELIX_SUCCESS) {
+    if (reg && reg->version && reg->proxies && reg->interceptorsHandler) {
         //printf("IMPORT REGISTRATION IS %p\n", reg);
         *out = reg;
+        return CELIX_ENOMEM;
     } else {
     	importRegistration_destroy(reg);
     }
 
-    return status;
+    return CELIX_SUCCESS;
 }
 
 static void importRegistration_clearProxies(import_registration_t *import) {
@@ -134,9 +134,7 @@ static void importRegistration_destroyCallback(void* data) {
 
     pthread_mutex_destroy(&import->proxiesMutex);
 
-    if (import->version != NULL) {
-        version_destroy(import->version);
-    }
+    celix_version_destroy(import->version);
     free(import);
 }
 
@@ -230,16 +228,14 @@ static celix_status_t importRegistration_createProxy(import_registration_t *impo
     }
 
     /* Check if the imported service version is compatible with the one in the consumer descriptor */
-    version_pt consumerVersion = NULL;
+    celix_version_t* consumerVersion = NULL;
     bool isCompatible = false;
     dynInterface_getVersion(intf,&consumerVersion);
-    version_isCompatible(consumerVersion,import->version,&isCompatible);
+    isCompatible = celix_version_isCompatible(consumerVersion, import->version);
 
     if(!isCompatible){
-    	char* cVerString = NULL;
-    	char* pVerString = NULL;
-    	version_toString(consumerVersion,&cVerString);
-    	version_toString(import->version,&pVerString);
+        char* cVerString = celix_version_toString(consumerVersion);
+        char* pVerString = celix_version_toString(import->version);
     	printf("Service version mismatch: consumer has %s, provider has %s. NOT creating proxy.\n",cVerString,pVerString);
     	dynInterface_destroy(intf);
     	free(cVerString);
