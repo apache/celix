@@ -27,49 +27,6 @@
 namespace celix {
 
     /**
-     * @brief List the embedded bundles in the executable.
-     *
-     * This function will check if there are embedded bundles in the executable / program by trying to lookup
-     * the symbol `celix_embedded_bundles`.
-     *
-     * If present the `celix_embedded_bundles` should be a point to a const char* containing a `,` seperated list of
-     * embedded bundle urls. For example:
-     * \code
-     * const char * const celix_embedded_bundles = "embedded://bundle1,embedded://bundle2";
-     * \endcode
-     *
-     * @return A vector of embedded bundle urls.
-     */
-    inline std::vector<std::string> listEmbeddedBundles() {
-        std::vector<std::string> list{};
-        auto* cList = celix_framework_utils_listEmbeddedBundles();
-        list.reserve(celix_arrayList_size(cList));
-        for (int i = 0; i< celix_arrayList_size(cList); ++i) {
-            auto* cStr = static_cast<char*>(celix_arrayList_get(cList, i));
-            std::unique_ptr<char, void(*)(void*)> strGuard{cStr, free}; //ensure RAII if emplace_back throws
-            list.emplace_back(cStr);
-        }
-        celix_arrayList_destroy(cList);
-        return list;
-    }
-
-    /**
-     * @brief Install the embedded bundles in the executable.
-     *
-     * Bundles will be installed in the order they appear in the return of
-     * `celix_framework_utils_listEmbeddedBundles`.
-     *
-     * If autStart is true, all embedded bundles will be installed first and then started in the same order.
-     *
-     * @param fw The Celix framework used to install the bundles.
-     * @param autoStart Whether to also start the installed bundles.
-     * @return The number of installed bundles.
-     */
-    inline std::size_t installEmbeddedBundles(celix::Framework& framework, bool autoStart = true) {
-        return celix_framework_utils_installEmbeddedBundles(framework.getCFramework(), autoStart);
-    }
-
-    /**
      * @brief Install bundles to the provided framework using the provided bundle set.
      *
      * Bundles will be installed in the order they appear in the provided bundleSet.

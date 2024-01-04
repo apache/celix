@@ -53,6 +53,7 @@ limitations under the License.
 - C Properties are no longer a direct typedef of `hashmap`. 
 - celix_string/long_hashmap put functions now return a celix_status_t instead of bool (value replaced). 
   THe celix_status_t is used to indicate an ENOMEM error.
+- Embedded bundles are no longer supported.
 - linked_list.h is removed and no longer supported. Use celix_array_list.h instead.
 - IP utils is refactored and the API is changed and all IP utils functions are now prefixed with `celix_utils_`.
 - array_list.h is removed and no longer supported. Use celix_array_list.h instead.

@@ -38,4 +38,4 @@ add_celix_container(dm_example
         PROP2=val2
         PROP3=val3
 )
-celix_target_embedded_bundles(dm_example Celix::shell)
+

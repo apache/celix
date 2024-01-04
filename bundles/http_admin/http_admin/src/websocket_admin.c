@@ -27,6 +27,7 @@
 #include "websocket_admin.h"
 
 #include "celix_compiler.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_utils_api.h"
 
 struct websocket_admin_manager {
@@ -41,7 +42,7 @@ struct websocket_admin_manager {
 websocket_admin_manager_t *websocketAdmin_create(celix_bundle_context_t *context, struct mg_context *svr_ctx) {
     celix_status_t status;
 
-    websocket_admin_manager_t *admin = (websocket_admin_manager_t *) calloc(1, sizeof(websocket_admin_manager_t));
+    celix_autofree websocket_admin_manager_t *admin = (websocket_admin_manager_t *) calloc(1, sizeof(websocket_admin_manager_t));
 
     if (admin == NULL) {
         return NULL;
@@ -53,10 +54,10 @@ websocket_admin_manager_t *websocketAdmin_create(celix_bundle_context_t *context
 
     if(status != CELIX_SUCCESS) {
         //No need to destroy other things
-        free(admin);
+        return NULL;
     }
 
-    return admin;
+    return celix_steal_ptr(admin);
 }
 
 void websocketAdmin_destroy(websocket_admin_manager_t *admin) {
