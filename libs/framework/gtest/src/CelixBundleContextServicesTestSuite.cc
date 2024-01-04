@@ -1289,13 +1289,13 @@ TEST_F(CelixBundleContextServicesTestSuite, FindServicesTest) {
     foundId = celix_bundleContext_findService(ctx, "example");
     ASSERT_EQ(foundId, svcId1); //oldest should have highest ranking
 
-    array_list_t *list = celix_bundleContext_findServices(ctx, "non existing service name");
+    celix_array_list_t *list = celix_bundleContext_findServices(ctx, "non existing service name");
     ASSERT_EQ(0, celix_arrayList_size(list));
-    arrayList_destroy(list);
+    celix_arrayList_destroy(list);
 
     list = celix_bundleContext_findServices(ctx, "example");
     ASSERT_EQ(4, celix_arrayList_size(list));
-    arrayList_destroy(list);
+    celix_arrayList_destroy(list);
 
     celix_bundleContext_unregisterService(ctx, svcId1);
     celix_bundleContext_unregisterService(ctx, svcId3);

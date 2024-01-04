@@ -24,7 +24,7 @@
 
 #include "celix_errno.h"
 #include "celix_threads.h"
-#include "array_list.h"
+#include "celix_array_list.h"
 #include "hash_map.h"
 #include "celix_properties.h"
 #include "utils.h"

@@ -32,9 +32,7 @@ typedef struct module celix_module_t;
 
 #include <stdbool.h>
 
-#include "linked_list.h"
 #include "manifest.h"
-#include "array_list.h"
 #include "bundle.h"
 #include "celix_framework_export.h"
 
@@ -58,19 +56,11 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t module_getSymbolicName(module_p
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT char *module_getId(module_pt module);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT linked_list_pt module_getWires(module_pt module);
-
-CELIX_FRAMEWORK_DEPRECATED_EXPORT void module_setWires(module_pt module, linked_list_pt wires);
-
 CELIX_FRAMEWORK_DEPRECATED_EXPORT bool module_isResolved(module_pt module);
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT void module_setResolved(module_pt module);
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_bundle_t *module_getBundle(module_pt module);
-
-CELIX_FRAMEWORK_DEPRECATED_EXPORT linked_list_pt module_getRequirements(module_pt module);
-
-CELIX_FRAMEWORK_DEPRECATED_EXPORT linked_list_pt module_getCapabilities(module_pt module);
 
 CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_array_list_t *module_getDependentImporters(module_pt module);
 

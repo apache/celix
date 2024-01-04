@@ -16,54 +16,44 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * hash_map_test.cpp
- *
- *  \date       Sep 15, 2015
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <string.h>
-#include <stdbool.h>
+#include <gtest/gtest.h>
 
-#include "CppUTest/TestHarness.h"
-#include "CppUTest/TestHarness_c.h"
-#include "CppUTest/CommandLineTestRunner.h"
-
-extern "C"
-{
 #include "hash_map.h"
 #include "hash_map_private.h"
-}
 
-int main(int argc, char** argv) {
-    MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
-    return RUN_ALL_TESTS(argc, argv);
-}
 
-static char* my_strdup(const char* s){
-    if(s==NULL){
-        return NULL;
-    }
+static unsigned int test_hashKeyChar(const void * k);
+static unsigned int test_hashValueChar(const void * v);
+static int test_equalsKeyChar(const void * k, const void * o);
+static int test_equalsValueChar(const void * v, const void * o);
 
-    size_t len = strlen(s);
+class DeprecatedHashmapTestSuite : public ::testing::Test {
+public:
+  DeprecatedHashmapTestSuite() {
+      map = hashMap_create(test_hashKeyChar, test_hashValueChar, test_equalsKeyChar, test_equalsValueChar);
+      defaultMap = hashMap_create(nullptr, nullptr, nullptr, nullptr); //use default hash and equals functions
+  }
 
-    char *d = (char*) calloc (len + 1,sizeof(char));
+  ~DeprecatedHashmapTestSuite() override {
+      hashMap_destroy(map, false, false);
+      hashMap_destroy(defaultMap, false, false);
+  }
 
-    if (d == NULL){
-        return NULL;
-    }
+  DeprecatedHashmapTestSuite(DeprecatedHashmapTestSuite&&) = delete;
+  DeprecatedHashmapTestSuite(const DeprecatedHashmapTestSuite&) = delete;
+  DeprecatedHashmapTestSuite& operator=(DeprecatedHashmapTestSuite&&) = delete;
+  DeprecatedHashmapTestSuite& operator=(const DeprecatedHashmapTestSuite&) = delete;
 
-    strncpy (d,s,len);
-    return d;
-}
+  hash_map_t* map{};
+  hash_map_t* defaultMap{};
+  hash_map_iterator_pt it_map{};
+  hash_map_values_pt values{};
+  hash_map_key_set_pt key_set{};
+  hash_map_entry_set_pt entry_set{};
+};
 
-//Callback functions
-unsigned int test_hashKeyChar(const void * k) {
+static unsigned int test_hashKeyChar(const void * k) {
     char * str = (char *) k;
 
     unsigned int hash = 1315423911;
@@ -78,104 +68,47 @@ unsigned int test_hashKeyChar(const void * k) {
     return hash;
 }
 
-unsigned int test_hashValueChar(const void * v) {
+static unsigned int test_hashValueChar(const void * v) {
     (void)(v);
     return 0;
 }
 
-int test_equalsKeyChar(const void * k, const void * o) {
+static int test_equalsKeyChar(const void * k, const void * o) {
     return strcmp((char *)k, (char *) o) == 0;
 }
 
-int test_equalsValueChar(const void * v, const void * o) {
+static int test_equalsValueChar(const void * v, const void * o) {
     return strcmp((char *)v, (char *) o) == 0;
 }
 
-//Tests group defines
-
-TEST_GROUP(hash_map){
-    hash_map_pt map;
-
-    void setup() {
-        map = hashMap_create(NULL, NULL, NULL, NULL);
+static char* my_strdup(const char* s){
+    if(s==nullptr){
+        return nullptr;
     }
-    void teardown() {
-        hashMap_destroy(map, false, false);
+
+    size_t len = strlen(s);
+
+    char *d = (char*) calloc (len + 1,sizeof(char));
+
+    if (d == nullptr){
+        return nullptr;
     }
-};
 
-TEST_GROUP(hash_map_iterator){
-    hash_map_pt map;
-    hash_map_iterator_pt it_map;
-
-    void setup() {
-        map = hashMap_create(NULL, NULL, NULL, NULL);
-    }
-    void teardown() {
-        hashMap_destroy(map, false, false);
-    }
-};
-
-TEST_GROUP(hash_map_values){
-    hash_map_pt map;
-    hash_map_values_pt values;
-
-    void setup() {
-        map = hashMap_create(NULL, NULL, NULL, NULL);
-    }
-    void teardown() {
-        hashMap_destroy(map, false, false);
-    }
-};
-
-TEST_GROUP(hash_map_keySet){
-    hash_map_pt map;
-    hash_map_key_set_pt key_set;
-
-    void setup() {
-        map = hashMap_create(NULL, NULL, NULL, NULL);
-    }
-    void teardown() {
-        hashMap_destroy(map, false, false);
-    }
-};
-
-TEST_GROUP(hash_map_entrySet){
-    hash_map_pt map;
-    hash_map_entry_set_pt entry_set;
-
-    void setup() {
-        map = hashMap_create(NULL, NULL, NULL, NULL);
-    }
-    void teardown() {
-        hashMap_destroy(map, false, false);
-    }
-};
-
-TEST_GROUP(hash_map_hash) {
-    hash_map_pt map;
-
-    void setup(void) {
-        map = hashMap_create(test_hashKeyChar, test_hashValueChar, test_equalsKeyChar, test_equalsValueChar);
-    }
-    void teardown() {
-        hashMap_destroy(map, false, false);
-    }
-};
-
-//----------------------HASH MAP DATA MANAGEMENT TEST----------------------
-
-TEST(hash_map, create){
-    CHECK(map != NULL);
-    LONGS_EQUAL(0, map->size);
-    // This fails on windows due to dllimport providing a proxy for exported functions.
-    POINTERS_EQUAL(hashMap_equals, map->equalsKey);
-    POINTERS_EQUAL(hashMap_equals, map->equalsValue);
-    POINTERS_EQUAL(hashMap_hashCode, map->hashKey);
-    POINTERS_EQUAL(hashMap_hashCode, map->hashValue);
+    strncpy (d,s,len);
+    return d;
 }
 
-TEST(hash_map, size){
+TEST_F(DeprecatedHashmapTestSuite, create){
+    EXPECT_TRUE(defaultMap != nullptr);
+    EXPECT_EQ(0, defaultMap->size);
+    // This fails on windows due to dllimport providing a proxy for exported functions.
+    EXPECT_TRUE(hashMap_equals == defaultMap->equalsKey);
+    EXPECT_TRUE(hashMap_equals == defaultMap->equalsValue);
+    EXPECT_TRUE(hashMap_hashCode == defaultMap->hashKey);
+    EXPECT_TRUE(hashMap_hashCode == defaultMap->hashValue);
+}
+
+TEST_F(DeprecatedHashmapTestSuite, size){
     char* key = my_strdup("key");
     char* value = my_strdup("value");
     char* key2 = my_strdup("key2");
@@ -183,53 +116,53 @@ TEST(hash_map, size){
     char* key3 = my_strdup("key2");
     char* value3 = my_strdup("value3");
 
-    LONGS_EQUAL(0, map->size);
+    EXPECT_EQ(0, defaultMap->size);
 
     // Add one entry
-    hashMap_put(map, key, value);
-    LONGS_EQUAL(1, map->size);
+    hashMap_put(defaultMap, key, value);
+    EXPECT_EQ(1, defaultMap->size);
 
     // Add second entry
-    hashMap_put(map, key2, value2);
-    LONGS_EQUAL(2, map->size);
+    hashMap_put(defaultMap, key2, value2);
+    EXPECT_EQ(2, defaultMap->size);
 
-    // Add entry using the same key, this does not overwrite an existing entry
-    hashMap_put(map, key3, value3);
-    LONGS_EQUAL(3, map->size);
+    // Add entry using a different key with the same str value, this does not overwrite an existing entry
+    hashMap_put(defaultMap, key3, value3);
+    EXPECT_EQ(3, defaultMap->size);
 
     // Clear map
-    hashMap_clear(map, true, true);
-    LONGS_EQUAL(0, map->size);
+    hashMap_clear(defaultMap, true, true);
+    EXPECT_EQ(0, defaultMap->size);
 }
 
-TEST(hash_map, isEmpty){
+TEST_F(DeprecatedHashmapTestSuite, isEmpty){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
 
-    LONGS_EQUAL(0, map->size);
-    CHECK(hashMap_isEmpty(map));
+    EXPECT_EQ(0, map->size);
+    EXPECT_TRUE(hashMap_isEmpty(map));
 
     // Add one entry
     hashMap_put(map, key, value);
-    LONGS_EQUAL(1, map->size);
-    CHECK(!hashMap_isEmpty(map));
+    EXPECT_EQ(1, map->size);
+    EXPECT_TRUE(!hashMap_isEmpty(map));
 
     // Remove entry
     hashMap_remove(map, key);
-    LONGS_EQUAL(0, map->size);
-    CHECK(hashMap_isEmpty(map));
+    EXPECT_EQ(0, map->size);
+    EXPECT_TRUE(hashMap_isEmpty(map));
 
     free(key);
     free(value);
 }
 
-TEST(hash_map, get){
+TEST_F(DeprecatedHashmapTestSuite, get){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
     char * value2 = my_strdup("value2");
     char * neKey = my_strdup("notExisting");
-    char * key3 = NULL;
+    char * key3 = nullptr;
     char * value3 = my_strdup("value3");
     char * get;
 
@@ -240,34 +173,34 @@ TEST(hash_map, get){
     hashMap_put(map, key2, value2);
 
     get = (char*) (char*) hashMap_get(map, key);
-    STRCMP_EQUAL(value, get);
+    EXPECT_STREQ(value, get);
 
     get = (char*) hashMap_get(map, key2);
-    STRCMP_EQUAL(value2, get);
+    EXPECT_STREQ(value2, get);
 
     get = (char*) hashMap_get(map, neKey);
-    POINTERS_EQUAL(NULL, get);
+    EXPECT_EQ(nullptr, get);
 
-    get = (char*) hashMap_get(map, NULL);
-    POINTERS_EQUAL(NULL, get);
+    get = (char*) hashMap_get(map, nullptr);
+    EXPECT_EQ(nullptr, get);
 
-    // Add third entry with NULL key
+    // Add third entry with nullptr key
     hashMap_put(map, key3, value3);
 
-    get = (char*) hashMap_get(map, NULL);
-    STRCMP_EQUAL(value3, get);
+    get = (char*) hashMap_get(map, nullptr);
+    EXPECT_STREQ(value3, get);
 
     free(neKey);
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map, containsKey){
+TEST_F(DeprecatedHashmapTestSuite, containsKey){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
     char * value2 = my_strdup("value2");
     char * neKey = my_strdup("notExisting");
-    char * key3 = NULL;
+    char * key3 = nullptr;
     char * value3 = my_strdup("value3");
 
     // Add one entry
@@ -276,27 +209,27 @@ TEST(hash_map, containsKey){
     // Add second entry
     hashMap_put(map, key2, value2);
 
-    CHECK(hashMap_containsKey(map, key));
-    CHECK(hashMap_containsKey(map, key2));
-    CHECK(!hashMap_containsKey(map, neKey));
-    CHECK(!hashMap_containsKey(map, NULL));
+    EXPECT_TRUE(hashMap_containsKey(map, key));
+    EXPECT_TRUE(hashMap_containsKey(map, key2));
+    EXPECT_TRUE(!hashMap_containsKey(map, neKey));
+    EXPECT_TRUE(!hashMap_containsKey(map, nullptr));
 
-    // Add third entry with NULL key
+    // Add third entry with nullptr key
     hashMap_put(map, key3, value3);
 
-    CHECK(hashMap_containsKey(map, key3));
+    EXPECT_TRUE(hashMap_containsKey(map, key3));
 
     free(neKey);
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map, getEntry){
+TEST_F(DeprecatedHashmapTestSuite, getEntry){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
     char * value2 = my_strdup("value2");
     char * neKey = my_strdup("notExisting");
-    char * key3 = NULL;
+    char * key3 = nullptr;
     char * value3 = my_strdup("value3");
     hash_map_entry_pt entry;
 
@@ -306,110 +239,110 @@ TEST(hash_map, getEntry){
     // Add second entry
     hashMap_put(map, key2, value2);
     entry = hashMap_getEntry(map, key);
-    STRCMP_EQUAL(key, (char*) entry->key);
-    STRCMP_EQUAL(value, (char*)entry->value);
+    EXPECT_STREQ(key, (char*) entry->key);
+    EXPECT_STREQ(value, (char*)entry->value);
 
     entry = hashMap_getEntry(map, key2);
-    STRCMP_EQUAL(key2, (char*) entry->key);
-    STRCMP_EQUAL(value2, (char*) entry->value);
+    EXPECT_STREQ(key2, (char*) entry->key);
+    EXPECT_STREQ(value2, (char*) entry->value);
 
     entry = hashMap_getEntry(map, neKey);
-    POINTERS_EQUAL(NULL, entry);
+    EXPECT_EQ(nullptr, entry);
 
-    entry = hashMap_getEntry(map, NULL);
-    POINTERS_EQUAL(NULL, entry);
+    entry = hashMap_getEntry(map, nullptr);
+    EXPECT_EQ(nullptr, entry);
 
-    // Add third entry with NULL key
+    // Add third entry with nullptr key
     hashMap_put(map, key3, value3);
 
     entry = hashMap_getEntry(map, key3);
-    CHECK_EQUAL(key3, entry->key);
-    STRCMP_EQUAL(value3, (char*) entry->value);
+    EXPECT_EQ(key3, entry->key);
+    EXPECT_STREQ(value3, (char*) entry->value);
 
     free(neKey);
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map, put){
+TEST_F(DeprecatedHashmapTestSuite, put){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
     char * value2 = my_strdup("value2");
     char * nkey2 = my_strdup("key2");
     char * nvalue2 = my_strdup("value3");
-    char * key3 = NULL;
+    char * key3 = nullptr;
     char * value3 = my_strdup("value3");
     char * key4 = my_strdup("key4");
-    char * value4 = NULL;
+    char * value4 = nullptr;
     char * old;
     char * get;
 
     // Add one entry
-    hashMap_put(map, key, value);
+    hashMap_put(defaultMap, key, value);
 
     // Add second entry
-    hashMap_put(map, key2, value2);
+    hashMap_put(defaultMap, key2, value2);
 
-    get = (char*) hashMap_get(map, key);
-    STRCMP_EQUAL(value, get);
+    get = (char*) hashMap_get(defaultMap, key);
+    EXPECT_STREQ(value, get);
 
-    get = (char*) hashMap_get(map, key2);
-    STRCMP_EQUAL(value2, get);
+    get = (char*) hashMap_get(defaultMap, key2);
+    EXPECT_STREQ(value2, get);
 
     // Try to add an entry with the same key, since no explicit hash function is used,
     //   this will not overwrite an existing entry.
-    old = (char *) hashMap_put(map, nkey2, nvalue2);
-    POINTERS_EQUAL(NULL, old);
+    old = (char *) hashMap_put(defaultMap, nkey2, nvalue2);
+    EXPECT_EQ(nullptr, old);
 
     // Retrieving the values will return the correct values
-    get = (char*) hashMap_get(map, (void*)key2);
-    STRCMP_EQUAL(value2, get);
-    get = (char*) hashMap_get(map, nkey2);
-    STRCMP_EQUAL(nvalue2, get);
+    get = (char*) hashMap_get(defaultMap, (void*)key2);
+    EXPECT_STREQ(value2, get);
+    get = (char*) hashMap_get(defaultMap, nkey2);
+    EXPECT_STREQ(nvalue2, get);
 
-    // Add third entry with NULL key
-    hashMap_put(map, key3, value3);
+    // Add third entry with nullptr key
+    hashMap_put(defaultMap, key3, value3);
 
-    get = (char*) hashMap_get(map, key3);
-    STRCMP_EQUAL(value3, get);
+    get = (char*) hashMap_get(defaultMap, key3);
+    EXPECT_STREQ(value3, get);
 
-    // Add fourth entry with NULL value
-    hashMap_put(map, key4, value4);
+    // Add fourth entry with nullptr value
+    hashMap_put(defaultMap, key4, value4);
 
-    get =(char*)hashMap_get(map, key4);
-    CHECK_EQUAL(value4, get);
+    get =(char*)hashMap_get(defaultMap, key4);
+    EXPECT_EQ(value4, get);
 
-    hashMap_clear(map, true, true);
+    hashMap_clear(defaultMap, true, true);
 }
 
-TEST(hash_map, resize){
+TEST_F(DeprecatedHashmapTestSuite, resize){
     int i;
     char key[6];
 
-    LONGS_EQUAL(0, map->size);
-    LONGS_EQUAL(16, map->tablelength);
-    LONGS_EQUAL(12, map->treshold);
+    EXPECT_EQ(0, map->size);
+    EXPECT_EQ(16, map->tablelength);
+    EXPECT_EQ(12, map->treshold);
     for (i = 0; i < 12; i++) {
         snprintf(key, sizeof(key), "key%d", i);
         hashMap_put(map, my_strdup(key), my_strdup(key));
     }
-    LONGS_EQUAL(12, map->size);
-    LONGS_EQUAL(16, map->tablelength);
-    LONGS_EQUAL(12, map->treshold);
+    EXPECT_EQ(12, map->size);
+    EXPECT_EQ(16, map->tablelength);
+    EXPECT_EQ(12, map->treshold);
 
     snprintf(key, sizeof(key), "key%d", i);
     hashMap_put(map, my_strdup(key), my_strdup(key));
-    LONGS_EQUAL(13, map->size);
-    LONGS_EQUAL(32, map->tablelength);
-    LONGS_EQUAL(24, map->treshold);
+    EXPECT_EQ(13, map->size);
+    EXPECT_EQ(32, map->tablelength);
+    EXPECT_EQ(24, map->treshold);
 
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map, remove){
+TEST_F(DeprecatedHashmapTestSuite, remove){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
-    char * key2 = NULL;
+    char * key2 = nullptr;
     char * value2 = my_strdup("value2");
     char * removeKey;
 
@@ -422,20 +355,20 @@ TEST(hash_map, remove){
     // Remove non-existing entry for map
     removeKey = my_strdup("nonexisting");
     hashMap_remove(map, removeKey);
-    LONGS_EQUAL(2, map->size);
-    CHECK(!hashMap_isEmpty(map));
+    EXPECT_EQ(2, map->size);
+    EXPECT_TRUE(!hashMap_isEmpty(map));
 
     hashMap_remove(map, key);
-    LONGS_EQUAL(1, map->size);
+    EXPECT_EQ(1, map->size);
 
     hashMap_remove(map, key2);
-    LONGS_EQUAL(0, map->size);
-    CHECK(hashMap_isEmpty(map));
+    EXPECT_EQ(0, map->size);
+    EXPECT_TRUE(hashMap_isEmpty(map));
 
     // Remove non-existing entry for empty map
     hashMap_remove(map, removeKey);
-    LONGS_EQUAL(0, map->size);
-    CHECK(hashMap_isEmpty(map));
+    EXPECT_EQ(0, map->size);
+    EXPECT_TRUE(hashMap_isEmpty(map));
 
     free(key);
     free(value);
@@ -444,10 +377,10 @@ TEST(hash_map, remove){
     free(removeKey);
 }
 
-TEST(hash_map, removeMapping){
+TEST_F(DeprecatedHashmapTestSuite, removeMapping){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
-    char * key2 = NULL;
+    char * key2 = nullptr;
     char * value2 = my_strdup("value2");
     hash_map_entry_pt entry1;
     hash_map_entry_pt entry2;
@@ -462,21 +395,21 @@ TEST(hash_map, removeMapping){
     entry1 = hashMap_getEntry(map, key);
     entry2 = hashMap_getEntry(map, key2);
 
-    CHECK(entry1 != NULL);
-    CHECK(entry2 != NULL);
+    EXPECT_TRUE(entry1 != nullptr);
+    EXPECT_TRUE(entry2 != nullptr);
 
     removed = hashMap_removeMapping(map, entry1);
-    POINTERS_EQUAL(removed, entry1);
-    LONGS_EQUAL(1, map->size);
+    EXPECT_EQ(removed, entry1);
+    EXPECT_EQ(1, map->size);
 
     removed = hashMap_removeMapping(map, entry2);
-    POINTERS_EQUAL(removed, entry2);
-    LONGS_EQUAL(0, map->size);
+    EXPECT_EQ(removed, entry2);
+    EXPECT_EQ(0, map->size);
 
     // Remove unexisting entry for empty map
-    hashMap_removeMapping(map, NULL);
-    LONGS_EQUAL(0, map->size);
-    CHECK(hashMap_isEmpty(map));
+    hashMap_removeMapping(map, nullptr);
+    EXPECT_EQ(0, map->size);
+    EXPECT_TRUE(hashMap_isEmpty(map));
 
     free(key);
     free(value);
@@ -486,15 +419,15 @@ TEST(hash_map, removeMapping){
     free(entry2);
 }
 
-TEST(hash_map, clear){
+TEST_F(DeprecatedHashmapTestSuite, clear){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
     char * value2 = my_strdup("value2");
-    char * key3 = NULL;
+    char * key3 = nullptr;
     char * value3 = my_strdup("value3");
     char * key4 = my_strdup("key4");
-    char * value4 = NULL;
+    char * value4 = nullptr;
 
     // Add one entry
     hashMap_put(map, key, value);
@@ -502,15 +435,15 @@ TEST(hash_map, clear){
     // Add second entry
     hashMap_put(map, key2, value2);
 
-    // Add third entry with NULL key
+    // Add third entry with nullptr key
     hashMap_put(map, key3, value3);
 
-    // Add fourth entry with NULL value
+    // Add fourth entry with nullptr value
     hashMap_put(map, key4, value4);
 
     // Clear but leave keys and values intact
     hashMap_clear(map, false, false);
-    LONGS_EQUAL(0, map->size);
+    EXPECT_EQ(0, map->size);
 
     // Add one entry
     hashMap_put(map, key, value);
@@ -518,24 +451,24 @@ TEST(hash_map, clear){
     // Add second entry
     hashMap_put(map, key2, value2);
 
-    // Add third entry with NULL key
+    // Add third entry with nullptr key
     hashMap_put(map, key3, value3);
 
-    // Add fourth entry with NULL value
+    // Add fourth entry with nullptr value
     hashMap_put(map, key4, value4);
     // Clear and clean up keys and values
     hashMap_clear(map, true, true);
-    LONGS_EQUAL(0, map->size);
+    EXPECT_EQ(0, map->size);
 }
 
-TEST(hash_map, containsValue){
+TEST_F(DeprecatedHashmapTestSuite, containsValue){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
     char * value2 = my_strdup("value2");
     char * neValue = my_strdup("notExisting");
     char * key3 = my_strdup("key3");
-    char * value3 = NULL;
+    char * value3 = nullptr;
 
     // Add one entry
     hashMap_put(map, key, value);
@@ -543,21 +476,21 @@ TEST(hash_map, containsValue){
     // Add second entry
     hashMap_put(map, key2, value2);
 
-    CHECK(hashMap_containsValue(map, value));
-    CHECK(hashMap_containsValue(map, value2));
-    CHECK(!hashMap_containsValue(map, neValue));
-    CHECK(!hashMap_containsValue(map, NULL));
+    EXPECT_TRUE(hashMap_containsValue(map, value));
+    EXPECT_TRUE(hashMap_containsValue(map, value2));
+    EXPECT_TRUE(!hashMap_containsValue(map, neValue));
+    EXPECT_TRUE(!hashMap_containsValue(map, nullptr));
 
-    // Add third entry with NULL value
+    // Add third entry with nullptr value
     hashMap_put(map, key3, value3);
 
-    CHECK(hashMap_containsValue(map, value3));
+    EXPECT_TRUE(hashMap_containsValue(map, value3));
 
     free(neValue);
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map, ValuestoArray){
+TEST_F(DeprecatedHashmapTestSuite, ValuestoArray){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -574,21 +507,21 @@ TEST(hash_map, ValuestoArray){
 
     values = hashMapValues_create(map);
     hashMapValues_toArray(values, (void***)&array, &size);
-    LONGS_EQUAL(2, size);
-    CHECK(hashMapValues_contains(values, array[0]));
-    CHECK(hashMapValues_contains(values, array[1]));
+    EXPECT_EQ(2, size);
+    EXPECT_TRUE(hashMapValues_contains(values, array[0]));
+    EXPECT_TRUE(hashMapValues_contains(values, array[1]));
 
     free(array);
     hashMapValues_destroy(values);
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map, entryGetKey){
+TEST_F(DeprecatedHashmapTestSuite, entryGetKey){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
     char * value2 = my_strdup("value2");
-    char * key3 = NULL;
+    char * key3 = nullptr;
     char * value3 = my_strdup("value3");
     char * get;
     hash_map_entry_pt entry;
@@ -600,25 +533,25 @@ TEST(hash_map, entryGetKey){
 
     entry = hashMap_getEntry(map, key);
     get = (char*) hashMapEntry_getKey(entry);
-    STRCMP_EQUAL(key, get);
+    EXPECT_STREQ(key, get);
 
     entry = hashMap_getEntry(map, key2);
     get = (char*) hashMapEntry_getKey(entry);
-    STRCMP_EQUAL(key2, get);
+    EXPECT_STREQ(key2, get);
 
     entry = hashMap_getEntry(map, key3);
     get = (char*) hashMapEntry_getKey(entry);
-    POINTERS_EQUAL(key3, get);
+    EXPECT_EQ(key3, get);
 
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map, entryGetValue){
+TEST_F(DeprecatedHashmapTestSuite, entryGetValue){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
     char * value2 = my_strdup("value2");
-    char * key3 = NULL;
+    char * key3 = nullptr;
     char * value3 = my_strdup("value3");
     char * get;
     hash_map_entry_pt entry;
@@ -630,32 +563,32 @@ TEST(hash_map, entryGetValue){
 
     entry = hashMap_getEntry(map, key);
     get = (char*) hashMapEntry_getValue(entry);
-    STRCMP_EQUAL(value, get);
+    EXPECT_STREQ(value, get);
 
     entry = hashMap_getEntry(map, key2);
     get = (char*) hashMapEntry_getValue(entry);
-    STRCMP_EQUAL(value2, get);
+    EXPECT_STREQ(value2, get);
 
     entry = hashMap_getEntry(map, key3);
     get = (char*) hashMapEntry_getValue(entry);
-    POINTERS_EQUAL(value3, get);
+    EXPECT_EQ(value3, get);
 
     hashMap_clear(map, true, true);
 }
 
 //----------------------HASH MAP ITERATOR TEST----------------------
 
-TEST(hash_map_iterator, create){
+TEST_F(DeprecatedHashmapTestSuite, createIteratorTest) {
     it_map = hashMapIterator_create(map);
-    CHECK(it_map != NULL);
-    POINTERS_EQUAL(map, it_map->map);
-    POINTERS_EQUAL(it_map->current, NULL);
-    LONGS_EQUAL(map->modificationCount, it_map->expectedModCount);
+    EXPECT_TRUE(it_map != nullptr);
+    EXPECT_EQ(map, it_map->map);
+    EXPECT_EQ(it_map->current, nullptr);
+    EXPECT_EQ(map->modificationCount, it_map->expectedModCount);
 
     hashMapIterator_destroy(it_map);
 }
 
-TEST(hash_map_iterator, hasNext){
+TEST_F(DeprecatedHashmapTestSuite, hasNext){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -676,23 +609,23 @@ TEST(hash_map_iterator, hasNext){
     it_map = hashMapIterator_create(map);
 
     //check hasNext
-    CHECK(hashMapIterator_hasNext(it_map));
+    EXPECT_TRUE(hashMapIterator_hasNext(it_map));
 
     hashMapIterator_nextEntry(it_map);
-    CHECK(hashMapIterator_hasNext(it_map));
+    EXPECT_TRUE(hashMapIterator_hasNext(it_map));
 
     hashMapIterator_nextEntry(it_map);
-    CHECK(hashMapIterator_hasNext(it_map));
+    EXPECT_TRUE(hashMapIterator_hasNext(it_map));
 
-    //third entry next points to NULL
+    //third entry next points to nullptr
     hashMapIterator_nextEntry(it_map);
-    CHECK(!hashMapIterator_hasNext(it_map));
+    EXPECT_TRUE(!hashMapIterator_hasNext(it_map));
 
     hashMapIterator_destroy(it_map);
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map_iterator, remove){
+TEST_F(DeprecatedHashmapTestSuite, removeIteratorTest) {
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -708,16 +641,16 @@ TEST(hash_map_iterator, remove){
     //create it_map from map
     it_map = hashMapIterator_create(map);
 
-    //try to remove current (NULL)
+    //try to remove current (nullptr)
     hashMapIterator_remove(it_map);
-    LONGS_EQUAL(3, map->size);
+    EXPECT_EQ(3, map->size);
 
     //delete the first and second entry
     hashMapIterator_nextEntry(it_map);
     hashMapIterator_remove(it_map);
     hashMapIterator_nextEntry(it_map);
     hashMapIterator_remove(it_map);
-    LONGS_EQUAL(1, map->size);
+    EXPECT_EQ(1, map->size);
 
     free(key);
     free(value);
@@ -728,7 +661,7 @@ TEST(hash_map_iterator, remove){
     hashMapIterator_destroy(it_map);
 }
 
-TEST(hash_map_iterator, nextValue){
+TEST_F(DeprecatedHashmapTestSuite, nextValue){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -743,19 +676,19 @@ TEST(hash_map_iterator, nextValue){
     it_map = hashMapIterator_create(map);
 
     getValue = (char*) hashMapIterator_nextValue(it_map);
-    CHECK(hashMap_containsValue(map, getValue));
+    EXPECT_TRUE(hashMap_containsValue(map, getValue));
 
     getValue = (char*) hashMapIterator_nextValue(it_map);
-    CHECK(hashMap_containsValue(map, getValue));
+    EXPECT_TRUE(hashMap_containsValue(map, getValue));
 
     getValue = (char*) hashMapIterator_nextValue(it_map);
-    POINTERS_EQUAL(NULL, getValue);
+    EXPECT_EQ(nullptr, getValue);
 
     hashMapIterator_destroy(it_map);
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map_iterator, nextKey){
+TEST_F(DeprecatedHashmapTestSuite, nextKey){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -770,19 +703,19 @@ TEST(hash_map_iterator, nextKey){
     it_map = hashMapIterator_create(map);
 
     getKey = (char*) hashMapIterator_nextKey(it_map);
-    CHECK(hashMap_containsKey(map, getKey));
+    EXPECT_TRUE(hashMap_containsKey(map, getKey));
 
     getKey = (char*) hashMapIterator_nextKey(it_map);
-    CHECK(hashMap_containsKey(map, getKey));
+    EXPECT_TRUE(hashMap_containsKey(map, getKey));
 
     getKey = (char*) hashMapIterator_nextKey(it_map);
-    POINTERS_EQUAL(NULL, getKey);
+    EXPECT_EQ(nullptr, getKey);
 
     hashMapIterator_destroy(it_map);
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map_iterator, nextEntry){
+TEST_F(DeprecatedHashmapTestSuite, nextEntry){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -799,27 +732,27 @@ TEST(hash_map_iterator, nextEntry){
 
     get = (hash_map_entry_pt) hashMapIterator_nextEntry(it_map);
     getValue = (char*) hashMap_get(map, get->key);
-    STRCMP_EQUAL((char*)get->value, (char*)getValue);
+    EXPECT_STREQ((char*)get->value, (char*)getValue);
 
     get = (hash_map_entry_pt) hashMapIterator_nextEntry(it_map);
     getValue = (char*) hashMap_get(map, get->key);
-    STRCMP_EQUAL((char*)get->value, (char*)getValue);
+    EXPECT_STREQ((char*)get->value, (char*)getValue);
 
     get = (hash_map_entry_pt) hashMapIterator_nextEntry(it_map);
-    POINTERS_EQUAL(NULL, get);
+    EXPECT_EQ(nullptr, get);
 
     hashMapIterator_destroy(it_map);
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map_iterator, valuesIterator){
+TEST_F(DeprecatedHashmapTestSuite, valuesIterator){
     hash_map_values_pt values;
     hash_map_iterator_pt it_val;
 
     values = hashMapValues_create(map);
     it_val = hashMapValues_iterator(values);
 
-    POINTERS_EQUAL(map, it_val->map);
+    EXPECT_EQ(map, it_val->map);
 
     hashMapIterator_destroy(it_val);
     hashMapValues_destroy(values);
@@ -827,7 +760,7 @@ TEST(hash_map_iterator, valuesIterator){
 
 //----------------------HASH MAP VALUES TEST----------------------
 
-TEST(hash_map_values, create){
+TEST_F(DeprecatedHashmapTestSuite, createValues){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -840,14 +773,14 @@ TEST(hash_map_values, create){
     //create Values from map
     values = hashMapValues_create(map);
 
-    CHECK(hashMapValues_contains(values, value));
-    CHECK(hashMapValues_contains(values, value2));
+    EXPECT_TRUE(hashMapValues_contains(values, value));
+    EXPECT_TRUE(hashMapValues_contains(values, value2));
 
     hashMap_clear(map, true, true);
     hashMapValues_destroy(values);
 }
 
-TEST(hash_map_values, size){
+TEST_F(DeprecatedHashmapTestSuite, sizeValues){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -860,13 +793,13 @@ TEST(hash_map_values, size){
     //create Values from map
     values = hashMapValues_create(map);
 
-    LONGS_EQUAL(2, hashMapValues_size(values));
+    EXPECT_EQ(2, hashMapValues_size(values));
 
     hashMap_clear(map, true, true);
     hashMapValues_destroy(values);
 }
 
-TEST(hash_map_values, remove){
+TEST_F(DeprecatedHashmapTestSuite, removeValues){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -878,16 +811,16 @@ TEST(hash_map_values, remove){
 
     //create Values from map
     values = hashMapValues_create(map);
-    CHECK(hashMapValues_contains(values, value));
-    CHECK(hashMapValues_contains(values, value2));
+    EXPECT_TRUE(hashMapValues_contains(values, value));
+    EXPECT_TRUE(hashMapValues_contains(values, value2));
 
     hashMapValues_remove(values, value);
-    CHECK(!hashMapValues_contains(values, value));
-    CHECK(hashMapValues_contains(values, value2));
+    EXPECT_TRUE(!hashMapValues_contains(values, value));
+    EXPECT_TRUE(hashMapValues_contains(values, value2));
 
     hashMapValues_remove(values, value2);
-    CHECK(!hashMapValues_contains(values, value));
-    CHECK(!hashMapValues_contains(values, value2));
+    EXPECT_TRUE(!hashMapValues_contains(values, value));
+    EXPECT_TRUE(!hashMapValues_contains(values, value2));
 
     free(key);
     free(value);
@@ -897,7 +830,7 @@ TEST(hash_map_values, remove){
     hashMapValues_destroy(values);
 }
 
-TEST(hash_map_values, clear){
+TEST_F(DeprecatedHashmapTestSuite, clearValues){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -910,15 +843,15 @@ TEST(hash_map_values, clear){
     //create Values from map
     values = hashMapValues_create(map);
 
-    CHECK(hashMapValues_contains(values, value));
-    CHECK(hashMapValues_contains(values, value2));
-    LONGS_EQUAL(2, values->map->size);
+    EXPECT_TRUE(hashMapValues_contains(values, value));
+    EXPECT_TRUE(hashMapValues_contains(values, value2));
+    EXPECT_EQ(2, values->map->size);
 
     hashMapValues_clear(values);
 
-    CHECK(!hashMapValues_contains(values, value));
-    CHECK(!hashMapValues_contains(values, value2));
-    LONGS_EQUAL(0, values->map->size);
+    EXPECT_TRUE(!hashMapValues_contains(values, value));
+    EXPECT_TRUE(!hashMapValues_contains(values, value2));
+    EXPECT_EQ(0, values->map->size);
 
     free(key);
     free(value);
@@ -927,7 +860,7 @@ TEST(hash_map_values, clear){
     hashMapValues_destroy(values);
 }
 
-TEST(hash_map_values, isEmpty){
+TEST_F(DeprecatedHashmapTestSuite, isEmptyValues){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -940,11 +873,11 @@ TEST(hash_map_values, isEmpty){
     //create Values from map
     values = hashMapValues_create(map);
 
-    CHECK(!hashMapValues_isEmpty(values));
+    EXPECT_TRUE(!hashMapValues_isEmpty(values));
 
     hashMapValues_clear(values);
 
-    CHECK(hashMapValues_isEmpty(values));
+    EXPECT_TRUE(hashMapValues_isEmpty(values));
 
     free(key);
     free(value);
@@ -955,120 +888,120 @@ TEST(hash_map_values, isEmpty){
 
 //----------------------HASH MAP KEYSET TEST----------------------
 
-TEST(hash_map_keySet, create){
+TEST_F(DeprecatedHashmapTestSuite, createSet){
     key_set = hashMapKeySet_create(map);
 
-    POINTERS_EQUAL(map, key_set->map);
+    EXPECT_EQ(map, key_set->map);
 
     hashMapKeySet_destroy(key_set);
 }
 
-TEST(hash_map_keySet, size){
+TEST_F(DeprecatedHashmapTestSuite, sizeSet){
     char * key = my_strdup("key");
     char * key2 = my_strdup("key2");
 
     key_set = hashMapKeySet_create(map);
 
-    LONGS_EQUAL(0, hashMapKeySet_size(key_set));
+    EXPECT_EQ(0, hashMapKeySet_size(key_set));
 
     // Add 2 entries
-    hashMap_put(map, key, NULL);
-    hashMap_put(map, key2, NULL);
+    hashMap_put(map, key, nullptr);
+    hashMap_put(map, key2, nullptr);
 
 
-    LONGS_EQUAL(2, hashMapKeySet_size(key_set));
+    EXPECT_EQ(2, hashMapKeySet_size(key_set));
 
     hashMap_clear(map, true, true);
     hashMapKeySet_destroy(key_set);
 }
 
-TEST(hash_map_keySet, contains){
+TEST_F(DeprecatedHashmapTestSuite, containsSet){
     char * key = my_strdup("key");
     char * key2 = my_strdup("key2");
 
     key_set = hashMapKeySet_create(map);
 
-    CHECK(!hashMapKeySet_contains(key_set, key));
-    CHECK(!hashMapKeySet_contains(key_set, key2));
+    EXPECT_TRUE(!hashMapKeySet_contains(key_set, key));
+    EXPECT_TRUE(!hashMapKeySet_contains(key_set, key2));
 
     // Add 2 entries
-    hashMap_put(map, key, NULL);
+    hashMap_put(map, key, nullptr);
 
-    CHECK(hashMapKeySet_contains(key_set, key));
-    CHECK(!hashMapKeySet_contains(key_set, key2));
+    EXPECT_TRUE(hashMapKeySet_contains(key_set, key));
+    EXPECT_TRUE(!hashMapKeySet_contains(key_set, key2));
 
-    hashMap_put(map, key2, NULL);
+    hashMap_put(map, key2, nullptr);
 
-    CHECK(hashMapKeySet_contains(key_set, key));
-    CHECK(hashMapKeySet_contains(key_set, key2));
+    EXPECT_TRUE(hashMapKeySet_contains(key_set, key));
+    EXPECT_TRUE(hashMapKeySet_contains(key_set, key2));
 
     hashMap_clear(map, true, true);
     hashMapKeySet_destroy(key_set);
 }
 
-TEST(hash_map_keySet, remove){
+TEST_F(DeprecatedHashmapTestSuite, removeSet){
     char * key = my_strdup("key");
     char * key2 = my_strdup("key2");
 
     key_set = hashMapKeySet_create(map);
 
     // Add 2 entries
-    hashMap_put(map, key, NULL);
-    hashMap_put(map, key2, NULL);
+    hashMap_put(map, key, nullptr);
+    hashMap_put(map, key2, nullptr);
 
-    LONGS_EQUAL(2, key_set->map->size);
+    EXPECT_EQ(2, key_set->map->size);
 
     hashMapKeySet_remove(key_set, key);
 
-    LONGS_EQUAL(1, key_set->map->size);
+    EXPECT_EQ(1, key_set->map->size);
 
     hashMapKeySet_remove(key_set, key2);
 
-    LONGS_EQUAL(0, key_set->map->size);
+    EXPECT_EQ(0, key_set->map->size);
 
     free(key);
     free(key2);
     hashMapKeySet_destroy(key_set);
 }
 
-TEST(hash_map_keySet, clear){
+TEST_F(DeprecatedHashmapTestSuite, clearSet){
     char * key = my_strdup("key");
     char * key2 = my_strdup("key2");
 
     key_set = hashMapKeySet_create(map);
 
     // Add 2 entries
-    hashMap_put(map, key, NULL);
-    hashMap_put(map, key2, NULL);
+    hashMap_put(map, key, nullptr);
+    hashMap_put(map, key2, nullptr);
 
-    LONGS_EQUAL(2, key_set->map->size);
+    EXPECT_EQ(2, key_set->map->size);
 
     hashMapKeySet_clear(key_set);
 
-    LONGS_EQUAL(0, key_set->map->size);
+    EXPECT_EQ(0, key_set->map->size);
 
     free(key);
     free(key2);
     hashMapKeySet_destroy(key_set);
 }
 
-TEST(hash_map_keySet, isEmpty){
+TEST_F(DeprecatedHashmapTestSuite, isEmptySet){
     char * key = my_strdup("key");
     char * key2 = my_strdup("key2");
 
     key_set = hashMapKeySet_create(map);
 
-    CHECK(hashMapKeySet_isEmpty(key_set));
+    EXPECT_TRUE(hashMapKeySet_isEmpty(key_set));
 
     // Add 2 entries
-    hashMap_put(map, key, NULL);
-    hashMap_put(map, key2, NULL);
+    hashMap_put(map, key, nullptr);
+    hashMap_put(map, key2, nullptr);
 
-    CHECK(!hashMapKeySet_isEmpty(key_set));
+    EXPECT_TRUE(!hashMapKeySet_isEmpty(key_set));
 
     hashMapKeySet_clear(key_set);
 
-    CHECK(hashMapKeySet_isEmpty(key_set));
+    EXPECT_TRUE(hashMapKeySet_isEmpty(key_set));
 
     free(key);
     free(key2);
@@ -1077,15 +1010,15 @@ TEST(hash_map_keySet, isEmpty){
 
 //----------------------HASH MAP ENTRYSET TEST----------------------
 
-TEST(hash_map_entrySet, create){
+TEST_F(DeprecatedHashmapTestSuite, createEntrySet){
     entry_set = hashMapEntrySet_create(map);
 
-    POINTERS_EQUAL(map, entry_set->map);
+    EXPECT_EQ(map, entry_set->map);
 
     hashMapEntrySet_destroy(entry_set);
 }
 
-TEST(hash_map_entrySet, size){
+TEST_F(DeprecatedHashmapTestSuite, sizeEntrySet){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -1094,20 +1027,20 @@ TEST(hash_map_entrySet, size){
 
     entry_set = hashMapEntrySet_create(map);
 
-    LONGS_EQUAL(0, hashMapEntrySet_size(entry_set));
+    EXPECT_EQ(0, hashMapEntrySet_size(entry_set));
 
     // Add 2 entries
     hashMap_put(map, key, value);
     hashMap_put(map, key2, value2);
 
 
-    LONGS_EQUAL(2, hashMapEntrySet_size(entry_set));
+    EXPECT_EQ(2, hashMapEntrySet_size(entry_set));
 
     hashMap_clear(map, true, true);
     hashMapEntrySet_destroy(entry_set);
 }
 
-TEST(hash_map_entrySet, contains){
+TEST_F(DeprecatedHashmapTestSuite, containsEntrySet){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -1119,15 +1052,15 @@ TEST(hash_map_entrySet, contains){
     hashMap_put(map, key, value);
     hashMap_put(map, key2, value2);
 
-    CHECK(!hashMapEntrySet_contains(entry_set, NULL));
-    CHECK(!hashMapEntrySet_contains(entry_set, hashMap_getEntry(map, key)));
-    CHECK(!hashMapEntrySet_contains(entry_set, hashMap_getEntry(map, key2)));
+    EXPECT_TRUE(!hashMapEntrySet_contains(entry_set, nullptr));
+    EXPECT_TRUE(!hashMapEntrySet_contains(entry_set, hashMap_getEntry(map, key)));
+    EXPECT_TRUE(!hashMapEntrySet_contains(entry_set, hashMap_getEntry(map, key2)));
 
     hashMap_clear(map, true, true);
     hashMapEntrySet_destroy(entry_set);
 }
 
-TEST(hash_map_entrySet, remove){
+TEST_F(DeprecatedHashmapTestSuite, removeEntrySet){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -1139,14 +1072,14 @@ TEST(hash_map_entrySet, remove){
     hashMap_put(map, key, value);
     hashMap_put(map, key2, value2);
 
-    CHECK(!hashMapEntrySet_remove(entry_set, (hash_map_entry_pt) NULL));
-    LONGS_EQUAL(2, entry_set->map->size);
+    EXPECT_TRUE(!hashMapEntrySet_remove(entry_set, (hash_map_entry_pt) nullptr));
+    EXPECT_EQ(2, entry_set->map->size);
 
-    CHECK(hashMapEntrySet_remove(entry_set, hashMap_getEntry(map, key)));
-    LONGS_EQUAL(1, entry_set->map->size);
+    EXPECT_TRUE(hashMapEntrySet_remove(entry_set, hashMap_getEntry(map, key)));
+    EXPECT_EQ(1, entry_set->map->size);
 
-    CHECK(hashMapEntrySet_remove(entry_set, hashMap_getEntry(map, key2)));
-    LONGS_EQUAL(0, entry_set->map->size);
+    EXPECT_TRUE(hashMapEntrySet_remove(entry_set, hashMap_getEntry(map, key2)));
+    EXPECT_EQ(0, entry_set->map->size);
 
     free(key);
     free(value);
@@ -1156,7 +1089,7 @@ TEST(hash_map_entrySet, remove){
     hashMapEntrySet_destroy(entry_set);
 }
 
-TEST(hash_map_entrySet, clear){
+TEST_F(DeprecatedHashmapTestSuite, clearEntrySet){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -1168,11 +1101,11 @@ TEST(hash_map_entrySet, clear){
     hashMap_put(map, key, value);
     hashMap_put(map, key2, value2);
 
-    LONGS_EQUAL(2, entry_set->map->size);
+    EXPECT_EQ(2, entry_set->map->size);
 
     hashMapEntrySet_clear(entry_set);
 
-    LONGS_EQUAL(0, entry_set->map->size);
+    EXPECT_EQ(0, entry_set->map->size);
 
     free(key);
     free(value);
@@ -1181,7 +1114,7 @@ TEST(hash_map_entrySet, clear){
     hashMapEntrySet_destroy(entry_set);
 }
 
-TEST(hash_map_entrySet, isEmpty){
+TEST_F(DeprecatedHashmapTestSuite, isEmptyEntrySet){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -1189,17 +1122,17 @@ TEST(hash_map_entrySet, isEmpty){
 
     entry_set = hashMapEntrySet_create(map);
 
-    CHECK(hashMapEntrySet_isEmpty(entry_set));
+    EXPECT_TRUE(hashMapEntrySet_isEmpty(entry_set));
 
     // Add 2 entries
     hashMap_put(map, key, value);
     hashMap_put(map, key2, value2);
 
-    CHECK(!hashMapEntrySet_isEmpty(entry_set));
+    EXPECT_TRUE(!hashMapEntrySet_isEmpty(entry_set));
 
     hashMapEntrySet_clear(entry_set);
 
-    CHECK(hashMapEntrySet_isEmpty(entry_set));
+    EXPECT_TRUE(hashMapEntrySet_isEmpty(entry_set));
 
     free(key);
     free(value);
@@ -1210,7 +1143,7 @@ TEST(hash_map_entrySet, isEmpty){
 
 //----------------------HASH MAP HASH TEST----------------------
 
-TEST(hash_map_hash, get){
+TEST_F(DeprecatedHashmapTestSuite, getTest){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -1218,7 +1151,7 @@ TEST(hash_map_hash, get){
     char * getKey = my_strdup("key");
     char * get;
     char * neKey = my_strdup("notExisting");
-    char * key3 = NULL;
+    char * key3 = nullptr;
     char * value3 = my_strdup("value3");
 
     hashMap_clear(map, false, false);
@@ -1231,39 +1164,39 @@ TEST(hash_map_hash, get){
 
     // Get with new created key
     get = (char*) (char*) hashMap_get(map, getKey);
-    CHECK_C(get != NULL);
-    STRCMP_EQUAL(value, get);
+    EXPECT_TRUE(get != nullptr);
+    EXPECT_STREQ(value, get);
 
     free(getKey);
     getKey = my_strdup("key2");
     get = (char*) hashMap_get(map, getKey);
-    CHECK_C(get != NULL);
-    STRCMP_EQUAL(value2, get);
+    EXPECT_TRUE(get != nullptr);
+    EXPECT_STREQ(value2, get);
 
     get = (char*) hashMap_get(map, neKey);
-    POINTERS_EQUAL(NULL, get);
+    EXPECT_EQ(nullptr, get);
 
-    get = (char*) hashMap_get(map, NULL);
-    POINTERS_EQUAL(NULL,get);
+    get = (char*) hashMap_get(map, nullptr);
+    EXPECT_EQ(nullptr,get);
 
-    // Add third entry with NULL key
+    // Add third entry with nullptr key
     hashMap_put(map, key3, value3);
 
-    get = (char*) hashMap_get(map, NULL);
-    STRCMP_EQUAL(get, value3);
+    get = (char*) hashMap_get(map, nullptr);
+    EXPECT_STREQ(get, value3);
 
     free(getKey);
     free(neKey);
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map_hash, containsKey) {
+TEST_F(DeprecatedHashmapTestSuite, containsKeyTest) {
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
     char * value2 = my_strdup("value2");
     char * containsKey = my_strdup("key");
-    char * key3 = NULL;
+    char * key3 = nullptr;
     char * value3 = my_strdup("value3");
 
     hashMap_clear(map, false, false);
@@ -1274,33 +1207,33 @@ TEST(hash_map_hash, containsKey) {
     // Add second entry
     hashMap_put(map, key2, value2);
 
-    CHECK(hashMap_containsKey(map, containsKey));
+    EXPECT_TRUE(hashMap_containsKey(map, containsKey));
     free(containsKey);
     containsKey = my_strdup("key2");
-    CHECK(hashMap_containsKey(map, containsKey));
+    EXPECT_TRUE(hashMap_containsKey(map, containsKey));
     free(containsKey);
     containsKey = my_strdup("notExisting");
-    CHECK(!hashMap_containsKey(map, containsKey));
+    EXPECT_TRUE(!hashMap_containsKey(map, containsKey));
     free(containsKey);
-    containsKey = NULL;
-    CHECK(!hashMap_containsKey(map, containsKey));
+    containsKey = nullptr;
+    EXPECT_TRUE(!hashMap_containsKey(map, containsKey));
 
-    // Add third entry with NULL key
+    // Add third entry with nullptr key
     hashMap_put(map, key3, value3);
 
-    containsKey = NULL;
-    CHECK(hashMap_containsKey(map, containsKey));
+    containsKey = nullptr;
+    EXPECT_TRUE(hashMap_containsKey(map, containsKey));
 
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map_hash, getEntry){
+TEST_F(DeprecatedHashmapTestSuite, getEntryTest){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
     char * value2 = my_strdup("value2");
     char * getEntryKey;
-    char * key3 = NULL;
+    char * key3 = nullptr;
     char * value3 = my_strdup("value3");
     hash_map_entry_pt entry;
 
@@ -1315,39 +1248,39 @@ TEST(hash_map_hash, getEntry){
     // Get with new created key
     getEntryKey = my_strdup("key");
     entry = hashMap_getEntry(map, getEntryKey);
-    CHECK(entry != NULL);
-    STRCMP_EQUAL(key, (char*) entry->key);
-    STRCMP_EQUAL(value, (char*) entry->value);
+    EXPECT_TRUE(entry != nullptr);
+    EXPECT_STREQ(key, (char*) entry->key);
+    EXPECT_STREQ(value, (char*) entry->value);
 
     free(getEntryKey);
     getEntryKey = my_strdup("key2");
     entry = hashMap_getEntry(map, getEntryKey);
-    CHECK(entry != NULL);
-    STRCMP_EQUAL(key2, (char*) entry->key);
-    STRCMP_EQUAL(value2, (char*) entry->value);
+    EXPECT_TRUE(entry != nullptr);
+    EXPECT_STREQ(key2, (char*) entry->key);
+    EXPECT_STREQ(value2, (char*) entry->value);
 
     free(getEntryKey);
     getEntryKey = my_strdup("notExisting");
     entry = hashMap_getEntry(map, getEntryKey);
-    POINTERS_EQUAL(NULL, entry);
+    EXPECT_EQ(nullptr, entry);
 
     free(getEntryKey);
-    getEntryKey = NULL;
+    getEntryKey = nullptr;
     entry = hashMap_getEntry(map, getEntryKey);
-    POINTERS_EQUAL(NULL, entry);
+    EXPECT_EQ(nullptr, entry);
 
-    // Add third entry with NULL key
+    // Add third entry with nullptr key
     hashMap_put(map, key3, value3);
 
-    getEntryKey = NULL;
+    getEntryKey = nullptr;
     entry = hashMap_getEntry(map, getEntryKey);
-    CHECK_EQUAL(key3, entry->key);
-    STRCMP_EQUAL(value3, (char*) entry->value);
+    EXPECT_EQ(key3, entry->key);
+    EXPECT_STREQ(value3, (char*) entry->value);
 
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map_hash, put){
+TEST_F(DeprecatedHashmapTestSuite, putTest){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
@@ -1357,10 +1290,10 @@ TEST(hash_map_hash, put){
     char * nkey2 = my_strdup("key2");
     char * nvalue2 = my_strdup("value3");
     char * old;
-    char * key3 = NULL;
+    char * key3 = nullptr;
     char * value3 = my_strdup("value3");
     char * key4 = my_strdup("key4");
-    char * value4 = NULL;
+    char * value4 = nullptr;
 
     hashMap_clear(map, false, false);
 
@@ -1372,37 +1305,37 @@ TEST(hash_map_hash, put){
 
     // Get with new key
     get = (char*) hashMap_get(map, getKey);
-    STRCMP_EQUAL(value, get);
+    EXPECT_STREQ(value, get);
 
     free(getKey);
     getKey = my_strdup("key2");
     get = (char*) hashMap_get(map, getKey);
-    STRCMP_EQUAL(value2, get);
+    EXPECT_STREQ(value2, get);
 
     // Overwrite existing entry
     old = (char *) hashMap_put(map, nkey2, nvalue2);
-    CHECK(old != NULL);
-    STRCMP_EQUAL(value2, old);
+    EXPECT_TRUE(old != nullptr);
+    EXPECT_STREQ(value2, old);
 
     free(getKey);
     getKey = my_strdup("key2");
     get = (char*) hashMap_get(map, key2);
-    STRCMP_EQUAL(nvalue2, get);
+    EXPECT_STREQ(nvalue2, get);
 
-    // Add third entry with NULL key
+    // Add third entry with nullptr key
     hashMap_put(map, key3, value3);
 
     free(getKey);
-    getKey = NULL;
+    getKey = nullptr;
     get = (char*) hashMap_get(map, key3);
-    STRCMP_EQUAL(value3, get);
+    EXPECT_STREQ(value3, get);
 
-    // Add fourth entry with NULL value
+    // Add fourth entry with nullptr value
     hashMap_put(map, key4, value4);
 
     getKey = my_strdup("key4");
     get = (char*) hashMap_get(map, key4);
-    CHECK_EQUAL(value4, get);
+    EXPECT_EQ(value4, get);
 
     free(getKey);
     free(value2);
@@ -1410,10 +1343,10 @@ TEST(hash_map_hash, put){
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map_hash, remove){
+TEST_F(DeprecatedHashmapTestSuite, removeTest){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
-    char * key2 = NULL;
+    char * key2 = nullptr;
     char * value2 = my_strdup("value2");
     char * removeKey = my_strdup("nonexisting");
 
@@ -1427,26 +1360,26 @@ TEST(hash_map_hash, remove){
 
     // Remove non-existing entry for map
     hashMap_remove(map, removeKey);
-    LONGS_EQUAL(2, map->size);
-    CHECK(!hashMap_isEmpty(map));
+    EXPECT_EQ(2, map->size);
+    EXPECT_TRUE(!hashMap_isEmpty(map));
 
     // Remove entry with new key
     free(removeKey);
     removeKey = my_strdup("key");
     hashMap_remove(map, removeKey);
-    LONGS_EQUAL(1, map->size);
+    EXPECT_EQ(1, map->size);
 
     free(removeKey);
-    removeKey = NULL;
+    removeKey = nullptr;
     hashMap_remove(map, removeKey);
-    LONGS_EQUAL(0, map->size);
-    CHECK(hashMap_isEmpty(map));
+    EXPECT_EQ(0, map->size);
+    EXPECT_TRUE(hashMap_isEmpty(map));
 
     // Remove non-existing entry for empty map
     removeKey = my_strdup("nonexisting");
     hashMap_remove(map, removeKey);
-    LONGS_EQUAL(0, map->size);
-    CHECK(hashMap_isEmpty(map));
+    EXPECT_EQ(0, map->size);
+    EXPECT_TRUE(hashMap_isEmpty(map));
 
     free(removeKey);
     free(key);
@@ -1455,14 +1388,14 @@ TEST(hash_map_hash, remove){
     hashMap_clear(map, true, true);
 }
 
-TEST(hash_map_hash, containsValue){
+TEST_F(DeprecatedHashmapTestSuite, containsValueTest){
     char * key = my_strdup("key");
     char * value = my_strdup("value");
     char * key2 = my_strdup("key2");
     char * value2 = my_strdup("value2");
     char * containsValue = my_strdup("value");
     char * key3 = my_strdup("key3");
-    char * value3 = NULL;
+    char * value3 = nullptr;
 
     hashMap_clear(map, false, false);
 
@@ -1472,22 +1405,22 @@ TEST(hash_map_hash, containsValue){
     // Add second entry
     hashMap_put(map, key2, value2);
 
-    CHECK(hashMap_containsValue(map, containsValue));
+    EXPECT_TRUE(hashMap_containsValue(map, containsValue));
     free(containsValue);
     containsValue = my_strdup("value2");
-    CHECK(hashMap_containsValue(map, containsValue));
+    EXPECT_TRUE(hashMap_containsValue(map, containsValue));
     free(containsValue);
     containsValue = my_strdup("notExisting");
-    CHECK(!hashMap_containsValue(map, containsValue));
+    EXPECT_TRUE(!hashMap_containsValue(map, containsValue));
     free(containsValue);
-    containsValue = NULL;
-    CHECK(!hashMap_containsValue(map, containsValue));
+    containsValue = nullptr;
+    EXPECT_TRUE(!hashMap_containsValue(map, containsValue));
 
-    // Add third entry with NULL value
+    // Add third entry with nullptr value
     hashMap_put(map, key3, value3);
 
-    containsValue = NULL;
-    CHECK(hashMap_containsValue(map, containsValue));
+    containsValue = nullptr;
+    EXPECT_TRUE(hashMap_containsValue(map, containsValue));
 
     hashMap_clear(map, true, true);
 }

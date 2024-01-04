@@ -23,6 +23,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 #include "rsa_shm_export_registration.h"
 #include "rsa_shm_import_registration.h"
 #include "endpoint_description.h"
@@ -49,9 +50,9 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
 
 celix_status_t rsaShm_removeExportedService(rsa_shm_t *admin, export_registration_t *registration);
 
-celix_status_t rsaShm_getExportedServices(rsa_shm_t *admin, array_list_pt *services);
+celix_status_t rsaShm_getExportedServices(rsa_shm_t *admin, celix_array_list_t** services);
 
-celix_status_t rsaShm_getImportedEndpoints(rsa_shm_t *admin, array_list_pt *services);
+celix_status_t rsaShm_getImportedEndpoints(rsa_shm_t *admin, celix_array_list_t** services);
 
 celix_status_t rsaShm_importService(rsa_shm_t *admin, endpoint_description_t *endpointDescription,
         import_registration_t **registration);

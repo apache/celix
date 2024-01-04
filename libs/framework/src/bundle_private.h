@@ -37,7 +37,7 @@ struct celix_bundle {
     bundle_state_e state;
     void *handle;
     bundle_archive_pt archive;
-    array_list_pt modules;
+    celix_array_list_t* modules;
 
     celix_framework_t *framework;
 };
