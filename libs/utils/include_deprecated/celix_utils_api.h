@@ -27,6 +27,7 @@
 #include "celix_array_list.h"
 #include "hash_map.h"
 #include "celix_properties.h"
+#include "utils.h"
 #include "celix_utils.h"
 #include "celix_version.h"
 

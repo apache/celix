@@ -162,7 +162,7 @@ struct celix_framework {
     } installedBundles;
 
 
-    properties_pt configurationMap;
+    celix_properties_t* configurationMap;
 
 
     struct {
@@ -264,8 +264,8 @@ bool celix_framework_getConfigPropertyAsBool(celix_framework_t* framework, const
 
 celix_status_t celix_framework_installBundleInternal(celix_framework_t* framework, const char* bndLoc, long* bndId);
 
-celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, const void* svcObj, properties_pt properties);
-celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, service_factory_pt factory, properties_pt properties);
+celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, const void* svcObj, celix_properties_t* properties);
+celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, long bundleId, const char* serviceName, service_factory_pt factory, celix_properties_t* properties);
 
 celix_status_t fw_getServiceReferences(framework_pt framework, celix_array_list_t** references, bundle_pt bundle, const char* serviceName, const char* filter);
 celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, celix_array_list_t** services);

@@ -442,7 +442,7 @@ celix_status_t celix_dmComponent_setCLanguageProperty(celix_dm_component_t *comp
     return CELIX_SUCCESS;
 }
 
-celix_status_t component_addInterface(celix_dm_component_t *component, const char* serviceName, const char* serviceVersion, const void* service, properties_pt properties) {
+celix_status_t component_addInterface(celix_dm_component_t *component, const char* serviceName, const char* serviceVersion, const void* service, celix_properties_t* properties) {
     return celix_dmComponent_addInterface(component, serviceName, serviceVersion, service, properties);
 }
 
@@ -1151,7 +1151,7 @@ void celix_dmComponent_destroyComponentInfo(celix_dm_component_info_t* info) {
             for (i = 0; i < size; i += 1) {
                 dm_interface_info_pt intfInfo = celix_arrayList_get(info->interfaces, i);
                 free(intfInfo->name);
-                properties_destroy(intfInfo->properties);
+                celix_properties_destroy(intfInfo->properties);
                 free(intfInfo);
             }
             celix_arrayList_destroy(info->interfaces);

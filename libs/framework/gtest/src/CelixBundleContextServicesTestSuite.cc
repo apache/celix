@@ -764,13 +764,13 @@ TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerTestWithAlreadyRegist
 TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerTestWithProperties) {
     int count = 0;
     int count2 = 0;
-    auto add = [](void *handle, void *svc, const properties_t *props) {
+    auto add = [](void *handle, void *svc, const celix_properties_t *props) {
         ASSERT_TRUE(svc != nullptr);
         ASSERT_TRUE(props != nullptr);
         int *c = static_cast<int*>(handle);
         *c += 1;
     };
-    auto remove = [](void *handle, void *svc, const properties_t *props) {
+    auto remove = [](void *handle, void *svc, const celix_properties_t *props) {
         ASSERT_TRUE(svc != nullptr);
         ASSERT_TRUE(props != nullptr);
         int *c = static_cast<int*>(handle);
@@ -813,14 +813,14 @@ TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerTestWithProperties) {
 
 TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerTestWithOwner) {
     int count = 0;
-    auto add = [](void *handle, void *svc, const properties_t *props, const bundle_t *svcOwner) {
+    auto add = [](void *handle, void *svc, const celix_properties_t *props, const bundle_t *svcOwner) {
         ASSERT_TRUE(svc != nullptr);
         ASSERT_TRUE(props != nullptr);
         ASSERT_TRUE(celix_bundle_getId(svcOwner) >= 0);
         int *c = static_cast<int*>(handle);
         *c += 1;
     };
-    auto remove = [](void *handle, void *svc, const properties_t *props, const bundle_t *svcOwner) {
+    auto remove = [](void *handle, void *svc, const celix_properties_t *props, const bundle_t *svcOwner) {
         ASSERT_TRUE(svc != nullptr);
         ASSERT_TRUE(props != nullptr);
         ASSERT_TRUE(celix_bundle_getId(svcOwner) >= 0);
@@ -1029,12 +1029,12 @@ TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerSetTest) {
     ASSERT_TRUE(trackerId >= 0);
 
     //register svc3 should lead to second set call
-    properties_t *props3 = celix_properties_create();
+    celix_properties_t *props3 = celix_properties_create();
     celix_properties_set(props3, CELIX_FRAMEWORK_SERVICE_RANKING, "10");
     long svcId3 = celix_bundleContext_registerService(ctx, svc3, "NA", props3); //call 2
 
     //register svc4 should lead to no set (lower ranking)
-    properties_t *props4 = celix_properties_create();
+    celix_properties_t *props4 = celix_properties_create();
     celix_properties_set(props4, CELIX_FRAMEWORK_SERVICE_RANKING, "10");
     long svcId4 = celix_bundleContext_registerService(ctx, svc4, "NA", props4); //no update
 
@@ -1087,12 +1087,12 @@ TEST_F(CelixBundleContextServicesTestSuite, TrackerOfAllServicesSetTest) {
     ASSERT_TRUE(trackerId >= 0);
 
     //register svc3 should lead to second set call
-    properties_t *props3 = celix_properties_create();
+    celix_properties_t *props3 = celix_properties_create();
     celix_properties_set(props3, CELIX_FRAMEWORK_SERVICE_RANKING, "10");
     long svcId3 = celix_bundleContext_registerService(ctx, svc3, "NA", props3); //call 2
 
     //register svc4 should lead to no set (lower ranking)
-    properties_t *props4 = celix_properties_create();
+    celix_properties_t *props4 = celix_properties_create();
     celix_properties_set(props4, CELIX_FRAMEWORK_SERVICE_RANKING, "10");
     long svcId4 = celix_bundleContext_registerService(ctx, svc4, "NA", props4); //no update
 
