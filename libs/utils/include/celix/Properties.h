@@ -340,7 +340,8 @@ namespace celix {
          *         or the value is not a Celix version.
          */
         celix::Version getAsVersion(const std::string& key, celix::Version defaultValue = {}) {
-            const auto* cVersion = celix_properties_peekVersion(cProps.get(), key.data(), nullptr);
+            celix_autoptr(celix_version_t) cVersion;
+            celix_properties_getAsVersion(cProps.get(), key.data(), nullptr, &cVersion);
             if (cVersion) {
                 celix::Version version{
                     celix_version_getMajor(cVersion),

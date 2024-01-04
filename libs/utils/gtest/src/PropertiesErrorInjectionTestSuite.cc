@@ -266,7 +266,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, SetWithoutCopyFailureTest) {
     // When a malloc error injection is set for celix_properties_setWithoutCopy (during alloc entry)
     celix_ei_expect_malloc((void*)celix_properties_allocEntry, 0, nullptr);
     // Then the celix_properties_setWithoutCopy call fails
-    auto status = celix_properties_setWithoutCopy(props, key, val);
+    auto status = celix_properties_assign(props, key, val);
     ASSERT_EQ(status, CELIX_ENOMEM);
     // And a celix err msg is set
     ASSERT_EQ(1, celix_err_getErrorCount());
@@ -276,9 +276,9 @@ TEST_F(PropertiesErrorInjectionTestSuite, SetWithoutCopyFailureTest) {
     key = celix_utils_strdup("key");
     val = celix_utils_strdup("value");
     // When a celix_stringHashMap_put error injection is set for celix_properties_setWithoutCopy
-    celix_ei_expect_celix_stringHashMap_put((void*)celix_properties_setWithoutCopy, 0, CELIX_ENOMEM);
+    celix_ei_expect_celix_stringHashMap_put((void*)celix_properties_assign, 0, CELIX_ENOMEM);
     // Then the celix_properties_setWithoutCopy call fails
-    status = celix_properties_setWithoutCopy(props, key, val);
+    status = celix_properties_assign(props, key, val);
     ASSERT_EQ(status, CELIX_ENOMEM);
     // And a celix err msg is set
     ASSERT_EQ(1, celix_err_getErrorCount());

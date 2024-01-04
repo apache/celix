@@ -27,6 +27,8 @@ extern "C" {
     
 CELIX_EI_DECLARE(celix_version_createVersionFromString, celix_version_t*);
 
+CELIX_EI_DECLARE(celix_version_parse, celix_status_t);
+
 CELIX_EI_DECLARE(celix_version_copy, celix_version_t*);
 
 #ifdef __cplusplus

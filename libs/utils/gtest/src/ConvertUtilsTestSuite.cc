@@ -20,11 +20,16 @@
 #include <gtest/gtest.h>
 
 #include "celix_convert_utils.h"
+
 #include <string>
 #include <cmath>
 
+#include "celix_err.h"
+
 class ConvertUtilsTestSuite : public ::testing::Test {
-public:
+  public:
+    ~ConvertUtilsTestSuite() noexcept override { celix_err_printErrors(stderr, nullptr, nullptr); }
+
     void checkVersion(const celix_version_t* version, int major, int minor, int micro, const char* qualifier) {
         EXPECT_TRUE(version != nullptr);
         if (version) {
@@ -216,52 +221,68 @@ TEST_F(ConvertUtilsTestSuite, ConvertToVersionTest) {
     celix_version_t* defaultVersion = celix_version_create(1, 2, 3, "B");
 
     //test for a valid string
-    celix_version_t* result = celix_utils_convertStringToVersion("1.2.3", nullptr, nullptr);
+    celix_version_t* result;
+    celix_status_t convertStatus = celix_utils_convertStringToVersion("1.2.3", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertStatus);
+    EXPECT_TRUE(result != nullptr);
     checkVersion(result, 1, 2, 3, nullptr);
     celix_version_destroy(result);
 
     //test for an invalid string
-    result = celix_utils_convertStringToVersion("A", nullptr, nullptr);
+    convertStatus = celix_utils_convertStringToVersion("A", nullptr, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertStatus);
     EXPECT_EQ(nullptr, result);
 
     //test for a string with a number
-    result = celix_utils_convertStringToVersion("1.2.3.A", nullptr, nullptr);
+    convertStatus = celix_utils_convertStringToVersion("1.2.3.A", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertStatus);
+    EXPECT_TRUE(result != nullptr);
     checkVersion(result, 1, 2, 3, "A");
     celix_version_destroy(result);
 
     //test for a string with a partly (strict) version
-    result = celix_utils_convertStringToVersion("1", nullptr, nullptr);
-    EXPECT_EQ(nullptr, result);
+    convertStatus = celix_utils_convertStringToVersion("1", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertStatus);
+    EXPECT_NE(nullptr, result);
+    checkVersion(result, 1, 0, 0, nullptr);
+    celix_version_destroy(result);
 
     //test for a string with a partly (strict) version
-    result = celix_utils_convertStringToVersion("1.2", nullptr, nullptr);
-    EXPECT_EQ(nullptr, result);
+    convertStatus = celix_utils_convertStringToVersion("1.2", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertStatus);
+    EXPECT_NE(nullptr, result);
+    checkVersion(result, 1, 2, 0, nullptr);
+    celix_version_destroy(result);
 
     //test for a string with a valid version, default version and a converted bool arg
-    bool converted;
-    result = celix_utils_convertStringToVersion("1.2.3", defaultVersion, &converted);
+    convertStatus = celix_utils_convertStringToVersion("1.2.3", defaultVersion, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertStatus);
+    EXPECT_NE(nullptr, result);
     checkVersion(result, 1, 2, 3, nullptr);
     celix_version_destroy(result);
-    EXPECT_TRUE(converted);
 
-    //test for a string with a invalid version, default version and a converted bool arg
-    result = celix_utils_convertStringToVersion("A", defaultVersion, &converted);
+    //test for a string with an invalid version and a default version
+    convertStatus = celix_utils_convertStringToVersion("A", defaultVersion, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertStatus);
+    EXPECT_NE(nullptr, result);
     checkVersion(result, 1, 2, 3, "B"); //default version
     celix_version_destroy(result);
-    EXPECT_FALSE(converted);
 
     //test for a convert with a version value with trailing chars
-    celix_utils_convertStringToVersion("2.1.1 and something else", nullptr, &converted);
-    EXPECT_FALSE(converted);
+    convertStatus = celix_utils_convertStringToVersion("2.1.1 and something else", nullptr, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertStatus);
+    EXPECT_EQ(nullptr, result);
 
     //test for a convert with a version value with trailing whitespaces
-    result = celix_utils_convertStringToVersion("1.2.3 \t\n", nullptr, &converted);
-    EXPECT_TRUE(converted);
+    convertStatus = celix_utils_convertStringToVersion("1.2.3 \t\n", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertStatus);
+    EXPECT_NE(nullptr, result);
     celix_version_destroy(result);
 
     //test for a convert with a version value with starting and trailing whitespaces
-    result = celix_utils_convertStringToVersion("\t 3.2.2 \t\n", nullptr, &converted);
-    EXPECT_TRUE(converted);
+    convertStatus = celix_utils_convertStringToVersion("\t 3.2.2 \t\n", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertStatus);
+    EXPECT_NE(nullptr, result);
     celix_version_destroy(result);
 
     //test for a convert with a super long invalid version string
@@ -269,9 +290,70 @@ TEST_F(ConvertUtilsTestSuite, ConvertToVersionTest) {
     for (int i = 0; i < 128; ++i) {
         longString += ".1";
     }
-    result = celix_utils_convertStringToVersion(longString.c_str(), nullptr, &converted);
-    EXPECT_FALSE(converted);
+    convertStatus = celix_utils_convertStringToVersion(longString.c_str(), nullptr, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertStatus);
     EXPECT_EQ(nullptr, result);
 
+    convertStatus = celix_utils_convertStringToVersion(nullptr, defaultVersion, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertStatus);
+    EXPECT_NE(nullptr, result); //copy of default version
+    celix_version_destroy(result);
+
     celix_version_destroy(defaultVersion);
+}
+
+TEST_F(ConvertUtilsTestSuite, ConvertToLongArrayTest) {
+    celix_array_list_t* result;
+    celix_status_t convertState = celix_utils_convertStringToLongArrayList("1,2,3", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertState);
+    EXPECT_TRUE(result != nullptr);
+    celix_arrayList_destroy(result);
+
+    convertState = celix_utils_convertStringToLongArrayList("invalid", nullptr, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
+    EXPECT_TRUE(result == nullptr);
+
+    celix_autoptr(celix_array_list_t) defaultList = celix_arrayList_create();
+    celix_arrayList_addLong(defaultList, 42L);
+    convertState = celix_utils_convertStringToLongArrayList("1,2,3,invalid", defaultList, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
+    EXPECT_TRUE(result != nullptr); //copy of default list
+    EXPECT_EQ(1, celix_arrayList_size(result));
+    EXPECT_EQ(42L, celix_arrayList_getLong(result, 0));
+    celix_arrayList_destroy(result);
+
+    convertState = celix_utils_convertStringToLongArrayList("  1  ,  2  ,  3   ", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertState);
+    EXPECT_TRUE(result != nullptr);
+    EXPECT_EQ(3, celix_arrayList_size(result));
+    EXPECT_EQ(2L, celix_arrayList_getLong(result, 1));
+    celix_arrayList_destroy(result);
+
+    convertState = celix_utils_convertStringToLongArrayList(nullptr, defaultList, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
+    EXPECT_TRUE(result != nullptr); //copy of default list
+    EXPECT_EQ(1, celix_arrayList_size(result));
+    celix_arrayList_destroy(result);
+}
+
+TEST_F(ConvertUtilsTestSuite, LongArrayToStringTest) {
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_arrayList_addLong(list, 1L);
+    celix_arrayList_addLong(list, 2L);
+    celix_arrayList_addLong(list, 3L);
+
+    char* result = celix_utils_longArrayListToString(list);
+    EXPECT_STREQ("1, 2, 3", result);
+    free(result);
+
+    celix_autoptr(celix_array_list_t) emptyList = celix_arrayList_create();
+    result = celix_utils_longArrayListToString(emptyList);
+    EXPECT_STREQ("", result);
+    free(result);
+
+    celix_autoptr(celix_array_list_t) singleEntryList = celix_arrayList_create();
+    celix_arrayList_addLong(singleEntryList, 1L);
+    result = celix_utils_longArrayListToString(singleEntryList);
+    EXPECT_STREQ("1", result);
+    free(result);
 }

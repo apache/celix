@@ -20,9 +20,11 @@
 #ifndef CELIX_CELIX_CONVERT_UTILS_H
 #define CELIX_CELIX_CONVERT_UTILS_H
 
-#include <stdbool.h>
-#include "celix_version.h"
+#include "celix_array_list.h"
+#include "celix_errno.h"
 #include "celix_utils_export.h"
+#include "celix_version.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -71,10 +73,23 @@ CELIX_UTILS_EXPORT long celix_utils_convertStringToLong(const char* val, long de
  *
  * @param[in] val The string to convert.
  * @param[in] defaultValue The default value if the string is not a valid celix_version_t.
- * @param[out] converted If not NULL, will be set to true if the string is a valid celix_version_t, otherwise false.
- * @return A new celix_version_t* if the string is a valid version, otherwise NULL.
+ * @param[out] version The converted version. If the string is not a valid version, the version will be set to a copy of
+ *                     the defaultValue.
+ * @return CELIX_SUCCESS if the string is a valid version, CELIX_ILLEGAL_ARGUMENT if the string is not a valid version and
+ * CELIX_ENOMEM if memory could not be allocated. Note that on a CELIX_ILLEGAL_ARGUMENT the version will be set to a copy
+ * of the defaultValue.
  */
-CELIX_UTILS_EXPORT celix_version_t* celix_utils_convertStringToVersion(const char* val, const celix_version_t* defaultValue, bool* converted);
+CELIX_UTILS_EXPORT celix_status_t
+celix_utils_convertStringToVersion(const char* val, const celix_version_t* defaultValue, celix_version_t** version);
+
+//TODO
+CELIX_UTILS_EXPORT
+celix_status_t
+celix_utils_convertStringToLongArrayList(const char* val, const celix_array_list_t* defaultValue, celix_array_list_t** list);
+
+//TODO
+CELIX_UTILS_EXPORT
+char* celix_utils_longArrayListToString(const celix_array_list_t* list);
 
 #ifdef __cplusplus
 }

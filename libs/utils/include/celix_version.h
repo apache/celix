@@ -25,6 +25,7 @@
 
 #include "celix_cleanup.h"
 #include "celix_utils_export.h"
+#include "celix_errno.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,13 +61,19 @@ typedef struct celix_version celix_version_t;
  */
 CELIX_UTILS_EXPORT celix_version_t* celix_version_create(int major, int minor, int micro, const char* qualifier);
 
-
+/**
+ * @brief Destroy a celix_version_t*.
+ * @param version The version to destroy.
+ */
 CELIX_UTILS_EXPORT void celix_version_destroy(celix_version_t* version);
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_version_t, celix_version_destroy)
 
 /**
  * @brief Create a copy of <code>version</code>.
+ *
+ * If the provided version is NULL a NULL pointer is returned.
+ * If the return is NULL, an error message is logged to celix_err.
  *
  * @param[in] version The version to copy
  * @return the copied version
@@ -91,10 +98,38 @@ CELIX_UTILS_EXPORT celix_version_t* celix_version_copy(const celix_version_t* ve
  *
  * There must be no whitespace in version.
  *
+ * If the return is NULL, an error message is logged to celix_err.
+ *
  * @param[in] versionStr String representation of the version identifier.
- * @return The created version or NULL if the input was invalid.
+ * @return The created version or NULL if the input was invalid or memory could not be allocated.
  */
 CELIX_UTILS_EXPORT celix_version_t* celix_version_createVersionFromString(const char *versionStr);
+
+//TODO test
+/**
+ * @brief Parse a version string into a version object.
+ *
+ * <p>
+ * Here is the grammar for version strings.
+ *
+ * <pre>
+ * version ::= major('.'minor('.'micro('.'qualifier)?)?)?
+ * major ::= digit+
+ * minor ::= digit+
+ * micro ::= digit+
+ * qualifier ::= (alpha|digit|'_'|'-')+
+ * digit ::= [0..9]
+ * alpha ::= [a..zA..Z]
+ * </pre>
+ *
+ * If the return is NULL, an error message is logged to celix_err.
+ *
+ * @param[in] versionStr The version string to parse.
+ * @param[out] version The parsed version object.
+ * @return CELIX_SUCCESS if the version string was parsed successfully, CELIX_ILLEGAL_ARGUMENT if the version string
+ *         was invalid, or CELIX_ENOMEM if memory could not be allocated.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_version_parse(const char *versionStr, celix_version_t** version);
 
 /**
  * @brief Create empty version "0.0.0".

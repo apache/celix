@@ -45,6 +45,7 @@
 #include "celix_errno.h"
 #include "celix_utils_export.h"
 #include "celix_version.h"
+#include "celix_array_list.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,12 +62,13 @@ typedef struct celix_properties celix_properties_t;
  * @brief Enum representing the possible types of a property value.
  */
 typedef enum celix_properties_value_type {
-    CELIX_PROPERTIES_VALUE_TYPE_UNSET = 0,  /**< Property value is not set. */
-    CELIX_PROPERTIES_VALUE_TYPE_STRING = 1, /**< Property value is a string. */
-    CELIX_PROPERTIES_VALUE_TYPE_LONG = 2,   /**< Property value is a long integer. */
-    CELIX_PROPERTIES_VALUE_TYPE_DOUBLE = 3, /**< Property value is a double. */
-    CELIX_PROPERTIES_VALUE_TYPE_BOOL = 4,   /**< Property value is a boolean. */
-    CELIX_PROPERTIES_VALUE_TYPE_VERSION = 5 /**< Property value is a Celix version. */
+    CELIX_PROPERTIES_VALUE_TYPE_UNSET = 0,     /**< Property value is not set. */
+    CELIX_PROPERTIES_VALUE_TYPE_STRING = 1,    /**< Property value is a string. */
+    CELIX_PROPERTIES_VALUE_TYPE_LONG = 2,      /**< Property value is a long integer. */
+    CELIX_PROPERTIES_VALUE_TYPE_DOUBLE = 3,    /**< Property value is a double. */
+    CELIX_PROPERTIES_VALUE_TYPE_BOOL = 4,      /**< Property value is a boolean. */
+    CELIX_PROPERTIES_VALUE_TYPE_VERSION = 5,   /**< Property value is a Celix version. */
+    CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY = 6 /**< Property value is an array of longs. */
 } celix_properties_value_type_e;
 
 /**
@@ -83,10 +85,12 @@ typedef struct celix_properties_entry {
         double doubleValue;                  /**< The double-precision floating point value of the entry. */
         bool boolValue;                      /**< The boolean value of the entry. */
         const celix_version_t* versionValue; /**< The Celix version value of the entry. */
-    } typed;                                 /**< The typed values of the entry. Only valid if valueType
-                                                  is not CELIX_PROPERTIES_VALUE_TYPE_UNSET and only the matching
-                                                  value types should be used. E.g typed.boolValue if valueType is
-                                                  CELIX_PROPERTIES_VALUE_TYPE_BOOL. */
+        const celix_array_list_t*
+            arrayValue; /**< The array list of longs, doubles, bools, strings or versions value of the entry. */
+    } typed;            /**< The typed values of the entry. Only valid if valueType
+                             is not CELIX_PROPERTIES_VALUE_TYPE_UNSET and only the matching
+                             value types should be used. E.g typed.boolValue if valueType is
+                             CELIX_PROPERTIES_VALUE_TYPE_BOOL. */
 } celix_properties_entry_t;
 
 /**
@@ -189,7 +193,7 @@ CELIX_UTILS_EXPORT celix_properties_entry_t* celix_properties_getEntry(const cel
                                                                        const char* key);
 
 /**
- * @brief Get the value of a property.
+ * @brief Get the string value or string representation of a property.
  *
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
@@ -208,6 +212,14 @@ celix_properties_get(const celix_properties_t* properties, const char* key, cons
  */
 CELIX_UTILS_EXPORT celix_properties_value_type_e celix_properties_getType(const celix_properties_t* properties,
                                                                           const char* key);
+
+/**
+ * @Brief Check if the properties set has the provided key.
+ * @param[in] properties The property set to search.
+ * @param[in] key The key to search for.
+ * @return True if the property set has the provided key, false otherwise.
+ */
+CELIX_UTILS_EXPORT bool celix_properties_hasKey(const celix_properties_t* properties, const char* key);
 
 /**
  * @brief Set the value of a property.
@@ -238,9 +250,13 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_set(celix_properties_t* prope
  *         and CELIX_ILLEGAL_ARGUMENT if the provided key or value is NULL.
  *         When an error status is returned, the key and value will be freed by this function.
  */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setWithoutCopy(celix_properties_t* properties,
+CELIX_UTILS_EXPORT celix_status_t celix_properties_assign(celix_properties_t* properties,
                                                                   char* key,
                                                                   char* value);
+
+//TODO
+CELIX_UTILS_EXPORT long
+celix_properties_getLong(const celix_properties_t* properties, const char* key, long defaultValue);
 
 /**
  * @brief Get the value of a property as a long integer.
@@ -268,6 +284,10 @@ celix_properties_getAsLong(const celix_properties_t* properties, const char* key
  *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_setLong(celix_properties_t* properties, const char* key, long value);
+
+//TODO
+CELIX_UTILS_EXPORT bool
+celix_properties_getBool(const celix_properties_t* properties, const char* key, bool defaultValue);
 
 /**
  * @brief Get the value of a property as a boolean.
@@ -311,6 +331,10 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setDouble(celix_properties_t*
                                                              const char* key,
                                                              double val);
 
+//TODO
+CELIX_UTILS_EXPORT double
+celix_properties_getDouble(const celix_properties_t* properties, const char* key, double defaultValue);
+
 /**
  * @brief Get the value of a property as a double.
  *
@@ -334,6 +358,7 @@ celix_properties_getAsDouble(const celix_properties_t* properties, const char* k
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
  * @param[in] version The value to set. The function will make a copy of this object and store it in the property set.
+ * Cannot be NULL.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
  *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL.
  */
@@ -351,7 +376,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersion(celix_properties_t
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
  * @param[in] version The value to assign. The function will store a reference to this object in the property set and
- *                    takes ownership of the provided version.
+ *                    takes ownership of the provided version. Cannot be NULL.
  @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
  *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL. When an error status is returned,
  *         the version will be destroy with celix_version_destroy by this function.
@@ -373,9 +398,8 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_assignVersion(celix_propertie
  * @return A const pointer to the Celix version if it is present and valid, or the provided default value if the
  * property is not set or the value is not a valid Celix version. The returned pointer should not be modified or freed.
  */
-CELIX_UTILS_EXPORT const celix_version_t* celix_properties_peekVersion(const celix_properties_t* properties,
-                                                                       const char* key,
-                                                                       const celix_version_t* defaultValue);
+CELIX_UTILS_EXPORT const celix_version_t*
+celix_properties_getVersion(const celix_properties_t* properties, const char* key, const celix_version_t* defaultValue);
 
 /**
  * @brief Get a value of a property as a copied Celix version.
@@ -389,14 +413,110 @@ CELIX_UTILS_EXPORT const celix_version_t* celix_properties_peekVersion(const cel
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
  * @param[in] defaultValue The value to return if the property is not set or if the value is not a Celix version.
- * @return A copy of the property value if it is a Celix version, or a new Celix version created from the property
- *         value string if it can be converted, or a copy of the default value if the property is not set or the value
- *         is not a valid Celix version.
- * @retval NULL if version cannot be found/converted and the defaultValue is NULL.
+ * @param[out] list A copy of the found version, a new parsed version, or a copy of the default value if the
+ *                 property is not set, its value is not an version or its value cannot be converted to an version.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to create the
+ *        version. Note if the key is not found, the return status is still CELIX_SUCCESS.
  */
-CELIX_UTILS_EXPORT celix_version_t* celix_properties_getAsVersion(const celix_properties_t* properties,
+CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsVersion(const celix_properties_t* properties,
                                                                   const char* key,
-                                                                  const celix_version_t* defaultValue);
+                                                                  const celix_version_t* defaultValue,
+                                                                  celix_version_t** version);
+
+/**
+ * @brief Set a long array value for a property.
+ *
+ * This function will make a copy of the provided celix_array_list_t object, assuming it contains long values,
+ * and store it in the property set.
+ * If an error occurs, the error status is returned and a message is logged to
+ * celix_err.
+ *
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] values An array list of long values to set for the property. Cannot be NULL.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key or values is NULL.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setLongArrayList(celix_properties_t* properties,
+                                                                const char* key,
+                                                                const celix_array_list_t* values);
+
+/**
+ * @brief Assign a long array value to a property, taking ownership of the array.
+ *
+ * This function stores a reference to the provided celix_array_list_t object in the property set and takes
+ * ownership of the array.
+ * If an error occurs, the error status is returned, the provided array is destroyed and a
+ * message is logged to celix_err.
+ *
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] values An array list of long values to assign to the property. Ownership of the array is transferred
+ *                   to the properties set. Cannot be NULL.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL. On error, the values array list is destroyed.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_properties_assignLongArrayList(celix_properties_t* properties,
+                                                                   const char* key,
+                                                                   celix_array_list_t* values);
+
+/**
+ * @brief Set multiple long values for a property using an array of longs.
+ *
+ * This function allows setting multiple long values for a given property key. The values are passed as an array
+ * of long integers. The number of values in the array should be specified by nrOfValues.
+ *
+ * If an error occurs, the error status is returned, the provided array is destroyed and a
+ * message is logged to celix_err.
+ *
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] nrOfValues The number of long values in the array.
+ * @param[in] values An array of long values to set for the property. Cannot be NULL.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL or the values array is NULL.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setLongs(celix_properties_t* properties,
+                                                            const char* key,
+                                                            const long* values,
+                                                            size_t nrOfValues);
+
+/**
+ * @brief Get a property value as an array of longs, making a copy of the array.
+ *
+ * This function retrieves the value of a property, interpreting it as an array of longs. It returns a new copy of the
+ * array. If the property is not set or its value is not an array of longs, the default value is returned as a copy.
+ *
+ * @param[in] properties The property set to search.
+ * @param[in] key The key of the property to get.
+ * @param[in] defaultValue The default value to return if the property is not set or its value is not an array of longs.
+ * @param[out] list A copy of the found list, a new array list with long values or a copy of the default value if the
+ *                 property is not set, its value is not an array of longs or its value cannot be converted to an array
+ *                 of longs.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to create the
+ *        array list. Note if the key is not found, the return status is still CELIX_SUCCESS.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsLongArrayList(const celix_properties_t* properties,
+                                                                  const char* key,
+                                                                  const celix_array_list_t* defaultValue,
+                                                                  celix_array_list_t** list);
+
+/**
+ * @brief Peek at the property value as an array of longs without copying.
+ *
+ * This function provides a non-owning, read-only access to a property value interpreted as an array of longs.
+ * It returns a const pointer to the array. If the property is not set or its value is not an array of longs,
+ * the default value is returned.
+ *
+ * @param[in] properties The property set to search.
+ * @param[in] key The key of the property to peek at.
+ * @param[in] defaultValue The value to return if the property is not set or its value is not an array of longs.
+ * @return A const pointer to the property value interpreted as an array of longs, or the default value if the property
+ *         is not set or its value is not an array of longs. The returned pointer should not be modified or freed.
+ */
+CELIX_UTILS_EXPORT const celix_array_list_t* celix_properties_getLongArrayList(const celix_properties_t* properties,
+                                                                            const char* key,
+                                                                            const celix_array_list_t* defaultValue);
 
 /**
  * @brief Set the value of a property based on the provided property entry, maintaining underlying type.

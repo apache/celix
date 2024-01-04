@@ -17,22 +17,102 @@
   under the License.
  */
 
-#include "celix_convert_utils.h"
-#include "celix_utils_ei.h"
 #include <gtest/gtest.h>
+
+#include "celix_array_list_ei.h"
+#include "celix_convert_utils.h"
+#include "celix_version_ei.h"
+#include "stdio_ei.h"
+#include "celix_err.h"
 
 class ConvertUtilsWithErrorInjectionTestSuite : public ::testing::Test {
 public:
     ~ConvertUtilsWithErrorInjectionTestSuite() override {
-        celix_ei_expect_celix_utils_writeOrCreateString(nullptr, 0, nullptr);
+        celix_ei_expect_celix_version_copy(nullptr, 0, nullptr);
+        celix_ei_expect_celix_version_createVersionFromString(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_arrayList_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_addLong(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_open_memstream(nullptr, 0, nullptr);
+        celix_ei_expect_fputs(nullptr, 0, 0);
+
+        celix_err_printErrors(stderr, nullptr, nullptr);
     }
 };
 
 TEST_F(ConvertUtilsWithErrorInjectionTestSuite, ConvertToVersionTest) {
     celix_version_t* defaultVersion = celix_version_create(1, 2, 3, "B");
-    celix_ei_expect_celix_utils_writeOrCreateString(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
-    celix_version_t* result = celix_utils_convertStringToVersion("1.2.3", nullptr, nullptr);
+
+    //Fail on first copy usage
+    celix_ei_expect_celix_version_copy((void*)celix_utils_convertStringToVersion, 0, nullptr);
+    celix_version_t* result;
+    celix_status_t status = celix_utils_convertStringToVersion(nullptr, defaultVersion, &result);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    EXPECT_EQ(nullptr, result);
+
+    //Fail on second copy usage
+    celix_ei_expect_celix_version_copy((void*)celix_utils_convertStringToVersion, 0, nullptr);
+    status = celix_utils_convertStringToVersion("invalid version str", defaultVersion, &result);
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    EXPECT_EQ(nullptr, result);
+
+    //Fail on parse version
+    celix_ei_expect_celix_version_parse((void*)celix_utils_convertStringToVersion, 0, CELIX_ENOMEM);
+    status = celix_utils_convertStringToVersion("1.2.3.B", defaultVersion, &result);
+    EXPECT_EQ(status, CELIX_ENOMEM);
     EXPECT_EQ(nullptr, result);
 
     celix_version_destroy(defaultVersion);
+}
+
+TEST_F(ConvertUtilsWithErrorInjectionTestSuite, ConvertToLongArrayTest) {
+    //Given an error injection for celix_arrayList_create
+    celix_ei_expect_celix_arrayList_create((void*)celix_utils_convertStringToLongArrayList, 0, nullptr);
+    //When calling celix_utils_convertStringToLongArrayList
+    celix_array_list_t* result;
+    celix_status_t status = celix_utils_convertStringToLongArrayList("1,2,3", nullptr, &result);
+    //Then the result is null and the status is ENOMEM
+    EXPECT_EQ(status, CELIX_ENOMEM);
+
+    //Given an error injection for celix_arrayList_addLong
+    celix_ei_expect_celix_arrayList_addLong((void*)celix_utils_convertStringToLongArrayList, 0, CELIX_ENOMEM);
+    //When calling celix_utils_convertStringToLongArrayList
+    status = celix_utils_convertStringToLongArrayList("1,2,3", nullptr, &result);
+    //Then the result is null and the status is ENOMEM
+    EXPECT_EQ(status, CELIX_ENOMEM);
+
+    celix_autoptr(celix_array_list_t) defaultList = celix_arrayList_create();
+
+    //Given an error injection for celix_arrayList_copy
+    celix_ei_expect_celix_arrayList_copy((void*)celix_utils_convertStringToLongArrayList, 0, nullptr);
+    //When calling celix_utils_convertStringToLongArrayList with a nullptr as value
+    status = celix_utils_convertStringToLongArrayList(nullptr, defaultList, &result);
+    //Then the result is null and the status is ENOMEM
+    EXPECT_EQ(status, CELIX_ENOMEM);
+
+    //Given an error injection for celix_arrayList_copy
+    celix_ei_expect_celix_arrayList_copy((void*)celix_utils_convertStringToLongArrayList, 0, nullptr);
+    //When calling celix_utils_convertStringToLongArrayList with an invalid value
+    status = celix_utils_convertStringToLongArrayList("invalid", defaultList, &result);
+    //Then the result is null and the status is ENOMEM
+    EXPECT_EQ(status, CELIX_ENOMEM);
+}
+
+TEST_F(ConvertUtilsWithErrorInjectionTestSuite, LongArrayToStringTest) {
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_arrayList_addLong(list, 1L);
+    celix_arrayList_addLong(list, 2L);
+
+    //Given an error injection for opem_memstream
+    celix_ei_expect_open_memstream((void*)celix_utils_longArrayListToString, 1, nullptr);
+    //When calling celix_utils_longArrayListToString
+    char* result = celix_utils_longArrayListToString(list);
+    //Then the result is null
+    EXPECT_EQ(nullptr, result);
+
+    //Given an error injection for fputs
+    celix_ei_expect_fputs((void*)celix_utils_longArrayListToString, 1, -1);
+    //When calling celix_utils_longArrayListToString
+    result = celix_utils_longArrayListToString(list);
+    //Then the result is null
+    EXPECT_EQ(nullptr, result);
 }

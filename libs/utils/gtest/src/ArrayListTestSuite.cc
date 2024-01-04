@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 
 #include "celix_array_list.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
 
 class ArrayListTestSuite : public ::testing::Test {
@@ -157,6 +158,52 @@ void testArrayListForTemplateType(int nrEntries) {
     EXPECT_EQ(celix_arrayList_size(list), 0);
 
     celix_arrayList_destroy(list);
+}
+
+TEST_F(ArrayListTestSuite, GetEntryTest) {
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    ASSERT_TRUE(list != nullptr);
+
+    celix_arrayList_addInt(list, 1);
+    celix_arrayList_addInt(list, 2);
+    celix_arrayList_addInt(list, 3);
+
+    celix_array_list_entry_t entry = celix_arrayList_getEntry(list, 0);
+    EXPECT_EQ(entry.intVal, 1);
+    entry = celix_arrayList_getEntry(list, 1);
+    EXPECT_EQ(entry.intVal, 2);
+    entry = celix_arrayList_getEntry(list, 2);
+    EXPECT_EQ(entry.intVal, 3);
+}
+
+TEST_F(ArrayListTestSuite, CopyArrayList) {
+    //Given an array list with a custom (and strange) equals function
+    celix_array_list_create_options_t opts{};
+    opts.equalsCallback = [](celix_array_list_entry_t a, celix_array_list_entry_t b) -> bool {
+        //equal if both are even or both are odd, note only for testing
+        return (a.intVal % 2 == 0 && b.intVal % 2 == 0) || (a.intVal % 2 != 0 && b.intVal % 2 != 0);
+    };
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createWithOptions(&opts);
+    ASSERT_TRUE(list != nullptr);
+
+    //And 2 entries
+    celix_arrayList_addInt(list, 1);
+    celix_arrayList_addInt(list, 2);
+    EXPECT_EQ(2, celix_arrayList_size(list));
+
+    //When copying the array list
+    celix_autoptr(celix_array_list_t) copy = celix_arrayList_copy(list);
+    ASSERT_TRUE(copy != nullptr);
+
+    //Then the copy should have the same size and entries
+    EXPECT_EQ(celix_arrayList_size(copy), 2);
+    EXPECT_EQ(celix_arrayList_getInt(copy, 0), 1);
+    EXPECT_EQ(celix_arrayList_getInt(copy, 1), 2);
+
+    //And the copy should have the same equals function
+    EXPECT_EQ(2, celix_arrayList_size(copy));
+    celix_arrayList_removeInt(copy, 3); //note in this test case 3 equals 1
+    EXPECT_EQ(1, celix_arrayList_size(copy));
 }
 
 TEST_F(ArrayListTestSuite, TestDifferentEntyTypesForArrayList) {

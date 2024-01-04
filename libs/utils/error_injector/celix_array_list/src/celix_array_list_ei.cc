@@ -98,4 +98,11 @@ celix_status_t __wrap_celix_arrayList_addSize(celix_array_list_t* list, size_t v
     return __real_celix_arrayList_addSize(list, value);
 }
 
+celix_array_list_t* __real_celix_arrayList_copy(const celix_array_list_t* list);
+CELIX_EI_DEFINE(celix_arrayList_copy, celix_array_list_t*)
+celix_array_list_t* __wrap_celix_arrayList_copy(const celix_array_list_t* list) {
+    CELIX_EI_IMPL(celix_arrayList_copy);
+    return __real_celix_arrayList_copy(list);
+}
+
 }

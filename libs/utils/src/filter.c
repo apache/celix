@@ -541,8 +541,13 @@ static celix_status_t celix_filter_compile(celix_filter_t* filter) {
             if (filter->internal->convertedToBool) {
                 break;
             }
-            filter->internal->versionValue =
-                    celix_utils_convertStringToVersion(filter->value, NULL, &filter->internal->convertedToVersion);
+            celix_version_t* version;
+            celix_status_t convertStatus = celix_utils_convertStringToVersion(filter->value, NULL, &version);
+            if (convertStatus == CELIX_SUCCESS) {
+                    filter->internal->versionValue = version;
+                    filter->internal->convertedToVersion = true;
+                    break;
+            }
         } while(false);
     }
 
@@ -633,8 +638,9 @@ static int celix_filter_compareAttributeValue(const celix_filter_t* filter, cons
             return celix_filter_cmpBool(val, filter->internal->boolValue);
         }
     } else if (filter->internal->convertedToVersion) {
-        celix_version_t* val = celix_utils_convertStringToVersion(entry->value, NULL, &propertyConverted);
-        if (propertyConverted) {
+        celix_version_t* val;
+        celix_status_t convertStatus = celix_utils_convertStringToVersion(entry->value, NULL, &val);
+        if (convertStatus == CELIX_SUCCESS) {
             int cmp = celix_version_compareTo(val, filter->internal->versionValue);
             celix_version_destroy(val);
             return cmp;

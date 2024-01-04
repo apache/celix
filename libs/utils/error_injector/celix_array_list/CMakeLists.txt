@@ -31,5 +31,6 @@ target_link_options(array_list_ei INTERFACE
         LINKER:--wrap,celix_arrayList_addDouble
         LINKER:--wrap,celix_arrayList_addBool
         LINKER:--wrap,celix_arrayList_addSize
+        LINKER:--wrap,celix_arrayList_copy
 )
 add_library(Celix::array_list_ei ALIAS array_list_ei)

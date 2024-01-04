@@ -526,7 +526,7 @@ static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
         celix_logHelper_error(admin->logHelper, "Failed to create imported configs");
         return CELIX_ENOMEM;
     }
-    celix_properties_setWithoutCopy(endpointProperties, strdup(OSGI_RSA_SERVICE_IMPORTED_CONFIGS), importedConfigs);
+    celix_properties_assign(endpointProperties, strdup(OSGI_RSA_SERVICE_IMPORTED_CONFIGS), importedConfigs);
     celix_properties_set(endpointProperties, (char *) RSA_SHM_SERVER_NAME_KEY, admin->shmServerName);
     status = endpointDescription_create(endpointProperties, description);
     if (status != CELIX_SUCCESS) {

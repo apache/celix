@@ -80,10 +80,8 @@ TEST_F(VersionTestSuite, CopyTest) {
     celix_version_destroy(copy);
     celix_version_destroy(version);
 
-    copy = celix_version_copy(nullptr); //returns "empty" version
-    EXPECT_NE(nullptr, copy);
-    expectVersion(copy, 0, 0, 0, "");
-    celix_version_destroy(copy);
+    copy = celix_version_copy(nullptr);
+    EXPECT_EQ(nullptr, copy);
 }
 
 TEST_F(VersionTestSuite, CreateFromStringTest) {
@@ -318,4 +316,43 @@ TEST_F(VersionTestSuite, FillStringTest) {
     EXPECT_FALSE(success);
 
     celix_version_destroy(version);
+}
+
+TEST_F(VersionTestSuite, ParseTest) {
+    celix_version_t* result;
+    celix_status_t parseStatus = celix_version_parse("1.2.3.alpha", &result);
+    EXPECT_EQ(CELIX_SUCCESS, parseStatus);
+    EXPECT_NE(nullptr, result);
+    expectVersion(result, 1, 2, 3, "alpha");
+    celix_version_destroy(result);
+
+    parseStatus = celix_version_parse("1.2.3", &result);
+    EXPECT_EQ(CELIX_SUCCESS, parseStatus);
+    EXPECT_NE(nullptr, result);
+    expectVersion(result, 1, 2, 3);
+    celix_version_destroy(result);
+
+    parseStatus = celix_version_parse("1.2", &result);
+    EXPECT_EQ(CELIX_SUCCESS, parseStatus);
+    EXPECT_NE(nullptr, result);
+    expectVersion(result, 1, 2, 0);
+    celix_version_destroy(result);
+
+    parseStatus = celix_version_parse("1", &result);
+    EXPECT_EQ(CELIX_SUCCESS, parseStatus);
+    EXPECT_NE(nullptr, result);
+    expectVersion(result, 1, 0, 0);
+    celix_version_destroy(result);
+
+    parseStatus = celix_version_parse("", &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
+    EXPECT_EQ(nullptr, result);
+
+    parseStatus = celix_version_parse(nullptr, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
+    EXPECT_EQ(nullptr, result);
+
+    parseStatus = celix_version_parse("invalid", &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
+    EXPECT_EQ(nullptr, result);
 }

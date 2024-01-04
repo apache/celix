@@ -30,8 +30,14 @@
 
 #include "array_list.h"
 #include "celix_array_list.h"
+
 #include "array_list_private.h"
 #include "celix_build_assert.h"
+#include "celix_err.h"
+#include "celix_stdio_cleanup.h"
+#include "celix_stdlib_cleanup.h"
+
+#define CELIX_ARRAY_LIST_DEFAULT_CAPACITY 10
 
 static celix_status_t arrayList_elementEquals(const void *a, const void *b, bool *equals) {
     *equals = (a == b);
@@ -368,16 +374,25 @@ void arrayListIterator_remove(array_list_iterator_pt iterator) {
  **********************************************************************************************************************/
 
 celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_create_options_t* opts) {
-    array_list_t *list = calloc(1, sizeof(*list));
-    if (list != NULL) {
-        list->capacity = 10;
-        list->elementData = malloc(sizeof(celix_array_list_entry_t) * list->capacity);
-        list->equals = opts->equalsCallback == NULL ? celix_arrayList_defaultEquals : opts->equalsCallback;
-        list->simpleRemovedCallback = opts->simpleRemovedCallback;
-        list->removedCallbackData = opts->removedCallbackData;
-        list->removedCallback = opts->removedCallback;
+    celix_autofree celix_array_list_t *list = calloc(1, sizeof(*list));
+    if (!list) {
+        celix_err_push("Failed to create array list. Out of memory.");
+        return NULL;
     }
-    return list;
+
+    list->capacity = opts->initialCapacity == 0 ? CELIX_ARRAY_LIST_DEFAULT_CAPACITY : opts->initialCapacity;
+    list->elementData = malloc(sizeof(celix_array_list_entry_t) * list->capacity);
+    list->equals = opts->equalsCallback == NULL ? celix_arrayList_defaultEquals : opts->equalsCallback;
+    list->simpleRemovedCallback = opts->simpleRemovedCallback;
+    list->removedCallbackData = opts->removedCallbackData;
+    list->removedCallback = opts->removedCallback;
+
+    if (!list->elementData) {
+        celix_err_push("Failed to create array list. Out of memory.");
+        return NULL;
+    }
+
+    return celix_steal_ptr(list);
 }
 
 celix_array_list_t* celix_arrayList_create() {
@@ -399,9 +414,27 @@ void celix_arrayList_destroy(celix_array_list_t *list) {
     }
 }
 
-int celix_arrayList_size(const celix_array_list_t *list) {
-    return list->size;
+int celix_arrayList_size(const celix_array_list_t* list) {
+    return (int)list->size;
 }
+
+celix_array_list_t* celix_arrayList_copy(const celix_array_list_t *list) {
+    if (!list) {
+        return NULL; //silently ignore
+    }
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    opts.equalsCallback = list->equals;
+    opts.initialCapacity = list->size;
+    celix_array_list_t* copy = celix_arrayList_createWithOptions(&opts);
+    if (!copy) {
+        celix_err_push("Failed to copy array list. Out of memory.");
+        return NULL;
+    }
+    copy->size = list->size;
+    memcpy(copy->elementData, list->elementData, sizeof(celix_array_list_entry_t) * list->size);
+    return copy;
+}
+
 
 static celix_array_list_entry_t arrayList_getEntry(const celix_array_list_t *list, int index) {
     celix_array_list_entry_t entry;
@@ -424,6 +457,7 @@ float celix_arrayList_getFloat(const celix_array_list_t *list, int index) { retu
 double celix_arrayList_getDouble(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).doubleVal; }
 bool celix_arrayList_getBool(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).boolVal; }
 size_t celix_arrayList_getSize(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).sizeVal; }
+celix_array_list_entry_t celix_arrayList_getEntry(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index); }
 
 static celix_status_t celix_arrayList_addEntry(celix_array_list_t *list, celix_array_list_entry_t entry) {
     celix_status_t status = arrayList_ensureCapacity(list, (int)list->size + 1);
