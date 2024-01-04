@@ -21,7 +21,6 @@
 #define FILTER_H_
 
 #include "celix_errno.h"
-#include "properties.h"
 #include "celix_properties.h"
 #include "celix_filter.h"
 #include "celix_utils_export.h"

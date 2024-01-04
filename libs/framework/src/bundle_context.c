@@ -164,7 +164,7 @@ celix_status_t bundleContext_installBundle2(bundle_context_pt context,
 }
 
 celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, const void * svcObj,
-        properties_pt properties, service_registration_pt *service_registration) {
+         celix_properties_t* properties, service_registration_pt *service_registration) {
     if (context == NULL || service_registration == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
@@ -173,7 +173,7 @@ celix_status_t bundleContext_registerService(bundle_context_pt context, const ch
 }
 
 celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, const char * serviceName, service_factory_pt factory,
-        properties_pt properties, service_registration_pt *service_registration) {
+         celix_properties_t* properties, service_registration_pt *service_registration) {
     if (context == NULL || service_registration == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }

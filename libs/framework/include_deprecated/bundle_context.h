@@ -34,7 +34,6 @@
 #include "celix_service_listener.h"
 #include "bundle_listener.h"
 #include "framework_listener.h"
-#include "properties.h"
 #include "array_list.h"
 #include "celix_service_listener.h"
 

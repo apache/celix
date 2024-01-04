@@ -33,7 +33,7 @@
 #include "celix_threads.h"
 #include "hash_map.h"
 #include "endpoint_description.h"
-#include "properties.h"
+#include "celix_properties.h"
 #include "service_reference.h"
 #include "tm_scope.h"
 

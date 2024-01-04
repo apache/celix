@@ -31,7 +31,7 @@
 
 #include "celix_types.h"
 #include "celix_errno.h"
-#include "properties.h"
+#include "celix_properties.h"
 #include "array_list.h"
 #include "celix_dm_info.h"
 #include "celix_dm_component.h"

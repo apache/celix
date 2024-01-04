@@ -26,7 +26,7 @@
 #include "celix_threads.h"
 #include "array_list.h"
 #include "hash_map.h"
-#include "properties.h"
+#include "celix_properties.h"
 #include "utils.h"
 #include "celix_utils.h"
 #include "version.h"

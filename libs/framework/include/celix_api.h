@@ -20,7 +20,7 @@
 #ifndef CELIX_CELIX_API_H_
 #define CELIX_CELIX_API_H_
 
-#include "properties.h"
+#include "celix_properties.h"
 #include "array_list.h"
 
 #include "bundle.h"
