@@ -25,14 +25,11 @@ if (UTILS)
     set(UTILS_SRC
             src/array_list.c
             src/hash_map.c
-            src/linked_list.c
-            src/linked_list_iterator.c
             src/celix_threads.c
             src/version.c
             src/version_range.c
             src/properties.c
             src/utils.c
-            src/ip_utils.c
             src/filter.c
             src/celix_log_level.c
             src/celix_log_utils.c
@@ -123,43 +120,6 @@ if (UTILS)
         target_link_libraries(utils_cut PUBLIC ${UTILS_PUBLIC_DEPS} ${UTILS_PRIVATE_DEPS})
 
         add_subdirectory(gtest)
-
-        find_package(CppUTest)
-
-        if (CppUTest_FOUND)
-            include_directories(SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR})
-            include_directories(include)
-            include_directories(src)
-
-            add_executable(hash_map_test private/test/hash_map_test.cpp)
-            target_include_directories(hash_map_test PRIVATE include_deprecated)
-            target_link_libraries(hash_map_test utils_cut CppUTest pthread)
-
-            add_executable(array_list_test private/test/array_list_test.cpp)
-            target_include_directories(array_list_test PRIVATE include_deprecated)
-            target_link_libraries(array_list_test utils_cut CppUTest pthread)
-
-            add_executable(linked_list_test private/test/linked_list_test.cpp)
-            target_include_directories(linked_list_test PRIVATE include_deprecated)
-            target_link_libraries(linked_list_test utils_cut CppUTest pthread)
-
-            add_executable(ip_utils_test private/test/ip_utils_test.cpp)
-            target_include_directories(ip_utils_test PRIVATE include_deprecated)
-            target_link_libraries(ip_utils_test CppUTest  utils_cut pthread)
-
-            add_test(NAME run_array_list_test COMMAND array_list_test)
-            add_test(NAME run_hash_map_test COMMAND hash_map_test)
-            add_test(NAME run_linked_list_test COMMAND linked_list_test)
-            add_test(NAME run_ip_utils_test COMMAND ip_utils_test)
-
-            setup_target_for_coverage(hash_map_test)
-            setup_target_for_coverage(array_list_test)
-            setup_target_for_coverage(linked_list_test)
-            setup_target_for_coverage(ip_utils_test)
-        else ()
-            message(WARNING "Cannot find CppUTest, deprecated cpputest-based unit test will not be added")
-        endif () #end CppUTest_FOUND
-
     endif ()
 
     add_subdirectory(benchmark)

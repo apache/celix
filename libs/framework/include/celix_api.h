@@ -20,12 +20,12 @@
 #ifndef CELIX_CELIX_API_H_
 #define CELIX_CELIX_API_H_
 
-#include "properties.h"
-#include "array_list.h"
+#include "celix_properties.h"
+#include "celix_array_list.h"
 
-#include "bundle.h"
-#include "bundle_context.h"
-#include "framework.h"
+#include "celix_bundle.h"
+#include "celix_bundle_context.h"
+#include "celix_framework.h"
 
 #include "celix_properties.h"
 #include "celix_array_list.h"

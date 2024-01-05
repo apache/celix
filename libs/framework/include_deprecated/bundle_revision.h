@@ -27,7 +27,7 @@
 #include "celix_errno.h"
 #include "manifest.h"
 #include "celix_log.h"
-#include "array_list.h"
+#include "celix_array_list.h"
 #include "celix_framework_export.h"
 
 #ifdef __cplusplus

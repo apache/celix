@@ -37,7 +37,7 @@ struct serviceRegistration {
 
     char* className;          // read-only
     bundle_pt bundle;         // read-only
-    properties_pt properties; // read-only
+     celix_properties_t* properties; // read-only
     long serviceId;           // read-only
 
     bool isUnregistering;
@@ -52,8 +52,8 @@ struct serviceRegistration {
     celix_thread_rwlock_t lock; // protects the service object
 };
 
-service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, const void * serviceObject, properties_pt dictionary);
-service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, const void * serviceObject, properties_pt dictionary);
+service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, const void * serviceObject,  celix_properties_t* dictionary);
+service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, const void * serviceObject,  celix_properties_t* dictionary);
 
 void serviceRegistration_retain(service_registration_pt registration);
 void serviceRegistration_release(service_registration_pt registration);

@@ -29,6 +29,10 @@
 
 #include "hash_map.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 unsigned int hashMap_hashCode(const void* toHash);
 int hashMap_equals(const void* toCompare, const void* compare);
 
@@ -69,5 +73,8 @@ struct hashMapEntrySet {
     hash_map_pt map;
 };
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* HASH_MAP_PRIVATE_H_ */

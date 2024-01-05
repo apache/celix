@@ -26,7 +26,6 @@
 #include "utils.h"
 #include "module.h"
 #include "manifest_parser.h"
-#include "linked_list_iterator.h"
 #include "celix_libloader.h"
 #include "celix_framework.h"
 #include "celix_constants.h"
@@ -187,13 +186,6 @@ char * module_getId(module_pt module) {
 	return module->id;
 }
 
-linked_list_pt module_getWires(module_pt module) {
-    return NULL;
-}
-
-void module_setWires(module_pt module, linked_list_pt wires) {
-}
-
 bool module_isResolved(module_pt module) {
 	return module->resolved;
 }
@@ -206,15 +198,7 @@ bundle_pt module_getBundle(module_pt module) {
 	return module->bundle;
 }
 
-linked_list_pt module_getRequirements(module_pt module) {
-    return NULL;
-}
-
-linked_list_pt module_getCapabilities(module_pt module) {
-    return NULL;
-}
-
-array_list_pt module_getDependentImporters(module_pt module) {
+celix_array_list_t* module_getDependentImporters(module_pt module) {
     return NULL;
 }
 
@@ -226,7 +210,7 @@ void module_removeDependentImporter(module_pt module, module_pt importer) {
 
 //----------------------------------------------------
 //TODO add implementation (functions not implemented but already exported)
-array_list_pt module_getDependentRequirers(module_pt module) {
+celix_array_list_t* module_getDependentRequirers(module_pt module) {
     return NULL;
 }
 
@@ -237,7 +221,7 @@ void module_removeDependentRequirer(module_pt module, module_pt requirer) {
 }
 //----------------------------------------------------
 
-array_list_pt module_getDependents(module_pt module) {
+celix_array_list_t* module_getDependents(module_pt module) {
     return NULL;
 }
 

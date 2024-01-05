@@ -144,7 +144,6 @@ class CelixConan(ConanFile):
     def build_requirements(self):
         if self.options.enable_testing:
             self.test_requires("gtest/1.10.0")
-            self.test_requires("cpputest/4.0")
         if self.options.enable_ccache:
             self.build_requires("ccache/4.7.4")
 
@@ -287,8 +286,6 @@ class CelixConan(ConanFile):
             self.options['openssl'].shared = True
         if self.options.enable_testing:
             self.options['gtest'].shared = True
-            if self.options.enable_address_sanitizer:
-                self.options["cpputest"].with_leak_detection = False
         if (self.options.build_rsa_discovery_common
                 or (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.options['libxml2'].shared = True

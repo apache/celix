@@ -53,7 +53,7 @@ struct import_registration_factory {
 	remote_proxy_factory_service_t *trackedFactory;
 	service_tracker_t *proxyFactoryTracker;
 	celix_bundle_context_t *context;
-	array_list_pt registrations;
+        celix_array_list_t* registrations;
 	celix_bundle_t *bundle;
 };
 

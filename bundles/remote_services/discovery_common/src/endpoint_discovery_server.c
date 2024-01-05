@@ -306,11 +306,9 @@ static char* format_path(const char* path) {
     return result;
 }
 
-static celix_status_t endpointDiscoveryServer_getEndpoints(endpoint_discovery_server_t *server, const char* the_endpoint_id, array_list_pt *endpoints) {
-    celix_status_t status;
-
-    status = arrayList_create(endpoints);
-    if (status != CELIX_SUCCESS) {
+static celix_status_t endpointDiscoveryServer_getEndpoints(endpoint_discovery_server_t *server, const char* the_endpoint_id, celix_array_list_t** endpoints) {
+    *endpoints = celix_arrayList_create();
+    if (!(*endpoints)) {
         return CELIX_ENOMEM;
     }
 
@@ -323,15 +321,15 @@ static celix_status_t endpointDiscoveryServer_getEndpoints(endpoint_discovery_se
         if (the_endpoint_id == NULL || strcmp(the_endpoint_id, endpoint_id) == 0) {
             endpoint_description_t *endpoint = hashMapEntry_getValue(entry);
 
-            arrayList_add(*endpoints, endpoint);
+            celix_arrayList_add(*endpoints, endpoint);
         }
     }
     hashMapIterator_destroy(iter);
 
-    return status;
+    return CELIX_SUCCESS;
 }
 
-static int endpointDiscoveryServer_writeEndpoints(struct mg_connection* conn, array_list_pt endpoints) {
+static int endpointDiscoveryServer_writeEndpoints(struct mg_connection* conn, celix_array_list_t* endpoints) {
     celix_status_t status;
     int rv = CIVETWEB_REQUEST_NOT_HANDLED;
 
@@ -360,14 +358,14 @@ static int endpointDiscoveryServer_writeEndpoints(struct mg_connection* conn, ar
 static int endpointDiscoveryServer_returnAllEndpoints(endpoint_discovery_server_t *server, struct mg_connection* conn) {
     int status = CIVETWEB_REQUEST_NOT_HANDLED;
 
-    array_list_pt endpoints = NULL;
+    celix_array_list_t* endpoints = NULL;
 
     if (celixThreadMutex_lock(&server->serverLock) == CELIX_SUCCESS) {
         endpointDiscoveryServer_getEndpoints(server, NULL, &endpoints);
         if (endpoints) {
             status = endpointDiscoveryServer_writeEndpoints(conn, endpoints);
 
-            arrayList_destroy(endpoints);
+            celix_arrayList_destroy(endpoints);
         }
 
 
@@ -381,14 +379,13 @@ static int endpointDiscoveryServer_returnAllEndpoints(endpoint_discovery_server_
 static int endpointDiscoveryServer_returnEndpoint(endpoint_discovery_server_t *server, struct mg_connection* conn, const char* endpoint_id) {
     int status = CIVETWEB_REQUEST_NOT_HANDLED;
 
-    array_list_pt endpoints = NULL;
+    celix_array_list_t* endpoints = NULL;
 
     if (celixThreadMutex_lock(&server->serverLock) == CELIX_SUCCESS) {
         endpointDiscoveryServer_getEndpoints(server, endpoint_id, &endpoints);
         if (endpoints) {
             status = endpointDiscoveryServer_writeEndpoints(conn, endpoints);
-
-            arrayList_destroy(endpoints);
+            celix_arrayList_destroy(endpoints);
         }
 
         celixThreadMutex_unlock(&server->serverLock);
