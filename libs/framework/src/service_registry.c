@@ -677,37 +677,30 @@ size_t serviceRegistry_nrOfHooks(service_registry_pt registry) {
 }
 
 static celix_status_t serviceRegistry_getUsingBundles(service_registry_pt registry, service_registration_pt registration, celix_array_list_t** out) {
-    celix_status_t status = CELIX_SUCCESS;
     celix_array_list_t* bundles = NULL;
     hash_map_iterator_pt iter;
 
     bundles = celix_arrayList_create();
-    if (bundles) {
-        celixThreadRwlock_readLock(&registry->lock);
-        iter = hashMapIterator_create(registry->serviceReferences);
-        while (hashMapIterator_hasNext(iter)) {
-            hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-            bundle_pt registrationUser = hashMapEntry_getKey(entry);
-            hash_map_pt regMap = hashMapEntry_getValue(entry);
-            if (hashMap_containsKey(regMap, (void*)registration->serviceId)) {
-                celix_arrayList_add(bundles, registrationUser);
-            }
-        }
-        hashMapIterator_destroy(iter);
-        celixThreadRwlock_unlock(&registry->lock);
-    } else {
-        status = CELIX_ENOMEM;
+    if (bundles == NULL) {
+        return CELIX_ENOMEM;
     }
 
-    if (status == CELIX_SUCCESS) {
-        *out = bundles;
-    } else {
-        if (bundles != NULL) {
-            celix_arrayList_destroy(bundles);
+    celixThreadRwlock_readLock(&registry->lock);
+    iter = hashMapIterator_create(registry->serviceReferences);
+    while (hashMapIterator_hasNext(iter)) {
+        hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+        bundle_pt registrationUser = hashMapEntry_getKey(entry);
+        hash_map_pt regMap = hashMapEntry_getValue(entry);
+        if (hashMap_containsKey(regMap, (void*)registration->serviceId)) {
+            celix_arrayList_add(bundles, registrationUser);
         }
     }
+    hashMapIterator_destroy(iter);
+    celixThreadRwlock_unlock(&registry->lock);
 
-    return status;
+    *out = bundles;
+
+    return CELIX_SUCCESS;
 }
 
 celix_status_t
