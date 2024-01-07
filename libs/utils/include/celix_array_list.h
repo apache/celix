@@ -42,6 +42,7 @@ extern "C" {
 
 typedef union celix_array_list_entry {
     void *voidPtrVal;
+    const char* strVal;
     int intVal;
     long int longVal;
     unsigned int uintVal;
@@ -279,6 +280,16 @@ CELIX_UTILS_EXPORT
 size_t celix_arrayList_getSize(const celix_array_list_t *list, int index);
 
 /**
+ * @brief Returns the value for the provided index.
+ *
+ * @param list The array list.
+ * @param index The entry index to return.
+ * @return Returns the string (const char*) value for the index. Returns NULL if index is out of bound.
+ */
+CELIX_UTILS_EXPORT
+const char* celix_arrayList_getString(const celix_array_list_t *list, int index);
+
+/**
  * @brief Returns the entry for the provided index.
  * 
  * @param list The array list.
@@ -376,6 +387,16 @@ celix_status_t celix_arrayList_addBool(celix_array_list_t *list, bool value);
  */
 CELIX_UTILS_EXPORT
 celix_status_t celix_arrayList_addSize(celix_array_list_t *list, size_t value);
+
+/**
+ * @brief add string pointer entry to the back of the array list.
+ * @note The string will *not* be copied.
+ *
+ * @param list The array list.
+ * @param value The string value to add to the array list.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_arrayList_addString(celix_array_list_t *list, const char* value);
 
 /**
  * @brief Returns the index of the provided entry, if found.
@@ -500,6 +521,15 @@ void celix_arrayList_removeBool(celix_array_list_t *list, bool value);
  */
 CELIX_UTILS_EXPORT
 void celix_arrayList_removeSize(celix_array_list_t *list, size_t value);
+
+/**
+ * @brief Remove the first size entry from array list which matches the provided value.
+ *
+ * The equals callback provided when the array list was created will be used to find the entry.
+ * If there was no equals callback provided a direct memory compare will be done.
+ */
+CELIX_UTILS_EXPORT
+void celix_arrayList_removeString(celix_array_list_t *list, const char* value);
 
 /**
  * @brief Sort the array list using the provided sort function.

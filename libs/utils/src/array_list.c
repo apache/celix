@@ -165,6 +165,7 @@ float celix_arrayList_getFloat(const celix_array_list_t *list, int index) { retu
 double celix_arrayList_getDouble(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).doubleVal; }
 bool celix_arrayList_getBool(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).boolVal; }
 size_t celix_arrayList_getSize(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).sizeVal; }
+const char* celix_arrayList_getString(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).strVal; }
 celix_array_list_entry_t celix_arrayList_getEntry(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index); }
 
 static celix_status_t celix_arrayList_addEntry(celix_array_list_t *list, celix_array_list_entry_t entry) {
@@ -235,6 +236,13 @@ celix_status_t celix_arrayList_addSize(celix_array_list_t *list, size_t val) {
     celix_array_list_entry_t entry;
     memset(&entry, 0, sizeof(entry));
     entry.sizeVal = val;
+    return celix_arrayList_addEntry(list, entry);
+}
+
+celix_status_t celix_arrayList_addString(celix_array_list_t *list, const char* value) {
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.strVal = value;
     return celix_arrayList_addEntry(list, entry);
 }
 
@@ -327,6 +335,13 @@ void celix_arrayList_removeSize(celix_array_list_t *list, size_t val) {
     celix_array_list_entry_t entry;
     memset(&entry, 0, sizeof(entry));
     entry.sizeVal = val;
+    celix_arrayList_removeEntry(list, entry);
+}
+
+void celix_arrayList_removeString(celix_array_list_t *list, const char* value) {
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.strVal = value;
     celix_arrayList_removeEntry(list, entry);
 }
 

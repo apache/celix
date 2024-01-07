@@ -85,6 +85,11 @@ TEST_F(ArrayListTestSuite, TestArrayListWithEquals) {
 
 template<typename T>
 void testArrayListForTemplateType(int nrEntries) {
+    std::vector<std::string> strStorage;
+    for (int i = 0; i < nrEntries; ++i) {
+        strStorage.push_back(std::string{"test-"} + std::to_string(i));
+    }
+
     auto* list = celix_arrayList_create();
     //fill
     for (int i = 0; i < nrEntries; ++i) {
@@ -106,6 +111,8 @@ void testArrayListForTemplateType(int nrEntries) {
             celix_arrayList_addBool(list, i % 2 == 0);
         } else if constexpr (std::is_same_v<size_t, T>) {
             celix_arrayList_addSize(list, i);
+        } else if constexpr (std::is_same_v<const char*, T>) {
+            celix_arrayList_addString(list, strStorage[i].c_str());
         }
     }
     EXPECT_EQ(celix_arrayList_size(list), nrEntries);
@@ -130,6 +137,8 @@ void testArrayListForTemplateType(int nrEntries) {
             EXPECT_EQ(celix_arrayList_getBool(list, i), i % 2 == 0);
         } else if constexpr (std::is_same_v<size_t, T>) {
             EXPECT_EQ(celix_arrayList_getSize(list, i), i);
+        } else if constexpr (std::is_same_v<const char*, T>) {
+            EXPECT_STREQ(celix_arrayList_getString(list, i), strStorage[i].c_str());
         }
     }
 
@@ -153,6 +162,8 @@ void testArrayListForTemplateType(int nrEntries) {
             celix_arrayList_removeBool(list, i % 2 == 0);
         } else if constexpr (std::is_same_v<size_t, T>) {
             celix_arrayList_removeSize(list, i);
+        } else if constexpr (std::is_same_v<const char*, T>) {
+            celix_arrayList_removeString(list, strStorage[i].c_str());
         }
     }
     EXPECT_EQ(celix_arrayList_size(list), 0);
@@ -216,6 +227,7 @@ TEST_F(ArrayListTestSuite, TestDifferentEntyTypesForArrayList) {
     testArrayListForTemplateType<double>(10);
     testArrayListForTemplateType<bool>(10);
     testArrayListForTemplateType<size_t>(10);
+    testArrayListForTemplateType<const char*>(10);
 }
 
 TEST_F(ArrayListTestSuite, TestSimpleRemovedCallbacksForArrayList) {
@@ -299,8 +311,11 @@ TEST_F(ArrayListTestSuite, TestReturnStatusAddFunctions) {
     EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addBool(list, true));
     EXPECT_EQ(5, celix_arrayList_size(list));
 
-    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_add(list, (void*)0x42));
+    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addString(list, "test"));
     EXPECT_EQ(6, celix_arrayList_size(list));
+
+    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_add(list, (void*)0x42));
+    EXPECT_EQ(7, celix_arrayList_size(list));
 
     celix_arrayList_destroy(list);
 }
