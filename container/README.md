@@ -45,8 +45,8 @@ cd <project-root>
 ./container/run-ubuntu-container.sh bash
 
 # Build Apache Celix
-mkdir celix-build
-cd celix-build
+mkdir -p build
+cd build
 ../container/support-scripts/build-all.sh
 make -j
 
