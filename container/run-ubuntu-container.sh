@@ -44,5 +44,4 @@ ${CONTAINER_ENGINE} run -it --rm --privileged \
                         --volume "${CELIX_REPO_ROOT}":"${CELIX_REPO_ROOT}" \
                         --workdir "${CELIX_REPO_ROOT}" \
                         --security-opt label=disable \
-                        apache/celix-dev:ubuntu-latest ${CONTAINER_COMMAND}
-
+                        apache/celix-dev:ubuntu-latest bash -c "${CONTAINER_COMMAND}"
