@@ -29,25 +29,28 @@
 using ::testing::MatchesRegex;
 
 class PropertiesTestSuite : public ::testing::Test {
-public:
-  PropertiesTestSuite() {
-      celix_err_resetErrors();
-  }
+  public:
+    PropertiesTestSuite() { celix_err_resetErrors(); }
 
-  void printStats(const celix_properties_statistics_t* stats) {
-      printf("Properties statistics:\n");
-      printf("|- nr of entries: %zu\n", stats->mapStatistics.nrOfEntries);
-      printf("|- nr of buckets: %zu\n", stats->mapStatistics.nrOfBuckets);
-      printf("|- average nr of entries in bucket: %f\n", stats->mapStatistics.averageNrOfEntriesPerBucket);
-      printf("|- stddev nr of entries in bucket: %f\n", stats->mapStatistics.stdDeviationNrOfEntriesPerBucket);
-      printf("|- resize count: %zu\n", stats->mapStatistics.resizeCount);
-      printf("|- size of keys and string values: %zu bytes\n", stats->sizeOfKeysAndStringValues);
-      printf("|- average size of keys and string values: %f bytes\n", stats->averageSizeOfKeysAndStringValues);
-      printf("|- fill string optimization buffer percentage: %f\n", stats->fillStringOptimizationBufferPercentage);
-      printf("|- fill entries optimization buffer percentage: %f\n", stats->fillEntriesOptimizationBufferPercentage);
-  }
+    void printStats(const celix_properties_statistics_t* stats) {
+        printf("Properties statistics:\n");
+        printf("|- nr of entries: %zu\n", stats->mapStatistics.nrOfEntries);
+        printf("|- nr of buckets: %zu\n", stats->mapStatistics.nrOfBuckets);
+        printf("|- average nr of entries in bucket: %f\n", stats->mapStatistics.averageNrOfEntriesPerBucket);
+        printf("|- stddev nr of entries in bucket: %f\n", stats->mapStatistics.stdDeviationNrOfEntriesPerBucket);
+        printf("|- resize count: %zu\n", stats->mapStatistics.resizeCount);
+        printf("|- size of keys and string values: %zu bytes\n", stats->sizeOfKeysAndStringValues);
+        printf("|- average size of keys and string values: %f bytes\n", stats->averageSizeOfKeysAndStringValues);
+        printf("|- fill string optimization buffer percentage: %f\n", stats->fillStringOptimizationBufferPercentage);
+        printf("|- fill entries optimization buffer percentage: %f\n", stats->fillEntriesOptimizationBufferPercentage);
+    }
+
+    void checkVersions(const celix_version_t* version1, const celix_version_t* version2) {
+        EXPECT_EQ(0, celix_version_compareTo(version1, version2))
+            << "Expected version " << celix_version_toString(version1) << " to be equal to "
+            << celix_version_toString(version2);
+    }
 };
-
 
 TEST_F(PropertiesTestSuite, CreateTest) {
     auto* properties = celix_properties_create();
@@ -724,7 +727,42 @@ TEST_F(PropertiesTestSuite, SetDoubleWithLargeStringRepresentationTest) {
     ASSERT_EQ(CELIX_SUCCESS, celix_properties_setDouble(props, "large_str_value", 12345678901234567890.1234567890));
 }
 
-TEST_F(PropertiesTestSuite, LongArrayTestSuite) {
+TEST_F(PropertiesTestSuite, GetLongDoubleBoolVersionAndStringTest) {
+
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_setLong(props, "long", 42);
+    celix_properties_setDouble(props, "double", 3.14);
+    celix_properties_setBool(props, "bool", true);
+    celix_properties_set(props, "str", "value");
+    celix_version_t* version = celix_version_create(1, 2, 3, nullptr);
+    celix_properties_assignVersion(props, "version", version);
+
+    // check if the values are correctly returned
+    EXPECT_STREQ("value", celix_properties_get(props, "str", nullptr));
+    EXPECT_EQ(42, celix_properties_getLong(props, "long", -1L));
+    EXPECT_DOUBLE_EQ(3.14, celix_properties_getDouble(props, "double", -1.0));
+    EXPECT_EQ(true, celix_properties_getBool(props, "bool", false));
+    EXPECT_EQ(version, celix_properties_getVersion(props, "version", nullptr));
+
+    // check if the values are correctly returned if value is not found
+    EXPECT_EQ(nullptr, celix_properties_get(props, "non-existing", nullptr));
+    EXPECT_EQ(-1L, celix_properties_getLong(props, "non-existing", -1L));
+    EXPECT_DOUBLE_EQ(-1.0, celix_properties_getDouble(props, "non-existing", -1.0));
+    EXPECT_EQ(false, celix_properties_getBool(props, "non-existing", false));
+    EXPECT_EQ(nullptr, celix_properties_getVersion(props, "non-existing", nullptr));
+
+    // check if the values are correctly returned if the found value is not of the correct type
+    EXPECT_EQ(-1L, celix_properties_getLong(props, "str", -1L));
+    EXPECT_DOUBLE_EQ(-1.0, celix_properties_getDouble(props, "str", -1.0));
+    EXPECT_EQ(false, celix_properties_getBool(props, "str", false));
+    EXPECT_EQ(nullptr, celix_properties_getVersion(props, "str", nullptr));
+
+    // check if a default ptr is correctly returned if value is not found for string and version
+    EXPECT_EQ("default", celix_properties_get(props, "non-existing", "default"));
+    EXPECT_EQ(version, celix_properties_getVersion(props, "non-existing", version));
+}
+
+TEST_F(PropertiesTestSuite, LongArrayListTest) {
     celix_autoptr(celix_properties_t) props = celix_properties_create();
 
     long array1[] = {1, 2, 3, 4, 5};
@@ -767,8 +805,278 @@ TEST_F(PropertiesTestSuite, LongArrayTestSuite) {
     EXPECT_EQ(4, celix_arrayList_getLong(retrievedList3, 0));
     EXPECT_EQ(5, celix_arrayList_getLong(retrievedList3, 1));
 
+    celix_array_list* retrievedList4;
+    celix_autoptr(celix_array_list_t) defaultList = celix_arrayList_create();
+    celix_arrayList_addLong(defaultList, 6);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_getAsLongArrayList(props, "non-existing", defaultList, &retrievedList4));
+    ASSERT_NE(nullptr, retrievedList4);
+    ASSERT_EQ(1, celix_arrayList_size(retrievedList4));
+    EXPECT_EQ(6, celix_arrayList_getLong(retrievedList4, 0));
+    celix_arrayList_destroy(retrievedList4);
+
     auto* getList = celix_properties_getLongArrayList(props, "array2", nullptr);
     EXPECT_NE(array2, getList);
     getList = celix_properties_getLongArrayList(props, "array3", nullptr);
+    EXPECT_EQ(array3, getList);
+}
+
+TEST_F(PropertiesTestSuite, DoubleArrayListTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+
+    double array1[] = {1.1, 2.2, 3.3, 4.4, 5.5};
+    ASSERT_EQ(CELIX_SUCCESS, celix_properties_setDoubles(props, "array1", array1, 5));
+    EXPECT_EQ(1, celix_properties_size(props));
+    celix_autoptr(celix_array_list_t) retrievedList1;
+    celix_status_t status = celix_properties_getAsDoubleArrayList(props, "array1", nullptr, &retrievedList1);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    ASSERT_TRUE(retrievedList1 != nullptr);
+    EXPECT_EQ(5, celix_arrayList_size(retrievedList1));
+    EXPECT_EQ(1.1, celix_arrayList_getDouble(retrievedList1, 0));
+    EXPECT_EQ(5.5, celix_arrayList_getDouble(retrievedList1, 4));
+
+    celix_autoptr(celix_array_list_t) array2 = celix_arrayList_create();
+    celix_arrayList_addDouble(array2, 1.1);
+    celix_arrayList_addDouble(array2, 2.2);
+    celix_arrayList_addDouble(array2, 3.3);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setDoubleArrayList(props, "array2", array2));
+    EXPECT_EQ(2, celix_properties_size(props));
+    celix_autoptr(celix_array_list_t) retrievedList2;
+    status = celix_properties_getAsDoubleArrayList(props, "array2", nullptr, &retrievedList2);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    ASSERT_TRUE(retrievedList2 != nullptr);
+    EXPECT_NE(array2, retrievedList2);
+    EXPECT_EQ(3, celix_arrayList_size(retrievedList2));
+    EXPECT_EQ(1.1, celix_arrayList_getDouble(retrievedList2, 0));
+    EXPECT_EQ(3.3, celix_arrayList_getDouble(retrievedList2, 2));
+
+    celix_array_list_t* array3 = celix_arrayList_create();
+    celix_arrayList_addDouble(array3, 4.4);
+    celix_arrayList_addDouble(array3, 5.5);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_assignDoubleArrayList(props, "array3", array3));
+    EXPECT_EQ(3, celix_properties_size(props));
+    celix_autoptr(celix_array_list_t) retrievedList3;
+    status = celix_properties_getAsDoubleArrayList(props, "array3", nullptr, &retrievedList3);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    ASSERT_TRUE(retrievedList3 != nullptr);
+    EXPECT_NE(array3, retrievedList3);
+    EXPECT_EQ(2, celix_arrayList_size(retrievedList3));
+    EXPECT_EQ(4.4, celix_arrayList_getDouble(retrievedList3, 0));
+    EXPECT_EQ(5.5, celix_arrayList_getDouble(retrievedList3, 1));
+
+    celix_array_list* retrievedList4;
+    celix_autoptr(celix_array_list_t) defaultList = celix_arrayList_create();
+    celix_arrayList_addDouble(defaultList, 6.6);
+    EXPECT_EQ(CELIX_SUCCESS,
+              celix_properties_getAsDoubleArrayList(props, "non-existing", defaultList, &retrievedList4));
+    ASSERT_NE(nullptr, retrievedList4);
+    ASSERT_EQ(1, celix_arrayList_size(retrievedList4));
+    EXPECT_EQ(6.6, celix_arrayList_getDouble(retrievedList4, 0));
+    celix_arrayList_destroy(retrievedList4);
+
+    auto* getList = celix_properties_getDoubleArrayList(props, "array2", nullptr);
+    EXPECT_NE(array2, getList);
+    getList = celix_properties_getDoubleArrayList(props, "array3", nullptr);
+    EXPECT_EQ(array3, getList);
+}
+
+TEST_F(PropertiesTestSuite, BoolArrayListTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+
+    bool array1[] = {true, false, true, false, true};
+    ASSERT_EQ(CELIX_SUCCESS, celix_properties_setBooleans(props, "array1", array1, 5));
+    EXPECT_EQ(1, celix_properties_size(props));
+    celix_autoptr(celix_array_list_t) retrievedList1;
+    celix_status_t status = celix_properties_getAsBoolArrayList(props, "array1", nullptr, &retrievedList1);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    ASSERT_TRUE(retrievedList1 != nullptr);
+    EXPECT_EQ(5, celix_arrayList_size(retrievedList1));
+    EXPECT_EQ(true, celix_arrayList_getBool(retrievedList1, 0));
+    EXPECT_EQ(true, celix_arrayList_getBool(retrievedList1, 2));
+    EXPECT_EQ(false, celix_arrayList_getBool(retrievedList1, 1));
+    EXPECT_EQ(false, celix_arrayList_getBool(retrievedList1, 3));
+    EXPECT_EQ(true, celix_arrayList_getBool(retrievedList1, 4));
+
+    celix_autoptr(celix_array_list_t) array2 = celix_arrayList_create();
+    celix_arrayList_addBool(array2, true);
+    celix_arrayList_addBool(array2, false);
+    celix_arrayList_addBool(array2, true);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setBoolArrayList(props, "array2", array2));
+    EXPECT_EQ(2, celix_properties_size(props));
+    celix_autoptr(celix_array_list_t) retrievedList2;
+    status = celix_properties_getAsBoolArrayList(props, "array2", nullptr, &retrievedList2);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    ASSERT_TRUE(retrievedList2 != nullptr);
+    EXPECT_NE(array2, retrievedList2);
+    EXPECT_EQ(3, celix_arrayList_size(retrievedList2));
+    EXPECT_EQ(true, celix_arrayList_getBool(retrievedList2, 0));
+    EXPECT_EQ(true, celix_arrayList_getBool(retrievedList2, 2));
+    EXPECT_EQ(false, celix_arrayList_getBool(retrievedList2, 1));
+
+    celix_array_list_t* array3 = celix_arrayList_create();
+    celix_arrayList_addBool(array3, false);
+    celix_arrayList_addBool(array3, true);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_assignBoolArrayList(props, "array3", array3));
+    EXPECT_EQ(3, celix_properties_size(props));
+    celix_autoptr(celix_array_list_t) retrievedList3;
+    status = celix_properties_getAsBoolArrayList(props, "array3", nullptr, &retrievedList3);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    ASSERT_TRUE(retrievedList3 != nullptr);
+    EXPECT_NE(array3, retrievedList3);
+    EXPECT_EQ(2, celix_arrayList_size(retrievedList3));
+    EXPECT_EQ(false, celix_arrayList_getBool(retrievedList3, 0));
+    EXPECT_EQ(true, celix_arrayList_getBool(retrievedList3, 1));
+
+    celix_array_list* retrievedList4;
+    celix_autoptr(celix_array_list_t) defaultList = celix_arrayList_create();
+    celix_arrayList_addBool(defaultList, true);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_getAsBoolArrayList(props, "non-existing", defaultList, &retrievedList4));
+    ASSERT_NE(nullptr, retrievedList4);
+    ASSERT_EQ(1, celix_arrayList_size(retrievedList4));
+    EXPECT_EQ(true, celix_arrayList_getBool(retrievedList4, 0));
+    celix_arrayList_destroy(retrievedList4);
+
+    auto* getList = celix_properties_getBoolArrayList(props, "array2", nullptr);
+    EXPECT_NE(array2, getList);
+    getList = celix_properties_getBoolArrayList(props, "array3", nullptr);
+    EXPECT_EQ(array3, getList);
+}
+
+TEST_F(PropertiesTestSuite, StringArrayListTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+
+    const char* str1 = "string1";
+    const char* str2 = "string2";
+    const char* str3 = "string3";
+    const char* str4 = "string4";
+    const char* str5 = "string5";
+
+    const char* array1[] = {str1, str2, str3, str4, str5};
+    ASSERT_EQ(CELIX_SUCCESS, celix_properties_setStrings(props, "array1", array1, 5));
+    EXPECT_EQ(1, celix_properties_size(props));
+    celix_autoptr(celix_array_list_t) retrievedList1;
+    celix_status_t status = celix_properties_getAsStringArrayList(props, "array1", nullptr, &retrievedList1);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    ASSERT_TRUE(retrievedList1 != nullptr);
+    EXPECT_EQ(5, celix_arrayList_size(retrievedList1));
+    EXPECT_STREQ(str1, (const char*)celix_arrayList_get(retrievedList1, 0));
+    EXPECT_STREQ(str2, (const char*)celix_arrayList_get(retrievedList1, 1));
+    EXPECT_STREQ(str3, (const char*)celix_arrayList_get(retrievedList1, 2));
+    EXPECT_STREQ(str4, (const char*)celix_arrayList_get(retrievedList1, 3));
+    EXPECT_STREQ(str5, (const char*)celix_arrayList_get(retrievedList1, 4));
+
+    celix_autoptr(celix_array_list_t) array2 = celix_arrayList_create();
+    celix_arrayList_addString(array2, str1);
+    celix_arrayList_addString(array2, str1);
+    celix_arrayList_addString(array2, str1);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setStringArrayList(props, "array2", array2));
+    EXPECT_EQ(2, celix_properties_size(props));
+
+    celix_autoptr(celix_array_list_t) retrievedList2;
+    status = celix_properties_getAsStringArrayList(props, "array2", nullptr, &retrievedList2);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    ASSERT_TRUE(retrievedList2 != nullptr);
+    EXPECT_NE(array2, retrievedList2);
+    EXPECT_EQ(3, celix_arrayList_size(retrievedList2));
+    EXPECT_STREQ(str1, (const char*)celix_arrayList_get(retrievedList2, 0));
+    EXPECT_STREQ(str1, (const char*)celix_arrayList_get(retrievedList2, 1));
+    EXPECT_STREQ(str1, (const char*)celix_arrayList_get(retrievedList2, 2));
+
+    celix_array_list_t* array3 = celix_arrayList_create();
+    celix_arrayList_addString(array3, str4);
+    celix_arrayList_addString(array3, str5);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_assignStringArrayList(props, "array3", array3));
+    EXPECT_EQ(3, celix_properties_size(props));
+    celix_autoptr(celix_array_list_t) retrievedList3;
+    status = celix_properties_getAsStringArrayList(props, "array3", nullptr, &retrievedList3);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    ASSERT_TRUE(retrievedList3 != nullptr);
+    EXPECT_NE(array3, retrievedList3);
+    EXPECT_EQ(2, celix_arrayList_size(retrievedList3));
+    EXPECT_STREQ(str4, (const char*)celix_arrayList_get(retrievedList3, 0));
+    EXPECT_STREQ(str5, (const char*)celix_arrayList_get(retrievedList3, 1));
+
+    celix_array_list* retrievedList4;
+    celix_autoptr(celix_array_list_t) defaultList = celix_arrayList_create();
+    celix_arrayList_addString(defaultList, str1);
+    EXPECT_EQ(CELIX_SUCCESS,
+              celix_properties_getAsStringArrayList(props, "non-existing", defaultList, &retrievedList4));
+    ASSERT_NE(nullptr, retrievedList4);
+    ASSERT_EQ(1, celix_arrayList_size(retrievedList4));
+    EXPECT_STREQ(str1, (const char*)celix_arrayList_get(retrievedList4, 0));
+    celix_arrayList_destroy(retrievedList4);
+
+    auto* getList = celix_properties_getStringArrayList(props, "array2", nullptr);
+    EXPECT_NE(array2, getList);
+    getList = celix_properties_getStringArrayList(props, "array3", nullptr);
+    EXPECT_EQ(array3, getList);
+}
+
+TEST_F(PropertiesTestSuite, VersionArrayListTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+
+    celix_autoptr(celix_version_t) v1 = celix_version_create(1, 2, 3, nullptr);
+    celix_autoptr(celix_version_t) v2 = celix_version_create(4, 5, 6, nullptr);
+    celix_autoptr(celix_version_t) v3 = celix_version_create(7, 8, 9, nullptr);
+    celix_autoptr(celix_version_t) v4 = celix_version_create(10, 11, 12, nullptr);
+    celix_autoptr(celix_version_t) v5 = celix_version_create(13, 14, 15, nullptr);
+
+    const celix_version_t* array1[] = {v1, v2, v3, v4, v5};
+    ASSERT_EQ(CELIX_SUCCESS, celix_properties_setVersions(props, "array1", array1, 5));
+    EXPECT_EQ(1, celix_properties_size(props));
+    celix_autoptr(celix_array_list_t) retrievedList1;
+    celix_status_t status = celix_properties_getAsVersionArrayList(props, "array1", nullptr, &retrievedList1);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    ASSERT_TRUE(retrievedList1 != nullptr);
+    EXPECT_EQ(5, celix_arrayList_size(retrievedList1));
+    checkVersions(v1, (celix_version_t*)celix_arrayList_get(retrievedList1, 0));
+    checkVersions(v2, (celix_version_t*)celix_arrayList_get(retrievedList1, 1));
+    checkVersions(v3, (celix_version_t*)celix_arrayList_get(retrievedList1, 2));
+    checkVersions(v4, (celix_version_t*)celix_arrayList_get(retrievedList1, 3));
+    checkVersions(v5, (celix_version_t*)celix_arrayList_get(retrievedList1, 4));
+
+    celix_autoptr(celix_array_list_t) array2 = celix_arrayList_create();
+    celix_arrayList_add(array2, v1);
+    celix_arrayList_add(array2, v2);
+    celix_arrayList_add(array2, v3);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_setVersionArrayList(props, "array2", array2));
+    EXPECT_EQ(2, celix_properties_size(props));
+
+    celix_autoptr(celix_array_list_t) retrievedList2;
+    status = celix_properties_getAsVersionArrayList(props, "array2", nullptr, &retrievedList2);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    ASSERT_TRUE(retrievedList2 != nullptr);
+    EXPECT_NE(array2, retrievedList2);
+    EXPECT_EQ(3, celix_arrayList_size(retrievedList2));
+    checkVersions(v1, (celix_version_t*)celix_arrayList_get(retrievedList2, 0));
+    checkVersions(v2, (celix_version_t*)celix_arrayList_get(retrievedList2, 1));
+    checkVersions(v3, (celix_version_t*)celix_arrayList_get(retrievedList2, 2));
+
+    celix_array_list_t* array3 = celix_arrayList_create();
+    celix_arrayList_add(array3, v4);
+    celix_arrayList_add(array3, v5);
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_assignVersionArrayList(props, "array3", array3));
+    EXPECT_EQ(3, celix_properties_size(props));
+    celix_autoptr(celix_array_list_t) retrievedList3;
+    status = celix_properties_getAsVersionArrayList(props, "array3", nullptr, &retrievedList3);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    ASSERT_TRUE(retrievedList3 != nullptr);
+    EXPECT_NE(array3, retrievedList3);
+    EXPECT_EQ(2, celix_arrayList_size(retrievedList3));
+    checkVersions(v4, (celix_version_t*)celix_arrayList_get(retrievedList3, 0));
+    checkVersions(v5, (celix_version_t*)celix_arrayList_get(retrievedList3, 1));
+
+    celix_array_list* retrievedList4;
+    celix_autoptr(celix_array_list_t) defaultList = celix_arrayList_create();
+    celix_arrayList_add(defaultList, v1);
+    EXPECT_EQ(CELIX_SUCCESS,
+              celix_properties_getAsVersionArrayList(props, "non-existing", defaultList, &retrievedList4));
+    ASSERT_NE(nullptr, retrievedList4);
+    ASSERT_EQ(1, celix_arrayList_size(retrievedList4));
+    checkVersions(v1, (celix_version_t*)celix_arrayList_get(retrievedList4, 0));
+    celix_arrayList_destroy(retrievedList4);
+
+    auto* getList = celix_properties_getVersionArrayList(props, "array2", nullptr);
+    EXPECT_NE(array2, getList);
+    getList = celix_properties_getVersionArrayList(props, "array3", nullptr);
     EXPECT_EQ(array3, getList);
 }
