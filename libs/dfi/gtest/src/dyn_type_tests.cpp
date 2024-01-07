@@ -249,7 +249,7 @@ TEST_F(DynTypeTests, SequenceWithPointerTest) {
         struct val val;
         double c;
         double d;
-        long e;
+        int64_t e;
     };
 
     struct item_sequence {
@@ -260,7 +260,7 @@ TEST_F(DynTypeTests, SequenceWithPointerTest) {
 
     dyn_type *type = NULL;
     int rc = 0;
-    rc = dynType_parseWithStr("Tval={DD a b};Titem={Jtlval;DDJ a text val c d e};**[Litem;", NULL, NULL, &type);
+    rc = dynType_parseWithStr("Tval={DD a b};Titem={Jtlval;DDJ a text val c d e};[Litem;", NULL, NULL, &type);
     ASSERT_EQ(0, rc);
 
     struct item_sequence *seq = NULL;
@@ -268,22 +268,75 @@ TEST_F(DynTypeTests, SequenceWithPointerTest) {
     ASSERT_EQ(0, rc);
     ASSERT_TRUE(seq != NULL);
 
+    rc = dynType_sequence_alloc(type, seq, 1);
+    ASSERT_EQ(0, rc);
+    struct item **loc = NULL;
+    rc = dynType_sequence_increaseLengthAndReturnLastLoc(type, seq, (void **)&loc);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(loc, &seq->buf[0]);
+    ASSERT_EQ(sizeof(struct item), dynType_size(dynType_typedPointer_getTypedType(dynType_sequence_itemType(type))));
+    rc = dynType_alloc(dynType_typedPointer_getTypedType(dynType_sequence_itemType(type)), (void**)loc);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(seq->buf[0], *loc);
     dynType_free(type, seq);
 
-    /*
+    rc = dynType_sequence_alloc(type, nullptr, 1);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Error null sequence", celix_err_popLastError());
+
+    dynType_destroy(type);
+}
 
 
-    struct item_sequence *items = (struct item_sequence *) calloc(1,sizeof(struct item_sequence));
-    items->buf = (struct item **) calloc(2, sizeof(struct item *));
-    items->cap = 2;
-    items->len = 2;
-    items->buf[0] = (struct item *)calloc(1, sizeof(struct item));
-    items->buf[0]->text = strdup("boe");
-    items->buf[1] = (struct item *)calloc(1, sizeof(struct item));
-    items->buf[1]->text = strdup("boe2");
+TEST_F(DynTypeTests, SequenceReserve) {
 
-    dynType_free(type, items);
-     */
+    struct val {
+        double a;
+        double b;
+    };
+
+    struct item {
+        int64_t a;
+        const char *text;
+        struct val val;
+        double c;
+        double d;
+        int64_t e;
+    };
+
+    struct item_sequence {
+        uint32_t cap;
+        uint32_t len;
+        struct item **buf;
+    };
+
+    dyn_type *type = NULL;
+    int rc = 0;
+    rc = dynType_parseWithStr("Tval={DD a b};Titem={Jtlval;DDJ a text val c d e};[Litem;", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+
+    struct item_sequence *seq = NULL;
+
+    // sequence buffer should be zeroed
+    rc = dynType_alloc(type, (void **)&seq);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(seq != NULL);
+    rc = dynType_sequence_reserve(type, seq, 2);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(nullptr, seq->buf[0]);
+    ASSERT_EQ(nullptr, seq->buf[1]);
+    ASSERT_EQ(2, seq->cap);
+    ASSERT_EQ(0, seq->len);
+
+    // no need to expand capacity
+    rc = dynType_sequence_reserve(type, seq, 1);
+    ASSERT_EQ(0, rc);
+    dynType_free(type, seq);
+
+    // try to reverse for null seq
+    rc = dynType_sequence_reserve(type, nullptr, 2);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Error null sequence", celix_err_popLastError());
 
     dynType_destroy(type);
 }

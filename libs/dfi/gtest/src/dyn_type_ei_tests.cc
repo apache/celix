@@ -33,9 +33,11 @@ public:
     }
 
     ~DynTypeErrorInjectionTestSuite() override {
+        celix_ei_expect_realloc(nullptr, 0, nullptr);
         celix_ei_expect_strdup(nullptr, 0, nullptr);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_fmemopen(nullptr, 0, nullptr);
+        celix_err_resetErrors();
     }
     // delete other constructors and assign operators
     DynTypeErrorInjectionTestSuite(DynTypeErrorInjectionTestSuite const&) = delete;
@@ -119,4 +121,54 @@ TEST_F(DynTypeErrorInjectionTestSuite, AllocateErrors) {
     rc = dynType_alloc(type, &buf);
     ASSERT_NE(0, rc);
     ASSERT_STREQ("Error allocating memory for type 'E'", celix_err_popLastError());
+}
+
+TEST_F(DynTypeErrorInjectionTestSuite, SequenceAllocateError) {
+    struct double_sequence {
+        uint32_t cap;
+        uint32_t len;
+        double* buf;
+    };
+
+    dyn_type *type = NULL;
+    int rc = 0;
+    rc = dynType_parseWithStr("[D", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+
+    struct double_sequence *seq = NULL;
+    rc = dynType_alloc(type, (void **)&seq);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(seq != NULL);
+    celix_ei_expect_calloc((void*)dynType_sequence_alloc, 0, nullptr);
+    rc = dynType_sequence_alloc(type, seq, 1);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Error allocating memory for buf", celix_err_popLastError());
+
+    dynType_free(type, seq);
+    dynType_destroy(type);
+}
+
+TEST_F(DynTypeErrorInjectionTestSuite, SequenceReserveError) {
+    struct double_sequence {
+        uint32_t cap;
+        uint32_t len;
+        double* buf;
+    };
+
+    dyn_type *type = NULL;
+    int rc = 0;
+    rc = dynType_parseWithStr("[D", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+
+    struct double_sequence *seq = NULL;
+    rc = dynType_alloc(type, (void **)&seq);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(seq != NULL);
+    celix_ei_expect_realloc((void*)dynType_sequence_reserve, 0, nullptr);
+    rc = dynType_sequence_reserve(type, seq, 1);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Error allocating memory for buf", celix_err_popLastError());
+
+    dynType_free(type, seq);
+    dynType_destroy(type);
 }

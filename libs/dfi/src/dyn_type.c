@@ -580,44 +580,43 @@ void dynType_sequence_init(const dyn_type* type, void* inst) {
 
 int dynType_sequence_alloc(const dyn_type* type, void* inst, uint32_t cap) {
     assert(type->type == DYN_TYPE_SEQUENCE);
-    int status = OK;
     struct generic_sequence* seq = inst;
-    if (seq != NULL) {
-        size_t size = dynType_size(type->sequence.itemType);
-        seq->buf = calloc(cap, size);
-        if (seq->buf != NULL) {
-            seq->cap = cap;
-            seq->len = 0;
-        } else {
-            seq->cap = 0;
-            status = MEM_ERROR;
-            celix_err_pushf("Error allocating memory for buf");
-        }
-    } else {
-        status = MEM_ERROR;
-        celix_err_pushf("Error allocating memory for seq");
+    if (seq == NULL) {
+        celix_err_pushf("Error null sequence");
+        return ERROR;
     }
-    return status;
+    size_t size = dynType_size(type->sequence.itemType);
+    seq->buf = calloc(cap, size);
+    if (seq->buf == NULL) {
+        seq->cap = 0;
+        celix_err_pushf("Error allocating memory for buf");
+        return MEM_ERROR;
+    }
+    seq->cap = cap;
+    seq->len = 0;
+    return OK;
 }
 
 int dynType_sequence_reserve(const dyn_type* type, void* inst, uint32_t cap) {
     assert(type->type == DYN_TYPE_SEQUENCE);
     int status = OK;
     struct generic_sequence* seq = inst;
-    if (seq != NULL && seq->cap < cap) {
-        size_t size = dynType_size(type->sequence.itemType);
-        seq->buf = realloc(seq->buf, (size_t)(cap * size));
-        if (seq->buf != NULL) {
-            seq->cap = cap;
-        } else {
-            seq->cap = 0;
-            status = MEM_ERROR;
-            celix_err_pushf("Error allocating memory for buf");
-        }
-    } else {
-        status = MEM_ERROR;
-        celix_err_pushf("Error allocating memory for seq");
+    if (seq == NULL) {
+        celix_err_pushf("Error null sequence");
+        return ERROR;
     }
+    if (seq->cap >= cap) {
+        return OK;
+    }
+    size_t size = dynType_size(type->sequence.itemType);
+    seq->buf = realloc(seq->buf, (size_t)(cap * size));
+    if (seq->buf == NULL) {
+        seq->cap = 0;
+        celix_err_pushf("Error allocating memory for buf");
+        return MEM_ERROR;
+    }
+    memset(seq->buf+seq->cap*size, 0, (cap-seq->cap)*size);
+    seq->cap = cap;
     return status;
 }
 
