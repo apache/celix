@@ -170,6 +170,9 @@ char* celix_utils_boolArrayListToString(const celix_array_list_t* list);
  *
  * @param[in] val The string to convert.
  * @param[in] defaultValue The default value if the string is not a valid "," separated list of strings.
+ *                         Note that the defaultValue is copied if the string is not a valid list of string entries
+ *                         and the defaultValue is expected to be configured with a removed entry callback so the
+ * strings are freed.
  * @param[out] list The converted list. If the string is not a valid list, the list will be set to a copy of the
  * defaultValue.
  */
@@ -196,7 +199,9 @@ char* celix_utils_stringArrayListToString(const celix_array_list_t* list);
  *
  * @param[in] val The string to convert.
  * @param[in] defaultValue The default value if the string is not a valid "," separated list of string parseable to
- *                         celix_version_t entries.
+ *                         celix_version_t entries. Note that the defaultValue is copied if the string is not a valid
+ *                         list of version entries and the defaultValue
+ *                         is expected to be configured with a removed entry callback so the versions are freed.
  * @param[out] list The converted list. If the string is not a valid list, the list will be set to a copy of the
  * defaultValue.
  */

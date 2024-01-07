@@ -278,7 +278,7 @@ static char* celix_utils_arrayListToString(const celix_array_list_t* list,
                                            int (*printCb)(FILE* stream, const celix_array_list_entry_t* entry)) {
     char* result = NULL;
     size_t len;
-    celix_autoptr(FILE) stream = open_memstream(&result, &len);
+    FILE* stream = open_memstream(&result, &len);
     if (!stream) {
         celix_err_push("Cannot open memstream");
         return NULL;
@@ -293,10 +293,12 @@ static char* celix_utils_arrayListToString(const celix_array_list_t* list,
         }
         if (rc < 0) {
             celix_err_push("Cannot print to stream");
+            fclose(stream);
+            free(result);
             return NULL;
         }
     }
-    fclose(celix_steal_ptr(stream));
+    fclose(stream);
     return result;
 }
 

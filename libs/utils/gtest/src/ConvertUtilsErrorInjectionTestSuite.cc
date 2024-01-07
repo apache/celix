@@ -30,7 +30,7 @@ public:
     ~ConvertUtilsWithErrorInjectionTestSuite() override {
         celix_ei_expect_celix_version_copy(nullptr, 0, nullptr);
         celix_ei_expect_celix_version_createVersionFromString(nullptr, 0, CELIX_SUCCESS);
-        celix_ei_expect_celix_arrayList_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_addLong(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_open_memstream(nullptr, 0, nullptr);
         celix_ei_expect_fputs(nullptr, 0, 0);
@@ -66,15 +66,16 @@ TEST_F(ConvertUtilsWithErrorInjectionTestSuite, ConvertToVersionTest) {
 
 TEST_F(ConvertUtilsWithErrorInjectionTestSuite, ConvertToLongArrayTest) {
     //Given an error injection for celix_arrayList_create
-    celix_ei_expect_celix_arrayList_create((void*)celix_utils_convertStringToLongArrayList, 0, nullptr);
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_utils_convertStringToLongArrayList, 1, nullptr);
     //When calling celix_utils_convertStringToLongArrayList
     celix_array_list_t* result;
     celix_status_t status = celix_utils_convertStringToLongArrayList("1,2,3", nullptr, &result);
     //Then the result is null and the status is ENOMEM
     EXPECT_EQ(status, CELIX_ENOMEM);
+    EXPECT_EQ(nullptr, result);
 
     //Given an error injection for celix_arrayList_addLong
-    celix_ei_expect_celix_arrayList_addLong((void*)celix_utils_convertStringToLongArrayList, 0, CELIX_ENOMEM);
+    celix_ei_expect_celix_arrayList_addLong((void*)celix_utils_convertStringToLongArrayList, 2, CELIX_ENOMEM);
     //When calling celix_utils_convertStringToLongArrayList
     status = celix_utils_convertStringToLongArrayList("1,2,3", nullptr, &result);
     //Then the result is null and the status is ENOMEM
@@ -83,14 +84,14 @@ TEST_F(ConvertUtilsWithErrorInjectionTestSuite, ConvertToLongArrayTest) {
     celix_autoptr(celix_array_list_t) defaultList = celix_arrayList_create();
 
     //Given an error injection for celix_arrayList_copy
-    celix_ei_expect_celix_arrayList_copy((void*)celix_utils_convertStringToLongArrayList, 0, nullptr);
+    celix_ei_expect_celix_arrayList_copy((void*)celix_utils_convertStringToLongArrayList, 1, nullptr);
     //When calling celix_utils_convertStringToLongArrayList with a nullptr as value
     status = celix_utils_convertStringToLongArrayList(nullptr, defaultList, &result);
     //Then the result is null and the status is ENOMEM
     EXPECT_EQ(status, CELIX_ENOMEM);
 
     //Given an error injection for celix_arrayList_copy
-    celix_ei_expect_celix_arrayList_copy((void*)celix_utils_convertStringToLongArrayList, 0, nullptr);
+    celix_ei_expect_celix_arrayList_copy((void*)celix_utils_convertStringToLongArrayList, 1, nullptr);
     //When calling celix_utils_convertStringToLongArrayList with an invalid value
     status = celix_utils_convertStringToLongArrayList("invalid", defaultList, &result);
     //Then the result is null and the status is ENOMEM
