@@ -589,6 +589,119 @@ TEST_F(FilterTestSuite, InvalidEscapeTest) {
     EXPECT_EQ(nullptr, celix_filter_create("(\\")); //escape without following char
 }
 
+TEST_F(FilterTestSuite, UnmatchedTypeMatchTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_set(props, "str", "20");
+    celix_properties_setLong(props, "long", 20);
+
+    celix_autoptr(celix_filter_t) filter1 = celix_filter_create("(str<3)");
+    EXPECT_TRUE(filter1 != nullptr); //note string is compared as string
+
+    celix_autoptr(celix_filter_t) filter2 = celix_filter_create("(long<3)");
+    EXPECT_TRUE(filter2 != nullptr);
+    EXPECT_FALSE(celix_filter_match(filter2, props)); //note long is compared as long
+}
+
+TEST_F(FilterTestSuite, MatchArrayTypesTest) {
+    const char* strings[] = {"a", "b", "c"};
+    const long longs[] = {1, 2, 3};
+    const double doubles[] = {1.0, 2.0, 3.0};
+    const bool bools[] = {true, true, true};
+    celix_autoptr(celix_version_t) v1 = celix_version_createVersionFromString("1.0.0");
+    celix_autoptr(celix_version_t) v2 = celix_version_createVersionFromString("2.0.0");
+    celix_autoptr(celix_version_t) v3 = celix_version_createVersionFromString("3.0.0");
+    const celix_version_t* versions[] = {v1, v2, v3};
+
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_setStrings(props, "strings", strings, 3);
+    celix_properties_setLongs(props, "longs", longs, 3);
+    celix_properties_setDoubles(props, "doubles", doubles, 3);
+    celix_properties_setBooleans(props, "bools", bools, 3);
+    celix_properties_setVersions(props, "versions", versions, 3);
+
+    // Check if match is true if any of the array elements match
+    celix_autoptr(celix_filter_t) filter1 = celix_filter_create("(strings=a)");
+    EXPECT_TRUE(filter1 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter1, props));
+
+    celix_autoptr(celix_filter_t) filter2 = celix_filter_create("(longs<2)");
+    EXPECT_TRUE(filter2 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter2, props));
+
+    celix_autoptr(celix_filter_t) filter3 = celix_filter_create("(doubles>2.9)");
+    EXPECT_TRUE(filter3 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter3, props));
+
+    celix_autoptr(celix_filter_t) filter4 = celix_filter_create("(bools=true)");
+    EXPECT_TRUE(filter4 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter4, props));
+
+    celix_autoptr(celix_filter_t) filter5 = celix_filter_create("(&(versions>=2.0.0)(versions<=2.0.0))");
+    EXPECT_TRUE(filter5 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter5, props));
+
+    // Check if match is false if none of the array elements match
+    celix_autoptr(celix_filter_t) filter6 = celix_filter_create("(strings=x)");
+    EXPECT_TRUE(filter6 != nullptr);
+    EXPECT_FALSE(celix_filter_match(filter6, props));
+
+    celix_autoptr(celix_filter_t) filter7 = celix_filter_create("(longs>3)");
+    EXPECT_TRUE(filter7 != nullptr);
+    EXPECT_FALSE(celix_filter_match(filter7, props));
+
+    celix_autoptr(celix_filter_t) filter8 = celix_filter_create("(doubles<0.9)");
+    EXPECT_TRUE(filter8 != nullptr);
+    EXPECT_FALSE(celix_filter_match(filter8, props));
+
+    celix_autoptr(celix_filter_t) filter9 = celix_filter_create("(bools=false)");
+    EXPECT_TRUE(filter9 != nullptr);
+    EXPECT_FALSE(celix_filter_match(filter9, props));
+
+    celix_autoptr(celix_filter_t) filter10 = celix_filter_create("(&(versions>=4.0.0)(versions<=4.0.0))");
+    EXPECT_TRUE(filter10 != nullptr);
+    EXPECT_FALSE(celix_filter_match(filter10, props));
+}
+
+TEST_F(FilterTestSuite, ApproxWithArrayAttributesTest) {
+    const char* strings[] = {"abcdef", "defghi", "ghijkl"};
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_setStrings(props, "strings", strings, 3);
+
+    celix_autoptr(celix_filter_t) filter1 = celix_filter_create("(strings~=abc)");
+    EXPECT_TRUE(filter1 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter1, props));
+
+    celix_autoptr(celix_filter_t) filter2 = celix_filter_create("(strings~=def)");
+    EXPECT_TRUE(filter2 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter2, props));
+
+    celix_autoptr(celix_filter_t) filter3 = celix_filter_create("(strings~=jkl)");
+    EXPECT_TRUE(filter3 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter3, props));
+
+    celix_autoptr(celix_filter_t) filter4 = celix_filter_create("(strings~=mno)");
+    EXPECT_TRUE(filter4 != nullptr);
+    EXPECT_FALSE(celix_filter_match(filter4, props));
+}
+
+TEST_F(FilterTestSuite, SubStringWithArrayAttributesTest) {
+    const char* strings[] = {"John Doe", "Jane Doe", "John Smith"};
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_setStrings(props, "strings", strings, 3);
+
+    celix_autoptr(celix_filter_t) filter1 = celix_filter_create("(strings=John*)");
+    EXPECT_TRUE(filter1 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter1, props));
+
+    celix_autoptr(celix_filter_t) filter2 = celix_filter_create("(strings=*Doe)");
+    EXPECT_TRUE(filter2 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter2, props));
+
+    // check if match is false if none of the array elements match with a substring
+    celix_autoptr(celix_filter_t) filter3 = celix_filter_create("(strings=*Johnson)");
+    EXPECT_TRUE(filter3 != nullptr);
+    EXPECT_FALSE(celix_filter_match(filter3, props));
+}
 
 #include "filter.h"
 TEST_F(FilterTestSuite, DeprecatedApiTest) {
