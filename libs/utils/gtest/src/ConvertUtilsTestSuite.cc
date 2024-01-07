@@ -307,6 +307,8 @@ TEST_F(ConvertUtilsTestSuite, ConvertToLongArrayTest) {
     celix_status_t convertState = celix_utils_convertStringToLongArrayList("1,2,3", nullptr, &result);
     EXPECT_EQ(CELIX_SUCCESS, convertState);
     EXPECT_TRUE(result != nullptr);
+    EXPECT_EQ(3, celix_arrayList_size(result));
+    EXPECT_EQ(2L, celix_arrayList_getLong(result, 1));
     celix_arrayList_destroy(result);
 
     convertState = celix_utils_convertStringToLongArrayList("invalid", nullptr, &result);
@@ -357,3 +359,133 @@ TEST_F(ConvertUtilsTestSuite, LongArrayToStringTest) {
     EXPECT_STREQ("1", result);
     free(result);
 }
+
+TEST_F(ConvertUtilsTestSuite, ConvertToDoubleArrayList) {
+    celix_array_list_t* result;
+    celix_status_t convertState = celix_utils_convertStringToDoubleArrayList("0.1,2.0,3.1,4,5", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertState);
+    EXPECT_TRUE(result != nullptr);
+    EXPECT_EQ(5, celix_arrayList_size(result));
+    EXPECT_DOUBLE_EQ(2.0, celix_arrayList_getDouble(result, 1));
+    EXPECT_DOUBLE_EQ(5.0, celix_arrayList_getDouble(result, 4));
+    celix_arrayList_destroy(result);
+
+    // NOTE celix_utils_convertStringToDoubleArrayList uses the same generic function as is used in
+    // celix_utils_convertStringToLongArrayList and because celix_utils_convertStringToLongArrayList is already
+    // tested, we only test a few cases here.
+}
+
+TEST_F(ConvertUtilsTestSuite, DoubleArrayToStringTest) {
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_arrayList_addDouble(list, 0.1);
+    celix_arrayList_addDouble(list, 2.0);
+    celix_arrayList_addDouble(list, 3.3);
+
+    char* result = celix_utils_doubleArrayListToString(list); //note result is not limited to 2 decimals, so using strstr
+    EXPECT_TRUE(strstr(result, "0.1") != nullptr);
+    EXPECT_TRUE(strstr(result, "2.0") != nullptr);
+    EXPECT_TRUE(strstr(result, "3.3") != nullptr);
+    free(result);
+
+    // NOTE celix_utils_doubleArrayListToString uses the same generic function as is used in
+    // celix_utils_longArrayListToString and because celix_utils_longArrayListToString is already
+    // tested, we only test a few cases here.
+}
+
+TEST_F(ConvertUtilsTestSuite, ConvertToBoolArrayList) {
+    celix_array_list_t* result;
+    celix_status_t convertState = celix_utils_convertStringToBoolArrayList("true,false,true", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertState);
+    EXPECT_TRUE(result != nullptr);
+    EXPECT_EQ(3, celix_arrayList_size(result));
+    EXPECT_TRUE(celix_arrayList_getBool(result, 0));
+    EXPECT_FALSE(celix_arrayList_getBool(result, 1));
+    EXPECT_TRUE(celix_arrayList_getBool(result, 2));
+    celix_arrayList_destroy(result);
+
+    // NOTE celix_utils_convertStringToBoolArrayList uses the same generic function as is used in
+    // celix_utils_convertStringToLongArrayList and because celix_utils_convertStringToLongArrayList is already
+    // tested, we only test a few cases here.
+}
+
+TEST_F(ConvertUtilsTestSuite, BoolArrayToStringTest) {
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_arrayList_addBool(list, true);
+    celix_arrayList_addBool(list, false);
+    celix_arrayList_addBool(list, true);
+
+    char* result = celix_utils_boolArrayListToString(list);
+    EXPECT_STREQ("true, false, true", result);
+    free(result);
+
+    // NOTE celix_utils_boolArrayListToString uses the same generic function as is used in
+    // celix_utils_longArrayListToString and because celix_utils_longArrayListToString is already
+    // tested, we only test a few cases here.
+}
+
+TEST_F(ConvertUtilsTestSuite, ConvertToStringArrayList) {
+    celix_array_list_t* result;
+    celix_status_t convertState = celix_utils_convertStringToStringArrayList("a,b,c", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertState);
+    EXPECT_TRUE(result != nullptr);
+    EXPECT_EQ(3, celix_arrayList_size(result));
+    EXPECT_STREQ("a", (char*)celix_arrayList_get(result, 0));
+    EXPECT_STREQ("b", (char*)celix_arrayList_get(result, 1));
+    EXPECT_STREQ("c", (char*)celix_arrayList_get(result, 2));
+    celix_arrayList_destroy(result);
+
+    // NOTE celix_utils_convertStringToStringArrayList uses the same generic function as is used in
+    // celix_utils_convertStringToLongArrayList and because celix_utils_convertStringToLongArrayList is already
+    // tested, we only test a few cases here.
+}
+
+TEST_F(ConvertUtilsTestSuite, StringArrayToStringTest) {
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_arrayList_add(list, (void*)"a");
+    celix_arrayList_add(list, (void*)"b");
+    celix_arrayList_add(list, (void*)"c");
+
+    char* result = celix_utils_stringArrayListToString(list);
+    EXPECT_STREQ("a, b, c", result);
+    free(result);
+
+    // NOTE celix_utils_stringArrayListToString uses the same generic function as is used in
+    // celix_utils_longArrayListToString and because celix_utils_longArrayListToString is already
+    // tested, we only test a few cases here.
+}
+
+TEST_F(ConvertUtilsTestSuite, ConvertToVersionArrayList) {
+    celix_array_list_t* result;
+    celix_status_t convertState = celix_utils_convertStringToVersionArrayList("1.2.3,2.3.4,3.4.5.qualifier", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertState);
+    EXPECT_TRUE(result != nullptr);
+    EXPECT_EQ(3, celix_arrayList_size(result));
+    checkVersion((celix_version_t*)celix_arrayList_get(result, 0), 1, 2, 3, nullptr);
+    checkVersion((celix_version_t*)celix_arrayList_get(result, 1), 2, 3, 4, nullptr);
+    checkVersion((celix_version_t*)celix_arrayList_get(result, 2), 3, 4, 5, "qualifier");
+    celix_arrayList_destroy(result);
+
+    // NOTE celix_utils_convertStringToVersionArrayList uses the same generic function as is used in
+    // celix_utils_convertStringToLongArrayList and because celix_utils_convertStringToLongArrayList is already
+    // tested, we only test a few cases here.
+}
+
+TEST_F(ConvertUtilsTestSuite, VersionArrayToStringTest) {
+    celix_autoptr(celix_version_t) v1 = celix_version_create(1, 2, 3, nullptr);
+    celix_autoptr(celix_version_t) v2 = celix_version_create(2, 3, 4, nullptr);
+    celix_autoptr(celix_version_t) v3 = celix_version_create(3, 4, 5, "qualifier");
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_arrayList_add(list, v1);
+    celix_arrayList_add(list, v2);
+    celix_arrayList_add(list, v3);
+
+    char* result = celix_utils_versionArrayListToString(list);
+    EXPECT_STREQ("1.2.3, 2.3.4, 3.4.5.qualifier", result);
+    free(result);
+
+    // NOTE celix_utils_versionArrayListToString uses the same generic function as is used in
+    // celix_utils_longArrayListToString and because celix_utils_longArrayListToString is already
+    // tested, we only test a few cases here.
+}
+
+

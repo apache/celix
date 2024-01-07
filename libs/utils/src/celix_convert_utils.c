@@ -26,9 +26,9 @@
 #include <string.h>
 
 #include "celix_array_list.h"
-#include "celix_utils.h"
-#include "celix_stdio_cleanup.h"
 #include "celix_err.h"
+#include "celix_stdio_cleanup.h"
+#include "celix_utils.h"
 
 static bool celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(const char* endptr) {
     bool result = false;
@@ -80,7 +80,7 @@ double celix_utils_convertStringToDouble(const char* val, double defaultValue, b
         *converted = false;
     }
     if (val != NULL) {
-        char *endptr;
+        char* endptr;
         double d = strtod(val, &endptr);
         if (endptr != val && celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(endptr)) {
             result = d;
@@ -98,7 +98,7 @@ long celix_utils_convertStringToLong(const char* val, long defaultValue, bool* c
         *converted = false;
     }
     if (val != NULL) {
-        char *endptr;
+        char* endptr;
         long l = strtol(val, &endptr, 10);
         if (endptr != val && celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(endptr)) {
             result = l;
@@ -110,7 +110,8 @@ long celix_utils_convertStringToLong(const char* val, long defaultValue, bool* c
     return result;
 }
 
-celix_status_t celix_utils_convertStringToVersion(const char* val, const celix_version_t* defaultValue, celix_version_t** version) {
+celix_status_t
+celix_utils_convertStringToVersion(const char* val, const celix_version_t* defaultValue, celix_version_t** version) {
     assert(version != NULL);
     if (!val && defaultValue) {
         *version = celix_version_copy(defaultValue);
@@ -130,52 +131,138 @@ celix_status_t celix_utils_convertStringToVersion(const char* val, const celix_v
     return status;
 }
 
-celix_status_t celix_utils_convertStringToLongArrayList(const char* val, const celix_array_list_t* defaultValue, celix_array_list_t** list) {
-        assert(list != NULL);
-        *list = NULL;
+/**
+ * @brief Convert the provided string to an array list using the provided addEntry callback to convert the string
+ * to a specific type and add it to the list.
+ */
+static celix_status_t celix_utils_convertStringToArrayList(const char* val,
+                                                           const celix_array_list_t* defaultValue,
+                                                           celix_array_list_t** list,
+                                                           void (*freeCb)(void*),
+                                                           celix_status_t (*addEntry)(celix_array_list_t*,
+                                                                                      const char*)) {
+    assert(list != NULL);
+    *list = NULL;
 
-        if (!val && defaultValue) {
-            *list = celix_arrayList_copy(defaultValue);
-            return *list ? CELIX_ILLEGAL_ARGUMENT : CELIX_ENOMEM;
-        } else if (!val) {
-            return CELIX_ILLEGAL_ARGUMENT;
-        }
+    if (!val && defaultValue) {
+        *list = celix_arrayList_copy(defaultValue);
+        return *list ? CELIX_ILLEGAL_ARGUMENT : CELIX_ENOMEM;
+    } else if (!val) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
 
-        celix_autoptr(celix_array_list_t) result = celix_arrayList_create();
-        if (!result) {
-            return CELIX_ENOMEM;
-        }
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    opts.simpleRemovedCallback = freeCb;
+    celix_autoptr(celix_array_list_t) result = celix_arrayList_createWithOptions(&opts);
+    if (!result) {
+        return CELIX_ENOMEM;
+    }
 
-        celix_status_t status = CELIX_SUCCESS;
-        if (val) {
-                char buf[256];
-                char* valCopy = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s", val);
-                char* savePtr = NULL;
-                char* token = strtok_r(valCopy, ",", &savePtr);
-                while (token != NULL) {
-                    bool converted;
-                    long l = celix_utils_convertStringToLong(token, 0L, &converted);
-                    if (!converted) {
-                        status =  CELIX_ILLEGAL_ARGUMENT;
-                        break;
-                    }
-                    status = celix_arrayList_addLong(result, l);
-                    if (status != CELIX_SUCCESS) {
-                        break;
-                    }
-                    token = strtok_r(NULL, ",", &savePtr);
-                }
-                celix_utils_freeStringIfNotEqual(buf, valCopy);
+    char buf[256];
+    char* valCopy = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s", val);
+    if (!valCopy) {
+        return CELIX_ENOMEM;
+    }
+
+    celix_status_t status = CELIX_SUCCESS;
+    char* savePtr = NULL;
+    char* token = strtok_r(valCopy, ",", &savePtr);
+    while (token != NULL) {
+        status = addEntry(result, token);
+        if (status != CELIX_SUCCESS) {
+            break;
         }
-        if (status == CELIX_ILLEGAL_ARGUMENT) {
-            if (defaultValue) {
-                *list = celix_arrayList_copy(defaultValue);
-                return *list ? status : CELIX_ENOMEM;
-            }
-            return status;
-        }
+        token = strtok_r(NULL, ",", &savePtr);
+    }
+    celix_utils_freeStringIfNotEqual(buf, valCopy);
+
+    if (status == CELIX_SUCCESS) {
         *list = celix_steal_ptr(result);
+    } else if (status == CELIX_ILLEGAL_ARGUMENT) {
+        if (defaultValue) {
+            *list = celix_arrayList_copy(defaultValue);
+            return *list ? status : CELIX_ENOMEM;
+        }
         return status;
+    }
+    return status;
+}
+
+celix_status_t celix_utils_addLongEntry(celix_array_list_t* list, const char* entry) {
+    bool converted;
+    long l = celix_utils_convertStringToLong(entry, 0L, &converted);
+    if (!converted) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    return celix_arrayList_addLong(list, l);
+}
+
+celix_status_t celix_utils_convertStringToLongArrayList(const char* val,
+                                                        const celix_array_list_t* defaultValue,
+                                                        celix_array_list_t** list) {
+    return celix_utils_convertStringToArrayList(val, defaultValue, list, NULL, celix_utils_addLongEntry);
+}
+
+celix_status_t celix_utils_addDoubleEntry(celix_array_list_t* list, const char* entry) {
+    bool converted;
+    double d = celix_utils_convertStringToDouble(entry, 0.0, &converted);
+    if (!converted) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    return celix_arrayList_addDouble(list, d);
+}
+
+celix_status_t celix_utils_convertStringToDoubleArrayList(const char* val,
+                                                          const celix_array_list_t* defaultValue,
+                                                          celix_array_list_t** list) {
+    return celix_utils_convertStringToArrayList(val, defaultValue, list, NULL, celix_utils_addDoubleEntry);
+}
+
+celix_status_t celix_utils_addBoolEntry(celix_array_list_t* list, const char* entry) {
+    bool converted;
+    bool b = celix_utils_convertStringToBool(entry, 0.0, &converted);
+    if (!converted) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    return celix_arrayList_addBool(list, b);
+}
+
+celix_status_t celix_utils_convertStringToBoolArrayList(const char* val,
+                                                          const celix_array_list_t* defaultValue,
+                                                          celix_array_list_t** list) {
+    return celix_utils_convertStringToArrayList(val, defaultValue, list, NULL, celix_utils_addBoolEntry);
+}
+
+celix_status_t celix_utils_addStringEntry(celix_array_list_t* list, const char* entry) {
+    char* copy = celix_utils_strdup(entry);
+    if (!copy) {
+            return CELIX_ENOMEM;
+    }
+    return celix_arrayList_add(list, copy);
+}
+
+celix_status_t celix_utils_convertStringToStringArrayList(const char* val,
+                                                          const celix_array_list_t* defaultValue,
+                                                          celix_array_list_t** list) {
+    return celix_utils_convertStringToArrayList(val, defaultValue, list, free, celix_utils_addStringEntry);
+}
+
+static celix_status_t celix_utils_addVersionEntry(celix_array_list_t* list, const char* entry) {
+    celix_version_t* version;
+    celix_status_t convertStatus = celix_utils_convertStringToVersion(entry, NULL, &version);
+    if (convertStatus == CELIX_SUCCESS) {
+        return celix_arrayList_add(list, version);
+    }
+    return convertStatus;
+}
+
+static void celix_utils_destroyVersionEntry(void* entry) { celix_version_destroy(entry); }
+
+celix_status_t celix_utils_convertStringToVersionArrayList(const char* val,
+                                                           const celix_array_list_t* defaultValue,
+                                                           celix_array_list_t** list) {
+    return celix_utils_convertStringToArrayList(
+        val, defaultValue, list, celix_utils_destroyVersionEntry, celix_utils_addVersionEntry);
 }
 
 /**
@@ -187,7 +274,8 @@ celix_status_t celix_utils_convertStringToLongArrayList(const char* val, const c
  * @param printCb The callback to use for printing the list entries.
  * @return The string representation of the list or NULL if an error occurred.
  */
-static char* celix_utils_arrayListToString(const celix_array_list_t *list, int (*printCb)(FILE* stream, const celix_array_list_entry_t* entry)) {
+static char* celix_utils_arrayListToString(const celix_array_list_t* list,
+                                           int (*printCb)(FILE* stream, const celix_array_list_entry_t* entry)) {
     char* result = NULL;
     size_t len;
     celix_autoptr(FILE) stream = open_memstream(&result, &len);
@@ -216,30 +304,46 @@ static int celix_utils_printLongEntry(FILE* stream, const celix_array_list_entry
     return fprintf(stream, "%li", entry->longVal);
 }
 
-//static int celix_properties_printDoubleEntry(FILE* stream, const celix_array_list_entry_t* entry) {
-//    return fprintf(stream, "%lf", entry->doubleVal);
-//}
-//
-//static int celix_properties_printBoolEntry(FILE* stream, const celix_array_list_entry_t* entry) {
-//    return fprintf(stream, "%s", entry->boolVal ? "true" : "false");
-//}
-//
-//static int celix_properties_printStrEntry(FILE* stream, const celix_array_list_entry_t* entry) {
-//    return fprintf(stream, "%s", (const char*)entry->voidPtrVal);
-//}
-
 char* celix_utils_longArrayListToString(const celix_array_list_t* list) {
     return celix_utils_arrayListToString(list, celix_utils_printLongEntry);
 }
 
-//static char* celix_properties_doubleArrayListToString(const celix_array_list_t* list) {
-//    return celix_properties_arrayListToString(list, celix_properties_printDoubleEntry);
-//}
-//
-//static char* celix_properties_boolArrayListToString(const celix_array_list_t* list) {
-//    return celix_properties_arrayListToString(list, celix_properties_printBoolEntry);
-//}
-//
-//static char* celix_properties_stringArrayListToString(const celix_array_list_t* list) {
-//    return celix_properties_arrayListToString(list, celix_properties_printStrEntry);
-//}
+static int celix_utils_printDoubleEntry(FILE* stream, const celix_array_list_entry_t* entry) {
+    return fprintf(stream, "%lf", entry->doubleVal);
+}
+
+char* celix_utils_doubleArrayListToString(const celix_array_list_t* list) {
+    return celix_utils_arrayListToString(list, celix_utils_printDoubleEntry);
+}
+
+static int celix_utils_printBoolEntry(FILE* stream, const celix_array_list_entry_t* entry) {
+    return fprintf(stream, "%s", entry->boolVal ? "true" : "false");
+}
+
+char* celix_utils_boolArrayListToString(const celix_array_list_t* list) {
+    return celix_utils_arrayListToString(list, celix_utils_printBoolEntry);
+}
+
+static int celix_utils_printStrEntry(FILE* stream, const celix_array_list_entry_t* entry) {
+    return fprintf(stream, "%s", (const char*)entry->voidPtrVal);
+}
+
+char* celix_utils_stringArrayListToString(const celix_array_list_t* list) {
+    return celix_utils_arrayListToString(list, celix_utils_printStrEntry);
+}
+
+static int celix_utils_printVersionEntry(FILE* stream, const celix_array_list_entry_t* entry) {
+    celix_version_t* version = entry->voidPtrVal;
+    int major = celix_version_getMajor(version);
+    int minor = celix_version_getMinor(version);
+    int micro = celix_version_getMicro(version);
+    const char* q = celix_version_getQualifier(version);
+    if (celix_utils_isStringNullOrEmpty(q)) {
+        return fprintf(stream, "%i.%i.%i", major, minor, micro);
+    }
+    return fprintf(stream, "%i.%i.%i.%s", major, minor, micro, q);
+}
+
+char* celix_utils_versionArrayListToString(const celix_array_list_t* list) {
+    return celix_utils_arrayListToString(list, celix_utils_printVersionEntry);
+}
