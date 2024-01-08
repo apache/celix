@@ -256,7 +256,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, LoadFailureTest) {
     fclose(memStream);
 }
 
-TEST_F(PropertiesErrorInjectionTestSuite, SetWithoutCopyFailureTest) {
+TEST_F(PropertiesErrorInjectionTestSuite, AssignFailureTest) {
     //Given a filled properties and a key and value
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     fillOptimizationCache(props);

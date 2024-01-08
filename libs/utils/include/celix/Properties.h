@@ -25,6 +25,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 #include "celix_properties.h"
 #include "celix_utils.h"
@@ -121,20 +122,24 @@ namespace celix {
     public:
         using const_iterator = ConstPropertiesIterator; //note currently only a const iterator is supported.
 
-        /**
-         * @brief Enum representing the possible types of a property value.
-         */
-        enum class ValueType {
-            Unset,    /**< Property value is not set. */
-            String,   /**< Property value is a string. */
-            Long,     /**< Property value is a long integer. */
-            Double,   /**< Property value is a double. */
-            Bool,     /**< Property value is a boolean. */
-            Version   /**< Property value is a Celix version. */
-        };
+      /**
+       * @brief Enum representing the possible types of a property value.
+       */
+      enum class ValueType {
+          Unset,        /**< Property value is not set. */
+          String,       /**< Property value is a string. */
+          Long,         /**< Property value is a long integer. */
+          Double,       /**< Property value is a double. */
+          Bool,         /**< Property value is a boolean. */
+          Version,      /**< Property value is a Celix version. */
+          LongArray,    /**< Property value is an array of long integers. */
+          DoubleArray,  /**< Property value is an array of doubles. */
+          BooleanArray, /**< Property value is an array of booleans. */
+          VersionArray, /**< Property value is an array of Celix versions. */
+          StringArray   /**< Property value is an array of strings. */
+      };
 
-
-        class ValueRef {
+      class ValueRef {
         public:
             ValueRef(std::shared_ptr<celix_properties_t> _props, std::string _key) : props{std::move(_props)}, stringKey{std::move(_key)}, charKey{nullptr} {}
             ValueRef(std::shared_ptr<celix_properties_t> _props, const char* _key) : props{std::move(_props)}, stringKey{}, charKey{_key} {}
@@ -304,6 +309,11 @@ namespace celix {
             return celix_properties_getAsLong(cProps.get(), key.c_str(), defaultValue);
         }
 
+        // TODO doc
+        long getLong(const std::string& key, long defaultValue) const {
+            return celix_properties_getLong(cProps.get(), key.c_str(), defaultValue);
+        }
+
         /**
          * @brief Get the value of the property with key as a double.
          *
@@ -316,6 +326,11 @@ namespace celix {
             return celix_properties_getAsDouble(cProps.get(), key.c_str(), defaultValue);
         }
 
+        // TODO doc
+        double getDouble(const std::string& key, double defaultValue) const {
+            return celix_properties_getDouble(cProps.get(), key.c_str(), defaultValue);
+        }
+
         /**
          * @brief Get the value of the property with key as a boolean.
          *
@@ -326,6 +341,11 @@ namespace celix {
          */
         bool getAsBool(const std::string &key, bool defaultValue) const {
             return celix_properties_getAsBool(cProps.get(), key.c_str(), defaultValue);
+        }
+
+        // TODO doc
+        bool getBool(const std::string& key, bool defaultValue) const {
+            return celix_properties_getBool(cProps.get(), key.c_str(), defaultValue);
         }
 
         /**
@@ -349,6 +369,132 @@ namespace celix {
                     celix_version_getMicro(cVersion),
                     celix_version_getQualifier(cVersion)};
                 return version;
+            }
+            return defaultValue;
+        }
+
+        // TODO doc
+        celix::Version getVersion(const std::string& key, celix::Version defaultValue = {}) const {
+            auto* v = celix_properties_getVersion(cProps.get(), key.c_str(), nullptr);
+            if (v) {
+                return celix::Version{celix_version_getMajor(v),
+                                      celix_version_getMinor(v),
+                                      celix_version_getMicro(v),
+                                      celix_version_getQualifier(v)};
+            }
+            return defaultValue;
+        }
+
+        // TODO doc
+        std::vector<long> getAsLongVector(const std::string& key, const std::vector<long>& defaultValue = {}) const {
+            celix_autoptr(celix_array_list_t) list;
+            celix_status_t status = celix_properties_getAsLongArrayList(cProps.get(), key.c_str(), nullptr, &list);
+            throwIfEnomem(status);
+            return convertToVector<long>(list, defaultValue, celix_arrayList_getLong);
+        }
+
+        // TODO doc
+        std::vector<long> getLongVector(const std::string& key, const std::vector<long>& defaultValue = {}) const {
+            const auto* list = celix_properties_getLongArrayList(cProps.get(), key.c_str(), nullptr);
+            return convertToVector<long>(list, defaultValue, celix_arrayList_getLong);
+        }
+
+        // TODO doc
+        std::vector<bool> getAsBoolVector(const std::string& key, const std::vector<bool>& defaultValue = {}) const {
+            celix_autoptr(celix_array_list_t) list;
+            celix_status_t status = celix_properties_getAsBoolArrayList(cProps.get(), key.c_str(), nullptr, &list);
+            throwIfEnomem(status);
+            return convertToVector<bool>(list, defaultValue, celix_arrayList_getBool);
+        }
+
+        // TODO doc
+        std::vector<bool> getBoolVector(const std::string& key, const std::vector<bool>& defaultValue = {}) const {
+            const auto* list = celix_properties_getBoolArrayList(cProps.get(), key.c_str(), nullptr);
+            return convertToVector<bool>(list, defaultValue, celix_arrayList_getBool);
+        }
+
+        // TODO doc
+        std::vector<double> getAsDoubleVector(const std::string& key,
+                                              const std::vector<double>& defaultValue = {}) const {
+            celix_autoptr(celix_array_list_t) list;
+            celix_status_t status = celix_properties_getAsDoubleArrayList(cProps.get(), key.c_str(), nullptr, &list);
+            throwIfEnomem(status);
+            return convertToVector<double>(list, defaultValue, celix_arrayList_getDouble);
+        }
+
+        // TODO doc
+        std::vector<double> getDoubleVector(const std::string& key,
+                                            const std::vector<double>& defaultValue = {}) const {
+            const auto* list = celix_properties_getDoubleArrayList(cProps.get(), key.c_str(), nullptr);
+            return convertToVector<double>(list, defaultValue, celix_arrayList_getDouble);
+        }
+
+        // TODO doc
+        std::vector<celix::Version> getAsVersionVector(const std::string& key,
+                                                       const std::vector<celix::Version>& defaultValue = {}) const {
+            celix_autoptr(celix_array_list_t) list;
+            celix_status_t status = celix_properties_getAsVersionArrayList(cProps.get(), key.c_str(), nullptr, &list);
+            throwIfEnomem(status);
+            if (list) {
+                std::vector<celix::Version> result{};
+                for (int i = 0; i < celix_arrayList_size(list); ++i) {
+                    auto* v = static_cast<celix_version_t*>(celix_arrayList_get(list, i));
+                    result.emplace_back(celix_version_getMajor(v),
+                                        celix_version_getMinor(v),
+                                        celix_version_getMicro(v),
+                                        celix_version_getQualifier(v));
+                }
+                return result;
+            }
+            return defaultValue;
+        }
+
+        // TODO doc
+        std::vector<celix::Version> getVersionVector(const std::string& key,
+                                                     const std::vector<celix::Version>& defaultValue = {}) const {
+            const auto* list = celix_properties_getVersionArrayList(cProps.get(), key.c_str(), nullptr);
+            if (list) {
+                std::vector<celix::Version> result{};
+                for (int i = 0; i < celix_arrayList_size(list); ++i) {
+                    auto* v = static_cast<celix_version_t*>(celix_arrayList_get(list, i));
+                    result.emplace_back(celix_version_getMajor(v),
+                                        celix_version_getMinor(v),
+                                        celix_version_getMicro(v),
+                                        celix_version_getQualifier(v));
+                }
+                return result;
+            }
+            return defaultValue;
+        }
+
+        // TODO doc
+        std::vector<std::string> getAsStringVector(const std::string& key,
+                                                   const std::vector<std::string>& defaultValue = {}) const {
+            celix_autoptr(celix_array_list_t) list;
+            celix_status_t status = celix_properties_getAsStringArrayList(cProps.get(), key.c_str(), nullptr, &list);
+            throwIfEnomem(status);
+            if (list) {
+                std::vector<std::string> result{};
+                for (int i = 0; i < celix_arrayList_size(list); ++i) {
+                    auto* s = celix_arrayList_getString(list, i);
+                    result.emplace_back(s);
+                }
+                return result;
+            }
+            return defaultValue;
+        }
+
+        // TODO doc
+        std::vector<std::string> getStringVector(const std::string& key,
+                                                 const std::vector<std::string>& defaultValue = {}) const {
+            const auto* list = celix_properties_getStringArrayList(cProps.get(), key.c_str(), nullptr);
+            if (list) {
+                std::vector<std::string> result{};
+                for (int i = 0; i < celix_arrayList_size(list); ++i) {
+                    auto* s = celix_arrayList_getString(list, i);
+                    result.emplace_back(s);
+                }
+                return result;
             }
             return defaultValue;
         }
@@ -468,6 +614,62 @@ namespace celix {
             throwIfEnomem(status);
         }
 
+        // TODO doc
+        void setStrings(const std::string& key, const std::vector<std::string>& values) {
+            celix_array_list_create_options_t opts{};
+            opts.simpleRemovedCallback = free;
+            celix_autoptr(celix_array_list_t) list = celix_arrayList_createWithOptions(&opts);
+            throwIfNull(list);
+            for (const auto& v : values) {
+                auto* s = celix_utils_strdup(v.c_str());
+                throwIfNull(s);
+                celix_status_t status = celix_arrayList_addString(list, s);
+                throwIfEnomem(status);
+            }
+            auto status = celix_properties_assignStringArrayList(cProps.get(), key.data(), celix_steal_ptr(list));
+            throwIfEnomem(status);
+        }
+
+        // TODO doc
+        void setVersions(const std::string& key, const std::vector<celix::Version>& values) {
+            celix_array_list_create_options_t opts{};
+            opts.simpleRemovedCallback = (void (*)(void*))celix_version_destroy;
+            celix_autoptr(celix_array_list_t) list = celix_arrayList_createWithOptions(&opts);
+            throwIfNull(list);
+            for (const auto& v : values) {
+                auto* cVer = celix_version_create(v.getMajor(), v.getMinor(), v.getMicro(), v.getQualifier().c_str());
+                throwIfNull(cVer);
+                celix_status_t status = celix_arrayList_add(list, cVer);
+                throwIfEnomem(status);
+            }
+            auto status = celix_properties_assignVersionArrayList(cProps.get(), key.data(), celix_steal_ptr(list));
+            throwIfEnomem(status);
+        }
+
+        // TODO doc
+        void setBooleans(const std::string& key, const std::vector<bool>& values) {
+            celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+            throwIfNull(list);
+            for (const auto& b : values) {
+                celix_status_t status = celix_arrayList_addBool(list, b);
+                throwIfEnomem(status);
+            }
+            auto status = celix_properties_assignBoolArrayList(cProps.get(), key.data(), celix_steal_ptr(list));
+            throwIfEnomem(status);
+        }
+
+        // TODO doc
+        void setLongs(const std::string& key, const std::vector<long>& values) {
+            auto status = celix_properties_setLongs(cProps.get(), key.data(), values.data(), values.size());
+            throwIfEnomem(status);
+        }
+
+        // TODO doc
+        void setDoubles(const std::string& key, const std::vector<double>& values) {
+            auto status = celix_properties_setDoubles(cProps.get(), key.data(), values.data(), values.size());
+            throwIfEnomem(status);
+        }
+
         /**
          * @brief Returns the number of properties in the Properties object.
          */
@@ -535,15 +737,20 @@ namespace celix {
         Properties(celix_properties_t* props, bool takeOwnership) :
             cProps{props, [takeOwnership](celix_properties_t* p){ if (takeOwnership) { celix_properties_destroy(p); }}} {}
 
-        std::shared_ptr<celix_properties_t> createCProps(celix_properties_t* p) {
-            if (!p) {
-                throw std::bad_alloc();
-            }
+        static std::shared_ptr<celix_properties_t> createCProps(celix_properties_t* p) {
+            throwIfNull(p);
             return std::shared_ptr<celix_properties_t>{p, [](celix_properties_t* p) { celix_properties_destroy(p); }};
         }
 
-        void throwIfEnomem(int status) {
+        static void throwIfEnomem(int status) {
             if (status == CELIX_ENOMEM) {
+                throw std::bad_alloc();
+            }
+        }
+
+        template<typename T>
+        static void throwIfNull(T* ptr) {
+            if (ptr == nullptr) {
                 throw std::bad_alloc();
             }
         }
@@ -563,6 +770,16 @@ namespace celix {
                     return ValueType::Bool;
                 case CELIX_PROPERTIES_VALUE_TYPE_VERSION:
                     return ValueType::Version;
+                case CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY:
+                    return ValueType::LongArray;
+                case CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY:
+                    return ValueType::DoubleArray;
+                case CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY:
+                    return ValueType::BooleanArray;
+                case CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY:
+                    return ValueType::VersionArray;
+                case CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY:
+                    return ValueType::StringArray;
                 default: /*unset*/
                     return ValueType::Unset;
             }
@@ -581,6 +798,20 @@ namespace celix {
             if (status != CELIX_SUCCESS) {
                 throw celix::IOException{"Cannot store celix::Properties to " + std::string{path}};
             }
+        }
+
+        template<typename T>
+        std::vector<T> convertToVector(const celix_array_list_t* list, const std::vector<T>& defaultValue, T (*get)(const celix_array_list_t*, int index)) const {
+            if (list) {
+                std::vector<T> result{};
+                result.reserve(celix_arrayList_size(list));
+                for (int i = 0; i < celix_arrayList_size(list); ++i) {
+                    T value = get(list, i);
+                    result.emplace_back(value);
+                }
+                return result;
+            }
+            return defaultValue;
         }
 
         std::shared_ptr<celix_properties_t> cProps;

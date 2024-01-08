@@ -790,9 +790,9 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_assignStringArrayList(celix_p
  *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL or the values array is NULL.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_setStrings(celix_properties_t* properties,
-                                                               const char* key,
-                                                               const char** values,
-                                                               size_t nrOfValues);
+                                                              const char* key,
+                                                              const char* const* values,
+                                                              size_t nrOfValues);
 
 /**
  * @brief Get a property value as an array of strings, making a copy of the array.

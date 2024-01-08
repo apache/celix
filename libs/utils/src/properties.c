@@ -35,7 +35,6 @@
 #include "celix_stdlib_cleanup.h"
 #include "celix_convert_utils.h"
 #include "celix_utils_private_constants.h"
-#include "celix_stdio_cleanup.h"
 
 static const char* const CELIX_PROPERTIES_BOOL_TRUE_STRVAL = "true";
 static const char* const CELIX_PROPERTIES_BOOL_FALSE_STRVAL = "false";
@@ -139,19 +138,20 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
                                                  celix_properties_entry_t* entry,
                                                  const celix_properties_entry_t* prototype) {
     char convertedValueBuffer[21] = {0};
-    *entry = *prototype;
-    if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
-        bool written = celix_version_fillString(prototype->typed.versionValue, convertedValueBuffer, sizeof(convertedValueBuffer));
+    memcpy(entry, prototype, sizeof(*entry));
+    entry->value = NULL;
+    if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
+        bool written = celix_version_fillString(entry->typed.versionValue, convertedValueBuffer, sizeof(convertedValueBuffer));
         if (written) {
             entry->value = celix_properties_createString(properties, convertedValueBuffer);
         } else {
-            entry->value = celix_version_toString(prototype->typed.versionValue);
+            entry->value = celix_version_toString(entry->typed.versionValue);
         }
-    } else if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG) {
+    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG) {
         // LONG_MAX str is 19 chars, LONG_MIN str is 20 chars
         (void)snprintf(convertedValueBuffer, sizeof(convertedValueBuffer), "%li", entry->typed.longValue);
         entry->value = celix_properties_createString(properties, convertedValueBuffer);
-    } else if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
+    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
         int written = snprintf(convertedValueBuffer, sizeof(convertedValueBuffer), "%f", entry->typed.doubleValue);
         if (written >= 0 || written < sizeof(convertedValueBuffer)) {
             entry->value = celix_properties_createString(properties, convertedValueBuffer);
@@ -160,21 +160,21 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
             asprintf(&val, "%f", entry->typed.doubleValue);
             entry->value = val;
         }
-    } else if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL) {
+    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL) {
         entry->value = entry->typed.boolValue ? CELIX_PROPERTIES_BOOL_TRUE_STRVAL : CELIX_PROPERTIES_BOOL_FALSE_STRVAL;
-    } else if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY) {
+    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY) {
         entry->value = celix_utils_longArrayListToString(entry->typed.arrayValue);
-    } else if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY) {
+    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY) {
         entry->value = celix_utils_doubleArrayListToString(entry->typed.arrayValue);
-    } else if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY) {
+    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY) {
         entry->value = celix_utils_boolArrayListToString(entry->typed.arrayValue);
-    } else if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY) {
+    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY) {
         entry->value = celix_utils_stringArrayListToString(entry->typed.arrayValue);
-    } else if (prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY) {
+    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY) {
         entry->value = celix_utils_versionArrayListToString(entry->typed.arrayValue);
     } else /*string value*/ {
-        assert(prototype->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING);
-        entry->value = celix_properties_createString(properties, prototype->typed.strValue);
+        assert(entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING);
+        entry->value = celix_properties_createString(properties, entry->typed.strValue);
         entry->typed.strValue = entry->value;
     }
 
@@ -1167,7 +1167,7 @@ celix_properties_assignStringArrayList(celix_properties_t* properties, const cha
 }
 
 celix_status_t
-celix_properties_setStrings(celix_properties_t* properties, const char* key, const char** values, size_t nrOfValues) {
+celix_properties_setStrings(celix_properties_t* properties, const char* key, const char* const * values, size_t nrOfValues) {
     assert(values != NULL);
     celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
     opts.simpleRemovedCallback = free;
