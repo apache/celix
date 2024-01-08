@@ -32,4 +32,3 @@ fi
 
 cd "${SCRIPT_LOCATION}"
 ${CONTAINER_ENGINE} build -t apache/celix-dev:ubuntu-latest -f Containerfile.ubuntu .
-

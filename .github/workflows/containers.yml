@@ -1,0 +1,38 @@
+name: Celix development containers
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 0 * * 0' # Weekly on Sunday at 00:00 UTC
+
+jobs:
+  container-build-ubuntu:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3.3.0
+      - name: Build container image
+        run: |
+          cd $GITHUB_WORKSPACE/container/
+          ./build-ubuntu-container.sh
+      - name: Build Celix using container image
+        run: |
+          cd $GITHUB_WORKSPACE/container/
+          ./run-ubuntu-container.sh "mkdir -p build && cd build && ../container/support-scripts/build-all.sh && make -j"
+      - name: Run Celix tests using container image
+        run: |
+          cd $GITHUB_WORKSPACE/container/
+          ./run-ubuntu-container.sh "cd build && ctest --output-on-failure"
+
+  container-build-gitpod:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3.3.0
+      - name: Build container image
+        run: |
+          cd $GITHUB_WORKSPACE/container/
+          docker build -t apache/celix-dev:gitpod-latest -f Containerfile.gitpod .
