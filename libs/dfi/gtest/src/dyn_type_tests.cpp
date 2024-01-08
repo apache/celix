@@ -268,6 +268,7 @@ TEST_F(DynTypeTests, SequenceWithPointerTest) {
     ASSERT_EQ(0, rc);
     ASSERT_TRUE(seq != NULL);
 
+    dynType_sequence_init(type, seq);
     rc = dynType_sequence_alloc(type, seq, 1);
     ASSERT_EQ(0, rc);
     struct item **loc = NULL;
@@ -338,6 +339,53 @@ TEST_F(DynTypeTests, SequenceReserve) {
     ASSERT_NE(0, rc);
     ASSERT_STREQ("Error null sequence", celix_err_popLastError());
 
+    dynType_destroy(type);
+}
+
+TEST_F(DynTypeTests, FillSequenceTest) {
+    struct double_sequence {
+        uint32_t cap;
+        uint32_t len;
+        double* buf;
+    };
+
+    dyn_type *type = NULL;
+    int rc = 0;
+    rc = dynType_parseWithStr("[D", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+
+    struct double_sequence *seq = NULL;
+    rc = dynType_alloc(type, (void **)&seq);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(seq != NULL);
+
+    rc = dynType_sequence_alloc(type, seq, 1);
+    ASSERT_EQ(0, rc);
+
+    void* loc;
+    rc = dynType_sequence_increaseLengthAndReturnLastLoc(type, seq, (void **)&loc);
+    ASSERT_EQ(0, rc);
+
+    double val = 2.0;
+    dynType_simple_setValue(dynType_sequence_itemType(type), loc, &val);
+    ASSERT_EQ(val, seq->buf[0]);
+
+    rc = dynType_sequence_increaseLengthAndReturnLastLoc(type, seq, (void **)&loc);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Cannot increase sequence length beyond capacity (1)", celix_err_popLastError());
+
+    rc = dynType_sequence_reserve(type, seq, 2);
+    ASSERT_EQ(0, rc);
+    rc = dynType_sequence_locForIndex(type, seq, 1, (void **)&loc);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Requesting index (1) outsize defined length (1) but within capacity", celix_err_popLastError());
+
+
+    rc = dynType_sequence_locForIndex(type, seq, 2, (void **)&loc);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Requested index (2) is greater than capacity (2) of sequence", celix_err_popLastError());
+
+    dynType_free(type, seq);
     dynType_destroy(type);
 }
 

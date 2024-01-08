@@ -651,9 +651,11 @@ static void dynType_deepFree(const dyn_type* type, void* loc, bool alsoDeleteSel
             case DYN_TYPE_SIMPLE:
                 //nop
                 break;
+//LCOV_EXCL_START
             default:
-                celix_err_pushf("Unexpected switch case. cannot free dyn type %c\n", type->descriptor);
+                assert(0 && "Unexpected switch case. cannot free dyn type");
                 break;
+//LCOV_EXCL_STOP
         }
 
         if (alsoDeleteSelf) {
@@ -666,7 +668,7 @@ static void dynType_freeSequenceType(const dyn_type* type, void* seqLoc) {
     struct generic_sequence* seq = seqLoc;
     const dyn_type* itemType = dynType_sequence_itemType(type);
     void* itemLoc = NULL;
-    int i;
+    uint32_t i;
     for (i = 0; i < seq->len; ++i) {
         dynType_sequence_locForIndex(type, seqLoc, i, &itemLoc);
         dynType_deepFree(itemType, itemLoc, false);
@@ -688,50 +690,39 @@ uint32_t dynType_sequence_length(const void *seqLoc) {
     return seq->len;
 }
 
-int dynType_sequence_locForIndex(const dyn_type* type, void* seqLoc, int index, void** out) {
+int dynType_sequence_locForIndex(const dyn_type* type, void* seqLoc, uint32_t index, void** out) {
     assert(type->type == DYN_TYPE_SEQUENCE);
-    int status = OK;
-
     struct generic_sequence* seq = seqLoc;
 
     size_t itemSize = dynType_size(type->sequence.itemType);
 
     if (index >= seq->cap) {
-        status = ERROR;
-        celix_err_pushf("Requested index (%i) is greater than capacity (%u) of sequence", index, seq->cap);
+        celix_err_pushf("Requested index (%u) is greater than capacity (%u) of sequence", index, seq->cap);
+        return ERROR;
     }
 
     if (index >= seq->len) {
-        status = ERROR;
-        celix_err_pushf("Requesting index (%i) outsize defined length (%u) but within capacity", index, seq->len);
+        celix_err_pushf("Requesting index (%u) outsize defined length (%u) but within capacity", index, seq->len);
+        return ERROR;
     }
 
-    if (status == OK) {
-        char* valLoc = seq->buf + (index * itemSize);
-        (*out) = valLoc;
-    }
+    char* valLoc = seq->buf + (index * itemSize);
+    (*out) = valLoc;
 
-    return status;
+    return OK;
 }
 
 int dynType_sequence_increaseLengthAndReturnLastLoc(const dyn_type* type, void* seqLoc, void** valLoc) {
     assert(type->type == DYN_TYPE_SEQUENCE);
-    int status = OK;
     struct generic_sequence* seq = seqLoc;
 
-    int lastIndex = seq->len;
-    if (seq->len < seq->cap) {
-        seq->len += 1;
-    } else {
-        status = ERROR;
+    uint32_t lastIndex = seq->len;
+    if (seq->len >= seq->cap) {
         celix_err_pushf("Cannot increase sequence length beyond capacity (%u)", seq->cap);
+        return ERROR;
     }
-
-    if (status == OK) {
-        status = dynType_sequence_locForIndex(type, seqLoc, lastIndex, valLoc);
-    }
-
-    return status;
+    seq->len += 1;
+    return dynType_sequence_locForIndex(type, seqLoc, lastIndex, valLoc);
 }
 
 const dyn_type* dynType_sequence_itemType(const dyn_type* type) {

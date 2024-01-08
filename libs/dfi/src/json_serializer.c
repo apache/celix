@@ -437,7 +437,7 @@ static int jsonSerializer_writeSequence(const dyn_type *type, void *input, json_
     const dyn_type *itemType = dynType_sequence_itemType(type);
     uint32_t len = dynType_sequence_length(input);
 
-    int i = 0;
+    uint32_t i = 0;
     void *itemLoc = NULL;
     json_t *item = NULL;
     for (i = 0; i < len; i += 1) {
