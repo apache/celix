@@ -59,11 +59,12 @@ static void dynType_printSequence(const char* name, const dyn_type* type, int de
 static void dynType_printSimple(const char* name, const dyn_type* type, int depth, FILE* stream);
 static void dynType_printEnum(const char* name, const dyn_type* type, int depth, FILE* stream);
 static void dynType_printTypedPointer(const char* name, const dyn_type* type, int depth, FILE* stream);
+static void dynType_printText(const char* name, const dyn_type* type, int depth, FILE* stream);
 static void dynType_printDepth(int depth, FILE* stream);
 
 static void dynType_printTypes(const dyn_type* type, FILE* stream);
-static void dynType_printComplexType(dyn_type* type, FILE* stream);
-static void dynType_printSimpleType(dyn_type* type, FILE* stream);
+static void dynType_printComplexType(const dyn_type* type, FILE* stream);
+static void dynType_printSimpleType(const dyn_type* type, FILE* stream);
 
 static int dynType_parseText(FILE* stream, dyn_type* type);
 static int dynType_parseEnum(FILE* stream, dyn_type* type);
@@ -534,7 +535,7 @@ const dyn_type* dynType_complex_dynTypeAt(const dyn_type* type, int index) {
     assert(type->type == DYN_TYPE_COMPLEX);
     assert(index >= 0);
     dyn_type* sub = type->complex.types[index];
-    if (sub->type == DYN_TYPE_REF) {
+    while (sub->type == DYN_TYPE_REF) {
         sub = sub->ref.ref;
     }
     return sub;
@@ -728,7 +729,7 @@ int dynType_sequence_increaseLengthAndReturnLastLoc(const dyn_type* type, void* 
 const dyn_type* dynType_sequence_itemType(const dyn_type* type) {
     assert(type->type == DYN_TYPE_SEQUENCE);
     dyn_type *itemType = type->sequence.itemType;
-    if (itemType->type == DYN_TYPE_REF) {
+    while (itemType->type == DYN_TYPE_REF) {
         itemType = itemType->ref.ref;
     }
     return itemType;
@@ -835,7 +836,7 @@ static unsigned short dynType_getOffset(const dyn_type* type, int index) {
 
 size_t dynType_size(const dyn_type* type) {
     const dyn_type* rType = type;
-    if (type->type == DYN_TYPE_REF) {
+    while (rType->type == DYN_TYPE_REF) {
         rType = type->ref.ref;
     }
     return rType->ffiType->size;
@@ -848,7 +849,7 @@ int dynType_type(const dyn_type* type) {
 const dyn_type* dynType_typedPointer_getTypedType(const dyn_type* type) {
     assert(type->type == DYN_TYPE_TYPED_POINTER);
     dyn_type* typedType = type->typedPointer.typedType;
-    if (typedType->type == DYN_TYPE_REF) {
+    while (typedType->type == DYN_TYPE_REF) {
         typedType = typedType->ref.ref;
     }
     return typedType;
@@ -857,21 +858,15 @@ const dyn_type* dynType_typedPointer_getTypedType(const dyn_type* type) {
 
 int dynType_text_allocAndInit(const dyn_type* type, void* textLoc, const char* value) {
     assert(type->type == DYN_TYPE_TEXT);
-    int status = 0;
     const char* str = strdup(value);
     char const** loc = textLoc;
-    if (str != NULL) {
-        *loc = str;
-    } else {
-        status = ERROR;
+    if (str == NULL) {
         celix_err_pushf("Cannot allocate memory for string");
+        return MEM_ERROR;
     }
-    return status;
+    *loc = str;
+    return OK;
 }
-
-
-
-
 
 void dynType_print(const dyn_type *type, FILE *stream) {
     if (type != NULL) {
@@ -893,9 +888,10 @@ static void dynType_printDepth(int depth, FILE *stream) {
 
 static void dynType_printAny(const char* name, const dyn_type* type, int depth, FILE *stream) {
     const dyn_type* toPrint = type;
-    if (toPrint->type == DYN_TYPE_REF) {
+    while (toPrint->type == DYN_TYPE_REF) {
         toPrint = toPrint->ref.ref;
     }
+    name = (name != NULL) ? name : "(unnamed)";
     switch(toPrint->type) {
         case DYN_TYPE_COMPLEX :
             dynType_printComplex(name, toPrint, depth, stream);
@@ -909,9 +905,14 @@ static void dynType_printAny(const char* name, const dyn_type* type, int depth, 
         case DYN_TYPE_TYPED_POINTER :
             dynType_printTypedPointer(name, toPrint, depth, stream);
             break;
-        default :
-            fprintf(stream, "TODO Unsupported type %d\n", toPrint->type);
+        case DYN_TYPE_TEXT:
+            dynType_printText(name, toPrint, depth, stream);
             break;
+//LCOV_EXCL_START
+        default :
+            assert(0 && "Unexpected switch case. cannot print dyn type");
+            break;
+//LCOV_EXCL_STOP
     }
 }
 
@@ -990,6 +991,12 @@ static void dynType_printTypedPointer(const char* name, const dyn_type* type, in
     dynType_printAny(subName, type->typedPointer.typedType, depth + 1, stream);
 }
 
+static void dynType_printText(const char* name, const dyn_type* type, int depth, FILE* stream) {
+    dynType_printDepth(depth, stream);
+    fprintf(stream, "%s: text type, size is %zu, alignment is %i, descriptor is '%c'.\n",
+            name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+}
+
 static void dynType_printTypes(const dyn_type* type, FILE* stream) {
 
     dyn_type* parent = type->parent;
@@ -1006,7 +1013,7 @@ static void dynType_printTypes(const dyn_type* type, FILE* stream) {
     struct type_entry* entry = NULL;
     TAILQ_FOREACH(entry, &type->nestedTypesHead, entries) {
         dyn_type* toPrint = entry->type;
-        if (toPrint->type == DYN_TYPE_REF) {
+        while (toPrint->type == DYN_TYPE_REF) {
             toPrint = toPrint->ref.ref;
         }
 
@@ -1018,7 +1025,7 @@ static void dynType_printTypes(const dyn_type* type, FILE* stream) {
                 dynType_printSimpleType(toPrint, stream);
                 break;
             default :
-                printf("TODO Print Type\n");
+                printf("TODO Print Type %d\n", toPrint->type);
                 break;
         }
     }
@@ -1040,7 +1047,7 @@ static void dynType_printTypes(const dyn_type* type, FILE* stream) {
     }
 }
 
-static void dynType_printComplexType(dyn_type *type, FILE *stream) {
+static void dynType_printComplexType(const dyn_type *type, FILE *stream) {
     fprintf(stream, "type '%s': complex type, size is %zu, alignment is %i, descriptor is '%c'. fields:\n", type->name,  type->ffiType->size, type->ffiType->alignment, type->descriptor);
 
     struct complex_type_entry *entry = NULL;
@@ -1051,7 +1058,7 @@ static void dynType_printComplexType(dyn_type *type, FILE *stream) {
     fprintf(stream, "}\n");
 }
 
-static void dynType_printSimpleType(dyn_type *type, FILE *stream) {
-    fprintf(stream, "\ttype '%s': simple type, size is %zu, alignment is %i, descriptor is '%c'\n", type->name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+static void dynType_printSimpleType(const dyn_type *type, FILE *stream) {
+    fprintf(stream, "type '%s': simple type, size is %zu, alignment is %i, descriptor is '%c'\n", type->name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
 }
 

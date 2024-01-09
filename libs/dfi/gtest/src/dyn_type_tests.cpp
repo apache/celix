@@ -16,8 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 #include "gtest/gtest.h"
+#include "celix_stdio_cleanup.h"
+#include "celix_stdlib_cleanup.h"
 
 extern "C" {
     #include "dyn_common.h"
@@ -30,6 +31,7 @@ extern "C" {
         //printf("\n-- example %s with descriptor string '%s' --\n", exName, descriptorStr);
         int status = dynType_parseWithStr(descriptorStr, exName, NULL, &type);
         ASSERT_EQ(0, status);
+        ASSERT_STREQ(exName, dynType_getName(type));
 
         //MEM check, to try to ensure no mem leaks/corruptions occur.
         int i;
@@ -82,11 +84,17 @@ public:
 #define EX15 "Tsample={jDD time val1 val2};Tresult={jDlsample; time result sample};Lresult;"
 #define EX16 "Tpoi={BDD id lat lon};Lpoi;"
 #define EX17 "{#v1=0;#v2=1;E#v1=9;#v2=10;E enum1 enum2}"
+#define EX18 "Ttext=t;ltext;"
+#define EX19 "Tsample={DD vala valb};Tref=lsample;;lref;"
+#define EX20 "TINTEGER=I;Tsample={DlINTEGER; vala valb};Tref=lsample;;lref;"
 
 #define CREATE_EXAMPLES_TEST(DESC) \
     TEST_F(DynTypeTests, ParseTestExample ## DESC) { \
         runTest(DESC, #DESC); \
-    }    
+    } \
+    TEST_F(DynTypeTests, ParseTestExampleNoName ## DESC) { \
+            runTest(DESC, nullptr); \
+    }
 
 CREATE_EXAMPLES_TEST(EX1)
 CREATE_EXAMPLES_TEST(EX2)
@@ -101,10 +109,13 @@ CREATE_EXAMPLES_TEST(EX10)
 CREATE_EXAMPLES_TEST(EX11)
 CREATE_EXAMPLES_TEST(EX12)
 CREATE_EXAMPLES_TEST(EX13)
-//CREATE_EXAMPLES_TEST(EX14)
+CREATE_EXAMPLES_TEST(EX14)
 CREATE_EXAMPLES_TEST(EX15)
 CREATE_EXAMPLES_TEST(EX16)
 CREATE_EXAMPLES_TEST(EX17)
+CREATE_EXAMPLES_TEST(EX18)
+CREATE_EXAMPLES_TEST(EX19)
+CREATE_EXAMPLES_TEST(EX20)
 
 TEST_F(DynTypeTests, ParseRandomGarbageTest) {
     /*
@@ -222,6 +233,17 @@ TEST_F(DynTypeTests, MetaInfoTest) {
     //rc = dynType_parseWithStr("{DDD a b c}", NULL, NULL, &type);
 
     ASSERT_EQ(0, rc);
+
+    auto entries = dynType_metaEntries(type);
+    struct meta_entry* entry = NULL;
+    size_t nbEntries = 0;
+    TAILQ_FOREACH(entry, entries, entries) {
+        nbEntries++;
+        ASSERT_STREQ("a", entry->name);
+        ASSERT_STREQ("t", entry->value);
+    }
+    ASSERT_EQ(1, nbEntries);
+
 
     const char *val = NULL;
     val = dynType_getMetaInfo(type, "a");
@@ -396,6 +418,33 @@ TEST_F(DynTypeTests, EnumTest) {
     ASSERT_EQ(0, rc);
 
     dynType_print(type, stdout);
+    dynType_destroy(type);
+}
+
+
+TEST_F(DynTypeTests, PrintNullTypeTest) {
+    celix_autofree char* buf = nullptr;
+    size_t bufSize = 0;
+    celix_autoptr(FILE) result = open_memstream(&buf, &bufSize);
+    dynType_print(nullptr, result);
+    fflush(result);
+    ASSERT_STREQ("invalid type\n", buf);
+}
+
+TEST_F(DynTypeTests, TextTest) {
+    dyn_type *type = NULL;
+    int rc = 0;
+    rc = dynType_parseWithStr("t", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(DYN_TYPE_TEXT, dynType_type(type));
+
+    char** val = nullptr;
+    rc = dynType_alloc(type, (void**)&val);
+    ASSERT_EQ(0, rc);
+    rc = dynType_text_allocAndInit(type, val, "test");
+    ASSERT_EQ(0, rc);
+    ASSERT_STREQ("test", *val);
+    dynType_free(type, val);
     dynType_destroy(type);
 }
 

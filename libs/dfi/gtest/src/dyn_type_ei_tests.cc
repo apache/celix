@@ -172,3 +172,21 @@ TEST_F(DynTypeErrorInjectionTestSuite, SequenceReserveError) {
     dynType_free(type, seq);
     dynType_destroy(type);
 }
+
+TEST_F(DynTypeErrorInjectionTestSuite, TextAllocateError) {
+    dyn_type *type = NULL;
+    int rc = 0;
+    rc = dynType_parseWithStr("t", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(DYN_TYPE_TEXT, dynType_type(type));
+
+    char** val = nullptr;
+    rc = dynType_alloc(type, (void**)&val);
+    ASSERT_EQ(0, rc);
+    celix_ei_expect_strdup((void*)dynType_text_allocAndInit, 0, nullptr);
+    rc = dynType_text_allocAndInit(type, val, "test");
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Cannot allocate memory for string", celix_err_popLastError());
+    dynType_free(type, val);
+    dynType_destroy(type);
+}
