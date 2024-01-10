@@ -938,8 +938,8 @@ static void dynType_printComplex(const char* name, const dyn_type* type, int dep
 
 static void dynType_printSequence(const char* name, const dyn_type* type, int depth, FILE* stream) {
     dynType_printDepth(depth, stream);
-    fprintf(stream, "sequence, size is %zu, alignment is %i, descriptor is '%c'. fields:\n",
-            type->ffiType->size, type->ffiType->alignment, type->descriptor);
+    fprintf(stream, "%s: sequence, size is %zu, alignment is %i, descriptor is '%c'. fields:\n",
+            name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
 
     dynType_printDepth(depth + 1, stream);
     fprintf(stream, "cap: simple type, size is %zu, alignment is %i.\n",
@@ -998,16 +998,8 @@ static void dynType_printText(const char* name, const dyn_type* type, int depth,
 }
 
 static void dynType_printTypes(const dyn_type* type, FILE* stream) {
-
-    dyn_type* parent = type->parent;
-    struct type_entry* pentry = NULL;
-    while (parent != NULL) {
-        TAILQ_FOREACH(pentry, &parent->nestedTypesHead, entries) {
-            if (pentry->type == type) {
-                return;
-            }
-        }
-        parent = parent->parent;
+    if (type->type == DYN_TYPE_REF) {
+        return;
     }
 
     struct type_entry* entry = NULL;
