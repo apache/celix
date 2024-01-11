@@ -66,7 +66,7 @@ enum dyn_function_argument_meta {
  * @retval 1 If there is not enough memory to create dyn_function_type.
  * @retval 2 Errors other than out-of-memory.
  */
-CELIX_DFI_EXPORT int dynFunction_parse(FILE *descriptorStream, struct types_head *refTypes, dyn_function_type **dynFunc);
+CELIX_DFI_EXPORT int dynFunction_parse(FILE* descriptorStream, struct types_head* refTypes, dyn_function_type** dynFunc);
 
 /**
  * @brief Creates a dyn_function_type according to the given function descriptor string.
@@ -82,14 +82,14 @@ CELIX_DFI_EXPORT int dynFunction_parse(FILE *descriptorStream, struct types_head
  * @retval 1 If there is not enough memory to create dyn_function_type.
  * @retval 2 Errors other than out-of-memory.
  */
-CELIX_DFI_EXPORT int dynFunction_parseWithStr(const char *descriptor, struct types_head *refTypes, dyn_function_type **dynFunc);
+CELIX_DFI_EXPORT int dynFunction_parseWithStr(const char* descriptor, struct types_head* refTypes, dyn_function_type** dynFunc);
 
 /**
  * @brief Returns the number of arguments of the given dynamic function type instance.
  * @param[in] dynFunc The dynamic type instance for function.
  * @return The number of arguments.
  */
-CELIX_DFI_EXPORT int dynFunction_nrOfArguments(dyn_function_type *dynFunc);
+CELIX_DFI_EXPORT int dynFunction_nrOfArguments(const dyn_function_type* dynFunc);
 
 /**
  * @brief Returns the argument type for the given argument index.
@@ -97,7 +97,7 @@ CELIX_DFI_EXPORT int dynFunction_nrOfArguments(dyn_function_type *dynFunc);
  * @param[in] argumentNr The argument index.
  * @return The argument type.
  */
-CELIX_DFI_EXPORT const dyn_type* dynFunction_argumentTypeForIndex(dyn_function_type* dynFunc, int argumentNr);
+CELIX_DFI_EXPORT const dyn_type* dynFunction_argumentTypeForIndex(const dyn_function_type* dynFunc, int argumentNr);
 
 /**
  * @brief Returns the argument meta for the given argument index.
@@ -105,20 +105,20 @@ CELIX_DFI_EXPORT const dyn_type* dynFunction_argumentTypeForIndex(dyn_function_t
  * @param[in] argumentNr The argument index.
  * @return The argument meta.
  */
-CELIX_DFI_EXPORT enum dyn_function_argument_meta dynFunction_argumentMetaForIndex(dyn_function_type *dynFunc, int argumentNr);
+CELIX_DFI_EXPORT enum dyn_function_argument_meta dynFunction_argumentMetaForIndex(const dyn_function_type* dynFunc, int argumentNr);
 
 /**
  * @brief Returns the return value type for the given dynamic function type instance.
  * @param[in] dynFunc The dynamic type instance for function.
  * @return The return value type.
  */
-CELIX_DFI_EXPORT const dyn_type* dynFunction_returnType(dyn_function_type *dynFunction);
+CELIX_DFI_EXPORT const dyn_type* dynFunction_returnType(const dyn_function_type* dynFunction);
 
 /**
  * @brief Destroys the given dynamic function type instance.
  * @param[in] dynFunc The dynamic type instance for function.
  */
-CELIX_DFI_EXPORT void dynFunction_destroy(dyn_function_type *dynFunc);
+CELIX_DFI_EXPORT void dynFunction_destroy(dyn_function_type* dynFunc);
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(dyn_function_type, dynFunction_destroy);
 
@@ -130,7 +130,7 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(dyn_function_type, dynFunction_destroy);
  * @param[in] argValues The argument values.
  * @return 0
  */
-CELIX_DFI_EXPORT int dynFunction_call(dyn_function_type *dynFunc, void(*fn)(void), void *returnValue, void **argValues);
+CELIX_DFI_EXPORT int dynFunction_call(const dyn_function_type* dynFunc, void(*fn)(void), void* returnValue, void** argValues);
 
 /**
  * @brief Creates a closure for the given dynamic function type instance.
@@ -142,7 +142,7 @@ CELIX_DFI_EXPORT int dynFunction_call(dyn_function_type *dynFunc, void(*fn)(void
  * @retval 1 If there is not enough memory to create the closure.
  * @retval 2 Errors other than out-of-memory.
  */
-CELIX_DFI_EXPORT int dynFunction_createClosure(dyn_function_type *func, void (*bind)(void *, void **, void*), void *userData, void(**fn)(void));
+CELIX_DFI_EXPORT int dynFunction_createClosure(dyn_function_type* func, void (*bind)(void*, void**, void*), void* userData, void(**fn)(void));
 
 /**
  * @brief Returns the function pointer for the given dynamic function type instance.
@@ -150,18 +150,18 @@ CELIX_DFI_EXPORT int dynFunction_createClosure(dyn_function_type *func, void (*b
  * @param[out] fn The function pointer.
  * @return 0 If successful, 1 if the dynamic function type instance has no function pointer.
  */
-CELIX_DFI_EXPORT int dynFunction_getFnPointer(dyn_function_type *func, void (**fn)(void));
+CELIX_DFI_EXPORT int dynFunction_getFnPointer(const dyn_function_type* func, void (**fn)(void));
 
 /**
  * Returns whether the function has a return type.
  * Will return false if return is void.
  */
-CELIX_DFI_EXPORT bool dynFunction_hasReturn(dyn_function_type *dynFunction);
+CELIX_DFI_EXPORT bool dynFunction_hasReturn(const dyn_function_type* dynFunction);
 
 /**
  * @brief Returns the name of the given dynamic function type instance.
  */
-CELIX_DFI_EXPORT const char* dynFunction_getName(const dyn_function_type *func);
+CELIX_DFI_EXPORT const char* dynFunction_getName(const dyn_function_type* func);
 
 #ifdef __cplusplus
 }
