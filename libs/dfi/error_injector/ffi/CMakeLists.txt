@@ -15,5 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(dfi)
-add_subdirectory(ffi)
+add_library(ffi_ei STATIC src/ffi_ei.cc)
+
+target_include_directories(ffi_ei PUBLIC include)
+target_link_libraries(ffi_ei PUBLIC Celix::error_injector libffi::libffi)
+
+target_link_options(ffi_ei INTERFACE
+        LINKER:--wrap,ffi_prep_cif
+)
+add_library(Celix::ffi_ei ALIAS ffi_ei)

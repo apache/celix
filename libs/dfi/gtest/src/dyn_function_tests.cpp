@@ -17,13 +17,14 @@
  * under the License.
  */
 
-#include "gtest/gtest.h"
 
 #include "dyn_example_functions.h"
-
 #include "dyn_common.h"
 #include "dyn_function.h"
+#include "celix_err.h"
+
 #include <ffi.h>
+#include <gtest/gtest.h>
 
 #define INVALID_FUNC_DESCRIPTOR "example$[D)V"//$ is an invalid symbol, missing (
 #define INVALID_FUNC_TYPE_DESCRIPTOR "example(H)A"//H and A are invalid types
@@ -33,7 +34,9 @@ class DynFunctionTests : public ::testing::Test {
 public:
     DynFunctionTests() {
     }
-    ~DynFunctionTests() override = default;
+    ~DynFunctionTests() override {
+        celix_err_resetErrors();
+    }
 
 };
 
@@ -251,20 +254,18 @@ TEST_F(DynFunctionTests, DynFuncTest5) {
     EXPECT_TRUE(func_test5());
 }
 
-extern "C" {
-static bool func_invalid() {
+TEST_F(DynFunctionTests, InvalidDynFuncTest) {
+
     dyn_function_type *dynFunc = nullptr;
     int rc1 = dynFunction_parseWithStr(INVALID_FUNC_DESCRIPTOR, nullptr, &dynFunc);
+    EXPECT_NE(0, rc1);
+    EXPECT_STREQ("Error parsing descriptor", celix_err_popLastError());
+    EXPECT_STREQ("Expected '(' token got '$'", celix_err_popLastError());
 
     dynFunc = nullptr;
     int rc2 = dynFunction_parseWithStr(INVALID_FUNC_TYPE_DESCRIPTOR, nullptr, &dynFunc);
-    return rc1 != 0 && rc2 != 0;
-}
-}
-
-TEST_F(DynFunctionTests, InvalidDynFuncTest) {
-    //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to
-    //corrupted memory. Note that libffi is a function for interfacing with C not C++
-    EXPECT_TRUE(func_invalid());
+    EXPECT_NE(0, rc2);
+    EXPECT_STREQ("Error parsing descriptor", celix_err_popLastError());
+    EXPECT_STREQ("Error unsupported type 'H'", celix_err_popLastError());
 }
 

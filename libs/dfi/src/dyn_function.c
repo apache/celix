@@ -37,67 +37,53 @@ static void dynFunction_ffiBind(ffi_cif* cif, void* ret, void* args[], void* use
 
 int dynFunction_parse(FILE* descriptor, struct types_head* refTypes, dyn_function_type** out) {
     int status = OK;
-    dyn_function_type* dynFunc = NULL;
-    
-    dynFunc = calloc(1, sizeof(*dynFunc));
-
-    if (dynFunc != NULL) {
-        TAILQ_INIT(&dynFunc->arguments);
-        dynFunc->refTypes = refTypes;
-        status = dynFunction_parseDescriptor(dynFunc, descriptor);
-        if (status == 0) {
-            int rc = dynFunction_initCif(dynFunc);
-            if (rc != 0) {
-                celix_err_pushf("Error initializing cif");
-                status = ERROR;
-            }
-        }
-    } else {
-        celix_err_pushf("Error allocating memory for dyn function\n");
-        status = MEM_ERROR;
+    celix_autoptr(dyn_function_type) dynFunc = calloc(1, sizeof(*dynFunc));
+    if (dynFunc == NULL) {
+        celix_err_pushf("Error allocating memory for dyn function");
+        return MEM_ERROR;
     }
 
-    if (status == OK) {
-        dyn_function_argument_type* arg = NULL;
-        TAILQ_FOREACH(arg, &dynFunc->arguments, entries) {
-            const char* meta = dynType_getMetaInfo(arg->type, "am");
-            if (meta == NULL) {
-                arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__STD;
-            } else if (strcmp(meta, "handle") == 0) {
-                arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__HANDLE;
-            } else if (strcmp(meta, "pre") == 0) {
-                arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT;
-            } else if (strcmp(meta, "out") == 0) {
-                arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__OUTPUT;
-            } else {
-                arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__STD;
-            }
-        }
+    TAILQ_INIT(&dynFunc->arguments);
+    dynFunc->refTypes = refTypes;
+    status = dynFunction_parseDescriptor(dynFunc, descriptor);
+    if (status != OK)  {
+        celix_err_pushf("Error parsing descriptor");
+        return status;
     }
-    
-    if (status == OK) {
-        *out = dynFunc;
-    }    else {
-        celix_err_pushf("Failed to Create dyn function");
-        if (dynFunc != NULL) {
-            dynFunction_destroy(dynFunc);
-        }
+    int rc = dynFunction_initCif(dynFunc);
+    if (rc != 0) {
+        return ERROR;
+    }
 
+    dyn_function_argument_type* arg = NULL;
+    TAILQ_FOREACH(arg, &dynFunc->arguments, entries) {
+        const char* meta = dynType_getMetaInfo(arg->type, "am");
+        if (meta == NULL) {
+            arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__STD;
+        } else if (strcmp(meta, "handle") == 0) {
+            arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__HANDLE;
+        } else if (strcmp(meta, "pre") == 0) {
+            arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT;
+        } else if (strcmp(meta, "out") == 0) {
+            arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__OUTPUT;
+        } else {
+            arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__STD;
+        }
     }
-    
-    return status;
+
+    *out = celix_steal_ptr(dynFunc);
+    return OK;
 }
 
 int dynFunction_parseWithStr(const char* descriptor, struct types_head* refTypes, dyn_function_type** out)  {
     int status = OK;
     FILE* stream = fmemopen((char* )descriptor, strlen(descriptor) + 1, "r");
-    if (stream != NULL) {
-        status = dynFunction_parse(stream, refTypes, out);
-        fclose(stream);
-    } else {
-        status = MEM_ERROR;
+    if (stream == NULL) {
         celix_err_pushf("Error creating mem stream for descriptor string. %s", strerror(errno));
+        return MEM_ERROR;
     }
+    status = dynFunction_parse(stream, refTypes, out);
+    fclose(stream);
     return status;
 }
 
@@ -194,6 +180,7 @@ static int dynFunction_initCif(dyn_function_type* dynFunc) {
 
     int ffiResult = ffi_prep_cif(&dynFunc->cif, FFI_DEFAULT_ABI, nargs, returnType, args);
     if (ffiResult != FFI_OK) {
+        celix_err_pushf("Error initializing cif %d", ffiResult);
         status = 1;
     }
 

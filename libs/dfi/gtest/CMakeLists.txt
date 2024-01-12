@@ -18,7 +18,7 @@
 
 add_executable(test_dfi
 		src/dyn_example_functions.c
-        src/dyn_type_tests.cpp
+		src/dyn_type_tests.cpp
 		src/dyn_function_tests.cpp
 		src/dyn_closure_tests.cpp
 		src/dyn_interface_tests.cpp
@@ -44,12 +44,14 @@ if (EI_TESTS)
 			src/dyn_common_ei_tests.cc
 			src/dyn_type_ei_tests.cc
 			src/dyn_message_ei_tests.cc
+			src/dyn_function_ei_tests.cc
 	)
 	target_link_libraries(test_dfi_with_ei PRIVATE
 			dfi_cut
 			Celix::malloc_ei
 			Celix::stdio_ei
 			Celix::string_ei
+			Celix::ffi_ei
 			GTest::gtest GTest::gtest_main
 	)
 	add_test(NAME run_test_dfi_with_ei COMMAND test_dfi_with_ei)
