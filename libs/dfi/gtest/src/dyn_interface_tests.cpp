@@ -57,8 +57,8 @@ extern "C" {
         status = dynInterface_getVersionString(dynIntf, &version);
         ASSERT_EQ(0, status);
         ASSERT_STREQ(v, version);
+        celix_version_t* localMsgVersion = celix_version_createVersionFromString(version);
         celix_version_t* msgVersion = nullptr;
-        celix_version_t* localMsgVersion = localMsgVersion = celix_version_createVersionFromString(version);
         status = dynInterface_getVersion(dynIntf, &msgVersion);
         ASSERT_EQ(0, status);
         int cmpVersion = celix_version_compareTo(msgVersion, localMsgVersion);
