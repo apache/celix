@@ -76,6 +76,10 @@ celix_status_t importRegistration_create(
         FILE *logFile,
         import_registration_t **out) {
     import_registration_t *reg = calloc(1, sizeof(*reg));
+    if (!reg) {
+        return CELIX_ENOMEM;
+    }
+
     reg->context = context;
     reg->endpoint = endpoint;
     reg->classObject = classObject;
@@ -95,14 +99,13 @@ celix_status_t importRegistration_create(
     reg->logFile = logFile;
 
 
-    if (reg && reg->version && reg->proxies && reg->interceptorsHandler) {
-        //printf("IMPORT REGISTRATION IS %p\n", reg);
-        *out = reg;
+    if (!reg->version || !reg->proxies || !reg->interceptorsHandler) {
+        importRegistration_destroy(reg);
         return CELIX_ENOMEM;
-    } else {
-    	importRegistration_destroy(reg);
+
     }
 
+    *out = reg;
     return CELIX_SUCCESS;
 }
 
