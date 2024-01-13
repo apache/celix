@@ -52,7 +52,12 @@ TEST_F(DynFunctionErrorInjectionTestSuite, ParseError) {
     celix_ei_expect_ffi_prep_cif((void*)dynFunction_parse, 1, FFI_BAD_TYPEDEF);
     rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, nullptr, &dynFunc);
     EXPECT_NE(0, rc);
-    EXPECT_STREQ("Error initializing cif 1", celix_err_popLastError());
+    EXPECT_STREQ("Error ffi_prep_cif 1", celix_err_popLastError());
+
+    celix_ei_expect_calloc((void*)dynFunction_parse, 1, nullptr, 4);
+    rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, nullptr, &dynFunc);
+    EXPECT_NE(0, rc);
+    EXPECT_STREQ("Error allocating memory for ffi args", celix_err_popLastError());
 
     celix_ei_expect_fmemopen((void*)dynFunction_parseWithStr, 0, nullptr);
     rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, nullptr, &dynFunc);

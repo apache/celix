@@ -50,9 +50,9 @@ int dynFunction_parse(FILE* descriptor, struct types_head* refTypes, dyn_functio
         celix_err_pushf("Error parsing descriptor");
         return status;
     }
-    int rc = dynFunction_initCif(dynFunc);
-    if (rc != 0) {
-        return ERROR;
+    status = dynFunction_initCif(dynFunc);
+    if (status != OK) {
+        return status;
     }
 
     dyn_function_argument_type* arg = NULL;
@@ -161,8 +161,6 @@ enum dyn_function_argument_meta dynFunction_argumentMetaForIndex(const dyn_funct
 
 
 static int dynFunction_initCif(dyn_function_type* dynFunc) {
-    int status = 0;
-
     unsigned int nargs = 0;
     dyn_function_argument_type* entry = NULL;
     TAILQ_FOREACH(entry, &dynFunc->arguments, entries) {
@@ -170,6 +168,10 @@ static int dynFunction_initCif(dyn_function_type* dynFunc) {
     }
 
     dynFunc->ffiArguments = calloc(nargs, sizeof(ffi_type*));
+    if (dynFunc->ffiArguments == NULL) {
+        celix_err_push("Error allocating memory for ffi args");
+        return MEM_ERROR;
+    }
 
     TAILQ_FOREACH(entry, &dynFunc->arguments, entries) {
         dynFunc->ffiArguments[entry->index] = dynType_ffiType(entry->type);
@@ -180,11 +182,11 @@ static int dynFunction_initCif(dyn_function_type* dynFunc) {
 
     int ffiResult = ffi_prep_cif(&dynFunc->cif, FFI_DEFAULT_ABI, nargs, returnType, args);
     if (ffiResult != FFI_OK) {
-        celix_err_pushf("Error initializing cif %d", ffiResult);
-        status = 1;
+        celix_err_pushf("Error ffi_prep_cif %d", ffiResult);
+        return ERROR;
     }
 
-    return status;
+    return OK;
 }
 
 void dynFunction_destroy(dyn_function_type* dynFunc) {
