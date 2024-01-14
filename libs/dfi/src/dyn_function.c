@@ -19,7 +19,9 @@
 
 #include "dyn_function.h"
 #include "dyn_function_common.h"
+#include "celix_cleanup.h"
 #include "celix_err.h"
+#include "celix_stdlib_cleanup.h"
 
 #include <strings.h>
 #include <stdlib.h>
@@ -77,7 +79,7 @@ int dynFunction_parse(FILE* descriptor, struct types_head* refTypes, dyn_functio
 
 int dynFunction_parseWithStr(const char* descriptor, struct types_head* refTypes, dyn_function_type** out)  {
     int status = OK;
-    FILE* stream = fmemopen((char* )descriptor, strlen(descriptor) + 1, "r");
+    FILE* stream = fmemopen((char* )descriptor, strlen(descriptor), "r");
     if (stream == NULL) {
         celix_err_pushf("Error creating mem stream for descriptor string. %s", strerror(errno));
         return MEM_ERROR;
@@ -89,60 +91,53 @@ int dynFunction_parseWithStr(const char* descriptor, struct types_head* refTypes
 
 static int dynFunction_parseDescriptor(dyn_function_type* dynFunc, FILE* descriptor) {
     int status = OK;
-    char* name = NULL;
 
-    status = dynCommon_parseName(descriptor, &name);
-
-    if (status == OK) {
-        dynFunc->name = name;
+    if ((status = dynCommon_parseName(descriptor, &dynFunc->name)) != OK) {
+        return status;
     }
 
-    if (status == OK) {
-        int c = fgetc(descriptor);
-        if ( c != '(') {
-            status = PARSE_ERROR;
-            celix_err_pushf("Expected '(' token got '%c'", c);
-        }
+    status = dynCommon_eatChar(descriptor, '(');
+    if (status != OK) {
+        return PARSE_ERROR;
     }
 
     int nextChar = fgetc(descriptor);
     int index = 0;
-    dyn_type* type = NULL;
-    char argName[32];
-    while (nextChar != ')' && status == 0)  {
+    while (nextChar != ')' && nextChar != EOF)  {
         ungetc(nextChar, descriptor);
-        type = NULL;
 
+        celix_autoptr(dyn_type) type = NULL;
+        celix_autofree char* argName = NULL;
         dyn_function_argument_type* arg = NULL;
 
-        status = dynType_parse(descriptor, NULL, dynFunc->refTypes, &type);
-        if (status == OK) {
-            arg = calloc(1, sizeof(*arg));
-            if (arg != NULL) {
-                arg->index = index;
-                arg->type = type;
-                snprintf(argName, 32, "arg%04i", index);
-                arg->name = strdup(argName);
-
-                index += 1;
-            } else {
-                celix_err_pushf("Error allocating memory");
-                status = MEM_ERROR;
-            }
+        if ((status = dynType_parse(descriptor, NULL, dynFunc->refTypes, &type)) != OK) {
+            return status;
         }
 
-        if (status == OK) {
-            TAILQ_INSERT_TAIL(&dynFunc->arguments, arg, entries);
+        if (asprintf(&argName, "arg%04i", index) == -1) {
+            celix_err_pushf("Error allocating argument name");
+            return MEM_ERROR;
         }
+
+        arg = calloc(1, sizeof(*arg));
+        if (arg == NULL) {
+            celix_err_pushf("Error allocating arg");
+            return MEM_ERROR;
+        }
+        arg->index = index++;
+        arg->type = celix_steal_ptr(type);
+        arg->name = celix_steal_ptr(argName);
+
+        TAILQ_INSERT_TAIL(&dynFunc->arguments, arg, entries);
 
         nextChar = fgetc(descriptor);
     }
-
-    if (status == 0) {
-        status = dynType_parse(descriptor, NULL, dynFunc->refTypes, &dynFunc->funcReturn); 
+    if (nextChar != ')') {
+        celix_err_push("Error missing ')'");
+        return PARSE_ERROR;
     }
-    
-    return status;
+
+    return dynType_parse(descriptor, NULL, dynFunc->refTypes, &dynFunc->funcReturn);
 }
 
 enum dyn_function_argument_meta dynFunction_argumentMetaForIndex(const dyn_function_type* dynFunc, int argumentNr) {
@@ -191,22 +186,19 @@ static int dynFunction_initCif(dyn_function_type* dynFunc) {
 
 void dynFunction_destroy(dyn_function_type* dynFunc) {
     if (dynFunc != NULL) {
-        if (dynFunc->funcReturn != NULL) {
-            dynType_destroy(dynFunc->funcReturn);
-        }
+        // release resource in strict reverse order
         if (dynFunc->ffiClosure != NULL) {
             ffi_closure_free(dynFunc->ffiClosure);
-        }
-        if (dynFunc->name != NULL) {
-            free(dynFunc->name);
         }
         if (dynFunc->ffiArguments != NULL) {
             free(dynFunc->ffiArguments);
         }
-        
+        if (dynFunc->funcReturn != NULL) {
+            dynType_destroy(dynFunc->funcReturn);
+        }
         dyn_function_argument_type* entry = NULL;
         dyn_function_argument_type* tmp = NULL;
-        entry = TAILQ_FIRST(&dynFunc->arguments); 
+        entry = TAILQ_FIRST(&dynFunc->arguments);
         while (entry != NULL) {
             if (entry->name != NULL) {
                 free(entry->name);
@@ -216,7 +208,9 @@ void dynFunction_destroy(dyn_function_type* dynFunc) {
             entry = TAILQ_NEXT(entry, entries);
             free(tmp);
         }
-
+        if (dynFunc->name != NULL) {
+            free(dynFunc->name);
+        }
         free(dynFunc);
     }
 }
@@ -231,37 +225,34 @@ static void dynFunction_ffiBind(ffi_cif* cif, void* ret, void* args[], void* use
     dynFunc->bind(dynFunc->userData, args, ret);
 }
 
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(ffi_closure, ffi_closure_free)
+
 int dynFunction_createClosure(dyn_function_type* dynFunc, void (*bind)(void*, void**, void*), void* userData, void(**out)(void)) {
-    int status = 0;
     void (*fn)(void);
-    dynFunc->ffiClosure = ffi_closure_alloc(sizeof(ffi_closure), (void **)&fn);
-    if (dynFunc->ffiClosure != NULL) {
-        int rc = ffi_prep_closure_loc(dynFunc->ffiClosure, &dynFunc->cif, dynFunction_ffiBind, dynFunc, fn);
-        if (rc != FFI_OK) {
-            status = 1;
-        }
-    } else {
-        status = 2;
+    celix_autoptr(ffi_closure) ffiClosure = ffi_closure_alloc(sizeof(ffi_closure), (void **)&fn);
+    if (ffiClosure == NULL) {
+        return MEM_ERROR;
+    }
+    int rc = ffi_prep_closure_loc(ffiClosure, &dynFunc->cif, dynFunction_ffiBind, dynFunc, fn);
+    if (rc != FFI_OK) {
+        return ERROR;
     }
 
-    if (status == 0) {
-        dynFunc->userData = userData;
-        dynFunc->bind = bind;
-        dynFunc->fn = fn;
-        *out =fn;
-    }
+    dynFunc->ffiClosure = celix_steal_ptr(ffiClosure);
+    dynFunc->userData = userData;
+    dynFunc->bind = bind;
+    dynFunc->fn = fn;
+    *out =fn;
 
-    return status;
+    return OK;
 }
 
 int dynFunction_getFnPointer(const dyn_function_type* dynFunc, void (**fn)(void)) {
-    int status = 0;
-    if (dynFunc != NULL && dynFunc->fn != NULL) {
-        (*fn) = dynFunc->fn;
-    } else {
-        status = 1;
+    if (dynFunc == NULL || dynFunc->fn == NULL) {
+        return ERROR;
     }
-    return status;
+    (*fn) = dynFunc->fn;
+    return OK;
 }
 
 int dynFunction_nrOfArguments(const dyn_function_type* dynFunc) {

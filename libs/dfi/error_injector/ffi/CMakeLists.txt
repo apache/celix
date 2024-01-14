@@ -22,5 +22,7 @@ target_link_libraries(ffi_ei PUBLIC Celix::error_injector libffi::libffi)
 
 target_link_options(ffi_ei INTERFACE
         LINKER:--wrap,ffi_prep_cif
+        LINKER:--wrap,ffi_closure_alloc
+        LINKER:--wrap,ffi_prep_closure_loc
 )
 add_library(Celix::ffi_ei ALIAS ffi_ei)

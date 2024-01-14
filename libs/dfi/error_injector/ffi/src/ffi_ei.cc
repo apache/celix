@@ -26,4 +26,19 @@ ffi_status __wrap_ffi_prep_cif(ffi_cif *cif, ffi_abi abi, unsigned int nargs, ff
     CELIX_EI_IMPL(ffi_prep_cif);
     return __real_ffi_prep_cif(cif, abi, nargs, rtype, atypes);
 }
+
+void *__real_ffi_closure_alloc(size_t size, void **code);
+CELIX_EI_DEFINE(ffi_closure_alloc, void*)
+void *__wrap_ffi_closure_alloc(size_t size, void **code) {
+    CELIX_EI_IMPL(ffi_closure_alloc);
+    return __real_ffi_closure_alloc(size, code);
+}
+
+ffi_status __real_ffi_prep_closure_loc(ffi_closure *closure, ffi_cif *cif, void (*fun)(ffi_cif *, void *, void **, void *), void *user_data, void *codeloc);
+CELIX_EI_DEFINE(ffi_prep_closure_loc, ffi_status)
+ffi_status __wrap_ffi_prep_closure_loc(ffi_closure *closure, ffi_cif *cif, void (*fun)(ffi_cif *, void *, void **, void *), void *user_data, void *codeloc) {
+    CELIX_EI_IMPL(ffi_prep_closure_loc);
+    return __real_ffi_prep_closure_loc(closure, cif, fun, user_data, codeloc);
+}
+
 }

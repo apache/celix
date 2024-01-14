@@ -40,37 +40,29 @@ public:
 
 };
 
-
-extern "C" {
-    static bool func_test1() {
-        dyn_function_type *dynFunc = nullptr;
-        int rc;
-        void (*fp)(void) = (void (*)(void)) example1;
-
-        rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, nullptr, &dynFunc);
-
-        ffi_sarg rVal = 0;
-        int32_t a = 2;
-        int32_t b = 4;
-        int32_t c = 8;
-        void *values[3];
-        values[0] = &a;
-        values[1] = &b;
-        values[2] = &c;
-
-        if (rc == 0) {
-            rc = dynFunction_call(dynFunc, fp, &rVal, values);
-            dynFunction_destroy(dynFunc);
-        }
-
-        return rc == 0 && rVal == 14;
-    }
-}
-
 TEST_F(DynFunctionTests, DynFuncTest1) {
-    //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to
-    //corrupted memory. Note that libffi is a function for interfacing with C not C++
-    EXPECT_TRUE(func_test1());
+    dyn_function_type *dynFunc = nullptr;
+    int rc;
+    void (*fp)(void) = (void (*)(void)) example1;
+
+    rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, nullptr, &dynFunc);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(dynFunction_hasReturn(dynFunc));
+
+    ffi_sarg rVal = 0;
+    int32_t a = 2;
+    int32_t b = 4;
+    int32_t c = 8;
+    void *values[3];
+    values[0] = &a;
+    values[1] = &b;
+    values[2] = &c;
+
+    rc = dynFunction_call(dynFunc, fp, &rVal, values);
+    dynFunction_destroy(dynFunc);
+
+    EXPECT_EQ(0, rc);
+    EXPECT_EQ(14, rVal);
 }
 
 extern "C" {
@@ -190,13 +182,14 @@ TEST_F(DynFunctionTests, DynFuncTest3) {
     EXPECT_TRUE(func_test3());
 }
 
-extern "C" {
-static bool func_test4() {
+TEST_F(DynFunctionTests, DynFuncTest4) {
     dyn_function_type *dynFunc = nullptr;
     void (*fp)(void) = (void(*)(void)) example4Func;
     int rc;
 
     rc = dynFunction_parseWithStr(EXAMPLE4_DESCRIPTOR, nullptr, &dynFunc);
+    ASSERT_EQ(0, rc);
+    EXPECT_FALSE(dynFunction_hasReturn(dynFunc));
 
     double buf[4];
     buf[0] = 1.1;
@@ -208,19 +201,9 @@ static bool func_test4() {
 
     void *args[1];
     args[0] = &seq;
-    if (rc == 0) {
-        rc = dynFunction_call(dynFunc, fp, nullptr, args);
-        dynFunction_destroy(dynFunc);
-    }
-
-    return rc == 0;
-}
-}
-
-TEST_F(DynFunctionTests, DynFuncTest4) {
-    //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to
-    //corrupted memory. Note that libffi is a function for interfacing with C not C++
-    EXPECT_TRUE(func_test4());
+    rc = dynFunction_call(dynFunc, fp, nullptr, args);
+    dynFunction_destroy(dynFunc);
+    EXPECT_EQ(0, rc);
 }
 
 extern "C" {
@@ -260,12 +243,24 @@ TEST_F(DynFunctionTests, InvalidDynFuncTest) {
     int rc1 = dynFunction_parseWithStr(INVALID_FUNC_DESCRIPTOR, nullptr, &dynFunc);
     EXPECT_NE(0, rc1);
     EXPECT_STREQ("Error parsing descriptor", celix_err_popLastError());
-    EXPECT_STREQ("Expected '(' token got '$'", celix_err_popLastError());
+    EXPECT_STREQ("Error parsing, expected token '(' got '$' at position 8", celix_err_popLastError());
 
     dynFunc = nullptr;
     int rc2 = dynFunction_parseWithStr(INVALID_FUNC_TYPE_DESCRIPTOR, nullptr, &dynFunc);
     EXPECT_NE(0, rc2);
     EXPECT_STREQ("Error parsing descriptor", celix_err_popLastError());
     EXPECT_STREQ("Error unsupported type 'H'", celix_err_popLastError());
+
+    dynFunc = nullptr;
+    int rc3 = dynFunction_parseWithStr("$xample(III)I", nullptr, &dynFunc);
+    EXPECT_NE(0, rc3);
+    EXPECT_STREQ("Error parsing descriptor", celix_err_popLastError());
+    EXPECT_STREQ("Parsed empty name", celix_err_popLastError());
+
+    dynFunc = nullptr;
+    int rc4 = dynFunction_parseWithStr("example(III", nullptr, &dynFunc);
+    EXPECT_NE(0, rc4);
+    EXPECT_STREQ("Error parsing descriptor", celix_err_popLastError());
+    EXPECT_STREQ("Error missing ')'", celix_err_popLastError());
 }
 

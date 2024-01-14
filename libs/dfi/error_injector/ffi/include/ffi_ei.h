@@ -27,6 +27,10 @@ extern "C" {
 
 CELIX_EI_DECLARE(ffi_prep_cif, ffi_status);
 
+CELIX_EI_DECLARE(ffi_closure_alloc, void*);
+
+CELIX_EI_DECLARE(ffi_prep_closure_loc, ffi_status);
+
 #ifdef __cplusplus
 }
 #endif

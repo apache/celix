@@ -52,6 +52,7 @@ if (EI_TESTS)
 			Celix::stdio_ei
 			Celix::string_ei
 			Celix::ffi_ei
+			Celix::asprintf_ei
 			GTest::gtest GTest::gtest_main
 	)
 	add_test(NAME run_test_dfi_with_ei COMMAND test_dfi_with_ei)
