@@ -559,6 +559,25 @@ static void parseTests() {
     ASSERT_EQ(1, rc);
     celix_err_printErrors(stderr, nullptr, nullptr);
     dynType_destroy(type);
+
+    // unknown member
+    rc = dynType_parseWithStr("{t a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":"hello", "b":"world"})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //simple string
+    rc = dynType_parseWithStr("t", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"("hello")";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(0, rc);
+    EXPECT_STREQ("hello", *(char**)inst);
+    dynType_free(type, inst);
+    dynType_destroy(type);
 }
 
 /*********** write example 1 ************************/

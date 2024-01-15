@@ -881,54 +881,6 @@ extern "C" {
 
         dynInterface_destroy(intf);
     }
-
-    void testResponseForwardCompatibility(void) {
-        dyn_interface_type *intf = nullptr;
-        FILE *desc = fopen("descriptors/example6.descriptor", "r");
-        ASSERT_TRUE(desc != nullptr);
-        int rc = dynInterface_parse(desc, &intf);
-        ASSERT_EQ(0, rc);
-        fclose(desc);
-
-        const struct methods_head* head = dynInterface_methods(intf);
-        dyn_function_type *func = nullptr;
-        struct method_entry *entry = nullptr;
-        TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(dynFunction_getName(entry->dynFunc), "cpt") == 0) {
-                func = entry->dynFunc;
-                break;
-            }
-        }
-        ASSERT_TRUE(func != nullptr);
-
-        struct tst_CptData *cptData{nullptr};
-        void *out = &cptData;
-
-        void *args[3];
-        args[0] = nullptr;
-        args[1] = nullptr;
-        args[2] = &out;
-        int rsErrno = 0;
-
-        //provider has more reply
-        rc = jsonRpc_handleReply(func, R"({"r":{"d":1.0, "t":"hello compatibility", "s":[1.0,2.0,3.0], "e":"v1", "e2":"v2"}})", args, &rsErrno);
-        EXPECT_EQ(0, rc);
-        EXPECT_EQ(0, rsErrno);
-        EXPECT_NE(cptData , nullptr);
-        EXPECT_EQ(cptData->d , 1.0);
-        EXPECT_STREQ(cptData->t , "hello compatibility");
-        EXPECT_EQ(cptData->s.len , 3);
-        EXPECT_EQ(cptData->s.cap , 3);
-        EXPECT_EQ(cptData->s.buf[0] , 1.0);
-        EXPECT_EQ(cptData->s.buf[1] , 2.0);
-        EXPECT_EQ(cptData->s.buf[2] , 3.0);
-        EXPECT_EQ(cptData->e , v1);
-        free(cptData->t);
-        free(cptData->s.buf);
-        free(cptData);
-
-        dynInterface_destroy(intf);
-    }
 }
 
 class JsonRpcTests : public ::testing::Test {
@@ -1035,8 +987,4 @@ TEST_F(JsonRpcTests, callTestConstChar) {
 
 TEST_F(JsonRpcTests, testRequestBackwardCompatibility) {
     testRequestBackwardCompatibility();
-}
-
-TEST_F(JsonRpcTests, testResponseForwardCompatibility) {
-    testResponseForwardCompatibility();
 }
