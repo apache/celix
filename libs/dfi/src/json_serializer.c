@@ -173,7 +173,7 @@ static int jsonSerializer_parseAny(const dyn_type* type, void* loc, json_t* val)
             if (json_is_null(val)) {
                 //nop
             } else if (json_is_string(val)) {
-                dynType_text_allocAndInit(type, loc, json_string_value(val));
+                status = dynType_text_allocAndInit(type, loc, json_string_value(val));
             } else {
                 status = ERROR;
                 celix_err_pushf("Expected json string type got %i", json_typeof(val));
