@@ -188,8 +188,11 @@ static int jsonSerializer_parseAny(const dyn_type* type, void* loc, json_t* val)
             }
             break;
         case '{' :
-            if (status == OK) {
+            if (json_is_object(val)) {
                 status = jsonSerializer_parseObject(type, val, loc);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json object type got '%i'", json_typeof(val));
             }
             break;
         case '*' :
@@ -202,7 +205,7 @@ static int jsonSerializer_parseAny(const dyn_type* type, void* loc, json_t* val)
         case 'P' :
         default :
             status = ERROR;
-            celix_err_pushf("Error provided type '%c' not supported for JSON\n", dynType_descriptorType(type));
+            celix_err_pushf("Error provided type '%c' not supported for JSON\n", c);
             break;
     }
 
@@ -214,21 +217,23 @@ static int jsonSerializer_parseSequence(const dyn_type* seq, json_t* array, void
     int status = OK;
 
     size_t size = json_array_size(array);
-    status = dynType_sequence_alloc(seq, seqLoc, (int) size);
+    if (size > UINT32_MAX) {
+        celix_err_pushf("Error array size(%zu) too large", size);
+        return ERROR;
+    }
+    if ((status = dynType_sequence_alloc(seq, seqLoc, (uint32_t) size)) != OK) {
+        return status;
+    }
 
-    if (status == OK) {
-        const dyn_type* itemType = dynType_sequence_itemType(seq);
-        size_t index;
-        json_t* val;
-        json_array_foreach(array, index, val) {
-            void* valLoc = NULL;
-            status = dynType_sequence_increaseLengthAndReturnLastLoc(seq, seqLoc, &valLoc);
-            if (status == OK) {
-                status = jsonSerializer_parseAny(itemType, valLoc, val);
-                if (status != OK) {
-                    break;
-                }
-            }
+    const dyn_type* itemType = dynType_sequence_itemType(seq);
+    size_t index;
+    json_t* val;
+    json_array_foreach(array, index, val) {
+        void* valLoc = NULL;
+        (void)dynType_sequence_increaseLengthAndReturnLastLoc(seq, seqLoc, &valLoc);
+        status = jsonSerializer_parseAny(itemType, valLoc, val);
+        if (status != OK) {
+            break;
         }
     }
 

@@ -142,7 +142,7 @@ TEST_F(DynTypeErrorInjectionTestSuite, SequenceAllocateError) {
     celix_ei_expect_calloc((void*)dynType_sequence_alloc, 0, nullptr);
     rc = dynType_sequence_alloc(type, seq, 1);
     ASSERT_NE(0, rc);
-    ASSERT_STREQ("Error allocating memory for buf", celix_err_popLastError());
+    ASSERT_STREQ("Error allocating memory for seq buf", celix_err_popLastError());
 
     dynType_free(type, seq);
     dynType_destroy(type);
@@ -167,7 +167,7 @@ TEST_F(DynTypeErrorInjectionTestSuite, SequenceReserveError) {
     celix_ei_expect_realloc((void*)dynType_sequence_reserve, 0, nullptr);
     rc = dynType_sequence_reserve(type, seq, 1);
     ASSERT_NE(0, rc);
-    ASSERT_STREQ("Error allocating memory for buf", celix_err_popLastError());
+    ASSERT_STREQ("Error allocating memory for seq buf", celix_err_popLastError());
 
     dynType_free(type, seq);
     dynType_destroy(type);

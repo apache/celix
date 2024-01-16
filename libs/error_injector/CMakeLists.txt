@@ -37,7 +37,13 @@ add_subdirectory(sys_shm)
 add_subdirectory(socket)
 add_subdirectory(pthread)
 add_subdirectory(unistd)
+
 celix_subproject(ERROR_INJECTOR_MDNSRESPONDER "Option to enable building the mdnsresponder error injector" OFF)
 if (ERROR_INJECTOR_MDNSRESPONDER)
     add_subdirectory(mdnsresponder)
+endif ()
+
+celix_subproject(ERROR_INJECTOR_JANSSON "Option to enable building the jansson error injector", OFF)
+if (ERROR_INJECTOR_JANSSON)
+    add_subdirectory(jansson)
 endif ()

@@ -338,6 +338,8 @@ class CelixConan(ConanFile):
             lst = [x.ref.name for x in self.requires.values()]
             if "mdnsresponder" in lst:
                 tc.cache_variables["BUILD_ERROR_INJECTOR_MDNSRESPONDER"] = "ON"
+            if "jansson" in lst:
+                tc.cache_variables["BUILD_ERROR_INJECTOR_JANSSON"] = "ON"
         tc.cache_variables["CELIX_ERR_BUFFER_SIZE"] = str(self.options.celix_err_buffer_size)
         # tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
