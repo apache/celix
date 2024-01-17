@@ -30,7 +30,6 @@
 
 static int jsonSerializer_createType(const dyn_type* type, json_t* object, void** result);
 static int jsonSerializer_parseObject(const dyn_type* type, json_t* object, void* inst);
-static int jsonSerializer_parseObjectMember(const dyn_type* type, const char* name, json_t* val, void* inst);
 static int jsonSerializer_parseSequence(const dyn_type* seq, json_t* array, void* seqLoc);
 static int jsonSerializer_parseAny(const dyn_type* type, void* input, json_t* val);
 static int jsonSerializer_parseEnum(const dyn_type* type, const char* enum_name, int32_t* out);
@@ -86,34 +85,33 @@ static int jsonSerializer_createType(const dyn_type* type, json_t* val, void** r
 
 static int jsonSerializer_parseObject(const dyn_type* type, json_t* object, void* inst) {
     assert(object != NULL);
-    int status = 0;
+    int status = OK;
     json_t* value;
-    const char* key;
-
-    json_object_foreach(object, key, value) {
-        status = jsonSerializer_parseObjectMember(type, key, value, inst);
+    const struct complex_type_entries_head* entries = dynType_complex_entries(type);
+    struct complex_type_entry* entry = NULL;
+    int index = 0;
+    void* valp = NULL;
+    const dyn_type* valType = NULL;
+    TAILQ_FOREACH(entry, entries, entries) {
+        if (entry->name == NULL) {
+            celix_err_push("Unamed field unsupported");
+            return ERROR;
+        }
+        value = json_object_get(object, entry->name);
+        if (value == NULL) {
+            celix_err_pushf("Missing object member %s", entry->name);
+            return ERROR;
+        }
+        valp = dynType_complex_valLocAt(type, index, inst);
+        valType = dynType_complex_dynTypeAt(type, index);
+        status = jsonSerializer_parseAny(valType, valp, value);
         if (status != OK) {
             break;
         }
+        index++;
     }
 
     return status;
-}
-
-static int jsonSerializer_parseObjectMember(const dyn_type* type, const char* name, json_t* val, void* inst) {
-    void* valp = NULL;
-    const dyn_type* valType = NULL;
-
-    int index = dynType_complex_indexForName(type, name);
-    if (index < 0) {
-        celix_err_pushf("Cannot find index for member '%s'", name);
-        return ERROR;
-    }
-
-    valp = dynType_complex_valLocAt(type, index, inst);
-    valType = dynType_complex_dynTypeAt(type, index);
-
-    return jsonSerializer_parseAny(valType, valp, val);
 }
 
 static int jsonSerializer_parseAny(const dyn_type* type, void* loc, json_t* val) {
@@ -160,9 +158,7 @@ static int jsonSerializer_parseAny(const dyn_type* type, void* loc, json_t* val)
             *(uint64_t*)loc = (uint64_t) json_integer_value(val);
             break;
         case 'E' :
-            if (json_is_null(val)) {
-                //nop
-            } else if (json_is_string(val)){
+            if (json_is_string(val)){
                 status = jsonSerializer_parseEnum(type, json_string_value(val), loc);
             } else {
                 status = ERROR;
@@ -171,7 +167,7 @@ static int jsonSerializer_parseAny(const dyn_type* type, void* loc, json_t* val)
             break;
         case 't' :
             if (json_is_null(val)) {
-                //nop
+                // NULL string is allowed
             } else if (json_is_string(val)) {
                 status = dynType_text_allocAndInit(type, loc, json_string_value(val));
             } else {
@@ -197,7 +193,15 @@ static int jsonSerializer_parseAny(const dyn_type* type, void* loc, json_t* val)
             break;
         case '*' :
             subType = dynType_typedPointer_getTypedType(type);
-            status = jsonSerializer_createType(subType, val, (void **) loc);
+            if (dynType_ffiType(subType) != &ffi_type_pointer) {
+                // NULL pointer is allowed
+                if (!json_is_null(val)) {
+                    status = jsonSerializer_createType(subType, val, (void **) loc);
+                }
+            } else {
+                status = ERROR;
+                celix_err_pushf("Error cannot deserialize pointer to pointer");
+            }
             break;
         case 'l':
             status = jsonSerializer_parseAny(type->ref.ref, loc, val);

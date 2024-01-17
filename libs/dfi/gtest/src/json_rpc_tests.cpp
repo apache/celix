@@ -777,110 +777,6 @@ extern "C" {
 
         dynInterface_destroy(intf);
     }
-
-    enum example6_enum{
-            v1 = 1,
-            v2 = 2,
-    };
-
-    struct tst_CptData {
-        double d;
-        char *t;
-        struct tst_seq s;
-        enum example6_enum e;
-    };
-
-    struct tst_serv_example6 {
-        void *handle;
-        int (*cpt)(void *, struct tst_CptData *input, struct tst_CptData *output);
-    };
-
-    void testRequestBackwardCompatibility(void) {
-        dyn_interface_type *intf = nullptr;
-        FILE *desc = fopen("descriptors/example6.descriptor", "r");
-        ASSERT_TRUE(desc != nullptr);
-        int rc = dynInterface_parse(desc, &intf);
-        ASSERT_EQ(0, rc);
-        fclose(desc);
-
-
-        char *result = nullptr;
-
-        tst_serv_example6 serv {nullptr, nullptr};
-
-        serv.cpt = [](void *, struct tst_CptData *input, struct tst_CptData *)->int {
-            EXPECT_EQ(input->d , 0.0);
-            EXPECT_EQ(input->t , nullptr);
-            EXPECT_EQ(input->s.len , 0);
-            EXPECT_EQ(input->s.cap , 0);
-            EXPECT_EQ(input->s.buf , nullptr);
-            EXPECT_EQ(input->e , 0);
-            return 0;
-        };
-        rc = jsonRpc_call(intf, &serv, R"({"m": "compatibility", "a": [{}]})", &result);
-        ASSERT_EQ(0, rc);
-        free(result);
-
-        serv.cpt = [](void *, struct tst_CptData *input, struct tst_CptData *)->int {
-            EXPECT_EQ(input->d , 1.0);
-            EXPECT_EQ(input->t , nullptr);
-            EXPECT_EQ(input->s.len , 0);
-            EXPECT_EQ(input->s.cap , 0);
-            EXPECT_EQ(input->s.buf , nullptr);
-            EXPECT_EQ(input->e , 0);
-            return 0;
-        };
-        rc = jsonRpc_call(intf, &serv, R"({"m": "compatibility", "a": [{"d":1.0}]})", &result);
-        ASSERT_EQ(0, rc);
-        free(result);
-
-        serv.cpt = [](void *, struct tst_CptData *input, struct tst_CptData *)->int {
-            EXPECT_EQ(input->d , 1.0);
-            EXPECT_STREQ(input->t , "hello compatibility");
-            EXPECT_EQ(input->s.len , 0);
-            EXPECT_EQ(input->s.cap , 0);
-            EXPECT_EQ(input->s.buf , nullptr);
-            EXPECT_EQ(input->e , 0);
-            return 0;
-        };
-        rc = jsonRpc_call(intf, &serv, R"({"m": "compatibility", "a": [{"d":1.0, "t":"hello compatibility"}]})", &result);
-        ASSERT_EQ(0, rc);
-        free(result);
-
-        serv.cpt = [](void *, struct tst_CptData *input, struct tst_CptData *)->int {
-            EXPECT_EQ(input->d , 1.0);
-            EXPECT_STREQ(input->t , "hello compatibility");
-            EXPECT_EQ(input->s.len , 3);
-            EXPECT_EQ(input->s.cap , 3);
-            EXPECT_EQ(input->s.buf[0] , 1.0);
-            EXPECT_EQ(input->s.buf[1] , 2.0);
-            EXPECT_EQ(input->s.buf[2] , 3.0);
-            EXPECT_EQ(input->e , 0);
-            return 0;
-        };
-        rc = jsonRpc_call(intf, &serv, R"({"m": "compatibility", "a": [{"d":1.0, "t":"hello compatibility", "s":[1.0,2.0,3.0]}]})", &result);
-        ASSERT_EQ(0, rc);
-        free(result);
-
-
-        serv.cpt = [](void *, struct tst_CptData *input, struct tst_CptData *)->int {
-            EXPECT_EQ(input->d , 1.0);
-            EXPECT_STREQ(input->t , "hello compatibility");
-            EXPECT_EQ(input->s.len , 3);
-            EXPECT_EQ(input->s.cap , 3);
-            EXPECT_EQ(input->s.buf[0] , 1.0);
-            EXPECT_EQ(input->s.buf[1] , 2.0);
-            EXPECT_EQ(input->s.buf[2] , 3.0);
-            EXPECT_EQ(input->e , v2);
-            return 0;
-        };
-        rc = jsonRpc_call(intf, &serv, R"({"m": "compatibility", "a": [{"d":1.0, "t":"hello compatibility", "s":[1.0,2.0,3.0], "e":"v2"}]})", &result);
-        ASSERT_EQ(0, rc);
-        free(result);
-
-
-        dynInterface_destroy(intf);
-    }
 }
 
 class JsonRpcTests : public ::testing::Test {
@@ -983,8 +879,4 @@ TEST_F(JsonRpcTests, callTestChar) {
 
 TEST_F(JsonRpcTests, callTestConstChar) {
     callTestConstChar();
-}
-
-TEST_F(JsonRpcTests, testRequestBackwardCompatibility) {
-    testRequestBackwardCompatibility();
 }
