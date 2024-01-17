@@ -43,7 +43,7 @@ if (ERROR_INJECTOR_MDNSRESPONDER)
     add_subdirectory(mdnsresponder)
 endif ()
 
-celix_subproject(ERROR_INJECTOR_JANSSON "Option to enable building the jansson error injector", ON)
+celix_subproject(ERROR_INJECTOR_JANSSON "Option to enable building the jansson error injector" ON)
 if (ERROR_INJECTOR_JANSSON)
     add_subdirectory(jansson)
 endif ()
