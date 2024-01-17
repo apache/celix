@@ -28,6 +28,7 @@
 #include "celix_array_list.h"
 #include "celix_dm_info.h"
 #include "celix_framework_export.h"
+#include "celix_cleanup.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,6 +86,8 @@ CELIX_FRAMEWORK_EXPORT const char* celix_dmComponent_getUUID(celix_dm_component_
  * Destroys a DM Component
  */
 CELIX_FRAMEWORK_EXPORT void celix_dmComponent_destroy(celix_dm_component_t* cmp);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_dm_component_t, celix_dmComponent_destroy)
 
 /**
  * Destroys a DM Component on the event thread.

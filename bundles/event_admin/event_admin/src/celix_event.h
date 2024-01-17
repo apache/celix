@@ -17,27 +17,33 @@
  * under the License.
  */
 
-#ifndef CELIX_BUNDLE_CONTEXT_EI_H
-#define CELIX_BUNDLE_CONTEXT_EI_H
+#ifndef CELIX_EVENT_H
+#define CELIX_EVENT_H
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "celix_error_injector.h"
-#include "celix_errno.h"
 
-CELIX_EI_DECLARE(celix_bundleContext_getProperty, const char*);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_trackServicesWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_getBundleId, long);
-CELIX_EI_DECLARE(bundleContext_getServiceReferences, celix_status_t);
-CELIX_EI_DECLARE(bundleContext_retainServiceReference, celix_status_t);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceFactoryAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_scheduleEvent, long);
-CELIX_EI_DECLARE(celix_bundleContext_trackBundlesWithOptionsAsync, long);
+#include <celix_properties.h>
+#include <celix_cleanup.h>
+
+typedef struct celix_event celix_event_t;
+
+
+celix_event_t* celix_event_create(const char* topic, const celix_properties_t* properties);
+
+void celix_event_release(celix_event_t* event);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_event_t, celix_event_release);
+
+const char* celix_event_getTopic(const celix_event_t* event);
+
+const celix_properties_t* celix_event_getProperties(const celix_event_t* event);
+
+celix_event_t* celix_event_retain(celix_event_t* event);
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //CELIX_BUNDLE_CONTEXT_EI_H
+#endif //CELIX_EVENT_H

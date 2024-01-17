@@ -17,27 +17,31 @@
  * under the License.
  */
 
-#ifndef CELIX_BUNDLE_CONTEXT_EI_H
-#define CELIX_BUNDLE_CONTEXT_EI_H
+#ifndef CELIX_EVENT_ADMIN_SERVICE_H
+#define CELIX_EVENT_ADMIN_SERVICE_H
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "celix_error_injector.h"
+#include "celix_properties.h"
 #include "celix_errno.h"
 
-CELIX_EI_DECLARE(celix_bundleContext_getProperty, const char*);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_trackServicesWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_getBundleId, long);
-CELIX_EI_DECLARE(bundleContext_getServiceReferences, celix_status_t);
-CELIX_EI_DECLARE(bundleContext_retainServiceReference, celix_status_t);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceFactoryAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_scheduleEvent, long);
-CELIX_EI_DECLARE(celix_bundleContext_trackBundlesWithOptionsAsync, long);
+#define CELIX_EVENT_ADMIN_SERVICE_NAME "org.osgi.service.event.EventAdmin"
+
+#define CELIX_EVENT_ADMIN_SERVICE_VERSION "1.0.0"
+#define CELIX_EVENT_ADMIN_SERVICE_USE_RANGE "[1.0.0,2)"
+
+/**
+ * @brief The Event Admin service
+ * @see https://osgi.org/specification/osgi.cmpn/7.0.0/service.event.html
+ */
+typedef struct celix_event_admin_service {
+    void* handle;
+    celix_status_t (*postEvent)(void* handle, const char* topic, const celix_properties_t* properties);
+    celix_status_t (*sendEvent)(void* handle, const char* topic, const celix_properties_t* properties);
+}celix_event_admin_service_t;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //CELIX_BUNDLE_CONTEXT_EI_H
+#endif //CELIX_EVENT_ADMIN_SERVICE_H

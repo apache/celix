@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-#
+# 
 #   http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,16 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(properties_ei STATIC src/celix_properties_ei.cc)
+add_library(event_admin_api INTERFACE)
+target_include_directories(event_admin_api INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+)
 
-target_include_directories(properties_ei PUBLIC include)
-target_link_libraries(properties_ei PUBLIC Celix::error_injector Celix::utils)
-# It plays nicely with address sanitizer this way.
-target_link_options(properties_ei INTERFACE
-        LINKER:--wrap,celix_properties_create
-        LINKER:--wrap,celix_properties_copy
-        LINKER:--wrap,celix_properties_set
-        LINKER:--wrap,celix_properties_setLong
-        LINKER:--wrap,celix_properties_setVersion
-        )
-add_library(Celix::properties_ei ALIAS properties_ei)
+target_link_libraries(event_admin_api INTERFACE Celix::utils)
+
+install(TARGETS event_admin_api EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT event_admin
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/event_admin)
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/event_admin COMPONENT event_admin)
+
+#Setup target aliases to match external usage
+add_library(Celix::event_admin_api ALIAS event_admin_api)

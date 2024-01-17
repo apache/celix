@@ -15,16 +15,26 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(properties_ei STATIC src/celix_properties_ei.cc)
+celix_subproject(EVENT_ADMIN_EXAMPLES "Option to enable building the Event Admin examples" OFF)
+if (EVENT_ADMIN_EXAMPLES)
+    add_subdirectory(event_publisher)
+    add_subdirectory(event_handler)
 
-target_include_directories(properties_ei PUBLIC include)
-target_link_libraries(properties_ei PUBLIC Celix::error_injector Celix::utils)
-# It plays nicely with address sanitizer this way.
-target_link_options(properties_ei INTERFACE
-        LINKER:--wrap,celix_properties_create
-        LINKER:--wrap,celix_properties_copy
-        LINKER:--wrap,celix_properties_set
-        LINKER:--wrap,celix_properties_setLong
-        LINKER:--wrap,celix_properties_setVersion
-        )
-add_library(Celix::properties_ei ALIAS properties_ei)
+    add_celix_container(event_admin_example
+            LAUNCHER Celix::launcher
+            NAME "event_admin_example"
+            GROUP "event_admin"
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::log_admin
+            Celix::event_admin
+            event_publisher_example
+            event_handler_example
+            USE_CONFIG
+    )
+endif (EVENT_ADMIN_EXAMPLES)
+
+
+
+

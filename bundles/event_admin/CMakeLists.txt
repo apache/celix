@@ -15,16 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(properties_ei STATIC src/celix_properties_ei.cc)
+celix_subproject(EVENT_ADMIN "Option to enable building the Event Admin bundles" OFF)
+if (EVENT_ADMIN)
+    add_subdirectory(event_admin)
+    add_subdirectory(event_admin_api)
+    add_subdirectory(examples)
+endif()
 
-target_include_directories(properties_ei PUBLIC include)
-target_link_libraries(properties_ei PUBLIC Celix::error_injector Celix::utils)
-# It plays nicely with address sanitizer this way.
-target_link_options(properties_ei INTERFACE
-        LINKER:--wrap,celix_properties_create
-        LINKER:--wrap,celix_properties_copy
-        LINKER:--wrap,celix_properties_set
-        LINKER:--wrap,celix_properties_setLong
-        LINKER:--wrap,celix_properties_setVersion
-        )
-add_library(Celix::properties_ei ALIAS properties_ei)

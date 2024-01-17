@@ -15,16 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(properties_ei STATIC src/celix_properties_ei.cc)
+add_celix_bundle(event_publisher_example
+        SYMBOLIC_NAME "apache_celix_event_publisher_example"
+        VERSION "1.0.0"
+        SOURCES
+        src/celix_example_event_publisher_activator.c
+)
 
-target_include_directories(properties_ei PUBLIC include)
-target_link_libraries(properties_ei PUBLIC Celix::error_injector Celix::utils)
-# It plays nicely with address sanitizer this way.
-target_link_options(properties_ei INTERFACE
-        LINKER:--wrap,celix_properties_create
-        LINKER:--wrap,celix_properties_copy
-        LINKER:--wrap,celix_properties_set
-        LINKER:--wrap,celix_properties_setLong
-        LINKER:--wrap,celix_properties_setVersion
-        )
-add_library(Celix::properties_ei ALIAS properties_ei)
+target_link_libraries(event_publisher_example PRIVATE Celix::event_admin_api Celix::framework)
+

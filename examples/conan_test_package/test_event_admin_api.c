@@ -16,29 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include <celix_event_admin_service.h>
+#include <celix_event_handler_service.h>
+#include <celix_event_constants.h>
+#include <stdio.h>
 
-#ifndef CELIX_CELIX_STRING_HASH_MAP_EI_H
-#define CELIX_CELIX_STRING_HASH_MAP_EI_H
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "celix_error_injector.h"
-#include "celix_string_hash_map.h"
-
-CELIX_EI_DECLARE(celix_stringHashMap_create, celix_string_hash_map_t*);
-
-CELIX_EI_DECLARE(celix_stringHashMap_createWithOptions, celix_string_hash_map_t*);
-
-CELIX_EI_DECLARE(celix_stringHashMap_put, celix_status_t);
-
-CELIX_EI_DECLARE(celix_stringHashMap_putLong, celix_status_t);
-
-CELIX_EI_DECLARE(celix_stringHashMap_putDouble, celix_status_t);
-
-CELIX_EI_DECLARE(celix_stringHashMap_putBool, celix_status_t);
-
-#ifdef __cplusplus
+int main() {
+    printf("sizeof(celix_event_admin_service_t) = %zu\n", sizeof(celix_event_admin_service_t));
+    printf("sizeof(celix_event_handler_service_t) = %zu\n", sizeof(celix_event_handler_service_t));
+    return 0;
 }
-#endif
-
-#endif //CELIX_CELIX_STRING_HASH_MAP_EI_H

@@ -389,6 +389,17 @@ if (TEST_UTILS)
     target_link_libraries(use_utils PRIVATE Celix::utils)
 endif ()
 
+option(TEST_EVENT_ADMIN "Test Event Admin" OFF)
+if (TEST_EVENT_ADMIN)
+    add_celix_container(use_event_admin
+            BUNDLES
+            Celix::event_admin
+            hello
+    )
+    add_executable(use_event_admin_api test_event_admin_api.c)
+    target_link_libraries(use_event_admin_api PRIVATE Celix::event_admin_api)
+endif ()
+
 option(TEST_COMPONENTS_READY_CHECK "Test the components.ready condition checking bundle" OFF)
 if (TEST_COMPONENTS_READY_CHECK)
     add_celix_container("use_components_ready_check" BUNDLES Celix::components_ready_check hello)

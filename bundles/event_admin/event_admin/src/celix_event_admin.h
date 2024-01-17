@@ -17,27 +17,31 @@
  * under the License.
  */
 
-#ifndef CELIX_BUNDLE_CONTEXT_EI_H
-#define CELIX_BUNDLE_CONTEXT_EI_H
+#ifndef CELIX_EVENT_ADMIN_H
+#define CELIX_EVENT_ADMIN_H
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "celix_error_injector.h"
+#include "celix_bundle_context.h"
 #include "celix_errno.h"
 
-CELIX_EI_DECLARE(celix_bundleContext_getProperty, const char*);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_trackServicesWithOptionsAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_getBundleId, long);
-CELIX_EI_DECLARE(bundleContext_getServiceReferences, celix_status_t);
-CELIX_EI_DECLARE(bundleContext_retainServiceReference, celix_status_t);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_registerServiceFactoryAsync, long);
-CELIX_EI_DECLARE(celix_bundleContext_scheduleEvent, long);
-CELIX_EI_DECLARE(celix_bundleContext_trackBundlesWithOptionsAsync, long);
+typedef struct celix_event_admin celix_event_admin_t;
+
+celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx);
+
+void celix_eventAdmin_destroy(celix_event_admin_t* ea);
+
+int celix_eventAdmin_start(celix_event_admin_t* ea);
+int celix_eventAdmin_stop(celix_event_admin_t* ea);
+
+int celix_eventAdmin_addEventHandlerWithProperties(void* handle, void* svc, const celix_properties_t* props);
+int celix_eventAdmin_removeEventHandlerWithProperties(void* handle, void* svc, const celix_properties_t* props);
+
+celix_status_t celix_eventAdmin_sendEvent(void* handle, const char* topic, const celix_properties_t* props);
+celix_status_t celix_eventAdmin_postEvent(void* handle, const char* topic, const celix_properties_t* props);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //CELIX_BUNDLE_CONTEXT_EI_H
+#endif //CELIX_EVENT_ADMIN_H
