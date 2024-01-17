@@ -65,7 +65,7 @@ if (EI_TESTS)
             src/CelixEventErrorInjectionTestSuite.cc
             src/CelixEventAdminErrorInjectionTestSuite.cc
             src/CelixEventAdapterErrorInjectionTestSuite.cc
-            #src/CelixEventAdminActivatorErrorInjectionTestSuite.cc
+            src/CelixEventAdminActivatorErrorInjectionTestSuite.cc
             )
 
     target_link_libraries(unit_test_event_admin_with_error_injection PRIVATE
@@ -78,7 +78,7 @@ if (EI_TESTS)
             Celix::array_list_ei
             Celix::properties_ei
             Celix::utils_ei
-            #Celix::dm_component_ei
+            Celix::dm_component_ei
             Celix::log_helper_ei
             Celix::malloc_ei
             GTest::gtest

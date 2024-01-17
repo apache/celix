@@ -15,6 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(celix_bundle_ctx)
-add_subdirectory(celix_bundle)
-add_subdirectory(celix_dm_component)
+add_library(dm_component_ei STATIC src/celix_dm_component_ei.cc)
+
+target_include_directories(dm_component_ei PUBLIC include)
+target_link_libraries(dm_component_ei PUBLIC Celix::error_injector)
+target_link_libraries(dm_component_ei PRIVATE Celix::framework)
+
+target_link_options(dm_component_ei INTERFACE
+        LINKER:--wrap,celix_dmComponent_create
+        LINKER:--wrap,celix_dmServiceDependency_create
+        )
+add_library(Celix::dm_component_ei ALIAS dm_component_ei)

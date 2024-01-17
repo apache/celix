@@ -22,6 +22,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "celix_bundle_context.h"
 #include "celix_error_injector.h"
 #include "celix_errno.h"
 
@@ -34,6 +35,7 @@ CELIX_EI_DECLARE(bundleContext_retainServiceReference, celix_status_t);
 CELIX_EI_DECLARE(celix_bundleContext_registerServiceAsync, long);
 CELIX_EI_DECLARE(celix_bundleContext_registerServiceFactoryAsync, long);
 CELIX_EI_DECLARE(celix_bundleContext_scheduleEvent, long);
+CELIX_EI_DECLARE(celix_bundleContext_getDependencyManager, celix_dependency_manager_t*);
 CELIX_EI_DECLARE(celix_bundleContext_trackBundlesWithOptionsAsync, long);
 
 #ifdef __cplusplus
