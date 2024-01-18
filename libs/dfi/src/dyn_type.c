@@ -629,11 +629,10 @@ static void dynType_deepFree(const dyn_type* type, void* loc, bool alsoDeleteSel
     if (loc != NULL) {
         const dyn_type* subType = NULL;
         char* text = NULL;
+        while (type->type == DYN_TYPE_REF) {
+            type = type->ref.ref;
+        }
         switch (type->type) {
-            case DYN_TYPE_REF:
-                //NOTE: do not recursively forward asloDeleteSelf, because this is already handled in this function)
-                dynType_deepFree(type->ref.ref, loc, false);
-                break;
             case DYN_TYPE_COMPLEX :
                 dynType_freeComplexType(type, loc);
                 break;
