@@ -28,56 +28,84 @@ extern "C" {
  * @see https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.event.html#org.osgi.service.event.EventConstants
  */
 
-#define CELIX_EVENT_BUNDLE "bundle"
-
+/**
+ * @brief The bundle id of the bundle relevant to the event. The type of the value for this event property is Long.
+ */
 #define CELIX_EVENT_BUNDLE_ID "bundle.id"
 
-#define CELIX_EVENT_BUNDLE_SIGNER "bundle.signer"
-
+/**
+ * @brief The bundle symbolic name of the bundle relevant to the event. The type of the value for this event property is String.
+ */
 #define CELIX_EVENT_BUNDLE_SYMBOLICNAME "bundle.symbolicName"
 
+/**
+ * @brief The version of the bundle relevant to the event. The type of the value for this event property is Version.
+ */
 #define CELIX_EVENT_BUNDLE_VERSION "bundle.version"
 
+/**
+ * @brief Event handler delivery quality value specifying the Event Handler requires asynchronously delivered events be delivered in order.
+ * @see CELIX_EVENT_DELIVERY
+ */
 #define CELIX_EVENT_DELIVERY_ASYNC_ORDERED "async.ordered"
 
+/**
+ * @brief Event handler delivery quality value specifying the Event Handler requires asynchronously delivered events be delivered in any order.
+ * @see CELIX_EVENT_DELIVERY
+ */
 #define CELIX_EVENT_DELIVERY_ASYNC_UNORDERED "async.unordered"
 
-#define CELIX_EVENT "event"
-
+/**
+ * @brief Service Registration property specifying the delivery qualities requested by an Event Handler service.
+ * @see CELIX_EVENT_DELIVERY_ASYNC_ORDERED,CELIX_EVENT_DELIVERY_ASYNC_UNORDERED
+ */
 #define CELIX_EVENT_DELIVERY "event.delivery"
 
+/**
+ * @brief Service Registration property specifying a filter to further select Event s of interest to an Event Handler service.
+ * The type of the value for this service property is String.
+ */
 #define CELIX_EVENT_FILTER "event.filter"
 
+/**
+ * @brief Service registration property specifying the Event topics of interest to an Event Handler service.
+ *
+ * The Event Handler must use the following grammar to indicate the topics in which it is interested:\n
+ * topic-description := '*' | topic ( '/&#42;' )?  \n
+ * topic := token ( '/' token )*    \n
+ *
+ * The event handler also can specify multiple topics by providing a comma separated list of topics.
+ *
+ * @example
+ * - "com/acme/&#42;"                         Indicates all topics beginning with "com/acme/"   \n
+ * - "com/acme/MyEvent"                       Indicates only the specific event which topic is "com/acme/MyEvent"  \n
+ * - "*"                                      Indicates all topics   \n
+ * - "com/acme/MyEvent,com/acme/MyOtherEvent" Indicates the specific events with topics "com/acme/MyEvent" and "com/acme/MyOtherEvent"
+ *
+ */
 #define CELIX_EVENT_TOPIC "event.topics"
 
-#define CELIX_EVENT_EXCEPTION "exception"
-
-#define CELIX_EVENT_EXCEPTION_CLASS "exception.class"
-
-#define CELIX_EVENT_EXCEPTION_MESSAGE "exception.message"
-
-#define CELIX_EVENT_MESSAGE "message"
-
-#define CELIX_EVENT_SERVICE "service"
-
+/**
+ * @brief A service's id. The type of the value for this event property is Long.
+ */
 #define CELIX_EVENT_SERVICE_ID "service.id"
 
+/**
+ * @brief A service's objectClass. The type of the value for this event property is String.
+ */
 #define CELIX_EVENT_SERVICE_OBJECTCLASS "service.objectClass"
 
+/**
+ * @brief A service's persistent identity. The type of the value for this event property is String.
+ */
 #define CELIX_EVENT_SERVICE_PID "service.pid"
 
+/**
+ * @brief The time when the event occurred, as reported by the system time in microseconds. The type of the value for this event property is Long.
+ */
 #define CELIX_EVENT_TIMESTAMP "timestamp"
 
 //end event constants
-
-/**
- * @name Custom event constants for celix
- *
- */
-#define CELIX_EVENT_FRAMEWORK_UUID "celix.framework.uuid"
-
-#define CELIX_EVENT_PAYLOAD "celix.event.payload"
-
 
 #ifdef __cplusplus
 }

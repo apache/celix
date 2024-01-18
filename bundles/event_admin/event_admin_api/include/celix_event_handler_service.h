@@ -26,18 +26,36 @@ extern "C" {
 #include "celix_properties.h"
 #include "celix_errno.h"
 
+/**
+ * @brief Name of the event handler service
+ */
 #define CELIX_EVENT_HANDLER_SERVICE_NAME "org.osgi.service.event.EventHandler"
 
+/**
+ * @brief Version of the event handler service
+ */
 #define CELIX_EVENT_HANDLER_SERVICE_VERSION "1.0.0"
 #define CELIX_EVENT_HANDLER_SERVICE_USE_RANGE "[1.0.0,2)"
 
 
 /**
- * @brief The Event Handler service allows bundles to receive events.
- * @see https://osgi.org/specification/osgi.cmpn/7.0.0/service.event.html
+ * @brief Listener for Events.
+ * @see https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.event.html#org.osgi.service.event.EventHandler
  */
 typedef struct celix_event_handler_service {
     void* handle;
+    /**
+     * @brief Handle an event. Called by the event admin to notify the event handler of an event.
+     * @details The event handler must be registered with the CELIX_EVENT_TOPIC service property.
+     * Event Handlers which have not specified the CELIX_EVENT_TOPIC service property must not receive events.
+     * Event handlers can also be registered with a service property named CELIX_EVENT_FILTER. The value of this property is LDAP-style filter string.
+     * In addition, event handlers can be registered with a service property named CELIX_EVENT_DELIVERY. The value of this property is a string that indicates the delivery qualities required by the event handler.
+     * @param[in] handle The handle as provided by the service registration.
+     * @param[in] topic The topic of the event.
+     * @param[in] properties The properties of the event.
+     * @return Status code indicating failure or success.
+     * CELIX_SUCCESS if no errors are encountered. If an error is encountered, it should be return celix errno.
+     */
     celix_status_t (*handleEvent)(void* handle, const char* topic, const celix_properties_t* properties);
 }celix_event_handler_service_t;
 

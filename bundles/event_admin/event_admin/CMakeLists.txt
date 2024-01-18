@@ -33,7 +33,7 @@ add_celix_bundle(event_admin
     SYMBOLIC_NAME "apache_celix_event_admin"
     VERSION "1.0.0"
     NAME "Apache Celix Event Admin"
-    GROUP "Celix/EventAdmin"
+    GROUP "Celix/event_admin"
     FILENAME celix_event_admin
     SOURCES
     ${EVENT_ADMIN_SRC}
