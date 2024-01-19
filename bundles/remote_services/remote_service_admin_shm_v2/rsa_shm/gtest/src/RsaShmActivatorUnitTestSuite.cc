@@ -58,7 +58,7 @@ TEST_F(RsaShmActivatorUnitTestSuite, RsaShmActivatorStart) {
     status = celix_bundleActivator_start(userData, ctx.get());
     EXPECT_EQ(status, CELIX_SUCCESS);
 
-    bool found = celix_bundleContext_findService(ctx.get(), OSGI_RSA_REMOTE_SERVICE_ADMIN);
+    bool found = celix_bundleContext_findService(ctx.get(), CELIX_RSA_REMOTE_SERVICE_ADMIN);
     EXPECT_TRUE(found);
 
     status = celix_bundleActivator_stop(userData, ctx.get());

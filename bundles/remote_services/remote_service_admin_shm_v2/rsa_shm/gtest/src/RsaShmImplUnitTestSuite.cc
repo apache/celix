@@ -81,9 +81,9 @@ public:
         calcService.handle = nullptr,
         calcService.add = calculator_add;
         celix_properties_t *properties = celix_properties_create();
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, RSA_SHM_CALCULATOR_SERVICE);
+        celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_INTERFACES, RSA_SHM_CALCULATOR_SERVICE);
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, RSA_SHM_CALCULATOR_SERVICE_VERSION);
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE);
+        celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE);
         celix_properties_set(properties, RSA_SHM_RPC_TYPE_KEY, RSA_SHM_RPC_TYPE_DEFAULT);
 
         calcSvcId = celix_bundleContext_registerService(ctx.get(), &calcService, RSA_SHM_CALCULATOR_SERVICE, properties);
@@ -97,12 +97,12 @@ public:
         celix_properties_t *properties = celix_properties_create();
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, RSA_SHM_CALCULATOR_SERVICE);
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, RSA_SHM_CALCULATOR_SERVICE_VERSION);
-        celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE);
+        celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE);
         celix_properties_set(properties, RSA_SHM_RPC_TYPE_KEY, RSA_SHM_RPC_TYPE_DEFAULT);
-        celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "7f7efba5-500f-4ee9-b733-68de012091da");
-        celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "1234");
-        celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-        celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "0a068612-9f95-4f1b-bf0b-ffa6916dae12");
+        celix_properties_set(properties, CELIX_RSA_ENDPOINT_ID, "7f7efba5-500f-4ee9-b733-68de012091da");
+        celix_properties_set(properties, CELIX_RSA_ENDPOINT_SERVICE_ID, "1234");
+        celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED, "true");
+        celix_properties_set(properties, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "0a068612-9f95-4f1b-bf0b-ffa6916dae12");
         celix_properties_set(properties, RSA_SHM_SERVER_NAME_KEY, "ShmServ-dummy");
         endpoint_description_t *endpoint = nullptr;
         auto status = endpointDescription_create(properties, &endpoint);
@@ -219,10 +219,10 @@ TEST_F(RsaShmUnitTestSuite, ExportService) {
         status = exportReference_getExportedEndpoint(ref, &endpoint);
         EXPECT_EQ(CELIX_SUCCESS, status);
         EXPECT_STREQ("AdditionValue", celix_properties_get(endpoint->properties, "AdditionKey", nullptr));
-        EXPECT_EQ(nullptr, celix_properties_get(endpoint->properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, nullptr));
+        EXPECT_EQ(nullptr, celix_properties_get(endpoint->properties, CELIX_RSA_SERVICE_EXPORTED_INTERFACES, nullptr));
         EXPECT_STREQ(RSA_SHM_CALCULATOR_SERVICE, celix_properties_get(endpoint->properties, CELIX_FRAMEWORK_SERVICE_NAME, nullptr));
-        EXPECT_STREQ("true", celix_properties_get(endpoint->properties, OSGI_RSA_SERVICE_IMPORTED, nullptr));
-        EXPECT_EQ(calcSvcId, celix_properties_getAsLong(endpoint->properties, OSGI_RSA_ENDPOINT_SERVICE_ID, -1));
+        EXPECT_STREQ("true", celix_properties_get(endpoint->properties, CELIX_RSA_SERVICE_IMPORTED, nullptr));
+        EXPECT_EQ(calcSvcId, celix_properties_getAsLong(endpoint->properties, CELIX_RSA_ENDPOINT_SERVICE_ID, -1));
         free(ref);
 
         status = rsaShm_removeExportedService(admin, reg);
@@ -245,7 +245,7 @@ TEST_F(RsaShmUnitTestSuite, ExportServiceWithObjectClass) {
     RegisterCalculatorService();
 
     celix_properties_t *prop = celix_properties_create();
-    celix_properties_set(prop, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, "*");
+    celix_properties_set(prop, CELIX_RSA_SERVICE_EXPORTED_INTERFACES, "*");
     celix_array_list_t *regs = nullptr;
     status = rsaShm_exportService(admin, const_cast<char *>(std::to_string(calcSvcId).c_str()), prop, &regs);
     EXPECT_EQ(CELIX_SUCCESS, status);
@@ -290,7 +290,7 @@ TEST_F(RsaShmUnitTestSuite, ExportedInterfaceNotMatchObjectClass) {
     RegisterCalculatorService();
 
     celix_properties_t *prop = celix_properties_create();
-    celix_properties_set(prop, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, "unmatched-interface");
+    celix_properties_set(prop, CELIX_RSA_SERVICE_EXPORTED_INTERFACES, "unmatched-interface");
     celix_array_list_t *regs = nullptr;
     status = rsaShm_exportService(admin, const_cast<char *>(std::to_string(calcSvcId).c_str()), prop, &regs);
     EXPECT_EQ(CELIX_SUCCESS, status);
@@ -312,7 +312,7 @@ TEST_F(RsaShmUnitTestSuite, ExportServiceWithUnmatchedConfigType) {
     RegisterCalculatorService();
 
     celix_properties_t *prop = celix_properties_create();
-    celix_properties_set(prop, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, "unmatched-config-type");
+    celix_properties_set(prop, CELIX_RSA_SERVICE_EXPORTED_CONFIGS, "unmatched-config-type");
     celix_array_list_t *regs = nullptr;
     status = rsaShm_exportService(admin, const_cast<char *>(std::to_string(calcSvcId).c_str()), prop, &regs);
     EXPECT_EQ(CELIX_SUCCESS, status);
@@ -337,7 +337,7 @@ TEST_F(RsaShmUnitTestSuite, ServiceLostExportedInterfaceProperty) {
     };
     celix_properties_t *properties = celix_properties_create();
     celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, RSA_SHM_CALCULATOR_SERVICE_VERSION);
-    celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE);
+    celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE);
     calcSvcId = celix_bundleContext_registerService(ctx.get(), &calcService, RSA_SHM_CALCULATOR_SERVICE, properties);
 
     celix_array_list_t *regs = nullptr;
@@ -535,7 +535,7 @@ TEST_F(RsaShmUnitTestSuite, ImportServiceWithUnmatchedConfigType) {
 
     endpoint_description_t *endpoint = CreateEndpointDescription();
     EXPECT_NE(nullptr, endpoint);
-    celix_properties_set(endpoint->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "unmatched-config-type");
+    celix_properties_set(endpoint->properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, "unmatched-config-type");
 
 
     status = rsaShm_importService(admin, endpoint, &regs);
@@ -556,7 +556,7 @@ TEST_F(RsaShmUnitTestSuite, EndpointLostConfigType) {
 
     endpoint_description_t *endpoint = CreateEndpointDescription();
     EXPECT_NE(nullptr, endpoint);
-    celix_properties_unset(endpoint->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS);
+    celix_properties_unset(endpoint->properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS);
 
     status = rsaShm_importService(admin, endpoint, &regs);
     EXPECT_EQ(CELIX_SUCCESS, status);
@@ -758,9 +758,9 @@ public:
                 .add = calculator_add,
         };
         celix_properties_t *properties = celix_properties_create();
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, RSA_SHM_CALCULATOR_SERVICE);
+        celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_INTERFACES, RSA_SHM_CALCULATOR_SERVICE);
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, RSA_SHM_CALCULATOR_SERVICE_VERSION);
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE ",celix.remote.admin.rpc_type.json");
+        celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE ",celix.remote.admin.rpc_type.json");
         calcSvcId = celix_bundleContext_registerService(serverCtx.get(), &calcService, RSA_SHM_CALCULATOR_SERVICE, properties);
         EXPECT_TRUE(calcSvcId >= 0);
     }

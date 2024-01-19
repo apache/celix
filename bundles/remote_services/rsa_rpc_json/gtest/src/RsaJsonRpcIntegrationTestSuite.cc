@@ -45,6 +45,6 @@ public:
 
 TEST_F(RsaJsonRpcIntegrationTestSuite, FindRsaJsonRpcService) {
 celix_bundleContext_waitForEvents(ctx.get());
-long found = celix_bundleContext_findService(ctx.get(), RSA_RPC_FACTORY_NAME);
+long found = celix_bundleContext_findService(ctx.get(), CELIX_RSA_RPC_FACTORY_NAME);
 EXPECT_GE(found, 0);
 }

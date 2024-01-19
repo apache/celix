@@ -213,12 +213,12 @@ static void TestAddEndpoint(celix_bundle_context *ctx, discovery_zeroconf_announ
         char ifName[IF_NAMESIZE] = {0};
         celix_properties_set(properties, DZC_TEST_CONFIG_TYPE".ifname", if_indextoname(ifIndex, ifName));
     }
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, "dzc_test_service");
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "100");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_SERVICE_ID, "100");
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED, "true");
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
     endpoint_description_t *endpoint{};
     auto status = endpointDescription_create(properties,&endpoint);
     EXPECT_EQ(status, CELIX_SUCCESS);
@@ -287,12 +287,12 @@ TEST_F(DiscoveryZeroconfAnnouncerTestSuite, AddAndRemoveEndpointOnSpecificInterf
 static void TestAddEndPointForRegisterServiceFailure(celix_bundle_context *ctx, discovery_zeroconf_announcer_t *announcer) {
     const char *fwUuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, "dzc_test_service");
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "100");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_SERVICE_ID, "100");
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED, "true");
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
     endpoint_description_t *endpoint{};
     auto status = endpointDescription_create(properties,&endpoint);
     EXPECT_EQ(status, CELIX_SUCCESS);
@@ -385,12 +385,12 @@ static void TestAddJumboEndpoint(celix_bundle_context *ctx, discovery_zeroconf_a
         char ifName[IF_NAMESIZE] = {0};
         celix_properties_set(properties, DZC_TEST_CONFIG_TYPE".ifname", if_indextoname(ifIndex, ifName));
     }
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, "dzc_test_service");
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "100");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_SERVICE_ID, "100");
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED, "true");
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
     for (int i = 0; i < 500; ++i) {
         char key[20]{};
         sprintf(key,"custom_key%d", i);
@@ -439,12 +439,12 @@ static void TestAddInvalidEndpoint(celix_bundle_context *ctx, discovery_zeroconf
 
     const char *fwUuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, "dzc_test_service");
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "100");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "celix.invalid_service_type_because_the_size_large_than_64_----------------");
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_SERVICE_ID, "100");
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED, "true");
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, "celix.invalid_service_type_because_the_size_large_than_64_----------------");
     endpoint_description_t *endpoint{};
     status = endpointDescription_create(properties,&endpoint);
     EXPECT_EQ(status, CELIX_SUCCESS);
@@ -454,7 +454,7 @@ static void TestAddInvalidEndpoint(celix_bundle_context *ctx, discovery_zeroconf
     EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
 
     //ifname not exist
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
     celix_properties_set(properties, DZC_TEST_CONFIG_TYPE".ifname", "if_not_exist");
     status = discoveryZeroconfAnnouncer_endpointAdded(announcer, endpoint, nullptr);
     EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
@@ -465,10 +465,10 @@ static void TestAddInvalidEndpoint(celix_bundle_context *ctx, discovery_zeroconf
     EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
 
     //imported config too long
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "celix.imported_config_too_long_for_port-----------------------------------------------------------------------------.subtype");
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, "celix.imported_config_too_long_for_port-----------------------------------------------------------------------------.subtype");
     status = discoveryZeroconfAnnouncer_endpointAdded(announcer, endpoint, nullptr);
     EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, "celix.imported_config_too_long_for_ifname-------------------------------------------------------------------------.subtype");
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, "celix.imported_config_too_long_for_ifname-------------------------------------------------------------------------.subtype");
     status = discoveryZeroconfAnnouncer_endpointAdded(announcer, endpoint, nullptr);
     EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
 
@@ -479,17 +479,17 @@ static void TestAddInvalidEndpoint(celix_bundle_context *ctx, discovery_zeroconf
     while (offset < 256) {
         offset += snprintf(configTypes + offset, 256 - offset, ",config_type-%d", ++i);
     }
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, configTypes);
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, configTypes);
     status = discoveryZeroconfAnnouncer_endpointAdded(announcer, endpoint, nullptr);
     EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
 
     //lost imported config
-    celix_properties_unset(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS);
+    celix_properties_unset(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS);
     status = discoveryZeroconfAnnouncer_endpointAdded(announcer, endpoint, nullptr);
     EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
 
     //lost service name
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
     celix_properties_unset(properties, CELIX_FRAMEWORK_SERVICE_NAME);
     status = discoveryZeroconfAnnouncer_endpointAdded(announcer, endpoint, nullptr);
     EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
@@ -509,12 +509,12 @@ static void TestAddEndpointWithENOMEM(celix_bundle_context *ctx, discovery_zeroc
     const char *fwUuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, nullptr);
     celix_properties_t *properties = celix_properties_create();
     celix_properties_set(properties, DZC_TEST_CONFIG_TYPE".ifname", "all");
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, "dzc_test_service");
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
-    celix_properties_set(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, "100");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_ID, "60f49d89-d105-430c-b12b-93fbb54b1d19");
+    celix_properties_set(properties, CELIX_RSA_ENDPOINT_SERVICE_ID, "100");
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED, "true");
+    celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, DZC_TEST_CONFIG_TYPE);
     endpoint_description_t *endpoint{};
     auto status = endpointDescription_create(properties,&endpoint);
     EXPECT_EQ(status, CELIX_SUCCESS);

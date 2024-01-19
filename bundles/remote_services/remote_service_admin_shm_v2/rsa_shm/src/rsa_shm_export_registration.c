@@ -116,21 +116,21 @@ celix_status_t exportRegistration_create(celix_bundle_context_t *context,
     }
 
     char filter[128] = {0};
-    int bytes = snprintf(filter, sizeof(filter), "(%s=%s)", RSA_RPC_TYPE_KEY, rsaShmRpcType);
+    int bytes = snprintf(filter, sizeof(filter), "(%s=%s)", CELIX_RSA_RPC_TYPE_KEY, rsaShmRpcType);
     if (bytes >= sizeof(filter)) {
-        celix_logHelper_error(logHelper,"RSA export reg: The value(%s) of %s is too long.", rsaShmRpcType, RSA_RPC_TYPE_KEY);
+        celix_logHelper_error(logHelper, "RSA export reg: The value(%s) of %s is too long.", rsaShmRpcType, CELIX_RSA_RPC_TYPE_KEY);
         return CELIX_ILLEGAL_ARGUMENT;
     }
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.filter = filter;
-    opts.filter.serviceName = RSA_RPC_FACTORY_NAME;
-    opts.filter.versionRange = RSA_RPC_FACTORY_USE_RANGE;
+    opts.filter.serviceName = CELIX_RSA_RPC_FACTORY_NAME;
+    opts.filter.versionRange = CELIX_RSA_RPC_FACTORY_USE_RANGE;
     opts.callbackHandle = export;
     opts.add = exportRegistration_addRpcFac;
     opts.remove = exportRegistration_removeRpcFac;
     export->rpcSvcTrkId = celix_bundleContext_trackServicesWithOptionsAsync(context, &opts);
     if (export->rpcSvcTrkId < 0) {
-        celix_logHelper_error(logHelper,"RSA export reg: Error Tracking service for %s.", RSA_RPC_FACTORY_NAME);
+        celix_logHelper_error(logHelper, "RSA export reg: Error Tracking service for %s.", CELIX_RSA_RPC_FACTORY_NAME);
         return CELIX_SERVICE_EXCEPTION;
     }
 
@@ -227,8 +227,8 @@ static void exportRegistration_addRpcFac(void *handle, void *svc) {
             reqHandlerSvcId);
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.filter = filter;
-    opts.filter.serviceName = RSA_REQUEST_HANDLER_SERVICE_NAME;
-    opts.filter.versionRange = RSA_REQUEST_HANDLER_SERVICE_USE_RANGE;
+    opts.filter.serviceName = CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME;
+    opts.filter.versionRange = CELIX_RSA_REQUEST_HANDLER_SERVICE_USE_RANGE;
     opts.callbackHandle = export->reqHandlerSvcEntry;
     // exportRegistration_removeRequestHandlerSvc maybe occur after exportRegistration_destroyCallback. Therefore,Using refrence count here.
     exportRegistration_retainReqHandlerSvcEntry(export->reqHandlerSvcEntry);
@@ -236,7 +236,7 @@ static void exportRegistration_addRpcFac(void *handle, void *svc) {
     opts.remove = exportRegistration_removeRequestHandlerSvc;
     export->reqHandlerSvcTrkId = celix_bundleContext_trackServicesWithOptionsAsync(export->context, &opts);
     if (export->reqHandlerSvcTrkId < 0) {
-        celix_logHelper_error(export->logHelper,"RSA export reg: Error Tracking service for %s(%ld)", RSA_REQUEST_HANDLER_SERVICE_NAME, export->reqHandlerSvcId);
+        celix_logHelper_error(export->logHelper, "RSA export reg: Error Tracking service for %s(%ld)", CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, export->reqHandlerSvcId);
         exportRegistration_releaseReqHandlerSvcEntry(export->reqHandlerSvcEntry);
         rpcFac->destroyEndpoint(rpcFac->handle, reqHandlerSvcId);
         return;

@@ -167,7 +167,7 @@ celix_status_t importRegistration_createProxyFactoryTracker(import_registration_
 	if (status == CELIX_SUCCESS) {
 		char filter[512];
 
-		snprintf(filter, 512, "(&(%s=%s)(proxy.interface=%s))", (char*) CELIX_FRAMEWORK_SERVICE_NAME, (char*) OSGI_RSA_REMOTE_PROXY_FACTORY, registration_factory->serviceName);
+		snprintf(filter, 512, "(&(%s=%s)(proxy.interface=%s))", (char*) CELIX_FRAMEWORK_SERVICE_NAME, (char*) CELIX_RSA_REMOTE_PROXY_FACTORY, registration_factory->serviceName);
 		status = serviceTracker_createWithFilter(registration_factory->context, filter, customizer, tracker);
 
 		if (status == CELIX_SUCCESS)

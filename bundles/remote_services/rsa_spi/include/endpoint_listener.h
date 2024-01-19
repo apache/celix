@@ -32,9 +32,9 @@
 
 #include "endpoint_description.h"
 
-static const char * const OSGI_ENDPOINT_LISTENER_SERVICE = "endpoint_listener";
+#define CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME "endpoint_listener"
 
-static const char * const OSGI_ENDPOINT_LISTENER_SCOPE = "endpoint.listener.scope";
+#define CELIX_RSA_ENDPOINT_LISTENER_SCOPE "endpoint.listener.scope"
 
 struct endpoint_listener {
     void *handle;

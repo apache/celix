@@ -146,11 +146,11 @@ public:
         auto* logHelperPtr = celix_logHelper_create(ctxPtr,"DiscoveryZeroconf");
         logHelper = std::shared_ptr<celix_log_helper_t>{logHelperPtr, [](auto*l){ celix_logHelper_destroy(l);}};
         epListener.handle = logHelperPtr;
-        eplId = celix_bundleContext_registerService(ctxPtr, &epListener, OSGI_ENDPOINT_LISTENER_SERVICE, nullptr);
+        eplId = celix_bundleContext_registerService(ctxPtr, &epListener, CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, nullptr);
         EXPECT_LE(0, eplId);
         auto rsaSvcProps = celix_properties_create();
-        celix_properties_set(rsaSvcProps, OSGI_RSA_REMOTE_CONFIGS_SUPPORTED, DZC_TEST_CONFIG_TYPE);
-        rsaSvcId = celix_bundleContext_registerService(ctx.get(), (void*)"dummy_service", OSGI_RSA_REMOTE_SERVICE_ADMIN, rsaSvcProps);
+        celix_properties_set(rsaSvcProps, CELIX_RSA_REMOTE_CONFIGS_SUPPORTED, DZC_TEST_CONFIG_TYPE);
+        rsaSvcId = celix_bundleContext_registerService(ctx.get(), (void*)"dummy_service", CELIX_RSA_REMOTE_SERVICE_ADMIN, rsaSvcProps);
         EXPECT_LE(0, rsaSvcId);
         logService.handle = nullptr;
         logService.vlogDetails = vlogDetails;
@@ -192,7 +192,7 @@ public:
 
     long TrackRsaService(discovery_zeroconf_watcher_t *watcher) {
         celix_service_tracking_options_t opts{};
-        opts.filter.serviceName = OSGI_RSA_REMOTE_SERVICE_ADMIN;
+        opts.filter.serviceName = CELIX_RSA_REMOTE_SERVICE_ADMIN;
         opts.filter.filter = "(remote.configs.supported=*)";
         opts.callbackHandle = watcher;
         opts.addWithProperties = [](void *handle, void *svc, const celix_properties_t *props) {
@@ -208,7 +208,7 @@ public:
 
     long TrackEndpointListenerService(discovery_zeroconf_watcher_t *watcher) {
         celix_service_tracking_options_t opts{};
-        opts.filter.serviceName = OSGI_ENDPOINT_LISTENER_SERVICE;
+        opts.filter.serviceName = CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME;
         opts.callbackHandle = watcher;
         opts.addWithProperties = [](void *handle, void *svc, const celix_properties_t *props) {
             discoveryZeroconfWatcher_addEPL(handle, svc, props);
@@ -232,8 +232,8 @@ public:
         beforeAddRsaAction();
 
         auto rsaSvcProps = celix_properties_create();
-        celix_properties_set(rsaSvcProps, OSGI_RSA_REMOTE_CONFIGS_SUPPORTED, remoteConfigsSupported);
-        auto rsaId = celix_bundleContext_registerService(ctx.get(), (void*)"dummy_service", OSGI_RSA_REMOTE_SERVICE_ADMIN, rsaSvcProps);
+        celix_properties_set(rsaSvcProps, CELIX_RSA_REMOTE_CONFIGS_SUPPORTED, remoteConfigsSupported);
+        auto rsaId = celix_bundleContext_registerService(ctx.get(), (void*)"dummy_service", CELIX_RSA_REMOTE_SERVICE_ADMIN, rsaSvcProps);
         EXPECT_LE(0, rsaId);
         auto trkId = TrackRsaService(watcher);
 
@@ -505,12 +505,12 @@ static DNSServiceRef RegisterTestService(int ifIndex, const char *endpointId, co
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
     TXTRecordSetValue(&txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
     TXTRecordSetValue(&txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, strlen("dzc_test_service"), "dzc_test_service");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_ID, strlen(endpointId), endpointId);
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, strlen(serviceId), serviceId);
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED, strlen("true"), "true");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE)-1, DZC_TEST_CONFIG_TYPE);
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_ID, strlen(endpointId), endpointId);
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_SERVICE_ID, strlen(serviceId), serviceId);
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_SERVICE_IMPORTED, strlen("true"), "true");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE) - 1, DZC_TEST_CONFIG_TYPE);
     char propSizeStr[16]= {0};
     sprintf(propSizeStr, "%d", TXTRecordGetCount(TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord)) + 1);
     TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
@@ -654,10 +654,10 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutEndpointToCache) {
 TEST_F(DiscoveryZeroconfWatcherTestSuite, InvalidEndpoint) {
     TestInvalidTxtRecord([](TXTRecordRef *txtRecord){
         TXTRecordSetValue(txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "-1");
-        TXTRecordSetValue(txtRecord, OSGI_RSA_SERVICE_IMPORTED, sizeof("true")-1, "true");
-        TXTRecordSetValue(txtRecord, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE)-1, DZC_TEST_CONFIG_TYPE);
+        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
+        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "-1");
+        TXTRecordSetValue(txtRecord, CELIX_RSA_SERVICE_IMPORTED, sizeof("true")-1, "true");
+        TXTRecordSetValue(txtRecord, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE)-1, DZC_TEST_CONFIG_TYPE);
         //No endpoint framework uuid
         ExpectMsgOutPut("Watcher: Failed to create endpoint description. %d.");
     }, [](){
@@ -669,11 +669,11 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, InvalidEndpoint) {
 TEST_F(DiscoveryZeroconfWatcherTestSuite, NoImportedConfigs) {
     TestInvalidTxtRecord([](TXTRecordRef *txtRecord){
         TXTRecordSetValue(txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
+        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
         TXTRecordSetValue(txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, sizeof("dzc_test_service")-1, "dzc_test_service");
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "100");
-        TXTRecordSetValue(txtRecord, OSGI_RSA_SERVICE_IMPORTED, sizeof("true")-1, "true");
+        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
+        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "100");
+        TXTRecordSetValue(txtRecord, CELIX_RSA_SERVICE_IMPORTED, sizeof("true")-1, "true");
         //NO imported configs
         ExpectMsgOutPut("Watcher: No imported configs.");
     }, [](){
@@ -685,13 +685,13 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, NoImportedConfigs) {
 TEST_F(DiscoveryZeroconfWatcherTestSuite, InvalidImportedConfigs1) {
     TestInvalidTxtRecord([](TXTRecordRef *txtRecord){
         TXTRecordSetValue(txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
+        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
         TXTRecordSetValue(txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, sizeof("dzc_test_service")-1, "dzc_test_service");
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "100");
-        TXTRecordSetValue(txtRecord, OSGI_RSA_SERVICE_IMPORTED, sizeof("true")-1, "true");
+        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
+        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "100");
+        TXTRecordSetValue(txtRecord, CELIX_RSA_SERVICE_IMPORTED, sizeof("true")-1, "true");
         const char *invalidImportedConfigs = "celix.imported_config_too_long_for_port-----------------------------------------------------------------------------.subtype";
-        TXTRecordSetValue(txtRecord, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, strlen(invalidImportedConfigs), invalidImportedConfigs);
+        TXTRecordSetValue(txtRecord, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, strlen(invalidImportedConfigs), invalidImportedConfigs);
 
         ExpectMsgOutPut("Watcher: The length of imported config type %s is too long.");
     }, [](){
@@ -703,13 +703,13 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, InvalidImportedConfigs1) {
 TEST_F(DiscoveryZeroconfWatcherTestSuite, InvalidImportedConfigs2) {
     TestInvalidTxtRecord([](TXTRecordRef *txtRecord){
         TXTRecordSetValue(txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
+        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
         TXTRecordSetValue(txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, sizeof("dzc_test_service")-1, "dzc_test_service");
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
-        TXTRecordSetValue(txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "100");
-        TXTRecordSetValue(txtRecord, OSGI_RSA_SERVICE_IMPORTED, sizeof("true")-1, "true");
+        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
+        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "100");
+        TXTRecordSetValue(txtRecord, CELIX_RSA_SERVICE_IMPORTED, sizeof("true")-1, "true");
         const char *invalidImportedConfigs = "celix.imported_config_too_long_for_ipaddresses--------------------------------------------------------------------.subtype";
-        TXTRecordSetValue(txtRecord, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, strlen(invalidImportedConfigs), invalidImportedConfigs);
+        TXTRecordSetValue(txtRecord, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, strlen(invalidImportedConfigs), invalidImportedConfigs);
 
         ExpectMsgOutPut("Watcher: The length of imported config type %s is too long.");
     }, [](){
@@ -975,12 +975,12 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveSelfFrameworkEndpoint) {
     TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
     const char *fwUuid = celix_bundleContext_getProperty(ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
     TXTRecordSetValue(&txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid == nullptr ? 0 : strlen(fwUuid), fwUuid);
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid == nullptr ? 0 : strlen(fwUuid), fwUuid);
     TXTRecordSetValue(&txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, strlen("dzc_test_self_fw_service"), "dzc_test_self_fw_service");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_ID, strlen("60f49d89-d105-430c-b12b-93fbb54b1d19"), "60f49d89-d105-430c-b12b-93fbb54b1d19");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, strlen("100"), "100");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED, strlen("true"), "true");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE)-1, DZC_TEST_CONFIG_TYPE);
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_ID, strlen("60f49d89-d105-430c-b12b-93fbb54b1d19"), "60f49d89-d105-430c-b12b-93fbb54b1d19");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_SERVICE_ID, strlen("100"), "100");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_SERVICE_IMPORTED, strlen("true"), "true");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE)-1, DZC_TEST_CONFIG_TYPE);
     char propSizeStr[16]= {0};
     sprintf(propSizeStr, "%d", TXTRecordGetCount(TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord)) + 1);
     TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
@@ -1073,12 +1073,12 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddTxtRecord) {
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
     TXTRecordSetValue(&txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
     TXTRecordSetValue(&txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, strlen("dzc_test_service"), "dzc_test_service");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_ID, strlen("60f49d89-d105-430c-b12b-93fbb54b1d18"), "60f49d89-d105-430c-b12b-93fbb54b1d18");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, strlen("100"), "100");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED, strlen("true"), "true");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE)-1, DZC_TEST_CONFIG_TYPE);
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_ID, strlen("60f49d89-d105-430c-b12b-93fbb54b1d18"), "60f49d89-d105-430c-b12b-93fbb54b1d18");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_SERVICE_ID, strlen("100"), "100");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_SERVICE_IMPORTED, strlen("true"), "true");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE)-1, DZC_TEST_CONFIG_TYPE);
     char propSizeStr[16]= {0};
     sprintf(propSizeStr, "%d", TXTRecordGetCount(TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord)) + 1 + 5);
     TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
@@ -1127,12 +1127,12 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveEndpointListener) {
     TXTRecordRef txtRecord;
     TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
     TXTRecordSetValue(&txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
     TXTRecordSetValue(&txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, strlen("dzc_test_service"), "dzc_test_service");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_ID, strlen("60f49d89-d105-430c-b12b-93fbb54b1d19"), "60f49d89-d105-430c-b12b-93fbb54b1d19");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_ENDPOINT_SERVICE_ID, strlen("100"), "100");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED, strlen("true"), "true");
-    TXTRecordSetValue(&txtRecord, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE)-1, DZC_TEST_CONFIG_TYPE);
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_ID, strlen("60f49d89-d105-430c-b12b-93fbb54b1d19"), "60f49d89-d105-430c-b12b-93fbb54b1d19");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_SERVICE_ID, strlen("100"), "100");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_SERVICE_IMPORTED, strlen("true"), "true");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE)-1, DZC_TEST_CONFIG_TYPE);
     char propSizeStr[16]= {0};
     sprintf(propSizeStr, "%d", TXTRecordGetCount(TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord)) + 1);
     TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);

@@ -27,19 +27,19 @@
 #ifndef REMOTE_CONSTANTS_H_
 #define REMOTE_CONSTANTS_H_
 
-static const char * const OSGI_RSA_SERVICE_EXPORTED_INTERFACES = "service.exported.interfaces";
-static const char * const OSGI_RSA_ENDPOINT_FRAMEWORK_UUID = "endpoint.framework.uuid";
-static const char * const OSGI_RSA_ENDPOINT_SERVICE_ID = "endpoint.service.id";
-static const char * const OSGI_RSA_ENDPOINT_ID = "endpoint.id";
-static const char * const OSGI_RSA_SERVICE_IMPORTED = "service.imported";
-static const char * const OSGI_RSA_SERVICE_IMPORTED_CONFIGS = "service.imported.configs";
-static const char * const OSGI_RSA_SERVICE_EXPORTED_CONFIGS = "service.exported.configs";
-static const char * const OSGI_RSA_SERVICE_LOCATION = "service.location";
+#define CELIX_RSA_SERVICE_EXPORTED_INTERFACES "service.exported.interfaces"
+#define CELIX_RSA_ENDPOINT_FRAMEWORK_UUID "endpoint.framework.uuid"
+#define CELIX_RSA_ENDPOINT_SERVICE_ID "endpoint.service.id"
+#define CELIX_RSA_ENDPOINT_ID "endpoint.id"
+#define CELIX_RSA_SERVICE_IMPORTED "service.imported"
+#define CELIX_RSA_SERVICE_IMPORTED_CONFIGS "service.imported.configs"
+#define CELIX_RSA_SERVICE_EXPORTED_CONFIGS "service.exported.configs"
+#define CELIX_RSA_SERVICE_LOCATION "service.location"
 
 /**
  * It identify which types of remote service configurations are supported by a distribution provider.
  * @ref https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.remoteservices.html#i1708968
  */
-#define OSGI_RSA_REMOTE_CONFIGS_SUPPORTED "remote.configs.supported"
+#define CELIX_RSA_REMOTE_CONFIGS_SUPPORTED "remote.configs.supported"
 
 #endif /* REMOTE_CONSTANTS_H_ */

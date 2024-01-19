@@ -88,8 +88,8 @@ typedef struct rsa_dfi_exception_test_service {
 
     static void registerExceptionTestServer(void) {
         celix_properties_t *properties = celix_properties_create();
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, RSA_DIF_EXCEPTION_TEST_SERVICE);
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, "org.amdatu.remote.admin.http");
+        celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_INTERFACES, RSA_DIF_EXCEPTION_TEST_SERVICE);
+        celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_CONFIGS, "org.amdatu.remote.admin.http");
         exceptionTestService = (rsa_dfi_exception_test_service_t *)calloc(1,sizeof(*exceptionTestService));
         exceptionTestService->handle = NULL;
         exceptionTestService->func1 = rsaDfi_excepTestFunc1;
@@ -145,8 +145,8 @@ typedef struct rsa_dfi_exception_test_service {
         celix_properties_setLong(svcInterceptorProps, CELIX_FRAMEWORK_SERVICE_RANKING, 10);
         celix_service_registration_options_t svcInterceptorOpts{};
         svcInterceptorOpts.svc = serverSvcInterceptor;
-        svcInterceptorOpts.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
-        svcInterceptorOpts.serviceVersion = REMOTE_INTERCEPTOR_SERVICE_VERSION;
+        svcInterceptorOpts.serviceName = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_NAME;
+        svcInterceptorOpts.serviceVersion = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_VERSION;
         svcInterceptorOpts.properties = svcInterceptorProps;
         serverSvcInterceptorSvcId = celix_bundleContext_registerServiceWithOptions(serverContext, &svcInterceptorOpts);
 
@@ -161,8 +161,8 @@ typedef struct rsa_dfi_exception_test_service {
         celix_properties_setLong(clientInterceptorProps, CELIX_FRAMEWORK_SERVICE_RANKING, 10);
         celix_service_registration_options_t clientInterceptorOpts{};
         clientInterceptorOpts.svc = clientSvcInterceptor;
-        clientInterceptorOpts.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
-        clientInterceptorOpts.serviceVersion = REMOTE_INTERCEPTOR_SERVICE_VERSION;
+        clientInterceptorOpts.serviceName = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_NAME;
+        clientInterceptorOpts.serviceVersion = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_VERSION;
         clientInterceptorOpts.properties = clientInterceptorProps;
         clientSvcInterceptorSvcId = celix_bundleContext_registerServiceWithOptions(clientContext, &clientInterceptorOpts);
     }

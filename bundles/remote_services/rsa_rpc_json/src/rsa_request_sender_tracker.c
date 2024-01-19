@@ -60,8 +60,8 @@ celix_status_t rsaRequestSenderTracker_create(celix_bundle_context_t* ctx, celix
     celix_autoptr(celix_long_hash_map_t) requestSenderSvcs = tracker->requestSenderSvcs = celix_longHashMap_create();
     assert(tracker->requestSenderSvcs != NULL);
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    opts.filter.serviceName = RSA_REQUEST_SENDER_SERVICE_NAME;
-    opts.filter.versionRange = RSA_REQUEST_SENDER_SERVICE_USE_RANGE;
+    opts.filter.serviceName = CELIX_RSA_REQUEST_SENDER_SERVICE_NAME;
+    opts.filter.versionRange = CELIX_RSA_REQUEST_SENDER_SERVICE_USE_RANGE;
     opts.callbackHandle = tracker;
     opts.addWithProperties = rsaRequestSenderTracker_addServiceWithProperties;
     opts.removeWithProperties = rsaRequestSenderTracker_removeServiceWithProperties;

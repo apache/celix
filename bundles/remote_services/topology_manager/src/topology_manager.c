@@ -358,7 +358,7 @@ celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr)
 		for (int i = 0; i < nrFound; i++) {
 			// Question: can srvRefs become invalid meanwhile??
 			const char* export = NULL;
-			serviceReference_getProperty(srvRefs[i], (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &export);
+			serviceReference_getProperty(srvRefs[i], (char *) CELIX_RSA_SERVICE_EXPORTED_INTERFACES, &export);
 
 			if (export) {
 				celix_status_t substatus = topologyManager_removeExportedService_nolock(manager, srvRefs[i], srvIds[i]);
@@ -532,7 +532,7 @@ static celix_status_t topologyManager_addExportedService_nolock(void * handle, s
 	celix_properties_t *serviceProperties = NULL;
 
 	const char *export = NULL;
-    serviceReference_getProperty(reference, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &export);
+    serviceReference_getProperty(reference, CELIX_RSA_SERVICE_EXPORTED_INTERFACES, &export);
     assert(export != NULL);
 
 	celix_logHelper_log(manager->loghelper, CELIX_LOG_LEVEL_DEBUG, "TOPOLOGY_MANAGER: Add exported service (%li).", serviceId);
@@ -677,7 +677,7 @@ celix_status_t topologyManager_endpointListenerAdded(void* handle, service_refer
 
 	hashMap_put(manager->listenerList, reference, NULL);
 
-	serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
+	serviceReference_getProperty(reference, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, &scope);
 
 	celix_autoptr(celix_filter_t) filter = celix_filter_create(scope);
 
@@ -755,7 +755,7 @@ static celix_status_t topologyManager_notifyListenersEndpointAdded(topology_mana
 		endpoint_listener_t *epl = NULL;
 		service_reference_pt reference = hashMapIterator_nextKey(iter);
 
-		serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
+		serviceReference_getProperty(reference, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, &scope);
 
 		status = bundleContext_getService(manager->context, reference, (void **) &epl);
 		if (status == CELIX_SUCCESS) {
@@ -795,7 +795,7 @@ static celix_status_t topologyManager_notifyListenersEndpointRemoved(topology_ma
 		const char* scope = NULL;
 
 		service_reference_pt reference = hashMapIterator_nextKey(iter);
-		serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
+		serviceReference_getProperty(reference, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, &scope);
 
 		substatus = bundleContext_getService(manager->context, reference, (void **) &epl);
 
@@ -825,13 +825,13 @@ static celix_status_t topologyManager_extendFilter(topology_manager_pt manager, 
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-	int len = 10 + strlen(filter) + strlen(OSGI_RSA_ENDPOINT_FRAMEWORK_UUID) + strlen(uuid);
+	int len = 10 + strlen(filter) + strlen(CELIX_RSA_ENDPOINT_FRAMEWORK_UUID) + strlen(uuid);
 	*updatedFilter = malloc(len);
 	if (!*updatedFilter) {
 		return CELIX_ENOMEM;
 	}
 
-	snprintf(*updatedFilter, len, "(&%s(!(%s=%s)))", filter, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+	snprintf(*updatedFilter, len, "(&%s(!(%s=%s)))", filter, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 
 	return status;
 }

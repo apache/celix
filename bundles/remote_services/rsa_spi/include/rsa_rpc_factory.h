@@ -31,11 +31,11 @@ extern "C" {
 /**
  * @brief The RPC type indicates which protocol is used to (de)serialize the raw data.
  */
-#define RSA_RPC_TYPE_KEY "celix.remote.admin.rpc_type"
+#define CELIX_RSA_RPC_TYPE_KEY "celix.remote.admin.rpc_type"
 
-#define RSA_RPC_FACTORY_NAME "rsa_rpc_factory"
-#define RSA_RPC_FACTORY_VERSION "1.0.0"
-#define RSA_RPC_FACTORY_USE_RANGE "[1.0.0,2.0.0)"
+#define CELIX_RSA_RPC_FACTORY_NAME "rsa_rpc_factory"
+#define CELIX_RSA_RPC_FACTORY_VERSION "1.0.0"
+#define CELIX_RSA_RPC_FACTORY_USE_RANGE "[1.0.0,2.0.0)"
 
 /**
  * @brief The service use to create remote service endpoint and remote service proxy

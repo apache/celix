@@ -64,13 +64,13 @@ celix_status_t discoveryZeroconfActivator_start(discovery_zeroconf_activator_t *
     }
     char scope[256] = {0};
     (void)snprintf(scope, sizeof(scope), "(&(%s=*)(%s=%s))", CELIX_FRAMEWORK_SERVICE_NAME,
-                    OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
-    celix_properties_set(props, OSGI_ENDPOINT_LISTENER_SCOPE, scope);
+                   CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
+    celix_properties_set(props, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, scope);
     celix_properties_set(props, "DISCOVERY", "true");//Only use to avoid the discovery calls to unnecessary endpoint listener service.Endpoint should be filtered by the scope.
     act->endpointListener.handle = act->announcer;
     act->endpointListener.endpointAdded = discoveryZeroconfAnnouncer_endpointAdded;
     act->endpointListener.endpointRemoved = discoveryZeroconfAnnouncer_endpointRemoved;
-    celix_dmComponent_addInterface(announcerCmp, OSGI_ENDPOINT_LISTENER_SERVICE, NULL,
+    celix_dmComponent_addInterface(announcerCmp, CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, NULL,
                                    &act->endpointListener, props);
 
     //init watcher
@@ -89,7 +89,7 @@ celix_status_t discoveryZeroconfActivator_start(discovery_zeroconf_activator_t *
         if (discoveredEplDep == NULL) {
             return CELIX_ENOMEM;
         }
-        celix_dmServiceDependency_setService(discoveredEplDep, OSGI_ENDPOINT_LISTENER_SERVICE, NULL, "(!(DISCOVERY=true))");
+        celix_dmServiceDependency_setService(discoveredEplDep, CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, NULL, "(!(DISCOVERY=true))");
         celix_dm_service_dependency_callback_options_t opts = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
         opts.addWithProps = discoveryZeroconfWatcher_addEPL;
         opts.removeWithProps = discoveryZeroconfWatcher_removeEPL;
@@ -102,7 +102,7 @@ celix_status_t discoveryZeroconfActivator_start(discovery_zeroconf_activator_t *
         if (rsaDep == NULL) {
             return CELIX_ENOMEM;
         }
-        celix_dmServiceDependency_setService(rsaDep, OSGI_RSA_REMOTE_SERVICE_ADMIN,
+        celix_dmServiceDependency_setService(rsaDep, CELIX_RSA_REMOTE_SERVICE_ADMIN,
                                              NULL, "(remote.configs.supported=*)");
         celix_dm_service_dependency_callback_options_t opts = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
         opts.addWithProps = discoveryZeroConfWatcher_addRSA;

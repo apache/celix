@@ -38,7 +38,7 @@ static celix_status_t celix_rsa_start(celix_remote_service_admin_activator_t* ac
     if (props == NULL) {
         return CELIX_ENOMEM;
     }
-    status = celix_properties_set(props, OSGI_RSA_REMOTE_CONFIGS_SUPPORTED, RSA_DFI_CONFIGURATION_TYPE","CELIX_RSA_DFI_ZEROCONF_CONFIGURATION_TYPE);
+    status = celix_properties_set(props, CELIX_RSA_REMOTE_CONFIGS_SUPPORTED, RSA_DFI_CONFIGURATION_TYPE","CELIX_RSA_DFI_ZEROCONF_CONFIGURATION_TYPE);
     if (status != CELIX_SUCCESS) {
         return status;
     }
@@ -65,7 +65,7 @@ static celix_status_t celix_rsa_start(celix_remote_service_admin_activator_t* ac
         activator->adminService.importRegistration_getException = importRegistration_getException;
         activator->adminService.importRegistration_getImportReference = importRegistration_getImportReference;
 
-        activator->svcIdRsa = celix_bundleContext_registerService(ctx, &activator->adminService, OSGI_RSA_REMOTE_SERVICE_ADMIN,
+        activator->svcIdRsa = celix_bundleContext_registerService(ctx, &activator->adminService, CELIX_RSA_REMOTE_SERVICE_ADMIN,
                                                                   celix_steal_ptr(props));
     }
 

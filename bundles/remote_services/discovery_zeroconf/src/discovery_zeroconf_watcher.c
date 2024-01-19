@@ -248,7 +248,7 @@ int discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix_propert
         return CELIX_ENOMEM;
     }
 
-    const char *scope = celix_properties_get(props, OSGI_ENDPOINT_LISTENER_SCOPE, NULL);//matching on empty filter is always true
+    const char *scope = celix_properties_get(props, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, NULL);//matching on empty filter is always true
     celix_filter_t *filter = scope == NULL ? NULL : celix_filter_create(scope);
 
     celixThreadMutex_lock(&watcher->mutex);
@@ -303,7 +303,7 @@ int discoveryZeroConfWatcher_addRSA(void *handle, void *svc, const celix_propert
     assert(svc != NULL);
     assert(props != NULL);
     discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)handle;
-    const char *configsSupported = celix_properties_get(props, OSGI_RSA_REMOTE_CONFIGS_SUPPORTED, NULL);
+    const char *configsSupported = celix_properties_get(props, CELIX_RSA_REMOTE_CONFIGS_SUPPORTED, NULL);
     celix_autofree char *configsSupportedCopy = celix_utils_strdup(configsSupported);
     if (configsSupportedCopy == NULL) {
         celix_logHelper_error(watcher->logHelper, "Watcher: Failed to dup remote configs supported.");
@@ -373,7 +373,7 @@ int discoveryZeroConfWatcher_removeRSA(void *handle, void *svc, const celix_prop
     assert(svc != NULL);
     assert(props != NULL);
     discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)handle;
-    const char *configsSupported = celix_properties_get(props, OSGI_RSA_REMOTE_CONFIGS_SUPPORTED, NULL);
+    const char *configsSupported = celix_properties_get(props, CELIX_RSA_REMOTE_CONFIGS_SUPPORTED, NULL);
     celix_autofree char *configsSupportedCopy = celix_utils_strdup(configsSupported);
     if (configsSupportedCopy == NULL) {
         celix_logHelper_error(watcher->logHelper, "Watcher: Failed to dup remote configs supported.");
@@ -442,7 +442,7 @@ static void OnServiceResolveCallback(DNSServiceRef sdRef, DNSServiceFlags flags,
             return;
         }
     }
-    svcEntry->endpointId = celix_properties_get(properties, OSGI_RSA_ENDPOINT_ID, NULL);
+    svcEntry->endpointId = celix_properties_get(properties, CELIX_RSA_ENDPOINT_ID, NULL);
 
     long propSize = celix_properties_getAsLong(properties, DZC_SERVICE_PROPERTIES_SIZE_KEY, 0);
     const char *version = celix_properties_get(properties, DZC_TXT_RECORD_VERSION_KEY, "");
@@ -919,7 +919,7 @@ static int discoveryZeroConfWatcher_createEndpointEntryForService(discovery_zero
         return status;
     }
 
-    const char *importedConfigs = celix_properties_get(ep->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
+    const char *importedConfigs = celix_properties_get(ep->properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
     if (importedConfigs == NULL) {
         celix_logHelper_error(watcher->logHelper, "Watcher: No imported configs.");
         return CELIX_ILLEGAL_ARGUMENT;
@@ -992,7 +992,7 @@ static void discoveryZeroconfWatcher_filterSameFrameWorkServices(discovery_zeroc
     while (!celix_stringHashMapIterator_isEnd(&iter)) {
         watched_service_entry_t *svcEntry = (watched_service_entry_t *)iter.value.ptrValue;
         if (svcEntry->resolved) {
-            const char *epFwUuid = celix_properties_get(svcEntry->txtRecord, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
+            const char *epFwUuid = celix_properties_get(svcEntry->txtRecord, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
             if (epFwUuid != NULL && strcmp(epFwUuid, watcher->fwUuid) == 0) {
                 celix_logHelper_debug(watcher->logHelper, "Watcher: Ignore self endpoint for %s.", celix_properties_get(svcEntry->txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, "unknown"));
                 celix_stringHashMapIterator_remove(&iter);

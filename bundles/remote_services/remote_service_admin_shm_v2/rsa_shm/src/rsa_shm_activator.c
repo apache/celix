@@ -54,7 +54,7 @@ celix_status_t rsaShmActivator_start(rsa_shm_activator_t *activator, celix_bundl
 
         return CELIX_ENOMEM;
     }
-    status = celix_properties_set(props, OSGI_RSA_REMOTE_CONFIGS_SUPPORTED, RSA_SHM_CONFIGURATION_TYPE);
+    status = celix_properties_set(props, CELIX_RSA_REMOTE_CONFIGS_SUPPORTED, RSA_SHM_CONFIGURATION_TYPE);
     if (status != CELIX_SUCCESS) {
         return status;
     }
@@ -80,7 +80,7 @@ celix_status_t rsaShmActivator_start(rsa_shm_activator_t *activator, celix_bundl
     activator->adminService.importRegistration_getImportReference = importRegistration_getImportReference;
 
     activator->adminSvcId = celix_bundleContext_registerServiceAsync(context, &activator->adminService,
-            OSGI_RSA_REMOTE_SERVICE_ADMIN, celix_steal_ptr(props));
+                                                                     CELIX_RSA_REMOTE_SERVICE_ADMIN, celix_steal_ptr(props));
     if (activator->adminSvcId < 0) {
         return CELIX_BUNDLE_EXCEPTION;
     }

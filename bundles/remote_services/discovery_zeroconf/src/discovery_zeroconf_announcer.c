@@ -323,7 +323,7 @@ celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, endpoint_d
 
     celix_logHelper_info(announcer->logHelper, "Announcer: Add endpoint for %s(%s).", endpoint->serviceName, endpoint->id);
 
-    const char *importedConfigs = celix_properties_get(endpoint->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
+    const char *importedConfigs = celix_properties_get(endpoint->properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
     if (importedConfigs == NULL) {
         celix_logHelper_error(announcer->logHelper, "Announcer: No imported configs for %s.", endpoint->serviceName);
         return CELIX_ILLEGAL_ARGUMENT;

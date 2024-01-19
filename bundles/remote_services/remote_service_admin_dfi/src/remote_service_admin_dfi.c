@@ -117,8 +117,8 @@ struct celix_get_data_reply {
     size_t size;
 };
 
-#define OSGI_RSA_REMOTE_PROXY_FACTORY   "remote_proxy_factory"
-#define OSGI_RSA_REMOTE_PROXY_TIMEOUT   "remote_proxy_timeout"
+#define CELIX_RSA_REMOTE_PROXY_FACTORY   "remote_proxy_factory"
+#define CELIX_RSA_REMOTE_PROXY_TIMEOUT   "remote_proxy_timeout"
 
 static const char *data_response_headers =
         "HTTP/1.1 200 OK\r\n"
@@ -569,7 +569,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
     celix_status_t status = CELIX_SUCCESS;
 
     bool export = false;
-    const char *exportConfigs = celix_properties_get(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, RSA_DFI_CONFIGURATION_TYPE);
+    const char *exportConfigs = celix_properties_get(properties, CELIX_RSA_SERVICE_EXPORTED_CONFIGS, RSA_DFI_CONFIGURATION_TYPE);
     if (exportConfigs != NULL) {
         // See if the EXPORT_CONFIGS matches this RSA. If so, try to export.
 
@@ -625,7 +625,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
         const char *exports = NULL;
         const char *provided = NULL;
         if (status == CELIX_SUCCESS) {
-            serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
+            serviceReference_getProperty(reference, (char *) CELIX_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
             serviceReference_getProperty(reference, (char *) CELIX_FRAMEWORK_SERVICE_NAME, &provided);
 
             if (exports == NULL || provided == NULL || strcmp(exports, provided) != 0) {
@@ -726,8 +726,8 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         const char *value = NULL;
 
         if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS
-            && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0
-            && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_CONFIGS) != 0
+            && strcmp(key, (char*) CELIX_RSA_SERVICE_EXPORTED_INTERFACES) != 0
+            && strcmp(key, (char*) CELIX_RSA_SERVICE_EXPORTED_CONFIGS) != 0
             && strcmp(key, (char*) CELIX_FRAMEWORK_SERVICE_NAME) != 0) {
             celix_properties_set(endpointProperties, key, value);
         }
@@ -748,12 +748,12 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     uuid_unparse_lower(endpoint_uid, endpoint_uuid);
 
     bundleContext_getProperty(admin->context, CELIX_FRAMEWORK_UUID, &uuid);
-    celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+    celix_properties_set(endpointProperties, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
     celix_properties_set(endpointProperties, CELIX_FRAMEWORK_SERVICE_NAME, interface);
-    celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
-    celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
-    celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) RSA_DFI_CONFIGURATION_TYPE","CELIX_RSA_DFI_ZEROCONF_CONFIGURATION_TYPE);
+    celix_properties_set(endpointProperties, CELIX_RSA_ENDPOINT_SERVICE_ID, serviceId);
+    celix_properties_set(endpointProperties, CELIX_RSA_ENDPOINT_ID, endpoint_uuid);
+    celix_properties_set(endpointProperties, CELIX_RSA_SERVICE_IMPORTED, "true");
+    celix_properties_set(endpointProperties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, (char*) RSA_DFI_CONFIGURATION_TYPE","CELIX_RSA_DFI_ZEROCONF_CONFIGURATION_TYPE);
     celix_properties_set(endpointProperties, RSA_DFI_ENDPOINT_URL, url);
     if (admin->discoveryInterface != NULL) {
         celix_properties_set(endpointProperties, CELIX_RSA_DFI_ZEROCONF_ENDPOINT_IFNAME, admin->discoveryInterface);
@@ -771,9 +771,9 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     if (!*endpoint) {
         status = CELIX_ENOMEM;
     } else {
-        (*endpoint)->id = (char*) celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, NULL);
+        (*endpoint)->id = (char*) celix_properties_get(endpointProperties, (char*) CELIX_RSA_ENDPOINT_ID, NULL);
         (*endpoint)->serviceId = serviceReference_getServiceId(reference);
-        (*endpoint)->frameworkUUID = (char*) celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
+        (*endpoint)->frameworkUUID = (char*) celix_properties_get(endpointProperties, (char*) CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
         (*endpoint)->serviceName = strndup(interface, 1024*10);
         (*endpoint)->properties = endpointProperties;
     }
@@ -901,7 +901,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
     celix_status_t status = CELIX_SUCCESS;
 
     bool importService = false;
-    const char *importConfigs = celix_properties_get(endpointDescription->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
+    const char *importConfigs = celix_properties_get(endpointDescription->properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
     if (importConfigs != NULL) {
         // Check whether this RSA must be imported
         char *ecCopy = strndup(importConfigs, strlen(importConfigs));
@@ -921,7 +921,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
         free(ecCopy);
     } else {
         celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_WARNING, "Mandatory %s element missing from endpoint description",
-                OSGI_RSA_SERVICE_IMPORTED_CONFIGS);
+                            CELIX_RSA_SERVICE_IMPORTED_CONFIGS);
     }
 
     if (importService) {
@@ -1036,10 +1036,10 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
 
     const char *timeoutStr = NULL;
     // Check if the endpoint has a timeout, if so, use it.
-    timeoutStr = (char*) celix_properties_get(endpointDescription->properties, (char*) OSGI_RSA_REMOTE_PROXY_TIMEOUT, NULL);
+    timeoutStr = (char*) celix_properties_get(endpointDescription->properties, (char*) CELIX_RSA_REMOTE_PROXY_TIMEOUT, NULL);
     if (timeoutStr == NULL) {
         // If not, get the global variable and use that one.
-        bundleContext_getProperty(rsa->context, (char*) OSGI_RSA_REMOTE_PROXY_TIMEOUT, &timeoutStr);
+        bundleContext_getProperty(rsa->context, (char*) CELIX_RSA_REMOTE_PROXY_TIMEOUT, &timeoutStr);
     }
 
     // Update timeout if a property is used to set it.
