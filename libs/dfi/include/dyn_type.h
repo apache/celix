@@ -311,7 +311,7 @@ CELIX_DFI_EXPORT int dynType_sequence_reserve(const dyn_type* type, void* inst, 
  * @return 0 if successful.
  * @retval 1 if the index is out of bounds.
  */
-CELIX_DFI_EXPORT int dynType_sequence_locForIndex(const dyn_type* type, void* seqLoc, uint32_t index, void** valLoc);
+CELIX_DFI_EXPORT int dynType_sequence_locForIndex(const dyn_type* type, const void* seqLoc, uint32_t index, void** valLoc);
 
 /**
  * @brief Increase the length of the sequence by one and return the value location for the last element.

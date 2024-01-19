@@ -170,13 +170,20 @@ TEST_F(DynTypeTests, AssignTest1) {
     int32_t val1 = 2;
     int32_t val2 = 4;
     int32_t val3 = 8;
+    EXPECT_EQ(0, dynType_complex_indexForName(type, "a"));
     dynType_complex_setValueAt(type, 0,  &inst, &val1);
     ASSERT_EQ(2, inst.a);
+
+    EXPECT_EQ(1, dynType_complex_indexForName(type, "b"));
     dynType_complex_setValueAt(type, 1,  &inst, &val2);
     ASSERT_EQ(4, inst.b);
+
+    EXPECT_EQ(2, dynType_complex_indexForName(type, "c"));
     dynType_complex_setValueAt(type, 2,  &inst, &val3);
     ASSERT_EQ(8, inst.c);
 
+    EXPECT_EQ(-1, dynType_complex_indexForName(type, nullptr));
+    EXPECT_EQ(-1, dynType_complex_indexForName(type, "none"));
     dynType_destroy(type);
 }
 

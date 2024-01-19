@@ -34,6 +34,8 @@ extern "C" {
 #include "json_serializer.h"
 #include "celix_err.h"
 
+#include <jansson.h>
+
 /*********** example 1 ************************/
 /** struct type ******************************/
 const char *example1_descriptor = "{DJISF a b c d e}";
@@ -408,7 +410,7 @@ static void parseTests() {
 	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_deserialize(type, example5_input, strlen(example5_input), &inst);
 	ASSERT_EQ(0, rc);
-	check_example5(inst);
+    check_example5(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
 
@@ -873,4 +875,43 @@ TEST_F(JsonSerializerTests, WriteComplexFailed) {
 
 TEST_F(JsonSerializerTests, WriteEnumFailed) {
     writeEnumFailed();
+}
+
+TEST_F(JsonSerializerTests, WriteDoublePointer) {
+    dyn_type *type;
+    int rc;
+    double val = 1.0;
+    double* valp = &val;
+    double** valpp = &valp;
+    char *result = nullptr;
+
+    rc = dynType_parseWithStr("**D", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    rc = jsonSerializer_serialize(type, &valpp, &result);
+    EXPECT_NE(0, rc);
+    EXPECT_STREQ("Error cannot serialize pointer to pointer", celix_err_popLastError());
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerTests, SerializationDeserilizationTest) {
+    dyn_type *type;
+    void *inst;
+    int rc;
+
+    type = nullptr;
+    inst = nullptr;
+    rc = dynType_parseWithStr(example5_descriptor, nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_loads(example5_input, JSON_DECODE_ANY, NULL);
+    ASSERT_NE(nullptr, root);
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_EQ(0, rc);
+    check_example5(inst);
+
+    json_auto_t* result = nullptr;
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(json_equal(root, result));
+    dynType_free(type, inst);
+    dynType_destroy(type);
 }

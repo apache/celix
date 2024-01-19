@@ -20,7 +20,6 @@
 #include "json_serializer.h"
 #include "dyn_type.h"
 #include "dyn_type_common.h"
-#include "dyn_interface.h"
 #include "celix_err.h"
 
 #include <jansson.h>
@@ -34,9 +33,9 @@ static int jsonSerializer_parseSequence(const dyn_type* seq, json_t* array, void
 static int jsonSerializer_parseAny(const dyn_type* type, void* input, json_t* val);
 static int jsonSerializer_parseEnum(const dyn_type* type, const char* enum_name, int32_t* out);
 
-static int jsonSerializer_writeAny(const dyn_type* type, void* input, json_t** val);
-static int jsonSerializer_writeComplex(const dyn_type* type, void* input, json_t** val);
-static int jsonSerializer_writeSequence(const dyn_type* type, void* input, json_t** out);
+static int jsonSerializer_writeAny(const dyn_type* type, const void* input, json_t** val);
+static int jsonSerializer_writeComplex(const dyn_type* type, const void* input, json_t** val);
+static int jsonSerializer_writeSequence(const dyn_type* type, const void* input, json_t** out);
 static int jsonSerializer_writeEnum(const dyn_type* type, int32_t enum_value, json_t** out);
 
 
@@ -246,17 +245,13 @@ static int jsonSerializer_parseSequence(const dyn_type* seq, json_t* array, void
 }
 
 int jsonSerializer_serialize(const dyn_type* type, const void* input, char** output) {
-    int status = OK;
-
-    json_t* root = NULL;
-    status = jsonSerializer_serializeJson(type, input, &root);
-
-    if (status == OK) {
-        *output = json_dumps(root, JSON_COMPACT | JSON_ENCODE_ANY);
-        json_decref(root);
+    int status;
+    json_auto_t* root = NULL;
+    if ((status = jsonSerializer_serializeJson(type, input, &root)) != OK) {
+        return status;
     }
-
-    return status;
+    *output = json_dumps(root, JSON_COMPACT | JSON_ENCODE_ANY);
+    return *output != NULL ? OK : ERROR;
 }
 
 static int jsonSerializer_parseEnum(const dyn_type* type, const char* enum_name, int32_t* out) {
@@ -278,89 +273,72 @@ int jsonSerializer_serializeJson(const dyn_type* type, const void* input, json_t
     while (real->type == DYN_TYPE_REF) {
         real = real->ref.ref;
     }
-    return jsonSerializer_writeAny(real, (void*)input /*TODO update static function to take const void**/, out);
+    return jsonSerializer_writeAny(real, input, out);
 }
 
-static int jsonSerializer_writeAny(const dyn_type *type, void* input, json_t **out) {
+static int jsonSerializer_writeAny(const dyn_type* type, const void* input, json_t** out) {
     int status = OK;
 
     int descriptor = dynType_descriptorType(type);
-    json_t *val = NULL;
-    const dyn_type *subType = NULL;
-
-    bool *z;            //Z
-    float *f;           //F
-    double *d;          //D
-    char *b;            //B
-    int *n;             //N
-    int16_t *s;         //S
-    int32_t *i;         //I
-    int32_t *e;         //E
-    int64_t *l;         //J
-    uint8_t   *ub;      //b
-    uint16_t  *us;      //s
-    uint32_t  *ui;      //i
-    uint64_t  *ul;      //j
+    json_auto_t* val = NULL;
+    const dyn_type* subType = NULL;
 
     switch (descriptor) {
         case 'Z' :
-            z = input;
-            val = json_boolean((bool)*z);
+            val = json_boolean(*(const bool*)input);
             break;
         case 'B' :
-            b = input;
-            val = json_integer((json_int_t)*b);
+            val = json_integer((json_int_t)*(const char*)input);
             break;
         case 'S' :
-            s = input;
-            val = json_integer((json_int_t)*s);
+            val = json_integer((json_int_t)*(const int16_t*)input);
             break;
         case 'I' :
-            i = input;
-            val = json_integer((json_int_t)*i);
+            val = json_integer((json_int_t)*(const int32_t*)input);
             break;
         case 'J' :
-            l = input;
-            val = json_integer((json_int_t)*l);
+            val = json_integer((json_int_t)*(const int64_t*)input);
             break;
         case 'b' :
-            ub = input;
-            val = json_integer((json_int_t)*ub);
+            val = json_integer((json_int_t)*(const uint8_t*)input);
             break;
         case 's' :
-            us = input;
-            val = json_integer((json_int_t)*us);
+            val = json_integer((json_int_t)*(const uint16_t*)input);
             break;
         case 'i' :
-            ui = input;
-            val = json_integer((json_int_t)*ui);
+            val = json_integer((json_int_t)*(const uint32_t *)input);
             break;
         case 'j' :
-            ul = input;
-            val = json_integer((json_int_t)*ul);
+            val = json_integer((json_int_t)*(const uint64_t*)input);
             break;
         case 'N' :
-            n = input;
-            val = json_integer((json_int_t)*n);
+            val = json_integer((json_int_t)*(const int*)input);
             break;
         case 'F' :
-            f = input;
-            val = json_real((double) *f);
+            val = json_real((double) *(const float*)input);
             break;
         case 'D' :
-            d = input;
-            val = json_real(*d);
+            val = json_real(*(const double*)input);
             break;
         case 't' :
             val = json_string(*(const char **) input);
             break;
         case 'E':
-            e = input;
-            status = jsonSerializer_writeEnum(type, *e, &val);
+            status = jsonSerializer_writeEnum(type, *(const int32_t*)input, &val);
             break;
         case '*' :
             subType = dynType_typedPointer_getTypedType(type);
-            status = jsonSerializer_writeAny(subType, *(void **)input, &val);
+            if (dynType_ffiType(subType) != &ffi_type_pointer) {
+                const void* inputValue = *(const void**)input;
+                if (inputValue) {
+                    status = jsonSerializer_writeAny(subType, inputValue, &val);
+                } else {
+                    val = json_null();
+                }
+            } else {
+                status = ERROR;
+                celix_err_pushf("Error cannot serialize pointer to pointer");
+            }
             break;
         case '{' :
             status = jsonSerializer_writeComplex(type, input, &val);
@@ -373,96 +351,76 @@ static int jsonSerializer_writeAny(const dyn_type *type, void* input, json_t **o
             status = ERROR;
             break;
     }
-
-    if (status == OK && val != NULL) {
-        *out = val;
+    if (status != OK) {
+        return status;
     }
-
-    return status;
+    *out = celix_steal_ptr(val);
+    return *out != NULL ? OK : ERROR;
 }
 
-static int jsonSerializer_writeSequence(const dyn_type *type, void *input, json_t **out) {
+static int jsonSerializer_writeSequence(const dyn_type* type, const void* input, json_t** out) {
     assert(dynType_type(type) == DYN_TYPE_SEQUENCE);
-    int status = OK;
 
-    json_t *array = json_array();
-    const dyn_type *itemType = dynType_sequence_itemType(type);
+    json_auto_t* array = json_array();
+    if (array == NULL) {
+        return ERROR;
+    }
+    const dyn_type* itemType = dynType_sequence_itemType(type);
     uint32_t len = dynType_sequence_length(input);
 
-    uint32_t i = 0;
-    void *itemLoc = NULL;
-    json_t *item = NULL;
-    for (i = 0; i < len; i += 1) {
-        item = NULL;
-        status = dynType_sequence_locForIndex(type, input, i, &itemLoc);
-        if (status == OK) {
-            status = jsonSerializer_writeAny(itemType, itemLoc, &item);
-            if (status == OK) {
-                json_array_append(array, item);
-                json_decref(item);
-            }
+    for (uint32_t i = 0; i < len; i += 1) {
+        int status = OK;
+        void* itemLoc = NULL;
+        json_t* item = NULL;
+        if ((status = dynType_sequence_locForIndex(type, input, i, &itemLoc)) != OK) {
+            celix_err_push("Cannot serialize invalid sequence");
+            return status;
         }
-
-        if (status != OK) {
-            break;
+        if ((status = jsonSerializer_writeAny(itemType, itemLoc, &item)) != OK) {
+            return status;
+        }
+        if ((json_array_append_new(array, item)) != 0) {
+            return ERROR;
         }
     }
 
-    if (status == OK && array != NULL) {
-        *out = array;
-    } else {
-        *out = NULL;
-        json_decref(array);
-    }
-
-    return status;
+    *out = celix_steal_ptr(array);
+    return OK;
 }
 
-static int jsonSerializer_writeComplex(const dyn_type *type, void *input, json_t **out) {
+static int jsonSerializer_writeComplex(const dyn_type* type, const void* input, json_t** out) {
     assert(dynType_type(type) == DYN_TYPE_COMPLEX);
-    int status = OK;
 
-    json_t *val = json_object();
-    struct complex_type_entry *entry = NULL;
-    const struct complex_type_entries_head *entries = dynType_complex_entries(type);
-    int index = -1;
+    json_auto_t* val = json_object();
+    if (val == NULL) {
+        return ERROR;
+    }
+    struct complex_type_entry* entry = NULL;
+    const struct complex_type_entries_head* entries = dynType_complex_entries(type);
+    int index = 0;
 
     TAILQ_FOREACH(entry, entries, entries) {
-        void *subLoc = NULL;
-        json_t *subVal = NULL;
+        int status;
+        void* subLoc = NULL;
+        json_t* subVal = NULL;
         const dyn_type* subType = NULL;
-        index = dynType_complex_indexForName(type, entry->name);
-        if (index < 0) {
-            celix_err_pushf("Cannot find index for member '%s'", entry->name);
-            status = ERROR;
+        if (entry->name == NULL) {
+            celix_err_push("Unamed field unsupported");
+            return ERROR;
         }
-        if(status == OK){
-            subLoc = dynType_complex_valLocAt(type, index, input);
+        subLoc = dynType_complex_valLocAt(type, index, (void*)input);
+        subType = dynType_complex_dynTypeAt(type, index);
+        if ((status = jsonSerializer_writeAny(subType, subLoc, &subVal)) != OK) {
+            return status;
         }
-        if (status == OK) {
-            subType = dynType_complex_dynTypeAt(type, index);
+        if (json_object_set_new(val, entry->name, subVal) != 0) {
+            return ERROR;
         }
-        if (status == OK) {
-            status = jsonSerializer_writeAny(subType, subLoc, &subVal);
-        }
-        if (status == OK) {
-            json_object_set(val, entry->name, subVal);
-            json_decref(subVal);
-        }
-
-        if (status != OK) {
-            break;
-        }
+        index++;
     }
 
-    if (status == OK && val != NULL) {
-        *out = val;
-    } else {
-        *out = NULL;
-        json_decref(val);
-    }
-
-    return status;
+    *out = celix_steal_ptr(val);
+    return OK;
 }
 
 static int jsonSerializer_writeEnum(const dyn_type* type, int32_t enum_value, json_t **out) {
@@ -476,7 +434,7 @@ static int jsonSerializer_writeEnum(const dyn_type* type, int32_t enum_value, js
     TAILQ_FOREACH(entry, &type->metaProperties, entries) {
         if (0 == strcmp(enum_value_str, entry->value)) {
             *out = json_string((const char*)entry->name);
-            return OK;
+            return *out != NULL ? OK : ERROR;
         }
     }
 

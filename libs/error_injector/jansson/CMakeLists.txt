@@ -20,9 +20,18 @@ find_package(jansson REQUIRED)
 add_library(jansson_ei STATIC src/jansson_ei.cc)
 
 target_include_directories(jansson_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
-target_link_libraries(jansson_ei PUBLIC Celix::error_injector jansson::jansson)
+target_link_libraries(jansson_ei
+        PUBLIC Celix::error_injector jansson::jansson
+        PRIVATE Celix::utils #for celix_cleanup.h
+)
 
 target_link_options(jansson_ei INTERFACE
         LINKER:--wrap,json_array_size
+        LINKER:--wrap,json_dumps
+        LINKER:--wrap,json_object
+        LINKER:--wrap,json_object_set_new
+        LINKER:--wrap,json_array
+        LINKER:--wrap,json_array_append_new
+        LINKER:--wrap,json_integer
         )
 add_library(Celix::jansson_ei ALIAS jansson_ei)

@@ -26,6 +26,12 @@ extern "C" {
 #include "celix_error_injector.h"
 
 CELIX_EI_DECLARE(json_array_size, size_t);
+CELIX_EI_DECLARE(json_dumps, char*);
+CELIX_EI_DECLARE(json_object, json_t*);
+CELIX_EI_DECLARE(json_object_set_new, int);
+CELIX_EI_DECLARE(json_array, json_t*);
+CELIX_EI_DECLARE(json_array_append_new, int);
+CELIX_EI_DECLARE(json_integer, json_t*);
 
 #ifdef __cplusplus
 }

@@ -690,9 +690,9 @@ uint32_t dynType_sequence_length(const void *seqLoc) {
     return seq->len;
 }
 
-int dynType_sequence_locForIndex(const dyn_type* type, void* seqLoc, uint32_t index, void** out) {
+int dynType_sequence_locForIndex(const dyn_type* type, const void* seqLoc, uint32_t index, void** out) {
     assert(type->type == DYN_TYPE_SEQUENCE);
-    struct generic_sequence* seq = seqLoc;
+    const struct generic_sequence* seq = seqLoc;
 
     size_t itemSize = dynType_size(type->sequence.itemType);
 
