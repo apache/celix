@@ -68,10 +68,10 @@ The events are mapped as follows:
 For celix framework Event, we map the celix framework condition id to the event admin event topic. The event admin event properties are none.
 The details mapping are shown in the following table:
 
-| Celix Framework Condition ID       | Event Admin Event topic |
-|------------------------------------|-------------------------|
-| CELIX_CONDITION_ID_FRAMEWORK_READY |"org/osgi/framework/FrameworkEvent/STARTED"|
-| CELIX_CONDITION_ID_FRAMEWORK_ERROR |"org/osgi/framework/FrameworkEvent/ERROR"|
+| Celix Framework Condition ID       | Event Admin Event topic                     |
+|------------------------------------|---------------------------------------------|
+| CELIX_CONDITION_ID_FRAMEWORK_READY | "org/osgi/framework/FrameworkEvent/STARTED" |
+| CELIX_CONDITION_ID_FRAMEWORK_ERROR | "org/osgi/framework/FrameworkEvent/ERROR"   |
 
 - **Celix Bundle Event**
 
@@ -82,15 +82,15 @@ For celix bundle Event, we map the celix bundle event type to the event admin ev
 
 The details mapping are shown in the following table:
 
-| Celix Bundle Event Type        | Event Admin Event topic |
-|--------------------------------|-------------------------|
-| CELIX_BUNDLE_EVENT_INSTALLED   |"org/osgi/framework/BundleEvent/INSTALLED"|
-| CELIX_BUNDLE_EVENT_STARTED     |"org/osgi/framework/BundleEvent/STARTED"|
-| CELIX_BUNDLE_EVENT_STOPPED     |"org/osgi/framework/BundleEvent/STOPPED"|
-| CELIX_BUNDLE_EVENT_UPDATED     |"org/osgi/framework/BundleEvent/UPDATED"|
-| CELIX_BUNDLE_EVENT_UNINSTALLED |"org/osgi/framework/BundleEvent/UNINSTALLED"|
-| CELIX_BUNDLE_EVENT_RESOLVED    |"org/osgi/framework/BundleEvent/RESOLVED"|
-| CELIX_BUNDLE_EVENT_UNRESOLVED  |"org/osgi/framework/BundleEvent/UNRESOLVED"|
+| Celix Bundle Event Type        | Event Admin Event topic                      |
+|--------------------------------|----------------------------------------------|
+| CELIX_BUNDLE_EVENT_INSTALLED   | "org/osgi/framework/BundleEvent/INSTALLED"   |
+| CELIX_BUNDLE_EVENT_STARTED     | "org/osgi/framework/BundleEvent/STARTED"     |
+| CELIX_BUNDLE_EVENT_STOPPED     | "org/osgi/framework/BundleEvent/STOPPED"     |
+| CELIX_BUNDLE_EVENT_UPDATED     | "org/osgi/framework/BundleEvent/UPDATED"     |
+| CELIX_BUNDLE_EVENT_UNINSTALLED | "org/osgi/framework/BundleEvent/UNINSTALLED" |
+| CELIX_BUNDLE_EVENT_RESOLVED    | "org/osgi/framework/BundleEvent/RESOLVED"    |
+| CELIX_BUNDLE_EVENT_UNRESOLVED  | "org/osgi/framework/BundleEvent/UNRESOLVED"  |
 
 - **Celix Service Event**
 
@@ -101,7 +101,7 @@ For celix service Event, we map the celix service register/unregister operation 
 
 The details mapping are shown in the following table:
 
-| Celix Service Operation | Event Admin Event topic |
-|-------------------------|-------------------------|
-| Register Service        |"org/osgi/framework/ServiceEvent/REGISTERED"|
-| Unregister Service      |"org/osgi/framework/ServiceEvent/UNREGISTERING"|
+| Celix Service Operation | Event Admin Event topic                         |
+|-------------------------|-------------------------------------------------|
+| Register Service        | "org/osgi/framework/ServiceEvent/REGISTERED"    |
+| Unregister Service      | "org/osgi/framework/ServiceEvent/UNREGISTERING" |

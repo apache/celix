@@ -82,6 +82,7 @@ extern "C" {
  * - "*"                                      Indicates all topics   \n
  * - "com/acme/MyEvent,com/acme/MyOtherEvent" Indicates the specific events with topics "com/acme/MyEvent" and "com/acme/MyOtherEvent"
  *
+ * @todo Use string array instead of comma-separated list.(depends on https://github.com/apache/celix/issues/674)
  */
 #define CELIX_EVENT_TOPIC "event.topics"
 
