@@ -40,7 +40,23 @@ event admin pubsub model, and events are delivered asynchronously.
 
 #### Synchronous Delivery
 
+In the synchronous delivery, the event handler will be notified in the caller's thread. And the `sendEvent` method will return after all the event handlers have been called.
+The diagram of synchronous delivery is shown in the following figure:
+
+![sync_delivery_seq.png](diagrams/sync_delivery_seq.png)
+
 #### Asynchronous Delivery
+
+In the asynchronous delivery, the event handler will be notified in a separate event-delivery thread. And the `postEvent` method will return immediately.
+The diagram of asynchronous delivery is shown in the following figure:
+
+![sync_delivery_seq.png](diagrams/async_delivery_seq.png)
+
+In above figure, if the event handler set the "event.delivery" property to "async.ordered", each event handler can hold 
+at most one event-delivery thread at a time, so that events can be delivered in order. If the event handler sets the 
+"event.delivery" property to "async.unordered", the event handler can hold multiple event-delivery threads at the same 
+time, so that events can be delivered in parallel.
+
 
 #### Event Adapter
 

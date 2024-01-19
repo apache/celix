@@ -1,0 +1,28 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+participant EventPublisher
+box "EventAdmin"
+participant EventAdmin
+== init ==
+create queue EventQueue
+EventAdmin -> EventQueue: new
+create control DeliveryEventThreads
+EventAdmin -> DeliveryEventThreads: new
+end box
+== postEvent ==
+EventPublisher -> EventAdmin: postEvent
+EventAdmin -> EventAdmin: collect event handlers for event
+EventAdmin -> EventQueue: add event with a list of event handlers to the queue
+EventQueue --> EventAdmin: return
+EventAdmin --> EventPublisher: return
+loop has event in queue
+    EventQueue -> DeliveryEventThreads: get event and event handler
+    DeliveryEventThreads -> EventHandler: handleEvent
+    return
+    alt event has been notified to all event handlers
+    DeliveryEventThreads -> EventQueue: remove event from queue
+    end alt
+end loop
+
+@enduml

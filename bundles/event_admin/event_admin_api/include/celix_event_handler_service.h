@@ -55,6 +55,7 @@ typedef struct celix_event_handler_service {
      * @param[in] properties The properties of the event.
      * @return Status code indicating failure or success.
      * CELIX_SUCCESS if no errors are encountered. If an error is encountered, it should be return celix errno.
+     * @see CELIX_EVENT_TOPIC, CELIX_EVENT_FILTER, CELIX_EVENT_DELIVERY
      */
     celix_status_t (*handleEvent)(void* handle, const char* topic, const celix_properties_t* properties);
 }celix_event_handler_service_t;

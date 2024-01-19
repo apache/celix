@@ -1,0 +1,12 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+EventPublisher -> EventAdmin: sendEvent
+EventAdmin -> EventAdmin: collect event handlers for event
+loop  for each event handler
+    EventAdmin -> EventHandler: handleEvent
+    EventHandler --> EventAdmin: return
+end loop
+EventAdmin --> EventPublisher: return
+
+@enduml
