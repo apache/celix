@@ -869,8 +869,39 @@ TEST_F(JsonSerializerTests, WriteSequenceFailed) {
     writeSequenceFailed();
 }
 
+TEST_F(JsonSerializerTests, WriteSequenceFailed2) {
+    dyn_type* type = nullptr;
+    char* result = nullptr;
+    int rc = dynType_parseWithStr(R"([**D)", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    double** input[] = {nullptr};
+    struct {
+        uint32_t cap;
+        uint32_t len;
+        double*** buf;
+    }seq{1,1,input};
+    rc = jsonSerializer_serialize(type, &seq, &result);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+}
+
 TEST_F(JsonSerializerTests, WriteComplexFailed) {
     writeComplexFailed();
+}
+
+TEST_F(JsonSerializerTests, WriteComplexFailed2) {
+    dyn_type *type = nullptr;
+    char *result = nullptr;
+    int rc = dynType_parseWithStr(R"({**D a})", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    struct {
+        double** a;
+    }input{nullptr};
+    rc = jsonSerializer_serialize(type, &input, &result);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
 }
 
 TEST_F(JsonSerializerTests, WriteEnumFailed) {
