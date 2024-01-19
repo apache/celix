@@ -66,7 +66,7 @@ celix_status_t discoveryZeroconfActivator_start(discovery_zeroconf_activator_t *
     (void)snprintf(scope, sizeof(scope), "(&(%s=*)(%s=%s))", CELIX_FRAMEWORK_SERVICE_NAME,
                    CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
     celix_properties_set(props, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, scope);
-    celix_properties_set(props, "DISCOVERY", "true");//Only use to avoid the discovery calls to unnecessary endpoint listener service.Endpoint should be filtered by the scope.
+    celix_properties_set(props, "DISCOVERY", "true");//Only use to avoid the discovery calls to unnecessary endpoint listener service. Endpoint should be filtered by the scope.
     act->endpointListener.handle = act->announcer;
     act->endpointListener.endpointAdded = discoveryZeroconfAnnouncer_endpointAdded;
     act->endpointListener.endpointRemoved = discoveryZeroconfAnnouncer_endpointRemoved;

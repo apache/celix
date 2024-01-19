@@ -91,7 +91,7 @@ celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, ce
     celix_status_t status = CELIX_SUCCESS;
     celix_autofree discovery_zeroconf_announcer_t *announcer = (discovery_zeroconf_announcer_t *)calloc(1, sizeof(*announcer));
     if (announcer == NULL) {
-        celix_logHelper_fatal(logHelper, "Announcer: Failed to alloc announcer.");
+        celix_logHelper_error(logHelper, "Announcer: Failed to alloc announcer.");
         return CELIX_ENOMEM;
     }
     announcer->ctx = ctx;
@@ -101,14 +101,14 @@ celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, ce
 
     announcer->eventFd = eventfd(0, 0);
     if (announcer->eventFd < 0) {
-        celix_logHelper_fatal(logHelper, "Announcer: Failed to open event fd, %d.", errno);
+        celix_logHelper_error(logHelper, "Announcer: Failed to open event fd, %d.", errno);
         return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
     }
     celix_auto(celix_fd_t) eventFd = announcer->eventFd;
 
     status = celixThreadMutex_create(&announcer->mutex, NULL);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_fatal(logHelper, "Announcer: Failed to create mutex, %d.", status);
+        celix_logHelper_error(logHelper, "Announcer: Failed to create mutex, %d.", status);
         return status;
     }
     celix_autoptr(celix_thread_mutex_t) mutex = &announcer->mutex;
@@ -116,25 +116,25 @@ celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, ce
     celix_autoptr(celix_string_hash_map_t) endpoints = announcer->endpoints = celix_stringHashMap_create();
     if (endpoints == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_fatal(logHelper, "Announcer: Failed to create endpoints map.");
+        celix_logHelper_error(logHelper, "Announcer: Failed to create endpoints map.");
         return CELIX_ENOMEM;
     }
     celix_autoptr(celix_array_list_t) revokedEndpoints = announcer->revokedEndpoints = celix_arrayList_create();
     if (revokedEndpoints == NULL) {
-        celix_logHelper_fatal(logHelper, "Announcer: Failed to create revoked endpoints list.");
+        celix_logHelper_error(logHelper, "Announcer: Failed to create revoked endpoints list.");
         return CELIX_ENOMEM;
     }
 
     celix_autoptr(celix_string_hash_map_t) conflictCntMap = announcer->conflictCntMap = celix_stringHashMap_create();
     if (conflictCntMap == NULL) {
-        celix_logHelper_fatal(logHelper, "Announcer: Failed to create conflict count map.");
+        celix_logHelper_error(logHelper, "Announcer: Failed to create conflict count map.");
         return CELIX_ENOMEM;
     }
 
     announcer->running = true;
     status = celixThread_create(&announcer->refreshEPThread, NULL, discoveryZeroconfAnnouncer_refreshEndpointThread, announcer);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_fatal(logHelper, "Announcer: Failed to create refreshing endpoint thread, %d.", status);
+        celix_logHelper_error(logHelper, "Announcer: Failed to create refreshing endpoint thread, %d.", status);
         return status;
     }
     celixThread_setName(&announcer->refreshEPThread, "DiscAnnouncer");
@@ -631,7 +631,6 @@ static void *discoveryZeroconfAnnouncer_refreshEndpointThread(void *data) {
                         }
                     }
                 }
-                running = announcer->running;
                 celixThreadMutex_unlock(&announcer->mutex);
 
                 discoveryZeroconfAnnouncer_revokeEndpoints(announcer, revokedEndpoints);
@@ -647,6 +646,9 @@ static void *discoveryZeroconfAnnouncer_refreshEndpointThread(void *data) {
             celix_logHelper_error(announcer->logHelper, "Announcer: Error Selecting event, %d.", errno);
             sleep(1);//avoid busy loop
         }
+        celixThreadMutex_lock(&announcer->mutex);
+        running = announcer->running;
+        celixThreadMutex_unlock(&announcer->mutex);
     }
     if (announcer->sharedRef) {
         DNSServiceRefDeallocate(announcer->sharedRef);

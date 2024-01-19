@@ -125,7 +125,7 @@ celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celi
     celix_status_t status = CELIX_SUCCESS;
     celix_autofree discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)calloc(1, sizeof(*watcher));
     if (watcher == NULL) {
-        celix_logHelper_fatal(logHelper, "Watcher: Failed to alloc watcher.");
+        celix_logHelper_error(logHelper, "Watcher: Failed to alloc watcher.");
         return CELIX_ENOMEM;
     }
     watcher->logHelper = logHelper;
@@ -133,28 +133,28 @@ celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celi
     watcher->sharedRef = NULL;
     watcher->eventFd = eventfd(0, 0);
     if (watcher->eventFd < 0) {
-        celix_logHelper_fatal(logHelper, "Watcher: Failed to open event fd, %d.", errno);
+        celix_logHelper_error(logHelper, "Watcher: Failed to open event fd, %d.", errno);
         return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
     }
     celix_auto(celix_fd_t) eventFd = watcher->eventFd;
 
     const char *fwUuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
     if (fwUuid == NULL || strlen(fwUuid) >= sizeof(watcher->fwUuid)) {
-        celix_logHelper_fatal(logHelper, "Watcher: Failed to get framework uuid.");
+        celix_logHelper_error(logHelper, "Watcher: Failed to get framework uuid.");
         return CELIX_BUNDLE_EXCEPTION;
     }
     strcpy(watcher->fwUuid, fwUuid);
 
     status = celixThreadMutex_create(&watcher->mutex, NULL);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_fatal(logHelper, "Watcher: Failed to create mutex, %d.", status);
+        celix_logHelper_error(logHelper, "Watcher: Failed to create mutex, %d.", status);
         return status;
     }
     celix_autoptr(celix_thread_mutex_t) mutex = &watcher->mutex;
     celix_autoptr(celix_string_hash_map_t) serviceBrowsers = watcher->serviceBrowsers = celix_stringHashMap_create();
     if (serviceBrowsers == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_fatal(logHelper, "Watcher: Failed to create service browsers map.");
+        celix_logHelper_error(logHelper, "Watcher: Failed to create service browsers map.");
         return CELIX_ENOMEM;
     }
     celix_string_hash_map_create_options_t epOpts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
@@ -163,27 +163,27 @@ celix_status_t discoveryZeroconfWatcher_create(celix_bundle_context_t *ctx, celi
         watcher->watchedEndpoints = celix_stringHashMap_createWithOptions(&epOpts);
     if (watchedEndpoints == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_fatal(logHelper, "Watcher: Failed to create endpoints map.");
+        celix_logHelper_error(logHelper, "Watcher: Failed to create endpoints map.");
         return CELIX_ENOMEM;
     }
     celix_autoptr(celix_string_hash_map_t) watchedHosts = watcher->watchedHosts = celix_stringHashMap_create();
     if (watchedHosts == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_fatal(logHelper, "Watcher: Failed to create hosts map.");
+        celix_logHelper_error(logHelper, "Watcher: Failed to create hosts map.");
         return CELIX_ENOMEM;
     }
     celix_autoptr(celix_string_hash_map_t) watchedServices =
         watcher->watchedServices = celix_stringHashMap_create();
     if (watchedServices == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_fatal(logHelper, "Watcher: Failed to create services map.");
+        celix_logHelper_error(logHelper, "Watcher: Failed to create services map.");
         return CELIX_ENOMEM;
     }
     celix_autoptr(celix_long_hash_map_t) epls =
         watcher->epls = celix_longHashMap_create();
     if (epls == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_fatal(logHelper, "Watcher: Failed to create endpoint listener map.");
+        celix_logHelper_error(logHelper, "Watcher: Failed to create endpoint listener map.");
         return CELIX_ENOMEM;
     }
 
