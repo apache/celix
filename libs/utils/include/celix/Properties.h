@@ -201,7 +201,7 @@ namespace celix {
          * @brief Wrap C properties and returns it as const in a shared_ptr,
          * but does not take ownership -> dtor will not destroy C properties.
          */
-        static const Properties wrap(const celix_properties_t* wrapProps) {
+        static Properties wrap(const celix_properties_t* wrapProps) {
             auto* cp = const_cast<celix_properties_t*>(wrapProps);
             return Properties{cp, false};
         }
@@ -210,7 +210,7 @@ namespace celix {
          * @brief Wrap C properties and returns it as const in a shared_ptr,
          * but does not take ownership -> dtor will not destroy C properties.
          */
-        static const Properties wrap(celix_properties_t* wrapProps) {
+        static Properties wrap(celix_properties_t* wrapProps) {
             return Properties{wrapProps, false};
         }
 
@@ -309,7 +309,13 @@ namespace celix {
             return celix_properties_getAsLong(cProps.get(), key.c_str(), defaultValue);
         }
 
-        // TODO doc
+        /**
+         * @Brief Get the value of a property, if the property is set and the underlying type is a long.
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set or the value is not a long.
+         * @return The value of the property, or the default value if the property is not set or the value is not of the
+         * requested type.
+         */
         long getLong(const std::string& key, long defaultValue) const {
             return celix_properties_getLong(cProps.get(), key.c_str(), defaultValue);
         }
@@ -326,7 +332,14 @@ namespace celix {
             return celix_properties_getAsDouble(cProps.get(), key.c_str(), defaultValue);
         }
 
-        // TODO doc
+        /**
+         * @Brief Get the value of a property, if the property is set and the underlying type is a double.
+         * @param[in] properties The property set to search.
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set or the value is not a double.
+         * @return The value of the property, or the default value if the property is not set or the value is not of the
+         * requested type.
+         */
         double getDouble(const std::string& key, double defaultValue) const {
             return celix_properties_getDouble(cProps.get(), key.c_str(), defaultValue);
         }
@@ -343,7 +356,13 @@ namespace celix {
             return celix_properties_getAsBool(cProps.get(), key.c_str(), defaultValue);
         }
 
-        // TODO doc
+        /**
+         * @Brief Get the value of a property, if the property is set and the underlying type is a boolean.
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set or the value is not a boolean.
+         * @return The value of the property, or the default value if the property is not set or the value is not of the
+         * requested type.
+         */
         bool getBool(const std::string& key, bool defaultValue) const {
             return celix_properties_getBool(cProps.get(), key.c_str(), defaultValue);
         }
@@ -373,7 +392,20 @@ namespace celix {
             return defaultValue;
         }
 
-        // TODO doc
+        /**
+         * @brief Get the Celix version value of a property without copying.
+         *
+         * This function provides a non-owning, read-only access to a Celix version contained in the properties.
+         * It returns a const pointer to the Celix version value associated with the specified key.
+         * This function does not perform any conversion from a string property value to a Celix version.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set or if the value is not a Celix
+         * version.
+         * @return A const pointer to the Celix version if it is present and valid, or the provided default value if the
+         * property is not set or the value is not a valid Celix version. The returned pointer should not be modified or
+         * freed.
+         */
         celix::Version getVersion(const std::string& key, celix::Version defaultValue = {}) const {
             auto* v = celix_properties_getVersion(cProps.get(), key.c_str(), nullptr);
             if (v) {
@@ -385,7 +417,22 @@ namespace celix {
             return defaultValue;
         }
 
-        // TODO doc
+        /**
+         * @brief Get a property value as a vector of longs.
+         *
+         * This function retrieves the value of a property, interpreting it as a vector of longs. If the underlying type
+         * of the property value is a long array, a new long vector with the longs of the found array  is returned. If
+         * the underlying type is a string, the string is converted to a vector of longs if possible. If the property is
+         * not set, its value is not a vector of longs or its value cannot be converted to a long vector, the default
+         * value is returned as a copy.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The default value to return if the property is not set or its value is not a vector
+         * of longs.
+         * @return A new vector with long values or a copy of the default value if
+         * the property is not set, its value is not a array of longs or its value cannot be converted to a vector of
+         * longs.
+         */
         std::vector<long> getAsLongVector(const std::string& key, const std::vector<long>& defaultValue = {}) const {
             celix_autoptr(celix_array_list_t) list;
             celix_status_t status = celix_properties_getAsLongArrayList(cProps.get(), key.c_str(), nullptr, &list);
@@ -393,13 +440,34 @@ namespace celix {
             return convertToVector<long>(list, defaultValue, celix_arrayList_getLong);
         }
 
-        // TODO doc
+        /**
+         * @brief Get vector of longs if the underlying property type is a array of longs.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue A new vector with long values or a copy of the default value if the property is not
+         * set or its value is not a array of longs.
+         */
         std::vector<long> getLongVector(const std::string& key, const std::vector<long>& defaultValue = {}) const {
             const auto* list = celix_properties_getLongArrayList(cProps.get(), key.c_str(), nullptr);
             return convertToVector<long>(list, defaultValue, celix_arrayList_getLong);
         }
 
-        // TODO doc
+        /**
+         * @brief Get a property value as a vector of booleans.
+         *
+         * This function retrieves the value of a property, interpreting it as a vector of booleans. If the underlying
+         * type of the property value is a booleans array, a new boolean vector with the booleans of the found array  is
+         * returned. If the underlying type is a string, the string is converted to a vector of booleans if possible. If
+         * the property is not set, its value is not a vector of booleans or its value cannot be converted to a boolean
+         * vector, the default value is returned as a copy.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The default value to return if the property is not set or its value is not a vector
+         * of booleans.
+         * @return A new vector with boolean values or a copy of the default value if
+         * the property is not set, its value is not a array of booleans or its value cannot be converted to a vector of
+         * booleans.
+         */
         std::vector<bool> getAsBoolVector(const std::string& key, const std::vector<bool>& defaultValue = {}) const {
             celix_autoptr(celix_array_list_t) list;
             celix_status_t status = celix_properties_getAsBoolArrayList(cProps.get(), key.c_str(), nullptr, &list);
@@ -407,13 +475,34 @@ namespace celix {
             return convertToVector<bool>(list, defaultValue, celix_arrayList_getBool);
         }
 
-        // TODO doc
+        /**
+         * @brief Get vector of booleans if the underlying property type is a array of booleans.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue A new vector with boolean values or a copy of the default value if the property is not
+         * set or its value is not a array of booleans.
+         */
         std::vector<bool> getBoolVector(const std::string& key, const std::vector<bool>& defaultValue = {}) const {
             const auto* list = celix_properties_getBoolArrayList(cProps.get(), key.c_str(), nullptr);
             return convertToVector<bool>(list, defaultValue, celix_arrayList_getBool);
         }
 
-        // TODO doc
+        /**
+         * @brief Get a property value as a vector of doubles.
+         *
+         * This function retrieves the value of a property, interpreting it as a vector of doubles. If the underlying
+         * type of the property value is a double array, a new double vector with the doubles of the found array  is
+         * returned. If the underlying type is a string, the string is converted to a vector of doubles if possible. If
+         * the property is not set, its value is not a vector of doubles or its value cannot be converted to a double
+         * vector, the default value is returned as a copy.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The default value to return if the property is not set or its value is not a vector
+         * of doubles.
+         * @return A new vector with double values or a copy of the default value if
+         * the property is not set, its value is not a array of doubles or its value cannot be converted to a vector of
+         * doubles.
+         */
         std::vector<double> getAsDoubleVector(const std::string& key,
                                               const std::vector<double>& defaultValue = {}) const {
             celix_autoptr(celix_array_list_t) list;
@@ -422,14 +511,36 @@ namespace celix {
             return convertToVector<double>(list, defaultValue, celix_arrayList_getDouble);
         }
 
-        // TODO doc
+        /**
+         * @brief Get vector of doubles if the underlying property type is a array of doubles.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue A new vector with double values or a copy of the default value if the property is not
+         * set or its value is not a array of doubles.
+         */
         std::vector<double> getDoubleVector(const std::string& key,
                                             const std::vector<double>& defaultValue = {}) const {
             const auto* list = celix_properties_getDoubleArrayList(cProps.get(), key.c_str(), nullptr);
             return convertToVector<double>(list, defaultValue, celix_arrayList_getDouble);
         }
 
-        // TODO doc
+        /**
+         * @brief Get a property value as a vector of celix::Version.
+         *
+         * This function retrieves the value of a property, interpreting it as a vector of celix::Version. If the
+         * underlying type of the property value is a celix_version_t* array, a new celix::Version vector created using
+         * the celix_version_t of the found array is returned. If the underlying type is a string, the string is
+         * converted to a vector of celix::Version if possible. If the property is not set, its value is not a vector of
+         * celix_version_t* or its value cannot be converted to a celix::Version vector, the default value is returned
+         * as a copy.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The default value to return if the property is not set or its value is not a vector
+         * of celix::Version.
+         * @return A new vector with celix::Version values or a copy of the default value if
+         * the property is not set, its value is not a array of celix_version_t* or its value cannot be converted to a
+         * vector of celix::Version.
+         */
         std::vector<celix::Version> getAsVersionVector(const std::string& key,
                                                        const std::vector<celix::Version>& defaultValue = {}) const {
             celix_autoptr(celix_array_list_t) list;
@@ -449,7 +560,13 @@ namespace celix {
             return defaultValue;
         }
 
-        // TODO doc
+        /**
+         * @brief Get vector of celix::Version if the underlying property type is a array of celix_version_t*.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue A new vector with celix::Version values or a copy of the default value if the
+         * property is not set or its value is not a array of celix_version_t*.
+         */
         std::vector<celix::Version> getVersionVector(const std::string& key,
                                                      const std::vector<celix::Version>& defaultValue = {}) const {
             const auto* list = celix_properties_getVersionArrayList(cProps.get(), key.c_str(), nullptr);
@@ -467,7 +584,22 @@ namespace celix {
             return defaultValue;
         }
 
-        // TODO doc
+        /**
+         * @brief Get a property value as a vector of strings.
+         *
+         * This function retrieves the value of a property, interpreting it as a vector of strings. If the underlying
+         * type of the property value is a string array, a new string vector with the strings of the found array  is
+         * returned. If the underlying type is a string, the string is converted to a vector of strings if possible. If
+         * the property is not set, its value is not a vector of strings or its value cannot be converted to a string
+         * vector, the default value is returned as a copy.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The default value to return if the property is not set or its value is not a vector
+         * of strings.
+         * @return A new vector with string values or a copy of the default value if
+         * the property is not set, its value is not a array of strings or its value cannot be converted to a vector of
+         * strings.
+         */
         std::vector<std::string> getAsStringVector(const std::string& key,
                                                    const std::vector<std::string>& defaultValue = {}) const {
             celix_autoptr(celix_array_list_t) list;
@@ -484,7 +616,13 @@ namespace celix {
             return defaultValue;
         }
 
-        // TODO doc
+        /**
+         * @brief Get vector of strings if the underlying property type is a array of strings.
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue A new vector with string values or a copy of the default value if the property is not
+         * set or its value is not a array of strings.
+         */
         std::vector<std::string> getStringVector(const std::string& key,
                                                  const std::vector<std::string>& defaultValue = {}) const {
             const auto* list = celix_properties_getStringArrayList(cProps.get(), key.c_str(), nullptr);
@@ -502,6 +640,8 @@ namespace celix {
         /**
          * @brief Set the value of a property.
          *
+         * The property value will be set as a string.
+         *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set the property to.
          * @throws std::bad_alloc If a ENOMEM error occurs while setting the property.
@@ -516,6 +656,8 @@ namespace celix {
         /**
          * @brief Set string property value for a given key.
          *
+         * The set property type will be ValueType::String.
+         *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set the property to.
          * @throws std::bad_alloc If a ENOMEM error occurs while setting the property.
@@ -529,6 +671,8 @@ namespace celix {
 
         /**
          * @brief Set a property with a to_string value of type T.
+         *
+         * The set property type will be ValueType::String.
          *
          * This function will use the std::to_string function to convert the value of type T to a string,
          * which will be used as the value for the property.
@@ -549,6 +693,8 @@ namespace celix {
         /**
          * @brief Sets a celix::Version property value for a given key.
          *
+         * The set property type will be ValueType::Version.
+         *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set for the property.
          * @throws std::bad_alloc If a ENOMEM error occurs while setting the property.
@@ -562,6 +708,8 @@ namespace celix {
 
         /**
          * @brief Sets a bool property value for a given key.
+         *
+         * The set property type will be ValueType::Bool.
          *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set for the property.
@@ -577,6 +725,8 @@ namespace celix {
         /**
          * @brief Sets a long property value for a given key.
          *
+         * The set property type will be ValueType::Long.
+         *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set for the property.
          * @throws std::bad_alloc If a ENOMEM error occurs while setting the property.
@@ -590,6 +740,8 @@ namespace celix {
 
         /**
          * @brief Sets a double property value for a given key.
+         *
+         * The set property type will be ValueType::Double.
          *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set for the property.
@@ -605,6 +757,8 @@ namespace celix {
         /**
          * @brief Sets a celix_version_t* property value for a given key.
          *
+         * The set property type will be ValueType::Version.
+         *
          * @param[in] key The key of the property to set.
          * @param[in] value The value to set for the property.
          * @throws std::bad_alloc If a ENOMEM error occurs while setting the property.
@@ -614,7 +768,14 @@ namespace celix {
             throwIfEnomem(status);
         }
 
-        // TODO doc
+        /**
+         * @brief Set a string array value for a property.
+         *
+         * The set property type will be ValueType::StringArray.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] values An vector of string values to set for the property.
+         */
         void setStrings(const std::string& key, const std::vector<std::string>& values) {
             celix_array_list_create_options_t opts{};
             opts.simpleRemovedCallback = free;
@@ -630,7 +791,14 @@ namespace celix {
             throwIfEnomem(status);
         }
 
-        // TODO doc
+        /**
+         * @brief Set a celix::Version array value for a property.
+         *
+         * The set property type will be ValueType::VersionArray.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] values An vector of celix::Version values to set for the property.
+         */
         void setVersions(const std::string& key, const std::vector<celix::Version>& values) {
             celix_array_list_create_options_t opts{};
             opts.simpleRemovedCallback = (void (*)(void*))celix_version_destroy;
@@ -646,7 +814,14 @@ namespace celix {
             throwIfEnomem(status);
         }
 
-        // TODO doc
+        /**
+         * @brief Set a boolean array value for a property.
+         *
+         * The set property type will be ValueType::BooleanArray.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] values An vector of boolean values to set for the property.
+         */
         void setBooleans(const std::string& key, const std::vector<bool>& values) {
             celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
             throwIfNull(list);
@@ -658,13 +833,27 @@ namespace celix {
             throwIfEnomem(status);
         }
 
-        // TODO doc
+        /**
+         * @brief Set a long array value for a property.
+         *
+         * The set property type will be ValueType::LongArray.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] values An vector of long values to set for the property.
+         */
         void setLongs(const std::string& key, const std::vector<long>& values) {
             auto status = celix_properties_setLongs(cProps.get(), key.data(), values.data(), values.size());
             throwIfEnomem(status);
         }
 
-        // TODO doc
+        /**
+         * @brief Set a double array value for a property.
+         *
+         * The set property type will be ValueType::DoubleArray.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] values An vector of double values to set for the property.
+         */
         void setDoubles(const std::string& key, const std::vector<double>& values) {
             auto status = celix_properties_setDoubles(cProps.get(), key.data(), values.data(), values.size());
             throwIfEnomem(status);
