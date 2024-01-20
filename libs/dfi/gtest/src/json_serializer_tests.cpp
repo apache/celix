@@ -946,3 +946,43 @@ TEST_F(JsonSerializerTests, SerializationDeserilizationTest) {
     dynType_free(type, inst);
     dynType_destroy(type);
 }
+
+TEST_F(JsonSerializerTests, SerializationDeserilizationNullStringTest) {
+    dyn_type *type;
+    void *inst;
+    int rc;
+    rc = dynType_parseWithStr("t", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_null();
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_EQ(0, rc);
+    EXPECT_EQ(nullptr, *(char**)inst);
+
+    json_auto_t* result = nullptr;
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(json_equal(root, result));
+    dynType_free(type, inst);
+    dynType_destroy(type);
+
+}
+
+TEST_F(JsonSerializerTests, SerializationDeserilizationStringTest) {
+    dyn_type *type;
+    void *inst;
+    int rc;
+    rc = dynType_parseWithStr("t", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_loads(R"("hello")", JSON_DECODE_ANY, NULL);
+    ASSERT_NE(nullptr, root);
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_EQ(0, rc);
+    EXPECT_STREQ("hello", *(char**)inst);
+
+    json_auto_t* result = nullptr;
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(json_equal(root, result));
+    dynType_free(type, inst);
+    dynType_destroy(type);
+}

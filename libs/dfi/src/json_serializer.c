@@ -320,9 +320,11 @@ static int jsonSerializer_writeAny(const dyn_type* type, const void* input, json
         case 'D' :
             val = json_real(*(const double*)input);
             break;
-        case 't' :
-            val = json_string(*(const char **) input);
+        case 't' : {
+            const char *strValue = *(const char **) input;
+            val = (strValue != NULL) ? json_string(strValue) : json_null();
             break;
+        }
         case 'E':
             status = jsonSerializer_writeEnum(type, *(const int32_t*)input, &val);
             break;
