@@ -1298,7 +1298,7 @@ celix_status_t
 celix_properties_setVersions(celix_properties_t* properties, const char* key, const celix_version_t** values, size_t nrOfValues) {
     assert(values != NULL);
     celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-    opts.simpleRemovedCallback = free;
+    opts.simpleRemovedCallback = celix_properties_destroyVersionCallback;
     opts.initialCapacity = nrOfValues;
     celix_autoptr(celix_array_list_t) list = celix_arrayList_createWithOptions(&opts);
     if (!list) {
