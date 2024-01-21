@@ -36,6 +36,7 @@ if (RSA_JSON_RPC)
             Celix::log_helper
             Celix::framework
             Celix::utils
+            Celix::rsa_utils
             jansson::jansson
             )
 

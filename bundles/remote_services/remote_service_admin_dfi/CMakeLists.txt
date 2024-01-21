@@ -34,6 +34,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             src/import_registration_dfi.c
             )
     target_link_libraries(rsa_dfi PRIVATE
+            Celix::rsa_utils
             Celix::rsa_dfi_utils
             Celix::dfi
             Celix::log_helper
