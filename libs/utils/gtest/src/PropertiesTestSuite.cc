@@ -624,6 +624,24 @@ TEST_F(PropertiesTestSuite, SetEntryTest) {
     celix_properties_destroy(props2);
 }
 
+TEST_F(PropertiesTestSuite, SetEntryWithLargeStringValueTest) {
+    //Test if the version and double with a large string representation are correctly set
+    //(whitebox test to check if the fallback to string allocation works)
+    celix_autoptr(celix_properties_t) props1 = celix_properties_create();
+
+    double doubleVal = 1.23456789E+307;
+    celix_properties_setDouble(props1, "key1", doubleVal);
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_DOUBLE, celix_properties_getType(props1, "key1"));
+    EXPECT_DOUBLE_EQ(doubleVal, celix_properties_getAsDouble(props1, "key1", 0.0));
+
+    celix_autoptr(celix_version_t) version =
+        celix_version_create(1, 2, 3, "a-qualifier-that-is-longer-than-20-characters");
+    celix_properties_setVersion(props1, "key2", version);
+    EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_VERSION, celix_properties_getType(props1, "key2"));
+    EXPECT_EQ(0, celix_version_compareTo(version, celix_properties_getVersion(props1, "key2", nullptr)));
+}
+
+
 TEST_F(PropertiesTestSuite, PropertiesAutoCleanupTest) {
     celix_autoptr(celix_properties_t) props = celix_properties_create();
 }

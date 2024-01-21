@@ -195,13 +195,28 @@ TEST_F(CxxPropertiesTestSuite, GetTest) {
     props.set("key4", true); //bool
     props.set("key5", celix::Version{1, 2, 3}); //version
 
-    //Test get with valid key
+    //Test getAs with valid key
     EXPECT_EQ(props.get("key1"), "value1");
     EXPECT_EQ(props.getAsLong("key2", -1), 2);
     EXPECT_EQ(props.getAsDouble("key3", -1), 3.3);
     EXPECT_EQ(props.getAsBool("key4", false), true);
     celix::Version checkVersion{1, 2, 3};
     EXPECT_EQ(props.getAsVersion("key5", celix::Version{1, 2, 4}), checkVersion);
+
+    //Test get with valid key
+    EXPECT_EQ(props.get("key1"), "value1");
+    EXPECT_EQ(props.getLong("key2", -1), 2);
+    EXPECT_EQ(props.getDouble("key3", -1), 3.3);
+    EXPECT_EQ(props.getBool("key4", false), true);
+    EXPECT_EQ(props.getVersion("key5", celix::Version{1, 2, 4}), checkVersion);
+
+    // Test get type
+    EXPECT_EQ(props.getType("key1"), celix::Properties::ValueType::String);
+    EXPECT_EQ(props.getType("key2"), celix::Properties::ValueType::Long);
+    EXPECT_EQ(props.getType("key3"), celix::Properties::ValueType::Double);
+    EXPECT_EQ(props.getType("key4"), celix::Properties::ValueType::Bool);
+    EXPECT_EQ(props.getType("key5"), celix::Properties::ValueType::Version);
+    EXPECT_EQ(props.getType("non-existing"), celix::Properties::ValueType::Unset);
 
     // Test get with invalid key and default value
     EXPECT_EQ(props.get("non_existent_key", "default_value"), "default_value");
@@ -231,6 +246,13 @@ TEST_F(CxxPropertiesTestSuite, ArrayListTest) {
     props.setBooleans("key4", {true, false});
     props.setVersions("key5", {celix::Version{1, 2, 3}, celix::Version{2, 3, 4}});
     EXPECT_EQ(5, props.size());
+
+    // Test get type
+    EXPECT_EQ(props.getType("key1"), celix::Properties::ValueType::StringArray);
+    EXPECT_EQ(props.getType("key2"), celix::Properties::ValueType::LongArray);
+    EXPECT_EQ(props.getType("key3"), celix::Properties::ValueType::DoubleArray);
+    EXPECT_EQ(props.getType("key4"), celix::Properties::ValueType::BooleanArray);
+    EXPECT_EQ(props.getType("key5"), celix::Properties::ValueType::VersionArray);
 
     // Test getAs with valid key
     auto strings = props.getAsStringVector("key1");

@@ -28,12 +28,12 @@
 #include "celix_utils_private_constants.h"
 #include "celix_version.h"
 
+#include "celix_array_list_ei.h"
 #include "celix_string_hash_map_ei.h"
 #include "celix_utils_ei.h"
+#include "celix_version_ei.h"
 #include "malloc_ei.h"
 #include "stdio_ei.h"
-#include "celix_utils_ei.h"
-#include "celix_version_ei.h"
 
 class PropertiesErrorInjectionTestSuite : public ::testing::Test {
   public:
@@ -49,6 +49,9 @@ class PropertiesErrorInjectionTestSuite : public ::testing::Test {
         celix_ei_expect_ftell(nullptr, 0, 0);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_celix_stringHashMap_put(nullptr, 0, 0);
+        celix_ei_expect_celix_version_copy(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_copy(nullptr, 0, nullptr);
     }
 
     /**
@@ -127,6 +130,12 @@ TEST_F(PropertiesErrorInjectionTestSuite, SetFailureTest) {
 
     // When a celix_stringHashMap_put error injection is set for celix_properties_set with level 1 (during put)
     celix_ei_expect_celix_stringHashMap_put((void*)celix_properties_set, 1, CELIX_ENOMEM);
+    // Then the celix_properties_set call fails
+    ASSERT_EQ(celix_properties_set(props, "key", "value"), CELIX_ENOMEM);
+
+    // When a celix_utils_strdup error injection is when calling celix_properties_set, for the creation of the
+    // key string.
+    celix_ei_expect_celix_utils_strdup((void*)celix_properties_createString, 0, nullptr, 2);
     // Then the celix_properties_set call fails
     ASSERT_EQ(celix_properties_set(props, "key", "value"), CELIX_ENOMEM);
 
@@ -255,6 +264,87 @@ TEST_F(PropertiesErrorInjectionTestSuite, LoadFailureTest) {
 
     fclose(memStream);
 }
+
+TEST_F(PropertiesErrorInjectionTestSuite, GetAsVersionWithVersionCopyFailedTest) {
+    //Given a properties set with a version
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_version_t* v = celix_version_create(1, 2, 3, "qualifier");
+    celix_properties_assignVersion(props, "key", v);
+
+    // When a celix_version_copy error injection is set for celix_properties_getAsVersion
+    celix_ei_expect_celix_version_copy((void*)celix_properties_getAsVersion, 0, nullptr);
+
+    // Then the celix_properties_getAsVersion call fails
+    celix_version_t* version = nullptr;
+    auto status =  celix_properties_getAsVersion(props, "key", nullptr, &version);
+    ASSERT_EQ(status, CELIX_ENOMEM);
+    ASSERT_EQ(nullptr, version);
+}
+
+TEST_F(PropertiesErrorInjectionTestSuite, GetAsArrayWithArrayListCopyFailedTest) {
+    //Given a properties set with a string array, long array, double array, bool array and version array
+    const char* str1 = "string1";
+    const char* str2 = "string2";
+    const char* stringsArray[] = {str1, str2};
+    long longsArray[] = {1, 2, 3};
+    double doublesArray[] = {1.1, 2.2, 3.3};
+    bool boolsArray[] = {true, false, true};
+    celix_autoptr(celix_version_t) v = celix_version_create(1, 2, 3, "qualifier");
+    const celix_version_t* versionsArray[] = {v, v, v};
+
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_setStrings(props, "stringArray", stringsArray, 2);
+    celix_properties_setLongs(props, "longArray", longsArray, 3);
+    celix_properties_setDoubles(props, "doubleArray", doublesArray, 3);
+    celix_properties_setBooleans(props, "boolArray", boolsArray, 3);
+    celix_properties_setVersions(props, "versionArray", versionsArray, 3);
+
+    // When a celix_arrayList_createWithOptions error injection is set for celix_properties_getAsStringArrayList
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_properties_getAsStringArrayList, 1, nullptr);
+
+    // Then the celix_properties_getAsStringArrayList call fails
+    celix_array_list_t* strings = nullptr;
+    auto status = celix_properties_getAsStringArrayList(props, "stringArray", nullptr, &strings);
+    ASSERT_EQ(status, CELIX_ENOMEM);
+    ASSERT_EQ(nullptr, strings);
+
+    //When a celix_arrayList_copy error injection is set for celix_properties_getAsLongArrayList
+    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsLongArrayList, 0, nullptr);
+
+    // Then the celix_properties_getAsLongArrayList call fails
+    celix_array_list_t* longs = nullptr;
+    status = celix_properties_getAsLongArrayList(props, "longArray", nullptr, &longs);
+    ASSERT_EQ(status, CELIX_ENOMEM);
+    ASSERT_EQ(nullptr, longs);
+
+    //When a celix_arrayList_copy error injection is set for celix_properties_getAsDoubleArrayList
+    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsDoubleArrayList, 0, nullptr);
+
+    // Then the celix_properties_getAsDoubleArrayList call fails
+    celix_array_list_t* doubles = nullptr;
+    status = celix_properties_getAsDoubleArrayList(props, "doubleArray", nullptr, &doubles);
+    ASSERT_EQ(status, CELIX_ENOMEM);
+    ASSERT_EQ(nullptr, doubles);
+
+    //When a celix_arrayList_copy error injection is set for celix_properties_getAsBoolArrayList
+    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsBoolArrayList, 0, nullptr);
+
+    // Then the celix_properties_getAsBoolArrayList call fails
+    celix_array_list_t* bools = nullptr;
+    status = celix_properties_getAsBoolArrayList(props, "boolArray", nullptr, &bools);
+    ASSERT_EQ(status, CELIX_ENOMEM);
+    ASSERT_EQ(nullptr, bools);
+
+    //When a celix_arrayList_createWithOptions error injection is set for celix_properties_getAsVersionArrayList
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_properties_getAsVersionArrayList, 1, nullptr);
+
+    // Then the celix_properties_getAsVersionArrayList call fails
+    celix_array_list_t* versions = nullptr;
+    status = celix_properties_getAsVersionArrayList(props, "versionArray", nullptr, &versions);
+    ASSERT_EQ(status, CELIX_ENOMEM);
+    ASSERT_EQ(nullptr, versions);
+}
+
 
 TEST_F(PropertiesErrorInjectionTestSuite, AssignFailureTest) {
     //Given a filled properties and a key and value

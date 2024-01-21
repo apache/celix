@@ -153,7 +153,7 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
         entry->value = celix_properties_createString(properties, convertedValueBuffer);
     } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
         int written = snprintf(convertedValueBuffer, sizeof(convertedValueBuffer), "%f", entry->typed.doubleValue);
-        if (written >= 0 || written < sizeof(convertedValueBuffer)) {
+        if (written >= 0 && written < sizeof(convertedValueBuffer)) {
             entry->value = celix_properties_createString(properties, convertedValueBuffer);
         } else {
             char* val = NULL;
@@ -842,12 +842,9 @@ celix_status_t celix_properties_getAsVersion(const celix_properties_t* propertie
         return CELIX_SUCCESS;
     }
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
-        celix_version_t* createdVersion = celix_version_createVersionFromString(entry->value);
-        //TODO improve error detection for celix_version_createVersionFromString, so that ENOMEM can be returned
-        //maybe use and improve celix_utils_convertStringToVersion
-        if (createdVersion) {
-            *version = createdVersion;
-            return CELIX_SUCCESS;
+        celix_status_t parseStatus = celix_version_parse(entry->value, version);
+        if (parseStatus != CELIX_ILLEGAL_ARGUMENT) {
+            return parseStatus;
         }
     }
     if (defaultValue) {
@@ -1195,7 +1192,7 @@ celix_properties_setStrings(celix_properties_t* properties, const char* key, con
     return celix_properties_createAndSetEntry(properties, key, &prototype);
 }
 
-celix_array_list_t* celix_properties_deepCopyStringArrayList(const celix_array_list_t* list) {
+static celix_array_list_t* celix_properties_deepCopyStringArrayList(const celix_array_list_t* list) {
     celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
     opts.simpleRemovedCallback = free;
     opts.initialCapacity = celix_arrayList_size(list);

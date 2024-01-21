@@ -178,7 +178,6 @@ celix_status_t celix_version_parse(const char *versionStr, celix_version_t** ver
     *version = NULL;
 
     if (celix_utils_isStringNullOrEmpty(versionStr)) {
-        celix_err_push("Invalid version string. Version string cannot be NULL or empty");
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
@@ -186,7 +185,7 @@ celix_status_t celix_version_parse(const char *versionStr, celix_version_t** ver
     char* versionWrkStr = celix_utils_writeOrCreateString(buffer, sizeof(buffer), "%s", versionStr);
     if (!versionWrkStr) {
         celix_err_push("Failed to allocate memory for celix_version_createVersionFromString");
-        return CELIX_ILLEGAL_ARGUMENT;
+        return CELIX_ENOMEM;
     }
 
     int versionsParts[3] = {0, 0, 0};
