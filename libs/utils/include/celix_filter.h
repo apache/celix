@@ -101,6 +101,7 @@
 #ifndef CELIX_FILTER_H_
 #define CELIX_FILTER_H_
 
+#include "celix_filter_type.h"
 #include "celix_array_list.h"
 #include "celix_cleanup.h"
 #include "celix_properties.h"
@@ -135,7 +136,7 @@ typedef struct celix_filter_internal celix_filter_internal_t; // opaque struct f
 /**
  * @brief The Apache Celix filter struct.
  */
-typedef struct celix_filter_struct {
+struct celix_filter_struct {
     celix_filter_operand_t operand; /**< The filter operand. */
     const char* attribute;          /**< The filter attribute; NULL for operands `AND`, `OR` or `NOT`. */
     const char* value;              /**< The filter value; NULL for operands `AND`, `OR` or `NOT`. */
@@ -145,7 +146,7 @@ typedef struct celix_filter_struct {
                                      the value is NULL. */
 
     celix_filter_internal_t* internal; /**< Internal use only. */
-} celix_filter_t;
+};
 
 /**
  * @brief Create a filter based on the provided filter string.

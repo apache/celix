@@ -644,14 +644,14 @@ bool celix_properties_hasKey(const celix_properties_t* properties, const char* k
 }
 
 const char* celix_properties_get(const celix_properties_t* properties, const char* key, const char* defaultValue) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL) {
         return entry->value;
     }
     return defaultValue;
 }
 
-celix_properties_entry_t* celix_properties_getEntry(const celix_properties_t* properties, const char* key) {
+const celix_properties_entry_t* celix_properties_getEntry(const celix_properties_t* properties, const char* key) {
     celix_properties_entry_t* entry = NULL;
     if (properties) {
         entry = celix_stringHashMap_get(properties->map, key);
@@ -742,7 +742,7 @@ void celix_properties_unset(celix_properties_t* properties, const char* key) {
 }
 
 long celix_properties_getLong(const celix_properties_t* properties, const char* key, long defaultValue) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG) {
         return entry->typed.longValue;
     }
@@ -750,7 +750,7 @@ long celix_properties_getLong(const celix_properties_t* properties, const char* 
 }
 
 long celix_properties_getAsLong(const celix_properties_t* props, const char* key, long defaultValue) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(props, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(props, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG) {
         return entry->typed.longValue;
     } else if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
@@ -769,7 +769,7 @@ celix_status_t celix_properties_setLong(celix_properties_t* props, const char* k
 }
 
 double celix_properties_getDouble(const celix_properties_t* properties, const char* key, double defaultValue) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
         return entry->typed.doubleValue;
     }
@@ -777,7 +777,7 @@ double celix_properties_getDouble(const celix_properties_t* properties, const ch
 }
 
 double celix_properties_getAsDouble(const celix_properties_t* props, const char* key, double defaultValue) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(props, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(props, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE) {
         return entry->typed.doubleValue;
     } else if (entry != NULL) {
@@ -794,7 +794,7 @@ celix_status_t celix_properties_setDouble(celix_properties_t* props, const char*
 }
 
 bool celix_properties_getBool(const celix_properties_t* properties, const char* key, bool defaultValue) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL) {
         return entry->typed.boolValue;
     }
@@ -802,7 +802,7 @@ bool celix_properties_getBool(const celix_properties_t* properties, const char* 
 }
 
 bool celix_properties_getAsBool(const celix_properties_t* props, const char* key, bool defaultValue) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(props, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(props, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL) {
         return entry->typed.boolValue;
     } else if (entry != NULL) {
@@ -821,7 +821,7 @@ celix_status_t celix_properties_setBool(celix_properties_t* props, const char* k
 const celix_version_t* celix_properties_getVersion(const celix_properties_t* properties,
                                                    const char* key,
                                                    const celix_version_t* defaultValue) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
         return entry->typed.versionValue;
     }
@@ -832,7 +832,7 @@ celix_status_t celix_properties_getAsVersion(const celix_properties_t* propertie
                                                const char* key,
                                                const celix_version_t* defaultValue,
                                                celix_version_t** version) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
         celix_version_t* copy = celix_version_copy(entry->typed.versionValue);
         if (!copy) {
@@ -886,7 +886,7 @@ celix_status_t celix_properties_getAsLongArrayList(const celix_properties_t* pro
                                                    const char* key,
                                                    const celix_array_list_t* defaultValue,
                                                    celix_array_list_t** list) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY) {
         celix_array_list_t* copy = celix_arrayList_copy(entry->typed.arrayValue);
         if (!copy) {
@@ -958,7 +958,7 @@ celix_properties_setLongs(celix_properties_t* properties, const char* key, const
 const celix_array_list_t* celix_properties_getLongArrayList(const celix_properties_t* properties,
                                                             const char* key,
                                                             const celix_array_list_t* defaultValue) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY) {
         return entry->typed.arrayValue;
     }
@@ -1012,7 +1012,7 @@ celix_status_t celix_properties_getAsDoubleArrayList(const celix_properties_t* p
                                                      const char* key,
                                                      const celix_array_list_t* defaultValue,
                                                      celix_array_list_t** list) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY) {
         celix_array_list_t* copy = celix_arrayList_copy(entry->typed.arrayValue);
         if (!copy) {
@@ -1040,7 +1040,7 @@ celix_status_t celix_properties_getAsDoubleArrayList(const celix_properties_t* p
 const celix_array_list_t* celix_properties_getDoubleArrayList(const celix_properties_t* properties,
                                                               const char* key,
                                                               const celix_array_list_t* defaultValue) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY) {
         return entry->typed.arrayValue;
     }
@@ -1093,7 +1093,7 @@ celix_status_t celix_properties_getAsBoolArrayList(const celix_properties_t* pro
                                                      const char* key,
                                                      const celix_array_list_t* defaultValue,
                                                      celix_array_list_t** list) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY) {
         celix_array_list_t* copy = celix_arrayList_copy(entry->typed.arrayValue);
         if (!copy) {
@@ -1121,7 +1121,7 @@ celix_status_t celix_properties_getAsBoolArrayList(const celix_properties_t* pro
 const celix_array_list_t* celix_properties_getBoolArrayList(const celix_properties_t* properties,
                                                               const char* key,
                                                               const celix_array_list_t* defaultValue) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY) {
         return entry->typed.arrayValue;
     }
@@ -1224,7 +1224,7 @@ celix_status_t celix_properties_getAsStringArrayList(const celix_properties_t* p
                                                    const char* key,
                                                    const celix_array_list_t* defaultValue,
                                                    celix_array_list_t** list) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY) {
         *list = celix_properties_deepCopyStringArrayList(entry->typed.arrayValue);
         return *list ? CELIX_SUCCESS : CELIX_ENOMEM;
@@ -1248,7 +1248,7 @@ celix_status_t celix_properties_getAsStringArrayList(const celix_properties_t* p
 const celix_array_list_t* celix_properties_getStringArrayList(const celix_properties_t* properties,
                                                             const char* key,
                                                             const celix_array_list_t* defaultValue) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY) {
         return entry->typed.arrayValue;
     }
@@ -1354,7 +1354,7 @@ celix_status_t celix_properties_getAsVersionArrayList(const celix_properties_t* 
                                                      const char* key,
                                                      const celix_array_list_t* defaultValue,
                                                      celix_array_list_t** list) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY) {
         *list = celix_properties_deepCopyVersionArrayList(entry->typed.arrayValue);
         return *list ? CELIX_SUCCESS : CELIX_ENOMEM;
@@ -1378,7 +1378,7 @@ celix_status_t celix_properties_getAsVersionArrayList(const celix_properties_t* 
 const celix_array_list_t* celix_properties_getVersionArrayList(const celix_properties_t* properties,
                                                               const char* key,
                                                               const celix_array_list_t* defaultValue) {
-    celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
+    const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY) {
         return entry->typed.arrayValue;
     }
@@ -1403,7 +1403,7 @@ bool celix_properties_equals(const celix_properties_t* props1, const celix_prope
         return false;
     }
     CELIX_PROPERTIES_ITERATE(props1, iter) {
-        celix_properties_entry_t* entry2 = celix_properties_getEntry(props2, iter.key);
+        const celix_properties_entry_t* entry2 = celix_properties_getEntry(props2, iter.key);
         if (entry2 == NULL || !celix_properties_entryEquals(&iter.entry, entry2)) {
             return false;
         }

@@ -40,6 +40,7 @@
 
 #include <stdio.h>
 
+#include "celix_properties_type.h"
 #include "celix_cleanup.h"
 #include "celix_compiler.h"
 #include "celix_errno.h"
@@ -50,13 +51,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * @brief celix_properties_t is a type that represents a set of key-value pairs called properties.
- *
- * @note Not thread safe.
- */
-typedef struct celix_properties celix_properties_t;
 
 /**
  * @brief Enum representing the possible types of a property value.
@@ -193,7 +187,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_store(celix_properties_t* pro
  * @param[in] key The key to search for.
  * @return The entry for the given key, or a NULL if the key is not found.
  */
-CELIX_UTILS_EXPORT celix_properties_entry_t* celix_properties_getEntry(const celix_properties_t* properties,
+CELIX_UTILS_EXPORT const celix_properties_entry_t* celix_properties_getEntry(const celix_properties_t* properties,
                                                                        const char* key);
 
 /**
