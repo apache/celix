@@ -18,19 +18,22 @@
  */
 
 #include "rsa_json_rpc_proxy_impl.h"
-#include "rsa_request_sender_tracker.h"
-#include "json_rpc.h"
-#include "endpoint_description.h"
-#include "celix_stdlib_cleanup.h"
-#include "celix_log_helper.h"
-#include "dfi_utils.h"
-#include "celix_version.h"
-#include "celix_constants.h"
-#include "celix_build_assert.h"
-#include "celix_long_hash_map.h"
-#include <sys/queue.h>
-#include <stdbool.h>
+
 #include <assert.h>
+#include <stdbool.h>
+#include <sys/queue.h>
+
+#include "celix_build_assert.h"
+#include "celix_constants.h"
+#include "celix_log_helper.h"
+#include "celix_long_hash_map.h"
+#include "celix_rsa_utils.h"
+#include "celix_stdlib_cleanup.h"
+#include "celix_version.h"
+#include "dfi_utils.h"
+#include "endpoint_description.h"
+#include "json_rpc.h"
+#include "rsa_request_sender_tracker.h"
 
 struct rsa_json_rpc_proxy_factory {
     celix_bundle_context_t* ctx;
@@ -69,10 +72,15 @@ static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxy
 static void rsaJsonRpcProxy_destroy(rsa_json_rpc_proxy_t *proxy);
 static void rsaJsonRpcProxy_unregisterFacSvcDone(void *data);
 
-celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_log_helper_t *logHelper,
-        FILE *logFile, remote_interceptors_handler_t *interceptorsHandler,
-        const endpoint_description_t *endpointDesc, rsa_request_sender_tracker_t *reqSenderTracker,
-        long requestSenderSvcId, unsigned int serialProtoId, rsa_json_rpc_proxy_factory_t **proxyFactoryOut) {
+celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx,
+                                             celix_log_helper_t* logHelper,
+                                             FILE* logFile,
+                                             remote_interceptors_handler_t* interceptorsHandler,
+                                             const endpoint_description_t* endpointDesc,
+                                             rsa_request_sender_tracker_t* reqSenderTracker,
+                                             long requestSenderSvcId,
+                                             unsigned int serialProtoId,
+                                             rsa_json_rpc_proxy_factory_t** proxyFactoryOut) {
     assert(ctx != NULL);
     assert(logHelper != NULL);
     assert(interceptorsHandler != NULL);
@@ -93,15 +101,15 @@ celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_
     proxyFactory->reqSenderSvcId = requestSenderSvcId;
     proxyFactory->serialProtoId = serialProtoId;
 
-    CELIX_BUILD_ASSERT(sizeof(long) == sizeof(void*));//The hash_map uses the pointer as key, so this should be true
+    CELIX_BUILD_ASSERT(sizeof(long) == sizeof(void*)); // The hash_map uses the pointer as key, so this should be true
     celix_autoptr(celix_long_hash_map_t) proxies = proxyFactory->proxies = celix_longHashMap_create();
     if (proxyFactory->proxies == NULL) {
         celix_logHelper_error(logHelper, "Proxy: Error creating proxy map.");
         return CELIX_ENOMEM;
     }
 
-    celix_autoptr(endpoint_description_t) endpointDescCopy =
-        proxyFactory->endpointDesc = endpointDescription_clone(endpointDesc);
+    celix_autoptr(endpoint_description_t) endpointDescCopy = proxyFactory->endpointDesc =
+        endpointDescription_clone(endpointDesc);
     if (proxyFactory->endpointDesc == NULL) {
         celix_logHelper_error(logHelper, "Proxy: Failed to clone endpoint description.");
         return CELIX_ENOMEM;
@@ -110,11 +118,16 @@ celix_status_t rsaJsonRpcProxy_factoryCreate(celix_bundle_context_t* ctx, celix_
     proxyFactory->factory.handle = proxyFactory;
     proxyFactory->factory.getService = rsaJsonRpcProxy_getService;
     proxyFactory->factory.ungetService = rsaJsonRpcProxy_ungetService;
-    celix_properties_t *props =  celix_properties_copy(endpointDesc->properties);
-    assert(props != NULL);
+    celix_properties_t* svcProperties = NULL;
+    celix_status_t status =
+        celix_rsaUtils_createServicePropertiesFromEndpointProperties(endpointDesc->properties, &svcProperties);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+    assert(svcProperties != NULL);
     proxyFactory->factorySvcId = celix_bundleContext_registerServiceFactoryAsync(
-            ctx, &proxyFactory->factory, endpointDesc->serviceName, props);
-    if (proxyFactory->factorySvcId  < 0) {
+        ctx, &proxyFactory->factory, endpointDesc->serviceName, svcProperties);
+    if (proxyFactory->factorySvcId < 0) {
         celix_logHelper_error(logHelper, "Proxy: Error Registering proxy service.");
         return CELIX_SERVICE_EXCEPTION;
     }

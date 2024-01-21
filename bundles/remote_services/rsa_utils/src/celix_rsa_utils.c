@@ -30,21 +30,16 @@ celix_rsaUtils_createServicePropertiesFromEndpointProperties(const celix_propert
     }
 
     celix_status_t status = CELIX_SUCCESS;
-    long bundleId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_BUNDLE_ID, -1L);
-    if (bundleId >= 0) {
-        status = celix_properties_setLong(props, CELIX_FRAMEWORK_BUNDLE_ID, bundleId);
-    }
-
     const celix_properties_entry_t* entry = celix_properties_getEntry(props, CELIX_FRAMEWORK_SERVICE_RANKING);
-    if (status == CELIX_SUCCESS && entry && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
+    if (entry && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
         long ranking = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_RANKING, 0L);
         status = celix_properties_setLong(props, CELIX_FRAMEWORK_SERVICE_RANKING, ranking);
     }
 
-    const char* versionStr = celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_VERSION, NULL);
-    if (status == CELIX_SUCCESS && versionStr) {
+    entry = celix_properties_getEntry(props, CELIX_FRAMEWORK_SERVICE_VERSION);
+    if (status == CELIX_SUCCESS && entry && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
         celix_autoptr(celix_version_t) version = NULL;
-        status = celix_version_parse(versionStr, &version);
+        status = celix_version_parse(entry->value, &version);
         if (status == CELIX_SUCCESS) {
             status = celix_properties_assignVersion(props, CELIX_FRAMEWORK_SERVICE_VERSION, celix_steal_ptr(version));
         }
