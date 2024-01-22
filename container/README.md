@@ -21,7 +21,7 @@ To always be able to develop on Celix with an up-to-date image, built the image 
 cd <project-root>
 
 # Start a local container with the SSH daemon running
-./container/start-ubuntu-container.sh
+./container/run-ubuntu-container.sh
 ```
 
 Now connect to the container via the remote container option of your favoured IDE and start building/developing.
@@ -35,22 +35,21 @@ When finished with development and testing, press `CTRL + \` to stop the SSH dae
 
 ### Start locally with only a bash shell
 
-The start script allows passing of additional paramters, which will override the starting of the SSH daemon.
+The start script allows passing of additional parameters, which will override the starting of the SSH daemon.
 Execute the following commands to open a bash shell and build Celix from the command line:
 
 ```bash
 cd <project-root>
 
 # Start a local container and open a bash shell
-./container/start-ubuntu-container.sh bash
+./container/run-ubuntu-container.sh bash
 
 # Build Apache Celix
-mkdir celix-build
-cd celix-build
+mkdir -p build
+cd build
 ../container/support-scripts/build-all.sh
 make -j
 
 # Run the unit tests for Apache Celix
 ctest --output-on-failure
 ```
-
