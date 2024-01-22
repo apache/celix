@@ -32,6 +32,8 @@ CELIX_EI_DECLARE(celix_arrayList_createWithOptions, celix_array_list_t*);
 
 CELIX_EI_DECLARE(celix_arrayList_add, celix_status_t);
 
+CELIX_EI_DECLARE(celix_arrayList_addString, celix_status_t);
+
 CELIX_EI_DECLARE(celix_arrayList_addInt, celix_status_t);
 
 CELIX_EI_DECLARE(celix_arrayList_addLong, celix_status_t);

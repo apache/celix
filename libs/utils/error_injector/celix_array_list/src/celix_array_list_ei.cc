@@ -42,6 +42,13 @@ celix_status_t __wrap_celix_arrayList_add(celix_array_list_t* list, void* value)
     return __real_celix_arrayList_add(list, value);
 }
 
+celix_status_t __real_celix_arrayList_addString(celix_array_list_t* list, const char* value);
+CELIX_EI_DEFINE(celix_arrayList_addString, celix_status_t)
+celix_status_t __wrap_celix_arrayList_addString(celix_array_list_t* list, const char* value) {
+    CELIX_EI_IMPL(celix_arrayList_addString);
+    return __real_celix_arrayList_addString(list, value);
+}
+
 celix_status_t __real_celix_arrayList_addInt(celix_array_list_t* list, int value);
 CELIX_EI_DEFINE(celix_arrayList_addInt, celix_status_t)
 celix_status_t __wrap_celix_arrayList_addInt(celix_array_list_t* list, int value) {

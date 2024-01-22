@@ -345,6 +345,115 @@ TEST_F(PropertiesErrorInjectionTestSuite, GetAsArrayWithArrayListCopyFailedTest)
     ASSERT_EQ(nullptr, versions);
 }
 
+TEST_F(PropertiesErrorInjectionTestSuite, SetArrayWithArrayListCopyFailedTest) {
+    //Given a properties set
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+
+    //And a (empty) array list
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+
+    // When a celix_arrayList_copy error injection is set for celix_properties_setLongArrayList
+    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_setLongArrayList, 0, nullptr);
+
+    // Then the celix_properties_setLongArrayList call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setLongArrayList(props, "longArray", list));
+
+    // When a celix_arrayList_copy error injection is set for celix_properties_setDoubleArrayList
+    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_setDoubleArrayList, 0, nullptr);
+
+    // Then the celix_properties_setDoubleArrayList call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setDoubleArrayList(props, "doubleArray", list));
+
+    // When a celix_arrayList_copy error injection is set for celix_properties_setBoolArrayList
+    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_setBoolArrayList, 0, nullptr);
+
+    // Then the celix_properties_setBoolArrayList call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setBoolArrayList(props, "boolArray", list));
+
+    // When a celix_arrayList_createWithOptions error injection is set for celix_properties_setVersionArrayList
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_properties_setVersionArrayList, 0, nullptr);
+
+    // Then the celix_properties_setVersionArrayList call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setVersionArrayList(props, "versionArray", list));
+
+    // When a celix_arrayList_createWithOptions error injection is set for celix_properties_setStringArrayList
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_properties_setStringArrayList, 0, nullptr);
+
+    // Then the celix_properties_setStringArrayList call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setStringArrayList(props, "stringArray", list));
+
+
+    //Given a raw array for each type
+    long longsArray[] = {1, 2, 3};
+    double doublesArray[] = {1.1, 2.2, 3.3};
+    bool boolsArray[] = {true, false, true};
+    celix_autoptr(celix_version_t) v = celix_version_create(1, 2, 3, "qualifier");
+    const celix_version_t* versionsArray[] = {v, v, v};
+    const char* stringsArray[] = {"string", "string2"};
+
+
+    // When a celix_arrayList_create error injection is set for celix_properties_setLongs
+    celix_ei_expect_celix_arrayList_create((void*)celix_properties_setLongs, 0, nullptr);
+
+    // Then the celix_properties_setLongs call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setLongs(props, "longArray", longsArray, 3));
+
+    // When a celix_arrayList_create error injection is set for celix_properties_setDoubles
+    celix_ei_expect_celix_arrayList_create((void*)celix_properties_setDoubles, 0, nullptr);
+
+    // Then the celix_properties_setDoubles call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setDoubles(props, "doubleArray", doublesArray, 3));
+
+    // When a celix_arrayList_create error injection is set for celix_properties_setBooleans
+    celix_ei_expect_celix_arrayList_create((void*)celix_properties_setBooleans, 0, nullptr);
+
+    // Then the celix_properties_setBooleans call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setBooleans(props, "boolArray", boolsArray, 3));
+
+    // When a celix_arrayList_createWithOptions error injection is set for celix_properties_setVersions
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_properties_setVersions, 0, nullptr);
+
+    // Then the celix_properties_setVersions call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setVersions(props, "versionArray", versionsArray, 3));
+
+    // When a celix_arrayList_createWithOptions error injection is set for celix_properties_setStrings
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_properties_setStrings, 0, nullptr);
+
+    // Then the celix_properties_setStrings call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setStrings(props, "stringArray", stringsArray, 3));
+
+
+    // When a celix_arrayList_addLong error injection is set for celix_properties_setLongArrayList
+    celix_ei_expect_celix_arrayList_addLong((void*)celix_properties_setLongs, 0, CELIX_ENOMEM);
+
+    // Then the celix_properties_setLongArrayList call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setLongs(props, "longArray", longsArray, 3));
+
+    // When a celix_arrayList_addDouble error injection is set for celix_properties_setDoubleArrayList
+    celix_ei_expect_celix_arrayList_addDouble((void*)celix_properties_setDoubles, 0, CELIX_ENOMEM);
+
+    // Then the celix_properties_setDoubleArrayList call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setDoubles(props, "doubleArray", doublesArray, 3));
+
+    // When a celix_arrayList_addBool error injection is set for celix_properties_setBoolArrayList
+    celix_ei_expect_celix_arrayList_addBool((void*)celix_properties_setBooleans, 0, CELIX_ENOMEM);
+
+    // Then the celix_properties_setBoolArrayList call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setBooleans(props, "boolArray", boolsArray, 3));
+
+    // When a celix_arrayList_add error injection is set for celix_properties_setVersionArrayList
+    celix_ei_expect_celix_arrayList_add((void*)celix_properties_setVersions, 0, CELIX_ENOMEM);
+
+    // Then the celix_properties_setVersionArrayList call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setVersions(props, "versionArray", versionsArray, 3));
+
+    // When a celix_arrayList_addString error injection is set for celix_properties_setStringArrayList
+    celix_ei_expect_celix_arrayList_addString((void*)celix_properties_setStrings, 0, CELIX_ENOMEM);
+
+    // Then the celix_properties_setStringArrayList call fails
+    EXPECT_EQ(CELIX_ENOMEM, celix_properties_setStrings(props, "stringArray", stringsArray, 3));
+}
+
 
 TEST_F(PropertiesErrorInjectionTestSuite, AssignFailureTest) {
     //Given a filled properties and a key and value
