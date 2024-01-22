@@ -355,4 +355,16 @@ TEST_F(VersionTestSuite, ParseTest) {
     parseStatus = celix_version_parse("invalid", &result);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
     EXPECT_EQ(nullptr, result);
+
+    parseStatus = celix_version_parse("-1", &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
+    EXPECT_EQ(nullptr, result);
+
+    parseStatus = celix_version_parse("1.-2", &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
+    EXPECT_EQ(nullptr, result);
+
+    parseStatus = celix_version_parse("1.2.-3", &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
+    EXPECT_EQ(nullptr, result);
 }

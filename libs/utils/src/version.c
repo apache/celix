@@ -196,8 +196,12 @@ celix_status_t celix_version_parse(const char *versionStr, celix_version_t** ver
     while (token) {
         bool convertedToLong = false;
         long l = celix_utils_convertStringToLong(token, 0L, &convertedToLong);
-        if (!convertedToLong && count == 3) { //qualifier
+        if (!convertedToLong && count == 3) { // qualifier
             qualifier = token;
+        } else if (convertedToLong && l < 0) {
+            //negative version part
+            celix_utils_freeStringIfNotEqual(buffer, versionWrkStr);
+            return CELIX_ILLEGAL_ARGUMENT;
         } else if (convertedToLong && count < 3) {
             versionsParts[count] = (int)l;
         } else if (!convertedToLong) {
