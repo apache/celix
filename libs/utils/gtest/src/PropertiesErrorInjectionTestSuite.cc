@@ -129,7 +129,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, SetFailureTest) {
     ASSERT_EQ(celix_properties_set(props, "key", "value"), CELIX_ENOMEM);
 
     // When a celix_stringHashMap_put error injection is set for celix_properties_set with level 1 (during put)
-    celix_ei_expect_celix_stringHashMap_put((void*)celix_properties_set, 1, CELIX_ENOMEM);
+    celix_ei_expect_celix_stringHashMap_put((void*)celix_properties_set, 2, CELIX_ENOMEM);
     // Then the celix_properties_set call fails
     ASSERT_EQ(celix_properties_set(props, "key", "value"), CELIX_ENOMEM);
 
