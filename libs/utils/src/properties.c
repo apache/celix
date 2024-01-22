@@ -1223,6 +1223,7 @@ celix_properties_setStrings(celix_properties_t* properties, const char* key, con
         celix_status_t status = celix_arrayList_addString(list, copy);
         if (status != CELIX_SUCCESS) {
             celix_err_push("Failed to add string to array list");
+            free(copy);
             return status;
         }
     }
@@ -1354,6 +1355,7 @@ celix_properties_setVersions(celix_properties_t* properties, const char* key, co
         celix_status_t status = celix_arrayList_add(list, copy);
         if (status != CELIX_SUCCESS) {
             celix_err_push("Failed to add version to array list");
+            celix_version_destroy(copy);
             return status;
         }
     }
