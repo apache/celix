@@ -336,10 +336,26 @@ extern "C" {
         tst_serv serv {nullptr, addFailed, nullptr, nullptr, nullptr};
 
         rc = jsonRpc_call(intf, &serv, R"({)", &result);
+        EXPECT_STREQ("Got json error: string or '}' expected near end of file", celix_err_popLastError());
         ASSERT_EQ(1, rc);
 
         rc = jsonRpc_call(intf, &serv, R"({"a": [1.0,2.0]})", &result);
+        EXPECT_STREQ("Error getting method signature", celix_err_popLastError());
         ASSERT_EQ(1, rc);
+
+        //request missing argument
+        rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;"})", &result);
+        EXPECT_STREQ("Error getting arguments array", celix_err_popLastError());
+        ASSERT_EQ(1, rc);
+
+        //request non-array argument
+        rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": "hello"})", &result);
+        EXPECT_STREQ("Error getting arguments array", celix_err_popLastError());
+        ASSERT_EQ(1, rc);
+
+        // argument number mismatch
+        //rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": []})", &result);
+        //ASSERT_EQ(1, rc);
 
         //request argument type mismatch
         rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": [1.0]})", &result);
@@ -480,6 +496,7 @@ extern "C" {
 
         rc = jsonRpc_call(intf, &serv, R"({"m":"unknown", "a": [1.0,2.0]})", &result);
         ASSERT_EQ(1, rc);
+        EXPECT_STREQ("Cannot find method with sig 'unknown'", celix_err_popLastError());
 
         dynInterface_destroy(intf);
     }
@@ -785,6 +802,7 @@ public:
 
     }
     ~JsonRpcTests() override {
+        celix_err_resetErrors();
     }
 
 };
@@ -817,6 +835,25 @@ TEST_F(JsonRpcTests, handleTestOut) {
     handleTestOut();
 }
 
+TEST_F(JsonRpcTests, callPreReference) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example7.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    char *result = nullptr;
+    tst_serv serv {nullptr, add, nullptr, nullptr, nullptr};
+
+    rc = jsonRpc_call(intf, &serv, R"({"m":"add(DD)D", "a": [1.0,2.0]})", &result);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(strstr(result, "3.0") != nullptr);
+
+    free(result);
+    dynInterface_destroy(intf);
+}
+
 TEST_F(JsonRpcTests, callPre) {
     callTestPreAllocated();
 }
@@ -827,6 +864,25 @@ TEST_F(JsonRpcTests, callFailedPre) {
 
 TEST_F(JsonRpcTests, callOut) {
     callTestOutput();
+}
+
+TEST_F(JsonRpcTests, callOutReference) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example7.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    char *result = nullptr;
+    tst_serv serv {nullptr, nullptr, nullptr, nullptr, stats};
+
+    rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": [[1.0,2.0]]})", &result);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(strstr(result, "1.5") != nullptr);
+
+    free(result);
+    dynInterface_destroy(intf);
 }
 
 TEST_F(JsonRpcTests, callTestInvalidRequest) {
