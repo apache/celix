@@ -44,6 +44,7 @@ TEST_F(CxxPropertiesTestSuite, FillAndLoopTest) {
     EXPECT_EQ(5, props.size());
 
     EXPECT_EQ(props.get("key1"), "value1");
+    EXPECT_EQ(props.getAsString("key1"), "value1");
     EXPECT_EQ(props.get("key2"), "value2");
     EXPECT_EQ(props.getAsDouble("key3", 0), 3.3);
     EXPECT_EQ(props.get("key4"), "4");
@@ -204,7 +205,7 @@ TEST_F(CxxPropertiesTestSuite, GetTest) {
     EXPECT_EQ(props.getAsVersion("key5", celix::Version{1, 2, 4}), checkVersion);
 
     //Test get with valid key
-    EXPECT_EQ(props.get("key1"), "value1");
+    EXPECT_EQ(props.getString("key1"), "value1");
     EXPECT_EQ(props.getLong("key2", -1), 2);
     EXPECT_EQ(props.getDouble("key3", -1), 3.3);
     EXPECT_EQ(props.getBool("key4", false), true);
@@ -219,7 +220,7 @@ TEST_F(CxxPropertiesTestSuite, GetTest) {
     EXPECT_EQ(props.getType("non-existing"), celix::Properties::ValueType::Unset);
 
     // Test get with invalid key and default value
-    EXPECT_EQ(props.get("non_existent_key", "default_value"), "default_value");
+    EXPECT_EQ(props.getString("non_existent_key", "default_value"), "default_value");
     EXPECT_EQ(props.getLong("non_existent_key", 1), 1);
     EXPECT_EQ(props.getDouble("non_existent_key", 1.1), 1.1);
     EXPECT_EQ(props.getBool("non_existent_key", true), true);
@@ -227,8 +228,7 @@ TEST_F(CxxPropertiesTestSuite, GetTest) {
     EXPECT_EQ(props.getVersion("non_existent_key", checkVersion2), checkVersion2);
 
     // Test get with an existing key, but invalid type and default value
-    EXPECT_EQ(props.get("key5", "default_value"), "1.2.3"); // Note get always returns the string value or string
-                                                            // representation of the value (in this case the version)
+    EXPECT_EQ(props.getString("key5", "default_value"), "default_value"); //key5 is a version
     EXPECT_EQ(props.getLong("key1", 1), 1); //key1 is a string
     EXPECT_EQ(props.getDouble("key1", 1.1), 1.1); //key1 is a string
     EXPECT_EQ(props.getBool("key1", true), true); //key1 is a string

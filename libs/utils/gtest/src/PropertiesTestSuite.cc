@@ -601,7 +601,7 @@ TEST_F(PropertiesTestSuite, HasKeyTest) {
 TEST_F(PropertiesTestSuite, SetEntryTest) {
     auto* props1 = celix_properties_create();
     auto* props2 = celix_properties_create();
-    celix_properties_set(props1, "key1", "value1");
+    celix_properties_setString(props1, "key1", "value1");
     celix_properties_setLong(props1, "key2", 123);
     celix_properties_setBool(props1, "key3", true);
     celix_properties_setDouble(props1, "key4", 3.14);
@@ -614,7 +614,7 @@ TEST_F(PropertiesTestSuite, SetEntryTest) {
     }
 
     EXPECT_EQ(5, celix_properties_size(props2));
-    EXPECT_STREQ("value1", celix_properties_get(props2, "key1", nullptr));
+    EXPECT_STREQ("value1", celix_properties_getAsString(props2, "key1", nullptr));
     EXPECT_EQ(123, celix_properties_getAsLong(props2, "key2", -1L));
     EXPECT_EQ(true, celix_properties_getAsBool(props2, "key3", false));
     EXPECT_EQ(3.14, celix_properties_getAsDouble(props2, "key4", -1.0));
@@ -756,20 +756,21 @@ TEST_F(PropertiesTestSuite, GetLongDoubleBoolVersionAndStringTest) {
     celix_properties_assignVersion(props, "version", version);
 
     // check if the values are correctly returned
-    EXPECT_STREQ("value", celix_properties_get(props, "str", nullptr));
+    EXPECT_STREQ("value", celix_properties_getString(props, "str", nullptr));
     EXPECT_EQ(42, celix_properties_getLong(props, "long", -1L));
     EXPECT_DOUBLE_EQ(3.14, celix_properties_getDouble(props, "double", -1.0));
     EXPECT_EQ(true, celix_properties_getBool(props, "bool", false));
     EXPECT_EQ(version, celix_properties_getVersion(props, "version", nullptr));
 
     // check if the values are correctly returned if value is not found
-    EXPECT_EQ(nullptr, celix_properties_get(props, "non-existing", nullptr));
+    EXPECT_EQ(nullptr, celix_properties_getString(props, "non-existing", nullptr));
     EXPECT_EQ(-1L, celix_properties_getLong(props, "non-existing", -1L));
     EXPECT_DOUBLE_EQ(-1.0, celix_properties_getDouble(props, "non-existing", -1.0));
     EXPECT_EQ(false, celix_properties_getBool(props, "non-existing", false));
     EXPECT_EQ(nullptr, celix_properties_getVersion(props, "non-existing", nullptr));
 
     // check if the values are correctly returned if the found value is not of the correct type
+    EXPECT_EQ(nullptr, celix_properties_getString(props, "long", nullptr));
     EXPECT_EQ(-1L, celix_properties_getLong(props, "str", -1L));
     EXPECT_DOUBLE_EQ(-1.0, celix_properties_getDouble(props, "str", -1.0));
     EXPECT_EQ(false, celix_properties_getBool(props, "str", false));

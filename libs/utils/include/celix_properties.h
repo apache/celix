@@ -193,6 +193,8 @@ CELIX_UTILS_EXPORT const celix_properties_entry_t* celix_properties_getEntry(con
 /**
  * @brief Get the string value or string representation of a property.
  *
+ * @note identical to celix_properties_getAsString
+ *
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
  * @param[in] defaultValue The value to return if the property is not set.
@@ -212,7 +214,7 @@ CELIX_UTILS_EXPORT celix_properties_value_type_e celix_properties_getType(const 
                                                                           const char* key);
 
 /**
- * @Brief Check if the properties set has the provided key.
+ * @brief Check if the properties set has the provided key.
  * @param[in] properties The property set to search.
  * @param[in] key The key to search for.
  * @return True if the property set has the provided key, false otherwise.
@@ -221,6 +223,8 @@ CELIX_UTILS_EXPORT bool celix_properties_hasKey(const celix_properties_t* proper
 
 /**
  * @brief Set the string value of a property.
+ *
+ * @note Identical to celix_properties_setString.
  *
  * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_STRING.
  *
@@ -257,7 +261,69 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_assign(celix_properties_t* pr
                                                                   char* value);
 
 /**
- * @Brief Get the value of a property, if the property is set and the underlying type is a long.
+ * @brief Get the value of a property, if the property is set and the underlying type is a string.
+ * @param[in] properties The property set to search.
+ * @param[in] key The key of the property to get.
+ * @param[in] defaultValue The value to return if the property is not set or the value is not a string.
+ * @return The value of the property, or the default value if the property is not set or the value is not of the
+ * requested type.
+ */
+CELIX_UTILS_EXPORT const char*
+celix_properties_getString(const celix_properties_t* properties, const char* key, const char* defaultValue);
+
+/**
+ * @brief Get the string value or string representation of a property.
+ *
+ * @note identical to celix_properties_get
+ *
+ * @param[in] properties The property set to search.
+ * @param[in] key The key of the property to get.
+ * @param[in] defaultValue The value to return if the property is not set.
+ * @return The value of the property, or the default value if the property is not set.
+ */
+CELIX_UTILS_EXPORT const char*
+celix_properties_getAsString(const celix_properties_t* properties, const char* key, const char* defaultValue);
+
+/**
+ * @brief Set the string value of a property.
+ *
+ * @note Identical to celix_properties_set.
+ *
+ * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_STRING.
+ *
+ * If the return status is an error, an error message is logged to celix_err.
+ *
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] value The value to set the property to.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setString(celix_properties_t* properties,
+                                                             const char* key,
+                                                             const char* value);
+
+/**
+ * @brief Assign the value of a property with the provided string pointer.
+ *
+ * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_STRING.
+ *
+ * This function take ownership of the provided string.
+ * If the return status is an error, an error message is logged to celix_err.
+ *
+ * @param[in] properties The property set to modify.
+ * @param[in] key The key of the property to set.
+ * @param[in] value The value to assign. The function take ownership of the provided version. Cannot be NULL.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL. When an error status is returned,
+ *         the string will be free by this function.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_properties_assignString(celix_properties_t* properties,
+                                                                const char* key,
+                                                                char* value);
+
+/**
+ * @brief Get the value of a property, if the property is set and the underlying type is a long.
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
  * @param[in] defaultValue The value to return if the property is not set or the value is not a long.
@@ -297,7 +363,7 @@ celix_properties_getAsLong(const celix_properties_t* properties, const char* key
 CELIX_UTILS_EXPORT celix_status_t celix_properties_setLong(celix_properties_t* properties, const char* key, long value);
 
 /**
- * @Brief Get the value of a property, if the property is set and the underlying type is a boolean.
+ * @brief Get the value of a property, if the property is set and the underlying type is a boolean.
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
  * @param[in] defaultValue The value to return if the property is not set or the value is not a boolean.
@@ -354,7 +420,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setDouble(celix_properties_t*
                                                              double val);
 
 /**
- * @Brief Get the value of a property, if the property is set and the underlying type is a double.
+ * @brief Get the value of a property, if the property is set and the underlying type is a double.
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
  * @param[in] defaultValue The value to return if the property is not set or the value is not a double.
@@ -410,7 +476,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersion(celix_properties_t
  * @param[in] key The key of the property to set.
  * @param[in] version The value to assign. The function will store a reference to this object in the property set and
  *                    takes ownership of the provided version. Cannot be NULL.
- @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry
  *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL. When an error status is returned,
  *         the version will be destroy with celix_version_destroy by this function.
  */
@@ -446,7 +512,7 @@ celix_properties_getVersion(const celix_properties_t* properties, const char* ke
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
  * @param[in] defaultValue The value to return if the property is not set or if the value is not a Celix version.
- * @param[out] list A copy of the found version, a new parsed version, or a copy of the default value if the
+ * @param[out] version A copy of the found version, a new parsed version, or a copy of the default value if the
  *                 property is not set, its value is not an version or its value cannot be converted to an version.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to create the
  *        version. Note if the key is not found, the return status is still CELIX_SUCCESS.

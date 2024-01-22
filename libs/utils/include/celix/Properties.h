@@ -290,10 +290,41 @@ namespace celix {
         }
 
         /**
-         * @brief Get the value for a property key or return the defaultValue if the key does not exists.
+         * @brief Get the string value or string representation of a property.
+         *
+         * @note identical to celix::Properties::getAsString
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set.
+         * @return The value of the property, or the default value if the property is not set.
          */
         std::string get(const std::string& key, const std::string& defaultValue = {}) const {
-            const char* found = celix_properties_get(cProps.get(), key.c_str(), nullptr);
+            return getAsString(key, defaultValue);
+        }
+
+        /**
+         * @brief Get the string value or string representation of a property.
+         *
+         * @note identical to celix::Properties::get
+         *
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set.
+         * @return The value of the property, or the default value if the property is not set.
+         */
+        std::string getAsString(const std::string& key, const std::string& defaultValue = {}) const {
+            const char* found = celix_properties_getAsString(cProps.get(), key.c_str(), nullptr);
+            return found == nullptr ? std::string{defaultValue} : std::string{found};
+        }
+
+        /**
+         * @brief Get the value of a property, if the property is set and the underlying type is a string.
+         * @param[in] key The key of the property to get.
+         * @param[in] defaultValue The value to return if the property is not set or the value is not a string.
+         * @return The value of the property, or the default value if the property is not set or the value is not of the
+         * requested type.
+         */
+        std::string getString(const std::string& key, const std::string& defaultValue = {}) const {
+            const char* found = celix_properties_getString(cProps.get(), key.c_str(), nullptr);
             return found == nullptr ? std::string{defaultValue} : std::string{found};
         }
 
@@ -310,7 +341,7 @@ namespace celix {
         }
 
         /**
-         * @Brief Get the value of a property, if the property is set and the underlying type is a long.
+         * @brief Get the value of a property, if the property is set and the underlying type is a long.
          * @param[in] key The key of the property to get.
          * @param[in] defaultValue The value to return if the property is not set or the value is not a long.
          * @return The value of the property, or the default value if the property is not set or the value is not of the
@@ -333,7 +364,7 @@ namespace celix {
         }
 
         /**
-         * @Brief Get the value of a property, if the property is set and the underlying type is a double.
+         * @brief Get the value of a property, if the property is set and the underlying type is a double.
          * @param[in] properties The property set to search.
          * @param[in] key The key of the property to get.
          * @param[in] defaultValue The value to return if the property is not set or the value is not a double.
@@ -357,7 +388,7 @@ namespace celix {
         }
 
         /**
-         * @Brief Get the value of a property, if the property is set and the underlying type is a boolean.
+         * @brief Get the value of a property, if the property is set and the underlying type is a boolean.
          * @param[in] key The key of the property to get.
          * @param[in] defaultValue The value to return if the property is not set or the value is not a boolean.
          * @return The value of the property, or the default value if the property is not set or the value is not of the
