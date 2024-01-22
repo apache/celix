@@ -52,6 +52,15 @@ enum dyn_function_argument_meta {
     DYN_FUNCTION_ARGUMENT_META__OUTPUT = 3
 };
 
+typedef struct _dyn_function_argument_type dyn_function_argument_type;
+TAILQ_HEAD(dyn_function_arguments_head,_dyn_function_argument_type);
+struct _dyn_function_argument_type {
+    int index;
+    enum dyn_function_argument_meta argumentMeta;
+    dyn_type* type;
+    TAILQ_ENTRY(_dyn_function_argument_type) entries;
+};
+
 /**
  * @brief Creates a dyn_function_type according to the given function descriptor stream.
  *
@@ -106,6 +115,12 @@ CELIX_DFI_EXPORT const dyn_type* dynFunction_argumentTypeForIndex(const dyn_func
  * @return The argument meta.
  */
 CELIX_DFI_EXPORT enum dyn_function_argument_meta dynFunction_argumentMetaForIndex(const dyn_function_type* dynFunc, int argumentNr);
+
+/**
+ * @brief Returns the argument list for the given dynamic function type instance.
+ * @note It always returns valid list.
+ */
+CELIX_DFI_EXPORT const struct dyn_function_arguments_head* dynFunction_arguments(const dyn_function_type* dynFunc);
 
 /**
  * @brief Returns the return value type for the given dynamic function type instance.

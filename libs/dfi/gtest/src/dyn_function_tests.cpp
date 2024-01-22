@@ -48,6 +48,13 @@ TEST_F(DynFunctionTests, DynFuncTest1) {
     rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, nullptr, &dynFunc);
     ASSERT_EQ(0, rc);
     EXPECT_TRUE(dynFunction_hasReturn(dynFunc));
+    EXPECT_EQ(3, dynFunction_nrOfArguments(dynFunc));
+    auto args = dynFunction_arguments(dynFunc);
+    dyn_function_argument_type* arg = NULL;
+    TAILQ_FOREACH(arg, args, entries) {
+        EXPECT_EQ(DYN_FUNCTION_ARGUMENT_META__STD, arg->argumentMeta);
+        EXPECT_EQ('I', dynType_descriptorType(arg->type));
+    }
 
     ffi_sarg rVal = 0;
     int32_t a = 2;
@@ -190,6 +197,7 @@ TEST_F(DynFunctionTests, DynFuncTest4) {
     rc = dynFunction_parseWithStr(EXAMPLE4_DESCRIPTOR, nullptr, &dynFunc);
     ASSERT_EQ(0, rc);
     EXPECT_FALSE(dynFunction_hasReturn(dynFunc));
+    EXPECT_EQ(1, dynFunction_nrOfArguments(dynFunc));
 
     double buf[4];
     buf[0] = 1.1;
@@ -235,6 +243,25 @@ TEST_F(DynFunctionTests, DynFuncTest5) {
     //NOTE only using libffi with extern C, because combining libffi with EXPECT_*/ASSERT_* call leads to
     //corrupted memory. Note that libffi is a function for interfacing with C not C++
     EXPECT_TRUE(func_test5());
+}
+
+TEST_F(DynFunctionTests, DynFuncTest6) {
+    dyn_function_type *dynFunc = nullptr;
+    void (*fp)(void) = (void(*)(void)) example6Func;
+    int rc;
+
+    rc = dynFunction_parseWithStr(EXAMPLE6_DESCRIPTOR, nullptr, &dynFunc);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(dynFunction_hasReturn(dynFunc));
+    EXPECT_EQ(0, dynFunction_nrOfArguments(dynFunc));
+    auto args = dynFunction_arguments(dynFunc);
+    EXPECT_TRUE(TAILQ_EMPTY(args));
+
+    ffi_sarg rVal = 0;
+    rc = dynFunction_call(dynFunc, fp, &rVal, nullptr);
+    dynFunction_destroy(dynFunc);
+    EXPECT_EQ(0, rc);
+    EXPECT_EQ(1234, rVal);
 }
 
 TEST_F(DynFunctionTests, InvalidDynFuncTest) {

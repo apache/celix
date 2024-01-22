@@ -107,16 +107,10 @@ static int dynFunction_parseDescriptor(dyn_function_type* dynFunc, FILE* descrip
         ungetc(nextChar, descriptor);
 
         celix_autoptr(dyn_type) type = NULL;
-        celix_autofree char* argName = NULL;
         dyn_function_argument_type* arg = NULL;
 
         if ((status = dynType_parse(descriptor, NULL, dynFunc->refTypes, &type)) != OK) {
             return status;
-        }
-
-        if (asprintf(&argName, "arg%04i", index) == -1) {
-            celix_err_pushf("Error allocating argument name");
-            return MEM_ERROR;
         }
 
         arg = calloc(1, sizeof(*arg));
@@ -126,7 +120,6 @@ static int dynFunction_parseDescriptor(dyn_function_type* dynFunc, FILE* descrip
         }
         arg->index = index++;
         arg->type = celix_steal_ptr(type);
-        arg->name = celix_steal_ptr(argName);
 
         TAILQ_INSERT_TAIL(&dynFunc->arguments, arg, entries);
 
@@ -154,6 +147,9 @@ enum dyn_function_argument_meta dynFunction_argumentMetaForIndex(const dyn_funct
     return result;
 }
 
+const struct dyn_function_arguments_head* dynFunction_arguments(const dyn_function_type* dynFunc) {
+    return &dynFunc->arguments;
+}
 
 static int dynFunction_initCif(dyn_function_type* dynFunc) {
     unsigned int nargs = 0;
@@ -200,9 +196,6 @@ void dynFunction_destroy(dyn_function_type* dynFunc) {
         dyn_function_argument_type* tmp = NULL;
         entry = TAILQ_FIRST(&dynFunc->arguments);
         while (entry != NULL) {
-            if (entry->name != NULL) {
-                free(entry->name);
-            }
             dynType_destroy(entry->type);
             tmp = entry;
             entry = TAILQ_NEXT(entry, entries);
@@ -256,12 +249,8 @@ int dynFunction_getFnPointer(const dyn_function_type* dynFunc, void (**fn)(void)
 }
 
 int dynFunction_nrOfArguments(const dyn_function_type* dynFunc) {
-    int count = 0;
-    dyn_function_argument_type *entry = NULL;
-    TAILQ_FOREACH(entry, &dynFunc->arguments, entries) {
-        count += 1;
-    }
-    return count;
+    dyn_function_argument_type* last = TAILQ_LAST(&dynFunc->arguments, dyn_function_arguments_head);
+    return last == NULL ? 0 : (last->index+1);
 }
 
 const dyn_type* dynFunction_argumentTypeForIndex(const dyn_function_type* dynFunc, int argumentNr) {

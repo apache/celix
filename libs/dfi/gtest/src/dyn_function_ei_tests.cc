@@ -68,13 +68,6 @@ TEST_F(DynFunctionErrorInjectionTestSuite, ParseError) {
     result += strerror(ENOMEM);
     EXPECT_STREQ(result.c_str(), celix_err_popLastError());
 
-    celix_ei_expect_asprintf((void*) dynFunction_parse, 1, -1, 3);
-    rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, nullptr, &dynFunc);
-    EXPECT_NE(0, rc);
-    EXPECT_STREQ("Error parsing descriptor", celix_err_popLastError());
-    EXPECT_STREQ("Error allocating argument name", celix_err_popLastError());
-
-
     celix_ei_expect_calloc((void*)dynFunction_parse, 1, nullptr, 3);
     rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, nullptr, &dynFunc);
     EXPECT_NE(0, rc);
