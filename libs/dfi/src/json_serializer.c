@@ -60,11 +60,7 @@ int jsonSerializer_deserialize(const dyn_type* type, const char* input, size_t l
 }
 
 int jsonSerializer_deserializeJson(const dyn_type* type, json_t* input, void** out) {
-    const dyn_type* real = type;
-    while (real->type == DYN_TYPE_REF) {
-        real = real->ref.ref;
-    }
-    return jsonSerializer_createType(real, input, out);
+    return jsonSerializer_createType(dynType_realType(type), input, out);
 }
 
 static int jsonSerializer_createType(const dyn_type* type, json_t* val, void** result) {
@@ -269,11 +265,7 @@ static int jsonSerializer_parseEnum(const dyn_type* type, const char* enum_name,
 }
 
 int jsonSerializer_serializeJson(const dyn_type* type, const void* input, json_t** out) {
-    const dyn_type* real = type;
-    while (real->type == DYN_TYPE_REF) {
-        real = real->ref.ref;
-    }
-    return jsonSerializer_writeAny(real, input, out);
+    return jsonSerializer_writeAny(dynType_realType(type), input, out);
 }
 
 static int jsonSerializer_writeAny(const dyn_type* type, const void* input, json_t** out) {

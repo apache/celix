@@ -497,11 +497,8 @@ static void dynType_clearTypedPointer(dyn_type* type) {
 }
 
 int dynType_alloc(const dyn_type* type, void** bufLoc) {
-    const dyn_type* current = type;
+    const dyn_type* current = dynType_realType(type);
 
-    while (current->type == DYN_TYPE_REF) {
-        current = current->ref.ref;
-    }
     void* inst = calloc(1, current->ffiType->size);
     if (inst == NULL) {
         celix_err_pushf("Error allocating memory for type '%c'", current->descriptor);
@@ -534,11 +531,7 @@ int dynType_complex_indexForName(const dyn_type* type, const char* name) {
 const dyn_type* dynType_complex_dynTypeAt(const dyn_type* type, int index) {
     assert(type->type == DYN_TYPE_COMPLEX);
     assert(index >= 0);
-    dyn_type* sub = type->complex.types[index];
-    while (sub->type == DYN_TYPE_REF) {
-        sub = sub->ref.ref;
-    }
-    return sub;
+    return dynType_realType(type->complex.types[index]);
 }
 
 int dynType_complex_setValueAt(const dyn_type* type, int index, void* start, const void* in) {
@@ -629,9 +622,7 @@ static void dynType_deepFree(const dyn_type* type, void* loc, bool alsoDeleteSel
     if (loc != NULL) {
         const dyn_type* subType = NULL;
         char* text = NULL;
-        while (type->type == DYN_TYPE_REF) {
-            type = type->ref.ref;
-        }
+        type = dynType_realType(type);
         switch (type->type) {
             case DYN_TYPE_COMPLEX :
                 dynType_freeComplexType(type, loc);
@@ -727,11 +718,7 @@ int dynType_sequence_increaseLengthAndReturnLastLoc(const dyn_type* type, void* 
 
 const dyn_type* dynType_sequence_itemType(const dyn_type* type) {
     assert(type->type == DYN_TYPE_SEQUENCE);
-    dyn_type *itemType = type->sequence.itemType;
-    while (itemType->type == DYN_TYPE_REF) {
-        itemType = itemType->ref.ref;
-    }
-    return itemType;
+    return dynType_realType(type->sequence.itemType);
 }
 
 void dynType_simple_setValue(const dyn_type *type, void *inst, const void *in) {
@@ -834,10 +821,7 @@ static unsigned short dynType_getOffset(const dyn_type* type, int index) {
 }
 
 size_t dynType_size(const dyn_type* type) {
-    const dyn_type* rType = type;
-    while (rType->type == DYN_TYPE_REF) {
-        rType = type->ref.ref;
-    }
+    const dyn_type* rType = dynType_realType(type);
     return rType->ffiType->size;
 }
 
@@ -845,13 +829,18 @@ int dynType_type(const dyn_type* type) {
     return type->type;
 }
 
+const dyn_type* dynType_realType(const dyn_type* type) {
+    const dyn_type* real = type;
+    while (real->type == DYN_TYPE_REF) {
+        real= real->ref.ref;
+    }
+    return real;
+
+}
+
 const dyn_type* dynType_typedPointer_getTypedType(const dyn_type* type) {
     assert(type->type == DYN_TYPE_TYPED_POINTER);
-    dyn_type* typedType = type->typedPointer.typedType;
-    while (typedType->type == DYN_TYPE_REF) {
-        typedType = typedType->ref.ref;
-    }
-    return typedType;
+    return dynType_realType(type->typedPointer.typedType);
 }
 
 
@@ -886,10 +875,7 @@ static void dynType_printDepth(int depth, FILE *stream) {
 }
 
 static void dynType_printAny(const char* name, const dyn_type* type, int depth, FILE *stream) {
-    const dyn_type* toPrint = type;
-    while (toPrint->type == DYN_TYPE_REF) {
-        toPrint = toPrint->ref.ref;
-    }
+    const dyn_type* toPrint = dynType_realType(type);
     name = (name != NULL) ? name : "(unnamed)";
     switch(toPrint->type) {
         case DYN_TYPE_COMPLEX :
@@ -998,10 +984,7 @@ static void dynType_printText(const char* name, const dyn_type* type, int depth,
 
 static void dynType_printTypes(const dyn_type* type, FILE* stream) {
     if (type->type == DYN_TYPE_REF) {
-        const dyn_type* real = type->ref.ref;
-        while (real->type == DYN_TYPE_REF) {
-            real = real->ref.ref;
-        }
+        const dyn_type* real = dynType_realType(type->ref.ref);
         dyn_type* parent = type->parent;
         struct type_entry* pentry = NULL;
         while (parent != NULL) {
@@ -1016,11 +999,7 @@ static void dynType_printTypes(const dyn_type* type, FILE* stream) {
 
     struct type_entry* entry = NULL;
     TAILQ_FOREACH(entry, &type->nestedTypesHead, entries) {
-        dyn_type* toPrint = entry->type;
-        while (toPrint->type == DYN_TYPE_REF) {
-            toPrint = toPrint->ref.ref;
-        }
-
+        const dyn_type* toPrint = dynType_realType(entry->type);
         switch(toPrint->type) {
             case DYN_TYPE_COMPLEX :
                 dynType_printComplexType(toPrint, stream);

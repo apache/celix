@@ -52,9 +52,6 @@ dyn_type* dynType_findType(dyn_type *type, char *name) {
 }
 
 ffi_type* dynType_ffiType(const dyn_type * type) {
-    while (type->type == DYN_TYPE_REF) {
-        type = type->ref.ref;
-    }
-    return type->ffiType;
+    return dynType_realType(type)->ffiType;
 }
 

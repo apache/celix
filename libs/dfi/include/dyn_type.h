@@ -219,6 +219,11 @@ CELIX_DFI_EXPORT size_t dynType_size(const dyn_type* type);
 CELIX_DFI_EXPORT int dynType_type(const dyn_type* type);
 
 /**
+ * Returns the real (non-reference) type of the dyn type.
+ */
+CELIX_DFI_EXPORT const dyn_type* dynType_realType(const dyn_type* type);
+
+/**
  * Returns the char identifier of the dyn type type.
  * E.g. 'D' for a double, or '{' for a complex type.
  * @param type  The dyn type
