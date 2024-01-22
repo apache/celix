@@ -58,10 +58,12 @@ limitations under the License.
 - linked_list.h is removed and no longer supported. Use celix_array_list.h instead.
 - ip_utils.h is removed and no longer supported.  
 - array_list.h is removed and no longer supported. Use celix_array_list.h instead.
+- Apache Celix filter now use the underlying properties value types for matching. This means that it is more important
+  to add service properties with the correct type.
 
 ## New Features
 
-- Basic type support for value in celix Properties.
+- Type support for value in celix Properties, including support for arrays.
 
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 
