@@ -258,3 +258,27 @@ TEST_F(DynInterfaceTests, testInvalid) {
     testInvalid();
 }
 
+
+TEST_F(DynInterfaceTests, testEmptyMethod) {
+    int status = 0;
+    dyn_interface_type *dynIntf = NULL;
+    FILE *desc = fopen("descriptors/example6.descriptor", "r");
+    assert(desc != NULL);
+    status = dynInterface_parse(desc, &dynIntf);
+    ASSERT_EQ(0, status);
+    fclose(desc);
+
+    const char *name = dynInterface_getName(dynIntf);
+    ASSERT_STREQ("calculator", name);
+
+    checkInterfaceVersion(dynIntf,"1.0.0");
+
+    const struct methods_head* list = dynInterface_methods(dynIntf);
+    ASSERT_TRUE(list != NULL);
+
+    int count = dynInterface_nrOfMethods(dynIntf);
+    ASSERT_EQ(0, count);
+
+    dynInterface_destroy(dynIntf);
+}
+

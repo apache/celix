@@ -184,10 +184,6 @@ const struct methods_head* dynInterface_methods(const dyn_interface_type* intf) 
 }
 
 int dynInterface_nrOfMethods(const dyn_interface_type* intf) {
-    int count = 0;
-    struct method_entry* entry = NULL;
-    TAILQ_FOREACH(entry, &intf->methods, entries) {
-        count +=1;
-    }
-    return count;
+    struct method_entry* last = TAILQ_LAST(&intf->methods, methods_head);
+    return last == NULL ? 0 : (last->index+1);
 }
