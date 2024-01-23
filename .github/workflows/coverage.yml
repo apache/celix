@@ -67,7 +67,7 @@ jobs:
           source deactivate_conanrun.sh
           lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx
       - name: Codecov
-        uses: codecov/codecov-action@e156083f13aff6830c92fc5faa23505779fbf649
+        uses: codecov/codecov-action@v3
         with:
-          file: build/coverage.info
+          files: build/coverage.info
           name: codecov-celix
