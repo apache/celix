@@ -291,3 +291,13 @@ TEST_F(DynFunctionTests, InvalidDynFuncTest) {
     EXPECT_STREQ("Error missing ')'", celix_err_popLastError());
 }
 
+TEST_F(DynFunctionTests, WrongArgumentMetaTest) {
+    dyn_function_type *dynFunc = nullptr;
+    int rc1 = dynFunction_parseWithStr("example(#am=handle;tt)N", nullptr, &dynFunc);
+    EXPECT_NE(0, rc1);
+    EXPECT_STREQ("Error 'handle' is only allowed for untyped pointer not 't'", celix_err_popLastError());
+
+    int rc2 = dynFunction_parseWithStr("example(#am=handle;THandle=P;lHandle;t)N", nullptr, &dynFunc);
+    EXPECT_EQ(0, rc2);
+    dynFunction_destroy(dynFunc);
+}

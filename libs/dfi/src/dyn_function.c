@@ -59,10 +59,15 @@ int dynFunction_parse(FILE* descriptor, struct types_head* refTypes, dyn_functio
 
     dyn_function_argument_type* arg = NULL;
     TAILQ_FOREACH(arg, &dynFunc->arguments, entries) {
+        const dyn_type* real = dynType_realType(arg->type);
         const char* meta = dynType_getMetaInfo(arg->type, "am");
         if (meta == NULL) {
             arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__STD;
         } else if (strcmp(meta, "handle") == 0) {
+            if (dynType_descriptorType(real) != 'P') {
+                celix_err_pushf("Error 'handle' is only allowed for untyped pointer not '%c'", dynType_descriptorType(real));
+                return PARSE_ERROR;
+            }
             arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__HANDLE;
         } else if (strcmp(meta, "pre") == 0) {
             arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT;
