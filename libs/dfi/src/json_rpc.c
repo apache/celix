@@ -328,19 +328,11 @@ int jsonRpc_handleReply(const dyn_function_type* func, const char* reply, void* 
                 void** out = (void **) args[i];
                 size_t size = 0;
 
-                if (dynType_descriptorType(argType) == 't') {
-                    status = jsonSerializer_deserializeJson(argType, result, &tmp);
-                    if (tmp != NULL) {
-                        size = strnlen(((char *) *(char**) tmp), 1024 * 1024);
-                        memcpy(*out, *(void**) tmp, size);
-                    }
-                } else {
-                    argType = dynType_typedPointer_getTypedType(argType);
-                    status = jsonSerializer_deserializeJson(argType, result, &tmp);
-                    if (tmp != NULL) {
-                        size = dynType_size(argType);
-                        memcpy(*out, tmp, size);
-                    }
+                argType = dynType_typedPointer_getTypedType(argType);
+                status = jsonSerializer_deserializeJson(argType, result, &tmp);
+                if (tmp != NULL) {
+                    size = dynType_size(argType);
+                    memcpy(*out, tmp, size);
                 }
 
                 dynType_free(argType, tmp);

@@ -574,3 +574,68 @@ TEST_F(DynTypeTests, ParseSequenceFailed) {
     rc = dynType_parseWithStr("Tval={DD a b};Titem={Jtlval;DDJ a text val c d e};**[Lite;", NULL, NULL, &type);
     ASSERT_NE(0, rc);
 }
+
+TEST_F(DynTypeTests, TrivialityTesT) {
+    dyn_type *type = NULL;
+    int rc = 0;
+
+    // non pointer simple type is trivial
+    rc = dynType_parseWithStr("I", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(dynType_isTrivial(type));
+    dynType_destroy(type);
+
+    // untyped pointer is non-trivial
+    rc = dynType_parseWithStr("P", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    ASSERT_FALSE(dynType_isTrivial(type));
+    dynType_destroy(type);
+
+    // reference to non-pointer simple type is trivial
+    rc = dynType_parseWithStr("Ttype=I;ltype;", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(dynType_isTrivial(type));
+    dynType_destroy(type);
+
+    // typed pointer is non-trivial
+    rc = dynType_parseWithStr("*D", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    ASSERT_FALSE(dynType_isTrivial(type));
+    dynType_destroy(type);
+
+    // sequence type is non-trivial
+    rc = dynType_parseWithStr("[I", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    EXPECT_FALSE(dynType_isTrivial(type));
+    dynType_destroy(type);
+
+    // text is non-trivial
+    rc = dynType_parseWithStr("t", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    EXPECT_FALSE(dynType_isTrivial(type));
+    dynType_destroy(type);
+
+    // a complex consisting of non-pointer scalars is trivial
+    rc = dynType_parseWithStr("{II a b}", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(dynType_isTrivial(type));
+    dynType_destroy(type);
+
+    // a complex having a pointer scalar is non-trivial
+    rc = dynType_parseWithStr("{IP a b}", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    EXPECT_FALSE(dynType_isTrivial(type));
+    dynType_destroy(type);
+
+    // a complex consisting of non-pointer scalar and trivial complex is trivial
+    rc = dynType_parseWithStr("{II{II b c}}", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(dynType_isTrivial(type));
+    dynType_destroy(type);
+
+    // a complex consisting of non-pointer scalar and non-trivial complex is non-trivial
+    rc = dynType_parseWithStr("{II{IP b c}}", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    EXPECT_FALSE(dynType_isTrivial(type));
+    dynType_destroy(type);
+}

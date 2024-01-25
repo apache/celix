@@ -300,4 +300,22 @@ TEST_F(DynFunctionTests, WrongArgumentMetaTest) {
     int rc2 = dynFunction_parseWithStr("example(#am=handle;THandle=P;lHandle;t)N", nullptr, &dynFunc);
     EXPECT_EQ(0, rc2);
     dynFunction_destroy(dynFunc);
+
+    int rc3 = dynFunction_parseWithStr("example(#am=handle;P#am=out;t)N", nullptr, &dynFunc);
+    EXPECT_NE(0, rc3);
+    EXPECT_STREQ("Error 'out' is only allowed for typed pointer not 't'", celix_err_popLastError());
+
+    int rc4 = dynFunction_parseWithStr("example(#am=handle;P#am=out;*D)N", nullptr, &dynFunc);
+    EXPECT_NE(0, rc4);
+    EXPECT_STREQ("Error 'out' is only allowed for pointer to text or typed pointer not to 'D'", celix_err_popLastError());
+
+    // #am=pre argument is not allowed for non pointer types
+    int rc5 = dynFunction_parseWithStr("example(#am=pre;I)N", nullptr, &dynFunc);
+    EXPECT_NE(0, rc5);
+    EXPECT_STREQ("Error 'pre' is only allowed for typed pointer not 'I'", celix_err_popLastError());
+
+    // #am=pre argument is not allowed for pointer to nontrivial types
+    int rc6 = dynFunction_parseWithStr("example(#am=pre;**D)N", nullptr, &dynFunc);
+    EXPECT_NE(0, rc6);
+    EXPECT_STREQ("Error 'pre' is only allowed for pointer to trivial types not non-trivial '*'", celix_err_popLastError());
 }

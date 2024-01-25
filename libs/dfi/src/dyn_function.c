@@ -70,8 +70,28 @@ int dynFunction_parse(FILE* descriptor, struct types_head* refTypes, dyn_functio
             }
             arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__HANDLE;
         } else if (strcmp(meta, "pre") == 0) {
+            if (dynType_type(real) != DYN_TYPE_TYPED_POINTER) {
+                celix_err_pushf("Error 'pre' is only allowed for typed pointer not '%c'", dynType_descriptorType(real));
+                return PARSE_ERROR;
+            }
+            const dyn_type* sub = dynType_typedPointer_getTypedType(real);
+            if (!dynType_isTrivial(sub)) {
+                celix_err_pushf("Error 'pre' is only allowed for pointer to trivial types not non-trivial '%c'", dynType_descriptorType(sub));
+                return PARSE_ERROR;
+            }
             arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT;
         } else if (strcmp(meta, "out") == 0) {
+            if (dynType_type(real) != DYN_TYPE_TYPED_POINTER) {
+                celix_err_pushf("Error 'out' is only allowed for typed pointer not '%c'", dynType_descriptorType(real));
+                return PARSE_ERROR;
+            }
+            const dyn_type* sub = dynType_typedPointer_getTypedType(real);
+            int subType = dynType_type(sub);
+            if (subType != DYN_TYPE_TEXT && subType != DYN_TYPE_TYPED_POINTER) {
+                celix_err_pushf("Error 'out' is only allowed for pointer to text or typed pointer not to '%c'",
+                                dynType_descriptorType(sub));
+                return PARSE_ERROR;
+            }
             arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__OUTPUT;
         } else {
             arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__STD;

@@ -34,8 +34,10 @@ extern "C" {
  *
  * Dyn function argument meta (am) as meta info, with the following possible values
  * am=handle #void pointer for the handle
- * am=pre #output pointer with memory pre-allocated
- * am=out #output pointer
+ * am=pre #output pointer with memory pre-allocated, it should be pointer to trivial types, check `dynType_isTrivial` for more info.
+ * am=out #output pointer, it should be pointer to text or double pointer to serializable types
+ *
+ * Without meta info the argument is considered to be a standard argument, which can be of any serializable type.
  *
  * text argument (t) can also be annotated to be considered const string.
  * Normally a text argument will be handled as char*, meaning that the callee is expected to take of ownership.

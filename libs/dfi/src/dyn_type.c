@@ -1045,3 +1045,30 @@ static void dynType_printSimpleType(const dyn_type *type, FILE *stream) {
     fprintf(stream, "type '%s': simple type, size is %zu, alignment is %i, descriptor is '%c'\n", type->name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
 }
 
+bool dynType_isTrivial(const dyn_type* type) {
+    const dyn_type* real = dynType_realType(type);
+    switch (real->type) {
+        case DYN_TYPE_COMPLEX : {
+            struct complex_type_entry* entry = NULL;
+            TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
+                if (!dynType_isTrivial(entry->type)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        case DYN_TYPE_SEQUENCE :
+            return false;
+        case DYN_TYPE_TYPED_POINTER :
+            return false;
+        case DYN_TYPE_TEXT:
+            return false;
+        case DYN_TYPE_SIMPLE:
+            return type->descriptor != 'P';
+//LCOV_EXCL_START
+        default :
+            assert(0 && "Unexpected type.");
+//LCOV_EXCL_STOP
+    }
+}
+

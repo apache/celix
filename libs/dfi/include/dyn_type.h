@@ -371,6 +371,16 @@ CELIX_DFI_EXPORT int dynType_text_allocAndInit(const dyn_type* type, void* textL
  */
 CELIX_DFI_EXPORT void dynType_simple_setValue(const dyn_type* type, void* inst, const void* in);
 
+/**
+ * @brief Test whether the given type is trivial.
+ * A trivial type does NOT involve any pointer type, and thus can always be safely shallow-copied.
+ * Any non-pointer simple type is trivial, while typed/untyped pointer is non-trivial.
+ * A sequence is non-trivial since it contains a pointer to the buffer.
+ * Text is nontrivial.
+ * A complex is trivial iff each field is trivial.
+ */
+CELIX_DFI_EXPORT bool dynType_isTrivial(const dyn_type* type);
+
 #ifdef __cplusplus
 }
 #endif

@@ -732,26 +732,6 @@ extern "C" {
         dynInterface_destroy(intf);
     }
 
-    void handleTestPreChar(void) {
-        dyn_function_type *dynFunc = nullptr;
-        int rc = dynFunction_parseWithStr("getName(#am=handle;P#am=pre;t)N", nullptr, &dynFunc);
-        ASSERT_EQ(0, rc);
-
-        const char *reply = "{\"r\":\"this is a test pre string\"}";
-        char result[32] = {0};
-        void *out = result;
-        void *args[2];
-        args[0] = nullptr;
-        args[1] = &out;
-        int rsErrno = 0;
-        rc = jsonRpc_handleReply(dynFunc, reply, args, &rsErrno);
-        ASSERT_EQ(0, rc);
-        ASSERT_EQ(0, rsErrno);
-        ASSERT_STREQ("this is a test pre string", result);
-
-        dynFunction_destroy(dynFunc);
-    }
-
     void callTestChar(void) {
         dyn_interface_type *intf = nullptr;
         FILE *desc = fopen("descriptors/example4.descriptor", "r");
@@ -903,10 +883,6 @@ TEST_F(JsonRpcTests, callTestOutChar) {
 
 TEST_F(JsonRpcTests, handleOutChar) {
     handleTestOutChar();
-}
-
-TEST_F(JsonRpcTests, handlePreChar) {
-    handleTestPreChar();
 }
 
 TEST_F(JsonRpcTests, handleReplyError) {
