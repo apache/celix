@@ -1068,6 +1068,7 @@ bool dynType_isTrivial(const dyn_type* type) {
 //LCOV_EXCL_START
         default :
             assert(0 && "Unexpected type.");
+            return false;
 //LCOV_EXCL_STOP
     }
 }
