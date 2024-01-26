@@ -299,17 +299,10 @@ int jsonRpc_handleReply(const dyn_function_type* func, const char* reply, void* 
         }
     }
 
-    int nrOfOutputArgs = 0;
     int nrOfArgs = dynFunction_nrOfArguments(func);
     for (int j = 0; j < nrOfArgs; ++j) {
         enum dyn_function_argument_meta meta = dynFunction_argumentMetaForIndex(func, j);
         if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT || meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
-            nrOfOutputArgs += 1;
-            if (nrOfOutputArgs > 1) {
-                status = ERROR;
-                celix_err_pushf("Only one output argument is supported");
-                break;
-            }
             if (result == NULL && !replyHasError) {
                 status = ERROR;
                 celix_err_pushf("Expected result in reply. got '%s'", reply);

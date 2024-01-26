@@ -5,4 +5,4 @@ version=1.0.0
 :annotations
 :types
 :methods
-multiOut(V)Di=multiOut(#am=handle;P#am=out;**D#am=out;**i)N
+multiPreOut(V)Di=multiPreOut(#am=handle;P#am=pre;*D#am=pre;*i)N

@@ -69,8 +69,34 @@ static int dynInterface_checkInterface(dyn_interface_type* intf) {
         const dyn_type* type = dynFunction_returnType(mEntry->dynFunc);
         int descriptor = dynType_descriptorType(type);
         if (descriptor != 'N') {
-            celix_err_pushf("Parse Error. Only method with a return type 'N' (native int) are supported. Got return type '%c'\n", descriptor);
+            celix_err_pushf("Parse Error. Got return type '%c' rather than 'N' (native int) for method %s (%d)",
+                            descriptor, mEntry->id, mEntry->index);
             return ERROR;
+        }
+        const struct dyn_function_arguments_head* args = dynFunction_arguments(mEntry->dynFunc);
+        dyn_function_argument_type* argEntry = TAILQ_FIRST(args);
+        if (argEntry == NULL || argEntry->argumentMeta != DYN_FUNCTION_ARGUMENT_META__HANDLE) {
+            celix_err_pushf("Parse Error. The first argument must be handle for method %s (%d)", mEntry->id, mEntry->index);
+            return ERROR;
+        }
+        size_t nbOfOutputArgs = 0;
+        for (argEntry = TAILQ_NEXT(argEntry, entries); argEntry != NULL; argEntry = TAILQ_NEXT(argEntry, entries)) {
+            if (argEntry->argumentMeta == DYN_FUNCTION_ARGUMENT_META__OUTPUT ||
+                argEntry->argumentMeta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
+                nbOfOutputArgs += 1;
+            }
+        }
+        if (nbOfOutputArgs > 1) {
+            celix_err_pushf("Parse Error. Only one output argument is allowed for method %s (%d)", mEntry->id, mEntry->index);
+            return ERROR;
+        } else if (nbOfOutputArgs > 0) {
+            argEntry = TAILQ_LAST(args, dyn_function_arguments_head);
+            if (argEntry->argumentMeta != DYN_FUNCTION_ARGUMENT_META__OUTPUT &&
+                argEntry->argumentMeta != DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
+                celix_err_pushf("Parse Error. Output argument is only allowed as the last argument for method %s (%d)",
+                                mEntry->id, mEntry->index);
+                return ERROR;
+            }
         }
     }
 

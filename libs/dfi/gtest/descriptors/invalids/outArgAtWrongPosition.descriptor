@@ -5,4 +5,4 @@ version=1.0.0
 :annotations
 :types
 :methods
-multiOut(V)Di=multiOut(#am=handle;P#am=out;**D#am=out;**i)N
+outWrongPos(V)Di=outWrongPos(#am=handle;P#am=out;**i**D)N

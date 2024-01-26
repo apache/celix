@@ -31,6 +31,7 @@ extern "C" {
 
 #include "dyn_common.h"
 #include "dyn_interface.h"
+#include "celix_err.h"
 #include "celix_version.h"
 
     static void checkInterfaceVersion(dyn_interface_type* dynIntf, const char* v) {
@@ -100,6 +101,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status); //Test fails because of a space at the end of the name
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Invalid header */
         desc = fopen("descriptors/invalids/invalidHeader.descriptor", "r");
@@ -107,6 +109,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status); //Test fails because of missing name value
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Header without Version */
         desc = fopen("descriptors/invalids/noVersion.descriptor", "r");
@@ -114,6 +117,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status); //Test fails because of missing version field in header section
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Header without Type */
         desc = fopen("descriptors/invalids/noType.descriptor", "r");
@@ -121,6 +125,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status); //Test fails because of missing type field in header section
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Header without Name */
         desc = fopen("descriptors/invalids/noName.descriptor", "r");
@@ -128,6 +133,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status); //Test fails because of missing name field in header section
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Invalid Annotations Section */
         desc = fopen("descriptors/invalids/invalidInterfaceAnnotations.descriptor", "r");
@@ -135,6 +141,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status); //Test fails because of missing name field in annotations section
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Invalid section */
         desc = fopen("descriptors/invalids/invalidSection.descriptor", "r");
@@ -142,13 +149,62 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status); //Test fails because of unknown section type
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Invalid return type */
         desc = fopen("descriptors/invalids/invalidMethodReturnType.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status); //Test fails because of invalid return type (D instead of N)
+        EXPECT_STREQ("Parse Error. Got return type 'D' rather than 'N' (native int) for method add(DD)D (0)", celix_err_popLastError());
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
+
+        /* Method without arguments */
+        desc = fopen("descriptors/invalids/methodWithoutArguments.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_NE(0, status);
+        EXPECT_STREQ("Parse Error. The first argument must be handle for method add(DD)D (0)", celix_err_popLastError());
+        fclose(desc); desc=NULL;
+        celix_err_resetErrors();
+
+        /* Method missing handle */
+        desc = fopen("descriptors/invalids/methodMissingHandle.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_NE(0, status);
+        EXPECT_STREQ("Parse Error. The first argument must be handle for method add(DD)D (0)", celix_err_popLastError());
+        fclose(desc); desc=NULL;
+        celix_err_resetErrors();
+
+        /* Method with multiple PreOut arguments */
+        desc = fopen("descriptors/invalids/multiPreOutArgs.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_NE(0, status);
+        EXPECT_STREQ("Parse Error. Only one output argument is allowed for method multiPreOut(V)Di (0)", celix_err_popLastError());
+        fclose(desc); desc=NULL;
+        celix_err_resetErrors();
+
+        /* Method with multiple Out arguments */
+        desc = fopen("descriptors/invalids/multiOutArgs.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_NE(0, status);
+        EXPECT_STREQ("Parse Error. Only one output argument is allowed for method multiOut(V)Di (0)", celix_err_popLastError());
+        fclose(desc); desc=NULL;
+        celix_err_resetErrors();
+
+        /* Method with an Out argument at wrong position */
+        desc = fopen("descriptors/invalids/outArgAtWrongPosition.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_NE(0, status);
+        EXPECT_STREQ("Parse Error. Output argument is only allowed as the last argument for method outWrongPos(V)Di (0)",
+                     celix_err_popLastError());
+        fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Invalid  method section */
         desc = fopen("descriptors/invalids/invalidMethod.descriptor", "r");
@@ -156,6 +212,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status); //Test fails because of space at the end of the method
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Invalid method section missing method id */
         desc = fopen("descriptors/invalids/invalidMethodMissingId.descriptor", "r");
@@ -163,6 +220,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status);
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Invalid method section missing equality */
         desc = fopen("descriptors/invalids/invalidMethodMissingEquality.descriptor", "r");
@@ -170,6 +228,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status);
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Invalid method section missing function name */
         desc = fopen("descriptors/invalids/invalidMethodMissingFunctionName.descriptor", "r");
@@ -177,6 +236,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status);
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Invalid type */
         desc = fopen("descriptors/invalids/invalidType.descriptor", "r");
@@ -184,6 +244,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status); //Test fails because of space at the end of the type
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Invalid types section missing type name */
         desc = fopen("descriptors/invalids/noTypeName.descriptor", "r");
@@ -191,6 +252,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status); //Test fails because of missing type name
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Invalid types section missing equality */
         desc = fopen("descriptors/invalids/invalidTypeMissingEquality.descriptor", "r");
@@ -198,6 +260,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status); //Test fails because of missing equality
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Invalid types section with unrecognized simple type */
         desc = fopen("descriptors/invalids/invalidTypeUnrecognizedSimpleType.descriptor", "r");
@@ -205,6 +268,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_NE(0, status);
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* Invalid metatype in method description */
         desc = fopen("descriptors/invalids/invalidMetaType.descriptor", "r");
@@ -213,6 +277,7 @@ extern "C" {
         dynInterface_destroy(dynIntf);
         ASSERT_EQ(0, status); //Invalid meta type doesn't generate errors, just warnings
         fclose(desc); desc=NULL; dynIntf=NULL;
+        celix_err_resetErrors();
 
         /* Invalid version section */
         desc = fopen("descriptors/invalids/invalidVersion.descriptor", "r");
@@ -220,6 +285,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status);
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* garbage descriptor */
         desc = fopen("descriptors/invalids/garbage.descriptor", "r");
@@ -227,6 +293,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status);
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
 
         /* invalid extra section */
         desc = fopen("descriptors/invalids/invalidExtraSection.descriptor", "r");
@@ -234,6 +301,7 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_EQ(1, status);
         fclose(desc); desc=NULL;
+        celix_err_resetErrors();
     }
 }
 
@@ -242,6 +310,7 @@ public:
     DynInterfaceTests() {
     }
     ~DynInterfaceTests() override {
+        celix_err_resetErrors();
     }
 
 };
