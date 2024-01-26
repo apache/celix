@@ -247,7 +247,8 @@ int jsonRpc_prepareInvokeRequest(const dyn_function_type* func, const char* id, 
             }
 
             if (dynType_descriptorType(type) == 't') {
-                const char* metaArgument = dynType_getMetaInfo(type, "const");
+                // we need to get meta info from the original type, which could be a reference, rather than the real type
+                const char* metaArgument = dynType_getMetaInfo(entry->type, "const");
                 if (metaArgument != NULL && strcmp("true", metaArgument) == 0) {
                     //const char * as input -> nop
                 } else {
