@@ -74,4 +74,10 @@ json_t* __wrap_json_integer(json_int_t value) {
     return __real_json_integer(value);
 }
 
+json_t* __real_json_string(const char *value);
+CELIX_EI_DEFINE(json_string, json_t*)
+json_t* __wrap_json_string(const char *value) {
+    CELIX_EI_IMPL(json_string);
+    return __real_json_string(value);
+}
 }

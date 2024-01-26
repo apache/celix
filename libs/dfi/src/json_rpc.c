@@ -219,58 +219,53 @@ int jsonRpc_call(const dyn_interface_type* intf, void* service, const char* requ
 }
 
 int jsonRpc_prepareInvokeRequest(const dyn_function_type* func, const char* id, void* args[], char** out) {
-    int status = OK;
+    json_auto_t* invoke = json_object();
+    // each method must have a non-null id
+    if (json_object_set_new_nocheck(invoke, "m", json_string(id)) != 0) {
+        celix_err_pushf("Error setting method name '%s'", id);
+        return ERROR;
+    }
 
+    json_auto_t* arguments = json_array();
+    if (json_object_set_nocheck(invoke, "a", arguments) != 0) {
+        celix_err_pushf("Error adding arguments array for '%s'", id);
+        return ERROR;
+    }
 
-    json_t* invoke = json_object();
-    json_object_set_new_nocheck(invoke, "m", json_string(id));
-
-    json_t* arguments = json_array();
-    json_object_set_new_nocheck(invoke, "a", arguments);
-
-    int i;
-    int nrOfArgs = dynFunction_nrOfArguments(func);
-    for (i = 0; i < nrOfArgs; i +=1) {
-        const dyn_type* type = dynFunction_argumentTypeForIndex(func, i);
-        enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
+    const struct dyn_function_arguments_head* dynArgs = dynFunction_arguments(func);
+    dyn_function_argument_type* entry = NULL;
+    TAILQ_FOREACH(entry, dynArgs, entries) {
+        const dyn_type* type = dynType_realType(entry->type);
+        enum dyn_function_argument_meta meta = entry->argumentMeta;
         if (meta == DYN_FUNCTION_ARGUMENT_META__STD) {
             json_t* val = NULL;
 
-            int rc = jsonSerializer_serializeJson(type, args[i], &val);
+            int rc = jsonSerializer_serializeJson(type, args[entry->index], &val);
+            if (rc != 0) {
+                celix_err_pushf("Failed to serialize args for function '%s'\n", id);
+                return ERROR;
+            }
 
             if (dynType_descriptorType(type) == 't') {
                 const char* metaArgument = dynType_getMetaInfo(type, "const");
-                if (metaArgument != NULL && strncmp("true", metaArgument, 5) == 0) {
+                if (metaArgument != NULL && strcmp("true", metaArgument) == 0) {
                     //const char * as input -> nop
                 } else {
-                    char** str = args[i];
+                    char** str = args[entry->index];
                     free(*str); //char * as input -> got ownership -> free it.
                 }
             }
-
-            if (rc == 0) {
-                json_array_append_new(arguments, val);
-            } else {
-                celix_err_pushf("Failed to serialize args for function '%s'\n", id);
-                status = ERROR;
-                break;
+            if (json_array_append_new(arguments, val) != 0) {
+                celix_err_pushf("Error adding argument (%d) for '%s'", entry->index, id);
+                return ERROR;
             }
-        } else {
-            //skip handle / output types
         }
     }
 
-    char* invokeStr = json_dumps(invoke, JSON_COMPACT | JSON_ENCODE_ANY);//Should use JSON_COMPACT, it can reduce the size of the JSON string.
-    json_decref(invoke);
-
-    if (status == OK) {
-        *out = invokeStr;
-    } else {
-        *out = NULL;
-        free(invokeStr);
-    }
-
-    return status;
+    //use JSON_COMPACT to reduce the size of the JSON string.
+    char* invokeStr = json_dumps(invoke, JSON_COMPACT | JSON_ENCODE_ANY);
+    *out = invokeStr;
+    return *out != NULL ? OK : ERROR;
 }
 
 int jsonRpc_handleReply(const dyn_function_type* func, const char* reply, void* args[], int* rsErrno) {
@@ -289,10 +284,10 @@ int jsonRpc_handleReply(const dyn_function_type* func, const char* reply, void* 
 
     const struct dyn_function_arguments_head* arguments = dynFunction_arguments(func);
     dyn_function_argument_type* last = TAILQ_LAST(arguments, dyn_function_arguments_head);
-    const dyn_type* argType = last->type;
+    const dyn_type* argType = dynType_realType(last->type);
     enum dyn_function_argument_meta meta = last->argumentMeta;
     rsError = json_object_get(replyJson, "e");
-    if(rsError != NULL) {
+    if (rsError != NULL) {
         //get the invocation error of remote service function
         *rsErrno = (int) json_integer_value(rsError);
         return OK;
@@ -315,12 +310,12 @@ int jsonRpc_handleReply(const dyn_function_type* func, const char* reply, void* 
         void** out = lastArg;
         size_t size = 0;
 
-        argType = dynType_typedPointer_getTypedType(argType);
-        status = jsonSerializer_deserializeJson(argType, result, &tmp);
+        const dyn_type* subType = dynType_typedPointer_getTypedType(argType);
+        status = jsonSerializer_deserializeJson(subType, result, &tmp);
         if (tmp != NULL) {
-            size = dynType_size(argType);
+            size = dynType_size(subType);
             memcpy(*out, tmp, size);
-            dynType_free(argType, tmp);
+            dynType_free(subType, tmp);
         }
     } else {
         const dyn_type* subType = dynType_typedPointer_getTypedType(argType);

@@ -46,6 +46,7 @@ if (EI_TESTS)
 			src/dyn_message_ei_tests.cc
 			src/dyn_function_ei_tests.cc
 			src/json_serializer_ei_tests.cc
+			src/json_rpc_ei_tests.cc
 	)
 	target_link_libraries(test_dfi_with_ei PRIVATE
 			dfi_cut
