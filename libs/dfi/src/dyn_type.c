@@ -226,6 +226,7 @@ bail_out:
 static int dynType_parseText(FILE* stream, dyn_type* type) {
     type->type = DYN_TYPE_TEXT;
     type->descriptor = 't';
+    type->trivial = false;
     type->ffiType = &ffi_type_pointer;
     return OK;
 }
@@ -233,6 +234,7 @@ static int dynType_parseText(FILE* stream, dyn_type* type) {
 static int dynType_parseEnum(FILE* stream, dyn_type* type) {
     type->ffiType = &ffi_type_sint32;
     type->descriptor = 'E';
+    type->trivial = true;
     type->type = DYN_TYPE_SIMPLE;
     return OK;
 }
@@ -242,6 +244,7 @@ static int dynType_parseComplex(FILE* stream, dyn_type* type) {
     int status = OK;
     type->type = DYN_TYPE_COMPLEX;
     type->descriptor = '{';
+    type->trivial = true;
     type->ffiType = &type->complex.structType;
     TAILQ_INIT(&type->complex.entriesHead);
 
@@ -260,6 +263,9 @@ static int dynType_parseComplex(FILE* stream, dyn_type* type) {
             return MEM_ERROR;
         }
         entry->type = celix_steal_ptr(subType);
+        if (!dynType_isTrivial(entry->type)) {
+            type->trivial = false;
+        }
         TAILQ_INSERT_TAIL(&type->complex.entriesHead, entry, entries);
         nbEntries += 1;
         c = fgetc(stream);
@@ -339,6 +345,7 @@ static int dynType_parseReference(FILE* stream, dyn_type* type) {
     int status;
     type->type = DYN_TYPE_TYPED_POINTER;
     type->descriptor = '*';
+    type->trivial = false;
     type->ffiType = &ffi_type_pointer;
     type->typedPointer.typedType =  NULL;
 
@@ -400,6 +407,7 @@ static int dynType_parseSimple(int c, dyn_type* type) {
     }
     type->type = DYN_TYPE_SIMPLE;
     type->descriptor = c;
+    type->trivial = c != 'P';
     type->ffiType = ffiType;
     return OK;
 }
@@ -408,6 +416,7 @@ static int dynType_parseTypedPointer(FILE* stream, dyn_type* type) {
     int status = OK;
     type->type = DYN_TYPE_TYPED_POINTER;
     type->descriptor = '*';
+    type->trivial = false;
     type->ffiType = &ffi_type_pointer;
 
     status = dynType_parseWithStreamOfName(stream, NULL, type, NULL, &type->typedPointer.typedType, dynType_parseAny);
@@ -1046,30 +1055,6 @@ static void dynType_printSimpleType(const dyn_type *type, FILE *stream) {
 }
 
 bool dynType_isTrivial(const dyn_type* type) {
-    const dyn_type* real = dynType_realType(type);
-    switch (real->type) {
-        case DYN_TYPE_COMPLEX : {
-            struct complex_type_entry* entry = NULL;
-            TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-                if (!dynType_isTrivial(entry->type)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        case DYN_TYPE_SEQUENCE :
-            return false;
-        case DYN_TYPE_TYPED_POINTER :
-            return false;
-        case DYN_TYPE_TEXT:
-            return false;
-        case DYN_TYPE_SIMPLE:
-            return type->descriptor != 'P';
-//LCOV_EXCL_START
-        default :
-            assert(0 && "Unexpected type.");
-            return false;
-//LCOV_EXCL_STOP
-    }
+    return dynType_realType(type)->trivial;
 }
 

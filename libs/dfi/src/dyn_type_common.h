@@ -24,6 +24,7 @@
 #include "dyn_type.h"
 
 #include <ffi.h>
+#include <stdbool.h>
 
 
 #ifdef __cplusplus
@@ -33,6 +34,7 @@ extern "C" {
 struct _dyn_type {
     char* name;
     char descriptor;
+    bool trivial;
     int type;
     ffi_type* ffiType;
     dyn_type* parent;
