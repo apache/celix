@@ -277,81 +277,68 @@ int jsonRpc_handleReply(const dyn_function_type* func, const char* reply, void* 
     int status = OK;
 
     json_error_t error;
-    json_t* replyJson = json_loads(reply, JSON_DECODE_ANY, &error);
+    json_auto_t* replyJson = json_loads(reply, JSON_DECODE_ANY, &error);
     if (replyJson == NULL) {
-        status = ERROR;
         celix_err_pushf("Error parsing json '%s', got error '%s'", reply, error.text);
+        return ERROR;
     }
 
     json_t* result = NULL;
     json_t* rsError = NULL;
-    bool replyHasError = false;
-    if (status == OK) {
-        *rsErrno = 0;
-        result = json_object_get(replyJson, "r");
-        if (result == NULL) {
-            rsError = json_object_get(replyJson, "e");
-            if(rsError != NULL) {
-                //get the invocation error of remote service function
-                *rsErrno = (int)json_integer_value(rsError);
-                replyHasError = true;
+    *rsErrno = 0;
+
+    const struct dyn_function_arguments_head* arguments = dynFunction_arguments(func);
+    dyn_function_argument_type* last = TAILQ_LAST(arguments, dyn_function_arguments_head);
+    const dyn_type* argType = last->type;
+    enum dyn_function_argument_meta meta = last->argumentMeta;
+    rsError = json_object_get(replyJson, "e");
+    if(rsError != NULL) {
+        //get the invocation error of remote service function
+        *rsErrno = (int) json_integer_value(rsError);
+        return OK;
+    }
+    if (meta != DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT && meta != DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
+        return OK;
+    }
+    result = json_object_get(replyJson, "r");
+    if (result == NULL) {
+        celix_err_pushf("Expected result in reply. got '%s'", reply);
+        return ERROR;
+    }
+    void** lastArg = (void **) args[last->index];
+    if (*lastArg == NULL) {
+        // caller provides nullptr, no need to deserialize
+        return OK;
+    }
+    if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
+        void* tmp = NULL;
+        void** out = lastArg;
+        size_t size = 0;
+
+        argType = dynType_typedPointer_getTypedType(argType);
+        status = jsonSerializer_deserializeJson(argType, result, &tmp);
+        if (tmp != NULL) {
+            size = dynType_size(argType);
+            memcpy(*out, tmp, size);
+            dynType_free(argType, tmp);
+        }
+    } else {
+        const dyn_type* subType = dynType_typedPointer_getTypedType(argType);
+
+        if (dynType_descriptorType(subType) == 't') {
+            char*** out = (char ***) lastArg;
+            char** ptrToString = NULL;
+            status = jsonSerializer_deserializeJson(subType, result, (void**)&ptrToString);
+            if (ptrToString != NULL) {
+                **out = (void*)*ptrToString;
+                free(ptrToString);
             }
+        } else {
+            const dyn_type* subSubType = dynType_typedPointer_getTypedType(subType);
+            void*** out = (void ***) lastArg;
+            status = jsonSerializer_deserializeJson(subSubType, result, *out);
         }
     }
-
-    int nrOfArgs = dynFunction_nrOfArguments(func);
-    for (int j = 0; j < nrOfArgs; ++j) {
-        enum dyn_function_argument_meta meta = dynFunction_argumentMetaForIndex(func, j);
-        if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT || meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
-            if (result == NULL && !replyHasError) {
-                status = ERROR;
-                celix_err_pushf("Expected result in reply. got '%s'", reply);
-                break;
-            }
-        }
-    }
-
-    if (status == OK && !replyHasError) {
-        int i;
-        for (i = 0; i < nrOfArgs; i += 1) {
-            const dyn_type* argType = dynFunction_argumentTypeForIndex(func, i);
-            enum dyn_function_argument_meta meta = dynFunction_argumentMetaForIndex(func, i);
-            if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
-                void* tmp = NULL;
-                void** out = (void **) args[i];
-                size_t size = 0;
-
-                argType = dynType_typedPointer_getTypedType(argType);
-                status = jsonSerializer_deserializeJson(argType, result, &tmp);
-                if (tmp != NULL) {
-                    size = dynType_size(argType);
-                    memcpy(*out, tmp, size);
-                }
-
-                dynType_free(argType, tmp);
-            } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
-                const dyn_type* subType = dynType_typedPointer_getTypedType(argType);
-
-                if (dynType_descriptorType(subType) == 't') {
-                    char*** out = (char ***) args[i];
-                    char** ptrToString = NULL;
-                    status = jsonSerializer_deserializeJson(subType, result, (void**)&ptrToString);
-                    char* s CELIX_UNUSED = *ptrToString; //note for debug
-                    free(ptrToString);
-                    **out = (void*)s;
-                } else {
-                    const dyn_type* subSubType = dynType_typedPointer_getTypedType(subType);
-                    void*** out = (void ***) args[i];
-                    status = jsonSerializer_deserializeJson(subSubType, result, *out);
-                }
-            } else {
-                //skip
-            }
-        }
-    }
-
-
-    json_decref(replyJson);
 
     return status;
 }

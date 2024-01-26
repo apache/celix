@@ -150,7 +150,7 @@ extern "C" {
         rc = jsonRpc_handleReply(dynFunc, reply, args, &rsErrno);
         ASSERT_EQ(0, rc);
         ASSERT_EQ(0, rsErrno);
-        //ASSERT_EQ(2.2, result);
+        EXPECT_DOUBLE_EQ(2.2, result);
 
         dynFunction_destroy(dynFunc);
     }
@@ -720,12 +720,66 @@ TEST_F(JsonRpcTests, handleTestPre) {
     handleTestPre();
 }
 
+TEST_F(JsonRpcTests, handleTestNullPre) {
+    dyn_function_type *dynFunc = nullptr;
+    int rc = dynFunction_parseWithStr("add(#am=handle;PDD#am=pre;*D)N", nullptr, &dynFunc);
+    ASSERT_EQ(0, rc);
+
+    const char *reply = "{\"r\":2.2}";
+    double *out = NULL;
+    void *args[4];
+    args[3] = &out;
+    int rsErrno = 0;
+    rc = jsonRpc_handleReply(dynFunc, reply, args, &rsErrno);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(0, rsErrno);
+    //ASSERT_EQ(2.2, result);
+
+    dynFunction_destroy(dynFunc);
+}
+
 TEST_F(JsonRpcTests, handleTestInvalidReply) {
     handleTestInvalidReply();
 }
 
 TEST_F(JsonRpcTests, handleTestOut) {
     handleTestOut();
+}
+
+TEST_F(JsonRpcTests, handleTestNullOut) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example1.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    const struct methods_head* head = dynInterface_methods(intf);
+    dyn_function_type *func = nullptr;
+    struct method_entry *entry = nullptr;
+    TAILQ_FOREACH(entry, head, entries) {
+        if (strcmp(dynFunction_getName(entry->dynFunc), "stats") == 0) {
+            func = entry->dynFunc;
+            break;
+        }
+    }
+    ASSERT_TRUE(func != nullptr);
+
+    const char *reply = R"({"r":{"input":[1.0,2.0],"max":2.0,"average":1.5,"min":1.0}})";
+
+    void *args[3];
+    args[0] = nullptr;
+    args[1] = nullptr;
+    args[2] = nullptr;
+
+    void *out = nullptr;
+    args[2] = &out;
+
+    int rsErrno = 0;
+    rc = jsonRpc_handleReply(func, reply, args, &rsErrno);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(0, rsErrno);
+    dynInterface_destroy(intf);
 }
 
 TEST_F(JsonRpcTests, callPreReference) {
@@ -796,6 +850,43 @@ TEST_F(JsonRpcTests, callTestOutChar) {
 
 TEST_F(JsonRpcTests, handleOutChar) {
     handleTestOutChar();
+}
+
+TEST_F(JsonRpcTests, handleInvalidOutChar) {
+
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example4.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    const struct methods_head* head = dynInterface_methods(intf);
+    dyn_function_type *func = nullptr;
+    struct method_entry *entry = nullptr;
+    TAILQ_FOREACH(entry, head, entries) {
+        if (strcmp(dynFunction_getName(entry->dynFunc), "getName") == 0) {
+            func = entry->dynFunc;
+            break;
+        }
+    }
+
+    ASSERT_TRUE(func != nullptr);
+
+    const char *reply = R"({"r": 12345})";
+    char *result = nullptr;
+    void *out = &result;
+
+    void *args[2];
+    args[0] = nullptr;
+    args[1] = &out;
+
+    if (func != nullptr) { // Check needed just to satisfy Coverity
+        int rsErrno = 0;
+        int status = jsonRpc_handleReply(func, reply, args, &rsErrno);
+        EXPECT_NE(0, status);
+    }
+    dynInterface_destroy(intf);
 }
 
 TEST_F(JsonRpcTests, handleReplyError) {
