@@ -21,9 +21,9 @@
 
 #include <float.h>
 #include <assert.h>
-#include "celix_err.h"
 
 extern "C" {
+#include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -37,7 +37,11 @@ extern "C" {
 #include "dyn_function.h"
 #include "json_serializer.h"
 #include "json_rpc.h"
+#include "celix_compiler.h"
 #include "celix_errno.h"
+#include "celix_err.h"
+
+#include <jansson.h>
 
 
     void prepareTest(void) {
@@ -372,16 +376,8 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head* head = dynInterface_methods(intf);
-        dyn_function_type *func = nullptr;
-        struct method_entry *entry = nullptr;
-        TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(dynFunction_getName(entry->dynFunc), "stats") == 0) {
-                func = entry->dynFunc;
-                break;
-            }
-        }
-        ASSERT_TRUE(func != nullptr);
+        dyn_function_type *func = dynInterface_findMethod(intf, "stats([D)LStatsResult;")->dynFunc;
+        assert(func != nullptr);
 
         const char *reply = R"({"r":{"input":[1.0,2.0],"max":2.0,"average":1.5,"min":1.0}})";
 
@@ -413,16 +409,8 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head* head = dynInterface_methods(intf);
-        dyn_function_type *func = nullptr;
-        struct method_entry *entry = nullptr;
-        TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(dynFunction_getName(entry->dynFunc), "stats") == 0) {
-                func = entry->dynFunc;
-                break;
-            }
-        }
-        ASSERT_TRUE(func != nullptr);
+        dyn_function_type *func = dynInterface_findMethod(intf, "stats([D)LStatsResult;")->dynFunc;
+        assert(func != nullptr);
 
         const char *reply = R"({})";
 
@@ -451,16 +439,9 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head* head = dynInterface_methods(intf);
-        dyn_function_type *func = nullptr;
-        struct method_entry *entry = nullptr;
-        TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(dynFunction_getName(entry->dynFunc), "add") == 0) {
-                func = entry->dynFunc;
-                break;
-            }
-        }
-        ASSERT_TRUE(func != nullptr);
+
+        dyn_function_type *func = dynInterface_findMethod(intf, "add(DD)D")->dynFunc;
+        assert(func != nullptr);
 
         const char *reply = R"({"e":33554433})";
 
@@ -509,19 +490,8 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head* head = dynInterface_methods(intf);
-        dyn_function_type *func = nullptr;
-        struct method_entry *entry = nullptr;
-        TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(dynFunction_getName(entry->dynFunc), "items") == 0) {
-                func = entry->dynFunc;
-                break;
-            }
-        }
-        ASSERT_TRUE(func != nullptr);
-
-        //dyn_type *arg = dynFunction_argumentTypeForIndex(func, 1);
-        //dynType_print(arg, stdout);
+        dyn_function_type *func = dynInterface_findMethod(intf, "example1")->dynFunc;
+        assert(func != nullptr);
 
         const char *reply = R"({"r":[{"a":1.0,"b":1.5},{"a":2.0,"b":2.5}]})";
 
@@ -561,16 +531,8 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head* head = dynInterface_methods(intf);
-        dyn_function_type *func = nullptr;
-        struct method_entry *entry = nullptr;
-        TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(dynFunction_getName(entry->dynFunc), "action") == 0) {
-                func = entry->dynFunc;
-                break;
-            }
-        }
-        ASSERT_TRUE(func != nullptr);
+        dyn_function_type *func = dynInterface_findMethod(intf, "action(V)")->dynFunc;
+        assert(func != nullptr);
 
         const char *reply = R"({})";
 
@@ -613,17 +575,8 @@ extern "C" {
         ASSERT_EQ(0, rc);
         fclose(desc);
 
-        const struct methods_head* head = dynInterface_methods(intf);
-        dyn_function_type *func = nullptr;
-        struct method_entry *entry = nullptr;
-        TAILQ_FOREACH(entry, head, entries) {
-            if (strcmp(dynFunction_getName(entry->dynFunc), "getName") == 0) {
-                func = entry->dynFunc;
-                break;
-            }
-        }
-
-        ASSERT_TRUE(func != nullptr);
+        dyn_function_type *func = dynInterface_findMethod(intf, "getName(V)t")->dynFunc;
+        assert(func != nullptr);
 
         const char *reply = R"({"r": "this is a test string"})";
         char *result = nullptr;
@@ -633,11 +586,9 @@ extern "C" {
         args[0] = nullptr;
         args[1] = &out;
 
-        if (func != nullptr) { // Check needed just to satisfy Coverity
-            int rsErrno = 0;
-		     jsonRpc_handleReply(func, reply, args, &rsErrno);
-		     ASSERT_EQ(0, rsErrno);
-        }
+        int rsErrno = 0;
+        jsonRpc_handleReply(func, reply, args, &rsErrno);
+        ASSERT_EQ(0, rsErrno);
 
         ASSERT_STREQ("this is a test string", result);
 
@@ -746,6 +697,36 @@ TEST_F(JsonRpcTests, handleTestOut) {
     handleTestOut();
 }
 
+TEST_F(JsonRpcTests, handleTestNullOutResult) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example1.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    dyn_function_type *func = dynInterface_findMethod(intf, "stats([D)LStatsResult;")->dynFunc;
+    ASSERT_TRUE(func != nullptr);
+
+    const char *reply = R"({"r":null})";
+
+    void *args[3];
+    args[0] = nullptr;
+    args[1] = nullptr;
+    args[2] = nullptr;
+
+    struct tst_StatsResult *result = nullptr;
+    void *out = &result;
+    args[2] = &out;
+
+    int rsErrno = 0;
+    rc = jsonRpc_handleReply(func, reply, args, &rsErrno);
+    ASSERT_EQ(0, rc);
+    ASSERT_EQ(0, rsErrno);
+    ASSERT_EQ(nullptr, result);
+    dynInterface_destroy(intf);
+}
+
 TEST_F(JsonRpcTests, handleTestNullOut) {
     dyn_interface_type *intf = nullptr;
     FILE *desc = fopen("descriptors/example1.descriptor", "r");
@@ -754,16 +735,8 @@ TEST_F(JsonRpcTests, handleTestNullOut) {
     ASSERT_EQ(0, rc);
     fclose(desc);
 
-    const struct methods_head* head = dynInterface_methods(intf);
-    dyn_function_type *func = nullptr;
-    struct method_entry *entry = nullptr;
-    TAILQ_FOREACH(entry, head, entries) {
-        if (strcmp(dynFunction_getName(entry->dynFunc), "stats") == 0) {
-            func = entry->dynFunc;
-            break;
-        }
-    }
-    ASSERT_TRUE(func != nullptr);
+    dyn_function_type *func = dynInterface_findMethod(intf, "stats([D)LStatsResult;")->dynFunc;
+    assert(func != nullptr);
 
     const char *reply = R"({"r":{"input":[1.0,2.0],"max":2.0,"average":1.5,"min":1.0}})";
 
@@ -813,6 +786,32 @@ TEST_F(JsonRpcTests, callOut) {
     callTestOutput();
 }
 
+
+TEST_F(JsonRpcTests, callOutNullResult) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example1.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    char *result = nullptr;
+    tst_serv serv {nullptr, nullptr, nullptr, nullptr, [](void*, struct tst_seq, struct tst_StatsResult **out)->int {
+        assert(out != nullptr);
+        assert(*out == nullptr);
+        *out = nullptr;
+        return 0;
+    }};
+
+    rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": [[1.0,2.0]]})", &result);
+    ASSERT_EQ(0, rc);
+
+    json_auto_t* replyJson = json_loads(result, JSON_DECODE_ANY, nullptr);
+    EXPECT_TRUE(json_is_null(json_object_get(replyJson, "r")));
+    free(result);
+    dynInterface_destroy(intf);
+}
+
 TEST_F(JsonRpcTests, callOutReference) {
     dyn_interface_type *intf = nullptr;
     FILE *desc = fopen("descriptors/example7.descriptor", "r");
@@ -844,12 +843,61 @@ TEST_F(JsonRpcTests, handleOutSeq) {
     handleTestOutputSequence();
 }
 
-TEST_F(JsonRpcTests, callTestOutChar) {
+TEST_F(JsonRpcTests, callTestOutText) {
     callTestOutChar();
 }
 
-TEST_F(JsonRpcTests, handleOutChar) {
+TEST_F(JsonRpcTests, callTestOutNullTextResult) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example4.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    char *result = nullptr;
+    tst_serv_example4 serv {nullptr, [](void *, char** result)->int {
+        *result = nullptr;
+        return 0;
+        }, nullptr, nullptr};
+
+    rc = jsonRpc_call(intf, &serv, R"({"m": "getName(V)t", "a": []})", &result);
+    ASSERT_EQ(0, rc);
+
+    json_auto_t* replyJson = json_loads(result, JSON_DECODE_ANY, nullptr);
+    EXPECT_TRUE(json_is_null(json_object_get(replyJson, "r")));
+    free(result);
+    dynInterface_destroy(intf);
+}
+
+TEST_F(JsonRpcTests, handleOutText) {
     handleTestOutChar();
+}
+
+TEST_F(JsonRpcTests, handleNullOutTextResult) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example4.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    dyn_function_type *func = dynInterface_findMethod(intf, "getName(V)t")->dynFunc;
+    assert(func != nullptr);
+
+    const char *reply = R"({"r":null})";
+    char *result = nullptr;
+    void *out = &result;
+
+    void *args[2];
+    args[0] = nullptr;
+    args[1] = &out;
+
+    int rsErrno = 0;
+    jsonRpc_handleReply(func, reply, args, &rsErrno);
+    ASSERT_EQ(0, rsErrno);
+    EXPECT_EQ(nullptr, result);
+    dynInterface_destroy(intf);
 }
 
 TEST_F(JsonRpcTests, handleInvalidOutChar) {
@@ -861,17 +909,8 @@ TEST_F(JsonRpcTests, handleInvalidOutChar) {
     ASSERT_EQ(0, rc);
     fclose(desc);
 
-    const struct methods_head* head = dynInterface_methods(intf);
-    dyn_function_type *func = nullptr;
-    struct method_entry *entry = nullptr;
-    TAILQ_FOREACH(entry, head, entries) {
-        if (strcmp(dynFunction_getName(entry->dynFunc), "getName") == 0) {
-            func = entry->dynFunc;
-            break;
-        }
-    }
-
-    ASSERT_TRUE(func != nullptr);
+    dyn_function_type *func = dynInterface_findMethod(intf, "getName(V)t")->dynFunc;
+    assert(func != nullptr);
 
     const char *reply = R"({"r": 12345})";
     char *result = nullptr;

@@ -213,3 +213,13 @@ int dynInterface_nrOfMethods(const dyn_interface_type* intf) {
     struct method_entry* last = TAILQ_LAST(&intf->methods, methods_head);
     return last == NULL ? 0 : (last->index+1);
 }
+
+const struct method_entry* dynInterface_findMethod(const dyn_interface_type* intf, const char* id) {
+    const struct method_entry* entry = NULL;
+    TAILQ_FOREACH(entry, &intf->methods, entries) {
+        if (strcmp(entry->id, id) == 0) {
+            break;
+        }
+    }
+    return entry;
+}

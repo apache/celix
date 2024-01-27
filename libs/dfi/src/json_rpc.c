@@ -61,27 +61,16 @@ int jsonRpc_call(const dyn_interface_type* intf, void* service, const char* requ
         return ERROR;
     }
 
-    const struct methods_head* methods = dynInterface_methods(intf);
-    struct method_entry* entry = NULL;
-    struct method_entry* method = NULL;
-    TAILQ_FOREACH(entry, methods, entries) {
-        if (strcmp(sig, entry->id) == 0) {
-            method = entry;
-            break;
-        }
-    }
-
+    const struct method_entry* method = dynInterface_findMethod(intf, sig);
     if (method == NULL) {
         celix_err_pushf("Cannot find method with sig '%s'", sig);
         return ERROR;
     }
 
     struct generic_service_layout* serv = service;
-    void* handle = serv->handle;
-    void (*fp)(void) = serv->methods[method->index];
 
-    dyn_function_type* func = method->dynFunc;
-    int nrOfArgs = dynFunction_nrOfArguments(method->dynFunc);
+    const dyn_function_type* func = method->dynFunc;
+    int nrOfArgs = dynFunction_nrOfArguments(func);
     void* args[nrOfArgs];
 
     json_t* value = NULL;
@@ -91,7 +80,6 @@ int jsonRpc_call(const dyn_interface_type* intf, void* service, const char* requ
 
     void* ptr = NULL;
     void* ptrToPtr = &ptr;
-    void* instPtr = NULL;
 
     //setup and deserialize input
     for (i = 0; i < nrOfArgs; ++i) {
@@ -106,15 +94,16 @@ int jsonRpc_call(const dyn_interface_type* intf, void* service, const char* requ
             void* inst = NULL;
             const dyn_type *subType = dynType_typedPointer_getTypedType(argType);
             dynType_alloc(subType, &inst);
-            instPtr = inst;
-            args[i] = &instPtr;
+            ptr = inst;
+            args[i] = &ptr;
         } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
             args[i] = &ptrToPtr;
         } else if (meta == DYN_FUNCTION_ARGUMENT_META__HANDLE) {
-            args[i] = &handle;
+            args[i] = &serv->handle;
         }
 
         if (status != OK) {
+            // FIXME: part of args uninitialized
             break;
         }
     }
@@ -123,7 +112,7 @@ int jsonRpc_call(const dyn_interface_type* intf, void* service, const char* requ
     ffi_sarg returnVal = 1;
 
     if (status == OK) {
-        status = dynFunction_call(func, fp, (void *) &returnVal, args);
+        status = dynFunction_call(func, serv->methods[method->index], (void *) &returnVal, args);
     }
 
     int funcCallStatus = (int)returnVal;
@@ -158,32 +147,18 @@ int jsonRpc_call(const dyn_interface_type* intf, void* service, const char* requ
                 status = jsonSerializer_serializeJson(argType, args[i], &jsonResult);
             }
             const dyn_type* subType = dynType_typedPointer_getTypedType(argType);
-            void** ptrToInst = (void**)args[i];
-            dynType_free(subType, *ptrToInst);
+            dynType_free(subType, ptr);
         } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
-            if (funcCallStatus == 0 && ptr != NULL) {
-                const dyn_type* typedType = NULL;
-                if (status == OK) {
-                    typedType = dynType_typedPointer_getTypedType(argType);
-                }
-                if (status == OK && dynType_descriptorType(typedType) == 't') {
-                    status = jsonSerializer_serializeJson(typedType, (void*) &ptr, &jsonResult);
-                    free(ptr);
-                } else {
-                    const dyn_type* typedTypedType = NULL;
-                    if (status == OK) {
-                        typedTypedType = dynType_typedPointer_getTypedType(typedType);
-                    }
-
-                    if(status == OK){
-                        status = jsonSerializer_serializeJson(typedTypedType, ptr, &jsonResult);
-                    }
-
-                    if (status == OK) {
-                        dynType_free(typedTypedType, ptr);
-                    }
-                }
-
+            const dyn_type* typedType = NULL;
+            typedType = dynType_typedPointer_getTypedType(argType);
+            if (funcCallStatus == 0 && status == OK) {
+                status = jsonSerializer_serializeJson(typedType, (void*) &ptr, &jsonResult);
+            }
+            if (dynType_descriptorType(typedType) == 't') {
+                free(ptr);
+            } else {
+                const dyn_type* typedTypedType = dynType_typedPointer_getTypedType(typedType);
+                dynType_free(typedTypedType, ptr);
             }
         }
 
@@ -332,7 +307,11 @@ int jsonRpc_handleReply(const dyn_function_type* func, const char* reply, void* 
         } else {
             const dyn_type* subSubType = dynType_typedPointer_getTypedType(subType);
             void*** out = (void ***) lastArg;
-            status = jsonSerializer_deserializeJson(subSubType, result, *out);
+            if (json_is_null(result)) {
+                **out = NULL;
+            } else {
+                status = jsonSerializer_deserializeJson(subSubType, result, *out);
+            }
         }
     }
 

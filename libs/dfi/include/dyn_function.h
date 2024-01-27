@@ -35,7 +35,7 @@ extern "C" {
  * Dyn function argument meta (am) as meta info, with the following possible values
  * am=handle #void pointer for the handle
  * am=pre #output pointer with memory pre-allocated, it should be pointer to trivial types, check `dynType_isTrivial` for more info.
- * am=out #output pointer, it should be pointer to text or double pointer to serializable types
+ * am=out #output pointer, it should be pointers to text or pointer to serializable point type
  *
  * Without meta info the argument is considered to be a standard argument, which can be of any serializable type.
  *

@@ -136,6 +136,16 @@ CELIX_DFI_EXPORT const struct methods_head* dynInterface_methods(const dyn_inter
  */
 CELIX_DFI_EXPORT int dynInterface_nrOfMethods(const dyn_interface_type* intf);
 
+/**
+ * @brief Finds and returns the method_entry structure for a given method id in the dynamic interface type instance.
+ * The dynamic interface type instance is the owner of the returned method_entry structure and it should not be freed.
+ *
+ * @param[in] intf The dynamic interface type instance.
+ * @param[in] id The id of the method to find.
+ * @return The method_entry structure for the given method id, or NULL if no matching method is found.
+ */
+CELIX_DFI_EXPORT const struct method_entry* dynInterface_findMethod(const dyn_interface_type* intf, const char* id);
+
 
 #ifdef __cplusplus
 }

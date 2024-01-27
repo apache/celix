@@ -351,3 +351,21 @@ TEST_F(DynInterfaceTests, testEmptyMethod) {
     dynInterface_destroy(dynIntf);
 }
 
+TEST_F(DynInterfaceTests, testFindMethod) {
+    int status = 0;
+    dyn_interface_type *dynIntf = NULL;
+    FILE *desc = fopen("descriptors/example1.descriptor", "r");
+    assert(desc != NULL);
+    status = dynInterface_parse(desc, &dynIntf);
+    ASSERT_EQ(0, status);
+    fclose(desc);
+
+    const struct method_entry* mInfo = dynInterface_findMethod(dynIntf, "add(DD)D");
+    ASSERT_TRUE(mInfo != NULL);
+    ASSERT_STREQ("add(DD)D", mInfo->id);
+
+    mInfo = dynInterface_findMethod(dynIntf, "add(D)D");
+    ASSERT_TRUE(mInfo == NULL);
+
+    dynInterface_destroy(dynIntf);
+}
