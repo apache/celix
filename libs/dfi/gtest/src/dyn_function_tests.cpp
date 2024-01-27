@@ -49,6 +49,7 @@ TEST_F(DynFunctionTests, DynFuncTest1) {
     ASSERT_EQ(0, rc);
     EXPECT_TRUE(dynFunction_hasReturn(dynFunc));
     EXPECT_EQ(3, dynFunction_nrOfArguments(dynFunc));
+    EXPECT_STREQ("example", dynFunction_getName(dynFunc));
     auto args = dynFunction_arguments(dynFunc);
     dyn_function_argument_type* arg = NULL;
     TAILQ_FOREACH(arg, args, entries) {
