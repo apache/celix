@@ -18,9 +18,13 @@
  */
 
 #include "json_rpc.h"
+#include "json_rpc_test.h"
+#include "json_serializer.h"
+#include "dyn_type.h"
 #include "dyn_function.h"
 #include "celix_err.h"
 #include "jansson_ei.h"
+#include "malloc_ei.h"
 
 #include <gtest/gtest.h>
 
@@ -30,6 +34,10 @@ public:
 
     }
     ~JsonRpcErrorInjectionTestSuite() override {
+        celix_ei_expect_json_dumps(nullptr, 0, nullptr);
+        celix_ei_expect_json_object(nullptr, 0, nullptr);
+        celix_ei_expect_json_real(nullptr, 0, nullptr);
+        celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_json_dumps(nullptr, 0, nullptr);
         celix_ei_expect_json_array_append_new(nullptr, 0, -1);
         celix_ei_expect_json_string(nullptr, 0, nullptr);
@@ -74,4 +82,108 @@ TEST_F(JsonRpcErrorInjectionTestSuite, prepareErrorTest) {
     ASSERT_NE(0, rc);
 
     dynFunction_destroy(dynFunc);
+}
+
+struct tst_serv {
+    void *handle;
+    int (*add)(void *, double, double, double *);
+    int (*sub)(void *, double, double, double *);
+    int (*sqrt)(void *, double, double *);
+    int (*stats)(void *, struct tst_seq, struct tst_StatsResult **);
+};
+
+TEST_F(JsonRpcErrorInjectionTestSuite, preallocationFailureTest) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example1.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    char *result = nullptr;
+    tst_serv serv {nullptr, add, nullptr, nullptr, nullptr};
+
+    celix_ei_expect_calloc((void*)dynType_alloc, 0, nullptr);
+    rc = jsonRpc_call(intf, &serv, R"({"m":"add(DD)D", "a": [1.0,2.0]})", &result);
+    ASSERT_NE(0, rc);
+    EXPECT_EQ(nullptr, result);
+    EXPECT_STREQ("Error allocating memory for pre-allocated output argument of add(DD)D", celix_err_popLastError());
+    EXPECT_STREQ("Error allocating memory for type 'D'", celix_err_popLastError());
+    dynInterface_destroy(intf);
+}
+
+TEST_F(JsonRpcErrorInjectionTestSuite, preOutParamterSerializationFailureTest) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example1.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    char *result = nullptr;
+    tst_serv serv {nullptr, add, nullptr, nullptr, nullptr};
+
+    celix_ei_expect_json_real((void*)jsonSerializer_serializeJson, 2, nullptr);
+    rc = jsonRpc_call(intf, &serv, R"({"m":"add(DD)D", "a": [1.0,2.0]})", &result);
+    ASSERT_NE(0, rc);
+    EXPECT_EQ(nullptr, result);
+    EXPECT_STREQ("Error serializing result for add(DD)D", celix_err_popLastError());
+    dynInterface_destroy(intf);
+}
+
+TEST_F(JsonRpcErrorInjectionTestSuite, outParamterSerializationFailureTest) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example1.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    char *result = nullptr;
+    tst_serv serv {nullptr, nullptr, nullptr, nullptr, stats};
+
+    celix_ei_expect_json_object((void*)jsonSerializer_serializeJson, 3, nullptr);
+    rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": [[1.0,2.0]]})", &result);
+    ASSERT_NE(0, rc);
+    EXPECT_STREQ("Error serializing result for stats([D)LStatsResult;", celix_err_popLastError());
+
+    free(result);
+    dynInterface_destroy(intf);
+}
+
+TEST_F(JsonRpcErrorInjectionTestSuite, responsePayloadGenerationErrorTest) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example1.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    char *result = nullptr;
+    tst_serv serv {nullptr, add, nullptr, nullptr, nullptr};
+
+    celix_ei_expect_json_object((void*)jsonRpc_call, 0, nullptr);
+    rc = jsonRpc_call(intf, &serv, R"({"m":"add(DD)D", "a": [1.0,2.0]})", &result);
+    ASSERT_NE(0, rc);
+    EXPECT_EQ(nullptr, result);
+    EXPECT_STREQ("Error generating response payload for add(DD)D", celix_err_popLastError());
+    dynInterface_destroy(intf);
+}
+
+TEST_F(JsonRpcErrorInjectionTestSuite, responseRenderingErrorTest) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example1.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    char *result = nullptr;
+    tst_serv serv {nullptr, add, nullptr, nullptr, nullptr};
+
+    celix_ei_expect_json_dumps((void*)jsonRpc_call, 0, nullptr);
+    rc = jsonRpc_call(intf, &serv, R"({"m":"add(DD)D", "a": [1.0,2.0]})", &result);
+    ASSERT_NE(0, rc);
+    EXPECT_EQ(nullptr, result);
+    dynInterface_destroy(intf);
 }

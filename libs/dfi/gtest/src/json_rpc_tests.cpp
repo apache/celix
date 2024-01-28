@@ -37,6 +37,7 @@ extern "C" {
 #include "dyn_function.h"
 #include "json_serializer.h"
 #include "json_rpc.h"
+#include "json_rpc_test.h"
 #include "celix_compiler.h"
 #include "celix_errno.h"
 #include "celix_err.h"
@@ -177,71 +178,12 @@ extern "C" {
         dynFunction_destroy(dynFunc);
     }
 
-
-
-    int add(void*, double a, double b, double *result) {
-        *result = a + b;
-        return 0;
-    }
-
     int addFailed(void*, double , double , double *) {
         return CELIX_CUSTOMER_ERROR_MAKE(0,1);// return customer error
     }
 
     int getName_example4(void*, char** result) {
         *result = strdup("allocatedInFunction");
-        return 0;
-    }
-
-    struct tst_seq {
-        uint32_t cap;
-        uint32_t len;
-        double *buf;
-    };
-
-
-    //StatsResult={DDD[D average min max input}
-    struct tst_StatsResult {
-        double average;
-        double min;
-        double max;
-        struct tst_seq input;
-    };
-
-
-    int stats(void*, struct tst_seq input, struct tst_StatsResult **out) {
-        assert(out != nullptr);
-        assert(*out == nullptr);
-        double total = 0.0;
-        unsigned int count = 0;
-        auto max = DBL_MIN;
-        auto min = DBL_MAX;
-
-        unsigned int i;
-        for (i = 0; i<input.len; i += 1) {
-            total += input.buf[i];
-            count += 1;
-            if (input.buf[i] > max) {
-                max = input.buf[i];
-            }
-            if (input.buf[i] < min) {
-                min = input.buf[i];
-            }
-        }
-
-        auto result = static_cast<tst_StatsResult *>(calloc(1, sizeof(tst_StatsResult)));
-        if(count>0) {
-		    result->average = total / count;
-        }
-        result->min = min;
-        result->max = max;
-        auto buf = static_cast<double *>(calloc(input.len, sizeof(double)));
-        memcpy(buf, input.buf, input.len * sizeof(double));
-        result->input.len = input.len;
-        result->input.cap = input.len;
-        result->input.buf = buf;
-
-        *out = result;
         return 0;
     }
 
@@ -342,28 +284,37 @@ extern "C" {
         rc = jsonRpc_call(intf, &serv, R"({)", &result);
         EXPECT_STREQ("Got json error: string or '}' expected near end of file", celix_err_popLastError());
         ASSERT_EQ(1, rc);
+        celix_err_resetErrors();
 
         rc = jsonRpc_call(intf, &serv, R"({"a": [1.0,2.0]})", &result);
         EXPECT_STREQ("Error getting method signature", celix_err_popLastError());
         ASSERT_EQ(1, rc);
+        celix_err_resetErrors();
 
         //request missing argument
         rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;"})", &result);
-        EXPECT_STREQ("Error getting arguments array", celix_err_popLastError());
+        EXPECT_STREQ("Error getting arguments array for stats([D)LStatsResult;", celix_err_popLastError());
         ASSERT_EQ(1, rc);
+        celix_err_resetErrors();
 
         //request non-array argument
         rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": "hello"})", &result);
-        EXPECT_STREQ("Error getting arguments array", celix_err_popLastError());
+        EXPECT_STREQ("Error getting arguments array for stats([D)LStatsResult;", celix_err_popLastError());
         ASSERT_EQ(1, rc);
+        celix_err_resetErrors();
 
         // argument number mismatch
-        //rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": []})", &result);
-        //ASSERT_EQ(1, rc);
+        rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": []})", &result);
+        ASSERT_EQ(1, rc);
+        EXPECT_STREQ("Wrong number of standard arguments for stats([D)LStatsResult;. Expected 1, got 0", celix_err_popLastError());
+        celix_err_resetErrors();
 
         //request argument type mismatch
         rc = jsonRpc_call(intf, &serv, R"({"m":"stats([D)LStatsResult;", "a": [1.0]})", &result);
         ASSERT_EQ(1, rc);
+        EXPECT_STREQ("Error deserializing argument 1 for stats([D)LStatsResult;", celix_err_popLastError());
+        EXPECT_STREQ("Expected json array type got '4'", celix_err_popLastError());
+        celix_err_resetErrors();
 
         dynInterface_destroy(intf);
     }
@@ -778,6 +729,24 @@ TEST_F(JsonRpcTests, callPre) {
     callTestPreAllocated();
 }
 
+TEST_F(JsonRpcTests, callPreWithMismatchedArgumentNumber) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/example1.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    char *result = nullptr;
+    tst_serv serv {nullptr, add, nullptr, nullptr, nullptr};
+
+    rc = jsonRpc_call(intf, &serv, R"({"m":"add(DD)D", "a": [1.0,2.0,3.0]})", &result);
+    EXPECT_NE(0, rc);
+    EXPECT_EQ(nullptr, result);
+    EXPECT_STREQ("Wrong number of standard arguments for add(DD)D. Expected 2, got 3", celix_err_popLastError());
+    dynInterface_destroy(intf);
+}
+
 TEST_F(JsonRpcTests, callFailedPre) {
     callFailedTestPreAllocated();
 }
@@ -785,7 +754,6 @@ TEST_F(JsonRpcTests, callFailedPre) {
 TEST_F(JsonRpcTests, callOut) {
     callTestOutput();
 }
-
 
 TEST_F(JsonRpcTests, callOutNullResult) {
     dyn_interface_type *intf = nullptr;
@@ -946,4 +914,22 @@ TEST_F(JsonRpcTests, callTestChar) {
 
 TEST_F(JsonRpcTests, callTestConstChar) {
     callTestConstChar();
+}
+
+TEST_F(JsonRpcTests, callWithTooManyArguments) {
+    dyn_interface_type *intf = nullptr;
+    FILE *desc = fopen("descriptors/invalids/methodWithTooManyArgs.descriptor", "r");
+    ASSERT_TRUE(desc != nullptr);
+    int rc = dynInterface_parse(desc, &intf);
+    ASSERT_EQ(0, rc);
+    fclose(desc);
+
+    char *result = nullptr;
+    tst_serv serv {nullptr, add, nullptr, nullptr, nullptr};
+
+    rc = jsonRpc_call(intf, &serv, R"({"m":"add(DDDDDDDDDDDDDDD)D", "a": [1.0,2.0]})", &result);
+    ASSERT_NE(0, rc);
+    EXPECT_EQ(nullptr, result);
+    EXPECT_STREQ("Too many arguments for add(DDDDDDDDDDDDDDD)D: 17 > 16", celix_err_popLastError());
+    dynInterface_destroy(intf);
 }

@@ -22,13 +22,15 @@
 #include "dyn_type.h"
 #include "dyn_interface.h"
 #include "dyn_type_common.h"
-#include "celix_compiler.h"
+#include "celix_cleanup.h"
 #include "celix_err.h"
 
 #include <jansson.h>
 #include <stdint.h>
 #include <string.h>
 #include <ffi.h>
+
+#define CELIX_JSON_RPC_MAX_ARGS     16
 
 static int OK = 0;
 static int ERROR = 1;
@@ -39,6 +41,51 @@ struct generic_service_layout {
     void* handle;
     gen_func_type methods[];
 };
+
+typedef struct celix_rpc_args {
+    const struct dyn_function_arguments_head* dynArgs;
+    void* args[CELIX_JSON_RPC_MAX_ARGS];
+}celix_rpc_args_t;
+
+static void celix_rpcArgs_cleanup(celix_rpc_args_t* args) {
+    const struct dyn_function_arguments_head* dynArgs = args->dynArgs;
+    if (dynArgs == NULL) {
+        return;
+    }
+    dyn_function_argument_type* entry = NULL;
+    TAILQ_FOREACH(entry, dynArgs, entries) {
+        const dyn_type* argType = dynType_realType(entry->type);
+        enum dyn_function_argument_meta meta = entry->argumentMeta;
+        if (meta == DYN_FUNCTION_ARGUMENT_META__STD) {
+            if (dynType_descriptorType(argType) == 't') {
+                const char* isConst = dynType_getMetaInfo(entry->type, "const");
+                if (isConst != NULL && strncmp("true", isConst, 5) == 0) {
+                    dynType_free(argType, args->args[entry->index]);
+                } else {
+                    //char* -> callee is now owner, no free for char seq needed
+                    //will free the actual pointer
+                    free(args->args[entry->index]);
+                }
+            } else {
+                dynType_free(argType, args->args[entry->index]);
+            }
+        } else if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
+            const dyn_type* subType = dynType_typedPointer_getTypedType(argType);
+            dynType_free(subType, *(void**)(args->args[entry->index]));
+        } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
+            const dyn_type* typedType = dynType_typedPointer_getTypedType(argType);
+            if (dynType_descriptorType(typedType) == 't') {
+                free(**(void***)args->args[entry->index]);
+            } else {
+                const dyn_type* typedTypedType = dynType_typedPointer_getTypedType(typedType);
+                dynType_free(typedTypedType, **(void***)args->args[entry->index]);
+            }
+        }
+    }
+    args->dynArgs = NULL;
+}
+
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_rpc_args_t, celix_rpcArgs_cleanup)
 
 int jsonRpc_call(const dyn_interface_type* intf, void* service, const char* request, char** out) {
     int status = OK;
@@ -57,7 +104,7 @@ int jsonRpc_call(const dyn_interface_type* intf, void* service, const char* requ
     }
     arguments = json_object_get(js_request, "a");
     if (arguments == NULL || !json_is_array(arguments)) {
-        celix_err_push("Error getting arguments array");
+        celix_err_pushf("Error getting arguments array for %s", sig);
         return ERROR;
     }
 
@@ -68,129 +115,83 @@ int jsonRpc_call(const dyn_interface_type* intf, void* service, const char* requ
     }
 
     struct generic_service_layout* serv = service;
-
-    const dyn_function_type* func = method->dynFunc;
-    int nrOfArgs = dynFunction_nrOfArguments(func);
-    void* args[nrOfArgs];
-
-    json_t* value = NULL;
-
-    int i;
-    int index = 0;
-
+    const struct dyn_function_arguments_head* dynArgs = dynFunction_arguments(method->dynFunc);
+    const dyn_function_argument_type* last = TAILQ_LAST(dynArgs, dyn_function_arguments_head);
+    int nrOfArgs = dynFunction_nrOfArguments(method->dynFunc);
+    if (nrOfArgs > CELIX_JSON_RPC_MAX_ARGS) {
+        celix_err_pushf("Too many arguments for %s: %d > %d", sig, nrOfArgs, CELIX_JSON_RPC_MAX_ARGS);
+        return ERROR;
+    }
+    celix_auto(celix_rpc_args_t) rpcArgs = { dynArgs, {0} };
     void* ptr = NULL;
     void* ptrToPtr = &ptr;
 
+    rpcArgs.args[0] = &serv->handle;
+    --nrOfArgs;
+    if (last->argumentMeta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
+        const dyn_type *subType = dynType_typedPointer_getTypedType(dynType_realType(last->type));
+        rpcArgs.args[last->index] = &ptr;
+        if ((status = dynType_alloc(subType, &ptr)) != OK) {
+            celix_err_pushf("Error allocating memory for pre-allocated output argument of %s", sig);
+            return ERROR;
+        }
+        --nrOfArgs;
+    } else if (last->argumentMeta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
+        rpcArgs.args[last->index] = &ptrToPtr;
+        --nrOfArgs;
+    }
+    if ((size_t)nrOfArgs != json_array_size(arguments)) {
+        celix_err_pushf("Wrong number of standard arguments for %s. Expected %d, got %zu",
+                        sig, nrOfArgs, json_array_size(arguments));
+        return ERROR;
+    }
     //setup and deserialize input
-    for (i = 0; i < nrOfArgs; ++i) {
-        const dyn_type* argType = dynType_realType(dynFunction_argumentTypeForIndex(func, i));
-        enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
-        if (meta == DYN_FUNCTION_ARGUMENT_META__STD) {
-            value = json_array_get(arguments, index++);
-            void* outPtr = NULL;
-            status = jsonSerializer_deserializeJson(argType, value, &outPtr);
-            args[i] = outPtr;
-        } else if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
-            void* inst = NULL;
-            const dyn_type *subType = dynType_typedPointer_getTypedType(argType);
-            dynType_alloc(subType, &inst);
-            ptr = inst;
-            args[i] = &ptr;
-        } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
-            args[i] = &ptrToPtr;
-        } else if (meta == DYN_FUNCTION_ARGUMENT_META__HANDLE) {
-            args[i] = &serv->handle;
+    dyn_function_argument_type* entry = NULL;
+    TAILQ_FOREACH(entry, dynArgs, entries) {
+        if (entry->argumentMeta != DYN_FUNCTION_ARGUMENT_META__STD) {
+            continue;
         }
-
+        status = jsonSerializer_deserializeJson(entry->type, json_array_get(arguments, entry->index-1), &(rpcArgs.args[entry->index]));
         if (status != OK) {
-            // FIXME: part of args uninitialized
-            break;
+            celix_err_pushf("Error deserializing argument %d for %s", entry->index, sig);
+            return status;
         }
     }
-    json_decref(celix_steal_ptr(js_request));
-
     ffi_sarg returnVal = 1;
-
-    if (status == OK) {
-        status = dynFunction_call(func, serv->methods[method->index], (void *) &returnVal, args);
-    }
+    (void)dynFunction_call(method->dynFunc, serv->methods[method->index], (void *) &returnVal, rpcArgs.args);
 
     int funcCallStatus = (int)returnVal;
-
-    //free input args
-    json_t* jsonResult = NULL;
-    for(i = 0; i < nrOfArgs; ++i) {
-        const dyn_type* argType = dynFunction_argumentTypeForIndex(func, i);
-        enum dyn_function_argument_meta meta = dynFunction_argumentMetaForIndex(func, i);
-        if (meta == DYN_FUNCTION_ARGUMENT_META__STD) {
-            if (dynType_descriptorType(argType) == 't') {
-                const char* isConst = dynType_getMetaInfo(argType, "const");
-                if (isConst != NULL && strncmp("true", isConst, 5) == 0) {
-                    dynType_free(argType, args[i]);
-                } else {
-                    //char* -> callee is now owner, no free for char seq needed
-                    //will free the actual pointer
-                    free(args[i]);
-                }
-            } else {
-                dynType_free(argType, args[i]);
-            }
+    //serialize output
+    json_auto_t* jsonResult = NULL;
+    if (funcCallStatus == 0) {
+        const dyn_type* argType = dynType_realType(last->type);
+        if (last->argumentMeta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
+            status = jsonSerializer_serializeJson(argType, rpcArgs.args[last->index], &jsonResult);
+        } else if (last->argumentMeta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
+            status = jsonSerializer_serializeJson(dynType_typedPointer_getTypedType(argType), (void*) &ptr, &jsonResult);
         }
-    }
-
-    //serialize and free output
-    for (i = 0; i < nrOfArgs; i += 1) {
-        const dyn_type* argType = dynType_realType(dynFunction_argumentTypeForIndex(func, i));
-        enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
-        if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
-            if (funcCallStatus == 0 && status == OK) {
-                status = jsonSerializer_serializeJson(argType, args[i], &jsonResult);
-            }
-            const dyn_type* subType = dynType_typedPointer_getTypedType(argType);
-            dynType_free(subType, ptr);
-        } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
-            const dyn_type* typedType = NULL;
-            typedType = dynType_typedPointer_getTypedType(argType);
-            if (funcCallStatus == 0 && status == OK) {
-                status = jsonSerializer_serializeJson(typedType, (void*) &ptr, &jsonResult);
-            }
-            if (dynType_descriptorType(typedType) == 't') {
-                free(ptr);
-            } else {
-                const dyn_type* typedTypedType = dynType_typedPointer_getTypedType(typedType);
-                dynType_free(typedTypedType, ptr);
-            }
-        }
-
         if (status != OK) {
-            break;
+            celix_err_pushf("Error serializing result for %s", sig);
+            return status;
         }
     }
+    celix_rpcArgs_cleanup(&rpcArgs);
 
-    char* response = NULL;
-    if (status == OK) {
-        json_t* payload = json_object();
-        if (funcCallStatus == 0) {
-            if (jsonResult == NULL) {
-                //ignore -> no result
-            } else {
-                json_object_set_new_nocheck(payload, "r", jsonResult);
-            }
-        } else {
-            json_object_set_new_nocheck(payload, "e", json_integer(funcCallStatus));
+    json_auto_t* payload = json_object();
+    if (funcCallStatus == 0) {
+        if (jsonResult != NULL) {
+            status = json_object_set_new_nocheck(payload, "r", celix_steal_ptr(jsonResult));
         }
-        //use JSON_COMPACT to reduce the size of the JSON string.
-        response = json_dumps(payload, JSON_COMPACT | JSON_ENCODE_ANY);
-        json_decref(payload);
-    }
-
-    if (status == OK) {
-        *out = response;
     } else {
-        free(response);
+        status = json_object_set_new_nocheck(payload, "e", json_integer(funcCallStatus));
     }
-
-    return status;
+    if (status != 0)  {
+        celix_err_pushf("Error generating response payload for %s", sig);
+        return ERROR;
+    }
+    //use JSON_COMPACT to reduce the size of the JSON string.
+    *out = json_dumps(payload, JSON_COMPACT | JSON_ENCODE_ANY);
+    return (*out != NULL) ? OK : ERROR;
 }
 
 int jsonRpc_prepareInvokeRequest(const dyn_function_type* func, const char* id, void* args[], char** out) {

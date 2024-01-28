@@ -26,6 +26,7 @@ add_executable(test_dfi
 		src/json_serializer_tests.cpp
 		src/json_rpc_tests.cpp
 		src/dyn_common_tests.cc
+		src/json_rpc_test.c
 )
 
 
@@ -47,6 +48,7 @@ if (EI_TESTS)
 			src/dyn_function_ei_tests.cc
 			src/json_serializer_ei_tests.cc
 			src/json_rpc_ei_tests.cc
+			src/json_rpc_test.c
 	)
 	target_link_libraries(test_dfi_with_ei PRIVATE
 			dfi_cut
