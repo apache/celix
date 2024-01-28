@@ -60,6 +60,13 @@ extern "C" {
 
         checkInterfaceVersion(dynIntf,"1.0.0");
 
+        auto method = dynInterface_findMethod(dynIntf, "add(DD)D");
+        EXPECT_EQ(DYN_FUNCTION_ARGUMENT_META__HANDLE, dynFunction_argumentMetaForIndex(method->dynFunc, 0));
+        EXPECT_EQ(DYN_FUNCTION_ARGUMENT_META__STD, dynFunction_argumentMetaForIndex(method->dynFunc, 1));
+        EXPECT_EQ(DYN_FUNCTION_ARGUMENT_META__STD, dynFunction_argumentMetaForIndex(method->dynFunc, 2));
+        EXPECT_EQ(DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT, dynFunction_argumentMetaForIndex(method->dynFunc, 3));
+        EXPECT_EQ(DYN_FUNCTION_ARGUMENT_META__STD, dynFunction_argumentMetaForIndex(method->dynFunc, 4));
+
         const char *annVal = NULL;
         status = dynInterface_getAnnotationEntry(dynIntf, "classname", &annVal);
         ASSERT_EQ(0, status);
