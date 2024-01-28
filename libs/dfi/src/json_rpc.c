@@ -122,9 +122,9 @@ int jsonRpc_call(const dyn_interface_type* intf, void* service, const char* requ
         celix_err_pushf("Too many arguments for %s: %d > %d", sig, nrOfArgs, CELIX_JSON_RPC_MAX_ARGS);
         return ERROR;
     }
-    celix_auto(celix_rpc_args_t) rpcArgs = { dynArgs, {0} };
     void* ptr = NULL;
     void* ptrToPtr = &ptr;
+    celix_auto(celix_rpc_args_t) rpcArgs = { dynArgs, {0} };
 
     rpcArgs.args[0] = &serv->handle;
     --nrOfArgs;
