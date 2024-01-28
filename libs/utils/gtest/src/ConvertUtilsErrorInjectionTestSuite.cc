@@ -34,6 +34,7 @@ public:
         celix_ei_expect_celix_arrayList_addLong(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_open_memstream(nullptr, 0, nullptr);
         celix_ei_expect_fputs(nullptr, 0, 0);
+        celix_ei_expect_fputc(nullptr, 0, 0);
 
         celix_err_printErrors(stderr, nullptr, nullptr);
     }
@@ -116,4 +117,29 @@ TEST_F(ConvertUtilsWithErrorInjectionTestSuite, LongArrayToStringTest) {
     result = celix_utils_longArrayListToString(list);
     //Then the result is null
     EXPECT_EQ(nullptr, result);
+}
+
+TEST_F(ConvertUtilsWithErrorInjectionTestSuite, StringToStringArrayTest) {
+    // Given an error injection for open_memstream (on the second call)
+    celix_ei_expect_open_memstream((void*)celix_utils_convertStringToStringArrayList, 1, nullptr, 2);
+    // When calling celix_utils_convertStringToStringArrayList
+    celix_array_list_t* result;
+    celix_status_t status = celix_utils_convertStringToStringArrayList("a,b,c", nullptr, &result);
+    // Then the result is null and the status is ENOMEM
+    EXPECT_EQ(status, CELIX_ENOMEM);
+    EXPECT_EQ(nullptr, result);
+
+    // Given an error injection for fputc
+    celix_ei_expect_fputc((void*)celix_utils_convertStringToStringArrayList, 1, EOF);
+    // When calling celix_utils_convertStringToStringArrayList
+    status = celix_utils_convertStringToStringArrayList("a,b,c", nullptr, &result);
+    // Then the result is null and the status is ENOMEM
+    EXPECT_EQ(status, CELIX_ENOMEM);
+
+    // Given an error injection for fputc (on writing an escaped char)
+    celix_ei_expect_fputc((void*)celix_utils_convertStringToStringArrayList, 1, EOF);
+    // When calling celix_utils_convertStringToStringArrayList
+    status = celix_utils_convertStringToStringArrayList(R"(\\)", nullptr, &result);
+    // Then the result is null and the status is ENOMEM
+    EXPECT_EQ(status, CELIX_ENOMEM);
 }

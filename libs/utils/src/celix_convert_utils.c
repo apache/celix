@@ -27,8 +27,10 @@
 
 #include "celix_array_list.h"
 #include "celix_err.h"
-#include "celix_stdio_cleanup.h"
 #include "celix_utils.h"
+
+#define ESCAPE_CHAR '\\'
+#define SEPARATOR_CHAR ','
 
 static bool celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(const char* endptr) {
     bool result = false;
@@ -116,8 +118,6 @@ celix_utils_convertStringToVersion(const char* val, const celix_version_t* defau
     if (!val && defaultValue) {
         *version = celix_version_copy(defaultValue);
         return *version ? CELIX_ILLEGAL_ARGUMENT : CELIX_ENOMEM;
-    } else if (!val) {
-        return CELIX_ILLEGAL_ARGUMENT;
     }
 
     celix_status_t status = celix_version_parse(val, version);
@@ -158,23 +158,50 @@ static celix_status_t celix_utils_convertStringToArrayList(const char* val,
         return CELIX_ENOMEM;
     }
 
-    char buf[256];
-    char* valCopy = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s", val);
-    if (!valCopy) {
-        return CELIX_ENOMEM;
+    char* buf = NULL;
+    size_t bufSize = 0;
+    FILE* entryStream = NULL;
+    celix_status_t status = CELIX_SUCCESS;
+    size_t max = strlen(val);
+    for (size_t i = 0; i <= max; ++i) {
+        if (!entryStream) {
+            entryStream = open_memstream(&buf, &bufSize);
+            if (!entryStream) {
+                 return CELIX_ENOMEM;
+            }
+        }
+        if (val[i] == ESCAPE_CHAR) {
+            // escape character, next char must be escapeChar or separatorChar
+            if (i + 1 < max && (val[i + 1] == ESCAPE_CHAR || val[i + 1] == SEPARATOR_CHAR)) {
+                // write escaped char
+                i += 1;
+                int rc = fputc(val[i], entryStream);
+                if (rc == EOF) {
+                    return CELIX_ENOMEM;
+                }
+                continue;
+            } else {
+                // invalid escape (ending with escapeChar or followed by an invalid char)
+                status = CELIX_ILLEGAL_ARGUMENT;
+                break;
+            }
+        } else if (val[i] == SEPARATOR_CHAR || val[i] == '\0') {
+            //end of entry
+            fclose(entryStream);
+            entryStream = NULL;
+            status = addEntry(result, buf);
+            if (status == CELIX_ENOMEM) {
+                return status;
+            }
+        } else {
+            //normal char
+            int rc = fputc(val[i], entryStream);
+            if (rc == EOF) {
+                return CELIX_ENOMEM;
+            }
+        }
     }
 
-    celix_status_t status = CELIX_SUCCESS;
-    char* savePtr = NULL;
-    char* token = strtok_r(valCopy, ",", &savePtr);
-    while (token != NULL) {
-        status = addEntry(result, token);
-        if (status != CELIX_SUCCESS) {
-            break;
-        }
-        token = strtok_r(NULL, ",", &savePtr);
-    }
-    celix_utils_freeStringIfNotEqual(buf, valCopy);
 
     if (status == CELIX_SUCCESS) {
         *list = celix_steal_ptr(result);
@@ -220,7 +247,7 @@ celix_status_t celix_utils_convertStringToDoubleArrayList(const char* val,
 
 celix_status_t celix_utils_addBoolEntry(celix_array_list_t* list, const char* entry) {
     bool converted;
-    bool b = celix_utils_convertStringToBool(entry, 0.0, &converted);
+    bool b = celix_utils_convertStringToBool(entry, true, &converted);
     if (!converted) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
@@ -289,7 +316,7 @@ static char* celix_utils_arrayListToString(const celix_array_list_t* list,
         celix_array_list_entry_t entry = celix_arrayList_getEntry(list, i);
         int rc = printCb(stream, &entry);
         if (rc >= 0 && i < size - 1) {
-            rc = fputs(", ", stream);
+            rc = fputs(",", stream);
         }
         if (rc < 0) {
             celix_err_push("Cannot print to stream");
@@ -327,7 +354,21 @@ char* celix_utils_boolArrayListToString(const celix_array_list_t* list) {
 }
 
 static int celix_utils_printStrEntry(FILE* stream, const celix_array_list_entry_t* entry) {
-    return fprintf(stream, "%s", (const char*)entry->voidPtrVal);
+    const char* str = entry->strVal;
+    int rc = 0;
+    for (int i = 0; str[i] != '\0'; ++i) {
+        if (str[i] == ESCAPE_CHAR || str[i] == SEPARATOR_CHAR) {
+            //both escape and separator char need to be escaped
+            rc = fputc(ESCAPE_CHAR, stream);
+        }
+        if (rc != EOF) {
+            rc = fputc(str[i], stream);
+        }
+        if (rc == EOF) {
+            break;
+        }
+    }
+    return rc;
 }
 
 char* celix_utils_stringArrayListToString(const celix_array_list_t* list) {

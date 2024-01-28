@@ -41,7 +41,7 @@ extern "C" {
 #endif
 
 typedef union celix_array_list_entry {
-    void *voidPtrVal;
+    void* voidPtrVal;
     const char* strVal;
     int intVal;
     long int longVal;

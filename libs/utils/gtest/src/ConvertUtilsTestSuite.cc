@@ -30,7 +30,7 @@ class ConvertUtilsTestSuite : public ::testing::Test {
   public:
     ~ConvertUtilsTestSuite() noexcept override { celix_err_printErrors(stderr, nullptr, nullptr); }
 
-    void checkVersion(const celix_version_t* version, int major, int minor, int micro, const char* qualifier) {
+    static void checkVersion(const celix_version_t* version, int major, int minor, int micro, const char* qualifier) {
         EXPECT_TRUE(version != nullptr);
         if (version) {
             EXPECT_EQ(major, celix_version_getMajor(version));
@@ -114,8 +114,9 @@ TEST_F(ConvertUtilsTestSuite, ConvertToDoubleTest) {
     EXPECT_EQ(1.0, result);
     EXPECT_FALSE(converted);
 
-    //test for a string with a invalid number
+    //test for a string with an invalid number
     result = celix_utils_convertStringToDouble("10.5A", 0, &converted);
+    EXPECT_EQ(0, result);
     EXPECT_FALSE(converted);
 
     //test for a string with a number and a negative sign
@@ -139,6 +140,7 @@ TEST_F(ConvertUtilsTestSuite, ConvertToDoubleTest) {
 
     //test for a convert with an invalid double value with trailing info
     result = celix_utils_convertStringToDouble("11.1.2", 0, &converted);
+    EXPECT_EQ(0, result);
     EXPECT_FALSE(converted);
 
     //test for a convert with a double value with trailing whitespaces
@@ -194,16 +196,17 @@ TEST_F(ConvertUtilsTestSuite, ConvertToBoolTest) {
     EXPECT_EQ(true, result);
 
     //test for a convert with a bool value with trailing chars
-    result = celix_utils_convertStringToBool("true and ok", 0, &converted);
+    result = celix_utils_convertStringToBool("true and ok", false, &converted);
+    EXPECT_FALSE(result);
     EXPECT_FALSE(converted);
 
     //test for a convert with a bool value with trailing whitespaces
-    result = celix_utils_convertStringToBool("true \t\n", 0, &converted);
+    result = celix_utils_convertStringToBool("true \t\n", false, &converted);
     EXPECT_TRUE(result);
     EXPECT_TRUE(converted);
 
     //test for a convert with a bool value with starting and trailing whitespaces
-    result = celix_utils_convertStringToBool("\t false \t\n", 0, &converted);
+    result = celix_utils_convertStringToBool("\t false \t\n", false, &converted);
     EXPECT_FALSE(result);
     EXPECT_TRUE(converted);
 
@@ -345,7 +348,7 @@ TEST_F(ConvertUtilsTestSuite, LongArrayToStringTest) {
     celix_arrayList_addLong(list, 3L);
 
     char* result = celix_utils_longArrayListToString(list);
-    EXPECT_STREQ("1, 2, 3", result);
+    EXPECT_STREQ("1,2,3", result);
     free(result);
 
     celix_autoptr(celix_array_list_t) emptyList = celix_arrayList_create();
@@ -415,7 +418,7 @@ TEST_F(ConvertUtilsTestSuite, BoolArrayToStringTest) {
     celix_arrayList_addBool(list, true);
 
     char* result = celix_utils_boolArrayListToString(list);
-    EXPECT_STREQ("true, false, true", result);
+    EXPECT_STREQ("true,false,true", result);
     free(result);
 
     // NOTE celix_utils_boolArrayListToString uses the same generic function as is used in
@@ -434,6 +437,33 @@ TEST_F(ConvertUtilsTestSuite, ConvertToStringArrayList) {
     EXPECT_STREQ("c", (char*)celix_arrayList_get(result, 2));
     celix_arrayList_destroy(result);
 
+    convertState = celix_utils_convertStringToStringArrayList(R"(a,b\\\,,c)", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertState);
+    EXPECT_TRUE(result != nullptr);
+    EXPECT_EQ(3, celix_arrayList_size(result));
+    EXPECT_STREQ("a", celix_arrayList_getString(result, 0));
+    EXPECT_STREQ("b\\,", celix_arrayList_getString(result, 1));
+    EXPECT_STREQ("c", celix_arrayList_getString(result, 2));
+    celix_arrayList_destroy(result);
+
+    convertState = celix_utils_convertStringToStringArrayList("a,,b,", nullptr, &result); //4 entries, second and last are empty strings
+    EXPECT_EQ(CELIX_SUCCESS, convertState);
+    EXPECT_TRUE(result != nullptr);
+    EXPECT_EQ(4, celix_arrayList_size(result));
+    EXPECT_STREQ("a", celix_arrayList_getString(result, 0));
+    EXPECT_STREQ("", celix_arrayList_getString(result, 1));
+    EXPECT_STREQ("b", celix_arrayList_getString(result, 2));
+    EXPECT_STREQ("", celix_arrayList_getString(result, 3));
+    celix_arrayList_destroy(result);
+
+    //invalid escape sequence
+    convertState = celix_utils_convertStringToStringArrayList(R"(a,b\c,d)", nullptr, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
+    EXPECT_TRUE(result == nullptr);
+    convertState = celix_utils_convertStringToStringArrayList(R"(a,b,c\)", nullptr, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
+    EXPECT_TRUE(result == nullptr);
+
     // NOTE celix_utils_convertStringToStringArrayList uses the same generic function as is used in
     // celix_utils_convertStringToLongArrayList and because celix_utils_convertStringToLongArrayList is already
     // tested, we only test a few cases here.
@@ -441,17 +471,29 @@ TEST_F(ConvertUtilsTestSuite, ConvertToStringArrayList) {
 
 TEST_F(ConvertUtilsTestSuite, StringArrayToStringTest) {
     celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
-    celix_arrayList_add(list, (void*)"a");
-    celix_arrayList_add(list, (void*)"b");
-    celix_arrayList_add(list, (void*)"c");
+    celix_arrayList_addString(list, "a");
+    celix_arrayList_addString(list, "b");
+    celix_arrayList_addString(list, "c");
 
     char* result = celix_utils_stringArrayListToString(list);
-    EXPECT_STREQ("a, b, c", result);
+    EXPECT_STREQ("a,b,c", result);
     free(result);
 
-    // NOTE celix_utils_stringArrayListToString uses the same generic function as is used in
-    // celix_utils_longArrayListToString and because celix_utils_longArrayListToString is already
-    // tested, we only test a few cases here.
+    celix_arrayList_addString(list, "d\\,");
+    celix_arrayList_addString(list, "e");
+    result = celix_utils_stringArrayListToString(list);
+    EXPECT_STREQ(R"(a,b,c,d\\\,,e)", result);
+
+    //Check if the result can be converted back to an equal list
+    celix_array_list_t* listResult;
+    celix_status_t convertState = celix_utils_convertStringToStringArrayList(result, nullptr, &listResult);
+    EXPECT_EQ(CELIX_SUCCESS, convertState);
+    EXPECT_TRUE(listResult != nullptr);
+
+    EXPECT_EQ(celix_arrayList_size(list), celix_arrayList_size(listResult));
+    for (int i = 0; i < celix_arrayList_size(list); ++i) {
+        EXPECT_STREQ((char*)celix_arrayList_get(list, i), (char*)celix_arrayList_get(listResult, i));
+    }
 }
 
 TEST_F(ConvertUtilsTestSuite, ConvertToVersionArrayList) {
@@ -480,7 +522,7 @@ TEST_F(ConvertUtilsTestSuite, VersionArrayToStringTest) {
     celix_arrayList_add(list, v3);
 
     char* result = celix_utils_versionArrayListToString(list);
-    EXPECT_STREQ("1.2.3, 2.3.4, 3.4.5.qualifier", result);
+    EXPECT_STREQ("1.2.3,2.3.4,3.4.5.qualifier", result);
     free(result);
 
     // NOTE celix_utils_versionArrayListToString uses the same generic function as is used in

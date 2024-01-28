@@ -168,6 +168,9 @@ char* celix_utils_boolArrayListToString(const celix_array_list_t* list);
  * The expected format of the string is a "," separated list of strings. Whitespace is preserved.
  * String entries are copied and the returned list will be configured to call free when entries are removed.
  *
+ * The escaped character is "\" and can be used to escape "," and "\" characters.
+ * E.g. "a,b\,\\,c" will be converted to "a", "b,\" and "c".
+ *
  * @param[in] val The string to convert.
  * @param[in] defaultValue The default value if the string is not a valid "," separated list of strings.
  *                         Note that the defaultValue is copied if the string is not a valid list of string entries
