@@ -18,18 +18,19 @@
  */
 
 #include "json_rpc_test.h"
+#include "celix_compiler.h"
 #include <assert.h>
 #include <float.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
-int add(void*, double a, double b, double *result) {
+int add(void* handle CELIX_UNUSED, double a, double b, double *result) {
     *result = a + b;
     return 0;
 }
 
-int stats(void*, struct tst_seq input, struct tst_StatsResult **out) {
+int stats(void* handle CELIX_UNUSED, struct tst_seq input, struct tst_StatsResult **out) {
     assert(out != NULL);
     assert(*out == NULL);
     double total = 0.0;
