@@ -74,28 +74,27 @@ static int dynInterface_checkInterface(dyn_interface_type* intf) {
             return ERROR;
         }
         const struct dyn_function_arguments_head* args = dynFunction_arguments(mEntry->dynFunc);
-        dyn_function_argument_type* argEntry = TAILQ_FIRST(args);
-        if (argEntry == NULL || argEntry->argumentMeta != DYN_FUNCTION_ARGUMENT_META__HANDLE) {
+        const dyn_function_argument_type* first = TAILQ_FIRST(args);
+        const dyn_function_argument_type* last = TAILQ_LAST(args, dyn_function_arguments_head);
+        if (first == NULL || first->argumentMeta != DYN_FUNCTION_ARGUMENT_META__HANDLE) {
             celix_err_pushf("Parse Error. The first argument must be handle for method %s (%d)", mEntry->id, mEntry->index);
             return ERROR;
         }
-        size_t nbOfOutputArgs = 0;
-        for (argEntry = TAILQ_NEXT(argEntry, entries); argEntry != NULL; argEntry = TAILQ_NEXT(argEntry, entries)) {
-            if (argEntry->argumentMeta == DYN_FUNCTION_ARGUMENT_META__OUTPUT ||
-                argEntry->argumentMeta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
-                nbOfOutputArgs += 1;
-            }
-        }
-        if (nbOfOutputArgs > 1) {
-            celix_err_pushf("Parse Error. Only one output argument is allowed for method %s (%d)", mEntry->id, mEntry->index);
-            return ERROR;
-        } else if (nbOfOutputArgs > 0) {
-            argEntry = TAILQ_LAST(args, dyn_function_arguments_head);
-            if (argEntry->argumentMeta != DYN_FUNCTION_ARGUMENT_META__OUTPUT &&
-                argEntry->argumentMeta != DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
-                celix_err_pushf("Parse Error. Output argument is only allowed as the last argument for method %s (%d)",
-                                mEntry->id, mEntry->index);
-                return ERROR;
+        const dyn_function_argument_type* argEntry = NULL;
+        TAILQ_FOREACH(argEntry, args, entries) {
+            if (argEntry->argumentMeta == DYN_FUNCTION_ARGUMENT_META__HANDLE) {
+                if (argEntry != first) {
+                    celix_err_pushf("Parse Error. Handle argument is only allowed as the first argument for method %s (%d)",
+                                    mEntry->id, mEntry->index);
+                    return ERROR;
+                }
+            } else if (argEntry->argumentMeta == DYN_FUNCTION_ARGUMENT_META__OUTPUT ||
+                       argEntry->argumentMeta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
+                if (argEntry != last) {
+                    celix_err_pushf("Parse Error. Output argument is only allowed as the last argument for method %s (%d)",
+                                    mEntry->id, mEntry->index);
+                    return ERROR;
+                }
             }
         }
     }

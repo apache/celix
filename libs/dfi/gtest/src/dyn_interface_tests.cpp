@@ -178,12 +178,21 @@ extern "C" {
         fclose(desc); desc=NULL;
         celix_err_resetErrors();
 
+        /* Method with multiple handles */
+        desc = fopen("descriptors/invalids/methodWithMultipleHandles.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        ASSERT_NE(0, status);
+        EXPECT_STREQ("Parse Error. Handle argument is only allowed as the first argument for method add(DD)D (0)", celix_err_popLastError());
+        fclose(desc); desc=NULL;
+        celix_err_resetErrors();
+
         /* Method with multiple PreOut arguments */
         desc = fopen("descriptors/invalids/multiPreOutArgs.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_NE(0, status);
-        EXPECT_STREQ("Parse Error. Only one output argument is allowed for method multiPreOut(V)Di (0)", celix_err_popLastError());
+        EXPECT_STREQ("Parse Error. Output argument is only allowed as the last argument for method multiPreOut(V)Di (0)", celix_err_popLastError());
         fclose(desc); desc=NULL;
         celix_err_resetErrors();
 
@@ -192,7 +201,7 @@ extern "C" {
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
         ASSERT_NE(0, status);
-        EXPECT_STREQ("Parse Error. Only one output argument is allowed for method multiOut(V)Di (0)", celix_err_popLastError());
+        EXPECT_STREQ("Parse Error. Output argument is only allowed as the last argument for method multiOut(V)Di (0)", celix_err_popLastError());
         fclose(desc); desc=NULL;
         celix_err_resetErrors();
 
