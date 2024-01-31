@@ -68,7 +68,7 @@ TEST_F(DynCommonErrorInjectionTestSuite, ParseNameErrors) {
     // fail to close name stream
     celix_ei_expect_fclose((void *) dynCommon_parseName, 1, EOF);
     ASSERT_EQ(dynCommon_parseName(stream, &result), 1);
-    msg = "Error creating mem stream for name. ";
+    msg = "Error closing mem stream for name. ";
     msg += strerror(ENOSPC);
     ASSERT_STREQ(msg.c_str(), celix_err_popLastError());
 }
