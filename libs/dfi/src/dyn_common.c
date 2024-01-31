@@ -56,7 +56,7 @@ int dynCommon_parseNameAlsoAccept(FILE* stream, const char* acceptedChars, char*
         ungetc(c, stream);
     }
     if(fclose(celix_steal_ptr(name)) != 0) {
-        celix_err_pushf("Error creating mem stream for name. %s", strerror(errno));
+        celix_err_pushf("Error closing mem stream for name. %s", strerror(errno));
         return ERROR;
     }
 

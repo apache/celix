@@ -377,7 +377,7 @@ CELIX_DFI_EXPORT void dynType_simple_setValue(const dyn_type* type, void* inst, 
  * Any non-pointer simple type is trivial, while typed/untyped pointer is non-trivial.
  * A sequence is non-trivial since it contains a pointer to the buffer.
  * Text is nontrivial.
- * A complex is trivial iff each field is trivial.
+ * A complex is trivial if each field is trivial.
  */
 CELIX_DFI_EXPORT bool dynType_isTrivial(const dyn_type* type);
 
