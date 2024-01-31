@@ -74,22 +74,20 @@ static int dynCommon_parseNameValue(FILE* stream, char** outName, char** outValu
     int status;
     celix_autofree char* name = NULL;
     celix_autofree char* value = NULL;
-    do {
-        if ((status = dynCommon_parseName(stream, &name)) != OK) {
-            break;
-        }
-        if ((status = dynCommon_eatChar(stream, '=')) != OK) {
-            break;
-        }
-        const char *valueAcceptedChars = ".<>{}[]?;:~!@#$%^&*()_+-=,./\\'\"";
-        //NOTE use different more lenient function e.g. only stop at '\n' ?
-        if ((status = dynCommon_parseNameAlsoAccept(stream, valueAcceptedChars, &value)) != OK) {
-            break;
-        }
-        *outName = celix_steal_ptr(name);
-        *outValue = celix_steal_ptr(value);
-    } while(false);
-    return status;
+    if ((status = dynCommon_parseName(stream, &name)) != OK) {
+        return status;
+    }
+    if ((status = dynCommon_eatChar(stream, '=')) != OK) {
+        return status;
+    }
+    const char *valueAcceptedChars = ".<>{}[]?;:~!@#$%^&*()_+-=,./\\'\"";
+    //NOTE use different more lenient function e.g. only stop at '\n' ?
+    if ((status = dynCommon_parseNameAlsoAccept(stream, valueAcceptedChars, &value)) != OK) {
+        return status;
+    }
+    *outName = celix_steal_ptr(name);
+    *outValue = celix_steal_ptr(value);
+    return OK;
 }
 
 int dynCommon_eatChar(FILE* stream, int expected) {

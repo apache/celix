@@ -45,9 +45,9 @@ typedef struct _dyn_interface_type dyn_interface_type;
 
 TAILQ_HEAD(methods_head, method_entry);
 struct method_entry {
-    int index;
-    char* id;
-    dyn_function_type* dynFunc;
+    int index; ///< The index of the method in the interface
+    char* id; ///< The signature of the method
+    dyn_function_type* dynFunc; ///< The function type of the method
 
     TAILQ_ENTRY(method_entry) entries; 
 };
@@ -141,7 +141,7 @@ CELIX_DFI_EXPORT int dynInterface_nrOfMethods(const dyn_interface_type* intf);
  * The dynamic interface type instance is the owner of the returned method_entry structure and it should not be freed.
  *
  * @param[in] intf The dynamic interface type instance.
- * @param[in] id The id of the method to find.
+ * @param[in] id The id of the method to find, which is currently the signature of the method.
  * @return The method_entry structure for the given method id, or NULL if no matching method is found.
  */
 CELIX_DFI_EXPORT const struct method_entry* dynInterface_findMethod(const dyn_interface_type* intf, const char* id);

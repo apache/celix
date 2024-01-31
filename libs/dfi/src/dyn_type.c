@@ -177,6 +177,8 @@ static int dynType_parseAny(FILE* stream, dyn_type* type) {
             status = dynType_parseMetaInfo(stream, type);
             if (status == OK) {
                 status = dynType_parseAny(stream, type);
+            } else {
+                celix_err_push("Failed to parse meta properties");
             }
             break;
         default :
@@ -188,39 +190,29 @@ static int dynType_parseAny(FILE* stream, dyn_type* type) {
 }
 
 static int dynType_parseMetaInfo(FILE* stream, dyn_type* type) {
-    int status = OK;
     celix_autofree char* name = NULL;
     celix_autofree char* value = NULL;
 
     if (dynCommon_parseName(stream, &name) != OK) {
-        status = PARSE_ERROR;
-        goto bail_out;
+        return PARSE_ERROR;
     }
     if (dynCommon_eatChar(stream, '=') != OK) {
-        status = PARSE_ERROR;
-        goto bail_out;
+        return PARSE_ERROR;
     }
     if (dynCommon_parseName(stream, &value) != OK) {
-        status = PARSE_ERROR;
-        goto bail_out;
+        return PARSE_ERROR;
     }
     if (dynCommon_eatChar(stream, ';') != OK) {
-        status = PARSE_ERROR;
-        goto bail_out;
+        return PARSE_ERROR;
     }
     struct meta_entry *entry = calloc(1, sizeof(*entry));
     if (entry == NULL) {
-        status = MEM_ERROR;
-        goto bail_out;
+        return MEM_ERROR;
     }
     entry->name = celix_steal_ptr(name);
     entry->value = celix_steal_ptr(value);
     TAILQ_INSERT_TAIL(&type->metaProperties, entry, entries);
     return OK;
-
-bail_out:
-    celix_err_push("Failed to parse meta properties");
-    return status;
 }
 
 static int dynType_parseText(FILE* stream, dyn_type* type) {
