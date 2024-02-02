@@ -22,12 +22,22 @@
 #include <errno.h>
 
 extern "C" {
-char* __real_strndup(const char* s, size_t n);
+char *__real_strndup(const char *s, size_t n);
 CELIX_EI_DEFINE(strndup, char*)
-char* __wrap_strndup(const char* s, size_t n) {
+char *__wrap_strndup(const char *s, size_t n) {
     errno = ENOMEM;
     CELIX_EI_IMPL(strndup);
     errno = 0;
     return __real_strndup(s, n);
 }
+
+char *__real_strdup(const char *s);
+CELIX_EI_DEFINE(strdup, char*)
+char *__wrap_strdup(const char *s) {
+    errno = ENOMEM;
+    CELIX_EI_IMPL(strdup);
+    errno = 0;
+    return __real_strdup(s);
+}
+
 }

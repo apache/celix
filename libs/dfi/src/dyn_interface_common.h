@@ -21,6 +21,7 @@
 #define _DYN_INTERFACE_COMMON_H_
 
 #include "dyn_interface.h"
+#include "dyn_descriptor.h"
 
 #include <strings.h>
 #include <stdlib.h>
@@ -33,11 +34,8 @@ extern "C" {
 #endif
 
 struct _dyn_interface_type {
-    struct namvals_head header;
-    struct namvals_head annotations;
-    struct types_head types;
+    CELIX_DESCRIPTOR_FIELDS
     struct methods_head methods;
-    celix_version_t* version;
 };
 
 #ifdef __cplusplus

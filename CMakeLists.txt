@@ -221,7 +221,10 @@ install(EXPORT celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE Target
 install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets COMPONENT cmake)
 
 #install celix cmake modules
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/ DESTINATION share/celix/cmake/Modules)
+option(INSTALL_FIND_MODULES "Whether to install Find modules defined by Celix" ON)
+if (INSTALL_FIND_MODULES)
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/ DESTINATION share/celix/cmake/Modules)
+endif ()
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_celix/ DESTINATION share/celix/cmake/cmake_celix)
 
 file(GENERATE

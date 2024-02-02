@@ -23,6 +23,5 @@ target_link_libraries(dfi_ei PUBLIC Celix::error_injector Celix::dfi)
 target_link_options(dfi_ei INTERFACE
         LINKER:--wrap,dynFunction_createClosure
         LINKER:--wrap,jsonRpc_prepareInvokeRequest
-        LINKER:--wrap,dynInterface_getVersionString
 )
 add_library(Celix::dfi_ei ALIAS dfi_ei)

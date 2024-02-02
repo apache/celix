@@ -29,6 +29,7 @@
 #include <sys/uio.h>
 #include <jansson.h>
 #include <assert.h>
+#include <string.h>
 
 struct rsa_json_rpc_endpoint {
     celix_bundle_context_t* ctx;
@@ -172,13 +173,7 @@ static void rsaJsonRpcEndpoint_addSvcWithOwner(void *handle, void *service,
     }
 
     // Check version
-    char *intfVersion = NULL;
-    int ret = dynInterface_getVersionString(intfType, &intfVersion);
-    if (ret != 0) {
-        celix_logHelper_logTssErrors(endpoint->logHelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_error(endpoint->logHelper, "Endpoint: Error getting interface version from the descriptor for %s.", serviceName);
-        return;
-    }
+    const char* intfVersion = dynInterface_getVersionString(intfType);
     const char *serviceVersion = celix_properties_get(endpoint->endpointDesc->properties,CELIX_FRAMEWORK_SERVICE_VERSION, NULL);
     if (serviceVersion == NULL) {
         celix_logHelper_error(endpoint->logHelper, "Endpoint: Error getting service version for %s.", serviceName);

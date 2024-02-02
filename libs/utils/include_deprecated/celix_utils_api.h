@@ -31,9 +31,4 @@
 #include "celix_utils.h"
 #include "celix_version.h"
 
-#if defined(NO_MEMSTREAM_AVAILABLE)
-#include "memstream/open_memstream.h"
-#include "memstream/fmemopen.h"
-#endif
-
 #endif //CELIX_CELIX_UTILS_API_H_
