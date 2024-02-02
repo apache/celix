@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(libuuid REQUIRED)
+
 add_celix_bundle(rsa_topology_manager
     SOURCES
         src/topology_manager.c
@@ -28,7 +30,7 @@ add_celix_bundle(rsa_topology_manager
 )
 target_include_directories(rsa_topology_manager PRIVATE src)
 target_include_directories(rsa_topology_manager PRIVATE include)
-target_link_libraries(rsa_topology_manager PRIVATE Celix::log_helper Celix::c_rsa_spi)
+target_link_libraries(rsa_topology_manager PRIVATE Celix::rsa_common Celix::log_helper Celix::c_rsa_spi libuuid::libuuid)
 celix_deprecated_utils_headers(rsa_topology_manager)
 celix_deprecated_framework_headers(rsa_topology_manager)
 
@@ -41,3 +43,11 @@ if (ENABLE_TESTING AND BUILD_RSA_REMOTE_SERVICE_ADMIN_DFI AND BUILD_RSA_DISCOVER
     add_subdirectory(tms_tst)
 endif ()
 
+if (ENABLE_TESTING)
+    add_library(rsa_topology_manager_cut STATIC src/topology_manager.c src/scope.c)
+    celix_deprecated_utils_headers(rsa_topology_manager_cut)
+    celix_deprecated_framework_headers(rsa_topology_manager_cut)
+    target_include_directories(rsa_topology_manager_cut PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include ${CMAKE_CURRENT_LIST_DIR}/src)
+    target_link_libraries(rsa_topology_manager_cut PUBLIC Celix::rsa_common Celix::log_helper Celix::c_rsa_spi libuuid::libuuid)
+    add_subdirectory(gtest)
+endif ()

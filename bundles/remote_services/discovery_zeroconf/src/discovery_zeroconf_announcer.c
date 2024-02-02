@@ -222,16 +222,71 @@ static int discoveryZeroconfAnnouncer_setServiceSubTypeTo(discovery_zeroconf_ann
     return CELIX_SUCCESS;
 }
 
-static int discoveryZeroconfAnnouncer_createEndpointEntry(discovery_zeroconf_announcer_t *announcer, const char *ifName, int port, const celix_string_hash_map_t *svcSubTypes, celix_properties_t *properties, announce_endpoint_entry_t **entryOut) {
-    celix_autoptr(celix_properties_t) propertiesPtr = properties;
+static char* discoveryZeroconfAnnouncer_createServiceTypeAccordingToConfigTypes(discovery_zeroconf_announcer_t* announcer, const char* configTypes) {
+    celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
+    opts.storeKeysWeakly = true;
+    celix_autoptr(celix_string_hash_map_t) svcSubTypes = celix_stringHashMap_createWithOptions(&opts);
+    if (svcSubTypes == NULL) {
+        celix_logHelper_logTssErrors(announcer->logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to create svc sub types map.");
+        return NULL;
+    }
+    celix_autofree char *configTypesCopy = celix_utils_strdup(configTypes);
+    if (configTypesCopy == NULL) {
+        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to dup config types.");
+        return NULL;
+    }
+    char *savePtr = NULL;
+    char *token = strtok_r(configTypesCopy, ",", &savePtr);
+    while (token != NULL) {
+        token = celix_utils_trimInPlace(token);
+        int status = discoveryZeroconfAnnouncer_setServiceSubTypeTo(announcer, token, svcSubTypes);
+        if (status != CELIX_SUCCESS) {
+            return NULL;
+        }
+        token = strtok_r(NULL, ",", &savePtr);
+    }
+
+    char serviceType[DZC_MAX_SERVICE_TYPE_LEN] = {0};
+    CELIX_BUILD_ASSERT(sizeof(serviceType) >= sizeof(DZC_SERVICE_PRIMARY_TYPE));
+    strcpy(serviceType, DZC_SERVICE_PRIMARY_TYPE);
+    size_t offset = strlen(serviceType);
+    CELIX_STRING_HASH_MAP_ITERATE(svcSubTypes, iter) {
+        offset += snprintf(serviceType + offset, sizeof(serviceType) - offset, ",%s", iter.key);
+        if (offset >= sizeof(serviceType)) {
+            celix_logHelper_error(announcer->logHelper, "Announcer: Please reduce the length of imported configs for %s.", serviceType);
+            return NULL;
+        }
+    }
+    return celix_utils_strdup(serviceType);
+}
+
+static int discoveryZeroconfAnnouncer_createEndpointEntry(discovery_zeroconf_announcer_t *announcer, endpoint_description_t *endpoint, announce_endpoint_entry_t **entryOut) {
+    celix_autoptr(celix_properties_t) properties = celix_properties_copy(endpoint->properties);
+    if (properties == NULL) {
+        celix_logHelper_logTssErrors(announcer->logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to copy endpoint properties for %s.", endpoint->serviceName);
+        return CELIX_ENOMEM;
+    }
+    const char* serviceName = celix_properties_get(properties, CELIX_FRAMEWORK_SERVICE_NAME, NULL);
+    if (serviceName == NULL) {
+        celix_logHelper_error(announcer->logHelper,"Announcer: Invalid service.");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    const char *importedConfigs = celix_properties_get(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
+    if (importedConfigs == NULL) {
+        celix_logHelper_error(announcer->logHelper, "Announcer: No imported configs for %s.", serviceName);
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
     celix_autofree announce_endpoint_entry_t *entry = (announce_endpoint_entry_t *)calloc(1, sizeof(*entry));
     if (entry == NULL) {
-        celix_logHelper_error(announcer->logHelper, "Announcer:  Failed to alloc endpoint entry.");
+        celix_logHelper_error(announcer->logHelper, "Announcer:  Failed to alloc endpoint entry for %s.", serviceName);
         return CELIX_ENOMEM;
     }
     entry->registerRef = NULL;
     entry->announced = false;
     entry->conflictCnt = 0;
+    const char *ifName = celix_properties_get(properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, NULL);
     if (ifName != NULL) {
         if (strcmp(ifName, "all") == 0) {
             entry->ifIndex = kDNSServiceInterfaceIndexAny;
@@ -249,31 +304,17 @@ static int discoveryZeroconfAnnouncer_createEndpointEntry(discovery_zeroconf_ann
     } else {
         entry->ifIndex = DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT;
     }
-    entry->port = port;
+    entry->port = celix_properties_getAsLong(properties, CELIX_RSA_PORT, DZC_PORT_DEFAULT);
 
-    char serviceType[DZC_MAX_SERVICE_TYPE_LEN] = {0};
-    CELIX_BUILD_ASSERT(sizeof(serviceType) >= sizeof(DZC_SERVICE_PRIMARY_TYPE));
-    strcpy(serviceType, DZC_SERVICE_PRIMARY_TYPE);
-    size_t offset = strlen(serviceType);
-    CELIX_STRING_HASH_MAP_ITERATE(svcSubTypes, iter) {
-        offset += snprintf(serviceType + offset, sizeof(serviceType) - offset, ",%s", iter.key);
-        if (offset >= sizeof(serviceType)) {
-            celix_logHelper_error(announcer->logHelper, "Announcer: Please reduce the length of imported configs for %s.", serviceType);
-            return CELIX_ILLEGAL_ARGUMENT;
-        }
-    }
-    celix_autofree char *serviceTypePtr = entry->serviceType = celix_utils_strdup(serviceType);
-    if (serviceTypePtr == NULL) {
-        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to copy service type.");
+    entry->serviceType = discoveryZeroconfAnnouncer_createServiceTypeAccordingToConfigTypes(announcer, importedConfigs);
+    if (entry->serviceType == NULL) {
+        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to create service type for %s.", serviceName);
         return CELIX_ENOMEM;
     }
-    entry->serviceName = celix_properties_get(propertiesPtr, CELIX_FRAMEWORK_SERVICE_NAME, NULL);
-    if (entry->serviceName == NULL) {
-        celix_logHelper_error(announcer->logHelper,"Announcer: Invalid service.");
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
-    entry->properties = celix_steal_ptr(propertiesPtr);
-    celix_steal_ptr(serviceTypePtr);
+    entry->serviceName = serviceName;
+    celix_properties_unset(properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE);//ifname should not set to mDNS TXT record, because service consumer will not use it.
+    celix_properties_unset(properties, CELIX_RSA_PORT);//port should not set to mDNS TXT record, because it will be set to SRV record. see https://www.rfc-editor.org/rfc/rfc6763.html#section-6.3
+    entry->properties = celix_steal_ptr(properties);
     *entryOut = celix_steal_ptr(entry);
     return CELIX_SUCCESS;
 }
@@ -323,63 +364,8 @@ celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, endpoint_d
 
     celix_logHelper_info(announcer->logHelper, "Announcer: Add endpoint for %s(%s).", endpoint->serviceName, endpoint->id);
 
-    const char *importedConfigs = celix_properties_get(endpoint->properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
-    if (importedConfigs == NULL) {
-        celix_logHelper_error(announcer->logHelper, "Announcer: No imported configs for %s.", endpoint->serviceName);
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
-
-    celix_autoptr(celix_properties_t) properties = celix_properties_copy(endpoint->properties);
-    if (properties == NULL) {
-        celix_logHelper_logTssErrors(announcer->logHelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to copy endpoint properties.");
-        return CELIX_ENOMEM;
-    }
-    celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
-    opts.storeKeysWeakly = true;
-    celix_autoptr(celix_string_hash_map_t) svcSubTypes = celix_stringHashMap_createWithOptions(&opts);
-    if (svcSubTypes == NULL) {
-        celix_logHelper_logTssErrors(announcer->logHelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to create svc sub types map.");
-        return CELIX_ENOMEM;
-    }
-    celix_autofree char *importedConfigsCopy = celix_utils_strdup(importedConfigs);
-    if (importedConfigsCopy == NULL) {
-        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to dup imported configs.");
-        return CELIX_ENOMEM;
-    }
-    const char *ifName = NULL;
-    int port = DZC_PORT_DEFAULT;
-    char *savePtr = NULL;
-    char *token = strtok_r(importedConfigsCopy, ",", &savePtr);
-    while (token != NULL) {
-        token = celix_utils_trimInPlace(token);
-        char key[128] = {0};
-        if(snprintf(key, sizeof(key), "%s.port", token) >= sizeof(key)) {
-            celix_logHelper_error(announcer->logHelper, "Announcer: The length of imported config type %s is too long.", token);
-            return CELIX_ILLEGAL_ARGUMENT;
-        }
-        //We only need to get one imported config port/ifname property, because all imported configs listed in this property must be synonymous(see https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.remoteservices.html#i1710847).
-        port = (int)celix_properties_getAsLong(endpoint->properties, key, port);
-        celix_properties_unset(properties, key);//port should not set to mDNS TXT record, because it will be set to SRV record. see https://www.rfc-editor.org/rfc/rfc6763.html#section-6.3
-
-        if(snprintf(key, sizeof(key), "%s.ifname", token) >= sizeof(key)) {
-            celix_logHelper_error(announcer->logHelper, "Announcer: The length of imported config type %s is too long.", token);
-            return CELIX_ILLEGAL_ARGUMENT;
-        }
-        ifName = celix_properties_get(endpoint->properties, key, ifName);
-        celix_properties_unset(properties, key);//ifname should not set to mDNS TXT record, because service consumer will not use it.
-
-        status = discoveryZeroconfAnnouncer_setServiceSubTypeTo(announcer, token, svcSubTypes);
-        if (status != CELIX_SUCCESS) {
-            return status;
-        }
-
-        token = strtok_r(NULL, ",", &savePtr);
-    }
-
     celix_autoptr(announce_endpoint_entry_t) entry = NULL;
-    status = discoveryZeroconfAnnouncer_createEndpointEntry(announcer, ifName, port, svcSubTypes, celix_steal_ptr(properties), &entry);
+    status = discoveryZeroconfAnnouncer_createEndpointEntry(announcer, endpoint, &entry);
     if (status != CELIX_SUCCESS) {
         return status;
     }
@@ -446,6 +432,7 @@ static void discoveryZeroconfAnnouncer_revokeEndpoints(discovery_zeroconf_announ
     for (int i = 0; i < size; ++i) {
         entry = celix_arrayList_get(endpoints, i);
         if (entry->registerRef != NULL) {
+            celix_logHelper_info(announcer->logHelper, "Announcer: Deregister service %s on interface %d.", entry->serviceName, entry->ifIndex);
             DNSServiceRefDeallocate(entry->registerRef);
         }
         endpointEntry_destroy(entry);

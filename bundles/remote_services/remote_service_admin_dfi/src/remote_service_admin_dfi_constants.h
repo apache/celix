@@ -37,15 +37,6 @@
 #define RSA_DFI_ENDPOINT_URL            "org.amdatu.remote.admin.http.url"
 
 /**
- * @brief RSA Configuration type for zeroconf http, it is synonymous(https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.remoteservices.html#i1698916) with RSA_DFI_CONFIGURATION_TYPE, they refer to the same endpoint.
- */
-#define CELIX_RSA_DFI_ZEROCONF_CONFIGURATION_TYPE       "celix.remote.admin.dfi.zeroconf.http"
-#define CELIX_RSA_DFI_ZEROCONF_ENDPOINT_IFNAME          "celix.remote.admin.dfi.zeroconf.http.ifname"
-#define CELIX_RSA_DFI_ZEROCONF_ENDPOINT_PORT            "celix.remote.admin.dfi.zeroconf.http.port"
-#define CELIX_RSA_DFI_ZEROCONF_ENDPOINT_IPADDRESSES     "celix.remote.admin.dfi.zeroconf.http.ipaddresses"
-#define CELIX_RSA_DFI_ZEROCONF_ENDPOINT_PATH            "celix.remote.admin.dfi.zeroconf.http.path"
-
-/**
  * @brief Remote Service Admin DFI environment property (named "RSA_DFI_USE_CURL_SHARE_HANDLE") which specified
  * whether the RSA DFI should use curl's share handle.
  *
@@ -75,6 +66,18 @@
  * @brief Default value for the property CELIX_RSA_BIND_ON_ALL_INTERFACES
  */
 #define CELIX_RSA_BIND_ON_ALL_INTERFACES_DEFAULT true
+
+/**
+ * @brief Remote Service Admin DFI environment property, it indicates whether the RSA_DFI implementation supports dynamic IP address fill-in for service exports.
+ * Its type is boolean.If this property is not specified, it defaults to false.
+ *
+ */
+#define CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT "CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT"
+
+/**
+ * @brief Default value for the property CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT
+ */
+#define CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT_DEFAULT false
 
 
 #endif //CELIX_REMOTE_SERVICE_ADMIN_DFI_CONSTANTS_H

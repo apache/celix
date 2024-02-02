@@ -321,15 +321,14 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
 
     if (status == CELIX_SUCCESS) {
         char *reply = NULL;
-        int rc = 0;
         //printf("sending request\n");
         celix_properties_t *metadata = NULL;
         bool cont = remoteInterceptorHandler_invokePreProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, &metadata);
         if (cont) {
-            status = import->send(import->sendHandle, import->endpoint, invokeRequest, metadata, &reply, &rc);
+            status = import->send(import->sendHandle, import->endpoint, invokeRequest, metadata, &reply);
             //printf("request sended. got reply '%s' with status %i\n", reply, rc);
 
-            if (status == CELIX_SUCCESS && rc == CELIX_SUCCESS && dynFunction_hasReturn(entry->dynFunc)) {
+            if (status == CELIX_SUCCESS && dynFunction_hasReturn(entry->dynFunc)) {
                 //fjprintf("Handling reply '%s'\n", reply);
                 int rsErrno = CELIX_SUCCESS;
                 int retVal = jsonRpc_handleReply(entry->dynFunc, reply, args, &rsErrno);
@@ -339,8 +338,6 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
                     //return the invocation error of remote service function
                     *(int *) returnVal = rsErrno;
                 }
-            } else if (rc != CELIX_SUCCESS) {
-                *(int *) returnVal = rc;
             }
 
             remoteInterceptorHandler_invokePostProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, metadata);
@@ -358,7 +355,7 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
             const char *url = importRegistration_getUrl(import);
             const char *svcName = importRegistration_getServiceName(import);
             fprintf(import->logFile, "REMOTE CALL NR %i\n\turl=%s\n\tservice=%s\n\tpayload=%s\n\treturn_code=%i\n\treply=%s\n",
-                                       callCount, url, svcName, invokeRequest, rc, reply);
+                                       callCount, url, svcName, invokeRequest, status, reply == NULL ? "null" : reply);
             fflush(import->logFile);
             callCount += 1;
         }
@@ -394,6 +391,10 @@ celix_status_t importRegistration_getImportReference(import_registration_t *regi
     celix_status_t status = CELIX_SUCCESS;
     //TODO
     return status;
+}
+
+endpoint_description_t* importRegistration_getEndpointDescription(import_registration_t *registration) {
+    return registration->endpoint;
 }
 
 celix_status_t importReference_getImportedEndpoint(import_reference_t *reference) {

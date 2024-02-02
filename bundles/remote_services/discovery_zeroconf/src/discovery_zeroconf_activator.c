@@ -58,20 +58,27 @@ celix_status_t discoveryZeroconfActivator_start(discovery_zeroconf_activator_t *
     }
     celix_dmComponent_setImplementation(announcerCmp, act->announcer);
     CELIX_DM_COMPONENT_SET_IMPLEMENTATION_DESTROY_FUNCTION(announcerCmp, discovery_zeroconf_announcer_t, discoveryZeroconfAnnouncer_destroy);
-    celix_properties_t *props = celix_properties_create();
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
     if (props == NULL) {
         return CELIX_ENOMEM;
     }
     char scope[256] = {0};
     (void)snprintf(scope, sizeof(scope), "(&(%s=*)(%s=%s))", CELIX_FRAMEWORK_SERVICE_NAME,
                    CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
-    celix_properties_set(props, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, scope);
+    status = celix_properties_set(props, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, scope);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
     celix_properties_set(props, "DISCOVERY", "true");//Only use to avoid the discovery calls to unnecessary endpoint listener service. Endpoint should be filtered by the scope.
+    status = celix_properties_set(props, CELIX_RSA_DISCOVERY_INTERFACE_SPECIFIC_ENDPOINTS_SUPPORT, "true");
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
     act->endpointListener.handle = act->announcer;
     act->endpointListener.endpointAdded = discoveryZeroconfAnnouncer_endpointAdded;
     act->endpointListener.endpointRemoved = discoveryZeroconfAnnouncer_endpointRemoved;
     celix_dmComponent_addInterface(announcerCmp, CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, NULL,
-                                   &act->endpointListener, props);
+                                   &act->endpointListener, celix_steal_ptr(props));
 
     //init watcher
     celix_autoptr(celix_dm_component_t) watcherCmp = celix_dmComponent_create(ctx, "DZC_WATCHER_CMP");

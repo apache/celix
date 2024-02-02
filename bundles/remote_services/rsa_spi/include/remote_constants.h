@@ -37,9 +37,40 @@
 #define CELIX_RSA_SERVICE_LOCATION "service.location"
 
 /**
- * It identify which types of remote service configurations are supported by a distribution provider.
+ * @brief It identify which types of remote service configurations are supported by a distribution provider.
  * @ref https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.remoteservices.html#i1708968
  */
 #define CELIX_RSA_REMOTE_CONFIGS_SUPPORTED "remote.configs.supported"
+
+/**
+ * @breif It is a property of remote service admin service. It indicates whether the RSA implementation supports dynamic IP address fill-in for service exports.
+ * Its type is boolean.If this property is not specified, it defaults to false.
+ * @details If dynamic IP fill-in is supported, the RSA implementation should bind to ANY address (0.0.0.0). And the topology manager will create multiple endpoints for a single export registration based on the available network interfaces and an optional network selection configuration.
+ */
+#define CELIX_RSA_DYNAMIC_IP_SUPPORT "celix.rsa.dynamic.ip.support"
+
+/**
+ * @brief It is a replaceable property of endpoint. It indicates the dynamically determined IP address for the endpoint. Its type is string with comma-separated list of IP addresses.
+ * @todo Use string array instead of comma-separated list.(depends on https://github.com/apache/celix/issues/674)
+ */
+#define CELIX_RSA_IP_ADDRESSES "celix.rsa.ip.addresses"
+
+/**
+ * @brief It is a property of endpoint. It indicates the port number of the endpoint for which a dynamic IP address is required. Its type is integer.
+ */
+#define CELIX_RSA_PORT "celix.rsa.port"
+
+/**
+ * @brief It is a replaceable property of endpoint. It indicates which network interface is used for exported endpoint exposure.
+ * Its type is string. If this property is not specified, discovery implementation should select a proper exposure policy.
+ */
+#define CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE "celix.rsa.ifname"
+
+/**
+ * @brief It is a property of discovery endpoint listener service. It indicates whether the discovery implementation supports handling of interface-specific endpoints.
+ * Its type is boolean. If this property is not specified, it defaults to false.
+ * @details If handling interface-specific endpoints are supported, the discovery implementation will fill in the dynamic IP address to the property `CELIX_RSA_IP_ADDRESSES` of endpoint.
+ */
+#define CELIX_RSA_DISCOVERY_INTERFACE_SPECIFIC_ENDPOINTS_SUPPORT "celix.rsa.discovery.interface.specific.endpoints.support"
 
 #endif /* REMOTE_CONSTANTS_H_ */

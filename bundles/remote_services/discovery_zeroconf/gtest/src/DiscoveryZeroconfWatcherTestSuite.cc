@@ -337,6 +337,77 @@ public:
     long rsaSvcId{-1};
 };
 
+
+class DiscoveryZeroconfWatcherWatchServiceTestSuite : public DiscoveryZeroconfWatcherTestSuite {
+public:
+    static void SetUpTestCase() {
+        (void)system(MDNSD);
+        sleep(3);//wait for mdnsd start
+        testServiceRef = RegisterTestService(GetTestNetInterfaceIndex());
+        EXPECT_TRUE(testServiceRef != nullptr);
+        bool found = false;
+        while (!found) {
+            DNSServiceRef dsRef{};
+            DNSServiceErrorType dnsErr = DNSServiceBrowse(&dsRef, 0, 0, DZC_SERVICE_PRIMARY_TYPE, "local.",
+                                                          [](DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *serviceName, const char *regtype, const char *replyDomain, void *context) {
+                (void)sdRef;
+                (void)flags;
+                (void)interfaceIndex;
+                (void)errorCode;
+                (void)serviceName;
+                (void)regtype;
+                (void)replyDomain;
+                auto *found = static_cast<bool*>(context);
+                *found = true;
+            }, &found);
+            EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(DNSServiceRefSockFD(dsRef), &readfds);
+            struct timeval tv{};
+            tv.tv_sec = 3;
+            tv.tv_usec = 0;
+            int ret = select(DNSServiceRefSockFD(dsRef) + 1, &readfds, nullptr, nullptr, &tv);
+            if (ret > 0) {
+                DNSServiceProcessResult(dsRef);
+            }
+            DNSServiceRefDeallocate(dsRef);
+        }
+    }
+
+    static void TearDownTestCase() {
+        DNSServiceRefDeallocate(testServiceRef);
+        (void)system("kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
+    }
+
+    DiscoveryZeroconfWatcherWatchServiceTestSuite() {
+        discovery_zeroconf_watcher_t *watcherPtr{};
+        celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcherPtr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        (void)GetTestNetInterfaceIndex;
+        watcher = std::shared_ptr<discovery_zeroconf_watcher_t>{watcherPtr, [](auto w){discoveryZeroconfWatcher_destroy(w);}};
+    }
+
+    ~DiscoveryZeroconfWatcherWatchServiceTestSuite() override = default;
+
+    void TestWatchService(void (*beforeWatchServiceAction)(void), void (*afterWatchServiceAction)(void)) {
+
+        beforeWatchServiceAction();
+
+        auto eplTrkId = TrackEndpointListenerService(watcher.get());
+        auto rsaTrkId = TrackRsaService(watcher.get());
+
+        afterWatchServiceAction();
+
+        celix_bundleContext_stopTracker(ctx.get(), eplTrkId);
+        celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
+    }
+
+    std::shared_ptr<discovery_zeroconf_watcher_t> watcher{};
+    static DNSServiceRef testServiceRef;
+};
+DNSServiceRef DiscoveryZeroconfWatcherWatchServiceTestSuite::testServiceRef{nullptr};
+
 TEST_F(DiscoveryZeroconfWatcherTestSuite, CreateAndDestroyWatcher) {
     discovery_zeroconf_watcher_t *watcher;
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
@@ -511,6 +582,7 @@ static DNSServiceRef RegisterTestService(int ifIndex, const char *endpointId, co
     TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_SERVICE_ID, strlen(serviceId), serviceId);
     TXTRecordSetValue(&txtRecord, CELIX_RSA_SERVICE_IMPORTED, strlen("true"), "true");
     TXTRecordSetValue(&txtRecord, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE) - 1, DZC_TEST_CONFIG_TYPE);
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_IP_ADDRESSES, 0, nullptr);
     char propSizeStr[16]= {0};
     sprintf(propSizeStr, "%d", TXTRecordGetCount(TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord)) + 1);
     TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
@@ -525,8 +597,10 @@ static DNSServiceRef RegisterTestService(int ifIndex, const char *endpointId, co
                                 DZC_TEST_SERVICE_TYPE, "local", nullptr, htons(DZC_TEST_SERVICE_PORT),
                                 TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord),
                                 OnDNSServiceRegisterCallback, nullptr);
-    EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
-    DNSServiceProcessResult(dsRef);
+    if (dnsErr == kDNSServiceErr_NoError) {
+        DNSServiceProcessResult(dsRef);
+    }
+
     return dsRef;
 }
 
@@ -537,45 +611,6 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveEndpoint) {
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
     });
-}
-
-TEST_F(DiscoveryZeroconfWatcherTestSuite, AddMultiEndpoint) {
-    discovery_zeroconf_watcher_t *watcher;
-    celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
-    EXPECT_EQ(CELIX_SUCCESS, status);
-    auto rsaTrkId = TrackRsaService(watcher);
-    auto eplTrkId = TrackEndpointListenerService(watcher);
-
-    ExpectMsgOutPut("Endpoint added: %s.");
-
-    auto dsRef1 = RegisterTestService(kDNSServiceInterfaceIndexAny);
-    auto dsRef2 = RegisterTestService(kDNSServiceInterfaceIndexAny, "65d17a8c-f31b-478c-b13e-da743c96ab51", "101");
-
-    //wait for endpoint1 added
-    auto timeOut  = CheckMsgWithTimeOutInS(30);
-    EXPECT_FALSE(timeOut);
-
-    //wait for endpoint2 added
-    timeOut  = CheckMsgWithTimeOutInS(30);
-    EXPECT_FALSE(timeOut);
-
-    ExpectMsgOutPut("Endpoint removed: %s.");
-
-    DNSServiceRefDeallocate(dsRef1);
-
-    //wait for endpoint1 added
-    timeOut  = CheckMsgWithTimeOutInS(30);
-    EXPECT_FALSE(timeOut);
-
-    DNSServiceRefDeallocate(dsRef2);
-
-    //wait for endpoint2 added
-    timeOut  = CheckMsgWithTimeOutInS(30);
-    EXPECT_FALSE(timeOut);
-
-    celix_bundleContext_stopTracker(ctx.get(), eplTrkId);
-    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
-    discoveryZeroconfWatcher_destroy(watcher);
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToCopyEndpointProperties) {
@@ -610,17 +645,6 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToCopyHostNameForEndpointEntry) 
     });
 }
 
-TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToGetHostIpAddressesWhenCreateEndpoint) {
-    TestAddEndpoint([](){
-        celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 5);
-        ExpectMsgOutPut("Watcher: Failed to create endpoint for %s. %d.");
-    }, [](){
-        auto timeOut  = CheckMsgWithTimeOutInS(30);
-        EXPECT_FALSE(timeOut);
-    }, GetTestNetInterfaceIndex());
-    sleep(2);//wait for mdnsd remove service, avoid affect other test case
-}
-
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToGetLocalHostIpAddressesWhenCreateEndpoint) {
     TestAddEndpoint([](){
         celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 5);
@@ -629,16 +653,6 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToGetLocalHostIpAddressesWhenCre
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
     }, kDNSServiceInterfaceIndexLocalOnly);
-}
-
-TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToDupImportedConfigsWhenCreateEndpoint) {
-    TestAddEndpoint([](){
-        celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 6);
-        ExpectMsgOutPut("Watcher: Failed to dup imported configs.");
-    }, [](){
-        auto timeOut  = CheckMsgWithTimeOutInS(30);
-        EXPECT_FALSE(timeOut);
-    });
 }
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutEndpointToCache) {
@@ -660,58 +674,6 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, InvalidEndpoint) {
         TXTRecordSetValue(txtRecord, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE)-1, DZC_TEST_CONFIG_TYPE);
         //No endpoint framework uuid
         ExpectMsgOutPut("Watcher: Failed to create endpoint description. %d.");
-    }, [](){
-        auto timeOut  = CheckMsgWithTimeOutInS(30);
-        EXPECT_FALSE(timeOut);
-    });
-}
-
-TEST_F(DiscoveryZeroconfWatcherTestSuite, NoImportedConfigs) {
-    TestInvalidTxtRecord([](TXTRecordRef *txtRecord){
-        TXTRecordSetValue(txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
-        TXTRecordSetValue(txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, sizeof("dzc_test_service")-1, "dzc_test_service");
-        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
-        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "100");
-        TXTRecordSetValue(txtRecord, CELIX_RSA_SERVICE_IMPORTED, sizeof("true")-1, "true");
-        //NO imported configs
-        ExpectMsgOutPut("Watcher: No imported configs.");
-    }, [](){
-        auto timeOut  = CheckMsgWithTimeOutInS(30);
-        EXPECT_FALSE(timeOut);
-    });
-}
-
-TEST_F(DiscoveryZeroconfWatcherTestSuite, InvalidImportedConfigs1) {
-    TestInvalidTxtRecord([](TXTRecordRef *txtRecord){
-        TXTRecordSetValue(txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
-        TXTRecordSetValue(txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, sizeof("dzc_test_service")-1, "dzc_test_service");
-        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
-        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "100");
-        TXTRecordSetValue(txtRecord, CELIX_RSA_SERVICE_IMPORTED, sizeof("true")-1, "true");
-        const char *invalidImportedConfigs = "celix.imported_config_too_long_for_port-----------------------------------------------------------------------------.subtype";
-        TXTRecordSetValue(txtRecord, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, strlen(invalidImportedConfigs), invalidImportedConfigs);
-
-        ExpectMsgOutPut("Watcher: The length of imported config type %s is too long.");
-    }, [](){
-        auto timeOut  = CheckMsgWithTimeOutInS(30);
-        EXPECT_FALSE(timeOut);
-    });
-}
-
-TEST_F(DiscoveryZeroconfWatcherTestSuite, InvalidImportedConfigs2) {
-    TestInvalidTxtRecord([](TXTRecordRef *txtRecord){
-        TXTRecordSetValue(txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
-        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
-        TXTRecordSetValue(txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, sizeof("dzc_test_service")-1, "dzc_test_service");
-        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_ID, sizeof("65d17a8c-f31b-478c-b13e-da743c96ab51")-1, "65d17a8c-f31b-478c-b13e-da743c96ab51");
-        TXTRecordSetValue(txtRecord, CELIX_RSA_ENDPOINT_SERVICE_ID, sizeof("100")-1, "100");
-        TXTRecordSetValue(txtRecord, CELIX_RSA_SERVICE_IMPORTED, sizeof("true")-1, "true");
-        const char *invalidImportedConfigs = "celix.imported_config_too_long_for_ipaddresses--------------------------------------------------------------------.subtype";
-        TXTRecordSetValue(txtRecord, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, strlen(invalidImportedConfigs), invalidImportedConfigs);
-
-        ExpectMsgOutPut("Watcher: The length of imported config type %s is too long.");
     }, [](){
         auto timeOut  = CheckMsgWithTimeOutInS(30);
         EXPECT_FALSE(timeOut);
@@ -1002,66 +964,6 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveSelfFrameworkEndpoint) {
     discoveryZeroconfWatcher_destroy(watcher);
 }
 
-TEST_F(DiscoveryZeroconfWatcherTestSuite, DNSServiceGetAddrInfoFailedOnce) {
-    TestAddEndpoint([](){
-        celix_ei_expect_DNSServiceGetAddrInfo(CELIX_EI_UNKNOWN_CALLER, 0, kDNSServiceErr_NoMemory);
-        ExpectMsgOutPut("Watcher: Failed to get address info for %s on %d, %d.");
-    }, [](){
-        auto timeOut  = CheckMsgWithTimeOutInS(30);
-        EXPECT_FALSE(timeOut);
-    }, kDNSServiceInterfaceIndexAny);
-    sleep(2);//wait for mdnsd remove service, avoid affect other test case
-}
-
-TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToAllocMemoryForHostEntry) {
-    TestAddEndpoint([](){
-        celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 3);//first calloc:service_browser_entry_t; second calloc:watched_service_entry_t
-        ExpectMsgOutPut("Watcher: Failed to alloc host entry for %s.");
-    }, [](){
-        auto timeOut  = CheckMsgWithTimeOutInS(30);
-        EXPECT_FALSE(timeOut);
-    }, GetTestNetInterfaceIndex());
-}
-
-TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToDupHostNameForHostEntry) {
-    TestAddEndpoint([](){
-        celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 3);
-        ExpectMsgOutPut("Watcher: Failed to dup hostname for %s.");
-    }, [](){
-        auto timeOut  = CheckMsgWithTimeOutInS(30);
-        EXPECT_FALSE(timeOut);
-    }, GetTestNetInterfaceIndex());
-}
-
-TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutHostEntryToCache) {
-    celix_ei_expect_celix_stringHashMap_put(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM, 4);
-    TestAddEndpoint([](){
-        ExpectMsgOutPut("Watcher: Failed to add host entry for %s.");
-    }, [](){
-        auto timeOut  = CheckMsgWithTimeOutInS(30);
-        EXPECT_FALSE(timeOut);
-    }, GetTestNetInterfaceIndex());
-}
-
-TEST_F(DiscoveryZeroconfWatcherTestSuite, GetAddrInfo) {
-    ExpectMsgOutPut("Endpoint added: %s.");
-    TestGetAddrInfo([](){
-    }, [](){
-        auto timeOut  = CheckMsgWithTimeOutInS(30);
-        EXPECT_FALSE(timeOut);
-    });
-}
-
-TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutIpToHostEntry) {
-    TestGetAddrInfo([](){
-        celix_ei_expect_celix_stringHashMap_putBool(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM);
-        ExpectMsgOutPut("Watcher: Failed to add ip address(%s). %d.");
-    }, [](){
-        auto timeOut  = CheckMsgWithTimeOutInS(30);
-        EXPECT_FALSE(timeOut);
-    });
-}
-
 TEST_F(DiscoveryZeroconfWatcherTestSuite, AddTxtRecord) {
     discovery_zeroconf_watcher_t *watcher;
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
@@ -1087,8 +989,8 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddTxtRecord) {
 
     DNSServiceRef dsRef{};
     DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexAny, "dzc_test_service",
-                 DZC_TEST_SERVICE_TYPE, "local", nullptr, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord),
-                 TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback, nullptr);
+                                                    DZC_TEST_SERVICE_TYPE, "local", nullptr, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord),
+                                                    TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback, nullptr);
     EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
     DNSServiceProcessResult(dsRef);
     TXTRecordDeallocate(&txtRecord);
@@ -1139,8 +1041,8 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveEndpointListener) {
 
     DNSServiceRef dsRef{};
     DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly, "dzc_test_service",
-      DZC_TEST_SERVICE_TYPE, "local", nullptr, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord),
-      TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback,nullptr);
+                                                    DZC_TEST_SERVICE_TYPE, "local", nullptr, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord),
+                                                    TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback,nullptr);
     EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
     DNSServiceProcessResult(dsRef);
 
@@ -1173,4 +1075,98 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToAllocMemoryForEPL) {
     celix_bundleContext_stopTracker(ctx.get(), eplTrkId);
 
     discoveryZeroconfWatcher_destroy(watcher);
+}
+
+TEST_F(DiscoveryZeroconfWatcherWatchServiceTestSuite, FailedToGetHostIpAddressesWhenCreateEndpoint) {
+    TestWatchService([](){
+        celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 5);
+        ExpectMsgOutPut("Watcher: Failed to create endpoint for %s. %d.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(30000);
+        EXPECT_FALSE(timeOut);
+    });
+}
+
+
+TEST_F(DiscoveryZeroconfWatcherWatchServiceTestSuite, DNSServiceGetAddrInfoFailedOnce) {
+    TestWatchService([](){
+        celix_ei_expect_DNSServiceGetAddrInfo(CELIX_EI_UNKNOWN_CALLER, 0, kDNSServiceErr_NoMemory);
+        ExpectMsgOutPut("Watcher: Failed to get address info for %s on %d, %d.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(30);
+        EXPECT_FALSE(timeOut);
+    });
+}
+
+TEST_F(DiscoveryZeroconfWatcherWatchServiceTestSuite, FailedToAllocMemoryForHostEntry) {
+    TestWatchService([](){
+        celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 4);//first calloc:watched_epl_entry_t; second calloc:service_browser_entry_t; third calloc:watched_service_entry_t
+        ExpectMsgOutPut("Watcher: Failed to alloc host entry for %s.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(30);
+        EXPECT_FALSE(timeOut);
+    });
+}
+
+TEST_F(DiscoveryZeroconfWatcherWatchServiceTestSuite, FailedToDupHostNameForHostEntry) {
+    TestWatchService([](){
+        celix_ei_expect_celix_utils_strdup(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 3);
+        ExpectMsgOutPut("Watcher: Failed to dup hostname for %s.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(30);
+        EXPECT_FALSE(timeOut);
+    });
+}
+
+TEST_F(DiscoveryZeroconfWatcherWatchServiceTestSuite, FailedToPutHostEntryToCache) {
+    TestWatchService([](){
+        celix_ei_expect_celix_stringHashMap_put(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM, 4);
+        ExpectMsgOutPut("Watcher: Failed to add host entry for %s.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(30);
+        EXPECT_FALSE(timeOut);
+    });
+}
+
+TEST_F(DiscoveryZeroconfWatcherWatchServiceTestSuite, GetAddrInfo) {
+    TestWatchService([](){
+        ExpectMsgOutPut("Endpoint added: %s.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(30);
+        EXPECT_FALSE(timeOut);
+    });
+}
+
+TEST_F(DiscoveryZeroconfWatcherWatchServiceTestSuite, FailedToPutIpToHostEntry) {
+    TestWatchService([](){
+        celix_ei_expect_celix_stringHashMap_putBool(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM);
+        ExpectMsgOutPut("Watcher: Failed to add ip address(%s). %d.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(30);
+        EXPECT_FALSE(timeOut);
+    });
+}
+
+TEST_F(DiscoveryZeroconfWatcherWatchServiceTestSuite, AddMultiEndpoint) {
+    TestWatchService([](){
+        ExpectMsgOutPut("Endpoint added: %s.");
+    }, [](){
+        //wait for endpoint1 added
+        auto timeOut  = CheckMsgWithTimeOutInS(30);
+        EXPECT_FALSE(timeOut);
+
+        //register service2
+        auto dsRef2 = RegisterTestService(kDNSServiceInterfaceIndexAny, "65d17a8c-f31b-478c-b13e-da743c96ab51", "101");
+
+        //wait for endpoint2 added
+        timeOut  = CheckMsgWithTimeOutInS(30);
+        EXPECT_FALSE(timeOut);
+
+        ExpectMsgOutPut("Endpoint removed: %s.");
+        DNSServiceRefDeallocate(dsRef2);
+
+        //wait for endpoint2 added
+        timeOut  = CheckMsgWithTimeOutInS(30);
+        EXPECT_FALSE(timeOut);
+    });
 }

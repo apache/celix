@@ -482,7 +482,6 @@ extern "C" {
         celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
         celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
         celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
-        celix_properties_set(props, TST_CONFIGURATION_TYPE".url", "http://127.0.0.1:8080/calc");
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.test.MyBundle");
         celix_properties_set(props, "service.version", "1.0.0");
         celix_properties_set(props, "zone", "a_zone");
@@ -535,7 +534,6 @@ extern "C" {
         celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
         celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
         celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
-        celix_properties_set(props, TST_CONFIGURATION_TYPE".url", "http://127.0.0.1:8080/calc");
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.test.MyBundle");
         celix_properties_set(props, "service.version", "1.0.0");
         celix_properties_set(props, "zone", "a_zone");
@@ -587,7 +585,6 @@ extern "C" {
         celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
         celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
         celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
-        celix_properties_set(props, TST_CONFIGURATION_TYPE".url", "http://127.0.0.1:8080/calc");
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.test.MyBundle");
         celix_properties_set(props, "service.version", "1.0.0"); //TODO find out standard in osgi spec
         celix_properties_set(props, "zone", "a_zone");
@@ -634,7 +631,6 @@ extern "C" {
         celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
         celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
         celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
-        celix_properties_set(props, TST_CONFIGURATION_TYPE".url", "http://127.0.0.1:8080/calc");
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.test.MyBundle");
         celix_properties_set(props, "service.version", "1.0.0");
         celix_properties_set(props, "zone", "a_zone");

@@ -38,9 +38,16 @@ static celix_status_t celix_rsa_start(celix_remote_service_admin_activator_t* ac
     if (props == NULL) {
         return CELIX_ENOMEM;
     }
-    status = celix_properties_set(props, CELIX_RSA_REMOTE_CONFIGS_SUPPORTED, RSA_DFI_CONFIGURATION_TYPE","CELIX_RSA_DFI_ZEROCONF_CONFIGURATION_TYPE);
+    status = celix_properties_set(props, CELIX_RSA_REMOTE_CONFIGS_SUPPORTED, RSA_DFI_CONFIGURATION_TYPE);
     if (status != CELIX_SUCCESS) {
         return status;
+    }
+    bool dynamicIpSupport = celix_bundleContext_getPropertyAsBool(ctx, CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT, CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT_DEFAULT);
+    if (dynamicIpSupport) {
+        status = celix_properties_setBool(props, CELIX_RSA_DYNAMIC_IP_SUPPORT, true);
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
     }
     status = remoteServiceAdmin_create(ctx, &activator->admin);
     if (status == CELIX_SUCCESS) {

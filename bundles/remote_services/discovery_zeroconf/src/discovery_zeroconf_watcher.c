@@ -448,7 +448,7 @@ static void OnServiceResolveCallback(DNSServiceRef sdRef, DNSServiceFlags flags,
     const char *version = celix_properties_get(properties, DZC_TXT_RECORD_VERSION_KEY, "");
     if (propSize == celix_properties_size(properties) && strcmp(DZC_CURRENT_TXT_RECORD_VERSION, version) == 0) {
         svcEntry->port = ntohs(port);
-        if (svcEntry->ifIndex != kDNSServiceInterfaceIndexLocalOnly || svcEntry->port != DZC_PORT_DEFAULT) {//if it is not network service, no need to resolve ip address
+        if (celix_properties_get(properties, CELIX_RSA_IP_ADDRESSES, NULL) != NULL) {//If no need fill in dynamic ip address, no need to resolve ip address
             free(svcEntry->hostname);//free old hostname
             svcEntry->hostname = celix_utils_strdup(host);
             if (svcEntry->hostname == NULL) {
@@ -461,6 +461,7 @@ static void OnServiceResolveCallback(DNSServiceRef sdRef, DNSServiceFlags flags,
         celix_properties_unset(properties, DZC_SERVICE_PROPERTIES_SIZE_KEY);//Service endpoint do not need it
         celix_properties_unset(properties, DZC_TXT_RECORD_VERSION_KEY);//Service endpoint do not need it
         svcEntry->resolved = true;
+        celix_logHelper_trace(svcEntry->logHelper, "Watcher: Resolved service %s on %u.", svcEntry->instanceName, interfaceIndex);
     }
     return;
 }
@@ -533,6 +534,7 @@ static void discoveryZeroconfWatcher_pickUpdatedServiceBrowsers(discovery_zeroco
     while (!celix_stringHashMapIterator_isEnd(&iter2)) {
         service_browser_entry_t *browserEntry = (service_browser_entry_t *)iter2.value.ptrValue;
         if (browserEntry->markDeleted) {
+            celix_logHelper_trace(watcher->logHelper, "Watcher: Stop to browse service type %s,%s.", DZC_SERVICE_PRIMARY_TYPE, iter2.key);
             celix_stringHashMapIterator_remove(&iter2);
             if (browserEntry->browseRef) {
                 DNSServiceRefDeallocate(browserEntry->browseRef);
@@ -556,6 +558,7 @@ static void discoveryZeroconfWatcher_browseServices(discovery_zeroconf_watcher_t
         browserEntry->browseRef = watcher->sharedRef;
         char serviceType[128] = {0};//primary type(15bytes) + subtype(63bytes)
         (void)snprintf(serviceType, sizeof(serviceType), "%s,%s", DZC_SERVICE_PRIMARY_TYPE, iter.key);
+        celix_logHelper_trace(watcher->logHelper, "Watcher: Start to browse service type %s.", serviceType);
         DNSServiceErrorType dnsErr = DNSServiceBrowse(&browserEntry->browseRef, kDNSServiceFlagsShareConnection, 0, serviceType, "local", OnServiceBrowseCallback, browserEntry);
         if (dnsErr != kDNSServiceErr_NoError) {
             celix_logHelper_error(watcher->logHelper, "Watcher: Failed to browse DNS service, %d.", dnsErr);
@@ -575,6 +578,7 @@ static void discoveryZeroconfWatcher_resolveServices(discovery_zeroconf_watcher_
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedServices, iter) {
         watched_service_entry_t *svcEntry = (watched_service_entry_t *)iter.value.ptrValue;
         if (watcher->sharedRef && svcEntry->resolveRef == NULL && svcEntry->resolvedCnt < DZC_MAX_RESOLVED_CNT) {
+            celix_logHelper_trace(watcher->logHelper, "Watcher: Start to resolve service %s on %d.", svcEntry->instanceName, svcEntry->ifIndex);
             svcEntry->resolveRef = watcher->sharedRef;
             DNSServiceErrorType dnsErr = DNSServiceResolve(&svcEntry->resolveRef, kDNSServiceFlagsShareConnection , svcEntry->ifIndex, svcEntry->instanceName, DZC_SERVICE_PRIMARY_TYPE, "local", OnServiceResolveCallback, svcEntry);
             if (dnsErr != kDNSServiceErr_NoError) {
@@ -668,6 +672,7 @@ static void discoveryZeroconfWatcher_refreshWatchedServices(discovery_zeroconf_w
     while (!celix_stringHashMapIterator_isEnd(&iter)) {
         watched_service_entry_t *svcEntry = (watched_service_entry_t *)iter.value.ptrValue;
         if (svcEntry->markDeleted) {
+            celix_logHelper_trace(watcher->logHelper, "Watcher: Stop to resolve service %s on %d.", svcEntry->instanceName, svcEntry->ifIndex);
             celix_stringHashMapIterator_remove(&iter);
             if (svcEntry->resolveRef) {
                 DNSServiceRefDeallocate(svcEntry->resolveRef);
@@ -718,6 +723,8 @@ static void onGetAddrInfoCb (DNSServiceRef sdRef, DNSServiceFlags flags, uint32_
     } else {
         celix_stringHashMap_remove(hostEntry->ipAddresses, ip);
     }
+
+    celix_logHelper_trace(hostEntry->logHelper, "Watcher: %s ip %s for host %s on %d.", (flags & kDNSServiceFlagsAdd) ? "Add" : "Remove", ip, hostEntry->hostname, hostEntry->ifIndex);
 
     hostEntry->resolved = !(flags & kDNSServiceFlagsMoreComing);
 
@@ -791,6 +798,7 @@ static void discoveryZeroconfWatcher_updateWatchedHosts(discovery_zeroconf_watch
     while (!celix_stringHashMapIterator_isEnd(&iter)) {
         watched_host_entry_t *hostEntry = (watched_host_entry_t *)iter.value.ptrValue;
         if (hostEntry->markDeleted) {
+            celix_logHelper_trace(watcher->logHelper, "Watcher: Stop to resolve host %s on %d.", hostEntry->hostname, hostEntry->ifIndex);
             celix_stringHashMapIterator_remove(&iter);
             if (hostEntry->sdRef) {
                 DNSServiceRefDeallocate(hostEntry->sdRef);
@@ -816,6 +824,7 @@ static void discoveryZeroconfWatcher_refreshHostsInfo(discovery_zeroconf_watcher
     CELIX_STRING_HASH_MAP_ITERATE(watcher->watchedHosts, iter1) {
         watched_host_entry_t *hostEntry = (watched_host_entry_t *)iter1.value.ptrValue;
         if (watcher->sharedRef && hostEntry->sdRef == NULL && hostEntry->resolvedCnt < DZC_MAX_RESOLVED_CNT) {
+            celix_logHelper_trace(watcher->logHelper, "Watcher: Start to resolve host %s on %d.", hostEntry->hostname, hostEntry->ifIndex);
             hostEntry->sdRef = watcher->sharedRef;
             DNSServiceErrorType dnsErr = DNSServiceGetAddrInfo(&hostEntry->sdRef, kDNSServiceFlagsShareConnection, hostEntry->ifIndex, kDNSServiceProtocol_IPv4 | kDNSServiceProtocol_IPv6, hostEntry->hostname, onGetAddrInfoCb, hostEntry);
             if (dnsErr != kDNSServiceErr_NoError) {
@@ -916,46 +925,21 @@ static int discoveryZeroConfWatcher_createEndpointEntryForService(discovery_zero
     celix_autofree char *ipAddressesStr = NULL;
     status = discoveryZeroConfWatcher_getHostIpAddresses(watcher, hostname, svcEntry->ifIndex, &ipAddressesStr);
     if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to get ip addresses for endpoint %s.", svcEntry->instanceName);
         return status;
     }
 
-    const char *importedConfigs = celix_properties_get(ep->properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
-    if (importedConfigs == NULL) {
-        celix_logHelper_error(watcher->logHelper, "Watcher: No imported configs.");
-        return CELIX_ILLEGAL_ARGUMENT;
+    status = celix_properties_setLong(ep->properties, CELIX_RSA_PORT, svcEntry->port);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to set imported config port.");
+        return status;
     }
-    celix_autofree char *importedConfigsCopy = celix_utils_strdup(importedConfigs);
-    if (importedConfigsCopy == NULL) {
-        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to dup imported configs.");
-        return CELIX_ENOMEM;
+    status = celix_properties_set(ep->properties, CELIX_RSA_IP_ADDRESSES, ipAddressesStr);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to set imported config ip address list.");
+        return status;
     }
-    char *savePtr = NULL;
-    char *token = strtok_r(importedConfigsCopy, ",", &savePtr);
-    while (token != NULL) {
-        char *configType = celix_utils_trimInPlace(token);
-        char key[128] = {0};
-        if(snprintf(key, sizeof(key), "%s.port", configType) >= sizeof(key)) {
-            celix_logHelper_error(watcher->logHelper, "Watcher: The length of imported config type %s is too long.", configType);
-            return CELIX_ILLEGAL_ARGUMENT;
-        }
-        status = celix_properties_setLong(ep->properties, key, svcEntry->port);
-        if (status != CELIX_SUCCESS) {
-            celix_logHelper_error(watcher->logHelper, "Watcher: Failed to set imported config port.");
-            return status;
-        }
-        if(snprintf(key, sizeof(key), "%s.ipaddresses", configType) >= sizeof(key)) {
-            celix_logHelper_error(watcher->logHelper, "Watcher: The length of imported config type %s is too long.", configType);
-            return CELIX_ILLEGAL_ARGUMENT;
-        }
-        status = celix_properties_set(ep->properties, key, ipAddressesStr);
-        if (status != CELIX_SUCCESS) {
-            celix_logHelper_error(watcher->logHelper, "Watcher: Failed to set imported config ip address list.");
-            return status;
-        }
-        epEntry->ipAddressesStr = celix_properties_get(ep->properties, key, "");
-
-        token = strtok_r(NULL, ",", &savePtr);
-    }
+    epEntry->ipAddressesStr = celix_properties_get(ep->properties, CELIX_RSA_IP_ADDRESSES, "");
 
     celix_steal_ptr(hostname);
     celix_steal_ptr(ep);
@@ -1023,7 +1007,7 @@ static void discoveryZeroconfWatcher_filterSameFrameWorkServices(discovery_zeroc
 }
 
 static bool discoveryZeroconfWatcher_checkEndpointIpAddressesChanged(discovery_zeroconf_watcher_t *watcher, watched_endpoint_entry_t *endpointEntry) {
-    if (endpointEntry->hostname == NULL) {
+    if (endpointEntry->hostname == NULL || endpointEntry->ifIndex == kDNSServiceInterfaceIndexLocalOnly) {
         return false;
     }
     watched_host_entry_t *hostEntry = discoveryZeroconfWatcher_getHostEntry(watcher, endpointEntry->hostname, endpointEntry->ifIndex);

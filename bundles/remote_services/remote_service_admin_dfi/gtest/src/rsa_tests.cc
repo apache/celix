@@ -118,7 +118,6 @@ extern "C" {
             celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
             celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
             celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
-            celix_properties_set(props, TST_CONFIGURATION_TYPE".url", "http://127.0.0.1:8888/service/42/org.apache.celix.Example");
             celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.Example");
 
             int rc = endpointDescription_create(props, &endpoint);
@@ -140,55 +139,6 @@ extern "C" {
         celix_service_use_options_t opts{};
         opts.filter.serviceName = CELIX_RSA_REMOTE_SERVICE_ADMIN;
         opts.use = testImportServiceCallback;
-        opts.waitTimeoutInSeconds = 0.25;
-
-        //first call -> init
-        bool called = celix_bundleContext_useServiceWithOptions(context, &opts);
-        ASSERT_TRUE(called);
-
-        celix_framework_waitForEmptyEventQueue(celix_bundleContext_getFramework(context));
-        long svcId = celix_bundleContext_findService(context, "org.apache.celix.Example");
-        EXPECT_GE(svcId, 0);
-
-        //second call -> deinit
-        called = celix_bundleContext_useServiceWithOptions(context, &opts);
-        ASSERT_TRUE(called);
-    }
-
-    static void testImportServiceCallbackForZeroconfConfigType(void *handle CELIX_UNUSED, void *svc) {
-        thread_local bool init = true;
-        thread_local endpoint_description_t *endpoint = nullptr;
-        if (init) {
-            auto *rsa = static_cast<remote_service_admin_service_t *>(svc);
-            celix_properties_t *props = celix_properties_create();
-            celix_properties_set(props, CELIX_RSA_ENDPOINT_SERVICE_ID, "42");
-            celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
-            celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-            celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, "celix.remote.admin.dfi.zeroconf.http");
-            celix_properties_set(props, "celix.remote.admin.dfi.zeroconf.http.port", "8888");
-            celix_properties_set(props, "celix.remote.admin.dfi.zeroconf.http.ipaddresses", "127.0.0.1");
-            celix_properties_set(props, "celix.remote.admin.dfi.zeroconf.http.path", "/service/42/org.apache.celix.Example");
-            celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.Example");
-
-            int rc = endpointDescription_create(props, &endpoint);
-            ASSERT_EQ(CELIX_SUCCESS, rc);
-
-            import_registration_t* reg = nullptr;
-            rc = rsa->importService(rsa->admin, endpoint, &reg);
-            ASSERT_EQ(CELIX_SUCCESS, rc);
-            ASSERT_TRUE(reg != nullptr);
-
-            init = false;
-        } else {
-            int rc = endpointDescription_destroy(endpoint);
-            ASSERT_EQ(CELIX_SUCCESS, rc);
-        }
-    }
-
-    static void testImportServiceForZeroconfConfigType(void) {
-        celix_service_use_options_t opts{};
-        opts.filter.serviceName = CELIX_RSA_REMOTE_SERVICE_ADMIN;
-        opts.use = testImportServiceCallbackForZeroconfConfigType;
         opts.waitTimeoutInSeconds = 0.25;
 
         //first call -> init
@@ -252,10 +202,6 @@ TEST_F(RsaDfiTests, ExportService) {
 
 TEST_F(RsaDfiTests, ImportService) {
     testImportService();
-}
-
-TEST_F(RsaDfiTests, ImportServiceForZeroconfConfigType) {
-    testImportServiceForZeroconfConfigType();
 }
 
 TEST_F(RsaDfiTests, TestBundles) {

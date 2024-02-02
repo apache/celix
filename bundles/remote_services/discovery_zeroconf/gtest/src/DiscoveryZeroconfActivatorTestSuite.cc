@@ -51,6 +51,7 @@ public:
         celix_ei_expect_celix_dmServiceDependency_create(nullptr, 0, nullptr);
         celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
         celix_ei_expect_celix_logHelper_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_properties_set(nullptr, 0, 0);
     }
 
     std::shared_ptr<celix_framework_t> fw{};
@@ -143,6 +144,32 @@ TEST_F(DiscoveryZeroconfActivatorTestSuite, CreateAnnouncerEndpointListenerPrope
     EXPECT_EQ(CELIX_SUCCESS, status);
 
     celix_ei_expect_celix_properties_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    status = celix_bundleActivator_start(act, ctx.get());
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    status = celix_bundleActivator_destroy(act, ctx.get());
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(DiscoveryZeroconfActivatorTestSuite, SetEndpointListenerSocpePropertyFailed) {
+    void *act{nullptr};
+    auto status = celix_bundleActivator_create(ctx.get(), &act);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    celix_ei_expect_celix_properties_set((void*)&celix_bundleActivator_start, 1, CELIX_ENOMEM);
+    status = celix_bundleActivator_start(act, ctx.get());
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    status = celix_bundleActivator_destroy(act, ctx.get());
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(DiscoveryZeroconfActivatorTestSuite, SetEndpointListenerInterfaceSpecificEndpointsPropertyFailed) {
+    void *act{nullptr};
+    auto status = celix_bundleActivator_create(ctx.get(), &act);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    celix_ei_expect_celix_properties_set((void*)&celix_bundleActivator_start, 1, CELIX_ENOMEM, 3);
     status = celix_bundleActivator_start(act, ctx.get());
     EXPECT_EQ(CELIX_ENOMEM, status);
 
