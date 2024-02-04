@@ -429,12 +429,12 @@ static size_t celix_logAdmin_setSinkEnabled(void *handle, const char* select, bo
 
 static celix_array_list_t* celix_logAdmin_currentLogServices(void *handle) {
     celix_log_admin_t* admin = handle;
-    celix_array_list_t* loggers = celix_arrayList_create();
+    celix_array_list_t* loggers = celix_arrayList_createStringArray();
     celixThreadRwlock_readLock(&admin->lock);
     hash_map_iterator_t iter = hashMapIterator_construct(admin->loggers);
     while (hashMapIterator_hasNext(&iter)) {
         celix_log_service_entry_t* visit = hashMapIterator_nextValue(&iter);
-        celix_arrayList_add(loggers, celix_utils_strdup(visit->name));
+        celix_arrayList_addString(loggers, visit->name);
     }
     celixThreadRwlock_unlock(&admin->lock);
     return loggers;
@@ -442,12 +442,12 @@ static celix_array_list_t* celix_logAdmin_currentLogServices(void *handle) {
 
 static celix_array_list_t* celix_logAdmin_currentSinks(void *handle) {
     celix_log_admin_t* admin = handle;
-    celix_array_list_t* sinks = celix_arrayList_create();
+    celix_array_list_t* sinks = celix_arrayList_createStringArray();
     celixThreadRwlock_readLock(&admin->lock);
     hash_map_iterator_t iter = hashMapIterator_construct(admin->sinks);
     while (hashMapIterator_hasNext(&iter)) {
         celix_log_sink_entry_t* entry = hashMapIterator_nextValue(&iter);
-        celix_arrayList_add(sinks, celix_utils_strdup(entry->name));
+        celix_arrayList_addString(sinks, entry->name);
     }
     celixThreadRwlock_unlock(&admin->lock);
     return sinks;
@@ -539,8 +539,8 @@ static void celix_logAdmin_setSinkEnabledCmd(celix_log_admin_t* admin, const cha
 static void celix_logAdmin_InfoCmd(celix_log_admin_t* admin, FILE* outStream, FILE* errorStream CELIX_UNUSED) {
     celix_array_list_t* logServices = celix_logAdmin_currentLogServices(admin);
     celix_array_list_t* sinks = celix_logAdmin_currentSinks(admin);
-    celix_arrayList_sort(logServices, (void*)strcmp);
-    celix_arrayList_sort(sinks, (void*)strcmp);
+    celix_arrayList_sort(logServices);
+    celix_arrayList_sort(sinks);
 
     fprintf(outStream, "Log Admin provided log services:\n");
     for (int i = 0 ; i < celix_arrayList_size(logServices); ++i) {
@@ -552,7 +552,6 @@ static void celix_logAdmin_InfoCmd(celix_log_admin_t* admin, FILE* outStream, FI
             fprintf(outStream, " |- %i) Log Service %20s, active log level %s, %s\n",
                     i+1, name, celix_logUtils_logLevelToString(level), detailed ? "detailed" : "brief");
         }
-        free(name);
     }
     celix_arrayList_destroy(logServices);
 
@@ -565,7 +564,6 @@ static void celix_logAdmin_InfoCmd(celix_log_admin_t* admin, FILE* outStream, FI
             if (found) {
                 fprintf(outStream, " |- %i) Log Sink %20s, %s\n", i+1, name, enabled ? "enabled" : "disabled");
             }
-            free(name);
         }
     } else {
         fprintf(outStream, "Log Admin has found 0 log sinks\n");

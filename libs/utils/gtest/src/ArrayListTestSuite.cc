@@ -219,7 +219,7 @@ TEST_F(ArrayListTestSuite, TestSortForArrayList) {
     EXPECT_EQ(celix_arrayList_getInt(list, 3), 4);
 
 
-    celix_array_list_sort_entries_fp sort = [](celix_array_list_entry_t a, celix_array_list_entry_t b) -> int {
+    celix_array_list_compare_entries_fp sort = [](celix_array_list_entry_t a, celix_array_list_entry_t b) -> int {
         return a.intVal - b.intVal;
     };
     celix_arrayList_sortEntries(list, sort);
