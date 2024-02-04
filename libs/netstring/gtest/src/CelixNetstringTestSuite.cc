@@ -232,6 +232,7 @@ TEST_F(CelixNetstringTestSuite, DecodeFromStreamWithInvalidNetstring) {
     TestDecodeFromStreamWithInvalidNetstring("9999999999:Hello World,");//size too large
     TestDecodeFromStreamWithInvalidNetstring("11:Hello World ");//missing ','
     TestDecodeFromStreamWithInvalidNetstring("129:Hello,");//missing contents
+    TestDecodeFromStreamWithInvalidNetstring(":Hello,");//missing size
 }
 
 TEST_F(CelixNetstringTestSuite, DecodeFromStreamWithInvalidStreamMode) {

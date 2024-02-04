@@ -83,7 +83,7 @@ int celix_netstring_decodef(FILE* netstringIn, char** bytes, size_t* bytesSize) 
     }
     if (c == EOF) {
         return ferror(netstringIn) != 0 ? errno : EINVAL;
-    } else if (c != ':') {
+    } else if (c != ':' || digitCnt == 0) {
         return EINVAL;
     }
 

@@ -328,9 +328,6 @@ class CelixConan(ConanFile):
         if options["build_promises"]:
             options["celix_cxx17"] = True
 
-        if options["build_netstring"]:
-            options["build_utils"] = True
-
         if options["celix_cxx17"]:
             options["celix_cxx14"] = True
 
