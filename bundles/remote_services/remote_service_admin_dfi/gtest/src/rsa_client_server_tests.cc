@@ -538,9 +538,3 @@ TEST_F(RsaDfiDynamicIpServerTestSuite, CallingMultiTimesRemoteCalculatorTest) {
     });
 }
 
-TEST_F(RsaDfiDynamicIpServerTestSuite, IPV6RemoteCalculatorTest) {
-    TestRemoteCalculator([](tst_service_t* testSvc) {
-        auto ok = testSvc->testCalculator(testSvc->handle);
-        ASSERT_TRUE(ok);
-    }, "::1");
-}

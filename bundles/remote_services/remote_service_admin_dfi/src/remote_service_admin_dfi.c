@@ -275,7 +275,7 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         do {
             char *listeningPorts = NULL;
             if (bindToAllInterfaces || (*admin)->dynamicIpSupport) {
-                asprintf(&listeningPorts,"0.0.0.0:%s,[::]:%s", newPort,newPort);
+                asprintf(&listeningPorts,"0.0.0.0:%s", newPort);
             } else {
                 asprintf(&listeningPorts,"%s:%s", (*admin)->ip, newPort);
             }
