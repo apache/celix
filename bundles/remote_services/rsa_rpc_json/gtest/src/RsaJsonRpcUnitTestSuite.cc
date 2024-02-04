@@ -790,39 +790,6 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToFindInterfaceDescriptor) {
     unsetenv("CELIX_FRAMEWORK_EXTENDER_PATH");
 }
 
-TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToGetServiceVersionFromInterfaceDescriptor) {
-    celix_ei_expect_dynInterface_getVersionString(CELIX_EI_UNKNOWN_CALLER, 0, 1);
-
-    auto endpoint = CreateEndpointDescription(rpcTestSvcId);
-    long svcId = -1L;
-    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
-    EXPECT_EQ(CELIX_SUCCESS, status);
-
-    celix_bundleContext_waitForEvents(ctx.get());//wait for async endpoint creation
-
-    unsigned int serialProtoId = GenerateSerialProtoId();
-    celix_properties_t *metadata = celix_properties_create();
-    celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
-
-    auto found = celix_bundleContext_useService(ctx.get(), CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
-        celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
-        auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
-        EXPECT_NE(nullptr, reqHandler);
-        struct iovec request{};
-        request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
-        request.iov_len = strlen((char*)request.iov_base);
-        struct iovec reply{nullptr,0};
-        EXPECT_EQ(CELIX_ILLEGAL_STATE, reqHandler->handleRequest(reqHandler->handle, metadata, &request, &reply));
-        free(reply.iov_base);
-    });
-    EXPECT_TRUE(found);
-
-    celix_properties_destroy(metadata);
-
-    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), svcId);
-    endpointDescription_destroy(endpoint);
-}
-
 TEST_F(RsaJsonRpcEndPointUnitTestSuite, ServiceVersionMismatched) {
     auto endpoint = CreateEndpointDescription(rpcTestSvcId);
     celix_properties_set(endpoint->properties, CELIX_FRAMEWORK_SERVICE_VERSION, "2.0.0");//Its 1.0.0 in the interface descriptor

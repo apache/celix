@@ -27,4 +27,3 @@ cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
       -DRSA_SHM=ON \
       -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON \
       ..
-

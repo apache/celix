@@ -84,8 +84,7 @@ celix_status_t importRegistrationFactory_create(celix_log_helper_t *helper, char
 		(*registration_factory)->context = context;
 		(*registration_factory)->bundle = NULL;
 		(*registration_factory)->loghelper = helper;
-
-		arrayList_create(&(*registration_factory)->registrations);
+                (*registration_factory)->registrations = celix_arrayList_create();
 	}
 
 	return status;
@@ -99,7 +98,7 @@ celix_status_t importRegistrationFactory_destroy(import_registration_factory_t *
 	if (*registration_factory != NULL)
 	{
 		free((*registration_factory)->serviceName);
-		arrayList_destroy((*registration_factory)->registrations);
+		celix_arrayList_destroy((*registration_factory)->registrations);
 
 		serviceTracker_destroy((*registration_factory)->proxyFactoryTracker);
 		free(*registration_factory);

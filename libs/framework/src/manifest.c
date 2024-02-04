@@ -96,7 +96,7 @@ manifest_pt manifest_clone(manifest_pt manifest) {
 
 celix_status_t manifest_destroy(manifest_pt manifest) {
     if (manifest != NULL) {
-        properties_destroy(manifest->mainAttributes);
+        celix_properties_destroy(manifest->mainAttributes);
         hash_map_iterator_t iter = hashMapIterator_construct(manifest->attributes);
         while (hashMapIterator_hasNext(&iter)) {
             hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
@@ -133,7 +133,7 @@ void manifest_clear(manifest_pt manifest) {
 }
 //LCOV_EXCL_STOP
 
-properties_pt manifest_getMainAttributes(manifest_pt manifest) {
+ celix_properties_t* manifest_getMainAttributes(manifest_pt manifest) {
     return manifest->mainAttributes;
 }
 
@@ -307,7 +307,7 @@ void manifest_write(manifest_pt manifest, const char * filename) {
 //LCOV_EXCL_STOP
 
 const char* manifest_getValue(manifest_pt manifest, const char* name) {
-    const char* val = properties_get(manifest->mainAttributes, name);
+    const char* val = celix_properties_get(manifest->mainAttributes, name, NULL);
     bool isEmpty = utils_isStringEmptyOrNull(val);
     return isEmpty ? NULL : val;
 }

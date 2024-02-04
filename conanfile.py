@@ -47,6 +47,7 @@ class CelixConan(ConanFile):
         "enable_address_sanitizer": False,
         "enable_undefined_sanitizer": False,
         "enable_thread_sanitizer": False,
+        "install_find_modules": False,
         "build_all": False,
         "build_http_admin": False,
         "build_log_service": False,
@@ -144,7 +145,6 @@ class CelixConan(ConanFile):
     def build_requirements(self):
         if self.options.enable_testing:
             self.test_requires("gtest/1.10.0")
-            self.test_requires("cpputest/4.0")
         if self.options.enable_ccache:
             self.build_requires("ccache/4.7.4")
 
@@ -287,8 +287,6 @@ class CelixConan(ConanFile):
             self.options['openssl'].shared = True
         if self.options.enable_testing:
             self.options['gtest'].shared = True
-            if self.options.enable_address_sanitizer:
-                self.options["cpputest"].with_leak_detection = False
         if (self.options.build_rsa_discovery_common
                 or (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.options['libxml2'].shared = True
@@ -341,6 +339,8 @@ class CelixConan(ConanFile):
             lst = [x.ref.name for x in self.requires.values()]
             if "mdnsresponder" in lst:
                 tc.cache_variables["BUILD_ERROR_INJECTOR_MDNSRESPONDER"] = "ON"
+            if "jansson" in lst:
+                tc.cache_variables["BUILD_ERROR_INJECTOR_JANSSON"] = "ON"
         tc.cache_variables["CELIX_ERR_BUFFER_SIZE"] = str(self.options.celix_err_buffer_size)
         # tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192

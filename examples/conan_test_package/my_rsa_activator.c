@@ -34,21 +34,21 @@ typedef struct my_remote_service_admin_activator {
     long svcIdRsa;
 } my_remote_service_admin_activator_t;
 
-static celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrations) {
+static celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, celix_array_list_t** registrations) {
     (void)properties;
     (void)registrations;
     celix_logHelper_info(admin->loghelper, "%s called: serviceId=%s\n", __FUNCTION__, serviceId);
     return CELIX_SUCCESS;
 }
 
-static celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t *admin, array_list_pt *services) {
+static celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t *admin, celix_array_list_t** services) {
     celix_status_t status = CELIX_SUCCESS;
     (void)services;
     celix_logHelper_info(admin->loghelper, "%s called\n", __FUNCTION__);
     return status;
 }
 
-static celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t *admin, array_list_pt *services) {
+static celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t *admin, celix_array_list_t** services) {
     celix_status_t status = CELIX_SUCCESS;
     (void)services;
     celix_logHelper_info(admin->loghelper, "%s called\n", __FUNCTION__);

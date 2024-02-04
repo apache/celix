@@ -28,7 +28,7 @@
 
 typedef struct disc_mock_service {
     void *handle;// disc_mock_activator_t*
-    celix_status_t (*getEPDescriptors)(void *handle, array_list_pt *descrList);
+    celix_status_t (*getEPDescriptors)(void *handle, celix_array_list_t** descrList);
 } disc_mock_service_t;
 
 
@@ -42,7 +42,7 @@ struct disc_mock_activator {
     endpoint_listener_t *endpointListener;
     service_registration_t *endpointListenerService;
 
-    array_list_pt endpointList;
+    celix_array_list_t* endpointList;
 };
 
 

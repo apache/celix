@@ -1270,12 +1270,12 @@ static celix_status_t topologyManager_extendFilter(topology_manager_pt manager, 
 	return status;
 }
 
-celix_status_t topologyManager_listenerAdded(void *handle, array_list_pt listeners) {
+celix_status_t topologyManager_listenerAdded(void *handle, celix_array_list_t* listeners) {
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
 
-	for (int i = 0; i < arrayList_size(listeners); i++) {
-		listener_hook_info_pt info = arrayList_get(listeners, i);
+	for (int i = 0; i < celix_arrayList_size(listeners); i++) {
+		listener_hook_info_pt info = celix_arrayList_get(listeners, i);
 		celix_bundle_t *bundle = NULL, *self = NULL;
 		bundleContext_getBundle(info->context, &bundle);
 		bundleContext_getBundle(manager->context, &self);
@@ -1320,12 +1320,12 @@ celix_status_t topologyManager_listenerAdded(void *handle, array_list_pt listene
 	return status;
 }
 
-celix_status_t topologyManager_listenerRemoved(void *handle, array_list_pt listeners) {
+celix_status_t topologyManager_listenerRemoved(void *handle, celix_array_list_t* listeners) {
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
 
-	for (int i = 0; i < arrayList_size(listeners); i++) {
-		listener_hook_info_pt info = arrayList_get(listeners, i);
+	for (int i = 0; i < celix_arrayList_size(listeners); i++) {
+		listener_hook_info_pt info = celix_arrayList_get(listeners, i);
 
 		celix_bundle_t *bundle = NULL, *self = NULL;
 		bundleContext_getBundle(info->context, &bundle);

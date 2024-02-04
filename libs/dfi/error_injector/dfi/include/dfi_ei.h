@@ -28,8 +28,6 @@ CELIX_EI_DECLARE(dynFunction_createClosure, int);
 
 CELIX_EI_DECLARE(jsonRpc_prepareInvokeRequest, int);
 
-CELIX_EI_DECLARE(dynInterface_getVersionString, int);
-
 #ifdef __cplusplus
 }
 #endif

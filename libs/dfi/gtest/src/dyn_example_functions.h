@@ -50,6 +50,8 @@ void example4Func(struct tst_seq seq);
 #define EXAMPLE5_DESCRIPTOR "example(#const=true;tt)V"
 void example5Func(const char *s1, char *s2);
 
+#define EXAMPLE6_DESCRIPTOR "example()I"
+int32_t example6Func();
 
 
 #ifdef __cplusplus

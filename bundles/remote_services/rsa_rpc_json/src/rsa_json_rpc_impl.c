@@ -36,6 +36,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 
 struct rsa_json_rpc {
     celix_bundle_context_t *ctx;
