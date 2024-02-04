@@ -1365,7 +1365,7 @@ long celix_bundleContext_findServiceWithOptions(celix_bundle_context_t *ctx, con
     long result = -1L;
     char* filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->serviceName, opts->versionRange, opts->filter);
     if (filter != NULL) {
-        celix_array_list_t *svcIds = celix_serviceRegisrty_findServices(ctx->framework->registry, filter);
+        celix_array_list_t *svcIds = celix_serviceRegistry_findServices(ctx->framework->registry, filter);
         if (svcIds != NULL && celix_arrayList_size(svcIds) > 0) {
             result = celix_arrayList_getLong(svcIds, 0);
         }
@@ -1388,7 +1388,7 @@ celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_con
     celix_array_list_t* result = NULL;
     char* filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->serviceName, opts->versionRange, opts->filter);
     if (filter != NULL) {
-        result = celix_serviceRegisrty_findServices(ctx->framework->registry, filter);
+        result = celix_serviceRegistry_findServices(ctx->framework->registry, filter);
         free(filter);
     }
     return result;
