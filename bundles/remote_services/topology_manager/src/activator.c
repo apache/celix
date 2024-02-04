@@ -36,11 +36,11 @@
 #include "topology_manager.h"
 #include "endpoint_listener.h"
 #include "remote_constants.h"
+#include "remote_service_admin.h"
 #include "listener_hook_service.h"
 #include "celix_log_helper.h"
 #include "scope.h"
 #include "tm_scope.h"
-#include "topology_manager.h"
 
 struct activator {
 	celix_bundle_context_t *context;

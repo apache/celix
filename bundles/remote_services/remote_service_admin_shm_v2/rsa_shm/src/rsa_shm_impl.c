@@ -255,7 +255,7 @@ static void rsaShm_overlayProperties(celix_properties_t *additionalProperties, c
 
 static bool rsaShm_isConfigTypeMatched(celix_properties_t *properties) {
     bool matched = false;
-    /* If OSGI_RSA_SERVICE_EXPORTED_CONFIGS property is not set, then the Remote Service
+    /* If CELIX_RSA_SERVICE_EXPORTED_CONFIGS property is not set, then the Remote Service
      * Admin implementation must choose a convenient configuration type.
      */
     const char *exportConfigs = celix_properties_get(properties,
