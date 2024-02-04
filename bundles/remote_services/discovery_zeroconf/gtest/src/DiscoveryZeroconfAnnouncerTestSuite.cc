@@ -451,27 +451,11 @@ static void TestAddJumboEndpoint(celix_bundle_context *ctx, discovery_zeroconf_a
 
     discoveryZeroconfAnnouncer_endpointAdded(announcer, endpoint, nullptr);
 
-    bool found = false;
-    while (!found) {
-        DNSServiceRef dsRef{};
-        DNSServiceErrorType dnsErr = DNSServiceBrowse(&dsRef, 0, 0, DZC_SERVICE_PRIMARY_TYPE, "local.",
-             [](DNSServiceRef, DNSServiceFlags, uint32_t, DNSServiceErrorType, const char*, const char*, const char*, void* context){
-                 auto *found = static_cast<bool*>(context);
-                 *found = true;
-            }, &found);
-        EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
-        fd_set readfds;
-        FD_ZERO(&readfds);
-        FD_SET(DNSServiceRefSockFD(dsRef), &readfds);
-        struct timeval tv{};
-        tv.tv_sec = 3;
-        tv.tv_usec = 0;
-        int ret = select(DNSServiceRefSockFD(dsRef) + 1, &readfds, nullptr, nullptr, &tv);
-        if (ret > 0) {
-            DNSServiceProcessResult(dsRef);
-        }
-        DNSServiceRefDeallocate(dsRef);
-    }
+    DNSServiceRef dsRef{};
+    DNSServiceErrorType dnsErr = DNSServiceBrowse(&dsRef, 0, 0, DZC_SERVICE_PRIMARY_TYPE, "local.", [](DNSServiceRef, DNSServiceFlags, uint32_t, DNSServiceErrorType, const char*, const char*, const char*, void* ){}, NULL);
+    EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
+    DNSServiceProcessResult(dsRef);
+    DNSServiceRefDeallocate(dsRef);
 
     discoveryZeroconfAnnouncer_endpointRemoved(announcer, endpoint, nullptr);
 

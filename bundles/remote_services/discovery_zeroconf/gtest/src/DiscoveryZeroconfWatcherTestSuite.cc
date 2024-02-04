@@ -345,34 +345,6 @@ public:
         sleep(3);//wait for mdnsd start
         testServiceRef = RegisterTestService(GetTestNetInterfaceIndex());
         EXPECT_TRUE(testServiceRef != nullptr);
-        bool found = false;
-        while (!found) {
-            DNSServiceRef dsRef{};
-            DNSServiceErrorType dnsErr = DNSServiceBrowse(&dsRef, 0, 0, DZC_SERVICE_PRIMARY_TYPE, "local.",
-                                                          [](DNSServiceRef sdRef, DNSServiceFlags flags, uint32_t interfaceIndex, DNSServiceErrorType errorCode, const char *serviceName, const char *regtype, const char *replyDomain, void *context) {
-                (void)sdRef;
-                (void)flags;
-                (void)interfaceIndex;
-                (void)errorCode;
-                (void)serviceName;
-                (void)regtype;
-                (void)replyDomain;
-                auto *found = static_cast<bool*>(context);
-                *found = true;
-            }, &found);
-            EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
-            fd_set readfds;
-            FD_ZERO(&readfds);
-            FD_SET(DNSServiceRefSockFD(dsRef), &readfds);
-            struct timeval tv{};
-            tv.tv_sec = 3;
-            tv.tv_usec = 0;
-            int ret = select(DNSServiceRefSockFD(dsRef) + 1, &readfds, nullptr, nullptr, &tv);
-            if (ret > 0) {
-                DNSServiceProcessResult(dsRef);
-            }
-            DNSServiceRefDeallocate(dsRef);
-        }
     }
 
     static void TearDownTestCase() {
