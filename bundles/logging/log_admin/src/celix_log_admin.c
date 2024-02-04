@@ -544,7 +544,7 @@ static void celix_logAdmin_InfoCmd(celix_log_admin_t* admin, FILE* outStream, FI
 
     fprintf(outStream, "Log Admin provided log services:\n");
     for (int i = 0 ; i < celix_arrayList_size(logServices); ++i) {
-        char *name = celix_arrayList_get(logServices, i);
+        const char *name = celix_arrayList_getString(logServices, i);
         celix_log_level_e level;
         bool detailed;
         bool found = celix_logAdmin_logServiceInfoEx(admin, name, &level, &detailed);
@@ -558,7 +558,7 @@ static void celix_logAdmin_InfoCmd(celix_log_admin_t* admin, FILE* outStream, FI
     if (celix_arrayList_size(sinks) > 0) {
         fprintf(outStream, "Log Admin found log sinks:\n");
         for (int i = 0 ; i < celix_arrayList_size(sinks); ++i) {
-            char *name = celix_arrayList_get(sinks, i);
+            const char *name = celix_arrayList_getString(sinks, i);
             bool enabled;
             bool found = celix_logAdmin_sinkInfo(admin, name, &enabled);
             if (found) {

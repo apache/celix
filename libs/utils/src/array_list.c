@@ -16,13 +16,6 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * array_list.c
- *
- *  \date       Aug 4, 2010
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
 #include <assert.h>
 #include <stdint.h>
@@ -50,7 +43,7 @@ struct celix_array_list {
 };
 
 static bool celix_arrayList_undefinedEquals(celix_array_list_entry_t a, celix_array_list_entry_t b) {
-    return memcmp(&a, &b, sizeof(a)) == 0;
+    return memcmp(&a.voidPtrVal, &b.voidPtrVal, sizeof(a)) == 0;
 }
 
 static int celix_arrayList_comparePtrEntries(celix_array_list_entry_t a, celix_array_list_entry_t b) {
@@ -195,6 +188,10 @@ static void celix_arrayList_setTypeSpecificCallbacks(celix_array_list_t* list) {
         list->equalsCallback = celix_arrayList_stringEquals;
         list->compareCallback = celix_arrayList_compareStringEntries;
         break;
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF:
+        list->equalsCallback = celix_arrayList_stringEquals;
+        list->compareCallback = celix_arrayList_compareStringEntries;
+        break;
     case CELIX_ARRAY_LIST_ELEMENT_TYPE_INT:
         list->equalsCallback = celix_arrayList_intEquals;
         list->compareCallback = celix_arrayList_compareIntEntries;
@@ -252,12 +249,19 @@ celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_cre
         list->elementType = opts->elementType;
         celix_arrayList_setTypeSpecificCallbacks(list);
 
+        //if opts contains callbacks, use them and override the default ones
         if (opts->simpleRemovedCallback) {
             list->simpleRemovedCallback = opts->simpleRemovedCallback;
         }
         if (opts->removedCallback) {
             list->removedCallback = opts->removedCallback;
             list->removedCallbackData = opts->removedCallbackData;
+        }
+        if (opts->equalsCallback) {
+            list->equalsCallback = opts->equalsCallback;
+        }
+        if (opts->compareCallback) {
+            list->compareCallback = opts->compareCallback;
         }
     }
     return celix_steal_ptr(list);
@@ -317,6 +321,11 @@ celix_array_list_t* celix_arrayList_createSizeArray() {
     return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_SIZE);
 }
 
+celix_array_list_t* celix_arrayList_createVersionArray() {
+    return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION);
+}
+
+
 celix_array_list_t* celix_arrayList_createWithEquals(celix_arrayList_equals_fp equals) {
     celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
     opts.equalsCallback = equals;
@@ -329,6 +338,10 @@ void celix_arrayList_destroy(celix_array_list_t *list) {
         free(list->elementData);
         free(list);
     }
+}
+
+celix_array_list_element_type_t celix_arrayList_getElementType(const celix_array_list_t *list) {
+    return list->elementType;
 }
 
 int celix_arrayList_size(const celix_array_list_t *list) {
@@ -448,10 +461,7 @@ celix_status_t celix_arrayList_assignString(celix_array_list_t* list, char* valu
     assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING);
     celix_array_list_entry_t entry;
     memset(&entry, 0, sizeof(entry));
-    entry.stringVal = celix_utils_strdup(value);
-    if (entry.stringVal == NULL) {
-        return CELIX_ENOMEM;
-    }
+    entry.stringVal = value;
     return celix_arrayList_addEntry(list, entry);
 }
 
@@ -697,6 +707,12 @@ static int celix_arrayList_compareEntries(const void* voidA, const void* voidB, 
     const celix_array_list_entry_t* a = voidA;
     const celix_array_list_entry_t* b = voidB;
     return compare(*a, *b);
+}
+
+void celix_arrayList_sort(celix_array_list_t *list) {
+    if (list->compareCallback) {
+        celix_arrayList_sortEntries(list, list->compareCallback);
+    }
 }
 
 void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_compare_entries_fp compare) {

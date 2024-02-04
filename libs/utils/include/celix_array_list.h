@@ -294,7 +294,9 @@ celix_array_list_t* celix_arrayList_createVersionArray();
 /**
  * @brief Creates a new empty array list using using the provided array list create options.
  *
- * The underlying element type will be undefined, until the first element is added.
+ * If the element type is set to something other than CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED, the remove, equals,
+ * and compare callbacks will be set according to the corresponding celix_arrayList_create*Array function.
+ * The provided callbacks in the options will override the default callbacks.
  *
  * @param opts The create options, only used during the creation of the array list.
  */
@@ -310,6 +312,12 @@ CELIX_UTILS_EXPORT
 void celix_arrayList_destroy(celix_array_list_t *list);
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_array_list_t, celix_arrayList_destroy)
+
+/**
+ * @brief Return the element type of the array list.
+ */
+CELIX_UTILS_EXPORT
+celix_array_list_element_type_t celix_arrayList_getElementType(const celix_array_list_t *list);
 
 /**
  * @brief Returns the size of the array list.

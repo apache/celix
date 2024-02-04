@@ -83,76 +83,26 @@ TEST_F(ArrayListTestSuite, TestArrayListWithEquals) {
 }
 
 template<typename T>
-void testArrayListForTemplateType(int nrEntries) {
-    auto* list = celix_arrayList_create();
+void testArrayListForTemplateType(const std::vector<T>& entries,
+                                  const std::function<celix_array_list_t*()>& create,
+                                  const std::function<celix_status_t(celix_array_list_t*, T)>& add,
+                                  const std::function<T(celix_array_list_t*, int)>& get,
+                                  const std::function<void(celix_array_list_t*, T)>& remove) {
+    auto* list = create();
     //fill
-    for (int i = 0; i < nrEntries; ++i) {
-        if constexpr (std::is_same_v<void*, T>) {
-            celix_arrayList_add(list, (void*)(intptr_t )i);
-        } else if constexpr (std::is_same_v<int, T>) {
-            celix_arrayList_addInt(list, i);
-        } else if constexpr (std::is_same_v<long, T>) {
-            celix_arrayList_addLong(list, i);
-        } else if constexpr (std::is_same_v<unsigned int, T>) {
-            celix_arrayList_addUInt(list, i);
-        } else if constexpr (std::is_same_v<unsigned long, T>) {
-            celix_arrayList_addULong(list, i);
-        } else if constexpr (std::is_same_v<float, T>) {
-            celix_arrayList_addFloat(list, i + 0.0f);
-        } else if constexpr (std::is_same_v<double, T>) {
-            celix_arrayList_addDouble(list, i + 0.0);
-        } else if constexpr (std::is_same_v<bool, T>) {
-            celix_arrayList_addBool(list, i % 2 == 0);
-        } else if constexpr (std::is_same_v<size_t, T>) {
-            celix_arrayList_addSize(list, i);
-        }
+    for (const auto& entry : entries) {
+        add(list, entry);
     }
-    EXPECT_EQ(celix_arrayList_size(list), nrEntries);
+    EXPECT_EQ(celix_arrayList_size(list), entries.size());
 
     //get
-    for (int i = 0; i < nrEntries; ++i) {
-        if constexpr (std::is_same_v<void*, T>) {
-            EXPECT_EQ(celix_arrayList_get(list, i), (void*)(intptr_t )i);
-        } else if constexpr (std::is_same_v<int, T>) {
-            EXPECT_EQ(celix_arrayList_getInt(list, i), i);
-        } else if constexpr (std::is_same_v<long, T>) {
-            EXPECT_EQ(celix_arrayList_getLong(list, i), i);
-        } else if constexpr (std::is_same_v<unsigned int, T>) {
-            EXPECT_EQ(celix_arrayList_getUInt(list, i), i);
-        } else if constexpr (std::is_same_v<unsigned long, T>) {
-            EXPECT_EQ(celix_arrayList_getULong(list, i), i);
-        } else if constexpr (std::is_same_v<float, T>) {
-            EXPECT_EQ(celix_arrayList_getFloat(list, i), i + 0.0);
-        } else if constexpr (std::is_same_v<double, T>) {
-            EXPECT_EQ(celix_arrayList_getDouble(list, i), i + 0.0);
-        } else if constexpr (std::is_same_v<bool, T>) {
-            EXPECT_EQ(celix_arrayList_getBool(list, i), i % 2 == 0);
-        } else if constexpr (std::is_same_v<size_t, T>) {
-            EXPECT_EQ(celix_arrayList_getSize(list, i), i);
-        }
+    for (int i = 0; i < (int)entries.size(); ++i) {
+        EXPECT_EQ(get(list, i), entries[i]);
     }
 
     //remove
-    for (int i = 0; i < nrEntries; ++i) {
-        if constexpr (std::is_same_v<void*, T>) {
-            celix_arrayList_remove(list, (void*)(intptr_t)i);
-        } else if constexpr (std::is_same_v<int, T>) {
-            celix_arrayList_removeInt(list, i);
-        } else if constexpr (std::is_same_v<long, T>) {
-            celix_arrayList_removeLong(list, i);
-        } else if constexpr (std::is_same_v<unsigned int, T>) {
-            celix_arrayList_removeUInt(list, i);
-        } else if constexpr (std::is_same_v<unsigned long, T>) {
-            celix_arrayList_removeULong(list, i);
-        } else if constexpr (std::is_same_v<float, T>) {
-            celix_arrayList_removeFloat(list, i + 0.0);
-        } else if constexpr (std::is_same_v<double, T>) {
-            celix_arrayList_removeDouble(list, i + 0.0);
-        } else if constexpr (std::is_same_v<bool, T>) {
-            celix_arrayList_removeBool(list, i % 2 == 0);
-        } else if constexpr (std::is_same_v<size_t, T>) {
-            celix_arrayList_removeSize(list, i);
-        }
+    for (int i = 0; i < (int)entries.size(); ++i) {
+        remove(list, entries[i]);
     }
     EXPECT_EQ(celix_arrayList_size(list), 0);
 
@@ -160,15 +110,270 @@ void testArrayListForTemplateType(int nrEntries) {
 }
 
 TEST_F(ArrayListTestSuite, TestDifferentEntyTypesForArrayList) {
-    testArrayListForTemplateType<void*>(10);
-    testArrayListForTemplateType<int>(10);
-    testArrayListForTemplateType<long>(10);
-    testArrayListForTemplateType<unsigned int>(10);
-    testArrayListForTemplateType<unsigned long>(10);
-    testArrayListForTemplateType<float>(10);
-    testArrayListForTemplateType<double>(10);
-    testArrayListForTemplateType<bool>(10);
-    testArrayListForTemplateType<size_t>(10);
+    std::vector<int> intEntries{1, 2, 3, 4, 5};
+    testArrayListForTemplateType<int>(intEntries,
+                                      celix_arrayList_createIntArray,
+                                      celix_arrayList_addInt,
+                                      celix_arrayList_getInt,
+                                      celix_arrayList_removeInt);
+
+    std::vector<long> longEntries{1L, 2L, 3L, 4L, 5L};
+    testArrayListForTemplateType<long>(longEntries,
+                                       celix_arrayList_createLongArray,
+                                       celix_arrayList_addLong,
+                                       celix_arrayList_getLong,
+                                       celix_arrayList_removeLong);
+
+    std::vector<float> floatEntries{1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+    testArrayListForTemplateType<float>(floatEntries,
+                                        celix_arrayList_createFloatArray,
+                                        celix_arrayList_addFloat,
+                                        celix_arrayList_getFloat,
+                                        celix_arrayList_removeFloat);
+
+    std::vector<double> doubleEntries{1.0, 2.0, 3.0, 4.0, 5.0};
+    testArrayListForTemplateType<double>(doubleEntries,
+                                         celix_arrayList_createDoubleArray,
+                                         celix_arrayList_addDouble,
+                                         celix_arrayList_getDouble,
+                                         celix_arrayList_removeDouble);
+
+    std::vector<bool> boolEntries{true, false, true, false, true};
+    testArrayListForTemplateType<bool>(boolEntries,
+                                       celix_arrayList_createBoolArray,
+                                       celix_arrayList_addBool,
+                                       celix_arrayList_getBool,
+                                       celix_arrayList_removeBool);
+
+    std::vector<void*> voidPtrEntries{(void*)0x11, (void*)0x22, (void*)0x33, (void*)0x44, (void*)0x55};
+    testArrayListForTemplateType<void*>(voidPtrEntries,
+                                        celix_arrayList_createPointerArray,
+                                        celix_arrayList_add,
+                                        celix_arrayList_get,
+                                        celix_arrayList_remove);
+
+    std::vector<uint32_t> uintEntries{1, 2, 3, 4, 5};
+    testArrayListForTemplateType<uint32_t>(uintEntries,
+                                           celix_arrayList_createUIntArray,
+                                           celix_arrayList_addUInt,
+                                           celix_arrayList_getUInt,
+                                           celix_arrayList_removeUInt);
+
+    std::vector<uint64_t> ulongEntries{1, 2, 3, 4, 5};
+    testArrayListForTemplateType<uint64_t>(ulongEntries,
+                                           celix_arrayList_createULongArray,
+                                           celix_arrayList_addULong,
+                                           celix_arrayList_getULong,
+                                           celix_arrayList_removeULong);
+
+    std::vector<size_t> sizeEntries{1, 2, 3, 4, 5};
+    testArrayListForTemplateType<size_t>(sizeEntries,
+                                         celix_arrayList_createSizeArray,
+                                         celix_arrayList_addSize,
+                                         celix_arrayList_getSize,
+                                         celix_arrayList_removeSize);
+}
+
+TEST_F(ArrayListTestSuite, StringArrayList) {
+    celix_autoptr(celix_array_list_t) stringList = celix_arrayList_createStringArray();
+    const char* str1 = "1";
+    celix_arrayList_addString(stringList, str1);
+    celix_arrayList_addString(stringList, "2");
+    celix_arrayList_assignString(stringList, strdup("3"));
+
+    EXPECT_EQ(3, celix_arrayList_size(stringList));
+    EXPECT_STREQ("1", celix_arrayList_getString(stringList, 0));
+    EXPECT_NE((void*)str1, (void*)celix_arrayList_getString(stringList, 0)); //string is added as copy
+    EXPECT_STREQ("2", celix_arrayList_getString(stringList, 1));
+    EXPECT_STREQ("3", celix_arrayList_getString(stringList, 2));
+
+    celix_arrayList_removeString(stringList, "2");
+    EXPECT_EQ(2, celix_arrayList_size(stringList));
+
+    celix_autoptr(celix_array_list_t) stringRefList = celix_arrayList_createStringRefArray();
+    celix_arrayList_addString(stringRefList, str1);
+    celix_arrayList_addString(stringRefList, "2");
+    celix_arrayList_addString(stringRefList, "3");
+
+    EXPECT_EQ(3, celix_arrayList_size(stringRefList));
+    EXPECT_STREQ("1", celix_arrayList_getString(stringRefList, 0));
+    EXPECT_EQ((void*)str1, (void*)celix_arrayList_getString(stringRefList, 0)); //string is added as reference
+    EXPECT_STREQ("2", celix_arrayList_getString(stringRefList, 1));
+
+    celix_arrayList_removeString(stringRefList, "2");
+    EXPECT_EQ(2, celix_arrayList_size(stringRefList));
+}
+
+TEST_F(ArrayListTestSuite, VersionArrayList) {
+    celix_autoptr(celix_array_list_t) versionList = celix_arrayList_createVersionArray();
+    celix_version_t* v1 = celix_version_create(1, 2, 3, "a");
+    celix_arrayList_addVersion(versionList, v1); //copy
+    celix_arrayList_assignVersion(versionList, v1); //transfer ownership
+    celix_arrayList_assignVersion(versionList, celix_version_create(2, 3, 4, "b"));
+
+    EXPECT_EQ(3, celix_arrayList_size(versionList));
+    EXPECT_EQ(0, celix_version_compareToMajorMinor(celix_arrayList_getVersion(versionList, 0), 1, 2));
+    EXPECT_EQ(0, celix_version_compareToMajorMinor(celix_arrayList_getVersion(versionList, 1), 1, 2));
+    EXPECT_EQ(0, celix_version_compareToMajorMinor(celix_arrayList_getVersion(versionList, 2), 2, 3));
+
+    EXPECT_NE((void*)v1, (void*)celix_arrayList_getVersion(versionList, 0)); //version is added as copy
+    EXPECT_EQ((void*)v1, (void*)celix_arrayList_getVersion(versionList, 1)); //version is added as reference
+
+    celix_autoptr(celix_version_t) vRef = celix_version_create(1, 2, 3, "a");
+    celix_arrayList_removeVersion(versionList, vRef);
+    EXPECT_EQ(2, celix_arrayList_size(versionList));
+}
+
+TEST_F(ArrayListTestSuite, SortTypedArrayLists) {
+    // Given a ptr, string, int, long, uint, ulong, float, double, bool, size and version list
+    // with unsorted values (including duplicates)
+    celix_autoptr(celix_array_list_t) ptrList = celix_arrayList_createPointerArray();
+    celix_arrayList_add(ptrList, (void*)0x33);
+    celix_arrayList_add(ptrList, (void*)0x11);
+    celix_arrayList_add(ptrList, (void*)0x22);
+    celix_arrayList_add(ptrList, (void*)0x11);
+
+    celix_autoptr(celix_array_list_t) stringList = celix_arrayList_createStringArray();
+    celix_arrayList_addString(stringList, "3");
+    celix_arrayList_addString(stringList, "1");
+    celix_arrayList_addString(stringList, "2");
+    celix_arrayList_addString(stringList, "1");
+
+    celix_autoptr(celix_array_list_t) intList = celix_arrayList_createIntArray();
+    celix_arrayList_addInt(intList, 3);
+    celix_arrayList_addInt(intList, 1);
+    celix_arrayList_addInt(intList, 2);
+    celix_arrayList_addInt(intList, 1);
+
+    celix_autoptr(celix_array_list_t) longList = celix_arrayList_createLongArray();
+    celix_arrayList_addLong(longList, 3L);
+    celix_arrayList_addLong(longList, 1L);
+    celix_arrayList_addLong(longList, 2L);
+    celix_arrayList_addLong(longList, 1L);
+
+    celix_autoptr(celix_array_list_t) uintList = celix_arrayList_createUIntArray();
+    celix_arrayList_addUInt(uintList, 3U);
+    celix_arrayList_addUInt(uintList, 1U);
+    celix_arrayList_addUInt(uintList, 2U);
+    celix_arrayList_addUInt(uintList, 1U);
+
+    celix_autoptr(celix_array_list_t) ulongList = celix_arrayList_createULongArray();
+    celix_arrayList_addULong(ulongList, 3UL);
+    celix_arrayList_addULong(ulongList, 1UL);
+    celix_arrayList_addULong(ulongList, 2UL);
+    celix_arrayList_addULong(ulongList, 1UL);
+
+    celix_autoptr(celix_array_list_t) floatList = celix_arrayList_createFloatArray();
+    celix_arrayList_addFloat(floatList, 3.0f);
+    celix_arrayList_addFloat(floatList, 1.0f);
+    celix_arrayList_addFloat(floatList, 2.0f);
+    celix_arrayList_addFloat(floatList, 1.0f);
+
+    celix_autoptr(celix_array_list_t) doubleList = celix_arrayList_createDoubleArray();
+    celix_arrayList_addDouble(doubleList, 3.0);
+    celix_arrayList_addDouble(doubleList, 1.0);
+    celix_arrayList_addDouble(doubleList, 2.0);
+    celix_arrayList_addDouble(doubleList, 1.0);
+
+    celix_autoptr(celix_array_list_t) boolList = celix_arrayList_createBoolArray();
+    celix_arrayList_addBool(boolList, false);
+    celix_arrayList_addBool(boolList, true);
+    celix_arrayList_addBool(boolList, false);
+
+    celix_autoptr(celix_array_list_t) sizeList = celix_arrayList_createSizeArray();
+    celix_arrayList_addSize(sizeList, 3);
+    celix_arrayList_addSize(sizeList, 1);
+    celix_arrayList_addSize(sizeList, 2);
+    celix_arrayList_addSize(sizeList, 1);
+
+    celix_autoptr(celix_array_list_t) versionList = celix_arrayList_createVersionArray();
+    celix_arrayList_assignVersion(versionList, celix_version_create(2, 1, 0, ""));
+    celix_arrayList_assignVersion(versionList, celix_version_create(3, 2, 1, ""));
+    celix_arrayList_assignVersion(versionList, celix_version_create(2, 1, 0, ""));
+    celix_arrayList_assignVersion(versionList, celix_version_create(1, 0, 0, "b"));
+    celix_arrayList_assignVersion(versionList, celix_version_create(1, 0, 0, "a"));
+
+    // Then the element type is correctly set
+    EXPECT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER, celix_arrayList_getElementType(ptrList));
+    EXPECT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING, celix_arrayList_getElementType(stringList));
+    EXPECT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_INT, celix_arrayList_getElementType(intList));
+    EXPECT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG, celix_arrayList_getElementType(longList));
+    EXPECT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_UINT, celix_arrayList_getElementType(uintList));
+    EXPECT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_ULONG, celix_arrayList_getElementType(ulongList));
+    EXPECT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_FLOAT, celix_arrayList_getElementType(floatList));
+    EXPECT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE, celix_arrayList_getElementType(doubleList));
+    EXPECT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL, celix_arrayList_getElementType(boolList));
+    EXPECT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_SIZE, celix_arrayList_getElementType(sizeList));
+    EXPECT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION, celix_arrayList_getElementType(versionList));
+
+    // When sorting the lists
+    celix_arrayList_sort(ptrList);
+    celix_arrayList_sort(stringList);
+    celix_arrayList_sort(intList);
+    celix_arrayList_sort(longList);
+    celix_arrayList_sort(uintList);
+    celix_arrayList_sort(ulongList);
+    celix_arrayList_sort(floatList);
+    celix_arrayList_sort(doubleList);
+    celix_arrayList_sort(boolList);
+    celix_arrayList_sort(sizeList);
+    celix_arrayList_sort(versionList);
+
+    // Then the lists are sorted
+    EXPECT_EQ((void*)0x11, celix_arrayList_get(ptrList, 0));
+    EXPECT_EQ((void*)0x11, celix_arrayList_get(ptrList, 1));
+    EXPECT_EQ((void*)0x22, celix_arrayList_get(ptrList, 2));
+    EXPECT_EQ((void*)0x33, celix_arrayList_get(ptrList, 3));
+
+    EXPECT_STREQ("1", celix_arrayList_getString(stringList, 0));
+    EXPECT_STREQ("1", celix_arrayList_getString(stringList, 1));
+    EXPECT_STREQ("2", celix_arrayList_getString(stringList, 2));
+    EXPECT_STREQ("3", celix_arrayList_getString(stringList, 3));
+
+    EXPECT_EQ(1, celix_arrayList_getInt(intList, 0));
+    EXPECT_EQ(1, celix_arrayList_getInt(intList, 1));
+    EXPECT_EQ(2, celix_arrayList_getInt(intList, 2));
+    EXPECT_EQ(3, celix_arrayList_getInt(intList, 3));
+
+    EXPECT_EQ(1L, celix_arrayList_getLong(longList, 0));
+    EXPECT_EQ(1L, celix_arrayList_getLong(longList, 1));
+    EXPECT_EQ(2L, celix_arrayList_getLong(longList, 2));
+    EXPECT_EQ(3L, celix_arrayList_getLong(longList, 3));
+
+    EXPECT_EQ(1U, celix_arrayList_getUInt(uintList, 0));
+    EXPECT_EQ(1U, celix_arrayList_getUInt(uintList, 1));
+    EXPECT_EQ(2U, celix_arrayList_getUInt(uintList, 2));
+    EXPECT_EQ(3U, celix_arrayList_getUInt(uintList, 3));
+
+    EXPECT_EQ(1UL, celix_arrayList_getULong(ulongList, 0));
+    EXPECT_EQ(1UL, celix_arrayList_getULong(ulongList, 1));
+    EXPECT_EQ(2UL, celix_arrayList_getULong(ulongList, 2));
+    EXPECT_EQ(3UL, celix_arrayList_getULong(ulongList, 3));
+
+    EXPECT_FLOAT_EQ(1.0f, celix_arrayList_getFloat(floatList, 0));
+    EXPECT_FLOAT_EQ(1.0f, celix_arrayList_getFloat(floatList, 1));
+    EXPECT_FLOAT_EQ(2.0f, celix_arrayList_getFloat(floatList, 2));
+    EXPECT_FLOAT_EQ(3.0f, celix_arrayList_getFloat(floatList, 3));
+
+    EXPECT_DOUBLE_EQ(1.0, celix_arrayList_getDouble(doubleList, 0));
+    EXPECT_DOUBLE_EQ(1.0, celix_arrayList_getDouble(doubleList, 1));
+    EXPECT_DOUBLE_EQ(2.0, celix_arrayList_getDouble(doubleList, 2));
+    EXPECT_DOUBLE_EQ(3.0, celix_arrayList_getDouble(doubleList, 3));
+
+    EXPECT_FALSE(celix_arrayList_getBool(boolList, 0));
+    EXPECT_FALSE(celix_arrayList_getBool(boolList, 1));
+    EXPECT_TRUE(celix_arrayList_getBool(boolList, 2));
+
+    EXPECT_EQ(1, celix_arrayList_getSize(sizeList, 0));
+    EXPECT_EQ(1, celix_arrayList_getSize(sizeList, 1));
+    EXPECT_EQ(2, celix_arrayList_getSize(sizeList, 2));
+    EXPECT_EQ(3, celix_arrayList_getSize(sizeList, 3));
+
+    EXPECT_EQ(0, celix_version_compareToMajorMinor(celix_arrayList_getVersion(versionList, 0), 1, 0));
+    EXPECT_EQ(0, celix_version_compareToMajorMinor(celix_arrayList_getVersion(versionList, 1), 1, 0));
+    EXPECT_EQ(0, celix_version_compareToMajorMinor(celix_arrayList_getVersion(versionList, 2), 2, 1));
+    EXPECT_EQ(0, celix_version_compareToMajorMinor(celix_arrayList_getVersion(versionList, 3), 2, 1));
+    EXPECT_EQ(0, celix_version_compareToMajorMinor(celix_arrayList_getVersion(versionList, 4), 3, 2));
 }
 
 TEST_F(ArrayListTestSuite, TestSimpleRemovedCallbacksForArrayList) {

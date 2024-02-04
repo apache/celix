@@ -34,6 +34,7 @@ add_executable(test_utils
         src/ThreadsTestSuite.cc
         src/CelixErrnoTestSuite.cc
         src/CelixUtilsAutoCleanupTestSuite.cc
+        src/ArrayListTestSuite.cc
         src/DeprecatedHashmapTestSuite.cc
 )
 
@@ -45,7 +46,6 @@ configure_file(resources/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-te
 
 if (CELIX_CXX17)
     add_library(test_utils_cxx17tests OBJECT
-            src/ArrayListTestSuite.cc #Uses constexpr
             src/HashMapTestSuite.cc   #Uses constexpr
     )
     target_link_libraries(test_utils_cxx17tests PRIVATE utils_cut Celix::utils GTest::gtest)

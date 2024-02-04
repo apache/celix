@@ -208,10 +208,6 @@ TEST_F(LogBundleTestSuite, SinkLogControl) {
 
     auto *list = control->currentSinks(control->handle);
     EXPECT_EQ(3, celix_arrayList_size(list));
-    for (int i = 0; i < celix_arrayList_size(list); ++i) {
-        auto *item = celix_arrayList_get(list, i);
-        free(item);
-    }
     celix_arrayList_destroy(list);
 
 
@@ -277,10 +273,6 @@ TEST_F(LogBundleTestSuite, LogServiceControl) {
 
     auto *list = control->currentLogServices(control->handle);
     EXPECT_EQ(4, celix_arrayList_size(list));
-    for (int i = 0; i < celix_arrayList_size(list); ++i) {
-        auto *item = celix_arrayList_get(list, i);
-        free(item);
-    }
     celix_arrayList_destroy(list);
 
     celix_bundleContext_stopTracker(ctx.get(), trkId1);
