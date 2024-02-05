@@ -376,6 +376,67 @@ TEST_F(ArrayListTestSuite, SortTypedArrayLists) {
     EXPECT_EQ(0, celix_version_compareToMajorMinor(celix_arrayList_getVersion(versionList, 4), 3, 2));
 }
 
+TEST_F(ArrayListTestSuite, EqualCheck) {
+    //Given a selection of long list and a double list
+    celix_autoptr(celix_array_list_t) list1 = celix_arrayList_createLongArray();
+    celix_arrayList_addLong(list1, 1L);
+    celix_autoptr(celix_array_list_t) list2 = celix_arrayList_createLongArray(); //same as list1
+    celix_arrayList_addLong(list2, 1L);
+    celix_autoptr(celix_array_list_t) list3 = celix_arrayList_createLongArray(); //different values than list1
+    celix_arrayList_addLong(list3, 2L);
+    celix_autoptr(celix_array_list_t) list4 = celix_arrayList_createLongArray(); //different size than list1
+    celix_arrayList_addLong(list4, 1L);
+    celix_arrayList_addLong(list4, 2L);
+    celix_autoptr(celix_array_list_t) list5 = celix_arrayList_createDoubleArray(); //different type than list1
+    celix_arrayList_addDouble(list5, 1.0);
+
+    //The lists can be checked for equality
+    EXPECT_TRUE(celix_arrayList_equals(list1, list2));
+    EXPECT_TRUE(celix_arrayList_equals(list1, list1));
+    EXPECT_TRUE(celix_arrayList_equals(nullptr, nullptr));
+
+    EXPECT_FALSE(celix_arrayList_equals(nullptr, list1));
+    EXPECT_FALSE(celix_arrayList_equals(list1, nullptr));
+    EXPECT_FALSE(celix_arrayList_equals(list1, list3));
+    EXPECT_FALSE(celix_arrayList_equals(list1, list4));
+    EXPECT_FALSE(celix_arrayList_equals(list1, list5));
+}
+
+TEST_F(ArrayListTestSuite, CopyArrayTest) {
+    // Given a long, string, string ref and version list
+    celix_autoptr(celix_array_list_t) longList = celix_arrayList_createLongArray();
+    celix_arrayList_addLong(longList, 1L);
+    celix_arrayList_addLong(longList, 2L);
+    celix_arrayList_addLong(longList, 3L);
+
+    celix_autoptr(celix_array_list_t) stringList = celix_arrayList_createStringArray();
+    celix_arrayList_addString(stringList, "1");
+    celix_arrayList_addString(stringList, "2");
+    celix_arrayList_addString(stringList, "3");
+
+    celix_autoptr(celix_array_list_t) stringRefList = celix_arrayList_createStringRefArray();
+    celix_arrayList_addString(stringRefList, "1");
+    celix_arrayList_addString(stringRefList, "2");
+    celix_arrayList_addString(stringRefList, "3");
+
+    celix_autoptr(celix_array_list_t) versionList = celix_arrayList_createVersionArray();
+    celix_arrayList_assignVersion(versionList, celix_version_create(1, 0, 0, ""));
+    celix_arrayList_assignVersion(versionList, celix_version_create(2, 0, 0, ""));
+    celix_arrayList_assignVersion(versionList, celix_version_create(3, 0, 0, ""));
+
+    // When copying the lists
+    celix_autoptr(celix_array_list_t) longListCopy = celix_arrayList_copy(longList);
+    celix_autoptr(celix_array_list_t) stringListCopy = celix_arrayList_copy(stringList);
+    celix_autoptr(celix_array_list_t) stringRefListCopy = celix_arrayList_copy(stringRefList);
+    celix_autoptr(celix_array_list_t) versionListCopy = celix_arrayList_copy(versionList);
+
+    // Then the copied lists are equal to the original lists
+    EXPECT_TRUE(celix_arrayList_equals(longList, longListCopy));
+    EXPECT_TRUE(celix_arrayList_equals(stringList, stringListCopy));
+    EXPECT_TRUE(celix_arrayList_equals(stringRefList, stringRefListCopy));
+    EXPECT_TRUE(celix_arrayList_equals(versionList, versionListCopy));
+}
+
 TEST_F(ArrayListTestSuite, TestSimpleRemovedCallbacksForArrayList) {
     celix_array_list_create_options_t opts{};
     opts.simpleRemovedCallback = free;

@@ -715,6 +715,66 @@ void celix_arrayList_sort(celix_array_list_t *list) {
     }
 }
 
+bool celix_arrayList_equals(const celix_array_list_t* listA, const celix_array_list_t* listB) {
+    if (listA == listB) {
+        return true;
+    }
+    if (!listA || !listB) {
+        return false;
+    }
+    if (listA->size != listB->size) {
+        return false;
+    }
+    if (listA->equalsCallback != listB->equalsCallback) {
+        return false;
+    }
+    for (int i = 0; i < listA->size; ++i) {
+        if (!listA->equalsCallback(listA->elementData[i], listB->elementData[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+celix_array_list_t* celix_arrayList_copy(const celix_array_list_t* list) {
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    opts.elementType = list->elementType;
+    opts.equalsCallback = list->equalsCallback;
+    opts.compareCallback = list->compareCallback;
+    opts.removedCallback = list->removedCallback;
+    opts.removedCallbackData = list->removedCallbackData;
+    opts.simpleRemovedCallback = list->simpleRemovedCallback;
+    celix_autoptr(celix_array_list_t) copy = celix_arrayList_createWithOptions(&opts);
+    if (!copy) {
+        celix_err_push("Failed to create copy list. Out of memory.");
+        return NULL;
+    }
+
+    for (int i = 0; i < celix_arrayList_size(list); ++i) {
+        celix_array_list_entry_t entry = list->elementData[i];
+        if (copy->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING) {
+            entry.stringVal = celix_utils_strdup(entry.stringVal);
+            if (entry.stringVal == NULL) {
+                celix_err_push("Failed to copy string entry. Out of memory.");
+                return NULL;
+            }
+        } else if (copy->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION) {
+            entry.versionVal = celix_version_copy(entry.versionVal);
+            if (entry.versionVal == NULL) {
+                celix_err_push("Failed to copy version entry. Out of memory.");
+                return NULL;
+            }
+        }
+        celix_status_t status = celix_arrayList_addEntry(copy, entry);
+        if (status != CELIX_SUCCESS) {
+            celix_err_push("Failed to add entry to copy list.");
+            return NULL;
+        }
+    }
+
+    return celix_steal_ptr(copy);
+}
+
 void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_compare_entries_fp compare) {
 #if defined(__APPLE__)
     qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), compare, celix_arrayList_compareEntries);

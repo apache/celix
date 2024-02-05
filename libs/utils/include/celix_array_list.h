@@ -163,7 +163,7 @@ typedef struct celix_array_list_create_options {
 
 #ifndef __cplusplus
 /**
- * @brief C Macro to create a empty string_hash_map_create_options_t type.
+ * @brief C Macro to create a empty celix_array_list_create_options_t type.
  */
 #define CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS                                                                          \
     {                                                                                                                  \
@@ -331,7 +331,7 @@ int celix_arrayList_size(const celix_array_list_t *list);
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param index The entry index to return.
  * @return Returns the pointer value for the index. Returns NULL if index is out of bound.
  */
@@ -357,7 +357,7 @@ const char* celix_arrayList_getString(const celix_array_list_t *list, int index)
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_INT or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param index The entry index to return.
  * @return Returns the int value for the index. Returns 0 if index is out of bound.
  */
@@ -370,7 +370,7 @@ int celix_arrayList_getInt(const celix_array_list_t *list, int index);
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param index The entry index to return.
  * @return Returns the long value for the index. Returns 0 if index is out of bound.
  */
@@ -383,7 +383,7 @@ long int celix_arrayList_getLong(const celix_array_list_t *list, int index);
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_UINT or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param index The entry index to return.
  * @return Returns the unsigned int value for the index. Returns 0 if index is out of bound.
  */
@@ -396,7 +396,7 @@ unsigned int celix_arrayList_getUInt(const celix_array_list_t *list, int index);
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_ULONG or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param index The entry index to return.
  * @return Returns the unsigned long value for the index. Returns 0 if index is out of bound.
  */
@@ -409,7 +409,7 @@ unsigned long int celix_arrayList_getULong(const celix_array_list_t *list, int i
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_FLOAT or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param index The entry index to return.
  * @return Returns the float value for the index. Returns 0 if index is out of bound.
  */
@@ -422,7 +422,7 @@ float celix_arrayList_getFloat(const celix_array_list_t *list, int index);
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param index The entry index to return.
  * @return Returns the double value for the index. Returns 0 if index is out of bound.
  */
@@ -435,7 +435,7 @@ double celix_arrayList_getDouble(const celix_array_list_t *list, int index);
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param index The entry index to return.
  * @return Returns the bool value for the index. Returns false if index is out of bound.
  */
@@ -448,7 +448,7 @@ bool celix_arrayList_getBool(const celix_array_list_t *list, int index);
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_SIZE or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param index The entry index to return.
  * @return Returns the size_t value for the index. Returns 0 if index is out of bound.
  */
@@ -474,7 +474,7 @@ const celix_version_t* celix_arrayList_getVersion(const celix_array_list_t *list
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param value The pointer value to add to the array list.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
@@ -518,7 +518,7 @@ celix_status_t celix_arrayList_assignString(celix_array_list_t* list, char* valu
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_INT or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param value The int value to add to the array list.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
@@ -531,7 +531,7 @@ celix_status_t celix_arrayList_addInt(celix_array_list_t* list, int value);
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param value The long value to add to the array list.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
@@ -544,7 +544,7 @@ celix_status_t celix_arrayList_addLong(celix_array_list_t* list, long value);
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_UINT or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param value The unsigned int value to add to the array list.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
@@ -557,7 +557,7 @@ celix_status_t celix_arrayList_addUInt(celix_array_list_t* list, unsigned int va
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_ULONG or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param value The unsigned long value to add to the array list.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
@@ -570,7 +570,7 @@ celix_status_t celix_arrayList_addULong(celix_array_list_t* list, unsigned long 
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_FLOAT or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param value The float value to add to the array list.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
@@ -583,7 +583,7 @@ celix_status_t celix_arrayList_addFloat(celix_array_list_t* list, float value);
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param value The double value to add to the array list.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
@@ -596,7 +596,7 @@ celix_status_t celix_arrayList_addDouble(celix_array_list_t* list, double value)
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param value The bool value to add to the array list.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
@@ -609,7 +609,7 @@ celix_status_t celix_arrayList_addBool(celix_array_list_t* list, bool value);
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_SIZE or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
- * @param map The array list.
+ * @param list The array list.
  * @param value The size_t value to add to the array list.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
@@ -834,6 +834,41 @@ void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_comp
  */
 CELIX_UTILS_EXPORT
 void celix_arrayList_sort(celix_array_list_t *list);
+
+/**
+ * @brief Check if the array list are equal.
+ *
+ * Equal is defined as:
+ * - The array list have the same size
+ * - The array list have the same element type
+ * - The array list have the same equals callback
+ * - The array list have the same values at the same index
+ *
+ * Note that the remove callback and compare callback are ignored.
+ *
+ * If both array list are NULL, they are considered equal.
+ *
+ * @param listA The first array list.
+ * @param listB The second array list.
+ * @return true if the array list are equal, false otherwise.
+ */
+CELIX_UTILS_EXPORT
+bool celix_arrayList_equals(const celix_array_list_t* listA, const celix_array_list_t* listB);
+
+/**
+ * @Brief Copy the array list to a new array list.
+ *
+ * The new array list will have the same element type and the same callbacks as the original array list.
+ * If the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING, the strings will be copied and
+ * if the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION, the versions will be copied.
+ * For all other element types the values will be copied.
+ *
+ * @param[in] list The array list to copy.
+ * @return A new array list with the same element type and values as the original array list or NULL if the original
+ * array list is NULL or out of memory.
+ */
+CELIX_UTILS_EXPORT
+celix_array_list_t* celix_arrayList_copy(const celix_array_list_t* list);
 
 #ifdef __cplusplus
 }
