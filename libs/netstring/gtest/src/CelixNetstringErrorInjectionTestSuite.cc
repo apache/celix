@@ -31,6 +31,7 @@ public:
         celix_ei_expect_fprintf(nullptr, 0, 0);
         celix_ei_expect_fwrite(nullptr, 0, 0);
         celix_ei_expect_fputc(nullptr, 0, 0);
+        celix_ei_expect_fgetc(nullptr, 0, 0);
         celix_ei_expect_malloc(nullptr, 0, nullptr);
     }
 };
@@ -90,6 +91,23 @@ TEST_F(CelixNetstringErrorInjectionTestSuite, DecodefWithMallocErrorInjectionTes
     size_t outputLen = 0;
     int rc = celix_netstring_decodef(stream, &output, &outputLen);
     ASSERT_EQ(ENOMEM, rc);
+
+    fclose(stream);
+}
+
+TEST_F(CelixNetstringErrorInjectionTestSuite, DecodefWithFgetcErrorInjectionTest) {
+    FILE *stream = fmemopen(nullptr, 128, "w+");
+    ASSERT_TRUE(stream != nullptr);
+
+    fputs("11:Hello World,", stream);
+
+    rewind(stream);
+
+    celix_ei_expect_fgetc((void *)&celix_netstring_decodef, 0, -1);
+    char *output = nullptr;
+    size_t outputLen = 0;
+    int rc = celix_netstring_decodef(stream, &output, &outputLen);
+    ASSERT_NE(0, rc);
 
     fclose(stream);
 }

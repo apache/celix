@@ -235,22 +235,6 @@ TEST_F(CelixNetstringTestSuite, DecodeFromStreamWithInvalidNetstringTest) {
     TestDecodeFromStreamWithInvalidNetstring(":,");//missing size
 }
 
-TEST_F(CelixNetstringTestSuite, DecodeFromStreamWithInvalidStreamModeTest) {
-    FILE *stream = fmemopen(nullptr, 128, "w");//write only
-    ASSERT_TRUE(stream != nullptr);
-
-    fputs("11:Hello World,", stream);
-
-    rewind(stream);
-
-    char *output = nullptr;
-    size_t outputLen = 0;
-    int rc = celix_netstring_decodef(stream, &output, &outputLen);
-    ASSERT_NE(0, rc);
-
-    fclose(stream);
-}
-
 TEST_F(CelixNetstringTestSuite, EncodeEmptyStringToBufferTest) {
     const char *input = "";
     size_t inputLen = strlen(input);
