@@ -26,14 +26,14 @@ class ArrayListTestSuite : public ::testing::Test {
 public:
 };
 
-TEST_F(ArrayListTestSuite, TestCreateDestroyHashMap) {
+TEST_F(ArrayListTestSuite, CreateDestroyArrayListTest) {
     auto* list = celix_arrayList_create();
     EXPECT_TRUE(list != nullptr);
     EXPECT_EQ(0, celix_arrayList_size(list));
     celix_arrayList_destroy(list);
 }
 
-TEST_F(ArrayListTestSuite, TestArrayListWithEquals) {
+TEST_F(ArrayListTestSuite, ArrayListWithEqualsTest) {
     celix_array_list_create_options_t opts{};
     opts.equalsCallback = [](celix_array_list_entry_t a, celix_array_list_entry_t b) -> bool {
         const char* sa = (char*)a.voidPtrVal;
@@ -109,7 +109,7 @@ void testArrayListForTemplateType(const std::vector<T>& entries,
     celix_arrayList_destroy(list);
 }
 
-TEST_F(ArrayListTestSuite, TestDifferentEntyTypesForArrayList) {
+TEST_F(ArrayListTestSuite, TestDifferentEntyTypesForArrayListTest) {
     std::vector<int> intEntries{1, 2, 3, 4, 5};
     testArrayListForTemplateType<int>(intEntries,
                                       celix_arrayList_createIntArray,
@@ -224,7 +224,7 @@ TEST_F(ArrayListTestSuite, VersionArrayList) {
     EXPECT_EQ(2, celix_arrayList_size(versionList));
 }
 
-TEST_F(ArrayListTestSuite, SortTypedArrayLists) {
+TEST_F(ArrayListTestSuite, SortTypedArrayListsTest) {
     // Given a ptr, string, int, long, uint, ulong, float, double, bool, size and version list
     // with unsorted values (including duplicates)
     celix_autoptr(celix_array_list_t) ptrList = celix_arrayList_createPointerArray();
@@ -376,7 +376,7 @@ TEST_F(ArrayListTestSuite, SortTypedArrayLists) {
     EXPECT_EQ(0, celix_version_compareToMajorMinor(celix_arrayList_getVersion(versionList, 4), 3, 2));
 }
 
-TEST_F(ArrayListTestSuite, EqualCheck) {
+TEST_F(ArrayListTestSuite, EqualCheckTest) {
     //Given a selection of long list and a double list
     celix_autoptr(celix_array_list_t) list1 = celix_arrayList_createLongArray();
     celix_arrayList_addLong(list1, 1L);
@@ -437,7 +437,7 @@ TEST_F(ArrayListTestSuite, CopyArrayTest) {
     EXPECT_TRUE(celix_arrayList_equals(versionList, versionListCopy));
 }
 
-TEST_F(ArrayListTestSuite, TestSimpleRemovedCallbacksForArrayList) {
+TEST_F(ArrayListTestSuite, SimpleRemovedCallbacksForArrayListTest) {
     celix_array_list_create_options_t opts{};
     opts.simpleRemovedCallback = free;
     auto* list = celix_arrayList_createWithOptions(&opts);
@@ -449,7 +449,7 @@ TEST_F(ArrayListTestSuite, TestSimpleRemovedCallbacksForArrayList) {
     celix_arrayList_destroy(list); //will call free for every entry
 }
 
-TEST_F(ArrayListTestSuite, TestRemovedCallbacksForArrayList) {
+TEST_F(ArrayListTestSuite, RemovedCallbacksForArrayListTest) {
     int count = 0 ;
     celix_array_list_create_options_t opts{};
     opts.removedCallbackData = &count;
@@ -473,7 +473,7 @@ TEST_F(ArrayListTestSuite, TestRemovedCallbacksForArrayList) {
 
 }
 
-TEST_F(ArrayListTestSuite, TestSortForArrayList) {
+TEST_F(ArrayListTestSuite, SortForArrayListTest) {
     auto* list = celix_arrayList_create();
     celix_arrayList_addInt(list, 3);
     celix_arrayList_addInt(list, 2);
@@ -497,7 +497,7 @@ TEST_F(ArrayListTestSuite, TestSortForArrayList) {
     celix_arrayList_destroy(list);
 }
 
-TEST_F(ArrayListTestSuite, TestReturnStatusAddFunctions) {
+TEST_F(ArrayListTestSuite, ReturnStatusAddFunctionsTest) {
     auto* list = celix_arrayList_create();
     ASSERT_TRUE(list != nullptr);
     EXPECT_EQ(0, celix_arrayList_size(list));

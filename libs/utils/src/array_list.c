@@ -61,7 +61,7 @@ static int celix_arrayList_compareStringEntries(celix_array_list_entry_t a, celi
 }
 
 static bool celix_arrayList_stringEquals(celix_array_list_entry_t a, celix_array_list_entry_t b) {
-    return celix_arrayList_compareStringEntries(a, b) == 0;
+    return celix_utils_stringEquals(a.stringVal, b.stringVal);
 }
 
 static int celix_arrayList_compareIntEntries(celix_array_list_entry_t a, celix_array_list_entry_t b) {
@@ -323,13 +323,6 @@ celix_array_list_t* celix_arrayList_createSizeArray() {
 
 celix_array_list_t* celix_arrayList_createVersionArray() {
     return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION);
-}
-
-
-celix_array_list_t* celix_arrayList_createWithEquals(celix_arrayList_equals_fp equals) {
-    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-    opts.equalsCallback = equals;
-    return celix_arrayList_createWithOptions(&opts);
 }
 
 void celix_arrayList_destroy(celix_array_list_t *list) {
@@ -752,20 +745,14 @@ celix_array_list_t* celix_arrayList_copy(const celix_array_list_t* list) {
 
     for (int i = 0; i < celix_arrayList_size(list); ++i) {
         celix_array_list_entry_t entry = list->elementData[i];
+        celix_status_t status;
         if (copy->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING) {
-            entry.stringVal = celix_utils_strdup(entry.stringVal);
-            if (entry.stringVal == NULL) {
-                celix_err_push("Failed to copy string entry. Out of memory.");
-                return NULL;
-            }
+            status = celix_arrayList_addString(copy, entry.stringVal);
         } else if (copy->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION) {
-            entry.versionVal = celix_version_copy(entry.versionVal);
-            if (entry.versionVal == NULL) {
-                celix_err_push("Failed to copy version entry. Out of memory.");
-                return NULL;
-            }
+            status = celix_arrayList_addVersion(copy, entry.versionVal);
+        } else {
+            status = celix_arrayList_addEntry(copy, entry);
         }
-        celix_status_t status = celix_arrayList_addEntry(copy, entry);
         if (status != CELIX_SUCCESS) {
             celix_err_push("Failed to add entry to copy list.");
             return NULL;

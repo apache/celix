@@ -863,6 +863,8 @@ bool celix_arrayList_equals(const celix_array_list_t* listA, const celix_array_l
  * if the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION, the versions will be copied.
  * For all other element types the values will be copied.
  *
+ * If a NULL is returned and the original array list is not NULL, a error message is logged to celix_err.
+ *
  * @param[in] list The array list to copy.
  * @return A new array list with the same element type and values as the original array list or NULL if the original
  * array list is NULL or out of memory.
