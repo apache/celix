@@ -124,7 +124,7 @@ int celix_netstring_decodeb(const char* bufferIn, size_t bufferInSize, const cha
         size = size * 10 + (bufferIn[offset] - '0');
         offset += 1;
     }
-    if (offset >= bufferInSize || bufferIn[offset] != ':') {
+    if (offset >= bufferInSize || bufferIn[offset] != ':' || offset == 0) {
         return EINVAL;
     }
     ++offset;//skip ':'

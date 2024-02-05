@@ -42,7 +42,7 @@ public:
     }
 };
 
-TEST_F(CelixNetstringTestSuite, EncodeToStream) {
+TEST_F(CelixNetstringTestSuite, EncodeToStreamTest) {
     FILE *stream = fmemopen(nullptr, 128, "w+");
     ASSERT_TRUE(stream != nullptr);
 
@@ -65,7 +65,7 @@ TEST_F(CelixNetstringTestSuite, EncodeToStream) {
     fclose(stream);
 }
 
-TEST_F(CelixNetstringTestSuite, EncodeToBuffer) {
+TEST_F(CelixNetstringTestSuite, EncodeToBufferTest) {
     const char *input = "Hello World";
     size_t inputLen = strlen(input);
 
@@ -87,7 +87,7 @@ TEST_F(CelixNetstringTestSuite, EncodeToBuffer) {
     free(outString);
 }
 
-TEST_F(CelixNetstringTestSuite, EncodeMutipleToStream) {
+TEST_F(CelixNetstringTestSuite, EncodeMutipleStringToStreamTest) {
     FILE *stream = fmemopen(nullptr, 128, "w+");
     ASSERT_TRUE(stream != nullptr);
 
@@ -125,7 +125,7 @@ TEST_F(CelixNetstringTestSuite, EncodeMutipleToStream) {
     fclose(stream);
 }
 
-TEST_F(CelixNetstringTestSuite, EncodeMutipleToBuffer) {
+TEST_F(CelixNetstringTestSuite, EncodeMutipleStringToBufferTest) {
     //encode 2 strings to buffer
     const char *input1 = "Hello World";
     size_t inputLen1 = strlen(input1);
@@ -169,7 +169,7 @@ TEST_F(CelixNetstringTestSuite, EncodeMutipleToBuffer) {
     free(outString);
 }
 
-TEST_F(CelixNetstringTestSuite, EncodeEmptyStringToStream) {
+TEST_F(CelixNetstringTestSuite, EncodeEmptyStringToStreamTest) {
     FILE *stream = fmemopen(nullptr, 128, "w+");
     ASSERT_TRUE(stream != nullptr);
 
@@ -191,7 +191,7 @@ TEST_F(CelixNetstringTestSuite, EncodeEmptyStringToStream) {
     fclose(stream);
 }
 
-TEST_F(CelixNetstringTestSuite, EncodeToStreamWithInvalidArguments) {
+TEST_F(CelixNetstringTestSuite, EncodeToStreamWithInvalidArgumentsTest) {
     FILE *stream = fmemopen(nullptr, 128, "w+");
     ASSERT_TRUE(stream != nullptr);
 
@@ -207,7 +207,7 @@ TEST_F(CelixNetstringTestSuite, EncodeToStreamWithInvalidArguments) {
     fclose(stream);
 }
 
-TEST_F(CelixNetstringTestSuite, DecodeFromStreamWithInvalidArguments) {
+TEST_F(CelixNetstringTestSuite, DecodeFromStreamWithInvalidArgumentsTest) {
     FILE *stream = fmemopen(nullptr, 128, "w+");
     ASSERT_TRUE(stream != nullptr);
 
@@ -225,17 +225,17 @@ TEST_F(CelixNetstringTestSuite, DecodeFromStreamWithInvalidArguments) {
     fclose(stream);
 }
 
-TEST_F(CelixNetstringTestSuite, DecodeFromStreamWithInvalidNetstring) {
+TEST_F(CelixNetstringTestSuite, DecodeFromStreamWithInvalidNetstringTest) {
     TestDecodeFromStreamWithInvalidNetstring("invalid");
     TestDecodeFromStreamWithInvalidNetstring("11");
     TestDecodeFromStreamWithInvalidNetstring("5hello,");//missing ':' after size
     TestDecodeFromStreamWithInvalidNetstring("9999999999:Hello World,");//size too large
     TestDecodeFromStreamWithInvalidNetstring("11:Hello World ");//missing ','
     TestDecodeFromStreamWithInvalidNetstring("129:Hello,");//missing contents
-    TestDecodeFromStreamWithInvalidNetstring(":Hello,");//missing size
+    TestDecodeFromStreamWithInvalidNetstring(":,");//missing size
 }
 
-TEST_F(CelixNetstringTestSuite, DecodeFromStreamWithInvalidStreamMode) {
+TEST_F(CelixNetstringTestSuite, DecodeFromStreamWithInvalidStreamModeTest) {
     FILE *stream = fmemopen(nullptr, 128, "w");//write only
     ASSERT_TRUE(stream != nullptr);
 
@@ -251,7 +251,7 @@ TEST_F(CelixNetstringTestSuite, DecodeFromStreamWithInvalidStreamMode) {
     fclose(stream);
 }
 
-TEST_F(CelixNetstringTestSuite, EncodeEmptyStringToBuffer) {
+TEST_F(CelixNetstringTestSuite, EncodeEmptyStringToBufferTest) {
     const char *input = "";
     size_t inputLen = strlen(input);
 
@@ -269,7 +269,7 @@ TEST_F(CelixNetstringTestSuite, EncodeEmptyStringToBuffer) {
     ASSERT_EQ(inputLen, outputLen);
 }
 
-TEST_F(CelixNetstringTestSuite, EncodeToBufferWithInvalidArguments) {
+TEST_F(CelixNetstringTestSuite, EncodeToBufferWithInvalidArgumentsTest) {
     const char *input = "Hello World";
     size_t inputLen = strlen(input);
 
@@ -284,9 +284,12 @@ TEST_F(CelixNetstringTestSuite, EncodeToBufferWithInvalidArguments) {
 
     rc = celix_netstring_encodeb(input, inputLen, buffer, sizeof(buffer), nullptr);
     ASSERT_EQ(EINVAL, rc);
+
+    rc = celix_netstring_encodeb(input, inputLen, buffer, 0, &offset);
+    ASSERT_EQ(EINVAL, rc);
 }
 
-TEST_F(CelixNetstringTestSuite, EncodeBufferTooSmall) {
+TEST_F(CelixNetstringTestSuite, EncodeBufferTooSmallTest) {
     const char *input = "Hello World";
     size_t inputLen = strlen(input);
 
@@ -297,20 +300,24 @@ TEST_F(CelixNetstringTestSuite, EncodeBufferTooSmall) {
     ASSERT_EQ(ENOMEM, rc);
 }
 
-TEST_F(CelixNetstringTestSuite, DecodeFromBufferWithInvalidArguments) {
+TEST_F(CelixNetstringTestSuite, DecodeFromBufferWithInvalidArgumentsTest) {
     const char *output = nullptr;
     size_t outputLen = 0;
+    const char *input = "5:hello,";
     int rc = celix_netstring_decodeb(nullptr, 0, &output, &outputLen);
     ASSERT_EQ(EINVAL, rc);
 
-    rc = celix_netstring_decodeb(nullptr, 0, nullptr, &outputLen);
+    rc = celix_netstring_decodeb(input, 0, &output, &outputLen);
     ASSERT_EQ(EINVAL, rc);
 
-    rc = celix_netstring_decodeb(nullptr, 0, &output, nullptr);
+    rc = celix_netstring_decodeb(input, strlen(input), nullptr, &outputLen);
+    ASSERT_EQ(EINVAL, rc);
+
+    rc = celix_netstring_decodeb(input, strlen(input), &output, nullptr);
     ASSERT_EQ(EINVAL, rc);
 }
 
-TEST_F(CelixNetstringTestSuite, DecodeFromBufferWithInvalidNetstring) {
+TEST_F(CelixNetstringTestSuite, DecodeFromBufferWithInvalidNetstringTest) {
     const char *input = "invalid";
     size_t inputLen = strlen(input);
 
@@ -340,6 +347,11 @@ TEST_F(CelixNetstringTestSuite, DecodeFromBufferWithInvalidNetstring) {
     ASSERT_EQ(EINVAL, rc);
 
     input = "129:Hello,";//missing contents
+    inputLen = strlen(input);
+    rc = celix_netstring_decodeb(input, inputLen, &output, &outputLen);
+    ASSERT_EQ(EINVAL, rc);
+
+    input = ":,";//missing size
     inputLen = strlen(input);
     rc = celix_netstring_decodeb(input, inputLen, &output, &outputLen);
     ASSERT_EQ(EINVAL, rc);

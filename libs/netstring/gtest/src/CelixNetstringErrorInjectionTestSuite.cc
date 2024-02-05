@@ -35,7 +35,7 @@ public:
     }
 };
 
-TEST_F(CelixNetstringErrorInjectionTestSuite, EncodefWithFprintfErrorInjection) {
+TEST_F(CelixNetstringErrorInjectionTestSuite, EncodefWithFprintfErrorInjectionTest) {
     FILE *stream = fmemopen(nullptr, 128, "w+");
     ASSERT_TRUE(stream != nullptr);
 
@@ -49,7 +49,7 @@ TEST_F(CelixNetstringErrorInjectionTestSuite, EncodefWithFprintfErrorInjection) 
     fclose(stream);
 }
 
-TEST_F(CelixNetstringErrorInjectionTestSuite, EncodefWithFwriteErrorInjection) {
+TEST_F(CelixNetstringErrorInjectionTestSuite, EncodefWithFwriteErrorInjectionTest) {
     FILE *stream = fmemopen(nullptr, 128, "w+");
     ASSERT_TRUE(stream != nullptr);
 
@@ -63,7 +63,7 @@ TEST_F(CelixNetstringErrorInjectionTestSuite, EncodefWithFwriteErrorInjection) {
     fclose(stream);
 }
 
-TEST_F(CelixNetstringErrorInjectionTestSuite, EncodefWithFputcErrorInjection) {
+TEST_F(CelixNetstringErrorInjectionTestSuite, EncodefWithFputcErrorInjectionTest) {
     FILE *stream = fmemopen(nullptr, 128, "w+");
     ASSERT_TRUE(stream != nullptr);
 
@@ -77,7 +77,7 @@ TEST_F(CelixNetstringErrorInjectionTestSuite, EncodefWithFputcErrorInjection) {
     fclose(stream);
 }
 
-TEST_F(CelixNetstringErrorInjectionTestSuite, DecodefWithMallocErrorInjection) {
+TEST_F(CelixNetstringErrorInjectionTestSuite, DecodefWithMallocErrorInjectionTest) {
     FILE *stream = fmemopen(nullptr, 128, "w+");
     ASSERT_TRUE(stream != nullptr);
 
