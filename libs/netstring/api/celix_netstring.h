@@ -57,7 +57,7 @@ int celix_netstring_encodeb(const char* bytes, size_t bytesSize, char* netstring
 /**
  * @brief Decode the first section of the given netstring from the given file. And allocate a buffer with the binary data.
  * @param[in] netstringIn The file descriptor to read the netstring from
- * @param[out] bytes The binary data of netstring first section. The memory is allocated with malloc and should be freed with free.
+ * @param[out] bytes The binary data of netstring first section. The memory is allocated with malloc and the caller should release it with free.
  * @param[out] bytesSize The size of the binary data
  * @return returns 0 on success, or errno on failure.
  * @section ERRORS
