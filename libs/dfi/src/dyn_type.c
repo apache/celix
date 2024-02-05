@@ -18,126 +18,130 @@
  */
 
 #include "dyn_type.h"
+#include "dyn_type_common.h"
+#include "dyn_common.h"
+#include "celix_err.h"
+#include "celix_stdio_cleanup.h"
+#include "celix_stdlib_cleanup.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
 #include <ffi.h>
-#include "dyn_type_common.h"
-
-#include "dyn_type_common.h"
-#include "dyn_common.h"
-
-DFI_SETUP_LOG(dynType)
 
 static const int OK = 0;
 static const int ERROR = 1;
 static const int MEM_ERROR = 2;
 static const int PARSE_ERROR = 3;
 
-static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *parent, struct types_head *refTypes, dyn_type **result);
-static void dynType_clear(dyn_type *type);
-static void dynType_clearComplex(dyn_type *type);
-static void dynType_clearSequence(dyn_type *type);
-static void dynType_clearTypedPointer(dyn_type *type);
-ffi_type * dynType_ffiType(dyn_type *type);
+static int dynType_parseWithStream(FILE* stream, const char* name, dyn_type* parent, const struct types_head* refTypes, dyn_type** result);
+static int dynType_parseWithStreamOfName(FILE* stream, char* name, dyn_type* parent, const struct types_head* refTypes, dyn_type** result, int (*)(FILE*, dyn_type*));
+static void dynType_clear(dyn_type* type);
+static void dynType_clearComplex(dyn_type* type);
+static void dynType_clearSequence(dyn_type* type);
+static void dynType_clearTypedPointer(dyn_type* type);
 
-static struct type_entry *dynType_allocTypeEntry(void);
+static ffi_type* dynType_ffiTypeFor(int c);
+static int dynType_parseAny(FILE* stream, dyn_type* type);
+static int dynType_parseComplex(FILE* stream, dyn_type* type);
+static int dynType_parseNestedType(FILE* stream, dyn_type* type);
+static int dynType_parseReference(FILE* stream, dyn_type* type);
+static int dynType_parseRefByValue(FILE* stream, dyn_type* type);
+static int dynType_parseSequence(FILE* stream, dyn_type* type);
+static int dynType_parseSimple(int c, dyn_type* type);
+static int dynType_parseTypedPointer(FILE* stream, dyn_type* type);
+static unsigned short dynType_getOffset(const dyn_type* type, int index);
 
-static ffi_type * dynType_ffiTypeFor(int c);
-static int dynType_parseAny(FILE *stream, dyn_type *type);
-static int dynType_parseComplex(FILE *stream, dyn_type *type);
-static int dynType_parseNestedType(FILE *stream, dyn_type *type);
-static int dynType_parseReference(FILE *stream, dyn_type *type);
-static int dynType_parseRefByValue(FILE *stream, dyn_type *type);
-static int dynType_parseSequence(FILE *stream, dyn_type *type);
-static int dynType_parseSimple(int c, dyn_type *type);
-static int dynType_parseTypedPointer(FILE *stream, dyn_type *type);
-static unsigned short dynType_getOffset(dyn_type *type, int index);
+static void dynType_printAny(const char* name, const dyn_type* type, int depth, FILE* stream);
+static void dynType_printComplex(const char* name, const dyn_type* type, int depth, FILE* stream);
+static void dynType_printSequence(const char* name, const dyn_type* type, int depth, FILE* stream);
+static void dynType_printSimple(const char* name, const dyn_type* type, int depth, FILE* stream);
+static void dynType_printEnum(const char* name, const dyn_type* type, int depth, FILE* stream);
+static void dynType_printTypedPointer(const char* name, const dyn_type* type, int depth, FILE* stream);
+static void dynType_printText(const char* name, const dyn_type* type, int depth, FILE* stream);
+static void dynType_printDepth(int depth, FILE* stream);
 
-static void dynType_printAny(char *name, dyn_type *type, int depth, FILE *stream);
-static void dynType_printComplex(char *name, dyn_type *type, int depth, FILE *stream);
-static void dynType_printSequence(char *name, dyn_type *type, int depth, FILE *stream);
-static void dynType_printSimple(char *name, dyn_type *type, int depth, FILE *stream);
-static void dynType_printEnum(char *name, dyn_type *type, int depth, FILE *stream);
-static void dynType_printTypedPointer(char *name, dyn_type *type, int depth, FILE *stream);
-static void dynType_printDepth(int depth, FILE *stream);
+static void dynType_printTypes(const dyn_type* type, FILE* stream);
+static void dynType_printComplexType(const dyn_type* type, FILE* stream);
+static void dynType_printSimpleType(const dyn_type* type, FILE* stream);
 
-static void dynType_printTypes(dyn_type *type, FILE *stream);
-static void dynType_printComplexType(dyn_type *type, FILE *stream);
-static void dynType_printSimpleType(dyn_type *type, FILE *stream);
+static int dynType_parseText(FILE* stream, dyn_type* type);
+static int dynType_parseEnum(FILE* stream, dyn_type* type);
+static void dynType_freeComplexType(const dyn_type* type, void* loc);
+static void dynType_deepFree(const dyn_type* type, void* loc, bool alsoDeleteSelf);
+static void dynType_freeSequenceType(const dyn_type* type, void* seqLoc);
 
-static int dynType_parseText(FILE *stream, dyn_type *type);
-static int dynType_parseEnum(FILE *stream, dyn_type *type);
-void dynType_freeComplexType(dyn_type *type, void *loc);
-void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf);
-void dynType_freeSequenceType(dyn_type *type, void *seqLoc);
-
-static int dynType_parseMetaInfo(FILE *stream, dyn_type *type);
+static int dynType_parseMetaInfo(FILE* stream, dyn_type* type);
 
 struct generic_sequence {
     uint32_t cap;
     uint32_t len;
-    void *buf;
+    void* buf;
 };
 
-int dynType_parse(FILE *descriptorStream, const char *name, struct types_head *refTypes, dyn_type **type) {
+int dynType_parse(FILE* descriptorStream, const char* name, const struct types_head* refTypes, dyn_type** type) {
     return dynType_parseWithStream(descriptorStream, name, NULL, refTypes, type);
 }
 
-int dynType_parseWithStr(const char *descriptor, const char *name, struct types_head *refTypes, dyn_type **type) {
-    int status = OK;
-    FILE *stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
-    if (stream != NULL) {
-        status = dynType_parseWithStream(stream, name, NULL, refTypes, type);
-        if (status == OK) {
-            int c = fgetc(stream);
-            if (c != '\0' && c != EOF) {
-                status = PARSE_ERROR;
-                LOG_ERROR("Expected EOF got %c", c);
-            }
-        } 
-        fclose(stream);
-    } else {
-        status = ERROR;
-        LOG_ERROR("Error creating mem stream for descriptor string. %s", strerror(errno)); 
-    }
-    return status;
+
+int dynType_parseOfName(FILE* descriptorStream, char* name, const struct types_head* refTypes, dyn_type** type) {
+    return dynType_parseWithStreamOfName(descriptorStream, name, NULL, refTypes, type, dynType_parseAny);
 }
 
-static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *parent, struct types_head *refTypes, dyn_type **result) {
-    int status = OK;
-    dyn_type *type = calloc(1, sizeof(*type));
-    if (type != NULL) {
-        type->parent = parent;
-        type->type = DYN_TYPE_INVALID;
-        type->referenceTypes = refTypes;
-        TAILQ_INIT(&type->nestedTypesHead);
-        TAILQ_INIT(&type->metaProperties);
-        if (name != NULL) {
-            type->name = strdup(name);
-            if (type->name == NULL) {
-                status = MEM_ERROR;
-                LOG_ERROR("Error strdup'ing name '%s'\n", name);			
-            } 
-        }
-        if (status == OK) {
-            status = dynType_parseAny(stream, type);        
-        }
-        if (status == OK) {
-            *result = type;
-        } else {
-            dynType_destroy(type);
-        }
-    } else {
-        status = MEM_ERROR;
-        LOG_ERROR("Error allocating memory for type");
+int dynType_parseWithStr(const char* descriptor, const char* name, const struct types_head* refTypes, dyn_type** type) {
+    int status;
+    celix_autoptr(FILE) stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
+    if (stream == NULL) {
+        celix_err_pushf("Error creating mem stream for descriptor string. %s", strerror(errno));
+        return ERROR;
     }
-    return status;
+    celix_autoptr(dyn_type) result = NULL;
+    if ((status = dynType_parseWithStream(stream, name, NULL, refTypes, &result)) != OK) {
+        return status;
+    }
+    if (dynCommon_eatChar(stream, EOF) != 0) {
+        return PARSE_ERROR;
+    }
+    *type = celix_steal_ptr(result);
+    return OK;
 }
 
-static int dynType_parseAny(FILE *stream, dyn_type *type) {
+static int dynType_parseWithStream(FILE* stream, const char* name, dyn_type* parent, const struct types_head* refTypes, dyn_type** result) {
+    char* typeName = NULL;
+    if (name != NULL) {
+        typeName = strdup(name);
+        if (typeName == NULL) {
+            celix_err_pushf("Error strdup'ing name '%s'", name);
+            return MEM_ERROR;
+        }
+    }
+    return dynType_parseWithStreamOfName(stream, typeName, parent, refTypes, result, dynType_parseAny);
+}
+
+static int dynType_parseWithStreamOfName(FILE* stream, char* name, dyn_type* parent, const struct types_head* refTypes,
+                                         dyn_type** result, int (*parse)(FILE*, dyn_type*)) {
+    int status;
+    celix_autofree char* typeName = name;
+    celix_autoptr(dyn_type) type = calloc(1, sizeof(*type));
+    if (type == NULL) {
+        celix_err_push("Error allocating memory for type");
+        return MEM_ERROR;
+    }
+    type->parent = parent;
+    type->type = DYN_TYPE_INVALID;
+    type->referenceTypes = refTypes;
+    TAILQ_INIT(&type->nestedTypesHead);
+    TAILQ_INIT(&type->metaProperties);
+    type->name = celix_steal_ptr(typeName);
+    if ((status = parse(stream, type)) != OK) {
+        return status;
+    }
+    *result = celix_steal_ptr(type);
+    return OK;
+}
+
+static int dynType_parseAny(FILE* stream, dyn_type* type) {
     int status = OK;
 
     int c = fgetc(stream);
@@ -173,6 +177,8 @@ static int dynType_parseAny(FILE *stream, dyn_type *type) {
             status = dynType_parseMetaInfo(stream, type);
             if (status == OK) {
                 status = dynType_parseAny(stream, type);
+            } else {
+                celix_err_push("Failed to parse meta properties");
             }
             break;
         default :
@@ -183,265 +189,190 @@ static int dynType_parseAny(FILE *stream, dyn_type *type) {
     return status;
 }
 
-static int dynType_parseMetaInfo(FILE *stream, dyn_type *type) {
-    int status = OK;
-    char *name = NULL;
-    char *value = NULL;
+static int dynType_parseMetaInfo(FILE* stream, dyn_type* type) {
+    celix_autofree char* name = NULL;
+    celix_autofree char* value = NULL;
 
+    if (dynCommon_parseName(stream, &name) != OK) {
+        return PARSE_ERROR;
+    }
+    if (dynCommon_eatChar(stream, '=') != OK) {
+        return PARSE_ERROR;
+    }
+    if (dynCommon_parseName(stream, &value) != OK) {
+        return PARSE_ERROR;
+    }
+    if (dynCommon_eatChar(stream, ';') != OK) {
+        return PARSE_ERROR;
+    }
     struct meta_entry *entry = calloc(1, sizeof(*entry));
     if (entry == NULL) {
-        status = ERROR;
+        return MEM_ERROR;
     }
-
-    if (status == OK) {
-        status = dynCommon_parseName(stream, &name);
-    }
-
-    if (status == OK) {
-        status = dynCommon_eatChar(stream, '=');
-    }
-
-    if (status == OK) {
-        status = dynCommon_parseName(stream, &value);
-    }
-
-    if (status == OK) {
-        status = dynCommon_eatChar(stream, ';');
-    }
-
-    if (status == OK) {
-        entry->name = name;
-        entry->value = value;
-        TAILQ_INSERT_TAIL(&type->metaProperties, entry, entries);
-    } else {
-        LOG_ERROR("Failed to parse meta properties");
-        free(name);
-        free(value);
-        free(entry);
-    }
-
-    return status;
+    entry->name = celix_steal_ptr(name);
+    entry->value = celix_steal_ptr(value);
+    TAILQ_INSERT_TAIL(&type->metaProperties, entry, entries);
+    return OK;
 }
 
-static int dynType_parseText(FILE *stream, dyn_type *type) {
-    int status = OK;
+static int dynType_parseText(FILE* stream, dyn_type* type) {
     type->type = DYN_TYPE_TEXT;
     type->descriptor = 't';
+    type->trivial = false;
     type->ffiType = &ffi_type_pointer;
-    return status;
+    return OK;
 }
 
-static int dynType_parseEnum(FILE *stream, dyn_type *type) {
-    int status = OK;
+static int dynType_parseEnum(FILE* stream, dyn_type* type) {
     type->ffiType = &ffi_type_sint32;
     type->descriptor = 'E';
+    type->trivial = true;
     type->type = DYN_TYPE_SIMPLE;
-    return status;
+    return OK;
 }
 
-static int dynType_parseComplex(FILE *stream, dyn_type *type) {
+static int dynType_parseComplex(FILE* stream, dyn_type* type) {
+    size_t nbEntries = 0;
     int status = OK;
     type->type = DYN_TYPE_COMPLEX;
     type->descriptor = '{';
+    type->trivial = true;
     type->ffiType = &type->complex.structType;
     TAILQ_INIT(&type->complex.entriesHead);
 
     int c = fgetc(stream);
-    struct complex_type_entry *entry = NULL;
+    struct complex_type_entry* entry = NULL;
     while (c != ' ' && c != '}') {
         ungetc(c,stream);
-        entry = calloc(1, sizeof(*entry));
-        if (entry != NULL) {
-            entry->type = calloc(1, sizeof(*entry->type));
-        }
-        if (entry != NULL && entry->type != NULL) {
-            entry->type->parent = type;
-            entry->type->type = DYN_TYPE_INVALID;
-            TAILQ_INIT(&entry->type->nestedTypesHead);
-            TAILQ_INIT(&entry->type->metaProperties);
-            TAILQ_INSERT_TAIL(&type->complex.entriesHead, entry, entries);
-            status = dynType_parseAny(stream, entry->type);
-        } else {
-            free(entry);
-            status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for type");
-        }
-
+        celix_autoptr(dyn_type) subType = NULL;
+        status = dynType_parseWithStreamOfName(stream, NULL, type, NULL, &subType, dynType_parseAny);
         if (status != OK) {
-            break;
+            return status;
         }
-
+        entry = calloc(1, sizeof(*entry));
+        if (entry == NULL) {
+            celix_err_push("Error allocating memory for complex_type_entry");
+            return MEM_ERROR;
+        }
+        entry->type = celix_steal_ptr(subType);
+        if (!dynType_isTrivial(entry->type)) {
+            type->trivial = false;
+        }
+        TAILQ_INSERT_TAIL(&type->complex.entriesHead, entry, entries);
+        nbEntries += 1;
         c = fgetc(stream);
     }
 
-// loop over names
-    if (status == OK) {
-        entry = TAILQ_FIRST(&type->complex.entriesHead);
-        char *name = NULL;
-        while (c == ' ' && entry != NULL) {
-            status = dynCommon_parseName(stream, &name);
-            if (status == OK) {
-                entry->name = name;
-                entry = TAILQ_NEXT(entry, entries);
-            } else {
-                break;
-            }
-            c = getc(stream); 
+    // loop over names
+    entry = TAILQ_FIRST(&type->complex.entriesHead);
+    char* name = NULL;
+    // the current implementation permits trailing unnamed fields, i.e. number of names is less than number of fields
+    while (c == ' ' && entry != NULL) {
+        if ((status = dynCommon_parseName(stream, &name)) != OK) {
+            return status;
         }
+        entry->name = name;
+        entry = TAILQ_NEXT(entry, entries);
+        c = getc(stream);
+    }
+    if (c != '}') {
+        celix_err_push("Error parsing complex type, expected '}'");
+        return PARSE_ERROR;
     }
 
-    int count = 0;
-    if (status == OK) {
-        TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-            count +=1;
-        }
+    type->complex.structType.type =  FFI_TYPE_STRUCT;
+    type->complex.structType.elements = calloc(nbEntries + 1, sizeof(ffi_type*));
+    if (type->complex.structType.elements == NULL) {
+        celix_err_push("Error allocating memory for ffi_type elements");
+        return MEM_ERROR;
+    }
+    type->complex.structType.elements[nbEntries] = NULL;
+    int index = 0;
+    TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
+        type->complex.structType.elements[index++] = dynType_ffiType(entry->type);
     }
 
-    if (status == OK) {
-        type->complex.structType.type =  FFI_TYPE_STRUCT;
-        type->complex.structType.elements = calloc(count + 1, sizeof(ffi_type*));
-        if (type->complex.structType.elements != NULL) {
-            type->complex.structType.elements[count] = NULL;
-            int index = 0;
-            TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-                type->complex.structType.elements[index++] = dynType_ffiType(entry->type);
-            }
-        } else {
-            status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for elements");
-        }
+    type->complex.types = calloc(nbEntries, sizeof(dyn_type *));
+    if (type->complex.types == NULL) {
+        celix_err_pushf("Error allocating memory for complex types");
+        return MEM_ERROR;
+    }
+    index = 0;
+    TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
+        type->complex.types[index++] = entry->type;
     }
 
-    if (status == OK) {
-        type->complex.types = calloc(count, sizeof(dyn_type *));
-        if (type->complex.types != NULL) {
-            int index = 0;
-            TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-                type->complex.types[index++] = entry->type;
-            }
-        } else {
-            status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for type");
-        }
-    }
-
-    if (status == OK) {
-        dynType_prepCif(type->ffiType);
-    }
-
+    (void)ffi_get_struct_offsets(FFI_DEFAULT_ABI, type->ffiType, NULL);
 
     return status;
 }
 
-static int dynType_parseNestedType(FILE *stream, dyn_type *type) {
+static int dynType_parseNestedType(FILE* stream, dyn_type* type) {
     int status = OK;
-    char *name = NULL;
-    struct type_entry *entry = NULL;
-
-    entry = dynType_allocTypeEntry();
-    if (entry != NULL) {
-        entry->type->parent = type;
-        entry->type->type = DYN_TYPE_INVALID;
-        TAILQ_INIT(&entry->type->nestedTypesHead);
-        TAILQ_INIT(&entry->type->metaProperties);
-        TAILQ_INSERT_TAIL(&type->nestedTypesHead, entry, entries);
-        status = dynCommon_parseName(stream, &name);
-        entry->type->name = name;
-    } else {
-        status = MEM_ERROR;
-        LOG_ERROR("Error allocating entry");
-    }     
-
-    if (status == OK) {
-        int c = fgetc(stream);
-        if (c != '=') {
-            status = PARSE_ERROR;
-            LOG_ERROR("Error parsing nested type expected '=' got '%c'", c);
-        }
+    celix_autofree char* name = NULL;
+    celix_autoptr(dyn_type) subType = NULL;
+    if ((status = dynCommon_parseName(stream, &name)) != OK) {
+        return status;
     }
-
-    if (status == OK) {
-        status = dynType_parseAny(stream, entry->type);
-        int c = fgetc(stream);
-        if (c != ';') {
-            status = PARSE_ERROR;
-            LOG_ERROR("Expected ';' got '%c'\n", c);
-        }
+    if (dynCommon_eatChar(stream, '=') != OK) {
+        return PARSE_ERROR;
     }
-
-    return status;
+    if ((status = dynType_parseWithStreamOfName(stream, celix_steal_ptr(name), type, NULL, &subType, dynType_parseAny)) != OK) {
+        return status;
+    }
+    if (dynCommon_eatChar(stream, ';') != OK) {
+        return PARSE_ERROR;
+    }
+    struct type_entry* entry = calloc(1, sizeof(*entry));
+    if (entry == NULL) {
+        celix_err_pushf("Error allocating entry");
+        return MEM_ERROR;
+    }
+    entry->type = celix_steal_ptr(subType);
+    TAILQ_INSERT_TAIL(&type->nestedTypesHead, entry, entries);
+    return OK;
 }
 
-static int dynType_parseReference(FILE *stream, dyn_type *type) {
-    int status = OK;
+static int dynType_parseReference(FILE* stream, dyn_type* type) {
+    int status;
     type->type = DYN_TYPE_TYPED_POINTER;
     type->descriptor = '*';
-
+    type->trivial = false;
     type->ffiType = &ffi_type_pointer;
     type->typedPointer.typedType =  NULL;
 
-    dyn_type *subType = calloc(1, sizeof(*subType));
-
-    if (subType != NULL) {
-        type->typedPointer.typedType = subType;
-        subType->parent = type;
-        subType->type = DYN_TYPE_INVALID;
-        TAILQ_INIT(&subType->nestedTypesHead);
-        TAILQ_INIT(&subType->metaProperties);
-        status = dynType_parseRefByValue(stream, subType);
-    } else {
-        status = MEM_ERROR;
-        LOG_ERROR("Error allocating memory for subtype\n");
+    if ((status = dynType_parseWithStreamOfName(stream, NULL, type, NULL,
+                                                &type->typedPointer.typedType, dynType_parseRefByValue)) != OK) {
+        return status;
     }
-
-    return status;
+    return OK;
 }
 
-static int dynType_parseRefByValue(FILE *stream, dyn_type *type) {
+static int dynType_parseRefByValue(FILE* stream, dyn_type* type) {
     int status = OK;
     type->type = DYN_TYPE_REF;
     type->descriptor = 'l';
 
-    char *name = NULL;
-    status = dynCommon_parseName(stream, &name);
-    if (status == OK) {
-        dyn_type *ref = dynType_findType(type, name);
-        if (ref != NULL) {
-            type->ref.ref = ref;
-        } else {
-            status = PARSE_ERROR;
-            LOG_ERROR("Error cannot find type '%s'", name);
-        }
-        free(name);
-    } 
-
-    if (status ==OK) {
-        int c = fgetc(stream);
-        if (c != ';') {
-            status = PARSE_ERROR;
-            LOG_ERROR("Error expected ';' got '%c'", c);
-        } 
+    celix_autofree char* name = NULL;
+    if ((status = dynCommon_parseName(stream, &name)) != OK) {
+        return status;
     }
-
-    return status;
+    dyn_type* ref = dynType_findType(type, name);
+    if (ref == NULL) {
+        celix_err_pushf("Error cannot find type '%s'", name);
+        return PARSE_ERROR;
+    }
+    type->ref.ref = ref;
+    if (dynCommon_eatChar(stream, ';') != OK) {
+        return PARSE_ERROR;
+    }
+    return OK;
 }
 
-static struct type_entry *dynType_allocTypeEntry(void) {
-    struct type_entry *entry = calloc(1, sizeof(*entry));
-    if (entry != NULL) {
-        entry->type = calloc(1, sizeof(*entry->type));
-        if (entry->type == NULL) {
-            free(entry);
-            entry = NULL;
-        }
-    }
-    return entry;
-}
+static ffi_type* seq_types[] = {&ffi_type_uint32, &ffi_type_uint32, &ffi_type_pointer, NULL};
 
-static ffi_type *seq_types[] = {&ffi_type_uint32, &ffi_type_uint32, &ffi_type_pointer, NULL};
-
-static int dynType_parseSequence(FILE *stream, dyn_type *type) {
-    int status = OK;
+static int dynType_parseSequence(FILE* stream, dyn_type* type) {
+    int status;
     type->type = DYN_TYPE_SEQUENCE;
     type->descriptor = '[';
 
@@ -450,64 +381,60 @@ static int dynType_parseSequence(FILE *stream, dyn_type *type) {
     type->sequence.seqType.size = 0;
     type->sequence.seqType.alignment = 0;
 
-    status = dynType_parseWithStream(stream, NULL, type, NULL, &type->sequence.itemType);
-
-    if (status == OK) {
-        type->ffiType = &type->sequence.seqType;
-        dynType_prepCif(&type->sequence.seqType);
+    status = dynType_parseWithStreamOfName(stream, NULL, type, NULL, &type->sequence.itemType, dynType_parseAny);
+    if (status != OK) {
+        return status;
     }
 
-    return status;
+    type->ffiType = &type->sequence.seqType;
+    (void)ffi_get_struct_offsets(FFI_DEFAULT_ABI, type->ffiType, NULL);
+    return OK;
 }
 
-static int dynType_parseSimple(int c, dyn_type *type) {
-    int status = OK;
-    ffi_type *ffiType = dynType_ffiTypeFor(c);
-    if (ffiType != NULL) {
-        type->type = DYN_TYPE_SIMPLE;
-        type->descriptor = c;
-        type->ffiType = ffiType;
-    } else {
-        status = PARSE_ERROR;
-        LOG_ERROR("Error unsupported type '%c'", c);
+static int dynType_parseSimple(int c, dyn_type* type) {
+    ffi_type* ffiType = dynType_ffiTypeFor(c);
+    if (ffiType == NULL) {
+        celix_err_pushf("Error unsupported type '%c'", c);
+        return PARSE_ERROR;
     }
-
-    return status;
+    type->type = DYN_TYPE_SIMPLE;
+    type->descriptor = c;
+    type->trivial = c != 'P';
+    type->ffiType = ffiType;
+    return OK;
 }
 
-static int dynType_parseTypedPointer(FILE *stream, dyn_type *type) {
+static int dynType_parseTypedPointer(FILE* stream, dyn_type* type) {
     int status = OK;
     type->type = DYN_TYPE_TYPED_POINTER;
     type->descriptor = '*';
+    type->trivial = false;
     type->ffiType = &ffi_type_pointer;
 
-    status = dynType_parseWithStream(stream, NULL, type, NULL, &type->typedPointer.typedType);
+    status = dynType_parseWithStreamOfName(stream, NULL, type, NULL, &type->typedPointer.typedType, dynType_parseAny);
 
     return status;
 }
 
-void dynType_destroy(dyn_type *type) {
+void dynType_destroy(dyn_type* type) {
     if (type != NULL) {          
         dynType_clear(type);
         free(type);
     }
 }
 
-static void dynType_clear(dyn_type *type) {
-    struct type_entry *entry = TAILQ_FIRST(&type->nestedTypesHead);
-    struct type_entry *tmp = NULL;
+static void dynType_clear(dyn_type* type) {
+    struct type_entry* entry = TAILQ_FIRST(&type->nestedTypesHead);
+    struct type_entry* tmp = NULL;
     while (entry != NULL) {
         tmp = entry;
         entry = TAILQ_NEXT(entry, entries);
-        if (tmp->type != NULL) {
-            dynType_destroy(tmp->type);
-            tmp->type = NULL;
-        }
+        dynType_destroy(tmp->type);
         free(tmp);
     }
 
-    struct meta_entry *mEntry = TAILQ_FIRST(&type->metaProperties);;
-    struct meta_entry *next = NULL;
+    struct meta_entry* mEntry = TAILQ_FIRST(&type->metaProperties);;
+    struct meta_entry* next = NULL;
     while (mEntry != NULL) {
         next = TAILQ_NEXT(mEntry, entries);
         if (mEntry != NULL) {
@@ -535,10 +462,10 @@ static void dynType_clear(dyn_type *type) {
     }
 }
 
-static void dynType_clearComplex(dyn_type *type) {
+static void dynType_clearComplex(dyn_type* type) {
     assert(type->type == DYN_TYPE_COMPLEX);
-    struct complex_type_entry *entry = TAILQ_FIRST(&type->complex.entriesHead);
-    struct complex_type_entry *tmp = NULL;
+    struct complex_type_entry* entry = TAILQ_FIRST(&type->complex.entriesHead);
+    struct complex_type_entry* tmp = NULL;
     while (entry != NULL) {
         dynType_destroy(entry->type);
         if (entry->name != NULL) {
@@ -556,162 +483,148 @@ static void dynType_clearComplex(dyn_type *type) {
     }
 }
 
-static void dynType_clearSequence(dyn_type *type) {
+static void dynType_clearSequence(dyn_type* type) {
     assert(type->type == DYN_TYPE_SEQUENCE);
     if (type->sequence.itemType != NULL) {
         dynType_destroy(type->sequence.itemType);
     }
 }
 
-static void dynType_clearTypedPointer(dyn_type *type) {
+static void dynType_clearTypedPointer(dyn_type* type) {
     assert(type->type == DYN_TYPE_TYPED_POINTER);
     if (type->typedPointer.typedType != NULL) {
         dynType_destroy(type->typedPointer.typedType);
     }
 }
 
-int dynType_alloc(dyn_type *type, void **bufLoc) {
-    int status = OK;
+int dynType_alloc(const dyn_type* type, void** bufLoc) {
+    const dyn_type* current = dynType_realType(type);
 
-    if (type->type == DYN_TYPE_REF) {
-        status = dynType_alloc(type->ref.ref, bufLoc);
-    } else {
-        void *inst = calloc(1, type->ffiType->size);
-        if (inst != NULL) {
-            *bufLoc = inst;
-        } else {
-            status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for type '%c'", type->descriptor);
-        }
+    void* inst = calloc(1, current->ffiType->size);
+    if (inst == NULL) {
+        celix_err_pushf("Error allocating memory for type '%c'", current->descriptor);
+        return MEM_ERROR;
     }
+    *bufLoc = inst;
 
-    return status;
+    return OK;
 }
 
 
-int dynType_complex_indexForName(dyn_type *type, const char *name) {
+int dynType_complex_indexForName(const dyn_type* type, const char* name) {
     assert(type->type == DYN_TYPE_COMPLEX);
+    if (name == NULL) {
+        return -1;
+    }
     int i = 0;
     int index = -1;
-    struct complex_type_entry *entry = NULL;
+    struct complex_type_entry* entry = NULL;
     TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-        if (strcmp(name, entry->name) == 0) {
+        if (entry->name != NULL && strcmp(name, entry->name) == 0) {
             index = i;
+            break;
         }
         i +=1;
     }
     return index;
 }
 
-int dynType_complex_dynTypeAt(dyn_type *type, int index, dyn_type **result) {
+const dyn_type* dynType_complex_dynTypeAt(const dyn_type* type, int index) {
     assert(type->type == DYN_TYPE_COMPLEX);
     assert(index >= 0);
-    dyn_type *sub = type->complex.types[index];
-    if (sub->type == DYN_TYPE_REF) {
-        sub = sub->ref.ref;
-    }
-    *result = sub;
-    return 0;
+    return dynType_realType(type->complex.types[index]);
 }
 
-int dynType_complex_setValueAt(dyn_type *type, int index, void *start, void *in) {
+int dynType_complex_setValueAt(const dyn_type* type, int index, void* start, const void* in) {
     assert(type->type == DYN_TYPE_COMPLEX);
-    char *loc = ((char *)start) + dynType_getOffset(type, index);
+    char* loc = ((char*)start) + dynType_getOffset(type, index);
     size_t size = type->complex.structType.elements[index]->size;
     memcpy(loc, in, size);
     return 0;
 }
 
-int dynType_complex_valLocAt(dyn_type *type, int index, void *inst, void **result) {
+void* dynType_complex_valLocAt(const dyn_type* type, int index, void* inst) {
     assert(type->type == DYN_TYPE_COMPLEX);
-    char *l = (char *)inst;
-    void *loc = (void *)(l + dynType_getOffset(type, index));
-    *result = loc;
-    return OK;
+    char* l = (char*)inst;
+    return (void* )(l + dynType_getOffset(type, index));
 }
 
-size_t dynType_complex_nrOfEntries(dyn_type *type) {
+size_t dynType_complex_nrOfEntries(const dyn_type* type) {
     size_t count = 0;
-    struct complex_type_entry *entry = NULL;
+    struct complex_type_entry* entry = NULL;
     TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
         ++count;
     }
     return count;
 }
 
-int dynType_complex_entries(dyn_type *type, struct complex_type_entries_head **entries) {
+const struct complex_type_entries_head* dynType_complex_entries(const dyn_type* type) {
     assert(type->type == DYN_TYPE_COMPLEX);
-    int status = OK;
-    *entries = &type->complex.entriesHead;
-    return status;
+    return &type->complex.entriesHead;
 }
 
 //sequence
 
-void dynType_sequence_init(dyn_type *type, void *inst) {
+void dynType_sequence_init(const dyn_type* type, void* inst) {
     assert(type->type == DYN_TYPE_SEQUENCE);
-    struct generic_sequence *seq = inst;
+    struct generic_sequence* seq = inst;
     seq->buf = NULL;
     seq->cap = 0;
     seq->len = 0;
 }
 
-int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap) {
+int dynType_sequence_alloc(const dyn_type* type, void* inst, uint32_t cap) {
+    assert(type->type == DYN_TYPE_SEQUENCE);
+    struct generic_sequence* seq = inst;
+    if (seq == NULL) {
+        celix_err_pushf("Error null sequence");
+        return ERROR;
+    }
+    size_t size = dynType_size(type->sequence.itemType);
+    seq->buf = calloc(cap, size);
+    if (seq->buf == NULL) {
+        seq->cap = 0;
+        celix_err_pushf("Error allocating memory for seq buf");
+        return MEM_ERROR;
+    }
+    seq->cap = cap;
+    seq->len = 0;
+    return OK;
+}
+
+int dynType_sequence_reserve(const dyn_type* type, void* inst, uint32_t cap) {
     assert(type->type == DYN_TYPE_SEQUENCE);
     int status = OK;
-    struct generic_sequence *seq = inst;
-    if (seq != NULL) {
-        size_t size = dynType_size(type->sequence.itemType);
-        seq->buf = malloc(cap * size);
-        if (seq->buf != NULL) {
-            seq->cap = cap;
-            seq->len = 0;
-        } else {
-            seq->cap = 0;
-            status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for buf");
-        }
-    } else {
-            status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for seq");
+    struct generic_sequence* seq = inst;
+    if (seq == NULL) {
+        celix_err_pushf("Error null sequence");
+        return ERROR;
     }
+    if (seq->cap >= cap) {
+        return OK;
+    }
+    size_t size = dynType_size(type->sequence.itemType);
+    seq->buf = realloc(seq->buf, (size_t)(cap * size));
+    if (seq->buf == NULL) {
+        seq->cap = 0;
+        celix_err_pushf("Error allocating memory for seq buf");
+        return MEM_ERROR;
+    }
+    memset(seq->buf+seq->cap*size, 0, (cap-seq->cap)*size);
+    seq->cap = cap;
     return status;
 }
 
-int dynType_sequence_reserve(dyn_type *type, void *inst, uint32_t cap) {
-    assert(type->type == DYN_TYPE_SEQUENCE);
-    int status = OK;
-    struct generic_sequence *seq = inst;
-    if (seq != NULL && seq->cap < cap) {
-        size_t size = dynType_size(type->sequence.itemType);
-        seq->buf = realloc(seq->buf, (size_t)(cap * size));
-        if (seq->buf != NULL) {
-            seq->cap = cap;
-        } else {
-            seq->cap = 0;
-            status = MEM_ERROR;
-            LOG_ERROR("Error allocating memory for buf");
-        }
-    } else {
-        status = MEM_ERROR;
-        LOG_ERROR("Error allocating memory for seq");
-    }
-    return status;
-}
-
-void dynType_free(dyn_type *type, void *loc) {
+void dynType_free(const dyn_type* type, void* loc) {
     dynType_deepFree(type, loc, true);
 }
 
-void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf) {
+static void dynType_deepFree(const dyn_type* type, void* loc, bool alsoDeleteSelf) {
     if (loc != NULL) {
-        dyn_type *subType = NULL;
-        char *text = NULL;
+        const dyn_type* subType = NULL;
+        char* text = NULL;
+        type = dynType_realType(type);
         switch (type->type) {
-            case DYN_TYPE_REF:
-                //NOTE: do not recursively forward asloDeleteSelf, because this is already handled in this function)
-                dynType_deepFree(type->ref.ref, loc, false);
-                break;
             case DYN_TYPE_COMPLEX :
                 dynType_freeComplexType(type, loc);
                 break;
@@ -719,20 +632,22 @@ void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf) {
                 dynType_freeSequenceType(type, loc);
                 break;
             case DYN_TYPE_TYPED_POINTER:
-                dynType_typedPointer_getTypedType(type, &subType);
+                subType = dynType_typedPointer_getTypedType(type);
                 void *ptrToType = *(void**)loc;
                 dynType_deepFree(subType, ptrToType, true);
                 break;
             case DYN_TYPE_TEXT :
-                text = *(char **)loc;
+                text = *(char**)loc;
                 free(text);
                 break;
             case DYN_TYPE_SIMPLE:
                 //nop
                 break;
+//LCOV_EXCL_START
             default:
-                LOG_ERROR("Unexpected switch case. cannot free dyn type %c\n", type->descriptor);
+                assert(0 && "Unexpected switch case. cannot free dyn type");
                 break;
+//LCOV_EXCL_STOP
         }
 
         if (alsoDeleteSelf) {
@@ -741,11 +656,11 @@ void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf) {
     }
 }
 
-void dynType_freeSequenceType(dyn_type *type, void *seqLoc) {
-    struct generic_sequence *seq = seqLoc;
-    dyn_type *itemType = dynType_sequence_itemType(type);
-    void *itemLoc = NULL;
-    int i;
+static void dynType_freeSequenceType(const dyn_type* type, void* seqLoc) {
+    struct generic_sequence* seq = seqLoc;
+    const dyn_type* itemType = dynType_sequence_itemType(type);
+    void* itemLoc = NULL;
+    uint32_t i;
     for (i = 0; i < seq->len; ++i) {
         dynType_sequence_locForIndex(type, seqLoc, i, &itemLoc);
         dynType_deepFree(itemType, itemLoc, false);
@@ -753,89 +668,72 @@ void dynType_freeSequenceType(dyn_type *type, void *seqLoc) {
     free(seq->buf);
 }
 
-void dynType_freeComplexType(dyn_type *type, void *loc) {
-    struct complex_type_entry *entry = NULL;
+static void dynType_freeComplexType(const dyn_type* type, void* loc) {
+    struct complex_type_entry* entry = NULL;
     int index = 0;
-    void *entryLoc = NULL;
     TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-        dynType_complex_valLocAt(type, index++, loc, &entryLoc);
-        dynType_deepFree(entry->type, entryLoc, false);
+        dynType_deepFree(entry->type, dynType_complex_valLocAt(type, index++, loc), false);
     }
 }
 
 
-uint32_t dynType_sequence_length(void *seqLoc) {
-    struct generic_sequence *seq = seqLoc;
+uint32_t dynType_sequence_length(const void *seqLoc) {
+    const struct generic_sequence* seq = seqLoc;
     return seq->len;
 }
 
-int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void **out) {
+int dynType_sequence_locForIndex(const dyn_type* type, const void* seqLoc, uint32_t index, void** out) {
     assert(type->type == DYN_TYPE_SEQUENCE);
-    int status = OK;
-
-    struct generic_sequence *seq = seqLoc;
+    const struct generic_sequence* seq = seqLoc;
 
     size_t itemSize = dynType_size(type->sequence.itemType);
 
     if (index >= seq->cap) {
-        status = ERROR;
-        LOG_ERROR("Requested index (%i) is greater than capacity (%u) of sequence", index, seq->cap);
+        celix_err_pushf("Requested index (%u) is greater than capacity (%u) of sequence", index, seq->cap);
+        return ERROR;
     }
 
     if (index >= seq->len) {
-        status = ERROR;
-        LOG_ERROR("Requesting index (%i) outsize defined length (%u) but within capacity", index, seq->len);
+        celix_err_pushf("Requesting index (%u) outsize defined length (%u) but within capacity", index, seq->len);
+        return ERROR;
     }
 
-    if (status == OK) {
-        char *valLoc = seq->buf + (index * itemSize);
-        (*out) = valLoc;
-    }
+    char* valLoc = seq->buf + (index * itemSize);
+    (*out) = valLoc;
 
-    return status;
+    return OK;
 }
 
-int dynType_sequence_increaseLengthAndReturnLastLoc(dyn_type *type, void *seqLoc, void **valLoc) {
+int dynType_sequence_increaseLengthAndReturnLastLoc(const dyn_type* type, void* seqLoc, void** valLoc) {
     assert(type->type == DYN_TYPE_SEQUENCE);
-    int status = OK;
-    struct generic_sequence *seq = seqLoc;
+    struct generic_sequence* seq = seqLoc;
 
-    int lastIndex = seq->len;
-    if (seq->len < seq->cap) {
-        seq->len += 1;
-    } else {
-        status = ERROR;
-        LOG_ERROR("Cannot increase sequence length beyond capacity (%u)", seq->cap);
+    uint32_t lastIndex = seq->len;
+    if (seq->len >= seq->cap) {
+        celix_err_pushf("Cannot increase sequence length beyond capacity (%u)", seq->cap);
+        return ERROR;
     }
-
-    if (status == OK) {
-        status = dynType_sequence_locForIndex(type, seqLoc, lastIndex, valLoc);
-    }
-
-    return status;
+    seq->len += 1;
+    return dynType_sequence_locForIndex(type, seqLoc, lastIndex, valLoc);
 }
 
-dyn_type * dynType_sequence_itemType(dyn_type *type) {
+const dyn_type* dynType_sequence_itemType(const dyn_type* type) {
     assert(type->type == DYN_TYPE_SEQUENCE);
-    dyn_type *itemType = type->sequence.itemType;
-    if (itemType->type == DYN_TYPE_REF) {
-        itemType = itemType->ref.ref;
-    }
-    return itemType;
+    return dynType_realType(type->sequence.itemType);
 }
 
-void dynType_simple_setValue(dyn_type *type, void *inst, void *in) {
+void dynType_simple_setValue(const dyn_type *type, void *inst, const void *in) {
     size_t size = dynType_size(type);
     memcpy(inst, in, size);
 }
 
-char dynType_descriptorType(dyn_type *type) {
+char dynType_descriptorType(const dyn_type* type) {
     return type->descriptor;
 }
 
-const char * dynType_getMetaInfo(dyn_type *type, const char *name) {
-    const char *result = NULL;
-    struct meta_entry *entry = NULL;
+const char* dynType_getMetaInfo(const dyn_type* type, const char* name) {
+    const char* result = NULL;
+    struct meta_entry* entry = NULL;
     TAILQ_FOREACH(entry, &type->metaProperties, entries) {
         if (strcmp(entry->name, name) == 0) {
             result = entry->value;
@@ -845,17 +743,16 @@ const char * dynType_getMetaInfo(dyn_type *type, const char *name) {
     return result;
 }
 
-int dynType_metaEntries(dyn_type *type, struct meta_properties_head **entries) {
-    *entries = &type->metaProperties;
-    return OK;
+const struct meta_properties_head* dynType_metaEntries(const dyn_type* type) {
+    return &type->metaProperties;
 }
 
-const char * dynType_getName(dyn_type *type) {
+const char* dynType_getName(const dyn_type* type) {
     return type->name;
 }
 
-static ffi_type * dynType_ffiTypeFor(int c) {
-    ffi_type *type = NULL;
+static ffi_type* dynType_ffiTypeFor(int c) {
+    ffi_type* type = NULL;
     switch (c) {
         case 'Z' :
             type = &ffi_type_uint8;
@@ -903,11 +800,11 @@ static ffi_type * dynType_ffiTypeFor(int c) {
     return type;
 }
 
-static unsigned short dynType_getOffset(dyn_type *type, int index) {
+static unsigned short dynType_getOffset(const dyn_type* type, int index) {
     assert(type->type == DYN_TYPE_COMPLEX);
     unsigned short offset = 0;
 
-    ffi_type *ffiType = &type->complex.structType;
+    const ffi_type* ffiType = &type->complex.structType;
     int i;
     for (i = 0;  i <= index && ffiType->elements[i] != NULL; i += 1) {
         size_t size = ffiType->elements[i]->size;
@@ -924,52 +821,43 @@ static unsigned short dynType_getOffset(dyn_type *type, int index) {
     return offset;
 }
 
-size_t dynType_size(dyn_type *type) {
-    dyn_type *rType = type;
-    if (type->type == DYN_TYPE_REF) {
-        rType = type->ref.ref;
-    }
+size_t dynType_size(const dyn_type* type) {
+    const dyn_type* rType = dynType_realType(type);
     return rType->ffiType->size;
 }
 
-int dynType_type(dyn_type *type) {
+int dynType_type(const dyn_type* type) {
     return type->type;
 }
 
+const dyn_type* dynType_realType(const dyn_type* type) {
+    const dyn_type* real = type;
+    while (real->type == DYN_TYPE_REF) {
+        real= real->ref.ref;
+    }
+    return real;
 
-int dynType_typedPointer_getTypedType(dyn_type *type, dyn_type **out) {
+}
+
+const dyn_type* dynType_typedPointer_getTypedType(const dyn_type* type) {
     assert(type->type == DYN_TYPE_TYPED_POINTER);
-    int status = 0;
-
-    dyn_type *typedType = type->typedPointer.typedType;
-    if (typedType->type == DYN_TYPE_REF) {
-        typedType = typedType->ref.ref;
-    }
-
-    *out = typedType;
-    return status;
+    return dynType_realType(type->typedPointer.typedType);
 }
 
 
-int dynType_text_allocAndInit(dyn_type *type, void *textLoc, const char *value) {
+int dynType_text_allocAndInit(const dyn_type* type, void* textLoc, const char* value) {
     assert(type->type == DYN_TYPE_TEXT);
-    int status = 0;
-    const char *str = strdup(value);
-    char const **loc = textLoc;
-    if (str != NULL) {
-        *loc = str;
-    } else {
-        status = ERROR;
-        LOG_ERROR("Cannot allocate memory for string");
+    const char* str = strdup(value);
+    char const** loc = textLoc;
+    if (str == NULL) {
+        celix_err_pushf("Cannot allocate memory for string");
+        return MEM_ERROR;
     }
-    return status;
+    *loc = str;
+    return OK;
 }
 
-
-
-
-
-void dynType_print(dyn_type *type, FILE *stream) {
+void dynType_print(const dyn_type *type, FILE *stream) {
     if (type != NULL) {
         dynType_printTypes(type, stream);
 
@@ -987,11 +875,9 @@ static void dynType_printDepth(int depth, FILE *stream) {
     }
 }
 
-static void dynType_printAny(char *name, dyn_type *type, int depth, FILE *stream) {
-    dyn_type *toPrint = type;
-    if (toPrint->type == DYN_TYPE_REF) {
-        toPrint = toPrint->ref.ref;
-    }
+static void dynType_printAny(const char* name, const dyn_type* type, int depth, FILE *stream) {
+    const dyn_type* toPrint = dynType_realType(type);
+    name = (name != NULL) ? name : "(unnamed)";
     switch(toPrint->type) {
         case DYN_TYPE_COMPLEX :
             dynType_printComplex(name, toPrint, depth, stream);
@@ -1005,18 +891,24 @@ static void dynType_printAny(char *name, dyn_type *type, int depth, FILE *stream
         case DYN_TYPE_TYPED_POINTER :
             dynType_printTypedPointer(name, toPrint, depth, stream);
             break;
-        default :
-            fprintf(stream, "TODO Unsupported type %d\n", toPrint->type);
+        case DYN_TYPE_TEXT:
+            dynType_printText(name, toPrint, depth, stream);
             break;
+//LCOV_EXCL_START
+        default :
+            assert(0 && "Unexpected switch case. cannot print dyn type");
+            break;
+//LCOV_EXCL_STOP
     }
 }
 
-static void dynType_printComplex(char *name, dyn_type *type, int depth, FILE *stream) {
+static void dynType_printComplex(const char* name, const dyn_type* type, int depth, FILE *stream) {
     if (type->name == NULL) {
         dynType_printDepth(depth, stream);
-        fprintf(stream, "%s: complex type (anon), size is %zu, alignment is %i, descriptor is '%c'. fields:\n", name,  type->ffiType->size, type->ffiType->alignment, type->descriptor);
+        fprintf(stream, "%s: complex type (anon), size is %zu, alignment is %i, descriptor is '%c'. fields:\n",
+                name,  type->ffiType->size, type->ffiType->alignment, type->descriptor);
 
-        struct complex_type_entry *entry = NULL;
+        struct complex_type_entry* entry = NULL;
         TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
             dynType_printAny(entry->name, entry->type, depth + 1, stream);
         }
@@ -1025,49 +917,57 @@ static void dynType_printComplex(char *name, dyn_type *type, int depth, FILE *st
         fprintf(stream, "}\n");
     } else {
         dynType_printDepth(depth, stream);
-        fprintf(stream, "%s: complex type ('%s'), size is %zu, alignment is %i, descriptor is '%c'.\n", name, type->name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+        fprintf(stream, "%s: complex type ('%s'), size is %zu, alignment is %i, descriptor is '%c'.\n",
+                name, type->name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
     }
 }
 
-static void dynType_printSequence(char *name, dyn_type *type, int depth, FILE *stream) {
+static void dynType_printSequence(const char* name, const dyn_type* type, int depth, FILE* stream) {
     dynType_printDepth(depth, stream);
-    fprintf(stream, "sequence, size is %zu, alignment is %i, descriptor is '%c'. fields:\n", type->ffiType->size, type->ffiType->alignment, type->descriptor);
+    fprintf(stream, "sequence, size is %zu, alignment is %i, descriptor is '%c'. fields:\n",
+            type->ffiType->size, type->ffiType->alignment, type->descriptor);
 
     dynType_printDepth(depth + 1, stream);
-    fprintf(stream, "cap: simple type, size is %zu, alignment is %i.\n", type->sequence.seqType.elements[0]->size, type->sequence.seqType.elements[0]->alignment);
+    fprintf(stream, "cap: simple type, size is %zu, alignment is %i.\n",
+            type->sequence.seqType.elements[0]->size, type->sequence.seqType.elements[0]->alignment);
 
     dynType_printDepth(depth + 1, stream);
-    fprintf(stream, "len: simple type, size is %zu, alignment is %i.\n", type->sequence.seqType.elements[1]->size, type->sequence.seqType.elements[1]->alignment);
+    fprintf(stream, "len: simple type, size is %zu, alignment is %i.\n",
+            type->sequence.seqType.elements[1]->size, type->sequence.seqType.elements[1]->alignment);
 
     dynType_printDepth(depth + 1, stream);
-    fprintf(stream, "buf: array, size is %zu, alignment is %i. points to ->\n", type->sequence.seqType.elements[2]->size, type->sequence.seqType.elements[2]->alignment);
+    fprintf(stream, "buf: array, size is %zu, alignment is %i. points to ->\n",
+            type->sequence.seqType.elements[2]->size, type->sequence.seqType.elements[2]->alignment);
     dynType_printAny("element", type->sequence.itemType, depth + 1, stream);
 }
 
-static void dynType_printSimple(char *name, dyn_type *type, int depth, FILE *stream) {
+static void dynType_printSimple(const char* name, const dyn_type* type, int depth, FILE* stream) {
     if (type->descriptor != 'E') {
         dynType_printDepth(depth, stream);
-        fprintf(stream, "%s: simple type, size is %zu, alignment is %i, descriptor is '%c'.\n", name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+        fprintf(stream, "%s: simple type, size is %zu, alignment is %i, descriptor is '%c'.\n",
+                name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
     }
     else {
         dynType_printEnum(name, type, depth, stream);
     }
 }
 
-static void dynType_printEnum(char *name, dyn_type *type, int depth, FILE *stream) {
+static void dynType_printEnum(const char* name, const dyn_type* type, int depth, FILE* stream) {
     dynType_printDepth(depth, stream);
-    fprintf(stream, "%s: enum type, size is %zu, alignment is %i, descriptor is '%c'. values:", name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
-    struct meta_entry * m_entry;
+    fprintf(stream, "%s: enum type, size is %zu, alignment is %i, descriptor is '%c'. values:",
+            name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+    struct meta_entry* m_entry;
     TAILQ_FOREACH(m_entry, &type->metaProperties, entries) {
         fprintf(stream, " (\"%s\":\"%s\")", m_entry->name, m_entry->value);
     }
     fprintf(stream, "\n");
 }
 
-static void dynType_printTypedPointer(char *name, dyn_type *type, int depth, FILE *stream) {
+static void dynType_printTypedPointer(const char* name, const dyn_type* type, int depth, FILE* stream) {
     dynType_printDepth(depth, stream);
-    fprintf(stream, "%s: typed pointer, size is %zu, alignment is %i, points to ->\n", name, type->ffiType->size, type->ffiType->alignment);
-    char *subName = NULL;
+    fprintf(stream, "%s: typed pointer, size is %zu, alignment is %i, points to ->\n",
+            name, type->ffiType->size, type->ffiType->alignment);
+    char* subName = NULL;
     char buf[128];
     memset(buf,0,128);
     if (name != NULL) {
@@ -1077,26 +977,30 @@ static void dynType_printTypedPointer(char *name, dyn_type *type, int depth, FIL
     dynType_printAny(subName, type->typedPointer.typedType, depth + 1, stream);
 }
 
-static void dynType_printTypes(dyn_type *type, FILE *stream) {
+static void dynType_printText(const char* name, const dyn_type* type, int depth, FILE* stream) {
+    dynType_printDepth(depth, stream);
+    fprintf(stream, "%s: text type, size is %zu, alignment is %i, descriptor is '%c'.\n",
+            name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+}
 
-    dyn_type *parent = type->parent;
-    struct type_entry *pentry = NULL;
-    while (parent != NULL) {
-        TAILQ_FOREACH(pentry, &parent->nestedTypesHead, entries) {
-            if (pentry->type == type) {
-                return;
+static void dynType_printTypes(const dyn_type* type, FILE* stream) {
+    if (type->type == DYN_TYPE_REF) {
+        const dyn_type* real = dynType_realType(type->ref.ref);
+        dyn_type* parent = type->parent;
+        struct type_entry* pentry = NULL;
+        while (parent != NULL) {
+            TAILQ_FOREACH(pentry, &parent->nestedTypesHead, entries) {
+                if (pentry->type == real) {
+                    return;
+                }
             }
+            parent = parent->parent;
         }
-        parent = parent->parent;
     }
 
-    struct type_entry *entry = NULL;
+    struct type_entry* entry = NULL;
     TAILQ_FOREACH(entry, &type->nestedTypesHead, entries) {
-        dyn_type *toPrint = entry->type;
-        if (toPrint->type == DYN_TYPE_REF) {
-            toPrint = toPrint->ref.ref;
-        }
-
+        const dyn_type* toPrint = dynType_realType(entry->type);
         switch(toPrint->type) {
             case DYN_TYPE_COMPLEX :
                 dynType_printComplexType(toPrint, stream);
@@ -1105,13 +1009,13 @@ static void dynType_printTypes(dyn_type *type, FILE *stream) {
                 dynType_printSimpleType(toPrint, stream);
                 break;
             default :
-                printf("TODO Print Type\n");
+                printf("TODO Print Type %d\n", toPrint->type);
                 break;
         }
     }
 
 
-    struct complex_type_entry *centry = NULL;
+    struct complex_type_entry* centry = NULL;
     switch(type->type) {
         case DYN_TYPE_COMPLEX :
             TAILQ_FOREACH(centry, &type->complex.entriesHead, entries) {
@@ -1127,7 +1031,7 @@ static void dynType_printTypes(dyn_type *type, FILE *stream) {
     }
 }
 
-static void dynType_printComplexType(dyn_type *type, FILE *stream) {
+static void dynType_printComplexType(const dyn_type *type, FILE *stream) {
     fprintf(stream, "type '%s': complex type, size is %zu, alignment is %i, descriptor is '%c'. fields:\n", type->name,  type->ffiType->size, type->ffiType->alignment, type->descriptor);
 
     struct complex_type_entry *entry = NULL;
@@ -1138,7 +1042,11 @@ static void dynType_printComplexType(dyn_type *type, FILE *stream) {
     fprintf(stream, "}\n");
 }
 
-static void dynType_printSimpleType(dyn_type *type, FILE *stream) {
-    fprintf(stream, "\ttype '%s': simple type, size is %zu, alignment is %i, descriptor is '%c'\n", type->name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+static void dynType_printSimpleType(const dyn_type *type, FILE *stream) {
+    fprintf(stream, "type '%s': simple type, size is %zu, alignment is %i, descriptor is '%c'\n", type->name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+}
+
+bool dynType_isTrivial(const dyn_type* type) {
+    return dynType_realType(type)->trivial;
 }
 

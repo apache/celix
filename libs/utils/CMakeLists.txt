@@ -21,26 +21,15 @@ if (UTILS)
 
     set(MEMSTREAM_SOURCES )
     set(MEMSTREAM_INCLUDES )
-    include(CheckFunctionExists)
-    #check_function_exists(fmemopen FMEMOPEN_EXISTS)
-    check_function_exists(open_memstream OPEN_MEMSTREAM_EXISTS)
-    if (NOT OPEN_MEMSTREAM_EXISTS)
-        set(MEMSTREAM_SOURCES src/memstream/open_memstream.c  src/memstream/fmemopen.c ${MEMSTREAM_SOURCES})
-        set(MEMSTREAM_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include/memstream ${MEMSTREAM_INCLUDE_DIR})
-        install(DIRECTORY include/memstream/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/memstream COMPONENT framework)
-    endif()
 
     set(UTILS_SRC
             src/array_list.c
             src/hash_map.c
-            src/linked_list.c
-            src/linked_list_iterator.c
             src/celix_threads.c
             src/version.c
             src/version_range.c
             src/properties.c
             src/utils.c
-            src/ip_utils.c
             src/filter.c
             src/celix_log_level.c
             src/celix_log_utils.c
@@ -63,10 +52,6 @@ if (UTILS)
             OUTPUT_NAME "celix_utils")
     celix_target_hide_symbols(utils)
 
-    if (NOT OPEN_MEMSTREAM_EXISTS)
-        target_compile_definitions(utils PUBLIC -DCELIX_UTILS_NO_MEMSTREAM_AVAILABLE)
-    endif ()
-
     if (ANDROID)
         target_compile_definitions(utils PRIVATE -DUSE_FILE32API)
     endif ()
@@ -78,7 +63,6 @@ if (UTILS)
     target_include_directories(utils PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include_internal> #Note not installed, only for project internal usage
-            $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
             )
     target_include_directories(utils PRIVATE src include_deprecated)
     IF(UNIX AND NOT ANDROID)
@@ -129,7 +113,6 @@ if (UTILS)
         target_include_directories(utils_cut PUBLIC
                 ${CMAKE_CURRENT_LIST_DIR}/include
                 ${CMAKE_CURRENT_LIST_DIR}/include_internal
-                ${MEMSTREAM_INCLUDE_DIR}
                 ${CMAKE_BINARY_DIR}/celix/gen/includes/utils
                 ${CMAKE_BINARY_DIR}/celix/gen/src/utils
                 src include_deprecated
@@ -137,43 +120,6 @@ if (UTILS)
         target_link_libraries(utils_cut PUBLIC ${UTILS_PUBLIC_DEPS} ${UTILS_PRIVATE_DEPS})
 
         add_subdirectory(gtest)
-
-        find_package(CppUTest)
-
-        if (CppUTest_FOUND)
-            include_directories(SYSTEM PRIVATE ${CppUTest_INCLUDE_DIR})
-            include_directories(include)
-            include_directories(src)
-
-            add_executable(hash_map_test private/test/hash_map_test.cpp)
-            target_include_directories(hash_map_test PRIVATE include_deprecated)
-            target_link_libraries(hash_map_test utils_cut CppUTest pthread)
-
-            add_executable(array_list_test private/test/array_list_test.cpp)
-            target_include_directories(array_list_test PRIVATE include_deprecated)
-            target_link_libraries(array_list_test utils_cut CppUTest pthread)
-
-            add_executable(linked_list_test private/test/linked_list_test.cpp)
-            target_include_directories(linked_list_test PRIVATE include_deprecated)
-            target_link_libraries(linked_list_test utils_cut CppUTest pthread)
-
-            add_executable(ip_utils_test private/test/ip_utils_test.cpp)
-            target_include_directories(ip_utils_test PRIVATE include_deprecated)
-            target_link_libraries(ip_utils_test CppUTest  utils_cut pthread)
-
-            add_test(NAME run_array_list_test COMMAND array_list_test)
-            add_test(NAME run_hash_map_test COMMAND hash_map_test)
-            add_test(NAME run_linked_list_test COMMAND linked_list_test)
-            add_test(NAME run_ip_utils_test COMMAND ip_utils_test)
-
-            setup_target_for_coverage(hash_map_test)
-            setup_target_for_coverage(array_list_test)
-            setup_target_for_coverage(linked_list_test)
-            setup_target_for_coverage(ip_utils_test)
-        else ()
-            message(WARNING "Cannot find CppUTest, deprecated cpputest-based unit test will not be added")
-        endif () #end CppUTest_FOUND
-
     endif ()
 
     add_subdirectory(benchmark)

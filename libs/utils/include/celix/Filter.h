@@ -23,6 +23,7 @@
 #include <memory>
 
 #include "celix_filter.h"
+#include "celix_err.h"
 
 #include "celix/Exception.h"
 #include "celix/Properties.h"
@@ -50,7 +51,18 @@ namespace celix {
      */
     class Filter {
     public:
-        Filter() : cFilter{createFilter("")} {}
+      /**
+       * @brief Create an empty ("()") filter based on the provided filter string.
+       * @param[in] filterStr The filter string.
+       * @throw celix::FilterException if the filter string is invalid also logs an error message is to celix_err.
+       */
+        Filter() : cFilter{createFilter(nullptr)} {}
+
+        /**
+         * @brief Create a filter based on the provided filter string.
+         * @param[in] filterStr The filter string.
+         * @throw celix::FilterException if the filter string is invalid also logs an error message is to celix_err.
+         */
         explicit Filter(const std::string& filterStr) : cFilter{createFilter(filterStr.c_str())} {}
 
 
@@ -113,7 +125,8 @@ namespace celix {
         }
 
         /**
-         * @brief Check whether the filter indicates the mandatory presence of an attribute with a specific value for the provided attribute key.
+         * @brief Check whether the filter indicates the mandatory presence of an attribute with a specific value for
+         * the provided attribute key.
          *
          * Example:
          *   using this method for attribute key "key1" on filter "(key1=value1)" yields true.
@@ -126,7 +139,8 @@ namespace celix {
         }
 
         /**
-         * @brief Check whether the filter indicates the mandatory absence of an attribute, regardless of its value, for the provided attribute key.
+         * @brief Check whether the filter indicates the mandatory absence of an attribute, regardless of its value, for
+         * the provided attribute key.
          *
          * example:
          *   using this function for attribute key "key1" on the filter "(!(key1=*))" yields true.
@@ -157,12 +171,9 @@ namespace celix {
 
     private:
         static std::shared_ptr<celix_filter_t> createFilter(const char* filterStr) {
-            if (filterStr == nullptr || strnlen(filterStr, 1) == 0) {
-                return nullptr;
-            }
             auto* cf = celix_filter_create(filterStr);
             if (cf == nullptr) {
-                throw celix::FilterException{"Invalid LDAP filter '" + std::string{filterStr} + "'"};
+                throw celix::FilterException{"Cannot create filter: '" + std::string{filterStr} + "'"};
             }
             return std::shared_ptr<celix_filter_t>{cf, [](celix_filter_t *f) {
                 celix_filter_destroy(f);

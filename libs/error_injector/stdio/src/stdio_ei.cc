@@ -114,4 +114,30 @@ int __wrap_fprintf(FILE *stream, const char *format, ...) {
     return ret;
 }
 
+int __real_fclose(FILE* __stream);
+CELIX_EI_DEFINE(fclose, int)
+int __wrap_fclose(FILE* __stream) {
+    int rc = __real_fclose(__stream); //note always call real fclose to ensure the stream is closed.
+    errno = ENOSPC;
+    CELIX_EI_IMPL(fclose);
+    errno = 0;
+    return rc;
+}
+
+int __real_fgetc(FILE* __stream);
+CELIX_EI_DEFINE(fgetc, int)
+int __wrap_fgetc(FILE* __stream) {
+    CELIX_EI_IMPL(fgetc);
+    return __real_fgetc(__stream);
+}
+
+FILE* __real_fmemopen(void* __s, size_t __len, const char* __modes);
+CELIX_EI_DEFINE(fmemopen, FILE*)
+FILE* __wrap_fmemopen(void* __s, size_t __len, const char* __modes) {
+    errno = ENOMEM;
+    CELIX_EI_IMPL(fmemopen);
+    errno = 0;
+    return __real_fmemopen(__s, __len, __modes);
+}
+
 }

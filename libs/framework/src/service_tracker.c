@@ -41,7 +41,7 @@ static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_trac
 static celix_status_t serviceTracker_invokeAddingService(service_tracker_t *tracker, service_reference_pt ref, void **svcOut);
 static celix_status_t serviceTracker_invokeAddService(service_tracker_t *tracker, celix_tracked_entry_t *tracked);
 static celix_status_t serviceTracker_invokeRemovingService(service_tracker_t *tracker, celix_tracked_entry_t *tracked);
-static void serviceTracker_checkAndInvokeSetService(void *handle, void *highestSvc, const properties_t *props, const bundle_t *bnd);
+static void serviceTracker_checkAndInvokeSetService(void *handle, void *highestSvc, const celix_properties_t *props, const bundle_t *bnd);
 
 static void serviceTracker_serviceChanged(void *handle, celix_service_event_t *event);
 
@@ -267,15 +267,14 @@ service_reference_pt serviceTracker_getServiceReference(service_tracker_t* track
 	return result;
 }
 
-array_list_pt serviceTracker_getServiceReferences(service_tracker_t* tracker) {
+celix_array_list_t* serviceTracker_getServiceReferences(service_tracker_t* tracker) {
     //TODO deprecated warning -> not locked
-	array_list_pt references = NULL;
-	arrayList_create(&references);
+    celix_array_list_t* references = celix_arrayList_create();
 
     celixThreadMutex_lock(&tracker->mutex);
     for (int i = 0; i < celix_arrayList_size(tracker->trackedServices); i++) {
         celix_tracked_entry_t *tracked = celix_arrayList_get(tracker->trackedServices, i);
-        arrayList_add(references, tracked->reference);
+        celix_arrayList_add(references, tracked->reference);
     }
     celixThreadMutex_unlock(&tracker->mutex);
 
@@ -296,15 +295,14 @@ void *serviceTracker_getService(service_tracker_t* tracker) {
     return service;
 }
 
-array_list_pt serviceTracker_getServices(service_tracker_t* tracker) {
+celix_array_list_t* serviceTracker_getServices(service_tracker_t* tracker) {
     //TODO deprecated warning -> not locked, also make locked variant
-	array_list_pt references = NULL;
-	arrayList_create(&references);
+    celix_array_list_t* references = celix_arrayList_create();
 
     celixThreadMutex_lock(&tracker->mutex);
     for (int i = 0; i < celix_arrayList_size(tracker->trackedServices); i++) {
         celix_tracked_entry_t *tracked = celix_arrayList_get(tracker->trackedServices, i);
-        arrayList_add(references, tracked->service);
+        celix_arrayList_add(references, tracked->service);
     }
     celixThreadMutex_unlock(&tracker->mutex);
 
@@ -367,7 +365,7 @@ static void serviceTracker_serviceChanged(void *handle, celix_service_event_t *e
 
 size_t serviceTracker_nrOfTrackedServices(service_tracker_t *tracker) {
     celixThreadMutex_lock(&tracker->mutex);
-    size_t result = (size_t) arrayList_size(tracker->trackedServices);
+    size_t result = (size_t) celix_arrayList_size(tracker->trackedServices);
     celixThreadMutex_unlock(&tracker->mutex);
     return result;
 }
@@ -382,7 +380,7 @@ static celix_status_t serviceTracker_track(service_tracker_t* tracker, service_r
     celixThreadMutex_lock(&tracker->mutex);
     for (int i = 0; i < celix_arrayList_size(tracker->trackedServices); i++) {
         bool equals = false;
-        celix_tracked_entry_t *visit = (celix_tracked_entry_t*) arrayList_get(tracker->trackedServices, i);
+        celix_tracked_entry_t *visit = (celix_tracked_entry_t*) celix_arrayList_get(tracker->trackedServices, i);
         serviceReference_equals(reference, visit->reference, &equals);
         if (equals) {
             //NOTE it is possible to get two REGISTERED events, second one can be ignored.
@@ -400,7 +398,7 @@ static celix_status_t serviceTracker_track(service_tracker_t* tracker, service_r
             assert(reference != NULL);
 
             service_registration_t *reg = NULL;
-            properties_t *props = NULL;
+            celix_properties_t *props = NULL;
             bundle_t *bnd = NULL;
 
             serviceReference_getBundle(reference, &bnd);
@@ -412,7 +410,7 @@ static celix_status_t serviceTracker_track(service_tracker_t* tracker, service_r
             celix_tracked_entry_t *tracked = tracked_create(reference, service, props, bnd); //use count 1
 
             celixThreadMutex_lock(&tracker->mutex);
-            arrayList_add(tracker->trackedServices, tracked);
+            celix_arrayList_add(tracker->trackedServices, tracked);
             celixThreadCondition_broadcast(&tracker->condTracked);
             celixThreadMutex_unlock(&tracker->mutex);
 
@@ -521,7 +519,7 @@ static celix_status_t serviceTracker_untrack(service_tracker_t* tracker, service
     celixThreadMutex_lock(&tracker->mutex);
     for (int i = 0; i < celix_arrayList_size(tracker->trackedServices); i++) {
         bool equals;
-        celix_tracked_entry_t *tracked = (celix_tracked_entry_t*) arrayList_get(tracker->trackedServices, i);
+        celix_tracked_entry_t *tracked = celix_arrayList_get(tracker->trackedServices, i);
         serviceReference_equals(reference, tracked->reference, &equals);
         if (equals) {
             remove = tracked;
@@ -718,7 +716,7 @@ static celix_tracked_entry_t* celix_serviceTracker_findHighestRankingService(ser
     //precondition tracker->mutex locked
     celix_tracked_entry_t* highest = NULL;
     for (int i = 0; i < celix_arrayList_size(tracker->trackedServices); ++i) {
-        celix_tracked_entry_t* tracked = (celix_tracked_entry_t *) arrayList_get(tracker->trackedServices, i);
+        celix_tracked_entry_t* tracked = celix_arrayList_get(tracker->trackedServices, i);
         if (serviceName == NULL || (serviceName != NULL && tracked->serviceName != NULL &&
                                     celix_utils_stringEquals(tracked->serviceName, serviceName))) {
             if (highest == NULL) {
@@ -795,7 +793,7 @@ size_t celix_serviceTracker_useServices(
     count = (size_t)size;
     celix_tracked_entry_t *entries[size];
     for (int i = 0; i < size; i++) {
-        celix_tracked_entry_t *tracked = (celix_tracked_entry_t *) arrayList_get(tracker->trackedServices, i);
+        celix_tracked_entry_t *tracked = celix_arrayList_get(tracker->trackedServices, i);
         tracked_retain(tracked);
         entries[i] = tracked;
     }

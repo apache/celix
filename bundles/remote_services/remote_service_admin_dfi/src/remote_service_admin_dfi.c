@@ -86,7 +86,7 @@ struct remote_service_admin {
     celix_thread_t stopExportsThread;
 
     celix_thread_mutex_t importedServicesLock;
-    array_list_pt importedServices;
+    celix_array_list_t* importedServices;
 
     char *port;
     char *ip;
@@ -190,7 +190,7 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
     } else {
         (*admin)->context = context;
         (*admin)->exportedServices = hashMap_create(NULL, NULL, NULL, NULL);
-         arrayList_create(&(*admin)->importedServices);
+        (*admin)->importedServices = celix_arrayList_create();
 
          celixThreadRwlock_create(&(*admin)->exportedServicesLock, NULL);
          celixThreadMutex_create(&(*admin)->importedServicesLock, NULL);
@@ -427,9 +427,9 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
 
     celixThreadMutex_lock(&admin->importedServicesLock);
     int i;
-    int size = arrayList_size(admin->importedServices);
+    int size = celix_arrayList_size(admin->importedServices);
     for (i = 0; i < size ; i += 1) {
-        import_registration_t *import = arrayList_get(admin->importedServices, i);
+        import_registration_t *import = celix_arrayList_get(admin->importedServices, i);
         if (import != NULL) {
             importRegistration_destroy(import);
         }
@@ -443,7 +443,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
     }
 
     hashMap_destroy(admin->exportedServices, false, false);
-    arrayList_destroy(admin->importedServices);
+    celix_arrayList_destroy(admin->importedServices);
 
     celix_logHelper_destroy(admin->loghelper);
 
@@ -577,7 +577,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
     return result;
 }
 
-celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrationsOut) {
+celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, celix_array_list_t** registrationsOut) {
     celix_status_t status = CELIX_SUCCESS;
 
     bool export = false;
@@ -607,7 +607,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
     celix_array_list_t *registrations = NULL;
     if (export) {
         registrations = celix_arrayList_create();
-        array_list_pt references = NULL;
+        celix_array_list_t* references = NULL;
         service_reference_pt reference = NULL;
         char filter[256];
 
@@ -618,15 +618,15 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
         celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_DEBUG, "RSA: exportService called for serviceId %s", serviceId);
 
         int i;
-        int size = arrayList_size(references);
+        int size = celix_arrayList_size(references);
         for (i = 0; i < size; i += 1) {
             if (i == 0) {
-                reference = arrayList_get(references, i);
+                reference = celix_arrayList_get(references, i);
             } else {
-                bundleContext_ungetServiceReference(admin->context, arrayList_get(references, i));
+                bundleContext_ungetServiceReference(admin->context, celix_arrayList_get(references, i));
             }
         }
-        arrayList_destroy(references);
+        celix_arrayList_destroy(references);
 
         if (reference == NULL) {
             celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_ERROR, "ERROR: expected a reference for service id %s.",
@@ -860,12 +860,12 @@ celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_descriptio
 }
 
 
-celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t *admin, array_list_pt *services) {
+celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t *admin, celix_array_list_t** services) {
     celix_status_t status = CELIX_SUCCESS;
     return status;
 }
 
-celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t *admin, array_list_pt *services) {
+celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t *admin, celix_array_list_t** services) {
     celix_status_t status = CELIX_SUCCESS;
     return status;
 }
@@ -919,7 +919,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
         }
 
         celixThreadMutex_lock(&admin->importedServicesLock);
-        arrayList_add(admin->importedServices, import);
+        celix_arrayList_add(admin->importedServices, import);
         celixThreadMutex_unlock(&admin->importedServicesLock);
 
         if (status == CELIX_SUCCESS) {
@@ -937,12 +937,12 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *
 
     celixThreadMutex_lock(&admin->importedServicesLock);
     int i;
-    int size = arrayList_size(admin->importedServices);
+    int size = celix_arrayList_size(admin->importedServices);
     import_registration_t * current  = NULL;
     for (i = 0; i < size; i += 1) {
-        current = arrayList_get(admin->importedServices, i);
+        current = celix_arrayList_get(admin->importedServices, i);
         if (current == registration) {
-            arrayList_remove(admin->importedServices, i);
+            celix_arrayList_removeAt(admin->importedServices, i);
             importRegistration_destroy(current);
             break;
         }

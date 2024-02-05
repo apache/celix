@@ -20,7 +20,8 @@
 #include <stdlib.h>
 #include <json_rpc.h>
 #include <assert.h>
-#include "version.h"
+#include "celix_version.h"
+#include "celix_stdlib_cleanup.h"
 #include "dyn_interface.h"
 #include "import_registration.h"
 #include "import_registration_dfi.h"
@@ -32,7 +33,7 @@ struct import_registration {
     celix_bundle_context_t *context;
     endpoint_description_t * endpoint; //TODO owner? -> free when destroyed
     const char *classObject; //NOTE owned by endpoint
-    version_pt version;
+    celix_version_t* version;
 
     send_func_type send;
     void *sendHandle;
@@ -87,8 +88,11 @@ celix_status_t importRegistration_create(
     remoteInterceptorsHandler_create(context, &reg->interceptorsHandler);
 
     celixThreadMutex_create(&reg->proxiesMutex, NULL);
-    status = version_createVersionFromString((char*)serviceVersion,&(reg->version));
-
+    // serviceVersion == NULL is allowed, check TEST_F(RsaDfiTests, ImportService)
+    reg->version = celix_version_createVersionFromString(serviceVersion);
+    if (serviceVersion != NULL && reg->version == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
     reg->factorySvcId = -1;
     reg->factory.handle = reg;
     reg->factory.getService = importRegistration_getService;
@@ -135,7 +139,7 @@ static void importRegistration_destroyCallback(void* data) {
     pthread_mutex_destroy(&import->proxiesMutex);
 
     if (import->version != NULL) {
-        version_destroy(import->version);
+        celix_version_destroy(import->version);
     }
     free(import);
 }
@@ -190,8 +194,8 @@ static void* importRegistration_getService(void *handle, const celix_bundle_t *r
 void importRegistration_ungetService(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties) {
     import_registration_t* import = handle;
     assert(import != NULL);
-    assert(import->proxies != NULL);
     pthread_mutex_lock(&import->proxiesMutex);
+    assert(import->proxies != NULL);
     struct service_proxy *proxy = hashMap_get(import->proxies, requestingBundle);
     if (proxy != NULL) {
         proxy->count -= 1;
@@ -217,18 +221,7 @@ static celix_status_t importRegistration_findAndParseInterfaceDescriptor(celix_b
         return status;
     }
 
-    status = dfi_findAvprDescriptor(context, bundle, name, &descriptor);
-    if (status == CELIX_SUCCESS && descriptor != NULL) {
-        *out = dynInterface_parseAvpr(descriptor);
-        fclose(descriptor);
-        if (*out == NULL) {
-            fprintf(stderr, "RSA_AVPR: Cannot parse avpr descriptor for '%s'", name);
-            status = CELIX_BUNDLE_EXCEPTION;
-        }
-        return status;
-    }
-
-    fprintf(stdout, "RSA: Cannot find/open any valid (avpr) descriptor files for '%s'", name);
+    fprintf(stdout, "RSA: Cannot find/open any valid descriptor files for '%s'", name);
     return CELIX_BUNDLE_EXCEPTION;
 }
 
@@ -241,21 +234,19 @@ static celix_status_t importRegistration_createProxy(import_registration_t *impo
     }
 
     /* Check if the imported service version is compatible with the one in the consumer descriptor */
-    version_pt consumerVersion = NULL;
+    const celix_version_t* consumerVersion = dynInterface_getVersion(intf);
     bool isCompatible = false;
-    dynInterface_getVersion(intf,&consumerVersion);
-    version_isCompatible(consumerVersion,import->version,&isCompatible);
+    isCompatible = celix_version_isCompatible(consumerVersion,import->version);
 
     if(!isCompatible){
-    	char* cVerString = NULL;
-    	char* pVerString = NULL;
-    	version_toString(consumerVersion,&cVerString);
-    	version_toString(import->version,&pVerString);
-    	printf("Service version mismatch: consumer has %s, provider has %s. NOT creating proxy.\n",cVerString,pVerString);
-    	dynInterface_destroy(intf);
-    	free(cVerString);
-    	free(pVerString);
-    	status = CELIX_SERVICE_EXCEPTION;
+        celix_autofree char* cVerString = NULL;
+        celix_autofree char* pVerString = NULL;
+        cVerString = celix_version_toString(consumerVersion);
+        pVerString = import->version != NULL ? celix_version_toString(import->version) : NULL;
+        printf("Service version mismatch: consumer has %s, provider has %s. NOT creating proxy.\n",
+               cVerString,pVerString != NULL ? pVerString : "NA");
+        dynInterface_destroy(intf);
+        status = CELIX_SERVICE_EXCEPTION;
     }
 
     struct service_proxy *proxy = NULL;
@@ -279,8 +270,7 @@ static celix_status_t importRegistration_createProxy(import_registration_t *impo
         void **serv = proxy->service;
         serv[0] = import;
 
-        struct methods_head *list = NULL;
-        dynInterface_methods(proxy->intf, &list);
+        const struct methods_head* list = dynInterface_methods(proxy->intf);
         struct method_entry *entry = NULL;
         void (*fn)(void) = NULL;
         int index = 0;
@@ -335,7 +325,8 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
         int rc = 0;
         //printf("sending request\n");
         celix_properties_t *metadata = NULL;
-        bool cont = remoteInterceptorHandler_invokePreProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, &metadata);
+        bool cont = remoteInterceptorHandler_invokePreProxyCall(import->interceptorsHandler, import->endpoint->properties,
+                                                                dynFunction_getName(entry->dynFunc), &metadata);
         if (cont) {
             status = import->send(import->sendHandle, import->endpoint, invokeRequest, metadata, &reply, &rc);
             //printf("request sended. got reply '%s' with status %i\n", reply, rc);
@@ -354,7 +345,8 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
                 *(int *) returnVal = rc;
             }
 
-            remoteInterceptorHandler_invokePostProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, metadata);
+            remoteInterceptorHandler_invokePostProxyCall(import->interceptorsHandler, import->endpoint->properties,
+                                                         dynFunction_getName(entry->dynFunc), metadata);
         } else {
             *(int *) returnVal = CELIX_INTERCEPTOR_EXCEPTION;
         }

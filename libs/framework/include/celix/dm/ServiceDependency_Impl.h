@@ -35,9 +35,9 @@ using namespace celix::dm;
 
 template<typename U>
 inline void BaseServiceDependency::waitForExpired(std::weak_ptr<U> observe, long svcId, const char* observeType) {
-    auto start = std::chrono::system_clock::now();
+    auto start = std::chrono::steady_clock::now();
     while (!observe.expired()) {
-        auto now = std::chrono::system_clock::now();
+        auto now = std::chrono::steady_clock::now();
         auto durationInMilli = std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
         if (durationInMilli > warningTimoutForNonExpiredSvcObject) {
             if (cCmp) {

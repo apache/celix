@@ -28,9 +28,6 @@ Doxyfile.in
  Workaround to exclude .in files.
 (.*).in
 
- Avpr files cannot have comments and as result no license info
-(.*).avpr
-
 build/*
 cmake-build-debug/*
 

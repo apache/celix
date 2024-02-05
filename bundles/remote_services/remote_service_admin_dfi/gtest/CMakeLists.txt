@@ -26,11 +26,11 @@ add_celix_bundle(rsa_dfi_tst_bundle
 celix_deprecated_utils_headers(rsa_dfi_tst_bundle)
 celix_deprecated_framework_headers(rsa_dfi_tst_bundle)
 
-#add calculator avpr
+#add calculator
 get_target_property(DESCR calculator_api INTERFACE_DESCRIPTOR)
 celix_bundle_files(rsa_dfi_tst_bundle ${DESCR} DESTINATION .)
 
-#add remote example avpr
+#add remote example
 get_target_property(DESCR remote_example_api INTERFACE_DESCRIPTOR)
 celix_bundle_files(rsa_dfi_tst_bundle ${DESCR} DESTINATION .)
 

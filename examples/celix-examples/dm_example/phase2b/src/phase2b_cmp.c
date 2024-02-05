@@ -111,6 +111,8 @@ static void *phase2b_thread(void *data) {
 }
 
 int phase2b_getData(phase2b_cmp_t *cmp, double *data) {
+    celixThreadMutex_lock(&cmp->mutex);
     *data = cmp->currentValue;
+    celixThreadMutex_unlock(&cmp->mutex);
     return 0;
 }

@@ -1,0 +1,10 @@
+:header
+type=interface
+name=calculator
+version=1.0.0
+:annotations
+classname=org.example.Calculator
+:types
+StatsResult={X x}
+:methods
+stats([D)LStatsResult;=stats(#am=handle;P[D#am=out;*LStatsResult;)N
