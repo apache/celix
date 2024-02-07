@@ -592,3 +592,19 @@ TEST_F(ArrayListTestSuite, AssignNullTest) {
     EXPECT_EQ(1, celix_arrayList_size(stringListCopy));
     EXPECT_EQ(nullptr, celix_arrayList_getString(stringListCopy, 0));
 }
+
+TEST_F(ArrayListTestSuite, ReallocTest) {
+    // Given a list with more than 10 elements (whitebox knowledge that the initial capacity is 10)
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createIntArray();
+    for (int i = 0; i < 20; ++i) {
+        celix_status_t status = celix_arrayList_addInt(list, i);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+    }
+    // Then the size is 20
+    EXPECT_EQ(20, celix_arrayList_size(list));
+
+    // And the elements are as expected
+    for (int i = 0; i < 20; ++i) {
+        EXPECT_EQ(i, celix_arrayList_getInt(list, i));
+    }
+}
