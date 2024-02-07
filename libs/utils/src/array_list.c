@@ -158,23 +158,20 @@ static void celix_arrayList_callRemovedCallback(celix_array_list_t *list, int in
 }
 
 static celix_status_t celix_arrayList_ensureCapacity(celix_array_list_t* list, int capacity) {
-    celix_status_t status = CELIX_SUCCESS;
     celix_array_list_entry_t *newList;
     list->modCount++;
     size_t oldCapacity = list->capacity;
     if (capacity > oldCapacity) {
         size_t newCapacity = (oldCapacity * 3) / 2 + 1;
-        if (newCapacity < capacity) {
-            newCapacity = capacity;
-        }
         newList = realloc(list->elementData, sizeof(celix_array_list_entry_t) * newCapacity);
-        if (newList != NULL) {
-            list->capacity = newCapacity;
-            list->elementData = newList;
+        if (!newList) {
+            celix_err_push("Failed to reallocate memory for elementData");
+            return CELIX_ENOMEM;
         }
-        status = newList == NULL ? CELIX_ENOMEM : CELIX_SUCCESS;
+        list->capacity = newCapacity;
+        list->elementData = newList;
     }
-    return status;
+    return CELIX_SUCCESS;
 }
 
 static void celix_arrayList_setTypeSpecificCallbacks(celix_array_list_t* list) {
@@ -238,31 +235,34 @@ static void celix_arrayList_setTypeSpecificCallbacks(celix_array_list_t* list) {
 
 celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_create_options_t* opts) {
     celix_autofree celix_array_list_t *list = calloc(1, sizeof(*list));
-    if (list) {
-        list->capacity = 10;
-        list->elementData = malloc(sizeof(celix_array_list_entry_t) * list->capacity);
-        if (!list->elementData) {
-            celix_err_push("Failed to allocate memory for elementData");
-            return NULL;
-        }
+    if (!list) {
+        celix_err_push("Failed to allocate memory for list");
+        return NULL;
+    }
 
-        list->elementType = opts->elementType;
-        celix_arrayList_setTypeSpecificCallbacks(list);
+    list->capacity = 10;
+    list->elementData = malloc(sizeof(celix_array_list_entry_t) * list->capacity);
+    if (!list->elementData) {
+        celix_err_push("Failed to allocate memory for elementData");
+        return NULL;
+    }
 
-        //if opts contains callbacks, use them and override the default ones
-        if (opts->simpleRemovedCallback) {
-            list->simpleRemovedCallback = opts->simpleRemovedCallback;
-        }
-        if (opts->removedCallback) {
-            list->removedCallback = opts->removedCallback;
-            list->removedCallbackData = opts->removedCallbackData;
-        }
-        if (opts->equalsCallback) {
-            list->equalsCallback = opts->equalsCallback;
-        }
-        if (opts->compareCallback) {
-            list->compareCallback = opts->compareCallback;
-        }
+    list->elementType = opts->elementType;
+    celix_arrayList_setTypeSpecificCallbacks(list);
+
+    //if opts contains callbacks, use them and override the default ones
+    if (opts->simpleRemovedCallback) {
+        list->simpleRemovedCallback = opts->simpleRemovedCallback;
+    }
+    if (opts->removedCallback) {
+        list->removedCallback = opts->removedCallback;
+        list->removedCallbackData = opts->removedCallbackData;
+    }
+    if (opts->equalsCallback) {
+        list->equalsCallback = opts->equalsCallback;
+    }
+    if (opts->compareCallback) {
+        list->compareCallback = opts->compareCallback;
     }
     return celix_steal_ptr(list);
 }
@@ -439,7 +439,7 @@ celix_status_t celix_arrayList_addString(celix_array_list_t* list, const char* v
            list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
     celix_array_list_entry_t entry;
     memset(&entry, 0, sizeof(entry));
-    if (list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING) {
+    if (list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING && val) {
         entry.stringVal = celix_utils_strdup(val);
         if (entry.stringVal == NULL) {
             return CELIX_ENOMEM;
@@ -535,7 +535,7 @@ celix_status_t celix_arrayList_addVersion(celix_array_list_t* list, const celix_
            list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
     celix_array_list_entry_t entry;
     memset(&entry, 0, sizeof(entry));
-    if (list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION) {
+    if (list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION && value) {
         entry.versionVal = celix_version_copy(value);
         if (entry.versionVal == NULL) {
             return CELIX_ENOMEM;
@@ -739,7 +739,6 @@ celix_array_list_t* celix_arrayList_copy(const celix_array_list_t* list) {
     opts.simpleRemovedCallback = list->simpleRemovedCallback;
     celix_autoptr(celix_array_list_t) copy = celix_arrayList_createWithOptions(&opts);
     if (!copy) {
-        celix_err_push("Failed to create copy list. Out of memory.");
         return NULL;
     }
 

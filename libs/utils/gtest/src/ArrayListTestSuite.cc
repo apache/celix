@@ -528,3 +528,67 @@ TEST_F(ArrayListTestSuite, AutoCleanupTest) {
     celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
     EXPECT_NE(nullptr, list);
 }
+
+TEST_F(ArrayListTestSuite, AddNullTest) {
+    // Given an undefined type, string, string ref and version list
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) stringList = celix_arrayList_createStringArray();
+    celix_autoptr(celix_array_list_t) stringRefList = celix_arrayList_createStringRefArray();
+    celix_autoptr(celix_array_list_t) versionList = celix_arrayList_createVersionArray();
+
+    // When adding a null value to the lists
+    celix_arrayList_add(list, nullptr);
+    celix_arrayList_addString(stringList, nullptr);
+    celix_arrayList_addString(stringRefList, nullptr);
+    celix_arrayList_addVersion(versionList, nullptr);
+
+    // Then the lists contain the null value
+    EXPECT_EQ(1, celix_arrayList_size(list));
+    EXPECT_EQ(nullptr, celix_arrayList_get(list, 0));
+    EXPECT_EQ(1, celix_arrayList_size(stringList));
+    EXPECT_EQ(nullptr, celix_arrayList_getString(stringList, 0));
+    EXPECT_EQ(1, celix_arrayList_size(stringRefList));
+    EXPECT_EQ(nullptr, celix_arrayList_getString(stringRefList, 0));
+    EXPECT_EQ(1, celix_arrayList_size(versionList));
+    EXPECT_EQ(nullptr, celix_arrayList_getVersion(versionList, 0));
+
+    // When copying the lists
+    celix_autoptr(celix_array_list_t) listCopy = celix_arrayList_copy(list);
+    celix_autoptr(celix_array_list_t) stringListCopy = celix_arrayList_copy(stringList);
+    celix_autoptr(celix_array_list_t) stringRefListCopy = celix_arrayList_copy(stringRefList);
+    celix_autoptr(celix_array_list_t) versionListCopy = celix_arrayList_copy(versionList);
+
+    // Then the copied lists contain the null value
+    EXPECT_EQ(1, celix_arrayList_size(listCopy));
+    EXPECT_EQ(nullptr, celix_arrayList_get(listCopy, 0));
+    EXPECT_EQ(1, celix_arrayList_size(stringListCopy));
+    EXPECT_EQ(nullptr, celix_arrayList_getString(stringListCopy, 0));
+    EXPECT_EQ(1, celix_arrayList_size(stringRefListCopy));
+    EXPECT_EQ(nullptr, celix_arrayList_getString(stringRefListCopy, 0));
+    EXPECT_EQ(1, celix_arrayList_size(versionListCopy));
+    EXPECT_EQ(nullptr, celix_arrayList_getVersion(versionListCopy, 0));
+}
+
+TEST_F(ArrayListTestSuite, AssignNullTest) {
+    // Given a string and version list
+    celix_autoptr(celix_array_list_t) stringList = celix_arrayList_createStringArray();
+    celix_autoptr(celix_array_list_t) versionList = celix_arrayList_createVersionArray();
+
+    // When assigning a null value to the lists
+    celix_arrayList_assignString(stringList, nullptr);
+    celix_arrayList_assignVersion(versionList, nullptr);
+
+    // Then the lists contain the null value
+    EXPECT_EQ(1, celix_arrayList_size(stringList));
+    EXPECT_EQ(nullptr, celix_arrayList_getString(stringList, 0));
+    EXPECT_EQ(1, celix_arrayList_size(versionList));
+    EXPECT_EQ(nullptr, celix_arrayList_getVersion(versionList, 0));
+
+    // When copying the lists
+    celix_autoptr(celix_array_list_t) stringListCopy = celix_arrayList_copy(stringList);
+    celix_autoptr(celix_array_list_t) versionListCopy = celix_arrayList_copy(versionList);
+
+    // Then the copied lists contain the null value
+    EXPECT_EQ(1, celix_arrayList_size(stringListCopy));
+    EXPECT_EQ(nullptr, celix_arrayList_getString(stringListCopy, 0));
+}

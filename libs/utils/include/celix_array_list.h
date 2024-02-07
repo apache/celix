@@ -177,16 +177,20 @@ typedef struct celix_array_list_create_options {
  *
  * The remove, equals and compare callback will be NULL.
  *
- * @deprecated Use celix_arrayList_createWithOptions instead.
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_DEPRECATED_EXPORT
-celix_array_list_t* celix_arrayList_create() __attribute__((deprecated("use create typed array list instead")));
+celix_array_list_t* celix_arrayList_create();
 
 /**
  * @brief Creates a new empty array list with a pointer element type where the array list is not the owner of the
  * pointers.
  *
  * The remove, equals and compare callback will be NULL.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createPointerArray();
@@ -196,6 +200,9 @@ celix_array_list_t* celix_arrayList_createPointerArray();
  *
  * The remove callback will be configured to free the string, and equals and compare callback will be configured for
  * string comparison.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createStringArray();
@@ -206,6 +213,9 @@ celix_array_list_t* celix_arrayList_createStringArray();
  *
  * The remove callback will be configured to NULL, and equals and compare callback will be configured for
  * string comparison.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createStringRefArray();
@@ -215,6 +225,9 @@ celix_array_list_t* celix_arrayList_createStringRefArray();
  *
  * The remove callback will be configured to NULL, and equals and compare callback will be configured for
  * integer comparison.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createIntArray();
@@ -224,6 +237,9 @@ celix_array_list_t* celix_arrayList_createIntArray();
  *
  * The remove callback will be configured to NULL, and equals and compare callback will be configured for
  * integer comparison.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createLongArray();
@@ -233,6 +249,9 @@ celix_array_list_t* celix_arrayList_createLongArray();
  *
  * The remove callback will be configured to NULL, and equals and compare callback will be configured for
  * unsigned integer comparison.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createUIntArray();
@@ -242,6 +261,9 @@ celix_array_list_t* celix_arrayList_createUIntArray();
  *
  * The remove callback will be configured to NULL, and equals and compare callback will be configured for
  * unsigned integer comparison.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createULongArray();
@@ -251,6 +273,9 @@ celix_array_list_t* celix_arrayList_createULongArray();
  *
  * The remove callback will be configured to NULL, and equals and compare callback will be configured for
  * float comparison.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createFloatArray();
@@ -260,6 +285,9 @@ celix_array_list_t* celix_arrayList_createFloatArray();
  *
  * The remove callback will be configured to NULL, and equals and compare callback will be configured for
  * double comparison.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createDoubleArray();
@@ -269,6 +297,9 @@ celix_array_list_t* celix_arrayList_createDoubleArray();
  *
  * The remove callback will be configured to NULL, and equals and compare callback will be configured for
  * boolean comparison.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createBoolArray();
@@ -278,6 +309,9 @@ celix_array_list_t* celix_arrayList_createBoolArray();
  *
  * The remove callback will be configured to NULL, and equals and compare callback will be configured for
  * unsigned integer comparison.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createSizeArray();
@@ -287,6 +321,9 @@ celix_array_list_t* celix_arrayList_createSizeArray();
  *
  * The remove callback will be configured to free a celix version, and equals and compare callback will be configured
  * for celix version comparison.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createVersionArray();
@@ -299,6 +336,8 @@ celix_array_list_t* celix_arrayList_createVersionArray();
  * The provided callbacks in the options will override the default callbacks.
  *
  * @param opts The create options, only used during the creation of the array list.
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_create_options_t* opts);
