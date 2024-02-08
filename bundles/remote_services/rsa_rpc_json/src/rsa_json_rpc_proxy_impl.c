@@ -29,8 +29,9 @@
 #include "celix_build_assert.h"
 #include "celix_long_hash_map.h"
 #include <sys/queue.h>
-#include <stdbool.h>
 #include <assert.h>
+#include <stdbool.h>
+#include <string.h>
 
 struct rsa_json_rpc_proxy_factory {
     celix_bundle_context_t* ctx;
@@ -212,7 +213,8 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
     int rc = jsonRpc_prepareInvokeRequest(entry->dynFunc, entry->id, args, &invokeRequest);
     if (rc != 0) {
         celix_logHelper_logTssErrors(proxyFactory->logHelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_error(proxyFactory->logHelper, "Error preparing invoke request for %s", entry->name);
+        celix_logHelper_error(proxyFactory->logHelper, "Error preparing invoke request for %s",
+                              dynFunction_getName(entry->dynFunc));
         *(celix_status_t *)returnVal = CELIX_SERVICE_EXCEPTION;
         return;
     }
@@ -220,14 +222,15 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
     struct iovec replyIovec = {NULL,0};
     celix_properties_t *metadata = celix_properties_create();
     if (metadata == NULL) {
-        celix_logHelper_error(proxyFactory->logHelper,"Error creating metadata for %s", entry->name);
+        celix_logHelper_error(proxyFactory->logHelper,"Error creating metadata for %s",
+                              dynFunction_getName(entry->dynFunc));
         free(invokeRequest);
         *(celix_status_t *)returnVal = CELIX_ENOMEM;
         return;
     }
     celix_properties_setLong(metadata, "SerialProtocolId", proxyFactory->serialProtoId);
     bool cont = remoteInterceptorHandler_invokePreProxyCall(proxyFactory->interceptorsHandler,
-            proxyFactory->endpointDesc->properties, entry->name, &metadata);
+            proxyFactory->endpointDesc->properties, dynFunction_getName(entry->dynFunc), &metadata);
     if (cont) {
         struct iovec requestIovec = {invokeRequest,strlen(invokeRequest) + 1};
         struct rsa_request_sender_callback_data data= {
@@ -246,7 +249,8 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
                 if(retVal != 0) {
                     status = CELIX_SERVICE_EXCEPTION;
                     celix_logHelper_logTssErrors(proxyFactory->logHelper, CELIX_LOG_LEVEL_ERROR);
-                    celix_logHelper_error(proxyFactory->logHelper, "Error handling reply for %s", entry->name);
+                    celix_logHelper_error(proxyFactory->logHelper, "Error handling reply for %s",
+                                          dynFunction_getName(entry->dynFunc));
                 } else if (rsErrno != CELIX_SUCCESS) {
                     //return the invocation error of remote service function
                     status = rsErrno;
@@ -259,7 +263,7 @@ static void rsaJsonRpcProxy_serviceFunc(void *userData, void *args[], void *retu
             celix_logHelper_error(proxyFactory->logHelper,"Service proxy send request failed. %d", status);
         }
         remoteInterceptorHandler_invokePostProxyCall(proxyFactory->interceptorsHandler,
-                proxyFactory->endpointDesc->properties, entry->name, metadata);
+                proxyFactory->endpointDesc->properties, dynFunction_getName(entry->dynFunc), metadata);
     } else {
         celix_logHelper_error(proxyFactory->logHelper, "%s has been intercepted.", proxyFactory->endpointDesc->serviceName);
         status = CELIX_INTERCEPTOR_EXCEPTION;
@@ -317,9 +321,8 @@ static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxy
         celix_logHelper_error(proxyFactory->logHelper, "Proxy: Error converting service version type. %d.", status);
         return status;
     }
-    celix_version_t *consumerVersion = NULL;
+    const celix_version_t *consumerVersion = dynInterface_getVersion(intfType);
     bool isCompatible = false;
-    dynInterface_getVersion(intfType,&consumerVersion);
     isCompatible = celix_version_isCompatible(consumerVersion, providerVersion);
     if(!isCompatible){
         celix_logHelper_error(proxyFactory->logHelper, "Proxy: Service version mismatch, consumer has %d.%d.%d, provider has %s.",
@@ -336,15 +339,15 @@ static celix_status_t rsaJsonRpcProxy_create(rsa_json_rpc_proxy_factory_t *proxy
     }
     celix_autofree void **service = (void **)proxy->service;
     service[0] = proxy;
-    struct methods_head *list = NULL;
-    dynInterface_methods(intfType, &list);
+    const struct methods_head* list = dynInterface_methods(intfType);
     struct method_entry *entry = NULL;
     void (*fn)(void) = NULL;
     int index = 0;
     TAILQ_FOREACH(entry, list, entries) {
         int rc = dynFunction_createClosure(entry->dynFunc, rsaJsonRpcProxy_serviceFunc, entry, &fn);
         if (rc != 0) {
-            celix_logHelper_error(proxyFactory->logHelper, "Proxy: Failed to create closure for service function %s.", entry->name);
+            celix_logHelper_error(proxyFactory->logHelper, "Proxy: Failed to create closure for service function %s.",
+                                  dynFunction_getName(entry->dynFunc));
             return CELIX_SERVICE_EXCEPTION;
         }
         service[++index] = fn;

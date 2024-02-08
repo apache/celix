@@ -1,0 +1,13 @@
+:header
+type=interface
+name=calculator
+version=1.0.0
+:annotations
+=org.example.Calculator
+:types
+StatsResult={DDD[D average min max input}
+:methods
+add(DD)D=add(#am=handle;PDD#am=pre;*D)N
+sub(DD)D=sub(#am=handle;PDD*#am=pre;D)N
+sqrt(D)D=sqrt(#am=handle;PD*#am=pre;D)N
+stats([D)LStatsResult;=stats(#am=handle;P[D#am=out;*LStatsResult;)N

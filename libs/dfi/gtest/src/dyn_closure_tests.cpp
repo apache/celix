@@ -35,16 +35,6 @@ extern "C" {
 
 static int g_count;
 
-static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
-    va_list ap;
-    const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-    fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-    va_start(ap, msg);
-    vfprintf(stderr, msg, ap);
-    fprintf(stderr, "\n");
-    va_end(ap);
-}
-
 #define EXAMPLE1_DESCRIPTOR "example(III)I"
 static void example1_binding(void*, void* args[], void *out) {
     int32_t a = *((int32_t *)args[0]);
@@ -151,10 +141,6 @@ static void tests() {
 class DynClosureTests : public ::testing::Test {
 public:
     DynClosureTests() {
-        int lvl = 1;
-        dynFunction_logSetup(stdLog, NULL, lvl);
-        dynType_logSetup(stdLog, NULL, lvl);
-        dynCommon_logSetup(stdLog, NULL, lvl);
         g_count = 0;
     }
     ~DynClosureTests() override {

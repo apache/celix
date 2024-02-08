@@ -31,5 +31,7 @@ target_link_options(stdio_ei INTERFACE
         LINKER:--wrap,fputc
         LINKER:--wrap,fputs
         LINKER:--wrap,fclose
+        LINKER:--wrap,fgetc
+        LINKER:--wrap,fmemopen
         )
 add_library(Celix::stdio_ei ALIAS stdio_ei)

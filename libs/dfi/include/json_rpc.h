@@ -21,7 +21,6 @@
 #define __JSON_RPC_H_
 
 #include <jansson.h>
-#include "dfi_log_util.h"
 #include "dyn_type.h"
 #include "dyn_function.h"
 #include "dyn_interface.h"
@@ -30,9 +29,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-//logging
-DFI_SETUP_LOG_HEADER(jsonRpc);
 
 /**
  * @brief Call a remote service using JSON-RPC.
@@ -48,7 +44,7 @@ DFI_SETUP_LOG_HEADER(jsonRpc);
  * @return 0 if successful, otherwise 1.
  *
  */
-CELIX_DFI_EXPORT int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, char **out);
+CELIX_DFI_EXPORT int jsonRpc_call(const dyn_interface_type* intf, void* service, const char* request, char** out);
 
 /**
  * @brief Prepare a JSON-RPC request for a given function.
@@ -64,7 +60,7 @@ CELIX_DFI_EXPORT int jsonRpc_call(dyn_interface_type *intf, void *service, const
  * @return 0 if successful, otherwise 1.
  *
  */
-CELIX_DFI_EXPORT int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *args[], char **out);
+CELIX_DFI_EXPORT int jsonRpc_prepareInvokeRequest(const dyn_function_type* func, const char* id, void* args[], char** out);
 
 /**
  * @brief Handle a JSON-RPC reply for a given function.
@@ -78,7 +74,7 @@ CELIX_DFI_EXPORT int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const
  * @return 0 if successful, otherwise 1.
  *
  */
-CELIX_DFI_EXPORT int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[], int *rsErrno);
+CELIX_DFI_EXPORT int jsonRpc_handleReply(const dyn_function_type* func, const char* reply, void* args[], int* rsErrno);
 
 #ifdef __cplusplus
 }
