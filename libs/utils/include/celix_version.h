@@ -21,8 +21,9 @@
 #define CELIX_CELIX_VERSION_H
 
 #include <stdbool.h>
-#include <stdlib.h>
+#include <stddef.h>
 
+#include "celix_version_type.h"
 #include "celix_cleanup.h"
 #include "celix_utils_export.h"
 
