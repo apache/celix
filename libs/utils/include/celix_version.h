@@ -42,11 +42,6 @@ extern "C" {
  */
 
 /**
- * @brief The definition of the celix_version_t* abstract data type.
- */
-typedef struct celix_version celix_version_t;
-
-/**
  * @brief Create a new celix_version_t* using the supplied arguments.
  *
  * If the return is NULL, an error message is logged to celix_err.
