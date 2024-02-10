@@ -712,20 +712,19 @@ void celix_serviceTracker_destroy(celix_service_tracker_t *tracker) {
     }
 }
 
-static celix_tracked_entry_t* celix_serviceTracker_findHighestRankingService(service_tracker_t *tracker, const char* serviceName) {
-    //precondition tracker->mutex locked
+static celix_tracked_entry_t* celix_serviceTracker_findHighestRankingService(service_tracker_t* tracker,
+                                                                             const char* serviceName) {
+    // precondition tracker->mutex locked
     celix_tracked_entry_t* highest = NULL;
     for (int i = 0; i < celix_arrayList_size(tracker->trackedServices); ++i) {
         celix_tracked_entry_t* tracked = celix_arrayList_get(tracker->trackedServices, i);
-        if (serviceName == NULL || (serviceName != NULL && tracked->serviceName != NULL &&
-                                    celix_utils_stringEquals(tracked->serviceName, serviceName))) {
+        if (serviceName == NULL ||
+            (tracked->serviceName != NULL && celix_utils_stringEquals(tracked->serviceName, serviceName))) {
             if (highest == NULL) {
                 highest = tracked;
             } else {
                 int compare = celix_utils_compareServiceIdsAndRanking(
-                        tracked->serviceId, tracked->serviceRanking,
-                        highest->serviceId, highest->serviceRanking
-                );
+                    tracked->serviceId, tracked->serviceRanking, highest->serviceId, highest->serviceRanking);
                 if (compare < 0) {
                     highest = tracked;
                 }
@@ -817,4 +816,19 @@ size_t celix_serviceTracker_useServices(
         tracked_release(entry);
     }
     return count;
+}
+
+size_t celix_serviceTracker_getTrackedServiceCount(celix_service_tracker_t *tracker) {
+    celix_auto(celix_mutex_lock_guard_t) lck = celixMutexLockGuard_init(&tracker->mutex);
+    return (size_t) celix_arrayList_size(tracker->trackedServices);
+}
+
+const char* celix_serviceTracker_getTrackedServiceName(celix_service_tracker_t *tracker) {
+    celix_auto(celix_mutex_lock_guard_t) lck = celixMutexLockGuard_init(&tracker->mutex);
+    return tracker->serviceName;
+}
+
+const char* celix_serviceTracker_getTrackedServiceFilter(celix_service_tracker_t *tracker) {
+    celix_auto(celix_mutex_lock_guard_t) lck = celixMutexLockGuard_init(&tracker->mutex);
+    return tracker->filter;
 }

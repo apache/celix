@@ -583,9 +583,8 @@ void celix_bundle_destroyRegisteredServicesList(celix_array_list_t* list) {
 celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t *bnd) {
     celix_array_list_t* result = celix_arrayList_create();
     celixThreadMutex_lock(&bnd->context->mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(bnd->context->serviceTrackers);
-    while (hashMapIterator_hasNext(&iter)) {
-        celix_bundle_context_service_tracker_entry_t *trkEntry = hashMapIterator_nextValue(&iter);
+    CELIX_LONG_HASH_MAP_ITERATE(bnd->context->serviceTrackers, iter) {
+        celix_bundle_context_service_tracker_entry_t *trkEntry = iter.value.ptrValue;
         if (trkEntry->tracker != NULL) {
             celix_bundle_service_tracker_list_entry_t *entry = calloc(1, sizeof(*entry));
             entry->filter = celix_utils_strdup(trkEntry->tracker->filter);

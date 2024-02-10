@@ -52,6 +52,8 @@ public:
 
         fw = celix_frameworkFactory_createFramework(properties);
         ctx = framework_getContext(fw);
+
+        celix_err_resetErrors();
     }
 
     ~CelixBundleContextServicesTestSuite() override {
@@ -1740,4 +1742,170 @@ TEST_F(CelixBundleContextServicesTestSuite, SetServicesWithTrackerWhenMultipleRe
     celix_bundleContext_unregisterService(ctx, svcId1);
     celix_bundleContext_unregisterService(ctx, svcId2);
     celix_bundleContext_unregisterService(ctx, svcId3);
+}
+
+
+TEST_F(CelixBundleContextServicesTestSuite, InvalidArgumentsForUseTrackedServicesTest) {
+    EXPECT_FALSE(celix_bundleContext_useTrackedService(ctx, -1, nullptr, nullptr));
+    EXPECT_FALSE(celix_bundleContext_useTrackedService(ctx, 1 /*non existing*/, nullptr, nullptr));
+
+    EXPECT_EQ(0, celix_bundleContext_useTrackedServices(ctx, -1, nullptr, nullptr));
+    EXPECT_EQ(0, celix_bundleContext_useTrackedServices(ctx, 1 /*non existing*/, nullptr, nullptr));
+
+    celix_tracked_service_use_options_t useOpts{};
+    EXPECT_FALSE(celix_bundleContext_useTrackedServiceWithOptions(ctx, -1, &useOpts));
+    EXPECT_FALSE(celix_bundleContext_useTrackedServiceWithOptions(ctx, 1 /*non existing*/, &useOpts));
+
+    EXPECT_EQ(0, celix_bundleContext_useTrackedServicesWithOptions(ctx, -1, &useOpts));
+    EXPECT_EQ(0, celix_bundleContext_useTrackedServicesWithOptions(ctx, 1 /*non existing*/, &useOpts));
+
+    EXPECT_EQ(0, celix_bundleContext_getTrackedServiceCount(ctx, -1));
+    EXPECT_EQ(0, celix_bundleContext_getTrackedServiceCount(ctx, 1 /*non existing*/));
+
+    EXPECT_EQ(nullptr, celix_bundleContext_getTrackedServiceName(ctx, -1));
+    EXPECT_EQ(nullptr, celix_bundleContext_getTrackedServiceName(ctx, 1 /*non existing*/));
+
+    EXPECT_EQ(nullptr, celix_bundleContext_getTrackedServiceFilter(ctx, -1));
+    EXPECT_EQ(nullptr, celix_bundleContext_getTrackedServiceFilter(ctx, 1 /*non existing*/));
+
+    EXPECT_FALSE(celix_bundleContext_isValidTrackerId(ctx, -1));
+}
+
+TEST_F(CelixBundleContextServicesTestSuite, IsValidTrackerIdTest) {
+    long trkId = celix_bundleContext_trackServices(ctx, "test", nullptr, nullptr, nullptr);
+    EXPECT_TRUE(celix_bundleContext_isValidTrackerId(ctx, trkId));
+    celix_bundleContext_stopTracker(ctx, trkId);
+    EXPECT_FALSE(celix_bundleContext_isValidTrackerId(ctx, trkId));
+}
+
+TEST_F(CelixBundleContextServicesTestSuite, UseTrackedServiceTest) {
+    // Given 3 foo services with different service properties
+    celix_properties_t* props1 = celix_properties_create();
+    celix_properties_set(props1, "key", "1");
+    long svcId1 = celix_bundleContext_registerService(ctx, (void*)0x42, "test", props1);
+    celix_auto(celix_service_registration_guard_t) guard1 = celix_serviceRegistrationGuard_init(ctx, svcId1);
+
+    celix_properties_t* props2 = celix_properties_create();
+    celix_properties_set(props2, "key", "2");
+    long svcId2 = celix_bundleContext_registerService(ctx, (void*)0x42, "test", props2);
+    celix_auto(celix_service_registration_guard_t) guard2 = celix_serviceRegistrationGuard_init(ctx, svcId2);
+
+    celix_properties_t* props3 = celix_properties_create();
+    celix_properties_set(props3, "key", "3");
+    long svcId3 = celix_bundleContext_registerService(ctx, (void*)0x42, "test", props3);
+    celix_auto(celix_service_registration_guard_t) guard3 = celix_serviceRegistrationGuard_init(ctx, svcId3);
+
+    // When tracking services for a service name
+    long trkId = celix_bundleContext_trackServices(ctx, "test", nullptr, nullptr, nullptr);
+    celix_auto(celix_tracker_guard_t) trkGuard = celix_trackerGuard_init(ctx, trkId);
+
+    // Then the useTrackedService function should be called for each service
+    struct use_data {
+        long bndId{0};
+        int count{0}; //note atomic not needed because the use function is called in the same thread.
+    };
+    use_data data{};
+    data.bndId = celix_bundleContext_getBundleId(ctx);
+    celix_tracked_service_use_options_t useOpts{};
+    useOpts.callbackHandle = (void*)&data;
+    useOpts.use = [](void* handle, void* svc) {
+        EXPECT_EQ((void*)0x42, svc);
+        auto *d = static_cast<use_data*>(handle);
+        d->count++;
+    };
+    useOpts.useWithProperties = [](void* handle, void* svc, const celix_properties_t* props) {
+        EXPECT_EQ((void*)0x42, svc);
+        auto* val = celix_properties_get(props, "key", nullptr);
+        EXPECT_TRUE(val != nullptr);
+        auto *d = static_cast<use_data*>(handle);
+        d->count++;
+    };
+    useOpts.useWithOwner = [](void* handle, void* svc, const celix_properties_t* props, const celix_bundle_t* owner) {
+        EXPECT_EQ((void*)0x42, svc);
+        auto* val = celix_properties_get(props, "key", nullptr);
+        EXPECT_TRUE(val != nullptr);
+        auto *d = static_cast<use_data*>(handle);
+        d->count++;
+        EXPECT_EQ(celix_bundle_getId(owner), d->bndId);
+    };
+    auto count = celix_bundleContext_useTrackedServicesWithOptions(ctx, trkId, &useOpts);
+    EXPECT_EQ(3, count);
+    EXPECT_EQ(9, data.count); // 3x use, 3x useWithProperties, 3x useWithOwner
+
+    // And the useTrackedServiceWithOptions function should be called a single time
+    data.count = 0;
+    bool called = celix_bundleContext_useTrackedServiceWithOptions(ctx, trkId, &useOpts);
+    EXPECT_TRUE(called);
+    EXPECT_EQ(3, data.count); // 1x use, 1x useWithProperties, 1x useWithOwner
+
+    // And the useTrackedServices function should be called 3 times
+    data.count = 0;
+    count = celix_bundleContext_useTrackedServices(ctx, trkId, useOpts.callbackHandle, useOpts.use);
+    EXPECT_EQ(3, count);
+    EXPECT_EQ(3, data.count); // 3x use
+
+    // And the useTrackedService function should be called a single time
+    data.count = 0;
+    called = celix_bundleContext_useTrackedService(ctx, trkId, useOpts.callbackHandle, useOpts.use);
+    EXPECT_TRUE(called);
+    EXPECT_EQ(1, data.count); // 1x use
+
+    // When tracking a service with a filter
+    celix_service_tracking_options_t opts{};
+    opts.filter.serviceName = "test";
+    opts.filter.filter = "(key=1)";
+    long trkId2 = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    celix_auto(celix_tracker_guard_t) trkGuard2 = celix_trackerGuard_init(ctx, trkId2);
+
+    // Then the useTrackedServiceWithOption function should be called for the service with the matching filter
+    useOpts.use = nullptr;
+    useOpts.useWithOwner = nullptr;
+    useOpts.useWithProperties = [](void* handle, void* svc, const celix_properties_t* props) {
+        EXPECT_EQ((void*)0x42, svc);
+        auto* val = celix_properties_get(props, "key", nullptr);
+        EXPECT_TRUE(val != nullptr);
+        EXPECT_STREQ("1", val);
+        auto *d = static_cast<use_data*>(handle);
+        d->count++;
+    };
+    data.count = 0;
+    called = celix_bundleContext_useTrackedServiceWithOptions(ctx, trkId2, &useOpts);
+    EXPECT_TRUE(called);
+    EXPECT_EQ(1, data.count); // 1x useWithProperties
+
+    // And the useTrackedServicesWithOption function should be called a single time
+    data.count = 0;
+    count = celix_bundleContext_useTrackedServicesWithOptions(ctx, trkId2, &useOpts);
+    EXPECT_EQ(1, count);
+    EXPECT_EQ(1, data.count); // 1x useWithProperties
+}
+
+TEST_F(CelixBundleContextServicesTestSuite, GetTrackedServicesInfoTest) {
+    //When a service tracker for a specific service name and with a filter
+    celix_service_tracking_options_t opts{};
+    opts.filter.serviceName = "test";
+    opts.filter.filter = "(key=1)";
+    long trkId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    celix_auto(celix_tracker_guard_t) trkGuard = celix_trackerGuard_init(ctx, trkId);
+
+    // And a service is registered with a matching service name and filter
+    celix_properties_t* props = celix_properties_create();
+    celix_properties_set(props, "key", "1");
+    long svcId = celix_bundleContext_registerService(ctx, (void*)0x42, "test", props);
+    celix_auto(celix_service_registration_guard_t) svcGuard = celix_serviceRegistrationGuard_init(ctx, svcId);
+
+    // Then the tracked services info should be available
+    EXPECT_EQ(celix_bundleContext_getTrackedServiceCount(ctx, trkId), 1);
+    EXPECT_STREQ(celix_bundleContext_getTrackedServiceName(ctx, trkId), "test");
+    EXPECT_STREQ(celix_bundleContext_getTrackedServiceFilter(ctx, trkId), "(&(objectClass=test)(key=1))");
+
+
+    // When a tracker for all services is created
+    long trkId2 = celix_bundleContext_trackServices(ctx, nullptr, nullptr, nullptr, nullptr);
+    celix_auto(celix_tracker_guard_t) trkGuard2 = celix_trackerGuard_init(ctx, trkId2);
+
+    // Then the tracked services info should be available
+    EXPECT_EQ(celix_bundleContext_getTrackedServiceCount(ctx, trkId2), 1);
+    EXPECT_STREQ(celix_bundleContext_getTrackedServiceName(ctx, trkId2), "*");
+    EXPECT_TRUE(strstr(celix_bundleContext_getTrackedServiceFilter(ctx, trkId2), "(objectClass=*)") != nullptr);
 }
