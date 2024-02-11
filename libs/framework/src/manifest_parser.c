@@ -34,11 +34,10 @@
 #include "celix_log.h"
 
 struct manifestParser {
-	module_pt owner;
-	manifest_pt manifest;
-
-        celix_version_t* bundleVersion;
-        //TODO: Implement Requirement-Capability-Model using RCM library
+    module_pt owner;
+    manifest_pt manifest;
+    celix_version_t* bundleVersion;
+    // TODO: Implement Requirement-Capability-Model using RCM library
 };
 
 celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, manifest_parser_pt *manifest_parser) {
