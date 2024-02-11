@@ -19,42 +19,35 @@
 
 #include <gtest/gtest.h>
 
-#include "version.h"
-#include "version_range.h" //NOTE testing celix_version_range through the deprecated version_range api.
+#include "celix_version.h"
+#include "celix_version_range.h" 
 #include "celix_stdlib_cleanup.h"
 #include "celix_version_range.h"
 #include "version_private.h"
 
 class VersionRangeTestSuite : public ::testing::Test {};
 
-TEST_F(VersionRangeTestSuite, create) {
-    celix_status_t status = CELIX_SUCCESS;
-    version_range_pt range = nullptr;
-    version_pt low = celix_version_createEmptyVersion();
-    version_pt high = celix_version_createEmptyVersion();
-
-    status = versionRange_createVersionRange(low, false, high, true, &range);
-    EXPECT_EQ(CELIX_SUCCESS, status);
+TEST_F(VersionRangeTestSuite, CreateTest) {
+    celix_version_range_t* range = nullptr;
+    celix_version_t* low = celix_version_createEmptyVersion();
+    celix_version_t* high = celix_version_createEmptyVersion();
+    range = celix_versionRange_createVersionRange(low, false, high, true);
     EXPECT_TRUE((range != nullptr));
     EXPECT_EQ(true, celix_versionRange_isHighInclusive(range));
     EXPECT_EQ(false, celix_versionRange_isLowInclusive(range));
     EXPECT_EQ(low, celix_versionRange_getLowVersion(range));
     EXPECT_EQ(high, celix_versionRange_getHighVersion(range));
 
-    versionRange_destroy(range);
+    celix_versionRange_destroy(range);
 }
 
-TEST_F(VersionRangeTestSuite, cleanup) {
+TEST_F(VersionRangeTestSuite, CleanupTest) {
     celix_autoptr(celix_version_range_t) range = celix_versionRange_createInfiniteVersionRange();
 }
 
-TEST_F(VersionRangeTestSuite, createInfinite) {
-    celix_status_t status = CELIX_SUCCESS;
-    version_range_pt range = nullptr;
-    version_pt version = celix_version_create(1,2, 3, nullptr);
-
-    status = versionRange_createInfiniteVersionRange(&range);
-    EXPECT_EQ(CELIX_SUCCESS, status);
+TEST_F(VersionRangeTestSuite, CreateInfiniteTest) {
+    celix_version_t* version = celix_version_create(1,2, 3, nullptr);
+    celix_version_range_t* range = celix_versionRange_createInfiniteVersionRange();
     EXPECT_TRUE(range != nullptr);
     EXPECT_EQ(true, celix_versionRange_isHighInclusive(range));
     EXPECT_EQ(true, celix_versionRange_isLowInclusive(range));
@@ -64,360 +57,339 @@ TEST_F(VersionRangeTestSuite, createInfinite) {
     EXPECT_EQ(std::string{celix_version_getQualifier(celix_versionRange_getLowVersion(range))}, std::string{""});
     EXPECT_EQ(nullptr, celix_versionRange_getHighVersion(range));
 
-    versionRange_destroy(range);
+    celix_versionRange_destroy(range);
     celix_version_destroy(version);
 }
 
-TEST_F(VersionRangeTestSuite, isInRange) {
-    bool result;
-    version_pt version = celix_version_create(1, 2, 3, nullptr);
+TEST_F(VersionRangeTestSuite, IsInRangeTest) {
+    celix_version_t* version = celix_version_create(1, 2, 3, nullptr);
 
     {
-        version_range_pt range = nullptr;
-
-        version_pt low = (version_pt) calloc(1, sizeof(*low));
+        celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
         low->major = 1;
         low->minor = 2;
         low->micro = 3;
         low->qualifier = nullptr;
 
-        version_pt high = (version_pt) calloc(1, sizeof(*high));
+        celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
         high->major = 1;
         high->minor = 2;
         high->micro = 3;
         high->qualifier = nullptr;
 
-        EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, true, high, true, &range));
-        EXPECT_EQ(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
-        EXPECT_EQ(true, result);
-
-        versionRange_destroy(range);
+        celix_version_range_t* range = celix_versionRange_createVersionRange(low, true, high, true);
+        EXPECT_TRUE(range != nullptr);
+        EXPECT_TRUE(celix_versionRange_isInRange(range, version));
+        celix_versionRange_destroy(range);
     }
 
     {
-        version_range_pt range = nullptr;
-
-        version_pt low = (version_pt) calloc(1, sizeof(*low));
+        celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
         low->major = 1;
         low->minor = 2;
         low->micro = 3;
 
-        EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, true, nullptr, true, &range));
-        EXPECT_EQ(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
-        EXPECT_EQ(true, result);
-
-        versionRange_destroy(range);
+        celix_version_range_t* range = celix_versionRange_createVersionRange(low, true, nullptr, true);
+        EXPECT_TRUE(range != nullptr);
+        EXPECT_TRUE(celix_versionRange_isInRange(range, version));
+        celix_versionRange_destroy(range);
     }
 
     {
-        version_range_pt range = nullptr;
-
-        version_pt low = (version_pt) calloc(1, sizeof(*low));
+        celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
         low->major = 1;
         low->minor = 2;
         low->micro = 3;
 
-        version_pt high = (version_pt) calloc(1, sizeof(*high));
+        celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
         high->major = 1;
         high->minor = 2;
         high->micro = 3;
 
-        EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, false, high, true, &range));
-        EXPECT_EQ(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
-        EXPECT_EQ(false, result);
+        celix_version_range_t* range = celix_versionRange_createVersionRange(low, false, high, true);
+        EXPECT_TRUE(range != nullptr);
+        EXPECT_FALSE(celix_versionRange_isInRange(range, version));
 
-        versionRange_destroy(range);
+        celix_versionRange_destroy(range);
     }
 
     {
-        version_range_pt range = nullptr;
-
-        version_pt low = (version_pt) calloc(1, sizeof(*low));
+        celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
         low->major = 1;
         low->minor = 2;
         low->micro = 3;
 
-        version_pt high = (version_pt) calloc(1, sizeof(*high));
+        celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
         high->major = 1;
         high->minor = 2;
         high->micro = 3;
 
-        EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, true, high, false, &range));
-        EXPECT_EQ(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
-        EXPECT_EQ(false, result);
+        celix_version_range_t* range = celix_versionRange_createVersionRange(low, true, high, false);
+        EXPECT_TRUE(range != nullptr);
+        EXPECT_FALSE(celix_versionRange_isInRange(range, version));
 
-        versionRange_destroy(range);
+        celix_versionRange_destroy(range);
     }
 
     {
-        version_range_pt range = nullptr;
-
-        version_pt low = (version_pt) calloc(1, sizeof(*low));
+        celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
         low->major = 1;
         low->minor = 2;
         low->micro = 3;
 
-        version_pt high = (version_pt) calloc(1, sizeof(*high));
+        celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
         high->major = 1;
         high->minor = 2;
         high->micro = 3;
 
-        EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, false, high, false, &range));
-        EXPECT_EQ(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
-        EXPECT_EQ(false, result);
+        celix_version_range_t* range = celix_versionRange_createVersionRange(low, false, high, false);
+        EXPECT_TRUE(range != nullptr);
+        EXPECT_FALSE(celix_versionRange_isInRange(range, version));
 
-        versionRange_destroy(range);
+        celix_versionRange_destroy(range);
     }
 
     celix_version_destroy(version);
 }
 
-TEST_F(VersionRangeTestSuite, parse) {
-    version_range_pt range = nullptr;
-    char * version = strdup("[1.2.3,7.8.9]");
+TEST_F(VersionRangeTestSuite, ParseTest) {
+    const char* version = "[1.2.3,7.8.9]";
+    celix_version_range_t* range = celix_versionRange_parse(version);
+    EXPECT_TRUE(range != nullptr);
+    celix_versionRange_destroy(range);
 
-    EXPECT_EQ(CELIX_SUCCESS, versionRange_parse(version, &range));
+    version = "[1.2.3";
+    EXPECT_TRUE(celix_versionRange_parse(version) == nullptr);
 
-    versionRange_destroy(range);
-    free(version);
-    version = strdup("[1.2.3");
-
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, versionRange_parse(version, &range));
-
-    free(version);
-
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, versionRange_parse("[2.2.3,a.b.c)", &range));
+    EXPECT_TRUE(celix_versionRange_parse("[2.2.3,a.b.c)") == nullptr);
 }
 
-TEST_F(VersionRangeTestSuite, createLdapFilterInclusiveBoth) {
-    version_pt low = (version_pt) calloc(1, sizeof(*low));
+TEST_F(VersionRangeTestSuite, CreateLdapFilterInclusiveBothTest) {
+    celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = nullptr;
 
-    version_pt high = (version_pt) calloc(1, sizeof(*high));
+    celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
     high->qualifier = nullptr;
 
-    version_range_pt range = nullptr;
-    EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, true, high, true, &range));
+    celix_version_range_t* range = celix_versionRange_createVersionRange(low, true, high, true);
+    EXPECT_TRUE(range != nullptr);
 
-    auto filter = versionRange_createLDAPFilter(range, "service.version");
+    auto filter = celix_versionRange_createLDAPFilter(range, "service.version");
     EXPECT_EQ(std::string{filter}, std::string{"(&(service.version>=1.2.3)(service.version<=1.2.3))"});
 
-    versionRange_destroy(range);
+    celix_versionRange_destroy(range);
     free(filter);
 }
 
-TEST_F(VersionRangeTestSuite, createLdapFilterInclusiveLow) {
-    version_pt low = (version_pt) calloc(1, sizeof(*low));
+TEST_F(VersionRangeTestSuite, CreateLdapFilterInclusiveLowTest) {
+    celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = nullptr;
 
-    version_pt high = (version_pt) calloc(1, sizeof(*high));
+    celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
     high->qualifier = nullptr;
 
-    version_range_pt range = nullptr;
-    EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, false, high, true, &range));
+    celix_version_range_t* range = celix_versionRange_createVersionRange(low, false, high, true);
+    EXPECT_TRUE(range != nullptr);
 
-    auto filter = versionRange_createLDAPFilter(range, "service.version");
+    auto filter = celix_versionRange_createLDAPFilter(range, "service.version");
     EXPECT_STREQ(filter, "(&(service.version>1.2.3)(service.version<=1.2.3))");
 
-    versionRange_destroy(range);
+    celix_versionRange_destroy(range);
     free(filter);
 }
 
-TEST_F(VersionRangeTestSuite, createLdapFilterInclusiveHigh) {
-    version_pt low = (version_pt) calloc(1, sizeof(*low));
+TEST_F(VersionRangeTestSuite, CreateLdapFilterInclusiveHighTest) {
+    celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = nullptr;
 
-    version_pt high = (version_pt) calloc(1, sizeof(*high));
+    celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
     high->qualifier = nullptr;
 
-    version_range_pt range = nullptr;
-    EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, true, high, false, &range));
+    celix_version_range_t* range = celix_versionRange_createVersionRange(low, true, high, false);
+    EXPECT_TRUE(range != nullptr);
 
-    auto filter = versionRange_createLDAPFilter(range, "service.version");
+    auto filter = celix_versionRange_createLDAPFilter(range, "service.version");
     EXPECT_STREQ(filter, "(&(service.version>=1.2.3)(service.version<1.2.3))");
 
-    versionRange_destroy(range);
+    celix_versionRange_destroy(range);
     free(filter);
 }
 
-TEST_F(VersionRangeTestSuite, createLdapFilterExclusiveBoth) {
-    version_pt low = (version_pt) calloc(1, sizeof(*low));
+TEST_F(VersionRangeTestSuite, CreateLdapFilterExclusiveBothTest) {
+    celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = nullptr;
 
-    version_pt high = (version_pt) calloc(1, sizeof(*high));
+    celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
     high->qualifier = nullptr;
 
-    version_range_pt range = nullptr;
-    EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, false, high, false, &range));
+    celix_version_range_t* range = celix_versionRange_createVersionRange(low, false, high, false);
+    EXPECT_TRUE(range != nullptr);
 
-    auto filter = versionRange_createLDAPFilter(range, "service.version");
+    auto filter = celix_versionRange_createLDAPFilter(range, "service.version");
     EXPECT_STREQ(filter, "(&(service.version>1.2.3)(service.version<1.2.3))");
 
-    versionRange_destroy(range);
+    celix_versionRange_destroy(range);
     free(filter);
 }
 
-TEST_F(VersionRangeTestSuite, createLdapFilterInfinite) {
-    version_pt low = (version_pt) calloc(1, sizeof(*low));
+TEST_F(VersionRangeTestSuite, CreateLdapFilterInfiniteTest) {
+    celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = nullptr;
 
-    version_range_pt range = nullptr;
-    EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, true, nullptr, true, &range));
+    celix_version_range_t* range = celix_versionRange_createVersionRange(low, true, nullptr, true);
 
-    auto filter = versionRange_createLDAPFilter(range, "service.version");
+    auto filter = celix_versionRange_createLDAPFilter(range, "service.version");
     EXPECT_STREQ(filter, "(&(service.version>=1.2.3))");
 
-    versionRange_destroy(range);
+    celix_versionRange_destroy(range);
     free(filter);
 }
 
-TEST_F(VersionRangeTestSuite, createLdapFilterInPlaceInclusiveBoth) {
-    version_pt low = (version_pt) calloc(1, sizeof(*low));
+TEST_F(VersionRangeTestSuite, CreateLdapFilterInPlaceInclusiveBothTest) {
+    celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = nullptr;
 
-    version_pt high = (version_pt) calloc(1, sizeof(*high));
+    celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
     high->qualifier = nullptr;
 
-    version_range_pt range = nullptr;
-    EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, true, high, true, &range));
+    celix_version_range_t* range = celix_versionRange_createVersionRange(low, true, high, true);
     char buffer[100];
     int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
 
-    EXPECT_EQ(1, versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
+    EXPECT_EQ(1, celix_versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
 
     EXPECT_STREQ(buffer, "(&(service.version>=1.2.3)(service.version<=1.2.3))");
 
-    versionRange_destroy(range);
+    celix_versionRange_destroy(range);
 }
 
-TEST_F(VersionRangeTestSuite, createLdapFilterInPlaceInclusiveLow) {
-    version_pt low = (version_pt) calloc(1, sizeof(*low));
+TEST_F(VersionRangeTestSuite, CreateLdapFilterInPlaceInclusiveLowTest) {
+    celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = nullptr;
 
-    version_pt high = (version_pt) calloc(1, sizeof(*high));
+    celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
     high->qualifier = nullptr;
 
-    version_range_pt range = nullptr;
-    EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, true, high, false, &range));
+    celix_version_range_t* range = celix_versionRange_createVersionRange(low, true, high, false);
+    EXPECT_TRUE(range != nullptr);
     char buffer[100];
     int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
 
-    EXPECT_EQ(1, versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
+    EXPECT_EQ(1, celix_versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
 
     EXPECT_STREQ(buffer, "(&(service.version>=1.2.3)(service.version<1.2.3))");
 
-    versionRange_destroy(range);
+    celix_versionRange_destroy(range);
 }
 
-TEST_F(VersionRangeTestSuite, createLdapFilterInPlaceInclusiveHigh) {
-    version_pt low = (version_pt) calloc(1, sizeof(*low));
+TEST_F(VersionRangeTestSuite, CreateLdapFilterInPlaceInclusiveHighTest) {
+    celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = nullptr;
 
-    version_pt high = (version_pt) calloc(1, sizeof(*high));
+    celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
     high->qualifier = nullptr;
 
-    version_range_pt range = nullptr;
-    EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, false, high, true, &range));
+    celix_version_range_t* range = celix_versionRange_createVersionRange(low, false, high, true);
+    EXPECT_TRUE(range != nullptr);
     char buffer[100];
     int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
 
-    EXPECT_EQ(1, versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
+    EXPECT_EQ(1, celix_versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
 
     EXPECT_STREQ(buffer, "(&(service.version>1.2.3)(service.version<=1.2.3))");
 
-    versionRange_destroy(range);
+    celix_versionRange_destroy(range);
 }
 
-TEST_F(VersionRangeTestSuite, createLdapFilterInPlaceExclusiveBoth) {
-    version_pt low = (version_pt) calloc(1, sizeof(*low));
+TEST_F(VersionRangeTestSuite, CreateLdapFilterInPlaceExclusiveBothTest) {
+    celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = nullptr;
 
-    version_pt high = (version_pt) calloc(1, sizeof(*high));
+    celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
     high->major = 1;
     high->minor = 2;
     high->micro = 3;
     high->qualifier = nullptr;
 
-    version_range_pt range = nullptr;
-    EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, false, high, false, &range));
+    celix_version_range_t* range = celix_versionRange_createVersionRange(low, false, high, false);
+    EXPECT_TRUE(range != nullptr);
     char buffer[100];
     int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
 
-    EXPECT_EQ(1, versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
+    EXPECT_EQ(1, celix_versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
 
     EXPECT_STREQ(buffer, "(&(service.version>1.2.3)(service.version<1.2.3))");
 
-    versionRange_destroy(range);
+    celix_versionRange_destroy(range);
 }
 
-TEST_F(VersionRangeTestSuite, createLdapFilterInPlaceInfiniteHigh) {
-    version_pt low = (version_pt) calloc(1, sizeof(*low));
+TEST_F(VersionRangeTestSuite, CreateLdapFilterInPlaceInfiniteHighTest) {
+    celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
     low->major = 1;
     low->minor = 2;
     low->micro = 3;
     low->qualifier = nullptr;
 
-    version_range_pt range = nullptr;
-    EXPECT_EQ(CELIX_SUCCESS, versionRange_createVersionRange(low, false, nullptr, false, &range));
+    celix_version_range_t* range = celix_versionRange_createVersionRange(low, false, nullptr, false);
     char buffer[100];
     int bufferLen = sizeof(buffer) / sizeof(buffer[0]);
 
-    EXPECT_EQ(1, versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
+    EXPECT_EQ(1, celix_versionRange_createLDAPFilterInPlace(range, "service.version", buffer, bufferLen));
 
     EXPECT_STREQ(buffer, "(&(service.version>1.2.3))");
 
-    versionRange_destroy(range);
+    celix_versionRange_destroy(range);
 }
 
-TEST_F(VersionRangeTestSuite, createLdapFilterWithQualifier) {
+TEST_F(VersionRangeTestSuite, CreateLdapFilterWithQualifierTest) {
     celix_autoptr(celix_version_t) low = celix_version_create(1, 2, 2, "0");
     celix_autoptr(celix_version_t) high = celix_version_create(1, 2, 2, "0");
 
