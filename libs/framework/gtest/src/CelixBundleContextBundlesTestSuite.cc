@@ -756,7 +756,7 @@ TEST_F(CelixBundleContextBundlesTestSuite, BundleInfoTests) {
 
 
     long svcId = celix_bundleContext_registerService(ctx, (void*)0x42, "NopService", NULL);
-    long trackerId = celix_bundleContext_trackServices(ctx, "AService", NULL, NULL, NULL);
+    long trackerId = celix_bundleContext_trackServices(ctx, "AService");
 
     called = celix_bundleContext_useBundle(ctx, 0, &data, updateCountFp);
     EXPECT_TRUE(called);

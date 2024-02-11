@@ -143,18 +143,19 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT size_t celix_serviceTracker_useServices(
 /**
  * @brief Get the number of tracked services.
  */
-CELIX_FRAMEWORK_DEPRECATED_EXPORT size_t celix_serviceTracker_getTrackedServiceCount(celix_service_tracker_t *tracker);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT size_t celix_serviceTracker_getTrackedServiceCount(celix_service_tracker_t* tracker);
 
 /**
  * @brief Get the tracker service name.
  */
-CELIX_FRAMEWORK_DEPRECATED_EXPORT const char* celix_serviceTracker_getTrackedServiceName(celix_service_tracker_t *tracker);
+CELIX_FRAMEWORK_DEPRECATED_EXPORT const char*
+celix_serviceTracker_getTrackedServiceName(celix_service_tracker_t* tracker);
 
 /**
  * @brief Get the tracker filter.
  */
-CELIX_FRAMEWORK_DEPRECATED_EXPORT const char* celix_serviceTracker_getTrackedServiceFilter(celix_service_tracker_t *tracker);
-
+CELIX_FRAMEWORK_DEPRECATED_EXPORT const char*
+celix_serviceTracker_getTrackedServiceFilter(celix_service_tracker_t* tracker);
 
 #ifdef __cplusplus
 }

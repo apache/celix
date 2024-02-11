@@ -586,48 +586,25 @@ CELIX_FRAMEWORK_EXPORT size_t celix_bundleContext_useServicesWithOptions(
 /**
  * @brief Track the highest ranking service with the provided serviceName.
  *
- * The highest ranking services will used for the callback.
- * If a new and higher ranking services the callback with be called again with the new service.
- * If a service is removed a the callback with be called with next highest ranking service or NULL as service.
- *
  * The service tracker will be created async on the Celix event loop thread. This means that the function can return
  * before the tracker is created.
  *
  * @param ctx The bundle context.
  * @param serviceName The required service name to track.
  *                    If NULL is all service are tracked.
- * @param callbackHandle The data pointer, which will be used in the callbacks
- * @param set is a required callback, which will be called when a new highest ranking service is set.
  * @return the tracker id (>=0) or < 0 if unsuccessful.
  */
-CELIX_FRAMEWORK_EXPORT long celix_bundleContext_trackServiceAsync(
-        celix_bundle_context_t *ctx,
-        const char* serviceName,
-        void* callbackHandle,
-        void (*set)(void* handle, void* svc)
-);
+CELIX_FRAMEWORK_EXPORT long celix_bundleContext_trackServiceAsync(celix_bundle_context_t* ctx, const char* serviceName);
 
 /**
- * @brief Track the highest ranking service with the provided serviceName.
+ * @brief Track the highest ranking service with the provided serviceName
  *
- * The highest ranking services will used for the callback.
- * If a new and higher ranking services the callback with be called again with the new service.
- * If a service is removed a the callback with be called with next highest ranking service or NULL as service.
- * Note: Please use the celix_bundleContext_trackServiceAsync instead.
+ * Note: If possible, use the celix_bundleContext_trackServiceAsync instead.
  *
  * @param ctx The bundle context.
- * @param serviceName The required service name to track.
- *                    If NULL is all service are tracked.
- * @param callbackHandle The data pointer, which will be used in the callbacks
- * @param set is a required callback, which will be called when a new highest ranking service is set.
  * @return the tracker id (>=0) or < 0 if unsuccessful.
  */
-CELIX_FRAMEWORK_EXPORT long celix_bundleContext_trackService(
-        celix_bundle_context_t *ctx,
-        const char* serviceName,
-        void* callbackHandle,
-        void (*set)(void* handle, void* svc)
-);
+CELIX_FRAMEWORK_EXPORT long celix_bundleContext_trackService(celix_bundle_context_t* ctx, const char* serviceName);
 
 /**
  * @brief Track services with the provided serviceName.
@@ -638,39 +615,22 @@ CELIX_FRAMEWORK_EXPORT long celix_bundleContext_trackService(
  * @param ctx The bundle context.
  * @param serviceName The required service name to track
  *                    If NULL is all service are tracked.
- * @param callbackHandle The data pointer, which will be used in the callbacks
- * @param add is a required callback, which will be called when a service is added and initially for the existing service.
- * @param remove is a required callback, which will be called when a service is removed
  * @return the tracker id (>=0) or < 0 if unsuccessful.
  */
-CELIX_FRAMEWORK_EXPORT long celix_bundleContext_trackServicesAsync(
-        celix_bundle_context_t *ctx,
-        const char* serviceName,
-        void* callbackHandle,
-        void (*add)(void* handle, void* svc),
-        void (*remove)(void* handle, void* svc)
-);
+CELIX_FRAMEWORK_EXPORT long celix_bundleContext_trackServicesAsync(celix_bundle_context_t* ctx,
+                                                                   const char* serviceName);
 
 /**
  * @brief Track services with the provided serviceName.
  *
- * Note: Please use the celix_bundleContext_trackServicesAsync instead.
+ * Note: If possible, use the celix_bundleContext_trackServicesAsync instead.
  *
  * @param ctx The bundle context.
  * @param serviceName The required service name to track
  *                    If NULL is all service are tracked.
- * @param callbackHandle The data pointer, which will be used in the callbacks
- * @param add is a required callback, which will be called when a service is added and initially for the existing service.
- * @param remove is a required callback, which will be called when a service is removed
  * @return the tracker id (>=0) or < 0 if unsuccessful.
  */
-CELIX_FRAMEWORK_EXPORT long celix_bundleContext_trackServices(
-        celix_bundle_context_t *ctx,
-        const char* serviceName,
-        void* callbackHandle,
-        void (*add)(void* handle, void* svc),
-        void (*remove)(void* handle, void* svc)
-);
+CELIX_FRAMEWORK_EXPORT long celix_bundleContext_trackServices(celix_bundle_context_t* ctx, const char* serviceName);
 
 /**
  * @brief Service Tracker Options used to fine tune which services to track and the callback to be used for the tracked services.
@@ -825,15 +785,14 @@ CELIX_FRAMEWORK_EXPORT long celix_bundleContext_trackServicesWithOptions(celix_b
  * @param[in] trackerId The tracker id.
  * @param[in] callbackHandle The data pointer, which will be used in the callbacks.
  * @param[in] use The callback, which will be called when service is retrieved.
- * @return True if a service was found and the use callback was called.
+ * @return True if a service was found and the use callback was called. Returns false if the tracker is not yet active
+ * (async tracker creation).
  */
 CELIX_FRAMEWORK_EXPORT
-bool celix_bundleContext_useTrackedService(
-        celix_bundle_context_t *ctx,
-        long trackerId,
-        void *callbackHandle,
-        void (*use)(void *handle, void* svc)
-);
+bool celix_bundleContext_useTrackedService(celix_bundle_context_t* ctx,
+                                           long trackerId,
+                                           void* callbackHandle,
+                                           void (*use)(void* handle, void* svc));
 
 /**
  * @brief Use the services, tracked by the provided tracker id, using the provided callback.
@@ -848,7 +807,8 @@ bool celix_bundleContext_useTrackedService(
  * @param[in] trackerId The tracker id.
  * @param[in] callbackHandle The data pointer, which will be used in the callbacks.
  * @param[in] use The callback, which will be called for every service found.
- * @return The number of services found and therefore the number of times the use callback was called.
+ * @return The number of services found and therefore the number of times the use callback was called. Returns 0 if the
+ * tracker is not yet active (async tracker creation).
  */
 CELIX_FRAMEWORK_EXPORT
 size_t celix_bundleContext_useTrackedServices(celix_bundle_context_t* ctx,
@@ -924,7 +884,8 @@ typedef struct celix_tracked_service_use_options {
  * @param[in] trackerId The tracker id.
  * @param[in] callbackHandle The data pointer, which will be used in the callbacks.
  * @param[in] opts The service use options.
- * @return True if a service was found and the use callbacks where called.
+ * @return True if a service was found and the use callbacks where called. Returns false if the tracker is not yet
+ * active (async tracker creation).
  */
 CELIX_FRAMEWORK_EXPORT
 bool celix_bundleContext_useTrackedServiceWithOptions(celix_bundle_context_t* ctx,
@@ -947,7 +908,8 @@ bool celix_bundleContext_useTrackedServiceWithOptions(celix_bundle_context_t* ct
  * @param[in] callbackHandle The data pointer, which will be used in the callbacks.
  * @param[in] opts The service use options.
  * @return The number of services found and therefore the number of times the callbacks in the provided options where
- * called.
+ * called. Returns 0 if the tracker is not yet active
+ * (async tracker creation).
  */
 CELIX_FRAMEWORK_EXPORT
 size_t celix_bundleContext_useTrackedServicesWithOptions(celix_bundle_context_t* ctx,
@@ -995,16 +957,6 @@ CELIX_FRAMEWORK_EXPORT
 const char* celix_bundleContext_getTrackedServiceFilter(celix_bundle_context_t* ctx, long trackerId);
 
 /**
- * @brief Returns true if the provided tracker id is a tracker id for an existing tracker for the provided bundle
- * context.
- * @param ctx The bundle context.
- * @param trackerId The tracker id.
- * @return True if the tracker id is valid.
- */
-CELIX_FRAMEWORK_EXPORT
-bool celix_bundleContext_isValidTrackerId(celix_bundle_context_t* ctx, long trackerId);
-
-/**
  * @brief Stop the tracker with the provided track id.
  *
  * Could be a service tracker, bundle tracker or service tracker tracker.
@@ -1025,12 +977,24 @@ CELIX_FRAMEWORK_EXPORT void celix_bundleContext_stopTrackerAsync(
         void (*doneCallback)(void* doneCallbackData));
 
 /**
- * @brief Wait for (async) creation of tracker
+ * @brief Wait, if able, for (async) creation of tracker.
+ *
+ * Will silently ignore trackerId < 0 and log an error if the tracker id is unknown.
+ * If called on the Apache Celix event loop thread, the function will log a warning and return immediately.
+ *
+ * @param[in] ctx The bundle context.
+ * @param[in] trackerId The tracker id.
  */
 CELIX_FRAMEWORK_EXPORT void celix_bundleContext_waitForAsyncTracker(celix_bundle_context_t *ctx, long trackerId);
 
 /**
- * @brief Wait for (async) stopping of tracking.
+ * @brief Wait, if able, for (async) stopping of tracking.
+ *
+ * Will silently ignore trackerId < 0 and log an error if the tracker id is unknown.
+ * If called on the Apache Celix event loop thread, the function will log a warning and return immediately.
+ *
+ * @param[in] ctx The bundle context.
+ * @param[in] trackerId The tracker id.
  */
 CELIX_FRAMEWORK_EXPORT void celix_bundleContext_waitForAsyncStopTracker(celix_bundle_context_t *ctx, long trackerId);
 
@@ -1044,6 +1008,16 @@ CELIX_FRAMEWORK_EXPORT void celix_bundleContext_waitForAsyncStopTracker(celix_bu
  * Will log a error if the provided tracker id is unknown. Will silently ignore trackerId < 0.
  */
 CELIX_FRAMEWORK_EXPORT void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId);
+
+/**
+ * @brief Returns true if the provided tracker id is a tracker id for an existing tracker for the provided bundle
+ * context.
+ * @param ctx The bundle context.
+ * @param trackerId The tracker id.
+ * @return True if the tracker id is valid.
+ */
+CELIX_FRAMEWORK_EXPORT
+bool celix_bundleContext_isValidTrackerId(celix_bundle_context_t* ctx, long trackerId);
 
 /**
  * @brief Tracker guard.

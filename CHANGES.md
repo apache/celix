@@ -58,6 +58,9 @@ limitations under the License.
 - linked_list.h is removed and no longer supported. Use celix_array_list.h instead.
 - ip_utils.h is removed and no longer supported.  
 - array_list.h is removed and no longer supported. Use celix_array_list.h instead.
+- The signature of `celix_bundleContext_trackServices` has changed. The signature is now simpler to better support
+  the use-case of using a service tracker with the `celix_bundleContext_useTrackedService*` functions.
+  The `celix_bundleContext_trackServicesWithOptions` is still available for more advanced use-cases.
 
 ## New Features
 
