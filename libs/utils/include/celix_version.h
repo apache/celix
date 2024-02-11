@@ -21,8 +21,9 @@
 #define CELIX_CELIX_VERSION_H
 
 #include <stdbool.h>
-#include <stdlib.h>
+#include <stddef.h>
 
+#include "celix_version_type.h"
 #include "celix_cleanup.h"
 #include "celix_utils_export.h"
 
@@ -39,11 +40,6 @@ extern "C" {
  * This implementation is based on the Semantic Versioning specification (SemVer).
  * Functions are provided for creating and destroying version objects, comparing versions, and extracting the individual version components.
  */
-
-/**
- * @brief The definition of the celix_version_t* abstract data type.
- */
-typedef struct celix_version celix_version_t;
 
 /**
  * @brief Create a new celix_version_t* using the supplied arguments.

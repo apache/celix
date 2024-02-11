@@ -23,80 +23,11 @@
 #include <celix_utils.h>
 
 #include "celix_version.h"
-#include "version.h"
 #include "celix_errno.h"
 #include "version_private.h"
 #include "celix_err.h"
 
 static const char* const CELIX_VERSION_EMPTY_QUALIFIER = "";
-
-celix_status_t version_createVersion(int major, int minor, int micro, const char * qualifier, version_pt *version) {
-    *version = celix_version_create(major, minor, micro, qualifier);
-    return *version == NULL ? CELIX_ILLEGAL_ARGUMENT : CELIX_SUCCESS;
-}
-
-celix_status_t version_clone(version_pt version, version_pt *clone) {
-    *clone = celix_version_copy(version);
-    return CELIX_SUCCESS;
-}
-
-celix_status_t version_destroy(version_pt version) {
-   celix_version_destroy(version);
-   return CELIX_SUCCESS;
-}
-
-celix_status_t version_createVersionFromString(const char * versionStr, version_pt *version) {
-    if (versionStr == NULL) {
-        *version = NULL;
-        return CELIX_SUCCESS;
-    }
-    *version = celix_version_createVersionFromString(versionStr);
-    return *version == NULL ? CELIX_ILLEGAL_ARGUMENT : CELIX_SUCCESS;
-}
-
-celix_status_t version_createEmptyVersion(version_pt *version) {
-    *version = celix_version_createEmptyVersion();
-    return *version == NULL ? CELIX_ILLEGAL_ARGUMENT : CELIX_SUCCESS;
-}
-
-celix_status_t version_getMajor(version_pt version, int *major) {
-    celix_status_t status = CELIX_SUCCESS;
-    *major = version->major;
-    return status;
-}
-
-celix_status_t version_getMinor(version_pt version, int *minor) {
-    celix_status_t status = CELIX_SUCCESS;
-    *minor = version->minor;
-    return status;
-}
-
-celix_status_t version_getMicro(version_pt version, int *micro) {
-    celix_status_t status = CELIX_SUCCESS;
-    *micro = version->micro;
-    return status;
-}
-
-celix_status_t version_getQualifier(version_pt version, const char **qualifier) {
-    celix_status_t status = CELIX_SUCCESS;
-    *qualifier = version->qualifier;
-    return status;
-}
-
-celix_status_t version_compareTo(version_pt version, version_pt compare, int *result) {
-    *result = celix_version_compareTo(version, compare);
-    return CELIX_SUCCESS;
-}
-
-celix_status_t version_toString(version_pt version, char **string) {
-    *string = celix_version_toString(version);
-    return CELIX_SUCCESS;
-}
-
-celix_status_t version_isCompatible(version_pt user, version_pt provider, bool* isCompatible) {
-    *isCompatible = celix_version_isCompatible(user, provider);
-    return CELIX_SUCCESS;
-}
 
 celix_version_t* celix_version_create(int major, int minor, int micro, const char* qualifier) {
     if (major < 0 || minor < 0 || micro < 0) {
