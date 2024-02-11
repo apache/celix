@@ -784,3 +784,106 @@ TEST_F(CxxBundleContextTestSuite, TestOldCStyleTrackerWithCxxMetaTracker) {
     serviceTracker_close(tracker);
     serviceTracker_destroy(tracker);
 }
+
+TEST_F(CxxBundleContextTestSuite, UseTrackedServidesTest) {
+    // Given 2 registered services
+    auto svc1 = std::make_shared<CInterface>(CInterface{nullptr, nullptr});
+    auto svcReg1 = ctx->registerService<CInterface>(svc1).build();
+    auto svc2 = std::make_shared<CInterface>(CInterface{nullptr, nullptr});
+    auto svcReg2 = ctx->registerService<CInterface>(svc2).build();
+
+    // And a tracker for the services
+    auto tracker = ctx->trackServices<CInterface>().build();
+    tracker->wait();
+
+    // Then I can use the useServices method to use the services
+    int count{0}; // note useService(s) callback are called in the current thread, so no need for atomic
+    size_t nrCalled = tracker->useServices([&count](CInterface& svc) {
+        (void)svc;
+        count++;
+    });
+    EXPECT_EQ(2, nrCalled);
+    EXPECT_EQ(2, count);
+
+    // And I can use the useServicesWithProperties method to use the services with their properties
+    count = 0;
+    nrCalled = tracker->useServicesWithProperties([&count](CInterface& svc, const celix::Properties& props) {
+        (void)svc;
+        long svcId = props.getAsLong(CELIX_FRAMEWORK_SERVICE_ID, -1L);
+        EXPECT_GE(svcId, 0);
+        count++;
+    });
+    EXPECT_EQ(2, nrCalled);
+    EXPECT_EQ(2, count);
+
+    // And I can use the useServicesWithOwner method to use the services with their properties and the bundle
+    count = 0;
+    nrCalled = tracker->useServicesWithOwner(
+        [&count](CInterface& svc, const celix::Properties& props, const celix::Bundle& bnd) {
+            (void)svc;
+            long svcId = props.getAsLong(CELIX_FRAMEWORK_SERVICE_ID, -1L);
+            EXPECT_GE(svcId, 0);
+            EXPECT_GE(bnd.getId(), 0);
+            count++;
+        });
+    EXPECT_EQ(2, nrCalled);
+    EXPECT_EQ(2, count);
+
+    // And I can use the useService method to use the highest ranking service
+    count = 0;
+    bool called = tracker->useService([&count](CInterface& svc) {
+        (void)svc;
+        count++;
+    });
+    EXPECT_TRUE(called);
+    EXPECT_EQ(1, count);
+
+    // And I can use the useServiceWithProperties method to use the highest ranking service with its properties
+    count = 0;
+    called = tracker->useServiceWithProperties([&count](CInterface& svc, const celix::Properties& props) {
+        (void)svc;
+        long svcId = props.getAsLong(CELIX_FRAMEWORK_SERVICE_ID, -1L);
+        EXPECT_GE(svcId, 0);
+        count++;
+    });
+    EXPECT_TRUE(called);
+    EXPECT_EQ(1, count);
+
+    // And I can use the useServiceWithOwner method to use the highest ranking service with its properties and the
+    // bundle
+    count = 0;
+    called = tracker->useServiceWithOwner(
+        [&count](CInterface& svc, const celix::Properties& props, const celix::Bundle& bnd) {
+            (void)svc;
+            long svcId = props.getAsLong(CELIX_FRAMEWORK_SERVICE_ID, -1L);
+            EXPECT_GE(svcId, 0);
+            EXPECT_GE(bnd.getId(), 0);
+            count++;
+        });
+    EXPECT_TRUE(called);
+    EXPECT_EQ(1, count);
+
+    // When registering a new service with a service raking of 100
+    auto svc3 = std::make_shared<CInterface>(CInterface{nullptr, nullptr});
+    auto svcReg3 = ctx->registerService<CInterface>(svc3).addProperty(celix::SERVICE_RANKING, 100).build();
+    svcReg3->wait();
+
+    // Then the useServices method returns 3 services
+    count = 0;
+    nrCalled = tracker->useServices([&count](CInterface& svc) {
+        (void)svc;
+        count++;
+    });
+    EXPECT_EQ(3, nrCalled);
+    EXPECT_EQ(3, count);
+
+    // And the useServiceWithProperties method is called with a service with a service ranking of 100 and returns true
+    count = 0;
+    called = tracker->useServiceWithProperties([&count](CInterface& svc, const celix::Properties& props) {
+        (void)svc;
+        long ranking = props.getAsLong(celix::SERVICE_RANKING, -1L);
+        EXPECT_EQ(100, ranking);
+        count++;
+    });
+    EXPECT_TRUE(called);
+}
