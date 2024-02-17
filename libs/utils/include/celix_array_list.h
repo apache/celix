@@ -51,14 +51,9 @@ typedef enum celix_array_list_element_type {
     CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING = 2, /**< Represents a string element type where the array list is the owner */
     CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF =
         3, /**< Represents a string element type where the array list is not the owner */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_INT = 4,    /**< Represents an integer element type. */
     CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG = 5,   /**< Represents a long integer element type. */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_UINT = 6,   /**< Represents an unsigned integer element type. */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_ULONG = 7,  /**< Represents an unsigned long integer element type. */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_FLOAT = 8,  /**< Represents a float element type. */
     CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE = 9, /**< Represents a double element type. */
     CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL = 10,  /**< Represents a boolean element type. */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_SIZE = 11,  /**< Represents a size_t element type. */
     CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION = 12 /**< Represents a celix_version_t* element type. */
 } celix_array_list_element_type_t;
 
@@ -74,21 +69,11 @@ typedef union celix_array_list_entry {
                               CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
     const char* stringVal; /**< A string value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING,
                               CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF or CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
-    int intVal;            /**< An integer value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_INT  or
-                              CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.*/
     long int longVal;      /**< A long integer value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG or
                               CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
-    unsigned int uintVal;  /**< An unsigned integer value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_UINT or
-                              CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
-    unsigned long ulongVal; /**< An unsigned long integer value when the element type is
-                               CELIX_ARRAY_LIST_ELEMENT_TYPE_ULONG or CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
     double doubleVal;       /**< A double value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE or
                                CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
-    float floatVal;         /**< A float value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_FLOAT or
-                               CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
     bool boolVal;           /**< A boolean value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL or
-                               CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
-    size_t sizeVal;         /**< A size_t value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_SIZE or
                                CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
     const celix_version_t* versionVal; /**< A celix_version_t* value when the element type is
                                    CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION or CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
@@ -221,18 +206,6 @@ CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createStringRefArray();
 
 /**
- * @brief Creates a new empty array list with an integer element type.
- *
- * The remove callback will be configured to NULL, and equals and compare callback will be configured for
- * integer comparison.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_EXPORT
-celix_array_list_t* celix_arrayList_createIntArray();
-
-/**
  * @brief Creates a new empty array list with a long integer element type.
  *
  * The remove callback will be configured to NULL, and equals and compare callback will be configured for
@@ -243,42 +216,6 @@ celix_array_list_t* celix_arrayList_createIntArray();
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createLongArray();
-
-/**
- * @brief Creates a new empty array list with an unsigned integer element type.
- *
- * The remove callback will be configured to NULL, and equals and compare callback will be configured for
- * unsigned integer comparison.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_EXPORT
-celix_array_list_t* celix_arrayList_createUIntArray();
-
-/**
- * @brief Creates a new empty array list with an unsigned long integer element type.
- *
- * The remove callback will be configured to NULL, and equals and compare callback will be configured for
- * unsigned integer comparison.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_EXPORT
-celix_array_list_t* celix_arrayList_createULongArray();
-
-/**
- * @brief Creates a new empty array list with a float element type.
- *
- * The remove callback will be configured to NULL, and equals and compare callback will be configured for
- * float comparison.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_EXPORT
-celix_array_list_t* celix_arrayList_createFloatArray();
 
 /**
  * @brief Creates a new empty array list with a double element type.
@@ -303,18 +240,6 @@ celix_array_list_t* celix_arrayList_createDoubleArray();
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_createBoolArray();
-
-/**
- * @brief Creates a new empty array list with a size_t element type.
- *
- * The remove callback will be configured to NULL, and equals and compare callback will be configured for
- * unsigned integer comparison.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_EXPORT
-celix_array_list_t* celix_arrayList_createSizeArray();
 
 /**
  * @brief Creates a new empty array list with a celix_version_t* element type.
@@ -393,19 +318,6 @@ const char* celix_arrayList_getString(const celix_array_list_t *list, int index)
 /**
  * @brief Returns the value for the provided index.
  *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_INT or
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * @param list The array list.
- * @param index The entry index to return.
- * @return Returns the int value for the index. Returns 0 if index is out of bound.
- */
-CELIX_UTILS_EXPORT
-int celix_arrayList_getInt(const celix_array_list_t *list, int index);
-
-/**
- * @brief Returns the value for the provided index.
- *
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
@@ -415,45 +327,6 @@ int celix_arrayList_getInt(const celix_array_list_t *list, int index);
  */
 CELIX_UTILS_EXPORT
 long int celix_arrayList_getLong(const celix_array_list_t *list, int index);
-
-/**
- * @brief Returns the value for the provided index.
- *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_UINT or
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * @param list The array list.
- * @param index The entry index to return.
- * @return Returns the unsigned int value for the index. Returns 0 if index is out of bound.
- */
-CELIX_UTILS_EXPORT
-unsigned int celix_arrayList_getUInt(const celix_array_list_t *list, int index);
-
-/**
- * @brief Returns the value for the provided index.
- *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_ULONG or
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * @param list The array list.
- * @param index The entry index to return.
- * @return Returns the unsigned long value for the index. Returns 0 if index is out of bound.
- */
-CELIX_UTILS_EXPORT
-unsigned long int celix_arrayList_getULong(const celix_array_list_t *list, int index);
-
-/**
- * @brief Returns the value for the provided index.
- *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_FLOAT or
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * @param list The array list.
- * @param index The entry index to return.
- * @return Returns the float value for the index. Returns 0 if index is out of bound.
- */
-CELIX_UTILS_EXPORT
-float celix_arrayList_getFloat(const celix_array_list_t *list, int index);
 
 /**
  * @brief Returns the value for the provided index.
@@ -484,19 +357,6 @@ bool celix_arrayList_getBool(const celix_array_list_t *list, int index);
 /**
  * @brief Returns the value for the provided index.
  *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_SIZE or
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * @param list The array list.
- * @param index The entry index to return.
- * @return Returns the size_t value for the index. Returns 0 if index is out of bound.
- */
-CELIX_UTILS_EXPORT
-size_t celix_arrayList_getSize(const celix_array_list_t *list, int index);
-
-/**
- * @brief Returns the value for the provided index.
- *
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION,
  * or CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
@@ -514,7 +374,7 @@ const celix_version_t* celix_arrayList_getVersion(const celix_array_list_t *list
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
  * @param list The array list.
- * @param value The pointer value to add to the array list.
+ * @param value The pointer value to add to the array list. Cannot be NULL.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
@@ -531,7 +391,7 @@ celix_status_t celix_arrayList_add(celix_array_list_t* list, void* value);
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED, the string will be added as reference (as-is).
  *
  * @param list The array list.
- * @param value The string value to add to the array list.
+ * @param value The string value to add to the array list. Cannot be NULL.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
@@ -545,24 +405,12 @@ celix_status_t celix_arrayList_addString(celix_array_list_t* list, const char* v
  * Can only be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING.
  *
  * @param list The array list.
- * @param value The string value to add to the array list.
- * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
+ * @param value The string value to add to the array list. Cannot be NULL.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory. If an error is returned
+ * the provided value is not added to the array list, but the value will be freed using free.
  */
 CELIX_UTILS_EXPORT
 celix_status_t celix_arrayList_assignString(celix_array_list_t* list, char* value);
-
-/**
- * @brief add pointer entry to the back of the array list.
- *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_INT or
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * @param list The array list.
- * @param value The int value to add to the array list.
- * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
- */
-CELIX_UTILS_EXPORT
-celix_status_t celix_arrayList_addInt(celix_array_list_t* list, int value);
 
 /**
  * @brief add pointer entry to the back of the array list.
@@ -576,45 +424,6 @@ celix_status_t celix_arrayList_addInt(celix_array_list_t* list, int value);
  */
 CELIX_UTILS_EXPORT
 celix_status_t celix_arrayList_addLong(celix_array_list_t* list, long value);
-
-/**
- * @brief add pointer entry to the back of the array list.
- *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_UINT or
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * @param list The array list.
- * @param value The unsigned int value to add to the array list.
- * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
- */
-CELIX_UTILS_EXPORT
-celix_status_t celix_arrayList_addUInt(celix_array_list_t* list, unsigned int value);
-
-/**
- * @brief add pointer entry to the back of the array list.
- *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_ULONG or
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * @param list The array list.
- * @param value The unsigned long value to add to the array list.
- * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
- */
-CELIX_UTILS_EXPORT
-celix_status_t celix_arrayList_addULong(celix_array_list_t* list, unsigned long value);
-
-/**
- * @brief add pointer entry to the back of the array list.
- *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_FLOAT or
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * @param list The array list.
- * @param value The float value to add to the array list.
- * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
- */
-CELIX_UTILS_EXPORT
-celix_status_t celix_arrayList_addFloat(celix_array_list_t* list, float value);
 
 /**
  * @brief add pointer entry to the back of the array list.
@@ -643,19 +452,6 @@ CELIX_UTILS_EXPORT
 celix_status_t celix_arrayList_addBool(celix_array_list_t* list, bool value);
 
 /**
- * @brief add pointer entry to the back of the array list.
- *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_SIZE or
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * @param list The array list.
- * @param value The size_t value to add to the array list.
- * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
- */
-CELIX_UTILS_EXPORT
-celix_status_t celix_arrayList_addSize(celix_array_list_t* list, size_t value);
-
-/**
  * @brief Add a version entry to the back of the version array list.
  *
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION,
@@ -666,7 +462,7 @@ celix_status_t celix_arrayList_addSize(celix_array_list_t* list, size_t value);
  * the string will be added as reference (as-is).
  *
  * @param list The array list.
- * @param value The version value to add to the array list.
+ * @param value The version value to add to the array list. Cannot be NULL.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
  */
 CELIX_UTILS_EXPORT
@@ -680,8 +476,9 @@ celix_status_t celix_arrayList_addVersion(celix_array_list_t* list, const celix_
  *
  *
  * @param list The array list.
- * @param value The version value to add to the array list.
- * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
+ * @param value The version value to add to the array list. Cannot be NULL.
+ * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory. If an error is
+ * returned, the provided value is not added to the array list, but the value will be freed using celix_version_destroy.
  */
 CELIX_UTILS_EXPORT
 celix_status_t celix_arrayList_assignVersion(celix_array_list_t* list, celix_version_t* value);

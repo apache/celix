@@ -455,9 +455,7 @@ static celix_status_t celix_filter_parseSubstringAny(const char* filterString, i
  * - (foo=bar*bar*) -> [bar, bar, NULL]
  */
 static celix_array_list_t* celix_filter_parseSubstring(const char* filterString, int* pos) {
-    celix_array_list_create_options_t ops = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-    ops.simpleRemovedCallback = free;
-    celix_autoptr(celix_array_list_t) subs = celix_arrayList_createWithOptions(&ops);
+    celix_autoptr(celix_array_list_t) subs = celix_arrayList_createStringArray();
     if (!subs) {
         celix_err_push("Filter Error: Failed to allocate memory.");
         return NULL;
@@ -467,7 +465,7 @@ static celix_array_list_t* celix_filter_parseSubstring(const char* filterString,
         // initial substring is NULL
         // eat '*'
         (*pos)++;
-        if (celix_arrayList_add(subs, NULL) != CELIX_SUCCESS) {
+        if (celix_arrayList_addString(subs, "") != CELIX_SUCCESS) {
             celix_err_push("Filter Error: Failed to add element to array list.");
             return NULL;
         }
@@ -481,8 +479,7 @@ static celix_array_list_t* celix_filter_parseSubstring(const char* filterString,
             return NULL;
         }
         if (element) {
-            if (celix_arrayList_add(subs, element) != CELIX_SUCCESS) {
-                free(element);
+            if (celix_arrayList_assignString(subs, element) != CELIX_SUCCESS) {
                 celix_err_push("Filter Error: Failed to add element to array list.");
                 return NULL;
             }
@@ -491,7 +488,7 @@ static celix_array_list_t* celix_filter_parseSubstring(const char* filterString,
             // final substring is NULL
             (*pos)++; // eat '*'
             if (celix_filter_isNextNonWhiteSpaceChar(filterString, *pos, ')')) {
-                if (celix_arrayList_add(subs, NULL) != CELIX_SUCCESS) {
+                if (celix_arrayList_addString(subs, "") != CELIX_SUCCESS) {
                     celix_err_push("Filter Error: Failed to add element to array list.");
                     return NULL;
                 }
@@ -649,12 +646,12 @@ static bool celix_filter_matchSubString(const celix_filter_t* filter, const celi
     assert(filter->children && celix_arrayList_size(filter->children) >= 2);
 
     size_t strLen = celix_utils_strlen(entry->value);
-    const char* initial = celix_arrayList_get(filter->children, 0);
-    const char* final = celix_arrayList_get(filter->children, celix_arrayList_size(filter->children) - 1);
+    const char* initial = celix_arrayList_getString(filter->children, 0);
+    const char* final = celix_arrayList_getString(filter->children, celix_arrayList_size(filter->children) - 1);
 
     const char* currentValue = entry->value;
 
-    if (initial) {
+    if (!celix_utils_stringEquals(initial, "")) {
         const char* found = strstr(entry->value, initial);
         currentValue = found + celix_utils_strlen(initial);
         if (!found || found != entry->value) {
@@ -663,7 +660,7 @@ static bool celix_filter_matchSubString(const celix_filter_t* filter, const celi
     }
 
     for (int i = 1; i < celix_arrayList_size(filter->children) - 1; i++) {
-        const char* substr = celix_arrayList_get(filter->children, i);
+        const char* substr = celix_arrayList_getString(filter->children, i);
         const char* found = strstr(currentValue, substr);
         if (!found) {
             return false;
@@ -671,7 +668,7 @@ static bool celix_filter_matchSubString(const celix_filter_t* filter, const celi
         currentValue = found + celix_utils_strlen(substr);
     }
 
-    if (final) {
+    if (!celix_utils_stringEquals(final, "")) {
         const char* found = strstr(currentValue, final);
         if (!found || found + celix_utils_strlen(final) != entry->value + strLen) {
             return false;
@@ -855,8 +852,8 @@ bool celix_filter_equals(const celix_filter_t* filter1, const celix_filter_t* fi
         if (sizeSrc == sizeDest) {
             int i;
             for (i = 0; i < celix_arrayList_size(filter1->children); i++) {
-                const char* srcPart = celix_arrayList_get(filter1->children, i);
-                const char* destPart = celix_arrayList_get(filter2->children, i);
+                const char* srcPart = celix_arrayList_getString(filter1->children, i);
+                const char* destPart = celix_arrayList_getString(filter2->children, i);
                 if (!celix_utils_stringEquals(srcPart, destPart)) {
                     break;
                 }

@@ -46,7 +46,7 @@ TEST_F(ArrayListErrorInjectionTestSuite, CreateTest) {
     EXPECT_EQ(1, celix_err_getErrorCount());
 
     //Given an error is injected for malloc (used for the element data)
-    celix_ei_expect_malloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    celix_ei_expect_calloc(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
     //Then creating an array list should fail
     EXPECT_EQ(nullptr, celix_arrayList_create());
     //And an error is logged to the celix_err
@@ -55,12 +55,13 @@ TEST_F(ArrayListErrorInjectionTestSuite, CreateTest) {
 
 
 TEST_F(ArrayListErrorInjectionTestSuite, AddFunctionsTest) {
-    //Given an array list with a capacity of 10 (whitebox knowledge)
-    auto* list = celix_arrayList_create();
+    // Given an array list with a capacity of 10 (whitebox knowledge) and with an entry than needs to be freed when
+    // removed.
+    auto* list = celix_arrayList_createStringArray();
 
     //When adding 10 elements, no error is expected
     for (int i = 0; i < 10; ++i) {
-        EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addInt(list, i));
+        EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addString(list, "test"));
     }
     EXPECT_EQ(10, celix_arrayList_size(list));
 
@@ -68,7 +69,7 @@ TEST_F(ArrayListErrorInjectionTestSuite, AddFunctionsTest) {
     celix_ei_expect_realloc(CELIX_EI_UNKNOWN_CALLER, 1, nullptr);
 
     //Then adding an element should fail
-    EXPECT_EQ(CELIX_ENOMEM, celix_arrayList_addInt(list, 10));
+    EXPECT_EQ(CELIX_ENOMEM, celix_arrayList_addString(list, "fail"));
     EXPECT_EQ(10, celix_arrayList_size(list));
     //And an error is logged to the celix_err
     EXPECT_EQ(1, celix_err_getErrorCount());
