@@ -47,18 +47,18 @@
 struct module {
     celix_framework_t* fw;
 
-	version_pt version;
-	char* symbolicName;
-	char* group;
+    celix_version_t* version;
+    char* symbolicName;
+    char* group;
     char* name;
     char* description;
-	bool resolved;
+    bool resolved;
 
-	char * id;
+    char* id;
 
-	celix_bundle_t *bundle;
+    celix_bundle_t* bundle;
 
-    celix_thread_mutex_t handlesLock; //protects libraryHandles and bundleActivatorHandle
+    celix_thread_mutex_t handlesLock; // protects libraryHandles and bundleActivatorHandle
     celix_array_list_t* libraryHandles;
     void* bundleActivatorHandle;
 };
@@ -105,42 +105,38 @@ module_pt module_create(manifest_pt headerMap, const char * moduleId, bundle_pt 
 module_pt module_createFrameworkModule(celix_framework_t* fw, bundle_pt bundle) {
     module_pt module;
 
-	module = (module_pt) calloc(1, sizeof(*module));
+    module = (module_pt)calloc(1, sizeof(*module));
     char modId[2];
     snprintf(modId, 2, "%li", CELIX_FRAMEWORK_BUNDLE_ID);
-	if (module) {
+    if (module) {
         module->fw = fw;
         module->id = celix_utils_strdup(modId);
         module->symbolicName = celix_utils_strdup("celix_framework");
         module->group = celix_utils_strdup("Celix/Framework");
         module->name = celix_utils_strdup("Celix Framework");
         module->description = celix_utils_strdup("The Celix Framework System Bundle");
-        module->version = NULL;
-        version_createVersion(1, 0, 0, "", &module->version);
+        module->version = celix_version_create(1, 0, 0, "");
         module->resolved = false;
         module->bundle = bundle;
         celixThreadMutex_create(&module->handlesLock, NULL);
         module->libraryHandles = celix_arrayList_create();
-	}
-	return module;
+    }
+    return module;
 }
 
 void module_destroy(module_pt module) {
-
-	version_destroy(module->version);
-	free(module->id);
-	free(module->symbolicName);
-    free(module->name);
-    free(module->group);
-    free(module->description);
-    celix_arrayList_destroy(module->libraryHandles);
-    celixThreadMutex_destroy(&module->handlesLock);
-	free(module);
+        celix_version_destroy(module->version);
+        free(module->id);
+        free(module->symbolicName);
+        free(module->name);
+        free(module->group);
+        free(module->description);
+        celix_arrayList_destroy(module->libraryHandles);
+        celixThreadMutex_destroy(&module->handlesLock);
+        free(module);
 }
 
-version_pt module_getVersion(module_pt module) {
-	return module->version;
-}
+celix_version_t* module_getVersion(module_pt module) { return module->version; }
 
 celix_status_t module_getSymbolicName(module_pt module, const char **symbolicName) {
 	celix_status_t status = CELIX_SUCCESS;

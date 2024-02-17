@@ -34,11 +34,10 @@
 #include "celix_log.h"
 
 struct manifestParser {
-	module_pt owner;
-	manifest_pt manifest;
-
-	version_pt bundleVersion;
-        //TODO: Implement Requirement-Capability-Model using RCM library
+    module_pt owner;
+    manifest_pt manifest;
+    celix_version_t* bundleVersion;
+    // TODO: Implement Requirement-Capability-Model using RCM library
 };
 
 celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, manifest_parser_pt *manifest_parser) {
@@ -54,11 +53,9 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, mani
 
 		bundleVersion = manifest_getValue(manifest, CELIX_FRAMEWORK_BUNDLE_VERSION);
 		if (bundleVersion != NULL) {
-			parser->bundleVersion = NULL;
-			version_createVersionFromString(bundleVersion, &parser->bundleVersion);
+                    parser->bundleVersion = celix_version_createVersionFromString(bundleVersion);
 		} else {
-			parser->bundleVersion = NULL;
-			version_createEmptyVersion(&parser->bundleVersion);
+                    parser->bundleVersion = celix_version_createEmptyVersion();
 		}
 
 		*manifest_parser = parser;
@@ -74,7 +71,7 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, mani
 }
 
 celix_status_t manifestParser_destroy(manifest_parser_pt mp) {
-	version_destroy(mp->bundleVersion);
+	celix_version_destroy(mp->bundleVersion);
 	mp->bundleVersion = NULL;
 	mp->manifest = NULL;
 	mp->owner = NULL;
@@ -110,6 +107,7 @@ celix_status_t manifestParser_getAndDuplicateDescription(manifest_parser_pt pars
     return manifestParser_getDuplicateEntry(parser, CELIX_FRAMEWORK_BUNDLE_DESCRIPTION, description);
 }
 
-celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, version_pt *version) {
-	return version_clone(parser->bundleVersion, version);
+celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, celix_version_t **version) {
+    *version = celix_version_copy(parser->bundleVersion);
+    return *version == NULL ? CELIX_ENOMEM : CELIX_SUCCESS;
 }

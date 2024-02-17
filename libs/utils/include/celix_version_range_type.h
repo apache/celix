@@ -17,19 +17,26 @@
  * under the License.
  */
 
-#ifndef CELIX_CELIX_UTILS_API_H_
-#define CELIX_CELIX_UTILS_API_H_
 
-#include <stdbool.h>
+#ifndef CELIX_VERSION_RANGE_TYPE_H
+#define CELIX_VERSION_RANGE_TYPE_H
 
-#include "celix_errno.h"
-#include "celix_threads.h"
-#include "celix_array_list.h"
-#include "hash_map.h"
-#include "celix_properties.h"
-#include "utils.h"
-#include "celix_utils.h"
-#include "celix_version.h"
-#include "celix_version_range.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#endif //CELIX_CELIX_UTILS_API_H_
+/**
+ * @file celix_version_range_type.h
+ * @brief Header file for celix_version_range_t opaque type. Can be used for forward declaration.
+ */
+
+/**
+ * Type definition for the celix_version_range_t abstract data type.
+ */
+typedef struct celix_version_range celix_version_range_t;
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CELIX_VERSION_RANGE_TYPE_H */
