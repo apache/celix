@@ -1,0 +1,7 @@
+{
+    "name": "Apache Celix Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+    },
+    "postCreateCommand": "sh .devcontainer/setup.sh",
+}
