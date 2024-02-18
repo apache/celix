@@ -966,6 +966,16 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *
     return status;
 }
 
+static bool shouldTryUseOtherDynamicIp(celix_status_t useUrlStatus) {
+    switch (useUrlStatus) {
+        case CELIX_SUCCESS:
+        case CELIX_ERROR_MAKE(CELIX_FACILITY_CURL,CURLE_OUT_OF_MEMORY):
+            return false;
+        default:
+            return true;
+    }
+}
+
 static celix_status_t remoteServiceAdmin_useDynamicIpUrlsForEndpoint(remote_service_admin_t* rsa, endpoint_description_t* endpointDescription,
 celix_status_t (*useUrl)(void* handle, const char* url), void* handle) {
     celix_status_t status = CELIX_ERROR_MAKE(CELIX_FACILITY_CURL,CURLE_COULDNT_CONNECT);
@@ -979,7 +989,7 @@ celix_status_t (*useUrl)(void* handle, const char* url), void* handle) {
     } else {
         celixThreadMutex_unlock(&rsa->importedServicesLock);
     }
-    if (status != CELIX_ERROR_MAKE(CELIX_FACILITY_CURL,CURLE_COULDNT_CONNECT)) {
+    if (!shouldTryUseOtherDynamicIp(status)) {
         return status;
     }
 
@@ -1004,7 +1014,7 @@ celix_status_t (*useUrl)(void* handle, const char* url), void* handle) {
             snprintf(url, sizeof(url), "http://[%s]:%d%s", ip, port, serviceUrl);
         }
         status = useUrl(handle, url);
-        if (status != CELIX_ERROR_MAKE(CELIX_FACILITY_CURL,CURLE_COULDNT_CONNECT)) {
+        if (!shouldTryUseOtherDynamicIp(status)) {
             celix_imported_endpoint_url_ref_t* urlRefNew = calloc(1, sizeof(*urlRefNew) + strlen(url) + 1);
             if (urlRefNew == NULL) {
                 celix_logHelper_error(rsa->loghelper, "Error allocating memory for imported endpoint url reference");
