@@ -32,7 +32,7 @@
 #include "export_registration.h"
 #include "import_registration.h"
 
-#define OSGI_RSA_REMOTE_SERVICE_ADMIN "remote_service_admin"
+#define CELIX_RSA_REMOTE_SERVICE_ADMIN "remote_service_admin"
 
 typedef struct import_registration_factory import_registration_factory_t;
 

@@ -106,8 +106,8 @@ celix_status_t rsaJsonRpcEndpoint_create(celix_bundle_context_t* ctx, celix_log_
     endpoint->reqHandlerSvc.handle = endpoint;
     endpoint->reqHandlerSvc.handleRequest = rsaJsonRpcEndpoint_handleRequest;
     celix_service_registration_options_t opts1 = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
-    opts1.serviceName = RSA_REQUEST_HANDLER_SERVICE_NAME;
-    opts1.serviceVersion = RSA_REQUEST_HANDLER_SERVICE_VERSION;
+    opts1.serviceName = CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME;
+    opts1.serviceVersion = CELIX_RSA_REQUEST_HANDLER_SERVICE_VERSION;
     opts1.svc = &endpoint->reqHandlerSvc;
     celix_steal_ptr(lock);
     celix_steal_ptr(endpointDescCopy);

@@ -17,3 +17,4 @@
 
 add_subdirectory(celix_bundle_ctx)
 add_subdirectory(celix_bundle)
+add_subdirectory(celix_dm_component)

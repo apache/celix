@@ -56,7 +56,7 @@ celix_status_t bundleActivator_createEPLTracker(struct activator *activator, ser
 			discovery_endpointListenerRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(activator->context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, customizer, tracker);
+		status = serviceTracker_create(activator->context, (char *) CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, customizer, tracker);
 	}
 
 	return status;
@@ -103,7 +103,7 @@ celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context
 	}
 
     char* scope = NULL;
-    int rc = asprintf(&scope, "(&(%s=*)(%s=%s))", CELIX_FRAMEWORK_SERVICE_NAME, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+    int rc = asprintf(&scope, "(&(%s=*)(%s=%s))", CELIX_FRAMEWORK_SERVICE_NAME, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
     status = rc < 0 ? CELIX_ENOMEM : CELIX_SUCCESS;
 
     celix_autoptr(celix_properties_t) props = NULL;
@@ -112,7 +112,7 @@ celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context
 
 	    props = celix_properties_create();
 	    celix_properties_set(props, "DISCOVERY", "true");
-	    celix_properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
+	    celix_properties_set(props, (char *) CELIX_RSA_ENDPOINT_LISTENER_SCOPE, scope);
     }
 
 	if (status == CELIX_SUCCESS) {
@@ -131,8 +131,8 @@ celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context
 			endpointListener->endpointAdded = discovery_endpointAdded;
 			endpointListener->endpointRemoved = discovery_endpointRemoved;
 
-			status = bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener,
-                                                   celix_steal_ptr(props), &activator->endpointListenerService);
+			status = bundleContext_registerService(context, (char *) CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, endpointListener,
+												   celix_steal_ptr(props), &activator->endpointListenerService);
 
 			if (status == CELIX_SUCCESS) {
 				activator->endpointListener = endpointListener;

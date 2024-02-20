@@ -49,10 +49,10 @@ celix_status_t endpointDescription_create(celix_properties_t *properties, endpoi
         return CELIX_ENOMEM;
     }
     ep->properties = properties;
-    ep->frameworkUUID = (char*)celix_properties_get(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
-    ep->id = (char*)celix_properties_get(properties, OSGI_RSA_ENDPOINT_ID, NULL);
+    ep->frameworkUUID = (char*)celix_properties_get(properties, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
+    ep->id = (char*)celix_properties_get(properties, CELIX_RSA_ENDPOINT_ID, NULL);
     ep->serviceName = celix_utils_strdup(celix_properties_get(properties, CELIX_FRAMEWORK_SERVICE_NAME, NULL));
-    ep->serviceId = celix_properties_getAsLong(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, -1);
+    ep->serviceId = celix_properties_getAsLong(properties, CELIX_RSA_ENDPOINT_SERVICE_ID, -1);
 
     if (!(ep->frameworkUUID) || !(ep->id) || !(ep->serviceName) || ep->serviceId < 0) {
     	fw_log(celix_frameworkLogger_globalLogger(), CELIX_LOG_LEVEL_ERROR, "ENDPOINT_DESCRIPTION: incomplete description!.");
@@ -95,9 +95,9 @@ endpoint_description_t *endpointDescription_clone(const endpoint_description_t *
     if (newDesc->properties == NULL) {
         return NULL;
     }
-    newDesc->frameworkUUID = (char*)celix_properties_get(newDesc->properties,OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
+    newDesc->frameworkUUID = (char*)celix_properties_get(newDesc->properties, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
     newDesc->serviceId = description->serviceId;
-    newDesc->id = (char*)celix_properties_get(newDesc->properties, OSGI_RSA_ENDPOINT_ID, NULL);
+    newDesc->id = (char*)celix_properties_get(newDesc->properties, CELIX_RSA_ENDPOINT_ID, NULL);
     newDesc->serviceName = celix_utils_strdup(description->serviceName);
     if (newDesc->serviceName == NULL) {
         return NULL;
