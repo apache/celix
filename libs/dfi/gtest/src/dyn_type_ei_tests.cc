@@ -173,6 +173,34 @@ TEST_F(DynTypeErrorInjectionTestSuite, SequenceReserveError) {
     dynType_destroy(type);
 }
 
+TEST_F(DynTypeErrorInjectionTestSuite, SequenceReserveError2) {
+    struct double_sequence {
+        uint32_t cap;
+        uint32_t len;
+        double* buf;
+    };
+
+    dyn_type *type = NULL;
+    int rc = 0;
+    rc = dynType_parseWithStr("[D", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+
+    struct double_sequence *seq = NULL;
+    rc = dynType_alloc(type, (void **)&seq);
+    ASSERT_EQ(0, rc);
+    ASSERT_TRUE(seq != NULL);
+
+    celix_ei_expect_realloc((void*)dynType_sequence_reserve, 0, nullptr, 2);
+    rc = dynType_sequence_reserve(type, seq, 1);
+    ASSERT_EQ(0, rc);
+    rc = dynType_sequence_reserve(type, seq, 2);
+    ASSERT_NE(0, rc);
+    ASSERT_STREQ("Error allocating memory for seq buf", celix_err_popLastError());
+
+    dynType_free(type, seq);
+    dynType_destroy(type);
+}
+
 TEST_F(DynTypeErrorInjectionTestSuite, TextAllocateError) {
     dyn_type *type = NULL;
     int rc = 0;
