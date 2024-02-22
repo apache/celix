@@ -604,12 +604,12 @@ int dynType_sequence_reserve(const dyn_type* type, void* inst, uint32_t cap) {
         return OK;
     }
     size_t size = dynType_size(type->sequence.itemType);
-    seq->buf = realloc(seq->buf, (size_t)(cap * size));
-    if (seq->buf == NULL) {
-        seq->cap = 0;
+    void* newBuf = realloc(seq->buf, (size_t)(cap * size));
+    if (newBuf == NULL) {
         celix_err_pushf("Error allocating memory for seq buf");
         return MEM_ERROR;
     }
+    seq->buf = newBuf;
     memset(seq->buf+seq->cap*size, 0, (cap-seq->cap)*size);
     seq->cap = cap;
     return status;
