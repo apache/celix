@@ -63,6 +63,8 @@ limitations under the License.
 - The signature of `celix_bundleContext_trackServices` has changed. The signature is now simpler to better support
   the use-case of using a service tracker with the `celix_bundleContext_useTrackedService*` functions.
   The `celix_bundleContext_trackServicesWithOptions` is still available for more advanced use-cases.
+- Function `celix_bundle_destroyServiceTrackerList` is removed. The returned array list from 
+  `celix_bundle_listServiceTrackers` is now configured to destroy the service trackers info entries.
 
 ## New Features
 

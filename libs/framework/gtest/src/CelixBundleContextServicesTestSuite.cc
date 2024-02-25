@@ -1349,7 +1349,7 @@ TEST_F(CelixBundleContextServicesTestSuite, TrackServiceTrackerTest) {
     EXPECT_TRUE(trackerId >= 0);
     EXPECT_EQ(0, count);
 
-    long tracker2 = celix_bundleContext_trackService(ctx, "example");
+    long tracker2 = celix_bundleContext_trackServices(ctx, "example");
     EXPECT_TRUE(tracker2 >= 0);
     EXPECT_EQ(1, count);
 

@@ -118,7 +118,7 @@ static void queryCommand_callback(void *handle, const celix_bundle_t *bnd) {
                 }
             }
         }
-        celix_bundle_destroyServiceTrackerList(trackers);
+        celix_arrayList_destroy(trackers);
     }
 
     if (printBundleCalled) {

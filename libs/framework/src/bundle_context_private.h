@@ -81,8 +81,8 @@ struct celix_bundle_context {
     celix_framework_t* framework;
     celix_bundle_t* bundle;
 
-    celix_thread_mutex_t
-        mutex; // protects fields below (NOTE/FIXME also used by bundle.c for listing service tracker usage)
+    celix_thread_rwlock_t
+        lock; // protects fields below
     celix_array_list_t* svcRegistrations; // serviceIds
     celix_dependency_manager_t* mng;
     long nextTrackerId;

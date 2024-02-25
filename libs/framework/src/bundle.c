@@ -580,9 +580,18 @@ void celix_bundle_destroyRegisteredServicesList(celix_array_list_t* list) {
     }
 }
 
+static void celix_bundle_destroyServiceTrackerListCallback(void *data) {
+    celix_bundle_service_tracker_list_entry_t *entry = data;
+    free(entry->filter);
+    free(entry->serviceName);
+    free(entry);
+}
+
 celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t *bnd) {
-    celix_array_list_t* result = celix_arrayList_create();
-    celixThreadMutex_lock(&bnd->context->mutex);
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    opts.simpleRemovedCallback = celix_bundle_destroyServiceTrackerListCallback;
+    celix_array_list_t* result = celix_arrayList_createWithOptions(&opts);
+    celixThreadRwlock_readLock(&bnd->context->lock);
     CELIX_LONG_HASH_MAP_ITERATE(bnd->context->serviceTrackers, iter) {
         celix_bundle_context_service_tracker_entry_t *trkEntry = iter.value.ptrValue;
         if (trkEntry->tracker != NULL) {
@@ -597,26 +606,12 @@ celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t *bnd) 
             } else {
                 framework_logIfError(bnd->framework->logger, CELIX_BUNDLE_EXCEPTION, NULL,
                                      "Failed to get service name from tracker. filter is %s", entry->filter);
-                free(entry->filter);
-                free(entry);
+                celix_bundle_destroyServiceTrackerListCallback(entry);
             }
         }
     }
-    celixThreadMutex_unlock(&bnd->context->mutex);
+    celixThreadRwlock_unlock(&bnd->context->lock);
     return result;
-}
-
-
-void celix_bundle_destroyServiceTrackerList(celix_array_list_t* list) {
-    if (list != NULL) {
-        for (int i = 0; i < celix_arrayList_size(list); ++i) {
-            celix_bundle_service_tracker_list_entry_t *entry = celix_arrayList_get(list, i);
-            free(entry->filter);
-            free(entry->serviceName);
-            free(entry);
-        }
-        celix_arrayList_destroy(list);
-    }
 }
 
 bundle_archive_t* celix_bundle_getArchive(const celix_bundle_t *bundle) {

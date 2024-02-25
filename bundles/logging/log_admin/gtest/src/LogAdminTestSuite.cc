@@ -84,11 +84,11 @@ TEST_F(LogBundleTestSuite, NrOfLogServices) {
     EXPECT_EQ(1, control->nrOfLogServices(control->handle, nullptr)); //default the framework log services is available
 
     //request "default" log service
-    long trkId1 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME);
+    long trkId1 = celix_bundleContext_trackServices(ctx.get(), CELIX_LOG_SERVICE_NAME);
     EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 
     //request "default" log service -> already created
-    long trkId2 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME);
+    long trkId2 = celix_bundleContext_trackServices(ctx.get(), CELIX_LOG_SERVICE_NAME);
     EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 
     //request a 'logger1' log service
@@ -225,7 +225,7 @@ TEST_F(LogBundleTestSuite, SinkLogControl) {
 
 TEST_F(LogBundleTestSuite, LogServiceControl) {
     //request "default" log service
-    long trkId1 = celix_bundleContext_trackService(ctx.get(), CELIX_LOG_SERVICE_NAME);
+    long trkId1 = celix_bundleContext_trackServices(ctx.get(), CELIX_LOG_SERVICE_NAME);
     celix_framework_waitForEmptyEventQueue(fw.get());
     EXPECT_EQ(2, control->nrOfLogServices(control->handle, nullptr));
 

@@ -745,7 +745,7 @@ TEST_F(CelixBundleContextBundlesTestSuite, BundleInfoTests) {
         auto *services = celix_bundle_listRegisteredServices(bnd);
         data->requestedCount = celix_arrayList_size(trackers);
         data->provideCount = celix_arrayList_size(services);
-        celix_bundle_destroyServiceTrackerList(trackers);
+        celix_arrayList_destroy(trackers);
         celix_bundle_destroyRegisteredServicesList(services);
     };
 
