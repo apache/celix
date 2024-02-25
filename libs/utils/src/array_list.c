@@ -18,16 +18,15 @@
  */
 
 #include <assert.h>
-#include <stdint.h>
-#include <stdio.h>
+
 #include <stdlib.h>
 #include <string.h>
 
 #include "celix_array_list.h"
-#include "celix_build_assert.h"
 #include "celix_err.h"
 #include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
+#include "celix_version.h"
 
 struct celix_array_list {
     celix_array_list_element_type_t elementType;
@@ -36,6 +35,7 @@ struct celix_array_list {
     size_t capacity;
     celix_arrayList_equals_fp  equalsCallback;
     celix_array_list_compare_entries_fp compareCallback;
+    celix_array_list_copy_entry_fp copyCallback;
     void (*simpleRemovedCallback)(void* value);
     void* removedCallbackData;
     void (*removedCallback)(void* data, celix_array_list_entry_t entry);
@@ -100,6 +100,24 @@ static bool celix_arrayList_equalsForElement(celix_array_list_t *list, celix_arr
     return false;
 }
 
+static celix_status_t celix_arrayList_copyStringEntry(celix_array_list_entry_t src, celix_array_list_entry_t* dst) {
+    assert(dst);
+    dst->stringVal = celix_utils_strdup(src.stringVal);
+    if (!dst->stringVal) {
+        return ENOMEM;
+    }
+    return CELIX_SUCCESS;
+}
+
+static celix_status_t celix_arrayList_copyVersionEntry(celix_array_list_entry_t src, celix_array_list_entry_t* dst) {
+    assert(dst);
+    dst->versionVal = celix_version_copy(src.versionVal);
+    if (!dst->versionVal) {
+        return ENOMEM;
+    }
+    return CELIX_SUCCESS;
+}
+
 static void celix_arrayList_destroyVersion(void* v) {
     celix_version_t* version = v;
     celix_version_destroy(version);
@@ -114,7 +132,7 @@ static void celix_arrayList_callRemovedCallback(celix_array_list_t *list, int in
     }
 }
 
-static celix_status_t celix_arrayList_ensureCapacity(celix_array_list_t* list, int capacity) {
+static celix_status_t celix_arrayList_ensureCapacity(celix_array_list_t* list, size_t capacity) {
     celix_array_list_entry_t *newList;
     size_t oldCapacity = list->capacity;
     if (capacity > oldCapacity) {
@@ -122,7 +140,7 @@ static celix_status_t celix_arrayList_ensureCapacity(celix_array_list_t* list, i
         newList = realloc(list->elementData, sizeof(celix_array_list_entry_t) * newCapacity);
         if (!newList) {
             celix_err_push("Failed to reallocate memory for elementData");
-            return CELIX_ENOMEM;
+            return ENOMEM;
         }
         list->capacity = newCapacity;
         list->elementData = newList;
@@ -140,10 +158,7 @@ static void celix_arrayList_setTypeSpecificCallbacks(celix_array_list_t* list) {
         list->simpleRemovedCallback = free;
         list->equalsCallback = celix_arrayList_stringEquals;
         list->compareCallback = celix_arrayList_compareStringEntries;
-        break;
-    case CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF:
-        list->equalsCallback = celix_arrayList_stringEquals;
-        list->compareCallback = celix_arrayList_compareStringEntries;
+        list->copyCallback = celix_arrayList_copyStringEntry;
         break;
     case CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG:
         list->equalsCallback = celix_arrayList_longEquals;
@@ -161,6 +176,7 @@ static void celix_arrayList_setTypeSpecificCallbacks(celix_array_list_t* list) {
         list->simpleRemovedCallback = celix_arrayList_destroyVersion;
         list->equalsCallback = celix_arrayList_versionEquals;
         list->compareCallback = celix_arrayList_compareVersionEntries;
+        list->copyCallback = celix_arrayList_copyVersionEntry;
         break;
     default:
         assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
@@ -200,6 +216,9 @@ celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_cre
     if (opts->compareCallback) {
         list->compareCallback = opts->compareCallback;
     }
+    if (opts->copyCallback) {
+        list->copyCallback = opts->copyCallback;
+    }
     return celix_steal_ptr(list);
 }
 
@@ -219,10 +238,6 @@ celix_array_list_t* celix_arrayList_createPointerArray() {
 
 celix_array_list_t* celix_arrayList_createStringArray() {
     return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING);
-}
-
-celix_array_list_t* celix_arrayList_createStringRefArray() {
-    return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF);
 }
 
 celix_array_list_t* celix_arrayList_createLongArray() {
@@ -274,7 +289,6 @@ void* celix_arrayList_get(const celix_array_list_t* list, int index) {
 
 const char* celix_arrayList_getString(const celix_array_list_t* list, int index) {
     assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF ||
            list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
     return arrayList_getEntry(list, index).stringVal;
 }
@@ -303,7 +317,7 @@ const celix_version_t* celix_arrayList_getVersion(const celix_array_list_t* list
 }
 
 static celix_status_t celix_arrayList_addEntry(celix_array_list_t* list, celix_array_list_entry_t entry) {
-    celix_status_t status = celix_arrayList_ensureCapacity(list, (int)list->size + 1);
+    celix_status_t status = celix_arrayList_ensureCapacity(list, list->size + 1);
     if (status == CELIX_SUCCESS) {
         list->elementData[list->size++] = entry;
     } else {
@@ -329,14 +343,13 @@ celix_status_t celix_arrayList_add(celix_array_list_t* list, void* element) {
 celix_status_t celix_arrayList_addString(celix_array_list_t* list, const char* val) {
     assert(val);
     assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF ||
            list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
     celix_array_list_entry_t entry;
     memset(&entry, 0, sizeof(entry));
     if (list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING) {
         entry.stringVal = celix_utils_strdup(val);
         if (entry.stringVal == NULL) {
-            return CELIX_ENOMEM;
+            return ENOMEM;
         }
     } else {
         entry.stringVal = val;
@@ -389,7 +402,7 @@ celix_status_t celix_arrayList_addVersion(celix_array_list_t* list, const celix_
     if (list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION) {
         entry.versionVal = celix_version_copy(value);
         if (entry.versionVal == NULL) {
-            return CELIX_ENOMEM;
+            return ENOMEM;
         }
     } else {
         entry.versionVal = value;
@@ -444,7 +457,6 @@ void celix_arrayList_remove(celix_array_list_t* list, void* ptr) {
 
 void celix_arrayList_removeString(celix_array_list_t* list, const char* val) {
     assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF ||
            list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
     celix_array_list_entry_t entry;
     memset(&entry, 0, sizeof(entry));
@@ -535,6 +547,10 @@ bool celix_arrayList_equals(const celix_array_list_t* listA, const celix_array_l
 }
 
 celix_array_list_t* celix_arrayList_copy(const celix_array_list_t* list) {
+    if (!list) {
+        return NULL;
+    }
+
     celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
     opts.elementType = list->elementType;
     opts.equalsCallback = list->equalsCallback;
@@ -542,25 +558,32 @@ celix_array_list_t* celix_arrayList_copy(const celix_array_list_t* list) {
     opts.removedCallback = list->removedCallback;
     opts.removedCallbackData = list->removedCallbackData;
     opts.simpleRemovedCallback = list->simpleRemovedCallback;
+    opts.copyCallback = list->copyCallback;
     celix_autoptr(celix_array_list_t) copy = celix_arrayList_createWithOptions(&opts);
     if (!copy) {
         return NULL;
     }
 
+    celix_status_t status = celix_arrayList_ensureCapacity(copy, list->capacity);
+    if (status != CELIX_SUCCESS) {
+        return NULL;
+    }
+
     for (int i = 0; i < celix_arrayList_size(list); ++i) {
-        celix_array_list_entry_t entry = list->elementData[i];
-        celix_status_t status;
-        if (copy->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING) {
-            status = celix_arrayList_addString(copy, entry.stringVal);
-        } else if (copy->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION) {
-            status = celix_arrayList_addVersion(copy, entry.versionVal);
+        celix_array_list_entry_t entry;
+        if (list->copyCallback) {
+            memset(&entry, 0, sizeof(entry));
+            status = list->copyCallback(list->elementData[i], &entry);
+            if (status != CELIX_SUCCESS) {
+                celix_err_push("Failed to copy entry");
+                return NULL;
+            }
         } else {
-            status = celix_arrayList_addEntry(copy, entry);
+            entry = list->elementData[i]; //shallow copy
         }
-        if (status != CELIX_SUCCESS) {
-            celix_err_push("Failed to add entry to copy list.");
-            return NULL;
-        }
+
+        (void)celix_arrayList_addEntry(copy, entry); // Cannot fail, because ensureCapacity is already called to
+                                                     // ensure enough space
     }
 
     return celix_steal_ptr(copy);

@@ -95,21 +95,31 @@ TEST_F(ArrayListErrorInjectionTestSuite, AddStringAndAddVersionFailureTest) {
 }
 
 TEST_F(ArrayListErrorInjectionTestSuite, CopyArrayListFailureTest) {
-    // Given a string array list with 10 elements (whitebox knowledge)
+    // Given a string array list with 11 elements (more than max initial capacity, whitebox knowledge)
     celix_autoptr(celix_array_list_t) stringList = celix_arrayList_createStringArray();
-    celix_arrayList_addString(stringList, "test1");
+    for (int i = 0; i < 11; ++i) {
+        std::string str = "test" + std::to_string(i);
+        celix_arrayList_addString(stringList, str.c_str());
+    }
 
-    // When an error is injected for calloc
+    // When an error is injected for calloc (create array list)
     celix_ei_expect_calloc((void*)celix_arrayList_copy, 1, nullptr);
     // Then copying an array list should fail
     EXPECT_EQ(nullptr, celix_arrayList_copy(stringList));
     // And a celix_err is expected
     EXPECT_EQ(1, celix_err_getErrorCount());
 
-    // When an error is injected for celix_utils_strdup
-    celix_ei_expect_celix_utils_strdup((void*)celix_arrayList_addString, 0, nullptr);
+    // And an error is injected for realloc (ensureCapacity)
+    celix_ei_expect_realloc((void*)celix_arrayList_copy, 1, nullptr);
     // Then copying an array list should fail
     EXPECT_EQ(nullptr, celix_arrayList_copy(stringList));
     // And a celix_err is expected
     EXPECT_EQ(2, celix_err_getErrorCount());
+
+    // When an error is injected for celix_utils_strdup (used in string array list copy callback (whitebox knowledge))
+    celix_ei_expect_celix_utils_strdup((void*)celix_arrayList_copy, 1, nullptr);
+    // Then copying an array list should fail
+    EXPECT_EQ(nullptr, celix_arrayList_copy(stringList));
+    // And a celix_err is expected
+    EXPECT_EQ(3, celix_err_getErrorCount());
 }

@@ -19,10 +19,10 @@
 
 #include <stdbool.h>
 
+#include "celix_utils_export.h"
 #include "celix_cleanup.h"
 #include "celix_errno.h"
-#include "celix_utils_export.h"
-#include "celix_version.h"
+#include "celix_version_type.h"
 
 #ifndef CELIX_ARRAY_LIST_H_
 #define CELIX_ARRAY_LIST_H_
@@ -49,12 +49,10 @@ typedef enum celix_array_list_element_type {
     CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED = 0, /**< Represents an undefined element type. */
     CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER = 1,   /**< Represents a pointer element type. */
     CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING = 2, /**< Represents a string element type where the array list is the owner */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF =
-        3, /**< Represents a string element type where the array list is not the owner */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG = 5,   /**< Represents a long integer element type. */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE = 9, /**< Represents a double element type. */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL = 10,  /**< Represents a boolean element type. */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION = 12 /**< Represents a celix_version_t* element type. */
+    CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG = 3,   /**< Represents a long integer element type. */
+    CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE = 4, /**< Represents a double element type. */
+    CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL = 5,  /**< Represents a boolean element type. */
+    CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION = 6, /**< Represents a celix_version_t* element type. */
 } celix_array_list_element_type_t;
 
 /**
@@ -93,6 +91,96 @@ typedef bool (*celix_arrayList_equals_fp)(celix_array_list_entry_t, celix_array_
  * @brief Compare function for array list entries, which can be used to sort a array list.
  */
 typedef int (*celix_array_list_compare_entries_fp)(celix_array_list_entry_t a, celix_array_list_entry_t b);
+
+/**
+ * @brief Copy function for array list entries, which can be used to copy a array list entry.
+ * @return CELIX_SUCCESS if the entry is copied, CELIX_ENOMEM if the entry could not be copied.
+ */
+typedef celix_status_t (*celix_array_list_copy_entry_fp)(celix_array_list_entry_t src, celix_array_list_entry_t* dst);
+
+/**
+ * @brief Creates a new empty array list with an undefined element type.
+ * @deprecated Use celix_arrayList_createWithOptions or celix_arrayList_create<Type>Array instead.
+ *
+ * The remove, equals and compare callback will be NULL.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
+ */
+CELIX_UTILS_DEPRECATED_EXPORT
+celix_array_list_t* celix_arrayList_create();
+
+/**
+ * @brief Creates a new empty array list with a pointer element type where the array list is not the owner of the
+ * pointers.
+ *
+ * The remove, equals, compare and copy callback will be NULL.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
+ */
+CELIX_UTILS_EXPORT
+celix_array_list_t* celix_arrayList_createPointerArray();
+
+/**
+ * @brief Creates a new empty array list with a string element type where the array list is the owner of the strings.
+ *
+ * The remove callback will be configured to free the string, the equals and compare callback will be configured for
+ * string comparison and the copy callback will be a callback to uses celix_utils_strdup.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
+ */
+CELIX_UTILS_EXPORT
+celix_array_list_t* celix_arrayList_createStringArray();
+
+/**
+ * @brief Creates a new empty array list with a long integer element type.
+ *
+ * The remove callback will be configured to NULL, the equals and compare callback will be configured for
+ * integer comparison and the copy callback will be configured to NULL.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
+ */
+CELIX_UTILS_EXPORT
+celix_array_list_t* celix_arrayList_createLongArray();
+
+/**
+ * @brief Creates a new empty array list with a double element type.
+ *
+ * The remove callback will be configured to NULL, the equals and compare callback will be configured for
+ * double comparison and the copy callback will be configured to NULL.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
+ */
+CELIX_UTILS_EXPORT
+celix_array_list_t* celix_arrayList_createDoubleArray();
+
+/**
+ * @brief Creates a new empty array list with a boolean element type.
+ *
+ * The remove callback will be configured to NULL, the equals and compare callback will be configured for
+ * boolean comparison and the copy callback will be configured to NULL.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
+ */
+CELIX_UTILS_EXPORT
+celix_array_list_t* celix_arrayList_createBoolArray();
+
+/**
+ * @brief Creates a new empty array list with a celix_version_t* element type.
+ *
+ * The remove callback will be configured to free a celix version, the equals and compare callback will be configured
+ * for celix version comparison and the copy callback will a callback that uses celix_version_copy.
+ *
+ * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
+ * is logged to celix_err.
+ */
+CELIX_UTILS_EXPORT
+celix_array_list_t* celix_arrayList_createVersionArray();
 
 /**
  * Additional create options when creating a array list.
@@ -142,7 +230,13 @@ typedef struct celix_array_list_create_options {
     /**
      * Compare callback used when sorting the array list.
      */
-     celix_array_list_compare_entries_fp compareCallback CELIX_OPTS_INIT;
+    celix_array_list_compare_entries_fp compareCallback CELIX_OPTS_INIT;
+
+    /**
+     * The copy callback used to copy a array list entry.
+     * If callback is NULL, a celix_arrayList_copy will result in a shallow copy.
+     */
+    celix_array_list_copy_entry_fp copyCallback CELIX_OPTS_INIT;
 
 } celix_array_list_create_options_t;
 
@@ -153,112 +247,19 @@ typedef struct celix_array_list_create_options {
 #define CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS                                                                          \
     {                                                                                                                  \
         .elementType = CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED, .simpleRemovedCallback = NULL,                         \
-        .removedCallbackData = NULL, .removedCallback = NULL, .equalsCallback = NULL, .compareCallback = NULL          \
+        .removedCallbackData = NULL, .removedCallback = NULL, .equalsCallback = NULL,                                  \
+        .compareCallback = NULL, .copyCallback = NULL,                                                                 \
     }
 #endif
 
 /**
- * @brief Creates a new empty array list with an undefined element type.
- *
- * The remove, equals and compare callback will be NULL.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_DEPRECATED_EXPORT
-celix_array_list_t* celix_arrayList_create();
-
-/**
- * @brief Creates a new empty array list with a pointer element type where the array list is not the owner of the
- * pointers.
- *
- * The remove, equals and compare callback will be NULL.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_EXPORT
-celix_array_list_t* celix_arrayList_createPointerArray();
-
-/**
- * @brief Creates a new empty array list with a string element type where the array list is the owner of the strings.
- *
- * The remove callback will be configured to free the string, and equals and compare callback will be configured for
- * string comparison.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_EXPORT
-celix_array_list_t* celix_arrayList_createStringArray();
-
-/**
- * @brief Creates a new empty array list with a string element type where the array list is **not** the owner of the
- * strings.
- *
- * The remove callback will be configured to NULL, and equals and compare callback will be configured for
- * string comparison.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_EXPORT
-celix_array_list_t* celix_arrayList_createStringRefArray();
-
-/**
- * @brief Creates a new empty array list with a long integer element type.
- *
- * The remove callback will be configured to NULL, and equals and compare callback will be configured for
- * integer comparison.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_EXPORT
-celix_array_list_t* celix_arrayList_createLongArray();
-
-/**
- * @brief Creates a new empty array list with a double element type.
- *
- * The remove callback will be configured to NULL, and equals and compare callback will be configured for
- * double comparison.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_EXPORT
-celix_array_list_t* celix_arrayList_createDoubleArray();
-
-/**
- * @brief Creates a new empty array list with a boolean element type.
- *
- * The remove callback will be configured to NULL, and equals and compare callback will be configured for
- * boolean comparison.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_EXPORT
-celix_array_list_t* celix_arrayList_createBoolArray();
-
-/**
- * @brief Creates a new empty array list with a celix_version_t* element type.
- *
- * The remove callback will be configured to free a celix version, and equals and compare callback will be configured
- * for celix version comparison.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_EXPORT
-celix_array_list_t* celix_arrayList_createVersionArray();
-
-/**
  * @brief Creates a new empty array list using using the provided array list create options.
  *
- * If the element type is set to something other than CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED, the remove, equals,
- * and compare callbacks will be set according to the corresponding celix_arrayList_create*Array function.
- * The provided callbacks in the options will override the default callbacks.
+ * The callbacks in the options will override the default callbacks based on the provided element type.
+ * The default callbacks (e.g. the remove, equals, compare and copy callback) correspond to the
+ * celix_arrayList_create<Type>Array function.
+ * For example if the elementType is CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING, the default callbacks will be set to
+ * handle string values.
  *
  * @param opts The create options, only used during the creation of the array list.
  * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
@@ -305,8 +306,8 @@ void* celix_arrayList_get(const celix_array_list_t *list, int index);
 /**
  * @brief Returns the value for the provided index.
  *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING,
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF or CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
+ * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING
+ * or CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
  * @param list The array list.
  * @param index The entry index to return.
@@ -383,12 +384,12 @@ celix_status_t celix_arrayList_add(celix_array_list_t* list, void* value);
 /**
  * @brief Add a string entry to the back of the array list.
  *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING,
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF or CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
+ * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING
+ * or CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
  * If the array list element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING, the string will be copied, but
- * if the array list element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF or
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED, the string will be added as reference (as-is).
+ * if the array list element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED,
+ * the string will be added as reference (as-is).
  *
  * @param list The array list.
  * @param value The string value to add to the array list. Cannot be NULL.
@@ -551,18 +552,6 @@ CELIX_UTILS_EXPORT
 void celix_arrayList_removeString(celix_array_list_t* list, const char* value);
 
 /**
- * @brief Remove the first int entry from array list which matches the provided value.
- *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_INT and
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * The equals callback provided when the array list was created will be used to find the entry.
- * If there was no equals callback provided a direct memory compare will be done.
- */
-CELIX_UTILS_EXPORT
-void celix_arrayList_removeInt(celix_array_list_t* list, int value);
-
-/**
  * @brief Remove the first long entry from array list which matches the provided value.
  *
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG and
@@ -573,42 +562,6 @@ void celix_arrayList_removeInt(celix_array_list_t* list, int value);
  */
 CELIX_UTILS_EXPORT
 void celix_arrayList_removeLong(celix_array_list_t* list, long value);
-
-/**
- * @brief Remove the first unsigned int entry from array list which matches the provided value.
- *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_UINT and
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * The equals callback provided when the array list was created will be used to find the entry.
- * If there was no equals callback provided a direct memory compare will be done.
- */
-CELIX_UTILS_EXPORT
-void celix_arrayList_removeUInt(celix_array_list_t* list, unsigned int value);
-
-/**
- * @brief Remove the first unsigned long entry from array list which matches the provided value.
- *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_ULONG and
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * The equals callback provided when the array list was created will be used to find the entry.
- * If there was no equals callback provided a direct memory compare will be done.
- */
-CELIX_UTILS_EXPORT
-void celix_arrayList_removeULong(celix_array_list_t* list, unsigned long value);
-
-/**
- * @brief Remove the first float entry from array list which matches the provided value.
- *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_FLOAT and
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * The equals callback provided when the array list was created will be used to find the entry.
- * If there was no equals callback provided a direct memory compare will be done.
- */
-CELIX_UTILS_EXPORT
-void celix_arrayList_removeFloat(celix_array_list_t* list, float value);
 
 /**
  * @brief Remove the first double entry from array list which matches the provided value.
@@ -633,18 +586,6 @@ void celix_arrayList_removeDouble(celix_array_list_t* list, double value);
  */
 CELIX_UTILS_EXPORT
 void celix_arrayList_removeBool(celix_array_list_t* list, bool value);
-
-/**
- * @brief Remove the first size entry from array list which matches the provided value.
- *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_SIZE or
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
- *
- * The equals callback provided when the array list was created will be used to find the entry.
- * If there was no equals callback provided a direct memory compare will be done.
- */
-CELIX_UTILS_EXPORT
-void celix_arrayList_removeSize(celix_array_list_t* list, size_t value);
 
 /**
  * @brief Remove the first version entry from array list which matches the provided value.
@@ -695,9 +636,8 @@ bool celix_arrayList_equals(const celix_array_list_t* listA, const celix_array_l
  * @Brief Copy the array list to a new array list.
  *
  * The new array list will have the same element type and the same callbacks as the original array list.
- * If the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING, the strings will be copied and
- * if the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION, the versions will be copied.
- * For all other element types the values will be copied.
+ * For copying the array list entries the copy callback will be used, if the capy callback is NULL a shallow copy will
+ * be done.
  *
  * If a NULL is returned and the original array list is not NULL, a error message is logged to celix_err.
  *
