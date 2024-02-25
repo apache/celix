@@ -43,6 +43,6 @@ public:
 
 TEST_F(RsaShmActivatorTestSuite, FindRsaShmService) {
     celix_bundleContext_waitForEvents(ctx.get());
-    long found = celix_bundleContext_findService(ctx.get(), OSGI_RSA_REMOTE_SERVICE_ADMIN);
+    long found = celix_bundleContext_findService(ctx.get(), CELIX_RSA_REMOTE_SERVICE_ADMIN);
     EXPECT_GE(found, 0);
 }

@@ -56,7 +56,7 @@ static celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_adm
 }
 
 static celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, endpoint_description_t *endpointDescription, import_registration_t **out) {
-    const char *importConfigs = celix_properties_get(endpointDescription->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
+    const char *importConfigs = celix_properties_get(endpointDescription->properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
     celix_logHelper_info(admin->loghelper, "%s called: %s\n", __FUNCTION__, importConfigs);
     return CELIX_ILLEGAL_ARGUMENT;
 }
@@ -107,7 +107,7 @@ static celix_status_t my_rsa_start(my_remote_service_admin_activator_t* activato
         activator->adminService.importRegistration_getException = importRegistration_getException;
         activator->adminService.importRegistration_getImportReference = importRegistration_getImportReference;
 
-        activator->svcIdRsa = celix_bundleContext_registerService(ctx, &activator->adminService, OSGI_RSA_REMOTE_SERVICE_ADMIN, NULL);
+        activator->svcIdRsa = celix_bundleContext_registerService(ctx, &activator->adminService, CELIX_RSA_REMOTE_SERVICE_ADMIN, NULL);
     }
 
     return status;

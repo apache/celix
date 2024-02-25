@@ -339,11 +339,12 @@ static size_t endpointDiscoveryPoller_writeMemory(void *contents, size_t size, s
 	size_t realsize = size * nmemb;
 	struct MemoryStruct *mem = (struct MemoryStruct *)memoryPtr;
 
-	mem->memory = realloc(mem->memory, mem->size + realsize + 1);
-	if(mem->memory == NULL) {
-		printf("ENDPOINT_POLLER: not enough memory (realloc returned NULL)!");
-		return 0;
-	}
+    void* newMem = realloc(mem->memory, mem->size + realsize + 1);
+    if (newMem == NULL) {
+        printf("ENDPOINT_POLLER: not enough memory (realloc returned NULL)!");
+        return 0;
+    }
+    mem->memory = newMem;
 
 	memcpy(&(mem->memory[mem->size]), contents, realsize);
 	mem->size += realsize;

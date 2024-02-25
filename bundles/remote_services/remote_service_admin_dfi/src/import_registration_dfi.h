@@ -22,10 +22,11 @@
 
 #include "import_registration.h"
 #include "dfi_utils.h"
+#include "endpoint_description.h"
 
 #include <celix_errno.h>
 
-typedef celix_status_t (*send_func_type)(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply, int* replyStatus);
+typedef celix_status_t (*send_func_type)(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply);
 
 celix_status_t importRegistration_create(
         celix_bundle_context_t *context,
@@ -39,5 +40,7 @@ celix_status_t importRegistration_create(
 void importRegistration_destroy(import_registration_t *import);
 
 celix_status_t importRegistration_start(import_registration_t *import);
+
+endpoint_description_t* importRegistration_getEndpointDescription(import_registration_t *registration);
 
 #endif //CELIX_IMPORT_REGISTRATION_DFI_H

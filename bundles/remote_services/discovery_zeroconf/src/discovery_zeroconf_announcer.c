@@ -24,11 +24,9 @@
 #include "celix_properties.h"
 #include "celix_constants.h"
 #include "celix_threads.h"
-#include "celix_bundle_context.h"
 #include "celix_string_hash_map.h"
 #include "celix_array_list.h"
 #include "celix_log_helper.h"
-#include "celix_types.h"
 #include "celix_errno.h"
 #include "celix_build_assert.h"
 #include "celix_stdlib_cleanup.h"
@@ -41,6 +39,7 @@
 #include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -52,17 +51,16 @@
 #include <errno.h>
 
 
-#define DZC_MAX_CONFLICT_CNT 256
-
 //According to rfc6763, Using TXT records larger than 1300 bytes is NOT RECOMMENDED
 #define DZC_MAX_TXT_RECORD_SIZE 1300
+
+//It is enough to store three subtypes.
+#define DZC_MAX_SERVICE_TYPE_LEN 256
 
 struct discovery_zeroconf_announcer {
     celix_bundle_context_t *ctx;
     celix_log_helper_t *logHelper;
-    char fwUuid[64];
-    endpoint_listener_t epListener;
-    long epListenerSvcId;
+    pid_t pid;
     DNSServiceRef sharedRef;
     int eventFd;
     celix_thread_t refreshEPThread;
@@ -70,22 +68,22 @@ struct discovery_zeroconf_announcer {
     bool running;
     celix_string_hash_map_t *endpoints;//key:endpoint id, val:announce_endpoint_entry_t*
     celix_array_list_t *revokedEndpoints;
+    celix_string_hash_map_t *conflictCntMap;//key:service name, val:conflictCnt. Use to resolve conflict service name in same host.Because the mDNSResponder does not automatically resolve service name conflicts in the same host.
 };
 
 typedef struct announce_endpoint_entry {
     celix_properties_t *properties;
     DNSServiceRef registerRef;
-    unsigned int uid;
     int ifIndex;
+    int port;
     const char *serviceName;
-    char serviceType[64];
+    char *serviceType;
     bool announced;
+    uint32_t conflictCnt;
 }announce_endpoint_entry_t;
 
-
+static void endpointEntry_destroy(announce_endpoint_entry_t *entry);
 static void discoveryZeroconfAnnouncer_eventNotify(discovery_zeroconf_announcer_t *announcer);
-static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, endpoint_description_t *endpoint, char *matchedFilter);
-static celix_status_t discoveryZeroconfAnnouncer_endpointRemoved(void *handle, endpoint_description_t *endpoint, char *matchedFilter);
 static void *discoveryZeroconfAnnouncer_refreshEndpointThread(void *data);
 
 
@@ -93,69 +91,55 @@ celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, ce
     celix_status_t status = CELIX_SUCCESS;
     celix_autofree discovery_zeroconf_announcer_t *announcer = (discovery_zeroconf_announcer_t *)calloc(1, sizeof(*announcer));
     if (announcer == NULL) {
-        celix_logHelper_fatal(logHelper, "Announcer: Failed to alloc announcer.");
+        celix_logHelper_error(logHelper, "Announcer: Failed to alloc announcer.");
         return CELIX_ENOMEM;
     }
     announcer->ctx = ctx;
     announcer->logHelper = logHelper;
+    announcer->pid = getpid();
     announcer->sharedRef = NULL;
 
     announcer->eventFd = eventfd(0, 0);
     if (announcer->eventFd < 0) {
-        celix_logHelper_fatal(logHelper, "Announcer: Failed to open event fd, %d.", errno);
+        celix_logHelper_error(logHelper, "Announcer: Failed to open event fd, %d.", errno);
         return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
     }
     celix_auto(celix_fd_t) eventFd = announcer->eventFd;
 
     status = celixThreadMutex_create(&announcer->mutex, NULL);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_fatal(logHelper, "Announcer: Failed to create mutex, %d.", status);
+        celix_logHelper_error(logHelper, "Announcer: Failed to create mutex, %d.", status);
         return status;
     }
     celix_autoptr(celix_thread_mutex_t) mutex = &announcer->mutex;
 
     celix_autoptr(celix_string_hash_map_t) endpoints = announcer->endpoints = celix_stringHashMap_create();
-    assert(announcer->endpoints != NULL);
+    if (endpoints == NULL) {
+        celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(logHelper, "Announcer: Failed to create endpoints map.");
+        return CELIX_ENOMEM;
+    }
     celix_autoptr(celix_array_list_t) revokedEndpoints = announcer->revokedEndpoints = celix_arrayList_create();
-    assert(announcer->revokedEndpoints != NULL);
-
-    const char *fwUuid = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
-    if (fwUuid == NULL || strlen(fwUuid) >= sizeof(announcer->fwUuid)) {
-        celix_logHelper_fatal(logHelper, "Announcer: Failed to get framework uuid.");
-        return CELIX_BUNDLE_EXCEPTION;
+    if (revokedEndpoints == NULL) {
+        celix_logHelper_error(logHelper, "Announcer: Failed to create revoked endpoints list.");
+        return CELIX_ENOMEM;
     }
-    strcpy(announcer->fwUuid, fwUuid);
 
-    announcer->epListener.handle = announcer;
-    announcer->epListener.endpointAdded = discoveryZeroconfAnnouncer_endpointAdded;
-    announcer->epListener.endpointRemoved = discoveryZeroconfAnnouncer_endpointRemoved;
-    char scope[256] = {0};
-    (void)snprintf(scope, sizeof(scope), "(&(%s=*)(%s=%s))", CELIX_FRAMEWORK_SERVICE_NAME, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, fwUuid);
-
-    celix_properties_t *props = celix_properties_create();
-    assert(props != NULL);
-    celix_properties_set(props, "DISCOVERY", "true");
-    celix_properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
-    celix_service_registration_options_t opt = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
-    opt.serviceName = OSGI_ENDPOINT_LISTENER_SERVICE;
-    opt.properties = props;
-    opt.svc = &announcer->epListener;
-    announcer->epListenerSvcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx, &opt);
-    if (announcer->epListenerSvcId < 0) {
-        celix_logHelper_fatal(logHelper, "Announcer: Failed to register endpoint listener.");
-        return CELIX_BUNDLE_EXCEPTION;
+    celix_autoptr(celix_string_hash_map_t) conflictCntMap = announcer->conflictCntMap = celix_stringHashMap_create();
+    if (conflictCntMap == NULL) {
+        celix_logHelper_error(logHelper, "Announcer: Failed to create conflict count map.");
+        return CELIX_ENOMEM;
     }
-    celix_auto(celix_service_registration_guard_t) epListenerSvcReg
-        = celix_serviceRegistrationGuard_init(ctx, announcer->epListenerSvcId);
+
     announcer->running = true;
     status = celixThread_create(&announcer->refreshEPThread, NULL, discoveryZeroconfAnnouncer_refreshEndpointThread, announcer);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_fatal(logHelper, "Announcer: Failed to create refreshing endpoint thread, %d.", status);
+        celix_logHelper_error(logHelper, "Announcer: Failed to create refreshing endpoint thread, %d.", status);
         return status;
     }
     celixThread_setName(&announcer->refreshEPThread, "DiscAnnouncer");
 
-    epListenerSvcReg.svcId = -1;
+    celix_steal_ptr(conflictCntMap);
     celix_steal_ptr(revokedEndpoints);
     celix_steal_ptr(endpoints);
     celix_steal_ptr(mutex);
@@ -170,22 +154,19 @@ void discoveryZeroconfAnnouncer_destroy(discovery_zeroconf_announcer_t *announce
     celixThreadMutex_unlock(&announcer->mutex);
     discoveryZeroconfAnnouncer_eventNotify(announcer);
     celixThread_join(announcer->refreshEPThread, NULL);
-    celix_bundleContext_unregisterServiceAsync(announcer->ctx, announcer->epListenerSvcId, NULL, NULL);
-    celix_bundleContext_waitForAsyncUnregistration(announcer->ctx, announcer->epListenerSvcId);
 
+    celix_stringHashMap_destroy(announcer->conflictCntMap);
     announce_endpoint_entry_t *entry = NULL;
     int size = celix_arrayList_size(announcer->revokedEndpoints);
     for (int i = 0; i < size; ++i) {
         entry = (announce_endpoint_entry_t *)celix_arrayList_get(announcer->revokedEndpoints, i);
-        celix_properties_destroy(entry->properties);
-        free(entry);
+        endpointEntry_destroy(entry);
     }
     celix_arrayList_destroy(announcer->revokedEndpoints);
 
     CELIX_STRING_HASH_MAP_ITERATE(announcer->endpoints,iter) {
         entry = (announce_endpoint_entry_t *) iter.value.ptrValue;
-        celix_properties_destroy(entry->properties);
-        free(entry);
+        endpointEntry_destroy(entry);
     }
     celix_stringHashMap_destroy(announcer->endpoints);
 
@@ -219,8 +200,161 @@ static bool isLoopBackNetInterface(const char *ifName) {
     return loopBack;
 }
 
-static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, endpoint_description_t *endpoint, char *matchedFilter) {
+static int discoveryZeroconfAnnouncer_setServiceSubTypeTo(discovery_zeroconf_announcer_t *announcer, const char *importedConfigType, celix_string_hash_map_t *svcSubTypes) {
+    //We use the last word of config type as mDNS service subtype(https://www.rfc-editor.org/rfc/rfc6763.html#section-7.1). so we can browse the service by the last word of config type.
+    const char *svcSubType = strrchr(importedConfigType, '.');
+    if (svcSubType != NULL) {
+        svcSubType += 1;//skip '.'
+    } else {
+        svcSubType = importedConfigType;
+    }
+    size_t subTypeLen = strlen(svcSubType);
+    if (subTypeLen ==0 || subTypeLen > 63) {//the subtype identifier is allowed to be up to 63 bytes, see https://www.rfc-editor.org/rfc/rfc6763.html#section-7.2
+        celix_logHelper_error(announcer->logHelper, "Announcer: Invalid service sub type for %s.", importedConfigType);
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    int status = celix_stringHashMap_put(svcSubTypes, svcSubType, NULL);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_logTssErrors(announcer->logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to put service sub type for %s. %d", importedConfigType, status);
+        return status;
+    }
+    return CELIX_SUCCESS;
+}
+
+static char* discoveryZeroconfAnnouncer_createServiceTypeAccordingToConfigTypes(discovery_zeroconf_announcer_t* announcer, const char* configTypes) {
+    celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
+    opts.storeKeysWeakly = true;
+    celix_autoptr(celix_string_hash_map_t) svcSubTypes = celix_stringHashMap_createWithOptions(&opts);
+    if (svcSubTypes == NULL) {
+        celix_logHelper_logTssErrors(announcer->logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to create svc sub types map.");
+        return NULL;
+    }
+    celix_autofree char *configTypesCopy = celix_utils_strdup(configTypes);
+    if (configTypesCopy == NULL) {
+        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to dup config types.");
+        return NULL;
+    }
+    char *savePtr = NULL;
+    char *token = strtok_r(configTypesCopy, ",", &savePtr);
+    while (token != NULL) {
+        token = celix_utils_trimInPlace(token);
+        int status = discoveryZeroconfAnnouncer_setServiceSubTypeTo(announcer, token, svcSubTypes);
+        if (status != CELIX_SUCCESS) {
+            return NULL;
+        }
+        token = strtok_r(NULL, ",", &savePtr);
+    }
+
+    char serviceType[DZC_MAX_SERVICE_TYPE_LEN] = {0};
+    CELIX_BUILD_ASSERT(sizeof(serviceType) >= sizeof(DZC_SERVICE_PRIMARY_TYPE));
+    strcpy(serviceType, DZC_SERVICE_PRIMARY_TYPE);
+    size_t offset = strlen(serviceType);
+    CELIX_STRING_HASH_MAP_ITERATE(svcSubTypes, iter) {
+        offset += snprintf(serviceType + offset, sizeof(serviceType) - offset, ",%s", iter.key);
+        if (offset >= sizeof(serviceType)) {
+            celix_logHelper_error(announcer->logHelper, "Announcer: Please reduce the length of imported configs for %s.", serviceType);
+            return NULL;
+        }
+    }
+    return celix_utils_strdup(serviceType);
+}
+
+static int discoveryZeroconfAnnouncer_createEndpointEntry(discovery_zeroconf_announcer_t *announcer, endpoint_description_t *endpoint, announce_endpoint_entry_t **entryOut) {
+    celix_autoptr(celix_properties_t) properties = celix_properties_copy(endpoint->properties);
+    if (properties == NULL) {
+        celix_logHelper_logTssErrors(announcer->logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to copy endpoint properties for %s.", endpoint->serviceName);
+        return CELIX_ENOMEM;
+    }
+    const char* serviceName = celix_properties_get(properties, CELIX_FRAMEWORK_SERVICE_NAME, NULL);
+    if (serviceName == NULL) {
+        celix_logHelper_error(announcer->logHelper,"Announcer: Invalid service.");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    const char *importedConfigs = celix_properties_get(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
+    if (importedConfigs == NULL) {
+        celix_logHelper_error(announcer->logHelper, "Announcer: No imported configs for %s.", serviceName);
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    celix_autofree announce_endpoint_entry_t *entry = (announce_endpoint_entry_t *)calloc(1, sizeof(*entry));
+    if (entry == NULL) {
+        celix_logHelper_error(announcer->logHelper, "Announcer:  Failed to alloc endpoint entry for %s.", serviceName);
+        return CELIX_ENOMEM;
+    }
+    entry->registerRef = NULL;
+    entry->announced = false;
+    entry->conflictCnt = 0;
+    const char *ifName = celix_properties_get(properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, NULL);
+    if (ifName != NULL) {
+        if (strcmp(ifName, "all") == 0) {
+            entry->ifIndex = kDNSServiceInterfaceIndexAny;
+        } else if (isLoopBackNetInterface(ifName)) {
+            // If it is a loopback interface,we will announce the service on the local only interface.
+            // Because the mDNSResponder will skip the loopback interface,if it found a normal interface.
+            entry->ifIndex = kDNSServiceInterfaceIndexLocalOnly;
+        } else {
+            entry->ifIndex = (int)if_nametoindex(ifName);
+            if (entry->ifIndex == 0) {
+                celix_logHelper_error(announcer->logHelper, "Announcer: Invalid network interface name %s.", ifName);
+                return CELIX_ILLEGAL_ARGUMENT;
+            }
+        }
+    } else {
+        entry->ifIndex = DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT;
+    }
+    entry->port = celix_properties_getAsLong(properties, CELIX_RSA_PORT, DZC_PORT_DEFAULT);
+
+    entry->serviceType = discoveryZeroconfAnnouncer_createServiceTypeAccordingToConfigTypes(announcer, importedConfigs);
+    if (entry->serviceType == NULL) {
+        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to create service type for %s.", serviceName);
+        return CELIX_ENOMEM;
+    }
+    entry->serviceName = serviceName;
+    celix_properties_unset(properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE);//ifname should not set to mDNS TXT record, because service consumer will not use it.
+    celix_properties_unset(properties, CELIX_RSA_PORT);//port should not set to mDNS TXT record, because it will be set to SRV record. see https://www.rfc-editor.org/rfc/rfc6763.html#section-6.3
+    entry->properties = celix_steal_ptr(properties);
+    *entryOut = celix_steal_ptr(entry);
+    return CELIX_SUCCESS;
+}
+
+static void endpointEntry_destroy(announce_endpoint_entry_t *entry) {
+    celix_properties_destroy(entry->properties);
+    free(entry->serviceType);
+    free(entry);
+    return;
+}
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(announce_endpoint_entry_t, endpointEntry_destroy)
+
+static int discoveryZeroconfAnnouncer_generateServiceNameConflictCnt(discovery_zeroconf_announcer_t *announcer, const char *serviceName, uint32_t *conflictCntOut) {
+    uint32_t conflictCnt = (uint32_t)celix_stringHashMap_getLong(announcer->conflictCntMap, serviceName, 0);
+    bool conflicted;
+    do {
+        conflicted = false;
+        conflictCnt++;
+        CELIX_STRING_HASH_MAP_ITERATE(announcer->endpoints, iter) {
+            announce_endpoint_entry_t *entry = (announce_endpoint_entry_t *)iter.value.ptrValue;
+            if (strcmp(entry->serviceName, serviceName) == 0 && entry->conflictCnt == conflictCnt) {
+                conflicted = true;
+                break;
+            }
+        }
+    }while(conflicted);
+
+    int status = celix_stringHashMap_putLong(announcer->conflictCntMap, serviceName, conflictCnt);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_logTssErrors(announcer->logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to update conflict count for %s.", serviceName);
+        return status;
+    }
+    *conflictCntOut = conflictCnt;
+    return CELIX_SUCCESS;
+}
+
+celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, endpoint_description_t *endpoint, char *matchedFilter) {
     (void)matchedFilter;//unused
+    int status = CELIX_SUCCESS;
     discovery_zeroconf_announcer_t *announcer = (discovery_zeroconf_announcer_t *)handle;
     assert(announcer != NULL);
     if (endpointDescription_isInvalid(endpoint)) {
@@ -230,66 +364,32 @@ static  celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, en
 
     celix_logHelper_info(announcer->logHelper, "Announcer: Add endpoint for %s(%s).", endpoint->serviceName, endpoint->id);
 
-    celix_autofree announce_endpoint_entry_t *entry = (announce_endpoint_entry_t *)calloc(1, sizeof(*entry));
-    if (entry == NULL) {
-        celix_logHelper_error(announcer->logHelper, "Announcer:  Failed to alloc endpoint entry.");
-        return CELIX_ENOMEM;
-    }
-    entry->registerRef = NULL;
-    entry->announced = false;
-    // The entry->uid is used in mDNS instance name.
-    // To avoid instance name conflicts on localonly interface,
-    // in our code, the instance name consists of the service name and the UID.
-    // Because the maximum size of an mDNS instance name is 64 bytes, so we use the hash of endpoint->id.
-    // Don't worry about the uniqueness of the endpoint->id hash, it is only used to reduce the probability of instance name conflicts.
-    // If a conflict occurs， mDNS daemon will resolve it.
-    entry->uid = celix_utils_stringHash(endpoint->id);
-    const char *ifName = celix_properties_get(endpoint->properties, CELIX_RSA_NETWORK_INTERFACES, NULL);
-    if (ifName != NULL) {
-        if (strcmp(ifName, "all") == 0) {
-            entry->ifIndex = kDNSServiceInterfaceIndexAny;
-        } else if (isLoopBackNetInterface(ifName)) {
-            // If it is a loopback interface,we will announce the service on the local only interface.
-            // Because the mDNSResponder will skip the loopback interface,if it found a normal interface.
-            entry->ifIndex = kDNSServiceInterfaceIndexLocalOnly;
-        } else {
-            entry->ifIndex = if_nametoindex(ifName);
-            entry->ifIndex = entry->ifIndex == 0 ? DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT : entry->ifIndex;
-        }
-    } else {
-        entry->ifIndex = DZC_SERVICE_ANNOUNCED_IF_INDEX_DEFAULT;
+    celix_autoptr(announce_endpoint_entry_t) entry = NULL;
+    status = discoveryZeroconfAnnouncer_createEndpointEntry(announcer, endpoint, &entry);
+    if (status != CELIX_SUCCESS) {
+        return status;
     }
 
-    const char *serviceSubType = celix_properties_get(endpoint->properties, DZC_SERVICE_TYPE_KEY, NULL);
-    if (serviceSubType != NULL) {
-        int bytes = snprintf(entry->serviceType, sizeof(entry->serviceType), DZC_SERVICE_PRIMARY_TYPE",%s", serviceSubType);
-        if (bytes >= sizeof(entry->serviceType)) {
-            celix_logHelper_error(announcer->logHelper, "Announcer: Please reduce the length of service type for %s.", serviceSubType);
-            return CELIX_ILLEGAL_ARGUMENT;
-        }
+    celix_auto(celix_mutex_lock_guard_t) lockGuard = celixMutexLockGuard_init(&announcer->mutex);
+    status = discoveryZeroconfAnnouncer_generateServiceNameConflictCnt(announcer, entry->serviceName, &entry->conflictCnt);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+    status = celix_stringHashMap_put(announcer->endpoints, endpoint->id, entry);
+    if (status == CELIX_SUCCESS) {
+        celix_steal_ptr(entry);
     } else {
-        CELIX_BUILD_ASSERT(sizeof(entry->serviceType) >= sizeof(DZC_SERVICE_PRIMARY_TYPE));
-        strcpy(entry->serviceType, DZC_SERVICE_PRIMARY_TYPE);
+        celix_logHelper_logTssErrors(announcer->logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(announcer->logHelper, "Announcer: Failed to put endpoint entry for %s.", endpoint->id);
+        return status;
     }
-    celix_autoptr(celix_properties_t) properties = entry->properties = celix_properties_copy(endpoint->properties);
 
-    //Remove properties that remote service does not need
-    celix_properties_unset(entry->properties, CELIX_RSA_NETWORK_INTERFACES);
-    celix_properties_unset(entry->properties, DZC_SERVICE_TYPE_KEY);
-    entry->serviceName = celix_properties_get(entry->properties, CELIX_FRAMEWORK_SERVICE_NAME, NULL);
-    if (entry->serviceName == NULL) {
-        celix_logHelper_error(announcer->logHelper,"Announcer: Invalid service.");
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
-    celixThreadMutex_lock(&announcer->mutex);
-    celix_stringHashMap_put(announcer->endpoints, endpoint->id, celix_steal_ptr(entry));
-    celixThreadMutex_unlock(&announcer->mutex);
     discoveryZeroconfAnnouncer_eventNotify(announcer);
-    celix_steal_ptr(properties);
+
     return CELIX_SUCCESS;
 }
 
-static celix_status_t discoveryZeroconfAnnouncer_endpointRemoved(void *handle, endpoint_description_t *endpoint, char *matchedFilter) {
+celix_status_t discoveryZeroconfAnnouncer_endpointRemoved(void *handle, endpoint_description_t *endpoint, char *matchedFilter) {
     (void)matchedFilter;//unused
     discovery_zeroconf_announcer_t *announcer = (discovery_zeroconf_announcer_t *)handle;
     assert(announcer != NULL);
@@ -306,6 +406,7 @@ static celix_status_t discoveryZeroconfAnnouncer_endpointRemoved(void *handle, e
         (void)celix_stringHashMap_remove(announcer->endpoints, endpoint->id);
         celix_arrayList_add(announcer->revokedEndpoints, entry);
     }
+    celix_stringHashMap_putLong(announcer->conflictCntMap, endpoint->serviceName, 0);//reset conflict count
     celixThreadMutex_unlock(&announcer->mutex);
     discoveryZeroconfAnnouncer_eventNotify(announcer);
     return CELIX_SUCCESS;
@@ -331,10 +432,10 @@ static void discoveryZeroconfAnnouncer_revokeEndpoints(discovery_zeroconf_announ
     for (int i = 0; i < size; ++i) {
         entry = celix_arrayList_get(endpoints, i);
         if (entry->registerRef != NULL) {
+            celix_logHelper_info(announcer->logHelper, "Announcer: Deregister service %s on interface %d.", entry->serviceName, entry->ifIndex);
             DNSServiceRefDeallocate(entry->registerRef);
         }
-        celix_properties_destroy(entry->properties);
-        free(entry);
+        endpointEntry_destroy(entry);
     }
     return;
 }
@@ -377,8 +478,9 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
         celix_properties_iterator_t propIter = celix_properties_begin(entry->properties);
 
         TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
+        (void)TXTRecordSetValue(&txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
         char propSizeStr[16]= {0};
-        sprintf(propSizeStr, "%zu", celix_properties_size(entry->properties) + 1);
+        sprintf(propSizeStr, "%zu", celix_properties_size(entry->properties) + 2/*size and version*/);
         (void)TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
         if (!discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(announcer, &propIter, &txtRecord, sizeof(txtBuf), splitTxtRecord)) {
             TXTRecordDeallocate(&txtRecord);
@@ -387,45 +489,42 @@ static void discoveryZeroconfAnnouncer_announceEndpoints(discovery_zeroconf_anno
 
         DNSServiceErrorType dnsErr;
         char instanceName[64] = {0};
-        bool registered = false;
-        int conflictCnt = 0;
-        DNSServiceRef dsRef;
-        do {
-            dsRef = announcer->sharedRef;//DNSServiceRegister will set a new value for dsRef
-            int bytes = snprintf(instanceName, sizeof(instanceName), "%s-%X", entry->serviceName, entry->uid + conflictCnt);
-            if (bytes >= sizeof(instanceName)) {
-                celix_logHelper_error(announcer->logHelper, "Announcer: Please reduce the length of service name for %s.", entry->serviceName);
-                break;
-            }
-            celix_logHelper_info(announcer->logHelper, "Announcer: Register service %s on interface %d.", instanceName, entry->ifIndex);
-            dnsErr = DNSServiceRegister(&dsRef, kDNSServiceFlagsShareConnection, entry->ifIndex, instanceName, entry->serviceType, "local", DZC_HOST_DEFAULT, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback, announcer);
-            if (dnsErr == kDNSServiceErr_NoError) {
-                registered = true;
-            } else {
-                celix_logHelper_error(announcer->logHelper, "Announcer: Failed to announce service, %s. %d", instanceName, dnsErr);
-            }
-            //LocalOnly service may be return kDNSServiceErr_NameConflict, but mDNS daemon will resolve the instance name conflicts for non-LocalOnly service
-        } while (dnsErr == kDNSServiceErr_NameConflict && conflictCnt++ < DZC_MAX_CONFLICT_CNT);
-
+        DNSServiceRef dsRef = announcer->sharedRef;//DNSServiceRegister will set a new value for dsRef
+        int bytes = 0;
+        if (entry->conflictCnt <= 1) {
+            bytes = snprintf(instanceName, sizeof(instanceName), "%s-%ld", entry->serviceName, (long)announcer->pid);
+        } else {
+            bytes = snprintf(instanceName, sizeof(instanceName), "%s-%ld(%u)", entry->serviceName, (long)announcer->pid, entry->conflictCnt);
+        }
+        if (bytes >= sizeof(instanceName)) {
+            celix_logHelper_error(announcer->logHelper, "Announcer: Please reduce the length of service name for %s.", entry->serviceName);
+            TXTRecordDeallocate(&txtRecord);
+            continue;
+        }
+        celix_logHelper_info(announcer->logHelper, "Announcer: Register service %s on interface %d.", instanceName, entry->ifIndex);
+        dnsErr = DNSServiceRegister(&dsRef, kDNSServiceFlagsShareConnection, entry->ifIndex, instanceName, entry->serviceType, "local", NULL, htons(entry->port), TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback, announcer);
+        if (dnsErr != kDNSServiceErr_NoError) {
+            celix_logHelper_error(announcer->logHelper, "Announcer: Failed to announce service, %s. %d", instanceName, dnsErr);
+            TXTRecordDeallocate(&txtRecord);
+            continue;
+        }
         TXTRecordDeallocate(&txtRecord);
 
-        if (registered) {
-            entry->registerRef = dsRef;
-            while (!celix_propertiesIterator_isEnd(&propIter)) {
-                TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
-                if (!discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(announcer, &propIter, &txtRecord, sizeof(txtBuf), true)) {
-                    TXTRecordDeallocate(&txtRecord);
-                    break;
-                }
-                DNSRecordRef rdRef;//It will be free when deallocate dsRef
-                dnsErr = DNSServiceAddRecord(dsRef, &rdRef, 0, kDNSServiceType_TXT, TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), 0);
-                if (dnsErr != kDNSServiceErr_NoError) {
-                    celix_logHelper_error(announcer->logHelper, "Announcer: Failed to add record for %s. %d", instanceName, dnsErr);
-                    TXTRecordDeallocate(&txtRecord);
-                    break;
-                }
+        entry->registerRef = dsRef;
+        while (!celix_propertiesIterator_isEnd(&propIter)) {
+            TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
+            if (!discoveryZeroconfAnnouncer_copyPropertiesToTxtRecord(announcer, &propIter, &txtRecord, sizeof(txtBuf), true)) {
                 TXTRecordDeallocate(&txtRecord);
+                break;
             }
+            DNSRecordRef rdRef;//It will be free when deallocate dsRef
+            dnsErr = DNSServiceAddRecord(dsRef, &rdRef, 0, kDNSServiceType_TXT, TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord), 0);
+            if (dnsErr != kDNSServiceErr_NoError) {
+                celix_logHelper_error(announcer->logHelper, "Announcer: Failed to add record for %s. %d", instanceName, dnsErr);
+                TXTRecordDeallocate(&txtRecord);
+                break;
+            }
+            TXTRecordDeallocate(&txtRecord);
         }
     }
     return;
@@ -444,13 +543,13 @@ static void discoveryZeroconfAnnouncer_handleMDNSEvent(discovery_zeroconf_announ
         celixThreadMutex_lock(&announcer->mutex);
         CELIX_STRING_HASH_MAP_ITERATE(announcer->endpoints, iter) {
             entry = (announce_endpoint_entry_t *) iter.value.ptrValue;
-            entry->registerRef = NULL;//no need free entry->registerRef, 'DNSServiceRefDeallocate(announcer->sharedRef)' has do it.
+            entry->registerRef = NULL;//no need free entry->registerRef, 'DNSServiceRefDeallocate(announcer->sharedRef)' has done it.
             entry->announced = false;
         }
         int size = celix_arrayList_size(announcer->revokedEndpoints);
         for (int i = 0; i < size; ++i) {
             entry = celix_arrayList_get(announcer->revokedEndpoints, i);
-            entry->registerRef = NULL;//no need free entry->registerRef, 'DNSServiceRefDeallocate(announcer->sharedRef)' has do it.
+            entry->registerRef = NULL;//no need free entry->registerRef, 'DNSServiceRefDeallocate(announcer->sharedRef)' has done it.
         }
         celixThreadMutex_unlock(&announcer->mutex);
     } else if (dnsErr != kDNSServiceErr_NoError) {
@@ -519,7 +618,6 @@ static void *discoveryZeroconfAnnouncer_refreshEndpointThread(void *data) {
                         }
                     }
                 }
-                running = announcer->running;
                 celixThreadMutex_unlock(&announcer->mutex);
 
                 discoveryZeroconfAnnouncer_revokeEndpoints(announcer, revokedEndpoints);
@@ -532,8 +630,12 @@ static void *discoveryZeroconfAnnouncer_refreshEndpointThread(void *data) {
                 discoveryZeroconfAnnouncer_handleMDNSEvent(announcer);
             }
         } else if (result == -1 && errno != EINTR) {
-                celix_logHelper_error(announcer->logHelper, "Announcer: Error Selecting event, %d.", errno);
+            celix_logHelper_error(announcer->logHelper, "Announcer: Error Selecting event, %d.", errno);
+            sleep(1);//avoid busy loop
         }
+        celixThreadMutex_lock(&announcer->mutex);
+        running = announcer->running;
+        celixThreadMutex_unlock(&announcer->mutex);
     }
     if (announcer->sharedRef) {
         DNSServiceRefDeallocate(announcer->sharedRef);

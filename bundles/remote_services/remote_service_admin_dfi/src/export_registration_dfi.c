@@ -100,7 +100,7 @@ celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_ref
     }
 
     const char *exports = NULL;
-    CELIX_DO_IF(status, serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports));
+    CELIX_DO_IF(status, serviceReference_getProperty(reference, (char *) CELIX_RSA_SERVICE_EXPORTED_INTERFACES, &exports));
 
     celix_bundle_t *bundle = NULL;
     CELIX_DO_IF(status, serviceReference_getBundle(reference, &bundle));
