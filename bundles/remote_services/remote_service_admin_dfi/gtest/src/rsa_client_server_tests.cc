@@ -446,18 +446,25 @@ public:
     void TestRemoteCalculator(void (*testBody)(tst_service_t* testSvc), const char* serverIp = "127.0.0.1") {
         remote_service_admin_service_t* serverRsaSvc{nullptr};
         remote_service_admin_service_t* clientRsaSvc{nullptr};
-        serverRsaTrkId = celix_bundleContext_trackService(serverCtx.get(), CELIX_RSA_REMOTE_SERVICE_ADMIN,
-                                                          &serverRsaSvc, [](void* handle, void* svc){
-                    auto rsaSvc = static_cast<remote_service_admin_service_t **>(handle);
-                    *rsaSvc = static_cast<remote_service_admin_service_t*>(svc);
-                });
+
+        celix_service_tracking_options_t trackintOpts{};
+        trackintOpts.filter.serviceName = CELIX_RSA_REMOTE_SERVICE_ADMIN;
+        trackintOpts.callbackHandle = &serverRsaSvc;
+        trackintOpts.set = [](void* handle, void* svc) {
+            auto rsaSvc = static_cast<remote_service_admin_service_t**>(handle);
+            *rsaSvc = static_cast<remote_service_admin_service_t*>(svc);
+        };
+        serverRsaTrkId = celix_bundleContext_trackServicesWithOptions(serverCtx.get(), &trackintOpts);
         EXPECT_GE(serverRsaTrkId, 0);
-        clientRsaTrkId = celix_bundleContext_trackService(clientCtx.get(), CELIX_RSA_REMOTE_SERVICE_ADMIN,
-                                                          &clientRsaSvc, [](void* handle, void* svc){
-                    auto rsaSvc = static_cast<remote_service_admin_service_t **>(handle);
-                    *rsaSvc = static_cast<remote_service_admin_service_t*>(svc);
-                });
+
+        trackintOpts.callbackHandle = &clientRsaSvc;
+        trackintOpts.set = [](void* handle, void* svc){
+            auto rsaSvc = static_cast<remote_service_admin_service_t **>(handle);
+            *rsaSvc = static_cast<remote_service_admin_service_t*>(svc);
+                };
+        clientRsaTrkId = celix_bundleContext_trackServicesWithOptions(clientCtx.get(), &trackintOpts);
         EXPECT_GE(clientRsaTrkId, 0);
+
         long calcId = celix_bundleContext_findService(serverCtx.get(), CALCULATOR_SERVICE);
         ASSERT_TRUE(calcId >= 0L);
         ASSERT_TRUE(clientRsaSvc != nullptr);
