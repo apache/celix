@@ -532,6 +532,9 @@ bool celix_arrayList_equals(const celix_array_list_t* listA, const celix_array_l
     if (!listA || !listB) {
         return false;
     }
+    if (listA->elementType != listB->elementType) {
+        return false;
+    }
     if (listA->size != listB->size) {
         return false;
     }

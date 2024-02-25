@@ -42,7 +42,7 @@ TEST_F(ArrayListTestSuite, ArrayListWithEqualsTest) {
         const char* sb = (char*)b.voidPtrVal;
         return celix_utils_stringEquals(sa, sb);
     };
-    auto* list = celix_arrayList_createWithOptions(&opts);
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createWithOptions(&opts);
     EXPECT_EQ(0, celix_arrayList_size(list));
 
     celix_arrayList_add(list, (void*)"val0");
@@ -80,8 +80,6 @@ TEST_F(ArrayListTestSuite, ArrayListWithEqualsTest) {
     EXPECT_EQ(celix_arrayList_size(list), 2);
     EXPECT_STREQ((char*)celix_arrayList_get(list, 0), "val1");
     EXPECT_STREQ((char*)celix_arrayList_get(list, 1), "val3");
-
-    celix_arrayList_destroy(list);
 }
 
 template<typename T>
@@ -280,6 +278,21 @@ TEST_F(ArrayListTestSuite, EqualCheckTest) {
     celix_autoptr(celix_array_list_t) list5 = celix_arrayList_createDoubleArray(); //different type than list1
     celix_arrayList_addDouble(list5, 1.0);
 
+    // And 2 custom pointer list, with different equals callbacks
+    celix_array_list_create_options_t opts{};
+    opts.elementType = CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER;
+    opts.equalsCallback = [](celix_array_list_entry_t, celix_array_list_entry_t) -> bool {
+        return true; //dummy equals callback
+    };
+    celix_autoptr(celix_array_list_t) list6 = celix_arrayList_createWithOptions(&opts);
+    celix_arrayList_add(list6, (void*)1);
+    opts.equalsCallback = [](celix_array_list_entry_t, celix_array_list_entry_t) -> bool {
+        return false; //dummy equals callback
+    };
+    celix_autoptr(celix_array_list_t) list7 = celix_arrayList_createWithOptions(&opts);
+    celix_arrayList_add(list7, (void*)1);
+
+
     //The lists can be checked for equality
     EXPECT_TRUE(celix_arrayList_equals(list1, list2));
     EXPECT_TRUE(celix_arrayList_equals(list1, list1));
@@ -290,6 +303,7 @@ TEST_F(ArrayListTestSuite, EqualCheckTest) {
     EXPECT_FALSE(celix_arrayList_equals(list1, list3));
     EXPECT_FALSE(celix_arrayList_equals(list1, list4));
     EXPECT_FALSE(celix_arrayList_equals(list1, list5));
+    EXPECT_FALSE(celix_arrayList_equals(list6, list7));
 }
 
 TEST_F(ArrayListTestSuite, CopyArrayTest) {

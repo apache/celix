@@ -621,7 +621,7 @@ void celix_arrayList_sort(celix_array_list_t *list);
  * - The array list have the same equals callback
  * - The array list have the same values at the same index
  *
- * Note that the remove callback and compare callback are ignored.
+ * Note that the remove, compare and copy callbacks are ignored.
  *
  * If both array list are NULL, they are considered equal.
  *
