@@ -691,7 +691,6 @@ static void bundleContext_cleanupBundleTrackers(bundle_context_t* ctx) {
         }
         celix_arrayList_addLong(danglingTrkIds, trkId);
     }
-    celix_longHashMap_clear(ctx->bundleTrackers);
     celixThreadRwlock_unlock(&ctx->lock);
 
     if (danglingTrkIds != NULL) {
@@ -727,7 +726,6 @@ static void bundleContext_cleanupServiceTrackers(bundle_context_t* ctx) {
         }
         celix_arrayList_addLong(danglingTrkIds, trkId);
     }
-    celix_longHashMap_clear(ctx->serviceTrackers);
     celixThreadRwlock_unlock(&ctx->lock);
 
     if (danglingTrkIds != NULL) {
@@ -763,7 +761,6 @@ static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t* ctx) {
         }
         celix_arrayList_addLong(danglingTrkIds, trkId);
     }
-    celix_longHashMap_clear(ctx->metaTrackers);
     celixThreadRwlock_unlock(&ctx->lock);
 
     if (danglingTrkIds != NULL) {
