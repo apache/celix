@@ -1664,6 +1664,40 @@ TEST_F(CelixBundleContextServicesTestSuite, StopSvcTrackerBeforeAsyncTrackerIsCr
     EXPECT_EQ(0, cbData.count.load()); //note create tracker canceled -> no callback
 }
 
+TEST_F(CelixBundleContextServicesTestSuite, WaitForTrackerOnLoop) {
+    struct callback_data {
+        std::atomic<int> count{};
+        celix_bundle_context_t* ctx{nullptr};
+    };
+    callback_data cbData{};
+    cbData.ctx = ctx;
+
+    celix_framework_fireGenericEvent(
+            fw,
+            -1,
+            celix_bundle_getId(celix_framework_getFrameworkBundle(fw)),
+            "create tracker async",
+            (void*)&cbData,
+            [](void *data) {
+                auto cbd = static_cast<struct callback_data*>(data);
+
+                celix_service_tracking_options_t opts{};
+                opts.filter.serviceName = "test-service";
+                opts.trackerCreatedCallbackData = data;
+                opts.trackerCreatedCallback = [](void *data) {
+                    auto* cbd = static_cast<struct callback_data*>(data);
+                    cbd->count.fetch_add(1);
+                };
+                long trkId = celix_bundleContext_trackServicesWithOptions(cbd->ctx, &opts);
+                celix_bundleContext_waitForAsyncTracker(cbd->ctx, trkId);
+                celix_bundleContext_stopTracker(cbd->ctx, trkId);
+            },
+            nullptr,
+            nullptr);
+
+    celix_bundleContext_waitForEvents(ctx);
+}
+
 TEST_F(CelixBundleContextServicesTestSuite, StopBundleTrackerBeforeAsyncTrackerIsCreatedTest) {
     struct callback_data {
         std::atomic<int> count{};

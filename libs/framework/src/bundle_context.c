@@ -952,6 +952,7 @@ static void celix_bundleContext_waitForTrackerInternal(celix_bundle_context_t* c
                CELIX_LOG_LEVEL_WARNING,
                "Cannot wait for tracker on the event loop thread. This can cause a deadlock. "
                "Ignoring call.");
+        return;
     }
 
     bool found = false;
