@@ -391,7 +391,7 @@ CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_bundleContext_findServicesWithO
  * @brief Use the service with the provided service id using the provided callback. The Celix framework will ensure that
  * the targeted service cannot be removed during the callback.
  *
- * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useServiceTracker* functions
+ * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService* functions
  * instead.
  *
  * The svc is should only be considered valid during the callback.
@@ -417,7 +417,7 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT bool celix_bundleContext_useServiceWithId(celi
 /**
  * @brief Use the highest ranking service with the provided service name using the provided callback.
  *
- * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useServiceTracker* functions
+ * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService* functions
  * instead.
  *
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
@@ -444,7 +444,7 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT bool celix_bundleContext_useService(
 /**
  * @brief Use the services with the provided service name using the provided callback.
  *
- * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useServiceTracker* functions
+ * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService* functions
  * instead.
  *
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
@@ -548,7 +548,7 @@ typedef struct celix_service_use_options {
 /**
  * @brief Use the highest ranking service satisfying the provided service filter options using the provided callback.
  *
- * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useServiceTracker* functions
+ * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService* functions
  * instead.
  *
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
@@ -572,7 +572,7 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT bool celix_bundleContext_useServiceWithOptions
 /**
  * @brief Use the services with the provided service filter options using the provided callback.
  *
- * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useServiceTracker* functions
+ * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService* functions
  * instead.
  *
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
