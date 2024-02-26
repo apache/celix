@@ -152,7 +152,7 @@ CELIX_FRAMEWORK_EXPORT char* celix_serviceRegistry_createFilterFor(
  * Find services and return a array list of service ids (long).
  * Caller is responsible for freeing the returned array list.
  */
-CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_serviceRegisrty_findServices(celix_service_registry_t* registry, const char* filter);
+CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_serviceRegistry_findServices(celix_service_registry_t* registry, const char* filterStr);
 
 
 #ifdef __cplusplus

@@ -98,10 +98,10 @@ void celix::BufferedPushStream<T>::startWorker() {
         std::weak_ptr<std::queue<std::unique_ptr<PushEvent<T>>>> weak{queue};
         auto lk = weak.lock();
         if (lk) {
-            std::unique_ptr<celix::PushEvent<T>> event = std::move(popQueue());
+            std::unique_ptr<celix::PushEvent<T>> event = popQueue();
             while (event != nullptr) {
                 this->nextEvent.accept(*event);
-                event = std::move(popQueue());
+                event = popQueue();
             }
             cv.notify_all();
         }

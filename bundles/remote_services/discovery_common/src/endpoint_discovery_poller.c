@@ -195,7 +195,9 @@ celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_p
     // Avoid memory leaks when adding an already existing URL...
     celix_array_list_t* endpoints = hashMap_get(poller->entries, url);
     if (endpoints == NULL) {
-        endpoints = celix_arrayList_createWithEquals(endpointDiscoveryPoller_endpointDescriptionEquals);
+        celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+        opts.equalsCallback = endpointDiscoveryPoller_endpointDescriptionEquals;
+        endpoints = celix_arrayList_createWithOptions(&opts);
 
         if (endpoints) {
             celix_logHelper_debug(*poller->loghelper, "ENDPOINT_POLLER: add new discovery endpoint with url %s", url);
@@ -253,7 +255,9 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
 celix_status_t
 endpointDiscoveryPoller_poll(endpoint_discovery_poller_t* poller, char* url, celix_array_list_t* currentEndpoints) {
     // create an arraylist with a custom equality test to ensure we can find endpoints properly...
-    celix_array_list_t* updatedEndpoints = celix_arrayList_createWithEquals(endpointDiscoveryPoller_endpointDescriptionEquals);
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    opts.equalsCallback = endpointDiscoveryPoller_endpointDescriptionEquals;
+    celix_array_list_t* updatedEndpoints = celix_arrayList_createWithOptions(&opts);
     if (!updatedEndpoints) {
         return CELIX_ENOMEM;
     }

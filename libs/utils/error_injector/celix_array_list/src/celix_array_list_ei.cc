@@ -18,6 +18,7 @@
  */
 
 #include "celix_array_list_ei.h"
+#include "celix_stdlib_cleanup.h"
 
 extern "C" {
 
@@ -35,6 +36,13 @@ void *__wrap_celix_arrayList_createWithOptions(const celix_array_list_create_opt
     return __real_celix_arrayList_createWithOptions(opts);
 }
 
+void *__real_celix_arrayList_createStringArray();
+CELIX_EI_DEFINE(celix_arrayList_createStringArray, celix_array_list_t*)
+void *__wrap_celix_arrayList_createStringArray() {
+    CELIX_EI_IMPL(celix_arrayList_createStringArray);
+    return __real_celix_arrayList_createStringArray();
+}
+
 celix_status_t __real_celix_arrayList_add(celix_array_list_t* list, void* value);
 CELIX_EI_DEFINE(celix_arrayList_add, celix_status_t)
 celix_status_t __wrap_celix_arrayList_add(celix_array_list_t* list, void* value) {
@@ -42,39 +50,11 @@ celix_status_t __wrap_celix_arrayList_add(celix_array_list_t* list, void* value)
     return __real_celix_arrayList_add(list, value);
 }
 
-celix_status_t __real_celix_arrayList_addInt(celix_array_list_t* list, int value);
-CELIX_EI_DEFINE(celix_arrayList_addInt, celix_status_t)
-celix_status_t __wrap_celix_arrayList_addInt(celix_array_list_t* list, int value) {
-    CELIX_EI_IMPL(celix_arrayList_addInt);
-    return __real_celix_arrayList_addInt(list, value);
-}
-
 celix_status_t __real_celix_arrayList_addLong(celix_array_list_t* list, long value);
 CELIX_EI_DEFINE(celix_arrayList_addLong, celix_status_t)
 celix_status_t __wrap_celix_arrayList_addLong(celix_array_list_t* list, long value) {
     CELIX_EI_IMPL(celix_arrayList_addLong);
     return __real_celix_arrayList_addLong(list, value);
-}
-
-celix_status_t __real_celix_arrayList_addUInt(celix_array_list_t* list, unsigned int value);
-CELIX_EI_DEFINE(celix_arrayList_addUInt, celix_status_t)
-celix_status_t __wrap_celix_arrayList_addUInt(celix_array_list_t* list, unsigned int value) {
-    CELIX_EI_IMPL(celix_arrayList_addUInt);
-    return __real_celix_arrayList_addUInt(list, value);
-}
-
-celix_status_t __real_celix_arrayList_addULong(celix_array_list_t* list, unsigned long value);
-CELIX_EI_DEFINE(celix_arrayList_addULong, celix_status_t)
-celix_status_t __wrap_celix_arrayList_addULong(celix_array_list_t* list, unsigned long value) {
-    CELIX_EI_IMPL(celix_arrayList_addULong);
-    return __real_celix_arrayList_addULong(list, value);
-}
-
-celix_status_t __real_celix_arrayList_addFloat(celix_array_list_t* list, float value);
-CELIX_EI_DEFINE(celix_arrayList_addFloat, celix_status_t)
-celix_status_t __wrap_celix_arrayList_addFloat(celix_array_list_t* list, float value) {
-    CELIX_EI_IMPL(celix_arrayList_addFloat);
-    return __real_celix_arrayList_addFloat(list, value);
 }
 
 celix_status_t __real_celix_arrayList_addDouble(celix_array_list_t* list, double value);
@@ -91,11 +71,20 @@ celix_status_t __wrap_celix_arrayList_addBool(celix_array_list_t* list, bool val
     return __real_celix_arrayList_addBool(list, value);
 }
 
-celix_status_t __real_celix_arrayList_addSize(celix_array_list_t* list, size_t value);
-CELIX_EI_DEFINE(celix_arrayList_addSize, celix_status_t)
-celix_status_t __wrap_celix_arrayList_addSize(celix_array_list_t* list, size_t value) {
-    CELIX_EI_IMPL(celix_arrayList_addSize);
-    return __real_celix_arrayList_addSize(list, value);
+celix_status_t __real_celix_arrayList_addString(celix_array_list_t* list, const char* value);
+CELIX_EI_DEFINE(celix_arrayList_addString, celix_status_t)
+celix_status_t __wrap_celix_arrayList_addString(celix_array_list_t* list, const char* value) {
+    CELIX_EI_IMPL(celix_arrayList_addString);
+    return __real_celix_arrayList_addString(list, value);
+}
+
+celix_status_t __real_celix_arrayList_assignString(celix_array_list_t* list, char* value);
+CELIX_EI_DEFINE(celix_arrayList_assignString, celix_status_t)
+celix_status_t __wrap_celix_arrayList_assignString(celix_array_list_t* list, char* value) {
+    celix_autofree char* tmp = value; //ensure that the value is freed when an error is injected
+    CELIX_EI_IMPL(celix_arrayList_assignString);
+    celix_steal_ptr(tmp);
+    return __real_celix_arrayList_assignString(list, value);
 }
 
 }

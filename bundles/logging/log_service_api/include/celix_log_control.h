@@ -44,8 +44,20 @@ typedef struct celix_log_control {
 
     size_t (*setSinkEnabled)(void *handle, const char* select, bool enabled);
 
+    /**
+     * @brief Get a list of names for the log service provided by the log service.
+     * @param handle The service handle.
+     * @return A string array list.
+     *         The array list is owned by the caller and should be destroyed by calling celix_arrayList_destroy.
+     */
     celix_array_list_t* (*currentLogServices)(void *handle);
 
+    /**
+     * @brief Get a list of sinks names used by the log service.
+     * @param handle The service handle.
+     * @return A string array list.
+     *        The array list is owned by the caller and should be destroyed by calling celix_arrayList_destroy.
+     */
     celix_array_list_t* (*currentSinks)(void *handle);
 
     bool (*logServiceInfo)(void *handle, const char* loggerName, celix_log_level_e* outActiveLogLevel);
