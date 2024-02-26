@@ -55,8 +55,8 @@ static int interceptor_start(struct interceptorActivator *act, celix_bundle_cont
 
     celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
     opts.svc = interceptorSvc;
-    opts.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
-    opts.serviceVersion = REMOTE_INTERCEPTOR_SERVICE_VERSION;
+    opts.serviceName = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_NAME;
+    opts.serviceVersion = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_VERSION;
     opts.properties = props;
 
     act->interceptorSvcId = celix_bundleContext_registerServiceWithOptions(ctx, &opts);
@@ -79,8 +79,8 @@ static int interceptor_start(struct interceptorActivator *act, celix_bundle_cont
 
     celix_service_registration_options_t secondOpts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
     secondOpts.svc = secondInterceptorSvc;
-    secondOpts.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
-    secondOpts.serviceVersion = REMOTE_INTERCEPTOR_SERVICE_VERSION;
+    secondOpts.serviceName = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_NAME;
+    secondOpts.serviceVersion = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_VERSION;
     secondOpts.properties = secondProps;
 
     act->secondInterceptorSvcId = celix_bundleContext_registerServiceWithOptions(ctx, &secondOpts);

@@ -20,11 +20,11 @@
 #ifndef SERVICE_REGISTRY_H_
 #define SERVICE_REGISTRY_H_
 
-#include "properties.h"
+#include "celix_properties.h"
 #include "filter.h"
 #include "service_factory.h"
 #include "celix_service_event.h"
-#include "array_list.h"
+#include "celix_array_list.h"
 #include "service_registration.h"
 #include "celix_service_factory.h"
 #include "celix_framework_export.h"

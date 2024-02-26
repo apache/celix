@@ -28,15 +28,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "array_list.h"
 #include "celix_array_list.h"
 #include "array_list_private.h"
 #include "celix_build_assert.h"
-
-static celix_status_t arrayList_elementEquals(const void *a, const void *b, bool *equals) {
-    *equals = (a == b);
-    return CELIX_SUCCESS;
-}
 
 static bool celix_arrayList_defaultEquals(celix_array_list_entry_t a, celix_array_list_entry_t b) {
     return memcmp(&a, &b, sizeof(a)) == 0;
@@ -45,9 +39,7 @@ static bool celix_arrayList_defaultEquals(celix_array_list_entry_t a, celix_arra
 static bool celix_arrayList_equalsForElement(celix_array_list_t *list, celix_array_list_entry_t a, celix_array_list_entry_t b) {
     bool equals = false;
     if (list != NULL) {
-        if (list->equalsDeprecated != NULL) {
-            list->equalsDeprecated(a.voidPtrVal, b.voidPtrVal, &equals);
-        } else if (list->equals != NULL) {
+        if (list->equals != NULL) {
             equals = list->equals(a, b);
         }
     }
@@ -63,34 +55,7 @@ static void celix_arrayList_callRemovedCallback(celix_array_list_t *list, int in
     }
 }
 
-celix_status_t arrayList_create(array_list_pt *list) {
-    return arrayList_createWithEquals(arrayList_elementEquals, list);
-}
-
-celix_status_t arrayList_createWithEquals(array_list_element_equals_pt equals, array_list_pt *list) {
-    *list = celix_arrayList_create();
-    if (*list != NULL) {
-        (*list)->equalsDeprecated = equals;
-
-    }
-    return CELIX_SUCCESS;
-}
-
-void arrayList_destroy(array_list_pt list) {
-    celix_arrayList_destroy(list);
-}
-
-void arrayList_trimToSize(array_list_pt list) {
-    list->modCount++;
-    size_t oldCapacity = list->capacity;
-    if (list->size < oldCapacity) {
-        celix_array_list_entry_t * newList = realloc(list->elementData, sizeof(celix_array_list_entry_t) * list->size);
-        list->capacity = list->size;
-        list->elementData = newList;
-    }
-}
-
-celix_status_t arrayList_ensureCapacity(array_list_pt list, int capacity) {
+static celix_status_t celix_arrayList_ensureCapacity(celix_array_list_t* list, int capacity) {
     celix_status_t status = CELIX_SUCCESS;
     celix_array_list_entry_t *newList;
     list->modCount++;
@@ -110,265 +75,8 @@ celix_status_t arrayList_ensureCapacity(array_list_pt list, int capacity) {
     return status;
 }
 
-unsigned int arrayList_size(array_list_pt list) {
-    return (int)list->size;
-}
-
-bool arrayList_isEmpty(array_list_pt list) {
-    return list->size == 0;
-}
-
-bool arrayList_contains(array_list_pt list, void * element) {
-    int index = arrayList_indexOf(list, element);
-    return index >= 0;
-}
-
-int arrayList_indexOf(array_list_pt list, void * element) {
-    if (element == NULL) {
-        unsigned int i = 0;
-        for (i = 0; i < list->size; i++) {
-            if (list->elementData[i].voidPtrVal == NULL) {
-                return i;
-            }
-        }
-    } else {
-        unsigned int i = 0;
-        for (i = 0; i < list->size; i++) {
-            celix_array_list_entry_t entry;
-            memset(&entry, 0, sizeof(entry));
-            entry.voidPtrVal = element;
-            bool equals = celix_arrayList_equalsForElement(list, entry, list->elementData[i]);
-            if (equals) {
-                return i;
-            }
-        }
-    }
-    return -1;
-}
-
-int arrayList_lastIndexOf(array_list_pt list, void * element) {
-    if (element == NULL) {
-        int i = 0;
-        int size = (int)list->size;
-        for (i = size - 1; i >= 0; i--) {
-            if (list->elementData[i].voidPtrVal == NULL) {
-                return (int)i;
-            }
-        }
-    } else {
-        int i = 0;
-        int size = (int)list->size;
-        for (i = size - 1; i >= 0; i--) {
-            celix_array_list_entry_t entry;
-            memset(&entry, 0, sizeof(entry));
-            entry.voidPtrVal = element;
-            bool equals = celix_arrayList_equalsForElement(list, entry, list->elementData[i]);
-            if (equals) {
-                return (int)i;
-            }
-        }
-    }
-    return -1;
-}
-
-void * arrayList_get(array_list_pt list, unsigned int index) {
-    if (index >= list->size) {
-        return NULL;
-    }
-
-    return list->elementData[index].voidPtrVal;
-}
-
-void * arrayList_set(array_list_pt list, unsigned int index, void * element) {
-    void * oldElement;
-    if (index >= list->size) {
-        return NULL;
-    }
-
-    oldElement = list->elementData[index].voidPtrVal;
-    memset(&list->elementData[index], 0, sizeof(celix_array_list_entry_t));
-    list->elementData[index].voidPtrVal = element;
-    return oldElement;
-}
-
-bool arrayList_add(array_list_pt list, void * element) {
-    arrayList_ensureCapacity(list, (int)list->size + 1);
-    memset(&list->elementData[list->size], 0, sizeof(celix_array_list_entry_t));
-    list->elementData[list->size++].voidPtrVal = element;
-    return true;
-}
-
-int arrayList_addIndex(array_list_pt list, unsigned int index, void * element) {
-    size_t numMoved;
-    if (index > list->size) {
-        return -1;
-    }
-    arrayList_ensureCapacity(list, (int)list->size+1);
-    numMoved = list->size - index;
-    memmove(list->elementData+(index+1), list->elementData+index, sizeof(celix_array_list_entry_t) * numMoved);
-
-    list->elementData[index].voidPtrVal = element;
-    list->size++;
-    return 0;
-}
-
-void * arrayList_remove(array_list_pt list, unsigned int index) {
-    void * oldElement;
-    size_t numMoved;
-    if (index >= list->size) {
-        return NULL;
-    }
-
-    list->modCount++;
-    oldElement = list->elementData[index].voidPtrVal;
-    numMoved = list->size - index - 1;
-    memmove(list->elementData+index, list->elementData+index+1, sizeof(celix_array_list_entry_t) * numMoved);
-    memset(&list->elementData[--list->size], 0, sizeof(celix_array_list_entry_t));
-
-    return oldElement;
-}
-
-void arrayList_fastRemove(array_list_pt list, unsigned int index) {
-    size_t numMoved;
-    list->modCount++;
-
-    numMoved = list->size - index - 1;
-    memmove(list->elementData+index, list->elementData+index+1, sizeof(celix_array_list_entry_t) * numMoved);
-    memset(&list->elementData[--list->size], 0, sizeof(celix_array_list_entry_t));
-}
-
-bool arrayList_removeElement(array_list_pt list, void * element) {
-    if (element == NULL) {
-        unsigned int i = 0;
-        for (i = 0; i < list->size; i++) {
-            if (list->elementData[i].voidPtrVal == NULL) {
-                arrayList_fastRemove(list, i);
-                return true;
-            }
-        }
-    } else {
-        unsigned int i = 0;
-        for (i = 0; i < list->size; i++) {
-            celix_array_list_entry_t entry;
-            memset(&entry, 0, sizeof(entry));
-            entry.voidPtrVal = element;
-            bool equals = celix_arrayList_equalsForElement(list, entry, list->elementData[i]);
-            if (equals) {
-                arrayList_fastRemove(list, i);
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-void arrayList_clear(array_list_pt list) {
-    celix_arrayList_clear(list);
-}
-
-bool arrayList_addAll(array_list_pt list, array_list_pt toAdd) {
-    unsigned int i;
-    unsigned int size = arrayList_size(toAdd);
-    arrayList_ensureCapacity(list, list->size + size);
-//    memcpy(list->elementData+list->size, *toAdd->elementData, size);
-//    list->size += size;
-    for (i = 0; i < arrayList_size(toAdd); i++) {
-        arrayList_add(list, arrayList_get(toAdd, i));
-    }
-    return size != 0;
-}
-
-array_list_pt arrayList_clone(array_list_pt list) {
-    unsigned int i;
-    array_list_pt new = NULL;
-    arrayList_create(&new);
-//    arrayList_ensureCapacity(new, list->size);
-//    memcpy(new->elementData, list->elementData, list->size);
-//    new->size = list->size;
-
-    for (i = 0; i < arrayList_size(list); i++) {
-        arrayList_add(new, arrayList_get(list, i));
-    }
-    new->modCount = 0;
-    return new;
-}
-
-array_list_iterator_pt arrayListIterator_create(array_list_pt list) {
-    array_list_iterator_pt iterator = (array_list_iterator_pt) malloc(sizeof(*iterator));
-
-    iterator->lastReturned = -1;
-    iterator->cursor = 0;
-    iterator->list = list;
-    iterator->expectedModificationCount = list->modCount;
-
-    return iterator;
-}
-
-void arrayListIterator_destroy(array_list_iterator_pt iterator) {
-    iterator->lastReturned = -1;
-    iterator->cursor = 0;
-    iterator->expectedModificationCount = 0;
-    iterator->list = NULL;
-    free(iterator);
-}
-
-bool arrayListIterator_hasNext(array_list_iterator_pt iterator) {
-    return iterator->cursor != iterator->list->size;
-}
-
-void * arrayListIterator_next(array_list_iterator_pt iterator) {
-    void * next;
-    if (iterator->expectedModificationCount != iterator->list->modCount) {
-        return NULL;
-    }
-    next = arrayList_get(iterator->list, iterator->cursor);
-    iterator->lastReturned = iterator->cursor++;
-    return next;
-}
-
-bool arrayListIterator_hasPrevious(array_list_iterator_pt iterator) {
-    return iterator->cursor != 0;
-}
-
-void * arrayListIterator_previous(array_list_iterator_pt iterator) {
-    int i;
-    void * previous;
-    if (iterator->expectedModificationCount != iterator->list->modCount) {
-        return NULL;
-    }
-    i = iterator->cursor - 1;
-    previous = arrayList_get(iterator->list, i);
-    iterator->lastReturned = iterator->cursor = i;
-    return previous;
-}
-
-void arrayListIterator_remove(array_list_iterator_pt iterator) {
-    if (iterator->lastReturned == -1) {
-        return;
-    }
-    if (iterator->expectedModificationCount != iterator->list->modCount) {
-        return;
-    }
-    if (arrayList_remove(iterator->list, iterator->lastReturned) != NULL) {
-        if (iterator->lastReturned < iterator->cursor) {
-            iterator->cursor--;
-        }
-        iterator->lastReturned = -1;
-        iterator->expectedModificationCount = iterator->list->modCount;
-    }
-}
-
-
-
-
-/**********************************************************************************************************************
- **********************************************************************************************************************
- * Updated API
- **********************************************************************************************************************
- **********************************************************************************************************************/
-
 celix_array_list_t* celix_arrayList_createWithOptions(const celix_array_list_create_options_t* opts) {
-    array_list_t *list = calloc(1, sizeof(*list));
+    celix_array_list_t *list = calloc(1, sizeof(*list));
     if (list != NULL) {
         list->capacity = 10;
         list->elementData = malloc(sizeof(celix_array_list_entry_t) * list->capacity);
@@ -416,17 +124,38 @@ void* celix_arrayList_get(const celix_array_list_t *list, int index) {
     return arrayList_getEntry(list, index).voidPtrVal;
 }
 
-int celix_arrayList_getInt(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).intVal; }
-long int celix_arrayList_getLong(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).longVal; }
-unsigned int celix_arrayList_getUInt(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).uintVal; }
-unsigned long int celix_arrayList_getULong(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).ulongVal; }
-float celix_arrayList_getFloat(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).floatVal; }
-double celix_arrayList_getDouble(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).doubleVal; }
-bool celix_arrayList_getBool(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).boolVal; }
-size_t celix_arrayList_getSize(const celix_array_list_t *list, int index) { return arrayList_getEntry(list, index).sizeVal; }
+int celix_arrayList_getInt(const celix_array_list_t* list, int index) { return arrayList_getEntry(list, index).intVal; }
+
+long int celix_arrayList_getLong(const celix_array_list_t* list, int index) {
+    return arrayList_getEntry(list, index).longVal;
+}
+
+unsigned int celix_arrayList_getUInt(const celix_array_list_t* list, int index) {
+    return arrayList_getEntry(list, index).uintVal;
+}
+
+unsigned long int celix_arrayList_getULong(const celix_array_list_t* list, int index) {
+    return arrayList_getEntry(list, index).ulongVal;
+}
+
+float celix_arrayList_getFloat(const celix_array_list_t* list, int index) {
+    return arrayList_getEntry(list, index).floatVal;
+}
+
+double celix_arrayList_getDouble(const celix_array_list_t* list, int index) {
+    return arrayList_getEntry(list, index).doubleVal;
+}
+
+bool celix_arrayList_getBool(const celix_array_list_t* list, int index) {
+    return arrayList_getEntry(list, index).boolVal;
+}
+
+size_t celix_arrayList_getSize(const celix_array_list_t* list, int index) {
+    return arrayList_getEntry(list, index).sizeVal;
+}
 
 static celix_status_t celix_arrayList_addEntry(celix_array_list_t *list, celix_array_list_entry_t entry) {
-    celix_status_t status = arrayList_ensureCapacity(list, (int)list->size + 1);
+    celix_status_t status = celix_arrayList_ensureCapacity(list, (int)list->size + 1);
     if (status == CELIX_SUCCESS) {
         list->elementData[list->size++] = entry;
     }

@@ -30,8 +30,8 @@
 #include "endpoint_listener.h"
 #include "remote_service_admin.h"
 
-#define OSGI_RSA_REMOTE_PROXY_FACTORY 	"remote_proxy_factory"
-#define OSGI_RSA_REMOTE_PROXY_TIMEOUT   "remote_proxy_timeout"
+#define CELIX_RSA_REMOTE_PROXY_FACTORY 	"remote_proxy_factory"
+#define CELIX_RSA_REMOTE_PROXY_TIMEOUT   "remote_proxy_timeout"
 
 typedef celix_status_t (*sendToHandle)(remote_service_admin_t *remote_service_admin_ptr, endpoint_description_t *endpointDescription, char *request, char **reply, int* replyStatus);
 typedef celix_status_t (*createProxyService)(void *handle, endpoint_description_t *endpointDescription, remote_service_admin_t *rsa, sendToHandle sendToCallback, celix_properties_t *properties, void **service);

@@ -46,15 +46,15 @@ struct celix_serviceTracker {
 	void (*remove)(void *handle, void *svc);
 	void (*modified)(void *handle, void *svc);
 
-	void (*setWithProperties)(void *handle, void *svc, const properties_t *props); //highest ranking
-	void (*addWithProperties)(void *handle, void *svc, const properties_t *props);
-	void (*removeWithProperties)(void *handle, void *svc, const properties_t *props);
-	void (*modifiedWithProperties)(void *handle, void *svc, const properties_t *props);
+	void (*setWithProperties)(void *handle, void *svc, const celix_properties_t* props); //highest ranking
+	void (*addWithProperties)(void *handle, void *svc, const celix_properties_t* props);
+	void (*removeWithProperties)(void *handle, void *svc, const celix_properties_t* props);
+	void (*modifiedWithProperties)(void *handle, void *svc, const celix_properties_t* props);
 
-	void (*setWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner); //highest ranking
-	void (*addWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner);
-	void (*removeWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner);
-	void (*modifiedWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner);
+	void (*setWithOwner)(void *handle, void *svc, const celix_properties_t* props, const bundle_t *owner); //highest ranking
+	void (*addWithOwner)(void *handle, void *svc, const celix_properties_t* props, const bundle_t *owner);
+	void (*removeWithOwner)(void *handle, void *svc, const celix_properties_t* props, const bundle_t *owner);
+	void (*modifiedWithOwner)(void *handle, void *svc, const celix_properties_t* props, const bundle_t *owner);
 
     struct {
         celix_thread_mutex_t mutex; //projects below
@@ -78,7 +78,7 @@ typedef struct celix_tracked_entry {
     long serviceId; //cached service.id of the service
     long serviceRanking; //cached service.ranking of the service
 	const char *serviceName;
-	properties_t *properties;
+	celix_properties_t *properties;
 	bundle_t *serviceOwner;
 
     celix_thread_mutex_t mutex; //protects useCount

@@ -28,6 +28,7 @@ extern "C" {
 
 CELIX_EI_DECLARE(celix_properties_create, celix_properties_t*);
 CELIX_EI_DECLARE(celix_properties_copy, celix_properties_t*);
+CELIX_EI_DECLARE(celix_properties_set, celix_status_t);
 
 #ifdef __cplusplus
 }

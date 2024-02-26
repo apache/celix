@@ -49,6 +49,7 @@ if (EI_TESTS)
             )
 
     celix_deprecated_utils_headers(unit_test_discovery_zeroconf)
+    celix_deprecated_framework_headers(unit_test_discovery_zeroconf)
 
     target_link_libraries(unit_test_discovery_zeroconf PRIVATE
             rsa_discovery_zeroconf_cut
@@ -58,6 +59,14 @@ if (EI_TESTS)
             Celix::threads_ei
             Celix::eventfd_ei
             Celix::bundle_ctx_ei
+            Celix::string_hash_map_ei
+            Celix::long_hash_map_ei
+            Celix::array_list_ei
+            Celix::properties_ei
+            Celix::utils_ei
+            Celix::dm_component_ei
+            Celix::bundle_ctx_ei
+            Celix::log_helper_ei
             Celix::mdnsresponder_ei
             Celix::malloc_ei
             GTest::gtest

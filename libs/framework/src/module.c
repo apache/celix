@@ -26,7 +26,6 @@
 #include "utils.h"
 #include "module.h"
 #include "manifest_parser.h"
-#include "linked_list_iterator.h"
 #include "celix_libloader.h"
 #include "celix_framework.h"
 #include "celix_constants.h"
@@ -48,18 +47,18 @@
 struct module {
     celix_framework_t* fw;
 
-	version_pt version;
-	char* symbolicName;
-	char* group;
+    celix_version_t* version;
+    char* symbolicName;
+    char* group;
     char* name;
     char* description;
-	bool resolved;
+    bool resolved;
 
-	char * id;
+    char* id;
 
-	celix_bundle_t *bundle;
+    celix_bundle_t* bundle;
 
-    celix_thread_mutex_t handlesLock; //protects libraryHandles and bundleActivatorHandle
+    celix_thread_mutex_t handlesLock; // protects libraryHandles and bundleActivatorHandle
     celix_array_list_t* libraryHandles;
     void* bundleActivatorHandle;
 };
@@ -106,42 +105,38 @@ module_pt module_create(manifest_pt headerMap, const char * moduleId, bundle_pt 
 module_pt module_createFrameworkModule(celix_framework_t* fw, bundle_pt bundle) {
     module_pt module;
 
-	module = (module_pt) calloc(1, sizeof(*module));
+    module = (module_pt)calloc(1, sizeof(*module));
     char modId[2];
     snprintf(modId, 2, "%li", CELIX_FRAMEWORK_BUNDLE_ID);
-	if (module) {
+    if (module) {
         module->fw = fw;
         module->id = celix_utils_strdup(modId);
         module->symbolicName = celix_utils_strdup("celix_framework");
         module->group = celix_utils_strdup("Celix/Framework");
         module->name = celix_utils_strdup("Celix Framework");
         module->description = celix_utils_strdup("The Celix Framework System Bundle");
-        module->version = NULL;
-        version_createVersion(1, 0, 0, "", &module->version);
+        module->version = celix_version_create(1, 0, 0, "");
         module->resolved = false;
         module->bundle = bundle;
         celixThreadMutex_create(&module->handlesLock, NULL);
         module->libraryHandles = celix_arrayList_create();
-	}
-	return module;
+    }
+    return module;
 }
 
 void module_destroy(module_pt module) {
-
-	version_destroy(module->version);
-	free(module->id);
-	free(module->symbolicName);
-    free(module->name);
-    free(module->group);
-    free(module->description);
-    celix_arrayList_destroy(module->libraryHandles);
-    celixThreadMutex_destroy(&module->handlesLock);
-	free(module);
+        celix_version_destroy(module->version);
+        free(module->id);
+        free(module->symbolicName);
+        free(module->name);
+        free(module->group);
+        free(module->description);
+        celix_arrayList_destroy(module->libraryHandles);
+        celixThreadMutex_destroy(&module->handlesLock);
+        free(module);
 }
 
-version_pt module_getVersion(module_pt module) {
-	return module->version;
-}
+celix_version_t* module_getVersion(module_pt module) { return module->version; }
 
 celix_status_t module_getSymbolicName(module_pt module, const char **symbolicName) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -187,13 +182,6 @@ char * module_getId(module_pt module) {
 	return module->id;
 }
 
-linked_list_pt module_getWires(module_pt module) {
-    return NULL;
-}
-
-void module_setWires(module_pt module, linked_list_pt wires) {
-}
-
 bool module_isResolved(module_pt module) {
 	return module->resolved;
 }
@@ -206,15 +194,7 @@ bundle_pt module_getBundle(module_pt module) {
 	return module->bundle;
 }
 
-linked_list_pt module_getRequirements(module_pt module) {
-    return NULL;
-}
-
-linked_list_pt module_getCapabilities(module_pt module) {
-    return NULL;
-}
-
-array_list_pt module_getDependentImporters(module_pt module) {
+celix_array_list_t* module_getDependentImporters(module_pt module) {
     return NULL;
 }
 
@@ -226,7 +206,7 @@ void module_removeDependentImporter(module_pt module, module_pt importer) {
 
 //----------------------------------------------------
 //TODO add implementation (functions not implemented but already exported)
-array_list_pt module_getDependentRequirers(module_pt module) {
+celix_array_list_t* module_getDependentRequirers(module_pt module) {
     return NULL;
 }
 
@@ -237,7 +217,7 @@ void module_removeDependentRequirer(module_pt module, module_pt requirer) {
 }
 //----------------------------------------------------
 
-array_list_pt module_getDependents(module_pt module) {
+celix_array_list_t* module_getDependents(module_pt module) {
     return NULL;
 }
 

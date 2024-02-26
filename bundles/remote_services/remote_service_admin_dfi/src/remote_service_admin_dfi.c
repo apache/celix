@@ -34,6 +34,7 @@
 #include "json_serializer.h"
 #include "utils.h"
 #include "celix_utils.h"
+#include "celix_ref.h"
 
 #include "import_registration_dfi.h"
 #include "export_registration_dfi.h"
@@ -46,6 +47,8 @@
 
 #include "remote_service_admin_dfi_constants.h"
 #include "celix_bundle_context.h"
+#include "celix_string_hash_map.h"
+#include "celix_stdlib_cleanup.h"
 
 // defines how often the webserver is restarted (with an increased port number)
 #define MAX_NUMBER_OF_RESTARTS 5
@@ -71,6 +74,11 @@
 #define CELIX_RSA_USE_STOP_EXPORT_THREAD true
 
 
+typedef struct celix_imported_endpoint_url_ref {
+    struct celix_ref ref;//It must be first
+    char url[0];
+}celix_imported_endpoint_url_ref_t;
+
 struct remote_service_admin {
     celix_bundle_context_t *context;
     celix_log_helper_t *loghelper;
@@ -86,11 +94,13 @@ struct remote_service_admin {
     celix_thread_t stopExportsThread;
 
     celix_thread_mutex_t importedServicesLock;
-    array_list_pt importedServices;
+    celix_array_list_t* importedServices;
+    celix_string_hash_map_t* importedEndpointUrls;//key: endpointId, value: celix_imported_endpoint_url_ref_t*
 
     char *port;
     char *ip;
     char *discoveryInterface;
+    bool dynamicIpSupport;
 
     struct mg_context *ctx;
 
@@ -115,8 +125,8 @@ struct celix_get_data_reply {
     size_t size;
 };
 
-#define OSGI_RSA_REMOTE_PROXY_FACTORY   "remote_proxy_factory"
-#define OSGI_RSA_REMOTE_PROXY_TIMEOUT   "remote_proxy_timeout"
+#define CELIX_RSA_REMOTE_PROXY_FACTORY   "remote_proxy_factory"
+#define CELIX_RSA_REMOTE_PROXY_TIMEOUT   "remote_proxy_timeout"
 
 static const char *data_response_headers =
         "HTTP/1.1 200 OK\r\n"
@@ -131,7 +141,7 @@ static const unsigned int DEFAULT_TIMEOUT = 0;
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
 static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_t *admin, service_reference_pt reference, celix_properties_t *props, char *interface, endpoint_description_t **description);
-static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply, int* replyStatus);
+static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply);
 static celix_status_t remoteServiceAdmin_getIpAddress(char* interface, char** ip);
 static char* remoteServiceAdmin_getIFNameForIP(const char *ip);
 static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp);
@@ -190,10 +200,12 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
     } else {
         (*admin)->context = context;
         (*admin)->exportedServices = hashMap_create(NULL, NULL, NULL, NULL);
-         arrayList_create(&(*admin)->importedServices);
+        (*admin)->importedServices = celix_arrayList_create();
 
          celixThreadRwlock_create(&(*admin)->exportedServicesLock, NULL);
          celixThreadMutex_create(&(*admin)->importedServicesLock, NULL);
+
+        (*admin)->importedEndpointUrls = celix_stringHashMap_create();//Ignore ENOMEM for now and deal with it on other PRs in the future
 
         (*admin)->loghelper = celix_logHelper_create(context, "celix_rsa_admin");
 
@@ -202,30 +214,17 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         const char *interface = celix_bundleContext_getProperty(context, RSA_INTERFACE_KEY, NULL);
         (*admin)->curlShareEnabled = celix_bundleContext_getPropertyAsBool(context, RSA_DFI_USE_CURL_SHARE_HANDLE, RSA_DFI_USE_CURL_SHARE_HANDLE_DEFAULT);
 
-        const char *networkInterfaces = celix_bundleContext_getProperty(context, CELIX_RSA_NETWORK_INTERFACES, NULL);
-        char *interfacesCopy = NULL;
-        if (networkInterfaces != NULL) {
-            interfacesCopy = celix_utils_strdup(networkInterfaces);
-            const char delimiter[2] = ",";
-            char *savePtr;
-            //TODO Supports multiple network interfaces
-            interface = strtok_r(interfacesCopy, delimiter, &savePtr);
-        }
+        (*admin)->dynamicIpSupport = celix_bundleContext_getPropertyAsBool(context, CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT, CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT_DEFAULT);
 
-        char *discoveryInterface = NULL;
         char *detectedIp = NULL;
         if ((interface != NULL) && (remoteServiceAdmin_getIpAddress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
             celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_WARNING, "RSA: Could not retrieve IP address for interface %s", interface);
         }
         if (detectedIp != NULL) {
             ip = detectedIp;
-            discoveryInterface = celix_utils_strdup(interface);
+            (*admin)->discoveryInterface = celix_utils_strdup(interface);
         } else {
-            discoveryInterface = remoteServiceAdmin_getIFNameForIP(ip);
-        }
-
-        if (interfacesCopy != NULL) {
-            free(interfacesCopy);
+            (*admin)->discoveryInterface = remoteServiceAdmin_getIFNameForIP(ip);
         }
 
         if (ip != NULL) {
@@ -275,7 +274,7 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         bool bindToAllInterfaces = celix_bundleContext_getPropertyAsBool(context, CELIX_RSA_BIND_ON_ALL_INTERFACES, CELIX_RSA_BIND_ON_ALL_INTERFACES_DEFAULT);
         do {
             char *listeningPorts = NULL;
-            if (bindToAllInterfaces) {
+            if (bindToAllInterfaces || (*admin)->dynamicIpSupport) {
                 asprintf(&listeningPorts,"0.0.0.0:%s", newPort);
             } else {
                 asprintf(&listeningPorts,"%s:%s", (*admin)->ip, newPort);
@@ -297,13 +296,6 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
             free(listeningPorts);
 
         } while (((*admin)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
-
-        if (bindToAllInterfaces) {
-            free(discoveryInterface);
-            (*admin)->discoveryInterface = celix_utils_strdup("all");//announce service to all network interface
-        } else {
-            (*admin)->discoveryInterface = discoveryInterface;
-        }
     }
 
     bool logCalls = celix_bundleContext_getPropertyAsBool(context, RSA_LOG_CALLS_KEY, RSA_LOG_CALLS_DEFAULT);
@@ -338,6 +330,13 @@ celix_status_t remoteServiceAdmin_destroy(remote_service_admin_t **admin) {
     pthread_mutex_destroy(&(*admin)->curlMutexConnect);
     pthread_mutex_destroy(&(*admin)->curlMutexCookie);
     pthread_mutex_destroy(&(*admin)->curlMutexDns);
+    CELIX_STRING_HASH_MAP_ITERATE((*admin)->importedEndpointUrls, iter) {
+        celix_imported_endpoint_url_ref_t* urlRef = iter.value.ptrValue;
+        celix_ref_put(&urlRef->ref, (void*)free);
+    }
+    celix_stringHashMap_destroy((*admin)->importedEndpointUrls);
+    celixThreadRwlock_destroy(&(*admin)->exportedServicesLock);
+    celixThreadMutex_destroy(&(*admin)->importedServicesLock);
     free(*admin);
 
     *admin = NULL;
@@ -427,9 +426,9 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
 
     celixThreadMutex_lock(&admin->importedServicesLock);
     int i;
-    int size = arrayList_size(admin->importedServices);
+    int size = celix_arrayList_size(admin->importedServices);
     for (i = 0; i < size ; i += 1) {
-        import_registration_t *import = arrayList_get(admin->importedServices, i);
+        import_registration_t *import = celix_arrayList_get(admin->importedServices, i);
         if (import != NULL) {
             importRegistration_destroy(import);
         }
@@ -443,7 +442,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t *admin) {
     }
 
     hashMap_destroy(admin->exportedServices, false, false);
-    arrayList_destroy(admin->importedServices);
+    celix_arrayList_destroy(admin->importedServices);
 
     celix_logHelper_destroy(admin->loghelper);
 
@@ -577,11 +576,11 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
     return result;
 }
 
-celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, array_list_pt *registrationsOut) {
+celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, char *serviceId, celix_properties_t *properties, celix_array_list_t** registrationsOut) {
     celix_status_t status = CELIX_SUCCESS;
 
     bool export = false;
-    const char *exportConfigs = celix_properties_get(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, RSA_DFI_CONFIGURATION_TYPE);
+    const char *exportConfigs = celix_properties_get(properties, CELIX_RSA_SERVICE_EXPORTED_CONFIGS, RSA_DFI_CONFIGURATION_TYPE);
     if (exportConfigs != NULL) {
         // See if the EXPORT_CONFIGS matches this RSA. If so, try to export.
 
@@ -607,7 +606,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
     celix_array_list_t *registrations = NULL;
     if (export) {
         registrations = celix_arrayList_create();
-        array_list_pt references = NULL;
+        celix_array_list_t* references = NULL;
         service_reference_pt reference = NULL;
         char filter[256];
 
@@ -618,15 +617,15 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
         celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_DEBUG, "RSA: exportService called for serviceId %s", serviceId);
 
         int i;
-        int size = arrayList_size(references);
+        int size = celix_arrayList_size(references);
         for (i = 0; i < size; i += 1) {
             if (i == 0) {
-                reference = arrayList_get(references, i);
+                reference = celix_arrayList_get(references, i);
             } else {
-                bundleContext_ungetServiceReference(admin->context, arrayList_get(references, i));
+                bundleContext_ungetServiceReference(admin->context, celix_arrayList_get(references, i));
             }
         }
-        arrayList_destroy(references);
+        celix_arrayList_destroy(references);
 
         if (reference == NULL) {
             celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_ERROR, "ERROR: expected a reference for service id %s.",
@@ -637,7 +636,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
         const char *exports = NULL;
         const char *provided = NULL;
         if (status == CELIX_SUCCESS) {
-            serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
+            serviceReference_getProperty(reference, (char *) CELIX_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
             serviceReference_getProperty(reference, (char *) CELIX_FRAMEWORK_SERVICE_NAME, &provided);
 
             if (exports == NULL || provided == NULL || strcmp(exports, provided) != 0) {
@@ -738,8 +737,8 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         const char *value = NULL;
 
         if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS
-            && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0
-            && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_CONFIGS) != 0
+            && strcmp(key, (char*) CELIX_RSA_SERVICE_EXPORTED_INTERFACES) != 0
+            && strcmp(key, (char*) CELIX_RSA_SERVICE_EXPORTED_CONFIGS) != 0
             && strcmp(key, (char*) CELIX_FRAMEWORK_SERVICE_NAME) != 0) {
             celix_properties_set(endpointProperties, key, value);
         }
@@ -760,15 +759,19 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     uuid_unparse_lower(endpoint_uid, endpoint_uuid);
 
     bundleContext_getProperty(admin->context, CELIX_FRAMEWORK_UUID, &uuid);
-    celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+    celix_properties_set(endpointProperties, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
     celix_properties_set(endpointProperties, CELIX_FRAMEWORK_SERVICE_NAME, interface);
-    celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
-    celix_properties_set(endpointProperties, OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
-    celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED, "true");
-    celix_properties_set(endpointProperties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) RSA_DFI_CONFIGURATION_TYPE);
+    celix_properties_set(endpointProperties, CELIX_RSA_ENDPOINT_SERVICE_ID, serviceId);
+    celix_properties_set(endpointProperties, CELIX_RSA_ENDPOINT_ID, endpoint_uuid);
+    celix_properties_set(endpointProperties, CELIX_RSA_SERVICE_IMPORTED, "true");
+    celix_properties_set(endpointProperties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, RSA_DFI_CONFIGURATION_TYPE);
     celix_properties_set(endpointProperties, RSA_DFI_ENDPOINT_URL, url);
     if (admin->discoveryInterface != NULL) {
-        celix_properties_set(endpointProperties, CELIX_RSA_NETWORK_INTERFACES, admin->discoveryInterface);
+        celix_properties_set(endpointProperties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, admin->discoveryInterface);
+    }
+    if (admin->dynamicIpSupport) {
+        celix_properties_set(endpointProperties, RSA_DFI_ENDPOINT_URL, buf);
+        celix_properties_set(endpointProperties, CELIX_RSA_PORT, admin->port);
     }
 
     if (props != NULL) {
@@ -781,9 +784,9 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     if (!*endpoint) {
         status = CELIX_ENOMEM;
     } else {
-        (*endpoint)->id = (char*) celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, NULL);
+        (*endpoint)->id = (char*) celix_properties_get(endpointProperties, (char*) CELIX_RSA_ENDPOINT_ID, NULL);
         (*endpoint)->serviceId = serviceReference_getServiceId(reference);
-        (*endpoint)->frameworkUUID = (char*) celix_properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
+        (*endpoint)->frameworkUUID = (char*) celix_properties_get(endpointProperties, (char*) CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, NULL);
         (*endpoint)->serviceName = strndup(interface, 1024*10);
         (*endpoint)->properties = endpointProperties;
     }
@@ -860,12 +863,12 @@ celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_descriptio
 }
 
 
-celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t *admin, array_list_pt *services) {
+celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t *admin, celix_array_list_t** services) {
     celix_status_t status = CELIX_SUCCESS;
     return status;
 }
 
-celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t *admin, array_list_pt *services) {
+celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t *admin, celix_array_list_t** services) {
     celix_status_t status = CELIX_SUCCESS;
     return status;
 }
@@ -874,7 +877,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
     celix_status_t status = CELIX_SUCCESS;
 
     bool importService = false;
-    const char *importConfigs = celix_properties_get(endpointDescription->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
+    const char *importConfigs = celix_properties_get(endpointDescription->properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
     if (importConfigs != NULL) {
         // Check whether this RSA must be imported
         char *ecCopy = strndup(importConfigs, strlen(importConfigs));
@@ -894,7 +897,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
         free(ecCopy);
     } else {
         celix_logHelper_log(admin->loghelper, CELIX_LOG_LEVEL_WARNING, "Mandatory %s element missing from endpoint description",
-                OSGI_RSA_SERVICE_IMPORTED_CONFIGS);
+                            CELIX_RSA_SERVICE_IMPORTED_CONFIGS);
     }
 
     if (importService) {
@@ -919,7 +922,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
         }
 
         celixThreadMutex_lock(&admin->importedServicesLock);
-        arrayList_add(admin->importedServices, import);
+        celix_arrayList_add(admin->importedServices, import);
         celixThreadMutex_unlock(&admin->importedServicesLock);
 
         if (status == CELIX_SUCCESS) {
@@ -930,6 +933,16 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t *admin, e
     return status;
 }
 
+static void remoteServiceAdmin_removeDynamicIpUrlOfImportedRegistration(remote_service_admin_t* admin, import_registration_t *registration) {
+    endpoint_description_t* endpoint = importRegistration_getEndpointDescription(registration);
+    assert(endpoint != NULL);
+    celix_imported_endpoint_url_ref_t* urlRef = celix_stringHashMap_get(admin->importedEndpointUrls, endpoint->id);
+    if (urlRef != NULL) {
+        celix_ref_put(&urlRef->ref, (void*)free);
+        celix_stringHashMap_remove(admin->importedEndpointUrls, endpoint->id);
+    }
+    return;
+}
 
 celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *admin, import_registration_t *registration) {
     celix_status_t status = CELIX_SUCCESS;
@@ -937,12 +950,13 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *
 
     celixThreadMutex_lock(&admin->importedServicesLock);
     int i;
-    int size = arrayList_size(admin->importedServices);
+    int size = celix_arrayList_size(admin->importedServices);
     import_registration_t * current  = NULL;
     for (i = 0; i < size; i += 1) {
-        current = arrayList_get(admin->importedServices, i);
+        current = celix_arrayList_get(admin->importedServices, i);
         if (current == registration) {
-            arrayList_remove(admin->importedServices, i);
+            celix_arrayList_removeAt(admin->importedServices, i);
+            remoteServiceAdmin_removeDynamicIpUrlOfImportedRegistration(admin, registration);
             importRegistration_destroy(current);
             break;
         }
@@ -952,7 +966,90 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_t *
     return status;
 }
 
-static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply, int* replyStatus) {
+static bool shouldTryUseOtherDynamicIp(celix_status_t useUrlStatus) {
+    switch (useUrlStatus) {
+        case CELIX_SUCCESS:
+        case CELIX_ERROR_MAKE(CELIX_FACILITY_CURL,CURLE_OUT_OF_MEMORY):
+            return false;
+        default:
+            return true;
+    }
+}
+
+static celix_status_t remoteServiceAdmin_useDynamicIpUrlsForEndpoint(remote_service_admin_t* rsa, endpoint_description_t* endpointDescription,
+celix_status_t (*useUrl)(void* handle, const char* url), void* handle) {
+    celix_status_t status = CELIX_ERROR_MAKE(CELIX_FACILITY_CURL,CURLE_COULDNT_CONNECT);
+    celixThreadMutex_lock(&rsa->importedServicesLock);
+    celix_imported_endpoint_url_ref_t* urlRef = celix_stringHashMap_get(rsa->importedEndpointUrls, endpointDescription->id);
+    if (urlRef != NULL) {
+        celix_ref_get(&urlRef->ref);
+        celixThreadMutex_unlock(&rsa->importedServicesLock);
+        status = useUrl(handle, urlRef->url);
+        celix_ref_put(&urlRef->ref, (void*)free);
+    } else {
+        celixThreadMutex_unlock(&rsa->importedServicesLock);
+    }
+    if (!shouldTryUseOtherDynamicIp(status)) {
+        return status;
+    }
+
+    const char *serviceUrl = celix_properties_get(endpointDescription->properties, (char*) RSA_DFI_ENDPOINT_URL, "");
+    const char *ipaddresses = celix_properties_get(endpointDescription->properties, CELIX_RSA_IP_ADDRESSES, NULL);
+    int port = (int)celix_properties_getAsLong(endpointDescription->properties, CELIX_RSA_PORT, RSA_PORT_DEFAULT);
+    celix_autofree char *ipStrListCopy = NULL;
+    ipStrListCopy = celix_utils_strdup(ipaddresses);
+    if (ipStrListCopy == NULL) {
+        celix_logHelper_error(rsa->loghelper, "Error duplicating ip addresses");
+        return CELIX_ENOMEM;
+    }
+    char url[256] = {0};
+    char *savePtr = NULL;
+    char *token = strtok_r(ipStrListCopy, ",", &savePtr);
+    while (token != NULL) {
+        char *ip = celix_utils_trimInPlace(token);
+        struct sockaddr_in sa;
+        if (inet_pton(AF_INET, ip, &(sa.sin_addr)) == 1) {
+            snprintf(url, sizeof(url), "http://%s:%d%s", ip, port, serviceUrl);
+        } else {
+            snprintf(url, sizeof(url), "http://[%s]:%d%s", ip, port, serviceUrl);
+        }
+        status = useUrl(handle, url);
+        if (!shouldTryUseOtherDynamicIp(status)) {
+            celix_imported_endpoint_url_ref_t* urlRefNew = calloc(1, sizeof(*urlRefNew) + strlen(url) + 1);
+            if (urlRefNew == NULL) {
+                celix_logHelper_error(rsa->loghelper, "Error allocating memory for imported endpoint url reference");
+                return CELIX_ENOMEM;
+            }
+            celix_ref_init(&urlRefNew->ref);
+            strcpy(urlRefNew->url, url);
+
+            celixThreadMutex_lock(&rsa->importedServicesLock);
+            if (celix_stringHashMap_put(rsa->importedEndpointUrls, endpointDescription->id, urlRefNew) != CELIX_SUCCESS) {
+                celix_logHelper_logTssErrors(rsa->loghelper, CELIX_LOG_LEVEL_ERROR);
+                celix_logHelper_error(rsa->loghelper, "Error storing imported endpoint url reference for endpoint %s", endpointDescription->id);
+                celix_ref_put(&urlRefNew->ref, (void*)free);
+            }else if (urlRef != NULL) {
+                celix_ref_put(&urlRef->ref, (void*)free);
+            }
+            celixThreadMutex_unlock(&rsa->importedServicesLock);
+            break;
+        }
+        token = strtok_r(NULL, ",", &savePtr);
+    }
+    return status;
+}
+
+static celix_status_t onUseUrlCallback(void* handle, const char* url) {
+    CURL *curl = handle;
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    CURLcode ret = curl_easy_perform(curl);
+    if (ret != CURLE_OK) {
+        return CELIX_ERROR_MAKE(CELIX_FACILITY_CURL, ret);
+    }
+    return CELIX_SUCCESS;
+}
+
+static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_t *endpointDescription, char *request, celix_properties_t *metadata, char **reply) {
     remote_service_admin_t * rsa = handle;
     struct celix_post_data post;
     post.readptr = request;
@@ -973,10 +1070,10 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
 
     const char *timeoutStr = NULL;
     // Check if the endpoint has a timeout, if so, use it.
-    timeoutStr = (char*) celix_properties_get(endpointDescription->properties, (char*) OSGI_RSA_REMOTE_PROXY_TIMEOUT, NULL);
+    timeoutStr = (char*) celix_properties_get(endpointDescription->properties, (char*) CELIX_RSA_REMOTE_PROXY_TIMEOUT, NULL);
     if (timeoutStr == NULL) {
         // If not, get the global variable and use that one.
-        bundleContext_getProperty(rsa->context, (char*) OSGI_RSA_REMOTE_PROXY_TIMEOUT, &timeoutStr);
+        bundleContext_getProperty(rsa->context, (char*) CELIX_RSA_REMOTE_PROXY_TIMEOUT, &timeoutStr);
     }
 
     // Update timeout if a property is used to set it.
@@ -990,6 +1087,8 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
 
     curl = curl_easy_init();
     if(!curl) {
+        fclose(get.stream);
+        free(get.buf);
         status = CELIX_ILLEGAL_STATE;
     } else {
         struct curl_slist *metadataHeader = NULL;
@@ -1006,7 +1105,6 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
 
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
-        curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
         curl_easy_setopt(curl, CURLOPT_READFUNCTION, remoteServiceAdmin_readCallback);
         curl_easy_setopt(curl, CURLOPT_READDATA, &post);
@@ -1016,12 +1114,24 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
         if (rsa->curlShareEnabled) {
             curl_easy_setopt(curl, CURLOPT_SHARE, rsa->curlShare);
         }
-        res = curl_easy_perform(curl);
+
+        const char *ipaddresses = celix_properties_get(endpointDescription->properties, CELIX_RSA_IP_ADDRESSES, NULL);
+        if (ipaddresses == NULL) {
+            curl_easy_setopt(curl, CURLOPT_URL, url);
+            res = curl_easy_perform(curl);
+            status = (res == CURLE_OK) ? CELIX_SUCCESS:CELIX_ERROR_MAKE(CELIX_FACILITY_CURL,res);
+        } else {
+            status = remoteServiceAdmin_useDynamicIpUrlsForEndpoint(rsa, endpointDescription, onUseUrlCallback, curl);
+        }
 
         fputc('\0', get.stream);
         fclose(get.stream);
         *reply = get.buf;
-        *replyStatus = (res == CURLE_OK) ? CELIX_SUCCESS:CELIX_ERROR_MAKE(CELIX_FACILITY_HTTP,res);
+        if (status == CELIX_SUCCESS) {
+            long httpCode = 0;
+            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
+            status = (httpCode == 200/*HTTP OK*/) ? CELIX_SUCCESS : CELIX_ERROR_MAKE(CELIX_FACILITY_HTTP,httpCode);
+        }
 
         curl_easy_cleanup(curl);
         curl_slist_free_all(metadataHeader);

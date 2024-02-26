@@ -17,6 +17,8 @@
  * under the License.
  */
 
+#include "celix_version_range.h"
+#include "version_range_private.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -24,107 +26,6 @@
 #include <assert.h>
 
 #include "version_private.h"
-#include "version_range.h"
-#include "celix_version_range.h"
-#include "version_range_private.h"
-#include "celix_version_range.h"
-
-celix_status_t versionRange_createVersionRange(version_pt low, bool isLowInclusive,
-            version_pt high, bool isHighInclusive, version_range_pt *range) {
-    *range = celix_versionRange_createVersionRange(low, isLowInclusive, high, isHighInclusive);
-    return CELIX_SUCCESS;
-}
-
-celix_status_t versionRange_destroy(version_range_pt range) {
-    celix_versionRange_destroy(range);
-    return CELIX_SUCCESS;
-}
-
-celix_status_t versionRange_createInfiniteVersionRange(version_range_pt *range) {
-    *range = celix_versionRange_createInfiniteVersionRange();
-    return CELIX_SUCCESS;
-}
-
-celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt version, bool *inRange) {
-    if (versionRange != NULL && version != NULL) {
-        *inRange = celix_versionRange_isInRange(versionRange, version);
-        return CELIX_SUCCESS;
-    } else {
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
-}
-
-celix_status_t versionRange_getLowVersion(version_range_pt versionRange, version_pt *lowVersion) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (versionRange == NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    }
-    else {
-        *lowVersion = versionRange->low;
-    }
-
-    return status;
-}
-
-celix_status_t versionRange_isLowInclusive(version_range_pt versionRange, bool *isLowInclusive) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (versionRange == NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    }
-    else {
-        *isLowInclusive = versionRange->isLowInclusive;
-    }
-
-    return status;
-}
-
-celix_status_t versionRange_getHighVersion(version_range_pt versionRange, version_pt *highVersion) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (versionRange == NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    }
-    else {
-        *highVersion = versionRange->high;
-    }
-
-    return status;
-}
-
-celix_status_t versionRange_isHighInclusive(version_range_pt versionRange, bool *isHighInclusive) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (versionRange == NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    }
-    else {
-        *isHighInclusive = versionRange->isHighInclusive;
-    }
-
-    return status;
-}
-
-
-celix_status_t versionRange_parse(const char * rangeStr, version_range_pt *range) {
-    *range = celix_versionRange_parse(rangeStr);
-    if (*range == NULL) {
-        return CELIX_ILLEGAL_ARGUMENT;
-    } else {
-        return CELIX_SUCCESS;
-    }
-}
-
-char* versionRange_createLDAPFilter(version_range_pt range, const char *serviceVersionAttributeName) {
-    return celix_versionRange_createLDAPFilter(range, serviceVersionAttributeName);
-}
-
-
-
-bool versionRange_createLDAPFilterInPlace(version_range_pt range, const char *serviceVersionAttributeName, char* buffer, size_t bufferLength) {
-    return celix_versionRange_createLDAPFilterInPlace(range, serviceVersionAttributeName, buffer, bufferLength);
-}
 
 celix_version_range_t* celix_versionRange_createVersionRange(celix_version_t* low, bool isLowInclusive, celix_version_t* high, bool isHighInclusive) {
     assert(low != high);

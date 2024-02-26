@@ -41,6 +41,7 @@ add_celix_bundle(rsa_shm
     SYMBOLIC_NAME "apache_celix_remote_service_admin_shm_v2"
     NAME "Apache Celix Remote Service Admin SHM V2"
     GROUP "Celix/RSA"
+    FILENAME celix_rsa_shm
     SOURCES
     ${RSA_SHM_SRC}
 )

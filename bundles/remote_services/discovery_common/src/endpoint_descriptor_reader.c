@@ -26,6 +26,7 @@
 
 #include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
 #include <libxml/xmlreader.h>
 
 #include "celix_log_helper.h"
@@ -70,13 +71,13 @@ void endpointDescriptorReader_addSingleValuedProperty(celix_properties_t *proper
     celix_properties_set(properties, (char *) name, (char*) value);
 }
 
-void endpointDescriptorReader_addMultiValuedProperty(celix_properties_t *properties, const xmlChar* name, array_list_pt values) {
+void endpointDescriptorReader_addMultiValuedProperty(celix_properties_t *properties, const xmlChar* name, celix_array_list_t* values) {
     char *value = calloc(256, sizeof(*value));
     if (value) {
-        unsigned int size = arrayList_size(values);
+        unsigned int size = celix_arrayList_size(values);
         unsigned int i;
         for (i = 0; i < size; i++) {
-            char* item = (char*) arrayList_get(values, i);
+            char* item = (char*) celix_arrayList_get(values, i);
             if (i > 0) {
                 value = strcat(value, ",");
             }
@@ -89,7 +90,7 @@ void endpointDescriptorReader_addMultiValuedProperty(celix_properties_t *propert
     }
 }
 
-celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_t *reader, char *document, array_list_pt *endpoints) {
+celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_t *reader, char *document, celix_array_list_t** endpoints) {
     celix_status_t status = CELIX_SUCCESS;
 
     reader->reader = xmlReaderForMemory(document, (int) strlen(document), NULL, "UTF-8", 0);
@@ -109,15 +110,14 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
         xmlChar *valueBuffer = xmlMalloc(256);
         valueBuffer[0] = '\0';
 
-        array_list_pt propertyValues = NULL;
-        arrayList_create(&propertyValues);
+        celix_array_list_t* propertyValues = celix_arrayList_create();
 
-        array_list_pt endpointDescriptions = NULL;
+        celix_array_list_t* endpointDescriptions = NULL;
         if (*endpoints) {
             // use the given arraylist...
             endpointDescriptions = *endpoints;
         } else {
-            arrayList_create(&endpointDescriptions);
+            endpointDescriptions = celix_arrayList_create();
             // return the read endpoints...
             *endpoints = endpointDescriptions;
         }
@@ -163,7 +163,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                     propertyValue = xmlTextReaderGetAttribute(reader->reader, VALUE);
                     xmlChar *vtype = xmlTextReaderGetAttribute(reader->reader, VALUE_TYPE);
                     propertyType = valueTypeFromString((char*) vtype);
-                    arrayList_clear(propertyValues);
+                    celix_arrayList_clear(propertyValues);
 
                     if (xmlTextReaderIsEmptyElement(reader->reader)) {
                         inProperty = false;
@@ -200,7 +200,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                     endpoint_description_t *endpointDescription = NULL;
                     // Completely parsed endpoint description, add it to our list of results...
                     if(endpointDescription_create(endpointProperties, &endpointDescription) == CELIX_SUCCESS){
-                        arrayList_add(endpointDescriptions, endpointDescription);
+                        celix_arrayList_add(endpointDescriptions, endpointDescription);
                     }
 
                     endpointProperties = celix_properties_create();
@@ -224,10 +224,10 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
 
                     xmlFree((void *) propertyName);
                     unsigned int k=0;
-                    for(;k<arrayList_size(propertyValues);k++){
-                        free(arrayList_get(propertyValues,k));
+                    for(;k<celix_arrayList_size(propertyValues);k++){
+                        free(celix_arrayList_get(propertyValues,k));
                     }
-                    arrayList_clear(propertyValues);
+                    celix_arrayList_clear(propertyValues);
 
                     propertyType = VALUE_TYPE_STRING;
                     inArray = false;
@@ -235,7 +235,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                     inSet = false;
                     inXml = false;
                 } else if (xmlStrcmp(localname, VALUE) == 0) {
-                    arrayList_add(propertyValues, strdup((char*) valueBuffer));
+                    celix_arrayList_add(propertyValues, strdup((char*) valueBuffer));
                     valueBuffer[0] = 0;
                     inValue = false;
                 }
@@ -255,10 +255,10 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
         }
 
         unsigned int k=0;
-        for(;k<arrayList_size(propertyValues);k++){
-            free(arrayList_get(propertyValues,k));
+        for(;k<celix_arrayList_size(propertyValues);k++){
+            free(celix_arrayList_get(propertyValues,k));
         }
-        arrayList_destroy(propertyValues);
+        celix_arrayList_destroy(propertyValues);
         xmlFree(valueBuffer);
 
         xmlFreeTextReader(reader->reader);

@@ -15,9 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# SSH credentials:
-#   root@password
-
 FROM docker.io/gitpod/workspace-full:2023-10-06-16-22-14@sha256:76d3041cc7a2caa00d6f4610ace0e15009c361515f3d5d9ee6690e4019adcfd4
 
 # Switch to root user to install dependencies and configure sshd

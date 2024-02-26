@@ -33,7 +33,6 @@
 #include "celix_log_helper.h"
 #include "scope.h"
 
-#define OSGI_RSA_REMOTE_SERVICE_ADMIN "remote_service_admin"
 
 typedef struct topology_manager topology_manager_t;
 typedef struct topology_manager *topology_manager_pt;
@@ -60,7 +59,7 @@ celix_status_t topologyManager_removeImportedService(void *handle, endpoint_desc
 celix_status_t topologyManager_addExportedService(void * handle, service_reference_pt reference, void * service);
 celix_status_t topologyManager_removeExportedService(void * handle, service_reference_pt reference, void * service);
 
-celix_status_t topologyManager_listenerAdded(void *handle, array_list_pt listeners);
-celix_status_t topologyManager_listenerRemoved(void *handle, array_list_pt listeners);
+celix_status_t topologyManager_listenerAdded(void *handle, celix_array_list_t* listeners);
+celix_status_t topologyManager_listenerRemoved(void *handle, celix_array_list_t* listeners);
 
 #endif /* TOPOLOGY_MANAGER_H_ */

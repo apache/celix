@@ -17,7 +17,6 @@
  * under the License.
  */
 
-#include "properties.h"
 #include "celix_properties.h"
 #include "celix_properties_private.h"
 #include "celix_properties_internal.h"
@@ -79,44 +78,8 @@ struct celix_properties {
 
 static celix_status_t celix_properties_parseLine(const char* line, celix_properties_t* props);
 
-properties_pt properties_create(void) { return celix_properties_create(); }
-
-void properties_destroy(properties_pt properties) { celix_properties_destroy(properties); }
-
-properties_pt properties_load(const char* filename) { return celix_properties_load(filename); }
-
-properties_pt properties_loadWithStream(FILE* file) { return celix_properties_loadWithStream(file); }
-
-properties_pt properties_loadFromString(const char* input) { return celix_properties_loadFromString(input); }
-
-/**
- * Header is ignored for now, cannot handle comments yet
- */
-void properties_store(properties_pt properties, const char* filename, const char* header) {
-    celix_properties_store(properties, filename, header);
-}
-
-celix_status_t properties_copy(properties_pt properties, properties_pt* out) {
-    celix_properties_t* copy = celix_properties_copy(properties);
-    *out = copy;
-    return copy == NULL ? CELIX_ENOMEM : CELIX_SUCCESS;
-}
-
-const char* properties_get(properties_pt properties, const char* key) {
-    return celix_properties_get(properties, key, NULL);
-}
-
-const char* properties_getWithDefault(properties_pt properties, const char* key, const char* defaultValue) {
-    return celix_properties_get(properties, key, defaultValue);
-}
-
-void properties_set(properties_pt properties, const char* key, const char* value) {
-    celix_properties_set(properties, key, value);
-}
-
-void properties_unset(properties_pt properties, const char* key) { celix_properties_unset(properties, key); }
-
-static void updateBuffers(char** key, char** value, char** output, int outputPos, int* key_len, int* value_len) {
+static void
+celix_properties_updateBuffers(char** key, char** value, char** output, int outputPos, int* key_len, int* value_len) {
     if (*output == *key) {
         if (outputPos == (*key_len) - 1) {
             (*key_len) += MALLOC_BLOCK_SIZE;
@@ -426,7 +389,7 @@ static celix_status_t celix_properties_parseLine(const char* line, celix_propert
             if (precedingCharIsBackslash) {
                 // escaped special character
                 output[outputPos++] = line[linePos];
-                updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
+                celix_properties_updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
                 precedingCharIsBackslash = false;
             } else {
                 if (line[linePos] == '#' || line[linePos] == '!') {
@@ -435,15 +398,15 @@ static celix_status_t celix_properties_parseLine(const char* line, celix_propert
                         return CELIX_SUCCESS;
                     } else {
                         output[outputPos++] = line[linePos];
-                        updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
+                        celix_properties_updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
                     }
                 } else {                   // = or :
                     if (output == value) { // already have a seperator
                         output[outputPos++] = line[linePos];
-                        updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
+                        celix_properties_updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
                     } else {
                         output[outputPos++] = '\0';
-                        updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
+                        celix_properties_updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
                         output = value;
                         outputPos = 0;
                     }
@@ -452,13 +415,13 @@ static celix_status_t celix_properties_parseLine(const char* line, celix_propert
         } else if (line[linePos] == '\\') {
             if (precedingCharIsBackslash) { // double backslash -> backslash
                 output[outputPos++] = '\\';
-                updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
+                celix_properties_updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
             }
             precedingCharIsBackslash = true;
         } else { // normal character
             precedingCharIsBackslash = false;
             output[outputPos++] = line[linePos];
-            updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
+            celix_properties_updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
         }
         linePos += 1;
     }

@@ -46,3 +46,7 @@ void example5Func(const char *s1, char *s2) {
     assert(strncmp("s1", s1, 5) == 0);
     assert(strncmp("s2", s2, 5) == 0);
 }
+
+int32_t example6Func() {
+    return 1234;
+}

@@ -19,8 +19,7 @@
 
 #include "gtest/gtest.h"
 
-#include <stdarg.h>
-#include "version.h"
+#include "celix_version.h"
 
 
 extern "C" {
@@ -34,40 +33,23 @@ extern "C" {
 
 #include "dyn_common.h"
 #include "dyn_message.h"
+#include "celix_err.h"
+#include "celix_version.h"
 
-#if NO_MEMSTREAM_AVAILABLE
-#include "open_memstream.h"
-#include "fmemopen.h"
-#endif
+static void checkMessageVersion(dyn_message_type* dynMsg, const char* v) {
+    int status = 0;
 
-static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
-	va_list ap;
-	const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-	fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-	va_start(ap, msg);
-	vfprintf(stderr, msg, ap);
-	fprintf(stderr, "\n");
-	va_end(ap);
+    const char* version = dynMessage_getVersionString(dynMsg);
+    ASSERT_STREQ(v, version);
+    const celix_version_t* msgVersion = nullptr;
+    celix_version_t* localMsgVersion = celix_version_createVersionFromString(version);
+    int cmpVersion = -1;
+    msgVersion = dynMessage_getVersion(dynMsg);
+    ASSERT_EQ(0, status);
+    cmpVersion = celix_version_compareTo(msgVersion, localMsgVersion);
+    ASSERT_EQ(cmpVersion, 0);
+    celix_version_destroy(localMsgVersion);
 }
-
-static void checkMessageVersion(dyn_message_type* dynMsg, const char* v){
-	int status = 0;
-
-	char *version = NULL;
-	status = dynMessage_getVersionString(dynMsg, &version);
-	ASSERT_EQ(0, status);
-	ASSERT_STREQ(v, version);
-	version_pt msgVersion = NULL, localMsgVersion = NULL;
-	int cmpVersion = -1;
-	version_createVersionFromString(version,&localMsgVersion);
-	status = dynMessage_getVersion(dynMsg,&msgVersion);
-	ASSERT_EQ(0, status);
-	version_compareTo(msgVersion,localMsgVersion,&cmpVersion);
-	ASSERT_EQ(cmpVersion,0);
-	version_destroy(localMsgVersion);
-
-}
-
 
 static void msg_test1(void) {
 	int status = 0;
@@ -78,26 +60,23 @@ static void msg_test1(void) {
 	ASSERT_EQ(0, status);
 	fclose(desc);
 
-	char *name = NULL;
-	status = dynMessage_getName(dynMsg, &name);
+	const char* name = dynMessage_getName(dynMsg);
 	ASSERT_EQ(0, status);
 	ASSERT_STREQ("poi", name);
 
 	checkMessageVersion(dynMsg,"1.0.0");
 
-	char *annVal = NULL;
+	const char* annVal = NULL;
 	status = dynMessage_getAnnotationEntry(dynMsg, "classname", &annVal);
 	ASSERT_EQ(0, status);
 	ASSERT_STREQ("org.example.PointOfInterest", annVal);
 
-	char *nonExist = NULL;
+	const char* nonExist = NULL;
 	status = dynMessage_getHeaderEntry(dynMsg, "nonExisting", &nonExist);
 	ASSERT_TRUE(status != 0);
 	ASSERT_TRUE(nonExist == NULL);
 
-	dyn_type *msgType = NULL;
-	status = dynMessage_getMessageType(dynMsg, &msgType);
-	ASSERT_EQ(0, status);
+	const dyn_type* msgType = dynMessage_getMessageType(dynMsg);
 	ASSERT_TRUE(msgType != NULL);
 
 	dynMessage_destroy(dynMsg);
@@ -113,26 +92,23 @@ static void msg_test2(void) {
 	ASSERT_EQ(0, status);
 	fclose(desc);
 
-	char *name = NULL;
-	status = dynMessage_getName(dynMsg, &name);
+	const char* name = dynMessage_getName(dynMsg);
 	ASSERT_EQ(0, status);
 	ASSERT_STREQ("track", name);
 
 	checkMessageVersion(dynMsg,"0.0.1");
 
-	char *annVal = NULL;
+	const char* annVal = NULL;
 	status = dynMessage_getAnnotationEntry(dynMsg, "classname", &annVal);
 	ASSERT_EQ(0, status);
 	ASSERT_STREQ("org.example.Track", annVal);
 
-	char *nonExist = NULL;
+	const char* nonExist = NULL;
 	status = dynMessage_getHeaderEntry(dynMsg, "nonExisting", &nonExist);
 	ASSERT_TRUE(status != 0);
 	ASSERT_TRUE(nonExist == NULL);
 
-	dyn_type *msgType = NULL;
-	status = dynMessage_getMessageType(dynMsg, &msgType);
-	ASSERT_EQ(0, status);
+	const dyn_type* msgType = dynMessage_getMessageType(dynMsg);
 	ASSERT_TRUE(msgType != NULL);
 
 	dynMessage_destroy(dynMsg);
@@ -147,26 +123,23 @@ static void msg_test3(void) {
 	ASSERT_EQ(0, status);
 	fclose(desc);
 
-	char *name = NULL;
-	status = dynMessage_getName(dynMsg, &name);
+	const char* name = dynMessage_getName(dynMsg);
 	ASSERT_EQ(0, status);
 	ASSERT_STREQ("logEntry", name);
 
 	checkMessageVersion(dynMsg,"1.0.0");
 
-	char *annVal = NULL;
+	const char* annVal = NULL;
 	status = dynMessage_getAnnotationEntry(dynMsg, "classname", &annVal);
 	ASSERT_EQ(0, status);
 	ASSERT_STREQ("org.example.LogEntry", annVal);
 
-	char *nonExist = NULL;
+	const char* nonExist = NULL;
 	status = dynMessage_getHeaderEntry(dynMsg, "nonExisting", &nonExist);
 	ASSERT_TRUE(status != 0);
 	ASSERT_TRUE(nonExist == NULL);
 
-	dyn_type *msgType = NULL;
-	status = dynMessage_getMessageType(dynMsg, &msgType);
-	ASSERT_EQ(0, status);
+	const dyn_type* msgType = dynMessage_getMessageType(dynMsg);
 	ASSERT_TRUE(msgType != NULL);
 
 	dynMessage_destroy(dynMsg);
@@ -221,6 +194,23 @@ static void msg_invalid(void) {
 	ASSERT_EQ(1, status);
 	fclose(desc);
 
+    desc = fopen("descriptors/invalids/invalidMsgMissingName.descriptor", "r");
+    assert(desc != NULL);
+    status = dynMessage_parse(desc, &dynMsg);
+    ASSERT_NE(0, status);
+    fclose(desc);
+
+    desc = fopen("descriptors/invalids/invalidMsgType.descriptor", "r");
+    assert(desc != NULL);
+    status = dynMessage_parse(desc, &dynMsg);
+    ASSERT_NE(0, status);
+    fclose(desc);
+
+    desc = fopen("descriptors/invalids/invalidMsgMissingNewline.descriptor", "r");
+    assert(desc != NULL);
+    status = dynMessage_parse(desc, &dynMsg);
+    ASSERT_NE(0, status);
+    fclose(desc);
 }
 
 }
@@ -229,12 +219,9 @@ static void msg_invalid(void) {
 class DynMessageTests : public ::testing::Test {
 public:
     DynMessageTests() {
-        int level = 1;
-        dynCommon_logSetup(stdLog, NULL, level);
-        dynType_logSetup(stdLog, NULL, level);
-        dynMessage_logSetup(stdLog, NULL, level);
     }
     ~DynMessageTests() override {
+        celix_err_resetErrors();
     }
 
 };
@@ -253,6 +240,7 @@ TEST_F(DynMessageTests, msg_test3) {
 
 TEST_F(DynMessageTests, msg_test4) {
 	msg_test4();
+    celix_err_printErrors(stderr, nullptr, nullptr);
 }
 
 TEST_F(DynMessageTests, msg_invalid) {

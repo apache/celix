@@ -21,8 +21,9 @@
 #include "remote_service_admin.h"
 #include "celix_api.h"
 #include "celix_log_helper_ei.h"
-#include "malloc_ei.h"
+#include "celix_properties_ei.h"
 #include "celix_bundle_context_ei.h"
+#include "malloc_ei.h"
 #include <gtest/gtest.h>
 
 class RsaShmActivatorUnitTestSuite : public ::testing::Test {
@@ -41,6 +42,8 @@ public:
         celix_ei_expect_celix_logHelper_create(nullptr, 0, nullptr);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_bundleContext_registerServiceAsync(nullptr, 0, 0);
+        celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_properties_set(nullptr, 0, 0);
     }
 
 
@@ -55,7 +58,7 @@ TEST_F(RsaShmActivatorUnitTestSuite, RsaShmActivatorStart) {
     status = celix_bundleActivator_start(userData, ctx.get());
     EXPECT_EQ(status, CELIX_SUCCESS);
 
-    bool found = celix_bundleContext_findService(ctx.get(), OSGI_RSA_REMOTE_SERVICE_ADMIN);
+    bool found = celix_bundleContext_findService(ctx.get(), CELIX_RSA_REMOTE_SERVICE_ADMIN);
     EXPECT_TRUE(found);
 
     status = celix_bundleActivator_stop(userData, ctx.get());
@@ -83,6 +86,30 @@ TEST_F(RsaShmActivatorUnitTestSuite, RsaShmActivatorStartWithCreatingRsaError) {
     auto status = celix_bundleActivator_create(ctx.get(), &userData);
     EXPECT_EQ(status, CELIX_SUCCESS);
     celix_ei_expect_calloc((void*)&rsaShm_create, 0, nullptr);
+    status = celix_bundleActivator_start(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_ENOMEM);
+
+    status = celix_bundleActivator_destroy(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+}
+
+TEST_F(RsaShmActivatorUnitTestSuite, RsaShmActivatorStartWithCreatingServicePropertiesError) {
+    void *userData = nullptr;
+    auto status = celix_bundleActivator_create(ctx.get(), &userData);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_ei_expect_celix_properties_create((void*)&celix_bundleActivator_start, 1, nullptr);
+    status = celix_bundleActivator_start(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_ENOMEM);
+
+    status = celix_bundleActivator_destroy(userData, ctx.get());
+    EXPECT_EQ(status, CELIX_SUCCESS);
+}
+
+TEST_F(RsaShmActivatorUnitTestSuite, RsaShmActivatorStartWithSettingServicePropertiesError) {
+    void *userData = nullptr;
+    auto status = celix_bundleActivator_create(ctx.get(), &userData);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_ei_expect_celix_properties_set((void*)&celix_bundleActivator_start, 1, CELIX_ENOMEM);
     status = celix_bundleActivator_start(userData, ctx.get());
     EXPECT_EQ(status, CELIX_ENOMEM);
 

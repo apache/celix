@@ -19,6 +19,10 @@
 
 #include "discovery_zeroconf_announcer.h"
 #include "discovery_zeroconf_watcher.h"
+#include "celix_dm_component_ei.h"
+#include "celix_bundle_context_ei.h"
+#include "celix_properties_ei.h"
+#include "celix_log_helper_ei.h"
 #include "eventfd_ei.h"
 #include "celix_framework.h"
 #include "celix_framework_factory.h"
@@ -41,6 +45,13 @@ public:
 
     ~DiscoveryZeroconfActivatorTestSuite() override {
         celix_ei_expect_eventfd(nullptr, 0, 0);
+        celix_ei_expect_celix_bundleContext_getProperty(nullptr, 0, nullptr);
+        celix_ei_expect_celix_bundleContext_getDependencyManager(nullptr, 0, nullptr);
+        celix_ei_expect_celix_dmComponent_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_dmServiceDependency_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_logHelper_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_properties_set(nullptr, 0, 0);
     }
 
     std::shared_ptr<celix_framework_t> fw{};
@@ -84,6 +95,134 @@ TEST_F(DiscoveryZeroconfActivatorTestSuite, DiscoveryZeroconfWatcherCreateFailed
     status = celix_bundleActivator_start(act, ctx.get());
     EXPECT_EQ(CELIX_ENOMEM, status);
 
+    status = celix_bundleActivator_destroy(act, ctx.get());
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(DiscoveryZeroconfActivatorTestSuite, GetFrameworkUuidFailed) {
+    void *act{nullptr};
+    auto status = celix_bundleActivator_create(ctx.get(), &act);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    celix_ei_expect_celix_bundleContext_getProperty(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    status = celix_bundleActivator_start(act, ctx.get());
+    EXPECT_EQ(CELIX_BUNDLE_EXCEPTION, status);
+
+    status = celix_bundleActivator_destroy(act, ctx.get());
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(DiscoveryZeroconfActivatorTestSuite, CreateLogHelperFailed) {
+    void *act{nullptr};
+    auto status = celix_bundleActivator_create(ctx.get(), &act);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    celix_ei_expect_celix_logHelper_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    status = celix_bundleActivator_start(act, ctx.get());
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    status = celix_bundleActivator_destroy(act, ctx.get());
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(DiscoveryZeroconfActivatorTestSuite, CreateAnnouncerDmComponentFailed) {
+    void *act{nullptr};
+    auto status = celix_bundleActivator_create(ctx.get(), &act);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    celix_ei_expect_celix_dmComponent_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    status = celix_bundleActivator_start(act, ctx.get());
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    status = celix_bundleActivator_destroy(act, ctx.get());
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(DiscoveryZeroconfActivatorTestSuite, CreateAnnouncerEndpointListenerPropertiesFailed) {
+    void *act{nullptr};
+    auto status = celix_bundleActivator_create(ctx.get(), &act);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    celix_ei_expect_celix_properties_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    status = celix_bundleActivator_start(act, ctx.get());
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    status = celix_bundleActivator_destroy(act, ctx.get());
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(DiscoveryZeroconfActivatorTestSuite, SetEndpointListenerSocpePropertyFailed) {
+    void *act{nullptr};
+    auto status = celix_bundleActivator_create(ctx.get(), &act);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    celix_ei_expect_celix_properties_set((void*)&celix_bundleActivator_start, 1, CELIX_ENOMEM);
+    status = celix_bundleActivator_start(act, ctx.get());
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    status = celix_bundleActivator_destroy(act, ctx.get());
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(DiscoveryZeroconfActivatorTestSuite, SetEndpointListenerInterfaceSpecificEndpointsPropertyFailed) {
+    void *act{nullptr};
+    auto status = celix_bundleActivator_create(ctx.get(), &act);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    celix_ei_expect_celix_properties_set((void*)&celix_bundleActivator_start, 1, CELIX_ENOMEM, 3);
+    status = celix_bundleActivator_start(act, ctx.get());
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    status = celix_bundleActivator_destroy(act, ctx.get());
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(DiscoveryZeroconfActivatorTestSuite, CreateWatcherDmComponentFailed) {
+    void *act{nullptr};
+    auto status = celix_bundleActivator_create(ctx.get(), &act);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    celix_ei_expect_celix_dmComponent_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 2);
+    status = celix_bundleActivator_start(act, ctx.get());
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    status = celix_bundleActivator_destroy(act, ctx.get());
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(DiscoveryZeroconfActivatorTestSuite, CreateEndpointListenerDependencyFailed) {
+    void *act{nullptr};
+    auto status = celix_bundleActivator_create(ctx.get(), &act);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    celix_ei_expect_celix_dmServiceDependency_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    status = celix_bundleActivator_start(act, ctx.get());
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    status = celix_bundleActivator_destroy(act, ctx.get());
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(DiscoveryZeroconfActivatorTestSuite, CreateRsaDependencyFailed) {
+    void *act{nullptr};
+    auto status = celix_bundleActivator_create(ctx.get(), &act);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    celix_ei_expect_celix_dmServiceDependency_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr, 2);
+    status = celix_bundleActivator_start(act, ctx.get());
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    status = celix_bundleActivator_destroy(act, ctx.get());
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(DiscoveryZeroconfActivatorTestSuite, GetDependencyManagerFailed) {
+    void *act{nullptr};
+    auto status = celix_bundleActivator_create(ctx.get(), &act);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    celix_ei_expect_celix_bundleContext_getDependencyManager(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+    status = celix_bundleActivator_start(act, ctx.get());
+    EXPECT_EQ(CELIX_ENOMEM, status);
     status = celix_bundleActivator_destroy(act, ctx.get());
     EXPECT_EQ(CELIX_SUCCESS, status);
 }

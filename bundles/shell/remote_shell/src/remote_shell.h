@@ -38,7 +38,7 @@ struct remote_shell {
 	celix_thread_mutex_t mutex;
 	int maximumConnections;
 
-	array_list_pt connections;
+	celix_array_list_t* connections;
 };
 typedef struct remote_shell *remote_shell_pt;
 

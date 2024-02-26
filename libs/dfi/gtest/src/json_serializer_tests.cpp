@@ -34,15 +34,7 @@ extern "C" {
 #include "json_serializer.h"
 #include "celix_err.h"
 
-static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
-	va_list ap;
-	const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-	fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-	va_start(ap, msg);
-	vfprintf(stderr, msg, ap);
-	fprintf(stderr, "\n");
-	va_end(ap);
-}
+#include <jansson.h>
 
 /*********** example 1 ************************/
 /** struct type ******************************/
@@ -172,18 +164,24 @@ static const char *example5_input =  "{ \
                 \"age\" : 44 \
             },\
             \"left\" : {\
+                \"left\" : null,\
+                \"right\" : null,\
                 \"value\" : {\
                     \"name\" : \"Victor\",\
                     \"age\" : 400 \
                 }\
-            }\
+            },\
+            \"right\" : null\
         },\
         \"right\" : {\
+            \"left\" : null,\
+            \"right\" : null,\
             \"value\" : {\
                 \"name\" : \"Peter\", \
                 \"age\" : 55 \
             }\
-        }\
+        },\
+        \"value\" : null\
     }\
 }";
 
@@ -222,6 +220,8 @@ static void check_example5(void *data) {
 	ASSERT_EQ(55, ex->head->right->value->age);
 	ASSERT_TRUE(ex->head->right->left == nullptr);
 	ASSERT_TRUE(ex->head->right->right == nullptr);
+
+    ASSERT_TRUE(ex->head->value == nullptr);
 }
 
 /*********** example 6 ************************/
@@ -279,25 +279,6 @@ const char *example8_input = "{ \
     \"d\" : 16, \
     \"e\" : 32 \
 }";
-
-struct example8 {
-	bool a;
-	unsigned char b;
-	uint32_t c;
-	uint64_t d;
-	int e;
-	void* f;
-};
-
-static void check_example8(void *data) {
-    auto ex = static_cast<example8*>(data);
-	ASSERT_EQ(true,ex->a);
-	ASSERT_EQ(4,ex->b);
-	ASSERT_EQ(8,ex->c);
-	//error on mac ASSERT_EQ(16,ex->d);
-    ASSERT_TRUE(16 == ex->d);
-	ASSERT_EQ(32,ex->e);
-}
 
 /*********** example 9 ************************/
 const char *example9_descriptor = "{It#OK=0;#NOK=1;#MAYBE=2;E id name result}";
@@ -429,7 +410,7 @@ static void parseTests() {
 	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_deserialize(type, example5_input, strlen(example5_input), &inst);
 	ASSERT_EQ(0, rc);
-	check_example5(inst);
+    check_example5(inst);
 	dynType_free(type, inst);
 	dynType_destroy(type);
 
@@ -453,14 +434,15 @@ static void parseTests() {
 	dynType_free(type, inst);
 	dynType_destroy(type);
 
+    // missing object member "f"
 	type = nullptr;
 	inst = nullptr;
 	rc = dynType_parseWithStr(example8_descriptor, nullptr, nullptr, &type);
 	ASSERT_EQ(0, rc);
 	rc = jsonSerializer_deserialize(type, example8_input, strlen(example8_input), &inst);
-	ASSERT_EQ(0, rc);
-	check_example8(inst);
-	dynType_free(type, inst);
+	ASSERT_NE(0, rc);
+    EXPECT_STREQ("Error cannot deserialize json. Input is '{     \"a\" : true,     \"b\" : 4,     \"c\" : 8,     \"d\" : 16,     \"e\" : 32 }'",
+                 celix_err_popLastError());
 	dynType_destroy(type);
 
 	type = nullptr;
@@ -516,12 +498,14 @@ static void parseTests() {
     celix_err_printErrors(stderr, nullptr, nullptr);
     dynType_destroy(type);
 
-    //pointer type mismatch
+    //double pointer unsupported
     rc = dynType_parseWithStr("{*t a}", nullptr, nullptr, &type);
     ASSERT_EQ(0, rc);
-    inputStr = R"({"a":1.0})";
+    inputStr = R"({"a":"hello world"})";
     rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
     ASSERT_EQ(1, rc);
+    EXPECT_STREQ("Error cannot deserialize json. Input is '{\"a\":\"hello world\"}'", celix_err_popLastError());
+    EXPECT_STREQ("Error cannot deserialize pointer to pointer", celix_err_popLastError());
     celix_err_printErrors(stderr, nullptr, nullptr);
     dynType_destroy(type);
 
@@ -568,6 +552,76 @@ static void parseTests() {
     rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
     ASSERT_EQ(1, rc);
     celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    // extra member ("b") is allowed
+    rc = dynType_parseWithStr("{t a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":"hello", "b":"world"})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(0, rc);
+    dynType_free(type, inst);
+    dynType_destroy(type);
+
+    // parse complex from non-object
+    rc = dynType_parseWithStr("{t a}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"(["a"])";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+
+    //simple string
+    rc = dynType_parseWithStr("t", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"("hello")";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(0, rc);
+    EXPECT_STREQ("hello", *(char**)inst);
+    dynType_free(type, inst);
+    dynType_destroy(type);
+
+    //null string
+    rc = dynType_parseWithStr("t", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"(null)";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(0, rc);
+    EXPECT_EQ(nullptr, *(char**)inst);
+    dynType_free(type, inst);
+    dynType_destroy(type);
+
+    // double*
+    rc = dynType_parseWithStr("*D", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"(0.1)";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(0, rc);
+    EXPECT_EQ(0.1, **(double**)inst);
+    dynType_free(type, inst);
+    dynType_destroy(type);
+
+    // null double*
+    rc = dynType_parseWithStr("*D", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"(null)";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    ASSERT_EQ(0, rc);
+    EXPECT_EQ(nullptr, *(double**)inst);
+    dynType_free(type, inst);
+    dynType_destroy(type);
+
+    // unnamed fields
+    type = nullptr;
+    inst = nullptr;
+    rc = dynType_parseWithStr("{DD}", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    inputStr = R"({"a":1.0, "b":2.0})";
+    rc = jsonSerializer_deserialize(type, inputStr, strlen(inputStr), &inst);
+    EXPECT_NE(0, rc);
+    EXPECT_STREQ("Error cannot deserialize json. Input is '{\"a\":1.0, \"b\":2.0}'", celix_err_popLastError());
+    EXPECT_STREQ("Unamed field unsupported", celix_err_popLastError());
     dynType_destroy(type);
 }
 
@@ -780,13 +834,9 @@ void writeEnumFailed(void) {
 class JsonSerializerTests : public ::testing::Test {
 public:
     JsonSerializerTests() {
-        int lvl = 1;
-        dynCommon_logSetup(stdLog, nullptr, lvl);
-        dynType_logSetup(stdLog, nullptr,lvl);
-        dynTypeCommon_logSetup(stdLog, nullptr,lvl);
-        jsonSerializer_logSetup(stdLog, nullptr, lvl);
     }
     ~JsonSerializerTests() override {
+        celix_err_resetErrors();
     }
 
 };
@@ -819,10 +869,120 @@ TEST_F(JsonSerializerTests, WriteSequenceFailed) {
     writeSequenceFailed();
 }
 
+TEST_F(JsonSerializerTests, WriteSequenceFailed2) {
+    dyn_type* type = nullptr;
+    char* result = nullptr;
+    int rc = dynType_parseWithStr(R"([**D)", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    double** input[] = {nullptr};
+    struct {
+        uint32_t cap;
+        uint32_t len;
+        double*** buf;
+    }seq{1,1,input};
+    rc = jsonSerializer_serialize(type, &seq, &result);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+}
+
 TEST_F(JsonSerializerTests, WriteComplexFailed) {
     writeComplexFailed();
 }
 
+TEST_F(JsonSerializerTests, WriteComplexFailed2) {
+    dyn_type *type = nullptr;
+    char *result = nullptr;
+    int rc = dynType_parseWithStr(R"({**D a})", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    struct {
+        double** a;
+    }input{nullptr};
+    rc = jsonSerializer_serialize(type, &input, &result);
+    ASSERT_EQ(1, rc);
+    celix_err_printErrors(stderr, nullptr, nullptr);
+    dynType_destroy(type);
+}
+
 TEST_F(JsonSerializerTests, WriteEnumFailed) {
     writeEnumFailed();
+}
+
+TEST_F(JsonSerializerTests, WriteDoublePointer) {
+    dyn_type *type;
+    int rc;
+    double val = 1.0;
+    double* valp = &val;
+    double** valpp = &valp;
+    char *result = nullptr;
+
+    rc = dynType_parseWithStr("**D", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    rc = jsonSerializer_serialize(type, &valpp, &result);
+    EXPECT_NE(0, rc);
+    EXPECT_STREQ("Error cannot serialize pointer to pointer", celix_err_popLastError());
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerTests, SerializationDeserilizationTest) {
+    dyn_type *type;
+    void *inst;
+    int rc;
+
+    type = nullptr;
+    inst = nullptr;
+    rc = dynType_parseWithStr(example5_descriptor, nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_loads(example5_input, JSON_DECODE_ANY, NULL);
+    ASSERT_NE(nullptr, root);
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_EQ(0, rc);
+    check_example5(inst);
+
+    json_auto_t* result = nullptr;
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(json_equal(root, result));
+    dynType_free(type, inst);
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerTests, SerializationDeserilizationNullStringTest) {
+    dyn_type *type;
+    void *inst;
+    int rc;
+    rc = dynType_parseWithStr("t", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_null();
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_EQ(0, rc);
+    EXPECT_EQ(nullptr, *(char**)inst);
+
+    json_auto_t* result = nullptr;
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(json_equal(root, result));
+    dynType_free(type, inst);
+    dynType_destroy(type);
+
+}
+
+TEST_F(JsonSerializerTests, SerializationDeserilizationStringTest) {
+    dyn_type *type;
+    void *inst;
+    int rc;
+    rc = dynType_parseWithStr("t", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_loads(R"("hello")", JSON_DECODE_ANY, NULL);
+    ASSERT_NE(nullptr, root);
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_EQ(0, rc);
+    EXPECT_STREQ("hello", *(char**)inst);
+
+    json_auto_t* result = nullptr;
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(json_equal(root, result));
+    dynType_free(type, inst);
+    dynType_destroy(type);
 }

@@ -160,7 +160,7 @@ int remoteExample_createAdditionalRemoteService(remote_example_impl_t* impl) {
         fprintf(stdout, "additional remote already created\n");
     } else {
         celix_properties_t *properties = celix_properties_create();
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, REMOTE_EXAMPLE_NAME);
+        celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_INTERFACES, REMOTE_EXAMPLE_NAME);
         long newSvcId = celix_bundleContext_registerService(impl->ctx, &impl->additionalSvc, REMOTE_EXAMPLE_NAME, properties);
         pthread_mutex_lock(&impl->mutex);
         prevSvcId = impl->additionalSvcId;

@@ -21,7 +21,6 @@
 #define SERVICE_TRACKER_H_
 
 #include "celix_service_listener.h"
-#include "array_list.h"
 #include "service_tracker_customizer.h"
 #include "bundle_context.h"
 #include "celix_bundle_context.h"

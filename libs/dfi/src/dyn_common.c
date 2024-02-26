@@ -18,124 +18,90 @@
  */
 
 #include "dyn_common.h"
+#include "celix_err.h"
+#include "celix_stdio_cleanup.h"
+#include "celix_stdlib_cleanup.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <stdbool.h>
 
-#if CELIX_UTILS_NO_MEMSTREAM_AVAILABLE
-#include "open_memstream.h"
-#include "fmemopen.h"
-#endif
-
 static const int OK = 0;
 static const int ERROR = 1;
 
-DFI_SETUP_LOG(dynCommon)
 
-static bool dynCommon_charIn(int c, const char *acceptedChars);
-
-int dynCommon_parseName(FILE *stream, char **result) {
+int dynCommon_parseName(FILE* stream, char** result) {
     return dynCommon_parseNameAlsoAccept(stream, NULL, result);
 }
 
-int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char **result) {
-    int status = OK;
-
-    char *buf = NULL;
+int dynCommon_parseNameAlsoAccept(FILE* stream, const char* acceptedChars, char** result) {
+    celix_autofree char* buf = NULL;
     size_t size = 0;
-    int strLen = 0;
-    FILE *name = open_memstream(&buf, &size);
+    celix_autoptr(FILE) name = open_memstream(&buf, &size);
+    if (name == NULL) {
+        celix_err_pushf("Error creating mem stream for name. %s", strerror(errno));
+        return ERROR;
+    }
 
-    if (name != NULL) { 
-        int c = getc(stream);
-        while (isalnum(c) || c == '_' || dynCommon_charIn(c, acceptedChars)) {
-            fputc(c, name); 
-            c = getc(stream);
-            strLen += 1;
+    int c = getc(stream);
+    while (c != EOF && (isalnum(c) || c == '_' || (acceptedChars != NULL && strchr(acceptedChars, c) != NULL))) {
+        if(fputc(c, name) == EOF) {
+            celix_err_push("Error writing to mem stream for name.");
+            return ERROR;
         }
-        fflush(name);
-        fclose(name);
+        c = getc(stream);
+    }
+    if (c != EOF) {
         ungetc(c, stream);
-    } else {
-        status = ERROR;
-        LOG_ERROR("Error creating mem stream for name. %s", strerror(errno));
+    }
+    if(fclose(celix_steal_ptr(name)) != 0) {
+        celix_err_pushf("Error closing mem stream for name. %s", strerror(errno));
+        return ERROR;
     }
 
-    if (status == OK) {
-        if (strLen == 0) {
-            status = ERROR;
-            LOG_ERROR("Parsed empty name");
-        }
+    if (size == 0) {
+        celix_err_push("Parsed empty name");
+        return ERROR;
     }
 
-    if (status == OK) {
-       *result = buf;
-    } else if (buf != NULL) {
-        free(buf);
-    }
+    *result = celix_steal_ptr(buf);
 
-    return status;
+    return OK;
 }
 
-int dynCommon_parseNameValue(FILE *stream, char **outName, char **outValue) {
+static int dynCommon_parseNameValue(FILE* stream, char** outName, char** outValue) {
     int status;
-    char *name = NULL;
-    char *value = NULL;
-
-    status = dynCommon_parseName(stream, &name);
-    if (status == OK) {
-        status = dynCommon_eatChar(stream, '=');
+    celix_autofree char* name = NULL;
+    celix_autofree char* value = NULL;
+    if ((status = dynCommon_parseName(stream, &name)) != OK) {
+        return status;
     }
-    if (status == OK) {
-        const char *valueAcceptedChars = ".<>{}[]?;:~!@#$%^&*()_+-=,./\\'\"";
-
-        status = dynCommon_parseNameAlsoAccept(stream, valueAcceptedChars, &value); //NOTE use different more lenient function e.g. only stop at '\n' ?
+    if ((status = dynCommon_eatChar(stream, '=')) != OK) {
+        return status;
     }
-
-    if (status == OK) {
-        *outName = name;
-        *outValue = value;
-    } else {
-        if (name != NULL) {
-            free(name);
-        }
-        if (value != NULL) {
-            free(value);
-        }
+    const char *valueAcceptedChars = ".<>{}[]?;:~!@#$%^&*()_+-=,./\\'\"";
+    //NOTE use different more lenient function e.g. only stop at '\n' ?
+    if ((status = dynCommon_parseNameAlsoAccept(stream, valueAcceptedChars, &value)) != OK) {
+        return status;
     }
-    return status;
+    *outName = celix_steal_ptr(name);
+    *outValue = celix_steal_ptr(value);
+    return OK;
 }
 
-int dynCommon_eatChar(FILE *stream, int expected) {
+int dynCommon_eatChar(FILE* stream, int expected) {
     int status = OK;
-    long loc = ftell(stream);
     int c = fgetc(stream);
     if (c != expected) {
         status = ERROR;
-        LOG_ERROR("Error parsing, expected token '%c' got '%c' at position %li", expected, c, loc);
+        celix_err_pushf("Error parsing, expected token '%c' got '%c' at position %li", expected, c, ftell(stream));
     }
     return status;
 }
 
-static bool dynCommon_charIn(int c, const char *acceptedChars) {
-    bool status = false;
-    if (acceptedChars != NULL) {
-        int i;
-        for (i = 0; acceptedChars[i] != '\0'; i += 1) {
-            if (c == acceptedChars[i]) {
-                status = true;
-                break;
-            }
-        }
-    }
-
-    return status;
-}
-
-void dynCommon_clearNamValHead(struct namvals_head *head) {
-    struct namval_entry *entry = TAILQ_FIRST(head);
+void dynCommon_clearNamValHead(struct namvals_head* head) {
+    struct namval_entry* entry = TAILQ_FIRST(head);
     while (entry != NULL) {
         struct namval_entry *tmp = entry;
 
@@ -148,4 +114,60 @@ void dynCommon_clearNamValHead(struct namvals_head *head) {
         entry = TAILQ_NEXT(entry, entries);
         free(tmp);
     }
+}
+
+int dynCommon_parseNameValueSection(FILE* stream, struct namvals_head* head) {
+    int status = OK;
+
+    int peek = fgetc(stream);
+    while (peek != ':' && peek != EOF) {
+        ungetc(peek, stream);
+
+        celix_autofree char* name = NULL;
+        celix_autofree char* value = NULL;
+        if ((status = dynCommon_parseNameValue(stream, &name, &value)) != OK) {
+            return status;
+        }
+
+        if ((status = dynCommon_eatChar(stream, '\n')) != OK) {
+            return status;
+        }
+
+        struct namval_entry* entry = NULL;
+        entry = calloc(1, sizeof(*entry));
+        if (entry == NULL) {
+            celix_err_pushf("Error allocating memory for namval entry");
+            return ERROR;
+        }
+
+        entry->name = celix_steal_ptr(name);
+        entry->value = celix_steal_ptr(value);
+        TAILQ_INSERT_TAIL(head, entry, entries);
+
+        peek = fgetc(stream);
+    }
+    if (peek != EOF) {
+        ungetc(peek, stream);
+    }
+
+    return OK;
+}
+
+int dynCommon_getEntryForHead(const struct namvals_head* head, const char* name, const char** out) {
+    int status = OK;
+    char* value = NULL;
+    struct namval_entry* entry = NULL;
+    TAILQ_FOREACH(entry, head, entries) {
+        if (strcmp(name, entry->name) == 0) {
+            value = entry->value;
+            break;
+        }
+    }
+    if (value != NULL) {
+        *out = value;
+    } else {
+        status = ERROR;
+        celix_err_pushf("Cannot find '%s' in list", name);
+    }
+    return status;
 }

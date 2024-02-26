@@ -18,8 +18,8 @@
  */
 
 #include "dyn_type.h"
-
 #include "dyn_type_common.h"
+#include "celix_err.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -27,53 +27,31 @@
 #include <errno.h>
 #include <ffi.h>
 
-DFI_SETUP_LOG(dynTypeCommon)
-
-dyn_type * dynType_findType(dyn_type *type, char *name) {
-    dyn_type *result = NULL;
-
-    struct type_entry *entry = NULL;
-    if (type->referenceTypes != NULL) {
-        TAILQ_FOREACH(entry, type->referenceTypes, entries) {
-            if (strcmp(name, entry->type->name) == 0) {
-                result = entry->type;
-                break;
+dyn_type* dynType_findType(dyn_type *type, char *name) {
+    for (dyn_type *current = type; current != NULL; current = current->parent) {
+        struct type_entry *entry = NULL;
+        if (current->name != NULL && strcmp(current->name, name) == 0) {
+            return current;
+        }
+        if (current->referenceTypes != NULL) {
+            TAILQ_FOREACH(entry, current->referenceTypes, entries) {
+                if (strcmp(name, entry->type->name) == 0) {
+                    return entry->type;
+                }
             }
         }
-    }
 
-    if (result == NULL) {
         struct type_entry *nEntry = NULL;
-        TAILQ_FOREACH(nEntry, &type->nestedTypesHead, entries) {
+        TAILQ_FOREACH(nEntry, &current->nestedTypesHead, entries) {
             if (strcmp(name, nEntry->type->name) == 0) {
-                result = nEntry->type;
-                break;
+                return nEntry->type;
             }
         }
     }
-
-    if (result == NULL && type->parent != NULL) {
-        result = dynType_findType(type->parent, name);
-    }
-
-    return result;
+    return NULL;
 }
 
-ffi_type * dynType_ffiType(dyn_type * type) {
-    if (type->type == DYN_TYPE_REF) {
-        if (type->ref.ref == NULL) {
-            LOG_ERROR("Error. Ref for %s is not (yet) initialized", type->name);
-            return NULL;
-        }
-        return type->ref.ref->ffiType;
-    }
-    return type->ffiType;
-}
-
-void dynType_prepCif(ffi_type *type) {
-    ffi_cif cif;
-    ffi_type *args[1];
-    args[0] = type;
-    ffi_prep_cif(&cif, FFI_DEFAULT_ABI, 1, &ffi_type_uint, args);
+ffi_type* dynType_ffiType(const dyn_type * type) {
+    return dynType_realType(type)->ffiType;
 }
 
