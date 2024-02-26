@@ -1215,18 +1215,6 @@ size_t celix_bundleContext_useServicesWithOptions(
     return data.count;
 }
 
-long celix_bundleContext_trackService(bundle_context_t* ctx, const char* serviceName) {
-    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    opts.filter.serviceName = serviceName;
-    return celix_bundleContext_trackServicesWithOptionsInternal(ctx, &opts, false);
-}
-
-long celix_bundleContext_trackServiceAsync(bundle_context_t* ctx, const char* serviceName) {
-    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    opts.filter.serviceName = serviceName;
-    return celix_bundleContext_trackServicesWithOptionsInternal(ctx, &opts, true);
-}
-
 long celix_bundleContext_trackServices(bundle_context_t* ctx, const char* serviceName) {
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.serviceName = serviceName;
