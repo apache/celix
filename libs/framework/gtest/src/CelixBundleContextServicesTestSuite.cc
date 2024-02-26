@@ -1698,6 +1698,10 @@ TEST_F(CelixBundleContextServicesTestSuite, WaitForTrackerOnLoop) {
     celix_bundleContext_waitForEvents(ctx);
 }
 
+TEST_F(CelixBundleContextServicesTestSuite, WaitForNonexistingTracker) {
+    celix_bundleContext_waitForAsyncTracker(ctx, 111L /* non-existing tracker */);
+}
+
 TEST_F(CelixBundleContextServicesTestSuite, StopBundleTrackerBeforeAsyncTrackerIsCreatedTest) {
     struct callback_data {
         std::atomic<int> count{};
