@@ -517,19 +517,23 @@ void celix_bundleContext_waitForAsyncUnregistration(celix_bundle_context_t* ctx,
 }
 
 celix_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_context_t *ctx) {
-    celix_dependency_manager_t* result = NULL;
-    if (ctx != NULL) {
-        celixThreadRwlock_readLock(&ctx->lock);
-        if (ctx->mng == NULL) {
-            ctx->mng = celix_private_dependencyManager_create(ctx);
-        }
-        if (ctx->mng == NULL) {
-            framework_logIfError(ctx->framework->logger, CELIX_BUNDLE_EXCEPTION, NULL, "Cannot create dependency manager");
-        }
-        result = ctx->mng;
-        celixThreadRwlock_unlock(&ctx->lock);
+    if (ctx == NULL) {
+        return NULL;
     }
-    return result;
+    celix_auto(celix_rwlock_rlock_guard_t) rlockGuard = celixRwlockRlockGuard_init(&ctx->lock);
+    if (ctx->mng) {
+        return ctx->mng;
+    }
+    celixThreadRwlock_unlock(celix_steal_ptr(rlockGuard.lock));
+
+    celix_auto(celix_rwlock_wlock_guard_t) wlockGuard = celixRwlockWlockGuard_init(&ctx->lock);
+    if (ctx->mng == NULL) {
+        ctx->mng = celix_private_dependencyManager_create(ctx);
+    }
+    if (ctx->mng == NULL) {
+        framework_logIfError(ctx->framework->logger, CELIX_BUNDLE_EXCEPTION, NULL, "Cannot create dependency manager");
+    }
+    return ctx->mng;
 }
 
 static celix_status_t bundleContext_bundleChanged(void* listenerSvc, bundle_event_t* event) {

@@ -139,7 +139,9 @@ static CELIX_UNUSED inline celix_mutex_lock_guard_t celixMutexLockGuard_init(cel
  * @param guard A celix_mutex_lock_guard_t.
  */
 static CELIX_UNUSED inline void celixMutexLockGuard_deinit(celix_mutex_lock_guard_t* guard) {
-    celixThreadMutex_unlock(guard->mutex);
+    if (guard->mutex) {
+        celixThreadMutex_unlock(guard->mutex);
+    }
 }
 
 CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_mutex_lock_guard_t, celixMutexLockGuard_deinit)
@@ -211,7 +213,9 @@ static CELIX_UNUSED inline celix_rwlock_wlock_guard_t celixRwlockWlockGuard_init
  * @param guard A celix_rwlock_wlock_guard_t.
  */
 static CELIX_UNUSED inline void celixRwlockWlockGuard_deinit(celix_rwlock_wlock_guard_t* guard) {
-    celixThreadRwlock_unlock(guard->lock);
+    if (guard->lock) {
+        celixThreadRwlock_unlock(guard->lock);
+    }
 }
 
 CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_rwlock_wlock_guard_t, celixRwlockWlockGuard_deinit)
@@ -256,7 +260,9 @@ static CELIX_UNUSED inline celix_rwlock_rlock_guard_t celixRwlockRlockGuard_init
  * @param guard A celix_rwlock_rlock_guard_t.
  */
 static CELIX_UNUSED inline void celixRwlockRlockGuard_deinit(celix_rwlock_rlock_guard_t* guard) {
-    celixThreadRwlock_unlock(guard->lock);
+    if (guard->lock) {
+        celixThreadRwlock_unlock(guard->lock);
+    }
 }
 
 CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_rwlock_rlock_guard_t, celixRwlockRlockGuard_deinit)
