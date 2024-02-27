@@ -61,6 +61,11 @@ limitations under the License.
 - the celix_arrayList_add function no longer accepts a NULL value.
 - version.h and version_range.h are removed and no longer supported. Use celix_version.h and celix_version_range.h 
   instead.
+- The signature of `celix_bundleContext_trackServices` has changed. The signature is now simpler to better support
+  the use-case of using a service tracker with the `celix_bundleContext_useTrackedService*` functions.
+  The `celix_bundleContext_trackServicesWithOptions` is still available for more advanced use-cases.
+- Function `celix_bundle_destroyServiceTrackerList` is removed. The returned array list from 
+  `celix_bundle_listServiceTrackers` is now configured to destroy the service trackers info entries.
 
 ## New Features
 
