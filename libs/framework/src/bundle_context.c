@@ -681,7 +681,7 @@ static void bundleContext_cleanupBundleTrackers(bundle_context_t* ctx) {
 
     celix_array_list_t* danglingTrkIds = NULL;
 
-    celixThreadRwlock_writeLock(&ctx->lock);
+    celixThreadRwlock_readLock(&ctx->lock);
     CELIX_LONG_HASH_MAP_ITERATE(ctx->bundleTrackers, iter) {
         long trkId = iter.key;
         fw_log(
@@ -714,7 +714,7 @@ static void bundleContext_cleanupServiceTrackers(bundle_context_t* ctx) {
 
     celix_array_list_t* danglingTrkIds = NULL;
 
-    celixThreadRwlock_writeLock(&ctx->lock);
+    celixThreadRwlock_readLock(&ctx->lock);
     CELIX_LONG_HASH_MAP_ITERATE(ctx->serviceTrackers, iter) {
         long trkId = iter.key;
         celix_bundle_context_service_tracker_entry_t* entry = celix_longHashMap_get(ctx->serviceTrackers, trkId);
@@ -724,7 +724,7 @@ static void bundleContext_cleanupServiceTrackers(bundle_context_t* ctx) {
                "'celix_bundleContext_stopTracker' calls.",
                trkId,
                symbolicName,
-               entry->tracker->filter);
+               entry->tracker ? entry->tracker->filter : "unknown");
         if (danglingTrkIds == NULL) {
             danglingTrkIds = celix_arrayList_create();
         }
@@ -749,7 +749,7 @@ static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t* ctx) {
 
     celix_array_list_t* danglingTrkIds = NULL;
 
-    celixThreadRwlock_writeLock(&ctx->lock);
+    celixThreadRwlock_readLock(&ctx->lock);
     CELIX_LONG_HASH_MAP_ITERATE(ctx->metaTrackers, iter) {
         long trkId = iter.key;
         celix_bundle_context_service_tracker_tracker_entry_t* entry = celix_longHashMap_get(ctx->metaTrackers, trkId);
@@ -759,7 +759,7 @@ static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t* ctx) {
                "Add missing 'celix_bundleContext_stopTracker' calls.",
                trkId,
                symbolicName,
-               entry->serviceName);
+               entry->serviceName ? entry->serviceName : "all");
         if (danglingTrkIds == NULL) {
             danglingTrkIds = celix_arrayList_create();
         }
@@ -784,16 +784,17 @@ static void bundleContext_cleanupServiceRegistration(bundle_context_t* ctx) {
 
     celix_array_list_t* danglingSvcIds = NULL;
 
-    celixThreadRwlock_writeLock(&ctx->lock);
+    celixThreadRwlock_readLock(&ctx->lock);
     for (int i = 0; i < celix_arrayList_size(ctx->svcRegistrations); ++i) {
         long svcId = celix_arrayList_getLong(ctx->svcRegistrations, i);
-        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Dangling service registration with svcId %li, for bundle %s. Add missing 'celix_bundleContext_unregisterService' calls.", svcId, symbolicName);
+        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR,
+               "Dangling service registration with svcId %li, for bundle %s. "
+               "Add missing 'celix_bundleContext_unregisterService' calls.", svcId, symbolicName);
         if (danglingSvcIds == NULL) {
             danglingSvcIds = celix_arrayList_create();
         }
         celix_arrayList_addLong(danglingSvcIds, svcId);
     }
-    celix_arrayList_clear(ctx->svcRegistrations);
     celixThreadRwlock_unlock(&ctx->lock);
 
     if (danglingSvcIds != NULL) {
