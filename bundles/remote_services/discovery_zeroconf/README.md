@@ -25,14 +25,14 @@ The `Discovery_zeroconf` is implemented based on [Bonjour](https://github.com/ap
 
 The mapping between celix and mdns services is as follows:
 
-| **mDNS service** | **celix service**                                                                                                            |
-|------------------|------------------------------------------------------------------------------------------------------------------------------|
-| instance name    | service name+pid(process id)                                                                                                 |
-| service type     | "${last word of service configuration type}._sub._celix-rpc._udp"                                                            |
-| domain name      | "local"                                                                                                                      |
-| txt record       | service properties                                                                                                           |
-| host             | hostname.                                                                                                                    |
-| port             | The property value of "${service configuration type}.port". If it is not network server, it will be set a dummy value(65535) |
+| **mDNS service** | **celix service**             |
+|------------------|-------------------------------|
+| instance name    | service name+pid(process id)  |
+| service type     | "${last word of service configuration type}._sub._celix-rpc._udp"|
+| domain name      | "local"                       |
+| txt record       | service properties            |
+| host             | hostname of OS(It can be got by gethostname function).|
+| port             | The property value of "celix.rsa.port". It is set by RSA. If it is not network server, Discovery will set a dummy value(65535) to mDNS daemon.|
 
 
 The domain name value is set to "local" , because for remote discovery the mDNS query will only use link-local multicast.

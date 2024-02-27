@@ -39,6 +39,7 @@ Libffi is configured using descriptor files in the bundles.
                                     Default is false
     CELIX_RSA_BIND_ON_ALL_INTERFACES    If set to true the RSA will bind to all interfaces. Default is true.
 
+    CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT    If set to true the RSA will support dynamic IP address fill-in for service exports. Default is false.
 
 ###### CMake option
     RSA_REMOTE_SERVICE_ADMIN_DFI=ON

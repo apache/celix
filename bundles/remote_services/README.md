@@ -87,6 +87,22 @@ Provides a service discovery using Bonjour.
 |--|----------------------------|
 | **Configuration** | See  [Zeroconf Discovery](discovery_zeroconf/README.md) |
 
+## Dynamic IP Mechanism For Remote Service Admin
+
+In order to make remote services work without configuring the IP of the RSA, we have designed the following dynamic IP mechanism.
+
+  - The remote service admin service adds the property "celix.rsa.dynamic.ip.support". If RSA sets this property to true, the RSA will support dynamic IP address.
+  - If the RSA supports dynamic IP addresses, it should bind the network service address to any address(0.0.0.0/::), and set the property "celix.rsa.port" (which indicates the network port number of the remote service) for the exported remote service endpoint.
+  - The endpoint listener service of discovery adds the property "celix.rsa.discovery.interface.specific.endpoints.support". If this property is set to true, it means that the discovery support dynamic IP address filling.
+  - Add the configuration property "CELIX_RSA_INTERFACES_OF_PORT_<port>", which indicates which network interfaces is used to expose the specified port service.
+  - When the topology manager exports remote services, it should detect whether the "celix.rsa.dynamic.ip.support" property of the remote service admin service is true. If so, the topology manager should create multiple endpoints that support dynamic IP address for a single export registration base on CELIX_RSA_INTERFACES_OF_PORT_<port>. These endpoints are then forwarded to the discovery endpoint listener services that support dynamic IP address filling.
+  - The endpoint that supports dynamic IP address adds the property "celix.rsa.ifname", which indicates which network interface is used for exported endpoint exposure. This property is set by the topology manager based on CELIX_RSA_INTERFACES_OF_PORT_<port>.
+  - The endpoint that supports dynamic IP address adds the property "celix.rsa.ip.addresses", which indicates the list of IP addresses corresponding to the endpoint. When the topology manager creates the endpoint description that supports dynamic IP address, the value of this property should be set to null, and the discovery that support dynamic IP address filling will replace the value(Discovery will decide whether to fill in the dynamic IP addresses based on whether the "celix.rsa.ip.addresses" key exists or not).
+
+The sequence diagram of the dynamic IP mechanism is as follows:
+![dynamic_ip_filling](diagrams/dynamic_ip_filling_seq.png)
+
+  The example of dynamic IP mechanism see `remote-services-zeroconf-server` and `remote-services-zeroconf-client`.
 
 ## Usage
 

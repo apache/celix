@@ -236,12 +236,14 @@ The data types supported by the interface description include:
   ~~~
   In order to represent the properties of function parameters (eg: in, out...), function parameters support the following metadata annotations:
 
-  |Meta-info|Description|
-  |---------|-----------|
-  |am=handle| void pointer for the handle|
-  |am=pre   | output pointer with memory pre-allocated|
-  |am=out   | output pointer, the caller should use `free` to release the memory|
+  |Meta-info| Description|
+  |---------|------------|
+  |am=handle| void pointer for the handle.|
+  |am=pre   | output pointer with memory pre-allocated, it should be pointer to [trivially copyable type](#notion-definitions).|
+  |am=out   | output pointer, the caller should use `free` to release the memory, and it should be pointer to text(t) or double pointer to [serializable types](#notion-definitions).|
   |const=true| text argument(t) can use it, Normally a text argument will be handled as char*, meaning that the callee is expected to take of ownership.If a const=true annotation is used the text argument will be handled as a const char*, meaning that the caller keeps ownership of the string.|
+
+  If there is no metadata annotation, the default is standard argument(input parameter). And it can be any serializable type.
 
   *Example*:
   ~~~
@@ -251,9 +253,16 @@ The data types supported by the interface description include:
   ~~~
   int add(void* handle,double a, double b, double *ret);
   ~~~
-  > **Notes**:
-  > - For RPC interface, the return type of methods must be N, because remote service calls usually return error codes.
-  > - Currently, the method only supports one output parameter, so the method cannot be defined in a multi-output parameter form.
+
+##### Notion Definitions
+
+- **trivially copyable type**: A trivially copyable type is a type that can be copied with a simple memcpy without the usual danger of shallow copying.
+- **serializable type**: All types except types involving untyped pointer or double pointer (pointer to pointer) are serializable. For example, complex types consisting of non-pointer fields are serializable while complex type containing a untyped pointer field is not serializable; [I is serializable while [P and [**D are not serializable.
+
+##### RSA Interface Convention Enforcement:
+  - For RSA interface, the return type of methods must be N, because remote service calls usually return error codes.
+  - The first parameter of a method must be `handle`, and`am=handle` can appear exactly once.
+  - If exists, output parameter (either `am=pre` or `am=out`) is only allowed as the last one. Therefore, there is at most one output parameter.
 
 #### Interface Description File
 

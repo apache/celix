@@ -1,0 +1,43 @@
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+@startuml
+'https://plantuml.com/sequence-diagram
+
+Box "Framework A"
+participant "RSA" as RSA_A
+participant "TopologyManager" as TM_A
+participant "Discovery" as Discovery_A
+end Box
+
+Box "Framework B"
+participant "Discovery" as Discovery_B
+participant "TopologyManager" as TM_B
+participant "RSA" as RSA_B
+end Box
+
+TM_A -> RSA_A: exportService()
+note over RSA_A: Exported service endpoint description e.g.:\n{\ncelix.rsa.port: 80"(set by RSA),\n...\n}"
+TM_A -> TM_A: Create endpoint descriptions\n that support dynamic ip
+note over TM_A: Dynamic ip endpoint description e.g.:\n{\ncelix.rsa.ifname: "eth0"(set by TopologyManager),\ncelix.rsa.port: 80",\ncelix.rsa.ip.addresses:""(set by TopologyManager),\n...\n}
+TM_A -> Discovery_A: endpointAdded()
+
+Discovery_A -> Discovery_B: Announce endpoint \nto other frameworks
+
+Discovery_B -> Discovery_B: Watch remote endpoints \nand fill in dynamic ip
+Discovery_B -> TM_B: endpointAdded()
+note over TM_B: Dynamic ip endpoint description e.g.:\n{\ncelix.rsa.port: 80",\ncelix.rsa.ip.addresses:"192.168...1.1, 192.168...1.2"(replaced by Discovery),\n...\n}"
+TM_B -> RSA_B: importService()
+@enduml
