@@ -1,0 +1,45 @@
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+@startuml
+
+box server process
+participant Announcer
+control AnnouncerThread
+participant Fw
+participant mDNS_daemon
+end box
+Announcer->Fw:register endpoint listener service
+create AnnouncerThread
+Announcer ->AnnouncerThread:
+==setup==
+--\Announcer: add endpoint\n (use endpoint listener service)
+loop
+    alt mDNS server disconnect
+        AnnouncerThread->mDNS_daemon:DNSServiceCreateConnection
+        return DNSServiceRef
+    end alt
+
+    alt Have new endpoint
+        AnnouncerThread->AnnouncerThread:Converting endpoint properties to txt records(max 1300 bytes)
+        AnnouncerThread->mDNS_daemon:DNSServiceRegister(DNSServiceRef,instanceName, txtRecord ...)
+        return registerRef
+        loop Have more endpoint properties
+            AnnouncerThread->mDNS_daemon:DNSServiceAddRecord(registerRef, txtRecord ...)
+        end loop
+    end alt
+end loop
+
+@enduml
