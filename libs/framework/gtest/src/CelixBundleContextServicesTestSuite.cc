@@ -2045,3 +2045,26 @@ TEST_F(CelixBundleContextServicesTestSuite, UseTrackedServiceOnTheCelixEventThre
             nullptr);
     celix_framework_waitForGenericEvent(fw, eventId);
 }
+
+TEST_F(CelixBundleContextServicesTestSuite, CreateServiceTrackedOnUseServiceTrackerCall) {
+    //Given a registered service with a service registration guard
+    long svcId = celix_bundleContext_registerService(ctx, (void*)0x42, "test", nullptr);
+    celix_auto(celix_service_registration_guard_t) svcGuard = celix_serviceRegistrationGuard_init(ctx, svcId);
+
+    //And a  service tracker for the "test" service with a service tracker guard
+    long trkId = celix_bundleContext_trackServices(ctx, "test");
+    celix_auto(celix_tracker_guard_t) trkGuard = celix_trackerGuard_init(ctx, trkId);
+
+    //When all events are processed
+    celix_bundleContext_waitForEvents(ctx);
+
+    //Then I can create and destroy an additional service tracker on the callback of the useTrackedService function
+    auto useCallback = [](void *data, void* /*svc*/) {
+        auto c = static_cast<celix_bundle_context_t *>(data);
+        long additionalTrkId = celix_bundleContext_trackServices(c, "foo");
+        EXPECT_GT(additionalTrkId, 0);
+        celix_bundleContext_stopTracker(c, additionalTrkId);
+    };
+    bool called = celix_bundleContext_useTrackedService(ctx, trkId, ctx, useCallback);
+    EXPECT_TRUE(called);
+}
