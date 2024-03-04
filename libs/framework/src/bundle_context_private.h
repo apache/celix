@@ -59,6 +59,9 @@ typedef struct celix_bundle_context_service_tracker_entry {
     // used for sync
     long createEventId;
     bool cancelled; // if tracker is stopped before created async
+
+    unsigned int useCount; // atomic, used to keep track of the number of times the tracker is used for a
+                           // useTrackedService or useService call
 } celix_bundle_context_service_tracker_entry_t;
 
 typedef struct celix_bundle_context_service_tracker_tracker_entry {
