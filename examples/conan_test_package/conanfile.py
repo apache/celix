@@ -24,6 +24,9 @@ class TestPackageConan(ConanFile):
     generators = "cmake_paths", "cmake_find_package"
     # requires = "celix/2.3.0@docker/test"
 
+    def imports(self):
+        self.copy("*", src="@libdirs", dst="lib")
+
     def build(self):
         cmake = CMake(self)
         cmake.definitions["TEST_FRAMEWORK"] = self.options["celix"].build_framework
@@ -56,10 +59,7 @@ class TestPackageConan(ConanFile):
         cmake.definitions["TEST_COMPONENTS_READY_CHECK"] = self.options["celix"].build_components_ready_check
         cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround https://github.com/conan-io/conan/issues/7192
-        if self.settings.os == "Linux":
-            cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
-        elif self.settings.os == "Macos":
-            cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
+        cmake.definitions["CMAKE_BUILD_RPATH"] = os.path.join(self.build_folder, "lib")
         cmake.configure()
         cmake.build()
 
