@@ -29,6 +29,8 @@
 #include "dfi_utils.h"
 #include "remote_interceptors_handler.h"
 
+#include <string.h>
+
 struct export_reference {
     endpoint_description_t *endpoint; //owner
     service_reference_pt reference;
@@ -98,7 +100,7 @@ celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_ref
     }
 
     const char *exports = NULL;
-    CELIX_DO_IF(status, serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports));
+    CELIX_DO_IF(status, serviceReference_getProperty(reference, (char *) CELIX_RSA_SERVICE_EXPORTED_INTERFACES, &exports));
 
     celix_bundle_t *bundle = NULL;
     CELIX_DO_IF(status, serviceReference_getBundle(reference, &bundle));
@@ -109,8 +111,7 @@ celix_status_t exportRegistration_create(celix_log_helper_t *helper, service_ref
 
     if (status == CELIX_SUCCESS) {
         /* Add the interface version as a property in the properties_map */
-        char* intfVersion = NULL;
-        dynInterface_getVersionString(reg->intf, &intfVersion);
+        const char* intfVersion = dynInterface_getVersionString(reg->intf);
         const char *serviceVersion = celix_properties_get(endpoint->properties,(char*) CELIX_FRAMEWORK_SERVICE_VERSION, NULL);
         if (serviceVersion != NULL) {
             if(strcmp(serviceVersion,intfVersion)!=0){
@@ -190,8 +191,7 @@ celix_status_t exportRegistration_call(export_registration_t *export, char *data
             //printf("calling for '%s'\n");
             if (export->logFile != NULL) {
                 static int callCount = 0;
-                char *name = NULL;
-                dynInterface_getName(export->intf, &name);
+                const char *name = dynInterface_getName(export->intf);
                 fprintf(export->logFile, "REMOTE CALL %i\n\tservice=%s\n\tservice_id=%s\n\trequest_payload=%s\n\trequest_response=%s\n\tstatus=%i\n", callCount, name, export->servId, data, response, status);
                 fflush(export->logFile);
                 callCount += 1;
@@ -216,17 +216,6 @@ static celix_status_t exportRegistration_findAndParseInterfaceDescriptor(celix_l
         if (rc != 0) {
             celix_logHelper_logTssErrors(helper, CELIX_LOG_LEVEL_WARNING);
             celix_logHelper_warning(helper, "RSA_DFI: Error parsing service descriptor for \"%s\", return code is %d.", name, rc);
-            status = CELIX_BUNDLE_EXCEPTION;
-        }
-        return status;
-    }
-
-    status = dfi_findAvprDescriptor(context, bundle, name, &descriptor);
-    if (status == CELIX_SUCCESS && descriptor != NULL) {
-        *out = dynInterface_parseAvpr(descriptor);
-        if (*out == NULL) {
-            celix_logHelper_logTssErrors(helper, CELIX_LOG_LEVEL_WARNING);
-            celix_logHelper_warning(helper, "RSA_AVPR: Error parsing avpr service descriptor for '%s'", name);
             status = CELIX_BUNDLE_EXCEPTION;
         }
         return status;

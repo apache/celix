@@ -184,10 +184,10 @@ long serviceReference_getServiceId(service_reference_pt ref) {
 celix_status_t
 serviceReference_getPropertyWithDefault(service_reference_pt ref, const char *key, const char* def, const char **value) {
     celix_status_t status = CELIX_SUCCESS;
-    properties_pt props = NULL;
+    celix_properties_t* props = NULL;
     status = serviceRegistration_getProperties(ref->registration, &props);
     if (status == CELIX_SUCCESS) {
-        *value = (char*) properties_getWithDefault(props, key, def);
+        *value = (char*) celix_properties_get(props, key, def);
     }
     return status;
 }
@@ -313,7 +313,7 @@ unsigned int serviceReference_hashCode(const void *referenceP) {
 }
 
 
-celix_status_t serviceReference_getUsingBundles(service_reference_pt ref, array_list_pt *out) {
+celix_status_t serviceReference_getUsingBundles(service_reference_pt ref, celix_array_list_t** out) {
     celix_status_t status = CELIX_SUCCESS;
     registry_callback_t callback;
 

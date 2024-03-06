@@ -22,8 +22,9 @@
 
 #include <stdlib.h>
 
-#include "celix_threads.h"
+#include "celix_bundle_context.h"
 #include "celix_shell.h"
+#include "celix_threads.h"
 
 typedef struct shell_tui shell_tui_t ;
 
@@ -35,7 +36,8 @@ typedef struct shell_tui shell_tui_t ;
  * @param outputFd The output file descriptor to use.
  * @param errorFd The error output file descriptor to use.
  */
-shell_tui_t* shellTui_create(bool useAnsiControlSequences, int inputFd, int outputFd, int errorFd);
+shell_tui_t*
+shellTui_create(celix_bundle_context_t* ctx, bool useAnsiControlSequences, int inputFd, int outputFd, int errorFd);
 
 /**
  * @brief Start the shell tui and the thread reading the tty and optional extra read file descriptor.

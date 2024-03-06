@@ -27,14 +27,11 @@
 #ifndef ENDPOINT_LISTENER_H_
 #define ENDPOINT_LISTENER_H_
 
-#include "array_list.h"
-#include "properties.h"
-
 #include "endpoint_description.h"
 
-static const char * const OSGI_ENDPOINT_LISTENER_SERVICE = "endpoint_listener";
+#define CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME "endpoint_listener"
 
-static const char * const OSGI_ENDPOINT_LISTENER_SCOPE = "endpoint.listener.scope";
+#define CELIX_RSA_ENDPOINT_LISTENER_SCOPE "endpoint.listener.scope"
 
 struct endpoint_listener {
     void *handle;

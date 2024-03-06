@@ -26,11 +26,11 @@ add_celix_bundle(rsa_dfi_tst_bundle
 celix_deprecated_utils_headers(rsa_dfi_tst_bundle)
 celix_deprecated_framework_headers(rsa_dfi_tst_bundle)
 
-#add calculator avpr
+#add calculator
 get_target_property(DESCR calculator_api INTERFACE_DESCRIPTOR)
 celix_bundle_files(rsa_dfi_tst_bundle ${DESCR} DESTINATION .)
 
-#add remote example avpr
+#add remote example
 get_target_property(DESCR remote_example_api INTERFACE_DESCRIPTOR)
 celix_bundle_files(rsa_dfi_tst_bundle ${DESCR} DESTINATION .)
 
@@ -69,6 +69,10 @@ configure_file(client.properties.in client.properties)
 configure_file(server.properties.in server.properties)
 #add exception service interface descriptor
 configure_file(exception_test_service.descriptor exception_test_service.descriptor)
+
+target_compile_options(test_rsa_dfi PRIVATE -DRSA_DFI_BUNDLE_FILE="${rsa_bundle_file}")
+target_compile_options(test_rsa_dfi PRIVATE -DCALC_BUNDLE_FILE="${calc_bundle_file}")
+target_compile_options(test_rsa_dfi PRIVATE -DTST_BUNDLE_FILE="${tst_bundle_file}")
 
 add_celix_bundle_dependencies(test_rsa_dfi
         rsa_dfi #note depend on the target creating the bundle zip not the lib target

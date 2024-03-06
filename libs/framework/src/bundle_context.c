@@ -43,7 +43,9 @@
 #include "celix_array_list.h"
 #include "celix_convert_utils.h"
 
-static celix_status_t bundleContext_bundleChanged(void *handle, bundle_event_t *event);
+#define TRACKER_WARN_THRESHOLD_SEC 5
+
+static celix_status_t bundleContext_bundleChanged(void* listenerSvc, bundle_event_t* event);
 static void bundleContext_cleanupBundleTrackers(bundle_context_t *ct);
 static void bundleContext_cleanupServiceTrackers(bundle_context_t *ctx);
 static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t *ctx);
@@ -65,13 +67,13 @@ celix_status_t bundleContext_create(framework_pt framework, celix_framework_logg
             context->bundle = bundle;
             context->mng = NULL;
 
-            celixThreadMutex_create(&context->mutex, NULL);
+            celixThreadRwlock_create(&context->lock, NULL);
 
             context->svcRegistrations = celix_arrayList_create();
-            context->bundleTrackers = hashMap_create(NULL,NULL,NULL,NULL);
-            context->serviceTrackers = hashMap_create(NULL,NULL,NULL,NULL);
-            context->metaTrackers =  hashMap_create(NULL,NULL,NULL,NULL);
-            context->stoppingTrackerEventIds = hashMap_create(NULL,NULL,NULL,NULL);
+            context->bundleTrackers = celix_longHashMap_create();
+            context->serviceTrackers = celix_longHashMap_create();
+            context->metaTrackers =  celix_longHashMap_create();
+            context->stoppingTrackerEventIds = celix_longHashMap_create();
             context->nextTrackerId = 1L;
 
             *bundle_context = context;
@@ -84,22 +86,21 @@ celix_status_t bundleContext_create(framework_pt framework, celix_framework_logg
 }
 
 celix_status_t bundleContext_destroy(bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-
-    if(context == NULL) {
+    if (context == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    assert(hashMap_size(context->bundleTrackers) == 0);
-    hashMap_destroy(context->bundleTrackers, false, false);
-    assert(hashMap_size(context->serviceTrackers) == 0);
-    hashMap_destroy(context->serviceTrackers, false, false);
-    assert(hashMap_size(context->metaTrackers) == 0);
-    hashMap_destroy(context->metaTrackers, false, false);
+
+    assert(celix_longHashMap_size(context->bundleTrackers) == 0);
+    celix_longHashMap_destroy(context->bundleTrackers);
+    assert(celix_longHashMap_size(context->serviceTrackers) == 0);
+    celix_longHashMap_destroy(context->serviceTrackers);
+    assert(celix_longHashMap_size(context->metaTrackers) == 0);
+    celix_longHashMap_destroy(context->metaTrackers);
     assert(celix_arrayList_size(context->svcRegistrations) == 0);
     celix_arrayList_destroy(context->svcRegistrations);
-    hashMap_destroy(context->stoppingTrackerEventIds, false, false);
+    celix_longHashMap_destroy(context->stoppingTrackerEventIds);
 
-    celixThreadMutex_destroy(&context->mutex);
+    celixThreadRwlock_destroy(&context->lock);
 
     if (context->mng != NULL) {
         celix_dependencyManager_removeAllComponents(context->mng);
@@ -108,7 +109,7 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
     }
 
     free(context);
-	return status;
+    return CELIX_SUCCESS;
 }
 
 void celix_bundleContext_cleanup(celix_bundle_context_t* ctx) {
@@ -147,7 +148,10 @@ celix_status_t bundleContext_installBundle(bundle_context_pt context, const char
     return bundleContext_installBundle2(context, location, NULL, bundle);
 }
 
-celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char *location, const char *inputFile, bundle_pt *bundle) {
+celix_status_t bundleContext_installBundle2(bundle_context_pt context,
+                                            const char* location,
+                                            const char* inputFile __attribute__((unused)),
+                                            bundle_pt* bundle) {
     celix_status_t status = CELIX_SUCCESS;
     long id = -1L;
     if (context == NULL || location == NULL || bundle == NULL) {
@@ -161,7 +165,7 @@ celix_status_t bundleContext_installBundle2(bundle_context_pt context, const cha
 }
 
 celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, const void * svcObj,
-        properties_pt properties, service_registration_pt *service_registration) {
+         celix_properties_t* properties, service_registration_pt *service_registration) {
     if (context == NULL || service_registration == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
@@ -170,7 +174,7 @@ celix_status_t bundleContext_registerService(bundle_context_pt context, const ch
 }
 
 celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, const char * serviceName, service_factory_pt factory,
-        properties_pt properties, service_registration_pt *service_registration) {
+         celix_properties_t* properties, service_registration_pt *service_registration) {
     if (context == NULL || service_registration == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
@@ -178,7 +182,7 @@ celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, c
     return fw_registerServiceFactory(context->framework, service_registration, bndId, serviceName, factory, properties);
 }
 
-celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, const char * filter, array_list_pt *service_references) {
+celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, const char * filter, celix_array_list_t** service_references) {
     if (context == NULL || service_references == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
@@ -187,20 +191,20 @@ celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, con
 
 celix_status_t bundleContext_getServiceReference(bundle_context_pt context, const char * serviceName, service_reference_pt *service_reference) {
     service_reference_pt reference = NULL;
-    array_list_pt services = NULL;
+    celix_array_list_t* services = NULL;
     celix_status_t status = CELIX_SUCCESS;
 
     if (serviceName != NULL) {
         if (bundleContext_getServiceReferences(context, serviceName, NULL, &services) == CELIX_SUCCESS) {
-            unsigned int size = arrayList_size(services);
+            unsigned int size = celix_arrayList_size(services);
             for(unsigned int i = 0; i < size; i++) {
                 if(i == 0) {
-                    reference = arrayList_get(services, 0);
+                    reference = celix_arrayList_get(services, 0);
                 } else {
-                    bundleContext_ungetServiceReference(context, arrayList_get(services, i));
+                    bundleContext_ungetServiceReference(context, celix_arrayList_get(services, i));
                 }
             }
-            arrayList_destroy(services);
+            celix_arrayList_destroy(services);
             *service_reference = reference;
         } else {
             status = CELIX_ILLEGAL_ARGUMENT;
@@ -251,7 +255,7 @@ celix_status_t bundleContext_ungetService(bundle_context_pt context, service_ref
     return serviceReference_ungetService(reference, result);
 }
 
-celix_status_t bundleContext_getBundles(bundle_context_pt context, array_list_pt *bundles) {
+celix_status_t bundleContext_getBundles(bundle_context_pt context, celix_array_list_t** bundles) {
     if (context == NULL || bundles == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
@@ -389,15 +393,29 @@ static long celix_bundleContext_registerServiceWithOptionsInternal(bundle_contex
     }
 
     //set properties
-    celix_properties_t *props = opts->properties;
+    celix_autoptr(celix_properties_t) props = opts->properties;
     if (props == NULL) {
         props = celix_properties_create();
     }
+
     if (opts->serviceVersion != NULL && strncmp("", opts->serviceVersion, 1) != 0) {
-        celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_VERSION, opts->serviceVersion);
+        celix_autoptr(celix_version_t) version = celix_version_createVersionFromString(opts->serviceVersion);
+        if (!version) {
+            celix_framework_logTssErrors(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR);
+            fw_log(
+                ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot parse service version %s", opts->serviceVersion);
+            return -1;
+        }
+        celix_status_t rc =
+            celix_properties_setVersionWithoutCopy(props, CELIX_FRAMEWORK_SERVICE_VERSION, celix_steal_ptr(version));
+        if (rc != CELIX_SUCCESS) {
+            celix_framework_logTssErrors(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR);
+            fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot set service version %s", opts->serviceVersion);
+            return -1;
+        }
     }
 
-    long svcId = -1;
+    long svcId;
     if (!async && celix_framework_isCurrentThreadTheEventLoop(ctx->framework)) {
         /*
          * Note already on event loop, cannot register the service async, because we cannot wait a future event (the
@@ -407,23 +425,20 @@ static long celix_bundleContext_registerServiceWithOptionsInternal(bundle_contex
          * registrations versions on the event loop thread
          */
 
-        svcId = celix_framework_registerService(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, opts->factory, props);
+        svcId = celix_framework_registerService(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, opts->factory, celix_steal_ptr(props));
     } else {
         void (*asyncCallback)(void *data, long serviceId) = async ? opts->asyncCallback : NULL; //NOTE for not async call do not use the callback.
-        svcId = celix_framework_registerServiceAsync(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, opts->factory, props, opts->asyncData, asyncCallback, NULL, NULL);
+        svcId = celix_framework_registerServiceAsync(ctx->framework, ctx->bundle, opts->serviceName, opts->svc, opts->factory, celix_steal_ptr(props), opts->asyncData, asyncCallback, NULL, NULL);
         if (!async && svcId >= 0) {
             //note on event loop thread, but in a sync call, so waiting till service registration is concluded
             celix_bundleContext_waitForAsyncRegistration(ctx, svcId);
         }
     }
 
-
-    if (svcId < 0) {
-        properties_destroy(props);
-    } else {
-        celixThreadMutex_lock(&ctx->mutex);
+    if (svcId >= 0) {
+        celixThreadRwlock_writeLock(&ctx->lock);
         celix_arrayList_addLong(ctx->svcRegistrations, svcId);
-        celixThreadMutex_unlock(&ctx->mutex);
+        celixThreadRwlock_unlock(&ctx->lock);
     }
     return svcId;
 }
@@ -449,7 +464,7 @@ bool celix_bundleContext_isServiceRegistered(celix_bundle_context_t* ctx, long s
 static void celix_bundleContext_unregisterServiceInternal(celix_bundle_context_t *ctx, long serviceId, bool async, void *data, void (*done)(void*)) {
     long found = -1L;
     if (ctx != NULL && serviceId >= 0) {
-        celixThreadMutex_lock(&ctx->mutex);
+        celixThreadRwlock_writeLock(&ctx->lock);
         int size = celix_arrayList_size(ctx->svcRegistrations);
         for (int i = 0; i < size; ++i) {
             long entryId = celix_arrayList_getLong(ctx->svcRegistrations, i);
@@ -459,7 +474,7 @@ static void celix_bundleContext_unregisterServiceInternal(celix_bundle_context_t
                 break;
             }
         }
-        celixThreadMutex_unlock(&ctx->mutex);
+        celixThreadRwlock_unlock(&ctx->lock);
 
         if (found >= 0) {
             if (async) {
@@ -504,34 +519,37 @@ void celix_bundleContext_waitForAsyncUnregistration(celix_bundle_context_t* ctx,
 }
 
 celix_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_context_t *ctx) {
-    celix_dependency_manager_t* result = NULL;
-    if (ctx != NULL) {
-        celixThreadMutex_lock(&ctx->mutex);
-        if (ctx->mng == NULL) {
-            ctx->mng = celix_private_dependencyManager_create(ctx);
-        }
-        if (ctx->mng == NULL) {
-            framework_logIfError(ctx->framework->logger, CELIX_BUNDLE_EXCEPTION, NULL, "Cannot create dependency manager");
-        }
-        result = ctx->mng;
-        celixThreadMutex_unlock(&ctx->mutex);
+    if (ctx == NULL) {
+        return NULL;
     }
-    return result;
+    celix_auto(celix_rwlock_rlock_guard_t) rlockGuard = celixRwlockRlockGuard_init(&ctx->lock);
+    if (ctx->mng) {
+        return ctx->mng;
+    }
+    celixThreadRwlock_unlock(celix_steal_ptr(rlockGuard.lock));
+
+    celix_auto(celix_rwlock_wlock_guard_t) wlockGuard = celixRwlockWlockGuard_init(&ctx->lock);
+    if (ctx->mng == NULL) {
+        ctx->mng = celix_private_dependencyManager_create(ctx);
+    }
+    if (ctx->mng == NULL) {
+        framework_logIfError(ctx->framework->logger, CELIX_BUNDLE_EXCEPTION, NULL, "Cannot create dependency manager");
+    }
+    return ctx->mng;
 }
 
-static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_event_t *event) {
-    celix_status_t status = CELIX_SUCCESS;
-    bundle_listener_t *listener = listenerSvc;
-    celix_bundle_context_bundle_tracker_entry_t *tracker = listener->handle;
+static celix_status_t bundleContext_bundleChanged(void* listenerSvc, bundle_event_t* event) {
+    bundle_listener_t* listener = listenerSvc;
+    celix_bundle_context_bundle_tracker_entry_t* tracker = listener->handle;
 
     bool handleEvent = true;
     long bndId = celix_bundle_getId(event->bnd);
-    if (bndId == 0 /*framework bundle*/)  {
+    if (bndId == 0 /*framework bundle*/) {
         handleEvent = tracker->opts.includeFrameworkBundle;
     }
 
     if (handleEvent) {
-        void *callbackHandle = tracker->opts.callbackHandle;
+        void* callbackHandle = tracker->opts.callbackHandle;
 
         if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED && tracker->opts.onInstalled != NULL) {
             tracker->opts.onInstalled(callbackHandle, event->bnd);
@@ -545,16 +563,16 @@ static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_even
             tracker->opts.onBundleEvent(callbackHandle, event);
         }
     }
-    return status;
+    return CELIX_SUCCESS;
 }
 
 void celix_bundleContext_trackBundlesWithOptionsCallback(void *data) {
     celix_bundle_context_bundle_tracker_entry_t* entry = data;
     assert(celix_framework_isCurrentThreadTheEventLoop(entry->ctx->framework));
-    celixThreadMutex_lock(&entry->ctx->mutex);
+    celixThreadRwlock_writeLock(&entry->ctx->lock);
     bool cancelled = entry->cancelled;
     entry->created = true;
-    celixThreadMutex_unlock(&entry->ctx->mutex);
+    celixThreadRwlock_unlock(&entry->ctx->lock);
     if (cancelled) {
         fw_log(entry->ctx->framework->logger, CELIX_LOG_LEVEL_DEBUG, "Creation of bundle tracker cancelled. trk id = %li", entry->trackerId);
         free(entry);
@@ -571,7 +589,6 @@ static long celix_bundleContext_trackBundlesWithOptionsInternal(
         bundle_context_t* ctx,
         const celix_bundle_tracking_options_t *opts,
         bool async) {
-    long trackerId = -1;
     celix_bundle_context_bundle_tracker_entry_t *entry = calloc(1, sizeof(*entry));
     memcpy(&entry->opts, opts, sizeof(*opts));
     entry->ctx = ctx;
@@ -579,11 +596,11 @@ static long celix_bundleContext_trackBundlesWithOptionsInternal(
     entry->listener.handle = entry;
     entry->listener.bundleChanged = bundleContext_bundleChanged;
 
-    celixThreadMutex_lock(&ctx->mutex);
+    celixThreadRwlock_writeLock(&ctx->lock);
     entry->trackerId = ctx->nextTrackerId++;
-    hashMap_put(ctx->bundleTrackers, (void*)(entry->trackerId), entry);
-    trackerId = entry->trackerId;
-    celixThreadMutex_unlock(&ctx->mutex);
+    celix_longHashMap_put(ctx->bundleTrackers, entry->trackerId, entry);
+    long trackerId = entry->trackerId;
+    celixThreadRwlock_unlock(&ctx->lock);
 
     if (!async) { //note only using the async callback if this is a async call.
         entry->opts.trackerCreatedCallback = NULL;
@@ -658,25 +675,29 @@ bool celix_bundleContext_useBundle(
     return celix_framework_useBundle(ctx->framework, false, bundleId, callbackHandle, use);
 }
 
-static void bundleContext_cleanupBundleTrackers(bundle_context_t *ctx) {
+static void bundleContext_cleanupBundleTrackers(bundle_context_t* ctx) {
     module_pt module;
-    const char *symbolicName;
+    const char* symbolicName;
     bundle_getCurrentModule(ctx->bundle, &module);
     module_getSymbolicName(module, &symbolicName);
 
     celix_array_list_t* danglingTrkIds = NULL;
 
-    celixThreadMutex_lock(&ctx->mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(ctx->bundleTrackers);
-    while (hashMapIterator_hasNext(&iter)) {
-        long trkId = (long)hashMapIterator_nextKey(&iter);
-        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Dangling bundle tracker with id %li for bundle %s. Add missing 'celix_bundleContext_stopTracker' calls.", trkId, symbolicName);
-        if (danglingTrkIds == NULL) {
+    celixThreadRwlock_readLock(&ctx->lock);
+    CELIX_LONG_HASH_MAP_ITERATE(ctx->bundleTrackers, iter) {
+        long trkId = iter.key;
+        fw_log(
+            ctx->framework->logger,
+            CELIX_LOG_LEVEL_ERROR,
+            "Dangling bundle tracker with id %li for bundle %s. Add missing 'celix_bundleContext_stopTracker' calls.",
+            trkId,
+            symbolicName);
+        if (!danglingTrkIds) {
             danglingTrkIds = celix_arrayList_create();
         }
         celix_arrayList_addLong(danglingTrkIds, trkId);
     }
-    celixThreadMutex_unlock(&ctx->mutex);
+    celixThreadRwlock_unlock(&ctx->lock);
 
     if (danglingTrkIds != NULL) {
         for (int i = 0; i < celix_arrayList_size(danglingTrkIds); ++i) {
@@ -687,26 +708,31 @@ static void bundleContext_cleanupBundleTrackers(bundle_context_t *ctx) {
     }
 }
 
-static void bundleContext_cleanupServiceTrackers(bundle_context_t *ctx) {
+static void bundleContext_cleanupServiceTrackers(bundle_context_t* ctx) {
     module_pt module;
-    const char *symbolicName;
+    const char* symbolicName;
     bundle_getCurrentModule(ctx->bundle, &module);
     module_getSymbolicName(module, &symbolicName);
 
     celix_array_list_t* danglingTrkIds = NULL;
 
-    celixThreadMutex_lock(&ctx->mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(ctx->serviceTrackers);
-    while (hashMapIterator_hasNext(&iter)) {
-        long trkId = (long)hashMapIterator_nextKey(&iter);
-        celix_bundle_context_service_tracker_entry_t* entry = hashMap_get(ctx->serviceTrackers, (void*)trkId);
-        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Dangling service tracker with trkId %li, for bundle %s and with filter %s. Add missing 'celix_bundleContext_stopTracker' calls.", trkId, symbolicName, entry->tracker->filter);
+    celixThreadRwlock_readLock(&ctx->lock);
+    CELIX_LONG_HASH_MAP_ITERATE(ctx->serviceTrackers, iter) {
+        long trkId = iter.key;
+        celix_bundle_context_service_tracker_entry_t* entry = celix_longHashMap_get(ctx->serviceTrackers, trkId);
+        fw_log(ctx->framework->logger,
+               CELIX_LOG_LEVEL_ERROR,
+               "Dangling service tracker with trkId %li, for bundle %s and with filter %s. Add missing "
+               "'celix_bundleContext_stopTracker' calls.",
+               trkId,
+               symbolicName,
+               entry->tracker ? entry->tracker->filter : "unknown");
         if (danglingTrkIds == NULL) {
             danglingTrkIds = celix_arrayList_create();
         }
         celix_arrayList_addLong(danglingTrkIds, trkId);
     }
-    celixThreadMutex_unlock(&ctx->mutex);
+    celixThreadRwlock_unlock(&ctx->lock);
 
     if (danglingTrkIds != NULL) {
         for (int i = 0; i < celix_arrayList_size(danglingTrkIds); ++i) {
@@ -717,26 +743,31 @@ static void bundleContext_cleanupServiceTrackers(bundle_context_t *ctx) {
     }
 }
 
-static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t *ctx) {
+static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t* ctx) {
     module_pt module;
-    const char *symbolicName;
+    const char* symbolicName;
     bundle_getCurrentModule(ctx->bundle, &module);
     module_getSymbolicName(module, &symbolicName);
 
     celix_array_list_t* danglingTrkIds = NULL;
 
-    celixThreadMutex_lock(&ctx->mutex);
-    hash_map_iterator_t iter = hashMapIterator_construct(ctx->metaTrackers);
-    while (hashMapIterator_hasNext(&iter)) {
-        long trkId = (long)hashMapIterator_nextKey(&iter);
-        celix_bundle_context_service_tracker_tracker_entry_t *entry = hashMap_get(ctx->metaTrackers, (void*)trkId);
-        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Dangling meta tracker (service tracker tracker) with trkId %li, for bundle %s and for the services %s. Add missing 'celix_bundleContext_stopTracker' calls.", trkId, symbolicName, entry->serviceName);
+    celixThreadRwlock_readLock(&ctx->lock);
+    CELIX_LONG_HASH_MAP_ITERATE(ctx->metaTrackers, iter) {
+        long trkId = iter.key;
+        celix_bundle_context_service_tracker_tracker_entry_t* entry = celix_longHashMap_get(ctx->metaTrackers, trkId);
+        fw_log(ctx->framework->logger,
+               CELIX_LOG_LEVEL_ERROR,
+               "Dangling meta tracker (service tracker tracker) with trkId %li, for bundle %s and for the services %s. "
+               "Add missing 'celix_bundleContext_stopTracker' calls.",
+               trkId,
+               symbolicName,
+               entry->serviceName ? entry->serviceName : "all");
         if (danglingTrkIds == NULL) {
             danglingTrkIds = celix_arrayList_create();
         }
         celix_arrayList_addLong(danglingTrkIds, trkId);
     }
-    celixThreadMutex_unlock(&ctx->mutex);
+    celixThreadRwlock_unlock(&ctx->lock);
 
     if (danglingTrkIds != NULL) {
         for (int i = 0; i < celix_arrayList_size(danglingTrkIds); ++i) {
@@ -755,16 +786,18 @@ static void bundleContext_cleanupServiceRegistration(bundle_context_t* ctx) {
 
     celix_array_list_t* danglingSvcIds = NULL;
 
-    celixThreadMutex_lock(&ctx->mutex);
+    celixThreadRwlock_readLock(&ctx->lock);
     for (int i = 0; i < celix_arrayList_size(ctx->svcRegistrations); ++i) {
         long svcId = celix_arrayList_getLong(ctx->svcRegistrations, i);
-        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Dangling service registration with svcId %li, for bundle %s. Add missing 'celix_bundleContext_unregisterService' calls.", svcId, symbolicName);
+        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR,
+               "Dangling service registration with svcId %li, for bundle %s. "
+               "Add missing 'celix_bundleContext_unregisterService' calls.", svcId, symbolicName);
         if (danglingSvcIds == NULL) {
             danglingSvcIds = celix_arrayList_create();
         }
         celix_arrayList_addLong(danglingSvcIds, svcId);
     }
-    celixThreadMutex_unlock(&ctx->mutex);
+    celixThreadRwlock_unlock(&ctx->lock);
 
     if (danglingSvcIds != NULL) {
         for (int i = 0; i < celix_arrayList_size(danglingSvcIds); ++i) {
@@ -778,18 +811,18 @@ static void bundleContext_cleanupServiceRegistration(bundle_context_t* ctx) {
 static void celix_bundleContext_removeBundleTracker(void *data) {
     celix_bundle_context_bundle_tracker_entry_t *tracker = data;
     fw_removeBundleListener(tracker->ctx->framework, tracker->ctx->bundle, &tracker->listener);
-    celixThreadMutex_lock(&tracker->ctx->mutex);
-    hashMap_remove(tracker->ctx->stoppingTrackerEventIds, (void*)tracker->trackerId);
-    celixThreadMutex_unlock(&tracker->ctx->mutex);
+    celixThreadRwlock_writeLock(&tracker->ctx->lock);
+    celix_longHashMap_remove(tracker->ctx->stoppingTrackerEventIds, tracker->trackerId);
+    celixThreadRwlock_unlock(&tracker->ctx->lock);
     free(tracker);
 }
 
 static void celix_bundleContext_removeServiceTracker(void *data) {
     celix_bundle_context_service_tracker_entry_t *tracker = data;
     celix_serviceTracker_destroy(tracker->tracker);
-    celixThreadMutex_lock(&tracker->ctx->mutex);
-    hashMap_remove(tracker->ctx->stoppingTrackerEventIds, (void*)tracker->trackerId);
-    celixThreadMutex_unlock(&tracker->ctx->mutex);
+    celixThreadRwlock_writeLock(&tracker->ctx->lock);
+    celix_longHashMap_remove(tracker->ctx->stoppingTrackerEventIds, tracker->trackerId);
+    celixThreadRwlock_unlock(&tracker->ctx->lock);
     if (tracker->isFreeFilterNeeded) {
         free((char*)tracker->opts.filter.serviceName);
         free((char*)tracker->opts.filter.versionRange);
@@ -801,14 +834,35 @@ static void celix_bundleContext_removeServiceTracker(void *data) {
 static void celix_bundleContext_removeServiceTrackerTracker(void *data) {
     celix_bundle_context_service_tracker_tracker_entry_t *tracker = data;
     celix_framework_unregister(tracker->ctx->framework, tracker->ctx->bundle, tracker->serviceId);
-    celixThreadMutex_lock(&tracker->ctx->mutex);
-    hashMap_remove(tracker->ctx->stoppingTrackerEventIds, (void*)tracker->trackerId);
-    celixThreadMutex_unlock(&tracker->ctx->mutex);
+    celixThreadRwlock_writeLock(&tracker->ctx->lock);
+    celix_longHashMap_remove(tracker->ctx->stoppingTrackerEventIds, tracker->trackerId);
+    celixThreadRwlock_unlock(&tracker->ctx->lock);
     free(tracker->serviceName);
     free(tracker);
 }
 
-static void celix_bundleContext_stopTrackerInternal(bundle_context_t *ctx, long trackerId, bool async, void *doneData, void (*doneCallback)(void* doneData)) {
+static void celix_bundleContext_waitForUnusedServiceTracker(celix_bundle_context_t* ctx,
+                                                            celix_bundle_context_service_tracker_entry_t* trkEntry) {
+    // busy wait till the tracker is not used anymore
+    // note that the use count cannot be increased anymore, because the tracker is removed from the map
+    struct timespec start = celix_gettime(CLOCK_MONOTONIC);
+    int logCount = 0;
+    while (__atomic_load_n(&trkEntry->useCount, __ATOMIC_ACQUIRE) > 0) {
+        if (celix_elapsedtime(CLOCK_MONOTONIC, start) > TRACKER_WARN_THRESHOLD_SEC) {
+            fw_log(ctx->framework->logger,
+                   CELIX_LOG_LEVEL_WARNING,
+                   "Service tracker with trk id %li is still in use after %i seconds. "
+                   "This might indicate a programming error.",
+                   trkEntry->trackerId,
+                   logCount * TRACKER_WARN_THRESHOLD_SEC);
+            start = celix_gettime(CLOCK_MONOTONIC);
+            logCount++;
+        }
+        usleep(1000);
+    }
+}
+
+static void celix_bundleContext_stopTrackerInternal(celix_bundle_context_t* ctx, long trackerId, bool async, void *doneData, void (*doneCallback)(void* doneData)) {
     if (ctx == NULL || trackerId <= 0) {
         return;
     }
@@ -819,41 +873,45 @@ static void celix_bundleContext_stopTrackerInternal(bundle_context_t *ctx, long 
     celix_bundle_context_service_tracker_entry_t *serviceTracker = NULL;
     celix_bundle_context_service_tracker_tracker_entry_t *svcTrackerTracker = NULL;
 
-    celixThreadMutex_lock(&ctx->mutex);
+    celixThreadRwlock_writeLock(&ctx->lock);
 
-    if (hashMap_containsKey(ctx->bundleTrackers, (void *) trackerId)) {
+    if (celix_longHashMap_hasKey(ctx->bundleTrackers, trackerId)) {
         found = true;
-        bundleTracker = hashMap_remove(ctx->bundleTrackers, (void *) trackerId);
+        bundleTracker = celix_longHashMap_get(ctx->bundleTrackers, trackerId);
+        (void)celix_longHashMap_remove(ctx->bundleTrackers, trackerId);
         if (!bundleTracker->created && !async) {
             //note tracker not yet created, so cancel instead of removing
             bundleTracker->cancelled = true;
             cancelled = true;
         }
-    } else if (hashMap_containsKey(ctx->serviceTrackers, (void *) trackerId)) {
+    } else if (celix_longHashMap_hasKey(ctx->serviceTrackers, trackerId)) {
         found = true;
-        serviceTracker = hashMap_remove(ctx->serviceTrackers, (void *) trackerId);
+        serviceTracker = celix_longHashMap_get(ctx->serviceTrackers, trackerId);
+        (void)celix_longHashMap_remove(ctx->serviceTrackers, trackerId);
         if (serviceTracker->tracker == NULL && !async) {
             //note tracker not yet created, so cancel instead of removing
             serviceTracker->cancelled = true;
             cancelled = true;
         }
-    } else if (hashMap_containsKey(ctx->metaTrackers, (void *) trackerId)) {
+    } else if (celix_longHashMap_hasKey(ctx->metaTrackers, trackerId)) {
         found = true;
-        svcTrackerTracker = hashMap_remove(ctx->metaTrackers, (void *) trackerId);
+        svcTrackerTracker = celix_longHashMap_get(ctx->metaTrackers, trackerId);
+        (void)celix_longHashMap_remove(ctx->metaTrackers, trackerId);
         //note because a meta tracker is a service listener hook under waiter, no additional cancel is needed (svc reg will be cancelled)
     }
 
     if (found && cancelled) {
         //nop
-        celixThreadMutex_unlock(&ctx->mutex);
+        celixThreadRwlock_unlock(&ctx->lock);
     } else if (found && !async && celix_framework_isCurrentThreadTheEventLoop(ctx->framework)) {
         //already on the event loop, stop tracker "traditionally" to keep old behavior
-        celixThreadMutex_unlock(&ctx->mutex); //note calling remove/stops/unregister out side of locks
+        celixThreadRwlock_unlock(&ctx->lock); //note calling remove/stops/unregister out side of locks
 
         if (bundleTracker != NULL) {
             fw_removeBundleListener(ctx->framework, ctx->bundle, &bundleTracker->listener);
             free(bundleTracker);
         } else if (serviceTracker != NULL) {
+            celix_bundleContext_waitForUnusedServiceTracker(ctx, serviceTracker);
             celix_serviceTracker_destroy(serviceTracker->tracker);
             if (serviceTracker->isFreeFilterNeeded) {
                 free((char*)serviceTracker->opts.filter.serviceName);
@@ -873,7 +931,7 @@ static void celix_bundleContext_stopTrackerInternal(bundle_context_t *ctx, long 
     } else if (found && async) {
         //NOTE: for async stopping of tracking we need to ensure we cant wait for the tracker destroy id event.
         long eventId = celix_framework_nextEventId(ctx->framework);
-        hashMap_put(ctx->stoppingTrackerEventIds, (void*)trackerId, (void*)eventId);
+        celix_longHashMap_put(ctx->stoppingTrackerEventIds, trackerId, (void*)eventId);
 
         if (bundleTracker != NULL) {
             celix_framework_fireGenericEvent(ctx->framework, eventId, celix_bundle_getId(ctx->bundle), "stop tracker", bundleTracker, celix_bundleContext_removeBundleTracker, doneData, doneCallback);
@@ -884,7 +942,7 @@ static void celix_bundleContext_stopTrackerInternal(bundle_context_t *ctx, long 
         } else {
             fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Unexpected else branch");
         }
-        celixThreadMutex_unlock(&ctx->mutex);
+        celixThreadRwlock_unlock(&ctx->lock);
     } else if (found) { /*sync, so waiting for events*/
         long eventId = -1L;
         if (bundleTracker != NULL) {
@@ -896,10 +954,10 @@ static void celix_bundleContext_stopTrackerInternal(bundle_context_t *ctx, long 
         } else {
             fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Unexpected else branch");
         }
-        celixThreadMutex_unlock(&ctx->mutex);
+        celixThreadRwlock_unlock(&ctx->lock);
         celix_framework_waitForGenericEvent(ctx->framework, eventId);
     } else {
-        celixThreadMutex_unlock(&ctx->mutex);
+        celixThreadRwlock_unlock(&ctx->lock);
         fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "No tracker with id %li found'", trackerId);
     }
 }
@@ -918,34 +976,41 @@ static void celix_bundleContext_waitForTrackerInternal(celix_bundle_context_t* c
         return;
     }
 
+    if (celix_framework_isCurrentThreadTheEventLoop(ctx->framework)) {
+        fw_log(ctx->framework->logger,
+               CELIX_LOG_LEVEL_WARNING,
+               "Cannot wait for tracker on the event loop thread. This can cause a deadlock. "
+               "Ignoring call.");
+        return;
+    }
 
     bool found = false;
     long eventId = -1;
     long svcId = -1;
 
     if (waitForStart) {
-        celixThreadMutex_lock(&ctx->mutex);
-        if (hashMap_containsKey(ctx->bundleTrackers, (void *) trackerId)) {
+        celixThreadRwlock_readLock(&ctx->lock);
+        if (celix_longHashMap_hasKey(ctx->bundleTrackers, trackerId)) {
             found = true;
-            celix_bundle_context_bundle_tracker_entry_t* bundleTracker = hashMap_get(ctx->bundleTrackers, (void *) trackerId);
+            celix_bundle_context_bundle_tracker_entry_t* bundleTracker = celix_longHashMap_get(ctx->bundleTrackers, trackerId);
             eventId = bundleTracker->createEventId;
-        } else if (hashMap_containsKey(ctx->serviceTrackers, (void *) trackerId)) {
+        } else if (celix_longHashMap_hasKey(ctx->serviceTrackers, trackerId)) {
             found = true;
-            celix_bundle_context_service_tracker_entry_t* serviceTracker = hashMap_get(ctx->serviceTrackers, (void *) trackerId);
+            celix_bundle_context_service_tracker_entry_t* serviceTracker = celix_longHashMap_get(ctx->serviceTrackers, trackerId);
             eventId = serviceTracker->createEventId;
-        } else if (hashMap_containsKey(ctx->metaTrackers, (void *) trackerId)) {
+        } else if (celix_longHashMap_hasKey(ctx->metaTrackers, trackerId)) {
             found = true;
-            celix_bundle_context_service_tracker_tracker_entry_t* svcTrackerTracker = hashMap_get(ctx->metaTrackers, (void *) trackerId);
+            celix_bundle_context_service_tracker_tracker_entry_t* svcTrackerTracker = celix_longHashMap_get(ctx->metaTrackers, trackerId);
             svcId = svcTrackerTracker->serviceId;
         }
-        celixThreadMutex_unlock(&ctx->mutex);
+        celixThreadRwlock_unlock(&ctx->lock);
     } else {
-        celixThreadMutex_lock(&ctx->mutex);
-        if (hashMap_containsKey(ctx->stoppingTrackerEventIds, (void*)trackerId)) {
+        celixThreadRwlock_readLock(&ctx->lock);
+        if (celix_longHashMap_hasKey(ctx->stoppingTrackerEventIds, trackerId)) {
             found = true;
-            eventId = (long)hashMap_get(ctx->stoppingTrackerEventIds, (void*)trackerId);
+            eventId = celix_longHashMap_getLong(ctx->stoppingTrackerEventIds, trackerId, -1);
         }
-        celixThreadMutex_unlock(&ctx->mutex);
+        celixThreadRwlock_unlock(&ctx->lock);
     }
 
     if (found) {
@@ -954,6 +1019,11 @@ static void celix_bundleContext_waitForTrackerInternal(celix_bundle_context_t* c
         } else {
             celix_framework_waitForGenericEvent(ctx->framework, eventId);
         }
+    } else if (waitForStart) {
+        fw_log(ctx->framework->logger,
+               CELIX_LOG_LEVEL_ERROR,
+               "Cannot wait for tracker, no tracker with id %li found'",
+               trackerId);
     }
 }
 
@@ -1012,11 +1082,10 @@ bool celix_bundleContext_useServiceWithId(
         const char *serviceName,
         void *callbackHandle,
         void (*use)(void *handle, void *svc)) {
+    char filter[1+/*(*/sizeof(CELIX_FRAMEWORK_SERVICE_ID)-1+1/*=*/+20/*INT64_MIN*/+1/*)*/+1/*'\0'*/];
+    (void)snprintf(filter, sizeof(filter), "(%s=%li)", CELIX_FRAMEWORK_SERVICE_ID, serviceId);
+
     celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
-
-    char filter[64];
-    snprintf(filter, 64, "(%s=%li)", CELIX_FRAMEWORK_SERVICE_ID, serviceId);
-
     opts.filter.serviceName = serviceName;
     opts.filter.filter = filter;
     opts.callbackHandle = callbackHandle;
@@ -1175,69 +1244,26 @@ size_t celix_bundleContext_useServicesWithOptions(
     return data.count;
 }
 
-
-long celix_bundleContext_trackService(
-        bundle_context_t* ctx,
-        const char* serviceName,
-        void* callbackHandle,
-        void (*set)(void* handle, void* svc)) {
+long celix_bundleContext_trackServices(bundle_context_t* ctx, const char* serviceName) {
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.serviceName = serviceName;
-    opts.callbackHandle = callbackHandle;
-    opts.set = set;
     return celix_bundleContext_trackServicesWithOptionsInternal(ctx, &opts, false);
 }
 
-long celix_bundleContext_trackServiceAsync(
-        bundle_context_t* ctx,
-        const char* serviceName,
-        void* callbackHandle,
-        void (*set)(void* handle, void* svc)) {
+long celix_bundleContext_trackServicesAsync(celix_bundle_context_t* ctx, const char* serviceName) {
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.serviceName = serviceName;
-    opts.callbackHandle = callbackHandle;
-    opts.set = set;
     return celix_bundleContext_trackServicesWithOptionsInternal(ctx, &opts, true);
 }
-
-
-long celix_bundleContext_trackServices(
-        bundle_context_t* ctx,
-        const char* serviceName,
-        void* callbackHandle,
-        void (*add)(void* handle, void* svc),
-        void (*remove)(void* handle, void* svc)) {
-    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    opts.filter.serviceName = serviceName;
-    opts.callbackHandle = callbackHandle;
-    opts.add = add;
-    opts.remove = remove;
-    return celix_bundleContext_trackServicesWithOptionsInternal(ctx, &opts, false);
-}
-
-long celix_bundleContext_trackServicesAsync(
-        celix_bundle_context_t* ctx,
-        const char* serviceName,
-        void* callbackHandle,
-        void (*add)(void* handle, void* svc),
-        void (*remove)(void* handle, void* svc)) {
-    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    opts.filter.serviceName = serviceName;
-    opts.callbackHandle = callbackHandle;
-    opts.add = add;
-    opts.remove = remove;
-    return celix_bundleContext_trackServicesWithOptionsInternal(ctx, &opts, true);
-}
-
 
 static void celix_bundleContext_createTrackerOnEventLoop(void *data) {
     celix_bundle_context_service_tracker_entry_t* entry = data;
     assert(celix_framework_isCurrentThreadTheEventLoop(entry->ctx->framework));
-    celixThreadMutex_lock(&entry->ctx->mutex);
+    celixThreadRwlock_writeLock(&entry->ctx->lock);
     bool cancelled = entry->cancelled;
     if (cancelled) {
         fw_log(entry->ctx->framework->logger, CELIX_LOG_LEVEL_DEBUG, "Creating of service tracker was cancelled. trk id = %li, svc name tracked = %s", entry->trackerId, entry->opts.filter.serviceName);
-        celixThreadMutex_unlock(&entry->ctx->mutex);
+        celixThreadRwlock_unlock(&entry->ctx->lock);
         return;
     }
     celix_service_tracker_t *tracker = celix_serviceTracker_createClosedWithOptions(entry->ctx, &entry->opts);
@@ -1246,7 +1272,7 @@ static void celix_bundleContext_createTrackerOnEventLoop(void *data) {
     } else {
         entry->tracker = tracker;
     }
-    celixThreadMutex_unlock(&entry->ctx->mutex);
+    celixThreadRwlock_unlock(&entry->ctx->lock);
     if (tracker) {
         serviceTracker_open(tracker);
     }
@@ -1254,9 +1280,9 @@ static void celix_bundleContext_createTrackerOnEventLoop(void *data) {
 
 static void celix_bundleContext_doneCreatingTrackerOnEventLoop(void *data) {
     celix_bundle_context_service_tracker_entry_t* entry = data;
-    celixThreadMutex_lock(&entry->ctx->mutex);
+    celixThreadRwlock_readLock(&entry->ctx->lock);
     bool cancelled = entry->cancelled;
-    celixThreadMutex_unlock(&entry->ctx->mutex);
+    celixThreadRwlock_unlock(&entry->ctx->lock);
     if (cancelled) {
         //tracker creation cancelled -> entry already removed from map, but memory needs to be freed.
         if (entry->isFreeFilterNeeded) {
@@ -1295,17 +1321,18 @@ static long celix_bundleContext_trackServicesWithOptionsInternal(celix_bundle_co
             entry->opts = *opts;
             entry->isFreeFilterNeeded = false;
             entry->createEventId = -1;
-            celixThreadMutex_lock(&ctx->mutex);
+            celixThreadRwlock_writeLock(&ctx->lock);
             entry->trackerId = ctx->nextTrackerId++;
             trackerId = entry->trackerId;
-            hashMap_put(ctx->serviceTrackers, (void *) trackerId, entry);
-            celixThreadMutex_unlock(&ctx->mutex);
+            celix_longHashMap_put(ctx->serviceTrackers, trackerId, entry);
+            celixThreadRwlock_unlock(&ctx->lock);
         }
         return trackerId;
     } else {
+        long createEventId = celix_framework_nextEventId(ctx->framework);
         celix_bundle_context_service_tracker_entry_t* entry = calloc(1, sizeof(*entry));
         entry->ctx = ctx;
-        entry->createEventId = celix_framework_nextEventId(ctx->framework);
+        entry->createEventId = createEventId;
         entry->tracker = NULL; //will be set async
         entry->opts = *opts;
 
@@ -1319,13 +1346,22 @@ static long celix_bundleContext_trackServicesWithOptionsInternal(celix_bundle_co
             entry->opts.filter.versionRange = celix_utils_strdup(opts->filter.versionRange);
             entry->opts.filter.filter = celix_utils_strdup(opts->filter.filter);
         }
-        celixThreadMutex_lock(&ctx->mutex);
+
+        celixThreadRwlock_writeLock(&ctx->lock);
         entry->trackerId = ctx->nextTrackerId++;
         long trackerId = entry->trackerId;
-        hashMap_put(ctx->serviceTrackers, (void *)entry->trackerId, entry);
-        celixThreadMutex_unlock(&ctx->mutex);
+        celix_longHashMap_put(ctx->serviceTrackers, entry->trackerId, entry);
+        celixThreadRwlock_unlock(&ctx->lock);
 
-        long id = celix_framework_fireGenericEvent(ctx->framework, entry->createEventId, celix_bundle_getId(ctx->bundle), "create service tracker event", entry, celix_bundleContext_createTrackerOnEventLoop, entry, celix_bundleContext_doneCreatingTrackerOnEventLoop);
+        long id = celix_framework_fireGenericEvent(ctx->framework,
+                                                   createEventId,
+                                                   celix_bundle_getId(ctx->bundle),
+                                                   "create service tracker event",
+                                                   entry,
+                                                   celix_bundleContext_createTrackerOnEventLoop,
+                                                   entry,
+                                                   celix_bundleContext_doneCreatingTrackerOnEventLoop);
+
 
         if (!async) {
             celix_framework_waitForGenericEvent(ctx->framework, id);
@@ -1343,6 +1379,158 @@ long celix_bundleContext_trackServicesWithOptionsAsync(celix_bundle_context_t *c
     return celix_bundleContext_trackServicesWithOptionsInternal(ctx, opts, true);
 }
 
+bool celix_bundleContext_useTrackedService(
+    celix_bundle_context_t *ctx,
+    long trackerId,
+    void *callbackHandle,
+    void (*use)(void *handle, void* svc)
+) {
+    celix_tracked_service_use_options_t opts = CELIX_EMPTY_TRACKER_SERVICE_USE_OPTIONS;
+    opts.callbackHandle = callbackHandle;
+    opts.use = use;
+    return celix_bundleContext_useTrackedServiceWithOptions(ctx, trackerId, &opts);
+}
+
+size_t celix_bundleContext_useTrackedServices(celix_bundle_context_t* ctx,
+                                              long trackerId,
+                                              void* callbackHandle,
+                                              void (*use)(void* handle, void* svc)) {
+    celix_tracked_service_use_options_t opts = CELIX_EMPTY_TRACKER_SERVICE_USE_OPTIONS;
+    opts.callbackHandle = callbackHandle;
+    opts.use = use;
+    return celix_bundleContext_useTrackedServicesWithOptions(ctx, trackerId, &opts);
+}
+
+/**
+ * @brief Find a service tracker with the given tracker id. ctx->lock must be taken.
+ */
+static celix_bundle_context_service_tracker_entry_t* celix_bundleContext_findServiceTracker(celix_bundle_context_t* ctx,
+                                                                                            long trackerId) {
+    if (trackerId < 0) {
+        return NULL; // silent ignore
+    }
+
+    celix_bundle_context_service_tracker_entry_t* entry = celix_longHashMap_get(ctx->serviceTrackers, trackerId);
+    if (!entry) {
+        fw_log(ctx->framework->logger,
+               CELIX_LOG_LEVEL_ERROR,
+               "Cannot use tracked service with tracker id %li, because no tracker with that id is found",
+               trackerId);
+        return NULL;
+    }
+
+    if (!entry->tracker && entry->createEventId >= 0) { // tracker not yet created (async creation)
+        fw_log(
+            ctx->framework->logger, CELIX_LOG_LEVEL_DEBUG, "Tracker with id %li is not yet created.", entry->trackerId);
+        return NULL;
+    }
+    return entry;
+}
+
+static size_t celix_bundleContext_useTrackedServiceWithOptionsInternal(celix_bundle_context_t* ctx,
+                                                                       long trackerId,
+                                                                       const celix_tracked_service_use_options_t* opts,
+                                                                       bool singleUse) {
+    celixThreadRwlock_readLock(&ctx->lock);
+    celix_bundle_context_service_tracker_entry_t* trkEntry = celix_bundleContext_findServiceTracker(ctx, trackerId);
+    if (trkEntry) {
+        // note use count is only increased inside a read (shared) lock and ensures that the trkEntry is not freed and
+        // the trkEntry->tracker is not destroyed until the use count drops back to 0.
+        (void)__atomic_fetch_add(&trkEntry->useCount, 1, __ATOMIC_RELAXED);
+    }
+    celixThreadRwlock_unlock(&ctx->lock);
+
+    if (!trkEntry) {
+        return 0;
+    }
+
+    size_t callCount;
+    if (singleUse) {
+        callCount = celix_serviceTracker_useHighestRankingService(trkEntry->tracker,
+                                                                  NULL,
+                                                                  0,
+                                                                  opts->callbackHandle,
+                                                                  opts->use,
+                                                                  opts->useWithProperties,
+                                                                  opts->useWithOwner);
+    } else {
+        callCount = celix_serviceTracker_useServices(
+            trkEntry->tracker, NULL, opts->callbackHandle, opts->use, opts->useWithProperties, opts->useWithOwner);
+    }
+
+    (void)__atomic_fetch_sub(&trkEntry->useCount, 1, __ATOMIC_RELEASE);
+    return callCount;
+}
+
+bool celix_bundleContext_useTrackedServiceWithOptions(celix_bundle_context_t* ctx,
+                                                      long trackerId,
+                                                      const celix_tracked_service_use_options_t* opts) {
+    return celix_bundleContext_useTrackedServiceWithOptionsInternal(ctx, trackerId, opts, true) > 0;
+}
+
+size_t celix_bundleContext_useTrackedServicesWithOptions(celix_bundle_context_t* ctx,
+                                                         long trackerId,
+                                                         const celix_tracked_service_use_options_t* opts) {
+    return celix_bundleContext_useTrackedServiceWithOptionsInternal(ctx, trackerId, opts, false);
+}
+
+static void celix_bundleContext_getTrackerInfo(celix_bundle_context_t* ctx,
+                                               long trackerId,
+                                               size_t* trackedServiceCount,
+                                               const char** trackedServiceName,
+                                               const char** trackedServiceFilter) {
+    if (trackedServiceCount) {
+        *trackedServiceCount = 0;
+    }
+    if (trackedServiceName) {
+        *trackedServiceName = NULL;
+    }
+    if (trackedServiceFilter) {
+        *trackedServiceFilter = NULL;
+    }
+
+    celix_auto(celix_rwlock_rlock_guard_t) lck = celixRwlockRlockGuard_init(&ctx->lock);
+    celix_bundle_context_service_tracker_entry_t* trkEntry = celix_bundleContext_findServiceTracker(ctx, trackerId);
+    if (!trkEntry) {
+        return;
+    }
+
+    if (trackedServiceCount) {
+        *trackedServiceCount = celix_serviceTracker_getTrackedServiceCount(trkEntry->tracker);
+    }
+    if (trackedServiceName) {
+        *trackedServiceName = celix_serviceTracker_getTrackedServiceName(trkEntry->tracker);
+    }
+    if (trackedServiceFilter) {
+        *trackedServiceFilter = celix_serviceTracker_getTrackedServiceFilter(trkEntry->tracker);
+    }
+}
+
+size_t celix_bundleContext_getTrackedServiceCount(celix_bundle_context_t *ctx, long trackerId) {
+    size_t result = 0;
+    celix_bundleContext_getTrackerInfo(ctx, trackerId, &result, NULL, NULL);
+    return result;
+}
+
+const char* celix_bundleContext_getTrackedServiceName(celix_bundle_context_t *ctx, long trackerId) {
+    const char* result = NULL;
+    celix_bundleContext_getTrackerInfo(ctx, trackerId, NULL, &result, NULL);
+    return result;
+}
+
+const char* celix_bundleContext_getTrackedServiceFilter(celix_bundle_context_t* ctx, long trackerId) {
+    const char* result = NULL;
+    celix_bundleContext_getTrackerInfo(ctx, trackerId, NULL, NULL, &result);
+    return result;
+}
+
+bool celix_bundleContext_isValidTrackerId(celix_bundle_context_t* ctx, long trackerId) {
+    celix_auto(celix_rwlock_rlock_guard_t) lck = celixRwlockRlockGuard_init(&ctx->lock);
+    return celix_longHashMap_hasKey(ctx->serviceTrackers, trackerId) ||
+           celix_longHashMap_hasKey(ctx->bundleTrackers, trackerId) ||
+           celix_longHashMap_hasKey(ctx->metaTrackers, trackerId);
+}
+
 long celix_bundleContext_findService(celix_bundle_context_t *ctx, const char *serviceName) {
     celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
     opts.serviceName = serviceName;
@@ -1353,7 +1541,7 @@ long celix_bundleContext_findServiceWithOptions(celix_bundle_context_t *ctx, con
     long result = -1L;
     char* filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->serviceName, opts->versionRange, opts->filter);
     if (filter != NULL) {
-        celix_array_list_t *svcIds = celix_serviceRegisrty_findServices(ctx->framework->registry, filter);
+        celix_array_list_t *svcIds = celix_serviceRegistry_findServices(ctx->framework->registry, filter);
         if (svcIds != NULL && celix_arrayList_size(svcIds) > 0) {
             result = celix_arrayList_getLong(svcIds, 0);
         }
@@ -1376,7 +1564,7 @@ celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_con
     celix_array_list_t* result = NULL;
     char* filter = celix_serviceRegistry_createFilterFor(ctx->framework->registry, opts->serviceName, opts->versionRange, opts->filter);
     if (filter != NULL) {
-        result = celix_serviceRegisrty_findServices(ctx->framework->registry, filter);
+        result = celix_serviceRegistry_findServices(ctx->framework->registry, filter);
         free(filter);
     }
     return result;
@@ -1385,12 +1573,11 @@ celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_con
 static celix_status_t bundleContext_callServicedTrackerTrackerCallback(void *handle, celix_array_list_t *listeners, bool add) {
     celix_bundle_context_service_tracker_tracker_entry_t *entry = handle;
     if (entry != NULL) {
-        size_t size = celix_arrayList_size(listeners);
-        for (unsigned int i = 0; i < size; ++i) {
-            listener_hook_info_pt info = arrayList_get(listeners, i);
+        int size = celix_arrayList_size(listeners);
+        for (int i = 0; i < size; ++i) {
+            listener_hook_info_pt info = celix_arrayList_get(listeners, i);
             celix_bundle_t *bnd = NULL;
             bundleContext_getBundle(info->context, &bnd);
-
             celix_autoptr(celix_filter_t) filter = celix_filter_create(info->filter);
             celix_service_tracker_info_t trkInfo;
             memset(&trkInfo, 0, sizeof(trkInfo));
@@ -1433,9 +1620,9 @@ long celix_bundleContext_trackServiceTrackersInternal(
     }
 
     celix_bundle_context_service_tracker_tracker_entry_t *entry = calloc(1, sizeof(*entry));
-    celixThreadMutex_lock(&ctx->mutex);
+    celixThreadRwlock_writeLock(&ctx->lock);
     entry->trackerId = ctx->nextTrackerId++;
-    celixThreadMutex_unlock(&ctx->mutex);
+    celixThreadRwlock_unlock(&ctx->lock);
     entry->ctx = ctx;
     entry->callbackHandle = callbackHandle;
     entry->add = trackerAdd;
@@ -1458,10 +1645,10 @@ long celix_bundleContext_trackServiceTrackersInternal(
     }
 
     if (entry->serviceId >= 0) {
-        celixThreadMutex_lock(&ctx->mutex);
-        hashMap_put(ctx->metaTrackers, (void*)entry->trackerId, entry);
+        celixThreadRwlock_writeLock(&ctx->lock);
+        celix_longHashMap_put(ctx->metaTrackers, entry->trackerId, entry);
         long trkId = entry->trackerId;
-        celixThreadMutex_unlock(&ctx->mutex);
+        celixThreadRwlock_unlock(&ctx->lock);
         return trkId;
     } else {
         celix_framework_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error registering service listener hook for service tracker tracker\n");

@@ -22,8 +22,8 @@
 
 #include <celix_properties.h>
 
-#define REMOTE_INTERCEPTOR_SERVICE_NAME "remote.interceptor"
-#define REMOTE_INTERCEPTOR_SERVICE_VERSION "1.0.0"
+#define CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_NAME "remote.interceptor"
+#define CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_VERSION "1.0.0"
 
 typedef struct remote_interceptor {
     void *handle;

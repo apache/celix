@@ -36,6 +36,14 @@ void discoveryZeroconfWatcher_destroy(discovery_zeroconf_watcher_t *watcher);
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(discovery_zeroconf_watcher_t, discoveryZeroconfWatcher_destroy)
 
+int discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix_properties_t *props);
+
+int discoveryZeroconfWatcher_removeEPL(void *handle, void *svc, const celix_properties_t *props);
+
+int discoveryZeroConfWatcher_addRSA(void *handle, void *svc, const celix_properties_t *props);
+
+int discoveryZeroConfWatcher_removeRSA(void *handle, void *svc, const celix_properties_t *props);
+
 #ifdef __cplusplus
 }
 #endif

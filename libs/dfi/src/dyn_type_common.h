@@ -24,46 +24,44 @@
 #include "dyn_type.h"
 
 #include <ffi.h>
+#include <stdbool.h>
 
-#include "dfi_log_util.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-DFI_SETUP_LOG_HEADER(dynTypeCommon);
-
 struct _dyn_type {
-    char *name;
+    char* name;
     char descriptor;
+    bool trivial;
     int type;
-    ffi_type *ffiType;
-    dyn_type *parent;
-    struct types_head *referenceTypes; //NOTE: not owned
+    ffi_type* ffiType;
+    dyn_type* parent;
+    const struct types_head* referenceTypes; //NOTE: not owned
     struct types_head nestedTypesHead;
     struct meta_properties_head metaProperties;
     union {
         struct {
             struct complex_type_entries_head entriesHead;
             ffi_type structType; //dyn_type.ffiType points to this
-            dyn_type **types; //based on entriesHead for fast access
+            dyn_type** types; //based on entriesHead for fast access
         } complex;
         struct {
             ffi_type seqType; //dyn_type.ffiType points to this
-            dyn_type *itemType;
+            dyn_type* itemType;
         } sequence;
         struct {
-            dyn_type *typedType;
+            dyn_type* typedType;
         } typedPointer;
         struct {
-            dyn_type *ref;
+            dyn_type* ref;
         } ref;
     };
 };
 
-dyn_type * dynType_findType(dyn_type *type, char *name);
-ffi_type * dynType_ffiType(dyn_type * type);
-void dynType_prepCif(ffi_type *type);
+dyn_type* dynType_findType(dyn_type* type, char* name);
+ffi_type* dynType_ffiType(const dyn_type* type);
 
 #ifdef __cplusplus
 }

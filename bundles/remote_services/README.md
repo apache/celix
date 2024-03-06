@@ -27,32 +27,31 @@ The Remote Service Admin Service subproject contains an adapted implementation o
 
 The topology manager decides which services should be imported and exported according to a defined policy. Currently, only one policy is implemented in Celix, the *promiscuous* policy, which simply imports and exports all services.
 
-| **Bundle** | `topology_manager.zip` |
-|--|--|
-| **Configuration** | *None* |
+| **Bundle** | `Celix::rsa_topology_manager` |
+|--|-----------------------------------------|
+| **Configuration** | *None*                 |
 
 ### Remote Service Admin
 
-The Remote Service Admin (RSA) provides the mechanisms to import and export services when instructed to do so by the Topology Manager. 
+The Remote Service Admin (RSA) provides the mechanisms to import and export services when instructed to do so by the Topology Manager.
 
-#### Endpoints and proxies
+#### Remote Service Admin DFI
 
-To delegate a *received* method call to the actual service implementation, the RSA uses an "endpoint" bundle, which has all the knowledge about the marshalling and unmarshalling of data for the service. This endpoint bundle is specific to the used RSA implementation, and as such cannot be reused between various RSA implementations.
+Provides remote service admin using HTTP and JSON. The serialization is done using [libdfi](../../libs/dfi/README.md) to convert function call information into [JSON representation](https://amdatu.atlassian.net/wiki/spaces/AMDATUDEV/pages/21954571/Amdatu+Remote#AmdatuRemote-AdminHTTP%2FJson).
+`libffi` is configured using descriptor files in the bundles. 
 
-Invoking a *remote* method is done by using "proxy" bundles. Similar as to endpoints, proxy bundles encapsulate all knowledge to marshall and unmarshall data for a remote method call and as such can not be shared between RSA implementations.
+| **Bundle** | `Celix::rsa_dfi`                                         |
+|--|--------------------------------------------------------------------|
+| **Configuration** | See [Remote Service Admin DFI](remote_service_admin_dfi/README.md) |
 
-Both proxy and endpoint bundles are loaded on demand when a service is imported or exported by the RSA. As such, these bundles **must** not be added to the list of "auto started" bundles, but placed in a separate location. By default, `endpoints` is used as location for locating proxy and/or endpoint bundles.
+#### Remote Service Admin SHM
 
-Note that since endpoints and proxies need to be created manually, one has full control about the handling of specifics of marshalling and unmarshalling data and dealing with exceptions. 
+Provides remote service admin using shared memory. The serialization implementation is pluggable, and the default serialization is done using [libdfi](../../libs/dfi/README.md) to convert function call information into [JSON representation](https://amdatu.atlassian.net/wiki/spaces/AMDATUDEV/pages/21954571/Amdatu+Remote#AmdatuRemote-AdminHTTP%2FJson).
+`libffi` is configured using descriptor files in the bundles.
 
-#### HTTP/JSON
-
-Provides a RSA implementation that uses JSON to marshal requests and HTTP as transport mechanism for its remote method invocation. It is compatible with the *Remote Service Admin HTTP* implementation provided by [Amdatu Remote](https://amdatu.atlassian.net/wiki/display/AMDATUDEV/Amdatu+Remote).
-
-| **Bundle** | `remote_service_admin_http.zip` |
-|--|--|
-| **Configuration** | `RSA_PORT`: defines the port on which the HTTP server should listen for incoming requests. Defaults to port `8888`; |
-| | `ENDPOINTS`: defines the location in which service endpoints and/or proxies can be found. Defaults to `endpoints` in the current working directory |
+| **Bundle**        | `Celix::rsa_shm`                                                       |
+|-------------------|------------------------------------------------------------------------|
+| **Configuration** | See [Remote Service Admin SHM](remote_service_admin_shm_v2/README.md)  |
 
 ### Discovery
 
@@ -62,7 +61,7 @@ Actively discovers the presence of remote exported services and provides informa
 
 Provides a service discovery with preconfigured discovery endpoints, allowing a static mesh of nodes for remote service invocation to be created. The configured discovery bundle in Celix is compatible with the configured discovery implementation provided by [Amdatu Remote](https://amdatu.atlassian.net/wiki/display/AMDATUDEV/Amdatu+Remote).
 
-| **Bundle** | `discovery_configured.zip` |
+| **Bundle** | `Celix::rsa_discovery` |
 |--|--|
 | **Configuration** | `DISCOVERY_CFG_POLL_ENDPOINTS`: defines a comma-separated list of discovery endpoints that should be used to query for remote services. Defaults to `http://localhost:9999/org.apache.celix.discovery.configured`; |
 | | `DISCOVERY_CFG_POLL_INTERVAL`: defines the interval (in seconds) in which the discovery endpoints should be polled. Defaults to `10` seconds. |
@@ -72,15 +71,38 @@ Provides a service discovery with preconfigured discovery endpoints, allowing a 
 
 Note that for configured discovery, the "Endpoint Description Extender" XML format defined in the OSGi Remote Service Admin specification (section 122.8 of OSGi Enterprise 5.0.0) is used.
 
-See [etcd discovery](discovery_etcd/README.md)
-
 #### etcd discovery 
-
-| **Bundle** | `discovery_etcd.zip` |
 
 Provides a service discovery using etcd distributed key/value store.
 
-See [etcd discovery](discovery_etcd/README.md)
+| **Bundle** | `Celix::rsa_discovery_etcd` |
+|------------|----------------------|
+| **Configuration** | See [etcd discovery](discovery_etcd/README.md)|
+
+#### Zero configuration discovery
+
+Provides a service discovery using Bonjour.
+
+| **Bundle** | `Celix::rsa_discovery_zeroconf` |
+|--|----------------------------|
+| **Configuration** | See  [Zeroconf Discovery](discovery_zeroconf/README.md) |
+
+## Dynamic IP Mechanism For Remote Service Admin
+
+In order to make remote services work without configuring the IP of the RSA, we have designed the following dynamic IP mechanism.
+
+  - The remote service admin service adds the property "celix.rsa.dynamic.ip.support". If RSA sets this property to true, the RSA will support dynamic IP address.
+  - If the RSA supports dynamic IP addresses, it should bind the network service address to any address(0.0.0.0/::), and set the property "celix.rsa.port" (which indicates the network port number of the remote service) for the exported remote service endpoint.
+  - The endpoint listener service of discovery adds the property "celix.rsa.discovery.interface.specific.endpoints.support". If this property is set to true, it means that the discovery support dynamic IP address filling.
+  - Add the configuration property "CELIX_RSA_INTERFACES_OF_PORT_<port>", which indicates which network interfaces is used to expose the specified port service.
+  - When the topology manager exports remote services, it should detect whether the "celix.rsa.dynamic.ip.support" property of the remote service admin service is true. If so, the topology manager should create multiple endpoints that support dynamic IP address for a single export registration base on CELIX_RSA_INTERFACES_OF_PORT_<port>. These endpoints are then forwarded to the discovery endpoint listener services that support dynamic IP address filling.
+  - The endpoint that supports dynamic IP address adds the property "celix.rsa.ifname", which indicates which network interface is used for exported endpoint exposure. This property is set by the topology manager based on CELIX_RSA_INTERFACES_OF_PORT_<port>.
+  - The endpoint that supports dynamic IP address adds the property "celix.rsa.ip.addresses", which indicates the list of IP addresses corresponding to the endpoint. When the topology manager creates the endpoint description that supports dynamic IP address, the value of this property should be set to null, and the discovery that support dynamic IP address filling will replace the value(Discovery will decide whether to fill in the dynamic IP addresses based on whether the "celix.rsa.ip.addresses" key exists or not).
+
+The sequence diagram of the dynamic IP mechanism is as follows:
+![dynamic_ip_filling](diagrams/dynamic_ip_filling_seq.png)
+
+  The example of dynamic IP mechanism see `remote-services-zeroconf-server` and `remote-services-zeroconf-client`.
 
 ## Usage
 
@@ -129,7 +151,7 @@ Note that the `RSA_PORT` property needs to be unique for at least the client in 
 
 ## Building
 
-To build the Remote Service Admin Service the CMake build option "`BUILD_REMOTE_SERVICE_ADMIN`" has to be enabled.
+To build the Remote Service Admin Service the CMake build option "`BUILD_REMOTE_SERVICE_ADMIN`" has to be enabled.If you use conan to build it, you should set the conan option `celix:build_remote_service_admin` to true.
 
 ## Dependencies
 
@@ -137,18 +159,19 @@ The Remote Service Admin Service depends on the following subprojects:
 
 - Framework
 - Utils
+- dfi
+- log_helper
 
-Also the following libraries are required for building and/or using the Remote Service Admin Service subproject:
-
-- Jansson (build and runtime)
-- cURL (build and runtime)
 
 ## RSA Bundles
 
-* [Remote Service Admin DFI](remote_service_admin_dfi) - A Dynamic Function Interface (DFI) implementation of the RSA.
-* [Topology Manager](topology_manager) - A (scoped) RSA Topology Manager implementation.
+* [Remote Service Admin DFI](remote_service_admin_dfi/README.md) - A Dynamic Function Interface (DFI) implementation of the RSA.
+* [Remote Service Admin SHM](remote_service_admin_shm_v2/README.md) - A Shared Memory (SHM) implementation of the RSA.
+* [Remote Service Admin RPC Using JSON](rsa_rpc_json/README.md) - A Remote Procedure Call (RPC) implementation of the RSA using JSON.
+* [Topology Manager](topology_manager/README.md) - A (scoped) RSA Topology Manager implementation.
 * [Discovery Configured](discovery_configured) - A RSA Discovery implementation using static configuration (xml).
 * [Discovery Etcd](discovery_etcd/README.md) - A RSA Discovery implementation using etcd.
+* [Discovery Zeroconf](discovery_zeroconf/README.md) - A RSA Discovery implementation using Bonjour.
 
 
 ## Notes

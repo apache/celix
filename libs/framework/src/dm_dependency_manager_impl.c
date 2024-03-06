@@ -30,6 +30,7 @@
 #include "celix_bundle.h"
 #include "celix_compiler.h"
 #include "celix_framework.h"
+#include "celix_array_list.h"
 
 celix_dependency_manager_t* celix_private_dependencyManager_create(celix_bundle_context_t *context) {
 	celix_dependency_manager_t *manager = calloc(1, sizeof(*manager));
@@ -367,13 +368,13 @@ celix_status_t dependencyManager_getInfo(celix_dependency_manager_t *manager, dm
 	celixThreadMutex_lock(&manager->mutex);
 
 	if (info != NULL) {
-		arrayList_create(&info->components);
-		size = arrayList_size(manager->components);
+		info->components = celix_arrayList_create();
+		size = celix_arrayList_size(manager->components);
 		for (i = 0; i < size; i += 1) {
-			celix_dm_component_t *cmp = arrayList_get(manager->components, i);
+			celix_dm_component_t *cmp = celix_arrayList_get(manager->components, i);
 			cmpInfo = NULL;
 			component_getComponentInfo(cmp, &cmpInfo);
-			arrayList_add(info->components, cmpInfo);
+                        celix_arrayList_add(info->components, cmpInfo);
 		}
 	} else {
 		status = CELIX_ENOMEM;

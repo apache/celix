@@ -18,28 +18,48 @@
 
 add_executable(test_dfi
 		src/dyn_example_functions.c
-		src/dyn_avpr_tests.cpp
 		src/dyn_type_tests.cpp
 		src/dyn_function_tests.cpp
 		src/dyn_closure_tests.cpp
-		src/dyn_avpr_function_tests.cpp
 		src/dyn_interface_tests.cpp
-		src/dyn_avpr_interface_tests.cpp
 		src/dyn_message_tests.cpp
 		src/json_serializer_tests.cpp
 		src/json_rpc_tests.cpp
-		src/json_rpc_avpr_tests.cpp
-		src/avrobin_serialization_tests.cpp
+		src/dyn_common_tests.cc
+		src/json_rpc_test.c
 )
 
 
 target_include_directories(test_dfi PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../src)
-target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils libffi::libffi jansson::jansson GTest::gtest GTest::gtest_main)
+target_link_libraries(test_dfi PRIVATE dfi_cut Celix::utils libffi::libffi jansson::jansson GTest::gtest GTest::gtest_main)
 celix_deprecated_utils_headers(test_dfi)
 
-file(COPY ${CMAKE_CURRENT_LIST_DIR}/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${CMAKE_CURRENT_LIST_DIR}/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 add_test(NAME run_test_dfi COMMAND test_dfi)
 setup_target_for_coverage(test_dfi SCAN_DIR ..)
 
+if (EI_TESTS)
+	add_executable(test_dfi_with_ei
+			src/dyn_interface_ei_tests.cc
+			src/dyn_common_ei_tests.cc
+			src/dyn_type_ei_tests.cc
+			src/dyn_message_ei_tests.cc
+			src/dyn_function_ei_tests.cc
+			src/json_serializer_ei_tests.cc
+			src/json_rpc_ei_tests.cc
+			src/json_rpc_test.c
+	)
+	target_link_libraries(test_dfi_with_ei PRIVATE
+			dfi_cut
+			Celix::malloc_ei
+			Celix::stdio_ei
+			Celix::string_ei
+			Celix::ffi_ei
+			Celix::asprintf_ei
+			Celix::jansson_ei
+			GTest::gtest GTest::gtest_main
+	)
+	add_test(NAME run_test_dfi_with_ei COMMAND test_dfi_with_ei)
+	setup_target_for_coverage(test_dfi_with_ei SCAN_DIR ..)
+endif ()

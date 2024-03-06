@@ -21,52 +21,66 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "service_registration_private.h"
-#include "celix_constants.h"
 #include "celix_build_assert.h"
+#include "celix_constants.h"
+#include "celix_err.h"
+#include "service_registration_private.h"
 
 static bool serviceRegistration_destroy(struct celix_ref *);
-static celix_status_t serviceRegistration_initializeProperties(service_registration_pt registration, properties_pt properties);
-static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId,
-        const void * serviceObject, properties_pt dictionary, enum celix_service_type svcType, service_registration_pt *registration);
+static celix_status_t serviceRegistration_initializeProperties(service_registration_t*registration,
+                                                               celix_properties_t* props);
 
-service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void * serviceObject, properties_pt dictionary) {
+static celix_status_t serviceRegistration_createInternal(registry_callback_t callback,
+                                                         celix_bundle_t* bundle,
+                                                         const char* serviceName,
+                                                         long serviceId,
+                                                         const void* serviceObject,
+                                                         celix_properties_t* dictionary,
+                                                         enum celix_service_type svcType,
+                                                         service_registration_t** out);
+
+service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, const void * serviceObject, celix_properties_t* dictionary) {
     service_registration_pt registration = NULL;
 	serviceRegistration_createInternal(callback, bundle, serviceName, serviceId, serviceObject, dictionary, CELIX_PLAIN_SERVICE, &registration);
 	return registration;
 }
 
-service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void * serviceObject, properties_pt dictionary) {
+service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, const void * serviceObject, celix_properties_t* dictionary) {
     service_registration_pt registration = NULL;
     serviceRegistration_createInternal(callback, bundle, serviceName, serviceId, serviceObject, dictionary, CELIX_DEPRECATED_FACTORY_SERVICE, &registration);
     return registration;
 }
 
-static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId,
-                                                         const void * serviceObject, properties_pt dictionary, enum celix_service_type svcType, service_registration_pt *out) {
-
+static celix_status_t serviceRegistration_createInternal(registry_callback_t callback,
+                                                         celix_bundle_t* bundle,
+                                                         const char* serviceName,
+                                                         long serviceId,
+                                                         const void* serviceObject,
+                                                         celix_properties_t* dictionary,
+                                                         enum celix_service_type svcType,
+                                                         service_registration_t** out) {
     celix_status_t status = CELIX_SUCCESS;
-	service_registration_pt  reg = calloc(1, sizeof(*reg));
+    service_registration_pt reg = calloc(1, sizeof(*reg));
     if (reg) {
         celix_ref_init(&reg->refCount);
         reg->callback = callback;
-		reg->svcType = svcType;
-		reg->className = strndup(serviceName, 1024*10);
+        reg->svcType = svcType;
+        reg->className = strndup(serviceName, 1024 * 10);
         reg->bundle = bundle;
-		reg->serviceId = serviceId;
-	    reg->svcObj = serviceObject;
-		reg->isUnregistering = false;
-		celixThreadRwlock_create(&reg->lock, NULL);
-		serviceRegistration_initializeProperties(reg, dictionary);
-	} else {
-		status = CELIX_ENOMEM;
-	}
+        reg->serviceId = serviceId;
+        reg->svcObj = serviceObject;
+        reg->isUnregistering = false;
+        celixThreadRwlock_create(&reg->lock, NULL);
+        serviceRegistration_initializeProperties(reg, dictionary);
+    } else {
+        status = CELIX_ENOMEM;
+    }
 
-	if (status == CELIX_SUCCESS) {
-		*out = reg;
-	}
+    if (status == CELIX_SUCCESS) {
+        *out = reg;
+    }
 
-	return status;
+    return status;
 }
 
 void serviceRegistration_retain(service_registration_pt registration) {
@@ -85,30 +99,32 @@ static bool serviceRegistration_destroy(struct celix_ref *refCount) {
     free(registration->className);
     registration->className = NULL;
     registration->callback.unregister = NULL;
-    properties_destroy(registration->properties);
+    celix_properties_destroy(registration->properties);
     celixThreadRwlock_destroy(&registration->lock);
     free(registration);
     return true;
 }
 
-static celix_status_t serviceRegistration_initializeProperties(service_registration_pt registration, properties_pt dictionary) {
-    char sId[32];
+static celix_status_t serviceRegistration_initializeProperties(service_registration_t*registration,
+                                                               celix_properties_t* props) {
+    if (!props) {
+        props = celix_properties_create();
+    }
+    if (!props) {
+        return CELIX_ENOMEM;
+    }
 
-	if (dictionary == NULL) {
-		dictionary = properties_create();
-	}
+    celix_status_t status = celix_properties_setLong(props, CELIX_FRAMEWORK_SERVICE_ID, registration->serviceId);
+    CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, registration->className));
 
+    if (status == CELIX_SUCCESS) {
+        registration->properties = props;
+    } else {
+        celix_err_push("Cannot initialize service registration properties");
+        celix_properties_destroy(props);
+    }
 
-	snprintf(sId, 32, "%lu", registration->serviceId);
-	properties_set(dictionary, (char *) CELIX_FRAMEWORK_SERVICE_ID, sId);
-
-	if (properties_get(dictionary, (char *) CELIX_FRAMEWORK_SERVICE_NAME) == NULL) {
-		properties_set(dictionary, (char *) CELIX_FRAMEWORK_SERVICE_NAME, registration->className);
-	}
-
-	registration->properties = dictionary;
-
-	return CELIX_SUCCESS;
+    return CELIX_SUCCESS;
 }
 
 void serviceRegistration_invalidate(service_registration_pt registration) {
@@ -190,7 +206,7 @@ celix_status_t serviceRegistration_ungetService(service_registration_pt registra
     return status;
 }
 
-celix_status_t serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties) {
+celix_status_t serviceRegistration_getProperties(service_registration_pt registration, celix_properties_t** properties) {
 	celix_status_t status = CELIX_SUCCESS;
 
     if (registration != NULL) {

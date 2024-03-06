@@ -21,7 +21,6 @@
 #define SERVICE_TRACKER_H_
 
 #include "celix_service_listener.h"
-#include "array_list.h"
 #include "service_tracker_customizer.h"
 #include "bundle_context.h"
 #include "celix_bundle_context.h"
@@ -67,7 +66,7 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT size_t serviceTracker_nrOfTrackedServices(serv
 
 /**********************************************************************************************************************
  **********************************************************************************************************************
- * Updated API
+ * Updated API. Note API is still deprecated for external usage, the api will become private in the future.
  **********************************************************************************************************************
  **********************************************************************************************************************/
 
@@ -141,6 +140,22 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT size_t celix_serviceTracker_useServices(
         void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
 );
 
+/**
+ * @brief Get the number of tracked services.
+ */
+CELIX_FRAMEWORK_DEPRECATED_EXPORT size_t celix_serviceTracker_getTrackedServiceCount(celix_service_tracker_t* tracker);
+
+/**
+ * @brief Get the tracker service name.
+ */
+CELIX_FRAMEWORK_DEPRECATED_EXPORT const char*
+celix_serviceTracker_getTrackedServiceName(celix_service_tracker_t* tracker);
+
+/**
+ * @brief Get the tracker filter.
+ */
+CELIX_FRAMEWORK_DEPRECATED_EXPORT const char*
+celix_serviceTracker_getTrackedServiceFilter(celix_service_tracker_t* tracker);
 
 #ifdef __cplusplus
 }

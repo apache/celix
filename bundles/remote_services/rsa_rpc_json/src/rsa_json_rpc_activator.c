@@ -55,15 +55,15 @@ static celix_status_t rsaJsonRpc_start(rsa_json_rpc_activator_t* activator, celi
         celix_logHelper_error(activator->logHelper, "Error creating properties for json rpc.");
         return CELIX_ENOMEM;
     }
-    celix_properties_set(props, RSA_RPC_TYPE_KEY, "celix.remote.admin.rpc_type.json");
+    celix_properties_set(props, CELIX_RSA_RPC_TYPE_KEY, "celix.remote.admin.rpc_type.json");
     activator->rpcFac.handle = activator->jsonRpc;
     activator->rpcFac.createProxy = rsaJsonRpc_createProxy;
     activator->rpcFac.destroyProxy = rsaJsonRpc_destroyProxy;
     activator->rpcFac.createEndpoint = rsaJsonRpc_createEndpoint;
     activator->rpcFac.destroyEndpoint = rsaJsonRpc_destroyEndpoint;
     celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
-    opts.serviceName = RSA_RPC_FACTORY_NAME;
-    opts.serviceVersion = RSA_RPC_FACTORY_VERSION;
+    opts.serviceName = CELIX_RSA_RPC_FACTORY_NAME;
+    opts.serviceVersion = CELIX_RSA_RPC_FACTORY_VERSION;
     opts.properties = props;
     opts.svc = &activator->rpcFac;
     activator->rpcSvcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx, &opts);

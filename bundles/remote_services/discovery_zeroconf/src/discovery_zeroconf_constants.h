@@ -33,34 +33,16 @@ extern "C" {
 
 /**
  * mDNS service name for celix service.
- * About mDNS service name, see rfc6363 section 4.1.2 and section 7
+ * About mDNS service name, see rfc6763 section 4.1.2 and section 7
  */
 #define DZC_SERVICE_PRIMARY_TYPE "_celix-rpc._udp"
 
 /**
- * mDNS service subtype for celix.service, it can be null.
- * About mDNS service subtype, see rfc6363 section 7.1
- * The subtype mechanism can be illustrated with some examples using the dns-sd command-line tool:
- * If we register the following three services:
- *    % dns-sd -R service1 _celix-rpc._udp local 1001
- *    % dns-sd -R service2 _celix-rpc._udp,subtype1 local 1002
- *    % dns-sd -R service3   _celix-rpc._udp,subtype1,subtype2 local 1003
- * Now:
- *    % dns-sd -B _celix-rpc._udp             # will find all three services
- *    % dns-sd -B _celix-rpc._udp,subtype1 # will find "service2" and "service3"
- *    % dns-sd -B _celix-rpc._udp,subtype2 # will find only "service3"
- */
-#define DZC_SERVICE_TYPE_KEY "DZC_SERVICE_TYPE_KEY"
-
-/**
- * Host name and  port for mDNS service.
+ * The default port for mDNS service.
  *
- * To reduce the operation of conversion between host name and address info(ip and port).
- * we set the address info to txt record, and set a dummy value("celix_rpc_dumb_host.local."
- * and "50009") to the host name and port for mDNS service.
+ * It is a dummy value, it is used for the remote service that IPC is not network based(eg:shared memory).
  */
-#define DZC_HOST_DEFAULT "celix_rpc_dumb_host.local."
-#define DZC_PORT_DEFAULT 50009
+#define DZC_PORT_DEFAULT 65535
 
 /**
  * The size of celix service properties.
@@ -70,6 +52,13 @@ extern "C" {
  * and use it to verify whether the complete service properties is resolved.
  */
 #define DZC_SERVICE_PROPERTIES_SIZE_KEY "DZC_SVC_PROPS_SIZE_KEY"
+
+/**
+ * The version of mDNS txt record.
+ * @ref https://www.rfc-editor.org/rfc/rfc6763.html#section-6.7
+ */
+#define DZC_TXT_RECORD_VERSION_KEY "txtvers"
+#define DZC_CURRENT_TXT_RECORD_VERSION "1"
 
 #ifdef __cplusplus
 }

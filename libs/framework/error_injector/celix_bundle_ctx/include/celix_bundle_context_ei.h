@@ -22,9 +22,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "celix_bundle_context.h"
 #include "celix_error_injector.h"
 #include "celix_errno.h"
+#include "celix_bundle_context.h"
 
 CELIX_EI_DECLARE(celix_bundleContext_getProperty, const char*);
 CELIX_EI_DECLARE(celix_bundleContext_registerServiceWithOptionsAsync, long);

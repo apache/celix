@@ -35,25 +35,25 @@ struct serviceRegistration {
     struct celix_ref refCount;
     registry_callback_t callback; // read-only
 
-	char * className; // read-only
-	bundle_pt bundle; // read-only
-	properties_pt properties; // read-only
-	unsigned long serviceId; // read-only
+    char* className;          // read-only
+    bundle_pt bundle;         // read-only
+     celix_properties_t* properties; // read-only
+    long serviceId;           // read-only
 
     bool isUnregistering;
 
     enum celix_service_type svcType; // read-only
     union {
-        const void * svcObj;
+        const void* svcObj;
         service_factory_pt deprecatedFactory;
-        celix_service_factory_t *factory;
+        celix_service_factory_t* factory;
     };
 
     celix_thread_rwlock_t lock; // protects the service object
 };
 
-service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void * serviceObject, properties_pt dictionary);
-service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void * serviceObject, properties_pt dictionary);
+service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, const void * serviceObject,  celix_properties_t* dictionary);
+service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, const void * serviceObject,  celix_properties_t* dictionary);
 
 void serviceRegistration_retain(service_registration_pt registration);
 void serviceRegistration_release(service_registration_pt registration);

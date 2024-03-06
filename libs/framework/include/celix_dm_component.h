@@ -87,7 +87,7 @@ CELIX_FRAMEWORK_EXPORT const char* celix_dmComponent_getUUID(celix_dm_component_
  */
 CELIX_FRAMEWORK_EXPORT void celix_dmComponent_destroy(celix_dm_component_t* cmp);
 
-CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_dm_component_t, celix_dmComponent_destroy)
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_dm_component_t, celix_dmComponent_destroy);
 
 /**
  * Destroys a DM Component on the event thread.

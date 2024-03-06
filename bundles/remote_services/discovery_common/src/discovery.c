@@ -89,7 +89,7 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 	const char *discoveryListener = NULL;
 	serviceReference_getProperty(reference, "DISCOVERY", &discoveryListener);
 	const char *scope = NULL;
-	serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
+	serviceReference_getProperty(reference, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, &scope);
 
 	celix_autoptr(celix_filter_t) filter = celix_filter_create(scope);
 
@@ -166,7 +166,7 @@ celix_status_t discovery_informEndpointListeners(discovery_t *discovery, endpoin
             endpoint_listener_t *listener = NULL;
 
             const char* scope = NULL;
-            serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
+            serviceReference_getProperty(reference, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, &scope);
 
             celix_autoptr(celix_filter_t) filter = celix_filter_create(scope);
             bool matchResult = celix_filter_match(filter, endpoint->properties);

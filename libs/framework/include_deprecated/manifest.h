@@ -30,10 +30,11 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include "properties.h"
 #include "celix_cleanup.h"
 #include "celix_errno.h"
 #include "celix_framework_export.h"
+#include "celix_properties.h"
+#include "hash_map.h"
 
 #ifdef __cplusplus
 extern "C" {

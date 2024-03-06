@@ -112,7 +112,7 @@ celix_status_t remoteProxyFactory_register(remote_proxy_factory_t *remote_proxy_
 	}
 
 	if (status == CELIX_SUCCESS) {
-		status = bundleContext_registerService(remote_proxy_factory_ptr->context_ptr, OSGI_RSA_REMOTE_PROXY_FACTORY,
+		status = bundleContext_registerService(remote_proxy_factory_ptr->context_ptr, CELIX_RSA_REMOTE_PROXY_FACTORY,
 				remote_proxy_factory_ptr->remote_proxy_factory_service_ptr, remote_proxy_factory_ptr->properties, &remote_proxy_factory_ptr->registration);
 	}
 

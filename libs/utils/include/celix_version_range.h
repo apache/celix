@@ -18,24 +18,20 @@
  */
 
 
-#ifndef CELIX_VERSION_RANGE_H_
-#define CELIX_VERSION_RANGE_H_
+#ifndef CELIX_VERSION_RANGE_H
+#define CELIX_VERSION_RANGE_H
 
 #include <stdbool.h>
 
-#include "celix_cleanup.h"
-#include "celix_errno.h"
-#include "celix_version.h"
+#include "celix_version_range_type.h"
+#include "celix_version_type.h"
 #include "celix_utils_export.h"
+#include "celix_errno.h"
+#include "celix_cleanup.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * Type definition for the celix_version_range_t abstract data type.
- */
-typedef struct celix_version_range celix_version_range_t;
 
 /**
  * Creates a new <code>celix_version_range_t*</code>.
@@ -146,4 +142,4 @@ CELIX_UTILS_EXPORT bool celix_versionRange_createLDAPFilterInPlace(const celix_v
 }
 #endif
 
-#endif /* CELIX_VERSION_RANGE_H_ */
+#endif /* CELIX_VERSION_RANGE_H */

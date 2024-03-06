@@ -16,3 +16,4 @@
 # under the License.
 
 add_subdirectory(dfi)
+add_subdirectory(ffi)

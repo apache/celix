@@ -72,7 +72,7 @@ celix_status_t endpointDescriptorWriter_destroy(endpoint_descriptor_writer_t *wr
     return CELIX_SUCCESS;
 }
 
-celix_status_t endpointDescriptorWriter_writeDocument(endpoint_descriptor_writer_t *writer, array_list_pt endpoints, char **document) {
+celix_status_t endpointDescriptorWriter_writeDocument(endpoint_descriptor_writer_t *writer, celix_array_list_t* endpoints, char **document) {
     celix_status_t status = CELIX_SUCCESS;
     int rc;
 
@@ -85,8 +85,8 @@ celix_status_t endpointDescriptorWriter_writeDocument(endpoint_descriptor_writer
             status = CELIX_BUNDLE_EXCEPTION;
         } else {
             unsigned int i;
-            for (i = 0; i < arrayList_size(endpoints); i++) {
-                endpoint_description_t *endpoint = arrayList_get(endpoints, i);
+            for (i = 0; i < celix_arrayList_size(endpoints); i++) {
+                endpoint_description_t *endpoint = celix_arrayList_get(endpoints, i);
                 status = endpointDescriptorWriter_writeEndpoint(writer, endpoint);
             }
             if (status == CELIX_SUCCESS) {
@@ -147,7 +147,7 @@ static celix_status_t endpointDescriptorWriter_writeEndpoint(endpoint_descriptor
             if (strcmp(CELIX_FRAMEWORK_SERVICE_NAME, (char*) iter.key) == 0) {
             	// objectClass *must* be represented as array of string values...
             	endpointDescriptorWriter_writeArrayValue(writer->writer, propertyValue);
-            } else if (strcmp(OSGI_RSA_ENDPOINT_SERVICE_ID, (char*) iter.key) == 0) {
+            } else if (strcmp(CELIX_RSA_ENDPOINT_SERVICE_ID, (char*) iter.key) == 0) {
             	// endpoint.service.id *must* be represented as long value...
             	endpointDescriptorWriter_writeTypedValue(writer->writer, VALUE_TYPE_LONG, propertyValue);
             } else {

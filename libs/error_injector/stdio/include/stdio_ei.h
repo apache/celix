@@ -26,13 +26,13 @@ extern "C" {
 #include "celix_error_injector.h"
 #include <stdio.h>
 
-CELIX_EI_DECLARE(fopen, FILE *);
+CELIX_EI_DECLARE(fopen, FILE*);
 
 CELIX_EI_DECLARE(fwrite, size_t);
 
 CELIX_EI_DECLARE(remove, int);
 
-CELIX_EI_DECLARE(open_memstream, FILE *);
+CELIX_EI_DECLARE(open_memstream, FILE*);
 
 CELIX_EI_DECLARE(fseek, int);
 
@@ -43,6 +43,12 @@ CELIX_EI_DECLARE(fread, size_t);
 CELIX_EI_DECLARE(fputc, int);
 
 CELIX_EI_DECLARE(fputs, int);
+
+CELIX_EI_DECLARE(fclose, int);
+
+CELIX_EI_DECLARE(fgetc, int);
+
+CELIX_EI_DECLARE(fmemopen, FILE*);
 
 #ifdef __cplusplus
 }

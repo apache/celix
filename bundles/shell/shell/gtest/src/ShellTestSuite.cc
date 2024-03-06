@@ -77,8 +77,10 @@ static void callCommand(std::shared_ptr<celix_bundle_context_t>& ctx, const char
     data.cmdLine = cmdLine;
     data.cmdShouldSucceed = cmdShouldSucceed;
     data.context = ctx.get();
-    data.tracker = celix_bundleContext_trackService(ctx.get(), CELIX_SHELL_SERVICE_NAME,
-                                                    static_cast<void*>(&data), [](void * handle, void * svc) {
+    celix_service_tracking_options_t opts{};
+    opts.filter.serviceName = CELIX_SHELL_SERVICE_NAME;
+    opts.callbackHandle = &data;
+    opts.set = [](void * handle, void * svc) {
         if (svc == nullptr) {
             return;
         }
@@ -93,7 +95,8 @@ static void callCommand(std::shared_ptr<celix_bundle_context_t>& ctx, const char
         }
         celix_bundleContext_stopTracker(d->context, d->tracker);
         d->barrier.set_value();
-    });
+    };
+    data.tracker = celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
     data.barrier.get_future().wait();
 }
 

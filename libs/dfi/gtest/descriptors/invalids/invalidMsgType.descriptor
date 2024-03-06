@@ -1,0 +1,10 @@
+:header
+type=message
+name=poi
+version=1.0.0
+:annotations
+classname=org.example.PointOfInterest
+:types
+location={DD lat long}
+:message
+{llocation;ttX location name description}

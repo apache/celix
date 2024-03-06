@@ -135,11 +135,6 @@ Some Apache Celix bundles use the SOD pattern. For example:
  - The `Celix::log_admin` bundle creates and registers `celix_log_service_t` services already preconfigured for 
    a requested logger name. <br/>
    ![Celix Log Admin](diagrams/sod_pattern_log_service.png)
- - The Celix PubSub bundles uses SOD to create and register `pubsub_publisher_t` services when these are requested 
-   with a valid "topic.name" and "topic.scope" filter attribute. For PubSub, the Celix PubSub Topology Manager monitors
-   the `pubsub_publisher_t` requests and instructs the available Celix PubSub Admins to create 
-   `pubsub_publisher_t`. <br/>
-   ![Celix PubSub](diagrams/sod_pattern_publisher_service.png)
  - The Apache Celix / OSGi remote services uses SOD, by ad hoc imported services only when they are discovered and
    requested.
 

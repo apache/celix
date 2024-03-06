@@ -1,0 +1,9 @@
+:header
+type=interface
+name=
+version=1.0.0
+:annotations
+:types
+item={DD a b}
+:methods
+example1=items(#am=handle;P#am=out;**[Litem;)N

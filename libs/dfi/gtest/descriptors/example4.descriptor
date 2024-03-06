@@ -6,3 +6,5 @@ version=1.0.0
 :types
 :methods
 getName(V)t=getName(#am=handle;P#am=out;*t)N
+setName=setName(#am=handle;Pt)N
+setConstName=setConstName(#am=handle;P#const=true;t)N

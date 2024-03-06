@@ -124,7 +124,8 @@ CELIX_UTILS_EXPORT bool celix_utils_isCustomerStatusCode(celix_status_t code);
 #define CELIX_FACILITY_FRAMEWORK 1
 
 /*!
- * The facility of the  http suppoter error code
+ * The facility of the  http status error code
+ * @see https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
  *
  */
 #define CELIX_FACILITY_HTTP 2
@@ -134,6 +135,12 @@ CELIX_UTILS_EXPORT bool celix_utils_isCustomerStatusCode(celix_status_t code);
  *
  */
 #define CELIX_FACILITY_ZIP 3
+
+/*!
+ * The facility of the libcurl error code
+ *
+ */
+#define CELIX_FACILITY_CURL 4
 
 /*!
  * Make the error code accroding to the specification

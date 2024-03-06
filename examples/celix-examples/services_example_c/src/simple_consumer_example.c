@@ -54,7 +54,12 @@ static celix_status_t activator_start(activator_data_t *data, celix_bundle_conte
     data->trkId = -1L;
 
     printf("Starting service tracker\n");
-    data->trkId = celix_bundleContext_trackServices(data->ctx, EXAMPLE_CALC_NAME, data, (void*)addSvc, (void*)removeSvc);
+    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+    opts.filter.serviceName = EXAMPLE_CALC_NAME;
+    opts.callbackHandle = data;
+    opts.addWithProperties = (void*)addSvc;
+    opts.remove = (void*)removeSvc;
+    data->trkId = celix_bundleContext_trackServicesWithOptions(data->ctx, &opts);
 
     printf("Trying to use calc service\n");
     celix_bundleContext_useService(data->ctx, EXAMPLE_CALC_NAME, data, (void*)useCalc);
