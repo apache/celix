@@ -17,6 +17,12 @@
  * under the License.
  */
 #include "celix_event_admin.h"
+
+#include <string.h>
+#include <stdbool.h>
+#include <assert.h>
+#include <errno.h>
+
 #include "celix_event_handler_service.h"
 #include "celix_event_constants.h"
 #include "celix_event.h"
@@ -28,10 +34,6 @@
 #include "celix_threads.h"
 #include "celix_utils.h"
 #include "celix_stdlib_cleanup.h"
-#include <string.h>
-#include <stdbool.h>
-#include <assert.h>
-#include <errno.h>
 
 
 #define CELIX_EVENT_ADMIN_MAX_HANDLER_THREADS 5

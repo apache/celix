@@ -17,14 +17,16 @@
  * under the License.
  */
 #include "celix_event_adapter.h"
-#include "celix_event_constants.h"
+
+#include <assert.h>
+
 #include "celix_log_helper.h"
 #include "celix_condition.h"
 #include "celix_constants.h"
 #include "celix_threads.h"
 #include "celix_utils.h"
 #include "celix_stdlib_cleanup.h"
-#include <assert.h>
+#include "celix_event_constants.h"
 
 struct celix_event_adapter {
     celix_bundle_context_t* ctx;

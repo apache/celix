@@ -16,12 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include <stdio.h>
+#include <unistd.h>
+
 #include "celix_event_admin_service.h"
 #include "celix_event_constants.h"
 #include "celix_bundle_activator.h"
 #include "celix_threads.h"
-#include <stdio.h>
-#include <unistd.h>
 
 typedef struct celix_event_publisher_example_activator {
     celix_thread_rwlock_t svcLock;

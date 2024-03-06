@@ -17,12 +17,14 @@
  * under the License.
  */
 #include "celix_event.h"
-#include "celix_stdlib_cleanup.h"
-#include "celix_ref.h"
-#include "celix_utils.h"
+
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "celix_stdlib_cleanup.h"
+#include "celix_ref.h"
+#include "celix_utils.h"
 
 struct celix_event {
     struct celix_ref ref;

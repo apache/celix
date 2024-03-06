@@ -16,10 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include <stdio.h>
+
 #include "celix_event_handler_service.h"
 #include "celix_event_constants.h"
 #include "celix_bundle_activator.h"
-#include <stdio.h>
 
 typedef struct celix_event_handler_example_activator {
     celix_event_handler_service_t service;

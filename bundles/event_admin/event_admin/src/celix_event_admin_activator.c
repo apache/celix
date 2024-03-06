@@ -16,13 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include <assert.h>
+
+#include "celix_bundle_activator.h"
 #include "celix_event_admin.h"
 #include "celix_event_adapter.h"
 #include "celix_event_admin_service.h"
 #include "celix_event_handler_service.h"
 #include "celix_event_constants.h"
-#include "celix_bundle_activator.h"
-#include <assert.h>
 
 typedef struct celix_event_admin_activator {
     celix_event_admin_t *eventAdmin;
