@@ -15,51 +15,64 @@
 #   specific language governing permissions and limitations
 #   under the License.
 
-from conans import CMake, ConanFile, tools
+from conan import ConanFile
+from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
+from conan.tools.files import copy
+from conans import tools
 import os
 
 
 class TestPackageConan(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
-    generators = "cmake_paths", "cmake_find_package"
-    # requires = "celix/2.3.0@docker/test"
+    generators = "CMakeDeps", "VirtualRunEnv"
+    test_type = "explicit"
 
-    def imports(self):
-        self.copy("*", src="@libdirs", dst="lib")
+    def layout(self):
+        cmake_layout(self)
+
+    def requirements(self):
+        self.requires(self.tested_reference_str)
+
+    def generate(self):
+        tc = CMakeToolchain(self)
+        tc.cache_variables["TEST_FRAMEWORK"] = self.options["celix"].build_framework
+        tc.cache_variables["TEST_HTTP_ADMIN"] = self.options["celix"].build_http_admin
+        tc.cache_variables["TEST_LOG_SERVICE"] = self.options["celix"].build_log_service
+        tc.cache_variables["TEST_SYSLOG_WRITER"] = self.options["celix"].build_syslog_writer
+        tc.cache_variables["TEST_RSA"] = self.options["celix"].build_remote_service_admin
+        tc.cache_variables["TEST_RSA_DFI"] = self.options["celix"].build_rsa_remote_service_admin_dfi
+        tc.cache_variables["TEST_RSA_SHM_V2"] = self.options["celix"].build_rsa_remote_service_admin_shm_v2
+        tc.cache_variables["TEST_RSA_RPC_JSON"] = self.options["celix"].build_rsa_json_rpc
+        tc.cache_variables["TEST_RSA_DISCOVERY_CONFIGURED"] = self.options["celix"].build_rsa_discovery_configured
+        tc.cache_variables["TEST_RSA_DISCOVERY_ETCD"] = self.options["celix"].build_rsa_discovery_etcd
+        tc.cache_variables["TEST_RSA_DISCOVERY_ZEROCONF"] = self.options["celix"].build_rsa_discovery_zeroconf
+        tc.cache_variables["TEST_SHELL"] = self.options["celix"].build_shell
+        if self.options["celix"].build_shell:
+            tc.cache_variables["TEST_CXX_SHELL"] = self.options["celix"].celix_cxx17 or self.options["celix"].celix_cxx14
+        tc.cache_variables["TEST_REMOTE_SHELL"] = self.options["celix"].build_remote_shell
+        tc.cache_variables["TEST_SHELL_TUI"] = self.options["celix"].build_shell_tui
+        tc.cache_variables["TEST_SHELL_WUI"] = self.options["celix"].build_shell_wui
+        tc.cache_variables["TEST_ETCD_LIB"] = self.options["celix"].build_celix_etcdlib
+        tc.cache_variables["TEST_LAUNCHER"] = self.options["celix"].build_launcher
+        tc.cache_variables["TEST_PROMISES"] = self.options["celix"].build_promises
+        tc.cache_variables["TEST_PUSHSTREAMS"] = self.options["celix"].build_pushstreams
+        tc.cache_variables["TEST_LOG_HELPER"] = self.options["celix"].build_log_helper
+        tc.cache_variables["TEST_LOG_SERVICE_API"] = self.options["celix"].build_log_service_api
+        tc.cache_variables["TEST_CXX_REMOTE_SERVICE_ADMIN"] = self.options["celix"].build_cxx_remote_service_admin
+        tc.cache_variables["TEST_SHELL_API"] = self.options["celix"].build_shell_api
+        tc.cache_variables["TEST_CELIX_DFI"] = self.options["celix"].build_celix_dfi
+        tc.cache_variables["TEST_UTILS"] = self.options["celix"].build_utils
+        tc.cache_variables["TEST_COMPONENTS_READY_CHECK"] = self.options["celix"].build_components_ready_check
+        # the following is workaround https://github.com/conan-io/conan/issues/7192
+        for dep in self.dependencies.host.values():
+            if dep.cpp_info.libdirs:
+                copy(self, "*", dep.cpp_info.libdir, os.path.join(self.build_folder, "lib"))
+        tc.cache_variables["CMAKE_BUILD_RPATH"] = os.path.join(self.build_folder, "lib")
+        tc.user_presets_path = False
+        tc.generate()
 
     def build(self):
         cmake = CMake(self)
-        cmake.definitions["TEST_FRAMEWORK"] = self.options["celix"].build_framework
-        cmake.definitions["TEST_HTTP_ADMIN"] = self.options["celix"].build_http_admin
-        cmake.definitions["TEST_LOG_SERVICE"] = self.options["celix"].build_log_service
-        cmake.definitions["TEST_SYSLOG_WRITER"] = self.options["celix"].build_syslog_writer
-        cmake.definitions["TEST_RSA"] = self.options["celix"].build_remote_service_admin
-        cmake.definitions["TEST_RSA_DFI"] = self.options["celix"].build_rsa_remote_service_admin_dfi
-        cmake.definitions["TEST_RSA_SHM_V2"] = self.options["celix"].build_rsa_remote_service_admin_shm_v2
-        cmake.definitions["TEST_RSA_RPC_JSON"] = self.options["celix"].build_rsa_json_rpc
-        cmake.definitions["TEST_RSA_DISCOVERY_CONFIGURED"] = self.options["celix"].build_rsa_discovery_configured
-        cmake.definitions["TEST_RSA_DISCOVERY_ETCD"] = self.options["celix"].build_rsa_discovery_etcd
-        cmake.definitions["TEST_RSA_DISCOVERY_ZEROCONF"] = self.options["celix"].build_rsa_discovery_zeroconf
-        cmake.definitions["TEST_SHELL"] = self.options["celix"].build_shell
-        if self.options["celix"].build_shell:
-            cmake.definitions["TEST_CXX_SHELL"] = self.options["celix"].celix_cxx17 or self.options["celix"].celix_cxx14
-        cmake.definitions["TEST_REMOTE_SHELL"] = self.options["celix"].build_remote_shell
-        cmake.definitions["TEST_SHELL_TUI"] = self.options["celix"].build_shell_tui
-        cmake.definitions["TEST_SHELL_WUI"] = self.options["celix"].build_shell_wui
-        cmake.definitions["TEST_ETCD_LIB"] = self.options["celix"].build_celix_etcdlib
-        cmake.definitions["TEST_LAUNCHER"] = self.options["celix"].build_launcher
-        cmake.definitions["TEST_PROMISES"] = self.options["celix"].build_promises
-        cmake.definitions["TEST_PUSHSTREAMS"] = self.options["celix"].build_pushstreams
-        cmake.definitions["TEST_LOG_HELPER"] = self.options["celix"].build_log_helper
-        cmake.definitions["TEST_LOG_SERVICE_API"] = self.options["celix"].build_log_service_api
-        cmake.definitions["TEST_CXX_REMOTE_SERVICE_ADMIN"] = self.options["celix"].build_cxx_remote_service_admin
-        cmake.definitions["TEST_SHELL_API"] = self.options["celix"].build_shell_api
-        cmake.definitions["TEST_CELIX_DFI"] = self.options["celix"].build_celix_dfi
-        cmake.definitions["TEST_UTILS"] = self.options["celix"].build_utils
-        cmake.definitions["TEST_COMPONENTS_READY_CHECK"] = self.options["celix"].build_components_ready_check
-        cmake.definitions["CMAKE_PROJECT_test_package_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
-        # the following is workaround https://github.com/conan-io/conan/issues/7192
-        cmake.definitions["CMAKE_BUILD_RPATH"] = os.path.join(self.build_folder, "lib")
         cmake.configure()
         cmake.build()
 
