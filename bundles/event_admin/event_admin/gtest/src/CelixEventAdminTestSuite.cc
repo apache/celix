@@ -27,31 +27,34 @@
 #include "celix_constants.h"
 
 static sem_t g_sem;
+static bool g_eventHandledFlag = false;
 
 static bool WaitForEventDone(int timeoutInSeconds) {
-    struct timespec ts{};
-    clock_gettime(CLOCK_REALTIME, &ts);
-    ts.tv_sec += timeoutInSeconds;
 #ifdef __APPLE__
     int sleepCnt = timeoutInSeconds * 1000 / 10;
-    while (sem_trywait(&g_sem) != 0 && sleepCnt > 0) {
+    while (g_eventHandledFlag == false && sleepCnt > 0) {
         usleep(10000);
         sleepCnt--;
     }
-    return sleepCnt > 0;
+    return g_eventHandledFlag;
 #else
+    struct timespec ts{};
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_sec += timeoutInSeconds;
     return sem_timedwait(&g_sem, &ts) == 0;
 #endif
 }
 
 static void HandleEventDone() {
     sem_post(&g_sem);
+    g_eventHandledFlag = true;
 }
 
 class CelixEventAdminTestSuite : public CelixEventAdminTestSuiteBaseClass {
 public:
     CelixEventAdminTestSuite() {
         sem_init(&g_sem, 0, 0);
+        g_eventHandledFlag = false;
     }
 
     ~CelixEventAdminTestSuite() override {
