@@ -110,7 +110,7 @@ jobs:
             ${{ runner.os }}-ccache-Release-
       - name: Create Celix
         run: |
-          conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix/*:build_all=True  -o celix/*:enable_ccache=True -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -tf examples/conan_test_package_v2 -o celix/*:celix_cxx17=True -o celix/*:celix_install_deprecated_api=True -vvv
+          conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix/*:build_all=True  -o celix/*:enable_ccache=True -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -tf examples/conan_test_package_v2 -o celix/*:celix_cxx17=True -o celix/*:celix_install_deprecated_api=True
       - name: Dependency Deduction Test
         run: |
           conan inspect .  | awk 'BEGIN { FS="[\t:]+"; output=0 } /build/ && !/build_all/ && !/build_rsa_remote_service_admin_shm_v2/ && !/build_rsa_discovery_zeroconf/ { if(output) print $1} /^options/ {output=1} /^options_definitions/ {output=0}' | while read option; do conan build . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix/*:${option}=True  -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -of  ${option}_dir -o celix/*:celix_cxx17=True -o celix/*:enable_ccache=True -o celix/*:celix_install_deprecated_api=True || exit 1; done
