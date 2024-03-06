@@ -16,13 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include <unistd.h>
+#include <semaphore.h>
+
+#include <gtest/gtest.h>
 #include "CelixEventAdminTestSuiteBaseClass.h"
 #include "celix_event_admin.h"
 #include "celix_event.h"
 #include "celix_event_constants.h"
 #include "celix_constants.h"
-#include <gtest/gtest.h>
-#include <semaphore.h>
 
 static sem_t g_sem;
 
@@ -30,7 +32,16 @@ static bool WaitForEventDone(int timeoutInSeconds) {
     struct timespec ts{};
     clock_gettime(CLOCK_REALTIME, &ts);
     ts.tv_sec += timeoutInSeconds;
+#ifdef __APPLE__
+    int sleepCnt = timeoutInSeconds * 1000 / 10;
+    while (sem_trywait(&g_sem) != 0 && sleepCnt > 0) {
+        usleep(10000);
+        sleepCnt--;
+    }
+    return sleepCnt > 0;
+#else
     return sem_timedwait(&g_sem, &ts) == 0;
+#endif
 }
 
 static void HandleEventDone() {
