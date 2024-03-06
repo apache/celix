@@ -25,7 +25,10 @@ class TestPackageConan(ConanFile):
     # requires = "celix/2.3.0@docker/test"
 
     def imports(self):
-        self.copy("*", src="@libdirs", dst="lib")
+        if self.settings.os == "Linux":
+            self.copy("*.so*", src="@libdirs", dst="lib")
+        elif self.settings.os == "Macos":
+            self.copy("*.dylib", src="@libdirs", dst="lib")
 
     def build(self):
         cmake = CMake(self)
