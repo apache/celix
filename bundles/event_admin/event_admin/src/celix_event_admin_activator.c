@@ -17,7 +17,9 @@
  * under the License.
  */
 #include <assert.h>
+#include <errno.h>
 
+#include "celix_errno.h"
 #include "celix_bundle_activator.h"
 #include "celix_event_admin.h"
 #include "celix_event_adapter.h"
@@ -42,7 +44,8 @@ celix_status_t celix_eventAdminActivator_start(celix_event_admin_activator_t *ac
 
     act->eventAdmin = celix_eventAdmin_create(ctx);
     if (act->eventAdmin == NULL) {
-        return CELIX_ENOMEM;
+        assert(errno != 0);
+        return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
     }
     celix_dmComponent_setImplementation(adminCmp, act->eventAdmin);
     CELIX_DM_COMPONENT_SET_CALLBACKS(adminCmp, celix_event_admin_t, NULL, celix_eventAdmin_start, celix_eventAdmin_stop, NULL);

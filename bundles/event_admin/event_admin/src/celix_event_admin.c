@@ -80,6 +80,7 @@ static void* celix_eventAdmin_deliverEventThread(void* data);
 celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
     celix_autofree celix_event_admin_t* ea = calloc(1, sizeof(*ea));
     if (ea == NULL) {
+        errno = ENOMEM;
         return NULL;
     }
     ea->ctx = ctx;
@@ -87,48 +88,56 @@ celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
 
     celix_autoptr(celix_log_helper_t) logHelper = ea->logHelper = celix_logHelper_create(ctx, "CelixEventAdmin");
     if (logHelper == NULL) {
+        errno = ENOMEM;
         return NULL;
     }
 
     celix_status_t status = celixThreadRwlock_create(&ea->lock, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(logHelper, "Failed to create event admin lock.");
+        errno = status;//The status be ensured to belong to CELIX_FACILITY_CERRNO
         return NULL;
     }
     celix_autoptr(celix_thread_rwlock_t) lock = &ea->lock;
     celix_autoptr(celix_array_list_t) channelMatchingAllEvents = ea->channelMatchingAllEvents.eventHandlerSvcIdList = celix_arrayList_create();
     if (channelMatchingAllEvents == NULL) {
         celix_logHelper_error(logHelper, "Failed to create event channel matching all events.");
+        errno = ENOMEM;
         return NULL;
     }
     celix_autoptr(celix_string_hash_map_t) channelsMatchingTopic = ea->channelsMatchingTopic = celix_stringHashMap_create();
     if (channelsMatchingTopic == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(logHelper, "Failed to create event channels matching topic.");
+        errno = ENOMEM;
         return NULL;
     }
     celix_autoptr(celix_string_hash_map_t) channelsMatchingPrefixTopic = ea->channelsMatchingPrefixTopic = celix_stringHashMap_create();
     if (channelsMatchingPrefixTopic == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(logHelper, "Failed to create event channels matching prefix topic.");
+        errno = ENOMEM;
         return NULL;
     }
     celix_autoptr(celix_long_hash_map_t) eventHandlers = ea->eventHandlers = celix_longHashMap_create();
     if (eventHandlers == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(logHelper, "Failed to create event handler map.");
+        errno = ENOMEM;
         return NULL;
     }
 
     status = celixThreadMutex_create(&ea->eventsMutex, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(logHelper, "Failed to create event admin events mutex.");
+        errno = status;//The status be ensured to belong to CELIX_FACILITY_CERRNO
         return NULL;
     }
     celix_autoptr(celix_thread_mutex_t) mutex = &ea->eventsMutex;
     status = celixThreadCondition_init(&ea->eventsTriggerCond, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(logHelper, "Failed to create event admin events not empty condition.");
+        errno = status;//The status be ensured to belong to CELIX_FACILITY_CERRNO
         return NULL;
     }
     celix_autoptr(celix_thread_cond_t) cond = &ea->eventsTriggerCond;
@@ -136,6 +145,7 @@ celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
     celix_autoptr(celix_array_list_t) asyncEventQueue = ea->asyncEventQueue = celix_arrayList_create();
     if (asyncEventQueue == NULL) {
         celix_logHelper_error(logHelper, "Failed to create async event queue.");
+        errno = ENOMEM;
         return NULL;
     }
 
