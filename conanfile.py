@@ -345,7 +345,7 @@ class CelixConan(ConanFile):
         # tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
         for dep in self.dependencies.host.values():
-            if dep.cpp_info.libdir is not None:
+            if dep.cpp_info.libdirs:
                 copy(self, "*", dep.cpp_info.libdir, os.path.join(self.build_folder, "lib"))
         tc.cache_variables["CMAKE_BUILD_RPATH"] = os.path.join(self.build_folder, "lib")
         v = Version(self.version)

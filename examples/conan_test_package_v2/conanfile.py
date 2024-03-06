@@ -67,7 +67,7 @@ class TestPackageConan(ConanFile):
         tc.cache_variables["TEST_COMPONENTS_READY_CHECK"] = celix_options.build_components_ready_check
         # the following is workaround https://github.com/conan-io/conan/issues/7192
         for dep in self.dependencies.host.values():
-            if dep.cpp_info.libdir is not None:
+            if dep.cpp_info.libdirs:
                 copy(self, "*", dep.cpp_info.libdir, os.path.join(self.build_folder, "lib"))
         tc.cache_variables["CMAKE_BUILD_RPATH"] = os.path.join(self.build_folder, "lib")
         tc.user_presets_path = False
