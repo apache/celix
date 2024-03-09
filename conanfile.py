@@ -344,10 +344,10 @@ class CelixConan(ConanFile):
         tc.cache_variables["CELIX_ERR_BUFFER_SIZE"] = str(self.options.celix_err_buffer_size)
         # tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192
-        for dep in self.dependencies.host.values():
-            for ld in dep.cpp_info.libdirs:
-                copy(self, "*", ld, os.path.join(self.build_folder, "lib"))
-        tc.cache_variables["CMAKE_BUILD_RPATH"] = os.path.join(self.build_folder, "lib")
+        if self.settings.os == "Linux":
+            tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
+        elif self.settings.os == "Macos":
+            tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
         v = Version(self.version)
         tc.cache_variables["CELIX_MAJOR"] = str(v.major.value)
         tc.cache_variables["CELIX_MINOR"] = str(v.minor.value)

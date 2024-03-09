@@ -19,7 +19,6 @@ from conan import ConanFile
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 from conan.tools.build import can_run
 from conan.tools.files import chdir
-from conan.tools.files import copy
 import os
 
 
@@ -66,10 +65,10 @@ class TestPackageConan(ConanFile):
         tc.cache_variables["TEST_UTILS"] = celix_options.build_utils
         tc.cache_variables["TEST_COMPONENTS_READY_CHECK"] = celix_options.build_components_ready_check
         # the following is workaround https://github.com/conan-io/conan/issues/7192
-        for dep in self.dependencies.host.values():
-            for ld in dep.cpp_info.libdirs:
-                copy(self, "*", ld, os.path.join(self.build_folder, "lib"))
-        tc.cache_variables["CMAKE_BUILD_RPATH"] = os.path.join(self.build_folder, "lib")
+        if self.settings.os == "Linux":
+            tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
+        elif self.settings.os == "Macos":
+            tc.cache_variables["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
         tc.user_presets_path = False
         tc.generate()
 
