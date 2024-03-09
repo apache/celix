@@ -136,26 +136,22 @@ celix_utils_convertStringToVersion(const char* val, const celix_version_t* defau
  * to a specific type and add it to the list.
  */
 static celix_status_t celix_utils_convertStringToArrayList(const char* val,
+                                                           celix_array_list_t* listIn,
                                                            const celix_array_list_t* defaultValue,
-                                                           celix_array_list_t** list,
-                                                           void (*freeCb)(void*),
                                                            celix_status_t (*addEntry)(celix_array_list_t*,
-                                                                                      const char*)) {
-    assert(list != NULL);
-    *list = NULL;
+                                                                                      const char*),
+                                                           celix_array_list_t** listOut) {
+    assert(listOut != NULL);
+    *listOut = NULL;
+    celix_autoptr(celix_array_list_t) list = listIn;
 
     if (!val && defaultValue) {
-        *list = celix_arrayList_copy(defaultValue);
-        return *list ? CELIX_ILLEGAL_ARGUMENT : CELIX_ENOMEM;
+        *listOut = celix_arrayList_copy(defaultValue);
+        return *listOut ? CELIX_ILLEGAL_ARGUMENT : CELIX_ENOMEM;
+    } else if (!list) {
+        return ENOMEM;
     } else if (!val) {
         return CELIX_ILLEGAL_ARGUMENT;
-    }
-
-    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-    opts.simpleRemovedCallback = freeCb;
-    celix_autoptr(celix_array_list_t) result = celix_arrayList_createWithOptions(&opts);
-    if (!result) {
-        return CELIX_ENOMEM;
     }
 
     char* buf = NULL;
@@ -189,7 +185,7 @@ static celix_status_t celix_utils_convertStringToArrayList(const char* val,
             //end of entry
             fclose(entryStream);
             entryStream = NULL;
-            status = addEntry(result, buf);
+            status = addEntry(list, buf);
             if (status == CELIX_ENOMEM) {
                 return status;
             }
@@ -204,11 +200,11 @@ static celix_status_t celix_utils_convertStringToArrayList(const char* val,
 
 
     if (status == CELIX_SUCCESS) {
-        *list = celix_steal_ptr(result);
+        *listOut = celix_steal_ptr(list);
     } else if (status == CELIX_ILLEGAL_ARGUMENT) {
         if (defaultValue) {
-            *list = celix_arrayList_copy(defaultValue);
-            return *list ? status : CELIX_ENOMEM;
+            *listOut = celix_arrayList_copy(defaultValue);
+            return *listOut ? status : CELIX_ENOMEM;
         }
         return status;
     }
@@ -227,7 +223,8 @@ celix_status_t celix_utils_addLongEntry(celix_array_list_t* list, const char* en
 celix_status_t celix_utils_convertStringToLongArrayList(const char* val,
                                                         const celix_array_list_t* defaultValue,
                                                         celix_array_list_t** list) {
-    return celix_utils_convertStringToArrayList(val, defaultValue, list, NULL, celix_utils_addLongEntry);
+    return celix_utils_convertStringToArrayList(
+        val, celix_arrayList_createLongArray(), defaultValue, celix_utils_addLongEntry, list);
 }
 
 celix_status_t celix_utils_addDoubleEntry(celix_array_list_t* list, const char* entry) {
@@ -242,7 +239,8 @@ celix_status_t celix_utils_addDoubleEntry(celix_array_list_t* list, const char* 
 celix_status_t celix_utils_convertStringToDoubleArrayList(const char* val,
                                                           const celix_array_list_t* defaultValue,
                                                           celix_array_list_t** list) {
-    return celix_utils_convertStringToArrayList(val, defaultValue, list, NULL, celix_utils_addDoubleEntry);
+    return celix_utils_convertStringToArrayList(
+        val, celix_arrayList_createDoubleArray(), defaultValue, celix_utils_addDoubleEntry, list);
 }
 
 celix_status_t celix_utils_addBoolEntry(celix_array_list_t* list, const char* entry) {
@@ -255,41 +253,33 @@ celix_status_t celix_utils_addBoolEntry(celix_array_list_t* list, const char* en
 }
 
 celix_status_t celix_utils_convertStringToBoolArrayList(const char* val,
-                                                          const celix_array_list_t* defaultValue,
-                                                          celix_array_list_t** list) {
-    return celix_utils_convertStringToArrayList(val, defaultValue, list, NULL, celix_utils_addBoolEntry);
-}
-
-celix_status_t celix_utils_addStringEntry(celix_array_list_t* list, const char* entry) {
-    char* copy = celix_utils_strdup(entry);
-    if (!copy) {
-            return CELIX_ENOMEM;
-    }
-    return celix_arrayList_add(list, copy);
+                                                        const celix_array_list_t* defaultValue,
+                                                        celix_array_list_t** list) {
+    return celix_utils_convertStringToArrayList(
+        val, celix_arrayList_createBoolArray(), defaultValue, celix_utils_addBoolEntry, list);
 }
 
 celix_status_t celix_utils_convertStringToStringArrayList(const char* val,
                                                           const celix_array_list_t* defaultValue,
                                                           celix_array_list_t** list) {
-    return celix_utils_convertStringToArrayList(val, defaultValue, list, free, celix_utils_addStringEntry);
+    return celix_utils_convertStringToArrayList(
+        val, celix_arrayList_createStringArray(), defaultValue, celix_arrayList_addString, list);
 }
 
 static celix_status_t celix_utils_addVersionEntry(celix_array_list_t* list, const char* entry) {
     celix_version_t* version;
     celix_status_t convertStatus = celix_utils_convertStringToVersion(entry, NULL, &version);
     if (convertStatus == CELIX_SUCCESS) {
-        return celix_arrayList_add(list, version);
+        return celix_arrayList_addVersion(list, version);
     }
     return convertStatus;
 }
-
-static void celix_utils_destroyVersionEntry(void* entry) { celix_version_destroy(entry); }
 
 celix_status_t celix_utils_convertStringToVersionArrayList(const char* val,
                                                            const celix_array_list_t* defaultValue,
                                                            celix_array_list_t** list) {
     return celix_utils_convertStringToArrayList(
-        val, defaultValue, list, celix_utils_destroyVersionEntry, celix_utils_addVersionEntry);
+        val, celix_arrayList_createVersionArray(), defaultValue, celix_utils_addVersionEntry, list);
 }
 
 /**

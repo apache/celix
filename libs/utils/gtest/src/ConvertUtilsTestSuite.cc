@@ -432,9 +432,9 @@ TEST_F(ConvertUtilsTestSuite, ConvertToStringArrayList) {
     EXPECT_EQ(CELIX_SUCCESS, convertState);
     EXPECT_TRUE(result != nullptr);
     EXPECT_EQ(3, celix_arrayList_size(result));
-    EXPECT_STREQ("a", (char*)celix_arrayList_get(result, 0));
-    EXPECT_STREQ("b", (char*)celix_arrayList_get(result, 1));
-    EXPECT_STREQ("c", (char*)celix_arrayList_get(result, 2));
+    EXPECT_STREQ("a", celix_arrayList_getString(result, 0));
+    EXPECT_STREQ("b", celix_arrayList_getString(result, 1));
+    EXPECT_STREQ("c", celix_arrayList_getString(result, 2));
     celix_arrayList_destroy(result);
 
     convertState = celix_utils_convertStringToStringArrayList(R"(a,b\\\,,c)", nullptr, &result);
@@ -492,7 +492,7 @@ TEST_F(ConvertUtilsTestSuite, StringArrayToStringTest) {
 
     EXPECT_EQ(celix_arrayList_size(list), celix_arrayList_size(listResult));
     for (int i = 0; i < celix_arrayList_size(list); ++i) {
-        EXPECT_STREQ((char*)celix_arrayList_get(list, i), (char*)celix_arrayList_get(listResult, i));
+        EXPECT_STREQ((char*)celix_arrayList_getString(list, i), (char*)celix_arrayList_getString(listResult, i));
     }
 }
 
@@ -502,9 +502,9 @@ TEST_F(ConvertUtilsTestSuite, ConvertToVersionArrayList) {
     EXPECT_EQ(CELIX_SUCCESS, convertState);
     EXPECT_TRUE(result != nullptr);
     EXPECT_EQ(3, celix_arrayList_size(result));
-    checkVersion((celix_version_t*)celix_arrayList_get(result, 0), 1, 2, 3, nullptr);
-    checkVersion((celix_version_t*)celix_arrayList_get(result, 1), 2, 3, 4, nullptr);
-    checkVersion((celix_version_t*)celix_arrayList_get(result, 2), 3, 4, 5, "qualifier");
+    checkVersion(celix_arrayList_getVersion(result, 0), 1, 2, 3, nullptr);
+    checkVersion(celix_arrayList_getVersion(result, 1), 2, 3, 4, nullptr);
+    checkVersion(celix_arrayList_getVersion(result, 2), 3, 4, 5, "qualifier");
     celix_arrayList_destroy(result);
 
     // NOTE celix_utils_convertStringToVersionArrayList uses the same generic function as is used in

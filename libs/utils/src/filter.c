@@ -678,8 +678,8 @@ static bool celix_filter_matchSubStringForValue(const celix_filter_t* filter, co
     assert(filter->children && celix_arrayList_size(filter->children) >= 2);
 
     size_t strLen = celix_utils_strlen(value);
-    const char* initial = celix_arrayList_get(filter->children, 0);
-    const char* final = celix_arrayList_get(filter->children, celix_arrayList_size(filter->children) - 1);
+    const char* initial = celix_arrayList_getString(filter->children, 0);
+    const char* final = celix_arrayList_getString(filter->children, celix_arrayList_size(filter->children) - 1);
 
     const char* currentValue = value;
 
