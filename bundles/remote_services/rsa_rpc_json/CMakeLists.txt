@@ -45,6 +45,7 @@ if (RSA_JSON_RPC)
         SYMBOLIC_NAME "apache_celix_rsa_json_rpc"
         NAME "Apache Celix Remote Service Admin JSON RPC"
         GROUP "Celix/RSA"
+        FILENAME celix_rsa_json_rpc
         SOURCES
         ${RSA_JSON_RPC_SRC}
     )

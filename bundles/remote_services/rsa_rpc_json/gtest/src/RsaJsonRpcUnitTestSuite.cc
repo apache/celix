@@ -87,14 +87,14 @@ public:
         endpointDesc->properties = celix_properties_create();
         EXPECT_TRUE(endpointDesc->properties != nullptr);
         const char *uuid = celix_bundleContext_getProperty(ctx.get(), CELIX_FRAMEWORK_UUID, nullptr);
-        celix_properties_set(endpointDesc->properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+        celix_properties_set(endpointDesc->properties, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
         celix_properties_set(endpointDesc->properties, CELIX_FRAMEWORK_SERVICE_NAME, RSA_RPC_JSON_TEST_SERVICE);
         celix_properties_set(endpointDesc->properties, CELIX_FRAMEWORK_SERVICE_VERSION, "1.0.0");
-        celix_properties_set(endpointDesc->properties, OSGI_RSA_ENDPOINT_ID, "8cf05b2d-421e-4c46-b55e-c3f1900b7cba");
-        celix_properties_set(endpointDesc->properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-        endpointDesc->frameworkUUID = (char*)celix_properties_get(endpointDesc->properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, nullptr);
+        celix_properties_set(endpointDesc->properties, CELIX_RSA_ENDPOINT_ID, "8cf05b2d-421e-4c46-b55e-c3f1900b7cba");
+        celix_properties_set(endpointDesc->properties, CELIX_RSA_SERVICE_IMPORTED, "true");
+        endpointDesc->frameworkUUID = (char*)celix_properties_get(endpointDesc->properties, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, nullptr);
         endpointDesc->serviceId = svcId;
-        endpointDesc->id = (char*)celix_properties_get(endpointDesc->properties, OSGI_RSA_ENDPOINT_ID, nullptr);
+        endpointDesc->id = (char*)celix_properties_get(endpointDesc->properties, CELIX_RSA_ENDPOINT_ID, nullptr);
         endpointDesc->serviceName = strdup(RSA_RPC_JSON_TEST_SERVICE);
         return endpointDesc;
     }
@@ -342,8 +342,8 @@ public:
             return CELIX_SUCCESS;
         };
         celix_service_registration_options_t opts{};
-        opts.serviceName = RSA_REQUEST_SENDER_SERVICE_NAME;
-        opts.serviceVersion = RSA_REQUEST_SENDER_SERVICE_VERSION;
+        opts.serviceName = CELIX_RSA_REQUEST_SENDER_SERVICE_NAME;
+        opts.serviceVersion = CELIX_RSA_REQUEST_SENDER_SERVICE_VERSION;
         opts.svc = &reqSenderSvc;
         reqSenderSvcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx.get(), &opts);
         EXPECT_NE(-1, reqSenderSvcId);
@@ -627,8 +627,8 @@ TEST_F(RsaJsonRpcProxyUnitTestSuite2, ServiceInvocationIsIntercepted) {
             };
 
     celix_service_registration_options_t opts{};
-    opts.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
-    opts.serviceVersion = REMOTE_INTERCEPTOR_SERVICE_VERSION;
+    opts.serviceName = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_NAME;
+    opts.serviceVersion = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_VERSION;
     opts.svc = &interceptor;
     auto interceptorSvcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx.get(), &opts);
     celix_bundleContext_waitForAsyncRegistration(ctx.get(), interceptorSvcId);
@@ -738,7 +738,7 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, UseRequestHandler) {
     celix_properties_t *metadata = celix_properties_create();
     celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
 
-    auto found = celix_bundleContext_useService(ctx.get(), RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
+    auto found = celix_bundleContext_useService(ctx.get(), CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
         celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
         auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
         EXPECT_NE(nullptr, reqHandler);
@@ -770,7 +770,7 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToFindInterfaceDescriptor) {
     celix_properties_t *metadata = celix_properties_create();
     celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
 
-    auto found = celix_bundleContext_useService(ctx.get(), RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
+    auto found = celix_bundleContext_useService(ctx.get(), CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
         celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
         auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
         EXPECT_NE(nullptr, reqHandler);
@@ -790,39 +790,6 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToFindInterfaceDescriptor) {
     unsetenv("CELIX_FRAMEWORK_EXTENDER_PATH");
 }
 
-TEST_F(RsaJsonRpcEndPointUnitTestSuite, FailedToGetServiceVersionFromInterfaceDescriptor) {
-    celix_ei_expect_dynInterface_getVersionString(CELIX_EI_UNKNOWN_CALLER, 0, 1);
-
-    auto endpoint = CreateEndpointDescription(rpcTestSvcId);
-    long svcId = -1L;
-    auto status = rsaJsonRpc_createEndpoint(jsonRpc.get(), endpoint, &svcId);
-    EXPECT_EQ(CELIX_SUCCESS, status);
-
-    celix_bundleContext_waitForEvents(ctx.get());//wait for async endpoint creation
-
-    unsigned int serialProtoId = GenerateSerialProtoId();
-    celix_properties_t *metadata = celix_properties_create();
-    celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
-
-    auto found = celix_bundleContext_useService(ctx.get(), RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
-        celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
-        auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
-        EXPECT_NE(nullptr, reqHandler);
-        struct iovec request{};
-        request.iov_base =  (char *)"{\n    \"m\": \"test\",\n    \"a\": []\n}";
-        request.iov_len = strlen((char*)request.iov_base);
-        struct iovec reply{nullptr,0};
-        EXPECT_EQ(CELIX_ILLEGAL_STATE, reqHandler->handleRequest(reqHandler->handle, metadata, &request, &reply));
-        free(reply.iov_base);
-    });
-    EXPECT_TRUE(found);
-
-    celix_properties_destroy(metadata);
-
-    rsaJsonRpc_destroyEndpoint(jsonRpc.get(), svcId);
-    endpointDescription_destroy(endpoint);
-}
-
 TEST_F(RsaJsonRpcEndPointUnitTestSuite, ServiceVersionMismatched) {
     auto endpoint = CreateEndpointDescription(rpcTestSvcId);
     celix_properties_set(endpoint->properties, CELIX_FRAMEWORK_SERVICE_VERSION, "2.0.0");//Its 1.0.0 in the interface descriptor
@@ -836,7 +803,7 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, ServiceVersionMismatched) {
     celix_properties_t *metadata = celix_properties_create();
     celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
 
-    auto found = celix_bundleContext_useService(ctx.get(), RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
+    auto found = celix_bundleContext_useService(ctx.get(), CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
         celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
         auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
         EXPECT_NE(nullptr, reqHandler);
@@ -868,7 +835,7 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, EndpointLostServiceVersion) {
     celix_properties_t *metadata = celix_properties_create();
     celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
 
-    auto found = celix_bundleContext_useService(ctx.get(), RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
+    auto found = celix_bundleContext_useService(ctx.get(), CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
         celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
         auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
         EXPECT_NE(nullptr, reqHandler);
@@ -899,7 +866,7 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, UseRequestHandlerWithInvalidParams) {
     celix_properties_t *metadata = celix_properties_create();
     celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
 
-    auto found = celix_bundleContext_useService(ctx.get(), RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
+    auto found = celix_bundleContext_useService(ctx.get(), CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
         celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
         auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
         EXPECT_NE(nullptr, reqHandler);
@@ -960,8 +927,8 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, ServiceInvocationIsIntercepted) {
         return;
     };
     celix_service_registration_options_t opts{};
-    opts.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
-    opts.serviceVersion = REMOTE_INTERCEPTOR_SERVICE_VERSION;
+    opts.serviceName = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_NAME;
+    opts.serviceVersion = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_VERSION;
     opts.svc = &interceptor;
     auto interceptorSvcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx.get(), &opts);
     celix_bundleContext_waitForAsyncRegistration(ctx.get(), interceptorSvcId);
@@ -970,7 +937,7 @@ TEST_F(RsaJsonRpcEndPointUnitTestSuite, ServiceInvocationIsIntercepted) {
     celix_properties_t *metadata = celix_properties_create();
     celix_properties_setLong(metadata, "SerialProtocolId", serialProtoId);
 
-    auto found = celix_bundleContext_useService(ctx.get(), RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
+    auto found = celix_bundleContext_useService(ctx.get(), CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME, metadata, [](void *handle, void *svc) {
         celix_properties_t *metadata = static_cast< celix_properties_t *>(handle);//unused
         auto reqHandler = static_cast<rsa_request_handler_service_t*>(svc);
         EXPECT_NE(nullptr, reqHandler);

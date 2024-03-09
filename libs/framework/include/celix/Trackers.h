@@ -371,6 +371,98 @@ namespace celix {
             }
             return result;
         }
+
+        /**
+         * @brief Applies the provided function to each service being tracked.
+         *
+         * @tparam F A function or callable object type. The function signature should be equivalent to the following:
+         *           `void func(I& svc)`
+         *           where I is the service type being tracked.
+         * @param f The function or callable object to apply to each service.
+         * @return The number of services to which the function was applied.
+         */
+        template<typename F>
+        size_t useServices(const F& f) {
+            return this->template useServicesInternal(
+                [&f](I& svc, const celix::Properties&, const celix::Bundle&) { f(svc); });
+        }
+
+        /**
+         * @brief Applies the provided function to each service being tracked, along with its properties.
+         *
+         * @tparam F A function or callable object type. The function signature should be equivalent to the following:
+         *           `void func(I& svc, const celix::Properties& props)`
+         *           where I is the service type being tracked.
+         * @param f The function or callable object to apply to each service.
+         * @return The number of services to which the function was applied.
+         */
+        template<typename F>
+        size_t useServicesWithProperties(const F& f) {
+            return this->template useServicesInternal(
+                [&f](I& svc, const celix::Properties& props, const celix::Bundle&) { f(svc, props); });
+        }
+
+        /**
+         * @brief Applies the provided function to each service being tracked, along with its properties and owner
+         * bundle.
+         *
+         * @tparam F A function or callable object type. The function signature should be equivalent to the following:
+         *           `void func(I& svc, const celix::Properties& props, const celix::Bundle& bnd)`
+         *           where I is the service type being tracked.
+         * @param f The function or callable object to apply to each service.
+         * @return The number of services to which the function was applied.
+         */
+        template<typename F>
+        size_t useServicesWithOwner(const F& f) {
+            return this->template useServicesInternal(
+                [&f](I& svc, const celix::Properties& props, const celix::Bundle& bnd) { f(svc, props, bnd); });
+        }
+
+        /**
+         * @brief Applies the provided function to the highest ranking service being tracked.
+         *
+         * @tparam F A function or callable object type. The function signature should be equivalent to the following:
+         *           `void func(I& svc)`
+         *           where I is the service type being tracked.
+         * @param f The function or callable object to apply to the highest ranking service.
+         * @return True if the function was applied to a service, false otherwise.
+         */
+        template<typename F>
+        bool useService(const F& f) {
+            return this->template useServiceInternal(
+                [&f](I& svc, const celix::Properties&, const celix::Bundle&) { f(svc); });
+        }
+
+        /**
+         * @brief Applies the provided function to the highest ranking service being tracked, along with its properties.
+         *
+         * @tparam F A function or callable object type. The function signature should be equivalent to the following:
+         *           `void func(I& svc, const celix::Properties& props)`
+         *           where I is the service type being tracked.
+         * @param f The function or callable object to apply to the highest ranking service.
+         * @return True if the function was applied to a service, false otherwise.
+         */
+        template<typename F>
+        bool useServiceWithProperties(const F& f) {
+            return this->template useServiceInternal(
+                [&f](I& svc, const celix::Properties& props, const celix::Bundle&) { f(svc, props); });
+        }
+
+        /**
+         * @brief Applies the provided function to the highest ranking service being tracked, along with its properties
+         * and owner bundle.
+         *
+         * @tparam F A function or callable object type. The function signature should be equivalent to the following:
+         *           `void func(I& svc, const celix::Properties& props, const celix::Bundle& bnd)`
+         *           where I is the service type being tracked.
+         * @param f The function or callable object to apply to the highest ranking service.
+         * @return True if the function was applied to a service, false otherwise.
+         */
+        template<typename F>
+        bool useServiceWithOwner(const F& f) {
+            return this->template useServiceInternal(
+                [&f](I& svc, const celix::Properties& props, const celix::Bundle& bnd) { f(svc, props, bnd); });
+        }
     protected:
         struct SvcEntry {
             SvcEntry(long _svcId, long _svcRanking, std::shared_ptr<I> _svc,
@@ -560,6 +652,33 @@ namespace celix {
                 lck.unlock();
                 tracker->waitForExpiredSvcEntry(prevEntry);
             };
+        }
+
+        template<typename F>
+        size_t useServicesInternal(const F& f) {
+            size_t count = 0;
+            std::lock_guard<std::mutex> lck{mutex};
+            for (auto& e : entries) {
+                I& svc = *e->svc;
+                const celix::Properties& props = *e->properties;
+                const celix::Bundle& owner = *e->owner;
+                f(svc, props, owner);
+                count++;
+            }
+            return count;
+        }
+
+        template<typename F>
+        bool useServiceInternal(const F& f) {
+            std::lock_guard<std::mutex> lck{mutex};
+            if (highestRankingServiceEntry) {
+                I& svc = *highestRankingServiceEntry->svc;
+                const celix::Properties& props = *highestRankingServiceEntry->properties;
+                const celix::Bundle& owner = *highestRankingServiceEntry->owner;
+                f(svc, props, owner);
+                return true;
+            }
+            return false;
         }
     };
 

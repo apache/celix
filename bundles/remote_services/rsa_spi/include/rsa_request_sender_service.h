@@ -28,9 +28,9 @@ extern "C" {
 #include <celix_errno.h>
 #include <sys/uio.h>
 
-#define RSA_REQUEST_SENDER_SERVICE_NAME "rsa_request_sender_service"
-#define RSA_REQUEST_SENDER_SERVICE_VERSION "1.0.0"
-#define RSA_REQUEST_SENDER_SERVICE_USE_RANGE "[1.0.0,2)"
+#define CELIX_RSA_REQUEST_SENDER_SERVICE_NAME "rsa_request_sender_service"
+#define CELIX_RSA_REQUEST_SENDER_SERVICE_VERSION "1.0.0"
+#define CELIX_RSA_REQUEST_SENDER_SERVICE_USE_RANGE "[1.0.0,2)"
 
 /**
  * @brief The service send RPC request

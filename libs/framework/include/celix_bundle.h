@@ -173,7 +173,6 @@ typedef struct celix_bundle_service_tracker_list_entry {
     size_t nrOfTrackedServices;
 } celix_bundle_service_tracker_list_entry_t;
 
-
 /**
  * Returns a array list of service tracker info entries for this bundle.
  *
@@ -181,15 +180,10 @@ typedef struct celix_bundle_service_tracker_list_entry {
  *
  * @param ctx       The bundle context
  * @param bndId     The bundle id for which the services should be listed
- * @return          A celix array list with celix_bundle_service_tracker_list_entry_t*. Caller is owner of the celix array.
+ * @return          A celix array list with celix_bundle_service_tracker_list_entry_t*. Caller is owner of the celix
+ * array. The returned list should be freed using celix_arrayList_destroy.
  */
-CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t *bnd);
-
-/**
- * Utils function to free memory for the return of a celix_bundle_listServiceTrackers call.
- */
-CELIX_FRAMEWORK_EXPORT void celix_bundle_destroyServiceTrackerList(celix_array_list_t* list);
-
+CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t* bnd);
 
 #ifdef __cplusplus
 }

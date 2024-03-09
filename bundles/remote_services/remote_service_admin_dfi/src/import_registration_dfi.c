@@ -18,6 +18,13 @@
  */
 
 #include "import_registration_dfi.h"
+
+#include <stdlib.h>
+#include <json_rpc.h>
+#include <assert.h>
+
+#include "celix_version.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_rsa_utils.h"
 #include "celix_constants.h"
 #include "dyn_interface.h"
@@ -25,16 +32,12 @@
 #include "remote_interceptors_handler.h"
 #include "remote_service_admin_dfi.h"
 #include "remote_service_admin_dfi_constants.h"
-#include "version.h"
-#include <assert.h>
-#include <json_rpc.h>
-#include <stdlib.h>
 
 struct import_registration {
     celix_bundle_context_t *context;
     endpoint_description_t * endpoint; //TODO owner? -> free when destroyed
     const char *classObject; //NOTE owned by endpoint
-    version_pt version;
+    celix_version_t* version;
 
     send_func_type send;
     void *sendHandle;
@@ -89,8 +92,11 @@ celix_status_t importRegistration_create(
     remoteInterceptorsHandler_create(context, &reg->interceptorsHandler);
 
     celixThreadMutex_create(&reg->proxiesMutex, NULL);
-    status = version_createVersionFromString((char*)serviceVersion,&(reg->version));
-
+    // serviceVersion == NULL is allowed, check TEST_F(RsaDfiTests, ImportService)
+    reg->version = celix_version_createVersionFromString(serviceVersion);
+    if (serviceVersion != NULL && reg->version == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
     reg->factorySvcId = -1;
     reg->factory.handle = reg;
     reg->factory.getService = importRegistration_getService;
@@ -137,7 +143,7 @@ static void importRegistration_destroyCallback(void* data) {
     pthread_mutex_destroy(&import->proxiesMutex);
 
     if (import->version != NULL) {
-        version_destroy(import->version);
+        celix_version_destroy(import->version);
     }
     free(import);
 }
@@ -237,21 +243,19 @@ static celix_status_t importRegistration_createProxy(import_registration_t *impo
     }
 
     /* Check if the imported service version is compatible with the one in the consumer descriptor */
-    version_pt consumerVersion = NULL;
+    const celix_version_t* consumerVersion = dynInterface_getVersion(intf);
     bool isCompatible = false;
-    dynInterface_getVersion(intf,&consumerVersion);
-    version_isCompatible(consumerVersion,import->version,&isCompatible);
+    isCompatible = celix_version_isCompatible(consumerVersion,import->version);
 
     if(!isCompatible){
-    	char* cVerString = NULL;
-    	char* pVerString = NULL;
-    	version_toString(consumerVersion,&cVerString);
-    	version_toString(import->version,&pVerString);
-    	printf("Service version mismatch: consumer has %s, provider has %s. NOT creating proxy.\n",cVerString,pVerString);
-    	dynInterface_destroy(intf);
-    	free(cVerString);
-    	free(pVerString);
-    	status = CELIX_SERVICE_EXCEPTION;
+        celix_autofree char* cVerString = NULL;
+        celix_autofree char* pVerString = NULL;
+        cVerString = celix_version_toString(consumerVersion);
+        pVerString = import->version != NULL ? celix_version_toString(import->version) : NULL;
+        printf("Service version mismatch: consumer has %s, provider has %s. NOT creating proxy.\n",
+               cVerString,pVerString != NULL ? pVerString : "NA");
+        dynInterface_destroy(intf);
+        status = CELIX_SERVICE_EXCEPTION;
     }
 
     struct service_proxy *proxy = NULL;
@@ -275,8 +279,7 @@ static celix_status_t importRegistration_createProxy(import_registration_t *impo
         void **serv = proxy->service;
         serv[0] = import;
 
-        struct methods_head *list = NULL;
-        dynInterface_methods(proxy->intf, &list);
+        const struct methods_head* list = dynInterface_methods(proxy->intf);
         struct method_entry *entry = NULL;
         void (*fn)(void) = NULL;
         int index = 0;
@@ -328,15 +331,15 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
 
     if (status == CELIX_SUCCESS) {
         char *reply = NULL;
-        int rc = 0;
         //printf("sending request\n");
         celix_properties_t *metadata = NULL;
-        bool cont = remoteInterceptorHandler_invokePreProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, &metadata);
+        bool cont = remoteInterceptorHandler_invokePreProxyCall(import->interceptorsHandler, import->endpoint->properties,
+                                                                dynFunction_getName(entry->dynFunc), &metadata);
         if (cont) {
-            status = import->send(import->sendHandle, import->endpoint, invokeRequest, metadata, &reply, &rc);
+            status = import->send(import->sendHandle, import->endpoint, invokeRequest, metadata, &reply);
             //printf("request sended. got reply '%s' with status %i\n", reply, rc);
 
-            if (status == CELIX_SUCCESS && rc == CELIX_SUCCESS && dynFunction_hasReturn(entry->dynFunc)) {
+            if (status == CELIX_SUCCESS && dynFunction_hasReturn(entry->dynFunc)) {
                 //fjprintf("Handling reply '%s'\n", reply);
                 int rsErrno = CELIX_SUCCESS;
                 int retVal = jsonRpc_handleReply(entry->dynFunc, reply, args, &rsErrno);
@@ -346,11 +349,10 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
                     //return the invocation error of remote service function
                     *(int *) returnVal = rsErrno;
                 }
-            } else if (rc != CELIX_SUCCESS) {
-                *(int *) returnVal = rc;
             }
 
-            remoteInterceptorHandler_invokePostProxyCall(import->interceptorsHandler, import->endpoint->properties, entry->name, metadata);
+            remoteInterceptorHandler_invokePostProxyCall(import->interceptorsHandler, import->endpoint->properties,
+                                                         dynFunction_getName(entry->dynFunc), metadata);
         } else {
             *(int *) returnVal = CELIX_INTERCEPTOR_EXCEPTION;
         }
@@ -365,7 +367,7 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
             const char *url = importRegistration_getUrl(import);
             const char *svcName = importRegistration_getServiceName(import);
             fprintf(import->logFile, "REMOTE CALL NR %i\n\turl=%s\n\tservice=%s\n\tpayload=%s\n\treturn_code=%i\n\treply=%s\n",
-                                       callCount, url, svcName, invokeRequest, rc, reply);
+                                       callCount, url, svcName, invokeRequest, status, reply == NULL ? "null" : reply);
             fflush(import->logFile);
             callCount += 1;
         }
@@ -401,6 +403,10 @@ celix_status_t importRegistration_getImportReference(import_registration_t *regi
     celix_status_t status = CELIX_SUCCESS;
     //TODO
     return status;
+}
+
+endpoint_description_t* importRegistration_getEndpointDescription(import_registration_t *registration) {
+    return registration->endpoint;
 }
 
 celix_status_t importReference_getImportedEndpoint(import_reference_t *reference) {

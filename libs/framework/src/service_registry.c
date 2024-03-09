@@ -843,9 +843,9 @@ char* celix_serviceRegistry_createFilterFor(celix_service_registry_t* registry, 
     return filter;
 }
 
-static int celix_serviceRegistry_compareRegistrations(const void *a, const void *b) {
-    const service_registration_t* regA = a;
-    const service_registration_t* regB = b;
+static int celix_serviceRegistry_compareRegistrations(celix_array_list_entry_t a, celix_array_list_entry_t b) {
+    const service_registration_t* regA = a.voidPtrVal;
+    const service_registration_t* regB = b.voidPtrVal;
 
     celix_properties_t* propsA = NULL;
     celix_properties_t* propsB = NULL;
@@ -861,7 +861,7 @@ static int celix_serviceRegistry_compareRegistrations(const void *a, const void 
     return celix_utils_compareServiceIdsAndRanking(servIdA, servRankingA, servIdB, servRankingB);
 }
 
-celix_array_list_t* celix_serviceRegisrty_findServices(
+celix_array_list_t* celix_serviceRegistry_findServices(
         celix_service_registry_t* registry,
         const char* filterStr) {
 
@@ -892,7 +892,7 @@ celix_array_list_t* celix_serviceRegisrty_findServices(
 
     //sort matched registration and add the svc id to the result list.
     if (celix_arrayList_size(matchedRegistrations) > 1) {
-        celix_arrayList_sort(matchedRegistrations, celix_serviceRegistry_compareRegistrations);
+        celix_arrayList_sortEntries(matchedRegistrations, celix_serviceRegistry_compareRegistrations);
     }
     for (int i = 0; i < celix_arrayList_size(matchedRegistrations); ++i) {
         service_registration_t* reg = celix_arrayList_get(matchedRegistrations, i);

@@ -37,14 +37,16 @@ if (RSA_DISCOVERY_ZEROCONF)
 
     add_celix_bundle(rsa_discovery_zeroconf
         SYMBOLIC_NAME "apache_celix_rsa_discovery_zeroconf"
-        VERSION "1.0.0"
+        VERSION "2.0.0"
         NAME "Apache Celix Multicast zeroconf service discovery"
         GROUP "Celix/RSA"
+        FILENAME celix_rsa_discovery_zeroconf
         SOURCES
         ${RSA_DISCOVERY_ZEROCONF_SRC}
     )
 
     celix_deprecated_utils_headers(rsa_discovery_zeroconf)
+    celix_deprecated_framework_headers(rsa_discovery_zeroconf)
 
     target_link_libraries(rsa_discovery_zeroconf PRIVATE ${RSA_DISCOVERY_ZEROCONF_DEPS})
 
@@ -58,6 +60,7 @@ if (RSA_DISCOVERY_ZEROCONF)
     if (ENABLE_TESTING)
         add_library(rsa_discovery_zeroconf_cut STATIC ${RSA_DISCOVERY_ZEROCONF_SRC})
         celix_deprecated_utils_headers(rsa_discovery_zeroconf_cut)
+        celix_deprecated_framework_headers(rsa_discovery_zeroconf_cut)
         target_include_directories(rsa_discovery_zeroconf_cut PUBLIC ${CMAKE_CURRENT_LIST_DIR}/src)
         target_link_libraries(rsa_discovery_zeroconf_cut PUBLIC ${RSA_DISCOVERY_ZEROCONF_DEPS})
         add_subdirectory(gtest)

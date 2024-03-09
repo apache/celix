@@ -21,10 +21,6 @@
 #include <gtest/gtest.h>
 #include <string>
 #include <stdio.h>
-#if CELIX_UTILS_NO_MEMSTREAM_AVAILABLE
-#include "open_memstream.h"
-#include "fmemopen.h"
-#endif
 
 #include "celix_err.h"
 #include "celix_stdio_cleanup.h"

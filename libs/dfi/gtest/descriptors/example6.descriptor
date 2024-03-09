@@ -1,9 +1,9 @@
 :header
 type=interface
-name=example6
+name=calculator
 version=1.0.0
 :annotations
+classname=org.example.Calculator
 :types
-CptData={Dt[D#v1=1;#v2=2;E d t s e}
+StatsResult={DDD[D average min max input}
 :methods
-compatibility=cpt(#am=handle;PLCptData;#am=out;*LCptData;)N

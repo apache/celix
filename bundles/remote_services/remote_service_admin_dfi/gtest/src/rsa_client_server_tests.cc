@@ -36,6 +36,7 @@ extern "C" {
 #include "framework.h"
 #include "remote_service_admin.h"
 #include "remote_interceptor.h"
+#include "calculator_service.h"
 
 #define RSA_DIF_EXCEPTION_TEST_SERVICE "exception_test_service"
 typedef struct rsa_dfi_exception_test_service {
@@ -88,8 +89,8 @@ typedef struct rsa_dfi_exception_test_service {
 
     static void registerExceptionTestServer(void) {
         celix_properties_t *properties = celix_properties_create();
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, RSA_DIF_EXCEPTION_TEST_SERVICE);
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, "org.amdatu.remote.admin.http");
+        celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_INTERFACES, RSA_DIF_EXCEPTION_TEST_SERVICE);
+        celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_CONFIGS, "org.amdatu.remote.admin.http");
         exceptionTestService = (rsa_dfi_exception_test_service_t *)calloc(1,sizeof(*exceptionTestService));
         exceptionTestService->handle = NULL;
         exceptionTestService->func1 = rsaDfi_excepTestFunc1;
@@ -145,8 +146,8 @@ typedef struct rsa_dfi_exception_test_service {
         celix_properties_setLong(svcInterceptorProps, CELIX_FRAMEWORK_SERVICE_RANKING, 10);
         celix_service_registration_options_t svcInterceptorOpts{};
         svcInterceptorOpts.svc = serverSvcInterceptor;
-        svcInterceptorOpts.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
-        svcInterceptorOpts.serviceVersion = REMOTE_INTERCEPTOR_SERVICE_VERSION;
+        svcInterceptorOpts.serviceName = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_NAME;
+        svcInterceptorOpts.serviceVersion = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_VERSION;
         svcInterceptorOpts.properties = svcInterceptorProps;
         serverSvcInterceptorSvcId = celix_bundleContext_registerServiceWithOptions(serverContext, &svcInterceptorOpts);
 
@@ -161,8 +162,8 @@ typedef struct rsa_dfi_exception_test_service {
         celix_properties_setLong(clientInterceptorProps, CELIX_FRAMEWORK_SERVICE_RANKING, 10);
         celix_service_registration_options_t clientInterceptorOpts{};
         clientInterceptorOpts.svc = clientSvcInterceptor;
-        clientInterceptorOpts.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
-        clientInterceptorOpts.serviceVersion = REMOTE_INTERCEPTOR_SERVICE_VERSION;
+        clientInterceptorOpts.serviceName = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_NAME;
+        clientInterceptorOpts.serviceVersion = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_VERSION;
         clientInterceptorOpts.properties = clientInterceptorProps;
         clientSvcInterceptorSvcId = celix_bundleContext_registerServiceWithOptions(clientContext, &clientInterceptorOpts);
     }
@@ -402,3 +403,145 @@ TEST_F(RsaDfiClientServerInterceptorTests,TestInterceptorPreProxyCallReturnFalse
 TEST_F(RsaDfiClientServerExceptionTests,TestExceptionService) {
     testExceptionService();
 }
+
+
+class RsaDfiDynamicIpServerTestSuite : public ::testing::Test {
+public:
+    RsaDfiDynamicIpServerTestSuite() {
+        {
+            auto* props = celix_properties_create();
+            celix_properties_setBool(props, "CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT", true);
+            celix_properties_setBool(props, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, true);
+            celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_dfi_server_cache");
+            serverFw = std::shared_ptr<celix_framework_t>{celix_frameworkFactory_createFramework(props), [](auto f) {celix_frameworkFactory_destroyFramework(f);}};
+            serverCtx = std::shared_ptr<celix_bundle_context_t>{celix_framework_getFrameworkContext(serverFw.get()), [](auto*){/*nop*/}};
+
+            auto bundleId = celix_bundleContext_installBundle(serverCtx.get(), RSA_DFI_BUNDLE_FILE, true);
+            EXPECT_TRUE(bundleId >= 0);
+
+            bundleId = celix_bundleContext_installBundle(serverCtx.get(), CALC_BUNDLE_FILE, true);
+            EXPECT_TRUE(bundleId >= 0);
+
+            celix_bundleContext_waitForEvents(serverCtx.get());
+        }
+
+        {
+            auto* props = celix_properties_create();
+            celix_properties_setBool(props, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, true);
+            celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_dfi_client_cache");
+            clientFw = std::shared_ptr<celix_framework_t>{celix_frameworkFactory_createFramework(props), [](auto f) {celix_frameworkFactory_destroyFramework(f);}};
+            clientCtx = std::shared_ptr<celix_bundle_context_t>{celix_framework_getFrameworkContext(clientFw.get()), [](auto*){/*nop*/}};
+
+            auto bundleId = celix_bundleContext_installBundle(clientCtx.get(), RSA_DFI_BUNDLE_FILE, true);
+            EXPECT_TRUE(bundleId >= 0);
+
+            bundleId = celix_bundleContext_installBundle(clientCtx.get(), TST_BUNDLE_FILE, true);
+            EXPECT_TRUE(bundleId >= 0);
+
+            celix_bundleContext_waitForEvents(clientCtx.get());
+        }
+    }
+    ~RsaDfiDynamicIpServerTestSuite() override = default;
+
+    void TestRemoteCalculator(void (*testBody)(tst_service_t* testSvc), const char* serverIp = "127.0.0.1") {
+        remote_service_admin_service_t* serverRsaSvc{nullptr};
+        remote_service_admin_service_t* clientRsaSvc{nullptr};
+
+        celix_service_tracking_options_t trackintOpts{};
+        trackintOpts.filter.serviceName = CELIX_RSA_REMOTE_SERVICE_ADMIN;
+        trackintOpts.callbackHandle = &serverRsaSvc;
+        trackintOpts.set = [](void* handle, void* svc) {
+            auto rsaSvc = static_cast<remote_service_admin_service_t**>(handle);
+            *rsaSvc = static_cast<remote_service_admin_service_t*>(svc);
+        };
+        serverRsaTrkId = celix_bundleContext_trackServicesWithOptions(serverCtx.get(), &trackintOpts);
+        EXPECT_GE(serverRsaTrkId, 0);
+
+        trackintOpts.callbackHandle = &clientRsaSvc;
+        trackintOpts.set = [](void* handle, void* svc){
+            auto rsaSvc = static_cast<remote_service_admin_service_t **>(handle);
+            *rsaSvc = static_cast<remote_service_admin_service_t*>(svc);
+                };
+        clientRsaTrkId = celix_bundleContext_trackServicesWithOptions(clientCtx.get(), &trackintOpts);
+        EXPECT_GE(clientRsaTrkId, 0);
+
+        long calcId = celix_bundleContext_findService(serverCtx.get(), CALCULATOR_SERVICE);
+        ASSERT_TRUE(calcId >= 0L);
+        ASSERT_TRUE(clientRsaSvc != nullptr);
+        ASSERT_TRUE(serverRsaSvc != nullptr);
+
+        char calcIdStr[32] = {0};
+        snprintf(calcIdStr, 32, "%li", calcId);
+        celix_array_list_t *svcRegistrations = NULL;
+        auto status = serverRsaSvc->exportService(serverRsaSvc->admin, calcIdStr, NULL, &svcRegistrations);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        ASSERT_EQ(1, celix_arrayList_size(svcRegistrations));
+        export_registration_t *exportedReg = static_cast<export_registration_t*>(celix_arrayList_get(svcRegistrations, 0));
+        export_reference_t *exportedRef = nullptr;
+        status = serverRsaSvc->exportRegistration_getExportReference(exportedReg, &exportedRef);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        endpoint_description_t *exportedEndpoint = nullptr;
+        status = serverRsaSvc->exportReference_getExportedEndpoint(exportedRef, &exportedEndpoint);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        free(exportedRef);
+        celix_arrayList_destroy(svcRegistrations);
+
+        celix_properties_t *importProps = celix_properties_copy(exportedEndpoint->properties);
+        ASSERT_TRUE(importProps != nullptr);
+        celix_properties_set(importProps, CELIX_RSA_IP_ADDRESSES, serverIp);
+        endpoint_description_t *importedEndpoint = nullptr;
+        status = endpointDescription_create(importProps, &importedEndpoint);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+
+        import_registration_t* reg = nullptr;
+        status = clientRsaSvc->importService(clientRsaSvc->admin, importedEndpoint, &reg);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        celix_bundleContext_waitForEvents(clientCtx.get());
+
+        celix_service_use_options_t opts{};
+        opts.filter.serviceName = TST_SERVICE_NAME;
+        opts.callbackHandle = (void*)testBody;
+        opts.use = [](void *handle , void *svc) {
+            auto* testBody = (void (*)(tst_service_t*))handle;
+            testBody(static_cast<tst_service_t*>(svc));
+        };
+        opts.waitTimeoutInSeconds = 5;
+        auto called = celix_bundleContext_useServiceWithOptions(clientCtx.get(), &opts);
+        ASSERT_TRUE(called);
+
+        status = clientRsaSvc->importRegistration_close(clientRsaSvc->admin, reg);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        endpointDescription_destroy(importedEndpoint);
+
+        status = serverRsaSvc->exportRegistration_close(serverRsaSvc->admin, exportedReg);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+
+        celix_bundleContext_stopTracker(clientCtx.get(), clientRsaTrkId);
+        celix_bundleContext_stopTracker(serverCtx.get(), serverRsaTrkId);
+    }
+
+    std::shared_ptr<celix_framework_t> serverFw{};
+    std::shared_ptr<celix_bundle_context_t> serverCtx{};
+    long serverRsaTrkId{-1};
+    std::shared_ptr<celix_framework_t> clientFw{};
+    std::shared_ptr<celix_bundle_context_t> clientCtx{};
+    long clientRsaTrkId{-1};
+};
+
+TEST_F(RsaDfiDynamicIpServerTestSuite, RemoteCalculatorTest) {
+    TestRemoteCalculator([](tst_service_t* testSvc) {
+        auto ok = testSvc->testCalculator(testSvc->handle);
+        ASSERT_TRUE(ok);
+    });
+}
+
+TEST_F(RsaDfiDynamicIpServerTestSuite, CallingMultiTimesRemoteCalculatorTest) {
+    TestRemoteCalculator([](tst_service_t* testSvc) {
+        auto ok = testSvc->testCalculator(testSvc->handle);
+        ASSERT_TRUE(ok);
+
+        ok = testSvc->testCalculator(testSvc->handle);
+        ASSERT_TRUE(ok);
+    });
+}
+

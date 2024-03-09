@@ -22,6 +22,8 @@
 #include "remote_service_admin_dfi.h"
 #include "export_registration_dfi.h"
 #include "import_registration_dfi.h"
+#include "remote_service_admin_dfi_constants.h"
+#include "remote_constants.h"
 
 typedef struct celix_remote_service_admin_activator {
     remote_service_admin_t *admin;
@@ -32,7 +34,21 @@ typedef struct celix_remote_service_admin_activator {
 static celix_status_t celix_rsa_start(celix_remote_service_admin_activator_t* activator, celix_bundle_context_t* ctx) {
     celix_status_t status = CELIX_SUCCESS;
     activator->svcIdRsa = -1;
-
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    if (props == NULL) {
+        return CELIX_ENOMEM;
+    }
+    status = celix_properties_set(props, CELIX_RSA_REMOTE_CONFIGS_SUPPORTED, RSA_DFI_CONFIGURATION_TYPE);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+    bool dynamicIpSupport = celix_bundleContext_getPropertyAsBool(ctx, CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT, CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT_DEFAULT);
+    if (dynamicIpSupport) {
+        status = celix_properties_setBool(props, CELIX_RSA_DYNAMIC_IP_SUPPORT, true);
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
+    }
     status = remoteServiceAdmin_create(ctx, &activator->admin);
     if (status == CELIX_SUCCESS) {
         activator->adminService.admin = activator->admin;
@@ -56,7 +72,8 @@ static celix_status_t celix_rsa_start(celix_remote_service_admin_activator_t* ac
         activator->adminService.importRegistration_getException = importRegistration_getException;
         activator->adminService.importRegistration_getImportReference = importRegistration_getImportReference;
 
-        activator->svcIdRsa = celix_bundleContext_registerService(ctx, &activator->adminService, OSGI_RSA_REMOTE_SERVICE_ADMIN, NULL);
+        activator->svcIdRsa = celix_bundleContext_registerService(ctx, &activator->adminService, CELIX_RSA_REMOTE_SERVICE_ADMIN,
+                                                                  celix_steal_ptr(props));
     }
 
     return status;

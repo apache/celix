@@ -58,8 +58,8 @@ public:
             return CELIX_SUCCESS;
         };
         celix_service_registration_options_t opts{};
-        opts.serviceName = RSA_REQUEST_SENDER_SERVICE_NAME;
-        opts.serviceVersion = RSA_REQUEST_SENDER_SERVICE_VERSION;
+        opts.serviceName = CELIX_RSA_REQUEST_SENDER_SERVICE_NAME;
+        opts.serviceVersion = CELIX_RSA_REQUEST_SENDER_SERVICE_VERSION;
         opts.svc = &reqSenderSvc;
         reqSenderSvcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx.get(), &opts);
         EXPECT_NE(-1, reqSenderSvcId);

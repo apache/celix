@@ -40,9 +40,9 @@ celix_status_t calculatorBndStart(struct activator *act, celix_bundle_context_t 
         act->service.sqrt = (void*)calculator_sqrt;
 
         celix_properties_t *properties = celix_properties_create();
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, CALCULATOR_SERVICE);
+        celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_INTERFACES, CALCULATOR_SERVICE);
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, CALCULATOR_SERVICE_VERSION);
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, CALCULATOR_CONFIGURATION_TYPE);
+        celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_CONFIGS, CALCULATOR_CONFIGURATION_TYPE);
 
         act->svcId = celix_bundleContext_registerService(ctx, &act->service, CALCULATOR_SERVICE, properties);
     }

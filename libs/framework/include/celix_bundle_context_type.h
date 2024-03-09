@@ -16,26 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
+#ifndef CELIX_BUNDLE_CONTEXT_TYPE_H
+#define CELIX_BUNDLE_CONTEXT_TYPE_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
- * array_list_private.h
- *
- *  \date       Aug 4, 2010
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
+ * @file celix_bundle_context_type.h
+ * @brief Header file for celix_bundle_context_t opaque type. Can be used for forward declaration.
  */
 
-#ifndef array_list_t_PRIVATE_H_
-#define array_list_t_PRIVATE_H_
+/**
+ * @brief The opaque type representing a bundle context.
+ */
+typedef struct celix_bundle_context celix_bundle_context_t;
 
-struct celix_array_list {
-    celix_array_list_entry_t* elementData;
-    size_t size;
-    size_t capacity;
-    unsigned int modCount;
-    celix_arrayList_equals_fp  equals;
-    void (*simpleRemovedCallback)(void* value);
-    void* removedCallbackData;
-    void (*removedCallback)(void* data, celix_array_list_entry_t entry);
-};
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* array_list_t_PRIVATE_H_ */
+#endif //CELIX_BUNDLE_CONTEXT_TYPE_H

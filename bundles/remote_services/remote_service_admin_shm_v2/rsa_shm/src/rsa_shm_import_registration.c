@@ -18,6 +18,7 @@
  */
 
 #include "rsa_shm_import_registration.h"
+#include "rsa_shm_constants.h"
 #include "rsa_rpc_factory.h"
 #include "remote_constants.h"
 #include "celix_log_helper.h"
@@ -63,46 +64,28 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
     import->rpcFac = NULL;
     import->proxySvcId = -1;
 
-    const char *serviceImportedConfigs = celix_properties_get(endpointDesc->properties,
-            OSGI_RSA_SERVICE_IMPORTED_CONFIGS, NULL);
-    if (serviceImportedConfigs == NULL) {
-        celix_logHelper_error(logHelper,"RSA import reg: service.imported.configs property is not exist.");
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
-    char *rsaRpcType = NULL;
-    celix_autofree char *icCopy = strdup(serviceImportedConfigs);
-    const char delimiter[2] = ",";
-    char *token, *savePtr;
-    token = strtok_r(icCopy, delimiter, &savePtr);
-    while (token != NULL) {
-        rsaRpcType = celix_utils_trimInPlace(token);
-        if (strncmp(rsaRpcType, RSA_RPC_TYPE_PREFIX, sizeof(RSA_RPC_TYPE_PREFIX) - 1) == 0) {
-            break;
-        }
-        rsaRpcType = NULL;
-        token = strtok_r(NULL, delimiter, &savePtr);
-    }
-    if (rsaRpcType == NULL) {
-        celix_logHelper_error(logHelper,"RSA import reg: %s property is not exist.", RSA_RPC_TYPE_KEY);
+    const char *rsaShmRpcType = celix_properties_get(endpointDesc->properties, RSA_SHM_RPC_TYPE_KEY, NULL);
+    if (rsaShmRpcType == NULL) {
+        celix_logHelper_error(logHelper,"RSA import reg: %s property is not exist.", RSA_SHM_RPC_TYPE_KEY);
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
     char filter[128] = {0};
-    int bytes = snprintf(filter, sizeof(filter), "(%s=%s)", RSA_RPC_TYPE_KEY, rsaRpcType);
+    int bytes = snprintf(filter, sizeof(filter), "(%s=%s)", CELIX_RSA_RPC_TYPE_KEY, rsaShmRpcType);
     if (bytes >= sizeof(filter)) {
-     celix_logHelper_error(logHelper,"RSA import reg: The value(%s) of %s is too long.", rsaRpcType, RSA_RPC_TYPE_KEY);
-     return CELIX_ILLEGAL_ARGUMENT;
+        celix_logHelper_error(logHelper, "RSA import reg: The value(%s) of %s is too long.", rsaShmRpcType, CELIX_RSA_RPC_TYPE_KEY);
+        return CELIX_ILLEGAL_ARGUMENT;
     }
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.filter = filter;
-    opts.filter.serviceName = RSA_RPC_FACTORY_NAME;
-    opts.filter.versionRange = RSA_RPC_FACTORY_USE_RANGE;
+    opts.filter.serviceName = CELIX_RSA_RPC_FACTORY_NAME;
+    opts.filter.versionRange = CELIX_RSA_RPC_FACTORY_USE_RANGE;
     opts.callbackHandle = import;
     opts.add = importRegistration_addRpcFac;
     opts.remove = importRegistration_removeRpcFac;
     import->rpcSvcTrkId = celix_bundleContext_trackServicesWithOptionsAsync(context, &opts);
     if (import->rpcSvcTrkId < 0) {
-        celix_logHelper_error(logHelper,"RSA import reg: Error Tracking service for %s.", RSA_RPC_FACTORY_NAME);
+        celix_logHelper_error(logHelper, "RSA import reg: Error Tracking service for %s.", CELIX_RSA_RPC_FACTORY_NAME);
         return CELIX_SERVICE_EXCEPTION;
     }
 

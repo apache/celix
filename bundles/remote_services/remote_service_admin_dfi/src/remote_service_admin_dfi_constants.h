@@ -67,5 +67,17 @@
  */
 #define CELIX_RSA_BIND_ON_ALL_INTERFACES_DEFAULT true
 
+/**
+ * @brief Remote Service Admin DFI environment property, it indicates whether the RSA_DFI implementation supports dynamic IP address fill-in for service exports.
+ * Its type is boolean.If this property is not specified, it defaults to false.
+ *
+ */
+#define CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT "CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT"
+
+/**
+ * @brief Default value for the property CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT
+ */
+#define CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT_DEFAULT false
+
 
 #endif //CELIX_REMOTE_SERVICE_ADMIN_DFI_CONSTANTS_H

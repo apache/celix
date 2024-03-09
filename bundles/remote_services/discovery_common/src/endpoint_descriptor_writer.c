@@ -147,7 +147,7 @@ static celix_status_t endpointDescriptorWriter_writeEndpoint(endpoint_descriptor
             if (strcmp(CELIX_FRAMEWORK_SERVICE_NAME, (char*) iter.key) == 0) {
             	// objectClass *must* be represented as array of string values...
             	endpointDescriptorWriter_writeArrayValue(writer->writer, propertyValue);
-            } else if (strcmp(OSGI_RSA_ENDPOINT_SERVICE_ID, (char*) iter.key) == 0) {
+            } else if (strcmp(CELIX_RSA_ENDPOINT_SERVICE_ID, (char*) iter.key) == 0) {
             	// endpoint.service.id *must* be represented as long value...
             	endpointDescriptorWriter_writeTypedValue(writer->writer, VALUE_TYPE_LONG, propertyValue);
             } else {

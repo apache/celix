@@ -22,7 +22,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#include "endpoint_description.h"
 #include "celix_cleanup.h"
 #include "celix_log_helper.h"
 #include "celix_types.h"
@@ -35,6 +35,10 @@ celix_status_t discoveryZeroconfAnnouncer_create(celix_bundle_context_t *ctx, ce
 void discoveryZeroconfAnnouncer_destroy(discovery_zeroconf_announcer_t *announcer);
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(discovery_zeroconf_announcer_t, discoveryZeroconfAnnouncer_destroy)
+
+celix_status_t discoveryZeroconfAnnouncer_endpointAdded(void *handle, endpoint_description_t *endpoint, char *matchedFilter);
+
+celix_status_t discoveryZeroconfAnnouncer_endpointRemoved(void *handle, endpoint_description_t *endpoint, char *matchedFilter);
 
 #ifdef __cplusplus
 }

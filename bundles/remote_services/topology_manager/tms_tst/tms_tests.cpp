@@ -90,7 +90,7 @@ extern "C" {
         rc = bundle_getContext(bundle, &context);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        rc = bundleContext_getServiceReference(context, (char *)OSGI_RSA_REMOTE_SERVICE_ADMIN, &rsaRef);
+        rc = bundleContext_getServiceReference(context, (char *)CELIX_RSA_REMOTE_SERVICE_ADMIN, &rsaRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
         EXPECT_TRUE(rsaRef != NULL);
 
@@ -185,7 +185,7 @@ extern "C" {
         EXPECT_EQ(celix_arrayList_size(bundles), 4); //rsa, calculator, topman, test bundle
         celix_arrayList_destroy(bundles);
 
-        rc = bundleContext_getServiceReference(context, (char *)OSGI_RSA_REMOTE_SERVICE_ADMIN, &rsaRef);
+        rc = bundleContext_getServiceReference(context, (char *)CELIX_RSA_REMOTE_SERVICE_ADMIN, &rsaRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
         EXPECT_TRUE(rsaRef != NULL);
 
@@ -206,7 +206,7 @@ extern "C" {
         rc = bundleContext_getService(context, testRef, (void **)&testImport);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        rc = bundleContext_getServiceReference(context, (char*)OSGI_ENDPOINT_LISTENER_SERVICE, &eplRef);
+        rc = bundleContext_getServiceReference(context, (char*) CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, &eplRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
         EXPECT_TRUE(eplRef != NULL);
 
@@ -478,10 +478,10 @@ extern "C" {
         endpoint_description_t *endpoint = NULL;
 
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+        celix_properties_set(props, CELIX_RSA_ENDPOINT_SERVICE_ID, "42");
+        celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.test.MyBundle");
         celix_properties_set(props, "service.version", "1.0.0");
         celix_properties_set(props, "zone", "a_zone");
@@ -530,10 +530,10 @@ extern "C" {
         endpoint_description_t *endpoint = NULL;
 
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+        celix_properties_set(props, CELIX_RSA_ENDPOINT_SERVICE_ID, "42");
+        celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.test.MyBundle");
         celix_properties_set(props, "service.version", "1.0.0");
         celix_properties_set(props, "zone", "a_zone");
@@ -581,10 +581,10 @@ extern "C" {
         endpoint_description_t *endpoint = NULL;
 
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+        celix_properties_set(props, CELIX_RSA_ENDPOINT_SERVICE_ID, "42");
+        celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.test.MyBundle");
         celix_properties_set(props, "service.version", "1.0.0"); //TODO find out standard in osgi spec
         celix_properties_set(props, "zone", "a_zone");
@@ -627,10 +627,10 @@ extern "C" {
         endpoint_description_t *endpoint = NULL;
 
         celix_properties_t *props = celix_properties_create();
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
-        celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-        celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+        celix_properties_set(props, CELIX_RSA_ENDPOINT_SERVICE_ID, "42");
+        celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+        celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+        celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.test.MyBundle");
         celix_properties_set(props, "service.version", "1.0.0");
         celix_properties_set(props, "zone", "a_zone");

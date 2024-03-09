@@ -74,7 +74,7 @@ extern "C" {
 
     static void testServices(void) {
         celix_service_use_options_t opts{};
-        opts.filter.serviceName = OSGI_RSA_REMOTE_SERVICE_ADMIN;
+        opts.filter.serviceName = CELIX_RSA_REMOTE_SERVICE_ADMIN;
         opts.use = testServicesCallback;
         opts.waitTimeoutInSeconds = 0.25;
         bool called = celix_bundleContext_useServiceWithOptions(context, &opts);
@@ -101,7 +101,7 @@ extern "C" {
 
     static void testExportService(void) {
         celix_service_use_options_t opts{};
-        opts.filter.serviceName = OSGI_RSA_REMOTE_SERVICE_ADMIN;
+        opts.filter.serviceName = CELIX_RSA_REMOTE_SERVICE_ADMIN;
         opts.use = testExportServiceCallback;
         opts.waitTimeoutInSeconds = 0.25;
         bool called = celix_bundleContext_useServiceWithOptions(context, &opts);
@@ -114,10 +114,10 @@ extern "C" {
         if (init) {
             auto *rsa = static_cast<remote_service_admin_service_t *>(svc);
             celix_properties_t *props = celix_properties_create();
-            celix_properties_set(props, OSGI_RSA_ENDPOINT_SERVICE_ID, "42");
-            celix_properties_set(props, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
-            celix_properties_set(props, OSGI_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
-            celix_properties_set(props, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
+            celix_properties_set(props, CELIX_RSA_ENDPOINT_SERVICE_ID, "42");
+            celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "eec5404d-51d0-47ef-8d86-c825a8beda42");
+            celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
+            celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
             celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.Example");
 
             int rc = endpointDescription_create(props, &endpoint);
@@ -137,7 +137,7 @@ extern "C" {
 
     static void testImportService(void) {
         celix_service_use_options_t opts{};
-        opts.filter.serviceName = OSGI_RSA_REMOTE_SERVICE_ADMIN;
+        opts.filter.serviceName = CELIX_RSA_REMOTE_SERVICE_ADMIN;
         opts.use = testImportServiceCallback;
         opts.waitTimeoutInSeconds = 0.25;
 

@@ -70,8 +70,8 @@ IF(ENABLE_CODE_COVERAGE)
 
     # Setup compiler options
     ADD_DEFINITIONS(--coverage)
-    set(CMAKE_SHARED_LINKER_FLAGS "--coverage")
-    set(CMAKE_EXE_LINKER_FLAGS "--coverage")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 
     IF(NOT TARGET coverage)
         add_custom_target(coverage

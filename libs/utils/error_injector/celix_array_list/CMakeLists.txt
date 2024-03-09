@@ -22,15 +22,15 @@ target_link_libraries(array_list_ei PUBLIC Celix::error_injector Celix::utils)
 target_link_options(array_list_ei INTERFACE
         LINKER:--wrap,celix_arrayList_create
         LINKER:--wrap,celix_arrayList_createWithOptions
+        LINKER:--wrap,celix_arrayList_createStringArray
         LINKER:--wrap,celix_arrayList_add
         LINKER:--wrap,celix_arrayList_addString
         LINKER:--wrap,celix_arrayList_addInt
         LINKER:--wrap,celix_arrayList_addLong
-        LINKER:--wrap,celix_arrayList_addUInt
-        LINKER:--wrap,celix_arrayList_addULong
-        LINKER:--wrap,celix_arrayList_addFloat
         LINKER:--wrap,celix_arrayList_addDouble
         LINKER:--wrap,celix_arrayList_addBool
+        LINKER:--wrap,celix_arrayList_addString
+        LINKER:--wrap,celix_arrayList_assignString
         LINKER:--wrap,celix_arrayList_addSize
         LINKER:--wrap,celix_arrayList_copy
 )

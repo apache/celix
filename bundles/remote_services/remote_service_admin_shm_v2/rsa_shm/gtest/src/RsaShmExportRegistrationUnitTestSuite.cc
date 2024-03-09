@@ -36,6 +36,8 @@
 #include <errno.h>
 #include <gtest/gtest.h>
 
+#define RSA_RPC_TYPE_FOR_TEST "celix.remote.admin.rpc_type.test"
+
 static celix_status_t expect_RpcFacCreateEndpoint_ret = CELIX_SUCCESS;
 static celix_status_t RpcFacCreateEndpoint(void *handle, const endpoint_description_t *endpoint, long *requestHandlerSvcId) {
     (void)endpoint; //unused
@@ -54,8 +56,8 @@ static celix_status_t RpcFacCreateEndpoint(void *handle, const endpoint_descript
     };
     celix_service_registration_options_t opts{};
     opts.svc = &requestHandler;
-    opts.serviceName = RSA_REQUEST_HANDLER_SERVICE_NAME;
-    opts.serviceVersion = RSA_REQUEST_HANDLER_SERVICE_VERSION;
+    opts.serviceName = CELIX_RSA_REQUEST_HANDLER_SERVICE_NAME;
+    opts.serviceVersion = CELIX_RSA_REQUEST_HANDLER_SERVICE_VERSION;
     auto svcId = celix_bundleContext_registerServiceWithOptionsAsync(ctx, &opts);
     EXPECT_GE(svcId, 0);
     *requestHandlerSvcId = svcId;
@@ -89,13 +91,10 @@ public:
                     return CELIX_SUCCESS;
                 };
         celix_properties_t *properties = celix_properties_create();
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, RSA_SHM_CALCULATOR_SERVICE);
-        auto* version = celix_version_createVersionFromString(RSA_SHM_CALCULATOR_SERVICE_VERSION);
-        EXPECT_NE(nullptr, version);
-        if (version) {
-            celix_properties_assignVersion(properties, CELIX_FRAMEWORK_SERVICE_VERSION, version);
-        }
-        celix_properties_set(properties, OSGI_RSA_SERVICE_EXPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE"," RSA_RPC_TYPE_PREFIX"mock");
+        celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_INTERFACES, RSA_SHM_CALCULATOR_SERVICE);
+        celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, RSA_SHM_CALCULATOR_SERVICE_VERSION);
+        celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE);
+        celix_properties_set(properties, RSA_SHM_RPC_TYPE_KEY, RSA_RPC_TYPE_FOR_TEST);
         calcSvcId = celix_bundleContext_registerServiceAsync(ctx.get(), &calcService, RSA_SHM_CALCULATOR_SERVICE, properties);
         EXPECT_GE(calcSvcId, 0);
 
@@ -107,13 +106,9 @@ public:
         rpcFactory.destroyEndpoint = RpcFacDestroyEndpoint;
 
         celix_properties_t *rpcFacProps = celix_properties_create();
-        celix_properties_set(rpcFacProps, RSA_RPC_TYPE_KEY, RSA_RPC_TYPE_PREFIX"mock");
-        version = celix_version_createVersionFromString(RSA_RPC_FACTORY_VERSION);
-        EXPECT_NE(nullptr, version);
-        if (version) {
-            celix_properties_assignVersion(rpcFacProps, CELIX_FRAMEWORK_SERVICE_VERSION, version);
-        }
-        rpcFactorySvcId = celix_bundleContext_registerServiceAsync(ctx.get(), &rpcFactory, RSA_RPC_FACTORY_NAME, rpcFacProps);
+        celix_properties_set(rpcFacProps, CELIX_RSA_RPC_TYPE_KEY, RSA_RPC_TYPE_FOR_TEST);
+        celix_properties_set(rpcFacProps, CELIX_FRAMEWORK_SERVICE_VERSION, CELIX_RSA_RPC_FACTORY_VERSION);
+        rpcFactorySvcId = celix_bundleContext_registerServiceAsync(ctx.get(), &rpcFactory, CELIX_RSA_RPC_FACTORY_NAME, rpcFacProps);
         EXPECT_GE(rpcFactorySvcId, 1);
 
         celix_bundleContext_waitForEvents(ctx.get());
@@ -135,16 +130,13 @@ public:
     endpoint_description_t *CreateEndpointDescription() {
         celix_properties_t *properties = celix_properties_create();
         celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_NAME, RSA_SHM_CALCULATOR_SERVICE);
-        celix_version_t* version = celix_version_createVersionFromString(RSA_SHM_CALCULATOR_SERVICE_VERSION);
-        EXPECT_NE(nullptr, version);
-        if (version) {
-            celix_properties_assignVersion(properties, CELIX_FRAMEWORK_SERVICE_VERSION, version);
-        }
-        celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE"," RSA_RPC_TYPE_PREFIX"mock");
-        celix_properties_set(properties, OSGI_RSA_ENDPOINT_ID, "7f7efba5-500f-4ee9-b733-68de012091da");
-        celix_properties_setLong(properties, OSGI_RSA_ENDPOINT_SERVICE_ID, calcSvcId);
-        celix_properties_set(properties, OSGI_RSA_SERVICE_IMPORTED, "true");
-        celix_properties_set(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, celix_bundleContext_getProperty(ctx.get(), CELIX_FRAMEWORK_UUID, ""));
+        celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, RSA_SHM_CALCULATOR_SERVICE_VERSION);
+        celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE);
+        celix_properties_set(properties, RSA_SHM_RPC_TYPE_KEY, RSA_RPC_TYPE_FOR_TEST);
+        celix_properties_set(properties, CELIX_RSA_ENDPOINT_ID, "7f7efba5-500f-4ee9-b733-68de012091da");
+        celix_properties_setLong(properties, CELIX_RSA_ENDPOINT_SERVICE_ID, calcSvcId);
+        celix_properties_set(properties, CELIX_RSA_SERVICE_IMPORTED, "true");
+        celix_properties_set(properties, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, celix_bundleContext_getProperty(ctx.get(), CELIX_FRAMEWORK_UUID, ""));
         celix_properties_set(properties, RSA_SHM_SERVER_NAME_KEY, "ShmServ-dummy");
         endpoint_description_t *endpoint = nullptr;
         auto status = endpointDescription_create(properties, &endpoint);
@@ -216,39 +208,7 @@ TEST_F(RsaShmExportRegUnitTestSuite, CreateExportRegistrationWithOutRpcType) {
     endpoint_description_t *endpoint = CreateEndpointDescription();
     service_reference_pt reference = GetServiceReference();
 
-    celix_properties_set(endpoint->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, RSA_SHM_CALCULATOR_CONFIGURATION_TYPE);
-
-    export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
-
-    bundleContext_ungetServiceReference(ctx.get(), reference);
-    endpointDescription_destroy(endpoint);
-}
-
-TEST_F(RsaShmExportRegUnitTestSuite, CreateExportRegistrationWithOverlongRpcTypeString) {
-    endpoint_description_t *endpoint = CreateEndpointDescription();
-    service_reference_pt reference = GetServiceReference();
-
-    char overlongRpcType[128] = RSA_RPC_TYPE_PREFIX;
-    for (int i = strlen(RSA_RPC_TYPE_PREFIX); i < 127; ++i) {
-        overlongRpcType[i] = 'a';
-    }
-    celix_properties_set(endpoint->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS, overlongRpcType);
-
-    export_registration_t *exportRegistration = nullptr;
-    auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
-
-    bundleContext_ungetServiceReference(ctx.get(), reference);
-    endpointDescription_destroy(endpoint);
-}
-
-TEST_F(RsaShmExportRegUnitTestSuite, CreateExportRegistrationWithOutConfigType) {
-    endpoint_description_t *endpoint = CreateEndpointDescription();
-    service_reference_pt reference = GetServiceReference();
-
-    celix_properties_unset(endpoint->properties, OSGI_RSA_SERVICE_IMPORTED_CONFIGS);
+    celix_properties_unset(endpoint->properties, RSA_SHM_RPC_TYPE_KEY);
 
     export_registration_t *exportRegistration = nullptr;
     auto status = exportRegistration_create(ctx.get(), logHelper.get(), reference, endpoint, &exportRegistration);
@@ -341,11 +301,9 @@ TEST_F(RsaShmExportRegUnitTestSuite, RegisterMoreThanOneRpcFactory) {
 
     //register another rpc factory
     celix_properties_t *props = celix_properties_create();
-    celix_properties_set(props, RSA_RPC_TYPE_KEY, RSA_RPC_TYPE_PREFIX"mock");
-    auto* version = celix_version_createVersionFromString(RSA_RPC_FACTORY_VERSION);
-    ASSERT_NE(nullptr, version);
-    celix_properties_assignVersion(props, CELIX_FRAMEWORK_SERVICE_VERSION, version);
-    auto svcId = celix_bundleContext_registerServiceAsync(ctx.get(), (void*)"dumb-rpc-service", RSA_RPC_FACTORY_NAME, props);
+    celix_properties_set(props, CELIX_RSA_RPC_TYPE_KEY, RSA_RPC_TYPE_FOR_TEST);
+    celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_VERSION, CELIX_RSA_RPC_FACTORY_VERSION);
+    auto svcId = celix_bundleContext_registerServiceAsync(ctx.get(), (void*)"dumb-rpc-service", CELIX_RSA_RPC_FACTORY_NAME, props);
     EXPECT_GE(svcId, 1);
     celix_bundleContext_waitForEvents(ctx.get());
     celix_bundleContext_unregisterServiceAsync(ctx.get(), svcId, nullptr, nullptr);

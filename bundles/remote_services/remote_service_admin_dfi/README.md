@@ -22,10 +22,10 @@ limitations under the License.
 ## Remote Service Admin DFI
 
 The Celix Remote Service Admin DFI bundle realizes OSGi remote service using HTTP and JSON.
-The serialization is done using libdfi to json. 
-Libffi is configured using descriptor files in the bundles. 
+The serialization is done using libdfi to json.
+Libffi is configured using descriptor files in the bundles.
 
-###### Properties
+###### Properties/Configuration
     RSA_PORT                    The RSA HTTP port to use (default 8888)
     RSA_IP                      The RSA ip address to use for discovery (default 127.0.0.1)
     RSA_INTERFACE               If specified, the ip adress of interface (i.g. eth0) will be used.
@@ -37,6 +37,9 @@ Libffi is configured using descriptor files in the bundles.
                                     The curl share handle has a significant performance boost by sharing DNS, COOKIE en CONNECTIONS over multiple calls, 
                                     but can also introduce some issues (based on experience).
                                     Default is false
+    CELIX_RSA_BIND_ON_ALL_INTERFACES    If set to true the RSA will bind to all interfaces. Default is true.
+
+    CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT    If set to true the RSA will support dynamic IP address fill-in for service exports. Default is false.
 
 ###### CMake option
     RSA_REMOTE_SERVICE_ADMIN_DFI=ON
