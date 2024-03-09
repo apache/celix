@@ -272,24 +272,6 @@ int celix_arrayList_size(const celix_array_list_t *list) {
     return (int)list->size;
 }
 
-celix_array_list_t* celix_arrayList_copy(const celix_array_list_t *list) {
-    if (!list) {
-        return NULL; //silently ignore
-    }
-    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-    opts.equalsCallback = list->equals;
-    opts.initialCapacity = list->size;
-    celix_array_list_t* copy = celix_arrayList_createWithOptions(&opts);
-    if (!copy) {
-        celix_err_push("Failed to copy array list. Out of memory.");
-        return NULL;
-    }
-    copy->size = list->size;
-    memcpy(copy->elementData, list->elementData, sizeof(celix_array_list_entry_t) * list->size);
-    return copy;
-}
-
-
 static celix_array_list_entry_t arrayList_getEntry(const celix_array_list_t *list, int index) {
     celix_array_list_entry_t entry;
     memset(&entry, 0, sizeof(entry));
@@ -297,6 +279,10 @@ static celix_array_list_entry_t arrayList_getEntry(const celix_array_list_t *lis
         entry = list->elementData[index];
     }
     return entry;
+}
+
+celix_array_list_entry_t celix_arrayList_getEntry(const celix_array_list_t *list, int index) {
+    return arrayList_getEntry(list, index);
 }
 
 void* celix_arrayList_get(const celix_array_list_t* list, int index) {
@@ -437,13 +423,6 @@ celix_status_t celix_arrayList_assignVersion(celix_array_list_t* list, celix_ver
     return celix_arrayList_addEntry(list, entry);
 }
 
-celix_status_t celix_arrayList_addString(celix_array_list_t *list, const char* value) {
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
-    entry.strVal = value;
-    return celix_arrayList_addEntry(list, entry);
-}
-
 int celix_arrayList_indexOf(celix_array_list_t *list, celix_array_list_entry_t entry) {
     size_t size = celix_arrayList_size(list);
     int i;
@@ -522,13 +501,6 @@ void celix_arrayList_removeVersion(celix_array_list_t* list, const celix_version
     celix_array_list_entry_t entry;
     memset(&entry, 0, sizeof(entry));
     entry.versionVal = val;
-    celix_arrayList_removeEntry(list, entry);
-}
-
-void celix_arrayList_removeString(celix_array_list_t *list, const char* value) {
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
-    entry.strVal = value;
     celix_arrayList_removeEntry(list, entry);
 }
 

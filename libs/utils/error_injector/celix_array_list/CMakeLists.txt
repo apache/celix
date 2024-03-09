@@ -23,6 +23,7 @@ target_link_options(array_list_ei INTERFACE
         LINKER:--wrap,celix_arrayList_create
         LINKER:--wrap,celix_arrayList_createWithOptions
         LINKER:--wrap,celix_arrayList_createStringArray
+        LINKER:--wrap,celix_arrayList_copy
         LINKER:--wrap,celix_arrayList_add
         LINKER:--wrap,celix_arrayList_addString
         LINKER:--wrap,celix_arrayList_addInt
@@ -32,6 +33,5 @@ target_link_options(array_list_ei INTERFACE
         LINKER:--wrap,celix_arrayList_addString
         LINKER:--wrap,celix_arrayList_assignString
         LINKER:--wrap,celix_arrayList_addSize
-        LINKER:--wrap,celix_arrayList_copy
 )
 add_library(Celix::array_list_ei ALIAS array_list_ei)

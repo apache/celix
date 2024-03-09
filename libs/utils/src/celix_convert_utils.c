@@ -354,7 +354,7 @@ char* celix_utils_boolArrayListToString(const celix_array_list_t* list) {
 }
 
 static int celix_utils_printStrEntry(FILE* stream, const celix_array_list_entry_t* entry) {
-    const char* str = entry->strVal;
+    const char* str = entry->stringVal;
     int rc = 0;
     for (int i = 0; str[i] != '\0'; ++i) {
         if (str[i] == ESCAPE_CHAR || str[i] == SEPARATOR_CHAR) {
