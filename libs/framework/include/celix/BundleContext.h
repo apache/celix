@@ -33,7 +33,7 @@
 #include "celix/Bundle.h"
 #include "celix/Framework.h"
 
-#include "celix/dm/DependencyManager.h" //TODO, TBD include or forward declaration?
+#include "celix/dm/DependencyManager.h"
 
 namespace celix {
 
@@ -106,6 +106,10 @@ namespace celix {
         /**
          * @brief Use a service registered in the Celix framework using a fluent builder API.
          *
+         * @deprecated celix_bundleContext_useService are deprecated and should be considered test utils functions. In
+         * operational code use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService*
+         * functions instead.
+         *
          * The service use can be fine tuned using the returned UseServiceBuilder API.
          *
          * With this API a Celix service can be used by providing use functions.
@@ -130,12 +134,17 @@ namespace celix {
          * @return A UseServiceBuilder object.
          */
         template<typename I>
+        [[deprecated]]
         UseServiceBuilder<I> useService(const std::string& name = {}) {
             return UseServiceBuilder<I>{cCtx, celix::typeName<I>(name), true};
         }
 
         /**
          * @brief Use services registered in the Celix framework using a fluent builder API.
+         *
+         * @deprecated celix_bundleContext_useService are deprecated and should be considered test utils functions. In
+         * operational code use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService*
+         * functions instead.
          *
          * The service use can be fine tuned using the returned UseServiceBuilder API.
          *
@@ -158,6 +167,7 @@ namespace celix {
          * @return A UseServiceBuilder object.
          */
         template<typename I>
+        [[deprecated]]
         UseServiceBuilder<I> useServices(const std::string& name = {}) {
             return UseServiceBuilder<I>{cCtx, celix::typeName<I>(name), false};
         }

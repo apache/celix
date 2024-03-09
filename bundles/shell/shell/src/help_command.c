@@ -22,8 +22,9 @@
 #include <stdint.h>
 
 #include "celix_array_list.h"
-#include "celix_utils.h"
 #include "celix_shell.h"
+#include "celix_stdlib_cleanup.h"
+#include "celix_utils.h"
 #include "std_commands.h"
 
 struct print_handle {
@@ -51,11 +52,9 @@ static void printHelp(void *handle, void *svc) {
     sub = strtok_r(NULL, CELIX_SHELL_COMMAND_SEPARATOR, &save_ptr);
 
     if (sub == NULL) {
-        unsigned int i;
         celix_array_list_t *commands = NULL;
-
         shell->getCommands(shell->handle, &commands);
-        for (i = 0; i < celix_arrayList_size(commands); i++) {
+        for (int i = 0; i < celix_arrayList_size(commands); i++) {
             char *name = celix_arrayList_get(commands, i);
             fprintf(out, "%s\n", name);
             free(name);
@@ -71,17 +70,19 @@ static void printHelp(void *handle, void *svc) {
         shell->getCommands(shell->handle, &commands);
         bool cmdFound = false;
         for (i = 0; i < celix_arrayList_size(commands); i++) {
-            char *name = celix_arrayList_get(commands, i);
-            if (strcmp(sub, name) == 0) {
+            char *fqn = celix_arrayList_get(commands, i);
+            bool hasNamespace = strstr(fqn, "::") != NULL;
+            char* localName = hasNamespace ? strstr(fqn, "::") + 2 : fqn;
+            if (strcmp(sub, fqn) == 0 || (hasNamespace && strcmp(sub, localName) == 0)) {
                 cmdFound = true;
                 char *usage_str = NULL;
                 char *desc_str = NULL;
 
-                sub_status_desc = shell->getCommandDescription(shell->handle, name, &desc_str);
-                sub_status_usage = shell->getCommandUsage(shell->handle, name, &usage_str);
+                sub_status_desc = shell->getCommandDescription(shell->handle, fqn, &desc_str);
+                sub_status_usage = shell->getCommandUsage(shell->handle, fqn, &usage_str);
 
                 if (sub_status_usage == CELIX_SUCCESS && sub_status_desc == CELIX_SUCCESS) {
-                    fprintf(out, "Command     : %s\n", name);
+                    fprintf(out, "Command     : %s\n", fqn);
                     fprintf(out, "Usage       : %s\n", usage_str == NULL ? "" : usage_str);
                     fprintf(out, "Description : %s\n", desc_str == NULL ? "" : desc_str);
                 } else {
@@ -91,7 +92,7 @@ static void printHelp(void *handle, void *svc) {
                 free(usage_str);
                 free(desc_str);
             }
-            free(name);
+            free(fqn);
         }
         celix_arrayList_destroy(commands);
 
@@ -103,16 +104,23 @@ static void printHelp(void *handle, void *svc) {
     }
 }
 
-bool helpCommand_execute(void *handle, const char *const_cmdLine, FILE *out, FILE *err) {
-	celix_bundle_context_t *ctx = handle;
-	struct print_handle printHandle;
-	char *cmdLine = celix_utils_strdup(const_cmdLine);
+bool helpCommand_execute(void* handle, const char* const_cmdLine, FILE* out, FILE* err) {
+    celix_bundle_context_t* ctx = handle;
+    celix_autofree char* cmdLine = celix_utils_strdup(const_cmdLine);
 
+    long trkId = celix_bundleContext_trackServices(ctx, CELIX_SHELL_SERVICE_NAME);
+    if (trkId < 0) {
+        fprintf(err, "Error tracking shell services\n");
+        return false;
+    }
+
+    struct print_handle printHandle;
     printHandle.cmdLine = cmdLine;
     printHandle.out = out;
     printHandle.err = err;
-	bool called = celix_bundleContext_useService(ctx, CELIX_SHELL_SERVICE_NAME, &printHandle, printHelp);
+    bool called = celix_bundleContext_useTrackedService(ctx, trkId, &printHandle, printHelp);
 
-	free(cmdLine);
+    celix_bundleContext_stopTracker(ctx, trkId);
+
     return called & printHandle.callSucceeded;
 }
