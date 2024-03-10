@@ -106,6 +106,8 @@ celix_status_t celix_utils_convertStringToLongArrayList(const char* val,
 /**
  * @brief Convert a celix_array_list_t* with long entries to a string.
  *
+ * @note The array list must an array list of the type CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG.
+ *
  * @param[in] list The list to convert.
  * @return The string representation of the list. The returned string is allocated and should be freed.
  */
@@ -131,6 +133,8 @@ celix_status_t celix_utils_convertStringToDoubleArrayList(const char* val,
 /**
  * @brief Convert a celix_array_list_t* with double entries to a string.
  *
+ * @note The array list must an array list of the type CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE.
+ *
  * @param[in] list The list to convert.
  * @return The string representation of the list. The returned string is allocated and should be freed.
  */
@@ -155,6 +159,8 @@ celix_status_t celix_utils_convertStringToBoolArrayList(const char* val,
 
 /**
  * @brief Convert a celix_array_list_t* with boolean entries to a string.
+ *
+ * @note The array list must an array list of the type CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL.
  *
  * @param[in] list The list to convert.
  * @return The string representation of the list. The returned string is allocated and should be freed.
@@ -187,6 +193,8 @@ celix_status_t celix_utils_convertStringToStringArrayList(const char* val,
 /**
  * @brief Convert a celix_array_list_t* with string entries to a string.
  *
+ * @note The array list must an array list of the type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING.
+ *
  * @param[in] list The list to convert.
  * @return The string representation of the list. The returned string is allocated and should be freed.
  */
@@ -215,6 +223,8 @@ celix_status_t celix_utils_convertStringToVersionArrayList(const char* val,
 
 /**
  * @brief Convert a celix_array_list_t* with version entries to a string.
+ *
+ * @note The array list must an array list of the type CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION.
  *
  * @param[in] list The list to convert.
  * @return The string representation of the list. The returned string is allocated and should be freed.

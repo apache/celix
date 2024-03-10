@@ -580,7 +580,7 @@ namespace celix {
             if (list) {
                 std::vector<celix::Version> result{};
                 for (int i = 0; i < celix_arrayList_size(list); ++i) {
-                    auto* v = static_cast<celix_version_t*>(celix_arrayList_get(list, i));
+                    const auto* v = celix_arrayList_getVersion(list, i);
                     result.emplace_back(celix_version_getMajor(v),
                                         celix_version_getMinor(v),
                                         celix_version_getMicro(v),
@@ -604,7 +604,7 @@ namespace celix {
             if (list) {
                 std::vector<celix::Version> result{};
                 for (int i = 0; i < celix_arrayList_size(list); ++i) {
-                    auto* v = static_cast<celix_version_t*>(celix_arrayList_get(list, i));
+                    const auto* v = celix_arrayList_getVersion(list, i);
                     result.emplace_back(celix_version_getMajor(v),
                                         celix_version_getMinor(v),
                                         celix_version_getMicro(v),
@@ -800,93 +800,98 @@ namespace celix {
         }
 
         /**
-         * @brief Set a string array value for a property.
-         *
-         * The set property type will be ValueType::StringArray.
-         *
-         * @param[in] key The key of the property to set.
-         * @param[in] values An vector of string values to set for the property.
-         */
-        void setStrings(const std::string& key, const std::vector<std::string>& values) {
-            celix_array_list_create_options_t opts{};
-            opts.simpleRemovedCallback = free;
-            celix_autoptr(celix_array_list_t) list = celix_arrayList_createWithOptions(&opts);
-            throwIfNull(list);
-            for (const auto& v : values) {
-                auto* s = celix_utils_strdup(v.c_str());
-                throwIfNull(s);
-                celix_status_t status = celix_arrayList_addString(list, s);
-                throwIfEnomem(status);
-            }
-            auto status = celix_properties_assignStringArrayList(cProps.get(), key.data(), celix_steal_ptr(list));
-            throwIfEnomem(status);
-        }
-
-        /**
-         * @brief Set a celix::Version array value for a property.
-         *
-         * The set property type will be ValueType::VersionArray.
-         *
-         * @param[in] key The key of the property to set.
-         * @param[in] values An vector of celix::Version values to set for the property.
-         */
-        void setVersions(const std::string& key, const std::vector<celix::Version>& values) {
-            celix_array_list_create_options_t opts{};
-            opts.simpleRemovedCallback = (void (*)(void*))celix_version_destroy;
-            celix_autoptr(celix_array_list_t) list = celix_arrayList_createWithOptions(&opts);
-            throwIfNull(list);
-            for (const auto& v : values) {
-                auto* cVer = celix_version_create(v.getMajor(), v.getMinor(), v.getMicro(), v.getQualifier().c_str());
-                throwIfNull(cVer);
-                celix_status_t status = celix_arrayList_add(list, cVer);
-                throwIfEnomem(status);
-            }
-            auto status = celix_properties_assignVersionArrayList(cProps.get(), key.data(), celix_steal_ptr(list));
-            throwIfEnomem(status);
-        }
-
-        /**
-         * @brief Set a boolean array value for a property.
-         *
-         * The set property type will be ValueType::BooleanArray.
-         *
-         * @param[in] key The key of the property to set.
-         * @param[in] values An vector of boolean values to set for the property.
-         */
-        void setBooleans(const std::string& key, const std::vector<bool>& values) {
-            celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
-            throwIfNull(list);
-            for (const auto& b : values) {
-                celix_status_t status = celix_arrayList_addBool(list, b);
-                throwIfEnomem(status);
-            }
-            auto status = celix_properties_assignBoolArrayList(cProps.get(), key.data(), celix_steal_ptr(list));
-            throwIfEnomem(status);
-        }
-
-        /**
          * @brief Set a long array value for a property.
+         *
+         * @note The serVector method is only available for long, double, boolean, string and celix::Version types.
          *
          * The set property type will be ValueType::LongArray.
          *
          * @param[in] key The key of the property to set.
          * @param[in] values An vector of long values to set for the property.
          */
-        void setLongs(const std::string& key, const std::vector<long>& values) {
-            auto status = celix_properties_setLongs(cProps.get(), key.data(), values.data(), values.size());
-            throwIfEnomem(status);
+        template<typename T>
+        typename std::enable_if<IsIntegral<T>::value, void>::type
+        setVector(const std::string& key, const std::vector<T>& values) {
+            setVectorInternal(key, values, celix_arrayList_createLongArray(), celix_arrayList_addLong);
         }
 
         /**
          * @brief Set a double array value for a property.
+         *
+         * @note The serVector method is only available for long, double, boolean, string and celix::Version types.
          *
          * The set property type will be ValueType::DoubleArray.
          *
          * @param[in] key The key of the property to set.
          * @param[in] values An vector of double values to set for the property.
          */
-        void setDoubles(const std::string& key, const std::vector<double>& values) {
-            auto status = celix_properties_setDoubles(cProps.get(), key.data(), values.data(), values.size());
+        template<typename T>
+        typename std::enable_if<IsFloatingPoint<T>::value, void>::type
+        setVector(const std::string& key, const std::vector<T>& values) {
+            setVectorInternal(key, values, celix_arrayList_createDoubleArray(), celix_arrayList_addDouble);
+        }
+
+        /**
+         * @brief Set a boolean array value for a property.
+         *
+         * @note The serVector method is only available for long, double, boolean, string and celix::Version types.
+         *
+         * The set property type will be ValueType::BooleanArray.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] values An vector of boolean values to set for the property.
+         */
+        template<typename T>
+        typename std::enable_if<IsBoolean<T>::value, void>::type
+        setVector(const std::string& key, const std::vector<T>& values) {
+            setVectorInternal(key, values, celix_arrayList_createBoolArray(), celix_arrayList_addBool);
+        }
+
+        /**
+         * @brief Set a string array value for a property.
+         *
+         * @note The serVector method is only available for long, double, boolean, string and celix::Version types.
+         *
+         * The set property type will be ValueType::StringArray.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] values An vector of string values to set for the property.
+         */
+        template <typename T>
+        typename std::enable_if<IsString<T>::value, void>::type setVector(const std::string& key,
+                                                                          const std::vector<T>& values) {
+            celix_autoptr(celix_array_list_t) list = celix_arrayList_createStringArray();
+            throwIfNull(list);
+            for (const auto& v : values) {
+                celix_status_t status = celix_arrayList_addString(list, v.c_str());
+                throwIfEnomem(status);
+            }
+            auto status = celix_properties_assignArrayList(cProps.get(), key.data(), celix_steal_ptr(list));
+            throwIfEnomem(status);
+        }
+
+        /**
+         * @brief Set a celix::Version array value for a property.
+         *
+         * @note The serVector method is only available for long, double, boolean, string and celix::Version types.
+         *
+         * The set property type will be ValueType::VersionArray.
+         *
+         * @param[in] key The key of the property to set.
+         * @param[in] values An vector of celix::Version values to set for the property.
+         */
+        template<typename T>
+        typename std::enable_if<IsVersion<T>::value, void>::type
+        setVector(const std::string& key, const std::vector<T>& values) {
+            celix_autoptr(celix_array_list_t) list = celix_arrayList_createVersionArray();
+            throwIfNull(list);
+            for (const auto& v : values) {
+                auto* cVer = celix_version_create(v.getMajor(), v.getMinor(), v.getMicro(), v.getQualifier().c_str());
+                throwIfNull(cVer);
+                celix_status_t status = celix_arrayList_assignVersion(list, cVer);
+                throwIfEnomem(status);
+            }
+            auto status = celix_properties_assignArrayList(cProps.get(), key.data(), celix_steal_ptr(list));
             throwIfEnomem(status);
         }
 
@@ -1032,6 +1037,19 @@ namespace celix {
                 return result;
             }
             return defaultValue;
+        }
+
+
+        template<typename T>
+        void setVectorInternal(const std::string& key, const std::vector<T>& values, celix_array_list_t* listIn, celix_status_t (*add)(celix_array_list_t*, T value)) {
+            celix_autoptr(celix_array_list_t) list = listIn;
+            throwIfNull(list);
+            for (const auto& v : values) {
+                celix_status_t status = add(list, v);
+                throwIfEnomem(status);
+            }
+            auto status = celix_properties_assignArrayList(cProps.get(), key.data(), celix_steal_ptr(list));
+            throwIfEnomem(status);
         }
 
         std::shared_ptr<celix_properties_t> cProps;

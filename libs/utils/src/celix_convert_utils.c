@@ -27,6 +27,8 @@
 
 #include "celix_array_list.h"
 #include "celix_err.h"
+#include "celix_stdio_cleanup.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
 
 #define ESCAPE_CHAR '\\'
@@ -154,9 +156,9 @@ static celix_status_t celix_utils_convertStringToArrayList(const char* val,
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    char* buf = NULL;
+    celix_autofree char* buf = NULL;
     size_t bufSize = 0;
-    FILE* entryStream = NULL;
+    celix_autoptr(FILE) entryStream = NULL;
     celix_status_t status = CELIX_SUCCESS;
     size_t max = strlen(val);
     for (size_t i = 0; i <= max; ++i) {
@@ -183,9 +185,10 @@ static celix_status_t celix_utils_convertStringToArrayList(const char* val,
             }
         } else if (val[i] == SEPARATOR_CHAR || val[i] == '\0') {
             //end of entry
-            fclose(entryStream);
+            fclose(celix_steal_ptr(entryStream));
             entryStream = NULL;
             status = addEntry(list, buf);
+            free(celix_steal_ptr(buf));
             if (status == CELIX_ENOMEM) {
                 return status;
             }
@@ -270,7 +273,7 @@ static celix_status_t celix_utils_addVersionEntry(celix_array_list_t* list, cons
     celix_version_t* version;
     celix_status_t convertStatus = celix_utils_convertStringToVersion(entry, NULL, &version);
     if (convertStatus == CELIX_SUCCESS) {
-        return celix_arrayList_addVersion(list, version);
+        return celix_arrayList_assignVersion(list, version);
     }
     return convertStatus;
 }
@@ -324,6 +327,9 @@ static int celix_utils_printLongEntry(FILE* stream, const celix_array_list_entry
 }
 
 char* celix_utils_longArrayListToString(const celix_array_list_t* list) {
+    if (list) {
+        assert(celix_arrayList_getElementType(list) == CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG);
+    }
     return celix_utils_arrayListToString(list, celix_utils_printLongEntry);
 }
 
@@ -332,6 +338,9 @@ static int celix_utils_printDoubleEntry(FILE* stream, const celix_array_list_ent
 }
 
 char* celix_utils_doubleArrayListToString(const celix_array_list_t* list) {
+    if (list) {
+        assert(celix_arrayList_getElementType(list) == CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE);
+    }
     return celix_utils_arrayListToString(list, celix_utils_printDoubleEntry);
 }
 
@@ -340,6 +349,9 @@ static int celix_utils_printBoolEntry(FILE* stream, const celix_array_list_entry
 }
 
 char* celix_utils_boolArrayListToString(const celix_array_list_t* list) {
+    if (list) {
+        assert(celix_arrayList_getElementType(list) == CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL);
+    }
     return celix_utils_arrayListToString(list, celix_utils_printBoolEntry);
 }
 
@@ -362,6 +374,9 @@ static int celix_utils_printStrEntry(FILE* stream, const celix_array_list_entry_
 }
 
 char* celix_utils_stringArrayListToString(const celix_array_list_t* list) {
+    if (list) {
+        assert(celix_arrayList_getElementType(list) == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING);
+    }
     return celix_utils_arrayListToString(list, celix_utils_printStrEntry);
 }
 
@@ -378,5 +393,8 @@ static int celix_utils_printVersionEntry(FILE* stream, const celix_array_list_en
 }
 
 char* celix_utils_versionArrayListToString(const celix_array_list_t* list) {
+    if (list) {
+        assert(celix_arrayList_getElementType(list) == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION);
+    }
     return celix_utils_arrayListToString(list, celix_utils_printVersionEntry);
 }

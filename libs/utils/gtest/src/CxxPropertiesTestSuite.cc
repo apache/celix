@@ -240,11 +240,11 @@ TEST_F(CxxPropertiesTestSuite, ArrayListTest) {
     EXPECT_EQ(0, props.size());
 
     // Test set
-    props.setStrings("key1", {"value1", "value2"});
-    props.setLongs("key2", {1, 2});
-    props.setDoubles("key3", {1.1, 2.2});
-    props.setBooleans("key4", {true, false});
-    props.setVersions("key5", {celix::Version{1, 2, 3}, celix::Version{2, 3, 4}});
+    props.setVector("key1", std::vector<std::string>{"value1", "value2"});
+    props.setVector("key2", std::vector<long>{1, 2});
+    props.setVector("key3", std::vector<double>{1.1, 2.2});
+    props.setVector("key4", std::vector<bool>{true, false});
+    props.setVector("key5", std::vector<celix::Version>{celix::Version{1, 2, 3}, celix::Version{2, 3, 4}});
     EXPECT_EQ(5, props.size());
 
     // Test get type

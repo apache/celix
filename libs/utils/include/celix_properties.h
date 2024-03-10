@@ -523,29 +523,30 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsVersion(const celix_prop
                                                                   celix_version_t** version);
 
 /**
- * @brief Set a long array value for a property.
+ * @brief Set a pointer, long, double, bool, string or version array list array for a property value.
  *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY.
+ * The set property type cannot be CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED or CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER
  *
- * This function will make a copy of the provided celix_array_list_t object, assuming it contains long values,
- * and store it in the property set.
+ * This function will make a copy of the provided celix_array_list_t object, using the celix_arrayList_copy function.
+ *
  * If an error occurs, the error status is returned and a message is logged to
  * celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
- * @param[in] values An array list of long values to set for the property. Cannot be NULL.
+ * @param[in] values An array list of types values to set for the property. Cannot be NULL.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key or values is NULL.
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key or values is NULL or if the array list type is
+ *         valid.
  */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setLongArrayList(celix_properties_t* properties,
+CELIX_UTILS_EXPORT celix_status_t celix_properties_setArrayList(celix_properties_t* properties,
                                                                 const char* key,
                                                                 const celix_array_list_t* values);
 
 /**
- * @brief Assign a long array value to a property, taking ownership of the array.
+ * @brief Assign a pointer, long, double, bool, string or version array list array for a property value.
  *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY.
+ * The set property type cannot be CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED or CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER
  *
  * This function stores a reference to the provided celix_array_list_t object in the property set and takes
  * ownership of the array.
@@ -557,34 +558,12 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setLongArrayList(celix_proper
  * @param[in] values An array list of long values to assign to the property. Ownership of the array is transferred
  *                   to the properties set. Cannot be NULL.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL. On error, the values array list is destroyed.
+ *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL, values is NULL or the array list type is
+ *         valid. On error, the provided array list is destroyed.
  */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_assignLongArrayList(celix_properties_t* properties,
+CELIX_UTILS_EXPORT celix_status_t celix_properties_assignArrayList(celix_properties_t* properties,
                                                                    const char* key,
                                                                    celix_array_list_t* values);
-
-/**
- * @brief Set multiple long values for a property using an array of longs.
- *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY.
- *
- * This function allows setting multiple long values for a given property key. The values are passed as an array
- * of long integers. The number of values in the array should be specified by nrOfValues.
- *
- * If an error occurs, the error status is returned, the provided array is destroyed and a
- * message is logged to celix_err.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] nrOfValues The number of long values in the array.
- * @param[in] values An array of long values to set for the property. Cannot be NULL.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL or the values array is NULL.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setLongs(celix_properties_t* properties,
-                                                            const char* key,
-                                                            const long* values,
-                                                            size_t nrOfValues);
 
 /**
  * @brief Get a property value as an array of longs.
@@ -627,70 +606,6 @@ CELIX_UTILS_EXPORT const celix_array_list_t* celix_properties_getLongArrayList(c
                                                                             const celix_array_list_t* defaultValue);
 
 /**
- * @brief Set a double array value for a property.
- *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY.
- *
- * This function will make a copy of the provided celix_array_list_t object, assuming it contains double values,
- * and store it in the property set.
- * If an error occurs, the error status is returned and a message is logged to
- * celix_err.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] values An array list of double values to set for the property. Cannot be NULL.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key or values is NULL.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setDoubleArrayList(celix_properties_t* properties,
-                                                                    const char* key,
-                                                                    const celix_array_list_t* values);
-
-/**
- * @brief Assign a double array value to a property, taking ownership of the array.
- *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY.
- *
- * This function stores a reference to the provided celix_array_list_t object in the property set and takes
- * ownership of the array.
- * If an error occurs, the error status is returned, the provided array is destroyed and a
- * message is logged to celix_err.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] values An array list of double values to assign to the property. Ownership of the array is transferred
- *                   to the properties set. Cannot be NULL.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL. On error, the values array list is destroyed.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_assignDoubleArrayList(celix_properties_t* properties,
-                                                                       const char* key,
-                                                                       celix_array_list_t* values);
-
-/**
- * @brief Set multiple double values for a property using an array of longs.
- *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY.
- *
- * This function allows setting multiple double values for a given property key. The values are passed as an array
- * of double integers. The number of values in the array should be specified by nrOfValues.
- *
- * If an error occurs, the error status is returned, the provided array is destroyed and a
- * message is logged to celix_err.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] nrOfValues The number of double values in the array.
- * @param[in] values An array of double values to set for the property. Cannot be NULL.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL or the values array is NULL.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setDoubles(celix_properties_t* properties,
-                                                            const char* key,
-                                                            const double* values,
-                                                            size_t nrOfValues);
-
-/**
  * @brief Get a property value as an array of doubles, making a copy of the array.
  *
  * This function retrieves the value of a property, interpreting it as an array of doubles. If the underlying type of
@@ -730,70 +645,6 @@ CELIX_UTILS_EXPORT const celix_array_list_t* celix_properties_getDoubleArrayList
     const celix_properties_t* properties, const char* key, const celix_array_list_t* defaultValue);
 
 /**
- * @brief Set a boolean array value for a property.
- *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_BOOLEAN_ARRAY.
- *
- * This function will make a copy of the provided celix_array_list_t object, assuming it contains boolean values,
- * and store it in the property set.
- * If an error occurs, the error status is returned and a message is logged to
- * celix_err.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] values An array list of boolean values to set for the property. Cannot be NULL.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key or values is NULL.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setBoolArrayList(celix_properties_t* properties,
-                                                                      const char* key,
-                                                                      const celix_array_list_t* values);
-
-/**
- * @brief Assign a boolean array value to a property, taking ownership of the array.
- *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_BOOLEAN_ARRAY.
- *
- * This function stores a reference to the provided celix_array_list_t object in the property set and takes
- * ownership of the array.
- * If an error occurs, the error status is returned, the provided array is destroyed and a
- * message is logged to celix_err.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] values An array list of boolean values to assign to the property. Ownership of the array is transferred
- *                   to the properties set. Cannot be NULL.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL. On error, the values array list is destroyed.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_assignBoolArrayList(celix_properties_t* properties,
-                                                                         const char* key,
-                                                                         celix_array_list_t* values);
-
-/**
- * @brief Set multiple boolean values for a property using an array of longs.
- *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_BOOLEAN_ARRAY.
- *
- * This function allows setting multiple boolean values for a given property key. The values are passed as an array
- * of booleans. The number of values in the array should be specified by nrOfValues.
- *
- * If an error occurs, the error status is returned, the provided array is destroyed and a
- * message is logged to celix_err.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] nrOfValues The number of bool values in the array.
- * @param[in] values An array of bool values to set for the property. Cannot be NULL.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL or the values array is NULL.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setBooleans(celix_properties_t* properties,
-                                                              const char* key,
-                                                              const bool* values,
-                                                              size_t nrOfValues);
-
-/**
  * @brief Get a property value as an array of booleans, making a copy of the array.
  *
  * This function retrieves the value of a property, interpreting it as an array of booleans. If the underlying type of
@@ -831,73 +682,6 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsBoolArrayList(const celi
  */
 CELIX_UTILS_EXPORT const celix_array_list_t* celix_properties_getBoolArrayList(
     const celix_properties_t* properties, const char* key, const celix_array_list_t* defaultValue);
-
-/**
- * @brief Set a string array value for a property.
- *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY.
- *
- * This function will make a copy of the provided celix_array_list_t object, assuming it contains string values,
- * and store it in the property set.
- * If an error occurs, the error status is returned and a message is logged to
- * celix_err.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] values An array list of string values to set for the property. Cannot be NULL.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key or values is NULL.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setStringArrayList(celix_properties_t* properties,
-                                                                    const char* key,
-                                                                    const celix_array_list_t* values);
-
-/**
- * @brief Assign a string array value to a property, taking ownership of the array.
- *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY.
- *
- * The provided array list should be created with a remove callback so that the destruction of the array list
- * will also free the strings in the array list. If this is not done, this property set will leak memory.
- *
- * This function stores a reference to the provided celix_array_list_t object in the property set and takes
- * ownership of the array.
- * If an error occurs, the error status is returned, the provided array is destroyed and a
- * message is logged to celix_err.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] values An array list of string values to assign to the property. Ownership of the array is transferred
- *                   to the properties set. Cannot be NULL.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL. On error, the values array list is destroyed.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_assignStringArrayList(celix_properties_t* properties,
-                                                                       const char* key,
-                                                                       celix_array_list_t* values);
-
-/**
- * @brief Set multiple string values for a property using an array of strings.
- *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY.
- *
- * This function allows setting multiple string values for a given property key. The values are passed as an array
- * of strings. The number of values in the array should be specified by nrOfValues.
- *
- * If an error occurs, the error status is returned, the provided array is destroyed and a
- * message is logged to celix_err.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] nrOfValues The number of string values in the array.
- * @param[in] values An array of string values to set for the property. Cannot be NULL.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL or the values array is NULL.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setStrings(celix_properties_t* properties,
-                                                              const char* key,
-                                                              const char* const* values,
-                                                              size_t nrOfValues);
 
 /**
  * @brief Get a property value as an array of strings, making a copy of the array.
@@ -940,73 +724,6 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsStringArrayList(const ce
  */
 CELIX_UTILS_EXPORT const celix_array_list_t* celix_properties_getStringArrayList(
     const celix_properties_t* properties, const char* key, const celix_array_list_t* defaultValue);
-
-/**
- * @brief Set a celix_version_t array value for a property.
- *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY.
- *
- * This function will make a copy of the provided celix_array_list_t object, assuming it contains celix_version_t
- * values, and store it in the property set. If an error occurs, the error status is returned and a message is logged to
- * celix_err.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] values An array list of celix_version_t values to set for the property. Cannot be NULL.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key or values is NULL.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersionArrayList(celix_properties_t* properties,
-                                                                       const char* key,
-                                                                       const celix_array_list_t* values);
-
-/**
- * @brief Assign a celix_version_t array value to a property, taking ownership of the array.
- *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY.
- *
- * The provided array list should be created with a remove callback so that the destruction of the array list
- * will also free the celix_version_t entries in the array list. If this is not done, this property set will leak
- * memory.
- *
- * This function stores a reference to the provided celix_array_list_t object in the property set and takes
- * ownership of the array.
- * If an error occurs, the error status is returned, the provided array is destroyed and a
- * message is logged to celix_err.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] values An array list of celix_version_t values to assign to the property. Ownership of the array is
- * transferred to the properties set. Cannot be NULL.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL. On error, the values array list is destroyed.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_assignVersionArrayList(celix_properties_t* properties,
-                                                                          const char* key,
-                                                                          celix_array_list_t* values);
-
-/**
- * @brief Set multiple celix_version_t values for a property using an array of celix_version_t*.
- *
- * The set property type will be CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY.
- *
- * This function allows setting multiple celix_version_t values for a given property key. The values are passed as an
- * array with celix_version_t entries. The number of values in the array should be specified by nrOfValues.
- *
- * If an error occurs, the error status is returned, the provided array is destroyed and a
- * message is logged to celix_err.
- *
- * @param[in] properties The property set to modify.
- * @param[in] key The key of the property to set.
- * @param[in] nrOfValues The number of celix_version_t values in the array.
- * @param[in] values An array of celix_version_t values to set for the property. Cannot be NULL.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
- *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL or the values array is NULL.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_setVersions(celix_properties_t* properties,
-                                                               const char* key,
-                                                               const celix_version_t** values,
-                                                               size_t nrOfValues);
 
 /**
  * @brief Get a property value as an array of celix_version_t entries, making a copy of the array.

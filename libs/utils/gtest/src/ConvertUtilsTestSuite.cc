@@ -342,7 +342,7 @@ TEST_F(ConvertUtilsTestSuite, ConvertToLongArrayTest) {
 }
 
 TEST_F(ConvertUtilsTestSuite, LongArrayToStringTest) {
-    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createLongArray();
     celix_arrayList_addLong(list, 1L);
     celix_arrayList_addLong(list, 2L);
     celix_arrayList_addLong(list, 3L);
@@ -351,12 +351,12 @@ TEST_F(ConvertUtilsTestSuite, LongArrayToStringTest) {
     EXPECT_STREQ("1,2,3", result);
     free(result);
 
-    celix_autoptr(celix_array_list_t) emptyList = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) emptyList = celix_arrayList_createLongArray();
     result = celix_utils_longArrayListToString(emptyList);
     EXPECT_STREQ("", result);
     free(result);
 
-    celix_autoptr(celix_array_list_t) singleEntryList = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) singleEntryList = celix_arrayList_createLongArray();
     celix_arrayList_addLong(singleEntryList, 1L);
     result = celix_utils_longArrayListToString(singleEntryList);
     EXPECT_STREQ("1", result);
@@ -379,7 +379,7 @@ TEST_F(ConvertUtilsTestSuite, ConvertToDoubleArrayList) {
 }
 
 TEST_F(ConvertUtilsTestSuite, DoubleArrayToStringTest) {
-    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createDoubleArray();
     celix_arrayList_addDouble(list, 0.1);
     celix_arrayList_addDouble(list, 2.0);
     celix_arrayList_addDouble(list, 3.3);
@@ -412,7 +412,7 @@ TEST_F(ConvertUtilsTestSuite, ConvertToBoolArrayList) {
 }
 
 TEST_F(ConvertUtilsTestSuite, BoolArrayToStringTest) {
-    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createBoolArray();
     celix_arrayList_addBool(list, true);
     celix_arrayList_addBool(list, false);
     celix_arrayList_addBool(list, true);
@@ -470,7 +470,7 @@ TEST_F(ConvertUtilsTestSuite, ConvertToStringArrayList) {
 }
 
 TEST_F(ConvertUtilsTestSuite, StringArrayToStringTest) {
-    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createStringArray();
     celix_arrayList_addString(list, "a");
     celix_arrayList_addString(list, "b");
     celix_arrayList_addString(list, "c");
@@ -485,15 +485,12 @@ TEST_F(ConvertUtilsTestSuite, StringArrayToStringTest) {
     EXPECT_STREQ(R"(a,b,c,d\\\,,e)", result);
 
     //Check if the result can be converted back to an equal list
-    celix_array_list_t* listResult;
+    celix_autoptr(celix_array_list_t) listResult;
     celix_status_t convertState = celix_utils_convertStringToStringArrayList(result, nullptr, &listResult);
     EXPECT_EQ(CELIX_SUCCESS, convertState);
     EXPECT_TRUE(listResult != nullptr);
-
-    EXPECT_EQ(celix_arrayList_size(list), celix_arrayList_size(listResult));
-    for (int i = 0; i < celix_arrayList_size(list); ++i) {
-        EXPECT_STREQ((char*)celix_arrayList_getString(list, i), (char*)celix_arrayList_getString(listResult, i));
-    }
+    EXPECT_TRUE(celix_arrayList_equals(list, listResult));
+    free(result);
 }
 
 TEST_F(ConvertUtilsTestSuite, ConvertToVersionArrayList) {
@@ -516,10 +513,10 @@ TEST_F(ConvertUtilsTestSuite, VersionArrayToStringTest) {
     celix_autoptr(celix_version_t) v1 = celix_version_create(1, 2, 3, nullptr);
     celix_autoptr(celix_version_t) v2 = celix_version_create(2, 3, 4, nullptr);
     celix_autoptr(celix_version_t) v3 = celix_version_create(3, 4, 5, "qualifier");
-    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
-    celix_arrayList_add(list, v1);
-    celix_arrayList_add(list, v2);
-    celix_arrayList_add(list, v3);
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createVersionArray();
+    celix_arrayList_addVersion(list, v1);
+    celix_arrayList_addVersion(list, v2);
+    celix_arrayList_addVersion(list, v3);
 
     char* result = celix_utils_versionArrayListToString(list);
     EXPECT_STREQ("1.2.3,2.3.4,3.4.5.qualifier", result);

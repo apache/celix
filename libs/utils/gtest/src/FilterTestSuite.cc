@@ -603,21 +603,30 @@ TEST_F(FilterTestSuite, UnmatchedTypeMatchTest) {
 }
 
 TEST_F(FilterTestSuite, MatchArrayTypesTest) {
-    const char* strings[] = {"a", "b", "c"};
-    const long longs[] = {1, 2, 3};
-    const double doubles[] = {1.0, 2.0, 3.0};
-    const bool bools[] = {true, true, true};
-    celix_autoptr(celix_version_t) v1 = celix_version_createVersionFromString("1.0.0");
-    celix_autoptr(celix_version_t) v2 = celix_version_createVersionFromString("2.0.0");
-    celix_autoptr(celix_version_t) v3 = celix_version_createVersionFromString("3.0.0");
-    const celix_version_t* versions[] = {v1, v2, v3};
+    //Given a string, long, double, bool and version array list.
+    celix_autoptr(celix_array_list_t) stringList = celix_arrayList_createStringArray();
+    celix_arrayList_addString(stringList, "a");
+    celix_arrayList_addString(stringList, "b");
+    celix_autoptr(celix_array_list_t) longList = celix_arrayList_createLongArray();
+    celix_arrayList_addLong(longList, 1);
+    celix_arrayList_addLong(longList, 2);
+    celix_autoptr(celix_array_list_t) doubleList = celix_arrayList_createDoubleArray();
+    celix_arrayList_addDouble(doubleList, 2.0);
+    celix_arrayList_addDouble(doubleList, 3.0);
+    celix_autoptr(celix_array_list_t) boolList = celix_arrayList_createBoolArray();
+    celix_arrayList_addBool(boolList, true);
+    celix_arrayList_addBool(boolList, true);
+    celix_autoptr(celix_array_list_t) versionList = celix_arrayList_createVersionArray();
+    celix_arrayList_assignVersion(versionList, celix_version_createVersionFromString("2.0.0"));
+    celix_arrayList_assignVersion(versionList, celix_version_createVersionFromString("3.0.0"));
 
+    //And a properties with these array lists
     celix_autoptr(celix_properties_t) props = celix_properties_create();
-    celix_properties_setStrings(props, "strings", strings, 3);
-    celix_properties_setLongs(props, "longs", longs, 3);
-    celix_properties_setDoubles(props, "doubles", doubles, 3);
-    celix_properties_setBooleans(props, "bools", bools, 3);
-    celix_properties_setVersions(props, "versions", versions, 3);
+    celix_properties_setArrayList(props, "strings", stringList);
+    celix_properties_setArrayList(props, "longs", longList);
+    celix_properties_setArrayList(props, "doubles", doubleList);
+    celix_properties_setArrayList(props, "bools", boolList);
+    celix_properties_setArrayList(props, "versions", versionList);
 
     // Check if match is true if any of the array elements match
     celix_autoptr(celix_filter_t) filter1 = celix_filter_create("(strings=a)");
@@ -663,9 +672,13 @@ TEST_F(FilterTestSuite, MatchArrayTypesTest) {
 }
 
 TEST_F(FilterTestSuite, ApproxWithArrayAttributesTest) {
-    const char* strings[] = {"abcdef", "defghi", "ghijkl"};
+    celix_array_list_t* stringList = celix_arrayList_createStringArray();
+    celix_arrayList_addString(stringList, "abcdef");
+    celix_arrayList_addString(stringList, "defghi");
+    celix_arrayList_addString(stringList, "ghijkl");
+
     celix_autoptr(celix_properties_t) props = celix_properties_create();
-    celix_properties_setStrings(props, "strings", strings, 3);
+    celix_properties_assignArrayList(props, "strings", stringList);
 
     celix_autoptr(celix_filter_t) filter1 = celix_filter_create("(strings~=abc)");
     EXPECT_TRUE(filter1 != nullptr);
@@ -685,9 +698,12 @@ TEST_F(FilterTestSuite, ApproxWithArrayAttributesTest) {
 }
 
 TEST_F(FilterTestSuite, SubStringWithArrayAttributesTest) {
-    const char* strings[] = {"John Doe", "Jane Doe", "John Smith"};
+    celix_array_list_t* stringList = celix_arrayList_createStringArray();
+    celix_arrayList_addString(stringList, "John Doe");
+    celix_arrayList_addString(stringList, "Jane Doe");
+    celix_arrayList_addString(stringList, "John Smith");
     celix_autoptr(celix_properties_t) props = celix_properties_create();
-    celix_properties_setStrings(props, "strings", strings, 3);
+    celix_properties_assignArrayList(props, "strings", stringList);
 
     celix_autoptr(celix_filter_t) filter1 = celix_filter_create("(strings=John*)");
     EXPECT_TRUE(filter1 != nullptr);

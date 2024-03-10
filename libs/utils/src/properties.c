@@ -948,47 +948,53 @@ celix_status_t celix_properties_getAsLongArrayList(const celix_properties_t* pro
     return CELIX_SUCCESS;
 }
 
+celix_properties_value_type_e celix_properties_getPropertiesTypeFromArrayList(const celix_array_list_t* list) {
+    switch (celix_arrayList_getElementType(list)) {
+        case CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG:
+            return CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY;
+        case CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE:
+            return CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY;
+        case CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL:
+            return CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY;
+        case CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING:
+            return CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY;
+        case CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION:
+            return CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY;
+        default:
+            //LCOV_EXCL_START
+            assert(false);
+            //LCOV_EXCL_STOP
+    }
+}
+
 celix_status_t
-celix_properties_setLongArrayList(celix_properties_t* properties, const char* key, const celix_array_list_t* values) {
-    assert(values != NULL);
+celix_properties_setArrayList(celix_properties_t* properties, const char* key, const celix_array_list_t* values) {
+    if (!key || !values) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    assert(celix_arrayList_getElementType(values) != CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED &&
+           celix_arrayList_getElementType(values) != CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER); //wrong array list type
     celix_array_list_t* copy = celix_arrayList_copy(values);
     if (!copy) {
         return CELIX_ENOMEM;
     }
     celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY;
+    prototype.valueType = celix_properties_getPropertiesTypeFromArrayList(values);
     prototype.typed.arrayValue = copy;
     return celix_properties_createAndSetEntry(properties, key, &prototype);
 }
 
 celix_status_t
-celix_properties_assignLongArrayList(celix_properties_t* properties, const char* key, celix_array_list_t* values) {
-    assert(values != NULL);
+celix_properties_assignArrayList(celix_properties_t* properties, const char* key, celix_array_list_t* values) {
+    if (!key || !values) {
+        celix_arrayList_destroy(values);
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    assert(celix_arrayList_getElementType(values) != CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED &&
+               celix_arrayList_getElementType(values) != CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER); //wrong array list type
     celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY;
+    prototype.valueType = celix_properties_getPropertiesTypeFromArrayList(values);
     prototype.typed.arrayValue = values;
-    return celix_properties_createAndSetEntry(properties, key, &prototype);
-}
-
-celix_status_t
-celix_properties_setLongs(celix_properties_t* properties, const char* key, const long* values, size_t nrOfValues) {
-    assert(values != NULL);
-    celix_autoptr(celix_array_list_t) copy = celix_arrayList_create();
-    if (!copy) {
-        celix_err_push("Failed to create a long array");
-        return CELIX_ENOMEM;
-    }
-    for (size_t i = 0; i < nrOfValues; ++i) {
-        celix_status_t status = celix_arrayList_addLong(copy, values[i]);
-        if (status != CELIX_SUCCESS) {
-            celix_err_push("Failed to add long to array list");
-            return status;
-        }
-    }
-
-    celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY;
-    prototype.typed.arrayValue = celix_steal_ptr(copy);
     return celix_properties_createAndSetEntry(properties, key, &prototype);
 }
 
@@ -1000,49 +1006,6 @@ const celix_array_list_t* celix_properties_getLongArrayList(const celix_properti
         return entry->typed.arrayValue;
     }
     return defaultValue;
-}
-
-celix_status_t
-celix_properties_setDoubleArrayList(celix_properties_t* properties, const char* key, const celix_array_list_t* values) {
-    assert(values != NULL);
-    celix_array_list_t* copy = celix_arrayList_copy(values);
-    if (!copy) {
-        return CELIX_ENOMEM;
-    }
-    celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY;
-    prototype.typed.arrayValue = copy;
-    return celix_properties_createAndSetEntry(properties, key, &prototype);
-}
-
-celix_status_t
-celix_properties_assignDoubleArrayList(celix_properties_t* properties, const char* key, celix_array_list_t* values) {
-    assert(values != NULL);
-    celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY;
-    prototype.typed.arrayValue = values;
-    return celix_properties_createAndSetEntry(properties, key, &prototype);
-}
-
-celix_status_t
-celix_properties_setDoubles(celix_properties_t* properties, const char* key, const double* values, size_t nrOfValues) {
-    assert(values != NULL);
-    celix_autoptr(celix_array_list_t) copy = celix_arrayList_create();
-    if (!copy) {
-        celix_err_push("Failed to create a double array");
-        return CELIX_ENOMEM;
-    }
-    for (size_t i = 0; i < nrOfValues; ++i) {
-        celix_status_t status = celix_arrayList_addDouble(copy, values[i]);
-        if (status != CELIX_SUCCESS) {
-            celix_err_push("Failed to add double to array list");
-            return status;
-        }
-    }
-    celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY;
-    prototype.typed.arrayValue = celix_steal_ptr(copy);
-    return celix_properties_createAndSetEntry(properties, key, &prototype);
 }
 
 celix_status_t celix_properties_getAsDoubleArrayList(const celix_properties_t* properties,
@@ -1084,48 +1047,6 @@ const celix_array_list_t* celix_properties_getDoubleArrayList(const celix_proper
     return defaultValue;
 }
 
-celix_status_t celix_properties_setBoolArrayList(celix_properties_t* properties, const char* key, const celix_array_list_t* values) {
-    assert(values != NULL);
-    celix_array_list_t* copy = celix_arrayList_copy(values);
-    if (!copy) {
-        return CELIX_ENOMEM;
-    }
-    celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY;
-    prototype.typed.arrayValue = copy;
-    return celix_properties_createAndSetEntry(properties, key, &prototype);
-}
-
-celix_status_t
-celix_properties_assignBoolArrayList(celix_properties_t* properties, const char* key, celix_array_list_t* values) {
-    assert(values != NULL);
-    celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY;
-    prototype.typed.arrayValue = values;
-    return celix_properties_createAndSetEntry(properties, key, &prototype);
-}
-
-celix_status_t
-celix_properties_setBooleans(celix_properties_t* properties, const char* key, const bool* values, size_t nrOfValues) {
-    assert(values != NULL);
-    celix_autoptr(celix_array_list_t) copy = celix_arrayList_create();
-    if (!copy) {
-        celix_err_push("Failed to create a bool array");
-        return CELIX_ENOMEM;
-    }
-    for (size_t i = 0; i < nrOfValues; ++i) {
-        celix_status_t status = celix_arrayList_addBool(copy, values[i]);
-        if (status != CELIX_SUCCESS) {
-            celix_err_push("Failed to add bool to array list.");
-            return status;
-        }
-    }
-    celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY;
-    prototype.typed.arrayValue = celix_steal_ptr(copy);
-    return celix_properties_createAndSetEntry(properties, key, &prototype);
-}
-
 celix_status_t celix_properties_getAsBoolArrayList(const celix_properties_t* properties,
                                                      const char* key,
                                                      const celix_array_list_t* defaultValue,
@@ -1165,106 +1086,13 @@ const celix_array_list_t* celix_properties_getBoolArrayList(const celix_properti
     return defaultValue;
 }
 
-celix_status_t celix_properties_setStringArrayList(celix_properties_t* properties, const char* key, const celix_array_list_t* values) {
-    assert(values != NULL);
-    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-    opts.simpleRemovedCallback = free;
-    opts.initialCapacity = celix_arrayList_size(values);
-    celix_autoptr(celix_array_list_t) list = celix_arrayList_createWithOptions(&opts);
-    if (!list) {
-        celix_err_push("Failed to create a string array");
-        return CELIX_ENOMEM;
-    }
-    for (int i = 0 ; i < celix_arrayList_size(values); ++i) {
-        const char* val = celix_arrayList_get(values, i);
-        char* copy = celix_utils_strdup(val);
-        if (!copy) {
-            celix_err_push("Failed to duplicate string");
-            return CELIX_ENOMEM;
-        }
-        celix_status_t status = celix_arrayList_add(list, copy);
-        if (status != CELIX_SUCCESS) {
-            celix_err_push("Failed to add string to array list");
-            return status;
-        }
-    }
-    celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY;
-    prototype.typed.arrayValue = celix_steal_ptr(list);
-    return celix_properties_createAndSetEntry(properties, key, &prototype);
-}
-
-celix_status_t
-celix_properties_assignStringArrayList(celix_properties_t* properties, const char* key, celix_array_list_t* values) {
-    assert(values != NULL);
-    celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY;
-    prototype.typed.arrayValue = values;
-    return celix_properties_createAndSetEntry(properties, key, &prototype);
-}
-
-celix_status_t
-celix_properties_setStrings(celix_properties_t* properties, const char* key, const char* const * values, size_t nrOfValues) {
-    assert(values != NULL);
-    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-    opts.simpleRemovedCallback = free;
-    opts.initialCapacity = nrOfValues;
-    celix_autoptr(celix_array_list_t) list = celix_arrayList_createWithOptions(&opts);
-    if (!list) {
-        celix_err_push("Failed to create a string array");
-        return CELIX_ENOMEM;
-    }
-    for (size_t i = 0; i < nrOfValues; ++i) {
-        char* copy = celix_utils_strdup(values[i]);
-        if (!copy) {
-            celix_err_push("Failed to duplicate string");
-            return CELIX_ENOMEM;
-        }
-        celix_status_t status = celix_arrayList_addString(list, copy);
-        if (status != CELIX_SUCCESS) {
-            celix_err_push("Failed to add string to array list");
-            free(copy);
-            return status;
-        }
-    }
-    celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY;
-    prototype.typed.arrayValue = celix_steal_ptr(list);
-    return celix_properties_createAndSetEntry(properties, key, &prototype);
-}
-
-static celix_array_list_t* celix_properties_deepCopyStringArrayList(const celix_array_list_t* list) {
-    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-    opts.simpleRemovedCallback = free;
-    opts.initialCapacity = celix_arrayList_size(list);
-    celix_autoptr(celix_array_list_t) copy = celix_arrayList_createWithOptions(&opts);
-    if (!copy) {
-        celix_err_push("Failed to create a string array");
-        return NULL;
-    }
-    for (int i = 0 ; i < celix_arrayList_size(list); ++i) {
-        const char* val = celix_arrayList_get(list, i);
-        char* copyStr = celix_utils_strdup(val);
-        if (!copyStr) {
-            celix_err_push("Failed to duplicate string");
-            return NULL;
-        }
-        celix_status_t status = celix_arrayList_addString(copy, copyStr);
-        if (status != CELIX_SUCCESS) {
-            celix_err_push("Failed to add string to array list");
-            return NULL;
-        }
-    }
-    return celix_steal_ptr(copy);
-}
-
 celix_status_t celix_properties_getAsStringArrayList(const celix_properties_t* properties,
                                                    const char* key,
                                                    const celix_array_list_t* defaultValue,
                                                    celix_array_list_t** list) {
     const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY) {
-        *list = celix_properties_deepCopyStringArrayList(entry->typed.arrayValue);
+        *list = celix_arrayList_copy(entry->typed.arrayValue);
         return *list ? CELIX_SUCCESS : CELIX_ENOMEM;
     }
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
@@ -1276,7 +1104,7 @@ celix_status_t celix_properties_getAsStringArrayList(const celix_properties_t* p
         return convertStatus;
     }
     if (defaultValue) {
-        *list = celix_properties_deepCopyStringArrayList(defaultValue);
+        *list = celix_arrayList_copy(defaultValue);
         return *list ? CELIX_SUCCESS : CELIX_ENOMEM;
     }
     *list = NULL;
@@ -1293,109 +1121,13 @@ const celix_array_list_t* celix_properties_getStringArrayList(const celix_proper
     return defaultValue;
 }
 
-static void celix_properties_destroyVersionCallback(void *data) {
-    celix_version_destroy((celix_version_t*)data);
-}
-
-celix_status_t celix_properties_setVersionArrayList(celix_properties_t* properties, const char* key, const celix_array_list_t* values) {
-    assert(values != NULL);
-    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-    opts.simpleRemovedCallback = celix_properties_destroyVersionCallback;
-    opts.initialCapacity = celix_arrayList_size(values);
-    celix_autoptr(celix_array_list_t) list = celix_arrayList_createWithOptions(&opts);
-    if (!list) {
-        celix_err_push("Failed to create a version array");
-        return CELIX_ENOMEM;
-    }
-    for (int i = 0 ; i < celix_arrayList_size(values); ++i) {
-        celix_version_t* version = celix_arrayList_get(values, i);
-        celix_version_t* copy = celix_version_copy(version);
-        if (!copy) {
-            celix_err_push("Failed to duplicate version");
-            return CELIX_ENOMEM;
-        }
-        celix_status_t status = celix_arrayList_add(list, copy);
-        if (status != CELIX_SUCCESS) {
-            celix_err_push("Failed to add version to array list");
-            return status;
-        }
-    }
-    celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY;
-    prototype.typed.arrayValue = celix_steal_ptr(list);
-    return celix_properties_createAndSetEntry(properties, key, &prototype);
-}
-
-celix_status_t
-celix_properties_assignVersionArrayList(celix_properties_t* properties, const char* key, celix_array_list_t* values) {
-    assert(values != NULL);
-    celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY;
-    prototype.typed.arrayValue = values;
-    return celix_properties_createAndSetEntry(properties, key, &prototype);
-}
-
-celix_status_t
-celix_properties_setVersions(celix_properties_t* properties, const char* key, const celix_version_t** values, size_t nrOfValues) {
-    assert(values != NULL);
-    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-    opts.simpleRemovedCallback = celix_properties_destroyVersionCallback;
-    opts.initialCapacity = nrOfValues;
-    celix_autoptr(celix_array_list_t) list = celix_arrayList_createWithOptions(&opts);
-    if (!list) {
-        celix_err_push("Failed to create a version array");
-        return CELIX_ENOMEM;
-    }
-    for (size_t i = 0; i < nrOfValues; ++i) {
-        celix_version_t* copy = celix_version_copy(values[i]);
-        if (!copy) {
-            celix_err_push("Failed to duplicate version");
-            return CELIX_ENOMEM;
-        }
-        celix_status_t status = celix_arrayList_add(list, copy);
-        if (status != CELIX_SUCCESS) {
-            celix_err_push("Failed to add version to array list");
-            celix_version_destroy(copy);
-            return status;
-        }
-    }
-    celix_properties_entry_t prototype = {0};
-    prototype.valueType = CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY;
-    prototype.typed.arrayValue = celix_steal_ptr(list);
-    return celix_properties_createAndSetEntry(properties, key, &prototype);
-}
-
-static celix_array_list_t* celix_properties_deepCopyVersionArrayList(const celix_array_list_t* list) {
-    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
-    opts.simpleRemovedCallback = celix_properties_destroyVersionCallback;
-    opts.initialCapacity = celix_arrayList_size(list);
-    celix_autoptr(celix_array_list_t) copy = celix_arrayList_createWithOptions(&opts);
-    if (!copy) {
-        return NULL;
-    }
-    for (int i = 0; i < celix_arrayList_size(list); ++i) {
-        const celix_version_t* val = celix_arrayList_get(list, i);
-        celix_version_t* verCopy = celix_version_copy(val);
-        if (!verCopy) {
-            celix_err_push("Failed to duplicate version");
-            return NULL;
-        }
-        celix_status_t status = celix_arrayList_add(copy, verCopy);
-        if (status != CELIX_SUCCESS) {
-            celix_err_push("Failed to add version to array list");
-            return NULL;
-        }
-    }
-    return celix_steal_ptr(copy);
-}
-
 celix_status_t celix_properties_getAsVersionArrayList(const celix_properties_t* properties,
                                                      const char* key,
                                                      const celix_array_list_t* defaultValue,
                                                      celix_array_list_t** list) {
     const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY) {
-        *list = celix_properties_deepCopyVersionArrayList(entry->typed.arrayValue);
+        *list = celix_arrayList_copy(entry->typed.arrayValue);
         return *list ? CELIX_SUCCESS : CELIX_ENOMEM;
     }
     if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
@@ -1407,7 +1139,7 @@ celix_status_t celix_properties_getAsVersionArrayList(const celix_properties_t* 
         return convertStatus;
     }
     if (defaultValue) {
-        *list = celix_properties_deepCopyVersionArrayList(defaultValue);
+        *list = celix_arrayList_copy(defaultValue);
         return *list ? CELIX_SUCCESS : CELIX_ENOMEM;
     }
     *list = NULL;

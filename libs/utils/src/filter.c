@@ -654,7 +654,7 @@ static bool celix_utils_matchBoolArrays(enum celix_filter_operand_enum op, const
 static bool celix_utils_matchVersionArrays(enum celix_filter_operand_enum op, const celix_array_list_t* list, celix_version_t* attributeValue) {
     assert(list != NULL);
     for (int i = 0 ; i < celix_arrayList_size(list); ++i) {
-        int cmp = celix_version_compareTo((celix_version_t*)celix_arrayList_get(list, i), attributeValue);
+        int cmp = celix_version_compareTo(celix_arrayList_getVersion(list, i), attributeValue);
         if (celix_utils_convertCompareToBool(op, cmp)) {
             return true;
         }
