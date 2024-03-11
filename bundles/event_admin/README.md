@@ -21,7 +21,7 @@ limitations under the License.
 
 ## Introduction
 
-The Event Admin subproject implements the [OSGi Event Admin Service Specification](https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.event.html). It consists event admin implementation and corresponding examples.
+The Event Admin subproject implements the [OSGi Event Admin Service Specification](https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.event.html). It consists of event admin implementation and corresponding examples.
 
 ### Event Admin
 

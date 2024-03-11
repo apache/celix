@@ -21,7 +21,7 @@ limitations under the License.
 
 ## Event Admin
 
-The Event Admin provides the pubsub mechanism for in-process communication. It has implements two delivery mechanisms:
+The Event Admin provides the pubsub mechanism for in-process communication. It has implemented two delivery mechanisms:
 - Synchronous delivery
 - Asynchronous delivery
 
@@ -52,7 +52,7 @@ The diagram of asynchronous delivery is shown in the following figure:
 
 ![sync_delivery_seq.png](diagrams/async_delivery_seq.png)
 
-In above figure, if the event handler set the "event.delivery" property to "async.ordered", each event handler can hold 
+In the above figure, if the event handler sets the "event.delivery" property to "async.ordered", each event handler can hold 
 at most one event-delivery thread at a time, so that events can be delivered in order. If the event handler sets the 
 "event.delivery" property to "async.unordered", the event handler can hold multiple event-delivery threads at the same 
 time, so that events can be delivered in parallel.
@@ -66,7 +66,7 @@ The events are mapped as follows:
 - **Celix Framework Event**
 
 For celix framework Event, we map the celix framework condition id to the event admin event topic. The event admin event properties are none.
-The details mapping are shown in the following table:
+The details mappings are shown in the following table:
 
 | Celix Framework Condition ID       | Event Admin Event topic                     |
 |------------------------------------|---------------------------------------------|
@@ -80,7 +80,7 @@ For celix bundle Event, we map the celix bundle event type to the event admin ev
 - bundle.symbolicName
 - bundle.version
 
-The details mapping are shown in the following table:
+The details mappings are shown in the following table:
 
 | Celix Bundle Event Type        | Event Admin Event topic                      |
 |--------------------------------|----------------------------------------------|
@@ -99,7 +99,7 @@ For celix service Event, we map the celix service register/unregister operation 
 - service.objectClass
 - service.pid
 
-The details mapping are shown in the following table:
+The details mappings are shown in the following table:
 
 | Celix Service Operation | Event Admin Event topic                         |
 |-------------------------|-------------------------------------------------|
