@@ -44,6 +44,8 @@ CELIX_EI_DECLARE(fputc, int);
 
 CELIX_EI_DECLARE(fputs, int);
 
+CELIX_EI_DECLARE(fprintf, int);
+
 CELIX_EI_DECLARE(fclose, int);
 
 CELIX_EI_DECLARE(fgetc, int);
