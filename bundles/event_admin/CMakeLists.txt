@@ -15,10 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(EVENT_ADMIN "Option to enable building the Event Admin bundles" OFF)
+celix_subproject(EVENT_ADMIN "Option to enable building the Event Admin bundles" ON)
 if (EVENT_ADMIN)
-    add_subdirectory(event_admin)
     add_subdirectory(event_admin_api)
+    add_subdirectory(event_admin)
     add_subdirectory(examples)
 endif()
 

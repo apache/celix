@@ -40,12 +40,12 @@ celix_status_t celix_eventHandlerExampleActivator_start(celix_event_handler_exam
     celix_properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, CELIX_EVENT_HANDLER_SERVICE_VERSION);
     act->service.handle = act;
     act->service.handleEvent = celix_eventHandlerExampleActivator_handleEvent;
-    act->serviceId = celix_bundleContext_registerService(ctx, &act->service, CELIX_EVENT_HANDLER_SERVICE_NAME, properties);
+    act->serviceId = celix_bundleContext_registerServiceAsync(ctx, &act->service, CELIX_EVENT_HANDLER_SERVICE_NAME, properties);
     return CELIX_SUCCESS;
 }
 
 celix_status_t celix_eventHandlerExampleActivator_stop(celix_event_handler_example_activator_t *act, celix_bundle_context_t *ctx) {
-    celix_bundleContext_unregisterService(ctx, act->serviceId);
+    celix_bundleContext_unregisterServiceAsync(ctx, act->serviceId, NULL, NULL);
     return CELIX_SUCCESS;
 }
 

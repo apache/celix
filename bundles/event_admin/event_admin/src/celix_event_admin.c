@@ -35,7 +35,7 @@
 #include "celix_utils.h"
 #include "celix_stdlib_cleanup.h"
 
-
+//Belows parameters are not configurable, consider its configurability until a real need arises.
 #define CELIX_EVENT_ADMIN_MAX_HANDLER_THREADS 5
 #define CELIX_EVENT_ADMIN_MAX_PARALLEL_EVENTS_OF_HANDLER (CELIX_EVENT_ADMIN_MAX_HANDLER_THREADS/3 + 1) //max parallel async event for a single handler
 #define CELIX_EVENT_ADMIN_MAX_HANDLE_EVENT_TIME 60 //seconds
@@ -76,6 +76,7 @@ struct celix_event_admin {
 };
 
 static void* celix_eventAdmin_deliverEventThread(void* data);
+static void onAsyncEventQueueRemoved(void* value);
 
 celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
     celix_autofree celix_event_admin_t* ea = calloc(1, sizeof(*ea));
@@ -101,6 +102,7 @@ celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
     celix_autoptr(celix_thread_rwlock_t) lock = &ea->lock;
     celix_autoptr(celix_array_list_t) channelMatchingAllEvents = ea->channelMatchingAllEvents.eventHandlerSvcIdList = celix_arrayList_create();
     if (channelMatchingAllEvents == NULL) {
+        celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(logHelper, "Failed to create event channel matching all events.");
         errno = ENOMEM;
         return NULL;
@@ -142,8 +144,12 @@ celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
     }
     celix_autoptr(celix_thread_cond_t) cond = &ea->eventsTriggerCond;
 
-    celix_autoptr(celix_array_list_t) asyncEventQueue = ea->asyncEventQueue = celix_arrayList_create();
+    celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
+    opts.elementType = CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER;
+    opts.simpleRemovedCallback = onAsyncEventQueueRemoved;
+    celix_autoptr(celix_array_list_t) asyncEventQueue = ea->asyncEventQueue = celix_arrayList_createWithOptions(&opts);
     if (asyncEventQueue == NULL) {
+        celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(logHelper, "Failed to create async event queue.");
         errno = ENOMEM;
         return NULL;
@@ -197,13 +203,6 @@ int celix_eventAdmin_stop(celix_event_admin_t* ea) {
 
 void celix_eventAdmin_destroy(celix_event_admin_t* ea) {
     assert(ea != NULL);
-    size_t size = celix_arrayList_size(ea->asyncEventQueue);
-    for (int i = 0; i < size; ++i) {
-        celix_event_entry_t *entry = celix_arrayList_get(ea->asyncEventQueue, i);
-        celix_event_release(entry->event);
-        celix_longHashMap_destroy(entry->eventHandlers);
-        free(entry);
-    }
     celix_arrayList_destroy(ea->asyncEventQueue);
     celixThreadCondition_destroy(&ea->eventsTriggerCond);
     celixThreadMutex_destroy(&ea->eventsMutex);
@@ -220,6 +219,13 @@ void celix_eventAdmin_destroy(celix_event_admin_t* ea) {
     return;
 }
 
+static void onAsyncEventQueueRemoved(void* value) {
+    celix_event_entry_t *entry = value;
+    celix_event_release(entry->event);
+    celix_longHashMap_destroy(entry->eventHandlers);
+    free(entry);
+}
+
 static void celix_eventAdmin_addEventHandlerToChannels(celix_event_admin_t* ea, const char* topic,
                                                        celix_event_handler_t* eventHandler, celix_string_hash_map_t* channels) {
     celix_event_channel_t* channel = celix_stringHashMap_get(channels, topic);
@@ -231,10 +237,12 @@ static void celix_eventAdmin_addEventHandlerToChannels(celix_event_admin_t* ea, 
         }
         celix_autoptr(celix_array_list_t) eventHandlerSvcIdList = channel->eventHandlerSvcIdList = celix_arrayList_create();
         if (eventHandlerSvcIdList == NULL) {
+            celix_logHelper_logTssErrors(ea->logHelper, CELIX_LOG_LEVEL_ERROR);
             celix_logHelper_error(ea->logHelper, "Failed to create event handlers list for topic %s", topic);
             return;
         }
         if (celix_arrayList_addLong(channel->eventHandlerSvcIdList, eventHandler->serviceId) != CELIX_SUCCESS) {
+            celix_logHelper_logTssErrors(ea->logHelper, CELIX_LOG_LEVEL_ERROR);
             celix_logHelper_error(ea->logHelper, "Failed to subscribe %s for event handler(%s).", topic, eventHandler->serviceDescription);
             return;
         }
@@ -246,6 +254,7 @@ static void celix_eventAdmin_addEventHandlerToChannels(celix_event_admin_t* ea, 
         celix_steal_ptr(eventHandlerSvcIdList);
         celix_steal_ptr(_channel);
     } else if (celix_arrayList_addLong(channel->eventHandlerSvcIdList, eventHandler->serviceId) != CELIX_SUCCESS) {
+        celix_logHelper_logTssErrors(ea->logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(ea->logHelper, "Failed to subscribe %s for event handler(%s).", topic, eventHandler->serviceDescription);
     }
     return;
@@ -256,6 +265,7 @@ static void celix_eventAdmin_subscribeTopicFor(celix_event_admin_t* ea, const ch
     if (celix_utils_stringEquals(topic, "*")) {
         celix_event_channel_t *channel = &ea->channelMatchingAllEvents;
         if (celix_arrayList_addLong(channel->eventHandlerSvcIdList, eventHandler->serviceId) != CELIX_SUCCESS) {
+            celix_logHelper_logTssErrors(ea->logHelper, CELIX_LOG_LEVEL_ERROR);
             celix_logHelper_error(ea->logHelper, "Failed to subscribe %s for event handler(%s).", topic, eventHandler->serviceDescription);
             return;
         }
@@ -355,6 +365,11 @@ int celix_eventAdmin_addEventHandlerWithProperties(void* handle, void* svc, cons
     const char* eventFilterStr = celix_properties_get(props, CELIX_EVENT_FILTER, NULL);
     if (eventFilterStr) {
         eventFilter = handler->eventFilter = celix_filter_create(eventFilterStr);
+        if (eventFilter == NULL) {
+            celix_logHelper_logTssErrors(ea->logHelper, CELIX_LOG_LEVEL_ERROR);
+            celix_logHelper_error(ea->logHelper, "Failed to create event filter for %s.", eventFilterStr);
+            return CELIX_BUNDLE_EXCEPTION;
+        }
     }
 
     celix_auto(celix_rwlock_wlock_guard_t) wLockGuard = celixRwlockWlockGuard_init(&ea->lock);
@@ -486,7 +501,14 @@ static void celix_eventAdmin_deliverEventToHandler(celix_event_admin_t* ea, cons
     celix_logHelper_trace(ea->logHelper, "Delivering event %s to handler(%s)", topic, eventHandler->serviceDescription);
     celix_event_handler_service_t* svc = eventHandler->service;
     struct timespec startTime = celix_gettime(CLOCK_MONOTONIC);
-    svc->handleEvent(svc->handle, topic, props);
+    celix_status_t status = svc->handleEvent(svc->handle, topic, props);
+    if (status != CELIX_SUCCESS) {
+        //If a handler throws an Exception during delivery of an event, it must be caught by the Event Admin service and handled in some implementation specific way.
+        //If a Log Service is available, the exception should be logged.
+        //Once the exception has been caught and dealt with, the event delivery must continue with the next handlers to be notified, if any.
+        //See https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.event.html#d0e47600
+        celix_logHelper_error(ea->logHelper, "Failed to handle event %s for handler(%s)", topic, eventHandler->serviceDescription);
+    }
     double elapsedTime = celix_elapsedtime(CLOCK_MONOTONIC, startTime);
     if (elapsedTime > CELIX_EVENT_ADMIN_MAX_HANDLE_EVENT_TIME) {
         celix_logHelper_error(ea->logHelper, "Event handler for topic %s took %f seconds, %s", topic, elapsedTime, eventHandler->serviceDescription);
@@ -536,6 +558,7 @@ static int celix_eventAdmin_deliverEventAsyncDo(celix_event_admin_t* ea, const c
     }
     int status = celix_arrayList_add(ea->asyncEventQueue, entry);
     if (status != CELIX_SUCCESS) {
+        celix_logHelper_logTssErrors(ea->logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(ea->logHelper, "Failed to add event(%s) to event queue.", topic);
         return status;
     }
@@ -556,12 +579,12 @@ celix_status_t celix_eventAdmin_postEvent(void* handle, const char* topic, const
 }
 
 static bool celix_eventAdmin_getPendingEvent(celix_event_admin_t* ea, celix_event_t** event, long* eventHandlerSvcId) {
-    bool notFound = true;
+    bool found = false;
     size_t size = celix_arrayList_size(ea->asyncEventQueue);
-    for (int i = 0; (i < size) && notFound; ++i) {
+    for (int i = 0; (i < size) && !found; ++i) {
         celix_event_entry_t* eventEntry = celix_arrayList_get(ea->asyncEventQueue, i);
         celix_long_hash_map_iterator_t iter = celix_longHashMap_begin(eventEntry->eventHandlers);
-        while (!celix_longHashMapIterator_isEnd(&iter) && notFound) {
+        while (!celix_longHashMapIterator_isEnd(&iter) && !found) {
             celix_auto(celix_rwlock_rlock_guard_t) rLockGuard = celixRwlockRlockGuard_init(&ea->lock);
             long handlerSvcId = iter.key;
             celix_event_handler_t* eventHandler = celix_longHashMap_get(ea->eventHandlers, handlerSvcId);
@@ -574,7 +597,7 @@ static bool celix_eventAdmin_getPendingEvent(celix_event_admin_t* ea, celix_even
                 *event = celix_event_retain(eventEntry->event);
                 *eventHandlerSvcId = handlerSvcId;
                 celix_longHashMapIterator_remove(&iter);
-                notFound = false;
+                found = true;
                 continue;
             }
             __atomic_fetch_sub(&eventHandler->handlingAsyncEventCnt, 1, __ATOMIC_SEQ_CST);
@@ -585,12 +608,9 @@ static bool celix_eventAdmin_getPendingEvent(celix_event_admin_t* ea, celix_even
             celix_arrayList_removeAt(ea->asyncEventQueue, i);
             i--;
             size--;
-            celix_event_release(eventEntry->event);
-            celix_longHashMap_destroy(eventEntry->eventHandlers);
-            free(eventEntry);
         }
     }
-    return !notFound;
+    return found;
 }
 
 static void celix_eventAdmin_deliverPendingEvent(celix_event_admin_t* ea, const char* topic, const celix_properties_t* props, long eventHandlerSvcId) {
@@ -602,9 +622,9 @@ static void celix_eventAdmin_deliverPendingEvent(celix_event_admin_t* ea, const 
     if (__atomic_load_n(&eventHandler->blackListed, __ATOMIC_ACQUIRE)) {
         celix_logHelper_warning(ea->logHelper, "Skipping blacklisted event handler for topic %s, %s", topic,
                                 eventHandler->serviceDescription);
-        return;
+    } else {
+        celix_eventAdmin_deliverEventToHandler(ea, topic, props, eventHandler);
     }
-    celix_eventAdmin_deliverEventToHandler(ea, topic, props, eventHandler);
     __atomic_fetch_sub(&eventHandler->handlingAsyncEventCnt, 1, __ATOMIC_SEQ_CST);
     return;
 }

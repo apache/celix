@@ -59,11 +59,16 @@ static void *celix_eventPublisherExampleActivator_sendEventThread(void *handle) 
     return CELIX_SUCCESS;
 }
 
-void celix_eventPublisherExampleActivator_addEventAdminService(void *handle, void *svc) {
+static void celix_eventPublisherExampleActivator_setEventAdminService(void *handle, void *svc) {
     celix_event_publisher_example_activator_t *act = (celix_event_publisher_example_activator_t *)handle;
     celixThreadRwlock_writeLock(&act->svcLock);
     act->service = svc;
     celixThreadRwlock_unlock(&act->svcLock);
+}
+
+static void onEventAdminServiceTrackerStopped(void *data) {
+    celix_event_publisher_example_activator_t *act = data;
+    celixThreadRwlock_destroy(&act->svcLock);
 }
 
 celix_status_t celix_eventPublisherExampleActivator_start(celix_event_publisher_example_activator_t *act, celix_bundle_context_t *ctx) {
@@ -77,27 +82,27 @@ celix_status_t celix_eventPublisherExampleActivator_start(celix_event_publisher_
     opts.filter.serviceName = CELIX_EVENT_ADMIN_SERVICE_NAME;
     opts.filter.versionRange = CELIX_EVENT_ADMIN_SERVICE_USE_RANGE;
     opts.callbackHandle = act;
-    opts.set = celix_eventPublisherExampleActivator_addEventAdminService;
-    act->serviceTrkId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    opts.set = celix_eventPublisherExampleActivator_setEventAdminService;
+    act->serviceTrkId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
     if (act->serviceTrkId < 0) {
         return CELIX_BUNDLE_EXCEPTION;
     }
 
+    celix_steal_ptr(svcLock);
+
     act->running = true;
     status = celixThread_create(&act->sendEventThread, NULL, celix_eventPublisherExampleActivator_sendEventThread, act);
     if (status != CELIX_SUCCESS) {
-        celix_bundleContext_stopTracker(ctx, act->serviceTrkId);
+        celix_bundleContext_stopTrackerAsync(ctx, act->serviceTrkId, act, onEventAdminServiceTrackerStopped);//celix_bundleActivator_destroy will wait for all events
         return status;
     }
-    celix_steal_ptr(svcLock);
     return CELIX_SUCCESS;
 }
 
 celix_status_t celix_eventPublisherExampleActivator_stop(celix_event_publisher_example_activator_t *act, celix_bundle_context_t *ctx) {
     act->running = false;
     celixThread_join(act->sendEventThread, NULL);
-    celix_bundleContext_stopTracker(ctx, act->serviceTrkId);
-    celixThreadRwlock_destroy(&act->svcLock);
+    celix_bundleContext_stopTrackerAsync(ctx, act->serviceTrkId, act, onEventAdminServiceTrackerStopped);//celix_bundleActivator_destroy will wait for all events
     return CELIX_SUCCESS;
 }
 

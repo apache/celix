@@ -55,7 +55,7 @@ typedef struct celix_event_admin_service {
      * @param[in] handle The handle as provided by the service registration.
      * @param[in] topic The topic of the event.
      * @param[in] properties The properties of the event. It can be NULL.
-     * @return Status code indicating failure or success. CELIX_SUCCESS if no errors are encountered. If an error is encountered, it should be return celix errno.
+     * @return Status code indicating failure or success. CELIX_SUCCESS if no errors are encountered. If an error is encountered, it should be a celix errno.
      */
     celix_status_t (*sendEvent)(void* handle, const char* topic, const celix_properties_t* properties);
 }celix_event_admin_service_t;

@@ -71,13 +71,13 @@ extern "C" {
  * @brief Service registration property specifying the Event topics of interest to an Event Handler service.
  *
  * The Event Handler must use the following grammar to indicate the topics in which it is interested:\n
- * topic-description := '*' | topic ( '/&#42;' )?  \n
+ * topic-description := '*' | topic ( '/&zwj;*' )?  \n
  * topic := token ( '/' token )*    \n
  *
  * The event handler also can specify multiple topics by providing a comma separated list of topics.
  *
  * @example
- * - "com/acme/&#42;"                         Indicates all topics beginning with "com/acme/"   \n
+ * - "com/acme/&zwj;*"                         Indicates all topics beginning with "com/acme/"   \n
  * - "com/acme/MyEvent"                       Indicates only the specific event which topic is "com/acme/MyEvent"  \n
  * - "*"                                      Indicates all topics   \n
  * - "com/acme/MyEvent,com/acme/MyOtherEvent" Indicates the specific events with topics "com/acme/MyEvent" and "com/acme/MyOtherEvent"
@@ -102,7 +102,7 @@ extern "C" {
 #define CELIX_EVENT_SERVICE_PID "service.pid"
 
 /**
- * @brief The time when the event occurred, as reported by the system time in microseconds. The type of the value for this event property is Long.
+ * @brief The time when the event occurred, as reported by the system time in milliseconds. The type of the value for this event property is Long.
  */
 #define CELIX_EVENT_TIMESTAMP "timestamp"
 

@@ -50,6 +50,7 @@ public:
         celix_ei_expect_celix_longHashMap_put(nullptr, 0, 0);
         celix_ei_expect_celix_arrayList_addLong(nullptr, 0, 0);
         celix_ei_expect_celix_elapsedtime(nullptr, 0, 0);
+        celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
     }
 };
 
@@ -131,7 +132,7 @@ TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToCreateCondForEventAdminTe
 }
 
 TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToCreateAsyncEventQueueForEventAdminTest) {
-    celix_ei_expect_celix_arrayList_create((void*)&celix_eventAdmin_create, 0, nullptr, 2);
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)&celix_eventAdmin_create, 0, nullptr);
     auto ea = celix_eventAdmin_create(ctx.get());
     EXPECT_EQ(nullptr, ea);
 }

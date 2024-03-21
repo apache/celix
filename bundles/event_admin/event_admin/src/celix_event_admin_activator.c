@@ -36,7 +36,7 @@ typedef struct celix_event_admin_activator {
 celix_status_t celix_eventAdminActivator_start(celix_event_admin_activator_t *act, celix_bundle_context_t *ctx) {
     assert(act != NULL);
     assert(ctx != NULL);
-
+    celix_status_t status = CELIX_SUCCESS;
     celix_autoptr(celix_dm_component_t) adminCmp = celix_dmComponent_create(ctx, "EVENT_ADMIN_CMP");
     if (adminCmp == NULL) {
         return CELIX_ENOMEM;
@@ -51,22 +51,34 @@ celix_status_t celix_eventAdminActivator_start(celix_event_admin_activator_t *ac
     CELIX_DM_COMPONENT_SET_CALLBACKS(adminCmp, celix_event_admin_t, NULL, celix_eventAdmin_start, celix_eventAdmin_stop, NULL);
     CELIX_DM_COMPONENT_SET_IMPLEMENTATION_DESTROY_FUNCTION(adminCmp, celix_event_admin_t, celix_eventAdmin_destroy);
 
-    celix_dm_service_dependency_t *eventHandlerDep = celix_dmServiceDependency_create();
-    if (eventHandlerDep == NULL) {
-        return CELIX_ENOMEM;
+    {
+        celix_autoptr(celix_dm_service_dependency_t) eventHandlerDep = celix_dmServiceDependency_create();
+        if (eventHandlerDep == NULL) {
+            return CELIX_ENOMEM;
+        }
+        status = celix_dmServiceDependency_setService(eventHandlerDep, CELIX_EVENT_HANDLER_SERVICE_NAME, CELIX_EVENT_HANDLER_SERVICE_USE_RANGE, "("CELIX_EVENT_TOPIC"=*)");//Event Handlers which have not specified the EVENT_TOPIC service property must not receive events.
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
+        celix_dmServiceDependency_setStrategy(eventHandlerDep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
+        celix_dm_service_dependency_callback_options_t opts = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
+        opts.addWithProps = celix_eventAdmin_addEventHandlerWithProperties;
+        opts.removeWithProps = celix_eventAdmin_removeEventHandlerWithProperties;
+        celix_dmServiceDependency_setCallbacksWithOptions(eventHandlerDep, &opts);
+        status = celix_dmComponent_addServiceDependency(adminCmp, eventHandlerDep);
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
+        celix_steal_ptr(eventHandlerDep);
     }
-    celix_dmServiceDependency_setService(eventHandlerDep, CELIX_EVENT_HANDLER_SERVICE_NAME, CELIX_EVENT_HANDLER_SERVICE_USE_RANGE, "("CELIX_EVENT_TOPIC"=*)");//Event Handlers which have not specified the EVENT_TOPIC service property must not receive events.
-    celix_dmServiceDependency_setStrategy(eventHandlerDep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
-    celix_dm_service_dependency_callback_options_t opts = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
-    opts.addWithProps = celix_eventAdmin_addEventHandlerWithProperties;
-    opts.removeWithProps = celix_eventAdmin_removeEventHandlerWithProperties;
-    celix_dmServiceDependency_setCallbacksWithOptions(eventHandlerDep, &opts);
-    celix_dmComponent_addServiceDependency(adminCmp, eventHandlerDep);
 
     act->eventAdminService.handle = act->eventAdmin;
     act->eventAdminService.postEvent = celix_eventAdmin_postEvent;
     act->eventAdminService.sendEvent = celix_eventAdmin_sendEvent;
-    celix_dmComponent_addInterface(adminCmp, CELIX_EVENT_ADMIN_SERVICE_NAME, CELIX_EVENT_ADMIN_SERVICE_VERSION, &act->eventAdminService, NULL);
+    status = celix_dmComponent_addInterface(adminCmp, CELIX_EVENT_ADMIN_SERVICE_NAME, CELIX_EVENT_ADMIN_SERVICE_VERSION, &act->eventAdminService, NULL);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
 
     celix_autoptr(celix_dm_component_t) adapterCmp = celix_dmComponent_create(ctx, "EVENT_ADAPTER_CMP");
     if (adapterCmp == NULL) {
@@ -79,28 +91,46 @@ celix_status_t celix_eventAdminActivator_start(celix_event_admin_activator_t *ac
     celix_dmComponent_setImplementation(adapterCmp, act->eventAdapter);
     CELIX_DM_COMPONENT_SET_CALLBACKS(adapterCmp, celix_event_adapter_t, NULL, celix_eventAdapter_start, celix_eventAdapter_stop, NULL);
     CELIX_DM_COMPONENT_SET_IMPLEMENTATION_DESTROY_FUNCTION(adapterCmp, celix_event_adapter_t, celix_eventAdapter_destroy);
-    celix_dm_service_dependency_t *eventAdminDep = celix_dmServiceDependency_create();
-    if (eventAdminDep == NULL) {
-        return CELIX_ENOMEM;
-    }
-    celix_dmServiceDependency_setService(eventAdminDep, CELIX_EVENT_ADMIN_SERVICE_NAME, CELIX_EVENT_ADMIN_SERVICE_USE_RANGE, NULL);
-    celix_dmServiceDependency_setRequired(eventAdminDep, true);
-    celix_dmServiceDependency_setStrategy(eventAdminDep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
-    celix_dm_service_dependency_callback_options_t opts2 = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
-    opts2.set = celix_eventAdapter_setEventAdminService;
-    celix_dmServiceDependency_setCallbacksWithOptions(eventAdminDep, &opts2);
-    celix_dmComponent_addServiceDependency(adapterCmp, eventAdminDep);
 
+    {
+        celix_autoptr(celix_dm_service_dependency_t) eventAdminDep = celix_dmServiceDependency_create();
+        if (eventAdminDep == NULL) {
+            return CELIX_ENOMEM;
+        }
+        status = celix_dmServiceDependency_setService(eventAdminDep, CELIX_EVENT_ADMIN_SERVICE_NAME, CELIX_EVENT_ADMIN_SERVICE_USE_RANGE, NULL);
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
+        celix_dmServiceDependency_setRequired(eventAdminDep, true);
+        celix_dmServiceDependency_setStrategy(eventAdminDep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
+        celix_dm_service_dependency_callback_options_t opts2 = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
+        opts2.set = celix_eventAdapter_setEventAdminService;
+        celix_dmServiceDependency_setCallbacksWithOptions(eventAdminDep, &opts2);
+        status = celix_dmComponent_addServiceDependency(adapterCmp, eventAdminDep);
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
+        celix_steal_ptr(eventAdminDep);
+    }
 
     celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(ctx);
     if (mng == NULL) {
         return CELIX_ENOMEM;
     }
 
-    celix_dependencyManager_addAsync(mng, celix_steal_ptr(adapterCmp));
-    celix_dependencyManager_addAsync(mng, celix_steal_ptr(adminCmp));
+    status = celix_dependencyManager_addAsync(mng, adapterCmp);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+    status = celix_dependencyManager_addAsync(mng, adminCmp);
+    if (status != CELIX_SUCCESS) {
+        celix_dependencyManager_removeAsync(mng, celix_steal_ptr(adapterCmp), NULL, NULL);
+        return status;
+    }
+    celix_steal_ptr(adapterCmp);
+    celix_steal_ptr(adminCmp);
 
-    return CELIX_SUCCESS;
+    return status;
 }
 
 CELIX_GEN_BUNDLE_ACTIVATOR(celix_event_admin_activator_t, celix_eventAdminActivator_start, NULL)

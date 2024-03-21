@@ -523,6 +523,19 @@ TEST_F(CelixEventAdminTestSuite, EventHandlerNoServiceIdTest) {
     });
 }
 
+TEST_F(CelixEventAdminTestSuite, EventHandlerWithInvalidFilterTopicTest) {
+    TestAddEventHandler([](void *handle, void *svc, const celix_properties_t *props) {
+        std::unique_ptr<celix_properties_t, decltype(&celix_properties_destroy)> propsCopy{celix_properties_copy(props), celix_properties_destroy};
+        celix_properties_set(propsCopy.get(), CELIX_EVENT_FILTER, "invalid_filter");
+        auto status = celix_eventAdmin_addEventHandlerWithProperties(handle, svc, propsCopy.get());
+        EXPECT_EQ(CELIX_BUNDLE_EXCEPTION, status);
+    }, [](void *handle, void *svc, const celix_properties_t *props) {
+        std::unique_ptr<celix_properties_t, decltype(&celix_properties_destroy)> propsCopy{celix_properties_copy(props), celix_properties_destroy};
+        auto status = celix_eventAdmin_removeEventHandlerWithProperties(handle, svc, propsCopy.get());
+        EXPECT_EQ(CELIX_SUCCESS, status);
+    });
+}
+
 TEST_F(CelixEventAdminTestSuite, PrefixTopicTooLongTest) {
     TestSubscribeEvent("org/celix/topic-too-long----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------/*");
 }
