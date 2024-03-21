@@ -50,6 +50,13 @@ void *__wrap_celix_arrayList_createStringArray() {
     return __real_celix_arrayList_createStringArray();
 }
 
+void *__real_celix_arrayList_createLongArray();
+CELIX_EI_DEFINE(celix_arrayList_createLongArray, celix_array_list_t*)
+void *__wrap_celix_arrayList_createLongArray() {
+    CELIX_EI_IMPL(celix_arrayList_createLongArray);
+    return __real_celix_arrayList_createLongArray();
+}
+
 celix_status_t __real_celix_arrayList_add(celix_array_list_t* list, void* value);
 CELIX_EI_DEFINE(celix_arrayList_add, celix_status_t)
 celix_status_t __wrap_celix_arrayList_add(celix_array_list_t* list, void* value) {

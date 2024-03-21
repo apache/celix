@@ -42,6 +42,7 @@ class PropertiesErrorInjectionTestSuite : public ::testing::Test {
         celix_err_resetErrors();
         celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_stringHashMap_createWithOptions(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_copy(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_fopen(nullptr, 0, nullptr);
         celix_ei_expect_fputc(nullptr, 0, 0);
@@ -286,8 +287,8 @@ TEST_F(PropertiesErrorInjectionTestSuite, GetAsArrayWithArrayListCopyFailedTest)
     const char* str1 = "string1";
     const char* str2 = "string2";
     celix_autoptr(celix_array_list_t) stringList = celix_arrayList_createStringArray();
-    celix_arrayList_add(stringList, (void*)str1);
-    celix_arrayList_add(stringList, (void*)str2);
+    celix_arrayList_addString(stringList, str1);
+    celix_arrayList_addString(stringList, str2);
     celix_autoptr(celix_array_list_t) longList = celix_arrayList_createLongArray();
     celix_arrayList_addLong(longList, 1);
     celix_arrayList_addLong(longList, 2);
@@ -299,8 +300,8 @@ TEST_F(PropertiesErrorInjectionTestSuite, GetAsArrayWithArrayListCopyFailedTest)
     celix_arrayList_addBool(boolList, false);
     celix_autoptr(celix_version_t) v = celix_version_create(1, 2, 3, "qualifier");
     celix_autoptr(celix_array_list_t) versionList = celix_arrayList_createVersionArray();
-    celix_arrayList_add(versionList, v);
-    celix_arrayList_add(versionList, v);
+    celix_arrayList_addVersion(versionList, v);
+    celix_arrayList_addVersion(versionList, v);
 
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     celix_properties_setArrayList(props, "stringArray", stringList);
@@ -310,7 +311,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, GetAsArrayWithArrayListCopyFailedTest)
     celix_properties_setArrayList(props, "versionArray", versionList);
 
     // When a celix_arrayList_createWithOptions error injection is set for celix_properties_getAsStringArrayList
-    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_properties_getAsStringArrayList, 1, nullptr);
+    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsStringArrayList, 0, nullptr);
 
     // Then the celix_properties_getAsStringArrayList call fails
     celix_array_list_t* strings = nullptr;
@@ -346,7 +347,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, GetAsArrayWithArrayListCopyFailedTest)
     ASSERT_EQ(nullptr, bools);
 
     //When a celix_arrayList_createWithOptions error injection is set for celix_properties_getAsVersionArrayList
-    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_properties_getAsVersionArrayList, 1, nullptr);
+    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsVersionArrayList, 0, nullptr);
 
     // Then the celix_properties_getAsVersionArrayList call fails
     celix_array_list_t* versions = nullptr;
@@ -360,7 +361,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, SetArrayWithArrayListCopyFailedTest) {
     celix_autoptr(celix_properties_t) props = celix_properties_create();
 
     //And a (empty) array list
-    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createLongArray();
 
     // When a celix_arrayList_copy error injection is set for celix_properties_setArrayList
     celix_ei_expect_celix_arrayList_copy((void*)celix_properties_setArrayList, 0, nullptr);

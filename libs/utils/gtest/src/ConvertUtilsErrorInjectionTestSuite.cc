@@ -31,6 +31,7 @@ public:
         celix_ei_expect_celix_version_copy(nullptr, 0, nullptr);
         celix_ei_expect_celix_version_createVersionFromString(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_createLongArray(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_addLong(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_open_memstream(nullptr, 0, nullptr);
         celix_ei_expect_fputs(nullptr, 0, 0);
@@ -67,7 +68,7 @@ TEST_F(ConvertUtilsWithErrorInjectionTestSuite, ConvertToVersionTest) {
 
 TEST_F(ConvertUtilsWithErrorInjectionTestSuite, ConvertToLongArrayTest) {
     //Given an error injection for celix_arrayList_create
-    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_utils_convertStringToLongArrayList, 1, nullptr);
+    celix_ei_expect_celix_arrayList_createLongArray((void*)celix_utils_convertStringToLongArrayList, 0, nullptr);
     //When calling celix_utils_convertStringToLongArrayList
     celix_array_list_t* result;
     celix_status_t status = celix_utils_convertStringToLongArrayList("1,2,3", nullptr, &result);
@@ -100,7 +101,7 @@ TEST_F(ConvertUtilsWithErrorInjectionTestSuite, ConvertToLongArrayTest) {
 }
 
 TEST_F(ConvertUtilsWithErrorInjectionTestSuite, LongArrayToStringTest) {
-    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createLongArray();
     celix_arrayList_addLong(list, 1L);
     celix_arrayList_addLong(list, 2L);
 
