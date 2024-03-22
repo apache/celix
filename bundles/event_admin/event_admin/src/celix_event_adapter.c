@@ -150,7 +150,7 @@ celix_properties_t* celix_eventAdapter_createServiceEventProperties(const celix_
 static void celix_eventAdapter_addServiceWithProperties(void* handle, void* svc, const celix_properties_t* props) {
     (void) svc;//unused
     celix_event_adapter_t* adapter = (celix_event_adapter_t*) handle;
-    const char* topic = "org/osgi/framework/ServiceEvent/REGISTERED";
+    const char* topic = "celix/framework/ServiceEvent/REGISTERED";
     celix_autoptr(celix_properties_t) eventProps = celix_eventAdapter_createServiceEventProperties(props);
     if (eventProps == NULL) {
         celix_logHelper_logTssErrors(adapter->logHelper, CELIX_LOG_LEVEL_ERROR);
@@ -170,7 +170,7 @@ static void celix_eventAdapter_addServiceWithProperties(void* handle, void* svc,
 static void celix_eventAdapter_removeServiceWithProperties(void* handle, void* svc, const celix_properties_t* props) {
     (void) svc;//unused
     celix_event_adapter_t* adapter = (celix_event_adapter_t*) handle;
-    const char* topic = "org/osgi/framework/ServiceEvent/UNREGISTERING";
+    const char* topic = "celix/framework/ServiceEvent/UNREGISTERING";
     celix_autoptr(celix_properties_t) eventProps = celix_eventAdapter_createServiceEventProperties(props);
     if (eventProps == NULL) {
         celix_logHelper_logTssErrors(adapter->logHelper, CELIX_LOG_LEVEL_ERROR);
@@ -192,25 +192,25 @@ static void celix_eventAdapter_onBundleEvent(void* handle, const celix_bundle_ev
     const char* topic = NULL;
     switch (event->type) {
         case CELIX_BUNDLE_EVENT_INSTALLED:
-            topic = "org/osgi/framework/BundleEvent/INSTALLED";
+            topic = "celix/framework/BundleEvent/INSTALLED";
             break;
         case CELIX_BUNDLE_EVENT_STARTED:
-            topic = "org/osgi/framework/BundleEvent/STARTED";
+            topic = "celix/framework/BundleEvent/STARTED";
             break;
         case CELIX_BUNDLE_EVENT_STOPPED:
-            topic = "org/osgi/framework/BundleEvent/STOPPED";
+            topic = "celix/framework/BundleEvent/STOPPED";
             break;
         case CELIX_BUNDLE_EVENT_UPDATED:
-            topic = "org/osgi/framework/BundleEvent/UPDATED";
+            topic = "celix/framework/BundleEvent/UPDATED";
             break;
         case CELIX_BUNDLE_EVENT_UNINSTALLED:
-            topic = "org/osgi/framework/BundleEvent/UNINSTALLED";
+            topic = "celix/framework/BundleEvent/UNINSTALLED";
             break;
         case CELIX_BUNDLE_EVENT_RESOLVED:
-            topic = "org/osgi/framework/BundleEvent/RESOLVED";
+            topic = "celix/framework/BundleEvent/RESOLVED";
             break;
         case CELIX_BUNDLE_EVENT_UNRESOLVED:
-            topic = "org/osgi/framework/BundleEvent/UNRESOLVED";
+            topic = "celix/framework/BundleEvent/UNRESOLVED";
             break;
         default:
             //ignore unknown event
@@ -258,9 +258,9 @@ static void celix_eventAdapter_addFrameworkConditionServiceWithProperties(void* 
     assert(condId != NULL);//It must be set, because the filter is set to only accept services with this property set.
     const char* topic = NULL;
     if (celix_utils_stringEquals(condId, CELIX_CONDITION_ID_FRAMEWORK_READY)) {
-        topic = "org/osgi/framework/FrameworkEvent/STARTED";
+        topic = "celix/framework/FrameworkEvent/STARTED";
     } else {
-        topic = "org/osgi/framework/FrameworkEvent/ERROR"; //It must be CELIX_CONDITION_ID_FRAMEWORK_ERROR, because the filter is set to only accept services with CELIX_CONDITION_ID_FRAMEWORK_READY or CELIX_CONDITION_ID_FRAMEWORK_ERROR properties.
+        topic = "celix/framework/FrameworkEvent/ERROR"; //It must be CELIX_CONDITION_ID_FRAMEWORK_ERROR, because the filter is set to only accept services with CELIX_CONDITION_ID_FRAMEWORK_READY or CELIX_CONDITION_ID_FRAMEWORK_ERROR properties.
     }
 
     celix_auto(celix_rwlock_rlock_guard_t) rLockGuard = celixRwlockRlockGuard_init(&adapter->lock);

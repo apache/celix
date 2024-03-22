@@ -29,7 +29,7 @@ The Event Admin provides the pubsub mechanism for in-process communication.
 
 | **Bundle**           | `Celix::event_admin` |
 |----------------------|----------------------|
-| **Configuration**    | *None*               |
+| **Configuration**    | see [EventAdmin](event_admin/README.md) |
 
 
 ## Building

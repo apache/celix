@@ -44,8 +44,7 @@ celix_status_t celix_eventAdminActivator_start(celix_event_admin_activator_t *ac
 
     act->eventAdmin = celix_eventAdmin_create(ctx);
     if (act->eventAdmin == NULL) {
-        assert(errno != 0);
-        return CELIX_ERROR_MAKE(CELIX_FACILITY_CERRNO, errno);
+        return CELIX_BUNDLE_EXCEPTION;
     }
     celix_dmComponent_setImplementation(adminCmp, act->eventAdmin);
     CELIX_DM_COMPONENT_SET_CALLBACKS(adminCmp, celix_event_admin_t, NULL, celix_eventAdmin_start, celix_eventAdmin_stop, NULL);

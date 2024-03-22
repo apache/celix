@@ -58,7 +58,7 @@ TEST_F(CelixEventAdapterTestSuite, PostServiceEventTest) {
     }, [](void *handle, const char *topic, const celix_properties_t *props) -> celix_status_t {
         (void)handle;
         (void)props;
-        auto r = strstr(topic, "org/osgi/framework/ServiceEvent/");
+        auto r = strstr(topic, "celix/framework/ServiceEvent/");
         EXPECT_TRUE(r != nullptr);
         return CELIX_SUCCESS;
     });
@@ -91,7 +91,7 @@ TEST_F(CelixEventAdapterTestSuite, PostBundleEventTest) {
     }, [](void *handle, const char *topic, const celix_properties_t *props) -> celix_status_t {
         (void)handle;
         (void)props;
-        auto r = strstr(topic, "org/osgi/framework/BundleEvent/");
+        auto r = strstr(topic, "celix/framework/BundleEvent/");
         EXPECT_TRUE(r != nullptr);
         return CELIX_SUCCESS;
     });
@@ -108,7 +108,7 @@ TEST_F(CelixEventAdapterTestSuite, PostBundleEventButEventAdminServiceIsNotSetTe
     }, [](void *handle, const char *topic, const celix_properties_t *props) -> celix_status_t {
         (void)handle;
         (void)props;
-        auto r = strstr(topic, "org/osgi/framework/BundleEvent/");
+        auto r = strstr(topic, "celix/framework/BundleEvent/");
         EXPECT_TRUE(r != nullptr);
         return CELIX_SUCCESS;
     });

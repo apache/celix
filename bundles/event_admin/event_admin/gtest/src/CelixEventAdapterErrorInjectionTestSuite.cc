@@ -121,7 +121,7 @@ TEST_F(CelixEventAdapterErrorInjectionTestSuite, FailedToCreateRegisteringServic
     }, [](void *handle, const char *topic, const celix_properties_t *props) -> celix_status_t {
         (void)handle;
         (void)props;
-        EXPECT_STRNE(topic, "org/osgi/framework/ServiceEvent/REGISTERED");
+        EXPECT_STRNE(topic, "celix/framework/ServiceEvent/REGISTERED");
         return CELIX_SUCCESS;
     });
 }
@@ -137,7 +137,7 @@ TEST_F(CelixEventAdapterErrorInjectionTestSuite, FailedToCreateUnregisteringServ
     }, [](void *handle, const char *topic, const celix_properties_t *props) -> celix_status_t {
         (void)handle;
         (void)props;
-        EXPECT_STRNE(topic, "org/osgi/framework/ServiceEvent/UNREGISTERING");
+        EXPECT_STRNE(topic, "celix/framework/ServiceEvent/UNREGISTERING");
         return CELIX_SUCCESS;
     });
 }
@@ -174,7 +174,7 @@ TEST_F(CelixEventAdapterErrorInjectionTestSuite, FailedToCreateBundleEventProper
     }, [](void *handle, const char *topic, const celix_properties_t *props) -> celix_status_t {
         (void)handle;
         (void)props;
-        EXPECT_STRNE(topic, "org/osgi/framework/BundleEvent/INSTALLED");
+        EXPECT_STRNE(topic, "celix/framework/BundleEvent/INSTALLED");
         return CELIX_SUCCESS;
     });
 }

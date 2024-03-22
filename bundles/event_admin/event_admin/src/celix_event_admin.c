@@ -21,7 +21,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include <assert.h>
-#include <errno.h>
 
 #include "celix_event_handler_service.h"
 #include "celix_event_constants.h"
@@ -35,9 +34,11 @@
 #include "celix_utils.h"
 #include "celix_stdlib_cleanup.h"
 
+#define CELIX_EVENT_ADMIN_MAX_HANDLER_THREADS 20
+#define CELIX_EVENT_ADMIN_HANDLER_THREADS_DEFAULT 5
+
 //Belows parameters are not configurable, consider its configurability until a real need arises.
-#define CELIX_EVENT_ADMIN_MAX_HANDLER_THREADS 5
-#define CELIX_EVENT_ADMIN_MAX_PARALLEL_EVENTS_OF_HANDLER (CELIX_EVENT_ADMIN_MAX_HANDLER_THREADS/3 + 1) //max parallel async event for a single handler
+#define CELIX_EVENT_ADMIN_MAX_PARALLEL_EVENTS_OF_HANDLER(handlerThNr) ((handlerThNr)/3 + 1) //max parallel async event for a single handler
 #define CELIX_EVENT_ADMIN_MAX_HANDLE_EVENT_TIME 60 //seconds
 #define CELIX_EVENT_ADMIN_MAX_EVENT_QUEUE_SIZE 512 //events
 
@@ -63,6 +64,7 @@ typedef struct celix_event_entry {
 struct celix_event_admin {
     celix_bundle_context_t* ctx;
     celix_log_helper_t* logHelper;
+    unsigned int handlerThreadNr;
     celix_thread_rwlock_t lock;//projects: channels,eventHandlers
     celix_event_channel_t channelMatchingAllEvents;
     celix_string_hash_map_t* channelsMatchingTopic; //key: topic, value: celix_event_channel_t *
@@ -81,7 +83,6 @@ static void onAsyncEventQueueRemoved(void* value);
 celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
     celix_autofree celix_event_admin_t* ea = calloc(1, sizeof(*ea));
     if (ea == NULL) {
-        errno = ENOMEM;
         return NULL;
     }
     ea->ctx = ctx;
@@ -89,14 +90,16 @@ celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
 
     celix_autoptr(celix_log_helper_t) logHelper = ea->logHelper = celix_logHelper_create(ctx, "CelixEventAdmin");
     if (logHelper == NULL) {
-        errno = ENOMEM;
         return NULL;
     }
-
+    ea->handlerThreadNr = (unsigned int)celix_bundleContext_getPropertyAsLong(ctx, "CELIX_EVENT_ADMIN_HANDLER_THREADS", CELIX_EVENT_ADMIN_HANDLER_THREADS_DEFAULT);
+    if (ea->handlerThreadNr > CELIX_EVENT_ADMIN_MAX_HANDLER_THREADS || ea->handlerThreadNr == 0) {
+        celix_logHelper_error(logHelper, "CELIX_EVENT_ADMIN_HANDLER_THREADS is set to %i, but max is %i.", ea->handlerThreadNr, CELIX_EVENT_ADMIN_MAX_HANDLER_THREADS);
+        return NULL;
+    }
     celix_status_t status = celixThreadRwlock_create(&ea->lock, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(logHelper, "Failed to create event admin lock.");
-        errno = status;//The status be ensured to belong to CELIX_FACILITY_CERRNO
         return NULL;
     }
     celix_autoptr(celix_thread_rwlock_t) lock = &ea->lock;
@@ -104,42 +107,36 @@ celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
     if (channelMatchingAllEvents == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(logHelper, "Failed to create event channel matching all events.");
-        errno = ENOMEM;
         return NULL;
     }
     celix_autoptr(celix_string_hash_map_t) channelsMatchingTopic = ea->channelsMatchingTopic = celix_stringHashMap_create();
     if (channelsMatchingTopic == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(logHelper, "Failed to create event channels matching topic.");
-        errno = ENOMEM;
         return NULL;
     }
     celix_autoptr(celix_string_hash_map_t) channelsMatchingPrefixTopic = ea->channelsMatchingPrefixTopic = celix_stringHashMap_create();
     if (channelsMatchingPrefixTopic == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(logHelper, "Failed to create event channels matching prefix topic.");
-        errno = ENOMEM;
         return NULL;
     }
     celix_autoptr(celix_long_hash_map_t) eventHandlers = ea->eventHandlers = celix_longHashMap_create();
     if (eventHandlers == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(logHelper, "Failed to create event handler map.");
-        errno = ENOMEM;
         return NULL;
     }
 
     status = celixThreadMutex_create(&ea->eventsMutex, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(logHelper, "Failed to create event admin events mutex.");
-        errno = status;//The status be ensured to belong to CELIX_FACILITY_CERRNO
         return NULL;
     }
     celix_autoptr(celix_thread_mutex_t) mutex = &ea->eventsMutex;
     status = celixThreadCondition_init(&ea->eventsTriggerCond, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(logHelper, "Failed to create event admin events not empty condition.");
-        errno = status;//The status be ensured to belong to CELIX_FACILITY_CERRNO
         return NULL;
     }
     celix_autoptr(celix_thread_cond_t) cond = &ea->eventsTriggerCond;
@@ -151,7 +148,6 @@ celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
     if (asyncEventQueue == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(logHelper, "Failed to create async event queue.");
-        errno = ENOMEM;
         return NULL;
     }
 
@@ -171,7 +167,7 @@ celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
 int celix_eventAdmin_start(celix_event_admin_t* ea) {
     celix_status_t status = CELIX_SUCCESS;
     ea->threadsRunning = true;
-    for (int thCnt = 0; thCnt < CELIX_EVENT_ADMIN_MAX_HANDLER_THREADS; ++thCnt) {
+    for (int thCnt = 0; thCnt < ea->handlerThreadNr; ++thCnt) {
         status = celixThread_create(&ea->eventHandlerThreads[thCnt], NULL, celix_eventAdmin_deliverEventThread, ea);
         if (status != CELIX_SUCCESS) {
             celix_logHelper_error(ea->logHelper, "Failed to create event handler thread.");
@@ -184,7 +180,9 @@ int celix_eventAdmin_start(celix_event_admin_t* ea) {
             }
             return status;
         }
-        celixThread_setName(&ea->eventHandlerThreads[thCnt], "EventHandler");
+        char threadName[16] = {0};
+        (void)snprintf(threadName, sizeof(threadName), "EventAdmin-%d", thCnt);
+        celixThread_setName(&ea->eventHandlerThreads[thCnt], threadName);
     }
 
     return CELIX_SUCCESS;
@@ -195,7 +193,7 @@ int celix_eventAdmin_stop(celix_event_admin_t* ea) {
     ea->threadsRunning = false;
     celixThreadMutex_unlock(&ea->eventsMutex);
     celixThreadCondition_broadcast(&ea->eventsTriggerCond);
-    for (int i = 0; i < CELIX_EVENT_ADMIN_MAX_HANDLER_THREADS; ++i) {
+    for (int i = 0; i < ea->handlerThreadNr; ++i) {
         celixThread_join(ea->eventHandlerThreads[i], NULL);
     }
     return CELIX_SUCCESS;
@@ -593,7 +591,7 @@ static bool celix_eventAdmin_getPendingEvent(celix_event_admin_t* ea, celix_even
                 continue;
             }
             unsigned int handlingEventCnt = __atomic_fetch_add(&eventHandler->handlingAsyncEventCnt, 1, __ATOMIC_SEQ_CST);
-            if (handlingEventCnt == 0 || (!eventHandler->asyncOrdered && handlingEventCnt < CELIX_EVENT_ADMIN_MAX_PARALLEL_EVENTS_OF_HANDLER)) {
+            if (handlingEventCnt == 0 || (!eventHandler->asyncOrdered && handlingEventCnt < CELIX_EVENT_ADMIN_MAX_PARALLEL_EVENTS_OF_HANDLER(ea->handlerThreadNr))) {
                 *event = celix_event_retain(eventEntry->event);
                 *eventHandlerSvcId = handlerSvcId;
                 celix_longHashMapIterator_remove(&iter);

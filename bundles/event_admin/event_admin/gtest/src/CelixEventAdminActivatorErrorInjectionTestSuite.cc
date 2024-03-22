@@ -75,7 +75,7 @@ TEST_F(CelixEventAdminActTestSuite, FailedToCreateEventAdminTest) {
     TestEventAdminActivator([](void *act, celix_bundle_context_t *ctx) {
         celix_ei_expect_calloc((void*)&celix_eventAdmin_create, 0, nullptr);
         auto status = celix_bundleActivator_start(act, ctx);
-        ASSERT_EQ(CELIX_ENOMEM, status);
+        ASSERT_EQ(CELIX_BUNDLE_EXCEPTION, status);
     });
 }
 

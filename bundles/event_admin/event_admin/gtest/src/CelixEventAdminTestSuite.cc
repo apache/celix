@@ -18,6 +18,7 @@
  */
 #include <unistd.h>
 #include <semaphore.h>
+#include <cstdlib>
 
 #include <gtest/gtest.h>
 #include "CelixEventAdminTestSuiteBaseClass.h"
@@ -66,6 +67,26 @@ TEST_F(CelixEventAdminTestSuite, CreateEventAdminTest) {
     auto ea = celix_eventAdmin_create(ctx.get());
     EXPECT_TRUE(ea != nullptr);
     celix_eventAdmin_destroy(ea);
+}
+
+TEST_F(CelixEventAdminTestSuite, CreateEventAdminWithInvalidHandlerThreadNrTest) {
+    setenv("CELIX_EVENT_ADMIN_HANDLER_THREADS", "21", 1);
+    auto ea = celix_eventAdmin_create(ctx.get());
+    EXPECT_TRUE(ea == nullptr);
+
+    setenv("CELIX_EVENT_ADMIN_HANDLER_THREADS", "0", 1);
+    ea = celix_eventAdmin_create(ctx.get());
+    EXPECT_TRUE(ea == nullptr);
+
+    unsetenv("CELIX_EVENT_ADMIN_HANDLER_THREADS");
+}
+
+TEST_F(CelixEventAdminTestSuite, CreateEventAdminWithMaxHandlerThreadNrTest) {
+    setenv("CELIX_EVENT_ADMIN_HANDLER_THREADS", "20", 1);
+    auto ea = celix_eventAdmin_create(ctx.get());
+    EXPECT_TRUE(ea != nullptr);
+    celix_eventAdmin_destroy(ea);
+    unsetenv("CELIX_EVENT_ADMIN_HANDLER_THREADS");
 }
 
 TEST_F(CelixEventAdminTestSuite, StartStopEventAdminTest) {
