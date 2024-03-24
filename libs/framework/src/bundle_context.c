@@ -847,7 +847,7 @@ static void celix_bundleContext_waitForUnusedServiceTracker(celix_bundle_context
     // note that the use count cannot be increased anymore, because the tracker is removed from the map
     struct timespec start = celix_gettime(CLOCK_MONOTONIC);
     int logCount = 0;
-    while (__atomic_load_n(&trkEntry->useCount, __ATOMIC_RELAXED) > 0) {
+    while (__atomic_load_n(&trkEntry->useCount, __ATOMIC_ACQUIRE) > 0) {
         if (celix_elapsedtime(CLOCK_MONOTONIC, start) > TRACKER_WARN_THRESHOLD_SEC) {
             fw_log(ctx->framework->logger,
                    CELIX_LOG_LEVEL_WARNING,
@@ -858,7 +858,7 @@ static void celix_bundleContext_waitForUnusedServiceTracker(celix_bundle_context
             start = celix_gettime(CLOCK_MONOTONIC);
             logCount++;
         }
-        usleep(1);
+        usleep(1000);
     }
 }
 
@@ -1082,7 +1082,7 @@ bool celix_bundleContext_useServiceWithId(
         const char *serviceName,
         void *callbackHandle,
         void (*use)(void *handle, void *svc)) {
-    char filter[32]; //20 is max long length
+    char filter[1+/*(*/sizeof(CELIX_FRAMEWORK_SERVICE_ID)-1+1/*=*/+20/*INT64_MIN*/+1/*)*/+1/*'\0'*/];
     (void)snprintf(filter, sizeof(filter), "(%s=%li)", CELIX_FRAMEWORK_SERVICE_ID, serviceId);
 
     celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
@@ -1392,7 +1392,7 @@ static size_t celix_bundleContext_useTrackedServiceWithOptionsInternal(celix_bun
             trkEntry->tracker, NULL, opts->callbackHandle, opts->use, opts->useWithProperties, opts->useWithOwner);
     }
 
-    (void)__atomic_fetch_sub(&trkEntry->useCount, 1, __ATOMIC_RELAXED);
+    (void)__atomic_fetch_sub(&trkEntry->useCount, 1, __ATOMIC_RELEASE);
     return callCount;
 }
 
