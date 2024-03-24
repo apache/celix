@@ -948,7 +948,7 @@ celix_status_t celix_properties_getAsLongArrayList(const celix_properties_t* pro
     return CELIX_SUCCESS;
 }
 
-celix_properties_value_type_e celix_properties_getPropertiesTypeFromArrayList(const celix_array_list_t* list) {
+static celix_properties_value_type_e celix_properties_getPropertiesTypeFromArrayList(const celix_array_list_t* list) {
     switch (celix_arrayList_getElementType(list)) {
         case CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG:
             return CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY;
@@ -963,6 +963,7 @@ celix_properties_value_type_e celix_properties_getPropertiesTypeFromArrayList(co
         default:
             //LCOV_EXCL_START
             assert(false);
+            abort();
             //LCOV_EXCL_STOP
     }
 }
