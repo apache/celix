@@ -65,7 +65,6 @@ int main() {
     opts.filter.serviceName = CELIX_SHELL_SERVICE_NAME;
     opts.callbackHandle = NULL;
     opts.waitTimeoutInSeconds = 1.0;
-    opts.flags = CELIX_SERVICE_USE_DIRECT | CELIX_SERVICE_USE_SOD;
     opts.use = use;
     bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
     assert(called);
@@ -73,5 +72,3 @@ int main() {
     celix_frameworkFactory_destroyFramework(fw);
     return 0;
 }
-
-
