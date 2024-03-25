@@ -80,6 +80,8 @@ class CelixConan(ConanFile):
         "build_framework": False,
         "build_rcm": False,
         "build_utils": False,
+        "build_event_admin": False,
+        "build_event_admin_examples": False,
         "celix_cxx14": True,
         "celix_cxx17": True,
         "celix_install_deprecated_api": False,
@@ -137,6 +139,7 @@ class CelixConan(ConanFile):
         # the followings are not installed
         del self.info.options.build_cxx_rsa_integration
         del self.info.options.build_examples
+        del self.info.options.build_event_admin_examples
         del self.info.options.enable_cmake_warning_tests
         del self.info.options.enable_testing_on_ci
         del self.info.options.enable_ccache
@@ -205,6 +208,16 @@ class CelixConan(ConanFile):
             options["build_log_helper"] = True
             options["build_celix_dfi"] = True
             options["celix_install_deprecated_api"] = True
+
+        if options["build_event_admin_examples"]:
+            options["build_event_admin"] = True
+            options["build_log_service"] = True
+            options["build_shell_tui"] = True
+            options["build_launcher"] = True
+
+        if options["build_event_admin"]:
+            options["build_framework"] = True
+            options["build_log_helper"] = True
 
         if options["build_remote_shell"]:
             options["build_shell"] = True

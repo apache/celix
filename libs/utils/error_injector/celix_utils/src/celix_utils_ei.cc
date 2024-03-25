@@ -106,4 +106,11 @@ struct timespec __wrap_celix_gettime(clockid_t clockId) {
     return __real_celix_gettime(clockId);
 }
 
+double __real_celix_elapsedtime(clockid_t clockId, struct timespec startTime);
+CELIX_EI_DEFINE(celix_elapsedtime, double)
+double __wrap_celix_elapsedtime(clockid_t clockId, struct timespec startTime) {
+    CELIX_EI_IMPL(celix_elapsedtime);
+    return __real_celix_elapsedtime(clockId, startTime);
+}
+
 }
