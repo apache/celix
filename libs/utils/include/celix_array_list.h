@@ -296,23 +296,6 @@ CELIX_UTILS_EXPORT
 int celix_arrayList_size(const celix_array_list_t *list);
 
 /**
- * @brief Create a shallow copy of the array list.
- *
- * The returned array list will be a shallow copy of the provided array list.
- * If the entries are pointers, the pointers will be copied, but the pointed to values will not be copied.
- * The equals callback provided when the provided array list was created will be copied, the removed callback
- * will not be copied.
- *
- * If the provided list is NULL, NULL is returned.
- * If the return value is NULL, an error message is logged to celix_err.
- *
- * @param list The array list.
- * @return A shallow copy of the array list or NULL if there is not enough memory.
- */
-CELIX_UTILS_EXPORT
-celix_array_list_t* celix_arrayList_copy(const celix_array_list_t *list);
-
-/**
  * @brief Returns the value for the provided index.
  *
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER or
@@ -391,22 +374,13 @@ CELIX_UTILS_EXPORT
 const celix_version_t* celix_arrayList_getVersion(const celix_array_list_t *list, int index);
 
 /**
- * @brief Returns the value for the provided index.
- *
- * @param list The array list.
- * @param index The entry index to return.
- * @return Returns the string (const char*) value for the index. Returns NULL if index is out of bound.
- */
-CELIX_UTILS_EXPORT
-const char* celix_arrayList_getString(const celix_array_list_t *list, int index);
-
-/**
  * @brief Returns the entry for the provided index.
  *
  * @param list The array list.
  * @param index The entry index to return.
  * @return Returns the entry for the index. Returns NULL if index is out of bound.
  */
+CELIX_UTILS_EXPORT
 celix_array_list_entry_t celix_arrayList_getEntry(const celix_array_list_t *list, int index);
 
 /**
@@ -526,16 +500,6 @@ CELIX_UTILS_EXPORT
 celix_status_t celix_arrayList_assignVersion(celix_array_list_t* list, celix_version_t* value);
 
 /**
- * @brief add string pointer entry to the back of the array list.
- * @note The string will *not* be copied.
- *
- * @param list The array list.
- * @param value The string value to add to the array list.
- * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_arrayList_addString(celix_array_list_t *list, const char* value);
-
-/**
  * @brief Returns the index of the provided entry, if found.
  *
  * The equals callback function provided when the array list was created will be used
@@ -593,8 +557,8 @@ void celix_arrayList_remove(celix_array_list_t* list, void* value);
 /**
  * @brief Remove the first string entry from array list which matches the provided value.
  *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING,
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF and CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
+ * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING and
+ * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
  * The equals callback provided when the array list was created will be used to find the entry.
  * If there was no equals callback provided a direct memory compare will be done.
@@ -649,15 +613,6 @@ void celix_arrayList_removeBool(celix_array_list_t* list, bool value);
  */
 CELIX_UTILS_EXPORT
 void celix_arrayList_removeVersion(celix_array_list_t* list, const celix_version_t* value);
-
-/**
- * @brief Remove the first size entry from array list which matches the provided value.
- *
- * The equals callback provided when the array list was created will be used to find the entry.
- * If there was no equals callback provided a direct memory compare will be done.
- */
-CELIX_UTILS_EXPORT
-void celix_arrayList_removeString(celix_array_list_t *list, const char* value);
 
 /**
  * @brief Sort the array list using the provided sort function.
