@@ -376,7 +376,8 @@ typedef struct celix_service_filter_options {
  * @param opts The pointer to the filter options.
  * @return If found a valid service id (>= 0) if not found -1.
  */
-CELIX_FRAMEWORK_EXPORT long celix_bundleContext_findServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_filter_options_t *opts);
+CELIX_FRAMEWORK_EXPORT long celix_bundleContext_findServiceWithOptions(celix_bundle_context_t* ctx,
+                                                                       const celix_service_filter_options_t* opts);
 
 /**
  * @brief Finds the services conform the provider filter options and returns a list of the found service ids.
@@ -385,17 +386,21 @@ CELIX_FRAMEWORK_EXPORT long celix_bundleContext_findServiceWithOptions(celix_bun
  * @param opts The pointer to the filter options.
  * @return A array list with as value a long int.
  */
-CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_filter_options_t *opts);
+CELIX_FRAMEWORK_EXPORT celix_array_list_t*
+celix_bundleContext_findServicesWithOptions(celix_bundle_context_t* ctx, const celix_service_filter_options_t* opts);
 
 /**
  * @brief Use the service with the provided service id using the provided callback. The Celix framework will ensure that
  * the targeted service cannot be removed during the callback.
  *
- * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService* functions
- * instead.
+ * @warning Cannot be called from the Celix event thread.
  *
- * The svc is should only be considered valid during the callback.
- * If no service is found, the callback will not be invoked and this function will return false immediately.
+ * @deprecated celix_bundleContext_useServiceWithId is deprecated and should be considered test utils functions. In
+ * operational code use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService*
+ * functions instead.
+ *
+ * The Celix framework will ensure that the targeted service cannot be removed during the callback and the callback
+ * is called on the calling thread.
  *
  * This function will block until the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -406,7 +411,7 @@ CELIX_FRAMEWORK_EXPORT celix_array_list_t* celix_bundleContext_findServicesWithO
  * service id (sanity check)
  * @param callbackHandle The data pointer, which will be used in the callbacks
  * @param use The callback, which will be called when service is retrieved.
- * @param bool returns true if a service was found.
+ * @param bool returns true if a service was found and the callback was called.
  */
 CELIX_FRAMEWORK_DEPRECATED_EXPORT bool celix_bundleContext_useServiceWithId(celix_bundle_context_t* ctx,
                                                                             long serviceId,
@@ -417,10 +422,14 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT bool celix_bundleContext_useServiceWithId(celi
 /**
  * @brief Use the highest ranking service with the provided service name using the provided callback.
  *
- * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService* functions
+ * @warning Cannot be called from the Celix event thread.
+ *
+ * @deprecated celix_bundleContext_useService is deprecated and should be considered test utils functions. In
+ * operational code use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService* functions
  * instead.
  *
- * The Celix framework will ensure that the targeted service cannot be removed during the callback.
+ * The Celix framework will ensure that the targeted service cannot be removed during the callback and the callback
+ * is called on the calling thread.
  *
  * The svc is should only be considered valid during the callback.
  * If no service is found, the callback will not be invoked and this function will return false immediately.
@@ -432,7 +441,7 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT bool celix_bundleContext_useServiceWithId(celi
  * @param   serviceName the required service name.
  * @param   callbackHandle The data pointer, which will be used in the callbacks
  * @param   use The callback, which will be called when service is retrieved.
- * @return  True if a service was found.
+ * @return  True if a service was found and the callback was called.
  */
 CELIX_FRAMEWORK_DEPRECATED_EXPORT bool celix_bundleContext_useService(
     celix_bundle_context_t *ctx,
@@ -444,10 +453,14 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT bool celix_bundleContext_useService(
 /**
  * @brief Use the services with the provided service name using the provided callback.
  *
- * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService* functions
+ * @warning Cannot be called from the Celix event thread.
+ *
+ * @deprecated celix_bundleContext_useServices is deprecated and should be considered test utils functions. In
+ * operational code use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService* functions
  * instead.
  *
- * The Celix framework will ensure that the targeted service cannot be removed during the callback.
+ * The Celix framework will ensure that the targeted service cannot be removed during the callback and the callback
+ * is called on the calling thread.
  *
  * The svc is should only be considered valid during the callback.
  * If no service is found, the callback will not be invoked and this function will return 0 immediately.
@@ -459,7 +472,7 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT bool celix_bundleContext_useService(
  * @param   serviceName the required service name.
  * @param   callbackHandle The data pointer, which will be used in the callbacks
  * @param   use The callback, which will be called for every service found.
- * @return  The number of services found and called
+ * @return  The number of services found and called.
  */
 CELIX_FRAMEWORK_DEPRECATED_EXPORT size_t celix_bundleContext_useServices(
     celix_bundle_context_t *ctx,
@@ -516,18 +529,6 @@ typedef struct celix_service_use_options {
      */
     void (*useWithOwner)(void* handle, void* svc, const celix_properties_t* props, const celix_bundle_t* svcOwner)
         CELIX_OPTS_INIT;
-    /**
-     * @brief Call the provided callbacks from the caller thread directly if set, otherwise the callbacks will be called
-     * from the Celix event loop (most likely indirectly). Note that using blocking service in the Celix event loop is
-     * generally a bad idea, which should be avoided if possible.
-     */
-#define CELIX_SERVICE_USE_DIRECT (1)
-    /**
-     * @brief Whether "service on demand" pattern is supported when CELIX_SERVICE_USE_DIRECT is set.
-     * Note that it has no effect in indirect mode, in which case "service on demand" is supported.
-     */
-#define CELIX_SERVICE_USE_SOD (2)
-    int flags CELIX_OPTS_INIT;
 } celix_service_use_options_t;
 
 #ifndef __cplusplus
@@ -541,15 +542,15 @@ typedef struct celix_service_use_options {
     .callbackHandle = NULL, \
     .use = NULL, \
     .useWithProperties = NULL, \
-    .useWithOwner = NULL, \
-    .flags=0}
+    .useWithOwner = NULL}
 #endif
 
 /**
  * @brief Use the highest ranking service satisfying the provided service filter options using the provided callback.
  *
- * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService* functions
- * instead.
+ * @note celix_bundleContext_useService should be considered a test util function.
+ * For production code, use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService*
+ * functions instead.
  *
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
@@ -564,7 +565,7 @@ typedef struct celix_service_use_options {
  * @param   opts The required options. Note that the serviceName is required.
  * @return  True if a service was found.
  */
-CELIX_FRAMEWORK_DEPRECATED_EXPORT bool celix_bundleContext_useServiceWithOptions(
+CELIX_FRAMEWORK_EXPORT bool celix_bundleContext_useServiceWithOptions(
     celix_bundle_context_t *ctx,
     const celix_service_use_options_t *opts);
 
@@ -572,8 +573,9 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT bool celix_bundleContext_useServiceWithOptions
 /**
  * @brief Use the services with the provided service filter options using the provided callback.
  *
- * @deprecated Use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService* functions
- * instead.
+ * @note celix_bundleContext_useService should be considered test utils functions.
+ * For production code, use celix_bundleContext_trackService* combined with celix_bundleContext_useTrackedService*
+ * functions instead.
  *
  * The Celix framework will ensure that the targeted service cannot be removed during the callback.
  *
@@ -588,7 +590,7 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT bool celix_bundleContext_useServiceWithOptions
  * @param   opts The required options. Note that the serviceName is required.
  * @return  The number of services found and called
  */
-CELIX_FRAMEWORK_DEPRECATED_EXPORT size_t celix_bundleContext_useServicesWithOptions(
+CELIX_FRAMEWORK_EXPORT size_t celix_bundleContext_useServicesWithOptions(
     celix_bundle_context_t *ctx,
     const celix_service_use_options_t *opts);
 

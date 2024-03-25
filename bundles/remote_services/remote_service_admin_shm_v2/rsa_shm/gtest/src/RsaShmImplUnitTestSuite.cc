@@ -813,7 +813,6 @@ TEST_F(RsaShmRpcTestSuite, CallRemoteService) {
         EXPECT_EQ(CELIX_SUCCESS, calc->add(calc->handle, 1, 2, &result));
         EXPECT_EQ(3.0, result);
     };
-    opts.flags = CELIX_SERVICE_USE_DIRECT | CELIX_SERVICE_USE_SOD;
     auto found = celix_bundleContext_useServiceWithOptions(clientCtx.get(), &opts);
     EXPECT_TRUE(found);
 
@@ -835,7 +834,6 @@ TEST_F(RsaShmRpcTestSuite, CallRemoteService) {
         double result;
         EXPECT_NE(CELIX_SUCCESS, calc->add(calc->handle, 1, 2, &result));
     };
-    opts.flags = CELIX_SERVICE_USE_DIRECT | CELIX_SERVICE_USE_SOD;
     found = celix_bundleContext_useServiceWithOptions(clientCtx.get(), &opts);
     EXPECT_TRUE(found);
 

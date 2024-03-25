@@ -33,7 +33,7 @@
 #include "celix/Bundle.h"
 #include "celix/Framework.h"
 
-#include "celix/dm/DependencyManager.h" //TODO, TBD include or forward declaration?
+#include "celix/dm/DependencyManager.h"
 
 namespace celix {
 
@@ -106,10 +106,16 @@ namespace celix {
         /**
          * @brief Use a service registered in the Celix framework using a fluent builder API.
          *
+         * @warning Cannot be called from the Celix event thread.
+         *
+         * @note celix::BundleContext::useService should be considered a test util method.
+         * For production code, use celix::BundleContext::trackServices combined with use callback methods on the
+         * service tracker instead.
+         *
          * The service use can be fine tuned using the returned UseServiceBuilder API.
          *
          * With this API a Celix service can be used by providing use functions.
-         * The use function will be executed on the Celix event thread and the Celix framework
+         * The use function will be executed on the calling thread and the Celix framework
          * will ensure that the service cannot be removed while in use.
          *
          * If there are more 1 matching service, the highest ranking service will be used.
@@ -137,11 +143,17 @@ namespace celix {
         /**
          * @brief Use services registered in the Celix framework using a fluent builder API.
          *
+         * @warning Cannot be called from the Celix event thread.
+         *
+         * @note celix::BundleContext::useServices should be considered a test util method.
+         * For production code, use celix::BundleContext::trackServices combined with use callback methods on the
+         * service tracker instead.
+         *
          * The service use can be fine tuned using the returned UseServiceBuilder API.
          *
          * With this API Celix services can be used by providing use functions.
-         * The use function will be executed on the Celix event thread and the Celix framework
-         * will ensure that the service cannot be removed while in use.
+         * The use function will be executed on the calling thread and the Celix framework
+         * will ensure that the used services cannot be removed while in use.
          *
          * The use callbacks will be called for every matching service found.
          *

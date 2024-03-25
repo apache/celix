@@ -66,6 +66,9 @@ limitations under the License.
   The `celix_bundleContext_trackServicesWithOptions` is still available for more advanced use-cases.
 - Function `celix_bundle_destroyServiceTrackerList` is removed. The returned array list from 
   `celix_bundle_listServiceTrackers` is now configured to destroy the service trackers info entries.
+- It is no longer possible to use the `celix_bundleContext_useService*` functions or `celix::BundleContxt::useService*` 
+  methods on the Celix event thread. The calls will now immediately return and log an error if called on the
+  Celix event thread.
 
 ## New Features
 
