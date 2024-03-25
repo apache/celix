@@ -141,7 +141,8 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
     memcpy(entry, prototype, sizeof(*entry));
     entry->value = NULL;
     if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
-        bool written = celix_version_fillString(entry->typed.versionValue, convertedValueBuffer, sizeof(convertedValueBuffer));
+        bool written =
+            celix_version_fillString(entry->typed.versionValue, convertedValueBuffer, sizeof(convertedValueBuffer));
         if (written) {
             entry->value = celix_properties_createString(properties, convertedValueBuffer);
         } else {
@@ -162,16 +163,12 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
         }
     } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL) {
         entry->value = entry->typed.boolValue ? CELIX_PROPERTIES_BOOL_TRUE_STRVAL : CELIX_PROPERTIES_BOOL_FALSE_STRVAL;
-    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY) {
-        entry->value = celix_utils_longArrayListToString(entry->typed.arrayValue);
-    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY) {
-        entry->value = celix_utils_doubleArrayListToString(entry->typed.arrayValue);
-    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY) {
-        entry->value = celix_utils_boolArrayListToString(entry->typed.arrayValue);
-    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY) {
-        entry->value = celix_utils_stringArrayListToString(entry->typed.arrayValue);
-    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY) {
-        entry->value = celix_utils_versionArrayListToString(entry->typed.arrayValue);
+    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY ||
+               entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY ||
+               entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY ||
+               entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY ||
+               entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY) {
+        entry->value = celix_utils_arrayListToString(entry->typed.arrayValue);
     } else /*string value*/ {
         assert(entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING);
         entry->value = entry->typed.strValue;

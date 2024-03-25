@@ -104,17 +104,6 @@ celix_status_t celix_utils_convertStringToLongArrayList(const char* val,
                                                         celix_array_list_t** list);
 
 /**
- * @brief Convert a celix_array_list_t* with long entries to a string.
- *
- * @note The array list must an array list of the type CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG.
- *
- * @param[in] list The list to convert.
- * @return The string representation of the list. The returned string is allocated and should be freed.
- */
-CELIX_UTILS_EXPORT
-char* celix_utils_longArrayListToString(const celix_array_list_t* list);
-
-/**
  * @brief Convert a string to a celix_array_list_t* with double entries.
  *
  * The expected format of the string is a "," separated list of doubles. Whitespace is ignored.
@@ -131,17 +120,6 @@ celix_status_t celix_utils_convertStringToDoubleArrayList(const char* val,
                                                           celix_array_list_t** list);
 
 /**
- * @brief Convert a celix_array_list_t* with double entries to a string.
- *
- * @note The array list must an array list of the type CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE.
- *
- * @param[in] list The list to convert.
- * @return The string representation of the list. The returned string is allocated and should be freed.
- */
-CELIX_UTILS_EXPORT
-char* celix_utils_doubleArrayListToString(const celix_array_list_t* list);
-
-/**
  * @brief Convert a string to a celix_array_list_t* with boolean entries.
  *
  * The expected format of the string is a "," separated list of booleans. Whitespace is ignored.
@@ -156,17 +134,6 @@ CELIX_UTILS_EXPORT
 celix_status_t celix_utils_convertStringToBoolArrayList(const char* val,
                                                         const celix_array_list_t* defaultValue,
                                                         celix_array_list_t** list);
-
-/**
- * @brief Convert a celix_array_list_t* with boolean entries to a string.
- *
- * @note The array list must an array list of the type CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL.
- *
- * @param[in] list The list to convert.
- * @return The string representation of the list. The returned string is allocated and should be freed.
- */
-CELIX_UTILS_EXPORT
-char* celix_utils_boolArrayListToString(const celix_array_list_t* list);
 
 /**
  * @brief Convert a string to a celix_array_list_t* with string entries.
@@ -191,17 +158,6 @@ celix_status_t celix_utils_convertStringToStringArrayList(const char* val,
                                                           celix_array_list_t** list);
 
 /**
- * @brief Convert a celix_array_list_t* with string entries to a string.
- *
- * @note The array list must an array list of the type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING.
- *
- * @param[in] list The list to convert.
- * @return The string representation of the list. The returned string is allocated and should be freed.
- */
-CELIX_UTILS_EXPORT
-char* celix_utils_stringArrayListToString(const celix_array_list_t* list);
-
-/**
  * @brief Convert a string to a celix_array_list_t* with celix_version_t* entries.
  *
  * The expected format of the string is a "," separated list of celix_version_t* entries. Whitespace is ignored.
@@ -222,15 +178,21 @@ celix_status_t celix_utils_convertStringToVersionArrayList(const char* val,
                                                            celix_array_list_t** list);
 
 /**
- * @brief Convert a celix_array_list_t* with version entries to a string.
+ * @brief Convert a celix_array_list_t* with a string, bool, long, double of celix_version_t entries to a string.
  *
- * @note The array list must an array list of the type CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION.
+ * @note The array list must an array list of the type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING,
+ * CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL, CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG, CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE,
+ * or CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION.
  *
  * @param[in] list The list to convert.
  * @return The string representation of the list. The returned string is allocated and should be freed.
+ * @retrunvalue NULL if the list is NULL or if the list entry type is CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED or
+ *              CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER.
  */
 CELIX_UTILS_EXPORT
-char* celix_utils_versionArrayListToString(const celix_array_list_t* list);
+char* celix_utils_arrayListToString(const celix_array_list_t* list);
+
+
 
 #ifdef __cplusplus
 }

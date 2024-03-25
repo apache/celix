@@ -294,7 +294,7 @@ celix_status_t celix_utils_convertStringToVersionArrayList(const char* val,
  * @param printCb The callback to use for printing the list entries.
  * @return The string representation of the list or NULL if an error occurred.
  */
-static char* celix_utils_arrayListToString(const celix_array_list_t* list,
+static char* celix_utils_arrayListToStringInternal(const celix_array_list_t* list,
                                            int (*printCb)(FILE* stream, const celix_array_list_entry_t* entry)) {
     char* result = NULL;
     size_t len;
@@ -326,33 +326,12 @@ static int celix_utils_printLongEntry(FILE* stream, const celix_array_list_entry
     return fprintf(stream, "%li", entry->longVal);
 }
 
-char* celix_utils_longArrayListToString(const celix_array_list_t* list) {
-    if (list) {
-        assert(celix_arrayList_getElementType(list) == CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG);
-    }
-    return celix_utils_arrayListToString(list, celix_utils_printLongEntry);
-}
-
 static int celix_utils_printDoubleEntry(FILE* stream, const celix_array_list_entry_t* entry) {
     return fprintf(stream, "%lf", entry->doubleVal);
 }
 
-char* celix_utils_doubleArrayListToString(const celix_array_list_t* list) {
-    if (list) {
-        assert(celix_arrayList_getElementType(list) == CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE);
-    }
-    return celix_utils_arrayListToString(list, celix_utils_printDoubleEntry);
-}
-
 static int celix_utils_printBoolEntry(FILE* stream, const celix_array_list_entry_t* entry) {
     return fprintf(stream, "%s", entry->boolVal ? "true" : "false");
-}
-
-char* celix_utils_boolArrayListToString(const celix_array_list_t* list) {
-    if (list) {
-        assert(celix_arrayList_getElementType(list) == CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL);
-    }
-    return celix_utils_arrayListToString(list, celix_utils_printBoolEntry);
 }
 
 static int celix_utils_printStrEntry(FILE* stream, const celix_array_list_entry_t* entry) {
@@ -373,13 +352,6 @@ static int celix_utils_printStrEntry(FILE* stream, const celix_array_list_entry_
     return rc;
 }
 
-char* celix_utils_stringArrayListToString(const celix_array_list_t* list) {
-    if (list) {
-        assert(celix_arrayList_getElementType(list) == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING);
-    }
-    return celix_utils_arrayListToString(list, celix_utils_printStrEntry);
-}
-
 static int celix_utils_printVersionEntry(FILE* stream, const celix_array_list_entry_t* entry) {
     celix_version_t* version = entry->voidPtrVal;
     int major = celix_version_getMajor(version);
@@ -392,9 +364,23 @@ static int celix_utils_printVersionEntry(FILE* stream, const celix_array_list_en
     return fprintf(stream, "%i.%i.%i.%s", major, minor, micro, q);
 }
 
-char* celix_utils_versionArrayListToString(const celix_array_list_t* list) {
-    if (list) {
-        assert(celix_arrayList_getElementType(list) == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION);
+char* celix_utils_arrayListToString(const celix_array_list_t* list) {
+    if (!list) {
+        return NULL;
     }
-    return celix_utils_arrayListToString(list, celix_utils_printVersionEntry);
+    celix_array_list_element_type_t elType = celix_arrayList_getElementType(list);
+    switch (elType) {
+        case CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG:
+            return celix_utils_arrayListToStringInternal(list, celix_utils_printLongEntry);
+        case CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE:
+            return celix_utils_arrayListToStringInternal(list, celix_utils_printDoubleEntry);
+        case CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL:
+            return celix_utils_arrayListToStringInternal(list, celix_utils_printBoolEntry);
+        case CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING:
+            return celix_utils_arrayListToStringInternal(list, celix_utils_printStrEntry);
+        case CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION:
+            return celix_utils_arrayListToStringInternal(list, celix_utils_printVersionEntry);
+        default:
+            return NULL;
+    }
 }

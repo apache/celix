@@ -347,18 +347,18 @@ TEST_F(ConvertUtilsTestSuite, LongArrayToStringTest) {
     celix_arrayList_addLong(list, 2L);
     celix_arrayList_addLong(list, 3L);
 
-    char* result = celix_utils_longArrayListToString(list);
+    char* result = celix_utils_arrayListToString(list);
     EXPECT_STREQ("1,2,3", result);
     free(result);
 
     celix_autoptr(celix_array_list_t) emptyList = celix_arrayList_createLongArray();
-    result = celix_utils_longArrayListToString(emptyList);
+    result = celix_utils_arrayListToString(emptyList);
     EXPECT_STREQ("", result);
     free(result);
 
     celix_autoptr(celix_array_list_t) singleEntryList = celix_arrayList_createLongArray();
     celix_arrayList_addLong(singleEntryList, 1L);
-    result = celix_utils_longArrayListToString(singleEntryList);
+    result = celix_utils_arrayListToString(singleEntryList);
     EXPECT_STREQ("1", result);
     free(result);
 }
@@ -384,7 +384,7 @@ TEST_F(ConvertUtilsTestSuite, DoubleArrayToStringTest) {
     celix_arrayList_addDouble(list, 2.0);
     celix_arrayList_addDouble(list, 3.3);
 
-    char* result = celix_utils_doubleArrayListToString(list); //note result is not limited to 2 decimals, so using strstr
+    char* result = celix_utils_arrayListToString(list); //note result is not limited to 2 decimals, so using strstr
     EXPECT_TRUE(strstr(result, "0.1") != nullptr);
     EXPECT_TRUE(strstr(result, "2.0") != nullptr);
     EXPECT_TRUE(strstr(result, "3.3") != nullptr);
@@ -417,7 +417,7 @@ TEST_F(ConvertUtilsTestSuite, BoolArrayToStringTest) {
     celix_arrayList_addBool(list, false);
     celix_arrayList_addBool(list, true);
 
-    char* result = celix_utils_boolArrayListToString(list);
+    char* result = celix_utils_arrayListToString(list);
     EXPECT_STREQ("true,false,true", result);
     free(result);
 
@@ -475,13 +475,13 @@ TEST_F(ConvertUtilsTestSuite, StringArrayToStringTest) {
     celix_arrayList_addString(list, "b");
     celix_arrayList_addString(list, "c");
 
-    char* result = celix_utils_stringArrayListToString(list);
+    char* result = celix_utils_arrayListToString(list);
     EXPECT_STREQ("a,b,c", result);
     free(result);
 
     celix_arrayList_addString(list, "d\\,");
     celix_arrayList_addString(list, "e");
-    result = celix_utils_stringArrayListToString(list);
+    result = celix_utils_arrayListToString(list);
     EXPECT_STREQ(R"(a,b,c,d\\\,,e)", result);
 
     //Check if the result can be converted back to an equal list
@@ -518,7 +518,7 @@ TEST_F(ConvertUtilsTestSuite, VersionArrayToStringTest) {
     celix_arrayList_addVersion(list, v2);
     celix_arrayList_addVersion(list, v3);
 
-    char* result = celix_utils_versionArrayListToString(list);
+    char* result = celix_utils_arrayListToString(list);
     EXPECT_STREQ("1.2.3,2.3.4,3.4.5.qualifier", result);
     free(result);
 
@@ -527,4 +527,10 @@ TEST_F(ConvertUtilsTestSuite, VersionArrayToStringTest) {
     // tested, we only test a few cases here.
 }
 
-
+TEST_F(ConvertUtilsTestSuite, InvalidArgumentsForArrayToStringTest) {
+    EXPECT_EQ(nullptr, celix_utils_arrayListToString(nullptr));
+    celix_autoptr(celix_array_list_t) list1 = celix_arrayList_create(); //unsupported undefined type
+    EXPECT_EQ(nullptr, celix_utils_arrayListToString(list1));
+    celix_autoptr(celix_array_list_t) list2 = celix_arrayList_createPointerArray(); //unsupported pointer type
+    EXPECT_EQ(nullptr, celix_utils_arrayListToString(list2));
+}

@@ -106,16 +106,16 @@ TEST_F(ConvertUtilsWithErrorInjectionTestSuite, LongArrayToStringTest) {
     celix_arrayList_addLong(list, 2L);
 
     //Given an error injection for opem_memstream
-    celix_ei_expect_open_memstream((void*)celix_utils_longArrayListToString, 1, nullptr);
+    celix_ei_expect_open_memstream((void*)celix_utils_arrayListToString, 1, nullptr);
     //When calling celix_utils_longArrayListToString
-    char* result = celix_utils_longArrayListToString(list);
+    char* result = celix_utils_arrayListToString(list);
     //Then the result is null
     EXPECT_EQ(nullptr, result);
 
     //Given an error injection for fputs
-    celix_ei_expect_fputs((void*)celix_utils_longArrayListToString, 1, -1);
+    celix_ei_expect_fputs((void*)celix_utils_arrayListToString, 1, -1);
     //When calling celix_utils_longArrayListToString
-    result = celix_utils_longArrayListToString(list);
+    result = celix_utils_arrayListToString(list);
     //Then the result is null
     EXPECT_EQ(nullptr, result);
 }
