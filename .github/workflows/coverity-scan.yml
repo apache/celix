@@ -1,10 +1,9 @@
 name: Celix Coverity Scan
 
 on:
-#  push:
-#  pull_request:
   schedule:
     - cron: '0 0 * * 0' # Weekly at 00:00 UTC
+  workflow_dispatch:
 
 jobs:
   latest:

@@ -109,4 +109,11 @@ celix_dependency_manager_t* __wrap_celix_bundleContext_getDependencyManager(celi
     return __real_celix_bundleContext_getDependencyManager(__ctx);
 }
 
+long __real_celix_bundleContext_trackBundlesWithOptionsAsync(celix_bundle_context_t *__ctx, const celix_bundle_tracking_options_t *__opts);
+CELIX_EI_DEFINE(celix_bundleContext_trackBundlesWithOptionsAsync, long)
+long __wrap_celix_bundleContext_trackBundlesWithOptionsAsync(celix_bundle_context_t *__ctx, const celix_bundle_tracking_options_t *__opts) {
+    CELIX_EI_IMPL(celix_bundleContext_trackBundlesWithOptionsAsync);
+    return __real_celix_bundleContext_trackBundlesWithOptionsAsync(__ctx, __opts);
+}
+
 }

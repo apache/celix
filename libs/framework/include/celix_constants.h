@@ -98,6 +98,15 @@ extern "C" {
 #define CELIX_FRAMEWORK_SERVICE_RANKING "service.ranking"
 
 /**
+ * @brief Service property (named "service.description") identifying a service's description. Type is string.
+ *
+ * The service.description property is intended to be used as documentation and is optional.
+ * Frameworks and bundles can use this property to provide a short description of a registered service object.
+ * The purpose is mainly for debugging.
+ */
+#define CELIX_FRAMEWORK_SERVICE_DESCRIPTION "service.description"
+
+/**
  * @brief Service property (named "service.version") specifying the optional version of a service.
  *
  * A version can be specified with major, minor and micro element in the form of <major>.<minor>.<micro>.

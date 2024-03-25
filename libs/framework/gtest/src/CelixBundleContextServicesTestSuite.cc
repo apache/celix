@@ -64,7 +64,7 @@ public:
     CelixBundleContextServicesTestSuite& operator=(CelixBundleContextServicesTestSuite&&) = delete;
     CelixBundleContextServicesTestSuite& operator=(const CelixBundleContextServicesTestSuite&) = delete;
 
-    void registerAndUseServiceWithCorrectVersion(bool direct) const {
+    void registerAndUseServiceWithCorrectVersion() const {
         struct calc {
             int (*calc)(int);
         };
@@ -78,9 +78,6 @@ public:
         celix_service_use_options_t use_opts{};
         use_opts.filter.serviceName = "calc";
         use_opts.filter.versionRange = "[1,2)";
-        if(direct) {
-            use_opts.flags = CELIX_SERVICE_USE_DIRECT;
-        }
 
         celix_service_registration_options_t reg_opts{};
         reg_opts.serviceName = calcName;
@@ -105,7 +102,7 @@ public:
         celix_bundleContext_unregisterService(ctx, svcId);
     }
 
-    void registerAndUseServiceWithIncorrectVersion(bool direct) const {
+    void registerAndUseServiceWithIncorrectVersion() const {
         struct calc {
             int (*calc)(int);
         };
@@ -119,9 +116,6 @@ public:
         celix_service_use_options_t use_opts{};
         use_opts.filter.serviceName = "calc";
         use_opts.filter.versionRange = "[2,3)";
-        if(direct) {
-            use_opts.flags = CELIX_SERVICE_USE_DIRECT;
-        }
 
         celix_service_registration_options_t reg_opts{};
         reg_opts.serviceName = calcName;
@@ -145,7 +139,7 @@ public:
         celix_bundleContext_unregisterService(ctx, svcId);
     }
 
-    void registerAndUseServiceWithTimeout(bool direct) const {
+    void registerAndUseServiceWithTimeout() const {
         const int NR_ITERATIONS = 5; //NOTE this test is sensitive for triggering race condition in the celix framework, therefore is used a few times.
         for (int i = 0; i < NR_ITERATIONS; ++i) {
             printf("Iter %i\n", i);
@@ -161,9 +155,6 @@ public:
 
             celix_service_use_options_t opts{};
             opts.filter.serviceName = "calc";
-            if(direct) {
-                opts.flags = CELIX_SERVICE_USE_DIRECT;
-            }
 
             bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
             EXPECT_FALSE(called); //service not avail.
@@ -197,7 +188,7 @@ public:
         }
     }
 
-    void registerAsyncAndUseServiceWithTimeout(bool direct) const {
+    void registerAsyncAndUseServiceWithTimeout() const {
         const int NR_ITERATIONS = 5; //NOTE this test is sensitive for triggering race condition in the celix framework, therefore is used a few times.
         for (int i = 0; i < NR_ITERATIONS; ++i) {
             printf("Iter %i\n", i);
@@ -213,9 +204,6 @@ public:
 
             celix_service_use_options_t opts{};
             opts.filter.serviceName = "calc";
-            if(direct) {
-                opts.flags = CELIX_SERVICE_USE_DIRECT;
-            }
 
             bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
             EXPECT_FALSE(called); //service not avail.
@@ -355,7 +343,7 @@ TEST_F(CelixBundleContextServicesTestSuite, UseServicesWithoutNameTest) {
     celix_bundleContext_unregisterService(ctx, svcId1);
 }
 
-TEST_F(CelixBundleContextServicesTestSuite, TegisterMultipleAndUseServicesTest) {
+TEST_F(CelixBundleContextServicesTestSuite, RegisterMultipleAndUseServicesTest) {
     struct calc {
         int (*calc)(int);
     };
@@ -393,13 +381,11 @@ TEST_F(CelixBundleContextServicesTestSuite, TegisterMultipleAndUseServicesTest) 
     use_opts.filter.versionRange = nullptr;
     use_opts.callbackHandle = &total;
     use_opts.use = use;
-    use_opts.flags = 0;
     total = 0;
     count = celix_bundleContext_useServicesWithOptions(ctx, &use_opts);
     EXPECT_EQ(3, count);
     EXPECT_EQ(42 * 3, total);
 
-    use_opts.flags = CELIX_SERVICE_USE_DIRECT;
     total = 0;
     count = celix_bundleContext_useServicesWithOptions(ctx, &use_opts);
     EXPECT_EQ(3, count);
@@ -411,13 +397,11 @@ TEST_F(CelixBundleContextServicesTestSuite, TegisterMultipleAndUseServicesTest) 
     EXPECT_EQ(2, count);
     EXPECT_EQ(42 * 2, total);
 
-    use_opts.flags = 0;
     total = 0;
     count = celix_bundleContext_useServicesWithOptions(ctx, &use_opts);
     EXPECT_EQ(2, count);
     EXPECT_EQ(42 * 2, total);
 
-    use_opts.flags = CELIX_SERVICE_USE_DIRECT;
     total = 0;
     count = celix_bundleContext_useServicesWithOptions(ctx, &use_opts);
     EXPECT_EQ(2, count);
@@ -470,7 +454,6 @@ TEST_F(CelixBundleContextServicesTestSuite, UseServiceInUseCallbackTest) {
     opts.filter.serviceName = calcName;
     opts.callbackHandle = ctx;
     opts.use = use;
-    opts.flags = 0;
     bool called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
     EXPECT_TRUE(called);
 
@@ -519,35 +502,19 @@ TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceTest) {
 };
 
 TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceWithTimeoutTest) {
-    registerAndUseServiceWithTimeout(false);
-}
-
-TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceDirectWithTimeoutTest) {
-    registerAndUseServiceWithTimeout(true);
+    registerAndUseServiceWithTimeout();
 }
 
 TEST_F(CelixBundleContextServicesTestSuite, RegisterAsyncAndUseServiceWithTimeoutTest) {
-    registerAsyncAndUseServiceWithTimeout(false);
-}
-
-TEST_F(CelixBundleContextServicesTestSuite, RegisterAsyncAndUseServiceDirectWithTimeoutTest) {
-    registerAsyncAndUseServiceWithTimeout(true);
+    registerAsyncAndUseServiceWithTimeout();
 }
 
 TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceWithCorrectVersionTest) {
-    registerAndUseServiceWithCorrectVersion(false);
-}
-
-TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceDirectWithCorrectVersionTest) {
-    registerAndUseServiceWithCorrectVersion(true);
+    registerAndUseServiceWithCorrectVersion();
 }
 
 TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceWithIncorrectVersionTest) {
-    registerAndUseServiceWithIncorrectVersion(false);
-}
-
-TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseServiceDirectWithIncorrectVersionTest) {
-    registerAndUseServiceWithIncorrectVersion(true);
+    registerAndUseServiceWithIncorrectVersion();
 }
 
 TEST_F(CelixBundleContextServicesTestSuite, RegisterAndUseWithForcedRaceConditionTest) {
@@ -974,16 +941,14 @@ TEST_F(CelixBundleContextServicesTestSuite, ServiceTrackerWithRaceConditionTest)
     celix_bundleContext_stopTracker(ctx, trackerId);
 };
 
-TEST_F(CelixBundleContextServicesTestSuite, UseServiceDoesNotBlockInEventLoop) {
-    void *svc1 = (void*)0x100;
-
-    auto set = [](void *handle, void */*svc*/) {
-        celix_bundle_context_t *ctx = static_cast<celix_bundle_context_t *>(handle);
+TEST_F(CelixBundleContextServicesTestSuite, UseServiceDoesNotWorkInEventLoop) {
+    auto callback = [](void* data) {
+        auto* ctx = static_cast<celix_bundle_context_t*>(data);
         celix_service_use_options_t use_opts{};
         use_opts.filter.serviceName = "NotAvailable";
         use_opts.waitTimeoutInSeconds = 3600; // unacceptable long blocking
         use_opts.callbackHandle = nullptr;
-        use_opts.use =  [](void *handle, void *svc) {
+        use_opts.use = [](void* handle, void* svc) {
             FAIL() << "We shouldn't get here: (" << handle << "," << svc << ")";
         };
 
@@ -991,25 +956,9 @@ TEST_F(CelixBundleContextServicesTestSuite, UseServiceDoesNotBlockInEventLoop) {
         ASSERT_FALSE(called);
     };
 
-    long svcId1 = celix_bundleContext_registerService(ctx, svc1, "NA", nullptr);
-    ASSERT_GE(svcId1, 0);
-
-    celix_service_tracking_options_t opts{};
-    opts.callbackHandle = (void*)ctx;
-    opts.filter.serviceName = "NA";
-    opts.set = set;
-    long trackerId = celix_bundleContext_trackServicesWithOptionsAsync(ctx, &opts);
-    ASSERT_TRUE(trackerId >= 0);
-
-    void *svc2 = (void*)0x200; //no ranking
-    long svcId2 = celix_bundleContext_registerServiceAsync(ctx, svc2, "NotAvailable", nullptr);
-    ASSERT_GE(svcId2, 0);
-    celix_bundleContext_waitForAsyncTracker(ctx, trackerId);
-    celix_bundleContext_waitForAsyncRegistration(ctx, svcId2);
-
-    celix_bundleContext_unregisterService(ctx, svcId2);
-    celix_bundleContext_stopTracker(ctx, trackerId);
-    celix_bundleContext_unregisterService(ctx, svcId1);
+    long eventId = celix_framework_fireGenericEvent(
+        fw, 0, CELIX_FRAMEWORK_BUNDLE_ID, "test event", ctx, callback, nullptr, nullptr);
+    celix_framework_waitForGenericEvent(fw, eventId);
 }
 
 TEST_F(CelixBundleContextServicesTestSuite, ServicesTrackerSetTest) {
@@ -1480,7 +1429,6 @@ TEST_F(CelixBundleContextServicesTestSuite, UseServiceOnDemandDirectlyWithAsyncR
     }, nullptr);
     celix_service_use_options_t opts{};
     opts.filter.serviceName = "test";
-    opts.flags = CELIX_SERVICE_USE_DIRECT | CELIX_SERVICE_USE_SOD;
     called = celix_bundleContext_useServiceWithOptions(ctx, &opts);
     EXPECT_TRUE(called); //service created on demand.
 
@@ -1518,7 +1466,6 @@ TEST_F(CelixBundleContextServicesTestSuite, UseServicesOnDemandDirectlyWithAsync
 
     celix_service_use_options_t opts{};
     opts.filter.serviceName = "test";
-    opts.flags = CELIX_SERVICE_USE_DIRECT | CELIX_SERVICE_USE_SOD;
     size_t count = celix_bundleContext_useServicesWithOptions(ctx, &opts);
     EXPECT_EQ(2, count);
 

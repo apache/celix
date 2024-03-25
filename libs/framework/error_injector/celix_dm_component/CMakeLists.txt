@@ -24,5 +24,9 @@ target_link_libraries(dm_component_ei PRIVATE Celix::framework)
 target_link_options(dm_component_ei INTERFACE
         LINKER:--wrap,celix_dmComponent_create
         LINKER:--wrap,celix_dmServiceDependency_create
+        LINKER:--wrap,celix_dmComponent_addServiceDependency
+        LINKER:--wrap,celix_dmServiceDependency_setService
+        LINKER:--wrap,celix_dmComponent_addInterface
+        LINKER:--wrap,celix_dependencyManager_addAsync
         )
 add_library(Celix::dm_component_ei ALIAS dm_component_ei)

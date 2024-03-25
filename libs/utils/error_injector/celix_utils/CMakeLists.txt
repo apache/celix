@@ -30,5 +30,6 @@ target_link_options(utils_ei INTERFACE
         LINKER:--wrap,celix_utils_extractZipFile
         LINKER:--wrap,celix_utils_trim
         LINKER:--wrap,celix_gettime
+        LINKER:--wrap,celix_elapsedtime
 )
 add_library(Celix::utils_ei ALIAS utils_ei)

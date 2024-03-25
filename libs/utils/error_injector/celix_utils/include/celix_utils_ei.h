@@ -45,6 +45,8 @@ CELIX_EI_DECLARE(celix_utils_trim, char *);
 
 CELIX_EI_DECLARE(celix_gettime, struct timespec);
 
+CELIX_EI_DECLARE(celix_elapsedtime, double);
+
 #ifdef __cplusplus
 }
 #endif

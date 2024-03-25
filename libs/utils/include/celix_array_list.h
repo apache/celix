@@ -389,6 +389,8 @@ celix_array_list_entry_t celix_arrayList_getEntry(const celix_array_list_t *list
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
+ * If the return status is an error, an error message is logged to celix_err.
+ *
  * @param list The array list.
  * @param value The pointer value to add to the array list. Cannot be NULL.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
@@ -406,6 +408,8 @@ celix_status_t celix_arrayList_add(celix_array_list_t* list, void* value);
  * if the array list element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED,
  * the string will be added as reference (as-is).
  *
+ * If the return status is an error, an error message is logged to celix_err.
+ *
  * @param list The array list.
  * @param value The string value to add to the array list. Cannot be NULL.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
@@ -419,6 +423,8 @@ celix_status_t celix_arrayList_addString(celix_array_list_t* list, const char* v
  * The string will not be copied and the array list will take ownership of the string.
  *
  * Can only be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING.
+ *
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param list The array list.
  * @param value The string value to add to the array list. Cannot be NULL.
@@ -434,6 +440,8 @@ celix_status_t celix_arrayList_assignString(celix_array_list_t* list, char* valu
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
+ * If the return status is an error, an error message is logged to celix_err.
+ *
  * @param list The array list.
  * @param value The long value to add to the array list.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
@@ -447,6 +455,8 @@ celix_status_t celix_arrayList_addLong(celix_array_list_t* list, long value);
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
+ * If the return status is an error, an error message is logged to celix_err.
+ *
  * @param list The array list.
  * @param value The double value to add to the array list.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
@@ -459,6 +469,8 @@ celix_status_t celix_arrayList_addDouble(celix_array_list_t* list, double value)
  *
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL or
  * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
+ *
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param list The array list.
  * @param value The bool value to add to the array list.
@@ -477,6 +489,8 @@ celix_status_t celix_arrayList_addBool(celix_array_list_t* list, bool value);
  * if the array list element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED,
  * the string will be added as reference (as-is).
  *
+ * If the return status is an error, an error message is logged to celix_err.
+ *
  * @param list The array list.
  * @param value The version value to add to the array list. Cannot be NULL.
  * @return CELIX_SUCCESS if the value is added, CELIX_ENOMEM if the array list is out of memory.
@@ -490,6 +504,7 @@ celix_status_t celix_arrayList_addVersion(celix_array_list_t* list, const celix_
  * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION.
  * The version will not be copied and the array list will take ownership of the version.
  *
+ * If the return status is an error, an error message is logged to celix_err.
  *
  * @param list The array list.
  * @param value The version value to add to the array list. Cannot be NULL.

@@ -35,4 +35,32 @@ celix_dm_service_dependency_t* __wrap_celix_dmServiceDependency_create() {
     return __real_celix_dmServiceDependency_create();
 }
 
+celix_status_t __real_celix_dmComponent_addServiceDependency(celix_dm_component_t *component, celix_dm_service_dependency_t *dep);
+CELIX_EI_DEFINE(celix_dmComponent_addServiceDependency, celix_status_t)
+celix_status_t __wrap_celix_dmComponent_addServiceDependency(celix_dm_component_t *component, celix_dm_service_dependency_t *dep) {
+    CELIX_EI_IMPL(celix_dmComponent_addServiceDependency);
+    return __real_celix_dmComponent_addServiceDependency(component, dep);
+}
+
+celix_status_t __real_celix_dmServiceDependency_setService(celix_dm_service_dependency_t *dependency, const char* serviceName, const char* serviceVersionRange, const char* filter);
+CELIX_EI_DEFINE(celix_dmServiceDependency_setService, celix_status_t)
+celix_status_t __wrap_celix_dmServiceDependency_setService(celix_dm_service_dependency_t *dependency, const char* serviceName, const char* serviceVersionRange, const char* filter) {
+    CELIX_EI_IMPL(celix_dmServiceDependency_setService);
+    return __real_celix_dmServiceDependency_setService(dependency, serviceName, serviceVersionRange, filter);
+}
+
+celix_status_t __real_celix_dmComponent_addInterface(celix_dm_component_t* component, const char* serviceName, const char* serviceVersion, const void* service, celix_properties_t* properties);
+CELIX_EI_DEFINE(celix_dmComponent_addInterface, celix_status_t)
+celix_status_t __wrap_celix_dmComponent_addInterface(celix_dm_component_t* component, const char* serviceName, const char* serviceVersion, const void* service, celix_properties_t* properties) {
+    CELIX_EI_IMPL(celix_dmComponent_addInterface);
+    return __real_celix_dmComponent_addInterface(component, serviceName, serviceVersion, service, properties);
+}
+
+celix_status_t __real_celix_dependencyManager_addAsync(celix_dependency_manager_t *manager, celix_dm_component_t *component);
+CELIX_EI_DEFINE(celix_dependencyManager_addAsync, celix_status_t)
+celix_status_t __wrap_celix_dependencyManager_addAsync(celix_dependency_manager_t *manager, celix_dm_component_t *component) {
+    CELIX_EI_IMPL(celix_dependencyManager_addAsync);
+    return __real_celix_dependencyManager_addAsync(manager, component);
+}
+
 }

@@ -28,6 +28,10 @@ extern "C" {
 
 CELIX_EI_DECLARE(celix_dmComponent_create, celix_dm_component_t*);
 CELIX_EI_DECLARE(celix_dmServiceDependency_create, celix_dm_service_dependency_t*);
+CELIX_EI_DECLARE(celix_dmComponent_addServiceDependency, celix_status_t);
+CELIX_EI_DECLARE(celix_dmServiceDependency_setService, celix_status_t);
+CELIX_EI_DECLARE(celix_dmComponent_addInterface, celix_status_t);
+CELIX_EI_DECLARE(celix_dependencyManager_addAsync, celix_status_t);
 
 #ifdef __cplusplus
 }
