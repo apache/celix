@@ -440,6 +440,19 @@ TEST_F(FilterTestSuite, MissingOperandCreateTest) {
     ASSERT_TRUE(filter == nullptr);
 }
 
+TEST_F(FilterTestSuite, TypedUntypedPropertiesAndFilterTest) {
+    celix_autoptr(celix_filter_t) filter =
+            celix_filter_create("(key>20)");
+    celix_autoptr(celix_properties_t) props1 = celix_properties_create();
+    celix_autoptr(celix_properties_t) props2 = celix_properties_create();
+
+    celix_properties_setLong(props1, "key", 3);
+    EXPECT_FALSE(celix_filter_match(filter, props1));
+
+    celix_properties_setString(props2, "key", "3");
+    EXPECT_TRUE(celix_filter_match(filter, props2));
+}
+
 TEST_F(FilterTestSuite, TypedPropertiesAndFilterTest) {
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     celix_autoptr(celix_version_t) version = celix_version_createVersionFromString("1.2.3");

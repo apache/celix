@@ -66,8 +66,8 @@
  * longs, doubles, booleans, Apache Celix versions and string if possible during creation.
  * And these typed attribute values will be used in the to-be-matched property value.
  *
- * Example: The filter "(key>20)" and a property set with a long value 3 for key "key", will match and the same
- * filter but with a property set which has a string value "3" for key "key", will not match.
+ * Example: The filter "(key>20)" and a property set with a long value 3 for key "key", will not match and the same
+ * filter but with a property set which has a string value "3" for key "key", will match.
  *
  * #Filter matching and property value arrays
  * If a filter matches a property set entry which has an array value (either a long, boolean, double, string or version
