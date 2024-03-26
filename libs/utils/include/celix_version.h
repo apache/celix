@@ -101,7 +101,6 @@ CELIX_UTILS_EXPORT celix_version_t* celix_version_copy(const celix_version_t* ve
  */
 CELIX_UTILS_EXPORT celix_version_t* celix_version_createVersionFromString(const char *versionStr);
 
-//TODO test
 /**
  * @brief Parse a version string into a version object.
  *
