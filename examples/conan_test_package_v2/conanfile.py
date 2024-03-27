@@ -93,6 +93,8 @@ class TestPackageConan(ConanFile):
                 if celix_options.build_remote_service_admin:
                     self.run("./use_my_rsa", cwd=os.path.join("deploy", "use_my_rsa"), env="conanrun")
                     self.run("./conan_test_package/use_c_rsa_spi", env="conanrun")
+                    self.run("./conan_test_package/use_rsa_utils", env="conanrun")
+
                 if celix_options.build_rsa_remote_service_admin_dfi and celix_options.build_launcher:
                     self.run("./use_rsa_dfi", cwd=os.path.join("deploy", "use_rsa_dfi"), env="conanrun")
                 if celix_options.build_rsa_remote_service_admin_shm_v2:

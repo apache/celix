@@ -19,7 +19,7 @@ add_executable(test_rsa_utils
         src/RsaUtilsTestSuite.cc
 )
 
-target_link_libraries(test_rsa_utils PRIVATE rsa_utils GTest::gtest GTest::gtest_main)
+target_link_libraries(test_rsa_utils PRIVATE rsa_utils GTest::gtest GTest::gtest_main Celix::framework)
 target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
 add_test(NAME test_rsa_utils COMMAND test_rsa_utils)
 setup_target_for_coverage(test_rsa_utils SCAN_DIR ..)

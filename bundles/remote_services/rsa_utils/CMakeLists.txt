@@ -23,7 +23,7 @@ add_library(rsa_utils STATIC ${RSA_UTILS_SRC})
 set_target_properties(rsa_utils PROPERTIES OUTPUT_NAME "celix_rsa_utils")
 target_include_directories(rsa_utils PRIVATE src)
 target_include_directories(rsa_utils PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)
-target_link_libraries(rsa_utils PUBLIC Celix::framework)
+target_link_libraries(rsa_utils PUBLIC Celix::utils PRIVATE Celix::framework)
 
 install(TARGETS rsa_utils EXPORT celix LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/celix/rsa_utils)

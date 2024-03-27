@@ -30,7 +30,7 @@ extern "C" {
 /**
  * @brief Create a typed service properties from endpoint properties.
  *
- * The conversion ensures that "service.ranking" and "bundle.id" (if present) are set as long values and that the
+ * The conversion ensures that "service.ranking" is set as long value and that the
  * "service.version" (if present) is set as version.
  *
  * Note that the "service.id" long "service.bundleid" properties are set during service registration and
