@@ -18,11 +18,16 @@
  */
 
 #include <gtest/gtest.h>
+#include <limits>
 
 #include "celix_version.h"
+#include "celix_err.h"
 
 class VersionTestSuite : public ::testing::Test {
 public:
+    ~VersionTestSuite() override {
+        celix_err_resetErrors();
+    }
     void expectVersion(const celix_version_t* version, int major, int minor, int micro, const char* qualifier = "") {
         if (version) {
             EXPECT_EQ(major, celix_version_getMajor(version));
@@ -257,9 +262,22 @@ TEST_F(VersionTestSuite, ParseTest) {
     expectVersion(result, 1, 0, 0);
     celix_version_destroy(result);
 
+    auto largeLong = std::to_string(std::numeric_limits<unsigned long long>::max());
+    parseStatus = celix_version_parse(largeLong.c_str(), &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
+    EXPECT_EQ(nullptr, result);
+    EXPECT_STREQ("Invalid version component(0)", celix_err_popLastError());
+
+    auto largeInteger = std::to_string(std::numeric_limits<unsigned int>::max());
+    parseStatus = celix_version_parse(largeInteger.c_str(), &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
+    EXPECT_EQ(nullptr, result);
+    EXPECT_STREQ("Invalid version component(0)", celix_err_popLastError());
+
     parseStatus = celix_version_parse("", &result);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
     EXPECT_EQ(nullptr, result);
+    EXPECT_STREQ("Invalid version component(0)", celix_err_popLastError());
 
     parseStatus = celix_version_parse(nullptr, &result);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
@@ -268,16 +286,20 @@ TEST_F(VersionTestSuite, ParseTest) {
     parseStatus = celix_version_parse("invalid", &result);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
     EXPECT_EQ(nullptr, result);
+    EXPECT_STREQ("Invalid version component(0)", celix_err_popLastError());
 
     parseStatus = celix_version_parse("-1", &result);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
     EXPECT_EQ(nullptr, result);
+    EXPECT_STREQ("Invalid version component(0)", celix_err_popLastError());
 
     parseStatus = celix_version_parse("1.-2", &result);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
     EXPECT_EQ(nullptr, result);
+    EXPECT_STREQ("Invalid version component(1)", celix_err_popLastError());
 
     parseStatus = celix_version_parse("1.2.-3", &result);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
     EXPECT_EQ(nullptr, result);
+    EXPECT_STREQ("Invalid version component(2)", celix_err_popLastError());
 }

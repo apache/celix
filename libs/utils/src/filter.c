@@ -877,7 +877,7 @@ bool celix_filter_match(const celix_filter_t* filter, const celix_properties_t* 
         return !childResult;
     }
 
-    // present, substring, equal, greater, greaterEqual, less, lessEqual, approx done with matchPropertyEntry
+    // substring, equal, greater, greaterEqual, less, lessEqual, approx done with matchPropertyEntry
     const celix_properties_entry_t* entry = celix_properties_getEntry(properties, filter->attribute);
     if (!entry) {
         return false;

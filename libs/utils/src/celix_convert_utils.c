@@ -18,6 +18,7 @@
  */
 
 #include "celix_convert_utils.h"
+#include "celix_convert_utils_private.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -34,7 +35,7 @@
 #define ESCAPE_CHAR '\\'
 #define SEPARATOR_CHAR ','
 
-static bool celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(const char* endptr) {
+bool celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(const char* endptr) {
     bool result = false;
     if (endptr != NULL) {
         while (*endptr != '\0') {

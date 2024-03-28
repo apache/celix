@@ -19,11 +19,15 @@
 
 #include "celix_version.h"
 
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <celix_utils.h>
 
+#include "celix_utils.h"
+#include "celix_convert_utils_private.h"
 #include "celix_convert_utils.h"
 #include "celix_err.h"
 #include "celix_errno.h"
@@ -33,6 +37,7 @@ static const char* const CELIX_VERSION_EMPTY_QUALIFIER = "";
 
 celix_version_t* celix_version_create(int major, int minor, int micro, const char* qualifier) {
     if (major < 0 || minor < 0 || micro < 0) {
+        errno = EINVAL;
         celix_err_push("Invalid version number. Major, minor and micro must be >= 0");
         return NULL;
     }
@@ -56,6 +61,7 @@ celix_version_t* celix_version_create(int major, int minor, int micro, const cha
         if ((ch == '_') || (ch == '-')) {
             continue;
         }
+        errno = EINVAL;
         celix_err_push("Invalid version qualifier. Characters must be [A-Za-z0-9_-]");
         return NULL;
     }
@@ -106,52 +112,40 @@ celix_version_t* celix_version_createVersionFromString(const char *versionStr) {
     return version;
 }
 
-celix_status_t celix_version_parse(const char *versionStr, celix_version_t** version) {
+celix_status_t celix_version_parse(const char* versionStr, celix_version_t** version) {
     *version = NULL;
 
-    if (celix_utils_isStringNullOrEmpty(versionStr)) {
+    if (versionStr == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
-
-    char buffer[64];
-    char* versionWrkStr = celix_utils_writeOrCreateString(buffer, sizeof(buffer), "%s", versionStr);
-    if (!versionWrkStr) {
-        celix_err_push("Failed to allocate memory for celix_version_createVersionFromString");
-        return CELIX_ENOMEM;
-    }
-
     int versionsParts[3] = {0, 0, 0};
-    char* qualifier = NULL;
-    char* savePtr = NULL;
-    char* token = strtok_r(versionWrkStr, ".", &savePtr);
     int count = 0;
-    while (token) {
-        bool convertedToLong = false;
-        long l = celix_utils_convertStringToLong(token, 0L, &convertedToLong);
-        if (!convertedToLong && count == 3) { // qualifier
-            qualifier = token;
-        } else if (convertedToLong && l < 0) {
-            //negative version part
-            celix_utils_freeStringIfNotEqual(buffer, versionWrkStr);
-            return CELIX_ILLEGAL_ARGUMENT;
-        } else if (convertedToLong && count < 3) {
-            versionsParts[count] = (int)l;
-        } else if (!convertedToLong) {
-            //unexpected token
-            celix_utils_freeStringIfNotEqual(buffer, versionWrkStr);
-            return CELIX_ILLEGAL_ARGUMENT;
+    const char* token = versionStr;
+
+    const char* qualifier = NULL;
+    while (token != NULL && count < 3) {
+        char* endPtr = NULL;
+        errno = 0;
+        long l = strtol(token, &endPtr, 10);
+        if (errno != 0 || token == endPtr || l < 0 || l >= INT_MAX) {
+            celix_err_pushf("Invalid version component(%d)", count);
+            return  CELIX_ILLEGAL_ARGUMENT;
+        }
+        versionsParts[count++] = (int)l;
+        if (*endPtr == '.') {
+            token = endPtr + 1;
+        } else if (celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(endPtr)){
+            token = NULL;
         } else {
-            //to many version parts
-            celix_utils_freeStringIfNotEqual(buffer, versionWrkStr);
+            celix_err_pushf("Invalid trailing string:<%s>", endPtr);
             return CELIX_ILLEGAL_ARGUMENT;
         }
-        count += 1;
-        token = strtok_r(NULL, ".", &savePtr);
     }
-
+    if (token != NULL) {
+        qualifier = token;
+    }
     *version = celix_version_create(versionsParts[0], versionsParts[1], versionsParts[2], qualifier);
-    celix_utils_freeStringIfNotEqual(buffer, versionWrkStr);
-    return *version ? CELIX_SUCCESS : CELIX_ENOMEM;
+    return *version ? CELIX_SUCCESS : (errno == EINVAL ? CELIX_ILLEGAL_ARGUMENT : CELIX_ENOMEM);
 }
 
 celix_version_t* celix_version_createEmptyVersion() {
