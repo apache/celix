@@ -69,10 +69,12 @@ limitations under the License.
 - It is no longer possible to use the `celix_bundleContext_useService*` functions or `celix::BundleContxt::useService*` 
   methods on the Celix event thread. The calls will now immediately return and log an error if called on the
   Celix event thread.
+- Apache Celix filter now use the underlying properties value types for matching. This means that it is more important
+  to add service properties with the correct type.
 
 ## New Features
 
-- Basic type support for value in celix Properties.
+- Type support for value in celix Properties, including support for arrays.
 
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 

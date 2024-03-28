@@ -380,6 +380,52 @@ long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, cel
     return celix_bundleContext_registerServiceWithOptions(ctx, &opts);
 }
 
+/**
+ * Corrects the service properties value types for the service ranking and service version to ensure
+ * that these properties are of the correct type.
+ * Print a warning log message if the service ranking or service version was not of the correct type.
+ */
+static celix_status_t celix_bundleContext_correctServicePropertiesValueTypes(celix_bundle_context_t* ctx,
+                                                                             celix_properties_t* props) {
+    celix_status_t status = CELIX_SUCCESS;
+    const celix_properties_entry_t* entry = celix_properties_getEntry(props, CELIX_FRAMEWORK_SERVICE_RANKING);
+    if (entry && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
+        fw_log(
+            ctx->framework->logger, CELIX_LOG_LEVEL_WARNING, "Service ranking is of type string, converting to long");
+        bool converted;
+        long ranking = celix_utils_convertStringToLong(entry->value, 0, &converted);
+        if (!converted) {
+            fw_log(ctx->framework->logger,
+                   CELIX_LOG_LEVEL_WARNING,
+                   "Cannot convert service ranking %s to long. Keeping %s value as string",
+                   entry->value,
+                   CELIX_FRAMEWORK_SERVICE_RANKING);
+        } else {
+            status = celix_properties_setLong(props, CELIX_FRAMEWORK_SERVICE_RANKING, ranking);
+        }
+    }
+
+    entry = celix_properties_getEntry(props, CELIX_FRAMEWORK_SERVICE_VERSION);
+    if (status == CELIX_SUCCESS && entry && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
+        fw_log(ctx->framework->logger,
+               CELIX_LOG_LEVEL_WARNING,
+               "Service version is of type string, converting to version");
+        celix_autoptr(celix_version_t) version = NULL;
+        status = celix_version_parse(entry->value, &version);
+        if (status == CELIX_ILLEGAL_ARGUMENT) {
+            fw_log(ctx->framework->logger,
+                   CELIX_LOG_LEVEL_WARNING,
+                   "Cannot parse service version %s. Keeping %s value as string",
+                   entry->value,
+                   CELIX_FRAMEWORK_SERVICE_VERSION);
+            status = CELIX_SUCCESS; //after warning, ignore parse error.
+        } else if (status == CELIX_SUCCESS) {
+            status = celix_properties_assignVersion(props, CELIX_FRAMEWORK_SERVICE_VERSION, celix_steal_ptr(version));
+        }
+    }
+    return status;
+}
+
 static long celix_bundleContext_registerServiceWithOptionsInternal(bundle_context_t *ctx, const celix_service_registration_options_t *opts, bool async) {
     bool valid = opts->serviceName != NULL && strncmp("", opts->serviceName, 1) != 0;
     if (!valid) {
@@ -407,12 +453,19 @@ static long celix_bundleContext_registerServiceWithOptionsInternal(bundle_contex
             return -1;
         }
         celix_status_t rc =
-            celix_properties_setVersionWithoutCopy(props, CELIX_FRAMEWORK_SERVICE_VERSION, celix_steal_ptr(version));
+            celix_properties_assignVersion(props, CELIX_FRAMEWORK_SERVICE_VERSION, celix_steal_ptr(version));
         if (rc != CELIX_SUCCESS) {
             celix_framework_logTssErrors(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR);
             fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot set service version %s", opts->serviceVersion);
             return -1;
         }
+    }
+
+    celix_status_t correctionStatus = celix_bundleContext_correctServicePropertiesValueTypes(ctx, props);
+    if (correctionStatus != CELIX_SUCCESS) {
+        celix_framework_logTssErrors(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR);
+        fw_log(ctx->framework->logger, CELIX_LOG_LEVEL_ERROR, "Cannot correct service properties value types");
+        return -1;
     }
 
     long svcId;

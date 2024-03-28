@@ -65,17 +65,8 @@ TEST_F(VersionRangeTestSuite, IsInRangeTest) {
     celix_version_t* version = celix_version_create(1, 2, 3, nullptr);
 
     {
-        celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
-        low->major = 1;
-        low->minor = 2;
-        low->micro = 3;
-        low->qualifier = nullptr;
-
-        celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
-        high->major = 1;
-        high->minor = 2;
-        high->micro = 3;
-        high->qualifier = nullptr;
+        celix_version_t* low = celix_version_create(1, 2, 3, nullptr);
+        celix_version_t* high = celix_version_create(1, 2, 3, nullptr);
 
         celix_version_range_t* range = celix_versionRange_createVersionRange(low, true, high, true);
         EXPECT_TRUE(range != nullptr);
@@ -84,11 +75,7 @@ TEST_F(VersionRangeTestSuite, IsInRangeTest) {
     }
 
     {
-        celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
-        low->major = 1;
-        low->minor = 2;
-        low->micro = 3;
-
+        celix_version_t* low = celix_version_create(1, 2, 3, nullptr);
         celix_version_range_t* range = celix_versionRange_createVersionRange(low, true, nullptr, true);
         EXPECT_TRUE(range != nullptr);
         EXPECT_TRUE(celix_versionRange_isInRange(range, version));
@@ -96,15 +83,8 @@ TEST_F(VersionRangeTestSuite, IsInRangeTest) {
     }
 
     {
-        celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
-        low->major = 1;
-        low->minor = 2;
-        low->micro = 3;
-
-        celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
-        high->major = 1;
-        high->minor = 2;
-        high->micro = 3;
+        celix_version_t* low = celix_version_create(1, 2, 3, nullptr);
+        celix_version_t* high = celix_version_create(1, 2, 3, nullptr);
 
         celix_version_range_t* range = celix_versionRange_createVersionRange(low, false, high, true);
         EXPECT_TRUE(range != nullptr);
@@ -114,15 +94,8 @@ TEST_F(VersionRangeTestSuite, IsInRangeTest) {
     }
 
     {
-        celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
-        low->major = 1;
-        low->minor = 2;
-        low->micro = 3;
-
-        celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
-        high->major = 1;
-        high->minor = 2;
-        high->micro = 3;
+        celix_version_t* low = celix_version_create(1, 2, 3, nullptr);
+        celix_version_t* high = celix_version_create(1, 2, 3, nullptr);
 
         celix_version_range_t* range = celix_versionRange_createVersionRange(low, true, high, false);
         EXPECT_TRUE(range != nullptr);
@@ -132,15 +105,8 @@ TEST_F(VersionRangeTestSuite, IsInRangeTest) {
     }
 
     {
-        celix_version_t* low = (celix_version_t*) calloc(1, sizeof(*low));
-        low->major = 1;
-        low->minor = 2;
-        low->micro = 3;
-
-        celix_version_t* high = (celix_version_t*) calloc(1, sizeof(*high));
-        high->major = 1;
-        high->minor = 2;
-        high->micro = 3;
+        celix_version_t* low = celix_version_create(1, 2, 3, nullptr);
+        celix_version_t* high = celix_version_create(1, 2, 3, nullptr);
 
         celix_version_range_t* range = celix_versionRange_createVersionRange(low, false, high, false);
         EXPECT_TRUE(range != nullptr);

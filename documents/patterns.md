@@ -1,5 +1,5 @@
 ---
-title: Apache Celix Services
+title: Apache Celix Patterns
 ---
 
 <!--

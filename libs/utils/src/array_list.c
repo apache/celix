@@ -281,6 +281,10 @@ static celix_array_list_entry_t arrayList_getEntry(const celix_array_list_t *lis
     return entry;
 }
 
+celix_array_list_entry_t celix_arrayList_getEntry(const celix_array_list_t *list, int index) {
+    return arrayList_getEntry(list, index);
+}
+
 void* celix_arrayList_get(const celix_array_list_t* list, int index) {
     assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER ||
            list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);

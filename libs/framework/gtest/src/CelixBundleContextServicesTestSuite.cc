@@ -2015,3 +2015,59 @@ TEST_F(CelixBundleContextServicesTestSuite, CreateServiceTrackedOnUseServiceTrac
     bool called = celix_bundleContext_useTrackedService(ctx, trkId, ctx, useCallback);
     EXPECT_TRUE(called);
 }
+
+TEST_F(CelixBundleContextServicesTestSuite, RegisterServiceWithInvalidRankingAndVersionPropertyTypeTest) {
+    //Given service properties with invalid type for ranking and version
+    celix_properties_t* props = celix_properties_create();
+    celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_RANKING, "10"); //string, not long type
+    celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_VERSION, "1.0.0"); //string, not celix_version_t* type
+
+    //When registering service
+    long svcId = celix_bundleContext_registerService(ctx, (void*)0x42, "TestService", props);
+
+    //Then the registration is successful
+    EXPECT_GE(svcId, 0);
+
+    //And the service properties types are corrected
+    celix_service_use_options_t opts;
+    opts.filter.serviceName = "TestService";
+    opts.useWithProperties = [](void* /*handle*/, void* /*svc*/, const celix_properties_t* props) {
+        auto propertyType = celix_properties_getType(props, CELIX_FRAMEWORK_SERVICE_RANKING);
+        EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_LONG, propertyType);
+
+        propertyType = celix_properties_getType(props, CELIX_FRAMEWORK_SERVICE_VERSION);
+        EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_VERSION, propertyType);
+    };
+    auto count = celix_bundleContext_useServicesWithOptions(ctx, &opts);
+    EXPECT_EQ(1, count);
+
+    celix_bundleContext_unregisterService(ctx, svcId);
+}
+
+TEST_F(CelixBundleContextServicesTestSuite, RegisterServiceWithInvalidRankingAndVersionValueTest) {
+    //Given service properties with invalid type for ranking and version
+    celix_properties_t* props = celix_properties_create();
+    celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_RANKING, "foo"); //string, not convertable to long
+    celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_VERSION, "bar"); //string, not convertable to version
+
+    //When registering service
+    long svcId = celix_bundleContext_registerService(ctx, (void*)0x42, "TestService", props);
+
+    //Then the registration is successful
+    EXPECT_GE(svcId, 0);
+
+    //And the service properties typer are kept as-is.
+    celix_service_use_options_t opts;
+    opts.filter.serviceName = "TestService";
+    opts.useWithProperties = [](void* /*handle*/, void* /*svc*/, const celix_properties_t* props) {
+        auto propertyType = celix_properties_getType(props, CELIX_FRAMEWORK_SERVICE_RANKING);
+        EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_STRING, propertyType);
+
+        propertyType = celix_properties_getType(props, CELIX_FRAMEWORK_SERVICE_VERSION);
+        EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_STRING, propertyType);
+    };
+    auto count = celix_bundleContext_useServicesWithOptions(ctx, &opts);
+    EXPECT_EQ(1, count);
+
+    celix_bundleContext_unregisterService(ctx, svcId);
+}

@@ -17,20 +17,27 @@
  * under the License.
  */
 
+#include "celix_version.h"
+
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <celix_utils.h>
 
-#include "celix_version.h"
+#include "celix_utils.h"
+#include "celix_convert_utils_private.h"
+#include "celix_convert_utils.h"
+#include "celix_err.h"
 #include "celix_errno.h"
 #include "version_private.h"
-#include "celix_err.h"
 
 static const char* const CELIX_VERSION_EMPTY_QUALIFIER = "";
 
 celix_version_t* celix_version_create(int major, int minor, int micro, const char* qualifier) {
     if (major < 0 || minor < 0 || micro < 0) {
+        errno = EINVAL;
         celix_err_push("Invalid version number. Major, minor and micro must be >= 0");
         return NULL;
     }
@@ -54,6 +61,7 @@ celix_version_t* celix_version_create(int major, int minor, int micro, const cha
         if ((ch == '_') || (ch == '-')) {
             continue;
         }
+        errno = EINVAL;
         celix_err_push("Invalid version qualifier. Characters must be [A-Za-z0-9_-]");
         return NULL;
     }
@@ -90,91 +98,55 @@ void celix_version_destroy(celix_version_t* version) {
 
 
 celix_version_t* celix_version_copy(const celix_version_t* version) {
-    if (version == NULL) {
-        return celix_version_createEmptyVersion();
+    if (!version) {
+        return NULL;
     }
     return celix_version_create(version->major, version->minor, version->micro, version->qualifier);
 }
 
 
 celix_version_t* celix_version_createVersionFromString(const char *versionStr) {
-    if (versionStr == NULL) {
-        return NULL;
-    }
-
-    int major = 0;
-    int minor = 0;
-    int micro = 0;
-    char * qualifier = NULL;
-
-    char delims[] = ".";
-    char *token = NULL;
-    char *last = NULL;
-
-    int i = 0;
-
-    char* versionWrkStr = strdup(versionStr);
-
-    celix_status_t status = CELIX_SUCCESS;
-    token = strtok_r(versionWrkStr, delims, &last);
-    if (token != NULL) {
-        for (i = 0; i < strlen(token); i++) {
-            char ch = token[i];
-            if (('0' <= ch) && (ch <= '9')) {
-                continue;
-            }
-            status = CELIX_ILLEGAL_ARGUMENT;
-            break;
-        }
-        major = atoi(token);
-        token = strtok_r(NULL, delims, &last);
-        if (token != NULL) {
-            for (i = 0; i < strlen(token); i++) {
-                char ch = token[i];
-                if (('0' <= ch) && (ch <= '9')) {
-                    continue;
-                }
-                status = CELIX_ILLEGAL_ARGUMENT;
-                break;
-            }
-            minor = atoi(token);
-            token = strtok_r(NULL, delims, &last);
-            if (token != NULL) {
-                for (i = 0; i < strlen(token); i++) {
-                    char ch = token[i];
-                    if (('0' <= ch) && (ch <= '9')) {
-                        continue;
-                    }
-                    status = CELIX_ILLEGAL_ARGUMENT;
-                    break;
-                }
-                micro = atoi(token);
-                token = strtok_r(NULL, delims, &last);
-                if (token != NULL) {
-                    qualifier = strdup(token);
-                    token = strtok_r(NULL, delims, &last);
-                    if (token != NULL) {
-                        status = CELIX_ILLEGAL_ARGUMENT;
-                    }
-                }
-            }
-        }
-    }
-
-    free(versionWrkStr);
-
-    celix_version_t* version = NULL;
-    if (status == CELIX_SUCCESS) {
-        version = celix_version_create(major, minor, micro, qualifier);
-    }
-
-    if (qualifier != NULL) {
-        free(qualifier);
-    }
-
+    celix_version_t* version;
+    celix_status_t status = celix_version_parse(versionStr, &version);
+    (void)status; //silently ignore status
     return version;
 }
 
+celix_status_t celix_version_parse(const char* versionStr, celix_version_t** version) {
+    *version = NULL;
+
+    if (versionStr == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    int versionsParts[3] = {0, 0, 0};
+    int count = 0;
+    const char* token = versionStr;
+
+    const char* qualifier = NULL;
+    while (token != NULL && count < 3) {
+        char* endPtr = NULL;
+        errno = 0;
+        long l = strtol(token, &endPtr, 10);
+        if (errno != 0 || token == endPtr || l < 0 || l >= INT_MAX) {
+            celix_err_pushf("Invalid version component(%d)", count);
+            return  CELIX_ILLEGAL_ARGUMENT;
+        }
+        versionsParts[count++] = (int)l;
+        if (*endPtr == '.') {
+            token = endPtr + 1;
+        } else if (celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(endPtr)){
+            token = NULL;
+        } else {
+            celix_err_pushf("Invalid trailing string:<%s>", endPtr);
+            return CELIX_ILLEGAL_ARGUMENT;
+        }
+    }
+    if (token != NULL) {
+        qualifier = token;
+    }
+    *version = celix_version_create(versionsParts[0], versionsParts[1], versionsParts[2], qualifier);
+    return *version ? CELIX_SUCCESS : (errno == EINVAL ? CELIX_ILLEGAL_ARGUMENT : CELIX_ENOMEM);
+}
 
 celix_version_t* celix_version_createEmptyVersion() {
     return celix_version_create(0, 0, 0, NULL);
@@ -213,13 +185,8 @@ int celix_version_compareTo(const celix_version_t* version, const celix_version_
                 if (res != 0) {
                     result = res;
                 } else {
-                    if(celix_utils_isStringNullOrEmpty(version->qualifier) && celix_utils_isStringNullOrEmpty(version->qualifier)) {
-                        result = 0;
-                    } else if (celix_utils_isStringNullOrEmpty(version->qualifier) || celix_utils_isStringNullOrEmpty(version->qualifier)) {
-                        result = -1;
-                    } else {
-                        result = strcmp(version->qualifier, compare->qualifier);
-                    }
+                    // by class invariant qualifier is never null
+                    result = strcmp(version->qualifier, compare->qualifier);
                 }
             }
         }
@@ -272,7 +239,13 @@ bool celix_version_isUserCompatible(const celix_version_t* user, int providerMaj
 }
 
 unsigned int celix_version_hash(const celix_version_t* version) {
-    return (unsigned int)(version->major | version->minor | version->micro | celix_utils_stringHash(version->qualifier));
+    unsigned int h = 0;
+    h = 31 * 17;
+    h = 31 * h + (unsigned int)version->major;
+    h = 31 * h + (unsigned int)version->minor;
+    h = 31 * h + (unsigned int)version->micro;
+    h = 31 * h + celix_utils_stringHash(version->qualifier);
+    return h;
 }
 
 int celix_version_compareToMajorMinor(const celix_version_t* version, int majorVersionPart, int minorVersionPart) {

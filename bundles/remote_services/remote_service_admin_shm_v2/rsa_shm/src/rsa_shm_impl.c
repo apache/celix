@@ -288,7 +288,7 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    celix_array_list_t *references = NULL;
+    celix_autoptr(celix_array_list_t) references = NULL;
     service_reference_pt reference = NULL;
     char filter[32] = {0};// It is longer than the size of "service.id" + serviceId
     snprintf(filter, sizeof(filter), "(%s=%s)", (char *) CELIX_FRAMEWORK_SERVICE_ID, serviceId);
@@ -298,10 +298,11 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
        return status;
     }
     //We get reference with serviceId, so the size of references must be less than or equal to 1.
-    reference = celix_arrayList_get(references, 0);
-    celix_arrayList_destroy(references);
+    if (celix_arrayList_size(references) == 1) {
+        reference = celix_arrayList_get(references, 0);
+    }
     if (reference == NULL) {
-        celix_logHelper_error(admin->logHelper, "Expect a reference for service id %s.", serviceId);
+        celix_logHelper_error(admin->logHelper, "Expect a exactly one reference for service id %s. Got %i", serviceId, celix_arrayList_size(references));
         return CELIX_ILLEGAL_STATE;
     }
     celix_auto(celix_service_ref_guard_t) ref = celix_ServiceRefGuard_init(admin->context, reference);

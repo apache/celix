@@ -91,6 +91,10 @@ if (TEST_RSA)
             
     add_executable(use_c_rsa_spi test_c_rsa_spi.c)
     target_link_libraries(use_c_rsa_spi PRIVATE Celix::c_rsa_spi)
+
+
+    add_executable(use_rsa_utils test_rsa_utils.cc)
+    target_link_libraries(use_rsa_utils PRIVATE Celix::rsa_utils Celix::utils)
 endif ()
 
 option(TEST_RSA_DFI "Test the Remote Service Admin Service DFI" OFF)

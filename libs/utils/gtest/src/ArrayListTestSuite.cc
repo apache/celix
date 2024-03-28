@@ -21,6 +21,7 @@
 
 #include "celix_array_list.h"
 #include "celix_version.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
 #include "celix_filter.h"
 

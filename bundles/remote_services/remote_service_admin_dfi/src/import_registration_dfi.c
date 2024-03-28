@@ -17,16 +17,20 @@
  * under the License.
  */
 
+#include "import_registration_dfi.h"
+
 #include <stdlib.h>
 #include <json_rpc.h>
 #include <assert.h>
+
 #include "celix_version.h"
 #include "celix_stdlib_cleanup.h"
+#include "celix_rsa_utils.h"
+#include "celix_constants.h"
 #include "dyn_interface.h"
 #include "import_registration.h"
-#include "import_registration_dfi.h"
-#include "remote_service_admin_dfi.h"
 #include "remote_interceptors_handler.h"
+#include "remote_service_admin_dfi.h"
 #include "remote_service_admin_dfi_constants.h"
 
 struct import_registration {
@@ -155,8 +159,13 @@ void importRegistration_destroy(import_registration_t *import) {
 }
 
 celix_status_t importRegistration_start(import_registration_t *import) {
-    celix_properties_t *props =  celix_properties_copy(import->endpoint->properties);
-    import->factorySvcId = celix_bundleContext_registerServiceFactoryAsync(import->context, &import->factory, import->classObject, props);
+    celix_properties_t* svcProperties = NULL;
+    celix_status_t status = celix_rsaUtils_createServicePropertiesFromEndpointProperties(import->endpoint->properties, &svcProperties);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+
+    import->factorySvcId = celix_bundleContext_registerServiceFactoryAsync(import->context, &import->factory, import->classObject, svcProperties);
     return import->factorySvcId >= 0 ? CELIX_SUCCESS : CELIX_ILLEGAL_STATE;
 }
 
