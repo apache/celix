@@ -185,6 +185,7 @@ int celix_version_compareTo(const celix_version_t* version, const celix_version_
                 if (res != 0) {
                     result = res;
                 } else {
+                    // by class invariant qualifier is never null
                     result = strcmp(version->qualifier, compare->qualifier);
                 }
             }

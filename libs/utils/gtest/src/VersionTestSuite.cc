@@ -143,7 +143,6 @@ TEST_F(VersionTestSuite, CompareTest) {
     EXPECT_TRUE(result > 0);
     celix_version_destroy(compare);
 
-    // Compare against a lower version
     compare = celix_version_create(1, 2, 3, nullptr);
     EXPECT_TRUE(compare != nullptr);
     result = celix_version_compareTo(version, compare);
