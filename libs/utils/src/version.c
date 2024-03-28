@@ -185,13 +185,7 @@ int celix_version_compareTo(const celix_version_t* version, const celix_version_
                 if (res != 0) {
                     result = res;
                 } else {
-                    if(celix_utils_isStringNullOrEmpty(version->qualifier) && celix_utils_isStringNullOrEmpty(version->qualifier)) {
-                        result = 0;
-                    } else if (celix_utils_isStringNullOrEmpty(version->qualifier) || celix_utils_isStringNullOrEmpty(version->qualifier)) {
-                        result = -1;
-                    } else {
-                        result = strcmp(version->qualifier, compare->qualifier);
-                    }
+                    result = strcmp(version->qualifier, compare->qualifier);
                 }
             }
         }
@@ -244,7 +238,13 @@ bool celix_version_isUserCompatible(const celix_version_t* user, int providerMaj
 }
 
 unsigned int celix_version_hash(const celix_version_t* version) {
-    return (unsigned int)(version->major | version->minor | version->micro | celix_utils_stringHash(version->qualifier));
+    unsigned int h = 0;
+    h = 31 * 17;
+    h = 31 * h + (unsigned int)version->major;
+    h = 31 * h + (unsigned int)version->minor;
+    h = 31 * h + (unsigned int)version->micro;
+    h = 31 * h + celix_utils_stringHash(version->qualifier);
+    return h;
 }
 
 int celix_version_compareToMajorMinor(const celix_version_t* version, int majorVersionPart, int minorVersionPart) {

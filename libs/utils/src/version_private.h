@@ -25,6 +25,7 @@ struct celix_version {
     int minor;
     int micro;
     char *qualifier;
+    int hash;
 };
 
 

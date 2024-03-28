@@ -136,6 +136,20 @@ TEST_F(VersionTestSuite, CompareTest) {
     EXPECT_TRUE(result > 0);
     celix_version_destroy(compare);
 
+    // Compare against a lower version
+    compare = celix_version_create(1, 2, 2, str);
+    EXPECT_TRUE(compare != nullptr);
+    result = celix_version_compareTo(version, compare);
+    EXPECT_TRUE(result > 0);
+    celix_version_destroy(compare);
+
+    // Compare against a lower version
+    compare = celix_version_create(1, 2, 3, nullptr);
+    EXPECT_TRUE(compare != nullptr);
+    result = celix_version_compareTo(version, compare);
+    EXPECT_TRUE(result > 0);
+    celix_version_destroy(compare);
+
     celix_version_destroy(version);
 }
 
@@ -302,4 +316,12 @@ TEST_F(VersionTestSuite, ParseTest) {
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, parseStatus);
     EXPECT_EQ(nullptr, result);
     EXPECT_STREQ("Invalid version component(2)", celix_err_popLastError());
+}
+
+TEST_F(VersionTestSuite, HashTest) {
+    celix_autoptr(celix_version_t) ver1 = celix_version_create(1, 1, 0, nullptr);
+    celix_autoptr(celix_version_t) ver2 = celix_version_create(1, 0, 1, nullptr);
+    celix_autoptr(celix_version_t) ver3 = celix_version_create(1, 1, 0, "abc");
+    EXPECT_NE(celix_version_hash(ver1), celix_version_hash(ver2));
+    EXPECT_NE(celix_version_hash(ver1), celix_version_hash(ver3));
 }
