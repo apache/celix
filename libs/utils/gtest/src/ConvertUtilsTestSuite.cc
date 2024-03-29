@@ -328,7 +328,14 @@ TEST_F(ConvertUtilsTestSuite, ConvertToLongArrayTest) {
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
     EXPECT_TRUE(result != nullptr); //copy of default list
     EXPECT_EQ(1, celix_arrayList_size(result));
-    EXPECT_EQ(42L, celix_arrayList_getLong(result, 0));
+    EXPECT_TRUE(celix_arrayList_equals(defaultList, result));
+    celix_arrayList_destroy(result);
+
+    convertState = celix_utils_convertStringToLongArrayList("1,3,invalid,2", defaultList, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
+    EXPECT_TRUE(result != nullptr); //copy of default list
+    EXPECT_EQ(1, celix_arrayList_size(result));
+    EXPECT_TRUE(celix_arrayList_equals(defaultList, result));
     celix_arrayList_destroy(result);
 
     convertState = celix_utils_convertStringToLongArrayList("  1  ,  2  ,  3   ", nullptr, &result);

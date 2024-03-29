@@ -122,7 +122,7 @@ TEST_F(ConvertUtilsWithErrorInjectionTestSuite, LongArrayToStringTest) {
 
 TEST_F(ConvertUtilsWithErrorInjectionTestSuite, StringToStringArrayTest) {
     // Given an error injection for open_memstream (on the second call)
-    celix_ei_expect_open_memstream((void*)celix_utils_convertStringToStringArrayList, 1, nullptr, 2);
+    celix_ei_expect_open_memstream((void*)celix_utils_convertStringToStringArrayList, 1, nullptr);
     // When calling celix_utils_convertStringToStringArrayList
     celix_array_list_t* result;
     celix_status_t status = celix_utils_convertStringToStringArrayList("a,b,c", nullptr, &result);

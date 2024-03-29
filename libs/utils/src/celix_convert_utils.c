@@ -157,18 +157,16 @@ static celix_status_t celix_utils_convertStringToArrayList(const char* val,
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    celix_autofree char* buf = NULL;
+    char* buf = NULL;
     size_t bufSize = 0;
-    celix_autoptr(FILE) entryStream = NULL;
+    FILE* entryStream = NULL;
     celix_status_t status = CELIX_SUCCESS;
     size_t max = strlen(val);
-    for (size_t i = 0; i <= max; ++i) {
-        if (!entryStream) {
-            entryStream = open_memstream(&buf, &bufSize);
-            if (!entryStream) {
-                 return CELIX_ENOMEM;
-            }
-        }
+    entryStream = open_memstream(&buf, &bufSize);
+    if (!entryStream) {
+        return CELIX_ENOMEM;
+    }
+    for (size_t i = 0; i <= max && status == CELIX_SUCCESS; ++i) {
         if (val[i] == ESCAPE_CHAR) {
             // escape character, next char must be escapeChar or separatorChar
             if (i + 1 < max && (val[i + 1] == ESCAPE_CHAR || val[i + 1] == SEPARATOR_CHAR)) {
@@ -176,32 +174,32 @@ static celix_status_t celix_utils_convertStringToArrayList(const char* val,
                 i += 1;
                 int rc = fputc(val[i], entryStream);
                 if (rc == EOF) {
-                    return CELIX_ENOMEM;
+                    status = CELIX_ENOMEM;
                 }
-                continue;
             } else {
                 // invalid escape (ending with escapeChar or followed by an invalid char)
                 status = CELIX_ILLEGAL_ARGUMENT;
-                break;
             }
         } else if (val[i] == SEPARATOR_CHAR || val[i] == '\0') {
             //end of entry
-            fclose(celix_steal_ptr(entryStream));
-            entryStream = NULL;
-            status = addEntry(list, buf);
-            free(celix_steal_ptr(buf));
-            if (status == CELIX_ENOMEM) {
-                return status;
+            int rc = fputc('\0', entryStream);
+            if (rc == EOF) {
+                status = CELIX_ENOMEM;
+                continue;
             }
+            fflush(entryStream);
+            status = addEntry(list, buf);
+            rewind(entryStream);
         } else {
             //normal char
             int rc = fputc(val[i], entryStream);
             if (rc == EOF) {
-                return CELIX_ENOMEM;
+                status = CELIX_ENOMEM;
             }
         }
     }
-
+    fclose(entryStream);
+    free(buf);
 
     if (status == CELIX_SUCCESS) {
         *listOut = celix_steal_ptr(list);
