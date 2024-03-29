@@ -54,6 +54,18 @@ TEST_F(RsaUtilsTestSuite, CreateServicePropertiesFromEndpointPropertiesTest) {
     EXPECT_STREQ("", celix_version_getQualifier(entry->typed.versionValue));
 }
 
+TEST_F(RsaUtilsTestSuite, CreateServicePropertiesFromEndpointPropertiesWithInvalidVersionTest) {
+    celix_autoptr(celix_properties_t) endpointProperties = celix_properties_create();
+    celix_properties_set(endpointProperties, CELIX_FRAMEWORK_SERVICE_RANKING, "10");
+    celix_properties_set(endpointProperties, CELIX_FRAMEWORK_SERVICE_VERSION, "invalid");
+
+    celix_autoptr(celix_properties_t) serviceProperties = nullptr;
+    celix_status_t status =
+            celix_rsaUtils_createServicePropertiesFromEndpointProperties(endpointProperties, &serviceProperties);
+    ASSERT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+    ASSERT_TRUE(serviceProperties == nullptr);
+}
+
 TEST_F(RsaUtilsTestSuite, CreateServicePropertiesFromEndpointPropertiesWithNullArgTest) {
     // NULL argument will result in an empty service properties set
     celix_autoptr(celix_properties_t) serviceProperties = nullptr;

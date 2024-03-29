@@ -38,7 +38,7 @@ extern "C" {
  *
  * @param[in] endpointProperties
  * @param[out] serviceProperties
- * @return CELIX_SUCCESS if successfully, CELIX_ENOMEM if out of memory.
+ * @return CELIX_SUCCESS if successfully, CELIX_ENOMEM if out of memory, and CELIX_ILLEGAL_ARGUMENT for invalid "service version".
  */
 celix_status_t
 celix_rsaUtils_createServicePropertiesFromEndpointProperties(const celix_properties_t* endpointProperties,
