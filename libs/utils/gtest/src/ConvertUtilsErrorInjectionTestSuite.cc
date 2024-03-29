@@ -114,7 +114,7 @@ TEST_F(ConvertUtilsWithErrorInjectionTestSuite, LongArrayToStringTest) {
 
     //Given an error injection for fputs
     celix_ei_expect_fputs((void*)celix_utils_arrayListToString, 1, -1);
-    //When calling celix_utils_longArrayListToString
+    //When calling celix_utils_arrayListToString
     result = celix_utils_arrayListToString(list);
     //Then the result is null
     EXPECT_EQ(nullptr, result);
@@ -137,10 +137,43 @@ TEST_F(ConvertUtilsWithErrorInjectionTestSuite, StringToStringArrayTest) {
     // Then the result is null and the status is ENOMEM
     EXPECT_EQ(status, CELIX_ENOMEM);
 
+    // Given an error injection for fputc
+    celix_ei_expect_fputc((void*)celix_utils_convertStringToStringArrayList, 1, EOF, 2);
+    // When calling celix_utils_convertStringToStringArrayList
+    status = celix_utils_convertStringToStringArrayList("a,b,c", nullptr, &result);
+    // Then the result is null and the status is ENOMEM
+    EXPECT_EQ(status, CELIX_ENOMEM);
+
+    // Given an error injection for fputc
+    celix_ei_expect_fputc((void*)celix_utils_convertStringToStringArrayList, 1, EOF, 6);
+    // When calling celix_utils_convertStringToStringArrayList
+    status = celix_utils_convertStringToStringArrayList("a,b,c", nullptr, &result);
+    // Then the result is null and the status is ENOMEM
+    EXPECT_EQ(status, CELIX_ENOMEM);
+
     // Given an error injection for fputc (on writing an escaped char)
     celix_ei_expect_fputc((void*)celix_utils_convertStringToStringArrayList, 1, EOF);
     // When calling celix_utils_convertStringToStringArrayList
     status = celix_utils_convertStringToStringArrayList(R"(\\)", nullptr, &result);
     // Then the result is null and the status is ENOMEM
     EXPECT_EQ(status, CELIX_ENOMEM);
+}
+
+TEST_F(ConvertUtilsWithErrorInjectionTestSuite, StringArrayToStringTest) {
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createStringArray();
+    celix_arrayList_addString(list, ",hello");
+    celix_arrayList_addString(list, "world");
+
+    //Given an error injection for fputc
+    celix_ei_expect_fputc((void*)celix_utils_arrayListToString, 2, -1);
+    //When calling celix_utils_arrayListToString
+    char* result = celix_utils_arrayListToString(list);
+    //Then the result is null
+    EXPECT_EQ(nullptr, result);
+
+    celix_ei_expect_fputc((void*)celix_utils_arrayListToString, 2, -1, 2);
+    //When calling celix_utils_arrayListToString
+    result = celix_utils_arrayListToString(list);
+    //Then the result is null
+    EXPECT_EQ(nullptr, result);
 }

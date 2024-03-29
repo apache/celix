@@ -322,6 +322,10 @@ TEST_F(ConvertUtilsTestSuite, ConvertToLongArrayTest) {
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
     EXPECT_TRUE(result == nullptr);
 
+    convertState = celix_utils_convertStringToLongArrayList(nullptr, nullptr, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
+    EXPECT_TRUE(result == nullptr);
+
     celix_autoptr(celix_array_list_t) defaultList = celix_arrayList_create();
     celix_arrayList_addLong(defaultList, 42L);
     convertState = celix_utils_convertStringToLongArrayList("1,2,3,invalid", defaultList, &result);
@@ -384,6 +388,10 @@ TEST_F(ConvertUtilsTestSuite, ConvertToDoubleArrayList) {
     EXPECT_DOUBLE_EQ(5.0, celix_arrayList_getDouble(result, 4));
     celix_arrayList_destroy(result);
 
+    convertState = celix_utils_convertStringToDoubleArrayList("0.1,invalid,3.1,4,5", nullptr, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
+    EXPECT_TRUE(result == nullptr);
+
     // NOTE celix_utils_convertStringToDoubleArrayList uses the same generic function as is used in
     // celix_utils_convertStringToLongArrayList and because celix_utils_convertStringToLongArrayList is already
     // tested, we only test a few cases here.
@@ -416,6 +424,10 @@ TEST_F(ConvertUtilsTestSuite, ConvertToBoolArrayList) {
     EXPECT_FALSE(celix_arrayList_getBool(result, 1));
     EXPECT_TRUE(celix_arrayList_getBool(result, 2));
     celix_arrayList_destroy(result);
+
+   convertState = celix_utils_convertStringToBoolArrayList("true,invalid,true", nullptr, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
+    EXPECT_TRUE(result == nullptr);
 
     // NOTE celix_utils_convertStringToBoolArrayList uses the same generic function as is used in
     // celix_utils_convertStringToLongArrayList and because celix_utils_convertStringToLongArrayList is already
@@ -514,6 +526,10 @@ TEST_F(ConvertUtilsTestSuite, ConvertToVersionArrayList) {
     checkVersion(celix_arrayList_getVersion(result, 1), 2, 3, 4, nullptr);
     checkVersion(celix_arrayList_getVersion(result, 2), 3, 4, 5, "qualifier");
     celix_arrayList_destroy(result);
+
+    convertState = celix_utils_convertStringToVersionArrayList("1.2.3,invalid,3.4.5.qualifier", nullptr, &result);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
+    EXPECT_TRUE(result == nullptr);
 
     // NOTE celix_utils_convertStringToVersionArrayList uses the same generic function as is used in
     // celix_utils_convertStringToLongArrayList and because celix_utils_convertStringToLongArrayList is already
