@@ -363,6 +363,9 @@ TEST_F(ArrayListTestSuite, CopyArrayTest) {
     EXPECT_TRUE(celix_arrayList_equals(stringList, stringListCopy));
     EXPECT_TRUE(celix_arrayList_equals(versionList, versionListCopy));
     EXPECT_TRUE(celix_arrayList_equals(ptrList, ptrListCopy));
+
+    auto* result = celix_arrayList_copy(nullptr);
+    EXPECT_EQ(nullptr, result);
 }
 
 TEST_F(ArrayListTestSuite, SimpleRemovedCallbacksForArrayListTest) {
@@ -373,6 +376,32 @@ TEST_F(ArrayListTestSuite, SimpleRemovedCallbacksForArrayListTest) {
     celix_arrayList_add(list, (void*) celix_utils_strdup("value"));
     celix_arrayList_add(list, (void*) celix_utils_strdup("value"));
     celix_arrayList_add(list, (void*) celix_utils_strdup("value"));
+    EXPECT_EQ(celix_arrayList_size(list), 4);
+    celix_arrayList_destroy(list); //will call free for every entry
+}
+
+TEST_F(ArrayListTestSuite, AddStringToArrayListOfUndefinedTypeTest) {
+    celix_array_list_create_options_t opts{};
+    opts.simpleRemovedCallback = free;
+    auto* list = celix_arrayList_createWithOptions(&opts);
+    celix_arrayList_addString(list, celix_utils_strdup("value"));
+    celix_arrayList_addString(list, celix_utils_strdup("value"));
+    celix_arrayList_addString(list, celix_utils_strdup("value"));
+    celix_arrayList_addString(list, celix_utils_strdup("value"));
+    EXPECT_EQ(celix_arrayList_size(list), 4);
+    celix_arrayList_destroy(list); //will call free for every entry
+}
+
+TEST_F(ArrayListTestSuite, AddVersionToArrayListOfUndefinedTypeTest) {
+    celix_array_list_create_options_t opts{};
+    opts.simpleRemovedCallback = [](void* data) {
+        celix_version_destroy((celix_version_t*)data);
+    };
+    auto* list = celix_arrayList_createWithOptions(&opts);
+    celix_arrayList_addVersion(list, celix_version_create(1, 3, 0, nullptr));
+    celix_arrayList_addVersion(list, celix_version_create(1, 3, 0, nullptr));
+    celix_arrayList_addVersion(list, celix_version_create(1, 3, 0, nullptr));
+    celix_arrayList_addVersion(list, celix_version_create(1, 3, 0, nullptr));
     EXPECT_EQ(celix_arrayList_size(list), 4);
     celix_arrayList_destroy(list); //will call free for every entry
 }

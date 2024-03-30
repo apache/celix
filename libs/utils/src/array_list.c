@@ -93,11 +93,9 @@ static bool celix_arrayList_versionEquals(celix_array_list_entry_t a, celix_arra
     return celix_arrayList_compareVersionEntries(a, b) == 0;
 }
 
-static bool celix_arrayList_equalsForElement(celix_array_list_t *list, celix_array_list_entry_t a, celix_array_list_entry_t b) {
-    if (list && list->equalsCallback != NULL) {
-        return list->equalsCallback(a, b);
-    }
-    return false;
+inline static bool celix_arrayList_equalsForElement(celix_array_list_t *list, celix_array_list_entry_t a, celix_array_list_entry_t b) {
+    // by class invariant, equalsCallback is never NULL
+    return list->equalsCallback(a, b);
 }
 
 static celix_status_t celix_arrayList_copyStringEntry(celix_array_list_entry_t src, celix_array_list_entry_t* dst) {
