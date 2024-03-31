@@ -298,10 +298,12 @@ static celix_filter_t* celix_filter_parseItem(const char* filterString, int* pos
         }
         break;
     }
+    //LCOV_EXCL_START
     default: {
         celix_err_pushf("Filter Error: Invalid operand char `%c`", op);
         return NULL;
     }
+    //LCOV_EXCL_STOP
     }
     return celix_steal_ptr(filter);
 }
@@ -609,11 +611,11 @@ static bool celix_utils_convertCompareToBool(enum celix_filter_operand_enum op, 
         return cmp < 0;
     case CELIX_FILTER_OPERAND_LESSEQUAL:
         return cmp <= 0;
+    //LCOV_EXCL_START
     default:
-        //LCOV_EXCL_START
         assert(false);
         return false;
-        //LCOV_EXCL_STOP
+    //LCOV_EXCL_STOP
     }
 }
 
@@ -923,6 +925,10 @@ bool celix_filter_equals(const celix_filter_t* filter1, const celix_filter_t* fi
         return false;
     }
 
+    if (!celix_utils_stringEquals(filter1->attribute, filter2->attribute)) {
+        return false;
+    }
+
     if (filter1->operand == CELIX_FILTER_OPERAND_SUBSTRING) {
         assert(filter1->children != NULL);
         assert(filter2->children != NULL);
@@ -942,22 +948,7 @@ bool celix_filter_equals(const celix_filter_t* filter1, const celix_filter_t* fi
         return false;
     }
 
-    // compare attr and value
-    bool attrSame = false;
-    bool valSame = false;
-    if (filter1->attribute == NULL && filter2->attribute == NULL) {
-        attrSame = true;
-    } else if (filter1->attribute != NULL && filter2->attribute != NULL) {
-        attrSame = celix_utils_stringEquals(filter1->attribute, filter2->attribute);
-    }
-
-    if (filter1->value == NULL && filter2->value == NULL) {
-        valSame = true;
-    } else if (filter1->value != NULL && filter2->value != NULL) {
-        valSame = celix_utils_stringEquals(filter1->value, filter2->value);
-    }
-
-    return attrSame && valSame;
+    return celix_utils_stringEquals(filter1->value, filter2->value);
 }
 
 const char* celix_filter_getFilterString(const celix_filter_t* filter) {

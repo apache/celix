@@ -83,6 +83,18 @@ TEST_F(FilterTestSuite, MissingClosingBracketsCreateTest) {
     filter = celix_filter_create(str);
     ASSERT_TRUE(filter == nullptr);
     free(str);
+
+    // test missing closing brackets in value
+    str = celix_utils_strdup("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3~=attr3");
+    filter = celix_filter_create(str);
+    ASSERT_TRUE(filter == nullptr);
+    free(str);
+
+    // test missing closing brackets in value
+    str = celix_utils_strdup("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3<4");
+    filter = celix_filter_create(str);
+    ASSERT_TRUE(filter == nullptr);
+    free(str);
 }
 
 TEST_F(FilterTestSuite, InvalidClosingBracketsCreateTest) {
@@ -404,6 +416,7 @@ TEST_F(FilterTestSuite, GetStringTest) {
 
     // cleanup
     celix_filter_destroy(filter);
+    ASSERT_EQ(nullptr, celix_filter_getFilterString(nullptr));
 }
 
 TEST_F(FilterTestSuite, FilterEqualsTest) {
@@ -424,8 +437,12 @@ TEST_F(FilterTestSuite, FilterEqualsTest) {
     celix_autoptr(celix_filter_t) f7 = celix_filter_create("(test_attr1=*test*)");
     celix_autoptr(celix_filter_t) f8 = celix_filter_create("(test_attr1=*test*)");
     celix_autoptr(celix_filter_t) f9 = celix_filter_create("(test_attr1=*test)");
+    celix_autoptr(celix_filter_t) f10 = celix_filter_create("(test_attr1=*tst*)");
+    celix_autoptr(celix_filter_t) f11 = celix_filter_create("(test_attr2=*test*)");
     EXPECT_TRUE(celix_filter_equals(f7, f8));
     EXPECT_FALSE(celix_filter_equals(f7, f9));
+    EXPECT_FALSE(celix_filter_equals(f7, f10));
+    EXPECT_FALSE(celix_filter_equals(f7, f11));
 }
 
 TEST_F(FilterTestSuite, AutoCleanupTest) {
@@ -482,6 +499,10 @@ TEST_F(FilterTestSuite, TypedPropertiesAndFilterTest) {
 
     celix_autoptr(celix_filter_t) filter5 = celix_filter_create("(strBool=true)");
     EXPECT_TRUE(celix_filter_match(filter5, props));
+
+    celix_autoptr(celix_filter_t) filter6 =
+            celix_filter_create("(bool2<true)");
+    EXPECT_TRUE(celix_filter_match(filter6, props));
 }
 
 

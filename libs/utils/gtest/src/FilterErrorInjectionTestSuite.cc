@@ -22,6 +22,7 @@
 #include "celix_filter.h"
 #include "celix_utils.h"
 #include "celix_err.h"
+#include "celix_version.h"
 
 #include "celix_array_list_ei.h"
 #include "celix_utils_ei.h"
@@ -245,5 +246,11 @@ TEST_F(FilterErrorInjectionTestSuite, ErrorFputcTest) {
     filterStr = "(key1=*val*)";
     //Then the filter creation should fail, because it cannot close the (mem)stream.
     filter = celix_filter_create(filterStr);
+    EXPECT_EQ(nullptr, filter);
+}
+
+TEST_F(FilterErrorInjectionTestSuite, ErrorWithVersionConversion) {
+    celix_ei_expect_calloc((void*)celix_version_create, 0, nullptr);
+    celix_autoptr(celix_filter_t) filter = celix_filter_create("(&(versions>=2.0.0)(versions<=2.0.0))");
     EXPECT_EQ(nullptr, filter);
 }
