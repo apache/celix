@@ -321,7 +321,7 @@ namespace celix {
          * requested type.
          */
         std::string getString(const std::string& key, const std::string& defaultValue = {}) const {
-            const char* found = celix_properties_getString(cProps.get(), key.c_str(), nullptr);
+            const char* found = celix_properties_getString(cProps.get(), key.c_str());
             return found == nullptr ? std::string{defaultValue} : std::string{found};
         }
 
@@ -435,7 +435,7 @@ namespace celix {
          * freed.
          */
         celix::Version getVersion(const std::string& key, celix::Version defaultValue = {}) const {
-            auto* v = celix_properties_getVersion(cProps.get(), key.c_str(), nullptr);
+            auto* v = celix_properties_getVersion(cProps.get(), key.c_str());
             if (v) {
                 return celix::Version{celix_version_getMajor(v),
                                       celix_version_getMinor(v),

@@ -332,7 +332,7 @@ TEST_F(PropertiesTestSuite, GetSetOverwrite) {
     EXPECT_EQ(CELIX_SUCCESS, celix_properties_setBool(props, "key", false));
     EXPECT_EQ(false, celix_properties_getAsBool(props, "key", true));
     EXPECT_EQ(CELIX_SUCCESS, celix_properties_assignVersion(props, "key", version));
-    EXPECT_EQ(version, celix_properties_getVersion(props, "key", nullptr));
+    EXPECT_EQ(version, celix_properties_getVersion(props, "key"));
     celix_properties_set(props, "key", "last");
 
     celix_properties_destroy(props);
@@ -494,7 +494,7 @@ TEST_F(PropertiesTestSuite, GetVersionTest) {
     // Test getting a version property
     auto* expected = celix_version_create(1, 2, 3, "test");
     celix_properties_setVersion(properties, "key", expected);
-    const auto* actual = celix_properties_getVersion(properties, "key", nullptr);
+    const auto* actual = celix_properties_getVersion(properties, "key");
     EXPECT_EQ(celix_version_getMajor(expected), celix_version_getMajor(actual));
     EXPECT_EQ(celix_version_getMinor(expected), celix_version_getMinor(actual));
     EXPECT_EQ(celix_version_getMicro(expected), celix_version_getMicro(actual));
@@ -502,17 +502,15 @@ TEST_F(PropertiesTestSuite, GetVersionTest) {
 
     // Test getting a non-version property
     celix_properties_set(properties, "key2", "value");
-    actual = celix_properties_getVersion(properties, "key2", emptyVersion);
-    EXPECT_EQ(celix_version_getMajor(actual), 0);
-    EXPECT_EQ(celix_version_getMinor(actual), 0);
-    EXPECT_EQ(celix_version_getMicro(actual), 0);
-    EXPECT_STREQ(celix_version_getQualifier(actual), "");
-    EXPECT_EQ(celix_properties_getVersion(properties, "non-existent", nullptr), nullptr);
+    actual = celix_properties_getVersion(properties, "key2");
+    EXPECT_EQ(nullptr, actual);
+    actual = celix_properties_getVersion(properties, "non-existent");
+    EXPECT_EQ(nullptr, actual);
     celix_version_destroy(expected);
 
     // Test setting without copy
     celix_properties_assignVersion(properties, "key3", celix_version_create(3, 3, 3, ""));
-    actual = celix_properties_getVersion(properties, "key3", emptyVersion);
+    actual = celix_properties_getVersion(properties, "key3");
     EXPECT_EQ(celix_version_getMajor(actual), 3);
     EXPECT_EQ(celix_version_getMinor(actual), 3);
     EXPECT_EQ(celix_version_getMicro(actual), 3);
@@ -632,7 +630,7 @@ TEST_F(PropertiesTestSuite, SetEntryWithLargeStringValueTest) {
         celix_version_create(1, 2, 3, "a-qualifier-that-is-longer-than-20-characters");
     celix_properties_setVersion(props1, "key2", version);
     EXPECT_EQ(CELIX_PROPERTIES_VALUE_TYPE_VERSION, celix_properties_getType(props1, "key2"));
-    EXPECT_EQ(0, celix_version_compareTo(version, celix_properties_getVersion(props1, "key2", nullptr)));
+    EXPECT_EQ(0, celix_version_compareTo(version, celix_properties_getVersion(props1, "key2")));
 }
 
 
@@ -748,29 +746,28 @@ TEST_F(PropertiesTestSuite, GetLongDoubleBoolVersionAndStringTest) {
     celix_properties_assignVersion(props, "version", version);
 
     // check if the values are correctly returned
-    EXPECT_STREQ("value", celix_properties_getString(props, "str", nullptr));
+    EXPECT_STREQ("value", celix_properties_getString(props, "str"));
     EXPECT_EQ(42, celix_properties_getLong(props, "long", -1L));
     EXPECT_DOUBLE_EQ(3.14, celix_properties_getDouble(props, "double", -1.0));
     EXPECT_EQ(true, celix_properties_getBool(props, "bool", false));
-    EXPECT_EQ(version, celix_properties_getVersion(props, "version", nullptr));
+    EXPECT_EQ(version, celix_properties_getVersion(props, "version"));
 
     // check if the values are correctly returned if value is not found
-    EXPECT_EQ(nullptr, celix_properties_getString(props, "non-existing", nullptr));
+    EXPECT_EQ(nullptr, celix_properties_getString(props, "non-existing"));
     EXPECT_EQ(-1L, celix_properties_getLong(props, "non-existing", -1L));
     EXPECT_DOUBLE_EQ(-1.0, celix_properties_getDouble(props, "non-existing", -1.0));
     EXPECT_EQ(false, celix_properties_getBool(props, "non-existing", false));
-    EXPECT_EQ(nullptr, celix_properties_getVersion(props, "non-existing", nullptr));
+    EXPECT_EQ(nullptr, celix_properties_getVersion(props, "non-existing"));
 
     // check if the values are correctly returned if the found value is not of the correct type
-    EXPECT_EQ(nullptr, celix_properties_getString(props, "long", nullptr));
+    EXPECT_EQ(nullptr, celix_properties_getString(props, "long"));
     EXPECT_EQ(-1L, celix_properties_getLong(props, "str", -1L));
     EXPECT_DOUBLE_EQ(-1.0, celix_properties_getDouble(props, "str", -1.0));
     EXPECT_EQ(false, celix_properties_getBool(props, "str", false));
-    EXPECT_EQ(nullptr, celix_properties_getVersion(props, "str", nullptr));
+    EXPECT_EQ(nullptr, celix_properties_getVersion(props, "str"));
 
     // check if a default ptr is correctly returned if value is not found for string and version
     EXPECT_EQ("default", celix_properties_get(props, "non-existing", "default"));
-    EXPECT_EQ(version, celix_properties_getVersion(props, "non-existing", version));
 }
 
 TEST_F(PropertiesTestSuite, LongArrayListTest) {

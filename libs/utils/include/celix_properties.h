@@ -264,12 +264,10 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_assign(celix_properties_t* pr
  * @brief Get the value of a property, if the property is set and the underlying type is a string.
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
- * @param[in] defaultValue The value to return if the property is not set or the value is not a string.
- * @return The value of the property, or the default value if the property is not set or the value is not of the
- * requested type.
+ * @return The value of the property, or NULL if the property is not set or the value is not of the requested type.
  */
 CELIX_UTILS_EXPORT const char*
-celix_properties_getString(const celix_properties_t* properties, const char* key, const char* defaultValue);
+celix_properties_getString(const celix_properties_t* properties, const char* key);
 
 /**
  * @brief Get the string value or string representation of a property.
@@ -493,12 +491,11 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_assignVersion(celix_propertie
  *
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
- * @param[in] defaultValue The value to return if the property is not set or if the value is not a Celix version.
- * @return A const pointer to the Celix version if it is present and valid, or the provided default value if the
+ * @return A const pointer to the Celix version if it is present and valid, or NULL if the
  * property is not set or the value is not a valid Celix version. The returned pointer should not be modified or freed.
  */
-CELIX_UTILS_EXPORT const celix_version_t*
-celix_properties_getVersion(const celix_properties_t* properties, const char* key, const celix_version_t* defaultValue);
+CELIX_UTILS_EXPORT const celix_version_t* celix_properties_getVersion(const celix_properties_t* properties,
+                                                                      const char* key);
 
 /**
  * @brief Get a value of a property as a copied Celix version.

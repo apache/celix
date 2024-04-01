@@ -741,13 +741,12 @@ void celix_properties_unset(celix_properties_t* properties, const char* key) {
 }
 
 const char* celix_properties_getString(const celix_properties_t* properties,
-                                                          const char* key,
-                                                          const char* defaultValue) {
+                                                          const char* key) {
     const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
-    if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
+    if (entry && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
         return entry->typed.strValue;
     }
-    return defaultValue;
+    return NULL;
 }
 
 const char* celix_properties_getAsString(const celix_properties_t* properties,
@@ -864,13 +863,12 @@ celix_status_t celix_properties_setBool(celix_properties_t* props, const char* k
 }
 
 const celix_version_t* celix_properties_getVersion(const celix_properties_t* properties,
-                                                   const char* key,
-                                                   const celix_version_t* defaultValue) {
+                                                   const char* key) {
     const celix_properties_entry_t* entry = celix_properties_getEntry(properties, key);
-    if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
+    if (entry && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
         return entry->typed.versionValue;
     }
-    return defaultValue;
+    return NULL;
 }
 
 celix_status_t celix_properties_getAsVersion(const celix_properties_t* properties,
