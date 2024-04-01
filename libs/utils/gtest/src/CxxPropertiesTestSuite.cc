@@ -248,11 +248,11 @@ TEST_F(CxxPropertiesTestSuite, ArrayListTest) {
     EXPECT_EQ(5, props.size());
 
     // Test get type
-    EXPECT_EQ(props.getType("key1"), celix::Properties::ValueType::StringArray);
-    EXPECT_EQ(props.getType("key2"), celix::Properties::ValueType::LongArray);
-    EXPECT_EQ(props.getType("key3"), celix::Properties::ValueType::DoubleArray);
-    EXPECT_EQ(props.getType("key4"), celix::Properties::ValueType::BooleanArray);
-    EXPECT_EQ(props.getType("key5"), celix::Properties::ValueType::VersionArray);
+    EXPECT_EQ(props.getType("key1"), celix::Properties::ValueType::Vector);
+    EXPECT_EQ(props.getType("key2"), celix::Properties::ValueType::Vector);
+    EXPECT_EQ(props.getType("key3"), celix::Properties::ValueType::Vector);
+    EXPECT_EQ(props.getType("key4"), celix::Properties::ValueType::Vector);
+    EXPECT_EQ(props.getType("key5"), celix::Properties::ValueType::Vector);
 
     // Test getAs with valid key
     auto strings = props.getAsStringVector("key1");

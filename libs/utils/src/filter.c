@@ -712,8 +712,14 @@ static bool celix_filter_matchSubStringForValue(const celix_filter_t* filter, co
     return true;
 }
 
+static bool celix_filter_isPropertyEntryArrayWithElementType(const celix_properties_entry_t* entry,
+                                                             celix_array_list_element_type_t elType) {
+    return entry && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_ARRAY_LIST &&
+           celix_arrayList_getElementType(entry->typed.arrayValue) == elType;
+}
+
 static bool celix_filter_matchSubString(const celix_filter_t* filter, const celix_properties_entry_t* entry) {
-    if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY) {
+    if (celix_filter_isPropertyEntryArrayWithElementType(entry, CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING)) {
         for (int i = 0; i < celix_arrayList_size(entry->typed.arrayValue); i++) {
             const char* substr = celix_arrayList_getString(entry->typed.arrayValue, i);
             if (celix_filter_matchSubStringForValue(filter, substr)) {
@@ -726,7 +732,7 @@ static bool celix_filter_matchSubString(const celix_filter_t* filter, const celi
 }
 
 static bool celix_filter_matchApprox(const celix_filter_t* filter, const celix_properties_entry_t* entry) {
-    if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY) {
+    if (celix_filter_isPropertyEntryArrayWithElementType(entry, CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING)) {
         for (int i = 0; i < celix_arrayList_size(entry->typed.arrayValue); i++) {
             const char* substr = celix_arrayList_getString(entry->typed.arrayValue, i);
             if (strcasestr(substr, filter->value) != NULL) {
@@ -751,15 +757,15 @@ static bool celix_filter_matchPropertyEntry(const celix_filter_t* filter, const 
 
 
     //match for array types
-    if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY && filter->internal->convertedToLong) {
+    if (celix_filter_isPropertyEntryArrayWithElementType(entry, CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG)) {
         return celix_utils_matchLongArrays(filter->operand, entry->typed.arrayValue, filter->internal->longValue);
-    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY && filter->internal->convertedToDouble) {
+    } else if (celix_filter_isPropertyEntryArrayWithElementType(entry, CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE)) {
         return celix_utils_matchDoubleArrays(filter->operand, entry->typed.arrayValue, filter->internal->doubleValue);
-    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY && filter->internal->convertedToBool) {
+    } else if (celix_filter_isPropertyEntryArrayWithElementType(entry, CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL)) {
         return celix_utils_matchBoolArrays(filter->operand, entry->typed.arrayValue, filter->internal->boolValue);
-    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY && filter->internal->convertedToVersion) {
+    } else if (celix_filter_isPropertyEntryArrayWithElementType(entry, CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION)) {
         return celix_utils_matchVersionArrays(filter->operand, entry->typed.arrayValue, filter->internal->versionValue);
-    } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY) {
+    } else if (celix_filter_isPropertyEntryArrayWithElementType(entry, CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING)) {
         return celix_utils_matchStringArrays(filter->operand, entry->typed.arrayValue, filter->value);
     }
 

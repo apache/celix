@@ -904,7 +904,49 @@ TEST_F(PropertiesTestSuite, GetTypedArrayListTest) {
     EXPECT_EQ(doubleList, retrievedDoubleList2);
     EXPECT_EQ(boolList, retrievedBoolList2);
     EXPECT_EQ(versionList, retrievedVersionList2);
+
+    //When using the celix_properties_getArrayList function to retrieve the array lists
+    const auto* retrievedStringList3 = celix_properties_getArrayList(props, "stringList", nullptr);
+    const auto* retrievedLongList3 = celix_properties_getArrayList(props, "longList", nullptr);
+    const auto* retrievedDoubleList3 = celix_properties_getArrayList(props, "doubleList", nullptr);
+    const auto* retrievedBoolList3 = celix_properties_getArrayList(props, "boolList", nullptr);
+    const auto* retrievedVersionList3 = celix_properties_getArrayList(props, "versionList", nullptr);
+
+    //Then the retrieved array lists should be the same as the original array lists
+    EXPECT_TRUE(celix_arrayList_equals(stringList, retrievedStringList3));
+    EXPECT_TRUE(celix_arrayList_equals(longList, retrievedLongList3));
+    EXPECT_TRUE(celix_arrayList_equals(doubleList, retrievedDoubleList3));
+    EXPECT_TRUE(celix_arrayList_equals(boolList, retrievedBoolList3));
+    EXPECT_TRUE(celix_arrayList_equals(versionList, retrievedVersionList3));
 }
+
+TEST_F(PropertiesTestSuite, GetAsTypedArrayListWithInvalidDefault) {
+    celix_autoptr(celix_array_list_t) ptrList = celix_arrayList_createPointerArray();
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+
+    celix_array_list_t* outList = nullptr;
+
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_getAsStringArrayList(nullptr, "aKey", ptrList, &outList));
+    EXPECT_EQ(1, celix_err_getErrorCount());
+    celix_err_resetErrors();
+
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_getAsLongArrayList(nullptr, "aKey", ptrList, &outList));
+    EXPECT_EQ(1, celix_err_getErrorCount());
+    celix_err_resetErrors();
+
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_getAsDoubleArrayList(nullptr, "aKey", ptrList, &outList));
+    EXPECT_EQ(1, celix_err_getErrorCount());
+    celix_err_resetErrors();
+
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_getAsBoolArrayList(nullptr, "aKey", ptrList, &outList));
+    EXPECT_EQ(1, celix_err_getErrorCount());
+    celix_err_resetErrors();
+
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_getAsVersionArrayList(nullptr, "aKey", ptrList, &outList));
+    EXPECT_EQ(1, celix_err_getErrorCount());
+    celix_err_resetErrors();
+}
+
 
 TEST_F(PropertiesTestSuite, SetArrayListWithIllegalArgumentsTest) {
     //Given a properties object

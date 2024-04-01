@@ -678,6 +678,15 @@ bool celix_arrayList_equals(const celix_array_list_t* listA, const celix_array_l
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_copy(const celix_array_list_t* list);
 
+/**
+ * @brief Returns the element type as a string.
+ * The returned string is owned by the celix_arrayList library and should not be freed.
+ * @param type The element type.
+ * @return The element type as a string. Returns "Undefined" if the element type is not recognized.
+ */
+CELIX_UTILS_EXPORT
+const char* celix_arrayList_elementTypeToString(celix_array_list_element_type_t type);
+
 #ifdef __cplusplus
 }
 #endif

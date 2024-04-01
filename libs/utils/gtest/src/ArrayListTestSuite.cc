@@ -495,3 +495,20 @@ TEST_F(ArrayListTestSuite, ReallocTest) {
         EXPECT_EQ(i, celix_arrayList_getLong(list, i));
     }
 }
+
+TEST_F(ArrayListTestSuite, ElementTypeToStringTest) {
+    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED",
+                 celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED));
+    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER",
+                 celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER));
+    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING",
+                 celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING));
+    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG",
+                 celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG));
+    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE",
+                 celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE));
+    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL",
+                 celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL));
+    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED",
+                 celix_arrayList_elementTypeToString((celix_array_list_element_type_t)100 /*non existing*/));
+}

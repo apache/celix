@@ -311,7 +311,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, GetAsArrayWithArrayListCopyFailedTest)
     celix_properties_setArrayList(props, "versionArray", versionList);
 
     // When a celix_arrayList_createWithOptions error injection is set for celix_properties_getAsStringArrayList
-    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsStringArrayList, 0, nullptr);
+    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsStringArrayList, 1, nullptr);
 
     // Then the celix_properties_getAsStringArrayList call fails
     celix_array_list_t* strings = nullptr;
@@ -320,7 +320,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, GetAsArrayWithArrayListCopyFailedTest)
     ASSERT_EQ(nullptr, strings);
 
     //When a celix_arrayList_copy error injection is set for celix_properties_getAsLongArrayList
-    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsLongArrayList, 0, nullptr);
+    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsLongArrayList, 1, nullptr);
 
     // Then the celix_properties_getAsLongArrayList call fails
     celix_array_list_t* longs = nullptr;
@@ -329,7 +329,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, GetAsArrayWithArrayListCopyFailedTest)
     ASSERT_EQ(nullptr, longs);
 
     //When a celix_arrayList_copy error injection is set for celix_properties_getAsDoubleArrayList
-    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsDoubleArrayList, 0, nullptr);
+    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsDoubleArrayList, 1, nullptr);
 
     // Then the celix_properties_getAsDoubleArrayList call fails
     celix_array_list_t* doubles = nullptr;
@@ -338,7 +338,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, GetAsArrayWithArrayListCopyFailedTest)
     ASSERT_EQ(nullptr, doubles);
 
     //When a celix_arrayList_copy error injection is set for celix_properties_getAsBoolArrayList
-    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsBoolArrayList, 0, nullptr);
+    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsBoolArrayList, 1, nullptr);
 
     // Then the celix_properties_getAsBoolArrayList call fails
     celix_array_list_t* bools = nullptr;
@@ -347,7 +347,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, GetAsArrayWithArrayListCopyFailedTest)
     ASSERT_EQ(nullptr, bools);
 
     //When a celix_arrayList_createWithOptions error injection is set for celix_properties_getAsVersionArrayList
-    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsVersionArrayList, 0, nullptr);
+    celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsVersionArrayList, 1, nullptr);
 
     // Then the celix_properties_getAsVersionArrayList call fails
     celix_array_list_t* versions = nullptr;

@@ -56,17 +56,17 @@ extern "C" {
  * @brief Enum representing the possible types of a property value.
  */
 typedef enum celix_properties_value_type {
-    CELIX_PROPERTIES_VALUE_TYPE_UNSET = 0,     /**< Property value is not set. */
-    CELIX_PROPERTIES_VALUE_TYPE_STRING = 1,    /**< Property value is a string. */
-    CELIX_PROPERTIES_VALUE_TYPE_LONG = 2,      /**< Property value is a long integer. */
-    CELIX_PROPERTIES_VALUE_TYPE_DOUBLE = 3,    /**< Property value is a double. */
-    CELIX_PROPERTIES_VALUE_TYPE_BOOL = 4,      /**< Property value is a boolean. */
-    CELIX_PROPERTIES_VALUE_TYPE_VERSION = 5,   /**< Property value is a Celix version. */
-    CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY = 6, /**< Property value is an array of strings. */
-    CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY = 7, /**< Property value is an array of longs. */
-    CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY = 8, /**< Property value is an array of doubles. */
-    CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY = 9, /**< Property value is an array of booleans. */
-    CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY = 10, /**< Property value is an array of Celix versions. */
+    CELIX_PROPERTIES_VALUE_TYPE_UNSET = 0,   /**< Property value is not set. */
+    CELIX_PROPERTIES_VALUE_TYPE_STRING = 1,  /**< Property value is a string. */
+    CELIX_PROPERTIES_VALUE_TYPE_LONG = 2,    /**< Property value is a long integer. */
+    CELIX_PROPERTIES_VALUE_TYPE_DOUBLE = 3,  /**< Property value is a double. */
+    CELIX_PROPERTIES_VALUE_TYPE_BOOL = 4,    /**< Property value is a boolean. */
+    CELIX_PROPERTIES_VALUE_TYPE_VERSION = 5, /**< Property value is a Celix version. */
+    CELIX_PROPERTIES_VALUE_TYPE_ARRAY_LIST =
+        6, /**< Property value is an array list. The element type of the array list can be
+              CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING, CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG,
+              CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE, CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL or
+              CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION. */
 } celix_properties_value_type_e;
 
 /**
@@ -566,6 +566,32 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_assignArrayList(celix_propert
                                                                    celix_array_list_t* values);
 
 /**
+ * @brief Get the property value as an array without copying.
+ *
+ * This function provides a non-owning, read-only access to a array property value.
+ * It returns a const pointer to the array. If the property is not set or its value is not an array,
+ * the default value is returned.
+ *
+ * The returned array will have a element type of:
+ *  - CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING
+ *  - CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG
+ *  - CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE
+ *  - CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL
+ *  - CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION
+ *
+ *  Note that users should check the element type of the returned array list to determine the type of the elements.
+ *
+ * @param[in] properties The property set to search.
+ * @param[in] key The key of the property to get.
+ * @param[in] defaultValue The value to return if the property is not set or its value is not an array list.
+ * @return A const pointer to the array list property value, or the default value if the property
+ *         is not set or its value is not an array list. The returned pointer should not be modified or freed.
+ */
+CELIX_UTILS_EXPORT const celix_array_list_t* celix_properties_getArrayList(const celix_properties_t* properties,
+                                                                               const char* key,
+                                                                               const celix_array_list_t* defaultValue);
+
+/**
  * @brief Get a property value as an array of longs.
  *
  * This function retrieves the value of a property, interpreting it as an array of longs. If the underlying type of the
@@ -574,14 +600,19 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_assignArrayList(celix_propert
  * If the property is not set, its value is not an array of longs or its value cannot be converted to a long array,
  * the default value is returned as a copy.
  *
+ * An celix err is logged if the default value is needed and not an array list with long values.
+ *
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
  * @param[in] defaultValue The default value to return if the property is not set or its value is not an array of longs.
  * @param[out] list A copy of the found list, a new array list with long values or a copy of the default value if the
  *                 property is not set, its value is not an array of longs or its value cannot be converted to an array
  *                 of longs.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to create the
- *        array list. Note if the key is not found, the return status is still CELIX_SUCCESS.
+ * @return CELIX_SUCCESS if the operation was successful. Note if the key is not found or the value cannot be converted
+ * to an array of longs, the return status is still CELIX_SUCCESS.
+ * @returnval CELIX_ENOMEM if there was not enough memory to create the array list.
+ * @returnval CELIX_ILLEGAL_ARGUMENT if the provided default value is not NULL and not an array list with long values.
+ *            In this case an error message is also logged to celix_err.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsLongArrayList(const celix_properties_t* properties,
                                                                   const char* key,
@@ -591,9 +622,10 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsLongArrayList(const celi
 /**
  * @brief Get the property value as an array of longs without copying.
  *
- * This function provides a non-owning, read-only access to a property value interpreted as an array of longs.
+ * This function provides a non-owning, read-only access to a array of longs property value.
  * It returns a const pointer to the array. If the property is not set or its value is not an array of longs,
  * the default value is returned.
+ *
  *
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
@@ -620,8 +652,11 @@ CELIX_UTILS_EXPORT const celix_array_list_t* celix_properties_getLongArrayList(c
  * @param[out] list A copy of the found list, a new array list with double values or a copy of the default value if the
  *                 property is not set, its value is not an array doubles longs or its value cannot be converted to an
  * array of doubles.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to create the
- *        array list. Note if the key is not found, the return status is still CELIX_SUCCESS.
+ * @return CELIX_SUCCESS if the operation was successful. Note if the key is not found or the value cannot be converted
+ * to an array of doubles, the return status is still CELIX_SUCCESS.
+ * @returnval CELIX_ENOMEM if there was not enough memory to create the array list.
+ * @returnval CELIX_ILLEGAL_ARGUMENT if the provided default value is not NULL and not an array list with double values.
+ *            In this case an error message is also logged to celix_err.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsDoubleArrayList(const celix_properties_t* properties,
                                                                         const char* key,
@@ -631,9 +666,10 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsDoubleArrayList(const ce
 /**
  * @brief Get the property value as an array of doubles without copying.
  *
- * This function provides a non-owning, read-only access to a property value interpreted as an array of doubles.
+ * This function provides a non-owning, read-only access to a array of doubles property value.
  * It returns a const pointer to the array. If the property is not set or its value is not an array of doubles,
  * the default value is returned.
+ *
  *
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
@@ -652,6 +688,8 @@ CELIX_UTILS_EXPORT const celix_array_list_t* celix_properties_getDoubleArrayList
  * string is converted to an array of booleans if possible. If the property is not set, its value is not an array of
  * booleans or its value cannot be converted to a boolean array, the default value is returned as a copy.
  *
+ * An celix err is logged if the default value is needed and not an array list with boolean values.
+ *
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
  * @param[in] defaultValue The default value to return if the property is not set or its value is not an array of
@@ -659,8 +697,11 @@ CELIX_UTILS_EXPORT const celix_array_list_t* celix_properties_getDoubleArrayList
  * @param[out] list A copy of the found list, a new array list with boolean values or a copy of the default value if the
  *                 property is not set, its value is not an array of booleans or its value cannot be converted to an
  * array of booleans.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to create the
- *        array list. Note if the key is not found, the return status is still CELIX_SUCCESS.
+ * @return CELIX_SUCCESS if the operation was successful. Note if the key is not found or the value cannot be converted
+ * to an array of booleans, the return status is still CELIX_SUCCESS.
+ * @returnval CELIX_ENOMEM if there was not enough memory to create the array list.
+ * @returnval CELIX_ILLEGAL_ARGUMENT if the provided default value is not NULL and not an array list with bool values.
+ *            In this case an error message is also logged to celix_err.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsBoolArrayList(const celix_properties_t* properties,
                                                                       const char* key,
@@ -670,9 +711,10 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsBoolArrayList(const celi
 /**
  * @brief Get the property value as an array of booleans without copying.
  *
- * This function provides a non-owning, read-only access to a property value interpreted as an array of booleans.
+ * This function provides a non-owning, read-only access to a array of booleans property value.
  * It returns a const pointer to the array. If the property is not set or its value is not an array of booleans,
  * the default value is returned.
+ *
  *
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
@@ -694,15 +736,20 @@ CELIX_UTILS_EXPORT const celix_array_list_t* celix_properties_getBoolArrayList(
  * The returned array list is configured with a remove callback so that the destruction of the array list will also
  * free the strings in the array list.
  *
+ * An celix err is logged if the default value is needed and not an array list with string values.
+ *
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
  * @param[in] defaultValue The default value to return if the property is not set or its value is not an array of
  * strings.
  * @param[out] list A copy of the found list, a new array list with string values or a copy of the default value if the
  *                 property is not set, its value is not an array of strings or its value cannot be converted to an
- * array of strings.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to create the
- *        array list. Note if the key is not found, the return status is still CELIX_SUCCESS.
+ *                 array of strings.
+ * @return CELIX_SUCCESS if the operation was successful. Note if the key is not found or the value cannot be converted
+ * to an array of strings, the return status is still CELIX_SUCCESS.
+ * @returnval CELIX_ENOMEM if there was not enough memory to create the array list.
+ * @returnval CELIX_ILLEGAL_ARGUMENT if the provided default value is not NULL and not an array list with string values.
+ *            In this case an error message is also logged to celix_err.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsStringArrayList(const celix_properties_t* properties,
                                                                         const char* key,
@@ -712,9 +759,10 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsStringArrayList(const ce
 /**
  * @brief Get the property value as an array of strings without copying.
  *
- * This function provides a non-owning, read-only access to a property value interpreted as an array of strings.
+ * This function provides a non-owning, read-only access to a array of string property value.
  * It returns a const pointer to the array. If the property is not set or its value is not an array of strings,
  * the default value is returned.
+ *
  *
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
@@ -738,6 +786,8 @@ CELIX_UTILS_EXPORT const celix_array_list_t* celix_properties_getStringArrayList
  * The returned array list is configured with a remove callback so that the destruction of the array list will also
  * free the celix_version_t entries in the array list.
  *
+ * An celix err is logged if the default value is needed and not an array list with celix_version_t values.
+ *
  * @param[in] properties The property set to search.
  * @param[in] key The key of the property to get.
  * @param[in] defaultValue The default value to return if the property is not set or its value is not an array of
@@ -745,8 +795,11 @@ CELIX_UTILS_EXPORT const celix_array_list_t* celix_properties_getStringArrayList
  * @param[out] list A copy of the found list, a new array list with celix_version_t values or a copy of the default
  * value if the property is not set, its value is not an array of celix_version_t entries or its value cannot be
  * converted to an array of celix_version_t entries.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to create the
- *        array list. Note if the key is not found, the return status is still CELIX_SUCCESS.
+ * @return CELIX_SUCCESS if the operation was successful. Note if the key is not found or the value cannot be converted
+ * to an array of celix_version_t, the return status is still CELIX_SUCCESS.
+ * @returnval CELIX_ENOMEM if there was not enough memory to create the array list.
+ * @returnval CELIX_ILLEGAL_ARGUMENT if the provided default value is not NULL and not an array list with
+ * celix_version_t values. In this case an error message is also logged to celix_err.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsVersionArrayList(const celix_properties_t* properties,
                                                                          const char* key,
@@ -756,7 +809,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsVersionArrayList(const c
 /**
  * @brief Get the property value as an array of celix_version_t entries without copying.
  *
- * This function provides a non-owning, read-only access to a property value interpreted as an array of celix_version_t
+ * This function provides a non-owning, read-only access to a array of celix_version_t property value.
  * entries. It returns a const pointer to the array. If the property is not set or its value is not an array of
  * celix_version_t entries, the default value is returned.
  *

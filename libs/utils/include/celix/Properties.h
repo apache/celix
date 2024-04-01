@@ -126,17 +126,14 @@ namespace celix {
        * @brief Enum representing the possible types of a property value.
        */
       enum class ValueType {
-          Unset,        /**< Property value is not set. */
-          String,       /**< Property value is a string. */
-          Long,         /**< Property value is a long integer. */
-          Double,       /**< Property value is a double. */
-          Bool,         /**< Property value is a boolean. */
-          Version,      /**< Property value is a Celix version. */
-          LongArray,    /**< Property value is an array of long integers. */
-          DoubleArray,  /**< Property value is an array of doubles. */
-          BooleanArray, /**< Property value is an array of booleans. */
-          VersionArray, /**< Property value is an array of Celix versions. */
-          StringArray   /**< Property value is an array of strings. */
+          Unset,   /**< Property value is not set. */
+          String,  /**< Property value is a string. */
+          Long,    /**< Property value is a long integer. */
+          Double,  /**< Property value is a double. */
+          Bool,    /**< Property value is a boolean. */
+          Version, /**< Property value is a Celix version. */
+          Vector,  /**< Property value is a vector of long integers, doubles, booleans, celix::Version or
+                         string. */
       };
 
       class ValueRef {
@@ -995,16 +992,8 @@ namespace celix {
                     return ValueType::Bool;
                 case CELIX_PROPERTIES_VALUE_TYPE_VERSION:
                     return ValueType::Version;
-                case CELIX_PROPERTIES_VALUE_TYPE_LONG_ARRAY:
-                    return ValueType::LongArray;
-                case CELIX_PROPERTIES_VALUE_TYPE_DOUBLE_ARRAY:
-                    return ValueType::DoubleArray;
-                case CELIX_PROPERTIES_VALUE_TYPE_BOOL_ARRAY:
-                    return ValueType::BooleanArray;
-                case CELIX_PROPERTIES_VALUE_TYPE_VERSION_ARRAY:
-                    return ValueType::VersionArray;
-                case CELIX_PROPERTIES_VALUE_TYPE_STRING_ARRAY:
-                    return ValueType::StringArray;
+                case CELIX_PROPERTIES_VALUE_TYPE_ARRAY_LIST:
+                    return ValueType::Vector;
                 default: /*unset*/
                     return ValueType::Unset;
             }

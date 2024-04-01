@@ -28,6 +28,14 @@
 #include "celix_utils.h"
 #include "celix_version.h"
 
+#define STRING_VALUE_UNDEFINED_EL_TYPE "CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED"
+#define STRING_VALUE_POINTER_EL_TYPE "CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER"
+#define STRING_VALUE_STRING_EL_TYPE "CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING"
+#define STRING_VALUE_LONG_EL_TYPE "CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG"
+#define STRING_VALUE_DOUBLE_EL_TYPE "CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE"
+#define STRING_VALUE_BOOL_EL_TYPE "CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL"
+#define STRING_VALUE_VERSION_EL_TYPE "CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION"
+
 struct celix_array_list {
     celix_array_list_element_type_t elementType;
     celix_array_list_entry_t* elementData;
@@ -600,4 +608,25 @@ void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_comp
 #else
     qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), celix_arrayList_compareEntries, compare);
 #endif
+}
+
+const char* celix_arrayList_elementTypeToString(celix_array_list_element_type_t type) {
+    switch (type) {
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED:
+        return STRING_VALUE_UNDEFINED_EL_TYPE;
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER:
+        return STRING_VALUE_POINTER_EL_TYPE;
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING:
+        return STRING_VALUE_STRING_EL_TYPE;
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG:
+        return STRING_VALUE_LONG_EL_TYPE;
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE:
+        return STRING_VALUE_DOUBLE_EL_TYPE;
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL:
+        return STRING_VALUE_BOOL_EL_TYPE;
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION:
+        return STRING_VALUE_VERSION_EL_TYPE;
+    default:
+        return STRING_VALUE_UNDEFINED_EL_TYPE;
+    }
 }
