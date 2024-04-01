@@ -751,6 +751,14 @@ TEST_F(FilterTestSuite, SubStringWithArrayAttributesTest) {
     celix_autoptr(celix_filter_t) filter3 = celix_filter_create("(strings=*Johnson)");
     EXPECT_TRUE(filter3 != nullptr);
     EXPECT_FALSE(celix_filter_match(filter3, props));
+
+    celix_autoptr(celix_filter_t) filter4 = celix_filter_create("(strings=Jane*)");
+    EXPECT_TRUE(filter4 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter4, props));
+
+    celix_autoptr(celix_filter_t) filter5 = celix_filter_create("(strings=*Smith)");
+    EXPECT_TRUE(filter5 != nullptr);
+    EXPECT_TRUE(celix_filter_match(filter5, props));
 }
 
 #include "filter.h"

@@ -685,7 +685,7 @@ static bool celix_filter_matchSubStringForValue(const celix_filter_t* filter, co
 
     const char* currentValue = value;
 
-    if (initial) {
+    if (!celix_utils_isStringNullOrEmpty(initial)) {
         const char* found = strstr(value, initial);
         currentValue = found + celix_utils_strlen(initial);
         if (!found || found != value) {
@@ -702,7 +702,7 @@ static bool celix_filter_matchSubStringForValue(const celix_filter_t* filter, co
         currentValue = found + celix_utils_strlen(substr);
     }
 
-    if (!celix_utils_stringEquals(final, "")) {
+    if (!celix_utils_isStringNullOrEmpty(final)) {
         const char* found = strstr(currentValue, final);
         if (!found || found + celix_utils_strlen(final) != value + strLen) {
             return false;
@@ -719,8 +719,8 @@ static bool celix_filter_matchSubString(const celix_filter_t* filter, const celi
             if (celix_filter_matchSubStringForValue(filter, substr)) {
                 return true;
             }
-            return false;
         }
+        return false;
     }
     return celix_filter_matchSubStringForValue(filter, entry->value);
 }
