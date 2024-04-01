@@ -476,7 +476,7 @@ namespace celix {
          * set or its value is not a array of longs.
          */
         std::vector<long> getLongVector(const std::string& key, const std::vector<long>& defaultValue = {}) const {
-            const auto* list = celix_properties_getLongArrayList(cProps.get(), key.c_str(), nullptr);
+            const auto* list = celix_properties_getLongArrayList(cProps.get(), key.c_str());
             return convertToVector<long>(list, defaultValue, celix_arrayList_getLong);
         }
 
@@ -511,7 +511,7 @@ namespace celix {
          * set or its value is not a array of booleans.
          */
         std::vector<bool> getBoolVector(const std::string& key, const std::vector<bool>& defaultValue = {}) const {
-            const auto* list = celix_properties_getBoolArrayList(cProps.get(), key.c_str(), nullptr);
+            const auto* list = celix_properties_getBoolArrayList(cProps.get(), key.c_str());
             return convertToVector<bool>(list, defaultValue, celix_arrayList_getBool);
         }
 
@@ -548,7 +548,7 @@ namespace celix {
          */
         std::vector<double> getDoubleVector(const std::string& key,
                                             const std::vector<double>& defaultValue = {}) const {
-            const auto* list = celix_properties_getDoubleArrayList(cProps.get(), key.c_str(), nullptr);
+            const auto* list = celix_properties_getDoubleArrayList(cProps.get(), key.c_str());
             return convertToVector<double>(list, defaultValue, celix_arrayList_getDouble);
         }
 
@@ -597,7 +597,7 @@ namespace celix {
          */
         std::vector<celix::Version> getVersionVector(const std::string& key,
                                                      const std::vector<celix::Version>& defaultValue = {}) const {
-            const auto* list = celix_properties_getVersionArrayList(cProps.get(), key.c_str(), nullptr);
+            const auto* list = celix_properties_getVersionArrayList(cProps.get(), key.c_str());
             if (list) {
                 std::vector<celix::Version> result{};
                 for (int i = 0; i < celix_arrayList_size(list); ++i) {
@@ -653,7 +653,7 @@ namespace celix {
          */
         std::vector<std::string> getStringVector(const std::string& key,
                                                  const std::vector<std::string>& defaultValue = {}) const {
-            const auto* list = celix_properties_getStringArrayList(cProps.get(), key.c_str(), nullptr);
+            const auto* list = celix_properties_getStringArrayList(cProps.get(), key.c_str());
             if (list) {
                 std::vector<std::string> result{};
                 for (int i = 0; i < celix_arrayList_size(list); ++i) {

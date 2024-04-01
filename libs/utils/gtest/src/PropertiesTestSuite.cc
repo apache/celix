@@ -832,9 +832,9 @@ TEST_F(PropertiesTestSuite, LongArrayListTest) {
     EXPECT_EQ(6, celix_arrayList_getLong(retrievedList4, 0));
     celix_arrayList_destroy(retrievedList4);
 
-    auto* getList = celix_properties_getLongArrayList(props, "array2", nullptr);
+    auto* getList = celix_properties_getLongArrayList(props, "array2");
     EXPECT_NE(longList2, getList);
-    getList = celix_properties_getLongArrayList(props, "array3", nullptr);
+    getList = celix_properties_getLongArrayList(props, "array3");
     EXPECT_EQ(longList3, getList);
 }
 
@@ -892,11 +892,11 @@ TEST_F(PropertiesTestSuite, GetTypedArrayListTest) {
 
 
     ///When the celix_properties_get<Type>ArrayList is called with the array lists
-    const auto* retrievedStringList2 = celix_properties_getStringArrayList(props, "stringList", nullptr);
-    const auto* retrievedLongList2 = celix_properties_getLongArrayList(props, "longList", nullptr);
-    const auto* retrievedDoubleList2 = celix_properties_getDoubleArrayList(props, "doubleList", nullptr);
-    const auto* retrievedBoolList2 = celix_properties_getBoolArrayList(props, "boolList", nullptr);
-    const auto* retrievedVersionList2 = celix_properties_getVersionArrayList(props, "versionList", nullptr);
+    const auto* retrievedStringList2 = celix_properties_getStringArrayList(props, "stringList");
+    const auto* retrievedLongList2 = celix_properties_getLongArrayList(props, "longList");
+    const auto* retrievedDoubleList2 = celix_properties_getDoubleArrayList(props, "doubleList");
+    const auto* retrievedBoolList2 = celix_properties_getBoolArrayList(props, "boolList");
+    const auto* retrievedVersionList2 = celix_properties_getVersionArrayList(props, "versionList");
 
     //Then the retrieved array lists pointers should be the same as the original array lists
     EXPECT_EQ(stringList, retrievedStringList2);
@@ -906,11 +906,11 @@ TEST_F(PropertiesTestSuite, GetTypedArrayListTest) {
     EXPECT_EQ(versionList, retrievedVersionList2);
 
     //When using the celix_properties_getArrayList function to retrieve the array lists
-    const auto* retrievedStringList3 = celix_properties_getArrayList(props, "stringList", nullptr);
-    const auto* retrievedLongList3 = celix_properties_getArrayList(props, "longList", nullptr);
-    const auto* retrievedDoubleList3 = celix_properties_getArrayList(props, "doubleList", nullptr);
-    const auto* retrievedBoolList3 = celix_properties_getArrayList(props, "boolList", nullptr);
-    const auto* retrievedVersionList3 = celix_properties_getArrayList(props, "versionList", nullptr);
+    const auto* retrievedStringList3 = celix_properties_getArrayList(props, "stringList");
+    const auto* retrievedLongList3 = celix_properties_getArrayList(props, "longList");
+    const auto* retrievedDoubleList3 = celix_properties_getArrayList(props, "doubleList");
+    const auto* retrievedBoolList3 = celix_properties_getArrayList(props, "boolList");
+    const auto* retrievedVersionList3 = celix_properties_getArrayList(props, "versionList");
 
     //Then the retrieved array lists should be the same as the original array lists
     EXPECT_TRUE(celix_arrayList_equals(stringList, retrievedStringList3));
