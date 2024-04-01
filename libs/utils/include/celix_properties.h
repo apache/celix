@@ -180,6 +180,12 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_store(celix_properties_t* pro
                                                          const char* file,
                                                          const char* header);
 
+//TODO doc
+CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToStream(const celix_properties_t* properties, FILE* stream);
+
+//TODO doc
+CELIX_UTILS_EXPORT celix_status_t celix_properties_loadFromStream(FILE* stream, celix_properties_t** out);
+
 /**
  * @brief Get the entry for a given key in a property set.
  *

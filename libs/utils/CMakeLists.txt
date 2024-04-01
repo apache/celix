@@ -29,6 +29,7 @@ if (UTILS)
             src/version.c
             src/version_range.c
             src/properties.c
+            src/properties_serialization.c
             src/utils.c
             src/filter.c
             src/celix_log_level.c
