@@ -17,22 +17,15 @@
  * under the License.
  */
 
-#ifndef CELIX_CELIX_VERSION_EI_H
-#define CELIX_CELIX_VERSION_EI_H
+#ifndef CELIX_CELIX_CONVERT_UTILS_PRIVATE_H
+#define CELIX_CELIX_CONVERT_UTILS_PRIVATE_H
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "celix_error_injector.h"
-#include "celix_version.h"
-    
-CELIX_EI_DECLARE(celix_version_createVersionFromString, celix_version_t*);
 
-CELIX_EI_DECLARE(celix_version_parse, celix_status_t);
-
-CELIX_EI_DECLARE(celix_version_copy, celix_version_t*);
+bool celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(const char* endptr);
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif //CELIX_CELIX_VERSION_EI_H
+#endif //CELIX_CELIX_CONVERT_UTILS_PRIVATE_H

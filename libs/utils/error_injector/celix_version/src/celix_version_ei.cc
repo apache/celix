@@ -27,6 +27,13 @@ celix_version_t *__wrap_celix_version_createVersionFromString(const char *versio
     return __real_celix_version_createVersionFromString(versionStr);
 }
 
+celix_status_t __real_celix_version_parse(const char* versionStr, celix_version_t** version);
+CELIX_EI_DEFINE(celix_version_parse, celix_status_t)
+celix_status_t __wrap_celix_version_parse(const char* versionStr, celix_version_t** version) {
+    CELIX_EI_IMPL(celix_version_parse);
+    return __real_celix_version_parse(versionStr, version);
+}
+
 celix_version_t* __real_celix_version_copy(const celix_version_t* version);
 CELIX_EI_DEFINE(celix_version_copy, celix_version_t*)
 celix_version_t* __wrap_celix_version_copy(const celix_version_t* version) {

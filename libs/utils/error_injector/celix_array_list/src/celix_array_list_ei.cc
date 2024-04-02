@@ -22,18 +22,25 @@
 
 extern "C" {
 
-void *__real_celix_arrayList_create(void);
+celix_array_list_t* __real_celix_arrayList_create(void);
 CELIX_EI_DEFINE(celix_arrayList_create, celix_array_list_t*)
-void *__wrap_celix_arrayList_create(void) {
+celix_array_list_t* __wrap_celix_arrayList_create(void) {
     CELIX_EI_IMPL(celix_arrayList_create);
     return __real_celix_arrayList_create();
 }
 
-void *__real_celix_arrayList_createWithOptions(const celix_array_list_create_options_t* opts);
+celix_array_list_t* __real_celix_arrayList_createWithOptions(const celix_array_list_create_options_t* opts);
 CELIX_EI_DEFINE(celix_arrayList_createWithOptions, celix_array_list_t*)
-void *__wrap_celix_arrayList_createWithOptions(const celix_array_list_create_options_t* opts) {
+celix_array_list_t* __wrap_celix_arrayList_createWithOptions(const celix_array_list_create_options_t* opts) {
     CELIX_EI_IMPL(celix_arrayList_createWithOptions);
     return __real_celix_arrayList_createWithOptions(opts);
+}
+
+celix_array_list_t* __real_celix_arrayList_copy(const celix_array_list_t* list);
+CELIX_EI_DEFINE(celix_arrayList_copy, celix_array_list_t*)
+celix_array_list_t* __wrap_celix_arrayList_copy(const celix_array_list_t* list) {
+    CELIX_EI_IMPL(celix_arrayList_copy);
+    return __real_celix_arrayList_copy(list);
 }
 
 void *__real_celix_arrayList_createStringArray();
@@ -41,6 +48,13 @@ CELIX_EI_DEFINE(celix_arrayList_createStringArray, celix_array_list_t*)
 void *__wrap_celix_arrayList_createStringArray() {
     CELIX_EI_IMPL(celix_arrayList_createStringArray);
     return __real_celix_arrayList_createStringArray();
+}
+
+void *__real_celix_arrayList_createLongArray();
+CELIX_EI_DEFINE(celix_arrayList_createLongArray, celix_array_list_t*)
+void *__wrap_celix_arrayList_createLongArray() {
+    CELIX_EI_IMPL(celix_arrayList_createLongArray);
+    return __real_celix_arrayList_createLongArray();
 }
 
 celix_status_t __real_celix_arrayList_add(celix_array_list_t* list, void* value);

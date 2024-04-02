@@ -21,6 +21,7 @@
 
 #include "celix_array_list.h"
 #include "celix_version.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
 #include "celix_filter.h"
 
@@ -362,6 +363,9 @@ TEST_F(ArrayListTestSuite, CopyArrayTest) {
     EXPECT_TRUE(celix_arrayList_equals(stringList, stringListCopy));
     EXPECT_TRUE(celix_arrayList_equals(versionList, versionListCopy));
     EXPECT_TRUE(celix_arrayList_equals(ptrList, ptrListCopy));
+
+    auto* result = celix_arrayList_copy(nullptr);
+    EXPECT_EQ(nullptr, result);
 }
 
 TEST_F(ArrayListTestSuite, SimpleRemovedCallbacksForArrayListTest) {
@@ -372,6 +376,32 @@ TEST_F(ArrayListTestSuite, SimpleRemovedCallbacksForArrayListTest) {
     celix_arrayList_add(list, (void*) celix_utils_strdup("value"));
     celix_arrayList_add(list, (void*) celix_utils_strdup("value"));
     celix_arrayList_add(list, (void*) celix_utils_strdup("value"));
+    EXPECT_EQ(celix_arrayList_size(list), 4);
+    celix_arrayList_destroy(list); //will call free for every entry
+}
+
+TEST_F(ArrayListTestSuite, AddStringToArrayListOfUndefinedTypeTest) {
+    celix_array_list_create_options_t opts{};
+    opts.simpleRemovedCallback = free;
+    auto* list = celix_arrayList_createWithOptions(&opts);
+    celix_arrayList_addString(list, celix_utils_strdup("value"));
+    celix_arrayList_addString(list, celix_utils_strdup("value"));
+    celix_arrayList_addString(list, celix_utils_strdup("value"));
+    celix_arrayList_addString(list, celix_utils_strdup("value"));
+    EXPECT_EQ(celix_arrayList_size(list), 4);
+    celix_arrayList_destroy(list); //will call free for every entry
+}
+
+TEST_F(ArrayListTestSuite, AddVersionToArrayListOfUndefinedTypeTest) {
+    celix_array_list_create_options_t opts{};
+    opts.simpleRemovedCallback = [](void* data) {
+        celix_version_destroy((celix_version_t*)data);
+    };
+    auto* list = celix_arrayList_createWithOptions(&opts);
+    celix_arrayList_addVersion(list, celix_version_create(1, 3, 0, nullptr));
+    celix_arrayList_addVersion(list, celix_version_create(1, 3, 0, nullptr));
+    celix_arrayList_addVersion(list, celix_version_create(1, 3, 0, nullptr));
+    celix_arrayList_addVersion(list, celix_version_create(1, 3, 0, nullptr));
     EXPECT_EQ(celix_arrayList_size(list), 4);
     celix_arrayList_destroy(list); //will call free for every entry
 }
@@ -464,4 +494,16 @@ TEST_F(ArrayListTestSuite, ReallocTest) {
     for (int i = 0; i < 20; ++i) {
         EXPECT_EQ(i, celix_arrayList_getLong(list, i));
     }
+}
+
+TEST_F(ArrayListTestSuite, ElementTypeToStringTest) {
+    EXPECT_STREQ("Undefined", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED));
+    EXPECT_STREQ("Pointer", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER));
+    EXPECT_STREQ("String", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING));
+    EXPECT_STREQ("Long", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG));
+    EXPECT_STREQ("Double", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE));
+    EXPECT_STREQ("Bool", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL));
+    EXPECT_STREQ("Version", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION));
+    EXPECT_STREQ("Undefined",
+                 celix_arrayList_elementTypeToString((celix_array_list_element_type_t)100 /*non existing*/));
 }

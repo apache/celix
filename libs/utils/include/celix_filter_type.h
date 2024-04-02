@@ -17,22 +17,25 @@
  * under the License.
  */
 
-#ifndef CELIX_CELIX_VERSION_EI_H
-#define CELIX_CELIX_VERSION_EI_H
+/**
+ * @file celix_filter_type.h
+ * @brief Header file for celix_filter_t opaque type. Can be used for forward declaration.
+ */
+
+#ifndef CELIX_FILTER_TYPE_H_
+#define CELIX_FILTER_TYPE_H_
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include "celix_error_injector.h"
-#include "celix_version.h"
-    
-CELIX_EI_DECLARE(celix_version_createVersionFromString, celix_version_t*);
 
-CELIX_EI_DECLARE(celix_version_parse, celix_status_t);
-
-CELIX_EI_DECLARE(celix_version_copy, celix_version_t*);
+/**
+ * @brief The Apache Celix filter type.
+ */
+typedef struct celix_filter_struct celix_filter_t;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //CELIX_CELIX_VERSION_EI_H
+#endif /* CELIX_FILTER_TYPE_H_ */

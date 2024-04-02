@@ -113,55 +113,47 @@ TEST_F(CxxFilterTestSuite, HasMandatoryNegatedPresenceAttribute) {
 }
 
 TEST_F(CxxFilterTestSuite, FilterForLongAttribute) {
-    celix::Filter filter1{"(key1>=10)"};
-    EXPECT_TRUE(filter1.match({{"key1", "12"}}));
-    EXPECT_TRUE(filter1.match({{"key1", "11.1"}}));
-    EXPECT_TRUE(filter1.match({{"key1", "10"}}));
-    EXPECT_FALSE(filter1.match({{"key1", "2"}}));
-    EXPECT_FALSE(filter1.match({{"key1", "1"}}));
-    EXPECT_FALSE(filter1.match({{"key1", "0.1"}}));
+    celix::Properties props{};
+    props.set("key1", 1L);
+    props.set("key2", 20L);
 
-    celix::Filter filter2{"(key1>20)"};
-    EXPECT_TRUE(filter2.match({{"key1", "21"}}));
-    EXPECT_TRUE(filter2.match({{"key1", "20.1"}}));
-    EXPECT_FALSE(filter2.match({{"key1", "20"}}));
-    EXPECT_FALSE(filter2.match({{"key1", "3"}}));
-    EXPECT_FALSE(filter2.match({{"key1", "2"}}));
-    EXPECT_FALSE(filter2.match({{"key1", "0.1"}}));
+    EXPECT_EQ(celix::Properties::ValueType::Long, props.getType("key1"));
+    EXPECT_EQ(celix::Properties::ValueType::Long, props.getType("key2"));
+
+    celix::Filter filter1{"(key1>=1)"};
+    EXPECT_TRUE(filter1.match(props));
+    celix::Filter filter2{"(key2<=3)"};
+    EXPECT_FALSE(filter2.match(props));
+    celix::Filter filter3{"(key2>=1)"};
+    EXPECT_TRUE(filter3.match(props));
 }
 
 TEST_F(CxxFilterTestSuite, FilterForDoubleAttribute) {
-    celix::Filter filter1{"(key1>=10.5)"};
-    EXPECT_TRUE(filter1.match({{"key1", "12"}}));
-    EXPECT_TRUE(filter1.match({{"key1", "11.1"}}));
-    EXPECT_TRUE(filter1.match({{"key1", "10.5"}}));
-    EXPECT_FALSE(filter1.match({{"key1", "2"}}));
-    EXPECT_FALSE(filter1.match({{"key1", "1"}}));
-    EXPECT_FALSE(filter1.match({{"key1", "0.1"}}));
+    celix::Properties props{};
+    props.set("key1", 1.1);
+    props.set("key2", 20.2);
 
-    celix::Filter filter2{"(key1>20.5)"};
-    EXPECT_TRUE(filter2.match({{"key1", "21"}}));
-    EXPECT_TRUE(filter2.match({{"key1", "20.7"}}));
-    EXPECT_FALSE(filter2.match({{"key1", "20.5"}}));
-    EXPECT_FALSE(filter2.match({{"key1", "3"}}));
-    EXPECT_FALSE(filter2.match({{"key1", "2"}}));
-    EXPECT_FALSE(filter2.match({{"key1", "0.1"}}));
+    EXPECT_EQ(celix::Properties::ValueType::Double, props.getType("key1"));
+    EXPECT_EQ(celix::Properties::ValueType::Double, props.getType("key2"));
+
+    celix::Filter filter1{"(key1>=1.1)"};
+    EXPECT_TRUE(filter1.match(props));
+    celix::Filter filter2{"(key2<=3.3)"};
+    EXPECT_FALSE(filter2.match(props));
 }
 
 TEST_F(CxxFilterTestSuite, FilterForVersionAttribute) {
-    celix::Filter filter1{"(key1>=1.2.3.qualifier)"};
-    EXPECT_TRUE(filter1.match({{"key1", "1.2.3.qualifier"}}));
-    EXPECT_TRUE(filter1.match({{"key1", "2"}}));
-    EXPECT_TRUE(filter1.match({{"key1", "2.0.0"}}));
-    EXPECT_TRUE(filter1.match({{"key1", "1.2.4"}}));
-    EXPECT_FALSE(filter1.match({{"key1", "1.2.2"}}));
-    EXPECT_FALSE(filter1.match({{"key1", "1.0.0"}}));
-    EXPECT_FALSE(filter1.match({{"key1", "0.1"}}));
+    celix::Properties props{};
+    props.set("key1", celix::Version{1, 2, 3});
+    props.set("key2", celix::Version{2, 0, 0});
 
-    celix::Filter filter2{"(key1>2.3.4)"};
-    EXPECT_TRUE(filter2.match({{"key1", "3"}}));
-    EXPECT_TRUE(filter2.match({{"key1", "3.0.0"}}));
-    EXPECT_TRUE(filter2.match({{"key1", "2.3.5"}}));
-    EXPECT_FALSE(filter2.match({{"key1", "2.3.4"}}));
-    EXPECT_FALSE(filter2.match({{"key1", "0.0.3"}}));
+    EXPECT_EQ(celix::Properties::ValueType::Version, props.getType("key1"));
+    EXPECT_EQ(celix::Properties::ValueType::Version, props.getType("key2"));
+
+    celix::Filter filter1{"(key1>=1.2.3)"};
+    EXPECT_TRUE(filter1.match(props));
+    celix::Filter filter2{"(key2<=2.0.0)"};
+    EXPECT_TRUE(filter2.match(props));
+    celix::Filter filter3{"(key2<=1.2.3)"};
+    EXPECT_FALSE(filter3.match(props));
 }

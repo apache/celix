@@ -28,6 +28,14 @@
 #include "celix_utils.h"
 #include "celix_version.h"
 
+#define STRING_VALUE_UNDEFINED_EL_TYPE "Undefined"
+#define STRING_VALUE_POINTER_EL_TYPE "Pointer"
+#define STRING_VALUE_STRING_EL_TYPE "String"
+#define STRING_VALUE_LONG_EL_TYPE "Long"
+#define STRING_VALUE_DOUBLE_EL_TYPE "Double"
+#define STRING_VALUE_BOOL_EL_TYPE "Bool"
+#define STRING_VALUE_VERSION_EL_TYPE "Version"
+
 struct celix_array_list {
     celix_array_list_element_type_t elementType;
     celix_array_list_entry_t* elementData;
@@ -93,11 +101,9 @@ static bool celix_arrayList_versionEquals(celix_array_list_entry_t a, celix_arra
     return celix_arrayList_compareVersionEntries(a, b) == 0;
 }
 
-static bool celix_arrayList_equalsForElement(celix_array_list_t *list, celix_array_list_entry_t a, celix_array_list_entry_t b) {
-    if (list && list->equalsCallback != NULL) {
-        return list->equalsCallback(a, b);
-    }
-    return false;
+inline static bool celix_arrayList_equalsForElement(celix_array_list_t *list, celix_array_list_entry_t a, celix_array_list_entry_t b) {
+    // by class invariant, equalsCallback is never NULL
+    return list->equalsCallback(a, b);
 }
 
 static celix_status_t celix_arrayList_copyStringEntry(celix_array_list_entry_t src, celix_array_list_entry_t* dst) {
@@ -279,6 +285,10 @@ static celix_array_list_entry_t arrayList_getEntry(const celix_array_list_t *lis
         entry = list->elementData[index];
     }
     return entry;
+}
+
+celix_array_list_entry_t celix_arrayList_getEntry(const celix_array_list_t *list, int index) {
+    return arrayList_getEntry(list, index);
 }
 
 void* celix_arrayList_get(const celix_array_list_t* list, int index) {
@@ -598,4 +608,25 @@ void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_comp
 #else
     qsort_r(list->elementData, list->size, sizeof(celix_array_list_entry_t), celix_arrayList_compareEntries, compare);
 #endif
+}
+
+const char* celix_arrayList_elementTypeToString(celix_array_list_element_type_t type) {
+    switch (type) {
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED:
+        return STRING_VALUE_UNDEFINED_EL_TYPE;
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER:
+        return STRING_VALUE_POINTER_EL_TYPE;
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING:
+        return STRING_VALUE_STRING_EL_TYPE;
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG:
+        return STRING_VALUE_LONG_EL_TYPE;
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE:
+        return STRING_VALUE_DOUBLE_EL_TYPE;
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL:
+        return STRING_VALUE_BOOL_EL_TYPE;
+    case CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION:
+        return STRING_VALUE_VERSION_EL_TYPE;
+    default:
+        return STRING_VALUE_UNDEFINED_EL_TYPE;
+    }
 }

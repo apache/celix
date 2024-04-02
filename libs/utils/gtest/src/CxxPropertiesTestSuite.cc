@@ -44,6 +44,7 @@ TEST_F(CxxPropertiesTestSuite, FillAndLoopTest) {
     EXPECT_EQ(5, props.size());
 
     EXPECT_EQ(props.get("key1"), "value1");
+    EXPECT_EQ(props.getAsString("key1"), "value1");
     EXPECT_EQ(props.get("key2"), "value2");
     EXPECT_EQ(props.getAsDouble("key3", 0), 3.3);
     EXPECT_EQ(props.get("key4"), "4");
@@ -185,6 +186,146 @@ TEST_F(CxxPropertiesTestSuite, GetAsVersionTest) {
     EXPECT_EQ(props.getAsVersion("key", celix::Version{4, 5, 6}), ver);
 }
 
+
+TEST_F(CxxPropertiesTestSuite, GetTest) {
+    celix::Properties props{};
+
+    props.set("key1", "value1"); //string
+    props.set("key2", 2); //long
+    props.set("key3", 3.3); //double
+    props.set("key4", true); //bool
+    props.set("key5", celix::Version{1, 2, 3}); //version
+
+    //Test getAs with valid key
+    EXPECT_EQ(props.get("key1"), "value1");
+    EXPECT_EQ(props.getAsLong("key2", -1), 2);
+    EXPECT_EQ(props.getAsDouble("key3", -1), 3.3);
+    EXPECT_EQ(props.getAsBool("key4", false), true);
+    celix::Version checkVersion{1, 2, 3};
+    EXPECT_EQ(props.getAsVersion("key5", celix::Version{1, 2, 4}), checkVersion);
+
+    //Test get with valid key
+    EXPECT_EQ(props.getString("key1"), "value1");
+    EXPECT_EQ(props.getLong("key2", -1), 2);
+    EXPECT_EQ(props.getDouble("key3", -1), 3.3);
+    EXPECT_EQ(props.getBool("key4", false), true);
+    EXPECT_EQ(props.getVersion("key5", celix::Version{1, 2, 4}), checkVersion);
+
+    // Test get type
+    EXPECT_EQ(props.getType("key1"), celix::Properties::ValueType::String);
+    EXPECT_EQ(props.getType("key2"), celix::Properties::ValueType::Long);
+    EXPECT_EQ(props.getType("key3"), celix::Properties::ValueType::Double);
+    EXPECT_EQ(props.getType("key4"), celix::Properties::ValueType::Bool);
+    EXPECT_EQ(props.getType("key5"), celix::Properties::ValueType::Version);
+    EXPECT_EQ(props.getType("non-existing"), celix::Properties::ValueType::Unset);
+
+    // Test get with invalid key and default value
+    EXPECT_EQ(props.getString("non_existent_key", "default_value"), "default_value");
+    EXPECT_EQ(props.getLong("non_existent_key", 1), 1);
+    EXPECT_EQ(props.getDouble("non_existent_key", 1.1), 1.1);
+    EXPECT_EQ(props.getBool("non_existent_key", true), true);
+    celix::Version checkVersion2{1, 2, 4};
+    EXPECT_EQ(props.getVersion("non_existent_key", checkVersion2), checkVersion2);
+
+    // Test get with an existing key, but invalid type and default value
+    EXPECT_EQ(props.getString("key5", "default_value"), "default_value"); //key5 is a version
+    EXPECT_EQ(props.getLong("key1", 1), 1); //key1 is a string
+    EXPECT_EQ(props.getDouble("key1", 1.1), 1.1); //key1 is a string
+    EXPECT_EQ(props.getBool("key1", true), true); //key1 is a string
+    EXPECT_EQ(props.getVersion("key1", checkVersion2), checkVersion2); //key1 is a string
+}
+
+TEST_F(CxxPropertiesTestSuite, ArrayListTest) {
+    celix::Properties props{};
+    EXPECT_EQ(0, props.size());
+
+    // Test set
+    props.setVector("key1", std::vector<std::string>{"value1", "value2"});
+    props.setVector("key2", std::vector<long>{1, 2});
+    props.setVector("key3", std::vector<double>{1.1, 2.2});
+    props.setVector("key4", std::vector<bool>{true, false});
+    props.setVector("key5", std::vector<celix::Version>{celix::Version{1, 2, 3}, celix::Version{2, 3, 4}});
+    EXPECT_EQ(5, props.size());
+
+    // Test get type
+    EXPECT_EQ(props.getType("key1"), celix::Properties::ValueType::Vector);
+    EXPECT_EQ(props.getType("key2"), celix::Properties::ValueType::Vector);
+    EXPECT_EQ(props.getType("key3"), celix::Properties::ValueType::Vector);
+    EXPECT_EQ(props.getType("key4"), celix::Properties::ValueType::Vector);
+    EXPECT_EQ(props.getType("key5"), celix::Properties::ValueType::Vector);
+
+    // Test getAs with valid key
+    auto strings = props.getAsStringVector("key1");
+    EXPECT_EQ(strings.size(), 2);
+    EXPECT_EQ(strings[0], "value1");
+    auto longs = props.getAsLongVector("key2");
+    EXPECT_EQ(longs.size(), 2);
+    EXPECT_EQ(longs[0], 1);
+    auto doubles = props.getAsDoubleVector("key3");
+    EXPECT_EQ(doubles.size(), 2);
+    EXPECT_EQ(doubles[0], 1.1);
+    auto booleans = props.getAsBoolVector("key4");
+    EXPECT_EQ(booleans.size(), 2);
+    EXPECT_EQ(booleans[0], true);
+    auto versions = props.getAsVersionVector("key5");
+    EXPECT_EQ(versions.size(), 2);
+    celix::Version checkVersion{1, 2, 3};
+    EXPECT_EQ(versions[0], checkVersion);
+
+    // Test getAs with invalid key and default value
+    strings = props.getAsStringVector("non_existent_key", {"default_value"});
+    EXPECT_EQ(strings.size(), 1);
+    EXPECT_EQ(strings[0], "default_value");
+    longs = props.getAsLongVector("non_existent_key", {1});
+    EXPECT_EQ(longs.size(), 1);
+    EXPECT_EQ(longs[0], 1);
+    doubles = props.getAsDoubleVector("non_existent_key", {1.1});
+    EXPECT_EQ(doubles.size(), 1);
+    EXPECT_EQ(doubles[0], 1.1);
+    booleans = props.getAsBoolVector("non_existent_key", {true});
+    EXPECT_EQ(booleans.size(), 1);
+    EXPECT_EQ(booleans[0], true);
+    versions = props.getAsVersionVector("non_existent_key", {celix::Version{1, 2, 3}});
+    EXPECT_EQ(versions.size(), 1);
+    EXPECT_EQ(versions[0], checkVersion);
+
+
+    // Test get with a valid key
+    strings = props.getStringVector("key1");
+    EXPECT_EQ(strings.size(), 2);
+    EXPECT_EQ(strings[1], "value2");
+    longs = props.getLongVector("key2");
+    EXPECT_EQ(longs.size(), 2);
+    EXPECT_EQ(longs[1], 2);
+    doubles = props.getDoubleVector("key3");
+    EXPECT_EQ(doubles.size(), 2);
+    EXPECT_EQ(doubles[1], 2.2);
+    booleans = props.getBoolVector("key4");
+    EXPECT_EQ(booleans.size(), 2);
+    EXPECT_EQ(booleans[1], false);
+    versions = props.getVersionVector("key5");
+    EXPECT_EQ(versions.size(), 2);
+    celix::Version checkVersion2{2, 3, 4};
+    EXPECT_EQ(versions[1], checkVersion2);
+
+    // Test get with an existing key, but invalid type and default value
+    strings = props.getStringVector("key5", {"default_value"}); //key5 is a version
+    EXPECT_EQ(strings.size(), 1);
+    EXPECT_EQ(strings[0], "default_value");
+    longs = props.getLongVector("key1", {1}); //key1 is a string
+    EXPECT_EQ(longs.size(), 1);
+    EXPECT_EQ(longs[0], 1);
+    doubles = props.getDoubleVector("key1", {1.1}); //key1 is a string
+    EXPECT_EQ(doubles.size(), 1);
+    EXPECT_EQ(doubles[0], 1.1);
+    booleans = props.getBoolVector("key1", {true}); //key1 is a string
+    EXPECT_EQ(booleans.size(), 1);
+    EXPECT_EQ(booleans[0], true);
+    versions = props.getVersionVector("key1", {celix::Version{1, 2, 3}}); //key1 is a string
+    EXPECT_EQ(versions.size(), 1);
+    EXPECT_EQ(versions[0], checkVersion);
+}
+
 TEST_F(CxxPropertiesTestSuite, StoreAndLoadTest) {
     std::string path{"cxx_store_and_load_test.properties"};
 
@@ -200,6 +341,7 @@ TEST_F(CxxPropertiesTestSuite, StoreAndLoadTest) {
 
     try {
         loadedProps = celix::Properties::load("non-existence");
+        (void)loadedProps;
         FAIL() << "Expected exception not thrown";
     } catch (const celix::IOException& e) {
         EXPECT_TRUE(strstr(e.what(), "Cannot load celix::Properties"));

@@ -238,6 +238,11 @@ typedef struct celix_array_list_create_options {
      */
     celix_array_list_copy_entry_fp copyCallback CELIX_OPTS_INIT;
 
+    /**
+     * Initial capacity of the array list. If 0, the default capacity will be used.
+     */
+    size_t initialCapacity CELIX_OPTS_INIT;
+
 } celix_array_list_create_options_t;
 
 #ifndef __cplusplus
@@ -367,6 +372,16 @@ bool celix_arrayList_getBool(const celix_array_list_t *list, int index);
  */
 CELIX_UTILS_EXPORT
 const celix_version_t* celix_arrayList_getVersion(const celix_array_list_t *list, int index);
+
+/**
+ * @brief Returns the entry for the provided index.
+ *
+ * @param list The array list.
+ * @param index The entry index to return.
+ * @return Returns the entry for the index. Returns NULL if index is out of bound.
+ */
+CELIX_UTILS_EXPORT
+celix_array_list_entry_t celix_arrayList_getEntry(const celix_array_list_t *list, int index);
 
 /**
  * @brief add pointer entry to the back of the array list.
@@ -557,8 +572,8 @@ void celix_arrayList_remove(celix_array_list_t* list, void* value);
 /**
  * @brief Remove the first string entry from array list which matches the provided value.
  *
- * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING,
- * CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF and CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
+ * Can be used for array list with element type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING and
+ * CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
  *
  * The equals callback provided when the array list was created will be used to find the entry.
  * If there was no equals callback provided a direct memory compare will be done.
@@ -662,6 +677,15 @@ bool celix_arrayList_equals(const celix_array_list_t* listA, const celix_array_l
  */
 CELIX_UTILS_EXPORT
 celix_array_list_t* celix_arrayList_copy(const celix_array_list_t* list);
+
+/**
+ * @brief Returns the element type as a string.
+ * The returned string is owned by the celix_arrayList library and should not be freed.
+ * @param type The element type.
+ * @return The element type as a string. Returns "Undefined" if the element type is not recognized.
+ */
+CELIX_UTILS_EXPORT
+const char* celix_arrayList_elementTypeToString(celix_array_list_element_type_t type);
 
 #ifdef __cplusplus
 }

@@ -15,14 +15,21 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(version_ei STATIC src/celix_version_ei.cc)
-
-target_include_directories(version_ei PUBLIC include)
-target_link_libraries(version_ei PUBLIC Celix::error_injector Celix::utils)
-# It plays nicely with address sanitizer this way.
-target_link_options(version_ei INTERFACE
-        LINKER:--wrap,celix_version_createVersionFromString
-        LINKER:--wrap,celix_version_parse
-        LINKER:--wrap,celix_version_copy
+add_executable(test_rsa_utils
+        src/RsaUtilsTestSuite.cc
 )
-add_library(Celix::version_ei ALIAS version_ei)
+
+target_link_libraries(test_rsa_utils PRIVATE rsa_utils GTest::gtest GTest::gtest_main Celix::framework)
+target_include_directories(test_utils PRIVATE ../src) #for version_private (needs refactoring of test)
+add_test(NAME test_rsa_utils COMMAND test_rsa_utils)
+setup_target_for_coverage(test_rsa_utils SCAN_DIR ..)
+
+if (EI_TESTS)
+    add_executable(test_rsa_utils_ei
+            src/RsaUtilsErrorInjectionTestSuite.cc
+    )
+    target_link_libraries(test_rsa_utils_ei PRIVATE rsa_utils GTest::gtest GTest::gtest_main)
+    target_link_libraries(test_rsa_utils_ei PRIVATE properties_ei)
+    add_test(NAME test_rsa_utils_ei COMMAND test_rsa_utils_ei)
+    setup_target_for_coverage(test_rsa_utils_ei SCAN_DIR ..)
+endif ()

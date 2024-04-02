@@ -21,8 +21,11 @@
 #define CELIX_CELIX_CONVERT_UTILS_H
 
 #include <stdbool.h>
-#include "celix_version.h"
+
+#include "celix_array_list.h"
+#include "celix_errno.h"
 #include "celix_utils_export.h"
+#include "celix_version.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,6 +38,9 @@ extern "C" {
 
 /**
  * @brief Convert a string to a boolean.
+ *
+ * Converts a string to a boolean. White space is ignored and the following values are considered booleans (case
+ * insensitive): "true', "false".
  *
  * @param[in] val The string to convert.
  * @param[in] defaultValue The default value if the string is not a valid boolean.
@@ -66,18 +72,159 @@ CELIX_UTILS_EXPORT long celix_utils_convertStringToLong(const char* val, long de
 /**
  * @brief Convert a string to a celix_version_t.
  *
+ * In case of an error, an error message is added to celix_err.
+ *
  * @note This convert function will only convert version strings in the format major.minor.micro(.qualifier)?.
  * So the major, minor and micro are required, the qualifier is optional.
  *
  * @param[in] val The string to convert.
  * @param[in] defaultValue The default value if the string is not a valid celix_version_t.
- * @param[out] converted If not NULL, will be set to true if the string is a valid celix_version_t, otherwise false.
- * @return A new celix_version_t* if the string is a valid version, otherwise NULL.
+ * @param[out] version The converted version. If the string is not a valid version, the version will be set to a copy of
+ *                     the defaultValue.
+ * @return CELIX_SUCCESS if the string is a valid version, CELIX_ILLEGAL_ARGUMENT if the string is not a valid version
+ * and CELIX_ENOMEM if memory could not be allocated. Note that on a CELIX_ILLEGAL_ARGUMENT the version will be set to a
+ * copy of the defaultValue.
  */
-CELIX_UTILS_EXPORT celix_version_t* celix_utils_convertStringToVersion(const char* val, const celix_version_t* defaultValue, bool* converted);
+CELIX_UTILS_EXPORT celix_status_t celix_utils_convertStringToVersion(const char* val,
+                                                                     const celix_version_t* defaultValue,
+                                                                     celix_version_t** version);
+
+/**
+ * @brief Convert a string to a celix_array_list_t* with long entries.
+ *
+ * The expected format of the string is a "," separated list of longs. Whitespace is ignored.
+ * Long entries are created using celix_utils_convertStringToLong.
+ *
+ * In case of an error, an error message is added to celix_err.
+ *
+ * @param[in] val The string to convert.
+ * @param[in] defaultValue The default value if the string is not a valid "," separated list of longs.
+ * @param[out] list The converted list. If the string is not a valid list, the list will be set to a copy of the
+ * defaultValue.
+ * @return CELIX_SUCCESS if the string is a valid array list of specified entry type, CELIX_ILLEGAL_ARGUMENT if otherwise,
+ * and CELIX_ENOMEM if memory could not be allocated.
+ * Note that on a CELIX_ILLEGAL_ARGUMENT the list will be set to a copy of the defaultValue.
+ */
+CELIX_UTILS_EXPORT
+celix_status_t celix_utils_convertStringToLongArrayList(const char* val,
+                                                        const celix_array_list_t* defaultValue,
+                                                        celix_array_list_t** list);
+
+/**
+ * @brief Convert a string to a celix_array_list_t* with double entries.
+ *
+ * The expected format of the string is a "," separated list of doubles. Whitespace is ignored.
+ * Double entries are created using celix_utils_convertStringToDouble.
+ *
+ * In case of an error, an error message is added to celix_err.
+ *
+ * @param[in] val The string to convert.
+ * @param[in] defaultValue The default value if the string is not a valid "," separated list of doubles.
+ * @param[out] list The converted list. If the string is not a valid list, the list will be set to a copy of the
+ * defaultValue.
+ * @return CELIX_SUCCESS if the string is a valid array list of specified entry type, CELIX_ILLEGAL_ARGUMENT if otherwise,
+ * and CELIX_ENOMEM if memory could not be allocated.
+ * Note that on a CELIX_ILLEGAL_ARGUMENT the list will be set to a copy of the defaultValue.
+ */
+CELIX_UTILS_EXPORT
+celix_status_t celix_utils_convertStringToDoubleArrayList(const char* val,
+                                                          const celix_array_list_t* defaultValue,
+                                                          celix_array_list_t** list);
+
+/**
+ * @brief Convert a string to a celix_array_list_t* with boolean entries.
+ *
+ * The expected format of the string is a "," separated list of booleans. Whitespace is ignored.
+ * Boolean entries are converted using celix_utils_convertStringToBool.
+ *
+ * In case of an error, an error message is added to celix_err.
+ *
+ * @param[in] val The string to convert.
+ * @param[in] defaultValue The default value if the string is not a valid "," separated list of booleans.
+ * @param[out] list The converted list. If the string is not a valid list, the list will be set to a copy of the
+ * defaultValue.
+ * @return CELIX_SUCCESS if the string is a valid array list of specified entry type, CELIX_ILLEGAL_ARGUMENT if otherwise,
+ * and CELIX_ENOMEM if memory could not be allocated.
+ * Note that on a CELIX_ILLEGAL_ARGUMENT the list will be set to a copy of the defaultValue.
+ */
+CELIX_UTILS_EXPORT
+celix_status_t celix_utils_convertStringToBoolArrayList(const char* val,
+                                                        const celix_array_list_t* defaultValue,
+                                                        celix_array_list_t** list);
+
+/**
+ * @brief Convert a string to a celix_array_list_t* with string entries.
+ *
+ * The expected format of the string is a "," separated list of strings. Whitespace is preserved.
+ * String entries are copied and the returned list will be configured to call free when entries are removed.
+ *
+ * The escaped character is "\" and can be used to escape "," and "\" characters.
+ * E.g. "a,b\,\\,c" will be converted to "a", "b,\" and "c".
+ *
+ * In case of an error, an error message is added to celix_err.
+ *
+ * @param[in] val The string to convert.
+ * @param[in] defaultValue The default value if the string is not a valid "," separated list of strings.
+ *                         Note that the defaultValue is copied if the string is not a valid list of string entries
+ *                         and the defaultValue is expected to be configured with a removed entry callback so the
+ * strings are freed.
+ * @param[out] list The converted list. If the string is not a valid list, the list will be set to a copy of the
+ * defaultValue.
+ * @return CELIX_SUCCESS if the string is a valid array list of specified entry type, CELIX_ILLEGAL_ARGUMENT if otherwise,
+ * and CELIX_ENOMEM if memory could not be allocated.
+ * Note that on a CELIX_ILLEGAL_ARGUMENT the list will be set to a copy of the defaultValue.
+ */
+CELIX_UTILS_EXPORT
+celix_status_t celix_utils_convertStringToStringArrayList(const char* val,
+                                                          const celix_array_list_t* defaultValue,
+                                                          celix_array_list_t** list);
+
+/**
+ * @brief Convert a string to a celix_array_list_t* with celix_version_t* entries.
+ *
+ * The expected format of the string is a "," separated list of celix_version_t* entries. Whitespace is ignored.
+ * Version entries are created using celix_utils_convertStringToVersion and the returned list will be configured to call
+ * celix_version_destroy when entries are removed.
+ *
+ * In case of an error, an error message is added to celix_err.
+ *
+ * @param[in] val The string to convert.
+ * @param[in] defaultValue The default value if the string is not a valid "," separated list of string parseable to
+ *                         celix_version_t entries. Note that the defaultValue is copied if the string is not a valid
+ *                         list of version entries and the defaultValue
+ *                         is expected to be configured with a removed entry callback so the versions are freed.
+ * @param[out] list The converted list. If the string is not a valid list, the list will be set to a copy of the
+ * defaultValue.
+ * @return CELIX_SUCCESS if the string is a valid array list of specified entry type, CELIX_ILLEGAL_ARGUMENT if otherwise,
+ * and CELIX_ENOMEM if memory could not be allocated.
+ * Note that on a CELIX_ILLEGAL_ARGUMENT the list will be set to a copy of the defaultValue.
+ */
+CELIX_UTILS_EXPORT
+celix_status_t celix_utils_convertStringToVersionArrayList(const char* val,
+                                                           const celix_array_list_t* defaultValue,
+                                                           celix_array_list_t** list);
+
+/**
+ * @brief Convert a celix_array_list_t* with a string, bool, long, double of celix_version_t entries to a string.
+ *
+ * @note The array list must an array list of the type CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING,
+ * CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL, CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG, CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE,
+ * or CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION.
+ *
+ * In case of an error, an error message is added to celix_err.
+ *
+ * @param[in] list The list to convert.
+ * @return The string representation of the list. The returned string is allocated and should be freed.
+ * @retrunvalue NULL if the list is NULL or if the list entry type is CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED or
+ *              CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER.
+ */
+CELIX_UTILS_EXPORT
+char* celix_utils_arrayListToString(const celix_array_list_t* list);
+
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //CELIX_CELIX_CONVERT_UTILS_H
+#endif // CELIX_CELIX_CONVERT_UTILS_H
