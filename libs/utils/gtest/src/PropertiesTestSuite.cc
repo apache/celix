@@ -625,7 +625,7 @@ TEST_F(PropertiesTestSuite, SetEntryTest) {
         celix_properties_setEntry(props2, visit.key, &visit.entry);
         celix_properties_setEntry(nullptr, visit.key, &visit.entry);
     }
-
+    celix_properties_setEntry(props2, "key7", nullptr);
     EXPECT_EQ(6, celix_properties_size(props2));
     EXPECT_STREQ("value1", celix_properties_getAsString(props2, "key1", nullptr));
     EXPECT_EQ(123, celix_properties_getAsLong(props2, "key2", -1L));
