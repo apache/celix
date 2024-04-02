@@ -19,15 +19,18 @@
  */
 
 #include <gtest/gtest.h>
+#include <string>
 
 #include "celix/Properties.h"
 #include "celix_cleanup.h"
+#include "celix_convert_utils.h"
 #include "celix_err.h"
 #include "celix_properties.h"
 #include "celix_properties_private.h"
 #include "celix_utils_private_constants.h"
 #include "celix_version.h"
 
+#include "asprintf_ei.h"
 #include "celix_array_list_ei.h"
 #include "celix_string_hash_map_ei.h"
 #include "celix_utils_ei.h"
@@ -40,6 +43,8 @@ class PropertiesErrorInjectionTestSuite : public ::testing::Test {
     PropertiesErrorInjectionTestSuite() = default;
     ~PropertiesErrorInjectionTestSuite() override {
         celix_err_resetErrors();
+        celix_ei_expect_open_memstream(nullptr, 0, nullptr);
+        celix_ei_expect_asprintf(nullptr, 0, -1);
         celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_stringHashMap_createWithOptions(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_copy(nullptr, 0, nullptr);
@@ -139,6 +144,20 @@ TEST_F(PropertiesErrorInjectionTestSuite, SetFailureTest) {
     celix_ei_expect_celix_utils_strdup((void*)celix_properties_createString, 0, nullptr, 2);
     // Then the celix_properties_set call fails
     ASSERT_EQ(celix_properties_set(props, "key", "value"), CELIX_ENOMEM);
+
+    celix_ei_expect_celix_utils_strdup((void*)celix_properties_createString, 0, nullptr);
+    ASSERT_EQ(CELIX_ENOMEM, celix_properties_setLong(props, "key", 1000));
+
+    celix_ei_expect_celix_utils_strdup((void*)celix_properties_createString, 0, nullptr);
+    ASSERT_EQ(CELIX_ENOMEM, celix_properties_setDouble(props, "key", 1.2));
+
+    double largeNumber = 123456789012345.0;
+    celix_ei_expect_asprintf((void*)celix_properties_setDouble, 3, -1);
+    ASSERT_EQ(CELIX_ENOMEM, celix_properties_setDouble(props, "key", largeNumber));
+
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createLongArray();
+    celix_ei_expect_open_memstream((void*)celix_utils_arrayListToString, 1, nullptr);
+    ASSERT_EQ(CELIX_ENOMEM, celix_properties_setArrayList(props, "key", list));
 
     // C++ API
     // Given a celix properties object with a filled optimization cache
@@ -309,6 +328,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, GetAsArrayWithArrayListCopyFailedTest)
     celix_properties_setArrayList(props, "doubleArray", doubleList);
     celix_properties_setArrayList(props, "boolArray", boolList);
     celix_properties_setArrayList(props, "versionArray", versionList);
+    celix_properties_setString(props, "string", "Hello world");
 
     // When a celix_arrayList_createWithOptions error injection is set for celix_properties_getAsStringArrayList
     celix_ei_expect_celix_arrayList_copy((void*)celix_properties_getAsStringArrayList, 1, nullptr);
@@ -352,6 +372,13 @@ TEST_F(PropertiesErrorInjectionTestSuite, GetAsArrayWithArrayListCopyFailedTest)
     // Then the celix_properties_getAsVersionArrayList call fails
     celix_array_list_t* versions = nullptr;
     status = celix_properties_getAsVersionArrayList(props, "versionArray", nullptr, &versions);
+    ASSERT_EQ(status, CELIX_ENOMEM);
+    ASSERT_EQ(nullptr, versions);
+
+
+    celix_ei_expect_open_memstream((void*)celix_utils_convertStringToVersionArrayList, 1, nullptr);
+    versions = nullptr;
+    status = celix_properties_getAsVersionArrayList(props, "string", nullptr, &versions);
     ASSERT_EQ(status, CELIX_ENOMEM);
     ASSERT_EQ(nullptr, versions);
 }
@@ -411,7 +438,7 @@ TEST_F(PropertiesErrorInjectionTestSuite, LoadFromStringFailureTest) {
     celix_err_resetErrors();
 }
 
-TEST_F(PropertiesErrorInjectionTestSuite, LoadSetVersionFailureTest) {
+TEST_F(PropertiesErrorInjectionTestSuite, SetVersionFailureTest) {
     // Given a celix properties object
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     // And a version object
@@ -420,6 +447,22 @@ TEST_F(PropertiesErrorInjectionTestSuite, LoadSetVersionFailureTest) {
     celix_ei_expect_celix_version_copy((void*)celix_properties_setVersion, 0, nullptr);
     // Then the celix_properties_setVersion call fails
     auto status = celix_properties_setVersion(props, "key", version);
+    ASSERT_EQ(status, CELIX_ENOMEM);
+    //And a celix err msg is pushed
+    ASSERT_EQ(1, celix_err_getErrorCount());
+    celix_err_resetErrors();
+
+    celix_autoptr(celix_version_t) version2 = celix_version_create(1, 2, 3, "aaaaaaaaaaaaaaaaaaaaaaaaaa");
+    celix_ei_expect_asprintf((void*) celix_version_toString, 0, -1);
+    status = celix_properties_setVersion(props, "key", version2);
+    ASSERT_EQ(status, CELIX_ENOMEM);
+    ASSERT_STREQ("Cannot fill property entry", celix_err_popLastError());
+    ASSERT_STREQ("Failed to allocate memory for celix_version_toString", celix_err_popLastError());
+    celix_err_resetErrors();
+
+    fillOptimizationCache(props);
+    celix_ei_expect_celix_utils_strdup((void*)celix_properties_createString, 0, nullptr);
+    status = celix_properties_setVersion(props, "key1", version);
     ASSERT_EQ(status, CELIX_ENOMEM);
     //And a celix err msg is pushed
     ASSERT_EQ(1, celix_err_getErrorCount());
