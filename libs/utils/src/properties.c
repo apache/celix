@@ -645,7 +645,7 @@ const celix_properties_entry_t* celix_properties_getEntry(const celix_properties
     return entry;
 }
 
-static const bool celix_properties_isEntryArrayListWithElType(const celix_properties_entry_t* entry,
+static bool celix_properties_isEntryArrayListWithElType(const celix_properties_entry_t* entry,
                                                               celix_array_list_element_type_t elType) {
     return entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_ARRAY_LIST &&
            celix_arrayList_getElementType(entry->typed.arrayValue) == elType;
