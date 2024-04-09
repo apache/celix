@@ -29,7 +29,7 @@ add_executable(test_utils
         src/CelixUtilsTestSuite.cc
         src/ConvertUtilsTestSuite.cc
         src/PropertiesTestSuite.cc
-        src/PropertiesSerializationTestSuite.cc
+        src/PropertiesEncodingTestSuite.cc
         src/VersionTestSuite.cc
         src/ErrTestSuite.cc
         src/ThreadsTestSuite.cc
