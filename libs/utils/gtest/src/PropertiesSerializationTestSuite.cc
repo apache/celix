@@ -32,7 +32,7 @@ class PropertiesSerializationTestSuite : public ::testing::Test {
     PropertiesSerializationTestSuite() { celix_err_resetErrors(); }
 };
 
-TEST_F(PropertiesSerializationTestSuite, SaveEmptyPropertiesTest) {
+TEST_F(PropertiesSerializationTestSuite, EncodeEmptyPropertiesTest) {
     //Given an empty properties object
     celix_autoptr(celix_properties_t) props = celix_properties_create();
 
@@ -41,16 +41,16 @@ TEST_F(PropertiesSerializationTestSuite, SaveEmptyPropertiesTest) {
     size_t bufLen = 0;
     FILE* stream = open_memstream(&buf, &bufLen);
 
-    //When saving the properties to the stream
-    auto status = celix_properties_saveToStream(props, stream);
-    EXPECT_EQ(CELIX_SUCCESS, status);
+    //When encoding the properties to the stream
+    auto status = celix_properties_encodeToStream(props, stream, 0);
+    ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the stream contains an empty JSON object
     fclose(stream);
     EXPECT_STREQ("{}", buf);
 }
 
-TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithSingleValuesTest) {
+TEST_F(PropertiesSerializationTestSuite, EncodePropertiesWithSingleValuesTest) {
         //Given a properties object with single values
         celix_autoptr(celix_properties_t) props = celix_properties_create();
         celix_properties_set(props, "key1", "value1");
@@ -65,9 +65,9 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithSingleValuesTest) {
         size_t bufLen = 0;
         FILE* stream = open_memstream(&buf, &bufLen);
 
-        //When saving the properties to the stream
-        auto status = celix_properties_saveToStream(props, stream);
-        EXPECT_EQ(CELIX_SUCCESS, status);
+        //When encoding the properties to the stream
+        auto status = celix_properties_encodeToStream(props, stream, 0);
+        ASSERT_EQ(CELIX_SUCCESS, status);
 
         //Then the stream contains the JSON representation snippets of the properties
         fclose(stream);
@@ -76,8 +76,6 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithSingleValuesTest) {
         EXPECT_NE(nullptr, strstr(buf, R"("key3":3)")) << "JSON: " << buf;
         EXPECT_NE(nullptr, strstr(buf, R"("key4":4.0)")) << "JSON: " << buf;
         EXPECT_NE(nullptr, strstr(buf, R"("key5":true)")) << "JSON: " << buf;
-
-        //TODO how are versions serialized? A string representation is needed to reconstruct the version from JSON
         EXPECT_NE(nullptr, strstr(buf, R"("key6":"celix_version<1.2.3.qualifier>")")) << "JSON: " << buf;
 
         //And the buf is a valid JSON object
@@ -87,7 +85,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithSingleValuesTest) {
         json_decref(root);
 }
 
-TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithNaNAndInfValuesTest) {
+TEST_F(PropertiesSerializationTestSuite, EncodePropertiesWithNaNAndInfValuesTest) {
     //Given a NAN, INF and -INF value
     auto keys = {"NAN", "INF", "-INF"};
     for (const auto& key : keys) {
@@ -104,7 +102,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithNaNAndInfValuesTest) 
 
         //Then saving the properties to the stream fails, because JSON does not support NAN, INF and -INF
         celix_err_resetErrors();
-        auto status = celix_properties_saveToStream(props, stream);
+        auto status = celix_properties_encodeToStream(props, stream, 0);
         EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
         //And an error msg is added to celix_err
@@ -113,7 +111,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithNaNAndInfValuesTest) 
 }
 
 
-TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithArrayListsTest) {
+TEST_F(PropertiesSerializationTestSuite, EncodePropertiesWithArrayListsTest) {
     // Given a properties object with array list values
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     celix_array_list_t* list1 = celix_arrayList_createStringArray();
@@ -143,8 +141,8 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithArrayListsTest) {
     FILE* stream = open_memstream(&buf, &bufLen);
 
     // When saving the properties to the stream
-    auto status = celix_properties_saveToStream(props, stream);
-    EXPECT_EQ(CELIX_SUCCESS, status);
+    auto status = celix_properties_encodeToStream(props, stream, 0);
+    ASSERT_EQ(CELIX_SUCCESS, status);
 
     // Then the stream contains the JSON representation snippets of the properties
     fclose(stream);
@@ -163,7 +161,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithArrayListsTest) {
 }
 
 
-TEST_F(PropertiesSerializationTestSuite, SaveEmptyArrayTest) {
+TEST_F(PropertiesSerializationTestSuite, EncodeEmptyArrayTest) {
     //Given a properties object with an empty array list of with el types string, long, double, bool, version
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     celix_properties_assignArrayList(props, "key1", celix_arrayList_createStringArray());
@@ -178,16 +176,16 @@ TEST_F(PropertiesSerializationTestSuite, SaveEmptyArrayTest) {
     size_t bufLen = 0;
     FILE* stream = open_memstream(&buf, &bufLen);
 
-    //When saving the properties to the stream
-    auto status = celix_properties_saveToStream(props, stream);
-    EXPECT_EQ(CELIX_SUCCESS, status);
+    //When encoding the properties to the stream
+    auto status = celix_properties_encodeToStream(props, stream, 0);
+    ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the stream contains an empty JSON object, because empty arrays are treated as unset
     fclose(stream);
     EXPECT_STREQ("{}", buf);
 }
 
-TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysTest) {
+TEST_F(PropertiesSerializationTestSuite, EncodeJPathKeysTest) {
     //Given a properties object with jpath keys
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     celix_properties_set(props, "key1", "value1");
@@ -202,9 +200,9 @@ TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysTest) {
     size_t bufLen = 0;
     FILE* stream = open_memstream(&buf, &bufLen);
 
-    //When saving the properties to the stream
-    auto status = celix_properties_saveToStream(props, stream);
-    EXPECT_EQ(CELIX_SUCCESS, status);
+    //When encoding the properties to the stream
+    auto status = celix_properties_encodeToStream(props, stream, 0);
+    ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the stream contains the JSON representation snippets of the properties
     fclose(stream);
@@ -221,7 +219,7 @@ TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysTest) {
     json_decref(root);
 }
 
-TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysWithCollisionTest) {
+TEST_F(PropertiesSerializationTestSuite, EncodeJPathKeysWithCollisionTest) {
     //Given a properties object with jpath keys that collide
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     celix_properties_set(props, "key1/key2/key3", "value1");
@@ -234,9 +232,9 @@ TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysWithCollisionTest) {
     size_t bufLen = 0;
     FILE* stream = open_memstream(&buf, &bufLen);
 
-    //When saving the properties to the stream
-    auto status = celix_properties_saveToStream(props, stream);
-    EXPECT_EQ(CELIX_SUCCESS, status);
+    //When encoding the properties to the stream
+    auto status = celix_properties_encodeToStream(props, stream, 0);
+    ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the stream contains the JSON representation snippets of the properties
     fclose(stream);
@@ -254,15 +252,15 @@ TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysWithCollisionTest) {
     json_decref(root);
 }
 
-TEST_F(PropertiesSerializationTestSuite, LoadEmptyPropertiesTest) {
+TEST_F(PropertiesSerializationTestSuite, DecodeEmptyPropertiesTest) {
     //Given an empty JSON object
     const char* json = "{}";
     FILE* stream = fmemopen((void*)json, strlen(json), "r");
 
-    //When loading the properties from the stream
+    //When decoding the properties from the stream
     celix_autoptr(celix_properties_t) props = nullptr;
-    auto status = celix_properties_loadFromStream(stream, &props);
-    EXPECT_EQ(CELIX_SUCCESS, status);
+    auto status = celix_properties_decodeFromStream(stream, 0, &props);
+    ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the properties object is empty
     EXPECT_EQ(0, celix_properties_size(props));
@@ -270,7 +268,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadEmptyPropertiesTest) {
     fclose(stream);
 }
 
-TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithSingleValuesTest) {
+TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithSingleValuesTest) {
     //Given a JSON object with single values for types string, long, double, bool and version
     const char* jsonInput = R"({
         "strKey":"strValue",
@@ -283,11 +281,10 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithSingleValuesTest) {
     //And a stream with the JSON object
     FILE* stream = fmemopen((void*)jsonInput, strlen(jsonInput), "r");
 
-
-    //When loading the properties from the stream
+    //When decoding the properties from the stream
     celix_autoptr(celix_properties_t) props = nullptr;
-    auto status = celix_properties_loadFromStream(stream, &props);
-    EXPECT_EQ(CELIX_SUCCESS, status);
+    auto status = celix_properties_decodeFromStream(stream, 0, &props);
+    ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the properties object contains the single values
     EXPECT_EQ(5, celix_properties_size(props));
@@ -301,26 +298,28 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithSingleValuesTest) {
     EXPECT_STREQ("1.2.3.qualifier", vStr);
 }
 
-TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithArrayListsTest) {
+TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithArrayListsTest) {
     //Given a JSON object with array values for types string, long, double, bool and version
     const char* jsonInput = R"({
         "strArr":["value1","value2"],
         "intArr":[1,2],
         "realArr":[1.0,2.0],
         "boolArr":[true,false],
-        "versionArr":["celix_version<1.2.3.qualifier>","celix_version<4.5.6.qualifier>"]
+        "versionArr":["celix_version<1.2.3.qualifier>","celix_version<4.5.6.qualifier>"],
+        "mixedRealAndIntArr1":[1,2.0,2,3.0],
+        "mixedRealAndIntArr2":[1.0,2,2.0,3]
     })";
 
     //And a stream with the JSON object
     FILE* stream = fmemopen((void*)jsonInput, strlen(jsonInput), "r");
 
-    //When loading the properties from the stream
+    //When decoding the properties from the stream
     celix_autoptr(celix_properties_t) props = nullptr;
-    auto status = celix_properties_loadFromStream(stream, &props);
-    EXPECT_EQ(CELIX_SUCCESS, status);
+    auto status = celix_properties_decodeFromStream(stream, 0, &props);
+    ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the properties object contains the array values
-    EXPECT_EQ(5, celix_properties_size(props));
+    EXPECT_EQ(7, celix_properties_size(props));
 
     //And the string array is correctly loaded
     auto* strArr = celix_properties_getArrayList(props, "strArr");
@@ -367,24 +366,42 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithArrayListsTest) {
     ASSERT_NE(nullptr, v2);
     celix_autofree char* v2Str = celix_version_toString(v2);
     EXPECT_STREQ("4.5.6.qualifier", v2Str);
+
+    //And the mixed json real and int arrays are correctly loaded as double arrays
+    auto* mixedRealAndIntArr1 = celix_properties_getArrayList(props, "mixedRealAndIntArr1");
+    ASSERT_NE(nullptr, mixedRealAndIntArr1);
+    EXPECT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE, celix_arrayList_getElementType(mixedRealAndIntArr1));
+    EXPECT_EQ(4, celix_arrayList_size(mixedRealAndIntArr1));
+    EXPECT_DOUBLE_EQ(1.0, celix_arrayList_getDouble(mixedRealAndIntArr1, 0));
+    EXPECT_DOUBLE_EQ(2.0, celix_arrayList_getDouble(mixedRealAndIntArr1, 1));
+    EXPECT_DOUBLE_EQ(2.0, celix_arrayList_getDouble(mixedRealAndIntArr1, 2));
+    EXPECT_DOUBLE_EQ(3.0, celix_arrayList_getDouble(mixedRealAndIntArr1, 3));
+
+    auto* mixedRealAndIntArr2 = celix_properties_getArrayList(props, "mixedRealAndIntArr2");
+    ASSERT_NE(nullptr, mixedRealAndIntArr2);
+    EXPECT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE, celix_arrayList_getElementType(mixedRealAndIntArr2));
+    EXPECT_EQ(4, celix_arrayList_size(mixedRealAndIntArr2));
+    EXPECT_DOUBLE_EQ(1.0, celix_arrayList_getDouble(mixedRealAndIntArr2, 0));
+    EXPECT_DOUBLE_EQ(2.0, celix_arrayList_getDouble(mixedRealAndIntArr2, 1));
+    EXPECT_DOUBLE_EQ(2.0, celix_arrayList_getDouble(mixedRealAndIntArr2, 2));
+    EXPECT_DOUBLE_EQ(3.0, celix_arrayList_getDouble(mixedRealAndIntArr2, 3));
 }
 
-//TODO test with combination json_int and json_real, this should be promoted to double
-
-TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithInvalidInputTest) {
+TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithInvalidInputTest) {
     auto invalidInputs = {
         R"({)",                            // invalid JSON (caught by jansson)
-        R"({"emptyArr":[]})",              // Empty array, not supported
+        R"([])",                           // unsupported JSON (top level array not supported)
+        R"(42)",                           // invalid JSON (caught by jansson)
         R"({"mixedArr":["string", true]})", // Mixed array, not supported
-        R"({"mixedArr":[1.9, 2]})", // Mixed array, TODO this should be supported
+        R"({"key1":null})",                 // Null value, not supported
     };
     for (auto& invalidInput: invalidInputs) {
         //Given an invalid JSON object
         FILE* stream = fmemopen((void*)invalidInput, strlen(invalidInput), "r");
 
-        //When loading the properties from the stream
+        //When decoding the properties from the stream
         celix_autoptr(celix_properties_t) props = nullptr;
-        auto status = celix_properties_loadFromStream(stream, &props);
+        auto status = celix_properties_decodeFromStream(stream, 0, &props);
 
         //Then loading fails
         EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
@@ -397,7 +414,132 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithInvalidInputTest) {
     }
 }
 
-//TODO test deserialize null values
-//TODO test serialize with empty array (treated as unset)
-//TODO test with jpath subset keys and json serialization
+TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithEmptyArrayTest) {
+    //Given a JSON object with an empty array
+    auto* emptyArrays = R"({"key1":[]})";
+
+    //And a stream with the JSON object
+    FILE* stream = fmemopen((void*)emptyArrays, strlen(emptyArrays), "r");
+
+    //When decoding the properties from the stream
+    celix_autoptr(celix_properties_t) props = nullptr;
+    auto status = celix_properties_decodeFromStream(stream, 0, &props);
+
+    //Then loading succeeds
+    ASSERT_EQ(CELIX_SUCCESS, status);
+
+    //And the properties object is empty, because empty arrays are treated as unset
+    EXPECT_EQ(0, celix_properties_size(props));
+}
+
+TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithNestedObjectsTest) {
+    // Given a complex JSON object
+    const char* jsonInput = R"({
+        "key1":"value1",
+        "key2":"value2",
+        "object1": {
+            "key3":"value3",
+            "key4":true
+        },
+        "object2": {
+            "key5":5.0
+        },
+        "object3":{
+            "object4":{
+                "key6":6
+            }
+        }
+    })";
+
+    // And a stream with the JSON object
+    FILE* stream = fmemopen((void*)jsonInput, strlen(jsonInput), "r");
+
+    // When decoding the properties from the stream
+    celix_autoptr(celix_properties_t) props = nullptr;
+    auto status = celix_properties_decodeFromStream(stream, 0, &props);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+
+    // Then the properties object contains the nested objects
+    EXPECT_EQ(6, celix_properties_size(props));
+    EXPECT_STREQ("value1", celix_properties_getString(props, "key1"));
+    EXPECT_STREQ("value2", celix_properties_getString(props, "key2"));
+    EXPECT_STREQ("value3", celix_properties_getString(props, "object1/key3"));
+    EXPECT_EQ(true, celix_properties_getBool(props, "object1/key4", false));
+    EXPECT_DOUBLE_EQ(5., celix_properties_getDouble(props, "object2/key5", 0.0));
+    EXPECT_EQ(6, celix_properties_getLong(props, "object3/object4/key6", 0));
+}
+
+TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithNestedObjectsAndJPathCollisionTest) {
+    // Given a complex JSON object with jpath keys that collide
+    const char* jsonInput = R"({
+        "object1": {
+            "object2": {
+                "key1":true
+            }
+        },
+        "object1/object2/key1":6
+    })";
+
+    // And a stream with the JSON object
+    FILE* stream = fmemopen((void*)jsonInput, strlen(jsonInput), "r");
+
+    // When decoding the properties from the stream
+    celix_autoptr(celix_properties_t) props = nullptr;
+    auto status = celix_properties_decodeFromStream(stream, 0, &props);
+
+    // Then loading fails
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    // And at least one error message is added to celix_err
+    EXPECT_GE(celix_err_getErrorCount(), 1);
+    celix_err_printErrors(stderr, "Error: ", "\n");
+}
+
+//TODO
+//TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithStrictEnabledDisabledTest) {
+//    auto invalidInputs = {
+//        R"({"mixedArr":["string", true]})", // Mixed array gives error on strict
+//        R"({"key1":null})",                 // Null value gives error on strict
+//        R"({"":"value"})",                  // "" key gives error on strict
+//        R"({"emptyArr":[]})",               // Empty array gives error on strict
+//        R"({"key1":"val1", "key1:"val2"})", // Duplicate key gives error on strict
+//    };
+//
+//    for (auto& invalidInput: invalidInputs) {
+//        //Given an invalid JSON object
+//        FILE* stream = fmemopen((void*)invalidInput, strlen(invalidInput), "r");
+//
+//        //When decoding the properties from the stream with an empty flags
+//        celix_autoptr(celix_properties_t) props = nullptr;
+//        auto status = celix_properties_decodeFromStream(stream, 0, &props);
+//
+//        //Then decoding succeeds, because strict is disabled
+//        ASSERT_EQ(CELIX_SUCCESS, status);
+//        EXPECT_GE(celix_err_getErrorCount(), 0);
+//
+//        //But the properties object is empty, because the invalid input is ignored
+//        EXPECT_EQ(0, celix_properties_size(props));
+//
+//        fclose(stream);
+//    }
+//
+//    for (auto& invalidInput: invalidInputs) {
+//        //Given an invalid JSON object
+//        FILE* stream = fmemopen((void*)invalidInput, strlen(invalidInput), "r");
+//
+//        //When decoding the properties from the stream with a strict flag
+//        celix_autoptr(celix_properties_t) props = nullptr;
+//        auto status = celix_properties_decodeFromStream(stream, CELIX_PROPERTIES_DECODE_STRICT, &props);
+//
+//        //Then decoding fails
+//        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+//
+//        //And at least one error message is added to celix_err
+//        EXPECT_GE(celix_err_getErrorCount(), 1);
+//        celix_err_printErrors(stderr, "Error: ", "\n");
+//
+//        fclose(stream);
+//    }
+//}
+
 //TODO test with key starting and ending with slash

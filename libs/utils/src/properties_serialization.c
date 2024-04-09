@@ -28,7 +28,7 @@
 #include <math.h>
 #include <string.h>
 
-static celix_status_t celix_properties_loadValue(celix_properties_t* props, const char* key, const json_t* jsonValue);
+static celix_status_t celix_properties_loadValue(celix_properties_t* props, const char* key, json_t* jsonValue);
 
 // TODO make jansson wrapper header for auto cleanup, wrap json_object_set_new and json_dumpf for error injection
 
@@ -211,7 +211,7 @@ celix_properties_addEntryToJson(const celix_properties_entry_t* entry, const cha
     return CELIX_SUCCESS;
 }
 
-celix_status_t celix_properties_saveToStream(const celix_properties_t* properties, FILE* stream) {
+celix_status_t celix_properties_encodeToStream(const celix_properties_t* properties, FILE* stream, int encodeFlags) {
     json_t* root = json_object();
     if (!root) {
         celix_err_push("Failed to create json object");
@@ -262,7 +262,7 @@ static bool celix_properties_isVersionString(const char* value) {
 /**
  * @brief Determine the array list element type based on the json value.
  *
- * If the array is empty or of a mixed type, the element type cannot be determined and a CELIX_ILLEGAL_ARGUMENT is
+ * If the array is of a mixed type, the element type cannot be determined and a CELIX_ILLEGAL_ARGUMENT is
  * returned.
  *
  * @param[in] value The json value.
@@ -273,10 +273,7 @@ static bool celix_properties_isVersionString(const char* value) {
 static celix_status_t celix_properties_determineArrayType(const json_t* jsonArray,
                                                           celix_array_list_element_type_t* out) {
     size_t size = json_array_size(jsonArray);
-    if (size == 0) {
-        celix_err_push("Empty array");
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
+    assert(size > 0); //precondition: size > 0
 
     json_t* value;
     int index;
@@ -288,9 +285,15 @@ static celix_status_t celix_properties_determineArrayType(const json_t* jsonArra
             if (type == JSON_STRING && celix_properties_isVersionString(json_string_value(value))) {
                 versionType = true;
             }
-        } else if ((type == JSON_TRUE || type == JSON_FALSE) &&
-                   (json_typeof(value) == JSON_TRUE || json_typeof(value) == JSON_FALSE)) {
+        } else if ((type == JSON_TRUE || type == JSON_FALSE) && json_is_boolean(value)) {
             // bool, ok.
+            continue;
+        } else if (type == JSON_INTEGER && json_typeof(value) == JSON_REAL) {
+            // mixed integer and real, ok but promote to real
+            type = JSON_REAL;
+            continue;
+        } else if (type == JSON_REAL && json_typeof(value) == JSON_INTEGER) {
+            // mixed real and integer, ok
             continue;
         } else if (type != json_typeof(value)) {
             celix_err_push("Mixed types in array");
@@ -350,7 +353,7 @@ static celix_status_t celix_properties_loadArray(celix_properties_t* props, cons
             status = celix_arrayList_addLong(array, (long)json_integer_value(value));
             break;
         case CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE:
-            status = celix_arrayList_addDouble(array, json_real_value(value));
+            status = celix_arrayList_addDouble(array, json_number_value(value));
             break;
         case CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL:
             status = celix_arrayList_addBool(array, json_boolean_value(value));
@@ -376,7 +379,12 @@ static celix_status_t celix_properties_loadArray(celix_properties_t* props, cons
     return celix_properties_assignArrayList(props, key, celix_steal_ptr(array));
 }
 
-static celix_status_t celix_properties_loadValue(celix_properties_t* props, const char* key, const json_t* jsonValue) {
+static celix_status_t celix_properties_loadValue(celix_properties_t* props, const char* key, json_t* jsonValue) {
+    if (celix_properties_hasKey(props, key)) {
+        celix_err_pushf("Key `%s` already exists.", key);
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+
     celix_status_t status = CELIX_SUCCESS;
     if (json_is_string(jsonValue) && celix_properties_isVersionString(json_string_value(jsonValue))) {
         celix_version_t* version = celix_properties_parseVersion(json_string_value(jsonValue));
@@ -393,34 +401,52 @@ static celix_status_t celix_properties_loadValue(celix_properties_t* props, cons
     } else if (json_is_boolean(jsonValue)) {
         status = celix_properties_setBool(props, key, json_boolean_value(jsonValue));
     } else if (json_is_object(jsonValue)) {
-        // TODO
-        status = CELIX_ILLEGAL_ARGUMENT;
+        const char* fieldName;
+        json_t* fieldValue;
+        json_object_foreach(jsonValue, fieldName, fieldValue) {
+            celix_autofree char* subKey;
+            int rc = asprintf(&subKey, "%s/%s", key, fieldName);
+            if (rc < 0) {
+                    celix_err_push("Failed to create sub key");
+                    return CELIX_ENOMEM;
+            }
+            status = celix_properties_loadValue(props, subKey, fieldValue);
+            if (status != CELIX_SUCCESS) {
+                return status;
+            }
+        }
+        return CELIX_SUCCESS;
+    } else if (json_is_array(jsonValue) && json_array_size(jsonValue) == 0) {
+        // empty array -> treat as unset property. silently ignore
+        return CELIX_SUCCESS;
     } else if (json_is_array(jsonValue)) {
         status = celix_properties_loadArray(props, key, jsonValue);
+    } else if (json_is_null(jsonValue)) {
+        celix_err_pushf("Unexpected null value for key `%s`", key);
+        return CELIX_ILLEGAL_ARGUMENT;
     } else {
         // LCOV_EXCL_START
-        celix_err_pushf("Unexpected json value type");
+        celix_err_pushf("Unexpected json value type for key `%s`", key);
         return CELIX_ILLEGAL_ARGUMENT;
         // LCOV_EXCL_STOP
     }
     return status;
 }
 
-static celix_status_t celix_properties_loadFromJson(json_t* obj, celix_properties_t** out) {
-    assert(obj != NULL && json_is_object(obj));
+static celix_status_t celix_properties_decodeFromJson(json_t* obj, celix_properties_t** out) {
+    if (!json_is_object(obj)) {
+        celix_err_push("Expected json object");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     if (!props) {
         return CELIX_ENOMEM;
     }
 
-    // add loop (obj=root, prefix="" and extend prefix when going into sub objects)
     const char* key;
     json_t* value;
     json_object_foreach(obj, key, value) {
-        if (json_is_object(value)) {
-            // TODO
-            return CELIX_ILLEGAL_ARGUMENT;
-        }
         celix_status_t status = celix_properties_loadValue(props, key, value);
         if (status != CELIX_SUCCESS) {
             return status;
@@ -431,7 +457,7 @@ static celix_status_t celix_properties_loadFromJson(json_t* obj, celix_propertie
     return CELIX_SUCCESS;
 }
 
-celix_status_t celix_properties_loadFromStream(FILE* stream, celix_properties_t** out) {
+celix_status_t celix_properties_decodeFromStream(FILE* stream, int decodeFlags, celix_properties_t** out) {
     json_error_t jsonError;
     json_t* root = json_loadf(stream, 0, &jsonError);
     if (!root) {
@@ -439,5 +465,5 @@ celix_status_t celix_properties_loadFromStream(FILE* stream, celix_properties_t*
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    return celix_properties_loadFromJson(root, out);
+    return celix_properties_decodeFromJson(root, out);
 }

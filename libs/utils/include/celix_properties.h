@@ -180,11 +180,28 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_store(celix_properties_t* pro
                                                          const char* file,
                                                          const char* header);
 
-//TODO doc
-CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToStream(const celix_properties_t* properties, FILE* stream);
+#define CELIX_PROPERTIES_ENCODE_PRETTY                  0x01
+#define CELIX_PROPERTIES_ENCODE_SORT_KEYS               0x02
+
+#define CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES     0x01
+#define CELIX_PROPERTIES_DECODE_ERROR_ON_NULL_VALUES    0x02
+#define CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS   0x04
+#define CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS     0x04
+#define CELIX_PROPERTIES_DECODE_ERROR_ON_MIXED_ARRAYS   0x08
+#define CELIX_PROPERTIES_DECODE_STRICT                                                                                 \
+    (CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES | CELIX_PROPERTIES_DECODE_ERROR_ON_NULL_VALUES |                      \
+     CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS | CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS |                     \
+     CELIX_PROPERTIES_DECODE_ERROR_ON_MIXED_ARRAYS)
 
 //TODO doc
-CELIX_UTILS_EXPORT celix_status_t celix_properties_loadFromStream(FILE* stream, celix_properties_t** out);
+CELIX_UTILS_EXPORT celix_status_t celix_properties_encodeToStream(const celix_properties_t* properties,
+                                                                  FILE* stream,
+                                                                  int encodeFlags);
+
+//TODO doc
+CELIX_UTILS_EXPORT celix_status_t celix_properties_decodeFromStream(FILE* stream,
+                                                                    int decodeFlags,
+                                                                    celix_properties_t** out);
 
 /**
  * @brief Get the entry for a given key in a property set.
