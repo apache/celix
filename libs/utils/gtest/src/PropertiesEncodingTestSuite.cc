@@ -252,6 +252,49 @@ TEST_F(PropertiesSerializationTestSuite, EncodeJPathKeysWithCollisionTest) {
     json_decref(root);
 }
 
+
+//TODO check desired behaviour, currently every "/" leads to a new object (except if an collision occurs)
+//TEST_F(PropertiesSerializationTestSuite, EncodePropertiesWithSpecialKeyNamesTest) {
+//    //Given a properties set with special key names (slashes)
+//    celix_autoptr(celix_properties_t) props = celix_properties_create();
+//    celix_properties_set(props, "/", "value1");
+//    celix_properties_set(props, "keyThatEndsWithSlash/", "value2");
+//    celix_properties_set(props, "key//With//Double//Slash", "value3");
+//    celix_properties_set(props, "object/", "value5");
+//    celix_properties_set(props, "object//", "value4");
+//    celix_properties_set(props, "object/keyThatEndsWithSlash/", "value6");
+//    celix_properties_set(props, "object/key//With//Double//Slash", "value7");
+//
+//    //And an in-memory stream
+//    celix_autofree char* buf = nullptr;
+//    size_t bufLen = 0;
+//    FILE* stream = open_memstream(&buf, &bufLen);
+//
+//    //When encoding the properties to the stream
+//    auto status = celix_properties_encodeToStream(props, stream, 0);
+//    ASSERT_EQ(CELIX_SUCCESS, status);
+//
+//    std::cout << buf << std::endl;
+//
+//    //Then the stream contains the JSON representation snippets of the properties
+//    fclose(stream);
+//    EXPECT_NE(nullptr, strstr(buf, R"("/":"value1")")) << "JSON: " << buf;
+//    EXPECT_NE(nullptr, strstr(buf, R"("keyThatEndsWithSlash/":"value2")")) << "JSON: " << buf;
+//    EXPECT_NE(nullptr, strstr(buf, R"("key//With//Double//Slash":"value3")")) << "JSON: " << buf;
+//    EXPECT_NE(nullptr, strstr(buf, R"("object/":"value5")")) << "JSON: " << buf;
+//    EXPECT_NE(nullptr, strstr(buf, R"("/":"value5")")) << "JSON: " << buf; //child of object
+//    EXPECT_NE(nullptr, strstr(buf, R"("keyThatEndsWithSlash/":"value6")")) << "JSON: " << buf; //child of object
+//    EXPECT_NE(nullptr, strstr(buf, R"("key//With//Double//Slash":"value7")")) << "JSON: " << buf; //child of object
+//
+//
+//    //And the buf is a valid JSON object
+//    json_error_t error;
+//    json_t* root = json_loads(buf, 0, &error);
+//    EXPECT_NE(nullptr, root) << "Unexpected JSON error: " << error.text;
+//    json_decref(root);
+//}
+
+
 TEST_F(PropertiesSerializationTestSuite, DecodeEmptyPropertiesTest) {
     //Given an empty JSON object
     const char* json = "{}";
@@ -392,8 +435,6 @@ TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithInvalidInputTest) {
         R"({)",                            // invalid JSON (caught by jansson)
         R"([])",                           // unsupported JSON (top level array not supported)
         R"(42)",                           // invalid JSON (caught by jansson)
-        R"({"mixedArr":["string", true]})", // Mixed array, not supported
-        R"({"key1":null})",                 // Null value, not supported
     };
     for (auto& invalidInput: invalidInputs) {
         //Given an invalid JSON object
@@ -477,7 +518,9 @@ TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithNestedObjectsAndJPa
                 "key1":true
             }
         },
-        "object1/object2/key1":6
+        "object1/object2/key1":6,
+        "key2":2,
+        "key2":3
     })";
 
     // And a stream with the JSON object
@@ -487,7 +530,22 @@ TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithNestedObjectsAndJPa
     celix_autoptr(celix_properties_t) props = nullptr;
     auto status = celix_properties_decodeFromStream(stream, 0, &props);
 
-    // Then loading fails
+    // Then loading succeeds
+    ASSERT_EQ(CELIX_SUCCESS, status);
+
+    // And the properties object contains the last values of the jpath keys
+    EXPECT_EQ(2, celix_properties_size(props));
+    EXPECT_EQ(6, celix_properties_getLong(props, "object1/object2/key1", 0));
+    EXPECT_EQ(3, celix_properties_getLong(props, "key2", 0));
+
+    // When the stream is reset
+    fseek(stream, 0, SEEK_SET);
+
+    // And decoding the properties from the stream using a flog that does not allow collisions
+    celix_autoptr(celix_properties_t) props2 = nullptr;
+    status = celix_properties_decodeFromStream(stream, CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES, &props2);
+
+    // Then loading fails, because of a duplicate key
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
     // And at least one error message is added to celix_err
@@ -495,51 +553,88 @@ TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithNestedObjectsAndJPa
     celix_err_printErrors(stderr, "Error: ", "\n");
 }
 
-//TODO
-//TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithStrictEnabledDisabledTest) {
-//    auto invalidInputs = {
-//        R"({"mixedArr":["string", true]})", // Mixed array gives error on strict
-//        R"({"key1":null})",                 // Null value gives error on strict
-//        R"({"":"value"})",                  // "" key gives error on strict
-//        R"({"emptyArr":[]})",               // Empty array gives error on strict
-//        R"({"key1":"val1", "key1:"val2"})", // Duplicate key gives error on strict
-//    };
-//
-//    for (auto& invalidInput: invalidInputs) {
-//        //Given an invalid JSON object
-//        FILE* stream = fmemopen((void*)invalidInput, strlen(invalidInput), "r");
-//
-//        //When decoding the properties from the stream with an empty flags
-//        celix_autoptr(celix_properties_t) props = nullptr;
-//        auto status = celix_properties_decodeFromStream(stream, 0, &props);
-//
-//        //Then decoding succeeds, because strict is disabled
-//        ASSERT_EQ(CELIX_SUCCESS, status);
-//        EXPECT_GE(celix_err_getErrorCount(), 0);
-//
-//        //But the properties object is empty, because the invalid input is ignored
-//        EXPECT_EQ(0, celix_properties_size(props));
-//
-//        fclose(stream);
-//    }
-//
-//    for (auto& invalidInput: invalidInputs) {
-//        //Given an invalid JSON object
-//        FILE* stream = fmemopen((void*)invalidInput, strlen(invalidInput), "r");
-//
-//        //When decoding the properties from the stream with a strict flag
-//        celix_autoptr(celix_properties_t) props = nullptr;
-//        auto status = celix_properties_decodeFromStream(stream, CELIX_PROPERTIES_DECODE_STRICT, &props);
-//
-//        //Then decoding fails
-//        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
-//
-//        //And at least one error message is added to celix_err
-//        EXPECT_GE(celix_err_getErrorCount(), 1);
-//        celix_err_printErrors(stderr, "Error: ", "\n");
-//
-//        fclose(stream);
-//    }
-//}
+TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithStrictEnabledDisabledTest) {
+    auto invalidInputs = {
+        R"({"mixedArr":["string", true]})", // Mixed array gives error on strict
+        R"({"key1":null})",                 // Null value gives error on strict
+        R"({"":"value"})",                  // "" key gives error on strict
+        R"({"emptyArr":[]})",               // Empty array gives error on strict
+        R"({"key1":"val1", "key1":"val2"})",// Duplicate key gives error on strict
+        R"({"nullArr":[null,null]})",       // Array with null values gives error on strict
+    };
 
-//TODO test with key starting and ending with slash
+    for (auto& invalidInput: invalidInputs) {
+        //Given an invalid JSON object
+        FILE* stream = fmemopen((void*)invalidInput, strlen(invalidInput), "r");
+
+        //When decoding the properties from the stream with an empty flags
+        celix_autoptr(celix_properties_t) props = nullptr;
+        auto status = celix_properties_decodeFromStream(stream, 0, &props);
+        celix_err_printErrors(stderr, "Error: ", "\n");
+
+        //Then decoding succeeds, because strict is disabled
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        EXPECT_GE(celix_err_getErrorCount(), 0);
+
+        //But the properties size is 0 or 1, because the all invalid inputs are ignored, except the duplicate key
+        auto size = celix_properties_size(props);
+        EXPECT_TRUE(size == 0 || size == 1);
+
+        fclose(stream);
+    }
+
+    for (auto& invalidInput: invalidInputs) {
+        //Given an invalid JSON object
+        FILE* stream = fmemopen((void*)invalidInput, strlen(invalidInput), "r");
+
+        //When decoding the properties from the stream with a strict flag
+        celix_autoptr(celix_properties_t) props = nullptr;
+        auto status = celix_properties_decodeFromStream(stream, CELIX_PROPERTIES_DECODE_STRICT, &props);
+
+        //Then decoding fails
+        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+        //And at least one error message is added to celix_err
+        EXPECT_GE(celix_err_getErrorCount(), 1);
+        celix_err_printErrors(stderr, "Error: ", "\n");
+
+        fclose(stream);
+    }
+}
+
+TEST_F(PropertiesSerializationTestSuite, DecodePropertiesWithSpecialKeyNamesTest) {
+    // Given a complex JSON object
+    const char* jsonInput = R"({
+        "/": "value1",
+        "keyThatEndsWithSlash/": "value2",
+        "key//With//Double//Slash": "value3",
+        "object": {
+            "/": "value4",
+            "keyThatEndsWithSlash/": "value5",
+            "key//With//Double//Slash": "value6"
+        }
+    })";
+
+    // And a stream with the JSON object
+    FILE* stream = fmemopen((void*)jsonInput, strlen(jsonInput), "r");
+
+    // When decoding the properties from the stream
+    celix_autoptr(celix_properties_t) props = nullptr;
+    auto status = celix_properties_decodeFromStream(stream, 0, &props);
+    celix_err_printErrors(stderr, "Error: ", "\n");
+    ASSERT_EQ(CELIX_SUCCESS, status);
+
+    // Then the properties object contains the nested objects
+    EXPECT_EQ(6, celix_properties_size(props));
+    EXPECT_STREQ("value1", celix_properties_getString(props, "/"));
+    EXPECT_STREQ("value2", celix_properties_getString(props, "keyThatEndsWithSlash/"));
+    EXPECT_STREQ("value3", celix_properties_getString(props, "key//With//Double//Slash"));
+    EXPECT_STREQ("value4", celix_properties_getString(props, "object//"));
+    EXPECT_STREQ("value5", celix_properties_getString(props, "object/keyThatEndsWithSlash/"));
+    EXPECT_STREQ("value6", celix_properties_getString(props, "object/key//With//Double//Slash"));
+}
+
+//TODO test with invalid version string
+//TODO is there a strict option needed for version (e.g. not parseable as version handle as string)
+//TODO test encoding flags
+//TODO error injection tests and wrappers for jansson functions

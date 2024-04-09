@@ -180,9 +180,16 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_store(celix_properties_t* pro
                                                          const char* file,
                                                          const char* header);
 
+//TODO document the encode flags
 #define CELIX_PROPERTIES_ENCODE_PRETTY                  0x01
 #define CELIX_PROPERTIES_ENCODE_SORT_KEYS               0x02
 
+//TODO doc. Not encode does not reset the stream position.
+CELIX_UTILS_EXPORT celix_status_t celix_properties_encodeToStream(const celix_properties_t* properties,
+                                                                  FILE* stream,
+                                                                  int encodeFlags);
+
+//TODO document the decode flags
 #define CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES     0x01
 #define CELIX_PROPERTIES_DECODE_ERROR_ON_NULL_VALUES    0x02
 #define CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS   0x04
@@ -193,12 +200,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_store(celix_properties_t* pro
      CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS | CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS |                     \
      CELIX_PROPERTIES_DECODE_ERROR_ON_MIXED_ARRAYS)
 
-//TODO doc
-CELIX_UTILS_EXPORT celix_status_t celix_properties_encodeToStream(const celix_properties_t* properties,
-                                                                  FILE* stream,
-                                                                  int encodeFlags);
-
-//TODO doc
+//TODO doc. Note decode does not reset the stream position.
 CELIX_UTILS_EXPORT celix_status_t celix_properties_decodeFromStream(FILE* stream,
                                                                     int decodeFlags,
                                                                     celix_properties_t** out);
