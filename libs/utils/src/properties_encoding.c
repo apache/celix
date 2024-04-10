@@ -31,8 +31,6 @@
 static celix_status_t
 celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t* jsonValue, int flags);
 
-// TODO make jansson wrapper header for auto cleanup, wrap json_object_set_new and json_dumpf for error injection
-
 static celix_status_t celix_properties_versionToJson(const celix_version_t* version, json_t** out) {
     celix_autofree char* versionStr = celix_version_toString(version);
     if (!versionStr) {
@@ -68,7 +66,7 @@ static celix_status_t celix_properties_arrayElementEntryValueToJson(celix_array_
         return celix_properties_versionToJson(entry.versionVal, out);
     default:
         // LCOV_EXCL_START
-        celix_err_pushf("Unexpected array list element type %d", elType);
+        celix_err_pushf("Invalid array list element type %d", elType);
         return CELIX_ILLEGAL_ARGUMENT;
         // LCOV_EXCL_STOP
     }
@@ -79,9 +77,16 @@ static celix_status_t celix_properties_arrayElementEntryValueToJson(celix_array_
     return CELIX_SUCCESS;
 }
 
-static celix_status_t celix_properties_arrayEntryValueToJson(const celix_properties_entry_t* entry, json_t** out) {
+static celix_status_t celix_properties_arrayEntryValueToJson(const char* key,
+                                                             const celix_properties_entry_t* entry,
+                                                             int flags,
+                                                             json_t** out) {
     *out = NULL;
     if (celix_arrayList_size(entry->typed.arrayValue) == 0) {
+        if (flags & CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS) {
+            celix_err_pushf("Invalid empty array for key %s", key);
+            return CELIX_ILLEGAL_ARGUMENT;
+        }
         return CELIX_SUCCESS; // empty array -> treat as unset property
     }
 
@@ -115,7 +120,8 @@ static celix_status_t celix_properties_arrayEntryValueToJson(const celix_propert
     return CELIX_SUCCESS;
 }
 
-static celix_status_t celix_properties_entryValueToJson(const celix_properties_entry_t* entry, json_t** out) {
+static celix_status_t
+celix_properties_entryValueToJson(const char* key, const celix_properties_entry_t* entry, int flags, json_t** out) {
     *out = NULL;
     switch (entry->valueType) {
     case CELIX_PROPERTIES_VALUE_TYPE_STRING:
@@ -126,7 +132,7 @@ static celix_status_t celix_properties_entryValueToJson(const celix_properties_e
         break;
     case CELIX_PROPERTIES_VALUE_TYPE_DOUBLE:
         if (isnan(entry->typed.doubleValue) || isinf(entry->typed.doubleValue)) {
-            celix_err_pushf("Double NaN or Inf not supported in JSON.");
+            celix_err_pushf("Invalid NaN or Inf in key '%s'.", key);
             return CELIX_ILLEGAL_ARGUMENT;
         }
         *out = json_real(entry->typed.doubleValue);
@@ -137,34 +143,76 @@ static celix_status_t celix_properties_entryValueToJson(const celix_properties_e
     case CELIX_PROPERTIES_VALUE_TYPE_VERSION:
         return celix_properties_versionToJson(entry->typed.versionValue, out);
     case CELIX_PROPERTIES_VALUE_TYPE_ARRAY_LIST:
-        return celix_properties_arrayEntryValueToJson(entry, out);
+        return celix_properties_arrayEntryValueToJson(key, entry, flags, out);
     default:
         // LCOV_EXCL_START
-        celix_err_pushf("Unexpected properties entry type %d", entry->valueType);
+        celix_err_pushf("Invalid properties entry type %d.", entry->valueType);
         return CELIX_ILLEGAL_ARGUMENT;
         // LCOV_EXCL_STOP
     }
 
     if (!*out) {
-        celix_err_push("Failed to create json value");
+        celix_err_pushf("Failed to create json value for key '%s'.", key);
         return CELIX_ENOMEM;
     }
     return CELIX_SUCCESS;
 }
 
-static celix_status_t
-celix_properties_addEntryToJson(const celix_properties_entry_t* entry, const char* key, json_t* root) {
+static celix_status_t celix_properties_addJsonValueToJson(json_t* value, const char* key, json_t* obj, int flags) {
+    if (!value) {
+        // ignore unset values
+        return CELIX_SUCCESS;
+    }
+
+    json_t* field = json_object_get(obj, key);
+    if (field) {
+        if (flags & CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS) {
+            celix_err_pushf("Invalid key collision. key '%s' already exists.", key);
+            return CELIX_ILLEGAL_ARGUMENT;
+        }
+    }
+
+    int rc = json_object_set_new(obj, key, value);
+    if (rc != 0) {
+        celix_err_push("Failed to set json object");
+        return CELIX_ENOMEM;
+    }
+    return CELIX_SUCCESS;
+}
+
+static celix_status_t celix_properties_addPropertiesEntryFlatToJson(const celix_properties_entry_t* entry,
+                                                                    const char* key,
+                                                                    json_t* root,
+                                                                    int flags) {
+    json_t* value;
+    celix_status_t status = celix_properties_entryValueToJson(key, entry, flags, &value);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+    return celix_properties_addJsonValueToJson(value, key, root, flags);
+}
+
+static celix_status_t celix_properties_addPropertiesEntryToJson(const celix_properties_entry_t* entry,
+                                                                const char* key,
+                                                                json_t* root,
+                                                                int flags) {
     json_t* jsonObj = root;
-    const char* subKey = key;
+    const char* fieldName = key;
     const char* slash = strstr(key, "/");
     while (slash) {
-        celix_autofree const char* name = strndup(subKey, slash - subKey);
+        char buf[64];
+        char* name = celix_utils_writeOrCreateString(buf, sizeof(buf), "%.*s", (int)(slash - fieldName), fieldName);
+        celix_auto(celix_utils_string_guard_t) strGuard = celix_utils_stringGuard_init(buf, name);
         if (!name) {
             celix_err_push("Failed to create name string");
             return CELIX_ENOMEM;
         }
         json_t* subObj = json_object_get(jsonObj, name);
-        if (!subObj) {
+        if (!subObj || !json_is_object(subObj)) {
+            if (!json_is_object(subObj) && flags & CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS) {
+                celix_err_pushf("Invalid key collision. Key '%s' already exists.", name);
+                return CELIX_ILLEGAL_ARGUMENT;
+            }
             subObj = json_object();
             if (!subObj) {
                 celix_err_push("Failed to create json object");
@@ -175,51 +223,40 @@ celix_properties_addEntryToJson(const celix_properties_entry_t* entry, const cha
                 celix_err_push("Failed to set json object");
                 return CELIX_ENOMEM;
             }
-        } else if (!json_is_object(subObj)) {
-            // subObj is not an object, so obj cannot be added -> adding obj flat
-            jsonObj = root;
-            subKey = key;
-            break;
         }
 
         jsonObj = subObj;
-        subKey = slash + 1;
-        slash = strstr(subKey, "/");
-
-        json_t* field = json_object_get(jsonObj, subKey);
-        if (field) {
-            // field already exists, so adding obj flat
-            jsonObj = root;
-            subKey = key;
-            break;
-        }
+        fieldName = slash + 1;
+        slash = strstr(fieldName, "/");
     }
 
     json_t* value;
-    celix_status_t status = celix_properties_entryValueToJson(entry, &value);
+    celix_status_t status = celix_properties_entryValueToJson(fieldName, entry, flags, &value);
     if (status != CELIX_SUCCESS) {
         return status;
-    } else if (!value) {
-        // ignore unset values
-    } else {
-        int rc = json_object_set_new(jsonObj, subKey, value);
-        if (rc != 0) {
-            celix_err_push("Failed to set json object");
-            return CELIX_ENOMEM;
-        }
     }
-
-    return CELIX_SUCCESS;
+    return celix_properties_addJsonValueToJson(value, fieldName, jsonObj, flags);
 }
 
-celix_status_t celix_properties_encodeToStream(const celix_properties_t* properties, FILE* stream, int encodeFlags) {
+celix_status_t celix_properties_saveToStream(const celix_properties_t* properties, FILE* stream, int encodeFlags) {
     json_t* root = json_object();
     if (!root) {
         celix_err_push("Failed to create json object");
     }
 
+    if (!(encodeFlags & CELIX_PROPERTIES_ENCODE_FLAT) && !(encodeFlags & CELIX_PROPERTIES_ENCODE_NESTED)) {
+        //no encoding flags set, default to flat
+        encodeFlags |= CELIX_PROPERTIES_ENCODE_FLAT;
+    }
+
     CELIX_PROPERTIES_ITERATE(properties, iter) {
-        celix_status_t status = celix_properties_addEntryToJson(&iter.entry, iter.key, root);
+        celix_status_t status;
+        if (encodeFlags & CELIX_PROPERTIES_ENCODE_FLAT) {
+            status = celix_properties_addPropertiesEntryFlatToJson(&iter.entry, iter.key, root, encodeFlags);
+        } else {
+            assert(encodeFlags & CELIX_PROPERTIES_ENCODE_NESTED);
+            status = celix_properties_addPropertiesEntryToJson(&iter.entry, iter.key, root, encodeFlags);
+        }
         if (status != CELIX_SUCCESS) {
             json_decref(root);
             return status;
@@ -230,9 +267,6 @@ celix_status_t celix_properties_encodeToStream(const celix_properties_t* propert
     if (encodeFlags & CELIX_PROPERTIES_ENCODE_PRETTY) {
         jsonFlags = JSON_INDENT(2);
     }
-    if (encodeFlags & CELIX_PROPERTIES_ENCODE_SORT_KEYS) {
-        jsonFlags |= JSON_SORT_KEYS;
-    }
 
     int rc = json_dumpf(root, stream, jsonFlags);
     json_decref(root);
@@ -241,6 +275,35 @@ celix_status_t celix_properties_encodeToStream(const celix_properties_t* propert
         return CELIX_ENOMEM;
     }
     return CELIX_SUCCESS;
+}
+
+celix_status_t celix_properties_save(const celix_properties_t* properties, const char* filename, int encodeFlags) {
+    FILE* stream = fopen(filename, "w");
+    if (!stream) {
+        celix_err_pushf("Failed to open file %s", filename);
+        return CELIX_FILE_IO_EXCEPTION;
+    }
+    celix_status_t status = celix_properties_saveToStream(properties, stream, encodeFlags);
+    fclose(stream);
+    return status;
+}
+
+celix_status_t celix_properties_saveToString(const celix_properties_t* properties, int encodeFlags, char** out) {
+    *out = NULL;
+    celix_autofree char* buffer = NULL;
+    size_t size = 0;
+    FILE* stream = open_memstream(&buffer, &size);
+    if (!stream) {
+        celix_err_push("Failed to open memstream");
+        return CELIX_FILE_IO_EXCEPTION;
+    }
+
+    celix_status_t status = celix_properties_saveToStream(properties, stream, encodeFlags);
+    fclose(stream);
+    if (status == CELIX_SUCCESS) {
+        *out = celix_steal_ptr(buffer);
+    }
+    return status;
 }
 
 static celix_version_t* celix_properties_parseVersion(const char* value) {
@@ -326,7 +389,7 @@ static celix_status_t celix_properties_determineArrayType(const json_t* jsonArra
         break;
     case JSON_NULL:
     default:
-        return CELIX_ILLEGAL_ARGUMENT; // TODO Add test for this case and maybe return a different error code and log error
+        return CELIX_ILLEGAL_ARGUMENT;
     }
 
     return CELIX_SUCCESS;
@@ -338,7 +401,7 @@ celix_properties_decodeArray(celix_properties_t* props, const char* key, const j
     celix_status_t status = celix_properties_determineArrayType(jsonArray, &elType);
     if (status != CELIX_SUCCESS && (flags & CELIX_PROPERTIES_DECODE_ERROR_ON_MIXED_ARRAYS)) {
         celix_autofree char* arrStr = json_dumps(jsonArray, JSON_ENCODE_ANY);
-        celix_err_pushf("Unsupported mixed or null array for key '%s': %s", key, arrStr);
+        celix_err_pushf("Invalid mixed or null array for key '%s': %s", key, arrStr);
         return status;
     } else if (status != CELIX_SUCCESS) {
         //ignore mixed types
@@ -378,7 +441,7 @@ celix_properties_decodeArray(celix_properties_t* props, const char* key, const j
         }
         default:
             // LCOV_EXCL_START
-            celix_err_pushf("Unexpected array list element type %d for key %s", elType, key);
+            celix_err_pushf("Invalid array list element type %d for key %s", elType, key);
             return CELIX_ILLEGAL_ARGUMENT;
             // LCOV_EXCL_STOP
         }
@@ -399,8 +462,9 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
         return CELIX_SUCCESS; // ignore empty keys.
     }
 
-    if (celix_properties_hasKey(props, key) && (flags & CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES)) {
-        celix_err_pushf("Key `%s` already exists.", key);
+    if (!json_is_object(jsonValue) && celix_properties_hasKey(props, key) &&
+        (flags & CELIX_PROPERTIES_DECODE_ERROR_ON_COLLISIONS)) {
+        celix_err_pushf("Invalid key collision. Key '%s' already exists.", key);
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
@@ -423,13 +487,14 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
         const char* fieldName;
         json_t* fieldValue;
         json_object_foreach(jsonValue, fieldName, fieldValue) {
-            celix_autofree char* subKey;
-            int rc = asprintf(&subKey, "%s/%s", key, fieldName);
-            if (rc < 0) {
-                    celix_err_push("Failed to create sub key");
-                    return CELIX_ENOMEM;
+            char buf[64];
+            char* combinedKey = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s/%s", key, fieldName);
+            celix_auto(celix_utils_string_guard_t) strGuard = celix_utils_stringGuard_init(buf, combinedKey);
+            if (!combinedKey) {
+                celix_err_push("Failed to create sub key");
+                return CELIX_ENOMEM;
             }
-            status = celix_properties_decodeValue(props, subKey, fieldValue, flags);
+            status = celix_properties_decodeValue(props, combinedKey, fieldValue, flags);
             if (status != CELIX_SUCCESS) {
                 return status;
             }
@@ -437,7 +502,7 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
         return CELIX_SUCCESS;
     } else if (json_is_array(jsonValue) && json_array_size(jsonValue) == 0) {
         if (flags & CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS) {
-            celix_err_pushf("Unexpected empty array for key `%s`", key);
+            celix_err_pushf("Invalid empty array for key '%s'", key);
             return CELIX_ILLEGAL_ARGUMENT;
         }
         // ignore empty arrays
@@ -446,14 +511,14 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
         status = celix_properties_decodeArray(props, key, jsonValue, flags);
     } else if (json_is_null(jsonValue)) {
         if (flags & CELIX_PROPERTIES_DECODE_ERROR_ON_NULL_VALUES) {
-            celix_err_pushf("Unexpected null value for key `%s`", key);
+            celix_err_pushf("Invalid null value for key '%s'", key);
             return CELIX_ILLEGAL_ARGUMENT;
         }
         // ignore null values
         return CELIX_SUCCESS;
     } else {
         // LCOV_EXCL_START
-        celix_err_pushf("Unexpected json value type for key `%s`", key);
+        celix_err_pushf("Invalid json value type for key '%s'", key);
         return CELIX_ILLEGAL_ARGUMENT;
         // LCOV_EXCL_STOP
     }
@@ -484,7 +549,7 @@ static celix_status_t celix_properties_decodeFromJson(json_t* obj, int flags, ce
     return CELIX_SUCCESS;
 }
 
-celix_status_t celix_properties_decodeFromStream(FILE* stream, int decodeFlags, celix_properties_t** out) {
+celix_status_t celix_properties_loadFromStream(FILE* stream, int decodeFlags, celix_properties_t** out) {
     json_error_t jsonError;
     size_t jsonFlags = 0;
     if (decodeFlags & CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES) {
@@ -495,6 +560,27 @@ celix_status_t celix_properties_decodeFromStream(FILE* stream, int decodeFlags, 
         celix_err_pushf("Failed to parse json: %s", jsonError.text);
         return CELIX_ILLEGAL_ARGUMENT;
     }
-
     return celix_properties_decodeFromJson(root, decodeFlags, out);
+}
+
+celix_status_t celix_properties_load2(const char* filename, int decodeFlags, celix_properties_t** out) {
+    FILE* stream = fopen(filename, "r");
+    if (!stream) {
+        celix_err_pushf("Failed to open file %s", filename);
+        return CELIX_FILE_IO_EXCEPTION;
+    }
+    celix_status_t status = celix_properties_loadFromStream(stream, decodeFlags, out);
+    fclose(stream);
+    return status;
+}
+
+celix_status_t celix_properties_loadFromString2(const char* input, int decodeFlags, celix_properties_t** out) {
+    FILE* stream = fmemopen((void*)input, strlen(input), "r");
+    if (!stream) {
+        celix_err_push("Failed to open memstream");
+        return CELIX_FILE_IO_EXCEPTION;
+    }
+    celix_status_t status = celix_properties_loadFromStream(stream, decodeFlags, out);
+    fclose(stream);
+    return status;
 }

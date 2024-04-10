@@ -315,6 +315,38 @@ TEST_F(UtilsTestSuite, WriteOrCreateStringTest) {
     celix_utils_freeStringIfNotEqual(buffer2, out2);
 }
 
+TEST_F(UtilsTestSuite, WriteOrCreateStringGuardTest) {
+    // Given a small buffer
+    char buffer[16];
+
+    {
+        // When writing a string that fits in the buffer
+        char* str = celix_utils_writeOrCreateString(buffer, sizeof(buffer), "abc");
+
+        // Then the str is equal to the buffer (in this case no malloc was needed)
+        EXPECT_EQ(buffer, str);
+
+        // And using celix_auto with a string guard
+        celix_auto(celix_utils_string_guard_t) guard = celix_utils_stringGuard_init(buffer, str);
+
+        // Then the guard will not free the string when going out of scope
+    }
+
+    {
+        // When writing a string that does not fit in the buffer
+        char* str = celix_utils_writeOrCreateString(
+            buffer, sizeof(buffer), "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz");
+
+        // Then the str is not equal to the buffer (in this case a malloc was needed)
+        EXPECT_NE(buffer, str);
+
+        // And using celix_auto with a string guard
+        celix_auto(celix_utils_string_guard_t) guard = celix_utils_stringGuard_init(buffer, str);
+
+        // Then the guard will free the string when going out of scope
+    }
+}
+
 TEST_F(UtilsTestSuite, StrDupAndStrLenTest) {
     celix_autofree char* str = celix_utils_strdup("abc");
     ASSERT_NE(nullptr, str);

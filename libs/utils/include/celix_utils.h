@@ -29,6 +29,8 @@ extern "C" {
 #include <stdbool.h>
 
 #include "celix_utils_export.h"
+#include "celix_compiler.h"
+#include "celix_cleanup.h"
 
 #define CELIX_US_IN_SEC (1000000)
 #define CELIX_NS_IN_SEC ((CELIX_US_IN_SEC)*1000)
@@ -91,6 +93,60 @@ __attribute__((format(printf, 3, 0)));
  */
 CELIX_UTILS_EXPORT void celix_utils_freeStringIfNotEqual(const char* buffer, char* str);
 
+/**
+ * @brief Guard for a string created with celix_utils_writeOrCreateString, celix_utils_writeOrCreateVString.
+ *
+ * Can be used with celix_auto() to automatically and correctly free the string.
+ * If the string is pointing to the buffer, the string should be freed, otherwise the string should be freed.
+ *
+ *
+ */
+typedef struct celix_utils_string_guard {
+    const char* buffer;
+    char* string;
+} celix_utils_string_guard_t;
+
+/**
+ * @brief Initialize a guard for a string created with celix_utils_writeOrCreateString, celix_utils_writeOrCreateVString.
+ *
+ * De-initialize with celix_utils_stringGuard_deinit().
+ *
+ * No allocation is performed.
+ * This is intended to be used with celix_auto().
+ *
+ * * Example:
+* ```
+ * const char* possibleLongString = ...
+ * char buffer[64];
+ * char* str = celix_utils_writeOrCreateString(buffer, sizeof(buffer), "Hello %s", possibleLongString);
+ * celix_auto(celix_utils_string_guard_t) strGuard = celix_utils_stringGuard_init(buffer, str);
+ * ```
+ * If the strGuard goes out of scope, the string will be freed correctly.
+ *
+ * @param buffer A (local) buffer which was potentially used to create the string.
+ * @param string The string to guard.
+ * @return An initialized string guard to be used with celix_auto().
+ */
+static CELIX_UNUSED inline celix_utils_string_guard_t celix_utils_stringGuard_init(const char* buffer, char* string) {
+    celix_utils_string_guard_t guard;
+    guard.buffer = buffer;
+    guard.string = string;
+    return guard;
+}
+
+/**
+ * @brief De-initialize a string guard.
+ *
+ * This will free the string if it is not equal to the buffer.
+ * This is intended to be used with celix_auto().
+ *
+ * @param guard The guard to de-initialize.
+ */
+static CELIX_UNUSED inline void celix_utils_stringGuard_deinit(celix_utils_string_guard_t* guard) {
+    celix_utils_freeStringIfNotEqual(guard->buffer, guard->string);
+}
+
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_utils_string_guard_t, celix_utils_stringGuard_deinit)
 
 /**
  * @brief Compares two strings and returns true if the strings are equal.
