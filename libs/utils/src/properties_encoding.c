@@ -34,12 +34,12 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
 static celix_status_t celix_properties_versionToJson(const celix_version_t* version, json_t** out) {
     celix_autofree char* versionStr = celix_version_toString(version);
     if (!versionStr) {
-        celix_err_push("Failed to create version string");
+        celix_err_push("Failed to create version string.");
         return CELIX_ENOMEM;
     }
-    *out = json_sprintf("celix_version<%s>", versionStr);
+    *out = json_sprintf("version<%s>", versionStr);
     if (!*out) {
-        celix_err_push("Failed to create json string");
+        celix_err_push("Failed to create json string.");
         return CELIX_ENOMEM;
     }
     return CELIX_SUCCESS;
@@ -66,12 +66,12 @@ static celix_status_t celix_properties_arrayElementEntryValueToJson(celix_array_
         return celix_properties_versionToJson(entry.versionVal, out);
     default:
         // LCOV_EXCL_START
-        celix_err_pushf("Invalid array list element type %d", elType);
+        celix_err_pushf("Invalid array list element type %d.", elType);
         return CELIX_ILLEGAL_ARGUMENT;
         // LCOV_EXCL_STOP
     }
     if (!*out) {
-        celix_err_push("Failed to create json value");
+        celix_err_push("Failed to create json value.");
         return CELIX_ENOMEM;
     }
     return CELIX_SUCCESS;
@@ -84,7 +84,7 @@ static celix_status_t celix_properties_arrayEntryValueToJson(const char* key,
     *out = NULL;
     if (celix_arrayList_size(entry->typed.arrayValue) == 0) {
         if (flags & CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS) {
-            celix_err_pushf("Invalid empty array for key %s", key);
+            celix_err_pushf("Invalid empty array for key %s.", key);
             return CELIX_ILLEGAL_ARGUMENT;
         }
         return CELIX_SUCCESS; // empty array -> treat as unset property
@@ -92,7 +92,7 @@ static celix_status_t celix_properties_arrayEntryValueToJson(const char* key,
 
     json_t* array = json_array();
     if (!array) {
-        celix_err_push("Failed to create json array");
+        celix_err_push("Failed to create json array.");
         return CELIX_ENOMEM;
     }
 
@@ -109,7 +109,7 @@ static celix_status_t celix_properties_arrayEntryValueToJson(const char* key,
         } else {
             int rc = json_array_append_new(array, jsonValue);
             if (rc != 0) {
-                celix_err_push("Failed to append json string to array");
+                celix_err_push("Failed to append json string to array.");
                 json_decref(array);
                 return CELIX_ENOMEM;
             }
@@ -271,8 +271,8 @@ celix_status_t celix_properties_saveToStream(const celix_properties_t* propertie
     int rc = json_dumpf(root, stream, jsonFlags);
     json_decref(root);
     if (rc != 0) {
-        celix_err_push("Failed to dump json object");
-        return CELIX_ENOMEM;
+        celix_err_push("Failed to dump json object to stream.");
+        return CELIX_FILE_IO_EXCEPTION;
     }
     return CELIX_SUCCESS;
 }
@@ -280,7 +280,7 @@ celix_status_t celix_properties_saveToStream(const celix_properties_t* propertie
 celix_status_t celix_properties_save(const celix_properties_t* properties, const char* filename, int encodeFlags) {
     FILE* stream = fopen(filename, "w");
     if (!stream) {
-        celix_err_pushf("Failed to open file %s", filename);
+        celix_err_pushf("Failed to open file %s.", filename);
         return CELIX_FILE_IO_EXCEPTION;
     }
     celix_status_t status = celix_properties_saveToStream(properties, stream, encodeFlags);
@@ -294,7 +294,7 @@ celix_status_t celix_properties_saveToString(const celix_properties_t* propertie
     size_t size = 0;
     FILE* stream = open_memstream(&buffer, &size);
     if (!stream) {
-        celix_err_push("Failed to open memstream");
+        celix_err_push("Failed to open memstream.");
         return CELIX_FILE_IO_EXCEPTION;
     }
 
@@ -306,26 +306,26 @@ celix_status_t celix_properties_saveToString(const celix_properties_t* propertie
     return status;
 }
 
-static celix_version_t* celix_properties_parseVersion(const char* value) {
-    // precondition: value is a valid version string (14 chars prefix and 1 char suffix)
-    celix_version_t* version = NULL;
+static celix_status_t celix_properties_parseVersion(const char* value, celix_version_t** out) {
+    // precondition: value is a valid version string (8 chars prefix and 1 char suffix)
+    *out = NULL;;
     char buf[32];
-    char* corrected = celix_utils_writeOrCreateString(buf, sizeof(buf), "%.*s", (int)strlen(value) - 15, value + 14);
+    char* corrected = celix_utils_writeOrCreateString(buf, sizeof(buf), "%.*s", (int)strlen(value) - 9, value + 8);
+    celix_auto(celix_utils_string_guard_t) guard = celix_utils_stringGuard_init(buf, corrected);
     if (!corrected) {
-        celix_err_push("Failed to create corrected version string");
-        return NULL;
+        celix_err_push("Failed to create corrected version string.");
+        return ENOMEM;
     }
-    celix_status_t status = celix_version_parse(corrected, &version);
-    celix_utils_freeStringIfNotEqual(buf, corrected);
+    celix_status_t status = celix_version_parse(corrected, out);
     if (status != CELIX_SUCCESS) {
-        celix_err_push("Failed to parse version string");
-        return NULL;
+        celix_err_push("Failed to parse version string.");
+        return status;
     }
-    return version;
+    return CELIX_SUCCESS;
 }
 
 static bool celix_properties_isVersionString(const char* value) {
-    return strncmp(value, "celix_version<", 14) == 0 && value[strlen(value) - 1] == '>';
+    return strncmp(value, "version<", 8) == 0 && value[strlen(value) - 1] == '>';
 }
 
 /**
@@ -401,7 +401,7 @@ celix_properties_decodeArray(celix_properties_t* props, const char* key, const j
     celix_status_t status = celix_properties_determineArrayType(jsonArray, &elType);
     if (status != CELIX_SUCCESS && (flags & CELIX_PROPERTIES_DECODE_ERROR_ON_MIXED_ARRAYS)) {
         celix_autofree char* arrStr = json_dumps(jsonArray, JSON_ENCODE_ANY);
-        celix_err_pushf("Invalid mixed or null array for key '%s': %s", key, arrStr);
+        celix_err_pushf("Invalid mixed or null array for key '%s': %s.", key, arrStr);
         return status;
     } else if (status != CELIX_SUCCESS) {
         //ignore mixed types
@@ -432,16 +432,14 @@ celix_properties_decodeArray(celix_properties_t* props, const char* key, const j
             status = celix_arrayList_addBool(array, json_boolean_value(value));
             break;
         case CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION: {
-            celix_version_t* v = celix_properties_parseVersion(json_string_value(value));
-            if (!v) {
-                return CELIX_ILLEGAL_ARGUMENT;
-            }
-            status = celix_arrayList_addVersion(array, v);
+            celix_version_t* v;
+            status = celix_properties_parseVersion(json_string_value(value), &v);
+            status = CELIX_DO_IF(status, celix_arrayList_addVersion(array, v));
             break;
         }
         default:
             // LCOV_EXCL_START
-            celix_err_pushf("Invalid array list element type %d for key %s", elType, key);
+            celix_err_pushf("Invalid array list element type %d for key %s.", elType, key);
             return CELIX_ILLEGAL_ARGUMENT;
             // LCOV_EXCL_STOP
         }
@@ -456,7 +454,7 @@ static celix_status_t
 celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t* jsonValue, int flags) {
     if (strncmp(key, "", 1) == 0) {
         if (flags & CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS) {
-            celix_err_push("Key cannot be empty");
+            celix_err_push("Key cannot be empty.");
             return CELIX_ILLEGAL_ARGUMENT;
         }
         return CELIX_SUCCESS; // ignore empty keys.
@@ -470,11 +468,9 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
 
     celix_status_t status = CELIX_SUCCESS;
     if (json_is_string(jsonValue) && celix_properties_isVersionString(json_string_value(jsonValue))) {
-        celix_version_t* version = celix_properties_parseVersion(json_string_value(jsonValue));
-        if (!version) {
-            return CELIX_ILLEGAL_ARGUMENT;
-        }
-        status = celix_properties_setVersion(props, key, version);
+        celix_version_t* version;
+        status = celix_properties_parseVersion(json_string_value(jsonValue), &version);
+        status = CELIX_DO_IF(status, celix_properties_setVersion(props, key, version));
     } else if (json_is_string(jsonValue)) {
         status = celix_properties_setString(props, key, json_string_value(jsonValue));
     } else if (json_is_integer(jsonValue)) {
@@ -491,7 +487,7 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
             char* combinedKey = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s/%s", key, fieldName);
             celix_auto(celix_utils_string_guard_t) strGuard = celix_utils_stringGuard_init(buf, combinedKey);
             if (!combinedKey) {
-                celix_err_push("Failed to create sub key");
+                celix_err_push("Failed to create sub key.");
                 return CELIX_ENOMEM;
             }
             status = celix_properties_decodeValue(props, combinedKey, fieldValue, flags);
@@ -502,7 +498,7 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
         return CELIX_SUCCESS;
     } else if (json_is_array(jsonValue) && json_array_size(jsonValue) == 0) {
         if (flags & CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS) {
-            celix_err_pushf("Invalid empty array for key '%s'", key);
+            celix_err_pushf("Invalid empty array for key '%s'.", key);
             return CELIX_ILLEGAL_ARGUMENT;
         }
         // ignore empty arrays
@@ -511,14 +507,14 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
         status = celix_properties_decodeArray(props, key, jsonValue, flags);
     } else if (json_is_null(jsonValue)) {
         if (flags & CELIX_PROPERTIES_DECODE_ERROR_ON_NULL_VALUES) {
-            celix_err_pushf("Invalid null value for key '%s'", key);
+            celix_err_pushf("Invalid null value for key '%s'.", key);
             return CELIX_ILLEGAL_ARGUMENT;
         }
         // ignore null values
         return CELIX_SUCCESS;
     } else {
         // LCOV_EXCL_START
-        celix_err_pushf("Invalid json value type for key '%s'", key);
+        celix_err_pushf("Invalid json value type for key '%s'.", key);
         return CELIX_ILLEGAL_ARGUMENT;
         // LCOV_EXCL_STOP
     }
@@ -527,7 +523,7 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
 
 static celix_status_t celix_properties_decodeFromJson(json_t* obj, int flags, celix_properties_t** out) {
     if (!json_is_object(obj)) {
-        celix_err_push("Expected json object");
+        celix_err_push("Expected json object.");
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
@@ -557,7 +553,7 @@ celix_status_t celix_properties_loadFromStream(FILE* stream, int decodeFlags, ce
     }
     json_t* root = json_loadf(stream, jsonFlags, &jsonError);
     if (!root) {
-        celix_err_pushf("Failed to parse json: %s", jsonError.text);
+        celix_err_pushf("Failed to parse json: %s.", jsonError.text);
         return CELIX_ILLEGAL_ARGUMENT;
     }
     return celix_properties_decodeFromJson(root, decodeFlags, out);
@@ -566,7 +562,7 @@ celix_status_t celix_properties_loadFromStream(FILE* stream, int decodeFlags, ce
 celix_status_t celix_properties_load2(const char* filename, int decodeFlags, celix_properties_t** out) {
     FILE* stream = fopen(filename, "r");
     if (!stream) {
-        celix_err_pushf("Failed to open file %s", filename);
+        celix_err_pushf("Failed to open file %s.", filename);
         return CELIX_FILE_IO_EXCEPTION;
     }
     celix_status_t status = celix_properties_loadFromStream(stream, decodeFlags, out);
@@ -577,7 +573,7 @@ celix_status_t celix_properties_load2(const char* filename, int decodeFlags, cel
 celix_status_t celix_properties_loadFromString2(const char* input, int decodeFlags, celix_properties_t** out) {
     FILE* stream = fmemopen((void*)input, strlen(input), "r");
     if (!stream) {
-        celix_err_push("Failed to open memstream");
+        celix_err_push("Failed to open memstream.");
         return CELIX_FILE_IO_EXCEPTION;
     }
     celix_status_t status = celix_properties_loadFromStream(stream, decodeFlags, out);

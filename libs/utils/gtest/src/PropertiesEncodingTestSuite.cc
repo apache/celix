@@ -76,7 +76,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithSingleValuesTest) {
         EXPECT_NE(nullptr, strstr(buf, R"("key3":3)")) << "JSON: " << buf;
         EXPECT_NE(nullptr, strstr(buf, R"("key4":4.0)")) << "JSON: " << buf;
         EXPECT_NE(nullptr, strstr(buf, R"("key5":true)")) << "JSON: " << buf;
-        EXPECT_NE(nullptr, strstr(buf, R"("key6":"celix_version<1.2.3.qualifier>")")) << "JSON: " << buf;
+        EXPECT_NE(nullptr, strstr(buf, R"("key6":"version<1.2.3.qualifier>")")) << "JSON: " << buf;
 
         //And the buf is a valid JSON object
         json_error_t error;
@@ -150,7 +150,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithArrayListsTest) {
     EXPECT_NE(nullptr, strstr(buf, R"("key2":[1,2])")) << "JSON: " << buf;
     EXPECT_NE(nullptr, strstr(buf, R"("key3":[1.0,2.0])")) << "JSON: " << buf;
     EXPECT_NE(nullptr, strstr(buf, R"("key4":[true,false])")) << "JSON: " << buf;
-    EXPECT_NE(nullptr, strstr(buf, R"("key5":["celix_version<1.2.3.qualifier>","celix_version<4.5.6.qualifier>"])"))
+    EXPECT_NE(nullptr, strstr(buf, R"("key5":["version<1.2.3.qualifier>","version<4.5.6.qualifier>"])"))
         << "JSON: " << buf;
 
     // And the buf is a valid JSON object
@@ -260,9 +260,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithKeyNamesWithSlashesTe
     //Given a properties set with key names with slashes
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     celix_properties_set(props, "a/key/name/with/slashes", "value1");
-    //TODO test separately celix_properties_set(props, "/", "value2");
     celix_properties_set(props, "/keyThatStartsWithSlash", "value3");
-    //TODO test separately celix_properties_set(props, "//keyThatStartsWithDoubleSlashes", "value4");
     celix_properties_set(props, "keyThatEndsWithSlash/", "value5");
     celix_properties_set(props, "keyThatEndsWithDoubleSlashes//", "value6");
     celix_properties_set(props, "key//With//Double//Slashes", "value7");
@@ -397,6 +395,24 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithPrettyPrintTest) {
     EXPECT_STREQ(expected, output);
 }
 
+TEST_F(PropertiesSerializationTestSuite, SaveWithInvalidStreamTest) {
+    celix_autoptr(celix_properties_t) properties = celix_properties_create();
+    celix_properties_set(properties, "key", "value");
+
+    // Saving properties with invalid stream will fail
+    auto status = celix_properties_save(properties, "/non-existing/no/rights/file.json", 0);
+    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION, status);
+    EXPECT_EQ(1, celix_err_getErrorCount());
+
+    auto* readStream = fopen("/dev/null", "r");
+    status = celix_properties_saveToStream(properties, readStream, 0);
+    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION, status);
+    EXPECT_EQ(2, celix_err_getErrorCount());
+    fclose(readStream);
+
+    celix_err_printErrors(stderr, "Error: ", "\n");
+}
+
 TEST_F(PropertiesSerializationTestSuite, LoadEmptyPropertiesTest) {
     //Given an empty JSON object
     const char* json = "{}";
@@ -420,7 +436,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithSingleValuesTest) {
         "longKey":42,
         "doubleKey":2.0,
         "boolKey":true,
-        "versionKey":"celix_version<1.2.3.qualifier>"
+        "versionKey":"version<1.2.3.qualifier>"
     })";
 
     //And a stream with the JSON object
@@ -450,7 +466,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithArrayListsTest) {
         "intArr":[1,2],
         "realArr":[1.0,2.0],
         "boolArr":[true,false],
-        "versionArr":["celix_version<1.2.3.qualifier>","celix_version<4.5.6.qualifier>"],
+        "versionArr":["version<1.2.3.qualifier>","version<4.5.6.qualifier>"],
         "mixedRealAndIntArr1":[1,2.0,2,3.0],
         "mixedRealAndIntArr2":[1.0,2,2.0,3]
     })";
@@ -714,6 +730,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedSlashesTest) {
 TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithAndWithoutStrictFlagTest) {
     auto invalidInputs = {
         R"({"mixedArr":["string", true]})", // Mixed array gives error on strict
+        R"({"mixedVersionAndStringArr":["version<1.2.3.qualifier>","2.3.4"]})", // Mixed array gives error on strict
         R"({"key1":null})",                 // Null value gives error on strict
         R"({"":"value"})",                  // "" key gives error on strict
         R"({"emptyArr":[]})",               // Empty array gives error on strict
@@ -728,7 +745,6 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithAndWithoutStrictFlagT
         //When loading the properties from the stream with an empty flags
         celix_autoptr(celix_properties_t) props = nullptr;
         auto status = celix_properties_loadFromStream(stream, 0, &props);
-        celix_err_printErrors(stderr, "Error: ", "\n");
 
         //Then decoding succeeds, because strict is disabled
         ASSERT_EQ(CELIX_SUCCESS, status);
@@ -792,8 +808,100 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithSlashesInTheKeysTest)
     EXPECT_STREQ("value6", celix_properties_getString(props, "object/key//With//Double//Slash"));
 }
 
-//TODO test with invalid version string
-//TODO is there a strict option needed for version (e.g. not parseable as version handle as string)
-//TODO error injection tests and wrappers for jansson functions
-//TODO test load and save with filename
-//TODO check all the celix_err messages for consistency
+TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithInvalidVersionsTest) {
+    // Given a JSON object with an invalid version string (<, > not allowed in qualifier)
+    const auto* jsonInput = R"( {"key":"version<1.2.3.<qualifier>>"} )";
+
+    // When loading the properties from the stream
+    celix_autoptr(celix_properties_t) props = nullptr;
+    auto status = celix_properties_loadFromString2(jsonInput, 0, &props);
+
+    // Then loading fails
+    ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    // And at least one error message is added to celix_err
+    EXPECT_GE(celix_err_getErrorCount(), 1);
+    celix_err_printErrors(stderr, "Error: ", "\n");
+
+    // Given a JSON object with an invalid version strings, that are not recognized as versions
+    jsonInput =
+        R"( {"key1":"version<1.2.3", "key2":"version1.2.3>", "key3":"ver<1.2.3>}", "key4":"celix_version<1.2.3>"} )";
+
+    // When loading the properties from the stream
+    status = celix_properties_loadFromString2(jsonInput, 0, &props);
+
+    // Then loading succeeds
+    ASSERT_EQ(CELIX_SUCCESS, status);
+
+    // But the values are not recognized as versions
+    EXPECT_NE(CELIX_PROPERTIES_VALUE_TYPE_VERSION, celix_properties_getType(props, "key1"));
+    EXPECT_NE(CELIX_PROPERTIES_VALUE_TYPE_VERSION, celix_properties_getType(props, "key2"));
+    EXPECT_NE(CELIX_PROPERTIES_VALUE_TYPE_VERSION, celix_properties_getType(props, "key3"));
+    EXPECT_NE(CELIX_PROPERTIES_VALUE_TYPE_VERSION, celix_properties_getType(props, "key4"));
+}
+
+TEST_F(PropertiesSerializationTestSuite, LoadWithInvalidStreamTest) {
+    celix_properties_t* dummyProps = nullptr;
+
+    // Loading properties with invalid stream will fail
+    auto status = celix_properties_load2("non_existing_file.json", 0, &dummyProps);
+    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION, status);
+    EXPECT_EQ(1, celix_err_getErrorCount());
+
+    char* buf = nullptr;
+    size_t size = 0;
+    FILE* stream = open_memstream(&buf, &size); // empty stream
+    status = celix_properties_loadFromStream(stream, 0, &dummyProps);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    EXPECT_EQ(2, celix_err_getErrorCount());
+
+    fclose(stream);
+    free(buf);
+    celix_err_printErrors(stderr, "Error: ", "\n");
+}
+
+TEST_F(PropertiesSerializationTestSuite, SaveAndLoadFlatProperties) {
+    // Given a properties object with all possible types (but no empty arrays)
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_set(props, "strKey", "strValue");
+    celix_properties_setLong(props, "longKey", 42);
+    celix_properties_setDouble(props, "doubleKey", 2.0);
+    celix_properties_setBool(props, "boolKey", true);
+    celix_properties_setVersion(props, "versionKey", celix_version_create(1, 2, 3, "qualifier"));
+    auto* strArr = celix_arrayList_createStringArray();
+    celix_arrayList_addString(strArr, "value1");
+    celix_arrayList_addString(strArr, "value2");
+    auto* longArr = celix_arrayList_createLongArray();
+    celix_arrayList_addLong(longArr, 1);
+    celix_arrayList_addLong(longArr, 2);
+    celix_properties_assignArrayList(props, "longArr", longArr);
+    auto* doubleArr = celix_arrayList_createDoubleArray();
+    celix_arrayList_addDouble(doubleArr, 1.0);
+    celix_arrayList_addDouble(doubleArr, 2.0);
+    celix_properties_assignArrayList(props, "doubleArr", doubleArr);
+    auto* boolArr = celix_arrayList_createBoolArray();
+    celix_arrayList_addBool(boolArr, true);
+    celix_arrayList_addBool(boolArr, false);
+    celix_properties_assignArrayList(props, "boolArr", boolArr);
+    auto* versionArr = celix_arrayList_createVersionArray();
+    celix_arrayList_addVersion(versionArr, celix_version_create(1, 2, 3, "qualifier"));
+    celix_arrayList_addVersion(versionArr, celix_version_create(4, 5, 6, "qualifier"));
+    celix_properties_assignArrayList(props, "versionArr", versionArr);
+
+    // When saving the properties to a properties_test.json file
+    const char* filename = "properties_test.json";
+    auto status = celix_properties_save(props, filename, 0);
+
+    // Then saving succeeds
+    ASSERT_EQ(CELIX_SUCCESS, status);
+
+    // When loading the properties from the properties_test.json file
+    celix_autoptr(celix_properties_t) loadedProps = nullptr;
+    status = celix_properties_load2(filename, 0, &loadedProps);
+
+    // Then loading succeeds
+    ASSERT_EQ(CELIX_SUCCESS, status);
+
+    // And the loaded properties are equal to the original properties
+    EXPECT_TRUE(celix_properties_equals(props, loadedProps));
+}
