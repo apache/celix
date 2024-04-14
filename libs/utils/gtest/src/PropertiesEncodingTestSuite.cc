@@ -93,14 +93,17 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithNaNAndInfValuesTest) 
         celix_autoptr(celix_properties_t) props = celix_properties_create();
         celix_properties_setDouble(props, key, strtod(key, nullptr));
 
-        //And an in-memory stream
-        celix_autofree char* buf = nullptr;
-        size_t bufLen = 0;
-        FILE* stream = open_memstream(&buf, &bufLen);
+        // Then saving the properties to a string succeeds, but value is not added to the JSON (because JSON does not
+        // support NAN, INF and -INF)
+        celix_autofree char* output;
+        auto status = celix_properties_saveToString(props, 0, &output);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        EXPECT_STREQ("{}", output);
 
-        //Then saving the properties to the stream fails, because JSON does not support NAN, INF and -INF
+        //And saving the properties to a string with the flag CELIX_PROPERTIES_ENCODE_ERROR_ON_NAN_INF fails
         celix_err_resetErrors();
-        auto status = celix_properties_saveToStream(props, stream, 0);
+        char* output2;
+        status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_ERROR_ON_NAN_INF, &output2);
         EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
         //And an error msg is added to celix_err
@@ -112,25 +115,30 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithNaNAndInfValuesTest) 
 TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithArrayListsTest) {
     // Given a properties object with array list values
     celix_autoptr(celix_properties_t) props = celix_properties_create();
+
     celix_array_list_t* list1 = celix_arrayList_createStringArray();
     celix_arrayList_addString(list1, "value1");
     celix_arrayList_addString(list1, "value2");
     celix_properties_assignArrayList(props, "key1", list1);
+
     celix_array_list_t* list2 = celix_arrayList_createLongArray();
     celix_arrayList_addLong(list2, 1);
     celix_arrayList_addLong(list2, 2);
     celix_properties_assignArrayList(props, "key2", list2);
+
     celix_array_list_t* list3 = celix_arrayList_createDoubleArray();
     celix_arrayList_addDouble(list3, 1.0);
     celix_arrayList_addDouble(list3, 2.0);
     celix_properties_assignArrayList(props, "key3", list3);
+
     celix_array_list_t* list4 = celix_arrayList_createBoolArray();
     celix_arrayList_addBool(list4, true);
     celix_arrayList_addBool(list4, false);
     celix_properties_assignArrayList(props, "key4", list4);
+
     celix_array_list_t* list5 = celix_arrayList_createVersionArray();
-    celix_arrayList_addVersion(list5, celix_version_create(1, 2, 3, "qualifier"));
-    celix_arrayList_addVersion(list5, celix_version_create(4, 5, 6, "qualifier"));
+    celix_arrayList_assignVersion(list5, celix_version_create(1, 2, 3, "qualifier"));
+    celix_arrayList_assignVersion(list5, celix_version_create(4, 5, 6, "qualifier"));
     celix_properties_assignArrayList(props, "key5", list5);
 
     // And an in-memory stream
@@ -170,17 +178,18 @@ TEST_F(PropertiesSerializationTestSuite, SaveEmptyArrayTest) {
     EXPECT_EQ(5, celix_properties_size(props));
 
     //When saving the properties to a string
-    char* output = nullptr;
-    auto status = celix_properties_saveToString(props, 0, &output);
+    celix_autofree char* output1;
+    auto status = celix_properties_saveToString(props, 0, &output1);
 
     //Then the save went ok
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     //And the output contains an empty JSON object, because empty arrays are treated as unset
-    EXPECT_STREQ("{}", output);
+    EXPECT_STREQ("{}", output1);
 
     //When saving the properties to a string with an error on  empty array flag
-    status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS, &output);
+    char* output2;
+    status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS, &output2);
 
     //Then the save fails, because the empty array generates an error
     ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
@@ -268,7 +277,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithKeyNamesWithSlashesTe
 
 
     //When saving the properties to a string
-    char* output = nullptr;
+    celix_autofree char* output;
     auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE, &output);
     ASSERT_EQ(CELIX_SUCCESS, status);
 
@@ -329,18 +338,19 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithKeyCollision) {
     celix_properties_set(props, "key1/key2", "value2"); //collision with object "key1/key2" -> overwrite
 
     //When saving the properties to a string
-    char* output = nullptr;
-    auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE, &output);
+    celix_autofree char* output1;
+    auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE, &output1);
 
     //Then the save succeeds
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     // And both keys are serialized (one as a flat key) (flat key name is whitebox knowledge)
-    EXPECT_NE(nullptr, strstr(output, R"({"key1":{"key2":"value2"}})")) << "JSON: " << output;
+    EXPECT_NE(nullptr, strstr(output1, R"({"key1":{"key2":"value2"}})")) << "JSON: " << output1;
 
     //When saving the properties to a string with the error on key collision flag
+    char* output2;
     status = celix_properties_saveToString(
-        props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE | CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS, &output);
+        props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE | CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS, &output2);
 
     //Then the save fails, because the keys collide
     ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
@@ -357,7 +367,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithAndWithoutStrictFlagT
     celix_properties_assignArrayList(props, "key1", list);
 
     //When saving the properties to a string without the strict flag
-    char* output = nullptr;
+    celix_autofree char* output;
     auto status = celix_properties_saveToString(props, 0, &output);
 
     //Then the save succeeds
@@ -381,7 +391,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithPrettyPrintTest) {
     celix_properties_set(props, "key2", "value2");
 
     //When saving the properties to a string with pretty print
-    char* output = nullptr;
+    celix_autofree char* output;
     auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_PRETTY, &output);
 
     //Then the save succeeds
@@ -414,17 +424,14 @@ TEST_F(PropertiesSerializationTestSuite, SaveWithInvalidStreamTest) {
 TEST_F(PropertiesSerializationTestSuite, LoadEmptyPropertiesTest) {
     //Given an empty JSON object
     const char* json = "{}";
-    FILE* stream = fmemopen((void*)json, strlen(json), "r");
 
     //When loading the properties from the stream
     celix_autoptr(celix_properties_t) props = nullptr;
-    auto status = celix_properties_loadFromStream(stream, 0, &props);
+    auto status = celix_properties_loadFromString2(json, 0, &props);
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the properties object is empty
     EXPECT_EQ(0, celix_properties_size(props));
-
-    fclose(stream);
 }
 
 TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithSingleValuesTest) {
@@ -586,7 +593,8 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithEmptyArrayTest) {
     EXPECT_EQ(0, celix_properties_size(props));
 
     //When loading the properties from string with a strict flag
-    status = celix_properties_loadFromString2(inputJSON, CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS, &props);
+    celix_properties_t* props2;
+    status = celix_properties_loadFromString2(inputJSON, CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS, &props2);
 
     //Then loading fails, because the empty array generates an error
     ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
@@ -651,7 +659,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithDuplicatesTest) {
     EXPECT_EQ(3, celix_properties_getLong(props, "key", 0));
 
     // When decoding the properties from the stream using a flog that does not allow duplicates
-    celix_autoptr(celix_properties_t) props2 = nullptr;
+    celix_autoptr(celix_properties_t) props2;
     status = celix_properties_loadFromString2(jsonInput, CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES, &props2);
 
     // Then loading fails, because of a duplicate key
@@ -687,7 +695,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedSlashesTest) {
     })";
 
     // When loading the properties from a string.
-    celix_autoptr(celix_properties_t) props = nullptr;
+    celix_autoptr(celix_properties_t) props;
     auto status = celix_properties_loadFromString2(jsonInput, 0, &props);
 
     // Then loading succeeds
@@ -703,7 +711,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedSlashesTest) {
     EXPECT_STREQ("value7", celix_properties_getString(props, "object3/key4"));
 
     // When decoding the properties from a string using a flag that allows duplicates
-    celix_autoptr(celix_properties_t) props2 = nullptr;
+    celix_autoptr(celix_properties_t) props2;
     status = celix_properties_loadFromString2(jsonInput, CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES, &props2);
 
     // Then loading fails, because of a duplicate key
@@ -714,7 +722,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedSlashesTest) {
     celix_err_printErrors(stderr, "Test Error: ", "\n");
 
     // When decoding the properties from a string using a flag that allows collisions
-    celix_autoptr(celix_properties_t) props3 = nullptr;
+    celix_autoptr(celix_properties_t) props3;
     status = celix_properties_loadFromString2(jsonInput, CELIX_PROPERTIES_DECODE_ERROR_ON_COLLISIONS, &props3);
 
     // Then loading fails, because of a collision
@@ -861,34 +869,41 @@ TEST_F(PropertiesSerializationTestSuite, LoadWithInvalidStreamTest) {
 TEST_F(PropertiesSerializationTestSuite, SaveAndLoadFlatProperties) {
     // Given a properties object with all possible types (but no empty arrays)
     celix_autoptr(celix_properties_t) props = celix_properties_create();
-    celix_properties_set(props, "strKey", "strValue");
-    celix_properties_setLong(props, "longKey", 42);
-    celix_properties_setDouble(props, "doubleKey", 2.0);
-    celix_properties_setBool(props, "boolKey", true);
-    celix_properties_setVersion(props, "versionKey", celix_version_create(1, 2, 3, "qualifier"));
-    auto* strArr = celix_arrayList_createStringArray();
+
+    celix_properties_set(props, "single/strKey", "strValue");
+    celix_properties_setLong(props, "single/longKey", 42);
+    celix_properties_setDouble(props, "single/doubleKey", 2.0);
+    celix_properties_setBool(props, "single/boolKey", true);
+    celix_properties_assignVersion(props, "single/versionKey", celix_version_create(1, 2, 3, "qualifier"));
+
+    celix_array_list_t* strArr = celix_arrayList_createStringArray();
     celix_arrayList_addString(strArr, "value1");
     celix_arrayList_addString(strArr, "value2");
-    auto* longArr = celix_arrayList_createLongArray();
+    celix_properties_assignArrayList(props, "array/stringArr", strArr);
+
+    celix_array_list_t* longArr = celix_arrayList_createLongArray();
     celix_arrayList_addLong(longArr, 1);
     celix_arrayList_addLong(longArr, 2);
-    celix_properties_assignArrayList(props, "longArr", longArr);
-    auto* doubleArr = celix_arrayList_createDoubleArray();
+    celix_properties_assignArrayList(props, "array/longArr", longArr);
+
+    celix_array_list_t* doubleArr = celix_arrayList_createDoubleArray();
     celix_arrayList_addDouble(doubleArr, 1.0);
     celix_arrayList_addDouble(doubleArr, 2.0);
-    celix_properties_assignArrayList(props, "doubleArr", doubleArr);
-    auto* boolArr = celix_arrayList_createBoolArray();
+    celix_properties_assignArrayList(props, "array/doubleArr", doubleArr);
+
+    celix_array_list_t* boolArr = celix_arrayList_createBoolArray();
     celix_arrayList_addBool(boolArr, true);
     celix_arrayList_addBool(boolArr, false);
-    celix_properties_assignArrayList(props, "boolArr", boolArr);
-    auto* versionArr = celix_arrayList_createVersionArray();
-    celix_arrayList_addVersion(versionArr, celix_version_create(1, 2, 3, "qualifier"));
-    celix_arrayList_addVersion(versionArr, celix_version_create(4, 5, 6, "qualifier"));
-    celix_properties_assignArrayList(props, "versionArr", versionArr);
+    celix_properties_assignArrayList(props, "array/boolArr", boolArr);
+
+    celix_array_list_t* versionArr = celix_arrayList_createVersionArray();
+    celix_arrayList_assignVersion(versionArr, celix_version_create(1, 2, 3, "qualifier"));
+    celix_arrayList_assignVersion(versionArr, celix_version_create(4, 5, 6, "qualifier"));
+    celix_properties_assignArrayList(props, "array/versionArr", versionArr);
 
     // When saving the properties to a properties_test.json file
     const char* filename = "properties_test.json";
-    auto status = celix_properties_save(props, filename, 0);
+    auto status = celix_properties_save(props, filename, CELIX_PROPERTIES_ENCODE_PRETTY);
 
     // Then saving succeeds
     ASSERT_EQ(CELIX_SUCCESS, status);

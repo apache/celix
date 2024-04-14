@@ -1021,6 +1021,16 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_i
 #define CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS 0x20
 
 /**
+ * @brief Flag to indicate that the encoding should fail if the JSON representation will contain NaN or Inf values.
+ *
+ * NaN, Inf and -Inf are not valid JSON values and as such properties entries with these values are not encoded.
+ *
+ * If this flag is set, the encoding will fail if the JSON representation will contain NaN or Inf values and if this
+ * flag is not set, the encoding will not fail and the NaN and Inf entries will be ignored.
+ */
+#define CELIX_PROPERTIES_ENCODE_ERROR_ON_NAN_INF 0x40
+
+/**
  * @brief Flag to indicate that all encode "error on" flags should be set.
  */
 #define CELIX_PROPERTIES_ENCODE_STRICT                                                                                 \
@@ -1031,7 +1041,26 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_i
  *
  * The stream is expected to be a valid stream and is not reset or closed by this function.
  *
- * TODO document the JSON format
+ * Properties are encoded as a JSON object.
+ *
+ * If no encoding style flag is set of when the CELIX_PROPERTIES_ENCODE_FLAT_STYLE flag is set, properties
+ * entries are written as top level field entries.
+ *
+ * If the CELIX_PROPERTIES_ENCODE_NESTED_STYLE flag is set, properties entry keys are split on '/' and nested in
+ * JSON objects. This leads to a more natural JSON representation, but if there are colliding properties keys (e.g.
+ * `{"key": "value1", "key/with/slash": "value2"}`), not all properties entries will be written.
+ *
+ * With all encoding styles, the empty array properties entries are ignored, because they cannot be decoded to a valid
+ * properties array entry.
+ *
+ * Properties type entries are encoded as follows:
+ * - CELIX_PROPERTIES_TYPE_STRING: The value is encoded as a JSON string.
+ * - CELIX_PROPERTIES_TYPE_LONG: The value is encoded as a JSON number.
+ * - CELIX_PROPERTIES_TYPE_DOUBLE: The value is encoded as a JSON number.
+ * - CELIX_PROPERTIES_TYPE_BOOL: The value is encoded as a JSON boolean.
+ * - CELIX_PROPERTIES_TYPE_ARRAY: The value is encoded as a JSON array, with each element encoded according to its type.
+ * - CELIX_PROPERTIES_TYPE_VERSION: The value is encoded as a JSON string with a "version<" prefix and a ">" suffix
+ * (e.g. "version<1.2.3>").
  *
  * For a overview of the possible encode flags, see the CELIX_PROPERTIES_ENCODE_* flags documentation.
  * The default encoding style is a compact and flat JSON representation.
@@ -1168,7 +1197,26 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToString(const celix_prop
  * The stream is expected to be a valid readable stream and is not reset or closed by this function.
  * The content of the stream is expected to be in the format of a JSON object.
  *
- * TODO describe allowed and disallowed JSON objects.
+ * For decoding a single JSON object is decoded to a properties object.
+ *
+ * The keys of the JSON object are used as
+ * properties keys and the values of the JSON object are used as properties values. If there are nested
+ * JSON objects, the keys are concatenated with a '/' separator (e.g. `{"key": {"nested": "value"}}` will be
+ * decoded to a properties object with a single entry with key `key/nested` and (string) value `value`).
+ *
+ * Because properties keys are created by concatenating the JSON keys, there there could be collisions
+ * (e.g. `{"obj/key": "value", "obj": {"key": "value2"}}`, two entries with the key `obj/key`. In this case
+ * the last decoded JSON entry will be used.
+ *
+ * Properties entry types are determined by the JSON value type:
+ * - JSON string values are decoded as string properties entries.
+ * - JSON number values are decoded as long or double properties entries, depending on the value.
+ * - JSON boolean values are decoded as boolean properties entries.
+ * - jSON string values with a "version<" prefix and a ">" suffix are decoded as version properties entries (e.g.
+ * "version<1.2.3>").
+ * - JSON array values are decoded as array properties entries. The array can contain any of the above types, but mixed
+ * arrays are not supported.
+ * - JSON null values are ignored.
  *
  * For a overview of the possible decode flags, see the CELIX_PROPERTIES_DECODE_* flags documentation.
  *

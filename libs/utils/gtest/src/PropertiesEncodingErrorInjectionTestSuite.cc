@@ -69,7 +69,7 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, SaveErrorTest) {
     celix_ei_expect_open_memstream((void*)celix_properties_saveToString, 0, nullptr);
 
     //When I call celix_properties_saveToString
-    char* out = nullptr;
+    char* out;
     status = celix_properties_saveToString(props, 0, &out);
 
     //Then I expect an error
@@ -90,7 +90,7 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeErrorTest) {
     celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_properties_saveToString, 2, nullptr);
 
     // And I call celix_properties_saveToString using NESTED encoding (whitebox-knowledge)
-    char* out = nullptr;
+    char* out;
     auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE, &out);
 
     // Then I expect an error
@@ -149,7 +149,7 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeArrayErrorTest) {
     celix_ei_expect_json_array((void*)celix_properties_saveToString, 4, nullptr);
 
     // And I call celix_properties_saveToString
-    char* out = nullptr;
+    char* out;
     auto status = celix_properties_saveToString(props, 0, &out);
 
     // Then I expect an error
@@ -189,7 +189,7 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeVersionErrorTest) {
     celix_ei_expect_json_sprintf((void*)celix_properties_saveToString, 4, nullptr);
 
     // And I call celix_properties_saveToString
-    char* out = nullptr;
+    char* out;
     auto status = celix_properties_saveToString(props, 0, &out);
 
     // Then I expect an error

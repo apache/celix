@@ -130,8 +130,11 @@ celix_properties_entryValueToJson(const char* key, const celix_properties_entry_
         break;
     case CELIX_PROPERTIES_VALUE_TYPE_DOUBLE:
         if (isnan(entry->typed.doubleValue) || isinf(entry->typed.doubleValue)) {
-            celix_err_pushf("Invalid NaN or Inf in key '%s'.", key);
-            return CELIX_ILLEGAL_ARGUMENT;
+            if (flags & CELIX_PROPERTIES_ENCODE_ERROR_ON_NAN_INF) {
+                celix_err_pushf("Invalid NaN or Inf in key '%s'.", key);
+                return CELIX_ILLEGAL_ARGUMENT;
+            }
+            return CELIX_SUCCESS; // ignore NaN and Inf
         }
         *out = json_real(entry->typed.doubleValue);
         break;
@@ -184,10 +187,8 @@ static celix_status_t celix_properties_addPropertiesEntryFlatToJson(const celix_
                                                                     int flags) {
     json_t* value;
     celix_status_t status = celix_properties_entryValueToJson(key, entry, flags, &value);
-    if (status != CELIX_SUCCESS) {
-        return status;
-    }
-    return celix_properties_addJsonValueToJson(value, key, root, flags);
+    status = CELIX_DO_IF(status, celix_properties_addJsonValueToJson(value, key, root, flags));
+    return status;
 }
 
 static celix_status_t celix_properties_addPropertiesEntryToJson(const celix_properties_entry_t* entry,
@@ -237,7 +238,7 @@ static celix_status_t celix_properties_addPropertiesEntryToJson(const celix_prop
 }
 
 celix_status_t celix_properties_saveToStream(const celix_properties_t* properties, FILE* stream, int encodeFlags) {
-    json_t* root = json_object();
+    json_auto_t* root = json_object();
     if (!root) {
         celix_err_push("Failed to create json object");
         return ENOMEM;
@@ -257,7 +258,6 @@ celix_status_t celix_properties_saveToStream(const celix_properties_t* propertie
             status = celix_properties_addPropertiesEntryToJson(&iter.entry, iter.key, root, encodeFlags);
         }
         if (status != CELIX_SUCCESS) {
-            json_decref(root);
             return status;
         }
     }
@@ -268,7 +268,6 @@ celix_status_t celix_properties_saveToStream(const celix_properties_t* propertie
     }
 
     int rc = json_dumpf(root, stream, jsonFlags);
-    json_decref(root);
     if (rc != 0) {
         celix_err_push("Failed to dump json object to stream.");
         return CELIX_FILE_IO_EXCEPTION;
@@ -432,7 +431,7 @@ celix_properties_decodeArray(celix_properties_t* props, const char* key, const j
         case CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION: {
             celix_version_t* v;
             status = celix_properties_parseVersion(json_string_value(value), &v);
-            status = CELIX_DO_IF(status, celix_arrayList_addVersion(array, v));
+            status = CELIX_DO_IF(status, celix_arrayList_assignVersion(array, v));
             break;
         }
         default:
@@ -468,7 +467,7 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
     if (json_is_string(jsonValue) && celix_properties_isVersionString(json_string_value(jsonValue))) {
         celix_version_t* version;
         status = celix_properties_parseVersion(json_string_value(jsonValue), &version);
-        status = CELIX_DO_IF(status, celix_properties_setVersion(props, key, version));
+        status = CELIX_DO_IF(status, celix_properties_assignVersion(props, key, version));
     } else if (json_is_string(jsonValue)) {
         status = celix_properties_setString(props, key, json_string_value(jsonValue));
     } else if (json_is_integer(jsonValue)) {
@@ -549,7 +548,7 @@ celix_status_t celix_properties_loadFromStream(FILE* stream, int decodeFlags, ce
     if (decodeFlags & CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES) {
         jsonFlags = JSON_REJECT_DUPLICATES;
     }
-    json_t* root = json_loadf(stream, jsonFlags, &jsonError);
+    json_auto_t* root = json_loadf(stream, jsonFlags, &jsonError);
     if (!root) {
         celix_err_pushf("Failed to parse json: %s.", jsonError.text);
         return CELIX_ILLEGAL_ARGUMENT;
