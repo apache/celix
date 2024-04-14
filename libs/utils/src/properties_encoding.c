@@ -243,17 +243,17 @@ celix_status_t celix_properties_saveToStream(const celix_properties_t* propertie
         return ENOMEM;
     }
 
-    if (!(encodeFlags & CELIX_PROPERTIES_ENCODE_FLAT) && !(encodeFlags & CELIX_PROPERTIES_ENCODE_NESTED)) {
+    if (!(encodeFlags & CELIX_PROPERTIES_ENCODE_FLAT_STYLE) && !(encodeFlags & CELIX_PROPERTIES_ENCODE_NESTED_STYLE)) {
         //no encoding flags set, default to flat
-        encodeFlags |= CELIX_PROPERTIES_ENCODE_FLAT;
+        encodeFlags |= CELIX_PROPERTIES_ENCODE_FLAT_STYLE;
     }
 
     CELIX_PROPERTIES_ITERATE(properties, iter) {
         celix_status_t status;
-        if (encodeFlags & CELIX_PROPERTIES_ENCODE_FLAT) {
+        if (encodeFlags & CELIX_PROPERTIES_ENCODE_FLAT_STYLE) {
             status = celix_properties_addPropertiesEntryFlatToJson(&iter.entry, iter.key, root, encodeFlags);
         } else {
-            assert(encodeFlags & CELIX_PROPERTIES_ENCODE_NESTED);
+            assert(encodeFlags & CELIX_PROPERTIES_ENCODE_NESTED_STYLE);
             status = celix_properties_addPropertiesEntryToJson(&iter.entry, iter.key, root, encodeFlags);
         }
         if (status != CELIX_SUCCESS) {
@@ -340,8 +340,7 @@ static bool celix_properties_isVersionString(const char* value) {
  */
 static celix_status_t celix_properties_determineArrayType(const json_t* jsonArray,
                                                           celix_array_list_element_type_t* out) {
-    size_t size = json_array_size(jsonArray);
-    assert(size > 0); //precondition: size > 0
+    assert(json_array_size(jsonArray) > 0); //precondition: size > 0
 
     json_t* value;
     int index;

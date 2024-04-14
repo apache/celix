@@ -206,7 +206,7 @@ TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysTest) {
     FILE* stream = open_memstream(&buf, &bufLen);
 
     //When saving the properties to the stream
-    auto status = celix_properties_saveToStream(props, stream, CELIX_PROPERTIES_ENCODE_NESTED);
+    auto status = celix_properties_saveToStream(props, stream, CELIX_PROPERTIES_ENCODE_NESTED_STYLE);
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the stream contains the JSON representation snippets of the properties
@@ -238,7 +238,7 @@ TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysWithCollisionTest) {
 
     //When saving the properties to a string
     celix_autofree char* output = nullptr;
-    auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED, &output);
+    auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE, &output);
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the stream contains the JSON representation of the properties with the collisions resolved
@@ -269,7 +269,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithKeyNamesWithSlashesTe
 
     //When saving the properties to a string
     char* output = nullptr;
-    auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED, &output);
+    auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE, &output);
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the out contains the JSON representation snippets of the properties
@@ -330,7 +330,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithKeyCollision) {
 
     //When saving the properties to a string
     char* output = nullptr;
-    auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED, &output);
+    auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE, &output);
 
     //Then the save succeeds
     ASSERT_EQ(CELIX_SUCCESS, status);
@@ -340,7 +340,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithKeyCollision) {
 
     //When saving the properties to a string with the error on key collision flag
     status = celix_properties_saveToString(
-        props, CELIX_PROPERTIES_ENCODE_NESTED | CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS, &output);
+        props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE | CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS, &output);
 
     //Then the save fails, because the keys collide
     ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);

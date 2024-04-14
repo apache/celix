@@ -91,7 +91,7 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeErrorTest) {
 
     // And I call celix_properties_saveToString using NESTED encoding (whitebox-knowledge)
     char* out = nullptr;
-    auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED, &out);
+    auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE, &out);
 
     // Then I expect an error
     EXPECT_EQ(ENOMEM, status);
@@ -100,7 +100,7 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeErrorTest) {
     celix_ei_expect_json_object((void*)celix_properties_saveToString, 2, nullptr);
 
     // And I call celix_properties_saveToString using NESTED encoding (whitebox-knowledge)
-    status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED, &out);
+    status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE, &out);
 
     // Then I expect an error
     EXPECT_EQ(ENOMEM, status);
@@ -109,7 +109,7 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeErrorTest) {
     celix_ei_expect_json_object_set_new((void*)celix_properties_saveToString, 2, -1);
 
     // And I call celix_properties_saveToString using NESTED encoding (whitebox-knowledge)
-    status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED, &out);
+    status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE, &out);
 
     // Then I expect an error
     EXPECT_EQ(ENOMEM, status);
@@ -118,7 +118,7 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeErrorTest) {
     celix_ei_expect_json_string((void*)celix_properties_saveToString, 3, nullptr);
 
     // And I call celix_properties_saveToString using NESTED encoding (whitebox-knowledge)
-    status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED, &out);
+    status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE, &out);
 
     // Then I expect an error
     EXPECT_EQ(ENOMEM, status);
@@ -127,7 +127,7 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeErrorTest) {
     celix_ei_expect_json_object_set_new((void*)celix_properties_saveToString, 3, -1);
 
     // And I call celix_properties_saveToString using FLAT encoding (whitebox-knowledge)
-    status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_FLAT, &out);
+    status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_FLAT_STYLE, &out);
 
     // Then I expect an error
     EXPECT_EQ(ENOMEM, status);

@@ -937,61 +937,300 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_i
          !celix_propertiesIterator_isEnd(&(iterName));                                                                 \
          celix_propertiesIterator_next(&(iterName)))
 
+/**
+ * @brief Flag to indicate that the encoded output should be pretty; e.g. encoded with additional whitespaces,
+ * newlines and indentation.
+ *
+ * If this flag is not set, the encoded output will compact; e.g. without additional whitespaces, newlines and
+ * indentation.
+ */
+#define CELIX_PROPERTIES_ENCODE_PRETTY 0x01
 
+/**
+ * @brief Flag to indicate that the encoded output should be flat; e.g. all properties entries are written as top level
+ * field entries.
+ *
+ * E.g:
+ * @code{.c}
+ * celix_properties_t* properties = celix_properties_create();
+ * celix_properties_setString(properties, "key/with/slash", "value1");
+ * celix_properties_setString(properties, "key", "value2");
+ * char* json;
+ * celix_properties_saveToString(properties, CELIX_PROPERTIES_ENCODE_FLAT, &json);
+ * // json will be: {"key/with/slash": "value1", "key": "value2"}
+ * @endcode
+ *
+ * Note that encoding with a flat encoding style, all properties keys are unique JSON keys and can be written.
+ *
+ * If no encoding style flag is set, the encoded output will use the default encoding style.
+ */
+#define CELIX_PROPERTIES_ENCODE_FLAT_STYLE 0x02
 
-//TODO document the encode flags
-#define CELIX_PROPERTIES_ENCODE_PRETTY                  0x01
-#define CELIX_PROPERTIES_ENCODE_FLAT                    0x02 //TODO doc, explain that decoding options ensures all properties entries are written, but only as a top level field entries.
-#define CELIX_PROPERTIES_ENCODE_NESTED                  0x04
+/**
+ * @brief Flag to indicate that the encoded output should be nested; e.g. properties entries are split on '/' and nested
+ * in JSON objects.
+ *
+ * E.g:
+ * @code{.c}
+ * celix_properties_t* properties = celix_properties_create();
+ * celix_properties_setString(properties, "key/with/slash", "value1");
+ * celix_properties_setString(properties, "key", "value2");
+ * char* json;
+ * celix_properties_saveToString(properties, CELIX_PROPERTIES_ENCODE_NESTED, &json);
+ * // json will be: {"key":{"with":{"slash": "value1"}}}
+ * // or
+ * // json will be: {"key": "value2"}
+ * @endcode
+ *
+ * Note that encoding with a nested encoding style, it properties key can collide resulting in missing properties
+ * entries or (if CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS is set) an error.
+ *
+ * If no encoding style flag is set, the encoded output will use the default encoding style.
+ */
+#define CELIX_PROPERTIES_ENCODE_NESTED_STYLE 0x04
 
-#define CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS     0x10
-#define CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS   0x20
+/**
+ * @brief Flag to indicate that the encoding should fail if the JSON representation will contain colliding keys.
+ *
+ * Note that colliding keys can only occur when using the nested encoding style.
+ *
+ * E.g. the following will lead to an error:
+ * @code{.c}
+ * celix_properties_t* properties = celix_properties_create();
+ * celix_properties_setString(properties, "key/with/slash", "value1");
+ * celix_properties_setString(properties, "key", "value2"); //collision
+ * char* json;
+ * celix_status_t status = celix_properties_saveToString(properties, CELIX_PROPERTIES_ENCODE_NESTED, &json);
+ * // status will be CELIX_ILLEGAL_ARGUMENT and a error message will be logged to celix_err
+ * @endcode
+ *
+ * If this flag is set, the encoding will fail if the JSON representation will contain colliding keys and if this flag
+ * is not set, the encoding will not fail and the colliding keys will be ignored.
+ */
+#define CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS 0x10
+
+/**
+ * @brief Flag to indicate that the encoding should fail if the JSON representation will contain empty arrays.
+ *
+ * Although empty arrays are valid in JSON, they cannot be decoded to a valid properties array entry and as such
+ * empty arrays properties entries are not encoded.
+ *
+ * If this flag is set, the encoding will fail if the JSON representation will contain empty arrays and if this flag
+ * is not set, the encoding will not fail and the empty arrays will be ignored.
+ */
+#define CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS 0x20
+
+/**
+ * @brief Flag to indicate that all encode "error on" flags should be set.
+ */
 #define CELIX_PROPERTIES_ENCODE_STRICT                                                                                 \
     (CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS | CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS)
 
-//TODO doc
-CELIX_UTILS_EXPORT celix_status_t celix_properties_save(const celix_properties_t* properties,
-                                                        const char* filename,
-                                                        int encodeFlags);
-
-//TODO doc. Not encode does not reset or close the stream position.
+/**
+ * @brief Save (encode) as a JSON representation to a stream.
+ *
+ * The stream is expected to be a valid stream and is not reset or closed by this function.
+ *
+ * TODO document the JSON format
+ *
+ * For a overview of the possible encode flags, see the CELIX_PROPERTIES_ENCODE_* flags documentation.
+ * The default encoding style is a compact and flat JSON representation.
+ *
+ * @param properties The properties object to encode.
+ * @param stream The stream to write the JSON representation of the properties object to.
+ * @param encodeFlags The flags to use when encoding the input string.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ILLEGAL_ARGUMENT if the provided properties cannot be
+ * encoded to a JSON representation and ENOMEM if there was not enough memory.
+ */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToStream(const celix_properties_t* properties,
                                                                 FILE* stream,
                                                                 int encodeFlags);
 
-//TODO doc
+/**
+ * @brief Save (encode) properties as a JSON representation to a file.
+ *
+ * For more information how a properties object is encoded to JSON, see the celix_properties_loadFromStream
+ *
+ * For a overview of the possible encode flags, see the CELIX_PROPERTIES_ENCODE_* flags documentation.
+ * The default encoding style is a compact and flat JSON representation.
+ *
+ * @param[in] properties The properties object to encode.
+ * @param[in] filename The file to write the JSON representation of the properties object to.
+ * @param[in] encodeFlags The flags to use when encoding the input string.
+ * returned string using free.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ILLEGAL_ARGUMENT if the provided properties cannot be
+ * encoded to a JSON representation and ENOMEM if there was not enough memory. CELIX_FILE_IO_EXCEPTION if the file
+ * could not be opened or written to.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_properties_save(const celix_properties_t* properties,
+                                                        const char* filename,
+                                                        int encodeFlags);
+
+/**
+ * @brief Save (encode) properties as a JSON representation to a string.
+ *
+ * For more information how a properties object is encoded to JSON, see the celix_properties_loadFromStream
+ *
+ * For a overview of the possible encode flags, see the CELIX_PROPERTIES_ENCODE_* flags documentation.
+ * The default encoding style is a compact and flat JSON representation.
+ *
+ * @param[in] properties The properties object to encode.
+ * @param[in] encodeFlags The flags to use when encoding the input string.
+ * @param[out] out The JSON string representation of the properties object. The caller is responsible for freeing the
+ * returned string using free.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ILLEGAL_ARGUMENT if the provided properties cannot be
+ * encoded to a JSON representation and ENOMEM if there was not enough memory.
+ */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToString(const celix_properties_t* properties,
                                                                 int encodeFlags,
                                                                 char** out);
 
+/**
+ * @brief Flag to indicate that the decoding should fail if the input contains duplicate JSON keys.
+ *
+ * E.g. `{"key": "value", "key": "value2"}` is a duplicate key.
+ *
+ * If this flag is set, the decoding will fail if the input contains a duplicate key and if this flag is not set, the
+ * decoding will not fail and the last entry will be used.
+ */
+#define CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES 0x01
 
-//TODO document the decode flags
-#define CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES     0x01
-#define CELIX_PROPERTIES_DECODE_ERROR_ON_COLLISIONS     0x02
-#define CELIX_PROPERTIES_DECODE_ERROR_ON_NULL_VALUES    0x04
-#define CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS   0x08
-#define CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS     0x10
-#define CELIX_PROPERTIES_DECODE_ERROR_ON_MIXED_ARRAYS   0x20
+/**
+ * @brief Flag to indicate that the decoding should fail if the input contains entry that collide on property keys.
+ *
+ * E.g. `{"obj/key": "value", "obj": {"key": "value2"}}` is a collision.
+ *
+ * If this flag is set, the decoding will fail if the input contains a collision and if this flag is not set, the
+ * decoding will not fail and the last entry will be used.
+ */
+#define CELIX_PROPERTIES_DECODE_ERROR_ON_COLLISIONS 0x02
+
+/**
+ * @brief Flag to indicate that the decoding should fail if the input contains null values.
+ *
+ * E.g. `{"key": null}` is a null value.
+ *
+ * If this flag is set, the decoding will fail if the input contains a null value and if this flag is not set, the
+ * decoding will not fail and the JSON null entry will be ignored.
+ */
+#define CELIX_PROPERTIES_DECODE_ERROR_ON_NULL_VALUES 0x04
+
+/**
+ * @brief Flag to indicate that the decoding should fail if the input contains empty arrays.
+ *
+ *
+ * E.g. `{"key": []}` is an empty array.
+ *
+ * Note that empty arrays are valid in JSON, but not cannot be decoded to a valid properties array entry.
+ *
+ * If this flag is set, the decoding will fail if the input contains an empty array and if this flag is not set, the
+ * decoding will not fail and the JSON empty array entry will be ignored.
+ */
+#define CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS 0x08
+
+/**
+ * @brief Flag to indicate that the decoding should fail if the input contains empty keys.
+ *
+ * E.g. `{"": "value"}` is an empty key.
+ *
+ * Note that empty keys are valid in JSON and valid in properties, but not always desired.
+ *
+ * If this flag is set, the decoding will fail if the input contains an empty key and if this flag is not set, the
+ * decoding will not fail and the JSON empty key entry will be ignored.
+ */
+#define CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS 0x10
+
+/**
+ * @brief Flag to indicate that the decoding should fail if the input contains mixed arrays.
+ *
+ * E.g. `{"key": ["value", 1]}` is a mixed array.
+ *
+ * Note that mixed arrays are valid in JSON, but not cannot be decoded to a valid properties array entry.
+ *
+ * If this flag is set, the decoding will fail if the input contains a mixed array and if this flag is not set, the
+ * decoding will not fail and the JSON mixed array entry will be ignored.
+ */
+#define CELIX_PROPERTIES_DECODE_ERROR_ON_MIXED_ARRAYS 0x20
+
+/**
+ * @brief Flag to indicate that the decoding should fail if the input contains any of the decode error flags.
+ *
+ * This flag is a combination of all decode error flags.
+ */
 #define CELIX_PROPERTIES_DECODE_STRICT                                                                                 \
     (CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES | CELIX_PROPERTIES_DECODE_ERROR_ON_COLLISIONS |                       \
      CELIX_PROPERTIES_DECODE_ERROR_ON_NULL_VALUES | CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS |                    \
      CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS | CELIX_PROPERTIES_DECODE_ERROR_ON_MIXED_ARRAYS)
 
-//TODO doc. Note load2, because load is currently already used. Will be updated in the future.
-CELIX_UTILS_EXPORT celix_status_t celix_properties_load2(const char* filename,
-                                                         int decodeFlags,
-                                                         celix_properties_t** out);
-
-//TODO doc. Note decode does not reset or close the stream position.
+/**
+ * @brief Load properties from a stream.
+ *
+ * The stream is expected to be a valid readable stream and is not reset or closed by this function.
+ * The content of the stream is expected to be in the format of a JSON object.
+ *
+ * TODO describe allowed and disallowed JSON objects.
+ *
+ * For a overview of the possible decode flags, see the CELIX_PROPERTIES_DECODE_* flags documentation.
+ *
+ * @param[in] stream The input stream to parse.
+ * @param[in] decodeFlags The flags to use when decoding the input string.
+ * @param[out] out The properties object that will be created from the input string. The caller is responsible for
+ * freeing the returned properties object using celix_properties_destroy.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ILLEGAL_ARGUMENT if the provided input cannot be
+ * decoded to a properties object and ENOMEM if there was not enough memory.
+ */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_loadFromStream(FILE* stream,
                                                                   int decodeFlags,
                                                                   celix_properties_t** out);
 
-//TODO doc. Note celix_properties_loadFromString2, because loadFromString is currently already used. Will be updated in the future.
+/**
+ * @brief Load properties from a file.
+ *
+ * @warning The name if temporary and will be renamed to celix_properties_load2 in the future (when
+ * the current celix_properties_load is removed).
+ *
+ * The content of the filename file is expected to be in the format of a JSON object.
+ * For what can and cannot be parsed, see celix_properties_loadFromStream documentation.
+ *
+ * For a overview of the possible decode flags, see the CELIX_PROPERTIES_DECODE_* flags documentation.
+ *
+ * If an error occurs, the error status is returned and a message is logged to celix_err.
+ *
+ * @param[in] filename The file to load the properties from.
+ * @param[in] decodeFlags The flags to use when decoding the input string.
+ * @param[out] out The properties object that will be created from the input string. The caller is responsible for
+ * freeing the returned properties object using celix_properties_destroy.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ILLEGAL_ARGUMENT if the provided input cannot be
+ * decoded to a properties object and ENOMEM if there was not enough memory. CELIX_FILE_IO_EXCEPTION if the file
+ * could not be opened.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_properties_load2(const char* filename,
+                                                         int decodeFlags,
+                                                         celix_properties_t** out);
+
+/**
+ * @brief Load properties from a string.
+ *
+ * @warning The name if temporary and will be renamed to celix_properties_loadFromString in the future (when
+ * the current celix_properties_loadFromString is removed).
+ *
+ * The input string is expected to be in the format of a JSON object.
+ * For what can and cannot be parsed, see celix_properties_loadFromStream documentation.
+ *
+ * For a overview of the possible decode flags, see the CELIX_PROPERTIES_DECODE_* flags documentation.
+ *
+ * If an error occurs, the error status is returned and a message is logged to celix_err.
+ *
+ * @param[in] input The input string to parse.
+ * @param[in] decodeFlags The flags to use when decoding the input string.
+ * @param[out] out The properties object that will be created from the input string. The caller is responsible for
+ * freeing the returned properties object using celix_properties_destroy.
+ * @return CELIX_SUCCESS if the operation was successful, CELIX_ILLEGAL_ARGUMENT if the provided input cannot be
+ * decoded to a properties object and ENOMEM if there was not enough memory.
+ */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_loadFromString2(const char* input,
                                                                    int decodeFlags,
                                                                    celix_properties_t** out);
-
 
 #ifdef __cplusplus
 }
