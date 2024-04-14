@@ -334,6 +334,8 @@ celix_properties_t* celix_properties_create() {
             free(props);
             props = NULL;
         }
+    } else {
+        celix_err_push("Cannot allocate memory for properties");
     }
     return props;
 }
@@ -451,7 +453,6 @@ celix_properties_t* celix_properties_loadWithStream(FILE* file) {
 
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     if (!props) {
-        celix_err_push("Failed to create properties");
         return NULL;
     }
 

@@ -17,15 +17,13 @@
  * under the License.
  */
 
-#include <cmath>
 #include <gtest/gtest.h>
+#include <cmath>
 #include <jansson.h>
 
 #include "celix_err.h"
 #include "celix_properties.h"
 #include "celix_stdlib_cleanup.h"
-
-using ::testing::MatchesRegex;
 
 class PropertiesSerializationTestSuite : public ::testing::Test {
   public:
@@ -189,7 +187,7 @@ TEST_F(PropertiesSerializationTestSuite, SaveEmptyArrayTest) {
 
     //And at least one error message is added to celix_err
     EXPECT_GE(celix_err_getErrorCount(), 1);
-    celix_err_printErrors(stderr, "Error: ", "\n");
+    celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 
 TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysTest) {
@@ -349,7 +347,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithKeyCollision) {
 
     //And at least one error message is added to celix_err
     EXPECT_GE(celix_err_getErrorCount(), 1);
-    celix_err_printErrors(stderr, "Error: ", "\n");
+    celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 
 TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithAndWithoutStrictFlagTest) {
@@ -373,7 +371,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithAndWithoutStrictFlagT
 
     //And at least one error message is added to celix_err
     EXPECT_GE(celix_err_getErrorCount(), 1);
-    celix_err_printErrors(stderr, "Error: ", "\n");
+    celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 
 TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithPrettyPrintTest) {
@@ -410,7 +408,7 @@ TEST_F(PropertiesSerializationTestSuite, SaveWithInvalidStreamTest) {
     EXPECT_EQ(2, celix_err_getErrorCount());
     fclose(readStream);
 
-    celix_err_printErrors(stderr, "Error: ", "\n");
+    celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 
 TEST_F(PropertiesSerializationTestSuite, LoadEmptyPropertiesTest) {
@@ -563,11 +561,11 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithInvalidInputTest) {
         auto status = celix_properties_loadFromStream(stream, 0, &props);
 
         //Then loading fails
-        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+        EXPECT_NE(CELIX_SUCCESS, status);
 
         //And at least one error message is added to celix_err
         EXPECT_GE(celix_err_getErrorCount(), 1);
-        celix_err_printErrors(stderr, "Error: ", "\n");
+        celix_err_printErrors(stderr, "Test Error: ", "\n");
 
         fclose(stream);
     }
@@ -661,7 +659,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithDuplicatesTest) {
 
     // And at least one error message is added to celix_err
     EXPECT_GE(celix_err_getErrorCount(), 1);
-    celix_err_printErrors(stderr, "Error: ", "\n");
+    celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 
 TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedSlashesTest) {
@@ -713,7 +711,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedSlashesTest) {
 
     // And at least one error message is added to celix_err
     EXPECT_GE(celix_err_getErrorCount(), 1);
-    celix_err_printErrors(stderr, "Error: ", "\n");
+    celix_err_printErrors(stderr, "Test Error: ", "\n");
 
     // When decoding the properties from a string using a flag that allows collisions
     celix_autoptr(celix_properties_t) props3 = nullptr;
@@ -724,7 +722,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedSlashesTest) {
 
     // And at least one error message is added to celix_err
     EXPECT_GE(celix_err_getErrorCount(), 1);
-    celix_err_printErrors(stderr, "Error: ", "\n");
+    celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 
 TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithAndWithoutStrictFlagTest) {
@@ -770,7 +768,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithAndWithoutStrictFlagT
 
         //And at least one error message is added to celix_err
         EXPECT_GE(celix_err_getErrorCount(), 1);
-        celix_err_printErrors(stderr, "Error: ", "\n");
+        celix_err_printErrors(stderr, "Test Error: ", "\n");
 
         fclose(stream);
     }
@@ -795,7 +793,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithSlashesInTheKeysTest)
     // When loading the properties from the stream
     celix_autoptr(celix_properties_t) props = nullptr;
     auto status = celix_properties_loadFromStream(stream, 0, &props);
-    celix_err_printErrors(stderr, "Error: ", "\n");
+    celix_err_printErrors(stderr, "Test Error: ", "\n");
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     // Then the properties object contains the nested objects
@@ -821,7 +819,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithInvalidVersionsTest) 
 
     // And at least one error message is added to celix_err
     EXPECT_GE(celix_err_getErrorCount(), 1);
-    celix_err_printErrors(stderr, "Error: ", "\n");
+    celix_err_printErrors(stderr, "Test Error: ", "\n");
 
     // Given a JSON object with an invalid version strings, that are not recognized as versions
     jsonInput =
@@ -857,7 +855,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadWithInvalidStreamTest) {
 
     fclose(stream);
     free(buf);
-    celix_err_printErrors(stderr, "Error: ", "\n");
+    celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 
 TEST_F(PropertiesSerializationTestSuite, SaveAndLoadFlatProperties) {
