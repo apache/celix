@@ -105,6 +105,19 @@ if (EI_TESTS)
     add_test(NAME test_utils_celix_err_with_ei COMMAND test_utils_celix_err_with_ei)
     setup_target_for_coverage(test_utils_celix_err_with_ei SCAN_DIR ..)
 
+    #Note testing version seperated, otherwise version calls are already wrapped
+    add_executable(test_utils_version_with_ei
+            src/VersionErrorInjectionTestSuite.cc
+    )
+    target_link_libraries(test_utils_version_with_ei PRIVATE
+            utils_cut
+            Celix::malloc_ei
+            Celix::asprintf_ei
+            Celix::utils_ei
+            GTest::gtest GTest::gtest_main
+    )
+    add_test(NAME test_utils_version_with_ei COMMAND test_utils_version_with_ei)
+    setup_target_for_coverage(test_utils_version_with_ei SCAN_DIR ..)
 
     #Note testing array list seperated, otherwise array list calls are already wrapped
     add_executable(test_utils_array_list_with_ei
@@ -124,7 +137,6 @@ if (EI_TESTS)
             src/FileUtilsErrorInjectionTestSuite.cc
             src/ConvertUtilsErrorInjectionTestSuite.cc
             src/PropertiesErrorInjectionTestSuite.cc
-            src/VersionErrorInjectionTestSuite.cc
             src/HashMapErrorInjectionTestSuite.cc
             src/FilterErrorInjectionTestSuite.cc
             src/PropertiesEncodingErrorInjectionTestSuite.cc
