@@ -309,7 +309,7 @@ class CelixConan(ConanFile):
             self.options['openssl'].shared = True
         if self.options.build_celix_dfi:
             self.options['libffi'].shared = True
-        if self.options.build_utils or  self.options.build_celix_dfi or self.options.build_celix_etcdlib:
+        if self.options.build_utils or self.options.build_celix_dfi or self.options.build_celix_etcdlib:
             self.options['jansson'].shared = True
 
     def requirements(self):

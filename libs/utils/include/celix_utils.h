@@ -97,9 +97,7 @@ CELIX_UTILS_EXPORT void celix_utils_freeStringIfNotEqual(const char* buffer, cha
  * @brief Guard for a string created with celix_utils_writeOrCreateString, celix_utils_writeOrCreateVString.
  *
  * Can be used with celix_auto() to automatically and correctly free the string.
- * If the string is pointing to the buffer, the string should be freed, otherwise the string should be freed.
- *
- *
+ * If the string is pointing to the buffer, the string should not be freed, otherwise the string should be freed.
  */
 typedef struct celix_utils_string_guard {
     const char* buffer;
@@ -107,7 +105,8 @@ typedef struct celix_utils_string_guard {
 } celix_utils_string_guard_t;
 
 /**
- * @brief Initialize a guard for a string created with celix_utils_writeOrCreateString, celix_utils_writeOrCreateVString.
+ * @brief Initialize a guard for a string created with celix_utils_writeOrCreateString or
+ * celix_utils_writeOrCreateVString.
  *
  * De-initialize with celix_utils_stringGuard_deinit().
  *
@@ -115,7 +114,7 @@ typedef struct celix_utils_string_guard {
  * This is intended to be used with celix_auto().
  *
  * * Example:
-* ```
+ * ```
  * const char* possibleLongString = ...
  * char buffer[64];
  * char* str = celix_utils_writeOrCreateString(buffer, sizeof(buffer), "Hello %s", possibleLongString);
