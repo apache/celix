@@ -519,6 +519,7 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
 }
 
 static celix_status_t celix_properties_decodeFromJson(json_t* obj, int flags, celix_properties_t** out) {
+    *out = NULL;
     if (!json_is_object(obj)) {
         celix_err_push("Expected json object.");
         return CELIX_ILLEGAL_ARGUMENT;

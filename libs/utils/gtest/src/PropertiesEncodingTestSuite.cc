@@ -659,7 +659,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithDuplicatesTest) {
     EXPECT_EQ(3, celix_properties_getLong(props, "key", 0));
 
     // When decoding the properties from the stream using a flog that does not allow duplicates
-    celix_autoptr(celix_properties_t) props2;
+    celix_properties_t* props2;
     status = celix_properties_loadFromString2(jsonInput, CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES, &props2);
 
     // Then loading fails, because of a duplicate key
@@ -711,7 +711,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedSlashesTest) {
     EXPECT_STREQ("value7", celix_properties_getString(props, "object3/key4"));
 
     // When decoding the properties from a string using a flag that allows duplicates
-    celix_autoptr(celix_properties_t) props2;
+    celix_properties_t* props2;
     status = celix_properties_loadFromString2(jsonInput, CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES, &props2);
 
     // Then loading fails, because of a duplicate key
@@ -722,7 +722,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedSlashesTest) {
     celix_err_printErrors(stderr, "Test Error: ", "\n");
 
     // When decoding the properties from a string using a flag that allows collisions
-    celix_autoptr(celix_properties_t) props3;
+    celix_properties_t* props3;
     status = celix_properties_loadFromString2(jsonInput, CELIX_PROPERTIES_DECODE_ERROR_ON_COLLISIONS, &props3);
 
     // Then loading fails, because of a collision
