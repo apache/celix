@@ -210,27 +210,23 @@ TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysTest) {
     celix_properties_set(props, "object3/object4/key6", "value6");
 
     //And an in-memory stream
-    celix_autofree char* buf = nullptr;
-    size_t bufLen = 0;
-    FILE* stream = open_memstream(&buf, &bufLen);
+    celix_autofree char* output;
 
     //When saving the properties to the stream
-    auto status = celix_properties_saveToStream(props, stream, CELIX_PROPERTIES_ENCODE_NESTED_STYLE);
+    auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE, &output);
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the stream contains the JSON representation snippets of the properties
-    fclose(stream);
-    EXPECT_NE(nullptr, strstr(buf, R"("key1":"value1")")) << "JSON: " << buf;
-    EXPECT_NE(nullptr, strstr(buf, R"("key2":"value2")")) << "JSON: " << buf;
-    EXPECT_NE(nullptr, strstr(buf, R"("object1":{"key3":"value3","key4":"value4"})")) << "JSON: " << buf;
-    EXPECT_NE(nullptr, strstr(buf, R"("object2":{"key5":"value5"})")) << "JSON: " << buf;
-    EXPECT_NE(nullptr, strstr(buf, R"("object3":{"object4":{"key6":"value6"}})")) << "JSON: " << buf;
+    EXPECT_NE(nullptr, strstr(output, R"("key1":"value1")")) << "JSON: " << output;
+    EXPECT_NE(nullptr, strstr(output, R"("key2":"value2")")) << "JSON: " << output;
+    EXPECT_NE(nullptr, strstr(output, R"("object1":{"key3":"value3","key4":"value4"})")) << "JSON: " << output;
+    EXPECT_NE(nullptr, strstr(output, R"("object2":{"key5":"value5"})")) << "JSON: " << output;
+    EXPECT_NE(nullptr, strstr(output, R"("object3":{"object4":{"key6":"value6"}})")) << "JSON: " << output;
 
     //And the buf is a valid JSON object
     json_error_t error;
-    json_t* root = json_loads(buf, 0, &error);
+    json_auto_t* root = json_loads(output, 0, &error);
     EXPECT_NE(nullptr, root) << "Unexpected JSON error: " << error.text;
-    json_decref(root);
 }
 
 TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysWithCollisionTest) {
@@ -374,7 +370,8 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithAndWithoutStrictFlagT
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     //When saving the properties to a string with the strict flag
-    status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_STRICT, &output);
+    char* output2;
+    status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_STRICT, &output2);
 
     //Then the save fails, because the empty array generates an error
     ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
