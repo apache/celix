@@ -497,18 +497,13 @@ TEST_F(ArrayListTestSuite, ReallocTest) {
 }
 
 TEST_F(ArrayListTestSuite, ElementTypeToStringTest) {
-    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED",
-                 celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED));
-    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER",
-                 celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER));
-    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING",
-                 celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING));
-    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG",
-                 celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG));
-    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE",
-                 celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE));
-    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL",
-                 celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL));
-    EXPECT_STREQ("CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED",
+    EXPECT_STREQ("Undefined", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED));
+    EXPECT_STREQ("Pointer", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER));
+    EXPECT_STREQ("String", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING));
+    EXPECT_STREQ("Long", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG));
+    EXPECT_STREQ("Double", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE));
+    EXPECT_STREQ("Bool", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL));
+    EXPECT_STREQ("Version", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION));
+    EXPECT_STREQ("Undefined",
                  celix_arrayList_elementTypeToString((celix_array_list_element_type_t)100 /*non existing*/));
 }

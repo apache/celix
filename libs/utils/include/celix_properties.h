@@ -526,8 +526,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsVersion(const celix_prop
  *
  * This function will make a copy of the provided celix_array_list_t object, using the celix_arrayList_copy function.
  *
- * If an error occurs, the error status is returned and a message is logged to
- * celix_err.
+ * If an error occurs, the error status is returned and a message is logged to celix_err.
  *
  * @param[in] properties The property set to modify.
  * @param[in] key The key of the property to set.
@@ -556,7 +555,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_setArrayList(celix_properties
  *                   to the properties set. Cannot be NULL.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ENOMEM if there was not enough memory to set the entry,
  *         and CELIX_ILLEGAL_ARGUMENT if the provided key is NULL, values is NULL or the array list type is
- *         valid. On error, the provided array list is destroyed.
+ *         invalid. On error, the provided array list is destroyed.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_assignArrayList(celix_properties_t* properties,
                                                                    const char* key,
@@ -616,7 +615,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsLongArrayList(const celi
 /**
  * @brief Get the property value as an array of longs without copying.
  *
- * This function provides a non-owning, read-only access to a array of longs property value.
+ * This function provides a non-owning, read-only access to an array of longs property value.
  * It returns a const pointer to the array. If the property is not set or its value is not an array of longs,
  * NULL is returned.
  *
@@ -658,7 +657,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsDoubleArrayList(const ce
 /**
  * @brief Get the property value as an array of doubles without copying.
  *
- * This function provides a non-owning, read-only access to a array of doubles property value.
+ * This function provides a non-owning, read-only access to an array of doubles property value.
  * It returns a const pointer to the array. If the property is not set or its value is not an array of doubles,
  * NULL is returned.
  *
@@ -748,7 +747,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsStringArrayList(const ce
 /**
  * @brief Get the property value as an array of strings without copying.
  *
- * This function provides a non-owning, read-only access to a array of string property value.
+ * This function provides a non-owning, read-only access to an array of string property value.
  * It returns a const pointer to the array. If the property is not set or its value is not an array of strings,
  * NULL is returned.
  *
@@ -796,7 +795,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_getAsVersionArrayList(const c
 /**
  * @brief Get the property value as an array of celix_version_t entries without copying.
  *
- * This function provides a non-owning, read-only access to a array of celix_version_t property value.
+ * This function provides a non-owning, read-only access to an array of celix_version_t property value.
  * entries. It returns a const pointer to the array. If the property is not set or its value is not an array of
  * celix_version_t entries, NULL is returned.
  *
