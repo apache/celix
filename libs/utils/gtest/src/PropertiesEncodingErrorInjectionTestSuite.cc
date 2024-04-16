@@ -19,9 +19,10 @@
 
 #include <gtest/gtest.h>
 
-#include "celix_err.h"
 #include "celix_properties.h"
+#include "celix/Properties.h"
 
+#include "celix_err.h"
 #include "celix_array_list_ei.h"
 #include "celix_utils_ei.h"
 #include "celix_version_ei.h"
@@ -302,4 +303,44 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, DecodeVersionErrorTest) {
     // And I expect 1 error message in celix_err
     EXPECT_EQ(1, celix_err_getErrorCount());
     celix_err_printErrors(stderr, "Test Error: ", "\n");
+}
+
+TEST_F(PropertiesEncodingErrorInjectionTestSuite, SaveCxxPropertiesErrorTest) {
+    //Given a dummy Properties object
+    celix::Properties props{};
+    props.set("key", "value");
+
+    //When an error injected is prepared for json_object() from saveToStream
+    celix_ei_expect_json_object((void*)celix_properties_saveToStream, 0, nullptr);
+
+    //Then saving to file throws a bad alloc exception
+    EXPECT_THROW(props.save("somefile.json"), std::bad_alloc);
+
+    //When an error injected is prepared for json_object() from saveToStream
+    celix_ei_expect_json_object((void*)celix_properties_saveToStream, 0, nullptr);
+
+    //Then saving to string throws a bad alloc exception
+    EXPECT_THROW(props.saveToString(), std::bad_alloc);
+}
+
+TEST_F(PropertiesEncodingErrorInjectionTestSuite, LoadCxxPropertiesErrorTest) {
+        //Given a dummy json string
+        const char* json = R"({"key":"value"})";
+
+        //When an error injected is prepared for malloc() from celix_properties_create
+        celix_ei_expect_malloc((void*)celix_properties_create, 0, nullptr);
+
+        //Then loading from string throws a bad alloc exception
+        EXPECT_THROW(celix::Properties::loadFromString(json), std::bad_alloc);
+
+        //When an error injected is prepared for malloc() from celix_properties_create
+        celix_ei_expect_malloc((void*)celix_properties_create, 0, nullptr);
+
+        //And an empty json file exists
+        FILE* file = fopen("empty.json", "w");
+        fprintf(file, "{}");
+        fclose(file);
+
+        //Then loading from file throws a bad alloc exception
+        EXPECT_THROW(celix::Properties::load2("empty.json"), std::bad_alloc);
 }

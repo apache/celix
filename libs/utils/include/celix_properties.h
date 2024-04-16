@@ -1085,7 +1085,6 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToStream(const celix_prop
  * @param[in] properties The properties object to encode.
  * @param[in] filename The file to write the JSON representation of the properties object to.
  * @param[in] encodeFlags The flags to use when encoding the input string.
- * returned string using free.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ILLEGAL_ARGUMENT if the provided properties cannot be
  * encoded to a JSON representation and ENOMEM if there was not enough memory. CELIX_FILE_IO_EXCEPTION if the file
  * could not be opened or written to.
@@ -1233,7 +1232,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_loadFromStream(FILE* stream,
 /**
  * @brief Load properties from a file.
  *
- * @warning The name if temporary and will be renamed to celix_properties_load2 in the future (when
+ * @warning The name if temporary and will be renamed to celix_properties_load in the future (when
  * the current celix_properties_load is removed).
  *
  * The content of the filename file is expected to be in the format of a JSON object.

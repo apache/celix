@@ -21,9 +21,11 @@
 #include <cmath>
 #include <jansson.h>
 
+#include "celix/Properties.h"
 #include "celix_err.h"
 #include "celix_properties.h"
 #include "celix_stdlib_cleanup.h"
+
 
 class PropertiesSerializationTestSuite : public ::testing::Test {
   public:
@@ -416,6 +418,42 @@ TEST_F(PropertiesSerializationTestSuite, SaveWithInvalidStreamTest) {
     fclose(readStream);
 
     celix_err_printErrors(stderr, "Test Error: ", "\n");
+}
+
+TEST_F(PropertiesSerializationTestSuite, SaveCxxPropertiesTest) {
+    // Given a C++ Properties object with 2 keys
+    celix::Properties props{};
+    props.set("key1", "value1");
+    props.set("key2", 42);
+    props.setVector("key3", std::vector<bool>{}); // empty vector
+
+    // When saving the properties to a string
+    std::string result = props.saveToString();
+
+    // Then the result contains the JSON representation snippets of the properties
+    EXPECT_NE(std::string::npos, result.find("\"key1\":\"value1\""));
+    EXPECT_NE(std::string::npos, result.find("\"key2\":42"));
+
+    // When saving the properties to a string using a flat style
+    std::string result2 = props.saveToString(celix::Properties::EncodingFlags::FlatStyle);
+
+    //The result is equals to a default save
+    EXPECT_EQ(result, result2);
+
+    // When saving the properties to a string using an errors on duplicate key flag
+    EXPECT_THROW(props.saveToString(celix::Properties::EncodingFlags::Strict),
+                 celix::IOException);
+
+    // When saving the properties to a string using combined flags
+    EXPECT_THROW(props.saveToString(
+                     celix::Properties::EncodingFlags::Pretty | celix::Properties::EncodingFlags::ErrorOnEmptyArrays |
+                     celix::Properties::EncodingFlags::ErrorOnCollisions |
+                     celix::Properties::EncodingFlags::ErrorOnNanInf | celix::Properties::EncodingFlags::NestedStyle),
+                 celix::IOException);
+
+    // When saving the properties to an invalid filename location
+    EXPECT_THROW(props.save("/non-existing/no/rights/file.json"),
+                     celix::IOException);
 }
 
 TEST_F(PropertiesSerializationTestSuite, LoadEmptyPropertiesTest) {
@@ -863,6 +901,35 @@ TEST_F(PropertiesSerializationTestSuite, LoadWithInvalidStreamTest) {
     celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 
+TEST_F(PropertiesSerializationTestSuite, LoadCxxPropertiesTest) {
+    // Given a JSON object
+    auto jsonInput = R"({"key1":"value1","key2":42,"key2":43})"; // note duplicate key3
+
+    // When loading the properties from the JSON object
+    auto props = celix::Properties::loadFromString(jsonInput);
+
+    // Then the properties object contains the values
+    EXPECT_EQ(2, props.size());
+    EXPECT_STREQ("value1", props.get("key1").c_str());
+    EXPECT_EQ(43, props.getAsLong("key2", -1));
+
+    // When loading the properties from the JSON object with a strict flag
+    EXPECT_THROW(celix::Properties::loadFromString(jsonInput, celix::Properties::DecodeFlags::Strict),
+                 celix::IOException);
+
+    // When loading the properties from the JSON object with a flag combined
+    EXPECT_THROW(
+        celix::Properties::loadFromString(
+            jsonInput,
+            celix::Properties::DecodeFlags::ErrorOnCollisions | celix::Properties::DecodeFlags::ErrorOnDuplicates |
+                celix::Properties::DecodeFlags::ErrorOnEmptyArrays | celix::Properties::DecodeFlags::ErrorOnEmptyKeys |
+                celix::Properties::DecodeFlags::ErrorOnMixedArrays | celix::Properties::DecodeFlags::ErrorOnNullValues |
+                celix::Properties::DecodeFlags::ErrorOnNullValues),
+        celix::IOException);
+
+    EXPECT_THROW(celix::Properties::load2("non_existing_file.json"), celix::IOException);
+}
+
 TEST_F(PropertiesSerializationTestSuite, SaveAndLoadFlatProperties) {
     // Given a properties object with all possible types (but no empty arrays)
     celix_autoptr(celix_properties_t) props = celix_properties_create();
@@ -914,4 +981,22 @@ TEST_F(PropertiesSerializationTestSuite, SaveAndLoadFlatProperties) {
 
     // And the loaded properties are equal to the original properties
     EXPECT_TRUE(celix_properties_equals(props, loadedProps));
+}
+
+TEST_F(PropertiesSerializationTestSuite, SaveAndLoadCxxProperties) {
+    //Given a filename
+    std::string filename = "properties_test.json";
+
+    //And a Properties object with 1 key
+    celix::Properties props{};
+    props.set("key1", "value1");
+
+    //When saving the properties to the filename
+    props.save(filename);
+
+    //And reloading the properties from the filename
+    auto props2 = celix::Properties::load2(filename);
+
+    //Then the reloaded properties are equal to the original properties
+    EXPECT_TRUE(props == props2);
 }

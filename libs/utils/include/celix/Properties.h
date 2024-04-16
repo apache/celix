@@ -948,12 +948,161 @@ namespace celix {
         }
 
         /**
+         * @brief Enum class for encoding flags used in Celix properties JSON encoding.
+         *
+         * The flags are used to control the encoding process and to specify the output format.
+         *
+         * @enum EncodingFlags
+         */
+        enum class EncodingFlags : int {
+            None = 0, /**< No special encoding flags. */
+            Pretty =
+                CELIX_PROPERTIES_ENCODE_PRETTY, /**< Encode in a pretty format, with indentation and line breaks. */
+            FlatStyle =
+                CELIX_PROPERTIES_ENCODE_FLAT_STYLE, /**< Encode in a flat style, with all keys at the top level. */
+            NestedStyle = CELIX_PROPERTIES_ENCODE_NESTED_STYLE, /**< Encode in a nested style, with nested objects for
+                                                                   each key based on a `/` separator. */
+            ErrorOnCollisions = CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS,    /**< If set, encoding will fail if there
+                                                                                   are collisions between keys. */
+            ErrorOnEmptyArrays = CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS, /**< If set, encoding will fail if there
+                                                                                   are empty arrays. */
+            ErrorOnNanInf = CELIX_PROPERTIES_ENCODE_ERROR_ON_NAN_INF, /**< If set, encoding will fail if there are NaN
+                                                                         or Inf values. */
+            Strict = CELIX_PROPERTIES_ENCODE_STRICT, /**< If set, encoding will fail if there are any errors. */
+        };
+
+        /**
+         * @brief Save (encode) this properties object as a JSON representation to a file.
+         *
+         * For more information how a properties object is encoded to JSON, see the celix_properties_loadFromStream
+         *
+         * For a overview of the possible encode flags, see the EncodingFlags flags documentation.
+         * The default encoding style is a compact and flat JSON representation.
+         *
+         * @param[in] filename The file to write the JSON representation of the properties object to.
+         * @param[in] encodingFlags The flags to use when encoding the input string.
+         * @throws celix::IOException If an error occurs while writing to the file.
+         * @throws std::bad_alloc If there was not enough memory to save the properties.
+         */
+        void save(const std::string& filename, EncodingFlags encodingFlags = EncodingFlags::None) const {
+            auto status = celix_properties_save(cProps.get(), filename.c_str(), static_cast<int>(encodingFlags));
+            if (status == ENOMEM) {
+                throw std::bad_alloc();
+            } else if (status != CELIX_SUCCESS) {
+                throw celix::IOException{"Cannot save celix::Properties to " + filename};
+            }
+        }
+
+        /**
+         * @brief Save (encode) this properties object as a JSON representation to a string.
+         *
+         * For more information how a properties object is encoded to JSON, see the celix_properties_loadFromStream
+         *
+         * For a overview of the possible encode flags, see the EncodingFlags flags documentation.
+         * The default encoding style is a compact and flat JSON representation.
+         *
+         * @param[in] encodeFlags The flags to use when encoding the input string.
+         * @throws celix::IOException If an error occurs while writing to the file.
+         * @throws std::bad_alloc If there was not enough memory to save the properties.
+         */
+        std::string saveToString(EncodingFlags encodeFlags = EncodingFlags::None) const {
+            char* str = nullptr;
+            auto status = celix_properties_saveToString(cProps.get(), static_cast<int>(encodeFlags), &str);
+            if (status == ENOMEM) {
+                throw std::bad_alloc();
+            } else if (status != CELIX_SUCCESS) {
+                throw celix::IOException{"Cannot save celix::Properties to string"};
+            }
+            std::string result{str};
+            free(str);
+            return result;
+        }
+
+        /**
+         * @brief Enum class for decoding flags used in Celix properties JSON decoding.
+         *
+         * The flags are used to control the decoding process and to specify the output format.
+         *
+         * @enum DecodeFlags
+         */
+        enum class DecodeFlags : int {
+            None = 0,                                                           /**< No special decoding flags. */
+            ErrorOnDuplicates = CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES,    /**< If set, decoding will fail if there
+                                                                                   are duplicate keys. */
+            ErrorOnCollisions = CELIX_PROPERTIES_DECODE_ERROR_ON_COLLISIONS,    /**< If set, decoding will fail if there
+                                                                                   are collisions between keys. */
+            ErrorOnNullValues = CELIX_PROPERTIES_DECODE_ERROR_ON_NULL_VALUES,   /**< If set, decoding will fail if there
+                                                                                   are null values. */
+            ErrorOnEmptyArrays = CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS, /**< If set, decoding will fail if there
+                                                                                   are empty arrays. */
+            ErrorOnEmptyKeys = CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS, /**< If set, decoding will fail if there are
+                                                                               empty ("") keys. */
+            ErrorOnMixedArrays = CELIX_PROPERTIES_DECODE_ERROR_ON_MIXED_ARRAYS, /**< If set, decoding will fail if there
+                                                                                   are mixed type arrays. */
+            Strict = CELIX_PROPERTIES_DECODE_STRICT /**< If set, decoding will fail if there are any errors. */
+        };
+
+        /**
          * @brief Loads properties from the file at the given path.
          * @param[in] path The path to the file containing the properties.
          * @return A new Properties object containing the properties from the file.
          * @throws celix::IOException If the file cannot be opened or read.
          */
-        static celix::Properties load(const std::string& path) { return loadFrom(path.data()); }
+        static Properties load(const std::string& path) { return loadFrom(path.data()); }
+
+        /**
+         * @brief Load a Properties object from a file.
+         *
+         * @warning The name if temporary and will be renamed to celix::Properties::load in the future (when
+         * the current celix::Properties::load is removed).
+         *
+         * The content of the filename file is expected to be in the format of a JSON object.
+         * For what can and cannot be parsed, see celix_properties_loadFromStream documentation.
+         *
+         * For a overview of the possible decode flags, see the DecodingFlags flags documentation.
+         *
+         * @param[in] filename The file to load the properties from.
+         * @param[in] decodeFlags The flags to use when decoding the input string.
+         * @return A new Properties object containing the properties from the file.
+         * @throws celix::IOException If the file cannot be opened or read.
+         * @throws std::bad_alloc If there was not enough memory to load the properties.
+         */
+        static Properties load2(const std::string& filename, DecodeFlags decodeFlags = DecodeFlags::None) {
+            celix_properties_t* props;
+            auto status = celix_properties_load2(filename.c_str(), static_cast<int>(decodeFlags), &props);
+            if (status == ENOMEM) {
+                throw std::bad_alloc();
+            } else if (status != CELIX_SUCCESS) {
+                throw celix::IOException{"Cannot load celix::Properties from " + filename};
+            }
+            return celix::Properties::own(props);
+        }
+
+        /**
+         * @brief Load a Properties object from a string.
+         *
+         *
+         * The input string is expected to be in the format of a JSON object.
+         * For what can and cannot be parsed, see celix_properties_loadFromStream documentation.
+         *
+         * For a overview of the possible decode flags, see the DecodingFlags flags documentation.
+         *
+         * @param[in] input The input string to parse.
+         * @param[in] decodeFlags The flags to use when decoding the input string.
+        * @return A new Properties object containing the properties from the file.
+        * @throws celix::IOException If the file cannot be opened or read.
+        * @throws std::bad_alloc If there was not enough memory to load the properties.
+        */
+        static Properties loadFromString(const std::string& input, DecodeFlags decodeFlags = DecodeFlags::None) {
+            celix_properties_t* props;
+            auto status = celix_properties_loadFromString2(input.c_str(), static_cast<int>(decodeFlags), &props);
+            if (status == ENOMEM) {
+                throw std::bad_alloc();
+            } else if (status != CELIX_SUCCESS) {
+                throw celix::IOException{"Cannot load celix::Properties from string"};
+            }
+            return celix::Properties::own(props);
+        }
 
     private:
         Properties(celix_properties_t* props, bool takeOwnership) :
@@ -1045,8 +1194,36 @@ namespace celix {
     };
 }
 
+/**
+ * @brief Stream operator to print the properties value reference to a stream.
+ * @param[in] os The stream to print the properties to.
+ * @param[in] ref The properties value reference to print.
+ * @return The os stream.
+ */
 inline std::ostream& operator<<(std::ostream& os, const ::celix::Properties::ValueRef& ref)
 {
     os << std::string{ref.getValue()};
     return os;
+}
+
+/**
+ * @brief Bitwise OR operator for EncodingFlags.
+ * @param[in] a encoding flags
+ * @param[in] b encoding flags
+ * @return The bitwise OR of the two encoding flags.
+ */
+inline ::celix::Properties::EncodingFlags operator|(::celix::Properties::EncodingFlags a,
+                                                    ::celix::Properties::EncodingFlags b) {
+    return static_cast<::celix::Properties::EncodingFlags>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+/**
+ * @brief Bitwise OR operator for DecodeFlags.
+ * @param[in] a decoding flags
+ * @param[in] b decoding flags
+ * @return The bitwise OR of the two decoding flags.
+ */
+inline ::celix::Properties::DecodeFlags operator|(::celix::Properties::DecodeFlags a,
+                                                  ::celix::Properties::DecodeFlags b) {
+    return static_cast<::celix::Properties::DecodeFlags>(static_cast<int>(a) | static_cast<int>(b));
 }
