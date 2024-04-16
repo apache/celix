@@ -3,5 +3,8 @@
     "build": {
         "dockerfile": "Dockerfile"
     },
+     "runArgs" : [
+        "--userns=keep-id"
+    ],
     "postCreateCommand": "sh .devcontainer/setup.sh"
 }
