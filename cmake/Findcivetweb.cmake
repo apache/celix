@@ -21,11 +21,12 @@ if (NOT civetweb_FOUND)
     set(CIVETWEB_ENABLE_WEBSOCKETS TRUE CACHE BOOL "" FORCE)
     set(CIVETWEB_BUILD_TESTING FALSE CACHE BOOL "" FORCE)
     set(BUILD_SHARED_LIBS TRUE CACHE BOOL "" FORCE)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error")
     FetchContent_Declare(
             civetweb
             GIT_REPOSITORY https://github.com/civetweb/civetweb.git
 #            GIT_REPOSITORY https://gitee.com/mirrors/civetweb.git
-            GIT_TAG        eefb26f82b233268fc98577d265352720d477ba4 # V1.15
+            GIT_TAG        d7ba35bbb649209c66e582d5a0244ba988a15159 # V1.16
     )
     FetchContent_MakeAvailable(civetweb)
     if (NOT TARGET civetweb::civetweb)
