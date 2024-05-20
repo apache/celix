@@ -26,10 +26,12 @@
 #define CELIX_CELIX_PROPERTIES_PRIVATE_H
 
 #include "celix_properties.h"
+#include "jansson.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 /**
  * @brief Alloc new entry for the provided properties. Possible using the properties optimizer cache.
@@ -40,6 +42,11 @@ celix_properties_entry_t* celix_properties_allocEntry(celix_properties_t* proper
  * @brief Create a new string for the provided properties. Possible using the properties optimizer cache.
  */
 char* celix_properties_createString(celix_properties_t* properties, const char* str);
+
+/**
+ * @brief Convert jansson error to celix status.
+ */
+celix_status_t celix_properties_jsonErrorToStatus(enum json_error_code error);
 
 
 #ifdef __cplusplus

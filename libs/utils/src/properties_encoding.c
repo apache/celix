@@ -18,6 +18,7 @@
  */
 
 #include "celix_properties.h"
+#include "celix_properties_private.h"
 
 #include "celix_err.h"
 #include "celix_stdlib_cleanup.h"
@@ -561,8 +562,12 @@ celix_status_t celix_properties_loadFromStream(FILE* stream, int decodeFlags, ce
     }
     json_auto_t* root = json_loadf(stream, jsonFlags, &jsonError);
     if (!root) {
-        celix_err_pushf("Failed to parse json: %s.", jsonError.text);
-        return CELIX_ILLEGAL_ARGUMENT;
+        celix_err_pushf("Failed to parse json from %s:%i:%i: %s.",
+                        jsonError.source,
+                        jsonError.line,
+                        jsonError.column,
+                        jsonError.text);
+        return celix_properties_jsonErrorToStatus(json_error_code(&jsonError));
     }
     return celix_properties_decodeFromJson(root, decodeFlags, out);
 }
@@ -587,4 +592,32 @@ celix_status_t celix_properties_loadFromString2(const char* input, int decodeFla
     celix_status_t status = celix_properties_loadFromStream(stream, decodeFlags, out);
     fclose(stream);
     return status;
+}
+
+celix_status_t celix_properties_jsonErrorToStatus(enum json_error_code error) {
+    switch (error) {
+    case json_error_unknown:
+        return CELIX_ILLEGAL_STATE;
+    case json_error_out_of_memory:
+    case json_error_stack_overflow:
+        return ENOMEM;
+    case json_error_cannot_open_file:
+        return CELIX_FILE_IO_EXCEPTION;
+    case json_error_invalid_argument:
+    case json_error_invalid_utf8:
+    case json_error_premature_end_of_input:
+    case json_error_end_of_input_expected:
+    case json_error_invalid_syntax:
+    case json_error_invalid_format:
+    case json_error_wrong_type:
+    case json_error_null_character:
+    case json_error_null_value:
+    case json_error_null_byte_in_key:
+    case json_error_duplicate_key:;
+    case json_error_numeric_overflow:
+    case json_error_item_not_found:
+    case json_error_index_out_of_range:
+    default:
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
 }
