@@ -216,15 +216,15 @@ TEST_F(PropertiesSerializationTestSuite, SaveEmptyKeyTest) {
     ASSERT_TRUE(celix_properties_equals(props, prop2));
 }
 
-TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysTest) {
+TEST_F(PropertiesSerializationTestSuite, SaveJSONPathKeysTest) {
     //Given a properties object with jpath keys
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     celix_properties_set(props, "key1", "value1");
     celix_properties_set(props, "key2", "value2");
-    celix_properties_set(props, "object1/key3", "value3");
-    celix_properties_set(props, "object1/key4", "value4");
-    celix_properties_set(props, "object2/key5", "value5");
-    celix_properties_set(props, "object3/object4/key6", "value6");
+    celix_properties_set(props, "object1.key3", "value3");
+    celix_properties_set(props, "object1.key4", "value4");
+    celix_properties_set(props, "object2.key5", "value5");
+    celix_properties_set(props, "object3.object4.key6", "value6");
 
     //And an in-memory stream
     celix_autofree char* output;
@@ -253,10 +253,10 @@ TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysWithCollisionTest) {
 
     //Given a properties object with jpath keys that collide
     celix_autoptr(celix_properties_t) props = celix_properties_create();
-    celix_properties_set(props, "key1/key2/key3", "value1");
-    celix_properties_set(props, "key1/key2", "value2"); //collision with object "key1/key2/key3" -> overwrite
-    celix_properties_set(props, "key4/key5/key6/key7", "value4");
-    celix_properties_set(props, "key4/key5/key6", "value3"); //collision with field "key4/key5/key6/key7" -> overwrite
+    celix_properties_set(props, "key1.key2.key3", "value1");
+    celix_properties_set(props, "key1.key2", "value2"); //collision with object "key1/key2/key3" -> overwrite
+    celix_properties_set(props, "key4.key5.key6.key7", "value4");
+    celix_properties_set(props, "key4.key5.key6", "value3"); //collision with field "key4/key5/key6/key7" -> overwrite
 
     //When saving the properties to a string
     celix_autofree char* output = nullptr;
@@ -278,10 +278,10 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithNestedEndErrorOnColli
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     celix_properties_set(props, "key1", "value1");
     celix_properties_set(props, "key2", "value2");
-    celix_properties_set(props, "object1/key3", "value3");
-    celix_properties_set(props, "object1/key4", "value4");
-    celix_properties_set(props, "object2/key5", "value5");
-    celix_properties_set(props, "object3/object4/key6", "value6");
+    celix_properties_set(props, "object1.key3", "value3");
+    celix_properties_set(props, "object1.key4", "value4");
+    celix_properties_set(props, "object2.key5", "value5");
+    celix_properties_set(props, "object3.object4.key6", "value6");
 
     // And an in-memory stream
     celix_autofree char* output;
@@ -292,17 +292,17 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithNestedEndErrorOnColli
     ASSERT_EQ(CELIX_SUCCESS, status);
 }
 
-TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithKeyNamesWithSlashesTest) {
-    //Given a properties set with key names with slashes
+TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithKeyNamesWithDotsTest) {
+    //Given a properties set with key names with dots
     celix_autoptr(celix_properties_t) props = celix_properties_create();
-    celix_properties_set(props, "a/key/name/with/slashes", "value1");
-    celix_properties_set(props, "/keyThatStartsWithSlash", "value3");
-    celix_properties_set(props, "keyThatEndsWithSlash/", "value5");
-    celix_properties_set(props, "keyThatEndsWithDoubleSlashes//", "value6");
-    celix_properties_set(props, "key//With//Double//Slashes", "value7");
-    celix_properties_set(props, "object/keyThatEndsWithSlash/", "value8");
-    celix_properties_set(props, "object/keyThatEndsWithDoubleSlashes//", "value9");
-    celix_properties_set(props, "object/key//With//Double//Slashes", "value10");
+    celix_properties_set(props, "a.key.name.with.dots", "value1");
+    celix_properties_set(props, ".keyThatStartsWithDot", "value3");
+    celix_properties_set(props, "keyThatEndsWithDot.", "value5");
+    celix_properties_set(props, "keyThatEndsWithDoubleDots..", "value6");
+    celix_properties_set(props, "key..With..Double..Dots", "value7");
+    celix_properties_set(props, "object.keyThatEndsWithDot.", "value8");
+    celix_properties_set(props, "object.keyThatEndsWithDoubleDots..", "value9");
+    celix_properties_set(props, "object.key..With..Double..Dots", "value10");
 
 
     //When saving the properties to a string
@@ -311,14 +311,14 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithKeyNamesWithSlashesTe
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the out contains the JSON representation snippets of the properties
-    EXPECT_NE(nullptr, strstr(output, R"("a":{"key":{"name":{"with":{"slashes":"value1"}}}})")) << "JSON: " << output;
-    EXPECT_NE(nullptr, strstr(output, R"("keyThatStartsWithSlash":"value3")")) << "JSON: " << output;
+    EXPECT_NE(nullptr, strstr(output, R"("a":{"key":{"name":{"with":{"dots":"value1"}}}})")) << "JSON: " << output;
+    EXPECT_NE(nullptr, strstr(output, R"("keyThatStartsWithDot":"value3")")) << "JSON: " << output;
     EXPECT_NE(nullptr, strstr(output, R"("":"value5")")) << "JSON: " << output;
     EXPECT_NE(nullptr, strstr(output, R"("":"value6")")) << "JSON: " << output;
-    EXPECT_NE(nullptr, strstr(output, R"("Slashes":"value7")")) << "JSON: " << output;
+    EXPECT_NE(nullptr, strstr(output, R"("Dots":"value7")")) << "JSON: " << output;
     EXPECT_NE(nullptr, strstr(output, R"("":"value8")")) << "JSON: " << output;
     EXPECT_NE(nullptr, strstr(output, R"("":"value9")")) << "JSON: " << output;
-    EXPECT_NE(nullptr, strstr(output, R"("Slashes":"value10")")) << "JSON: " << output;
+    EXPECT_NE(nullptr, strstr(output, R"("Dots":"value10")")) << "JSON: " << output;
 
     //And the output is a valid JSON object
     json_error_t error;
@@ -348,7 +348,7 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithKeyNamesWithSlashesTe
     node = json_object_get(node, "");
     ASSERT_NE(nullptr, node);
     ASSERT_TRUE(json_is_object(node));
-    node = json_object_get(node, "Slashes");
+    node = json_object_get(node, "Dots");
     ASSERT_NE(nullptr, node);
     ASSERT_TRUE(json_is_string(node));
     EXPECT_STREQ("value10", json_string_value(node));
@@ -363,8 +363,8 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithKeyCollision) {
 
     //Given a properties that contains keys that will collide with an existing JSON object
     celix_autoptr(celix_properties_t) props = celix_properties_create();
-    celix_properties_set(props, "key1/key2/key3", "value1");
-    celix_properties_set(props, "key1/key2", "value2"); //collision with object "key1/key2" -> overwrite
+    celix_properties_set(props, "key1.key2.key3", "value1");
+    celix_properties_set(props, "key1.key2", "value2"); //collision with object "key1.key2" -> overwrite
 
     //When saving the properties to a string
     celix_autofree char* output1;
@@ -700,10 +700,10 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithNestedObjectsTest) {
     EXPECT_EQ(6, celix_properties_size(props));
     EXPECT_STREQ("value1", celix_properties_getString(props, "key1"));
     EXPECT_STREQ("value2", celix_properties_getString(props, "key2"));
-    EXPECT_STREQ("value3", celix_properties_getString(props, "object1/key3"));
-    EXPECT_EQ(true, celix_properties_getBool(props, "object1/key4", false));
-    EXPECT_DOUBLE_EQ(5., celix_properties_getDouble(props, "object2/key5", 0.0));
-    EXPECT_EQ(6, celix_properties_getLong(props, "object3/object4/key6", 0));
+    EXPECT_STREQ("value3", celix_properties_getString(props, "object1.key3"));
+    EXPECT_EQ(true, celix_properties_getBool(props, "object1.key4", false));
+    EXPECT_DOUBLE_EQ(5., celix_properties_getDouble(props, "object2.key5", 0.0));
+    EXPECT_EQ(6, celix_properties_getLong(props, "object3.object4.key6", 0));
 }
 
 TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithDuplicatesTest) {
@@ -736,7 +736,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithDuplicatesTest) {
     celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 
-TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedSlashesTest) {
+TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedDotsTest) {
     // Given a complex JSON object with collisions and duplicate keys
     // Collisions:
     // - object object1/object2 and value object1/object2
@@ -749,12 +749,12 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedSlashesTest) {
             "object2": {
                 "key1": "value1"
             },
-            "object2/key2": "value2"
+            "object2.key2": "value2"
         },
-        "object1/object2" : "value3",
+        "object1.object2" : "value3",
         "key3": "value4",
         "key3": "value5",
-        "object3/key4": "value6",
+        "object3.key4": "value6",
         "object3": {
             "key4": "value7"
         }
@@ -770,11 +770,11 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedSlashesTest) {
     // And the properties object all the values for the colliding keys and a single (latest) value for the duplicate
     // keys
     EXPECT_EQ(5, celix_properties_size(props));
-    EXPECT_STREQ("value1", celix_properties_getString(props, "object1/object2/key1"));
-    EXPECT_STREQ("value2", celix_properties_getString(props, "object1/object2/key2"));
-    EXPECT_STREQ("value3", celix_properties_getString(props, "object1/object2"));
+    EXPECT_STREQ("value1", celix_properties_getString(props, "object1.object2.key1"));
+    EXPECT_STREQ("value2", celix_properties_getString(props, "object1.object2.key2"));
+    EXPECT_STREQ("value3", celix_properties_getString(props, "object1.object2"));
     EXPECT_STREQ("value5", celix_properties_getString(props, "key3"));
-    EXPECT_STREQ("value7", celix_properties_getString(props, "object3/key4"));
+    EXPECT_STREQ("value7", celix_properties_getString(props, "object3.key4"));
 
     // When decoding the properties from a string using a flag that allows duplicates
     celix_properties_t* props2;
@@ -881,7 +881,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithUnsupportedArrayTypes
         EXPECT_GE(celix_err_getErrorCount(), 1);
         celix_err_resetErrors();
 
-        // When loading the properties from the CELIX_PROPETIES_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS flag
+        // When loading the properties from the CELIX_PROPERTIES_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS flag
         celix_properties_t* props2;
         status = celix_properties_loadFromString2(
             invalidArray, CELIX_PROPERTIES_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS, &props2);
@@ -896,16 +896,16 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithUnsupportedArrayTypes
     }
 }
 
-TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithSlashesInTheKeysTest) {
+TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithDotsInTheKeysTest) {
     // Given a complex JSON object
     const char* jsonInput = R"({
-        "/": "value1",
-        "keyThatEndsWithSlash/": "value2",
-        "key//With//Double//Slash": "value3",
+        ".": "value1",
+        "keyThatEndsWithDots.": "value2",
+        "key..With..Double..Dots": "value3",
         "object": {
-            "/": "value4",
-            "keyThatEndsWithSlash/": "value5",
-            "key//With//Double//Slash": "value6"
+            ".": "value4",
+            "keyThatEndsWithDot.": "value5",
+            "key..With..Double..Dot": "value6"
         }
     })";
 
@@ -920,12 +920,12 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithSlashesInTheKeysTest)
 
     // Then the properties object contains the nested objects
     EXPECT_EQ(6, celix_properties_size(props));
-    EXPECT_STREQ("value1", celix_properties_getString(props, "/"));
-    EXPECT_STREQ("value2", celix_properties_getString(props, "keyThatEndsWithSlash/"));
-    EXPECT_STREQ("value3", celix_properties_getString(props, "key//With//Double//Slash"));
-    EXPECT_STREQ("value4", celix_properties_getString(props, "object//"));
-    EXPECT_STREQ("value5", celix_properties_getString(props, "object/keyThatEndsWithSlash/"));
-    EXPECT_STREQ("value6", celix_properties_getString(props, "object/key//With//Double//Slash"));
+    EXPECT_STREQ("value1", celix_properties_getString(props, "."));
+    EXPECT_STREQ("value2", celix_properties_getString(props, "keyThatEndsWithDots."));
+    EXPECT_STREQ("value3", celix_properties_getString(props, "key..With..Double..Dots"));
+    EXPECT_STREQ("value4", celix_properties_getString(props, "object.."));
+    EXPECT_STREQ("value5", celix_properties_getString(props, "object.keyThatEndsWithDot."));
+    EXPECT_STREQ("value6", celix_properties_getString(props, "object.key..With..Double..Dot"));
 }
 
 TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithInvalidVersionsTest) {

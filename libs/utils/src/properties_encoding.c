@@ -28,7 +28,7 @@
 #include <math.h>
 #include <string.h>
 
-#define CELIX_PROPERTIES_JPATH_SEPARATOR '/'
+#define CELIX_PROPERTIES_JSONPATH_SEPARATOR '.'
 
 static celix_status_t
 celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t* jsonValue, int flags);
@@ -200,7 +200,7 @@ static celix_status_t celix_properties_addPropertiesEntryToJson(const celix_prop
                                                                 int flags) {
     json_t* jsonObj = root;
     const char* fieldName = key;
-    const char* slash = strchr(key, CELIX_PROPERTIES_JPATH_SEPARATOR);
+    const char* slash = strchr(key, CELIX_PROPERTIES_JSONPATH_SEPARATOR);
     while (slash) {
         char buf[64];
         char* name = celix_utils_writeOrCreateString(buf, sizeof(buf), "%.*s", (int)(slash - fieldName), fieldName);
@@ -229,7 +229,7 @@ static celix_status_t celix_properties_addPropertiesEntryToJson(const celix_prop
 
         jsonObj = subObj;
         fieldName = slash + 1;
-        slash = strchr(fieldName, CELIX_PROPERTIES_JPATH_SEPARATOR);
+        slash = strchr(fieldName, CELIX_PROPERTIES_JSONPATH_SEPARATOR);
     }
 
     json_t* value;
@@ -491,7 +491,7 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
         json_t* fieldValue;
         json_object_foreach(jsonValue, fieldName, fieldValue) {
             char buf[64];
-            char* combinedKey = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s/%s", key, fieldName);
+            char* combinedKey = celix_utils_writeOrCreateString(buf, sizeof(buf), "%s%c%s", key, CELIX_PROPERTIES_JSONPATH_SEPARATOR, fieldName);
             celix_auto(celix_utils_string_guard_t) strGuard = celix_utils_stringGuard_init(buf, combinedKey);
             if (!combinedKey) {
                 celix_err_push("Failed to create sub key.");

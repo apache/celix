@@ -103,7 +103,7 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, FcloseErrorWhenSaveTest) {
 TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeErrorTest) {
     // Given a dummy properties object
     celix_autoptr(celix_properties_t) props = celix_properties_create();
-    celix_properties_set(props, "key/with/slash", "value");
+    celix_properties_set(props, "key.with.slash", "value");
     celix_properties_set(props, "key-with-out-slash", "value");
 
     // When an error injected is prepared for celix_utils_writeOrCreateString() from celix_properties_saveToString
