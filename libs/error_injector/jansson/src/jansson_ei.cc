@@ -106,4 +106,11 @@ json_t* __wrap_json_sprintf(const char* fmt, ...) {
     return obj;
 }
 
+int __real_json_dumpf(const json_t* json, FILE* output, size_t flags);
+CELIX_EI_DEFINE(json_dumpf, int)
+int __wrap_json_dumpf(const json_t* json, FILE* output, size_t flags) {
+    CELIX_EI_IMPL(json_dumpf);
+    return __real_json_dumpf(json, output, flags);
+}
+
 }

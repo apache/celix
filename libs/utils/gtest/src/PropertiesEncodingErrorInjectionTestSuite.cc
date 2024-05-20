@@ -210,6 +210,26 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeVersionErrorTest) {
     celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 
+TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeDumpfErrorTest) {
+    // Given a dummy properties object
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_set(props, "key", "value");
+
+    // When an error injected is prepared for json_dumpf() from celix_properties_saveToString
+    celix_ei_expect_json_dumpf((void*)celix_properties_saveToStream, 0, -1);
+
+    // And I call celix_properties_saveToString
+    char* out;
+    auto status = celix_properties_saveToString(props, 0, &out);
+
+    // Then I expect an error
+    EXPECT_EQ(ENOMEM, status);
+
+    // And I expect 1 error message in celix_err
+    EXPECT_EQ(1, celix_err_getErrorCount());
+    celix_err_printErrors(stderr, "Test Error: ", "\n");
+}
+
 TEST_F(PropertiesEncodingErrorInjectionTestSuite, LoadErrorTest) {
     //Given a dummy json string
     const char* json = R"({"key":"value"})";

@@ -259,7 +259,23 @@ TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysWithCollisionTest) {
     json_decref(root);
 }
 
+TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithNestedEndErrorOnCollisionsFlagsTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_set(props, "key1", "value1");
+    celix_properties_set(props, "key2", "value2");
+    celix_properties_set(props, "object1/key3", "value3");
+    celix_properties_set(props, "object1/key4", "value4");
+    celix_properties_set(props, "object2/key5", "value5");
+    celix_properties_set(props, "object3/object4/key6", "value6");
 
+    // And an in-memory stream
+    celix_autofree char* output;
+
+    // When saving the properties to the stream
+    auto status = celix_properties_saveToString(
+        props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE | CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS, &output);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+}
 
 TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithKeyNamesWithSlashesTest) {
     //Given a properties set with key names with slashes

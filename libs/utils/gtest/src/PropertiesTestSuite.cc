@@ -24,6 +24,7 @@
 #include "celix_err.h"
 #include "celix_properties.h"
 #include "celix_properties_internal.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
 
 using ::testing::MatchesRegex;

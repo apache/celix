@@ -28,6 +28,8 @@
 #include <math.h>
 #include <string.h>
 
+#define CELIX_PROPERTIES_JPATH_SEPARATOR '/'
+
 static celix_status_t
 celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t* jsonValue, int flags);
 
@@ -169,6 +171,7 @@ static celix_status_t celix_properties_addJsonValueToJson(json_t* value, const c
     if (field) {
         if (flags & CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS) {
             celix_err_pushf("Invalid key collision. key '%s' already exists.", key);
+            json_decref(value);
             return CELIX_ILLEGAL_ARGUMENT;
         }
     }
@@ -197,7 +200,7 @@ static celix_status_t celix_properties_addPropertiesEntryToJson(const celix_prop
                                                                 int flags) {
     json_t* jsonObj = root;
     const char* fieldName = key;
-    const char* slash = strstr(key, "/");
+    const char* slash = strchr(key, CELIX_PROPERTIES_JPATH_SEPARATOR);
     while (slash) {
         char buf[64];
         char* name = celix_utils_writeOrCreateString(buf, sizeof(buf), "%.*s", (int)(slash - fieldName), fieldName);
@@ -207,11 +210,11 @@ static celix_status_t celix_properties_addPropertiesEntryToJson(const celix_prop
             return ENOMEM;
         }
         json_t* subObj = json_object_get(jsonObj, name);
-        if (!subObj || !json_is_object(subObj)) {
-            if (!json_is_object(subObj) && flags & CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS) {
-                celix_err_pushf("Invalid key collision. Key '%s' already exists.", name);
-                return CELIX_ILLEGAL_ARGUMENT;
-            }
+        if (subObj && !json_is_object(subObj) && flags & CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS) {
+            celix_err_pushf("Invalid key collision. Key '%s' already exists.", name);
+            return CELIX_ILLEGAL_ARGUMENT;
+        }
+        if (!subObj) {
             subObj = json_object();
             if (!subObj) {
                 celix_err_push("Failed to create json object");
@@ -226,7 +229,7 @@ static celix_status_t celix_properties_addPropertiesEntryToJson(const celix_prop
 
         jsonObj = subObj;
         fieldName = slash + 1;
-        slash = strstr(fieldName, "/");
+        slash = strchr(fieldName, CELIX_PROPERTIES_JPATH_SEPARATOR);
     }
 
     json_t* value;
@@ -297,11 +300,15 @@ celix_status_t celix_properties_saveToString(const celix_properties_t* propertie
     }
 
     celix_status_t status = celix_properties_saveToStream(properties, stream, encodeFlags);
-    fclose(stream);
-    if (status == CELIX_SUCCESS) {
-        *out = celix_steal_ptr(buffer);
+    (void)fclose(stream);
+    if (!buffer || status != CELIX_SUCCESS) {
+        if (!buffer || status == CELIX_FILE_IO_EXCEPTION) {
+            return ENOMEM; // Using memstream as stream, return ENOMEM instead of CELIX_FILE_IO_EXCEPTION
+        }
+        return status;
     }
-    return status;
+    *out = celix_steal_ptr(buffer);
+    return CELIX_SUCCESS;
 }
 
 static celix_status_t celix_properties_parseVersion(const char* value, celix_version_t** out) {

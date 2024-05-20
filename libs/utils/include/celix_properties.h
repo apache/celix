@@ -999,7 +999,8 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_i
  * celix_properties_setString(properties, "key/with/slash", "value1");
  * celix_properties_setString(properties, "key", "value2"); //collision
  * char* json;
- * celix_status_t status = celix_properties_saveToString(properties, CELIX_PROPERTIES_ENCODE_NESTED, &json);
+ * celix_status_t status = celix_properties_saveToString(properties,
+ *     CELIX_PROPERTIES_ENCODE_NESTED | | CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS, &json);
  * // status will be CELIX_ILLEGAL_ARGUMENT and a error message will be logged to celix_err
  * @endcode
  *
@@ -1033,7 +1034,8 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_i
  * @brief Flag to indicate that all encode "error on" flags should be set.
  */
 #define CELIX_PROPERTIES_ENCODE_STRICT                                                                                 \
-    (CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS | CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS)
+    (CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS | CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS |                     \
+     CELIX_PROPERTIES_ENCODE_ERROR_ON_NAN_INF)
 
 /**
  * @brief Save (encode) as a JSON representation to a stream.
@@ -1042,7 +1044,7 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_i
  *
  * Properties are encoded as a JSON object.
  *
- * If no encoding style flag is set of when the CELIX_PROPERTIES_ENCODE_FLAT_STYLE flag is set, properties
+ * If no encoding style flag is set or when the CELIX_PROPERTIES_ENCODE_FLAT_STYLE flag is set, properties
  * entries are written as top level field entries.
  *
  * If the CELIX_PROPERTIES_ENCODE_NESTED_STYLE flag is set, properties entry keys are split on '/' and nested in
@@ -1066,9 +1068,10 @@ CELIX_UTILS_EXPORT bool celix_propertiesIterator_equals(const celix_properties_i
  *
  * @param properties The properties object to encode.
  * @param stream The stream to write the JSON representation of the properties object to.
- * @param encodeFlags The flags to use when encoding the input string.
+ * @param encodeFlags The flags to use when encoding the input properties.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ILLEGAL_ARGUMENT if the provided properties cannot be
- * encoded to a JSON representation and ENOMEM if there was not enough memory.
+ * encoded to a JSON representation, ENOMEM if there was not enough memory and CELIX_FILE_IO_EXCEPTION if the stream
+ * could not be written to.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToStream(const celix_properties_t* properties,
                                                                 FILE* stream,
