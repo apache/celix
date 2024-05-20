@@ -44,7 +44,7 @@ class PropertiesEncodingErrorInjectionTestSuite : public ::testing::Test {
         celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_addString(nullptr, 0, CELIX_SUCCESS);
-
+        celix_err_resetErrors();
     }
 };
 
@@ -80,6 +80,25 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, SaveErrorTest) {
     EXPECT_EQ(2, celix_err_getErrorCount());
     celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
+
+TEST_F(PropertiesEncodingErrorInjectionTestSuite, FcloseErrorWhenSaveTest) {
+    //Given a dummy properties object
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_set(props, "key", "value");
+
+    //When an error injected is prepared for fclose() from save
+    celix_ei_expect_fclose((void*)celix_properties_save, 0, -1);
+
+    //And I call celix_properties_save
+    auto status = celix_properties_save(props, "somefile.json", 0);
+
+    //Then I expect an error
+    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION, status);
+
+    //And I expect 1 error message in celix_err
+    EXPECT_EQ(1, celix_err_getErrorCount());
+}
+
 
 TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeErrorTest) {
     // Given a dummy properties object

@@ -201,6 +201,21 @@ TEST_F(PropertiesSerializationTestSuite, SaveEmptyArrayTest) {
     celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 
+TEST_F(PropertiesSerializationTestSuite, SaveEmptyKeyTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_setString(props, "", "value");
+
+    celix_autofree char* output1;
+    auto status = celix_properties_saveToString(props, 0, &output1);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+
+    celix_autoptr(celix_properties_t) prop2 = nullptr;
+    status = celix_properties_loadFromString2(output1, 0, &prop2);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+
+    ASSERT_TRUE(celix_properties_equals(props, prop2));
+}
+
 TEST_F(PropertiesSerializationTestSuite, SaveJPathKeysTest) {
     //Given a properties object with jpath keys
     celix_autoptr(celix_properties_t) props = celix_properties_create();
@@ -791,8 +806,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithAndWithoutStrictFlagT
         R"({"key1":null})",                 // Null value gives error on strict
         R"({"":"value"})",                  // "" key gives error on strict
         R"({"emptyArr":[]})",               // Empty array gives error on strict
-        R"({"key1":"val1", "key1":"val2"})",// Duplicate key gives error on strict
-        R"({"nullArr":[null,null]})",       // Array with null values gives error on strict
+        R"({"key1":"val1", "key1":"val2"})"// Duplicate key gives error on strict
     };
 
     for (auto& invalidInput: invalidInputs) {
@@ -830,6 +844,55 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithAndWithoutStrictFlagT
         celix_err_printErrors(stderr, "Test Error: ", "\n");
 
         fclose(stream);
+    }
+}
+
+TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithUnsupportedArrayTypesTest) {
+    auto invalidArrays = {
+        R"({"objArray":[{"obj1": true}, {"obj2": true}]})", // Array with objects not supported.
+        R"({"arrayArray":[[1,2], [2,4]]})",                  // Array with array not supported.
+        R"({"nullArr":[null,null]})"       // Array with null values gives error on strict
+    };
+
+    // Decode with no strict flag, will ignore the unsupported arrays
+    for (auto& invalidArray : invalidArrays) {
+        // When loading the properties from the string
+        celix_autoptr(celix_properties_t) props = nullptr;
+        auto status = celix_properties_loadFromString2(invalidArray, 0, &props);
+
+        // Then decoding succeeds, because strict is disabled
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        EXPECT_GE(celix_err_getErrorCount(), 0);
+
+        // But the properties size is 0, because the all invalid inputs are ignored
+        EXPECT_EQ(0, celix_properties_size(props));
+    }
+
+    // Decode with strict flag, will fail on unsupported arrays
+    for (auto& invalidArray : invalidArrays) {
+        // When loading the properties from the string
+        celix_autoptr(celix_properties_t) props = nullptr;
+        auto status = celix_properties_loadFromString2(invalidArray, CELIX_PROPERTIES_DECODE_STRICT, &props);
+
+        // Then decoding fails
+        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+        // And at least one error message is added to celix_err
+        EXPECT_GE(celix_err_getErrorCount(), 1);
+        celix_err_resetErrors();
+
+        // When loading the properties from the CELIX_PROPETIES_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS flag
+        celix_properties_t* props2;
+        status = celix_properties_loadFromString2(
+            invalidArray, CELIX_PROPERTIES_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS, &props2);
+
+        // Then decoding fails
+        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+        // And at least one error message is added to celix_err
+        EXPECT_GE(celix_err_getErrorCount(), 1);
+        //celix_err_resetErrors();
+        celix_err_printErrors(stderr, "Test Error: ", "\n");
     }
 }
 
@@ -939,8 +1002,8 @@ TEST_F(PropertiesSerializationTestSuite, LoadCxxPropertiesTest) {
             jsonInput,
             celix::Properties::DecodeFlags::ErrorOnCollisions | celix::Properties::DecodeFlags::ErrorOnDuplicates |
                 celix::Properties::DecodeFlags::ErrorOnEmptyArrays | celix::Properties::DecodeFlags::ErrorOnEmptyKeys |
-                celix::Properties::DecodeFlags::ErrorOnMixedArrays | celix::Properties::DecodeFlags::ErrorOnNullValues |
-                celix::Properties::DecodeFlags::ErrorOnNullValues),
+                celix::Properties::DecodeFlags::ErrorOnUnsupportedArrays |
+                celix::Properties::DecodeFlags::ErrorOnNullValues | celix::Properties::DecodeFlags::ErrorOnNullValues),
         celix::IOException);
 
     EXPECT_THROW(celix::Properties::load2("non_existing_file.json"), celix::IOException);

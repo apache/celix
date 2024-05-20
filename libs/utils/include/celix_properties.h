@@ -1140,6 +1140,8 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToString(const celix_prop
  *
  * E.g. `{"key": null}` is a null value.
  *
+ * Note arrays with null values are handled by the CELIX_PROPERTIES_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS flag.
+ *
  * If this flag is set, the decoding will fail if the input contains a null value and if this flag is not set, the
  * decoding will not fail and the JSON null entry will be ignored.
  */
@@ -1159,6 +1161,22 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToString(const celix_prop
 #define CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS 0x08
 
 /**
+ * @brief Flag to indicate that the decoding should fail if the input contains unsupported arrays.
+ *
+ * Unsupported arrays are arrays that contain JSON objects, multiple arrays, arrays with null values and
+ * mixed arrays.
+ * E.g.
+ * - `{"key": [{"nested": "value"}]}` (array with JSON object)
+ * - `{"key": [[1,2],[3,4]]}` (array with array)
+ * - `{"key": [null,null]}` (array with null values)
+ * - `{"key": ["value", 1]}` (mixed array)
+ *
+ * If this flag is set, the decoding will fail if the input contains an unsupported array and if this flag is not set,
+ * the decoding will not fail and the unsupported array entries will be ignored.
+ */
+#define CELIX_PROPERTIES_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS 0x10
+
+/**
  * @brief Flag to indicate that the decoding should fail if the input contains empty keys.
  *
  * E.g. `{"": "value"}` is an empty key.
@@ -1168,19 +1186,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToString(const celix_prop
  * If this flag is set, the decoding will fail if the input contains an empty key and if this flag is not set, the
  * decoding will not fail and the JSON empty key entry will be ignored.
  */
-#define CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS 0x10
-
-/**
- * @brief Flag to indicate that the decoding should fail if the input contains mixed arrays.
- *
- * E.g. `{"key": ["value", 1]}` is a mixed array.
- *
- * Note that mixed arrays are valid in JSON, but not cannot be decoded to a valid properties array entry.
- *
- * If this flag is set, the decoding will fail if the input contains a mixed array and if this flag is not set, the
- * decoding will not fail and the JSON mixed array entry will be ignored.
- */
-#define CELIX_PROPERTIES_DECODE_ERROR_ON_MIXED_ARRAYS 0x20
+#define CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS 0x20
 
 /**
  * @brief Flag to indicate that the decoding should fail if the input contains any of the decode error flags.
@@ -1190,7 +1196,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToString(const celix_prop
 #define CELIX_PROPERTIES_DECODE_STRICT                                                                                 \
     (CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES | CELIX_PROPERTIES_DECODE_ERROR_ON_COLLISIONS |                       \
      CELIX_PROPERTIES_DECODE_ERROR_ON_NULL_VALUES | CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS |                    \
-     CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS | CELIX_PROPERTIES_DECODE_ERROR_ON_MIXED_ARRAYS)
+     CELIX_PROPERTIES_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS | CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS)
 
 /**
  * @brief Load properties from a stream.

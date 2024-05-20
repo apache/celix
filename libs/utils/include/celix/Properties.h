@@ -1037,8 +1037,9 @@ namespace celix {
                                                                                    are empty arrays. */
             ErrorOnEmptyKeys = CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS, /**< If set, decoding will fail if there are
                                                                                empty ("") keys. */
-            ErrorOnMixedArrays = CELIX_PROPERTIES_DECODE_ERROR_ON_MIXED_ARRAYS, /**< If set, decoding will fail if there
-                                                                                   are mixed type arrays. */
+            ErrorOnUnsupportedArrays =
+                CELIX_PROPERTIES_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS, /**< If set, decoding will fail if there
+                                                            are unsupported array types or mixed array types. */
             Strict = CELIX_PROPERTIES_DECODE_STRICT /**< If set, decoding will fail if there are any errors. */
         };
 

@@ -285,7 +285,11 @@ celix_status_t celix_properties_save(const celix_properties_t* properties, const
         return CELIX_FILE_IO_EXCEPTION;
     }
     celix_status_t status = celix_properties_saveToStream(properties, stream, encodeFlags);
-    fclose(stream);
+    int rc = fclose(stream);
+    if (rc != 0) {
+        celix_err_pushf("Failed to close file %s: %s", filename, strerror(errno));
+        return CELIX_FILE_IO_EXCEPTION;
+    }
     return status;
 }
 
@@ -391,8 +395,8 @@ static celix_status_t celix_properties_determineArrayType(const json_t* jsonArra
     case JSON_FALSE:
         *out = CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL;
         break;
-    case JSON_NULL:
     default:
+        //JSON_NULL, JSON_OBJECT and  JSON_ARRAY
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
@@ -403,9 +407,9 @@ static celix_status_t
 celix_properties_decodeArray(celix_properties_t* props, const char* key, const json_t* jsonArray, int flags) {
     celix_array_list_element_type_t elType;
     celix_status_t status = celix_properties_determineArrayType(jsonArray, &elType);
-    if (status != CELIX_SUCCESS && (flags & CELIX_PROPERTIES_DECODE_ERROR_ON_MIXED_ARRAYS)) {
+    if (status != CELIX_SUCCESS && (flags & CELIX_PROPERTIES_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS)) {
         celix_autofree char* arrStr = json_dumps(jsonArray, JSON_ENCODE_ANY);
-        celix_err_pushf("Invalid mixed or null array for key '%s': %s.", key, arrStr);
+        celix_err_pushf("Invalid mixed, null, object or multidimensional array for key '%s': %s.", key, arrStr);
         return status;
     } else if (status != CELIX_SUCCESS) {
         //ignore mixed types
@@ -461,7 +465,6 @@ celix_properties_decodeValue(celix_properties_t* props, const char* key, json_t*
             celix_err_push("Key cannot be empty.");
             return CELIX_ILLEGAL_ARGUMENT;
         }
-        return CELIX_SUCCESS; // ignore empty keys.
     }
 
     if (!json_is_object(jsonValue) && celix_properties_hasKey(props, key) &&
