@@ -1104,3 +1104,28 @@ TEST_F(PropertiesSerializationTestSuite, JsonErrorToCelixStatusTest) {
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_item_not_found));
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_index_out_of_range));
 }
+
+TEST_F(PropertiesSerializationTestSuite, KeyCollision) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    // pick keys such that key1 appears before key2 when iterating over the properties
+    celix_properties_set(props, "a.b.haha.arbifdadfsfa", "value1");
+    celix_properties_set(props, "a.b.haha", "value2");
+
+    celix_autofree char* output = nullptr;
+    auto status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_NESTED_STYLE | CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS,
+                                                    &output);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    celix_autoptr(celix_properties_t) props2 = celix_properties_create();
+    // pick keys such that key1 appears before key2 when iterating over the properties
+    celix_properties_set(props2, "a.b.c", "value1");
+    celix_properties_set(props2, "a.b.c.d", "value2");
+    status = celix_properties_saveToString(props2, CELIX_PROPERTIES_ENCODE_NESTED_STYLE | CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS,
+                                           &output);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    status = celix_properties_saveToString(props2, CELIX_PROPERTIES_ENCODE_NESTED_STYLE, &output);
+    // "a.b.c.d" is silently discarded
+    EXPECT_STREQ(R"({"a":{"b":{"c":"value1"}}})", output);
+    std::cout << output << std::endl;
+    EXPECT_EQ(CELIX_SUCCESS, status);
+}

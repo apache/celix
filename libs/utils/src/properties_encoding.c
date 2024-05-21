@@ -211,9 +211,12 @@ static celix_status_t celix_properties_addPropertiesEntryToJson(const celix_prop
             return ENOMEM;
         }
         json_t* subObj = json_object_get(jsonObj, name);
-        if (subObj && !json_is_object(subObj) && flags & CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS) {
-            celix_err_pushf("Invalid key collision. Key '%s' already exists.", name);
-            return CELIX_ILLEGAL_ARGUMENT;
+        if (subObj && !json_is_object(subObj)) {
+            if (flags & CELIX_PROPERTIES_ENCODE_ERROR_ON_COLLISIONS) {
+                celix_err_pushf("Invalid key collision. Key '%s' already exists.", name);
+                return CELIX_ILLEGAL_ARGUMENT;
+            }
+            return CELIX_SUCCESS;
         }
         if (!subObj) {
             subObj = json_object();
