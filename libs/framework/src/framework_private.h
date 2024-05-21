@@ -345,11 +345,6 @@ void celix_framework_waitForAsyncRegistration(celix_framework_t *fw, long svcId)
 void celix_framework_waitForAsyncUnregistration(celix_framework_t *fw, long svcId);
 
 /**
- * Returns whether the current thread is the Celix framework event loop thread.
- */
-bool celix_framework_isCurrentThreadTheEventLoop(celix_framework_t* fw);
-
-/**
  * Increase the use count of a bundle and ensure that a bundle cannot be uninstalled.
  */
 void celix_framework_bundleEntry_increaseUseCount(celix_framework_bundle_entry_t *entry);

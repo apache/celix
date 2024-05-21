@@ -340,8 +340,6 @@ class CelixConan(ConanFile):
             self.requires("mdnsresponder/1310.140.1")
         # 'libzip/1.10.1' requires 'zlib/1.2.13' while 'libcurl/7.64.1' requires 'zlib/1.2.12'
         self.requires("zlib/1.2.13", override=True)
-        # the latest civetweb (1.16) is not ready for openssl3
-        self.requires("openssl/1.1.1t", override=True)
         self.validate()
 
     def generate(self):
