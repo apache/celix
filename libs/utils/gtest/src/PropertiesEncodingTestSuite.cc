@@ -114,6 +114,36 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithNaNAndInfValuesTest) 
     }
 }
 
+TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithArrayListsContainingNaNAndInfValueTest) {
+    auto keys = {"NAN", "INF", "-INF"};
+    for (const auto& key : keys) {
+        celix_autoptr(celix_properties_t) props = celix_properties_create();
+        celix_autoptr(celix_array_list_t) list = celix_arrayList_createDoubleArray();
+        celix_arrayList_addDouble(list, strtod(key, nullptr));
+        celix_properties_assignArrayList(props, key, celix_steal_ptr(list));
+
+        // Then saving the properties to a string succeeds, but value is not added to the JSON (because JSON does not
+        // support NAN, INF and -INF)
+        celix_autofree char* output;
+        auto status = celix_properties_saveToString(props, 0, &output);
+        ASSERT_EQ(CELIX_SUCCESS, status);
+        EXPECT_STREQ("{}", output);
+
+        //And saving the properties to a string with the flag CELIX_PROPERTIES_ENCODE_ERROR_ON_NAN_INF fails
+        celix_err_resetErrors();
+        char* output2;
+        status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_ERROR_ON_NAN_INF, &output2);
+        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+        //And an error msg is added to celix_err
+        EXPECT_EQ(2, celix_err_getErrorCount());
+
+        celix_err_resetErrors();
+        char* output3;
+        status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS, &output3);
+        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+        EXPECT_EQ(1, celix_err_getErrorCount());
+    }
+}
 
 TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithArrayListsTest) {
     // Given a properties object with array list values

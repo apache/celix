@@ -195,7 +195,7 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeArrayErrorTest) {
     EXPECT_EQ(ENOMEM, status);
 
     // And I expect 3 error message in celix_err
-    EXPECT_EQ(3, celix_err_getErrorCount());
+    EXPECT_EQ(4, celix_err_getErrorCount());
     celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 

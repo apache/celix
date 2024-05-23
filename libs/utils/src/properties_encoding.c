@@ -50,6 +50,7 @@ static celix_status_t celix_properties_versionToJson(const celix_version_t* vers
 
 static celix_status_t celix_properties_arrayElementEntryValueToJson(celix_array_list_element_type_t elType,
                                                                     celix_array_list_entry_t entry,
+                                                                    int flags,
                                                                     json_t** out) {
     *out = NULL;
     switch (elType) {
@@ -60,6 +61,13 @@ static celix_status_t celix_properties_arrayElementEntryValueToJson(celix_array_
         *out = json_integer(entry.longVal);
         break;
     case CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE:
+        if (isnan(entry.doubleVal) || isinf(entry.doubleVal)) {
+            if (flags & CELIX_PROPERTIES_ENCODE_ERROR_ON_NAN_INF) {
+                celix_err_push("Invalid NaN or Inf.");
+                return CELIX_ILLEGAL_ARGUMENT;
+            }
+            return CELIX_SUCCESS; // ignore NaN and Inf
+        }
         *out = json_real(entry.doubleVal);
         break;
     case CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL:
@@ -99,12 +107,14 @@ static celix_status_t celix_properties_arrayEntryValueToJson(const char* key,
         return ENOMEM;
     }
 
-    for (int i = 0; i < celix_arrayList_size(entry->typed.arrayValue); ++i) {
+    int size = celix_arrayList_size(entry->typed.arrayValue);
+    celix_array_list_element_type_t elType = celix_arrayList_getElementType(entry->typed.arrayValue);
+    for (int i = 0; i < size; ++i) {
         celix_array_list_entry_t arrayEntry = celix_arrayList_getEntry(entry->typed.arrayValue, i);
-        celix_array_list_element_type_t elType = celix_arrayList_getElementType(entry->typed.arrayValue);
         json_t* jsonValue;
-        celix_status_t status = celix_properties_arrayElementEntryValueToJson(elType, arrayEntry, &jsonValue);
+        celix_status_t status = celix_properties_arrayElementEntryValueToJson(elType, arrayEntry, flags, &jsonValue);
         if (status != CELIX_SUCCESS) {
+            celix_err_pushf("Failed to encode array element(%d) for key %s.", i, key);
             return status;
         } else if (!jsonValue) {
             // ignore unset values
@@ -115,6 +125,14 @@ static celix_status_t celix_properties_arrayEntryValueToJson(const char* key,
                 return ENOMEM;
             }
         }
+    }
+
+    if (json_array_size(array) == 0) {
+        if (flags & CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS) {
+            celix_err_pushf("Invalid empty array for key %s.", key);
+            return CELIX_ILLEGAL_ARGUMENT;
+        }
+        return CELIX_SUCCESS; // empty array -> treat as unset property
     }
 
     *out = celix_steal_ptr(array);

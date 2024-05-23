@@ -1054,7 +1054,7 @@ namespace celix {
         /**
          * @brief Load a Properties object from a file.
          *
-         * @warning The name if temporary and will be renamed to celix::Properties::load in the future (when
+         * @warning The name is temporary and will be renamed to celix::Properties::load in the future (when
          * the current celix::Properties::load is removed).
          *
          * The content of the filename file is expected to be in the format of a JSON object.

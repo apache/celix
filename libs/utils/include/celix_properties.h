@@ -57,7 +57,7 @@ extern "C" {
  */
 typedef enum celix_properties_value_type {
     CELIX_PROPERTIES_VALUE_TYPE_UNSET = 0,   /**< Property value is not set. */
-    CELIX_PROPERTIES_VALUE_TYPE_STRING = 1,  /**< Property value is a string. */
+    CELIX_PROPERTIES_VALUE_TYPE_STRING = 1,  /**< Property value is a UTF-8 encoded string. */
     CELIX_PROPERTIES_VALUE_TYPE_LONG = 2,    /**< Property value is a long integer. */
     CELIX_PROPERTIES_VALUE_TYPE_DOUBLE = 3,  /**< Property value is a double. */
     CELIX_PROPERTIES_VALUE_TYPE_BOOL = 4,    /**< Property value is a boolean. */
@@ -1087,7 +1087,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToStream(const celix_prop
  *
  * @param[in] properties The properties object to encode.
  * @param[in] filename The file to write the JSON representation of the properties object to.
- * @param[in] encodeFlags The flags to use when encoding the input string.
+ * @param[in] encodeFlags The flags to use when encoding the input properties.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ILLEGAL_ARGUMENT if the provided properties cannot be
  * encoded to a JSON representation and ENOMEM if there was not enough memory. CELIX_FILE_IO_EXCEPTION if the file
  * could not be opened or written to.
@@ -1105,7 +1105,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_save(const celix_properties_t
  * The default encoding style is a compact and flat JSON representation.
  *
  * @param[in] properties The properties object to encode.
- * @param[in] encodeFlags The flags to use when encoding the input string.
+ * @param[in] encodeFlags The flags to use when encoding the input properties.
  * @param[out] out The JSON string representation of the properties object. The caller is responsible for freeing the
  * returned string using free.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ILLEGAL_ARGUMENT if the provided properties cannot be
@@ -1183,8 +1183,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToString(const celix_prop
  *
  * Note that empty keys are valid in JSON and valid in properties, but not always desired.
  *
- * If this flag is set, the decoding will fail if the input contains an empty key and if this flag is not set, the
- * decoding will not fail and the JSON empty key entry will be ignored.
+ * If this flag is set, the decoding will fail if the input contains an empty key.
  */
 #define CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_KEYS 0x20
 
@@ -1232,7 +1231,8 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_saveToString(const celix_prop
  * @param[out] out The properties object that will be created from the input string. The caller is responsible for
  * freeing the returned properties object using celix_properties_destroy.
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ILLEGAL_ARGUMENT if the provided input cannot be
- * decoded to a properties object and ENOMEM if there was not enough memory.
+ * decoded to a properties object and ENOMEM if there was not enough memory. CELIX_FILE_IO_EXCEPTION if the file
+ * could not be read.
  */
 CELIX_UTILS_EXPORT celix_status_t celix_properties_loadFromStream(FILE* stream,
                                                                   int decodeFlags,
@@ -1241,7 +1241,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_loadFromStream(FILE* stream,
 /**
  * @brief Load properties from a file.
  *
- * @warning The name if temporary and will be renamed to celix_properties_load in the future (when
+ * @warning The name is temporary and will be renamed to celix_properties_load in the future (when
  * the current celix_properties_load is removed).
  *
  * The content of the filename file is expected to be in the format of a JSON object.
@@ -1266,7 +1266,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_load2(const char* filename,
 /**
  * @brief Load properties from a string.
  *
- * @warning The name if temporary and will be renamed to celix_properties_loadFromString in the future (when
+ * @warning The name is temporary and will be renamed to celix_properties_loadFromString in the future (when
  * the current celix_properties_loadFromString is removed).
  *
  * The input string is expected to be in the format of a JSON object.
