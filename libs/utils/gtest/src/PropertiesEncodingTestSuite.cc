@@ -504,14 +504,14 @@ TEST_F(PropertiesSerializationTestSuite, SaveCxxPropertiesTest) {
 
     // When saving the properties to a string using an errors on duplicate key flag
     EXPECT_THROW(props.saveToString(celix::Properties::EncodingFlags::Strict),
-                 celix::IOException);
+                 celix::IllegalArgumentException);
 
     // When saving the properties to a string using combined flags
     EXPECT_THROW(props.saveToString(
                      celix::Properties::EncodingFlags::Pretty | celix::Properties::EncodingFlags::ErrorOnEmptyArrays |
                      celix::Properties::EncodingFlags::ErrorOnCollisions |
                      celix::Properties::EncodingFlags::ErrorOnNanInf | celix::Properties::EncodingFlags::NestedStyle),
-                 celix::IOException);
+                 celix::IllegalArgumentException);
 
     // When saving the properties to an invalid filename location
     EXPECT_THROW(props.save("/non-existing/no/rights/file.json"),
@@ -1025,7 +1025,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadCxxPropertiesTest) {
 
     // When loading the properties from the JSON object with a strict flag
     EXPECT_THROW(celix::Properties::loadFromString(jsonInput, celix::Properties::DecodeFlags::Strict),
-                 celix::IOException);
+                 celix::IllegalArgumentException);
 
     // When loading the properties from the JSON object with a flag combined
     EXPECT_THROW(
@@ -1035,7 +1035,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadCxxPropertiesTest) {
                 celix::Properties::DecodeFlags::ErrorOnEmptyArrays | celix::Properties::DecodeFlags::ErrorOnEmptyKeys |
                 celix::Properties::DecodeFlags::ErrorOnUnsupportedArrays |
                 celix::Properties::DecodeFlags::ErrorOnNullValues | celix::Properties::DecodeFlags::ErrorOnNullValues),
-        celix::IOException);
+        celix::IllegalArgumentException);
 
     EXPECT_THROW(celix::Properties::load2("non_existing_file.json"), celix::IOException);
 }

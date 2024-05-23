@@ -22,8 +22,8 @@
 #include <memory>
 #include <functional>
 
+#include "celix/Exceptions.h"
 #include "celix/ScheduledEvent.h"
-#include "celix/Exception.h"
 
 namespace celix {
 
@@ -112,7 +112,7 @@ public:
      */
     ScheduledEvent build() {
         if (!callback) {
-            throw celix::Exception{"Cannot build scheduled event without callback"}; //TODO improve error
+            throw celix::Exception{"Cannot build scheduled event without callback"};
         }
         return ScheduledEvent{ctx, name, std::move(callback), std::move(removeCallback), options};
     }

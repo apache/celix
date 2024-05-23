@@ -30,7 +30,7 @@
 #include "celix_properties.h"
 #include "celix_utils.h"
 #include "celix/Version.h"
-#include "celix/IOException.h"
+#include "celix/Exceptions.h"
 
 namespace celix {
 
@@ -982,6 +982,7 @@ namespace celix {
          * @param[in] filename The file to write the JSON representation of the properties object to.
          * @param[in] encodingFlags The flags to use when encoding the input string.
          * @throws celix::IOException If an error occurs while writing to the file.
+         * @throws celix::IllegalArgumentException If the provided properties cannot be encoded to JSON.
          * @throws std::bad_alloc If there was not enough memory to save the properties.
          */
         void save(const std::string& filename, EncodingFlags encodingFlags = EncodingFlags::None) const {
@@ -989,7 +990,7 @@ namespace celix {
             if (status == ENOMEM) {
                 throw std::bad_alloc();
             } else if (status != CELIX_SUCCESS) {
-                throw celix::IOException{"Cannot save celix::Properties to " + filename};
+                celix::impl::throwException(status, std::string{"Cannot save celix::Properties to "} + filename);
             }
         }
 
@@ -1002,7 +1003,7 @@ namespace celix {
          * The default encoding style is a compact and flat JSON representation.
          *
          * @param[in] encodeFlags The flags to use when encoding the input string.
-         * @throws celix::IOException If an error occurs while writing to the file.
+         * @throws celix::IllegalArgumentException If the provided properties cannot be encoded to JSON.
          * @throws std::bad_alloc If there was not enough memory to save the properties.
          */
         std::string saveToString(EncodingFlags encodeFlags = EncodingFlags::None) const {
@@ -1011,7 +1012,7 @@ namespace celix {
             if (status == ENOMEM) {
                 throw std::bad_alloc();
             } else if (status != CELIX_SUCCESS) {
-                throw celix::IOException{"Cannot save celix::Properties to string"};
+                celix::impl::throwException(status, "Cannot save celix::Properties to string");
             }
             std::string result{str};
             free(str);
@@ -1048,6 +1049,8 @@ namespace celix {
          * @param[in] path The path to the file containing the properties.
          * @return A new Properties object containing the properties from the file.
          * @throws celix::IOException If the file cannot be opened or read.
+         * @throws celix::IllegalArgumentException if the provided input cannot be decoded to a properties object.
+         * @throws std::bad_alloc If there was not enough memory to load the properties.
          */
         static Properties load(const std::string& path) { return loadFrom(path.data()); }
 
@@ -1066,6 +1069,7 @@ namespace celix {
          * @param[in] decodeFlags The flags to use when decoding the input string.
          * @return A new Properties object containing the properties from the file.
          * @throws celix::IOException If the file cannot be opened or read.
+         * @throws celix::IllegalArgumentException if the provided input cannot be decoded to a properties object.
          * @throws std::bad_alloc If there was not enough memory to load the properties.
          */
         static Properties load2(const std::string& filename, DecodeFlags decodeFlags = DecodeFlags::None) {
@@ -1074,7 +1078,7 @@ namespace celix {
             if (status == ENOMEM) {
                 throw std::bad_alloc();
             } else if (status != CELIX_SUCCESS) {
-                throw celix::IOException{"Cannot load celix::Properties from " + filename};
+                celix::impl::throwException(status, "Cannot load celix::Properties from " + filename);
             }
             return celix::Properties::own(props);
         }
@@ -1090,22 +1094,22 @@ namespace celix {
          *
          * @param[in] input The input string to parse.
          * @param[in] decodeFlags The flags to use when decoding the input string.
-        * @return A new Properties object containing the properties from the file.
-        * @throws celix::IOException If the file cannot be opened or read.
-        * @throws std::bad_alloc If there was not enough memory to load the properties.
-        */
+         * @return A new Properties object containing the properties from the file.
+         * @throws celix::IllegalArgumentException if the provided input cannot be decoded to a properties object.
+         * @throws std::bad_alloc If there was not enough memory to load the properties.
+         */
         static Properties loadFromString(const std::string& input, DecodeFlags decodeFlags = DecodeFlags::None) {
             celix_properties_t* props;
             auto status = celix_properties_loadFromString2(input.c_str(), static_cast<int>(decodeFlags), &props);
             if (status == ENOMEM) {
                 throw std::bad_alloc();
             } else if (status != CELIX_SUCCESS) {
-                throw celix::IOException{"Cannot load celix::Properties from string"};
+                celix::impl::throwException(status, "Cannot load celix::Properties from string");
             }
             return celix::Properties::own(props);
         }
 
-    private:
+      private:
         Properties(celix_properties_t* props, bool takeOwnership) :
             cProps{props, [takeOwnership](celix_properties_t* p){ if (takeOwnership) { celix_properties_destroy(p); }}} {}
 

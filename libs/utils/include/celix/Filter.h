@@ -25,7 +25,7 @@
 #include "celix_filter.h"
 #include "celix_err.h"
 
-#include "celix/Exception.h"
+#include "celix/Exceptions.h"
 #include "celix/Properties.h"
 
 namespace celix {
