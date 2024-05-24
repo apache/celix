@@ -86,6 +86,7 @@ bundles contains binaries depending on the stdlibc++ library.
   * [Apache Celix C Patterns](c_patterns.md)
 * Utils
   * [Apache Celix Properties & Filter](properties_and_filter.md)
+  * [Apache Celix Properties Encoding](properties_encoding.md)
 * Framework 
   * [Apache Celix Bundles](bundles.md)
   * [Apache Celix Services](services.md)

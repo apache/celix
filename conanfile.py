@@ -309,7 +309,7 @@ class CelixConan(ConanFile):
             self.options['openssl'].shared = True
         if self.options.build_celix_dfi:
             self.options['libffi'].shared = True
-        if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
+        if self.options.build_utils or self.options.build_celix_dfi or self.options.build_celix_etcdlib:
             self.options['jansson'].shared = True
 
     def requirements(self):
@@ -332,7 +332,7 @@ class CelixConan(ConanFile):
             self.requires("civetweb/1.16")
         if self.options.build_celix_dfi:
             self.requires("libffi/[>=3.2.1 <4.0.0]")
-        if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
+        if self.options.build_utils or self.options.build_celix_dfi or self.options.build_celix_etcdlib:
             self.requires("jansson/[>=2.12 <3.0.0]")
         if self.options.build_rsa_discovery_zeroconf:
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder

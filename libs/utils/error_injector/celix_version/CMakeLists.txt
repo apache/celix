@@ -24,5 +24,6 @@ target_link_options(version_ei INTERFACE
         LINKER:--wrap,celix_version_createVersionFromString
         LINKER:--wrap,celix_version_parse
         LINKER:--wrap,celix_version_copy
+        LINKER:--wrap,celix_version_toString
 )
 add_library(Celix::version_ei ALIAS version_ei)

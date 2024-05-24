@@ -29,6 +29,7 @@ add_executable(test_utils
         src/CelixUtilsTestSuite.cc
         src/ConvertUtilsTestSuite.cc
         src/PropertiesTestSuite.cc
+        src/PropertiesEncodingTestSuite.cc
         src/VersionTestSuite.cc
         src/ErrTestSuite.cc
         src/ThreadsTestSuite.cc
@@ -36,6 +37,7 @@ add_executable(test_utils
         src/CelixUtilsAutoCleanupTestSuite.cc
         src/ArrayListTestSuite.cc
         src/DeprecatedHashmapTestSuite.cc
+        src/CxxExceptionsTestSuite.cc
 )
 
 target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::zip)
@@ -104,6 +106,19 @@ if (EI_TESTS)
     add_test(NAME test_utils_celix_err_with_ei COMMAND test_utils_celix_err_with_ei)
     setup_target_for_coverage(test_utils_celix_err_with_ei SCAN_DIR ..)
 
+    #Note testing version seperated, otherwise version calls are already wrapped
+    add_executable(test_utils_version_with_ei
+            src/VersionErrorInjectionTestSuite.cc
+    )
+    target_link_libraries(test_utils_version_with_ei PRIVATE
+            utils_cut
+            Celix::malloc_ei
+            Celix::asprintf_ei
+            Celix::utils_ei
+            GTest::gtest GTest::gtest_main
+    )
+    add_test(NAME test_utils_version_with_ei COMMAND test_utils_version_with_ei)
+    setup_target_for_coverage(test_utils_version_with_ei SCAN_DIR ..)
 
     #Note testing array list seperated, otherwise array list calls are already wrapped
     add_executable(test_utils_array_list_with_ei
@@ -123,9 +138,9 @@ if (EI_TESTS)
             src/FileUtilsErrorInjectionTestSuite.cc
             src/ConvertUtilsErrorInjectionTestSuite.cc
             src/PropertiesErrorInjectionTestSuite.cc
-            src/VersionErrorInjectionTestSuite.cc
             src/HashMapErrorInjectionTestSuite.cc
             src/FilterErrorInjectionTestSuite.cc
+            src/PropertiesEncodingErrorInjectionTestSuite.cc
     )
     target_link_libraries(test_utils_with_ei PRIVATE
             Celix::zip_ei
@@ -142,6 +157,7 @@ if (EI_TESTS)
             Celix::long_hash_map_ei
             Celix::version_ei
             Celix::array_list_ei
+            Celix::jansson_ei
             GTest::gtest GTest::gtest_main
     )
     target_include_directories(test_utils_with_ei PRIVATE ../src) #for version_private (needs refactoring of test)

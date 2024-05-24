@@ -46,6 +46,7 @@ class PropertiesErrorInjectionTestSuite : public ::testing::Test {
         celix_ei_expect_open_memstream(nullptr, 0, nullptr);
         celix_ei_expect_asprintf(nullptr, 0, -1);
         celix_ei_expect_malloc(nullptr, 0, nullptr);
+        celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_stringHashMap_createWithOptions(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_copy(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
@@ -453,11 +454,12 @@ TEST_F(PropertiesErrorInjectionTestSuite, SetVersionFailureTest) {
     celix_err_resetErrors();
 
     celix_autoptr(celix_version_t) version2 = celix_version_create(1, 2, 3, "aaaaaaaaaaaaaaaaaaaaaaaaaa");
-    celix_ei_expect_asprintf((void*) celix_version_toString, 0, -1);
+    celix_ei_expect_calloc((void*) celix_version_create, 0, nullptr);
     status = celix_properties_setVersion(props, "key", version2);
     ASSERT_EQ(status, CELIX_ENOMEM);
-    ASSERT_STREQ("Cannot fill property entry", celix_err_popLastError());
-    ASSERT_STREQ("Failed to allocate memory for celix_version_toString", celix_err_popLastError());
+    EXPECT_EQ(2, celix_err_getErrorCount());
+    ASSERT_STREQ("Failed to copy version", celix_err_popLastError());
+    ASSERT_STREQ("Failed to allocate memory for celix_version_create", celix_err_popLastError());
     celix_err_resetErrors();
 
     fillOptimizationCache(props);

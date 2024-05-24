@@ -71,6 +71,8 @@ limitations under the License.
   Celix event thread.
 - Apache Celix filter now use the underlying properties value types for matching. This means that it is more important
   to add service properties with the correct type.
+- Celix C++ Exception are now defined in the `celix/exceptions.h` header file. The `celix/Exception.h`
+  and `celix/IOException.h` are removed.
 
 ## New Features
 

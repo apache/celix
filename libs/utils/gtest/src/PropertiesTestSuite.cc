@@ -24,6 +24,7 @@
 #include "celix_err.h"
 #include "celix_properties.h"
 #include "celix_properties_internal.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
 
 using ::testing::MatchesRegex;
@@ -1004,4 +1005,11 @@ TEST_F(PropertiesTestSuite, SetArrayListWithIllegalArgumentsTest) {
 
     //And when an NULL key is used, a ILLEGAL_ARGUMENT error is returned
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_setArrayList(props, nullptr, list));
+}
+
+TEST_F(PropertiesTestSuite, EmptyStringKeyTest) {
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_set(props, "", "value"); // "" is a valid key (nullptr is not)
+    EXPECT_EQ(1, celix_properties_size(props));
+    EXPECT_STREQ("value", celix_properties_getString(props, ""));
 }

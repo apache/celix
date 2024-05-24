@@ -41,4 +41,11 @@ celix_version_t* __wrap_celix_version_copy(const celix_version_t* version) {
     return __real_celix_version_copy(version);
 }
 
+char* __real_celix_version_toString(const celix_version_t* version);
+CELIX_EI_DEFINE(celix_version_toString, char*);
+char* __wrap_celix_version_toString(const celix_version_t* version) {
+    CELIX_EI_IMPL(celix_version_toString);
+    return __real_celix_version_toString(version);
+}
+
 }
