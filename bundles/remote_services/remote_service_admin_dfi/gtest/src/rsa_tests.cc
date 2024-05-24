@@ -33,18 +33,19 @@ extern "C" {
 
 #define TST_CONFIGURATION_TYPE "org.amdatu.remote.admin.http"
 
-    static celix_framework_t *framework = NULL;
-    static celix_bundle_context_t *context = NULL;
+    static celix_framework_t *framework = nullptr;
+    static celix_bundle_context_t *context = nullptr;
 
     long calcSvcId = -1L;
 
     static void setupFm(void) {
-        celix_properties_t *fwProperties = celix_properties_load("config.properties");
-        ASSERT_TRUE(fwProperties != NULL);
+        celix_properties_t *fwProperties = nullptr;
+        EXPECT_EQ(CELIX_SUCCESS, celix_properties_load2("config.properties", 0, &fwProperties));
+        ASSERT_TRUE(fwProperties != nullptr);
         framework = celix_frameworkFactory_createFramework(fwProperties);
-        ASSERT_TRUE(framework != NULL);
+        ASSERT_TRUE(framework != nullptr);
         context = celix_framework_getFrameworkContext(framework);
-        ASSERT_TRUE(context != NULL);
+        ASSERT_TRUE(context != nullptr);
 
 
         calcSvcId = celix_bundleContext_findService(context, CALCULATOR_SERVICE);
@@ -87,8 +88,8 @@ extern "C" {
         char strSvcId[64];
         snprintf(strSvcId, 64, "%li", calcSvcId);
 
-        celix_array_list_t *svcRegistration = NULL;
-        int rc = rsa->exportService(rsa->admin, strSvcId, NULL, &svcRegistration);
+        celix_array_list_t *svcRegistration = nullptr;
+        int rc = rsa->exportService(rsa->admin, strSvcId, nullptr, &svcRegistration);
         ASSERT_EQ(CELIX_SUCCESS, rc);
 
         ASSERT_EQ(1, celix_arrayList_size(svcRegistration));
@@ -155,7 +156,7 @@ extern "C" {
     }
 
     static void testBundles(void) {
-        celix_array_list_t* bundles = NULL;
+        celix_array_list_t* bundles = nullptr;
 
         int rc = bundleContext_getBundles(context, &bundles);
         ASSERT_EQ(0, rc);
@@ -165,9 +166,9 @@ extern "C" {
         int size = arrayList_size(bundles);
         int i;
         for (i = 0; i < size; i += 1) {
-            celix_bundle_t *bundle = NULL;
-            module_pt module = NULL;
-            char *name = NULL;
+            celix_bundle_t *bundle = nullptr;
+            module_pt module = nullptr;
+            char *name = nullptr;
 
             bundle = (celix_bundle_t *) arrayList_get(bundles, i);
             bundle_getCurrentModule(bundle, &module);

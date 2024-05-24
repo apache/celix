@@ -62,9 +62,9 @@ struct bundleArchive {
 
 static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_archive_pt archive) {
     bool needUpdate = false;
-    celix_properties_t* bundleStateProperties = NULL;
-    bundleStateProperties = celix_properties_load(archive->savedBundleStatePropertiesPath);
-    if (bundleStateProperties == NULL) {
+    celix_properties_t* bundleStateProperties;
+    celix_status_t status = celix_properties_load2(archive->savedBundleStatePropertiesPath, 0, &bundleStateProperties);
+    if (status != CELIX_SUCCESS) {
         celix_framework_logTssErrors(archive->fw->logger, CELIX_LOG_LEVEL_ERROR);
         bundleStateProperties = celix_properties_create();
     }
@@ -91,8 +91,12 @@ static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_arch
 
     //save bundle cache state properties
     if (needUpdate) {
-        celix_properties_store(bundleStateProperties, archive->savedBundleStatePropertiesPath,
-                               "Bundle State Properties");
+        status = celix_properties_save(
+            bundleStateProperties, archive->savedBundleStatePropertiesPath, CELIX_PROPERTIES_ENCODE_PRETTY);
+        if (status != CELIX_SUCCESS) {
+            celix_framework_logTssErrors(archive->fw->logger, CELIX_LOG_LEVEL_ERROR);
+            return status;
+        }
     }
     celix_properties_destroy(bundleStateProperties);
     return CELIX_SUCCESS;

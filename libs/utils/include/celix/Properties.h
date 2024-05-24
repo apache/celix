@@ -933,21 +933,6 @@ namespace celix {
         }
 
         /**
-         * @brief Store the property set to the given file path.
-         *
-         * This function writes the properties in the given set to the specified file path in a format suitable
-         * for loading with the load() function.
-         * If a non-empty header string is provided, it will be written as a comment at the beginning of the file.
-         *
-         * @param[in] file The file to store the properties to.
-         * @param[in] header An optional (single line) header string to include as a comment at the beginning of the file.
-         * @throws celix::IOException If an error occurs while writing to the file.
-         */
-        void store(const std::string& path, const std::string& header = {}) const {
-            storeTo(path.data(), header.empty() ? nullptr : header.data());
-        }
-
-        /**
          * @brief Enum class for encoding flags used in Celix properties JSON encoding.
          *
          * The flags are used to control the encoding process and to specify the output format.
@@ -1045,16 +1030,6 @@ namespace celix {
         };
 
         /**
-         * @brief Loads properties from the file at the given path.
-         * @param[in] path The path to the file containing the properties.
-         * @return A new Properties object containing the properties from the file.
-         * @throws celix::IOException If the file cannot be opened or read.
-         * @throws celix::IllegalArgumentException if the provided input cannot be decoded to a properties object.
-         * @throws std::bad_alloc If there was not enough memory to load the properties.
-         */
-        static Properties load(const std::string& path) { return loadFrom(path.data()); }
-
-        /**
          * @brief Load a Properties object from a file.
          *
          * @warning The name is temporary and will be renamed to celix::Properties::load in the future (when
@@ -1150,21 +1125,6 @@ namespace celix {
                     return ValueType::Vector;
                 default: /*unset*/
                     return ValueType::Unset;
-            }
-        }
-
-        static celix::Properties loadFrom(const char* path) {
-            auto* cProps = celix_properties_load(path);
-            if (cProps) {
-                return celix::Properties::own(cProps);
-            }
-            throw celix::IOException{"Cannot load celix::Properties from path " + std::string{path}};
-        }
-
-        void storeTo(const char* path, const char* header) const {
-            auto status = celix_properties_store(cProps.get(), path, header);
-            if (status != CELIX_SUCCESS) {
-                throw celix::IOException{"Cannot store celix::Properties to " + std::string{path}};
             }
         }
 

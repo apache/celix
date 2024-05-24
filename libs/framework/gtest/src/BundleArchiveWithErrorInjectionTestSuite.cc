@@ -57,6 +57,7 @@ class BundleArchiveWithErrorInjectionTestSuite : public ::testing::Test {
 
     void teardownErrorInjectors() {
         celix_ei_expect_celix_properties_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_properties_save(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_asprintf(nullptr, 0, 0);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_malloc(nullptr, 0, nullptr);
@@ -257,4 +258,28 @@ TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     teardownErrorInjectors();
 
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_destroy(cache));
+}
+
+TEST_F(CelixBundleArchiveErrorInjectionTestSuite, StoreBundleStatePropertiesErrorTest) {
+    // Given a framework
+    auto fw = celix::createFramework({
+        {CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true"},
+    });
+    auto ctx = fw->getFrameworkBundleContext();
+
+    // When an error is prepped for celix_properties_save
+    celix_ei_expect_celix_properties_save((void*)celix_bundleCache_findBundleIdForLocation, 1, CELIX_FILE_IO_EXCEPTION);
+
+    // When the bundle install, a bundle id is returned (async bundle install)
+    long bndId = ctx->installBundle(SIMPLE_TEST_BUNDLE1_LOCATION);
+    EXPECT_GE(bndId, 0);
+
+    // Then the bundle is not successfully installed
+
+    celix_bundleContext_useBundle(
+        ctx->getCBundleContext(), bndId, nullptr, [](void* /*handle*/, const celix_bundle_t* bnd) {
+            auto status = celix_bundle_getState(bnd);
+            // TODO fixme, bundle is installed and active, this is not correct
+            EXPECT_EQ(CELIX_BUNDLE_EVENT_INSTALLED, status);
+        });
 }

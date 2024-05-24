@@ -21,6 +21,7 @@
 
 #include <string>
 
+#include "celix/FrameworkFactory.h"
 #include "celix_bundle_cache.h"
 #include "celix_constants.h"
 #include "celix_file_utils.h"
@@ -28,6 +29,7 @@
 #include "celix_log.h"
 #include "celix_properties.h"
 #include "celix_utils_ei.h"
+#include "celix_properties_ei.h"
 
 #include "asprintf_ei.h"
 #include "bundle_archive_private.h"
@@ -54,6 +56,7 @@ class CelixBundleCacheErrorInjectionTestSuite : public ::testing::Test {
         celix_ei_expect_celix_stringHashMap_create(nullptr, 0, nullptr);
         celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
+        celix_ei_expect_celix_properties_load2(nullptr, 0, CELIX_SUCCESS);
         celix_frameworkLogger_destroy(fw.logger);
         celix_properties_destroy(fw.configurationMap);
     }
@@ -163,4 +166,41 @@ TEST_F(CelixBundleCacheErrorInjectionTestSuite, CreateBundleArchivesCacheErrorTe
     celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_bundleCache_createArchive, 0, nullptr);
     EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_createBundleArchivesCache(&fw, true));
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_destroy(cache));
+}
+
+TEST_F(CelixBundleCacheErrorInjectionTestSuite, LoadBundleStatePropertiesErrorTest) {
+    // Given a celix framework
+    auto fw = celix::createFramework(
+        {{"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"}, {CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true"}});
+    auto ctx = fw->getFrameworkBundleContext();
+
+    // And an installed bundle (with a bundle cache)
+    long bndId = ctx->installBundle(SIMPLE_TEST_BUNDLE1_LOCATION);
+    EXPECT_GT(bndId, -1);
+
+    // When framework is stopped
+    ctx.reset();
+    fw.reset();
+
+    // And a new framework is created
+    fw = celix::createFramework(
+        {{"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace"}, {CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "false"}});
+    ctx = fw->getFrameworkBundleContext();
+
+    // When the bundle is uninstalled
+    celix_bundleContext_uninstallBundle(ctx->getCBundleContext(), bndId);
+
+    // And a celix_properties_load error is injected
+    celix_ei_expect_celix_properties_load2(
+        (void*)celix_bundleCache_findBundleIdForLocation, 1, CELIX_FILE_IO_EXCEPTION);
+
+    // Then installing the bundle will fail
+    bndId = ctx->installBundle(SIMPLE_TEST_BUNDLE1_LOCATION);
+    EXPECT_GT(bndId, -1); //async install, so bundle id is returned
+    celix_bundleContext_useBundle(
+        ctx->getCBundleContext(), bndId, nullptr, [](void* /*handle*/, const celix_bundle_t* bnd) {
+            auto status = celix_bundle_getState(bnd);
+            // TODO fixme, bundle is installed and active, this is not correct
+            EXPECT_EQ(CELIX_BUNDLE_EVENT_INSTALLED, status);
+        });
 }

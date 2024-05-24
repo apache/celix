@@ -235,7 +235,14 @@ static void celix_bundleCache_updateIdForLocationLookupMap(celix_bundle_cache_t*
                                                                       "%s/%s/%s", cache->cacheDir, dent->d_name,
                                                                       CELIX_BUNDLE_ARCHIVE_STATE_PROPERTIES_FILE_NAME);
         if (celix_utils_fileExists(bundleStateProperties)) {
-            celix_properties_t* props = celix_properties_load(bundleStateProperties);
+            celix_properties_t* props;
+            celix_status_t status = celix_properties_load2(bundleStateProperties, 0, &props); //validate the file (and ignore the result
+            if (status != CELIX_SUCCESS) {
+                    fw_logCode(cache->fw->logger, CELIX_LOG_LEVEL_ERROR, status,
+                               "Cannot load bundle state properties from %s", bundleStateProperties);
+                    celix_framework_logTssErrors(cache->fw->logger, CELIX_LOG_LEVEL_ERROR);
+                    continue;
+            }
             const char* visitLoc = celix_properties_get(props, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, NULL);
             long bndId = celix_properties_getAsLong(props, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, -1);
             if (visitLoc != NULL && bndId >= 0) {

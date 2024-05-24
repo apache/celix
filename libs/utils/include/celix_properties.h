@@ -130,57 +130,6 @@ CELIX_UTILS_EXPORT void celix_properties_destroy(celix_properties_t* properties)
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_properties_t, celix_properties_destroy)
 
 /**
- * @brief Load properties from a file.
- *
- * If the return status is an error, an error message is logged to celix_err.
- *
- * @param[in] filename The name of the file to load properties from.
- * @return A property set containing the properties from the file.
- * @retval NULL If an error occurred (e.g. file not found).
- */
-CELIX_UTILS_EXPORT celix_properties_t* celix_properties_load(const char* filename);
-
-/**
- * @brief Load properties from a stream.
- *
- * If the return status is an error, an error message is logged to celix_err.
- *
- * @param[in,out] stream The stream to load properties from.
- * @return A property set containing the properties from the stream.
- * @retval NULL If an error occurred (e.g. invalid format).
- */
-CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadWithStream(FILE* stream);
-
-/**
- * @brief Load properties from a string.
- *
- * If the return status is an error, an error message is logged to celix_err.
- *
- * @param[in] input The string to load properties from.
- * @return A property set containing the properties from the string.
- * @retval NULL If an error occurred (e.g. invalid format).
- */
-CELIX_UTILS_EXPORT celix_properties_t* celix_properties_loadFromString(const char* input);
-
-/**
- * @brief Store properties to a file.
- *
- * @note Properties values are always stored as string values, regardless of their actual underlining types.
- *
- * If the return status is an error, an error message is logged to celix_err.
- *
- * @param[in] properties The property set to store.
- * @param[in] file The name of the file to store the properties to.
- * @param[in] header An optional - single line - header to write to the file before the properties.
- *                   Will be prefix with a '#' character.
- * @return CELIX_SUCCESS if the operation was successful, CELIX_FILE_IO_EXCEPTION if there was an error writing to the
- *         file.
- */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_store(celix_properties_t* properties,
-                                                         const char* file,
-                                                         const char* header);
-
-/**
  * @brief Get the entry for a given key in a property set.
  *
  * @param[in] properties The property set to search.

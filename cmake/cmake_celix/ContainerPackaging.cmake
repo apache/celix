@@ -221,6 +221,8 @@ function(add_celix_container)
         file(GENERATE
                 OUTPUT "${STAGE1_LAUNCHER_SRC}"
                 CONTENT "#include <celix_launcher.h>
+#include <celix_err.h>
+
 int main(int argc, char *argv[]) {
     const char * config = \"\\
 CELIX_CONTAINER_NAME=$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_NAME>\\n\\
@@ -236,7 +238,12 @@ $<$<BOOL:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_INSTALL>>:CELIX
 $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\\
 >\";
 
-    celix_properties_t *embeddedProps = celix_properties_loadFromString(config);
+    celix_properties_t *embeddedProps;
+    celix_status_t status = celix_properties_loadFromString2(config, 0, &embeddedProps);
+    if (status != CELIX_SUCCESS) {
+        celix_err_printErrors(stderr, \"Error creating embedded properties.\", NULL);
+        return -1;
+    }
     return celixLauncher_launchAndWaitForShutdown(argc, argv, embeddedProps);
 }
 "
