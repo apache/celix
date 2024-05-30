@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #ifndef CELIX_NO_CURLINIT
 #include <curl/curl.h>
@@ -45,6 +46,8 @@ static celix_properties_t* celixLauncher_createConfig(const char* configFile, ce
 static void celixLauncher_printUsage(char* progName);
 static void celixLauncher_printProperties(celix_properties_t* embeddedProps, const char* configFile);
 static int celixLauncher_createBundleCache(celix_properties_t* embeddedProperties, const char* configFile);
+static celix_status_t celixLauncher_loadConfigProperties(const char* configFile,
+                                                         celix_properties_t** outConfigProperties);
 
 #define DEFAULT_CONFIG_FILE "config.properties"
 
@@ -90,10 +93,6 @@ int celixLauncher_launchWithArgv(int argc,
         } else {
             configFile = opt;
         }
-    }
-
-    if (configFile == NULL) {
-        configFile = DEFAULT_CONFIG_FILE;
     }
 
     if (embeddedConfig == NULL) {
@@ -187,7 +186,7 @@ static void celixLauncher_printUsage(char* progName) {
 }
 
 static void celixLauncher_printProperties(celix_properties_t* embeddedProps, const char* configFile) {
-    celix_properties_t* keys = celix_properties_create(); // only to store the keys
+    celix_autoptr(celix_properties_t) keys = celix_properties_create(); // only to store the keys
 
     printf("Embedded properties:\n");
     if (embeddedProps == NULL || celix_properties_size(embeddedProps) == 0) {
@@ -200,14 +199,9 @@ static void celixLauncher_printProperties(celix_properties_t* embeddedProps, con
     }
     printf("\n");
 
-    celix_properties_t* runtimeProps = NULL;
-    if (configFile != NULL) {
-        celix_status_t status = celix_properties_load2(configFile, 0, &runtimeProps);
-        if (status != CELIX_SUCCESS) {
-            celix_err_printErrors(stderr, "Error loading config file.", NULL);
-        }
-    }
-    printf("Runtime properties (input %s):\n", configFile);
+    celix_autoptr(celix_properties_t) runtimeProps;
+    (void)celixLauncher_loadConfigProperties(configFile, &runtimeProps);
+    printf("Runtime properties (input %s):\n", configFile ? configFile : "none");
     if (runtimeProps == NULL || celix_properties_size(runtimeProps) == 0) {
         printf("|- Empty!\n");
     } else {
@@ -233,15 +227,13 @@ static void celixLauncher_printProperties(celix_properties_t* embeddedProps, con
         }
     }
     printf("\n");
-
-    if (runtimeProps != NULL) {
-        celix_properties_destroy(runtimeProps);
-    }
-    celix_properties_destroy(keys);
 }
 
 static int celixLauncher_createBundleCache(celix_properties_t* embeddedProperties, const char* configFile) {
     celix_properties_t* config = celixLauncher_createConfig(configFile, embeddedProperties);
+    if (!config) {
+        return CELIX_LAUNCHER_ERROR_EXIT_CODE;
+    }
     celix_framework_t* fw = celix_frameworkFactory_createFramework(config);
     if (!fw) {
         fprintf(stderr, "Failed to create framework for bundle cache creation\n");
@@ -266,14 +258,37 @@ static celix_properties_t* celixLauncher_createConfig(const char* configFile, ce
     if (!embeddedProperties) {
         embeddedProperties = celix_properties_create();
     }
-
-    celix_autoptr(celix_properties_t) configProperties = NULL;
-    celix_status_t status = celix_properties_load2(configFile, 0, &configProperties);
+    celix_autoptr(celix_properties_t) configProperties;
+    celix_status_t status = celixLauncher_loadConfigProperties(configFile, &configProperties);
     if (status != CELIX_SUCCESS) {
-        fprintf(stderr, "Error loading config file %s\n", configFile);
         celix_properties_destroy(embeddedProperties);
         return NULL;
     }
     celixLauncher_combineProperties(embeddedProperties, configProperties);
     return embeddedProperties;
+}
+
+/**
+ * @brief Load the config properties from the given file.
+ * If configFile is NULL, config properties will only be loaded if DEFAULT_CONFIG_FILE exists.
+ */
+static celix_status_t celixLauncher_loadConfigProperties(const char* configFile,
+                                                         celix_properties_t** outConfigProperties) {
+    celix_properties_t* configProperties = NULL;
+    bool loadConfig = configFile != NULL;
+    if (!loadConfig) {
+        struct stat buffer;
+        loadConfig = stat(DEFAULT_CONFIG_FILE, &buffer) == 0;
+        configFile = DEFAULT_CONFIG_FILE;
+    }
+    if (loadConfig) {
+        celix_status_t status = celix_properties_load2(configFile, 0, &configProperties);
+        if (status != CELIX_SUCCESS) {
+            celix_err_printErrors(stderr, "Error loading config file: ", NULL);
+            *outConfigProperties = NULL;
+            return status;
+        }
+    }
+    *outConfigProperties = configProperties;
+    return CELIX_SUCCESS;
 }

@@ -1,10 +1,11 @@
-CELIX_AUTO_START_1=@rsa_bundle_file@ @discovery_bundle_file@ @topology_manager_bundle_file@ @tst_bundle_file@
-LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE=true
-CELIX_FRAMEWORK_CACHE_DIR=.cacheClient
-
-DISCOVERY_CFG_POLL_INTERVAL=1
-DISCOVERY_CFG_POLL_TIMEOUT=5
-RSA_PORT=50881
-DISCOVERY_CFG_SERVER_PORT=50991
-DISCOVERY_CFG_POLL_ENDPOINTS=http://localhost:50992/org.apache.celix.discovery.configured
+{
+    "CELIX_AUTO_START_1":"@rsa_bundle_file@ @discovery_bundle_file@ @topology_manager_bundle_file@ @tst_bundle_file@",
+    "LOGHELPER_ENABLE_STDOUT_FALLBACK":true,
+    "CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE":true,
+    "CELIX_FRAMEWORK_CACHE_DIR":".cacheClient",
+    "DISCOVERY_CFG_POLL_INTERVAL":1,
+    "DISCOVERY_CFG_POLL_TIMEOUT":5,
+    "RSA_PORT":50881,
+    "DISCOVERY_CFG_SERVER_PORT":50991,
+    "DISCOVERY_CFG_POLL_ENDPOINTS":"http://localhost:50992/org.apache.celix.discovery.configured"
+}
