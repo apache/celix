@@ -42,11 +42,12 @@
 #include "bundle_archive_private.h"
 #include "bundle_context_private.h"
 #include "bundle_private.h"
+#include "celix_err.h"
+#include "celix_scheduled_event.h"
+#include "celix_stdlib_cleanup.h"
 #include "framework_private.h"
 #include "service_reference_private.h"
 #include "service_registration_private.h"
-#include "celix_scheduled_event.h"
-#include "celix_err.h"
 #include "utils.h"
 
 struct celix_bundle_activator {
@@ -624,63 +625,62 @@ bool celix_framework_getConfigPropertyAsBool(celix_framework_t* framework, const
 
 static celix_status_t
 celix_framework_installBundleInternalImpl(celix_framework_t* framework, const char* bndLoc, long* bndId) {
-    celix_status_t status = CELIX_SUCCESS;
-    celix_bundle_t* bundle = NULL;
-    long id = -1L;
-
-    bundle_state_e state = CELIX_BUNDLE_STATE_UNKNOWN;
-
     bool valid = celix_framework_utils_isBundleUrlValid(framework, bndLoc, false);
     if (!valid) {
         return CELIX_FILE_IO_EXCEPTION;
     }
 
-    //increase use count of framework bundle to prevent a stop.
-    celix_framework_bundle_entry_t *fwBundleEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
-                                                                                                                  framework->bundleId);
-    status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
-    if (status == CELIX_SUCCESS) {
-        if (state == CELIX_BUNDLE_STATE_STOPPING || state == CELIX_BUNDLE_STATE_UNINSTALLED) {
-            fw_log(framework->logger, CELIX_LOG_LEVEL_INFO,  "The framework is being shutdown");
-            status = CELIX_FRAMEWORK_SHUTDOWN;
-        }
+    // increase use count of framework bundle to prevent a stop.
+    celix_framework_bundle_entry_t* fwBundleEntry =
+        celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, framework->bundleId);
+
+    celix_bundle_state_e bndState = celix_bundle_getState(framework->bundle);
+    if (bndState == CELIX_BUNDLE_STATE_STOPPING || bndState == CELIX_BUNDLE_STATE_UNINSTALLED) {
+        fw_log(framework->logger, CELIX_LOG_LEVEL_INFO,  "The framework is being shutdown");
+        return CELIX_FRAMEWORK_SHUTDOWN;
     }
 
-    if (status == CELIX_SUCCESS) {
-        if (*bndId == -1L) {
-            id = framework_getBundle(framework, bndLoc);
-            if (id != -1L) {
-                celix_framework_bundleEntry_decreaseUseCount(fwBundleEntry);
-                *bndId = id;
-                return CELIX_SUCCESS;
-            }
-            long alreadyExistingBndId = celix_bundleCache_findBundleIdForLocation(framework->cache, bndLoc);
-            id = alreadyExistingBndId == -1 ? framework_getNextBundleId(framework) : alreadyExistingBndId;
-        } else {
-            id = *bndId;
+    long id;
+    if (*bndId == -1L) {
+        id = framework_getBundle(framework, bndLoc);
+        if (id != -1L) {
+            celix_framework_bundleEntry_decreaseUseCount(fwBundleEntry);
+            *bndId = id;
+            return CELIX_SUCCESS;
         }
-        bundle_archive_t* archive = NULL;
-        status = CELIX_DO_IF(status, celix_bundleCache_createArchive(framework->cache, id, bndLoc, &archive));
-        status = CELIX_DO_IF(status, celix_bundle_createFromArchive(framework, archive, &bundle));
-        if (status == CELIX_SUCCESS) {
-            celix_framework_bundle_entry_t *bEntry = fw_bundleEntry_create(bundle);
-            celix_framework_bundleEntry_increaseUseCount(bEntry);
-            celixThreadMutex_lock(&framework->installedBundles.mutex);
-            celix_arrayList_add(framework->installedBundles.entries, bEntry);
-            celixThreadMutex_unlock(&framework->installedBundles.mutex);
-            fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED, bEntry);
-            celix_framework_bundleEntry_decreaseUseCount(bEntry);
+        long alreadyExistingBndId;
+        celix_status_t status =
+            celix_bundleCache_findBundleIdForLocation(framework->cache, bndLoc, &alreadyExistingBndId);
+        if (status != CELIX_SUCCESS) {
+            celix_framework_bundleEntry_decreaseUseCount(fwBundleEntry);
+            fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not install bundle");
+            return status;
         }
-    }
-
-    if (status == CELIX_SUCCESS) {
-        *bndId = id;
+        id = alreadyExistingBndId == -1 ? framework_getNextBundleId(framework) : alreadyExistingBndId;
     } else {
-        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not install bundle");
+        id = *bndId;
     }
 
+    bundle_archive_t* archive = NULL;
+    celix_bundle_t* bundle = NULL;
+    celix_status_t status = celix_bundleCache_createArchive(framework->cache, id, bndLoc, &archive);
+    status = CELIX_DO_IF(status, celix_bundle_createFromArchive(framework, archive, &bundle));
+    if (status != CELIX_SUCCESS) {
+        celix_framework_bundleEntry_decreaseUseCount(fwBundleEntry);
+        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not install bundle");
+        return status;
+    }
+
+    celix_framework_bundle_entry_t *bEntry = fw_bundleEntry_create(bundle);
+    celix_framework_bundleEntry_increaseUseCount(bEntry);
+    celixThreadMutex_lock(&framework->installedBundles.mutex);
+    celix_arrayList_add(framework->installedBundles.entries, bEntry);
+    celixThreadMutex_unlock(&framework->installedBundles.mutex);
+    fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED, bEntry);
+    celix_framework_bundleEntry_decreaseUseCount(bEntry);
     celix_framework_bundleEntry_decreaseUseCount(fwBundleEntry);
-    return status;
+    *bndId = id;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t
@@ -2349,57 +2349,72 @@ celix_status_t celix_framework_updateBundleEntry(celix_framework_t* framework,
                                                  const char* updatedBundleUrl) {
     celix_status_t status = CELIX_SUCCESS;
     long bundleId = bndEntry->bndId;
-    const char* errMsg;
     fw_log(framework->logger, CELIX_LOG_LEVEL_DEBUG, "Updating bundle %s", celix_bundle_getSymbolicName(bndEntry->bnd));
     celix_bundle_state_e bndState = celix_bundle_getState(bndEntry->bnd);
-    char *location = celix_bundle_getLocation(bndEntry->bnd);
-    do {
-        // lock to reuse the bundle id
-        celixThreadMutex_lock(&framework->installLock);
-        if (updatedBundleUrl == NULL) {
-            updatedBundleUrl = location;
-        } else if (strcmp(location, updatedBundleUrl) != 0) {
-            long alreadyExistingBndId = celix_bundleCache_findBundleIdForLocation(framework->cache, updatedBundleUrl);
-            if (alreadyExistingBndId != -1 && alreadyExistingBndId != bundleId) {
-                errMsg = "specified bundle location exists in cache with a different id";
-                celix_framework_bundleEntry_decreaseUseCount(bndEntry);
-                celixThreadMutex_unlock(&framework->installLock);
-                status = CELIX_ILLEGAL_STATE;
-                break;
-            }
-            celix_bundleArchive_invalidateCache(celix_bundle_getArchive(bndEntry->bnd));
-        }
-        status = celix_framework_uninstallBundleEntryImpl(framework, bndEntry, false);
+    celix_autofree char* location = celix_bundle_getLocation(bndEntry->bnd);
+
+    // lock to reuse the bundle id
+    celix_auto(celix_mutex_lock_guard_t) lck = celixMutexLockGuard_init(&framework->installLock);
+    if (updatedBundleUrl == NULL) {
+        updatedBundleUrl = location;
+    } else if (strcmp(location, updatedBundleUrl) != 0) {
+        long existingBndId;
+        status = celix_bundleCache_findBundleIdForLocation(framework->cache, updatedBundleUrl, &existingBndId);
         if (status != CELIX_SUCCESS) {
-            errMsg = "uninstall failure";
-            celixThreadMutex_unlock(&framework->installLock);
-            break;
+            fw_log(framework->logger,
+                   CELIX_LOG_LEVEL_ERROR,
+                   "Could not read bundle cache to check if bundle location %s exists in cache. Update failed.",
+                   updatedBundleUrl);
+            return status;
+        } else if (existingBndId != -1 && existingBndId != bundleId) {
+            fw_log(framework->logger,
+                   CELIX_LOG_LEVEL_ERROR,
+                   "Specified bundle location %s exists in cache with a different id. Update failed.",
+                   updatedBundleUrl);
+            celix_framework_bundleEntry_decreaseUseCount(bndEntry);
+            return CELIX_ILLEGAL_STATE;
         }
-        // bndEntry is now invalid
-        status = celix_framework_installBundleInternalImpl(framework, updatedBundleUrl, &bundleId);
-        if (status != CELIX_SUCCESS) {
-            errMsg = "reinstall failure";
-            celixThreadMutex_unlock(&framework->installLock);
-            break;
-        }
-        if (bndState != CELIX_BUNDLE_STATE_STARTING && bndState != CELIX_BUNDLE_STATE_ACTIVE) {
-            // no need to restart the updated bundle
-            celixThreadMutex_unlock(&framework->installLock);
-            break;
-        }
-        celix_framework_bundle_entry_t* entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, bundleId);
-        celixThreadMutex_unlock(&framework->installLock);
-        // assert(entry != NULL);
-        status = celix_framework_startBundleEntry(framework, entry);
-        celix_framework_bundleEntry_decreaseUseCount(entry);
-        if (status != CELIX_SUCCESS) {
-            errMsg = "restart failure";
-            break;
-        }
-    } while(0);
-    framework_logIfError(framework->logger, status, errMsg, "Could not update bundle from %s", updatedBundleUrl);
-    free(location);
-    return status;
+        celix_bundleArchive_invalidateCache(celix_bundle_getArchive(bndEntry->bnd));
+    }
+    status = celix_framework_uninstallBundleEntryImpl(framework, bndEntry, false);
+    if (status != CELIX_SUCCESS) {
+        fw_log(framework->logger,
+               CELIX_LOG_LEVEL_ERROR,
+               "Failed to uninstall bundle %s",
+               celix_bundle_getSymbolicName(bndEntry->bnd));
+        return status;
+    }
+
+    // bndEntry is now invalid
+    status = celix_framework_installBundleInternalImpl(framework, updatedBundleUrl, &bundleId);
+    if (status != CELIX_SUCCESS) {
+        fw_log(framework->logger,
+               CELIX_LOG_LEVEL_ERROR,
+               "Failed to install updated bundle %s",
+               updatedBundleUrl);
+        return status;
+    }
+
+    if (bndState != CELIX_BUNDLE_STATE_STARTING && bndState != CELIX_BUNDLE_STATE_ACTIVE) {
+        // no need to restart the updated bundle
+        fw_log(framework->logger, CELIX_LOG_LEVEL_DEBUG, "Bundle %li is not active, no need to restart", bundleId);
+        return CELIX_SUCCESS;
+    }
+
+    celix_framework_bundle_entry_t* entry =
+        celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, bundleId);
+    celixMutexLockGuard_deinit(&lck);
+    status = celix_framework_startBundleEntry(framework, entry);
+    celix_framework_bundleEntry_decreaseUseCount(entry);
+    if (status != CELIX_SUCCESS) {
+        fw_log(framework->logger,
+               CELIX_LOG_LEVEL_ERROR,
+               "Failed to start updated bundle %s",
+               celix_bundle_getSymbolicName(bndEntry->bnd));
+        return CELIX_BUNDLE_EXCEPTION;
+    }
+
+    return CELIX_SUCCESS;
 }
 
 bool celix_framework_updateBundle(celix_framework_t *fw, long bndId, const char* updatedBundleUrl) {

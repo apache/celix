@@ -25,10 +25,13 @@ extern "C" {
 #endif
 
 #include <stdio.h>
+#include <dirent.h>
 
 #include "celix_cleanup.h"
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(FILE, fclose)
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(DIR, closedir)
 
 #ifdef __cplusplus
 }

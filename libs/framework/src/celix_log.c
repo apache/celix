@@ -145,10 +145,10 @@ void celix_framework_logCode(celix_framework_logger_t*  logger, celix_log_level_
 
 void celix_framework_logTssErrors(celix_framework_logger_t* logger, celix_log_level_e level) {
     char buf[CELIX_ERR_BUFFER_SIZE] = {0};
-    if (celix_err_dump(buf, sizeof(buf), "[TssErr] ", NULL) == 0) {
+    if (celix_err_dump(buf, sizeof(buf), NULL, NULL) == 0) {
         // nothing to output
         return;
     }
     celix_err_resetErrors();
-    celix_framework_log(logger, level, NULL, NULL, 0, "Detected tss errors:\n%s", buf);
+    celix_framework_log(logger, level, NULL, NULL, 0, "Detected tss errors: %s", buf);
 }

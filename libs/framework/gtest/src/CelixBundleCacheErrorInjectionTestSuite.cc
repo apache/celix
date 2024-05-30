@@ -110,13 +110,18 @@ TEST_F(CelixBundleCacheErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_bundleCache_createArchive, 0, nullptr);
     EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_createArchive(cache, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_EQ(nullptr, archive);
-    EXPECT_EQ(-1, celix_bundleCache_findBundleIdForLocation(cache, SIMPLE_TEST_BUNDLE1_LOCATION));
+    long bndId;
+    auto status = celix_bundleCache_findBundleIdForLocation(cache, SIMPLE_TEST_BUNDLE1_LOCATION, &bndId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_EQ(-1, bndId);
     EXPECT_FALSE(celix_bundleCache_isBundleIdAlreadyUsed(cache, 1));
 
     celix_ei_expect_calloc((void*)celix_bundleArchive_create, 0, nullptr);
     EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_createArchive(cache, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_EQ(nullptr, archive);
-    EXPECT_EQ(-1, celix_bundleCache_findBundleIdForLocation(cache, SIMPLE_TEST_BUNDLE1_LOCATION));
+    status = celix_bundleCache_findBundleIdForLocation(cache, SIMPLE_TEST_BUNDLE1_LOCATION, &bndId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_EQ(-1, bndId);
     EXPECT_FALSE(celix_bundleCache_isBundleIdAlreadyUsed(cache, 1));
 
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_destroy(cache));
@@ -196,11 +201,5 @@ TEST_F(CelixBundleCacheErrorInjectionTestSuite, LoadBundleStatePropertiesErrorTe
 
     // Then installing the bundle will fail
     bndId = ctx->installBundle(SIMPLE_TEST_BUNDLE1_LOCATION);
-    EXPECT_GT(bndId, -1); //async install, so bundle id is returned
-    celix_bundleContext_useBundle(
-        ctx->getCBundleContext(), bndId, nullptr, [](void* /*handle*/, const celix_bundle_t* bnd) {
-            auto status = celix_bundle_getState(bnd);
-            // TODO fixme, bundle is installed and active, this is not correct
-            EXPECT_EQ(CELIX_BUNDLE_EVENT_INSTALLED, status);
-        });
+    EXPECT_EQ(bndId, -1); //async install, so bundle id is returned
 }

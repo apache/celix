@@ -142,6 +142,7 @@ static CELIX_UNUSED inline void celixMutexLockGuard_deinit(celix_mutex_lock_guar
     if (guard->mutex) {
         celixThreadMutex_unlock(guard->mutex);
     }
+    guard->mutex = NULL;
 }
 
 CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_mutex_lock_guard_t, celixMutexLockGuard_deinit)

@@ -18,7 +18,6 @@
  */
 
 #include <assert.h>
-#include <dirent.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -94,7 +93,6 @@ static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_arch
         status = celix_properties_save(
             bundleStateProperties, archive->savedBundleStatePropertiesPath, CELIX_PROPERTIES_ENCODE_PRETTY);
         if (status != CELIX_SUCCESS) {
-            celix_framework_logTssErrors(archive->fw->logger, CELIX_LOG_LEVEL_ERROR);
             return status;
         }
     }

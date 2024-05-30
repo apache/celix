@@ -268,18 +268,9 @@ TEST_F(CelixBundleArchiveErrorInjectionTestSuite, StoreBundleStatePropertiesErro
     auto ctx = fw->getFrameworkBundleContext();
 
     // When an error is prepped for celix_properties_save
-    celix_ei_expect_celix_properties_save((void*)celix_bundleCache_findBundleIdForLocation, 1, CELIX_FILE_IO_EXCEPTION);
+    celix_ei_expect_celix_properties_save((void*)celix_bundleArchive_create, 1, CELIX_FILE_IO_EXCEPTION);
 
     // When the bundle install, a bundle id is returned (async bundle install)
     long bndId = ctx->installBundle(SIMPLE_TEST_BUNDLE1_LOCATION);
-    EXPECT_GE(bndId, 0);
-
-    // Then the bundle is not successfully installed
-
-    celix_bundleContext_useBundle(
-        ctx->getCBundleContext(), bndId, nullptr, [](void* /*handle*/, const celix_bundle_t* bnd) {
-            auto status = celix_bundle_getState(bnd);
-            // TODO fixme, bundle is installed and active, this is not correct
-            EXPECT_EQ(CELIX_BUNDLE_EVENT_INSTALLED, status);
-        });
+    EXPECT_LT(bndId, 0);
 }
