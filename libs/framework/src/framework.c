@@ -159,10 +159,10 @@ static void *fw_eventDispatcher(void *fw);
 celix_status_t fw_invokeBundleListener(framework_pt framework, bundle_listener_pt listener, bundle_event_pt event, bundle_pt bundle);
 celix_status_t fw_invokeFrameworkListener(framework_pt framework, framework_listener_pt listener, framework_event_pt event, bundle_pt bundle);
 
-static celix_status_t framework_autoStartConfiguredBundles(celix_framework_t *fw);
-static celix_status_t framework_autoInstallConfiguredBundles(celix_framework_t *fw);
-static celix_status_t framework_autoInstallConfiguredBundlesForList(celix_framework_t *fw, const char *autoStart, celix_array_list_t *installedBundles);
-static celix_status_t framework_autoStartConfiguredBundlesForList(celix_framework_t* fw, const celix_array_list_t *installedBundles);
+static celix_status_t framework_autoStartConfiguredBundles(celix_framework_t *fw, bool* startedAllBundles);
+static celix_status_t framework_autoInstallConfiguredBundles(celix_framework_t *fw, bool* installedAllBundles);
+static bool framework_autoInstallConfiguredBundlesForList(celix_framework_t *fw, const char *autoStart, celix_array_list_t *installedBundles);
+static bool framework_autoStartConfiguredBundlesForList(celix_framework_t* fw, const celix_array_list_t *installedBundles);
 static void celix_framework_addToEventQueue(celix_framework_t *fw, const celix_framework_event_t* event);
 static void celix_framework_stopAndJoinEventQueue(celix_framework_t* fw);
 
@@ -458,71 +458,83 @@ celix_status_t framework_start(celix_framework_t* framework) {
     fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED, entry);
     celix_framework_bundleEntry_decreaseUseCount(entry);
 
-    celix_status_t startStatus = framework_autoStartConfiguredBundles(framework);
-    celix_status_t installStatus = framework_autoInstallConfiguredBundles(framework);
+    bool allStarted = false;
+    status = framework_autoStartConfiguredBundles(framework, &allStarted);
+    bool allInstalled = false;
+    status = CELIX_DO_IF(status, framework_autoInstallConfiguredBundles(framework, &allInstalled));
 
-    if (startStatus == CELIX_SUCCESS && installStatus == CELIX_SUCCESS) {
-        //fire started event if all bundles are started/installed and the event queue is empty
+    if (status != CELIX_SUCCESS) {
+        fw_log(framework->logger, CELIX_LOG_LEVEL_ERROR, "Celix framework failed to start");
+        return status;
+    }
+
+    if (allStarted && allInstalled) {
+        // fire started event if all bundles are started/installed and the event queue is empty
         celix_framework_waitForEmptyEventQueue(framework);
         fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_STARTED, CELIX_SUCCESS);
     } else {
-        //note not returning an error, because the framework is started, but not all bundles are started/installed
-        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not auto start or install all configured bundles");
+        // note not returning an error, because the framework is started, but not all bundles are started/installed
+        fw_logCode(
+            framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not auto start or install all configured bundles");
         fw_fireFrameworkEvent(framework, OSGI_FRAMEWORK_EVENT_ERROR, CELIX_BUNDLE_EXCEPTION);
     }
 
-    if (status == CELIX_SUCCESS) {
-        fw_log(framework->logger, CELIX_LOG_LEVEL_INFO, "Celix framework started");
-        fw_log(framework->logger,
-               CELIX_LOG_LEVEL_TRACE,
-               "Celix framework started with uuid %s",
-               celix_framework_getUUID(framework));
-    } else {
-        fw_log(framework->logger, CELIX_LOG_LEVEL_ERROR, "Celix framework failed to start");
-    }
+    fw_log(framework->logger, CELIX_LOG_LEVEL_INFO, "Celix framework started");
+    fw_log(framework->logger,
+           CELIX_LOG_LEVEL_TRACE,
+           "Celix framework started with uuid %s",
+           celix_framework_getUUID(framework));
 
-    return status;
+    return CELIX_SUCCESS;
 }
 
-static celix_status_t framework_autoStartConfiguredBundles(celix_framework_t* fw) {
+static celix_status_t framework_autoStartConfiguredBundles(celix_framework_t* fw, bool *startedAllBundles) {
     celix_status_t status = CELIX_SUCCESS;
     const char* const celixKeys[] = {CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3, CELIX_AUTO_START_4, CELIX_AUTO_START_5, CELIX_AUTO_START_6, NULL};
-    celix_array_list_t *installedBundles = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) installedBundles = celix_arrayList_create();
+    if (!installedBundles) {
+        celix_framework_logTssErrors(fw->logger, CELIX_LOG_LEVEL_ERROR);
+        return ENOMEM;
+    }
+
+    bool allStarted = true;
     for (int i = 0; celixKeys[i] != NULL; ++i) {
         const char *autoStart = celix_framework_getConfigProperty(fw, celixKeys[i], NULL, NULL);
         if (autoStart != NULL) {
-            if (framework_autoInstallConfiguredBundlesForList(fw, autoStart, installedBundles) != CELIX_SUCCESS) {
-                status = CELIX_BUNDLE_EXCEPTION;
+            if (!framework_autoInstallConfiguredBundlesForList(fw, autoStart, installedBundles)) {
+                allStarted = false;
             }
         }
     }
-    celix_status_t startStatus = framework_autoStartConfiguredBundlesForList(fw, installedBundles);
-    if (status == CELIX_SUCCESS) {
-        status = startStatus;
+    if (!framework_autoStartConfiguredBundlesForList(fw, installedBundles)) {
+        allStarted = false;
     }
-    celix_arrayList_destroy(installedBundles);
+    *startedAllBundles = allStarted;
     return status;
 }
 
-static celix_status_t framework_autoInstallConfiguredBundles(celix_framework_t* fw) {
+static celix_status_t framework_autoInstallConfiguredBundles(celix_framework_t* fw, bool* installedAllBundles) {
+    *installedAllBundles = true;
     const char* autoInstall = celix_framework_getConfigProperty(fw, CELIX_AUTO_INSTALL, NULL, NULL);
     if (autoInstall != NULL) {
-        return framework_autoInstallConfiguredBundlesForList(fw, autoInstall, NULL);
+        *installedAllBundles = framework_autoInstallConfiguredBundlesForList(fw, autoInstall, NULL);
     }
     return CELIX_SUCCESS;
 }
 
-
-static celix_status_t framework_autoInstallConfiguredBundlesForList(celix_framework_t* fw, const char *autoStartIn, celix_array_list_t *installedBundles) {
-    celix_status_t status = CELIX_SUCCESS;
-    char delims[] = " ";
-    char *save_ptr = NULL;
+static bool framework_autoInstallConfiguredBundlesForList(celix_framework_t* fw,
+                                                          const char* autoStartIn,
+                                                          celix_array_list_t* installedBundles) {
+    bool allInstalled = true;
+    const char* delim = ",";
+    char* save_ptr = NULL;
     char autoStartBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
     char* autoStart = celix_utils_writeOrCreateString(autoStartBuffer, sizeof(autoStartBuffer), "%s", autoStartIn);
+    celix_auto(celix_utils_string_guard_t) grd = celix_utils_stringGuard_init(autoStartBuffer, autoStart);
     if (autoStart != NULL) {
-        char *location = strtok_r(autoStart, delims, &save_ptr);
+        char* location = strtok_r(autoStart, delim, &save_ptr);
         while (location != NULL) {
-            //first install
+            // first install
             long id = -1L;
             if (celix_framework_installBundleInternal(fw, location, &id) == CELIX_SUCCESS) {
                 if (installedBundles) {
@@ -530,19 +542,21 @@ static celix_status_t framework_autoInstallConfiguredBundlesForList(celix_framew
                 }
             } else {
                 fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Could not install bundle from location '%s'.", location);
-                status = CELIX_BUNDLE_EXCEPTION;
+                allInstalled = false;
             }
-            location = strtok_r(NULL, delims, &save_ptr);
+            location = strtok_r(NULL, delim, &save_ptr);
         }
     } else {
-        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Could not auto install bundles, out of memory.");
+        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Could create auto install bundle list, out of memory.");
+        allInstalled = false;
+        // note out of memory, but framework can continue
     }
-    celix_utils_freeStringIfNotEqual(autoStartBuffer, autoStart);
-    return status;;
+    return allInstalled;
 }
 
-static celix_status_t framework_autoStartConfiguredBundlesForList(celix_framework_t* fw, const celix_array_list_t *installedBundles) {
-    celix_status_t status = CELIX_SUCCESS;
+static bool framework_autoStartConfiguredBundlesForList(celix_framework_t* fw,
+                                                        const celix_array_list_t* installedBundles) {
+    bool allStarted = true;
     assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
     for (int i = 0; i < celix_arrayList_size(installedBundles); ++i) {
         long bndId = celix_arrayList_getLong(installedBundles, i);
@@ -550,14 +564,23 @@ static celix_status_t framework_autoStartConfiguredBundlesForList(celix_framewor
         if (celix_bundle_getState(bnd) != OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
             bool started = celix_framework_startBundle(fw, bndId);
             if (!started) {
-                fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Could not start bundle %s (bnd id = %li)\n", bnd->symbolicName, bndId);
+                fw_log(fw->logger,
+                       CELIX_LOG_LEVEL_ERROR,
+                       "Could not start bundle %s (bnd id = %li)\n",
+                       bnd->symbolicName,
+                       bndId);
+                allStarted = false;
             }
         } else {
-            fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "Cannot start bundle %s (bnd id = %li), because it is already started\n", bnd->symbolicName, bndId);
-            status = CELIX_BUNDLE_EXCEPTION;
+            fw_log(fw->logger,
+                   CELIX_LOG_LEVEL_TRACE,
+                   "Cannot start bundle %s (bnd id = %li), because it is already started\n",
+                   bnd->symbolicName,
+                   bndId);
+            allStarted = false;
         }
     }
-    return status;
+    return allStarted;
 }
 
 celix_status_t framework_stop(framework_pt framework) {
@@ -1596,7 +1619,6 @@ bool celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, 
     if (bundleId >= 0) {
         celix_framework_bundle_entry_t *entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw,
                                                                                                               bundleId);
-
         if (entry != NULL) {
             if (onlyActive) {
                 celixThreadRwlock_readLock(&entry->fsmMutex);

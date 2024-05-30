@@ -1,5 +1,5 @@
 {
-    "CELIX_AUTO_START_1":"@rsa_bundle_file@ @calc_bundle_file@ @remote_example_bundle_file@ @discovery_bundle_file@ @topology_manager_bundle_file@",
+    "CELIX_AUTO_START_1":"@rsa_bundle_file@,@calc_bundle_file@,@remote_example_bundle_file@,@discovery_bundle_file@,@topology_manager_bundle_file@",
     "LOGHELPER_ENABLE_STDOUT_FALLBACK":true,
     "CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE":true,
     "CELIX_FRAMEWORK_CACHE_DIR":".cacheServer",

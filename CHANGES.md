@@ -73,6 +73,8 @@ limitations under the License.
   to add service properties with the correct type.
 - Celix C++ Exception are now defined in the `celix/exceptions.h` header file. The `celix/Exception.h`
   and `celix/IOException.h` are removed.
+- The seperator for `CELIX_AUTO_START_0` .. `CELIX_AUTO_START_6` and `CELIX_AUTO_INSTALL` is now a comma instead of a
+  space.
 
 ## New Features
 
