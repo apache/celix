@@ -40,7 +40,7 @@ extern "C" {
 
     static void setupFm(void) {
         celix_properties_t *fwProperties = nullptr;
-        EXPECT_EQ(CELIX_SUCCESS, celix_properties_load2("config.properties", 0, &fwProperties));
+        EXPECT_EQ(CELIX_SUCCESS, celix_properties_load("config.properties", 0, &fwProperties));
         ASSERT_TRUE(fwProperties != nullptr);
         framework = celix_frameworkFactory_createFramework(fwProperties);
         ASSERT_TRUE(framework != nullptr);

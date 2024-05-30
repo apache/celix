@@ -255,7 +255,7 @@ Properties encoding flags can be used control the behavior of the encoding. The 
 ## Properties Decoding
 
 JSON can be decoded to an Apache Celix properties object using
-the `celix_properties_load2`, `celix_properties_loadFromStream` and `celix_properties_loadFromString2` functions. These
+the `celix_properties_load`, `celix_properties_loadFromStream` and `celix_properties_loadFromString` functions. These
 functions take a JSON input and decode it to a properties object. Because properties use a flat key structure,
 decoding a nested JSON object to properties results in combining JSON object keys to a flat key structure. This can
 result in key collisions. 
@@ -290,7 +290,7 @@ Combined with the following code:
 
 int main() {
     celix_autoptr(celix_properties_t) props;
-    celix_status_t status = celix_properties_load2("example.json", 0, &props):
+    celix_status_t status = celix_properties_load("example.json", 0, &props):
     (void)status; //for production code check status
     CELIX_PROPERTIES_ITERATE(props, iter) { 
         printf("key=%s, value=%s\n", celix_properties_key(iter.key), celix_properties_value(iter.entry.value));        

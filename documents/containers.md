@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
 });
 
     celix_properties_t *embeddedProps;
-    celix_status_t status = celix_properties_loadFromString2(config, 0, &embeddedProps);
+    celix_status_t status = celix_properties_loadFromString(config, 0, &embeddedProps);
     if (status != CELIX_SUCCESS) {
         celix_err_printErrors(stderr, "Error creating embedded properties.", NULL);
         return -1;
@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
 });
 
     celix_properties_t *embeddedProps;
-    celix_status_t status = celix_properties_loadFromString2(config, 0, &embeddedProps);
+    celix_status_t status = celix_properties_loadFromString(config, 0, &embeddedProps);
     if (status != CELIX_SUCCESS) {
         celix_err_printErrors(stderr, "Error creating embedded properties.", NULL);
         return -1;

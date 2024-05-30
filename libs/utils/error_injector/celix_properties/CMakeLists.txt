@@ -27,6 +27,6 @@ target_link_options(properties_ei INTERFACE
         LINKER:--wrap,celix_properties_setLong
         LINKER:--wrap,celix_properties_setVersion
         LINKER:--wrap,celix_properties_save
-        LINKER:--wrap,celix_properties_load2
+        LINKER:--wrap,celix_properties_load
         )
 add_library(Celix::properties_ei ALIAS properties_ei)

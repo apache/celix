@@ -282,7 +282,7 @@ static celix_status_t celixLauncher_loadConfigProperties(const char* configFile,
         configFile = DEFAULT_CONFIG_FILE;
     }
     if (loadConfig) {
-        celix_status_t status = celix_properties_load2(configFile, 0, &configProperties);
+        celix_status_t status = celix_properties_load(configFile, 0, &configProperties);
         if (status != CELIX_SUCCESS) {
             celix_err_printErrors(stderr, "Error loading config file: ", NULL);
             *outConfigProperties = NULL;

@@ -65,16 +65,16 @@ __wrap_celix_properties_save(const celix_properties_t* properties, const char* f
 }
 
 celix_status_t
-__real_celix_properties_load2(const char* filename,
+__real_celix_properties_load(const char* filename,
                                     int decodeFlags,
                                     celix_properties_t** out);
-CELIX_EI_DEFINE(celix_properties_load2, celix_status_t)
+CELIX_EI_DEFINE(celix_properties_load, celix_status_t)
 celix_status_t
-__wrap_celix_properties_load2(const char* filename,
+__wrap_celix_properties_load(const char* filename,
                               int decodeFlags,
                               celix_properties_t** out) {
-    CELIX_EI_IMPL(celix_properties_load2);
-    return __real_celix_properties_load2(filename, decodeFlags, out);
+    CELIX_EI_IMPL(celix_properties_load);
+    return __real_celix_properties_load(filename, decodeFlags, out);
 }
 
 }

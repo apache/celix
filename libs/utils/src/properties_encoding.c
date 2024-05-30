@@ -593,7 +593,7 @@ celix_status_t celix_properties_loadFromStream(FILE* stream, int decodeFlags, ce
     return celix_properties_decodeFromJson(root, decodeFlags, out);
 }
 
-celix_status_t celix_properties_load2(const char* filename, int decodeFlags, celix_properties_t** out) {
+celix_status_t celix_properties_load(const char* filename, int decodeFlags, celix_properties_t** out) {
     FILE* stream = fopen(filename, "r");
     if (!stream) {
         celix_err_pushf("Failed to open file %s.", filename);
@@ -604,7 +604,7 @@ celix_status_t celix_properties_load2(const char* filename, int decodeFlags, cel
     return status;
 }
 
-celix_status_t celix_properties_loadFromString2(const char* input, int decodeFlags, celix_properties_t** out) {
+celix_status_t celix_properties_loadFromString(const char* input, int decodeFlags, celix_properties_t** out) {
     FILE* stream = fmemopen((void*)input, strlen(input), "r");
     if (!stream) {
         celix_err_push("Failed to open memstream.");

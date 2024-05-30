@@ -237,7 +237,7 @@ static celix_status_t celix_bundleCache_updateIdForLocationLookupMap(celix_bundl
         celix_auto(celix_utils_string_guard_t) strGuard = celix_utils_stringGuard_init(archiveRootBuffer, bundleStateProperties);
         if (celix_utils_fileExists(bundleStateProperties)) {
             celix_autoptr(celix_properties_t) props = NULL;
-            celix_status_t status = celix_properties_load2(bundleStateProperties, 0, &props);
+            celix_status_t status = celix_properties_load(bundleStateProperties, 0, &props);
             if (status != CELIX_SUCCESS) {
                     fw_logCode(cache->fw->logger, CELIX_LOG_LEVEL_ERROR, status,
                                "Cannot load bundle state properties from %s", bundleStateProperties);

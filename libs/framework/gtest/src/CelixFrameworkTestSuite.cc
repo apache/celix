@@ -325,7 +325,7 @@ TEST_F(FrameworkFactoryTestSuite, LaunchFrameworkWithConfigTest) {
      */
 
     celix_properties_t* config = nullptr;
-    ASSERT_EQ(CELIX_SUCCESS, celix_properties_load2(INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE, 0, &config));
+    ASSERT_EQ(CELIX_SUCCESS, celix_properties_load(INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE, 0, &config));
     ASSERT_TRUE(config != nullptr);
 
     framework_t* fw = celix_frameworkFactory_createFramework(config);

@@ -56,7 +56,7 @@ class CelixBundleCacheErrorInjectionTestSuite : public ::testing::Test {
         celix_ei_expect_celix_stringHashMap_create(nullptr, 0, nullptr);
         celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
-        celix_ei_expect_celix_properties_load2(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_properties_load(nullptr, 0, CELIX_SUCCESS);
         celix_frameworkLogger_destroy(fw.logger);
         celix_properties_destroy(fw.configurationMap);
     }
@@ -196,7 +196,7 @@ TEST_F(CelixBundleCacheErrorInjectionTestSuite, LoadBundleStatePropertiesErrorTe
     celix_bundleContext_uninstallBundle(ctx->getCBundleContext(), bndId);
 
     // And a celix_properties_load error is injected
-    celix_ei_expect_celix_properties_load2(
+    celix_ei_expect_celix_properties_load(
         (void*)celix_bundleCache_findBundleIdForLocation, 1, CELIX_FILE_IO_EXCEPTION);
 
     // Then installing the bundle will fail

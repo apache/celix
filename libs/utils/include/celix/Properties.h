@@ -1049,7 +1049,7 @@ namespace celix {
          */
         static Properties load2(const std::string& filename, DecodeFlags decodeFlags = DecodeFlags::None) {
             celix_properties_t* props;
-            auto status = celix_properties_load2(filename.c_str(), static_cast<int>(decodeFlags), &props);
+            auto status = celix_properties_load(filename.c_str(), static_cast<int>(decodeFlags), &props);
             if (status == ENOMEM) {
                 throw std::bad_alloc();
             } else if (status != CELIX_SUCCESS) {
@@ -1075,7 +1075,7 @@ namespace celix {
          */
         static Properties loadFromString(const std::string& input, DecodeFlags decodeFlags = DecodeFlags::None) {
             celix_properties_t* props;
-            auto status = celix_properties_loadFromString2(input.c_str(), static_cast<int>(decodeFlags), &props);
+            auto status = celix_properties_loadFromString(input.c_str(), static_cast<int>(decodeFlags), &props);
             if (status == ENOMEM) {
                 throw std::bad_alloc();
             } else if (status != CELIX_SUCCESS) {

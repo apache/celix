@@ -62,7 +62,7 @@ struct bundleArchive {
 static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_archive_pt archive) {
     bool needUpdate = false;
     celix_properties_t* bundleStateProperties;
-    celix_status_t status = celix_properties_load2(archive->savedBundleStatePropertiesPath, 0, &bundleStateProperties);
+    celix_status_t status = celix_properties_load(archive->savedBundleStatePropertiesPath, 0, &bundleStateProperties);
     if (status != CELIX_SUCCESS) {
         celix_framework_logTssErrors(archive->fw->logger, CELIX_LOG_LEVEL_ERROR);
         bundleStateProperties = celix_properties_create();

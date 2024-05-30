@@ -62,7 +62,7 @@ typedef struct rsa_dfi_exception_test_service {
     static void setupFm(bool useCurlShare) {
         //server
         celix_properties_t *serverProps = nullptr;
-        ASSERT_EQ(CELIX_SUCCESS, celix_properties_load2("server.properties", 0, &serverProps));
+        ASSERT_EQ(CELIX_SUCCESS, celix_properties_load("server.properties", 0, &serverProps));
         ASSERT_TRUE(serverProps != nullptr);
         serverFramework = celix_frameworkFactory_createFramework(serverProps);
         ASSERT_TRUE(serverFramework != nullptr);
@@ -71,7 +71,7 @@ typedef struct rsa_dfi_exception_test_service {
 
         //client
         celix_properties_t *clientProperties = nullptr;
-        ASSERT_EQ(CELIX_SUCCESS, celix_properties_load2("client.properties", 0, &clientProperties));
+        ASSERT_EQ(CELIX_SUCCESS, celix_properties_load("client.properties", 0, &clientProperties));
         celix_properties_setBool(clientProperties, "RSA_DFI_USE_CURL_SHARE_HANDLE", useCurlShare);
         ASSERT_TRUE(clientProperties != nullptr);
         clientFramework = celix_frameworkFactory_createFramework(clientProperties);

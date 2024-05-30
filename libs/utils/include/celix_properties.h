@@ -1208,7 +1208,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_loadFromStream(FILE* stream,
  * decoded to a properties object and ENOMEM if there was not enough memory. CELIX_FILE_IO_EXCEPTION if the file
  * could not be opened.
  */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_load2(const char* filename,
+CELIX_UTILS_EXPORT celix_status_t celix_properties_load(const char* filename,
                                                          int decodeFlags,
                                                          celix_properties_t** out);
 
@@ -1232,7 +1232,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_load2(const char* filename,
  * @return CELIX_SUCCESS if the operation was successful, CELIX_ILLEGAL_ARGUMENT if the provided input cannot be
  * decoded to a properties object and ENOMEM if there was not enough memory.
  */
-CELIX_UTILS_EXPORT celix_status_t celix_properties_loadFromString2(const char* input,
+CELIX_UTILS_EXPORT celix_status_t celix_properties_loadFromString(const char* input,
                                                                    int decodeFlags,
                                                                    celix_properties_t** out);
 
