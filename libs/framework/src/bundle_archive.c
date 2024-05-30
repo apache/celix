@@ -96,7 +96,6 @@ static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_arch
             return status;
         }
     }
-    celix_properties_destroy(bundleStateProperties);
     return CELIX_SUCCESS;
 }
 
