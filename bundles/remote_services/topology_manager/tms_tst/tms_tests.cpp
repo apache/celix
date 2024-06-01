@@ -19,10 +19,11 @@
 
 #include "gtest/gtest.h"
 
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 
 #include "celix_bundle_context.h"
+#include "celix_framework_factory.h"
 
 extern "C" {
 
@@ -57,34 +58,36 @@ extern "C" {
 
 #define TST_CONFIGURATION_TYPE "org.amdatu.remote.admin.http"
 
-    static framework_pt framework = NULL;
-    static celix_bundle_context_t *context = NULL;
+    static framework_pt framework = nullptr;
+    static celix_bundle_context_t *context = nullptr;
 
-    static service_reference_pt scopeServiceRef = NULL;
-    static tm_scope_service_pt tmScopeService = NULL;
+    static service_reference_pt scopeServiceRef = nullptr;
+    static tm_scope_service_pt tmScopeService = nullptr;
 
-    static service_reference_pt calcRef = NULL;
-    static calculator_service_t *calc = NULL;
+    static service_reference_pt calcRef = nullptr;
+    static calculator_service_t *calc = nullptr;
 
-    static service_reference_pt rsaRef = NULL;
-    static remote_service_admin_service_t *rsa = NULL;
+    static service_reference_pt rsaRef = nullptr;
+    static remote_service_admin_service_t *rsa = nullptr;
 
-    static service_reference_pt discRef = NULL;
-    static disc_mock_service_t *discMock = NULL;
+    static service_reference_pt discRef = nullptr;
+    static disc_mock_service_t *discMock = nullptr;
 
-    static service_reference_pt testRef = NULL;
-    static tst_service_t *testImport = NULL;
+    static service_reference_pt testRef = nullptr;
+    static tst_service_t *testImport = nullptr;
 
-    static service_reference_pt eplRef = NULL;
-    static endpoint_listener_t *eplService = NULL; // actually this is the topology manager
+    static service_reference_pt eplRef = nullptr;
+    static endpoint_listener_t *eplService = nullptr; // actually this is the topology manager
 
-    static void setupFm(void) {
-        int rc = 0;
-        rc = celixLauncher_launch("config.properties", &framework);
-        EXPECT_EQ(CELIX_SUCCESS, rc);
+    static void setupFm() {
+        celix_properties_t* config;
+        ASSERT_EQ(CELIX_SUCCESS, celix_properties_load("config.properties", 0, &config));
 
-        celix_bundle_t *bundle = NULL;
-        rc = framework_getFrameworkBundle(framework, &bundle);
+        framework = celix_frameworkFactory_createFramework(config);
+        ASSERT_NE(nullptr, framework);
+
+        celix_bundle_t *bundle = nullptr;
+        celix_status_t rc = framework_getFrameworkBundle(framework, &bundle);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         rc = bundle_getContext(bundle, &context);
@@ -92,28 +95,28 @@ extern "C" {
 
         rc = bundleContext_getServiceReference(context, (char *)CELIX_RSA_REMOTE_SERVICE_ADMIN, &rsaRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
-        EXPECT_TRUE(rsaRef != NULL);
+        EXPECT_TRUE(rsaRef != nullptr);
 
         rc = bundleContext_getService(context, rsaRef, (void **)&rsa);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         rc = bundleContext_getServiceReference(context, (char *)TOPOLOGYMANAGER_SCOPE_SERVICE, &scopeServiceRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
-        EXPECT_TRUE(scopeServiceRef != NULL);
+        EXPECT_TRUE(scopeServiceRef != nullptr);
 
         rc = bundleContext_getService(context, scopeServiceRef, (void **)&tmScopeService);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         rc = bundleContext_getServiceReference(context, (char *)CALCULATOR_SERVICE, &calcRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
-        EXPECT_TRUE(calcRef != NULL);
+        EXPECT_TRUE(calcRef != nullptr);
 
         rc = bundleContext_getService(context, calcRef, (void **)&calc);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         rc = bundleContext_getServiceReference(context, (char *)DISC_MOCK_SERVICE_NAME, &discRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
-        EXPECT_TRUE(discRef != NULL);
+        EXPECT_TRUE(discRef != nullptr);
 
         rc = bundleContext_getService(context, discRef, (void **)&discMock);
         EXPECT_EQ(CELIX_SUCCESS, rc);
@@ -121,61 +124,61 @@ extern "C" {
         printf("==> Finished setup.\n");
     }
 
-    static void teardownFm(void) {
+    static void teardownFm() {
         printf("==> Starting teardown.\n");
         int rc = 0;
 
-        rc = bundleContext_ungetService(context, scopeServiceRef, NULL);
+        rc = bundleContext_ungetService(context, scopeServiceRef, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
         rc = bundleContext_ungetServiceReference(context,scopeServiceRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        rc = bundleContext_ungetService(context, calcRef, NULL);
+        rc = bundleContext_ungetService(context, calcRef, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
         rc = bundleContext_ungetServiceReference(context,calcRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        rc = bundleContext_ungetService(context, rsaRef, NULL);
+        rc = bundleContext_ungetService(context, rsaRef, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
         rc = bundleContext_ungetServiceReference(context,rsaRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        rc = bundleContext_ungetService(context, discRef, NULL);
+        rc = bundleContext_ungetService(context, discRef, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
         rc = bundleContext_ungetServiceReference(context,discRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        celixLauncher_stop(framework);
-        celixLauncher_waitForShutdown(framework);
-        celixLauncher_destroy(framework);
+        celix_frameworkFactory_destroyFramework(framework);
 
-        scopeServiceRef = NULL;
-        tmScopeService = NULL;
-        calcRef = NULL;
-        calc = NULL;
+        scopeServiceRef = nullptr;
+        tmScopeService = nullptr;
+        calcRef = nullptr;
+        calc = nullptr;
 
-        rsaRef = NULL;
-        rsa = NULL;
-        discRef = NULL;
-        discMock = NULL;
+        rsaRef = nullptr;
+        rsa = nullptr;
+        discRef = nullptr;
+        discMock = nullptr;
 
-        testRef = NULL;
-        testImport = NULL;
+        testRef = nullptr;
+        testImport = nullptr;
 
-        eplRef = NULL;
-        eplService = NULL;
+        eplRef = nullptr;
+        eplService = nullptr;
 
-        context = NULL;
-        framework = NULL;
+        context = nullptr;
+        framework = nullptr;
     }
 
-    static void setupFmImport(void) {
-        int rc = 0;
-        rc = celixLauncher_launch("config_import.properties", &framework);
-        EXPECT_EQ(CELIX_SUCCESS, rc);
+    static void setupFmImport() {
+        celix_properties_t* config;
+        ASSERT_EQ(CELIX_SUCCESS, celix_properties_load("config.properties", 0, &config));
 
-        celix_bundle_t *bundle = NULL;
-        rc = framework_getFrameworkBundle(framework, &bundle);
+        framework = celix_frameworkFactory_createFramework(config);
+        ASSERT_NE(nullptr, framework);
+
+        celix_bundle_t *bundle = nullptr;
+        celix_status_t rc = framework_getFrameworkBundle(framework, &bundle);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         rc = bundle_getContext(bundle, &context);
@@ -187,78 +190,76 @@ extern "C" {
 
         rc = bundleContext_getServiceReference(context, (char *)CELIX_RSA_REMOTE_SERVICE_ADMIN, &rsaRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
-        EXPECT_TRUE(rsaRef != NULL);
+        EXPECT_TRUE(rsaRef != nullptr);
 
         rc = bundleContext_getService(context, rsaRef, (void **)&rsa);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         rc = bundleContext_getServiceReference(context, (char *)TOPOLOGYMANAGER_SCOPE_SERVICE, &scopeServiceRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
-        EXPECT_TRUE(scopeServiceRef != NULL);
+        EXPECT_TRUE(scopeServiceRef != nullptr);
 
         rc = bundleContext_getService(context, scopeServiceRef, (void **)&tmScopeService);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         rc = bundleContext_getServiceReference(context, (char *)TST_SERVICE_NAME, &testRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
-        EXPECT_TRUE(testRef != NULL);
+        EXPECT_TRUE(testRef != nullptr);
 
         rc = bundleContext_getService(context, testRef, (void **)&testImport);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         rc = bundleContext_getServiceReference(context, (char*) CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, &eplRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
-        EXPECT_TRUE(eplRef != NULL);
+        EXPECT_TRUE(eplRef != nullptr);
 
         rc = bundleContext_getService(context, eplRef, (void **)&eplService);
         EXPECT_EQ(CELIX_SUCCESS, rc);
     }
 
-    static void teardownFmImport(void) {
+    static void teardownFmImport() {
         int rc = 0;
 
-        rc = bundleContext_ungetService(context, rsaRef, NULL);
+        rc = bundleContext_ungetService(context, rsaRef, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
         rc = bundleContext_ungetServiceReference(context,rsaRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        rc = bundleContext_ungetService(context, scopeServiceRef, NULL);
+        rc = bundleContext_ungetService(context, scopeServiceRef, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
         rc = bundleContext_ungetServiceReference(context,scopeServiceRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        rc = bundleContext_ungetService(context, testRef, NULL);
+        rc = bundleContext_ungetService(context, testRef, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
         rc = bundleContext_ungetServiceReference(context,testRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        rc = bundleContext_ungetService(context, eplRef, NULL);
+        rc = bundleContext_ungetService(context, eplRef, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
         rc = bundleContext_ungetServiceReference(context,eplRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        celixLauncher_stop(framework);
-        celixLauncher_waitForShutdown(framework);
-        celixLauncher_destroy(framework);
+        celix_frameworkFactory_destroyFramework(framework);
 
-        scopeServiceRef = NULL;
-        tmScopeService = NULL;
-        calcRef = NULL;
-        calc = NULL;
+        scopeServiceRef = nullptr;
+        tmScopeService = nullptr;
+        calcRef = nullptr;
+        calc = nullptr;
 
-        rsaRef = NULL;
-        rsa = NULL;
-        discRef = NULL;
-        discMock = NULL;
+        rsaRef = nullptr;
+        rsa = nullptr;
+        discRef = nullptr;
+        discMock = nullptr;
 
-        testRef = NULL;
-        testImport = NULL;
+        testRef = nullptr;
+        testImport = nullptr;
 
-        eplRef = NULL;
-        eplService = NULL;
+        eplRef = nullptr;
+        eplService = nullptr;
 
-        context = NULL;
-        framework = NULL;
+        context = nullptr;
+        framework = nullptr;
     }
 
     /// \TEST_CASE_ID{1}
@@ -267,7 +268,7 @@ extern "C" {
     /// \TEST_CASE_DESC Checks if 3 bundles are installed after the framework setup
     static void testBundles(void) {
         printf("Begin: %s\n", __func__);
-            celix_array_list_t* bundles = NULL;
+            celix_array_list_t* bundles = nullptr;
 
             int rc = bundleContext_getBundles(context, &bundles);
             EXPECT_EQ(0, rc);
@@ -277,9 +278,9 @@ extern "C" {
             int size = arrayList_size(bundles);
             int i;
             for (i = 0; i < size; i += 1) {
-                celix_bundle_t *bundle = NULL;
-                module_pt module = NULL;
-                char *name = NULL;
+                celix_bundle_t *bundle = nullptr;
+                module_pt module = nullptr;
+                char *name = nullptr;
 
                 bundle = (celix_bundle_t *) arrayList_get(bundles, i);
                 bundle_getCurrentModule(bundle, &module);
@@ -304,11 +305,11 @@ extern "C" {
         *nr_imported = 0;
         js_root = json_load_file(fileName, 0, &error);
 
-        if (js_root != NULL) {
+        if (js_root != nullptr) {
             json_t *js_exportServices = json_object_get(js_root, JSON_EXPORT_SERVICES);
             json_t *js_importServices = json_object_get(js_root, JSON_IMPORT_SERVICES);
 
-            if (js_exportServices != NULL)  {
+            if (js_exportServices != nullptr)  {
                 if (json_is_array(js_exportServices)) {
                     int i = 0;
                     int size = json_array_size(js_exportServices);
@@ -323,15 +324,15 @@ extern "C" {
                             json_t* js_key2 = json_object_get(js_service, JSON_SERVICE_KEY2);
 
                             properties = celix_properties_create();
-                            if (js_serviceZone != NULL) {
+                            if (js_serviceZone != nullptr) {
                                 celix_properties_set(properties, (char*)JSON_SERVICE_ZONE,
                                                                  (char*)json_string_value(js_serviceZone));
                             }
-                            if (js_key1 != NULL) {
+                            if (js_key1 != nullptr) {
                                 celix_properties_set(properties, (char*)JSON_SERVICE_KEY1,
                                                                  (char*)json_string_value(js_key1));
                             }
-                            if (js_key2 != NULL) {
+                            if (js_key2 != nullptr) {
                                 celix_properties_set(properties, (char*)JSON_SERVICE_KEY2,
                                                                  (char*)json_string_value(js_key2));
                             }
@@ -345,7 +346,7 @@ extern "C" {
                  }
              }
 
-            if (js_importServices != NULL)  {
+            if (js_importServices != nullptr)  {
                 if (json_is_array(js_importServices)) {
                     int i = 0;
                     int size = json_array_size(js_importServices);
@@ -475,7 +476,7 @@ extern "C" {
         EXPECT_EQ(0, nr_imported);
         int rc = 0;
 
-        endpoint_description_t *endpoint = NULL;
+        endpoint_description_t *endpoint = nullptr;
 
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, CELIX_RSA_ENDPOINT_SERVICE_ID, "42");
@@ -489,7 +490,7 @@ extern "C" {
         rc = endpointDescription_create(props, &endpoint);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        rc = eplService->endpointAdded(eplService->handle, endpoint, NULL);
+        rc = eplService->endpointAdded(eplService->handle, endpoint, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         celix_framework_waitForEmptyEventQueue(framework);
@@ -502,7 +503,7 @@ extern "C" {
             usleep(1000);
         } while (!imported && iteration++ < 1000);
 
-        rc = eplService->endpointRemoved(eplService->handle, endpoint, NULL);
+        rc = eplService->endpointRemoved(eplService->handle, endpoint, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         celix_framework_waitForEmptyEventQueue(framework);
@@ -527,7 +528,7 @@ extern "C" {
         EXPECT_EQ(1, nr_imported);
         int rc = 0;
 
-        endpoint_description_t *endpoint = NULL;
+        endpoint_description_t *endpoint = nullptr;
 
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, CELIX_RSA_ENDPOINT_SERVICE_ID, "42");
@@ -541,7 +542,7 @@ extern "C" {
         rc = endpointDescription_create(props, &endpoint);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        rc = eplService->endpointAdded(eplService->handle, endpoint, NULL);
+        rc = eplService->endpointAdded(eplService->handle, endpoint, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         celix_framework_waitForEmptyEventQueue(framework);
@@ -554,7 +555,7 @@ extern "C" {
             usleep(1000);
         } while (!imported && iteration++ < 1000);
 
-        rc = eplService->endpointRemoved(eplService->handle, endpoint, NULL);
+        rc = eplService->endpointRemoved(eplService->handle, endpoint, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         celix_framework_waitForEmptyEventQueue(framework);
@@ -578,7 +579,7 @@ extern "C" {
         EXPECT_EQ(1, nr_imported);
         int rc = 0;
 
-        endpoint_description_t *endpoint = NULL;
+        endpoint_description_t *endpoint = nullptr;
 
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, CELIX_RSA_ENDPOINT_SERVICE_ID, "42");
@@ -592,7 +593,7 @@ extern "C" {
         rc = endpointDescription_create(props, &endpoint);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        rc = eplService->endpointAdded(eplService->handle, endpoint, NULL);
+        rc = eplService->endpointAdded(eplService->handle, endpoint, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         celix_framework_waitForEmptyEventQueue(framework);
@@ -600,7 +601,7 @@ extern "C" {
         bool imported = testImport->IsImported(testImport);
         EXPECT_EQ(false, imported);
 
-        rc = eplService->endpointRemoved(eplService->handle, endpoint, NULL);
+        rc = eplService->endpointRemoved(eplService->handle, endpoint, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         celix_framework_waitForEmptyEventQueue(framework);
@@ -624,7 +625,7 @@ extern "C" {
         EXPECT_EQ(2, nr_imported);
         int rc = 0;
 
-        endpoint_description_t *endpoint = NULL;
+        endpoint_description_t *endpoint = nullptr;
 
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, CELIX_RSA_ENDPOINT_SERVICE_ID, "42");
@@ -638,7 +639,7 @@ extern "C" {
         rc = endpointDescription_create(props, &endpoint);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
-        rc = eplService->endpointAdded(eplService->handle, endpoint, NULL);
+        rc = eplService->endpointAdded(eplService->handle, endpoint, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         celix_framework_waitForEmptyEventQueue(framework);
@@ -653,7 +654,7 @@ extern "C" {
 
         EXPECT_EQ(true, imported);
 
-        rc = eplService->endpointRemoved(eplService->handle, endpoint, NULL);
+        rc = eplService->endpointRemoved(eplService->handle, endpoint, nullptr);
         EXPECT_EQ(CELIX_SUCCESS, rc);
 
         celix_framework_waitForEmptyEventQueue(framework);

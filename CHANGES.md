@@ -75,6 +75,8 @@ limitations under the License.
   and `celix/IOException.h` are removed.
 - The seperator for `CELIX_AUTO_START_0` .. `CELIX_AUTO_START_6` and `CELIX_AUTO_INSTALL` is now a comma instead of a
   space.
+- The launcher now only has 2 public functions: `celix_launcher_launchAndWait` and `celix_launcher_triggerStop`. The
+  other functions are removed.
 
 ## New Features
 

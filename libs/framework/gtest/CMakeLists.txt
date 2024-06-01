@@ -104,6 +104,7 @@ celix_get_bundle_file(cond_test_bundle COND_TEST_BUNDLE_LOC)
 configure_file(config.properties.in config.properties @ONLY)
 configure_file(framework1.properties.in framework1.properties @ONLY)
 configure_file(framework2.properties.in framework2.properties @ONLY)
+configure_file(empty.properties.in empty.properties @ONLY)
 configure_file(install_and_start_bundles.properties.in install_and_start_bundles.properties @ONLY)
 
 celix_target_bundle_set_definition(test_framework NAME CELIX_ERR_TEST_BUNDLE celix_err_test_bundle)

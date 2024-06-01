@@ -23,7 +23,7 @@
 int main(int argc, char *argv[]) {
     int ret;
     curl_global_init(CURL_GLOBAL_ALL);
-    ret = celixLauncher_launchAndWaitForShutdown(argc, argv, NULL);
+    ret = celix_launcher_launchAndWait(argc, argv, NULL);
     curl_global_cleanup();
     return ret;
 }

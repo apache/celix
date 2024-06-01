@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
         celix_err_printErrors(stderr, "Error creating embedded properties.", NULL);
         return -1;
     }
-    return celixLauncher_launchAndWaitForShutdown(argc, argv, embeddedProps);
+    return celix_launcher_launch(argc, argv, embeddedProps);
 }
 ```
 
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
         celix_err_printErrors(stderr, "Error creating embedded properties.", NULL);
         return -1;
     }
-    return celixLauncher_launchAndWaitForShutdown(argc, argv, embeddedProps);
+    return celix_launcher_launch(argc, argv, embeddedProps);
 }
 ```
 

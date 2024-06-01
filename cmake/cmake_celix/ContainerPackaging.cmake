@@ -238,13 +238,7 @@ int main(int argc, char *argv[]) {
     \"CELIX_CONTAINER_NAME\":\"$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_NAME>\"
 });
 
-    celix_properties_t *embeddedProps;
-    celix_status_t status = celix_properties_loadFromString(config, 0, &embeddedProps);
-    if (status != CELIX_SUCCESS) {
-        celix_err_printErrors(stderr, \"Error creating embedded properties.\", NULL);
-        return -1;
-    }
-    return celixLauncher_launchAndWaitForShutdown(argc, argv, embeddedProps);
+    return celix_launcher_launchAndWait(argc, argv, config);
 }
 "
         )
