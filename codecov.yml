@@ -19,5 +19,3 @@ coverage:
   precision: 2
   round: down
   range: "68...100"
-ignore:
-  - "gtest/**"
