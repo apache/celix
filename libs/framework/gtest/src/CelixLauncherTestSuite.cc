@@ -30,10 +30,10 @@
 #include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
 
+#define LAUNCH_WAIT_TIMEOUT 100
+
 class CelixLauncherTestSuite : public ::testing::Test {
   public:
-    static constexpr int LAUNCH_WAIT_TIMEOUT{100};
-
     static std::future<void> launchInThread(const std::vector<std::string>& args, celix_properties_t* props, int expectedRc) {
         std::string propsStr{};
         if (props) {
@@ -208,7 +208,7 @@ TEST_F(CelixLauncherTestSuite, StopLauncherWithSignalTest) {
     EXPECT_EQ(status, std::future_status::ready);
 }
 
-TEST_F(CelixLauncherTestSuite, DoubleStartAndStopLauncher) {
+TEST_F(CelixLauncherTestSuite, DoubleStartAndStopLauncherTest) {
         // When launching the framework
         auto future = launchInThread({"programName"}, nullptr, 0);
 
@@ -234,4 +234,12 @@ TEST_F(CelixLauncherTestSuite, DoubleStartAndStopLauncher) {
         celix_launcher_triggerStop();
 
         // Then nothing happens
+}
+
+TEST_F(CelixLauncherTestSuite, StartWithInvalidEmbeddedPropertiesTest) {
+    //When launching the framework with an invalid embedded properties
+    auto rc = celix_launcher_launchAndWait(0, nullptr, "invalid props");
+
+    //Then the launch will exit with a return code of 1
+    EXPECT_EQ(1, rc);
 }
