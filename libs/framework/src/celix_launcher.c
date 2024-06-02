@@ -79,13 +79,6 @@ static celix_status_t celix_launcher_createFramework(celix_properties_t* embedde
 static celix_status_t celix_launcher_parseOptions(int argc, char* argv[], celix_launcher_options_t* opts);
 
 /**
- * @brief Create a combined configuration properties set by combining the embedded properties with the runtime properties.
- * @param[in,out] embeddedProps The embedded properties to use and extend with the runtime properties.
- * @param[in] configFile The optional runtime properties file to load and use.
- */
-static celix_status_t celix_launcher_combineProperties(celix_properties_t* embeddedProps, const celix_properties_t* runtimeProps);
-
-/**
  * @brief Print the usage of the Celix launcher command arguments.
  */
 static void celix_launcher_printUsage(char* progName);
@@ -170,7 +163,7 @@ int celix_launcher_launchAndWait(int argc, char* argv[], const char* embeddedCon
         curl_global_cleanup();
 #endif
     }
-    return CELIX_LAUNCHER_OK_EXIT_CODE;
+    return status == CELIX_SUCCESS ? CELIX_LAUNCHER_OK_EXIT_CODE : CELIX_LAUNCHER_ERROR_EXIT_CODE;
 }
 
 static celix_status_t celix_launcher_setGlobalFramework(celix_framework_t* fw) {
@@ -247,7 +240,7 @@ static celix_status_t celix_launcher_createFramework(celix_properties_t* embedde
 #endif
 
     *frameworkOut = celix_frameworkFactory_createFramework(embeddedProps);
-    return *frameworkOut != NULL ? CELIX_SUCCESS : CELIX_ENOMEM;
+    return *frameworkOut != NULL ? CELIX_SUCCESS : CELIX_FRAMEWORK_EXCEPTION;
 }
 
 /**
@@ -334,7 +327,7 @@ static celix_status_t celix_launcher_createBundleCache(celix_properties_t* embed
     return CELIX_SUCCESS;
 }
 
-static celix_status_t celix_launcher_combineProperties(celix_properties_t* embeddedProps,
+celix_status_t celix_launcher_combineProperties(celix_properties_t* embeddedProps,
                                                        const celix_properties_t* runtimeProps) {
     if (embeddedProps && runtimeProps) {
         CELIX_PROPERTIES_ITERATE(runtimeProps, visit) {

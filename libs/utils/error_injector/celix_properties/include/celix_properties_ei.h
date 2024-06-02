@@ -31,6 +31,7 @@ CELIX_EI_DECLARE(celix_properties_copy, celix_properties_t*);
 CELIX_EI_DECLARE(celix_properties_set, celix_status_t);
 CELIX_EI_DECLARE(celix_properties_setLong, celix_status_t);
 CELIX_EI_DECLARE(celix_properties_setVersion, celix_status_t);
+CELIX_EI_DECLARE(celix_properties_setEntry, celix_status_t);
 CELIX_EI_DECLARE(celix_properties_save, celix_status_t);
 CELIX_EI_DECLARE(celix_properties_load, celix_status_t);
 

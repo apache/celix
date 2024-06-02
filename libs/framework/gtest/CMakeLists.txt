@@ -141,6 +141,7 @@ if (EI_TESTS)
             src/FrameworkBundleWithErrorInjectionTestSuite.cc
             src/FrameworkFactoryWithErrorInjectionTestSuite.cc
             src/ManifestErrorInjectionTestSuite.cc
+            src/CelixLauncherErrorInjectionTestSuite.cc
     )
     target_compile_definitions(test_framework_with_ei PRIVATE
             SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"

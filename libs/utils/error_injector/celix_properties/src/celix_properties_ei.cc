@@ -55,6 +55,17 @@ celix_status_t __wrap_celix_properties_setVersion(celix_properties_t *properties
     return __real_celix_properties_setVersion(properties, key, version);
 }
 
+celix_status_t __real_celix_properties_setEntry(celix_properties_t* properties,
+                                                const char* key,
+                                                const celix_properties_entry_t* entry);
+CELIX_EI_DEFINE(celix_properties_setEntry, celix_status_t)
+celix_status_t __wrap_celix_properties_setEntry(celix_properties_t* properties,
+                                                const char* key,
+                                                const celix_properties_entry_t* entry) {
+    CELIX_EI_IMPL(celix_properties_setEntry);
+    return __real_celix_properties_setEntry(properties, key, entry);
+}
+
 celix_status_t
 __real_celix_properties_save(const celix_properties_t* properties, const char* filename, int encodeFlags);
 CELIX_EI_DEFINE(celix_properties_save, celix_status_t)

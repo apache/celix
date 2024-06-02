@@ -26,6 +26,7 @@ target_link_options(properties_ei INTERFACE
         LINKER:--wrap,celix_properties_set
         LINKER:--wrap,celix_properties_setLong
         LINKER:--wrap,celix_properties_setVersion
+        LINKER:--wrap,celix_properties_setEntry
         LINKER:--wrap,celix_properties_save
         LINKER:--wrap,celix_properties_load
         )

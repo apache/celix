@@ -495,7 +495,7 @@ const char* celix_properties_getAsString(const celix_properties_t* properties,
 celix_status_t celix_properties_setString(celix_properties_t* properties,
                                                              const char* key,
                                                              const char* value) {
-    if  (!properties) {
+    if (!properties) {
         return CELIX_SUCCESS; // silently ignore NULL properties
     }
     char* copy = celix_properties_createString(properties, value);
