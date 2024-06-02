@@ -19,7 +19,7 @@ jobs:
       - name: Install conan and lcov
         run: |
           sudo apt-get install -yq --no-install-recommends lcov
-          sudo pip install conan==1.62.0
+          sudo pip install conan==1.62.0 coverage
       - name: Setup Conan Profile
         run: |
           conan profile new default --detect
