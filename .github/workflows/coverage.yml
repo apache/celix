@@ -71,5 +71,6 @@ jobs:
         if: github.repository_owner == 'apache'
         with:
           files: build/coverage.info
+          disable_search: true
           name: codecov-celix
           token: ${{ secrets.CODECOV_TOKEN }}
