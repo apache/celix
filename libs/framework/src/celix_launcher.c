@@ -379,7 +379,7 @@ void celix_launcher_stopInternal(const int* signal) {
         if (signal) {
             celix_bundle_context_t* ctx = celix_framework_getFrameworkContext(fw);
             celix_bundleContext_log(
-                ctx, CELIX_LOG_LEVEL_INFO, "Stopping Celix framework due to signal %s", sigabbrev_np(*signal));
+                ctx, CELIX_LOG_LEVEL_INFO, "Stopping Celix framework due to signal %s", strsignal(*signal));
         }
         celix_framework_stopBundle(fw, CELIX_FRAMEWORK_BUNDLE_ID);
     } else {
