@@ -539,7 +539,7 @@ static celix_status_t celix_filter_compile(celix_filter_t* filter) {
         internal->boolValue =
                 celix_utils_convertStringToBool(filter->value, false, &internal->convertedToBool);
 
-        celix_status_t convertStatus = celix_utils_convertStringToVersion(filter->value, NULL, &internal->versionValue);
+        celix_status_t convertStatus = celix_version_tryParse(filter->value, &internal->versionValue);
         if (convertStatus == ENOMEM) {
             return ENOMEM;
         }

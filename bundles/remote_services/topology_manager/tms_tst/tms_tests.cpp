@@ -24,6 +24,7 @@
 
 #include "celix_bundle_context.h"
 #include "celix_framework_factory.h"
+#include "celix_version.h"
 
 extern "C" {
 
@@ -172,7 +173,7 @@ extern "C" {
 
     static void setupFmImport() {
         celix_properties_t* config;
-        ASSERT_EQ(CELIX_SUCCESS, celix_properties_load("config.properties", 0, &config));
+        ASSERT_EQ(CELIX_SUCCESS, celix_properties_load("config_import.properties", 0, &config));
 
         framework = celix_frameworkFactory_createFramework(config);
         ASSERT_NE(nullptr, framework);
@@ -484,7 +485,8 @@ extern "C" {
         celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
         celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.test.MyBundle");
-        celix_properties_set(props, "service.version", "1.0.0");
+        auto* v = celix_version_create(1, 0, 0, nullptr);
+        celix_properties_assignVersion(props, "service.version", v);
         celix_properties_set(props, "zone", "a_zone");
 
         rc = endpointDescription_create(props, &endpoint);
@@ -536,7 +538,8 @@ extern "C" {
         celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
         celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.test.MyBundle");
-        celix_properties_set(props, "service.version", "1.0.0");
+        auto* v = celix_version_create(1, 0, 0, nullptr);
+        celix_properties_assignVersion(props, "service.version", v);
         celix_properties_set(props, "zone", "a_zone");
 
         rc = endpointDescription_create(props, &endpoint);
@@ -587,7 +590,8 @@ extern "C" {
         celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
         celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.test.MyBundle");
-        celix_properties_set(props, "service.version", "1.0.0"); //TODO find out standard in osgi spec
+        auto*v = celix_version_create(1, 0, 0, nullptr);
+        celix_properties_assignVersion(props, "service.version", v);
         celix_properties_set(props, "zone", "a_zone");
 
         rc = endpointDescription_create(props, &endpoint);
@@ -633,7 +637,8 @@ extern "C" {
         celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, "eec5404d-51d0-47ef-8d86-c825a8beda42-42");
         celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, TST_CONFIGURATION_TYPE);
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, "org.apache.celix.test.MyBundle");
-        celix_properties_set(props, "service.version", "1.0.0");
+        auto*v = celix_version_create(1, 0, 0, nullptr);
+        celix_properties_assignVersion(props, "service.version", v);
         celix_properties_set(props, "zone", "a_zone");
 
         rc = endpointDescription_create(props, &endpoint);

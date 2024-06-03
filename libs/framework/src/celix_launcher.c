@@ -33,9 +33,9 @@
 #include "celix_bundle_context.h"
 #include "celix_constants.h"
 #include "celix_err.h"
+#include "celix_file_utils.h"
 #include "celix_framework_factory.h"
 #include "celix_framework_utils.h"
-
 
 #define DEFAULT_CONFIG_FILE "config.properties"
 
@@ -348,8 +348,7 @@ static celix_status_t celix_launcher_loadRuntimeProperties(const char* configFil
     *outConfigProperties = NULL;
     bool loadConfig = configFile != NULL;
     if (!loadConfig) {
-        struct stat buffer;
-        loadConfig = stat(DEFAULT_CONFIG_FILE, &buffer) == 0;
+        loadConfig = celix_utils_fileExists(DEFAULT_CONFIG_FILE);
         configFile = DEFAULT_CONFIG_FILE;
     }
     if (loadConfig) {

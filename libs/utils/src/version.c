@@ -112,7 +112,8 @@ celix_version_t* celix_version_createVersionFromString(const char *versionStr) {
     return version;
 }
 
-celix_status_t celix_version_parse(const char* versionStr, celix_version_t** version) {
+static celix_status_t
+celix_version_parseInternal(const char* versionStr, bool logParseError, celix_version_t** version) {
     *version = NULL;
 
     if (versionStr == NULL) {
@@ -128,16 +129,20 @@ celix_status_t celix_version_parse(const char* versionStr, celix_version_t** ver
         errno = 0;
         long l = strtol(token, &endPtr, 10);
         if (errno != 0 || token == endPtr || l < 0 || l >= INT_MAX) {
-            celix_err_pushf("Invalid version component(%d)", count);
-            return  CELIX_ILLEGAL_ARGUMENT;
+            if (logParseError) {
+                celix_err_pushf("Invalid version part %d. Input str: %s", count, versionStr);
+            }
+            return CELIX_ILLEGAL_ARGUMENT;
         }
         versionsParts[count++] = (int)l;
         if (*endPtr == '.') {
             token = endPtr + 1;
-        } else if (celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(endPtr)){
+        } else if (celix_utils_isEndptrEndOfStringOrOnlyContainsWhitespaces(endPtr)) {
             token = NULL;
         } else {
-            celix_err_pushf("Invalid trailing string:<%s>", endPtr);
+            if (logParseError) {
+                celix_err_pushf("Invalid trailing string `%s`. Input str: %s", endPtr, versionStr);
+            }
             return CELIX_ILLEGAL_ARGUMENT;
         }
     }
@@ -146,6 +151,14 @@ celix_status_t celix_version_parse(const char* versionStr, celix_version_t** ver
     }
     *version = celix_version_create(versionsParts[0], versionsParts[1], versionsParts[2], qualifier);
     return *version ? CELIX_SUCCESS : (errno == EINVAL ? CELIX_ILLEGAL_ARGUMENT : CELIX_ENOMEM);
+}
+
+celix_status_t celix_version_parse(const char* versionStr, celix_version_t** version) {
+    return celix_version_parseInternal(versionStr, true, version);
+}
+
+celix_status_t celix_version_tryParse(const char* versionStr, celix_version_t** version) {
+    return celix_version_parseInternal(versionStr, false, version);
 }
 
 celix_version_t* celix_version_createEmptyVersion() {
