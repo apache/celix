@@ -78,4 +78,13 @@ TEST_F(CelixLauncherErrorInjectionTestSuite, CombinePropertiesErrorTest) {
 
     //Then an exception is expected
     EXPECT_EQ(1, rc);
+
+    //Given an error injection for celix_properties_setEntry is primed when called from celix_launcher_combineProperties
+    celix_ei_expect_celix_properties_setEntry((void*)celix_launcher_combineProperties, 0, ENOMEM);
+
+    //When calling celix_launcher_launchAndWait with a create cache flag
+    rc = launch({"programName", "-c"}, nullptr);
+
+    //Then an exception is expected
+    EXPECT_EQ(1, rc);
 }

@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
+#include <libgen.h>
 
 #ifndef CELIX_NO_CURLINIT
 #include <curl/curl.h>
@@ -333,6 +333,7 @@ celix_status_t celix_launcher_combineProperties(celix_properties_t* embeddedProp
         CELIX_PROPERTIES_ITERATE(runtimeProps, visit) {
             celix_status_t status = celix_properties_setEntry(embeddedProps, visit.key, &visit.entry);
             if (status != CELIX_SUCCESS) {
+                celix_properties_destroy(embeddedProps);
                 return status;
             }
         }

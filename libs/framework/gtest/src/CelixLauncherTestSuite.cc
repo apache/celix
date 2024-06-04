@@ -40,6 +40,7 @@ class CelixLauncherTestSuite : public ::testing::Test {
             celix_autofree char* str;
             EXPECT_EQ(CELIX_SUCCESS, celix_properties_saveToString(props, 0, &str));
             propsStr = str;
+            celix_properties_destroy(props);
         }
         return std::async(std::launch::async, [args, propsStr, expectedRc] {
             char** argv = new char*[args.size()];
@@ -242,4 +243,20 @@ TEST_F(CelixLauncherTestSuite, StartWithInvalidEmbeddedPropertiesTest) {
 
     //Then the launch will exit with a return code of 1
     EXPECT_EQ(1, rc);
+}
+
+TEST_F(CelixLauncherTestSuite, StartWithInvalidArgumentsTest) {
+    //When launching the framework with invalid arguments and expect a 1 return code
+    auto future = launchInThread({"programName", "config1.properties", "config2.properties"}, nullptr, 1);
+
+    // The launch will exit
+    auto status = future.wait_for(std::chrono::milliseconds{LAUNCH_WAIT_TIMEOUT});
+    EXPECT_EQ(status, std::future_status::ready);
+
+    //When launching the framework with invalid arguments and expect a 1 return code
+    future = launchInThread({"programName", "-c", "-p"}, nullptr, 1);
+
+    // The launch will exit
+    status = future.wait_for(std::chrono::milliseconds{LAUNCH_WAIT_TIMEOUT});
+    EXPECT_EQ(status, std::future_status::ready);
 }
