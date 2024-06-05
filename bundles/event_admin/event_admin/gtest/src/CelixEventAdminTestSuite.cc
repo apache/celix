@@ -606,21 +606,26 @@ TEST_F(CelixEventAdminTestSuite, PostEventWithInvalidArgumentsTest) {
 }
 
 static bool g_blockingHandlerCalled = false;
+static bool g_handlingEvent = false;
 TEST_F(CelixEventAdminTestSuite, AsyncEventQueueFullTest) {
     g_blockingHandlerCalled = true;
+    g_handlingEvent = false;
     TestPublishEvent("org/celix/test", nullptr, [](celix_event_admin_t *ea) {
-        for (int i = 0; i < 512 + 1/*handling event*/; ++i) {
+        for (int i = 0; i < 512; ++i) {
             auto status = celix_eventAdmin_postEvent(ea, "org/celix/test", nullptr);
             EXPECT_EQ(CELIX_SUCCESS, status);
         }
-        usleep(30000);
+        while (!g_handlingEvent) usleep(1000);
         auto status = celix_eventAdmin_postEvent(ea, "org/celix/test", nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        status = celix_eventAdmin_postEvent(ea, "org/celix/test", nullptr);
         EXPECT_EQ(CELIX_ILLEGAL_STATE, status);
         g_blockingHandlerCalled = false;
     }, [](void *handle, const char *topic, const celix_properties_t *props) {
         (void)handle;
         (void)props;
         (void)topic;
+        g_handlingEvent = true;
         while (g_blockingHandlerCalled) usleep(1000);
         return CELIX_SUCCESS;
     });
