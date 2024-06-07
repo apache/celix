@@ -20,6 +20,7 @@
 #ifndef CELIX_CELIX_EVENT_ADMIN_TEST_SUITE_BASE_CLASS_H
 #define CELIX_CELIX_EVENT_ADMIN_TEST_SUITE_BASE_CLASS_H
 
+#include <functional>
 
 #include "celix_event_admin.h"
 #include "celix_event_handler_service.h"
@@ -137,16 +138,22 @@ public:
         celix_eventAdmin_destroy(ea);
     }
 
-    void TestPublishEvent(const char *handlerTopics, const char *eventFilter, void (*testBody)(celix_event_admin_t *ea),
-                          celix_status_t (*onHandleEvent)(void *handle, const char *topic, const celix_properties_t *props), bool asyncUnordered = false) {
+    void TestPublishEvent(const char *handlerTopics, const char *eventFilter, std::function<void(celix_event_admin_t*)> testBody,
+                          std::function<celix_status_t (void*, const char*, const celix_properties_t*)> onHandleEvent, bool asyncUnordered = false) {
         auto ea = celix_eventAdmin_create(ctx.get());
         EXPECT_TRUE(ea != nullptr);
         auto status = celix_eventAdmin_start(ea);
         EXPECT_EQ(CELIX_SUCCESS, status);
-
+        struct celix_handle_event_callback_data {
+                std::function<celix_status_t (void*, const char*, const celix_properties_t*)> onHandleEvent;
+                void* handle;
+        } data{onHandleEvent, ea};
         celix_event_handler_service_t handler;
-        handler.handle = ea;
-        handler.handleEvent = onHandleEvent;
+        handler.handle = &data;
+        handler.handleEvent = [](void *handle, const char *topic, const celix_properties_t *props) {
+            auto data = static_cast<celix_handle_event_callback_data*>(handle);
+            return data->onHandleEvent(data->handle, topic, props);
+        };
         auto props = celix_properties_create();
         celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_VERSION, CELIX_EVENT_HANDLER_SERVICE_VERSION);
         celix_properties_set(props, CELIX_EVENT_TOPIC, handlerTopics);
