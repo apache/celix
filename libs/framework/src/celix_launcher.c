@@ -151,7 +151,7 @@ int celix_launcher_launchAndWait(int argc, char* argv[], const char* embeddedCon
 
     celix_framework_t* framework = NULL;
     status = celix_launcher_createFramework(celix_steal_ptr(embeddedProps), runtimeProps, &framework);
-    if (status == CELIX_SUCCESS && framework) {
+    if (status == CELIX_SUCCESS) {
         status = celix_launcher_setGlobalFramework(framework);
         if (status != CELIX_SUCCESS) {
             return CELIX_LAUNCHER_ERROR_EXIT_CODE;
@@ -235,7 +235,7 @@ static celix_status_t celix_launcher_createFramework(celix_properties_t* embedde
     sigaction(SIGUSR2, &sigact, NULL);
 
 #ifndef CELIX_NO_CURLINIT
-    // Before doing anything else, let's setup Curl
+    // Before doing anything else, lets setup Curl
     curl_global_init(CURL_GLOBAL_ALL);
 #endif
 

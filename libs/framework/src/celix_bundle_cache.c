@@ -212,7 +212,7 @@ void celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, bundle_archiv
     }
     (void)celix_bundleArchive_removeInvalidDirs(archive);
     celixThreadMutex_unlock(&cache->mutex);
-    bundleArchive_destroy(archive);
+    celix_bundleArchive_destroy(archive);
 }
 
 /**
@@ -242,7 +242,7 @@ static celix_status_t celix_bundleCache_updateIdForLocationLookupMap(celix_bundl
                     fw_logCode(cache->fw->logger, CELIX_LOG_LEVEL_ERROR, status,
                                "Cannot load bundle state properties from %s", bundleStateProperties);
                     celix_framework_logTssErrors(cache->fw->logger, CELIX_LOG_LEVEL_ERROR);
-                    return CELIX_FILE_IO_EXCEPTION;
+                    return status;
             }
             const char* visitLoc = celix_properties_get(props, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, NULL);
             long bndId = celix_properties_getAsLong(props, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, -1);
@@ -309,7 +309,7 @@ celix_bundleCache_createBundleArchivesForSpaceSeparatedList(celix_framework_t* f
                 fw_log(fw->logger, lvl, "Created bundle cache '%s' for bundle archive %s (bndId=%li).",
                        celix_bundleArchive_getCurrentRevisionRoot(archive),
                        celix_bundleArchive_getSymbolicName(archive), celix_bundleArchive_getId(archive));
-                bundleArchive_destroy(archive);
+                celix_bundleArchive_destroy(archive);
             }
             location = strtok_r(NULL, delims, &savePtr);
         }

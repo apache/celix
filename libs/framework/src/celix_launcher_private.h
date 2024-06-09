@@ -37,7 +37,7 @@ void celix_launcher_stopInternal(const int* signal);
  * @brief Create a combined configuration properties set by combining the embedded properties with the runtime
  * properties.
  * @param[in,out] embeddedProps The embedded properties to use and extend with the runtime properties.
- * @param[in] configFile The optional runtime properties file to load and use.
+ * @param[in] runtimeProps The optional runtime properties file to load and use.
  */
 celix_status_t celix_launcher_combineProperties(celix_properties_t* embeddedProps,
                                                 const celix_properties_t* runtimeProps);
