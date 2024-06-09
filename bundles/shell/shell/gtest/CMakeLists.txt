@@ -19,8 +19,10 @@ add_executable(test_shell
         src/ShellTestSuite.cc
 )
 
+add_celix_bundle(celix_shell_empty_resource_test_bundle NO_ACTIVATOR VERSION 0.0.0)
+
 target_link_libraries(test_shell PRIVATE Celix::framework Celix::shell_api GTest::gtest GTest::gtest_main)
-celix_target_bundle_set_definition(test_shell NAME TEST_BUNDLES Celix::shell)
+celix_target_bundle_set_definition(test_shell NAME TEST_BUNDLES Celix::shell celix_shell_empty_resource_test_bundle)
 target_compile_options(test_shell PRIVATE -Wno-deprecated-declarations)
 
 add_test(NAME test_shell COMMAND test_shell)
@@ -31,7 +33,7 @@ if (CELIX_CXX14)
     add_executable(test_cxx_shell src/ShellTestSuite.cc)
 
     target_link_libraries(test_cxx_shell PRIVATE Celix::framework Celix::shell_api GTest::gtest GTest::gtest_main)
-    celix_target_bundle_set_definition(test_cxx_shell NAME TEST_BUNDLES Celix::ShellCxx)
+    celix_target_bundle_set_definition(test_cxx_shell NAME TEST_BUNDLES Celix::ShellCxx celix_shell_empty_resource_test_bundle)
     target_compile_definitions(test_cxx_shell PRIVATE -DCXX_SHELL)
 
     add_test(NAME test_cxx_shell COMMAND test_cxx_shell)

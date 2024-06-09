@@ -20,6 +20,7 @@ if (REMOTE_SERVICE_ADMIN)
     add_subdirectory(remote_services_api)
     add_subdirectory(rsa_spi)
     add_subdirectory(rsa_common)
+    add_subdirectory(rsa_utils)
     add_subdirectory(rsa_dfi_utils)
     add_subdirectory(discovery_common)
     add_subdirectory(discovery_configured)
@@ -127,7 +128,9 @@ if (REMOTE_SERVICE_ADMIN)
                 calculator
                 USE_CONFIG
                 PROPERTIES
-                CELIX_RSA_BIND_ON_ALL_INTERFACES=false
+                CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT=true
+                RSA_PORT=19999
+                CELIX_RSA_INTERFACES_OF_PORT_19999=lo
                 )
 
         add_celix_container(remote-services-zeroconf-client
@@ -147,7 +150,9 @@ if (REMOTE_SERVICE_ADMIN)
                 calculator_shell
                 USE_CONFIG
                 PROPERTIES
-                CELIX_RSA_BIND_ON_ALL_INTERFACES=false
+                CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT=true
+                RSA_PORT=29999
+                CELIX_RSA_INTERFACES_OF_PORT_29999=lo
                 )
     endif()
     

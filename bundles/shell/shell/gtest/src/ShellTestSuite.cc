@@ -21,19 +21,20 @@
 #include <gtest/gtest.h>
 #include <thread>
 
-#include "celix_shell_command.h"
-#include "celix_framework_factory.h"
 #include "celix_bundle_context.h"
-#include "celix_shell.h"
-#include "celix_framework_utils.h"
 #include "celix_constants.h"
+#include "celix_framework_factory.h"
+#include "celix_framework_utils.h"
+#include "celix_shell.h"
+#include "celix_shell_command.h"
+#include "celix_stdlib_cleanup.h"
 
 class ShellTestSuite : public ::testing::Test {
 public:
     ShellTestSuite() : ctx{createFrameworkContext()} {
         auto* fw = celix_bundleContext_getFramework(ctx.get());
         size_t nr = celix_framework_utils_installBundleSet(fw, TEST_BUNDLES, true);
-        EXPECT_EQ(nr, 1); //shell bundle
+        EXPECT_EQ(nr, 2); //shell and  celix_shell_empty_resource_test_bundle bundle
     }
 
     static std::shared_ptr<celix_bundle_context_t> createFrameworkContext() {
@@ -54,12 +55,25 @@ public:
         }};
     }
 
+    long getBundleIdForResourceBundle() const {
+        celix_autoptr(celix_array_list_t) bundles = celix_bundleContext_listBundles(ctx.get());
+        for (auto i = 0 ; i < celix_arrayList_size(bundles); ++i) {
+            auto bndId = celix_arrayList_getLong(bundles, i);
+            celix_autofree char* name = celix_bundleContext_getBundleSymbolicName(ctx.get(), bndId);
+            if (strstr(name, "resource") != nullptr) {
+                return bndId;
+            }
+
+        }
+        return -1;
+    }
+
     std::shared_ptr<celix_bundle_context_t> ctx;
 };
 
 TEST_F(ShellTestSuite, shellBundleInstalledTest) {
     auto *bndIds = celix_bundleContext_listBundles(ctx.get());
-    EXPECT_EQ(1, celix_arrayList_size(bndIds));
+    EXPECT_EQ(2, celix_arrayList_size(bndIds));
     celix_arrayList_destroy(bndIds);
 }
 
@@ -71,14 +85,14 @@ static void callCommand(std::shared_ptr<celix_bundle_context_t>& ctx, const char
         celix_bundle_context_t* context{};
         long tracker{-1};
     };
-    // Note that using celix_bundleContext_useServiceWithOptions to call command quit/stop may result in deadlock.
-    // For more on this, see https://github.com/apache/celix/issues/629
     struct callback_data data{};
     data.cmdLine = cmdLine;
     data.cmdShouldSucceed = cmdShouldSucceed;
     data.context = ctx.get();
-    data.tracker = celix_bundleContext_trackService(ctx.get(), CELIX_SHELL_SERVICE_NAME,
-                                                    static_cast<void*>(&data), [](void * handle, void * svc) {
+    celix_service_tracking_options_t opts{};
+    opts.filter.serviceName = CELIX_SHELL_SERVICE_NAME;
+    opts.callbackHandle = &data;
+    opts.set = [](void * handle, void * svc) {
         if (svc == nullptr) {
             return;
         }
@@ -93,7 +107,8 @@ static void callCommand(std::shared_ptr<celix_bundle_context_t>& ctx, const char
         }
         celix_bundleContext_stopTracker(d->context, d->tracker);
         d->barrier.set_value();
-    });
+    };
+    data.tracker = celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
     data.barrier.get_future().wait();
 }
 
@@ -101,9 +116,10 @@ TEST_F(ShellTestSuite, testAllCommandsAreCallable) {
     callCommand(ctx, "non-existing", false);
     callCommand(ctx, "install a-bundle-loc.zip", true);
     callCommand(ctx, "help", true);
-    callCommand(ctx, "help lb", false); //note need namespace
+    callCommand(ctx, "help lb", true);
     callCommand(ctx, "help celix::lb", true);
     callCommand(ctx, "help non-existing-command", false);
+    callCommand(ctx, "help celix::non-existing-command-with-namespace", false);
     callCommand(ctx, "lb", true);
     callCommand(ctx, "lb -l", true);
     callCommand(ctx, "query", true);
@@ -141,7 +157,8 @@ TEST_F(ShellTestSuite, stopFrameworkTest) {
 
 TEST_F(ShellTestSuite, stopSelfTest) {
     auto* list = celix_bundleContext_listBundles(ctx.get());
-    EXPECT_EQ(1, celix_arrayList_size(list));
+    ASSERT_GE(celix_arrayList_size(list), 1);
+    auto nrOfBundles = celix_arrayList_size(list);
     long shellBundleId = celix_arrayList_getLong(list, 0);
     celix_arrayList_destroy(list);
 
@@ -153,24 +170,33 @@ TEST_F(ShellTestSuite, stopSelfTest) {
     std::this_thread::sleep_for(std::chrono::milliseconds{100});
 
     list = celix_bundleContext_listBundles(ctx.get());
-    EXPECT_EQ(0, celix_arrayList_size(list));
+    EXPECT_EQ(nrOfBundles-1, celix_arrayList_size(list));
     celix_arrayList_destroy(list);
 }
 
 TEST_F(ShellTestSuite, queryTest) {
+    struct data {
+        long resourceBundleId;
+    };
+    data data{};
+    data.resourceBundleId = getBundleIdForResourceBundle();
+
     celix_service_use_options_t opts{};
     opts.filter.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;
     opts.filter.filter = "(command.name=celix::query)";
     opts.waitTimeoutInSeconds = 1.0;
-    opts.use = [](void */*handle*/, void *svc) {
+    opts.callbackHandle = (void*)&data;
+    opts.use = [](void* handle, void *svc) {
+        auto *d = static_cast<struct data*>(handle);
         auto *command = static_cast<celix_shell_command_t*>(svc);
-        EXPECT_TRUE(command != nullptr);
+        ASSERT_TRUE(command != nullptr);
+        ASSERT_TRUE(d != nullptr);
 
         {
             char *buf = nullptr;
             size_t len;
             FILE *sout = open_memstream(&buf, &len);
-            command->executeCommand(command->handle, (char *) "query", sout, sout);
+            command->executeCommand(command->handle, "query", sout, sout);
             fclose(sout);
             char* found = strstr(buf, "Provided services found 1"); //note could be 11, 12, etc
             EXPECT_TRUE(found != nullptr);
@@ -180,7 +206,8 @@ TEST_F(ShellTestSuite, queryTest) {
             char *buf = nullptr;
             size_t len;
             FILE *sout = open_memstream(&buf, &len);
-            command->executeCommand(command->handle, (char *) "query 0", sout, sout); //note query framework bundle -> no results
+            auto cmd = std::string{"query "} + std::to_string(d->resourceBundleId);
+            command->executeCommand(command->handle, cmd.c_str(), sout, sout); //note query test resource bundle -> no results
             fclose(sout);
             char* found = strstr(buf, "No results"); //note could be 11, 12, etc
             EXPECT_TRUE(found != nullptr);

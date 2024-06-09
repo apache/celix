@@ -63,6 +63,7 @@ class TestPackageConan(ConanFile):
         tc.cache_variables["TEST_SHELL_API"] = celix_options.build_shell_api
         tc.cache_variables["TEST_CELIX_DFI"] = celix_options.build_celix_dfi
         tc.cache_variables["TEST_UTILS"] = celix_options.build_utils
+        tc.cache_variables["TEST_EVENT_ADMIN"] = celix_options.build_event_admin
         tc.cache_variables["TEST_COMPONENTS_READY_CHECK"] = celix_options.build_components_ready_check
         # the following is workaround https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":
@@ -92,6 +93,8 @@ class TestPackageConan(ConanFile):
                 if celix_options.build_remote_service_admin:
                     self.run("./use_my_rsa", cwd=os.path.join("deploy", "use_my_rsa"), env="conanrun")
                     self.run("./conan_test_package/use_c_rsa_spi", env="conanrun")
+                    self.run("./conan_test_package/use_rsa_utils", env="conanrun")
+
                 if celix_options.build_rsa_remote_service_admin_dfi and celix_options.build_launcher:
                     self.run("./use_rsa_dfi", cwd=os.path.join("deploy", "use_rsa_dfi"), env="conanrun")
                 if celix_options.build_rsa_remote_service_admin_shm_v2:
@@ -137,6 +140,10 @@ class TestPackageConan(ConanFile):
                     self.run("./conan_test_package/use_celix_dfi", env="conanrun")
                 if celix_options.build_utils:
                     self.run("./conan_test_package/use_utils", env="conanrun")
+                if celix_options.build_event_admin:
+                    self.run("./use_event_admin",
+                             cwd=os.path.join("deploy", "use_event_admin"), env="conanrun")
+                    self.run("./conan_test_package/use_event_admin_api", env="conanrun")
                 if celix_options.build_components_ready_check:
                     self.run("./use_components_ready_check",
                              cwd=os.path.join("deploy", "use_components_ready_check"), env="conanrun")

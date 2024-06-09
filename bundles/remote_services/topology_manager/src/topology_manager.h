@@ -33,7 +33,6 @@
 #include "celix_log_helper.h"
 #include "scope.h"
 
-#define OSGI_RSA_REMOTE_SERVICE_ADMIN "remote_service_admin"
 
 typedef struct topology_manager topology_manager_t;
 typedef struct topology_manager *topology_manager_pt;

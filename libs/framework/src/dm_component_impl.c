@@ -472,8 +472,8 @@ celix_status_t celix_dmComponent_addInterface(celix_dm_component_t* component,
             celix_properties_destroy(properties);
             return CELIX_ILLEGAL_ARGUMENT;
         }
-        celix_status_t rc = celix_properties_setVersionWithoutCopy(
-            properties, CELIX_FRAMEWORK_SERVICE_VERSION, celix_steal_ptr(version));
+        celix_status_t rc =
+            celix_properties_assignVersion(properties, CELIX_FRAMEWORK_SERVICE_VERSION, celix_steal_ptr(version));
         if (rc != CELIX_SUCCESS) {
             celix_bundleContext_log(
                 component->context, CELIX_LOG_LEVEL_ERROR, "Cannot add interface with an invalid serviceVersion");

@@ -34,6 +34,9 @@ CELIX_EI_DECLARE(json_array_append_new, int);
 CELIX_EI_DECLARE(json_integer, json_t*);
 CELIX_EI_DECLARE(json_string, json_t*);
 CELIX_EI_DECLARE(json_real, json_t*);
+CELIX_EI_DECLARE(json_vsprintf,json_t*);
+CELIX_EI_DECLARE(json_sprintf, json_t*);
+CELIX_EI_DECLARE(json_dumpf, int);
 
 #ifdef __cplusplus
 }

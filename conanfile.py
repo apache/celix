@@ -80,6 +80,8 @@ class CelixConan(ConanFile):
         "build_framework": False,
         "build_rcm": False,
         "build_utils": False,
+        "build_event_admin": False,
+        "build_event_admin_examples": False,
         "celix_cxx14": True,
         "celix_cxx17": True,
         "celix_install_deprecated_api": False,
@@ -137,6 +139,7 @@ class CelixConan(ConanFile):
         # the followings are not installed
         del self.info.options.build_cxx_rsa_integration
         del self.info.options.build_examples
+        del self.info.options.build_event_admin_examples
         del self.info.options.enable_cmake_warning_tests
         del self.info.options.enable_testing_on_ci
         del self.info.options.enable_ccache
@@ -205,6 +208,16 @@ class CelixConan(ConanFile):
             options["build_log_helper"] = True
             options["build_celix_dfi"] = True
             options["celix_install_deprecated_api"] = True
+
+        if options["build_event_admin_examples"]:
+            options["build_event_admin"] = True
+            options["build_log_service"] = True
+            options["build_shell_tui"] = True
+            options["build_launcher"] = True
+
+        if options["build_event_admin"]:
+            options["build_framework"] = True
+            options["build_log_helper"] = True
 
         if options["build_remote_shell"]:
             options["build_shell"] = True
@@ -296,7 +309,7 @@ class CelixConan(ConanFile):
             self.options['openssl'].shared = True
         if self.options.build_celix_dfi:
             self.options['libffi'].shared = True
-        if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
+        if self.options.build_utils or self.options.build_celix_dfi or self.options.build_celix_etcdlib:
             self.options['jansson'].shared = True
 
     def requirements(self):
@@ -319,7 +332,7 @@ class CelixConan(ConanFile):
             self.requires("civetweb/1.16")
         if self.options.build_celix_dfi:
             self.requires("libffi/[>=3.2.1 <4.0.0]")
-        if self.options.build_celix_dfi or self.options.build_celix_etcdlib:
+        if self.options.build_utils or self.options.build_celix_dfi or self.options.build_celix_etcdlib:
             self.requires("jansson/[>=2.12 <3.0.0]")
         if self.options.build_rsa_discovery_zeroconf:
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
@@ -327,8 +340,6 @@ class CelixConan(ConanFile):
             self.requires("mdnsresponder/1310.140.1")
         # 'libzip/1.10.1' requires 'zlib/1.2.13' while 'libcurl/7.64.1' requires 'zlib/1.2.12'
         self.requires("zlib/1.2.13", override=True)
-        # the latest civetweb (1.16) is not ready for openssl3
-        self.requires("openssl/1.1.1t", override=True)
         self.validate()
 
     def generate(self):

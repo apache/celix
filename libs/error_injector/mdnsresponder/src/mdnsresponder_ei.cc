@@ -55,4 +55,20 @@ DNSServiceErrorType __wrap_DNSServiceBrowse(DNSServiceRef *__sdRef, DNSServiceFl
     CELIX_EI_IMPL(DNSServiceBrowse);
     return __real_DNSServiceBrowse(__sdRef, __flags, __interfaceIndex, __regtype, __domain, __callBack, __context);
 }
+
+DNSServiceErrorType __real_DNSServiceResolve(DNSServiceRef *sdRef,DNSServiceFlags flags,uint32_t interfaceIndex,const char *name,const char *regtype,const char *domain,DNSServiceResolveReply callBack,void *context);
+CELIX_EI_DEFINE(DNSServiceResolve, DNSServiceErrorType)
+DNSServiceErrorType __wrap_DNSServiceResolve(DNSServiceRef *sdRef,DNSServiceFlags flags,uint32_t interfaceIndex,const char *name,const char *regtype,const char *domain,DNSServiceResolveReply callBack,void *context) {
+    CELIX_EI_IMPL(DNSServiceResolve);
+    return __real_DNSServiceResolve(sdRef, flags, interfaceIndex, name, regtype, domain, callBack, context);
+}
+
+DNSServiceErrorType __real_DNSServiceGetAddrInfo(DNSServiceRef *sdRef,DNSServiceFlags flags,uint32_t interfaceIndex,DNSServiceProtocol protocol,const char *hostname,DNSServiceGetAddrInfoReply callBack,void *context);
+CELIX_EI_DEFINE(DNSServiceGetAddrInfo, DNSServiceErrorType)
+DNSServiceErrorType __wrap_DNSServiceGetAddrInfo(DNSServiceRef *sdRef,DNSServiceFlags flags,uint32_t interfaceIndex,DNSServiceProtocol protocol,const char *hostname,DNSServiceGetAddrInfoReply callBack,void *context) {
+    CELIX_EI_IMPL(DNSServiceGetAddrInfo);
+    return __real_DNSServiceGetAddrInfo(sdRef, flags, interfaceIndex, protocol, hostname, callBack, context);
+}
+
+
 }

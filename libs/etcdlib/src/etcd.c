@@ -637,12 +637,12 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
     size_t realsize = size * nmemb;
     struct MemoryStruct *mem = (struct MemoryStruct *) userp;
 
-    mem->memory = realloc(mem->memory, mem->memorySize + realsize + 1);
-    if (mem->memory == NULL) {
-        /* out of memory! */
+    void* newMem = realloc(mem->memory, mem->memorySize + realsize + 1);
+    if (newMem == NULL) {
         fprintf(stderr, "[ETCDLIB] Error: not enough memory (realloc returned NULL)\n");
         return 0;
     }
+    mem->memory = newMem;
 
     memcpy(&(mem->memory[mem->memorySize]), contents, realsize);
     mem->memorySize += realsize;
@@ -655,12 +655,13 @@ static size_t WriteHeaderCallback(void *contents, size_t size, size_t nmemb, voi
     size_t realsize = size * nmemb;
     struct MemoryStruct *mem = (struct MemoryStruct *) userp;
 
-    mem->header = realloc(mem->header, mem->headerSize + realsize + 1);
-    if (mem->header == NULL) {
+    void* newHeader = realloc(mem->header, mem->headerSize + realsize + 1);
+    if (newHeader == NULL) {
         /* out of memory! */
         fprintf(stderr, "[ETCDLIB] Error: not enough header-memory (realloc returned NULL)\n");
         return 0;
     }
+    mem->header = newHeader;
 
     memcpy(&(mem->header[mem->headerSize]), contents, realsize);
     mem->headerSize += realsize;

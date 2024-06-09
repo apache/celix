@@ -42,7 +42,7 @@ struct remote_interceptors_handler {
     celix_thread_mutex_t lock;
 };
 
-static int referenceCompare(const void *a, const void *b);
+static int referenceCompare(celix_array_list_entry_t a, celix_array_list_entry_t b);
 
 static void remoteInterceptorsHandler_addInterceptor(void *handle, void *svc, const celix_properties_t *props);
 static void remoteInterceptorsHandler_removeInterceptor(void *handle, void *svc, const celix_properties_t *props);
@@ -63,7 +63,7 @@ celix_status_t remoteInterceptorsHandler_create(celix_bundle_context_t *ctx, rem
         if (status == CELIX_SUCCESS) {
             // Create service tracker here, and not in the activator
             celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-            opts.filter.serviceName = REMOTE_INTERCEPTOR_SERVICE_NAME;
+            opts.filter.serviceName = CELIX_RSA_REMOTE_INTERCEPTOR_SERVICE_NAME;
             opts.callbackHandle = *handler;
             opts.addWithProperties = remoteInterceptorsHandler_addInterceptor;
             opts.removeWithProperties = remoteInterceptorsHandler_removeInterceptor;
@@ -104,7 +104,7 @@ void remoteInterceptorsHandler_addInterceptor(void *handle, void *svc, const cel
         entry->interceptor = svc;
         celix_arrayList_add(handler->interceptors, entry);
 
-        celix_arrayList_sort(handler->interceptors, referenceCompare);
+        celix_arrayList_sortEntries(handler->interceptors, referenceCompare);
     }
 
     celixThreadMutex_unlock(&handler->lock);
@@ -197,9 +197,9 @@ void remoteInterceptorHandler_invokePostProxyCall(remote_interceptors_handler_t 
     celixThreadMutex_unlock(&handler->lock);
 }
 
-int referenceCompare(const void *a, const void *b) {
-    const entry_t *aEntry = a;
-    const entry_t *bEntry = b;
+int referenceCompare(celix_array_list_entry_t a, celix_array_list_entry_t b) {
+    const entry_t *aEntry = a.voidPtrVal;
+    const entry_t *bEntry = b.voidPtrVal;
 
     long servIdA = celix_properties_getAsLong(aEntry->properties, CELIX_FRAMEWORK_SERVICE_ID, 0);
     long servIdB = celix_properties_getAsLong(bEntry->properties, CELIX_FRAMEWORK_SERVICE_ID, 0);

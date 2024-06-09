@@ -91,6 +91,10 @@ if (TEST_RSA)
             
     add_executable(use_c_rsa_spi test_c_rsa_spi.c)
     target_link_libraries(use_c_rsa_spi PRIVATE Celix::c_rsa_spi)
+
+
+    add_executable(use_rsa_utils test_rsa_utils.cc)
+    target_link_libraries(use_rsa_utils PRIVATE Celix::rsa_utils Celix::utils)
 endif ()
 
 option(TEST_RSA_DFI "Test the Remote Service Admin Service DFI" OFF)
@@ -285,6 +289,17 @@ option(TEST_UTILS "Test utils" OFF)
 if (TEST_UTILS)
     add_executable(use_utils test_utils.c)
     target_link_libraries(use_utils PRIVATE Celix::utils)
+endif ()
+
+option(TEST_EVENT_ADMIN "Test Event Admin" OFF)
+if (TEST_EVENT_ADMIN)
+    add_celix_container(use_event_admin
+            BUNDLES
+            Celix::event_admin
+            hello
+    )
+    add_executable(use_event_admin_api test_event_admin_api.c)
+    target_link_libraries(use_event_admin_api PRIVATE Celix::event_admin_api)
 endif ()
 
 option(TEST_COMPONENTS_READY_CHECK "Test the components.ready condition checking bundle" OFF)

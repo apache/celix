@@ -23,5 +23,8 @@ target_link_libraries(properties_ei PUBLIC Celix::error_injector Celix::utils)
 target_link_options(properties_ei INTERFACE
         LINKER:--wrap,celix_properties_create
         LINKER:--wrap,celix_properties_copy
+        LINKER:--wrap,celix_properties_set
+        LINKER:--wrap,celix_properties_setLong
+        LINKER:--wrap,celix_properties_setVersion
         )
 add_library(Celix::properties_ei ALIAS properties_ei)

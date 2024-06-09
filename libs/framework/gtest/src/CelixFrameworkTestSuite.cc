@@ -26,7 +26,7 @@
 #include "celix_launcher.h"
 #include "celix_framework_factory.h"
 #include "celix_framework.h"
-#include "framework.h"
+#include "framework_private.h"
 #include "celix_constants.h"
 #include "celix_utils.h"
 
@@ -105,27 +105,27 @@ TEST_F(CelixFrameworkTestSuite, AsyncInstallStartStopUpdateAndUninstallBundleTes
     EXPECT_FALSE(celix_framework_isBundleActive(framework.get(), bndId));
 
     celix_framework_updateBundleAsync(framework.get(), bndId, NULL);
-    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    celix_framework_waitForBundleLifecycleHandlers(framework.get());
     EXPECT_FALSE(celix_framework_isBundleActive(framework.get(), bndId));
 
     celix_framework_startBundleAsync(framework.get(), bndId);
-    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    celix_framework_waitForBundleLifecycleHandlers(framework.get());
     EXPECT_TRUE(celix_framework_isBundleActive(framework.get(), bndId));
 
     celix_framework_updateBundleAsync(framework.get(), bndId, NULL);
-    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    celix_framework_waitForBundleLifecycleHandlers(framework.get());
     EXPECT_TRUE(celix_framework_isBundleActive(framework.get(), bndId));
 
     celix_framework_stopBundleAsync(framework.get(), bndId);
-    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    celix_framework_waitForBundleLifecycleHandlers(framework.get());
     EXPECT_FALSE(celix_framework_isBundleActive(framework.get(), bndId));
 
     celix_framework_updateBundleAsync(framework.get(), bndId, NULL);
-    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    celix_framework_waitForBundleLifecycleHandlers(framework.get());
     EXPECT_FALSE(celix_framework_isBundleActive(framework.get(), bndId));
 
     celix_framework_unloadBundleAsync(framework.get(), bndId);
-    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    celix_framework_waitForBundleLifecycleHandlers(framework.get());
     EXPECT_FALSE(celix_framework_isBundleInstalled(framework.get(), bndId));
 
     // reloaded bundle should reuse the same bundle id
@@ -134,7 +134,7 @@ TEST_F(CelixFrameworkTestSuite, AsyncInstallStartStopUpdateAndUninstallBundleTes
     EXPECT_FALSE(celix_framework_isBundleActive(framework.get(), bndId));
 
     celix_framework_uninstallBundleAsync(framework.get(), bndId);
-    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    celix_framework_waitForBundleLifecycleHandlers(framework.get());
     EXPECT_FALSE(celix_framework_isBundleInstalled(framework.get(), bndId));
 }
 

@@ -36,11 +36,11 @@
 #include "topology_manager.h"
 #include "endpoint_listener.h"
 #include "remote_constants.h"
+#include "remote_service_admin.h"
 #include "listener_hook_service.h"
 #include "celix_log_helper.h"
 #include "scope.h"
 #include "tm_scope.h"
-#include "topology_manager.h"
 
 struct activator {
 	celix_bundle_context_t *context;
@@ -130,7 +130,7 @@ static celix_status_t bundleActivator_createEPLTracker(struct activator *activat
 	status = serviceTrackerCustomizer_create(activator->manager, topologyManager_endpointListenerAdding, topologyManager_endpointListenerAdded, topologyManager_endpointListenerModified,
 			topologyManager_endpointListenerRemoved, &customizer);
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(activator->context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, customizer, tracker);
+		status = serviceTracker_create(activator->context, (char *) CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, customizer, tracker);
 	}
 	return status;
 }
@@ -140,7 +140,7 @@ static celix_status_t bundleActivator_createRSATracker(struct activator *activat
 	service_tracker_customizer_t *customizer = NULL;
 	status = serviceTrackerCustomizer_create(activator->manager, topologyManager_rsaAdding, topologyManager_rsaAdded, topologyManager_rsaModified, topologyManager_rsaRemoved, &customizer);
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(activator->context, OSGI_RSA_REMOTE_SERVICE_ADMIN, customizer, tracker);
+		status = serviceTracker_create(activator->context, CELIX_RSA_REMOTE_SERVICE_ADMIN, customizer, tracker);
 	}
 	return status;
 }
@@ -172,25 +172,25 @@ celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context
 		return CELIX_ILLEGAL_STATE;
 	}
 
-	size_t len = 14 + strlen(CELIX_FRAMEWORK_SERVICE_NAME) + strlen(OSGI_RSA_ENDPOINT_FRAMEWORK_UUID) + strlen(uuid);
+	size_t len = 14 + strlen(CELIX_FRAMEWORK_SERVICE_NAME) + strlen(CELIX_RSA_ENDPOINT_FRAMEWORK_UUID) + strlen(uuid);
 	char *scope = malloc(len);
 	if (!scope) {
 		return CELIX_ENOMEM;
 	}
 
-	snprintf(scope, len, "(&(%s=*)(!(%s=%s)))", CELIX_FRAMEWORK_SERVICE_NAME, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+	snprintf(scope, len, "(&(%s=*)(!(%s=%s)))", CELIX_FRAMEWORK_SERVICE_NAME, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 
 	celix_logHelper_log(activator->celix_logHelper, CELIX_LOG_LEVEL_INFO, "TOPOLOGY_MANAGER: endpoint listener scope is %s", scope);
 
 	celix_properties_t *props = celix_properties_create();
 	// topology manager should ingore itself endpoint listener service
 	celix_properties_set(props, "TOPOLOGY_MANAGER", "true");
-	celix_properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
+	celix_properties_set(props, (char *) CELIX_RSA_ENDPOINT_LISTENER_SCOPE, scope);
 
 	// We can release the scope, as celix_properties_set makes a copy of the key & value...
 	free(scope);
 
-	bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props, &activator->endpointListenerService);
+	bundleContext_registerService(context, (char *) CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, endpointListener, props, &activator->endpointListenerService);
 
 	listener_hook_service_pt hookService = malloc(sizeof(*hookService));
 	hookService->handle = activator->manager;

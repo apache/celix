@@ -22,6 +22,7 @@
 #include "celix_filter.h"
 #include "celix_utils.h"
 #include "celix_err.h"
+#include "celix_version.h"
 
 #include "celix_array_list_ei.h"
 #include "celix_utils_ei.h"
@@ -33,7 +34,10 @@ class FilterErrorInjectionTestSuite : public ::testing::Test {
     FilterErrorInjectionTestSuite() {
         celix_err_resetErrors();
         celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_createStringArray(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_add(nullptr, 0, 0);
+        celix_ei_expect_celix_arrayList_addString(nullptr, 0, 0);
+        celix_ei_expect_celix_arrayList_assignString(nullptr, 0, 0);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_open_memstream(nullptr, 0, nullptr);
         celix_ei_expect_fclose(nullptr, 0, 0);
@@ -64,7 +68,7 @@ TEST_F(FilterErrorInjectionTestSuite, ErrorWithArrayListCreateTest) {
     EXPECT_EQ(nullptr, filter);
 
     //Given an error injection for celix_arrayList_create
-    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_filter_create, 4, nullptr);
+    celix_ei_expect_celix_arrayList_createStringArray((void*)celix_filter_create, 4, nullptr);
     //When creating a filter with a substring
     filterStr = "(key1=*val*)";
     //Then the filter creation should fail, because it cannot create a children list for the substring filter node
@@ -89,15 +93,29 @@ TEST_F(FilterErrorInjectionTestSuite, ErrorWithArrayListAddTest) {
     filter = celix_filter_create(filterStr);
     EXPECT_EQ(nullptr, filter);
 
-    for (int i = 0; i < 3; ++i) {
-        //Given an error injection for celix_arrayList_add
-        celix_ei_expect_celix_arrayList_add((void*)celix_filter_create, 4, CELIX_ENOMEM, i+1);
-        //When creating a filter with a substring
-        filterStr = "(key1=*val*)";
-        //Then the filter creation should fail, because it cannot add a children to the substring filter node
-        filter = celix_filter_create(filterStr);
-        EXPECT_EQ(nullptr, filter);
-    }
+    //Given an error injection for celix_arrayList_addString for the initial "" string entry
+    celix_ei_expect_celix_arrayList_addString((void*)celix_filter_create, 4, CELIX_ENOMEM);
+    //When creating a filter with a substring
+    filterStr = "(key1=*val*)";
+    //Then the filter creation should fail, because it cannot add a children to the substring filter node
+    filter = celix_filter_create(filterStr);
+    EXPECT_EQ(nullptr, filter);
+
+    //Given an error injection for celix_arrayList_assignString for the sub "val" string entry
+    celix_ei_expect_celix_arrayList_assignString((void*)celix_filter_create, 4, CELIX_ENOMEM);
+    //When creating a filter with a substring
+    filterStr = "(key1=*val*)";
+    //Then the filter creation should fail, because it cannot add a children to the substring filter node
+    filter = celix_filter_create(filterStr);
+    EXPECT_EQ(nullptr, filter);
+
+    //Given an error injection for celix_arrayList_addString for the final "" string entry
+    celix_ei_expect_celix_arrayList_addString((void*)celix_filter_create, 4, CELIX_ENOMEM, 2);
+    //When creating a filter with a substring
+    filterStr = "(key1=*val*)";
+    //Then the filter creation should fail, because it cannot add a children to the substring filter node
+    filter = celix_filter_create(filterStr);
+    EXPECT_EQ(nullptr, filter);
 }
 
 TEST_F(FilterErrorInjectionTestSuite, ErrorWithCallocTest) {
@@ -228,5 +246,11 @@ TEST_F(FilterErrorInjectionTestSuite, ErrorFputcTest) {
     filterStr = "(key1=*val*)";
     //Then the filter creation should fail, because it cannot close the (mem)stream.
     filter = celix_filter_create(filterStr);
+    EXPECT_EQ(nullptr, filter);
+}
+
+TEST_F(FilterErrorInjectionTestSuite, ErrorWithVersionConversion) {
+    celix_ei_expect_calloc((void*)celix_version_create, 0, nullptr);
+    celix_autoptr(celix_filter_t) filter = celix_filter_create("(&(versions>=2.0.0)(versions<=2.0.0))");
     EXPECT_EQ(nullptr, filter);
 }

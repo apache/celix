@@ -74,15 +74,20 @@ celix_status_t activator_start(activator_data_t* act, celix_bundle_context_t *ct
 
     act->trackerId = celix_bundleContext_trackServiceTrackers(ctx, CALC_SERVICE_NAME, act, addCalcTracker, removeCalcTracker);
 
-    act->calcTrk1 = celix_bundleContext_trackServices(ctx, CALC_SERVICE_NAME, act, addCalcSvc, removeCalcSvc);
+    celix_service_tracking_options_t opts1 = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+    opts1.filter.serviceName = CALC_SERVICE_NAME;
+    opts1.callbackHandle = act;
+    opts1.add = addCalcSvc;
+    opts1.remove = removeCalcSvc;
+    act->calcTrk1 = celix_bundleContext_trackServicesWithOptions(ctx, &opts1);
 
-    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    opts.filter.serviceName = CALC_SERVICE_NAME;
-    opts.filter.filter = "(&(prop1=val1)(prop2=val2))";
-    opts.callbackHandle = act;
-    opts.add = addCalcSvc;
-    opts.remove = removeCalcSvc;
-    act->calcTrk2 = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+    celix_service_tracking_options_t opts2 = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+    opts2.filter.serviceName = CALC_SERVICE_NAME;
+    opts2.filter.filter = "(&(prop1=val1)(prop2=val2))";
+    opts2.callbackHandle = act;
+    opts2.add = addCalcSvc;
+    opts2.remove = removeCalcSvc;
+    act->calcTrk2 = celix_bundleContext_trackServicesWithOptions(ctx, &opts2);
 
     act->svc.handle = act;
     act->svc.calc = calc;

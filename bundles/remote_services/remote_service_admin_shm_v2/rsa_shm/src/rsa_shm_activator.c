@@ -19,6 +19,8 @@
 #include "rsa_shm_export_registration.h"
 #include "rsa_shm_import_registration.h"
 #include "rsa_shm_impl.h"
+#include "rsa_shm_constants.h"
+#include "remote_constants.h"
 #include "remote_service_admin.h"
 #include "celix_log_helper.h"
 #include "celix_api.h"
@@ -47,7 +49,15 @@ celix_status_t rsaShmActivator_start(rsa_shm_activator_t *activator, celix_bundl
     if (status != CELIX_SUCCESS) {
         return status;
     }
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    if (props == NULL) {
 
+        return CELIX_ENOMEM;
+    }
+    status = celix_properties_set(props, CELIX_RSA_REMOTE_CONFIGS_SUPPORTED, RSA_SHM_CONFIGURATION_TYPE);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
     activator->adminService.admin = (void*)admin;
     activator->adminService.exportService = (void*)rsaShm_exportService;
 
@@ -70,7 +80,7 @@ celix_status_t rsaShmActivator_start(rsa_shm_activator_t *activator, celix_bundl
     activator->adminService.importRegistration_getImportReference = importRegistration_getImportReference;
 
     activator->adminSvcId = celix_bundleContext_registerServiceAsync(context, &activator->adminService,
-            OSGI_RSA_REMOTE_SERVICE_ADMIN, NULL);
+                                                                     CELIX_RSA_REMOTE_SERVICE_ADMIN, celix_steal_ptr(props));
     if (activator->adminSvcId < 0) {
         return CELIX_BUNDLE_EXCEPTION;
     }

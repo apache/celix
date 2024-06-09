@@ -20,11 +20,12 @@
 #ifndef CELIX_CELIX_TYPES_H
 #define CELIX_CELIX_TYPES_H
 
+#include "celix_bundle_context_type.h"
+
 /**
  * Celix types contains the declaration of many of the celix types.
  * These types are declared in a separate header for forward declaration
  */
-
 
 #ifdef ADD_CELIX_DEPRECATED_WARNING
 #define CELIX_DEPRECATED_ATTR __attribute__ ((deprecated))
@@ -40,7 +41,6 @@ extern "C" {
 
 typedef struct celix_framework celix_framework_t;
 typedef struct celix_bundle celix_bundle_t;
-typedef struct celix_bundle_context celix_bundle_context_t;
 typedef struct celix_dependency_manager celix_dependency_manager_t;
 typedef struct celix_dm_component_struct celix_dm_component_t;
 typedef struct celix_dm_service_dependency celix_dm_service_dependency_t;

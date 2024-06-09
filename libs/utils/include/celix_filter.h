@@ -21,6 +21,7 @@
  * @file celix_filter.h
  * @brief Header file for the Celix Filter API.
  *
+ * #Introduction
  * An Apache Celix filter is a based on LDAP filters, for more information about LDAP filters see:
  *  - https://tools.ietf.org/html/rfc4515
  *  - https://tools.ietf.org/html/rfc1960
@@ -54,15 +55,53 @@
  * Apache Celix filters can be used to match a set of Apache Celix properties and such Apache Celix filters should be
  * used together with a set of properties.
  *
- * Internally attribute values will be parsed to a long, double, boolean and Apache Celix version if
- * possible during creation. And these typed attribute values will be used in the to-be-matched property value,
- * if the property value is of the same type.
+ * #Filter matching and property value types
+ * When matching a filter the attribute type of a filter node is used to determine the type of the property value and
+ * this type is used to compare the property value with the filter attribute value.
+ * If the property value is of a type that the filter attribute value can be parsed to, the filter attribute value the
+ * comparison is done with the matching type. If the property value is not of a type that the filter attribute value
+ * can be parsed to, the comparison is done with the string representation of the property value.
  *
+ * Internally attribute values will be parsed to a long, double, boolean, Apache Celix version and array list of
+ * longs, doubles, booleans, Apache Celix versions and string if possible during creation.
+ * And these typed attribute values will be used in the to-be-matched property value.
+ *
+ * Example: The filter "(key>20)" and a property set with a long value 3 for key "key", will not match and the same
+ * filter but with a property set which has a string value "3" for key "key", will match.
+ *
+ * #Filter matching and property value arrays
+ * If a filter matches a property set entry which has an array value (either a long, boolean, double, string or version
+ * array) the filter match will check if the array contains a single entry which matches the filter attribute value using
+ * the aforementioned "Filter matching and property value types" rules.
+ *
+ * Filter matching with array is supported for the following operands: "=" (including substring), ">=", "<=", ">", "<"
+ * and "~=".
+ *
+ * Example: The filter "(key=3)" will match the property set entry with key "key" and a long array list value of
+ *  [1,2,3].
+ *
+ * #Substring filter operand
+ * The substring filter operand is used to match a string value with a filter attribute value. The filter attribute
+ * value can contain a `*` to match any character sequence. The filter attribute value can also contain a `*` at the
+ * start or end of the string to match any character sequence at the start or end of the string.
+ *
+ * A substring filter operand uses the string representation of the property value to match with the filter attribute
+ * or if the property value is an string array the substring filter operand will match if any of the string array values.
+ *
+ * Example: The filter "(key=*Smith)" will match the property set entry with key "key" and a string value "John Smith".
+ *
+ * #Approx filter operand
+ * The approx filter operand is used to check if the filter attribute value is a substring of the property value.
+ * A approx filter operand uses the string representation of the property value to match with the filter attribute or
+ * if the property value is an string array the approx filter operand will match if any of the string array values.
+ *
+ * Example: The filter "(key~=Smith)" will match the property set entry with key "key" and a string value "John Smith".
  */
 
 #ifndef CELIX_FILTER_H_
 #define CELIX_FILTER_H_
 
+#include "celix_filter_type.h"
 #include "celix_array_list.h"
 #include "celix_cleanup.h"
 #include "celix_properties.h"
@@ -97,7 +136,7 @@ typedef struct celix_filter_internal celix_filter_internal_t; // opaque struct f
 /**
  * @brief The Apache Celix filter struct.
  */
-typedef struct celix_filter_struct {
+struct celix_filter_struct {
     celix_filter_operand_t operand; /**< The filter operand. */
     const char* attribute;          /**< The filter attribute; NULL for operands `AND`, `OR` or `NOT`. */
     const char* value;              /**< The filter value; NULL for operands `AND`, `OR` or `NOT`. */
@@ -107,7 +146,7 @@ typedef struct celix_filter_struct {
                                      the value is NULL. */
 
     celix_filter_internal_t* internal; /**< Internal use only. */
-} celix_filter_t;
+};
 
 /**
  * @brief Create a filter based on the provided filter string.

@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef CELIX_CELIX_LONG_HASH_MAP_EI_H
-#define CELIX_CELIX_LONG_HASH_MAP_EI_H
+#ifndef CELIX_CELIX_STRING_HASH_MAP_EI_H
+#define CELIX_CELIX_STRING_HASH_MAP_EI_H
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -41,4 +41,4 @@ CELIX_EI_DECLARE(celix_stringHashMap_putBool, celix_status_t);
 }
 #endif
 
-#endif //CELIX_CELIX_LONG_HASH_MAP_EI_H
+#endif //CELIX_CELIX_STRING_HASH_MAP_EI_H

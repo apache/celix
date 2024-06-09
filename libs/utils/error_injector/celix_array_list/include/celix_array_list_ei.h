@@ -30,23 +30,24 @@ CELIX_EI_DECLARE(celix_arrayList_create, celix_array_list_t*);
 
 CELIX_EI_DECLARE(celix_arrayList_createWithOptions, celix_array_list_t*);
 
+CELIX_EI_DECLARE(celix_arrayList_createStringArray, celix_array_list_t*);
+
+CELIX_EI_DECLARE(celix_arrayList_createLongArray, celix_array_list_t*);
+
+CELIX_EI_DECLARE(celix_arrayList_copy, celix_array_list_t*);
+
 CELIX_EI_DECLARE(celix_arrayList_add, celix_status_t);
 
-CELIX_EI_DECLARE(celix_arrayList_addInt, celix_status_t);
-
 CELIX_EI_DECLARE(celix_arrayList_addLong, celix_status_t);
-
-CELIX_EI_DECLARE(celix_arrayList_addUInt, celix_status_t);
-
-CELIX_EI_DECLARE(celix_arrayList_addULong, celix_status_t);
-
-CELIX_EI_DECLARE(celix_arrayList_addFloat, celix_status_t);
 
 CELIX_EI_DECLARE(celix_arrayList_addDouble, celix_status_t);
 
 CELIX_EI_DECLARE(celix_arrayList_addBool, celix_status_t);
 
-CELIX_EI_DECLARE(celix_arrayList_addSize, celix_status_t);
+CELIX_EI_DECLARE(celix_arrayList_addString, celix_status_t);
+
+CELIX_EI_DECLARE(celix_arrayList_assignString, celix_status_t);
+
 
 #ifdef __cplusplus
 }

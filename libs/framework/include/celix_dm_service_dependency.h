@@ -25,6 +25,7 @@
 #include "celix_threads.h"
 #include "celix_dm_info.h"
 #include "celix_framework_export.h"
+#include "celix_cleanup.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -80,6 +81,8 @@ CELIX_FRAMEWORK_EXPORT celix_dm_service_dependency_t* celix_dmServiceDependency_
  * component is disabled).
  */
 CELIX_FRAMEWORK_EXPORT void celix_dmServiceDependency_destroy(celix_dm_service_dependency_t *dep);
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_dm_service_dependency_t, celix_dmServiceDependency_destroy);
 
 /**
  * Specify if the service dependency is required. default is false

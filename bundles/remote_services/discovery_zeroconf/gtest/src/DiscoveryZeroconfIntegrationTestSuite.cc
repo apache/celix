@@ -44,6 +44,6 @@ public:
 };
 
 TEST_F(DiscoveryZeroconfIntegrationTestSuite, FindEndpointListener) {
-    auto found = celix_bundleContext_findService(ctx.get(), OSGI_ENDPOINT_LISTENER_SERVICE);
+    auto found = celix_bundleContext_findService(ctx.get(), CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME);
     EXPECT_TRUE(found);
 }

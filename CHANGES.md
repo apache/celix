@@ -58,12 +58,25 @@ limitations under the License.
 - linked_list.h is removed and no longer supported. Use celix_array_list.h instead.
 - ip_utils.h is removed and no longer supported.  
 - array_list.h is removed and no longer supported. Use celix_array_list.h instead.
+- the celix_arrayList_add function no longer accepts a NULL value.
 - version.h and version_range.h are removed and no longer supported. Use celix_version.h and celix_version_range.h 
   instead.
+- The signature of `celix_bundleContext_trackServices` has changed. The signature is now simpler to better support
+  the use-case of using a service tracker with the `celix_bundleContext_useTrackedService*` functions.
+  The `celix_bundleContext_trackServicesWithOptions` is still available for more advanced use-cases.
+- Function `celix_bundle_destroyServiceTrackerList` is removed. The returned array list from 
+  `celix_bundle_listServiceTrackers` is now configured to destroy the service trackers info entries.
+- It is no longer possible to use the `celix_bundleContext_useService*` functions or `celix::BundleContxt::useService*` 
+  methods on the Celix event thread. The calls will now immediately return and log an error if called on the
+  Celix event thread.
+- Apache Celix filter now use the underlying properties value types for matching. This means that it is more important
+  to add service properties with the correct type.
+- Celix C++ Exception are now defined in the `celix/exceptions.h` header file. The `celix/Exception.h`
+  and `celix/IOException.h` are removed.
 
 ## New Features
 
-- Basic type support for value in celix Properties.
+- Type support for value in celix Properties, including support for arrays.
 
 # Noteworthy Changes for 2.4.0 (2023-09-27)
 

@@ -30,6 +30,8 @@ CELIX_EI_DECLARE(DNSServiceProcessResult, DNSServiceErrorType);
 CELIX_EI_DECLARE(DNSServiceRegister, DNSServiceErrorType);
 CELIX_EI_DECLARE(TXTRecordSetValue, DNSServiceErrorType);
 CELIX_EI_DECLARE(DNSServiceBrowse, DNSServiceErrorType);
+CELIX_EI_DECLARE(DNSServiceResolve, DNSServiceErrorType);
+CELIX_EI_DECLARE(DNSServiceGetAddrInfo, DNSServiceErrorType);
 
 #ifdef __cplusplus
 }

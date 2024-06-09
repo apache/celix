@@ -27,6 +27,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             SYMBOLIC_NAME "apache_celix_remote_service_admin_dfi"
             NAME "Apache Celix Remote Service Admin Dynamic Function Interface (DFI)"
             GROUP "Celix/RSA"
+            FILENAME celix_rsa_dfi
             SOURCES
             src/remote_service_admin_dfi.c
             src/remote_service_admin_activator.c
@@ -34,6 +35,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             src/import_registration_dfi.c
             )
     target_link_libraries(rsa_dfi PRIVATE
+            Celix::rsa_utils
             Celix::rsa_dfi_utils
             Celix::dfi
             Celix::log_helper

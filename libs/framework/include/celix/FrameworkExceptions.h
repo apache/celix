@@ -18,7 +18,7 @@
  */
 #pragma once
 
-#include "celix/Exception.h"
+#include "celix/Exceptions.h"
 
 namespace celix {
 

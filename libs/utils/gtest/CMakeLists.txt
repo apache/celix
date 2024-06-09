@@ -29,12 +29,15 @@ add_executable(test_utils
         src/CelixUtilsTestSuite.cc
         src/ConvertUtilsTestSuite.cc
         src/PropertiesTestSuite.cc
+        src/PropertiesEncodingTestSuite.cc
         src/VersionTestSuite.cc
         src/ErrTestSuite.cc
         src/ThreadsTestSuite.cc
         src/CelixErrnoTestSuite.cc
         src/CelixUtilsAutoCleanupTestSuite.cc
+        src/ArrayListTestSuite.cc
         src/DeprecatedHashmapTestSuite.cc
+        src/CxxExceptionsTestSuite.cc
 )
 
 target_link_libraries(test_utils PRIVATE utils_cut Celix::utils GTest::gtest GTest::gtest_main libzip::zip)
@@ -45,7 +48,6 @@ configure_file(resources/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-te
 
 if (CELIX_CXX17)
     add_library(test_utils_cxx17tests OBJECT
-            src/ArrayListTestSuite.cc #Uses constexpr
             src/HashMapTestSuite.cc   #Uses constexpr
     )
     target_link_libraries(test_utils_cxx17tests PRIVATE utils_cut Celix::utils GTest::gtest)
@@ -92,26 +94,53 @@ setup_target_for_coverage(test_utils SCAN_DIR ..)
 
 if (EI_TESTS)
     #Note testing celix err separated, otherwise celix err tss can already be initialized by another util function
-    add_executable(test_celix_err_with_ei
+    add_executable(test_utils_celix_err_with_ei
             src/ErrErrorInjectionTestSuite.cc
     )
-    target_link_libraries(test_celix_err_with_ei PRIVATE
+    target_link_libraries(test_utils_celix_err_with_ei PRIVATE
             utils_cut
             Celix::malloc_ei
             Celix::threads_ei
             GTest::gtest GTest::gtest_main
     )
-    add_test(NAME test_celix_err_with_ei COMMAND test_celix_err_with_ei)
-    setup_target_for_coverage(test_celix_err_with_ei SCAN_DIR ..)
+    add_test(NAME test_utils_celix_err_with_ei COMMAND test_utils_celix_err_with_ei)
+    setup_target_for_coverage(test_utils_celix_err_with_ei SCAN_DIR ..)
+
+    #Note testing version seperated, otherwise version calls are already wrapped
+    add_executable(test_utils_version_with_ei
+            src/VersionErrorInjectionTestSuite.cc
+    )
+    target_link_libraries(test_utils_version_with_ei PRIVATE
+            utils_cut
+            Celix::malloc_ei
+            Celix::asprintf_ei
+            Celix::utils_ei
+            GTest::gtest GTest::gtest_main
+    )
+    add_test(NAME test_utils_version_with_ei COMMAND test_utils_version_with_ei)
+    setup_target_for_coverage(test_utils_version_with_ei SCAN_DIR ..)
+
+    #Note testing array list seperated, otherwise array list calls are already wrapped
+    add_executable(test_utils_array_list_with_ei
+            src/ArrayListErrorInjectionTestSuite.cc
+    )
+    target_link_libraries(test_utils_array_list_with_ei PRIVATE
+            utils_cut
+            Celix::malloc_ei
+            Celix::utils_ei
+            Celix::version_ei
+            GTest::gtest GTest::gtest_main
+    )
+    add_test(NAME test_utils_array_list_with_ei COMMAND test_utils_array_list_with_ei)
+    setup_target_for_coverage(test_utils_array_list_with_ei SCAN_DIR ..)
 
     add_executable(test_utils_with_ei
             src/FileUtilsErrorInjectionTestSuite.cc
             src/ConvertUtilsErrorInjectionTestSuite.cc
-            src/ArrayListErrorInjectionTestSuite.cc
             src/PropertiesErrorInjectionTestSuite.cc
-            src/VersionErrorInjectionTestSuite.cc
             src/HashMapErrorInjectionTestSuite.cc
             src/FilterErrorInjectionTestSuite.cc
+            src/PropertiesEncodingErrorInjectionTestSuite.cc
     )
     target_link_libraries(test_utils_with_ei PRIVATE
             Celix::zip_ei
@@ -128,6 +157,7 @@ if (EI_TESTS)
             Celix::long_hash_map_ei
             Celix::version_ei
             Celix::array_list_ei
+            Celix::jansson_ei
             GTest::gtest GTest::gtest_main
     )
     target_include_directories(test_utils_with_ei PRIVATE ../src) #for version_private (needs refactoring of test)
