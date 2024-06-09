@@ -15,22 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-FROM docker.io/library/ubuntu:22.04@sha256:b492494d8e0113c4ad3fe4528a4b5ff89faa5331f7d52c5c138196f69ce176a6
+FROM docker.io/library/ubuntu:22.04@sha256:b492494d8e0113c4ad3fe4528a4b5ff89faa5331f7d52c5c138196f69ce176a6 as build
 
 # Install dependencies
 RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-        # Development dependencies \
-        dos2unix \
-        git \
-        locales-all \
-        rsync \
-        tar \
-        ssh \
-        tzdata \
-        sudo \
-        vim \
-        # Build dependencies \
         build-essential \
         ccache \
         cmake \
@@ -41,10 +30,27 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
         g++ \
         gdb \
         make \
+        ninja-build \
         lcov \
         python3 \
-        python3-pip \
-        # Celix dependencies \
+        python3-pip && \
+    apt-get clean
+
+# Build image using conan & cmake
+FROM build as conan-build
+
+# Install conan
+RUN pip3 install conan && pip3 cache purge
+
+# Setup conan profile
+RUN conan profile detect
+
+# Build image using apt dependencies
+FROM build as apt-build
+
+# Install celix dependencies
+RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
         civetweb \
         libavahi-compat-libdnssd-dev \
         libcivetweb-dev \
@@ -59,10 +65,27 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
         uuid-dev && \
     apt-get clean
 
-# Install conan
-RUN pip3 install conan && pip3 cache purge
+FROM conan-build as develop
+
+#Install development dependencies
+RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+        # Development dependencies \
+        dos2unix \
+        git \
+        locales-all \
+        rsync \
+        tar \
+        ssh \
+        tzdata \
+        sudo \
+        vim && \
+    apt-get clean
 
 # Add user celixdev with sudo rights and a "celixdev" password
 RUN useradd -m -s /bin/bash -G sudo celixdev
 RUN echo "celixdev:celixdev" | chpasswd
 USER celixdev
+
+# Setup conan profile for user celixdev
+RUN conan profile detect
