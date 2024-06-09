@@ -76,6 +76,15 @@ __wrap_celix_properties_save(const celix_properties_t* properties, const char* f
 }
 
 celix_status_t
+__real_celix_properties_saveToStream(const celix_properties_t* properties, FILE* stream, int encodeFlags);
+CELIX_EI_DEFINE(celix_properties_saveToStream, celix_status_t)
+celix_status_t
+__wrap_celix_properties_saveToStream(const celix_properties_t* properties, FILE* stream, int encodeFlags) {
+    CELIX_EI_IMPL(celix_properties_saveToStream);
+    return __real_celix_properties_saveToStream(properties, stream, encodeFlags);
+}
+
+celix_status_t
 __real_celix_properties_load(const char* filename,
                                     int decodeFlags,
                                     celix_properties_t** out);

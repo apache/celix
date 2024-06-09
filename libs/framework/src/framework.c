@@ -574,11 +574,9 @@ static bool framework_autoStartConfiguredBundlesForList(celix_framework_t* fw,
             }
         } else {
             fw_log(fw->logger,
-                   CELIX_LOG_LEVEL_TRACE,
-                   "Cannot start bundle %s (bnd id = %li), because it is already started\n",
-                   bnd->symbolicName,
+                   CELIX_LOG_LEVEL_WARNING,
+                   "Cannot start bundle %s (bnd id = %li) again, already started\n",                   bnd->symbolicName,
                    bndId);
-            allStarted = false;
         }
     }
     return allStarted;
