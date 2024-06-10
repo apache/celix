@@ -376,8 +376,8 @@ static CELIX_UNUSED inline celix_bundle_entry_use_guard_t celix_bundleEntryUseGu
 static CELIX_UNUSED inline void celix_bundleEntryUseGuard_deinit(celix_bundle_entry_use_guard_t* guard) {
     if (guard->entry) {
         celix_bundleEntry_decreaseUseCount(guard->entry);
+        guard->entry = NULL;
     }
-    guard->entry = NULL;
 }
 
 CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_bundle_entry_use_guard_t, celix_bundleEntryUseGuard_deinit)

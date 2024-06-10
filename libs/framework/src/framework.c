@@ -685,10 +685,13 @@ celix_framework_installBundleInternalImpl(celix_framework_t* framework, const ch
     bundle_archive_t* archive = NULL;
     celix_bundle_t* bundle = NULL;
     celix_status_t status = celix_bundleCache_createArchive(framework->cache, id, bndLoc, &archive);
-    status = CELIX_DO_IF(status, celix_bundle_createFromArchive(framework, archive, &bundle));
     if (status != CELIX_SUCCESS) {
-        celix_bundleArchive_destroy(archive);
-        fw_logCode(framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot install bundle without archive");
+        return status;
+    }
+    status = celix_bundle_createFromArchive(framework, archive, &bundle);
+    if (status != CELIX_SUCCESS) {
+        celix_bundleArchive_invalidate(archive);
+        celix_bundleCache_destroyArchive(framework->cache, archive);
         return status;
     }
 
@@ -783,19 +786,19 @@ celix_status_t fw_populateDependentGraph(framework_pt framework, bundle_pt expor
 }
 
 celix_status_t fw_registerService(framework_pt framework, service_registration_pt *registration, long bndId, const char* serviceName, const void* svcObj, celix_properties_t *properties) {
-	celix_status_t status = CELIX_SUCCESS;
-	char *error = NULL;
-	if (serviceName == NULL || svcObj == NULL) {
-	    status = CELIX_ILLEGAL_ARGUMENT;
-	    error = "ServiceName and SvcObj cannot be null";
-	}
+    celix_status_t status = CELIX_SUCCESS;
+    char *error = NULL;
+    if (serviceName == NULL || svcObj == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+        error = "ServiceName and SvcObj cannot be null";
+    }
 
-        celix_bundle_entry_t*entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
-                                                                                                          bndId);
+    celix_bundle_entry_t*entry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework,
+                                                                                               bndId);
     status = CELIX_DO_IF(status, serviceRegistry_registerService(framework->registry, entry->bnd, serviceName, svcObj, properties, registration));
     celix_bundleEntry_decreaseUseCount(entry);
     framework_logIfError(framework->logger, status, error, "Cannot register service: %s", serviceName);
-	return status;
+    return status;
 }
 
 celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt *registration, long bndId, const char* serviceName, service_factory_pt factory,  celix_properties_t* properties) {
@@ -1911,9 +1914,8 @@ static void celix_framework_waitForBundleEvents(celix_framework_t *fw, long bndI
 
 static long celix_framework_installAndStartBundleInternal(celix_framework_t *fw, const char *bundleLoc, bool autoStart, bool forcedAsync) {
     long bundleId = -1;
-    celix_status_t status = CELIX_SUCCESS;
-
-    if (celix_framework_installBundleInternal(fw, bundleLoc, &bundleId) == CELIX_SUCCESS) {
+    celix_status_t status = celix_framework_installBundleInternal(fw, bundleLoc, &bundleId) ;
+    if (status == CELIX_SUCCESS) {
         if (autoStart) {
             celix_bundle_entry_t* bndEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw,
                                                                                                                      bundleId);
@@ -2375,15 +2377,10 @@ celix_status_t celix_framework_updateBundleEntry(celix_framework_t* framework,
     if (updatedBundleUrl == NULL) {
         updatedBundleUrl = location;
     } else if (strcmp(location, updatedBundleUrl) != 0) {
-        long existingBndId;
-        status = celix_bundleCache_findBundleIdForLocation(framework->cache, updatedBundleUrl, &existingBndId);
-        if (status != CELIX_SUCCESS) {
-            fw_log(framework->logger,
-                   CELIX_LOG_LEVEL_ERROR,
-                   "Could not read bundle cache to check if bundle location %s exists in cache. Update failed.",
-                   updatedBundleUrl);
-            return status;
-        } else if (existingBndId != -1 && existingBndId != bundleId) {
+        long existingBndId = -1L;
+        // celix_bundleCache_findBundleIdForLocation can never fail since there is at lease bndEntry is installed
+        (void)celix_bundleCache_findBundleIdForLocation(framework->cache, updatedBundleUrl, &existingBndId);
+        if (existingBndId != -1 && existingBndId != bundleId) {
             fw_log(framework->logger,
                    CELIX_LOG_LEVEL_ERROR,
                    "Specified bundle location %s exists in cache with a different id. Update failed.",
@@ -2417,14 +2414,14 @@ celix_status_t celix_framework_updateBundleEntry(celix_framework_t* framework,
 
     celix_bundle_entry_t* entry =
         celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(framework, bundleId);
+    celix_auto(celix_bundle_entry_use_guard_t) entryGuard = celix_bundleEntryUseGuard_init(entry);
     celixMutexLockGuard_deinit(&lck);
     status = celix_framework_startBundleEntry(framework, entry);
-    celix_bundleEntry_decreaseUseCount(entry);
     if (status != CELIX_SUCCESS) {
         fw_log(framework->logger,
                CELIX_LOG_LEVEL_ERROR,
                "Failed to start updated bundle %s",
-               celix_bundle_getSymbolicName(bndEntry->bnd));
+               celix_bundle_getSymbolicName(entry->bnd));
         return CELIX_BUNDLE_EXCEPTION;
     }
 
