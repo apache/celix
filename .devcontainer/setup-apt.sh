@@ -23,6 +23,7 @@ LC_BUILD_TYPE=$(echo ${BUILD_TYPE} | tr '[:upper:]' '[:lower:]')
 mkdir -p cmake-build-${LC_BUILD_TYPE}
 
 cmake -S . \
+      -G Ninja \
       -B cmake-build-${LC_BUILD_TYPE} \
       -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
       -DCMAKE_INSTALL_PREFIX=/tmp/celix-install \
@@ -31,3 +32,5 @@ cmake -S . \
       -DRSA_JSON_RPC=ON \
       -DRSA_SHM=ON \
       -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON
+
+cmake --build cmake-build-${LC_BUILD_TYPE} --parallel

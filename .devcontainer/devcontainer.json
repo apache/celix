@@ -2,7 +2,7 @@
     "name": "Apache Celix Dev Container",
     "build": {
         "dockerfile": "Containerfile",
-        "target": "develop"
+        "target": "conan-develop"
     },
      "runArgs" : [
         "--userns=keep-id"
