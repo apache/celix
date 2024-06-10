@@ -28,7 +28,6 @@
 extern "C" {
 #endif
 
-
 /**
  * @brief Launch a celix framework, wait (block) until the framework is stopped and destroy the framework when stopped.
  *
@@ -36,8 +35,10 @@ extern "C" {
  * For SIGINT and SIGTERM the framework will be stopped.
  * SIGUSR1 and SIGUSR2 will be ignored.
  *
- * Note that the Celix launcher uses a global variable to store the framework instance and as such only one framework
- * can be launched at a time using this function.
+ * The Celix launcher can only controls a single framework instance. If multiple frameworks are needed,
+ * `celix_frameworkFactory_createFramework` or `celix::createFramework` should be used. If the celix launcher is called
+ * while a framework is already running or being launched, the launcher will print an error message to stderr and
+ * return 1.
  *
  * @param argc argc as provided in a main function.
  * @param argv argv as provided in a main function.
@@ -45,7 +46,7 @@ extern "C" {
  * @return 0 if successful and return 1 if the framework could not be launched. Reason for not launching the framework
  * will be logged.
  */
-CELIX_FRAMEWORK_EXPORT int celix_launcher_launchAndWait(int argc, char *argv[], const char* embeddedConfig);
+CELIX_FRAMEWORK_EXPORT int celix_launcher_launchAndWait(int argc, char* argv[], const char* embeddedConfig);
 
 /**
  * @brief Trigger the stop of the Celix framework.
