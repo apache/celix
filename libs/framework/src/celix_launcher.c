@@ -86,7 +86,7 @@ static celix_status_t celix_launcher_createFramework(celix_properties_t* embedde
                                           celix_framework_t** frameworkOut);
 
 /**
- * @brief Stop the global framework instance (if set).
+ * @brief Parse launcher options from the given command line arguments.
  */
 static celix_status_t celix_launcher_parseOptions(int argc, char* argv[], celix_launcher_options_t* opts);
 
@@ -125,13 +125,13 @@ static void celix_launcher_setGlobalFramework(celix_framework_t* fw);
 int celix_launcher_launchAndWait(int argc, char* argv[], const char* embeddedConfig) {
     celix_autoptr(celix_properties_t) embeddedProps = NULL;
     if (embeddedConfig) {
-        celix_status_t status = celix_properties_loadFromString(embeddedConfig, 0, &embeddedProps);
-        if (status != CELIX_SUCCESS) {
-            celix_err_printErrors(stderr, "Error creating embedded properties: ", NULL);
-            return CELIX_LAUNCHER_ERROR_EXIT_CODE;
-        }
+        (void)celix_properties_loadFromString(embeddedConfig, 0, &embeddedProps);
     } else {
         embeddedProps = celix_properties_create();
+    }
+    if (embeddedProps == NULL) {
+        celix_err_printErrors(stderr, "Error creating embedded properties: ", NULL);
+        return CELIX_LAUNCHER_ERROR_EXIT_CODE;
     }
 
     celix_launcher_options_t options;
@@ -253,7 +253,7 @@ static void celix_launcher_noopSignalHandler(int signal __attribute__((unused)))
 }
 
 static void celix_launcher_printUsage(char* progName) {
-    printf("Usage:\n  %s [-h|-p] [path/to/runtime/config.properties]\n", basename(progName));
+    printf("Usage:\n  %s [-h|-p|-c] [path/to/runtime/config.properties]\n", basename(progName));
     printf("Options:\n");
     printf("\t-h | --help: Show this message.\n");
     printf("\t-p | --props: Show the embedded and runtime properties for this Celix container and exit.\n");
@@ -323,10 +323,9 @@ static celix_status_t celix_launcher_createBundleCache(celix_properties_t* embed
     if (status != CELIX_SUCCESS) {
         celix_bundle_context_t* ctx = celix_framework_getFrameworkContext(fw);
         celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR, "Failed to create bundle cache");
-        return status;
     }
     celix_frameworkFactory_destroyFramework(fw);
-    return CELIX_SUCCESS;
+    return status;
 }
 
 celix_status_t celix_launcher_combineProperties(celix_properties_t* embeddedProps,
