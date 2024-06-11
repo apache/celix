@@ -2,11 +2,11 @@
     "name": "Apache Celix Dev Container",
     "build": {
         "dockerfile": "Containerfile",
-        "target": "conan-develop"
+        "target": "conan-dev"
     },
      "runArgs" : [
         "--userns=keep-id"
     ],
-    "onCreateCommand": "sh .devcontainer/setup-conan.sh",
-    "postCreateCommand": "sh .devcontainer/build-conan.sh"
+    "onCreateCommand": "sh .devcontainer/setup-project-with-conan.sh",
+    "postCreateCommand": "sh .devcontainer/build-project-with-conan.sh"
 }

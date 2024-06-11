@@ -74,18 +74,43 @@ RUN DEBIAN_FRONTEND="noninteractive" sudo apt-get update && \
     sudo apt-get clean
 
 
-ARG DEVELOP_PACKAGES="dos2unix git locales-all rsync tar ssh tzdata sudo vim"
 
-FROM conan-build as conan-develop
+#TODO deps needed for clion devcontainer
+ARG DEVELOP_PACKAGES="$DEVELOP_PACKAGES curl unzip ps libxext libxrender libxtst libxi freetype procps gcompat"
+
+ARG SSHD_INSTALL="sudo ( \
+                      echo 'Port 2233'; \
+                      echo 'LogLevel INFO'; \
+                      echo 'PermitRootLogin yes'; \
+                      echo 'PasswordAuthentication yes'; \
+                      echo 'Subsystem sftp /usr/lib/openssh/sftp-server'; \
+                    ) > /etc/ssh/sshd_config_celix \
+                    && sudo mkdir /run/sshd"
+
+FROM conan-build as conan-dev
 
 #Install development dependencies
-RUN DEBIAN_FRONTEND="noninteractive" sudo apt-get update && \
-    DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends $DEVELOP_PACKAGES && \
+RUN sudo DEBIAN_FRONTEND="noninteractive" apt-get update && \
+    sudo DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+    gnupg2 dos2unix git locales-all rsync tar ssh tzdata sudo vim openssh-server && \
     sudo apt-get clean
 
-FROM apt-build as apt-develop
+ #Setup sshd
+ # RUN sudo mkdir /etc/ssh && \
+ #     sudo touch /etc/ssh/sshd_config_celix && \
+ #     sudo echo "Port 2233\n \
+ #          LogLevel INFO\n \
+ #          PermitRootLogin yes\n \
+ #          PasswordAuthentication yes\n \
+ #          Subsystem sftp /usr/lib/openssh/sftp-server" > /etc/ssh/sshd_config_celix && \
+ #     sudo mkdir /run/sshd
+
+RUN sudo mkdir /run/sshd
+
+FROM apt-build as apt-dev
 
 #Install development dependencies
-RUN DEBIAN_FRONTEND="noninteractive" sudo apt-get update && \
-    DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends $DEVELOP_PACKAGES && \
-    sudo apt-get clean
+RUN ${APT_INSTALL}
+
+#Setup sshd
+RUN ${SSHD_INSTALL}
