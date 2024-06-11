@@ -254,11 +254,11 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, LoadErrorTest) {
     const char* json = R"({"key":"value"})";
 
     //When an error injected is prepared for fmemopen() from loadFromString2
-    celix_ei_expect_fmemopen((void*)celix_properties_loadFromString2, 0, nullptr);
+    celix_ei_expect_fmemopen((void*)celix_properties_loadFromString, 0, nullptr);
 
     //When I call celix_properties_loadFromString
     celix_properties_t* props;
-    auto status = celix_properties_loadFromString2(json, 0, &props);
+    auto status = celix_properties_loadFromString(json, 0, &props);
 
     //Then I expect an error
     EXPECT_EQ(ENOMEM, status);
@@ -273,20 +273,20 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, DecodeErrorTest) {
     const char* json = R"({"key":"value", "object": {"key":"value"}})";
 
     //When an error injected is prepared for celix_properties_create()->malloc() from celix_properties_loadFromString2
-    celix_ei_expect_malloc((void*)celix_properties_loadFromString2, 3, nullptr);
+    celix_ei_expect_malloc((void*)celix_properties_loadFromString, 3, nullptr);
 
     //When I call celix_properties_loadFromString
     celix_properties_t* props;
-    auto status = celix_properties_loadFromString2(json, 0, &props);
+    auto status = celix_properties_loadFromString(json, 0, &props);
 
     //Then I expect an error
     EXPECT_EQ(ENOMEM, status);
 
     //When an error injected is prepared for celix_utils_writeOrCreateString() from celix_properties_loadFromString2
-    celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_properties_loadFromString2, 3, nullptr);
+    celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_properties_loadFromString, 3, nullptr);
 
     //When I call celix_properties_loadFromString
-    status = celix_properties_loadFromString2(json, 0, &props);
+    status = celix_properties_loadFromString(json, 0, &props);
 
     //Then I expect an error
     EXPECT_EQ(ENOMEM, status);
@@ -301,20 +301,20 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, DecodeArrayErrorTest) {
     const char* json = R"({"key":["value1", "value2"]})";
 
     // When an error injected is prepared for celix_arrayList_createWithOptions() from celix_properties_loadFromString2
-    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_properties_loadFromString2, 4, nullptr);
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_properties_loadFromString, 4, nullptr);
 
     //When I call celix_properties_loadFromString
     celix_properties_t* props;
-    auto status = celix_properties_loadFromString2(json, 0, &props);
+    auto status = celix_properties_loadFromString(json, 0, &props);
 
     //Then I expect an error
     EXPECT_EQ(ENOMEM, status);
 
     // When an error injected is prepared for celix_arrayList_addString() from celix_properties_loadFromString2
-    celix_ei_expect_celix_arrayList_addString((void*)celix_properties_loadFromString2, 4, ENOMEM);
+    celix_ei_expect_celix_arrayList_addString((void*)celix_properties_loadFromString, 4, ENOMEM);
 
     //When I call celix_properties_loadFromString
-    status = celix_properties_loadFromString2(json, 0, &props);
+    status = celix_properties_loadFromString(json, 0, &props);
 
     //Then I expect an error
     EXPECT_EQ(ENOMEM, status);
@@ -330,11 +330,11 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, DecodeVersionErrorTest) {
     const char* json = R"({"key":"version<1.2.3.qualifier>"})";
 
     // When an error injected is prepared for celix_utils_writeOrCreateString() from celix_properties_loadFromString2
-    celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_properties_loadFromString2, 4, nullptr);
+    celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_properties_loadFromString, 4, nullptr);
 
     // And I call celix_properties_loadFromString
     celix_properties_t* props;
-    auto status = celix_properties_loadFromString2(json, 0, &props);
+    auto status = celix_properties_loadFromString(json, 0, &props);
 
     // Then I expect an error
     EXPECT_EQ(ENOMEM, status);

@@ -241,7 +241,7 @@ TEST_F(PropertiesSerializationTestSuite, SaveEmptyKeyTest) {
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     celix_autoptr(celix_properties_t) prop2 = nullptr;
-    status = celix_properties_loadFromString2(output1, 0, &prop2);
+    status = celix_properties_loadFromString(output1, 0, &prop2);
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     ASSERT_TRUE(celix_properties_equals(props, prop2));
@@ -524,7 +524,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadEmptyPropertiesTest) {
 
     //When loading the properties from the stream
     celix_autoptr(celix_properties_t) props = nullptr;
-    auto status = celix_properties_loadFromString2(json, 0, &props);
+    auto status = celix_properties_loadFromString(json, 0, &props);
     ASSERT_EQ(CELIX_SUCCESS, status);
 
     //Then the properties object is empty
@@ -681,7 +681,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithEmptyArrayTest) {
 
     //When loading the properties from string
     celix_autoptr(celix_properties_t) props = nullptr;
-    auto status = celix_properties_loadFromString2(inputJSON, 0, &props);
+    auto status = celix_properties_loadFromString(inputJSON, 0, &props);
 
     //Then loading succeeds
     ASSERT_EQ(CELIX_SUCCESS, status);
@@ -691,7 +691,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithEmptyArrayTest) {
 
     //When loading the properties from string with a strict flag
     celix_properties_t* props2;
-    status = celix_properties_loadFromString2(inputJSON, CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS, &props2);
+    status = celix_properties_loadFromString(inputJSON, CELIX_PROPERTIES_DECODE_ERROR_ON_EMPTY_ARRAYS, &props2);
 
     //Then loading fails, because the empty array generates an error
     ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
@@ -746,7 +746,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithDuplicatesTest) {
 
     // When loading the properties from a string.
     celix_autoptr(celix_properties_t) props = nullptr;
-    auto status = celix_properties_loadFromString2(jsonInput, 0, &props);
+    auto status = celix_properties_loadFromString(jsonInput, 0, &props);
 
     // Then loading succeeds
     ASSERT_EQ(CELIX_SUCCESS, status);
@@ -757,7 +757,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithDuplicatesTest) {
 
     // When decoding the properties from the stream using a flog that does not allow duplicates
     celix_properties_t* props2;
-    status = celix_properties_loadFromString2(jsonInput, CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES, &props2);
+    status = celix_properties_loadFromString(jsonInput, CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES, &props2);
 
     // Then loading fails, because of a duplicate key
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
@@ -793,7 +793,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedDotsTest) {
 
     // When loading the properties from a string.
     celix_autoptr(celix_properties_t) props;
-    auto status = celix_properties_loadFromString2(jsonInput, 0, &props);
+    auto status = celix_properties_loadFromString(jsonInput, 0, &props);
 
     // Then loading succeeds
     ASSERT_EQ(CELIX_SUCCESS, status);
@@ -809,7 +809,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedDotsTest) {
 
     // When decoding the properties from a string using a flag that allows duplicates
     celix_properties_t* props2;
-    status = celix_properties_loadFromString2(jsonInput, CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES, &props2);
+    status = celix_properties_loadFromString(jsonInput, CELIX_PROPERTIES_DECODE_ERROR_ON_DUPLICATES, &props2);
 
     // Then loading fails, because of a duplicate key
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
@@ -820,7 +820,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesEscapedDotsTest) {
 
     // When decoding the properties from a string using a flag that allows collisions
     celix_properties_t* props3;
-    status = celix_properties_loadFromString2(jsonInput, CELIX_PROPERTIES_DECODE_ERROR_ON_COLLISIONS, &props3);
+    status = celix_properties_loadFromString(jsonInput, CELIX_PROPERTIES_DECODE_ERROR_ON_COLLISIONS, &props3);
 
     // Then loading fails, because of a collision
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
@@ -889,7 +889,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithUnsupportedArrayTypes
     for (auto& invalidArray : invalidArrays) {
         // When loading the properties from the string
         celix_autoptr(celix_properties_t) props = nullptr;
-        auto status = celix_properties_loadFromString2(invalidArray, 0, &props);
+        auto status = celix_properties_loadFromString(invalidArray, 0, &props);
 
         // Then decoding succeeds, because strict is disabled
         ASSERT_EQ(CELIX_SUCCESS, status);
@@ -903,7 +903,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithUnsupportedArrayTypes
     for (auto& invalidArray : invalidArrays) {
         // When loading the properties from the string
         celix_autoptr(celix_properties_t) props = nullptr;
-        auto status = celix_properties_loadFromString2(invalidArray, CELIX_PROPERTIES_DECODE_STRICT, &props);
+        auto status = celix_properties_loadFromString(invalidArray, CELIX_PROPERTIES_DECODE_STRICT, &props);
 
         // Then decoding fails
         EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
@@ -914,8 +914,8 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithUnsupportedArrayTypes
 
         // When loading the properties from the CELIX_PROPERTIES_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS flag
         celix_properties_t* props2;
-        status = celix_properties_loadFromString2(
-            invalidArray, CELIX_PROPERTIES_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS, &props2);
+        status =
+            celix_properties_loadFromString(invalidArray, CELIX_PROPERTIES_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS, &props2);
 
         // Then decoding fails
         EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
@@ -965,7 +965,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithInvalidVersionsTest) 
 
     // When loading the properties from the stream
     celix_autoptr(celix_properties_t) props = nullptr;
-    auto status = celix_properties_loadFromString2(jsonInput, 0, &props);
+    auto status = celix_properties_loadFromString(jsonInput, 0, &props);
 
     // Then loading fails
     ASSERT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
@@ -979,7 +979,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadPropertiesWithInvalidVersionsTest) 
         R"( {"key1":"version<1.2.3", "key2":"version1.2.3>", "key3":"ver<1.2.3>}", "key4":"celix_version<1.2.3>"} )";
 
     // When loading the properties from the stream
-    status = celix_properties_loadFromString2(jsonInput, 0, &props);
+    status = celix_properties_loadFromString(jsonInput, 0, &props);
 
     // Then loading succeeds
     ASSERT_EQ(CELIX_SUCCESS, status);
@@ -995,7 +995,7 @@ TEST_F(PropertiesSerializationTestSuite, LoadWithInvalidStreamTest) {
     celix_properties_t* dummyProps = nullptr;
 
     // Loading properties with invalid stream will fail
-    auto status = celix_properties_load2("non_existing_file.json", 0, &dummyProps);
+    auto status = celix_properties_load("non_existing_file.json", 0, &dummyProps);
     EXPECT_EQ(CELIX_FILE_IO_EXCEPTION, status);
     EXPECT_EQ(1, celix_err_getErrorCount());
 
@@ -1084,7 +1084,7 @@ TEST_F(PropertiesSerializationTestSuite, SaveAndLoadFlatProperties) {
 
     // When loading the properties from the properties_test.json file
     celix_autoptr(celix_properties_t) loadedProps = nullptr;
-    status = celix_properties_load2(filename, 0, &loadedProps);
+    status = celix_properties_load(filename, 0, &loadedProps);
 
     // Then loading succeeds
     ASSERT_EQ(CELIX_SUCCESS, status);

@@ -27,30 +27,3 @@ public:
     MultipleFrameworkTestSuite() = default;
     ~MultipleFrameworkTestSuite() noexcept override  = default;
 };
-
-TEST_F(MultipleFrameworkTestSuite, MultipleFrameworkTest) {
-    //framework 1
-    celix_framework_t *framework1 = nullptr;
-    int rc = celixLauncher_launch("framework1.properties", &framework1);
-    ASSERT_EQ(CELIX_SUCCESS, rc);
-    celix_bundle_t* fwBundle1 = celix_framework_getFrameworkBundle(framework1);
-    EXPECT_NE(nullptr, fwBundle1);
-    celix_bundle_context_t* fwBundleContext1 = celix_framework_getFrameworkContext(framework1);
-    EXPECT_NE(nullptr, fwBundleContext1);
-
-    //framework 2
-    celix_framework_t *framework2 = nullptr;
-    rc = celixLauncher_launch("framework2.properties", &framework2);
-    celix_bundle_t* fwBundle2 = celix_framework_getFrameworkBundle(framework2);
-    EXPECT_NE(nullptr, fwBundle2);
-    celix_bundle_context_t* fwBundleContext2 = celix_framework_getFrameworkContext(framework2);
-    EXPECT_NE(nullptr, fwBundleContext2);
-
-    celixLauncher_stop(framework1);
-    celixLauncher_waitForShutdown(framework1);
-    celixLauncher_destroy(framework1);
-
-    celixLauncher_stop(framework2);
-    celixLauncher_waitForShutdown(framework2);
-    celixLauncher_destroy(framework2);
-}

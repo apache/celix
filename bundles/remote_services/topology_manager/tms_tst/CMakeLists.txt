@@ -54,19 +54,21 @@ add_celix_bundle_dependencies(test_tm_scoped Celix::rsa_dfi Celix::rsa_topology_
 
 file(GENERATE 
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config.properties"
-    CONTENT "
-CELIX_AUTO_START_1=$<TARGET_PROPERTY:Celix::rsa_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:Celix::rsa_topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_disc_mock_bundle,BUNDLE_FILE>
-LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE=true
-")
+    CONTENT "{
+    \"CELIX_AUTO_START_1\":\"$<TARGET_PROPERTY:Celix::rsa_dfi,BUNDLE_FILE>,$<TARGET_PROPERTY:calculator,BUNDLE_FILE>,$<TARGET_PROPERTY:Celix::rsa_topology_manager,BUNDLE_FILE>,$<TARGET_PROPERTY:topology_manager_disc_mock_bundle,BUNDLE_FILE>\",
+    \"LOGHELPER_ENABLE_STDOUT_FALLBACK\":true,
+    \"CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE\":true,
+    \"CELIX_FRAMEWORK_CACHE_DIR\":\".rstm_cache\"
+}")
 
 file(GENERATE 
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config_import.properties"
-    CONTENT "
-CELIX_AUTO_START_1=$<TARGET_PROPERTY:Celix::rsa_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:Celix::rsa_topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_test_bundle,BUNDLE_FILE>
-LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE=true
-")
+    CONTENT "{
+    \"CELIX_AUTO_START_1\":\"$<TARGET_PROPERTY:Celix::rsa_dfi,BUNDLE_FILE>,$<TARGET_PROPERTY:calculator,BUNDLE_FILE>,$<TARGET_PROPERTY:Celix::rsa_topology_manager,BUNDLE_FILE>,$<TARGET_PROPERTY:topology_manager_test_bundle,BUNDLE_FILE>\",
+    \"LOGHELPER_ENABLE_STDOUT_FALLBACK\":true,
+    \"CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE\":true,
+    \"CELIX_FRAMEWORK_CACHE_DIR\":\".rstm_import_cache\"
+}")
 
 configure_file("scope.json" "scope.json")
 configure_file("scope2.json" "scope2.json")

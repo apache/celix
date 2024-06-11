@@ -193,3 +193,7 @@ TEST_F(CelixUtilsCleanupTestSuite, StealFdTest) {
 TEST_F(CelixUtilsCleanupTestSuite, FileTest) {
     celix_autoptr(FILE) file = tmpfile();
 }
+
+TEST_F(CelixUtilsCleanupTestSuite, DirTest) {
+    celix_autoptr(DIR) dir = opendir(".");
+}

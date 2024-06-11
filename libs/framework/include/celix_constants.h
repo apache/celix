@@ -221,16 +221,16 @@ extern "C" {
 #define CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE "CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE"
 
 /**
- * @brief Celix framework environment property (named "CELIX_AUTO_START_0") which specified a (ordered) space
+ * @brief Celix framework environment property (named "CELIX_AUTO_START_0") which specified a (ordered) comma
  * separated set of bundles to load and auto start when the Celix framework is started.
  *
- * Note: Because the list is space separated path with spaces are not allowed.
+ * Note: Because the list is comma separated, paths with commas are not supported.
  *
- * The Celix framework will first start bundles in for CELIX_AUTO_START_0 and lastly start bundles in CELIX_AUTO_START_6.
- * Bundles which are also started in the order they appear in the AUTO_START set; first bundles mentioned is started
+ * The Celix framework will first start bundles in for CELIX_AUTO_START_0 and lastly start bundles in
+ * CELIX_AUTO_START_6. Bundles which are also started in the order they appear in the AUTO_START set; first bundles
+ * mentioned is started first. When the Celix framework stops the bundles are stopped in the reverse order. Bundles in
+ * CELIX_AUTO_START_6 are stopped first and of those bundles, the bundle mentioned last in a AUTO_START set is stopped
  * first.
- * When the Celix framework stops the bundles are stopped in the reverse order. Bundles in CELIX_AUTO_START_6 are stopped
- * first and of those bundles, the bundle mentioned last in a AUTO_START set is stopped first.
  */
 #define CELIX_AUTO_START_0 "CELIX_AUTO_START_0"
 
@@ -265,11 +265,11 @@ extern "C" {
 #define CELIX_AUTO_START_6 "CELIX_AUTO_START_6"
 
 /**
- * @brief Celix framework environment property (named "CELIX_AUTO_INSTALL") which specified a (ordered) space
+ * @brief Celix framework environment property (named "CELIX_AUTO_INSTALL") which specified a (ordered) comma
  * separated set of bundles to install when the Celix framework is started.
  *
  * The Celix framework will first install and start bundles defined in the properties CELIX_AUTO_START_0 till
- * CELIX_AUTO_START_6 and then install (ano not start!) the bundles listed in CELIX_AUTO_INSTALL.
+ * CELIX_AUTO_START_6 and then install (and not start!) the bundles listed in CELIX_AUTO_INSTALL.
  *
  * When the Celix framework stops the bundles are stopped in the reverse order. Started bundles in CELIX_AUTO_INSTALL
  * are stopped first and of those bundles, the bundle mentioned last in a CELIX_AUTO_INSTALL set is stopped first.

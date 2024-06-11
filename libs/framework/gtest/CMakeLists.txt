@@ -20,6 +20,8 @@ celix_bundle_name(simple_test_bundle1 "Simple Test Bundle")
 celix_bundle_group(simple_test_bundle1 "test/group")
 celix_bundle_description(simple_test_bundle1 "Test Description")
 
+add_celix_bundle(dup_symbolic_name_bundle NO_ACTIVATOR VERSION 1.0.0 SYMBOLIC_NAME simple_test_bundle1)
+
 add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(bundle_with_exception SOURCES src/nop_activator.c VERSION 1.0.0)
@@ -80,11 +82,12 @@ add_celix_bundle_dependencies(test_framework
         simple_test_bundle2 simple_test_bundle3 simple_test_bundle4
         simple_test_bundle5 bundle_with_exception bundle_with_bad_export
         unresolvable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle
-        celix_err_test_bundle)
+        celix_err_test_bundle dup_symbolic_name_bundle)
 target_include_directories(test_framework PRIVATE ../src)
 celix_deprecated_utils_headers(test_framework)
 
 celix_get_bundle_file(simple_test_bundle1 SIMPLE_TEST_BUNDLE1)
+celix_get_bundle_file(dup_symbolic_name_bundle DUP_SYMBOLIC_NAME_BUNDLE)
 celix_get_bundle_file(simple_test_bundle2 SIMPLE_TEST_BUNDLE2)
 celix_get_bundle_file(simple_test_bundle3 SIMPLE_TEST_BUNDLE3)
 celix_get_bundle_file(simple_test_bundle4 SIMPLE_TEST_BUNDLE4)
@@ -104,6 +107,7 @@ celix_get_bundle_file(cond_test_bundle COND_TEST_BUNDLE_LOC)
 configure_file(config.properties.in config.properties @ONLY)
 configure_file(framework1.properties.in framework1.properties @ONLY)
 configure_file(framework2.properties.in framework2.properties @ONLY)
+configure_file(empty.properties.in empty.properties @ONLY)
 configure_file(install_and_start_bundles.properties.in install_and_start_bundles.properties @ONLY)
 
 celix_target_bundle_set_definition(test_framework NAME CELIX_ERR_TEST_BUNDLE celix_err_test_bundle)
@@ -114,6 +118,7 @@ target_compile_definitions(test_framework PRIVATE
         SIMPLE_TEST_BUNDLE3_LOCATION="${SIMPLE_TEST_BUNDLE3}"
         SIMPLE_TEST_BUNDLE4_LOCATION="${SIMPLE_TEST_BUNDLE4_FILENAME}"
         SIMPLE_TEST_BUNDLE5_LOCATION="${SIMPLE_TEST_BUNDLE5_FILENAME}"
+        DUP_SYMBOLIC_NAME_BUNDLE_LOCATION="${DUP_SYMBOLIC_NAME_BUNDLE}"
         TEST_BUNDLE_WITH_EXCEPTION_LOCATION="${BUNDLE_WITH_EXCEPTION}"
         BUNDLE_WITH_BAD_EXPORT_LOCATION="${BUNDLE_WITH_BAD_EXPORT}"
         TEST_BUNDLE_UNRESOLVABLE_LOCATION="${UNRESOLVABLE_BUNDLE}"
@@ -140,6 +145,7 @@ if (EI_TESTS)
             src/FrameworkBundleWithErrorInjectionTestSuite.cc
             src/FrameworkFactoryWithErrorInjectionTestSuite.cc
             src/ManifestErrorInjectionTestSuite.cc
+            src/CelixLauncherErrorInjectionTestSuite.cc
     )
     target_compile_definitions(test_framework_with_ei PRIVATE
             SIMPLE_TEST_BUNDLE1_LOCATION="${SIMPLE_TEST_BUNDLE1}"

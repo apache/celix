@@ -56,8 +56,8 @@ if (CELIX_CXX17)
 endif ()
 
 ####### generating zip file used for testing ##########################################################################
-file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties" CONTENT "level=1\n")
-file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zip_content/subdir/sub.properties" CONTENT "level=2\n")
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zip_content/top.properties" CONTENT "{\"level\":1}")
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/zip_content/subdir/sub.properties" CONTENT "{\"level\":2}")
 set(TEST_ZIP_FILE "${CMAKE_CURRENT_BINARY_DIR}/test.zip")
 if(ZIP_COMMAND)
     add_custom_command(OUTPUT ${TEST_ZIP_FILE}

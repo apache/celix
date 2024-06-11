@@ -33,7 +33,7 @@ limitations under the License.
 - pubsub_serializer.h is removed and no longer supported. Use pubsub_message_serialization_service.h instead.
 - C++11 support for dm is removed. C++14 is now the minimum required version.
 - C++17 string_view support is removed from the utils and framework lib.
-- Apache Celix CMake bundle functions without a celix_ prefix or infix are removed.
+- Apache Celix CMake container & bundle functions without a celix_ prefix or infix are removed.
 - Apache Celix CMake support for creating docker images and creating runtimes dirs is removed.
 - Support and usage of "service.lang" service property is removed.
 - Rename of `CELIX_FRAMEWORK_FRAMEWORK_CACHE_DIR` config property to `CELIX_FRAMEWORK_CACHE_DIR`.
@@ -73,6 +73,10 @@ limitations under the License.
   to add service properties with the correct type.
 - Celix C++ Exception are now defined in the `celix/exceptions.h` header file. The `celix/Exception.h`
   and `celix/IOException.h` are removed.
+- The seperator for `CELIX_AUTO_START_0` .. `CELIX_AUTO_START_6` and `CELIX_AUTO_INSTALL` is now a comma instead of a
+  space.
+- The launcher now only has 2 public functions: `celix_launcher_launchAndWait` and `celix_launcher_triggerStop`. The
+  other functions are removed.
 
 ## New Features
 

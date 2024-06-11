@@ -167,7 +167,7 @@ static void rsaShmServer_terminateMsgHandling(rsa_shm_msg_control_t *ctrl) {
 
 static void rsaShmServer_msgHandlingWork(void *data) {
     assert(data != NULL);
-    int status =  CELIX_SUCCESS;
+    int status = CELIX_SUCCESS;
     struct rsa_shm_server_thpool_work_data *workData = data;
     rsa_shm_server_t *server = workData->server;
     assert(server != NULL);
@@ -179,9 +179,9 @@ static void rsaShmServer_msgHandlingWork(void *data) {
 
     celix_properties_t *metadataProps = NULL;
     if (workData->metadataSize != 0) {
-        metadataProps = celix_properties_loadFromString(metaDataString);
-        if (metadataProps == NULL) {
+        if (celix_properties_loadFromString(metaDataString, 0, &metadataProps) != CELIX_SUCCESS) {
             celix_logHelper_warning(server->loghelper, "RsaShmServer: Parse metadata failed.");
+            celix_logHelper_logTssErrors(server->loghelper, CELIX_LOG_LEVEL_WARNING);
         }
     }
 

@@ -45,13 +45,22 @@ will create the following main source file (note: reformatted for display purpos
 ```C++
 //${CMAKE_BINARY_DIR}/celix/gen/containers/my_empty_container/main.cc
 #include <celix_launcher.h>
+#include <celix_err.h>
+#define CELIX_MULTI_LINE_STRING(...) #__VA_ARGS__
 int main(int argc, char *argv[]) {
-    const char * config = "\
-CELIX_CONTAINER_NAME=my_empty_container\n\
-CELIX_BUNDLES_PATH=bundles\n\
-";
-    celix_properties_t *embeddedProps = celix_properties_loadFromString(config);
-    return celixLauncher_launchAndWaitForShutdown(argc, argv, embeddedProps);
+    const char * config = CELIX_MULTI_LINE_STRING(
+{
+    "CELIX_BUNDLES_PATH":"bundles",
+    "CELIX_CONTAINER_NAME":"my_empty_container"
+});
+
+    celix_properties_t *embeddedProps;
+    celix_status_t status = celix_properties_loadFromString(config, 0, &embeddedProps);
+    if (status != CELIX_SUCCESS) {
+        celix_err_printErrors(stderr, "Error creating embedded properties.", NULL);
+        return -1;
+    }
+    return celix_launcher_launch(argc, argv, embeddedProps);
 }
 ```
 
@@ -84,16 +93,25 @@ add_celix_container(my_web_shell_container
 will create the following main source file (note: reformatted for display purpose):
 ```C++
 #include <celix_launcher.h>
+#include <celix_err.h>
+#define CELIX_MULTI_LINE_STRING(...) #__VA_ARGS__
 int main(int argc, char *argv[]) {
-    const char * config = "\
-CELIX_CONTAINER_NAME=my_web_shell_container\n\
-CELIX_BUNDLES_PATH=bundles\n\
-CELIX_AUTO_START_3=celix_http_admin-Debug.zip celix_shell-Debug.zip celix_shell_wui-Debug.zip\n\
-CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL=debug\n\
-CELIX_HTTP_ADMIN_LISTENING_PORTS=8888";
+    const char * config = CELIX_MULTI_LINE_STRING(
+{
+    "CELIX_AUTO_START_3":"celix_http_admin-Debug.zip celix_shell-Debug.zip celix_shell_wui-Debug.zip",
+    "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL":"debug",
+    "CELIX_HTTP_ADMIN_LISTENING_PORTS":"8888",
+    "CELIX_BUNDLES_PATH":"bundles",
+    "CELIX_CONTAINER_NAME":"my_web_shell_container"
+});
 
-    celix_properties_t *embeddedProps = celix_properties_loadFromString(config);
-    return celixLauncher_launchAndWaitForShutdown(argc, argv, embeddedProps);
+    celix_properties_t *embeddedProps;
+    celix_status_t status = celix_properties_loadFromString(config, 0, &embeddedProps);
+    if (status != CELIX_SUCCESS) {
+        celix_err_printErrors(stderr, "Error creating embedded properties.", NULL);
+        return -1;
+    }
+    return celix_launcher_launch(argc, argv, embeddedProps);
 }
 ```
 
