@@ -16,11 +16,10 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-#
-# Build a Celix dev container with all needed dependencies pre-installed.
 
 SCRIPT_LOCATION=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
 CELIX_REPO_ROOT=$(realpath "${SCRIPT_LOCATION}/..")
+IMAGE_TARGET="${1:-conan-dev}"
 
 # Check which container engine is available.
 # Check for podman first, because the 'podman-docker' package might be installed providing a dummy 'docker' command.
@@ -31,4 +30,4 @@ else
 fi
 
 cd "${SCRIPT_LOCATION}"
-${CONTAINER_ENGINE} build -t apache/celix-dev:ubuntu-latest -f Containerfile.ubuntu .
+${CONTAINER_ENGINE} build -t apache/celix-${IMAGE_TARGET} -f Containerfile --target ${IMAGE_TARGET} .

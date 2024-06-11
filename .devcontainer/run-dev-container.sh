@@ -25,6 +25,7 @@ CELIX_REPO_ROOT=$(realpath "${SCRIPT_LOCATION}/..")
 
 CONTAINER_COMMAND_DEFAULT="sudo /usr/sbin/sshd -D -e -p 2233"
 CONTAINER_COMMAND=${1:-${CONTAINER_COMMAND_DEFAULT}}
+CONTAINER_NAME="celixdev"
 
 # Check which container engine is available.
 # Check for podman first, because the 'podman-docker' package might be installed providing a dummy 'docker' command.
@@ -34,37 +35,63 @@ else
     CONTAINER_ENGINE="docker"
 fi
 
-# Check if container celix-dev already exists
-if [ "$(${CONTAINER_ENGINE} ps -a --format '{{.Names}}' | grep celix-dev)" ]; then
-    echo "Container 'celix-dev' already exists. Do you want to remove it?"
-    select yn in "Yes" "No"; do
-        case $yn in
-            Yes ) echo "Removing container celix-dev"; ${CONTAINER_ENGINE} rm -f celix-dev; break;;
-            No ) exit;;
-        esac
-    done
-    echo ""
+ask_and_execute() {
+  local QUESTION="$1"
+  local FUNC_NAME="$2"
+
+  # Prompt the user with the question
+  while true; do
+    read -p "${QUESTION} (yes/no): " yn
+    case $yn in
+        [Yy]* )
+            # Call the provided function if the answer is yes
+            ${FUNC_NAME}
+            echo ""
+            break;;
+        [Nn]* )
+            # Exit if the answer is no
+            break;;
+        * )
+            echo "Please answer yes or no.";;
+    esac
+  done
+}
+
+remove_celixdev_container() {
+  echo "Removing container '${CONTAINER_NAME}'"
+  ${CONTAINER_ENGINE} rm -f ${CONTAINER_NAME}
+}
+# Check if container celixdev already exists
+if [ "$(${CONTAINER_ENGINE} ps -a --format '{{.Names}}' | grep ${CONTAINER_NAME})" ]; then
+    ask_and_execute "Container '${CONTAINER_NAME}' already exists. Do you want to remove it?" remove_celixdev_container
 fi
 
 ADDITIONAL_ARGS=""
-echo "Do you want to mount the .ssh directory to the container (as an overlayfs)?"
-select yn in "Yes" "No"; do
-    case $yn in
-        Yes ) echo "Add .ssh directory mount arguments"; ADDITIONAL_ARGS="--volume ${HOME}/.ssh:/home/celixdev/.ssh:O"; break;;
-        No ) break;;
-    esac
-done
-echo ""
 
+add_gnupg_mount() {
+  echo "Adding .gnupg directory mount arguments"
+  echo "TODO does not work yet, maybe a gpg agent can be used instead"
+  ADDITIONAL_ARGS="--volume ${HOME}/.gnupg:/home/celixdev/.gnupg:O"
+}
 if [ -e "${HOME}/.gnupg" ]; then
-  echo "Do you want to mount the .gnupg directory to the container (as an overlayfs)?"
-  select yn in "Yes" "No"; do
-      case $yn in
-          Yes ) echo "Add .gnupg directory mount arguments"; ADDITIONAL_ARGS="--volume ${HOME}/.gnupg:/home/celixdev/.gnupg:O"; break;;
-          No ) break;;
-      esac
-  done
-  echo ""
+  ask_and_execute "Do you want to mount the .gnupg directory to the container (as an overlayfs)?" add_gnupg_mount
+fi
+
+add_gitconfig_mount() {
+  echo "Adding .gitconfig file mount arguments"
+  ADDITIONAL_ARGS="--volume ${HOME}/.gitconfig:/home/celixdev/.gitconfig:ro"
+}
+if [ -e "${HOME}/.gitconfig" ]; then
+  ask_and_execute "Do you want to mount the .gitconfig file to the container (as read-only)?" add_gitconfig_mount
+fi
+
+add_sshagent_forward()
+{
+  echo "Adding SSH agent forwarding"
+  ADDITIONAL_ARGS="${ADDITIONAL_ARGS} --volume ${SSH_AUTH_SOCK}:/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent"
+}
+if [ -n "${SSH_AUTH_SOCK}" ]; then
+  ask_and_execute "Do you want to forward the SSH agent to the container?" add_sshagent_forward
 fi
 
 # Start a container with all the Celix dependencies pre-installed
@@ -74,10 +101,10 @@ fi
 #   --volume & --workdir    are set to the Celix repo root (to allow building and editing of the Celix repo)
 #   --security-opt          disables SELinux for the container
 #   -d                      runs the container in detached mode
-echo "Starting container 'celix-dev' with command: ${CONTAINER_COMMAND}"
+echo "Starting container '${CONTAINER_NAME}' with command: ${CONTAINER_COMMAND}"
 ${CONTAINER_ENGINE} run -it --rm --privileged -d \
-                        --name celix-dev \
-                        --userns keep-id \
+                        --name ${CONTAINER_NAME} \
+                        --userns=keep-id \
                         --net=host \
                         ${ADDITIONAL_ARGS} \
                         --volume "${CELIX_REPO_ROOT}":"${CELIX_REPO_ROOT}" \
@@ -86,24 +113,16 @@ ${CONTAINER_ENGINE} run -it --rm --privileged -d \
                         apache/celix-conan-dev:latest bash -c "${CONTAINER_COMMAND}"
 echo ""
 
-echo "Do you want to setup the git user and email in the container?"
-USER_NAME=$(git config user.name)
-USER_EMAIL=$(git config user.email)
-select yn in "Yes" "No"; do
-    case $yn in
-        Yes ) echo "Setting up git user and email"; ${CONTAINER_ENGINE} exec celix-dev bash -c "git config --global user.email '${USER_EMAIL}' && git config --global user.name '${USER_NAME}'"; break;;
-        No ) break;;
-    esac
-done
-echo ""
+#copy_ssh_id() {
+#  echo "Copying ssh key (password: celixdev)"
+#  ssh-copy-id -p 2233 celixdev@localhost
+#}
+#ask_and_execute "Do you want to copy the ssh key to the container?" copy_ssh_id
 
-echo "Do you want to copy the ssh key to the container?"
-select yn in "Yes" "No"; do
-    case $yn in
-        Yes ) echo "Copying ssh key (password: celixdev)"; ssh-copy-id -p 2233 celixdev@localhost; break;;
-        No ) break;;
-    esac
-done
-echo ""
+build_conan_deps() {
+  echo "Building Celix dependencies with Conan"
+  ${CONTAINER_ENGINE} exec -it ${CONTAINER_NAME} bash -c "cd ${CELIX_REPO_ROOT} && .devcontainer/setup-project-with-conan.sh"
+}
+ask_and_execute "Do you want to build Celix dependencies with Conan?" build_conan_deps
 
 echo "Done."
