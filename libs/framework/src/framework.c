@@ -2542,6 +2542,13 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
                bndId);
         return -1;
     }
+    if (initialDelayInSeconds < 0 || intervalInSeconds < 0) {
+        fw_log(fw->logger,
+               CELIX_LOG_LEVEL_ERROR,
+               "Cannot add scheduled event for bundle id %li. Invalid intervals: (%f,%f).",
+               bndId, initialDelayInSeconds, intervalInSeconds);
+        return -1;
+    }
 
     celix_bundle_entry_t* bndEntry = celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(fw, bndId);
     if (bndEntry == NULL) {
