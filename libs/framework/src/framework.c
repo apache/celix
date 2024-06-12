@@ -1531,12 +1531,12 @@ static void *fw_eventDispatcher(void *fw) {
     }
 
     //not active anymore, extra runs for possible request leftovers
+    celix_framework_processScheduledEvents(framework);
     celixThreadMutex_lock(&framework->dispatcher.mutex);
     bool needExtraRun = celix_framework_eventQueueSize(fw) > 0;
     celixThreadMutex_unlock(&framework->dispatcher.mutex);
     while (needExtraRun) {
         fw_handleEvents(framework);
-        celix_framework_processScheduledEvents(framework);
         celixThreadMutex_lock(&framework->dispatcher.mutex);
         needExtraRun = celix_framework_eventQueueSize(fw) > 0;
         celixThreadMutex_unlock(&framework->dispatcher.mutex);
