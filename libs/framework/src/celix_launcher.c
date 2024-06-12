@@ -178,6 +178,7 @@ int celix_launcher_launchAndWait(int argc, char* argv[], const char* embeddedCon
     celix_framework_t* framework = NULL;
     status = celix_launcher_createFramework(celix_steal_ptr(embeddedProps), runtimeProps, &framework);
     if (status != CELIX_SUCCESS) {
+        celix_launcher_resetLauncher();
         return CELIX_LAUNCHER_ERROR_EXIT_CODE;
     }
     status = celix_launcher_setGlobalFramework(framework);
@@ -255,12 +256,14 @@ static celix_status_t celix_launcher_createFramework(celix_properties_t* embedde
     return *frameworkOut != NULL ? CELIX_SUCCESS : CELIX_FRAMEWORK_EXCEPTION;
 }
 
+// LCOV_EXCL_START
 /**
  * @brief SIGUSR1 SIGUSR2 no-op callback
  */
 static void celix_launcher_noopSignalHandler(int signal __attribute__((unused))) {
     // ignoring signal SIGUSR1, SIGUSR2. Can be used on threads
 }
+// LCOV_EXCL_STOP
 
 static void celix_launcher_printUsage(char* progName) {
     printf("Usage:\n  %s [-h|-p|-c] [path/to/runtime/config.properties]\n", basename(progName));
