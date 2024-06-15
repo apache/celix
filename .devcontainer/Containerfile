@@ -56,9 +56,10 @@ RUN conan profile detect
 # Build image using apt dependencies
 FROM build as apt-build
 
-# Install celix dependencies
+# Install celix dependencies (note git needed for cloning gtest)
 RUN DEBIAN_FRONTEND="noninteractive" sudo apt-get update && \
     DEBIAN_FRONTEND="noninteractive" sudo apt-get install -y --no-install-recommends \
+        git \
         civetweb \
         libavahi-compat-libdnssd-dev \
         libcivetweb-dev \

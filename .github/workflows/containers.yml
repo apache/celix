@@ -38,11 +38,10 @@ jobs:
           docker build -t apache/celix-apt-build:latest --target apt-build -f .devcontainer/Containerfile
       - name: Build and test Celix the conan container image
         run: |
-          docker run --rm -v $(pwd):/workspace --userns=keep-id apache/celix-conan-build:latest /bin/bash -c \
-          "cd /workspace && \
-          cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXPERIMENTAL=ON -DENABLE_TESTING=ON -DRSA_JSON_RPC=ON -DRSA_SHM=ON \
+          docker run --rm -v $(pwd):/workspace --userns=keep-id apache/celix-apt-build:latest /bin/bash -c \
+          "mkdir /workspace/build && cd /workspace/build && \
+          cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXPERIMENTAL=ON -DENABLE_TESTING=ON -DRSA_JSON_RPC=ON  \
           -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON .. && \
-          cd build && \
           make -j && \
           ctest --output-on-failure"
 
