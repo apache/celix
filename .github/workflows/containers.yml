@@ -1,4 +1,4 @@
-name: Celix development containers
+name: Celix build containers
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     - cron: '0 0 * * 0' # Weekly on Sunday at 00:00 UTC
 
 jobs:
-  container-build-ubuntu:
+  container-conan-build-ubuntu:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
@@ -15,18 +15,19 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Build container image
         run: |
-          cd $GITHUB_WORKSPACE/container/
-          ./build-ubuntu-container.sh
-      - name: Build Celix using container image
+          docker build -t apache/celix-conan-build:latest --target conan-build -f .devcontainer/Containerfile
+      - name: Build and test Celix the conan container image
         run: |
-          cd $GITHUB_WORKSPACE/container/
-          ./run-ubuntu-container.sh "mkdir -p build && cd build && ../container/support-scripts/build-all.sh && make -j"
-      - name: Run Celix tests using container image
-        run: |
-          cd $GITHUB_WORKSPACE/container/
-          ./run-ubuntu-container.sh "cd build && ctest --output-on-failure"
+          docker run --rm -v $(pwd):/workspace --userns=keep-id apache/celix-conan-build:latest /bin/bash -c \
+          "cd /workspace && \
+          conan build . --build missing --options build_all=True --options enable_address_sanitizer=True \
+          --options enable_testing=True --options enable_ccache=True --output-folder build \
+          --conf tools.cmake.cmaketoolchain:generator=Ninja --settings build_type=Debug && \
+          cd build && \
+          source conanrun.sh && \
+          ctest --output-on-failure"
 
-  container-build-gitpod:
+  container-apt-build-ubuntu:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
@@ -34,5 +35,24 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Build container image
         run: |
-          cd $GITHUB_WORKSPACE/container/
-          docker build -t apache/celix-dev:gitpod-latest -f Containerfile.gitpod .
+          docker build -t apache/celix-apt-build:latest --target apt-build -f .devcontainer/Containerfile
+      - name: Build and test Celix the conan container image
+        run: |
+          docker run --rm -v $(pwd):/workspace --userns=keep-id apache/celix-conan-build:latest /bin/bash -c \
+          "cd /workspace && \
+          cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXPERIMENTAL=ON -DENABLE_TESTING=ON -DRSA_JSON_RPC=ON -DRSA_SHM=ON \
+          -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON .. && \
+          cd build && \
+          make -j && \
+          ctest --output-on-failure"
+
+  build-dev-container-images:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3.3.0
+      - name: Build dev container images
+        run: |
+          docker build -t apache/celix-conan-dev:latest --target conan-dev -f .devcontainer/Containerfile
+          docker build -t apache/celix-apt-dev:latest --target apt-dev -f .devcontainer/Containerfile

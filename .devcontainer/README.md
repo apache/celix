@@ -17,24 +17,32 @@ limitations under the License.
 
 # Apache Celix Development Container
 
-## Intro
+## Introduction
 
-TODO add intro, explain difference build, dev images and apt/conan variant.
+This directory contains a [DevContainer](https://containers.dev) setup for developing Apache Celix inside a container.
+
+While Apache Celix can be built using CMake with APT-installed dependencies or using Conan with Conan-installed/built
+dependencies, this DevContainer setup currently only supports building Celix using Conan.
+
+Please note, the DevContainer setup is not broadly tested and might not work on all systems. 
+It has been tested on Ubuntu 23.10.
 
 ## VSCode Usage
 
-Support for development containers in VSCode is built-in. Just startup VSCode using the celix workspace folder, 
-and you will be prompted to open the workspace in a container.
+VSCode has built-in support for development containers. Simply start VSCode using the Celix workspace folder, and you
+will be prompted to open the workspace in a container.
 
-VSCode will ensure that your host .gitconfig file, .gnupg dir, and ssh agent forwarding is available in the container.
+VSCode will ensure that your host `.gitconfig` file, `.gnupg` directory, and SSH agent forwarding are available in the
+container.
 
 ## CLion Usage
 
-Support for devcontainers in CLion is not built-in and currently not fully supported.
-For CLion you can instead use remote development via ssh.
-The `.devcontainer/run-dev-container.sh` script can be used to start a container with sshd running and interactively
-setup .gitconfig, .gnupg, and ssh agent forwarding.
-Before `.devcontainer/run-dev-container.sh` can be used, a `celix-conan-dev` image must be build.
+CLion does not have built-in support for DevContainers and is not fully supported at this time.
+Instead, you can use remote development via SSH with CLion.
+
+To start a container with SSHD running and interactively set up `.gitconfig`, `.gnupg`, and SSH agent forwarding, use
+the `.devcontainer/run-dev-container.sh` script. 
+Before using this script, you must build a `celix-conan-dev` image.
 
 ```bash
 cd ${CELIX_ROOT}
@@ -43,4 +51,7 @@ cd ${CELIX_ROOT}
 ssh -p 2233 celixdev@localhost
 ```
 
-In Clion open the Remote Development window using "File -> Remote Development ..." and add a new configuration.
+In CLion, open the Remote Development window by navigating to "File -> Remote Development..." and add a new
+configuration. When a new configuration is added, you can start a new project using `/home/celixdev/workspace` as the
+project root and
+selecting CLion as the IDE.
