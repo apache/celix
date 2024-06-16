@@ -43,7 +43,7 @@ FROM build as conan-build
 # Install conan
 RUN pip3 install conan && pip3 cache purge
 
-# Setup conan profile
+# Setup conan profile for root
 RUN conan profile detect
 
 # Build image using apt dependencies
@@ -75,6 +75,9 @@ RUN useradd -m -s /bin/bash -G sudo celixdev && \
     echo "celixdev:celixdev" | chpasswd
 USER celixdev
 WORKDIR /home/celixdev
+
+# Setup conan profile for celixdev
+RUN conan profile detect
 
 #Install development dependencies
 RUN sudo DEBIAN_FRONTEND="noninteractive" apt-get update && \
