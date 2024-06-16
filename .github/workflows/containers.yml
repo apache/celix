@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Build container image
         run: |
-          docker build -t apache/celix-conan-build:latest --target conan-build -f .devcontainer/Containerfile
+          docker build --tag apache/celix-conan-build:latest --target conan-build --file .devcontainer/Containerfile .
       - name: Build and test Celix the conan container image
         run: |
           docker run --rm -v $(pwd):/workspace --userns=keep-id apache/celix-conan-build:latest /bin/bash -c \
@@ -35,13 +35,13 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Build container image
         run: |
-          docker build -t apache/celix-apt-build:latest --target apt-build -f .devcontainer/Containerfile
+          docker build --tag apache/celix-apt-build:latest --target apt-build --file .devcontainer/Containerfile .
       - name: Build and test Celix the conan container image
         run: |
           docker run --rm -v $(pwd):/workspace --userns=keep-id apache/celix-apt-build:latest /bin/bash -c \
           "mkdir /workspace/build && cd /workspace/build && \
           cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXPERIMENTAL=ON -DENABLE_TESTING=ON -DRSA_JSON_RPC=ON  \
-          -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON .. && \
+          -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON -DENABLE_CCACHE=ON .. && \
           make -j && \
           ctest --output-on-failure"
 
