@@ -612,19 +612,3 @@ add_library(celix::my_bundle ALIAS my_bundle)
 - Code should be checked for memory leaks using AddressSanitizer.
 - Coverity scan are done on the master on a regular basis. Ideally new coverity issues should be fixed as soon as 
   possible.
-
-## Conan Dependencies Locking
-
-If Conan is used as a build tool, the dependencies are locked using a `conan.lock` file. 
-This file is committed to source control and should be periodically updated when dependencies change.
-
-The lock file is used to ensure CI build caches and that developers work with the same dependencies.
-
-When updating dependencies, the following Conan command should be used:
-
-```bash
-conan lock create --options build_all=True --options enable_address_sanitizer=True --options enable_testing=True --options enable_ccache=True --conf tools.cmake.cmaketoolchain:generator=Ninja .
-```
-
-This command ensures that all the dependencies needed for different build options are enabled and locked, including some
-build dependencies like ccache and Ninja.
