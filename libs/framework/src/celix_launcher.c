@@ -49,8 +49,8 @@ typedef struct {
     framework_t* framework;
     long shutdownEventId;
     bool launched;
-    bool shutdown;
-    int signal;
+    bool shutdown; // accessed through atomic operations
+    int signal; // accessed through atomic operations
 } celix_launcher_t;
 
 typedef struct {
@@ -393,7 +393,6 @@ void celix_launcher_triggerStop() {
 }
 
 static void celix_launcher_shutdownCheck(void* data CELIX_UNUSED) {
-    // assert(data == &g_launcher)
     celix_auto(celix_mutex_lock_guard_t) lck = celixMutexLockGuard_init(&g_launcher.lock);
     if (__atomic_load_n(&g_launcher.shutdown, __ATOMIC_ACQUIRE)) {
         int sig = __atomic_load_n(&g_launcher.signal, __ATOMIC_RELAXED);
