@@ -11,13 +11,20 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3.3.0
+      - name: Cache Conan
+        uses: actions/cache@v3
+        with:
+          path: ~/.conan2
+          key: cache-conan-${{ hashFiles('conan.lock') }}
+          restore-keys: |
+            cache-conan-
       - name: Build container image
         run: |
           docker build --tag apache/celix-conan-build:latest --target conan-build --file .devcontainer/Containerfile .
       - name: Build Celix dependencies
         run: |
-          mkdir -p .conan2 && \
-          docker run --rm -v .conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
+          mkdir -p ~/.conan2 && \
+          docker run --rm -v ~/.conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
           "conan profile detect && \
           cd /workspace && \
           conan install . --build missing --options build_all=True --options enable_address_sanitizer=True \
@@ -25,14 +32,14 @@ jobs:
           --conf tools.cmake.cmaketoolchain:generator=Ninja"
       - name: Build Celix
         run: |
-          docker run --rm -v .conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
+          docker run --rm -v ~/.conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
           "cd /workspace && \
           conan build . --build missing --options build_all=True --options enable_address_sanitizer=True \
           --options enable_testing=True --options enable_ccache=True --output-folder build \
           --conf tools.cmake.cmaketoolchain:generator=Ninja --settings build_type=Debug"
       - name: Test Celix
         run: |
-          docker run --rm -v .conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
+          docker run --rm -v ~/.conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
           "cd /workspace/build && \
           source conanrun.sh && \
           ctest --output-on-failure"          
