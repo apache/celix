@@ -16,22 +16,23 @@ jobs:
           docker build --tag apache/celix-conan-build:latest --target conan-build --file .devcontainer/Containerfile .
       - name: Build Celix dependencies
         run: |
-          mkdir -p ~/.conan2 && \
-          docker run --rm -v ~/.conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
-          "cd /workspace && \
+          mkdir -p .conan2 && \
+          docker run --rm -v .conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
+          "conan profile detect && \
+          cd /workspace && \
           conan install . --build missing --options build_all=True --options enable_address_sanitizer=True \
           --options enable_testing=True --options enable_ccache=True --output-folder build \
           --conf tools.cmake.cmaketoolchain:generator=Ninja"
       - name: Build Celix
         run: |
-          docker run --rm -v ~/.conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
+          docker run --rm -v .conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
           "cd /workspace && \
           conan build . --build missing --options build_all=True --options enable_address_sanitizer=True \
           --options enable_testing=True --options enable_ccache=True --output-folder build \
           --conf tools.cmake.cmaketoolchain:generator=Ninja --settings build_type=Debug"
       - name: Test Celix
         run: |
-          docker run --rm -v ~/.conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
+          docker run --rm -v .conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
           "cd /workspace/build && \
           source conanrun.sh && \
           ctest --output-on-failure"          
@@ -51,7 +52,7 @@ jobs:
           "mkdir /workspace/build && cd /workspace/build && \
           cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXPERIMENTAL=ON -DENABLE_TESTING=ON -DRSA_JSON_RPC=ON  \
           -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON -DENABLE_CCACHE=ON .. && \
-          make -j &&"
+          make -j"
       - name: Test Celix
         run: |
           docker run --rm -v $(pwd):/workspace apache/celix-apt-build:latest /bin/bash -c \

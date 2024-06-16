@@ -25,7 +25,7 @@ This document outlines the recommended coding conventions for Apache Celix devel
 formatting, comments, control structures, functions and error handling.
 
 Note that not all existing code adheres to these conventions.
-New code should adhere to these conventions and when possible, existing code should be updated to adhere to these
+New code should adhere to these conventions, and when possible, existing code should be updated to adhere to these
 conventions.
 
 ## Naming Conventions
@@ -447,7 +447,6 @@ set(MY_LIB_PRIVATE_LIBS ...)
 add_library(my_lib SHARED ${MY_LIB_SOURCES})
 target_link_libraries(my_lib PUBLIC ${MY_LIB_PUBLIC_LIBS} PRIVATE ${MY_LIB_PRIVATE_LIBS})
 celix_target_hide_symbols(my_lib)
-...
 
 if (ENABLE_TESTING)
     add_library(my_lib_cut STATIC ${MY_LIB_SOURCES})
@@ -613,3 +612,19 @@ add_library(celix::my_bundle ALIAS my_bundle)
 - Code should be checked for memory leaks using AddressSanitizer.
 - Coverity scan are done on the master on a regular basis. Ideally new coverity issues should be fixed as soon as 
   possible.
+
+## Conan Dependencies Locking
+
+If Conan is used as a build tool, the dependencies are locked using a `conan.lock` file. 
+This file is committed to source control and should be periodically updated when dependencies change.
+
+The lock file is used to ensure CI build caches and that developers work with the same dependencies.
+
+When updating dependencies, the following Conan command should be used:
+
+```bash
+conan lock create --options build_all=True --options enable_address_sanitizer=True --options enable_testing=True --options enable_ccache=True --conf tools.cmake.cmaketoolchain:generator=Ninja .
+```
+
+This command ensures that all the dependencies needed for different build options are enabled and locked, including some
+build dependencies like ccache and Ninja.

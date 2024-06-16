@@ -1,0 +1,41 @@
+{
+    "version": "0.5",
+    "requires": [
+        "zstd/1.5.5#1f239731dc45147c7fc2f54bfbde73df%1715599909.17",
+        "zlib/1.2.13#4e74ebf1361fe6fb60326f473f276eb5%1705999194.457",
+        "xz_utils/5.4.5#51e5a6e6564f4ea3afd79def01f035ad%1712043875.075",
+        "util-linux-libuuid/2.39.2#339f80aea7e5cf507b5b9839a128909f%1704959804.303",
+        "rapidjson/1.1.0#9f5e39d1f4a6b67d48c6a343c4592f32%1705070241.006",
+        "openssl/3.2.2#899583c694f9deccec74dbe0bbc65a15%1717540517.968",
+        "mdnsresponder/1310.140.1#5116b98dc767ebb2ea48a2a584a365b4%1686542086.05",
+        "libzip/1.10.1#502a2dde4cadffadd89a63e9bd824b08%1701463072.681",
+        "libxml2/2.12.7#737a1eba03113d1aa22d67579ced7d5e%1717577274.077",
+        "libiconv/1.17#73fefc1b696e069df90fd1d18aa63edd%1707122814.387",
+        "libffi/3.4.6#21f87d4a555c33a87a8dc87c58570407%1712271678.82",
+        "libcurl/8.8.0#9170903d66d6f6e6795fbb566a403129%1718115143.514",
+        "jansson/2.14#42fc601d5b8e236e050e48f2321ef851%1676235093.781",
+        "gtest/1.10.0#b58a214095fea571a44c2b19dff70711%1715096215.707",
+        "civetweb/1.16#fbdec252dc18b011fcd68d0663054ed8%1717493460.975",
+        "bzip2/1.0.8#457c272f7da34cb9c67456dd217d36c4%1703591832.799"
+    ],
+    "build_requires": [
+        "zstd/1.5.5#1f239731dc45147c7fc2f54bfbde73df%1715599909.17",
+        "pkgconf/2.1.0#27f44583701117b571307cf5b5fe5605%1701537936.436",
+        "ninja/1.11.1#77587f8c8318662ac8e5a7867eb4be21%1684431244.21",
+        "meson/1.2.2#04bdfb85d665c82b08a3510aee3ffd19%1702568761.764",
+        "m4/1.4.19#b38ced39a01e31fef5435bc634461fd2%1700758725.451",
+        "libtool/2.4.7#08316dad5c72c541ed21e039e4cf217b%1702300906.107",
+        "hiredis/1.1.0#4dc0176dbbd4e4257a0db69d0e2047b0%1707834163.397",
+        "gnu-config/cci.20210814#dc430d754f465e8c74463019672fb97b%1701248168.479",
+        "cmake/3.29.5#56dbff3ff8af6bcd4b9c170fbd4da068%1717779530.555",
+        "ccache/4.7.4#83eaaa1059cdc33a90eb35249e1df6fb%1689758368.487",
+        "automake/1.16.5#058bda3e21c36c9aa8425daf3c1faf50%1688481772.751",
+        "autoconf/2.71#f9307992909d7fb3df459340f1932809%1711983104.648"
+    ],
+    "python_requires": [],
+    "overrides": {
+        "zlib/[>=1.2.11 <2]": [
+            "zlib/1.2.13"
+        ]
+    }
+}
