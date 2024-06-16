@@ -25,15 +25,6 @@ extern "C" {
 #endif
 
 /**
- * @brief Stop the framework, by stopping the framework bundle.
- *
- * Also logs a message if the framework is stopped due to a signal.
- *
- * @param signal The optional signal that caused the framework to stop.
- */
-void celix_launcher_stopInternal(const int* signal);
-
-/**
  * @brief Create a combined configuration properties set by combining the embedded properties with the runtime
  * properties.
  * @param[in,out] embeddedProps The embedded properties to use and extend with the runtime properties.

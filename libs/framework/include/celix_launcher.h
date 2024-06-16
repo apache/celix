@@ -29,6 +29,15 @@ extern "C" {
 #endif
 
 /**
+ * @brief Celix launcher environment property to specify interval of the periodic shutdown check performed by launcher.
+ *
+ * The launcher will perform a periodic check to see whether to perform a shutdown, and if so, the launcher will
+ * stop and destroy the framework. The interval of this check can be specified in seconds using this property.
+ */
+#define CELIX_LAUNCHER_SHUTDOWN_PERIOD_IN_SECONDS           "CELIX_LAUNCHER_SHUTDOWN_PERIOD_IN_SECONDS"
+#define CELIX_LAUNCHER_SHUTDOWN_PERIOD_IN_SECONDS_DEFAULT   1.0
+
+/**
  * @brief Launch a celix framework, wait (block) until the framework is stopped and destroy the framework when stopped.
  *
  * The launcher will also setup signal handlers for SIGINT, SIGTERM, SIGUSR1 and SIGUSR2 and initialize libcurl.

@@ -1383,7 +1383,7 @@ static void celix_framework_processScheduledEvents(celix_framework_t* fw) {
         celixThreadMutex_lock(&fw->dispatcher.mutex);
         CELIX_LONG_HASH_MAP_ITERATE(fw->dispatcher.scheduledEvents, entry) {
             celix_scheduled_event_t* visit = entry.value.ptrValue;
-            if (celix_scheduledEvent_isMarkedForRemoval(visit)) {
+            if (!fw->dispatcher.active || celix_scheduledEvent_isMarkedForRemoval(visit)) {
                 removeEvent = visit;
                 celix_longHashMap_remove(fw->dispatcher.scheduledEvents, celix_scheduledEvent_getId(visit));
                 break;
@@ -1531,6 +1531,7 @@ static void *fw_eventDispatcher(void *fw) {
     }
 
     //not active anymore, extra runs for possible request leftovers
+    celix_framework_processScheduledEvents(framework);
     celixThreadMutex_lock(&framework->dispatcher.mutex);
     bool needExtraRun = celix_framework_eventQueueSize(fw) > 0;
     celixThreadMutex_unlock(&framework->dispatcher.mutex);
@@ -2540,6 +2541,13 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
                CELIX_LOG_LEVEL_ERROR,
                "Cannot add scheduled event for bundle id %li. Invalid NULL event callback.",
                bndId);
+        return -1;
+    }
+    if (initialDelayInSeconds < 0 || intervalInSeconds < 0) {
+        fw_log(fw->logger,
+               CELIX_LOG_LEVEL_ERROR,
+               "Cannot add scheduled event for bundle id %li. Invalid intervals: (%f,%f).",
+               bndId, initialDelayInSeconds, intervalInSeconds);
         return -1;
     }
 

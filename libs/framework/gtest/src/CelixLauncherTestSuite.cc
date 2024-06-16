@@ -19,10 +19,12 @@
 
 #include <gtest/gtest.h>
 
+#include <csignal>
 #include <thread>
 #include <future>
 #include <vector>
 #include <string>
+#include <pthread.h>
 
 #include "celix_constants.h"
 #include "celix_launcher.h"
@@ -190,19 +192,31 @@ TEST_F(CelixLauncherTestSuite, LaunchWithInvalidConfigPropertiesTest) {
     //Then the launch will exit
     auto status = future.wait_for(std::chrono::milliseconds{LAUNCH_WAIT_TIMEOUT});
     EXPECT_EQ(status, std::future_status::ready);
+
+    //When launching the framework with a properties set with a negative shutdown period
+    auto* props = celix_properties_create();
+    ASSERT_TRUE(props != nullptr);
+    celix_properties_setDouble(props, CELIX_LAUNCHER_SHUTDOWN_PERIOD_IN_SECONDS, -1.0);
+    future = launchInThread({"programName"}, props, 1);
+    //Then launch will exit
+    status = future.wait_for(std::chrono::milliseconds{LAUNCH_WAIT_TIMEOUT});
+    EXPECT_EQ(status, std::future_status::ready);
 }
 
+
 TEST_F(CelixLauncherTestSuite, StopLauncherWithSignalTest) {
+    auto* props = celix_properties_create();
     // When launching the framework
-    auto future = launchInThread({"programName"}, nullptr, 0);
+    celix_properties_setDouble(props, CELIX_LAUNCHER_SHUTDOWN_PERIOD_IN_SECONDS, 0.01);
+    auto future = launchInThread({"programName"}, props, 0);
 
     // Then the launch will not exit, because the framework is running
     auto status = future.wait_for(std::chrono::milliseconds{LAUNCH_WAIT_TIMEOUT});
     EXPECT_EQ(status, std::future_status::timeout);
 
-    // When I stop the framework by mimicking a SIGINT signal
+    // When I stop the framework by sending a SIGINT signal
     int signal = SIGINT;
-    celix_launcher_stopInternal(&signal);
+    EXPECT_EQ(0, pthread_kill(pthread_self(), signal));
 
     // Then the launch will exit
     status = future.wait_for(std::chrono::milliseconds{LAUNCH_WAIT_TIMEOUT});

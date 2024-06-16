@@ -231,7 +231,21 @@ TEST_F(ScheduledEventTestSuite, InvalidOptionsAndArgumentsTest) {
     auto ctx = fw->getFrameworkBundleContext();
     celix_scheduled_event_options_t opts{}; // no callback
     long scheduledEventId = celix_bundleContext_scheduleEvent(ctx->getCBundleContext(), &opts);
+    // Then I expect an error
+    EXPECT_LT(scheduledEventId, 0);
 
+    // When I create a scheduled event with negative initial delay
+    opts.name = "Invalid scheduled event test";
+    opts.initialDelayInSeconds = -1;
+    opts.callback = [](void* /*data*/) { FAIL() << "Scheduled event called, but should not be called"; };
+    scheduledEventId = celix_bundleContext_scheduleEvent(ctx->getCBundleContext(), &opts);
+    // Then I expect an error
+    EXPECT_LT(scheduledEventId, 0);
+
+    // When I create a scheduled event with negative interval value
+    opts.initialDelayInSeconds = 0.1;
+    opts.intervalInSeconds = -1;
+    scheduledEventId = celix_bundleContext_scheduleEvent(ctx->getCBundleContext(), &opts);
     // Then I expect an error
     EXPECT_LT(scheduledEventId, 0);
 
