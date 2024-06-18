@@ -1,4 +1,4 @@
-name: Celix build containers
+name: Celix Containers
 
 on:
   push:
@@ -23,10 +23,6 @@ jobs:
           path: ~/.ccache-container
           key: cache-ccache-container-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
           restore-keys: cache-ccache-container-${{ runner.os }}-${{ github.job }}-
-      - name: Cache Docker images
-        uses: ScribeMD/docker-cache@0.5.0
-        with:
-          key: docker-images-${{ runner.os }}-${{ github.job }}-${{ hashFiles('.devcontainer/*') }}
       - name: Build container image
         run: |
           docker build --tag apache/celix-conan-build:latest --target conan-build --file .devcontainer/Containerfile .
@@ -77,10 +73,6 @@ jobs:
           path: ~/.ccache-container
           key: cache-ccache-container-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
           restore-keys: cache-ccache-container-${{ runner.os }}-${{ github.job }}-
-      - name: Cache Docker images
-        uses: ScribeMD/docker-cache@0.5.0
-        with:
-          key: docker-images-${{ runner.os }}-${{ github.job }}-${{ hashFiles('.devcontainer/*') }}
       - name: Build Celix
         run: |
           docker run --rm -v ~/.ccache-container:/root/.ccache -v $(pwd):/workspace \
@@ -101,10 +93,6 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3.3.0
-      - name: Cache Docker images
-        uses: ScribeMD/docker-cache@0.5.0
-        with:
-          key: docker-images-${{ runner.os }}-${{ github.job }}-${{ hashFiles('.devcontainer/*') }}
       - name: Build dev container images
         run: |
           docker build --tag apache/celix-conan-dev:latest --target conan-dev --file .devcontainer/Containerfile .
