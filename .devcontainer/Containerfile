@@ -23,13 +23,10 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
         build-essential \
         ccache \
         cmake \
-        cmake-curses-gui \
-        curl \
-        default-jdk \
         gcc \
         g++ \
-        gdb \
         make \
+        zip \
         ninja-build \
         lcov \
         sudo \
@@ -44,7 +41,8 @@ FROM build as conan-build
 RUN pip3 install conan && pip3 cache purge
 
 # Setup conan profile for root
-RUN conan profile detect
+COPY .devcontainer/conan-container-default-profile /root/.conan2/profiles/default
+COPY .devcontainer/conan-container-debug-profile /root/.conan2/profiles/debug
 
 # Build image using apt dependencies
 FROM build as apt-build
@@ -77,12 +75,13 @@ USER celixdev
 WORKDIR /home/celixdev
 
 # Setup conan profile for celixdev
-RUN conan profile detect
+COPY .devcontainer/conan-container-default-profile /home/celixdev/.conan2/profiles/default
+COPY .devcontainer/conan-container-debug-profile /home/celixdev/.conan2/profiles/debug
 
 #Install development dependencies
 RUN sudo DEBIAN_FRONTEND="noninteractive" apt-get update && \
     sudo DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-    gnupg2 dos2unix git locales-all rsync tar ssh tzdata sudo vim openssh-server && \
+    gnupg2 dos2unix git locales-all rsync tar ssh tzdata sudo vim openssh-server cmake-curses-gui gdb && \
     sudo apt-get clean
 
 RUN sudo mkdir /run/sshd
@@ -99,7 +98,7 @@ WORKDIR /home/celixdev
 #Install development dependencies
 RUN sudo DEBIAN_FRONTEND="noninteractive" apt-get update && \
     sudo DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-    gnupg2 dos2unix git locales-all rsync tar ssh tzdata sudo vim openssh-server && \
+    gnupg2 dos2unix git locales-all rsync tar ssh tzdata sudo vim openssh-server cmake-curses-gui gdb && \
     sudo apt-get clean
 
 RUN sudo mkdir /run/sshd

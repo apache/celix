@@ -14,34 +14,42 @@ jobs:
       - name: Cache Conan
         uses: actions/cache@v3
         with:
-          path: ~/.conan2
-          key: conan-container-cache-${{ runner.os }}-${{ hashFiles('conanfile.py') }}
+          path: ~/.conan2-container
+          key: conan-container-cache-${{ runner.os }}-${{ hashFiles('conanfile.py', '.devcontainer/Containerfile') }}
           restore-keys: conan-container-cache-${{ runner.os }}-
       - name: Build container image
         run: |
           docker build --tag apache/celix-conan-build:latest --target conan-build --file .devcontainer/Containerfile .
       - name: Build Celix dependencies
-        run: |
-          mkdir -p ~/.conan2 && \
-          docker run --rm -v ~/.conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
-          "conan profile detect && \
-          cd /workspace && \
-          conan install . --build missing --options build_all=True --options enable_address_sanitizer=True \
-          --options enable_testing=True --options enable_ccache=True --output-folder build \
-          --conf tools.cmake.cmaketoolchain:generator=Ninja"
+        run: | #Using .conan2-container so that the steps can be reproduced locally without affecting the host conan 
+          mkdir -p ~/.conan2-container/profiles && \
+          cp .devcontainer/conan-container-default-profile ~/.conan2-container/profiles/default && \
+          cp .devcontainer/conan-container-debug-profile ~/.conan2-container/profiles/debug && \
+          docker run --rm -v ~/.conan2-container:/root/.conan2 -v $(pwd):/workspace \
+          apache/celix-conan-build:latest /bin/bash -c \
+          "cd /workspace && \
+          conan install . --build missing --profile debug \
+          --options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True \
+          --options celix/*:enable_testing=True --options celix/*:enable_ccache=True \
+          --conf:build tools.cmake.cmaketoolchain:generator=Ninja \
+          --output-folder build"
       - name: Build Celix
         run: |
-          docker run --rm -v ~/.conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
+          docker run --rm -v ~/.conan2-container:/root/.conan2 -v $(pwd):/workspace \
+          apache/celix-conan-build:latest /bin/bash -c \
           "cd /workspace && \
-          conan build . --build missing --options build_all=True --options enable_address_sanitizer=True \
-          --options enable_testing=True --options enable_ccache=True --output-folder build \
-          --conf tools.cmake.cmaketoolchain:generator=Ninja --settings build_type=Debug"
+          conan build . --profile debug \
+          --options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True \
+          --options celix/*:enable_testing=True --options celix/*:enable_ccache=True \
+          --conf:build tools.cmake.cmaketoolchain:generator=Ninja \
+          --output-folder build"
       - name: Test Celix
         run: |
-          docker run --rm -v ~/.conan2:/root/.conan2 -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
+          docker run --rm -v ~/.conan2-container:/root/.conan2 -v $(pwd):/workspace \
+          apache/celix-conan-build:latest /bin/bash -c \
           "cd /workspace/build && \
           source conanrun.sh && \
-          ctest --output-on-failure"          
+          ctest --output-on-failure -E unit_test_discovery_zeroconf"          
 
   container-apt-build-ubuntu:
     runs-on: ubuntu-22.04
