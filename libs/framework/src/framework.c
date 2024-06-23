@@ -2583,8 +2583,13 @@ long celix_framework_scheduleEvent(celix_framework_t* fw,
     celix_bundleEntry_decreaseUseCount(bndEntry);
 
     celixThreadMutex_lock(&fw->dispatcher.mutex);
-    celix_longHashMap_put(fw->dispatcher.scheduledEvents, id, event);
-    celixThreadCondition_broadcast(&fw->dispatcher.cond); //notify dispatcher thread for newly added scheduled event
+    if (fw->dispatcher.active) {
+        celix_longHashMap_put(fw->dispatcher.scheduledEvents, id, event);
+        celixThreadCondition_broadcast(&fw->dispatcher.cond); //notify dispatcher thread for newly added scheduled event
+    } else {
+        celix_scheduledEvent_release(event);
+        id = -1L;
+    }
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 
     return id;
