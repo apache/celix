@@ -99,7 +99,8 @@ COPY --chown=celixdev:celixdev conan-container-debug-profile /home/celixdev/.con
 #Install development dependencies
 RUN sudo DEBIAN_FRONTEND="noninteractive" apt-get update && \
     sudo DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-    gnupg2 dos2unix git locales-all rsync tar ssh tzdata sudo vim openssh-server cmake-curses-gui gdb && \
+    gnupg2 dos2unix git locales-all rsync tar ssh tzdata sudo vim openssh-server cmake-curses-gui gdb \
+    wget curl && \
     sudo apt-get clean
 
 RUN sudo mkdir /run/sshd
@@ -119,7 +120,8 @@ WORKDIR /home/celixdev
 #Install development dependencies
 RUN sudo DEBIAN_FRONTEND="noninteractive" apt-get update && \
     sudo DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
-    gnupg2 dos2unix git locales-all rsync tar ssh tzdata sudo vim openssh-server cmake-curses-gui gdb && \
+    gnupg2 dos2unix git locales-all rsync tar ssh tzdata sudo vim openssh-server cmake-curses-gui gdb \
+    wget curl && \
     sudo apt-get clean
 
 RUN sudo mkdir /run/sshd

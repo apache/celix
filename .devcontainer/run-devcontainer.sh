@@ -130,4 +130,4 @@ build_conan_deps() {
 }
 ask_and_execute "Do you want to build Celix dependencies with Conan?" build_conan_deps
 
-echo "Done."
+echo "Done. You can connect with ssh using 'ssh -p 2233 celixdev@localhost' and password 'celixdev'"

@@ -10,15 +10,15 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
       - name: Cache Conan
-        uses: actions/cache@v3
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c #v3
         with:
           path: ~/.conan2-container
           key: cache-conan-container-${{ runner.os }}-${{ github.job }}-${{ hashFiles('conanfile.py', '.devcontainer/*') }}
           restore-keys: cache-conan-container-${{ runner.os }}-${{ github.job }}-
       - name: Cache ccache
-        uses: actions/cache@v3
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c #v3
         with:
           path: ~/.ccache-container
           key: cache-ccache-container-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
@@ -63,13 +63,13 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
       - name: Build container image
         run: |
           cd .devcontainer && \
           docker build --tag apache/celix-apt-build:latest --target apt-build --file Containerfile .
       - name: Cache ccache
-        uses: actions/cache@v3
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c #v3
         with:
           path: ~/.ccache-container
           key: cache-ccache-container-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
@@ -93,7 +93,7 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
       - name: Build dev container images
         run: |
           cd .devcontainer && \
