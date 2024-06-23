@@ -85,8 +85,6 @@ celix_status_t shellMediator_stop(shell_mediator_pt instance) {
 celix_status_t shellMediator_destroy(shell_mediator_pt instance) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	celixThreadMutex_lock(&instance->mutex);
-
 	instance->shellService = NULL;
 	serviceTracker_destroy(instance->tracker);
     celix_logHelper_destroy(instance->loghelper);
