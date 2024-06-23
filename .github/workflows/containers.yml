@@ -25,7 +25,8 @@ jobs:
           restore-keys: cache-ccache-container-${{ runner.os }}-${{ github.job }}-
       - name: Build container image
         run: |
-          docker build --tag apache/celix-conan-build:latest --target conan-build --file .devcontainer/Containerfile .
+          cd .devcontainer && \
+          docker build --tag apache/celix-conan-build:latest --target conan-build --file Containerfile .
       - name: Build Celix dependencies
         run: | #Using .conan2-container so that the steps can be reproduced locally without affecting the host conan 
           mkdir -p ~/.conan2-container/profiles && \
@@ -55,8 +56,7 @@ jobs:
           docker run --rm -v ~/.conan2-container:/root/.conan2 -v $(pwd):/workspace \
           apache/celix-conan-build:latest /bin/bash -c \
           "cd /workspace/build && \
-          source conanrun.sh && \
-          ctest --output-on-failure -E unit_test_discovery_zeroconf"          
+          ctest --output-on-failure --test-command ./workspaces/celix/build/conanrun.sh"          
 
   container-apt-build-ubuntu:
     runs-on: ubuntu-22.04
@@ -66,7 +66,8 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Build container image
         run: |
-          docker build --tag apache/celix-apt-build:latest --target apt-build --file .devcontainer/Containerfile .
+          cd .devcontainer && \
+          docker build --tag apache/celix-apt-build:latest --target apt-build --file Containerfile .
       - name: Cache ccache
         uses: actions/cache@v3
         with:
@@ -95,5 +96,6 @@ jobs:
         uses: actions/checkout@v3.3.0
       - name: Build dev container images
         run: |
-          docker build --tag apache/celix-conan-dev:latest --target conan-dev --file .devcontainer/Containerfile .
-          docker build --tag apache/celix-apt-dev:latest --target apt-dev --file .devcontainer/Containerfile .
+          cd .devcontainer && \
+          docker build --tag apache/celix-conan-dev:latest --target conan-dev --file Containerfile . && \
+          docker build --tag apache/celix-apt-dev:latest --target apt-dev --file Containerfile .

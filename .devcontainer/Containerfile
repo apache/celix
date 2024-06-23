@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-FROM docker.io/library/ubuntu:22.04@sha256:b492494d8e0113c4ad3fe4528a4b5ff89faa5331f7d52c5c138196f69ce176a6 as build
+FROM docker.io/library/ubuntu:24.04@sha256:2e863c44b718727c860746568e1d54afd13b2fa71b160f5cd9058fc436217b30 as build
 
 # Install dependencies
 RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
@@ -31,18 +31,25 @@ RUN DEBIAN_FRONTEND="noninteractive" apt-get update && \
         lcov \
         sudo \
         python3 \
-        python3-pip && \
+        pipx && \
     apt-get clean
+
+#python3-pip && \
 
 # Build image using conan & cmake
 FROM build as conan-build
 
 # Install conan
-RUN pip3 install conan && pip3 cache purge
+#RUN pip3 install conan && pip3 cache purge
+##RUN DEBIAN_FRONTEND="noninteractive" apt-get install -y --no-install-recommends \
+#        python3-conan && \
+#    apt-get clean
+ENV PATH="${PATH}:/root/.local/bin"
+RUN pipx install conan
 
 # Setup conan profile for root
-COPY .devcontainer/conan-container-default-profile /root/.conan2/profiles/default
-COPY .devcontainer/conan-container-debug-profile /root/.conan2/profiles/debug
+COPY conan-container-default-profile /root/.conan2/profiles/default
+COPY conan-container-debug-profile /root/.conan2/profiles/debug
 
 # Build image using apt dependencies
 FROM build as apt-build
@@ -65,18 +72,29 @@ RUN DEBIAN_FRONTEND="noninteractive" sudo apt-get update && \
         uuid-dev && \
     sudo apt-get clean
 
-FROM conan-build as conan-dev
+#Note from build not conan-build, because conan-dev uses a celixdev user
+FROM build as conan-dev
 
-# Add user celixdev with sudo rights and a "celixdev" password
-RUN useradd -m -s /bin/bash -G sudo celixdev && \
+# Remove ubuntu user and add celixdev with sudo rights and a "celixdev" password
+RUN userdel -r ubuntu && \
+    groupadd --gid 1000 celixdev && \
+    useradd --uid 1000 --gid 1000 -m \
+    -s /bin/bash -G sudo celixdev && \
     echo "%sudo  ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
     echo "celixdev:celixdev" | chpasswd
 USER celixdev
 WORKDIR /home/celixdev
 
+#Create workdir, used in vscode
+#RUN sudo mkdir -p /workspaces/celix/build && sudo chown -R celixdev:celixdev /workspaces
+
+# Setup python venv for celixdev and install conan
+ENV PATH="${PATH}:/home/celixdev/.local/bin"
+RUN pipx install conan
+
 # Setup conan profile for celixdev
-COPY .devcontainer/conan-container-default-profile /home/celixdev/.conan2/profiles/default
-COPY .devcontainer/conan-container-debug-profile /home/celixdev/.conan2/profiles/debug
+COPY --chown=celixdev:celixdev conan-container-default-profile /home/celixdev/.conan2/profiles/default
+COPY --chown=celixdev:celixdev conan-container-debug-profile /home/celixdev/.conan2/profiles/debug
 
 #Install development dependencies
 RUN sudo DEBIAN_FRONTEND="noninteractive" apt-get update && \
@@ -88,8 +106,11 @@ RUN sudo mkdir /run/sshd
 
 FROM apt-build as apt-dev
 
-# Add user celixdev with sudo rights and a "celixdev" password
-RUN useradd -m -s /bin/bash -G sudo celixdev && \
+# Remove ubuntu user and add celixdev with sudo rights and a "celixdev" password
+RUN userdel -r ubuntu && \
+    groupadd --gid 1000 celixdev && \
+    useradd --uid 1000 --gid 1000 -m \
+    -s /bin/bash -G sudo celixdev && \
     echo "%sudo  ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers && \
     echo "celixdev:celixdev" | chpasswd
 USER celixdev

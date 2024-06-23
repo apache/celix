@@ -15,12 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#Based on gcc from ubuntu:22.04 base image
+#Based on gcc from ubuntu:24.04 base image
 [settings]
 arch=x86_64
 build_type=Debug
 compiler=gcc
 compiler.cppstd=17
 compiler.libcxx=libstdc++11
-compiler.version=11
+compiler.version=13
 os=Linux

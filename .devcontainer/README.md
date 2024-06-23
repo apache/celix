@@ -55,3 +55,12 @@ In CLion, open the Remote Development window by navigating to "File -> Remote De
 configuration. When a new configuration is added, you can start a new project using `/home/celixdev/workspace` as the
 project root and
 selecting CLion as the IDE.
+
+## Running tests
+Tests can be runned using ctest. When building with conan, the conanrun.sh script will setup the environment for the
+built dependencies. To run the tests, execute the following commands:
+
+```shell
+cd build
+ctest --output-on-failure --test-command ./workspaces/celix/build/conanrun.sh
+```

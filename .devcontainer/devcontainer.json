@@ -7,6 +7,8 @@
      "runArgs" : [
         "--userns=keep-id"
     ],
+    "remoteUser": "celixdev",
+    "containerUser": "celixdev",
     "onCreateCommand": "sh .devcontainer/setup-project-with-conan.sh",
     "postCreateCommand": "sh .devcontainer/build-project-with-conan.sh"
 }

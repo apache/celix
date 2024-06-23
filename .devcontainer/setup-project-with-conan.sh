@@ -17,6 +17,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-conan install . --build missing --options build_all=True --options enable_address_sanitizer=True \
-      --options enable_testing=True --options enable_ccache=True --output-folder build \
-      --conf tools.cmake.cmaketoolchain:generator=Ninja --settings build_type=Debug
+mkdir build
+
+conan install . --build missing --profile debug \
+          --options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True \
+          --options celix/*:enable_testing=True --options celix/*:enable_ccache=True \
+          --conf:build tools.cmake.cmaketoolchain:generator=Ninja \
+          --output-folder build
