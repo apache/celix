@@ -19,7 +19,7 @@ add_library(tlib SHARED
         tlib/src/test.c
 )
 target_include_directories(tlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tlib/include)
-set_library_version(tlib "4.3.2") # sets target propery VERSION to 4.3.2 and SOVERSION to 4
+celix_set_library_version(tlib "4.3.2") # sets target propery VERSION to 4.3.2 and SOVERSION to 4
 
 add_celix_bundle(hellotest
     VERSION "1.2"

@@ -30,6 +30,7 @@ public:
     ~ConvertUtilsWithErrorInjectionTestSuite() override {
         celix_ei_expect_celix_version_copy(nullptr, 0, nullptr);
         celix_ei_expect_celix_version_createVersionFromString(nullptr, 0, CELIX_SUCCESS);
+        celix_ei_expect_celix_version_parse(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_createLongArray(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_addLong(nullptr, 0, CELIX_SUCCESS);

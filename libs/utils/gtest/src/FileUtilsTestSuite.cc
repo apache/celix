@@ -178,13 +178,14 @@ TEST_F(FileUtilsTestSuite, ExtractZipFileTest) {
     EXPECT_EQ(status, CELIX_SUCCESS);
 
     EXPECT_TRUE(celix_utils_fileExists(file1));
-    auto* props = celix_properties_load(file1);
-    EXPECT_NE(props, nullptr);
+    celix_properties_t* props = nullptr;
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_load(file1, 0, &props));
     EXPECT_EQ(celix_properties_getAsLong(props, "level", 0), 1);
     celix_properties_destroy(props);
 
     EXPECT_TRUE(celix_utils_fileExists(file2));
-    props = celix_properties_load(file2);
+    props = nullptr;
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_load(file2, 0, &props));
     EXPECT_NE(props, nullptr);
     EXPECT_EQ(celix_properties_getAsLong(props, "level", 0), 2);
     celix_properties_destroy(props);
@@ -234,13 +235,16 @@ TEST_F(FileUtilsTestSuite, ExtractZipDataTest) {
     EXPECT_EQ(status, CELIX_SUCCESS);
 
     EXPECT_TRUE(celix_utils_fileExists(file1));
-    auto* props = celix_properties_load(file1);
+    celix_properties_t* props = nullptr;
+    status = celix_properties_load(file1, 0, &props);
+    EXPECT_EQ(status, CELIX_SUCCESS);
     EXPECT_NE(props, nullptr);
     EXPECT_EQ(celix_properties_getAsLong(props, "level", 0), 1);
     celix_properties_destroy(props);
 
     EXPECT_TRUE(celix_utils_fileExists(file2));
-    props = celix_properties_load(file2);
+    status = celix_properties_load(file2, 0, &props);
+    EXPECT_EQ(status, CELIX_SUCCESS);
     EXPECT_NE(props, nullptr);
     EXPECT_EQ(celix_properties_getAsLong(props, "level", 0), 2);
     celix_properties_destroy(props);
@@ -262,13 +266,15 @@ TEST_F(FileUtilsTestSuite, ExtractZipDataTest) {
     EXPECT_EQ(status, CELIX_SUCCESS);
 
     EXPECT_TRUE(celix_utils_fileExists(file1));
-    auto* props = celix_properties_load(file1);
+    celix_properties_t* props = nullptr;
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_load(file1, 0, &props));
     EXPECT_NE(props, nullptr);
     EXPECT_EQ(celix_properties_getAsLong(props, "level", 0), 1);
     celix_properties_destroy(props);
 
     EXPECT_TRUE(celix_utils_fileExists(file2));
-    props = celix_properties_load(file2);
+    props = nullptr;
+    EXPECT_EQ(CELIX_SUCCESS, celix_properties_load(file2, 0, &props));
     EXPECT_NE(props, nullptr);
     EXPECT_EQ(celix_properties_getAsLong(props, "level", 0), 2);
     celix_properties_destroy(props);

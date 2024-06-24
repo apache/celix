@@ -109,7 +109,7 @@ The Apache Celix launcher also does some additional work:
 //src/launcher.c
 #include <celix_bundle_activator.h>
 int main(int argc, char** argv) {
-    return celixLauncher_launchAndWaitForShutdown(argc, argv, NULL);
+    return celix_launcher_launchAndWait(argc, argv, NULL);
 }
 ```
 ```cmake
@@ -191,7 +191,7 @@ int main() {
 //src/launcher.c
 #include <celix_bundle_activator.h>
 int main(int argc, char** argv) {
-    return celixLauncher_launchAndWaitForShutdown(argc, argv, NULL);
+    return celix_launcher_launch(argc, argv, NULL);
 }
 ```
 

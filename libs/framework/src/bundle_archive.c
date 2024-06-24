@@ -18,7 +18,6 @@
  */
 
 #include <assert.h>
-#include <dirent.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,39 +61,52 @@ struct bundleArchive {
 
 static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_archive_pt archive) {
     bool needUpdate = false;
-    celix_properties_t* bundleStateProperties = NULL;
-    bundleStateProperties = celix_properties_load(archive->savedBundleStatePropertiesPath);
-    if (bundleStateProperties == NULL) {
-        celix_framework_logTssErrors(archive->fw->logger, CELIX_LOG_LEVEL_ERROR);
+    celix_autoptr(celix_properties_t) bundleStateProperties = NULL;
+    if (celix_utils_fileExists(archive->savedBundleStatePropertiesPath)) {
+        celix_status_t status =
+            celix_properties_load(archive->savedBundleStatePropertiesPath, 0, &bundleStateProperties);
+        if (status != CELIX_SUCCESS) {
+            celix_framework_logTssErrors(archive->fw->logger, CELIX_LOG_LEVEL_ERROR);
+        }
+    }
+    if (!bundleStateProperties) {
         bundleStateProperties = celix_properties_create();
     }
-    if (bundleStateProperties == NULL) {
+    if (!bundleStateProperties) {
         return CELIX_ENOMEM;
     }
-    //set/update bundle cache state properties
-    if (celix_properties_getAsLong(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, 0) != archive->id) {
+
+    // set/update bundle cache state properties
+    if (celix_properties_getAsLong(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, 0) !=
+        archive->id) {
         celix_properties_setLong(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_BUNDLE_ID_PROPERTY_NAME, archive->id);
         needUpdate = true;
     }
-    if (strcmp(celix_properties_get(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, ""), archive->location) != 0) {
+    if (strcmp(celix_properties_get(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, ""),
+               archive->location) != 0) {
         celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_LOCATION_PROPERTY_NAME, archive->location);
         needUpdate = true;
     }
-    if (strcmp(celix_properties_get(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME, ""), archive->bundleSymbolicName) != 0) {
-        celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME, archive->bundleSymbolicName);
+    if (strcmp(celix_properties_get(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME, ""),
+               archive->bundleSymbolicName) != 0) {
+        celix_properties_set(
+            bundleStateProperties, CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME, archive->bundleSymbolicName);
         needUpdate = true;
     }
-    if (strcmp(celix_properties_get(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME, ""), archive->bundleVersion) != 0) {
+    if (strcmp(celix_properties_get(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME, ""),
+               archive->bundleVersion) != 0) {
         celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME, archive->bundleVersion);
         needUpdate = true;
     }
 
-    //save bundle cache state properties
+    // save bundle cache state properties
     if (needUpdate) {
-        celix_properties_store(bundleStateProperties, archive->savedBundleStatePropertiesPath,
-                               "Bundle State Properties");
+        celix_status_t status = celix_properties_save(
+            bundleStateProperties, archive->savedBundleStatePropertiesPath, CELIX_PROPERTIES_ENCODE_PRETTY);
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
     }
-    celix_properties_destroy(bundleStateProperties);
     return CELIX_SUCCESS;
 }
 
@@ -317,14 +329,14 @@ dir_failed:
         celix_utils_deleteDirectory(archive->archiveRoot, NULL);
     }
 init_failed:
-    bundleArchive_destroy(archive);
+    celix_bundleArchive_destroy(archive);
 calloc_failed:
     celix_framework_logTssErrors(fw->logger, CELIX_LOG_LEVEL_ERROR);
     framework_logIfError(fw->logger, status, error, "Could not create archive.");
     return status;
 }
 
-void bundleArchive_destroy(bundle_archive_pt archive) {
+void celix_bundleArchive_destroy(bundle_archive_pt archive) {
     if (archive != NULL) {
         free(archive->location);
         free(archive->savedBundleStatePropertiesPath);

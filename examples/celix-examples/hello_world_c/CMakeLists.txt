@@ -21,6 +21,7 @@ add_celix_bundle(hello_world_c
 )
 
 add_celix_container(hello_world_c_container
+    C
     GROUP c_examples
     BUNDLES
         Celix::shell
