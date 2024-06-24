@@ -34,6 +34,7 @@ add_celix_bundle(cmp_test_bundle SOURCES src/CmpTestBundleActivator.cc VERSION 1
 add_celix_bundle(cond_test_bundle SOURCES src/CondTestBundleActivator.cc VERSION 1.0.0)
 add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
 add_celix_bundle(celix_err_test_bundle SOURCES src/activator_with_celix_err.c VERSION 1.0.0)
+add_celix_bundle(immediate_stop_bundle SOURCES src/activator_stop.c VERSION 1.0.0)
 
 add_celix_bundle(unresolvable_bundle SOURCES src/nop_activator.c VERSION 1.0.0)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -82,7 +83,7 @@ add_celix_bundle_dependencies(test_framework
         simple_test_bundle2 simple_test_bundle3 simple_test_bundle4
         simple_test_bundle5 bundle_with_exception bundle_with_bad_export
         unresolvable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle
-        celix_err_test_bundle dup_symbolic_name_bundle)
+        celix_err_test_bundle dup_symbolic_name_bundle immediate_stop_bundle)
 target_include_directories(test_framework PRIVATE ../src)
 celix_deprecated_utils_headers(test_framework)
 
@@ -94,6 +95,7 @@ celix_get_bundle_file(simple_test_bundle4 SIMPLE_TEST_BUNDLE4)
 celix_get_bundle_file(simple_test_bundle5 SIMPLE_TEST_BUNDLE5)
 celix_get_bundle_filename(simple_test_bundle4 SIMPLE_TEST_BUNDLE4_FILENAME)
 celix_get_bundle_filename(simple_test_bundle5 SIMPLE_TEST_BUNDLE5_FILENAME)
+celix_get_bundle_file(immediate_stop_bundle IMMEDIATE_STOP_BUNDLE)
 
 celix_get_bundle_filename(bundle_with_exception BUNDLE_WITH_EXCEPTION)
 celix_get_bundle_file(bundle_with_bad_export BUNDLE_WITH_BAD_EXPORT)
@@ -128,7 +130,9 @@ target_compile_definitions(test_framework PRIVATE
         CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"
         COND_TEST_BUNDLE_LOC="${COND_TEST_BUNDLE_LOC}"
         INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE="${CMAKE_CURRENT_BINARY_DIR}/install_and_start_bundles.properties"
+        IMMEDIATE_STOP_BUNDLE_LOCATION="${IMMEDIATE_STOP_BUNDLE}"
 )
+
 if (ENABLE_TESTING_ON_CI)
     target_compile_definitions(test_framework PRIVATE TESTING_ON_CI=1)
 endif ()
