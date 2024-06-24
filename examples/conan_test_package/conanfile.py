@@ -26,6 +26,7 @@ class TestPackageConan(ConanFile):
 
     def build(self):
         cmake = CMake(self)
+        cmake.definitions["ENABLE_ADDRESS_SANITIZER"] = self.options["celix"].enable_address_sanitizer
         cmake.definitions["TEST_FRAMEWORK"] = self.options["celix"].build_framework
         cmake.definitions["TEST_HTTP_ADMIN"] = self.options["celix"].build_http_admin
         cmake.definitions["TEST_LOG_SERVICE"] = self.options["celix"].build_log_service
