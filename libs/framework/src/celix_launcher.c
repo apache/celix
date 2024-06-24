@@ -182,9 +182,12 @@ int celix_launcher_launchAndWait(int argc, char* argv[], const char* embeddedCon
         return CELIX_LAUNCHER_ERROR_EXIT_CODE;
     }
     status = celix_launcher_setGlobalFramework(framework);
-    if (status == CELIX_SUCCESS) {
-        celix_framework_waitForStop(framework);
+    if (status != CELIX_SUCCESS) {
+        celix_bundleContext_log(celix_framework_getFrameworkContext(framework), CELIX_LOG_LEVEL_WARNING,
+                                "Failed to schedule celix_shutdown_check");
+        status = CELIX_SUCCESS;
     }
+    celix_framework_waitForStop(framework);
     celix_launcher_resetLauncher();
 #ifndef CELIX_NO_CURLINIT
     // Cleanup Curl
