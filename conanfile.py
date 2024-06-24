@@ -322,7 +322,6 @@ class CelixConan(ConanFile):
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
                 or self.options.build_launcher):
             self.requires("libcurl/[>=8.4.0 <9.0.0]")
-            self.requires("openssl/[>=3.2.0]")
         if (self.options.build_rsa_discovery_common
                 or (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.requires("libxml2/[>=2.9.9 <3.0.0]")
@@ -340,6 +339,7 @@ class CelixConan(ConanFile):
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
         # 'libzip/1.10.1' requires 'zlib/1.2.13' while 'libcurl/7.64.1' requires 'zlib/1.2.12'
+        self.requires("openssl/[>=3.2.0]", override=True)
         self.requires("zlib/1.2.13", override=True)
         self.validate()
 
