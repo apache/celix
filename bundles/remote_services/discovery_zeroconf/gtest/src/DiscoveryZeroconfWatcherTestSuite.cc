@@ -127,11 +127,11 @@ static int GetTestNetInterfaceIndex() {
 class DiscoveryZeroconfWatcherTestSuite : public ::testing::Test {
 public:
     static void SetUpTestCase() {
-        (void)system(MDNSD);
+        (void)system("sudo " MDNSD);
     }
 
     static void TearDownTestCase() {
-        (void)system("kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
+        (void)system("sudo kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
     }
 
     DiscoveryZeroconfWatcherTestSuite() {
@@ -341,7 +341,7 @@ public:
 class DiscoveryZeroconfWatcherWatchServiceTestSuite : public DiscoveryZeroconfWatcherTestSuite {
 public:
     static void SetUpTestCase() {
-        (void)system(MDNSD);
+        (void)system("sudo " MDNSD);
         sleep(3);//wait for mdnsd start
         testServiceRef = RegisterTestService(GetTestNetInterfaceIndex());
         EXPECT_TRUE(testServiceRef != nullptr);
@@ -349,7 +349,7 @@ public:
 
     static void TearDownTestCase() {
         DNSServiceRefDeallocate(testServiceRef);
-        (void)system("kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
+        (void)system("sudo kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
     }
 
     DiscoveryZeroconfWatcherWatchServiceTestSuite() {
