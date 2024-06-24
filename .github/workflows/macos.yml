@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
       - name: Install conan
         run: |
           brew install python ninja
@@ -30,7 +30,7 @@ jobs:
           conan profile detect -f
       - name: Conan Cache
         id: cache-conan
-        uses: actions/cache@v3
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c #v3
         env:
           cache-name: cache-conan2-modules
         with:
@@ -42,7 +42,7 @@ jobs:
         run: |
           echo timestamp=`date +"%Y-%m-%d-%H;%M;%S"` >> $GITHUB_OUTPUT
       - name: ccache Cache
-        uses: actions/cache@v3
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c #v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-test-ccache-Release-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
@@ -72,7 +72,7 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
       - name: Install dependencies
         run: |
           brew install lcov jansson rapidjson libzip ccache ninja openssl@1.1
@@ -81,7 +81,7 @@ jobs:
         run: |
           echo timestamp=`date +"%Y-%m-%d-%H;%M;%S"` >> $GITHUB_OUTPUT
       - name: ccache Cache
-        uses: actions/cache@v3
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c #v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-brew-test-ccache-Release-${{ steps.ccache_cache_timestamp.outputs.timestamp }}

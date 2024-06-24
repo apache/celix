@@ -53,11 +53,11 @@ static int GetLoopBackIfIndex(void);
 class DiscoveryZeroconfAnnouncerTestSuite : public ::testing::Test {
 public:
     static void SetUpTestCase() {
-        (void)system(MDNSD);
+        (void)system("sudo " MDNSD);
     }
 
     static void TearDownTestCase() {
-        (void)system("kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
+        (void)system("sudo kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
     }
     DiscoveryZeroconfAnnouncerTestSuite() {
         auto* props = celix_properties_create();
