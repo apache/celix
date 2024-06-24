@@ -80,7 +80,7 @@ jobs:
             -o celix:framework_curlinit=False
             -o celix:enable_ccache=True
         run: |
-          conan install . celix/ci -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing --require-override=openssl/1.1.1s
+          conan install . celix/ci -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b release -pr:h default -if build ${CONAN_BUILD_OPTIONS} -b missing
       - name: Build
         env:
           CC: ${{ matrix.compiler[0] }}
