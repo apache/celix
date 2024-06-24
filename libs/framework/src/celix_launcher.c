@@ -185,7 +185,6 @@ int celix_launcher_launchAndWait(int argc, char* argv[], const char* embeddedCon
     if (status != CELIX_SUCCESS) {
         celix_bundleContext_log(celix_framework_getFrameworkContext(framework), CELIX_LOG_LEVEL_WARNING,
                                 "Failed to schedule celix_shutdown_check");
-        status = CELIX_SUCCESS;
     }
     celix_framework_waitForStop(framework);
     celix_launcher_resetLauncher();
@@ -193,7 +192,7 @@ int celix_launcher_launchAndWait(int argc, char* argv[], const char* embeddedCon
     // Cleanup Curl
     curl_global_cleanup();
 #endif
-    return status == CELIX_SUCCESS ? CELIX_LAUNCHER_OK_EXIT_CODE : CELIX_LAUNCHER_ERROR_EXIT_CODE;
+    return CELIX_LAUNCHER_OK_EXIT_CODE;
 }
 
 static celix_status_t celix_launcher_parseOptions(int argc, char* argv[], celix_launcher_options_t* opts) {

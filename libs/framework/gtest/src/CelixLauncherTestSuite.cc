@@ -194,6 +194,19 @@ TEST_F(CelixLauncherTestSuite, LaunchWithInvalidConfigPropertiesTest) {
     EXPECT_EQ(status, std::future_status::ready);
 }
 
+TEST_F(CelixLauncherTestSuite, LaunchWithInvalidConfigProperties2Test) {
+
+    //When launching the framework with a properties set with a negative shutdown period
+    auto* props = celix_properties_create();
+    ASSERT_TRUE(props != nullptr);
+    celix_properties_set(props, CELIX_AUTO_START_0, IMMEDIATE_STOP_BUNDLE_LOCATION);
+    celix_properties_setDouble(props, CELIX_LAUNCHER_SHUTDOWN_PERIOD_IN_SECONDS, -1.0);
+    auto future = launchInThread({"programName"}, props, 0);
+    //Then launch will exit
+    auto status = future.wait_for(std::chrono::milliseconds{LAUNCH_WAIT_TIMEOUT});
+    EXPECT_EQ(status, std::future_status::ready);
+}
+
 
 TEST_F(CelixLauncherTestSuite, StopLauncherWithSignalTest) {
     auto* props = celix_properties_create();
