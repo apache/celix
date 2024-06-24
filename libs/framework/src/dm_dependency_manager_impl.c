@@ -261,10 +261,6 @@ celix_array_list_t * celix_dependencyManager_createInfos(celix_dependency_manage
 static void celix_dm_allComponentsActiveCallback(void *handle, const celix_bundle_t *bnd) {
 	bool *allActivePtr = handle;
 
-    if (celix_bundle_getState(bnd) != CELIX_BUNDLE_STATE_ACTIVE) {
-        return;
-    }
-
 	celix_bundle_context_t *context = NULL;
 	bundle_getContext((celix_bundle_t*)bnd, &context);
 	celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
@@ -275,9 +271,10 @@ static void celix_dm_allComponentsActiveCallback(void *handle, const celix_bundl
 }
 
 bool celix_dependencyManager_allComponentsActive(celix_dependency_manager_t *manager) {
-	bool allActive = true;
-	celix_bundleContext_useBundles(manager->ctx, &allActive, celix_dm_allComponentsActiveCallback);
-	return allActive;
+    bool allActive = true;
+    celix_framework_t* fw = celix_bundleContext_getFramework(manager->ctx);
+    celix_framework_useActiveBundles(fw, true, &allActive, celix_dm_allComponentsActiveCallback);
+    return allActive;
 }
 
 size_t celix_dependencyManager_nrOfComponents(celix_dependency_manager_t *mng) {
