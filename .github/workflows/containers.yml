@@ -56,7 +56,8 @@ jobs:
           docker run --rm -v ~/.conan2-container:/root/.conan2 -v $(pwd):/workspace \
           apache/celix-conan-build:latest /bin/bash -c \
           "cd /workspace/build && \
-          ctest --output-on-failure --test-command ./conanrun.sh"          
+          source conanrun.sh && \
+          ctest --output-on-failure"          
 
   container-apt-build-ubuntu:
     runs-on: ubuntu-22.04
