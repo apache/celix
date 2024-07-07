@@ -7,6 +7,7 @@
      "runArgs" : [
         "--userns=keep-id"
     ],
+    "securityOpt":["label=disable"],
     "remoteUser": "celixdev",
     "containerUser": "celixdev",
     "onCreateCommand": "sh .devcontainer/setup-project-with-conan.sh",
