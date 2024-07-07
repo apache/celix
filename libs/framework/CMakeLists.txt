@@ -38,7 +38,7 @@ if (FRAMEWORK)
             src/celix_framework_utils.c
             src/celix_scheduled_event.c
             src/celix_framework_bundle.c
-            src/celix_manifest.c
+            src/celix_bundle_manifest.c
             )
     add_library(framework SHARED ${FRAMEWORK_SRC})
 

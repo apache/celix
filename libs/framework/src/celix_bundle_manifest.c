@@ -17,7 +17,9 @@
  * under the License.
  */
 
-#include "celix_manifest.h"
+#include "celix_bundle_manifest.h"
+#include <ctype.h>
+#include <string.h>
 
 #include "celix_err.h"
 #include "celix_properties.h"
@@ -26,17 +28,17 @@
 #include "celix_version.h"
 
 // Mandatory manifest attributes
-#define CELIX_MANIFEST_VERSION "CELIX_MANIFEST_VERSION"
+#define CELIX_BUNDLE_MANIFEST_VERSION "CELIX_BUNDLE_MANIFEST_VERSION"
 #define CELIX_BUNDLE_SYMBOLIC_NAME "CELIX_BUNDLE_SYMBOLIC_NAME"
 #define CELIX_BUNDLE_VERSION "CELIX_BUNDLE_VERSION"
 #define CELIX_BUNDLE_NAME "CELIX_BUNDLE_NAME"
 
 // Optional manifest attributes
-#define CELIX_BUNDLE_PRIVATE_LIBRARIES "CELIX_BUNDLE_PRIVATE_LIBRARIES"
 #define CELIX_BUNDLE_ACTIVATOR_LIBRARY "CELIX_BUNDLE_ACTIVATOR_LIBRARY"
+#define CELIX_BUNDLE_PRIVATE_LIBRARIES "CELIX_BUNDLE_PRIVATE_LIBRARIES"
 #define CELIX_BUNDLE_GROUP "CELIX_BUNDLE_GROUP"
 
-struct celix_manifest{
+struct celix_bundle_manifest {
     celix_properties_t* attributes;
 
     //Mandatory fields
@@ -55,14 +57,14 @@ struct celix_manifest{
  * @brief Set and validate the provided manifest by checking if all mandatory attributes are present and of the correct
  * type and checking if the optional attributes, when present, are of the correct type.
  */
-static celix_status_t celix_manifest_setAttributes(celix_manifest_t* manifest);
+static celix_status_t celix_bundleManifest_setAttributes(celix_bundle_manifest_t* manifest);
 
-celix_status_t celix_manifest_create(celix_properties_t* attributes, celix_manifest_t** manifestOut) {
+celix_status_t celix_bundleManifest_create(celix_properties_t* attributes, celix_bundle_manifest_t** manifestOut) {
     if (!attributes) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    celix_autofree celix_manifest_t* manifest = calloc(1, sizeof(*manifest));
+    celix_autoptr(celix_bundle_manifest_t) manifest = calloc(1, sizeof(*manifest));
     if (!manifest) {
         celix_properties_destroy(attributes);
         celix_err_push("Failed to allocate memory for manifest");
@@ -70,23 +72,26 @@ celix_status_t celix_manifest_create(celix_properties_t* attributes, celix_manif
     }
     manifest->attributes = attributes;
 
-    CELIX_EPROP(celix_manifest_setAttributes(manifest));
+    celix_status_t status = celix_bundleManifest_setAttributes(manifest);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
 
     *manifestOut = celix_steal_ptr(manifest);
     return CELIX_SUCCESS;
 }
 
 
-celix_status_t celix_manifest_createFromFile(const char* filename, celix_manifest_t** manifestOut) {
+celix_status_t celix_bundleManifest_createFromFile(const char* filename, celix_bundle_manifest_t** manifestOut) {
     celix_properties_t* properties = NULL;
     celix_status_t status = celix_properties_load(filename, 0, &properties);
     if (status != CELIX_SUCCESS) {
         return status;
     }
-    return celix_manifest_create(properties, manifestOut);
+    return celix_bundleManifest_create(properties, manifestOut);
 }
 
-void celix_manifest_destroy(celix_manifest_t* manifest) {
+void celix_bundleManifest_destroy(celix_bundle_manifest_t* manifest) {
     if (manifest) {
         celix_properties_destroy(manifest->attributes);
 
@@ -103,17 +108,17 @@ void celix_manifest_destroy(celix_manifest_t* manifest) {
     }
 }
 
-const celix_properties_t* celix_manifest_getAttributes(celix_manifest_t* manifest) {
+const celix_properties_t* celix_bundleManifest_getAttributes(celix_bundle_manifest_t* manifest) {
     return manifest->attributes;
 }
 
-static celix_status_t celix_manifest_setMandatoryAttributes(celix_manifest_t* manifest) {
+static celix_status_t celix_bundleManifest_setMandatoryAttributes(celix_bundle_manifest_t* manifest) {
     const char* symbolicName = celix_properties_get(manifest->attributes, CELIX_BUNDLE_SYMBOLIC_NAME, NULL);
     const char* bundleName = celix_properties_get(manifest->attributes, CELIX_BUNDLE_NAME, NULL);
 
     celix_autoptr(celix_version_t) manifestVersion = NULL;
     celix_status_t getVersionStatus =
-        celix_properties_getAsVersion(manifest->attributes, CELIX_MANIFEST_VERSION, NULL, &manifestVersion);
+        celix_properties_getAsVersion(manifest->attributes, CELIX_BUNDLE_MANIFEST_VERSION, NULL, &manifestVersion);
     CELIX_ERR_RET_IF_ENOMEM(getVersionStatus);
 
     celix_autoptr(celix_version_t) bundleVersion = NULL;
@@ -128,9 +133,18 @@ static celix_status_t celix_manifest_setMandatoryAttributes(celix_manifest_t* ma
     if (!symbolicName) {
         celix_err_push(CELIX_BUNDLE_SYMBOLIC_NAME " is missing");
         status = CELIX_ILLEGAL_ARGUMENT;
+    } else {
+        //check if bundle symbolic name only contains the following characters: [a-zA-Z0-9_-:]
+        for (size_t i = 0; symbolicName[i] != '\0'; ++i) {
+            if (!isalnum(symbolicName[i]) && strchr("-_:", symbolicName[i]) == NULL) {
+                celix_err_pushf(CELIX_BUNDLE_SYMBOLIC_NAME " contains invalid character '%c'", symbolicName[i]);
+                status = CELIX_ILLEGAL_ARGUMENT;
+                break;
+            }
+        }
     }
     if (!manifestVersion) {
-        celix_err_push(CELIX_MANIFEST_VERSION " is missing or not a version");
+        celix_err_push(CELIX_BUNDLE_MANIFEST_VERSION " is missing or not a version");
         status = CELIX_ILLEGAL_ARGUMENT;
     }
     if (!bundleVersion) {
@@ -139,7 +153,7 @@ static celix_status_t celix_manifest_setMandatoryAttributes(celix_manifest_t* ma
     }
 
     if (manifestVersion && celix_version_compareToMajorMinor(manifestVersion, 2, 0) != 0) {
-        celix_err_push(CELIX_MANIFEST_VERSION " is not 2.0.*");
+        celix_err_push(CELIX_BUNDLE_MANIFEST_VERSION " is not 2.0.*");
         status = CELIX_ILLEGAL_ARGUMENT;
     }
 
@@ -155,26 +169,26 @@ static celix_status_t celix_manifest_setMandatoryAttributes(celix_manifest_t* ma
     return status;
 }
 
-static celix_status_t celix_manifest_setOptionalAttributes(celix_manifest_t* manifest) {
+static celix_status_t celix_bundleManifest_setOptionalAttributes(celix_bundle_manifest_t* manifest) {
     celix_status_t status = CELIX_SUCCESS;
 
-    const char* l = celix_properties_getAsString(manifest->attributes, CELIX_BUNDLE_ACTIVATOR_LIBRARY, NULL);
+    const char* lib = celix_properties_getAsString(manifest->attributes, CELIX_BUNDLE_ACTIVATOR_LIBRARY, NULL);
     celix_autofree char* activatorLib = NULL;
-    if (l) {
-        activatorLib = celix_utils_strdup(l);
+    if (lib) {
+        activatorLib = celix_utils_strdup(lib);
         CELIX_ERR_RET_IF_NULL(activatorLib);
     }
 
-    const char* g = celix_properties_getAsString(manifest->attributes, CELIX_BUNDLE_GROUP, NULL);
+    const char* group = celix_properties_getAsString(manifest->attributes, CELIX_BUNDLE_GROUP, NULL);
     celix_autofree char* bundleGroup = NULL;
-    if (g) {
-        bundleGroup = celix_utils_strdup(g);
+    if (group) {
+        bundleGroup = celix_utils_strdup(group);
         CELIX_ERR_RET_IF_NULL(bundleGroup);
     }
 
     celix_autoptr(celix_array_list_t) privateLibraries = NULL;
     celix_status_t getStatus = celix_properties_getAsStringArrayList(
-        manifest->attributes, CELIX_BUNDLE_ACTIVATOR_LIBRARY, NULL, &privateLibraries);
+        manifest->attributes, CELIX_BUNDLE_PRIVATE_LIBRARIES, NULL, &privateLibraries);
     CELIX_ERR_RET_IF_ENOMEM(getStatus);
     if (celix_properties_hasKey(manifest->attributes, CELIX_BUNDLE_PRIVATE_LIBRARIES) && !privateLibraries) {
         celix_err_pushf(CELIX_BUNDLE_PRIVATE_LIBRARIES " is not a string array. Got: '%s'",
@@ -191,8 +205,36 @@ static celix_status_t celix_manifest_setOptionalAttributes(celix_manifest_t* man
     return status;
 }
 
-static celix_status_t celix_manifest_setAttributes(celix_manifest_t* manifest) {
-    celix_status_t mStatus = celix_manifest_setMandatoryAttributes(manifest);
-    celix_status_t oStatus = celix_manifest_setOptionalAttributes(manifest);
+static celix_status_t celix_bundleManifest_setAttributes(celix_bundle_manifest_t* manifest) {
+    celix_status_t mStatus = celix_bundleManifest_setMandatoryAttributes(manifest);
+    celix_status_t oStatus = celix_bundleManifest_setOptionalAttributes(manifest);
     return mStatus != CELIX_SUCCESS ? mStatus : oStatus;
+}
+
+const char* celix_bundleManifest_getBundleName(celix_bundle_manifest_t* manifest) {
+    return manifest->bundleName;
+}
+
+const char* celix_bundleManifest_getSymbolicName(celix_bundle_manifest_t* manifest) {
+    return manifest->symbolicName;
+}
+
+const celix_version_t* celix_bundleManifest_getBundleVersion(celix_bundle_manifest_t* manifest) {
+    return manifest->bundleVersion;
+}
+
+const celix_version_t* celix_bundleManifest_getManifestVersion(celix_bundle_manifest_t* manifest) {
+    return manifest->manifestVersion;
+}
+
+const char* celix_bundleManifest_getBundleActivatorLibrary(celix_bundle_manifest_t* manifest) {
+    return manifest->activatorLibrary;
+}
+
+const celix_array_list_t* celix_bundleManifest_getBundlePrivateLibraries(celix_bundle_manifest_t* manifest) {
+    return manifest->privateLibraries;
+}
+
+const char* celix_bundleManifest_getBundleGroup(celix_bundle_manifest_t* manifest) {
+    return manifest->bundleGroup;
 }
