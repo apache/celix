@@ -36,6 +36,7 @@
 #include <sys/param.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <string.h>
 #include <errno.h>
 
 
