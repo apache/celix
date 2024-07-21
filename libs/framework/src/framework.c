@@ -2019,7 +2019,7 @@ static celix_status_t celix_framework_uninstallBundleEntryImpl(celix_framework_t
     fw_bundleEntry_destroy(bndEntry, true); //wait till use count is 0 -> e.g. not used
 
     if (status == CELIX_SUCCESS) {
-        celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstall event is triggered and handled
+        celix_framework_waitForEmptyEventQueue(framework); //to ensure that the uninstalled event is triggered and handled
         (void)bundle_destroy(bnd);
         if(permanent) {
             celix_bundleArchive_invalidate(archive);

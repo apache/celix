@@ -20,13 +20,12 @@ set(CELIX_NO_POSTFIX_BUILD_TYPES RelWithDebInfo Release CACHE STRING "The build 
 option(CELIX_USE_COMPRESSION_FOR_BUNDLE_ZIPS "Enables bundle compression" TRUE)
 
 if (CELIX_USE_COMPRESSION_FOR_BUNDLE_ZIPS)
-    set(CELIX_JAR_COMMAND_ARGUMENTS -cfm)
+    set(CELIX_JAR_COMMAND_ARGUMENTS -cf)
     set(CELIX_ZIP_COMMAND_ARGUMENTS -rq)
 else ()
-    set(CELIX_JAR_COMMAND_ARGUMENTS -cfm0)
+    set(CELIX_JAR_COMMAND_ARGUMENTS -cf0)
     set(CELIX_ZIP_COMMAND_ARGUMENTS -rq0)
 endif ()
-
 
 find_program(JAR_COMMAND jar NO_CMAKE_FIND_ROOT_PATH)
 
@@ -269,7 +268,7 @@ function(add_celix_bundle)
 
     ##### MANIFEST configuration and generation ##################
     #Step1 configure the file so that the target name is present in in the template
-    configure_file(${CELIX_CMAKE_DIRECTORY}/templates/Manifest.in ${BUNDLE_GEN_DIR}/MANIFEST.step1)
+    configure_file(${CELIX_CMAKE_DIRECTORY}/templates/MANIFEST.json.in ${BUNDLE_GEN_DIR}/MANIFEST.step1)
 
     #Step2 replace headers with target property values. Note this is done build time
     file(GENERATE
@@ -277,9 +276,9 @@ function(add_celix_bundle)
             INPUT "${BUNDLE_GEN_DIR}/MANIFEST.step1"
     )
 
-    #Step3 The replaced values in step 2 can contain generator expresssion, generated again to resolve those. Note this is done build time
+    #Step3 The replaced values in step 2 can contain generator expression, generated again to resolve those. Note this is done build time
     file(GENERATE
-            OUTPUT "${BUNDLE_GEN_DIR}/MANIFEST.MF"
+            OUTPUT "${BUNDLE_GEN_DIR}/MANIFEST.json"
             INPUT "${BUNDLE_GEN_DIR}/MANIFEST.step2"
     )
     #########################################################
@@ -288,19 +287,19 @@ function(add_celix_bundle)
     if (JAR_COMMAND)
         add_custom_command(OUTPUT ${BUNDLE_FILE}
                 COMMAND ${CMAKE_COMMAND} -E make_directory ${BUNDLE_CONTENT_DIR}
-                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE} ${BUNDLE_GEN_DIR}/MANIFEST.MF -C ${BUNDLE_CONTENT_DIR} .
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json ${BUNDLE_CONTENT_DIR}/META-INF/MANIFEST.json
+                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE} -C ${BUNDLE_CONTENT_DIR} .
                 COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
-                DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.MF
+                DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.json
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         )
     elseif (ZIP_COMMAND)
-        file(MAKE_DIRECTORY ${BUNDLE_CONTENT_DIR})
-
+        file(MAKE_DIRECTORY ${BUNDLE_CONTENT_DIR}) #Note needed because working_directory is bundle content dir
         add_custom_command(OUTPUT ${BUNDLE_FILE}
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.MF META-INF/MANIFEST.MF
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json ${BUNDLE_CONTENT_DIR}/META-INF/MANIFEST.json
                 COMMAND ${ZIP_COMMAND} ${CELIX_ZIP_COMMAND_ARGUMENTS} ${BUNDLE_FILE} *
                 COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
-                DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.MF
+                DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.json
                 WORKING_DIRECTORY ${BUNDLE_CONTENT_DIR}
         )
     else ()
@@ -340,7 +339,7 @@ function(add_celix_bundle)
     celix_bundle_description(${BUNDLE_TARGET_NAME} "${BUNDLE_DESCRIPTION}") #The bundle description.
 
     #headers
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" 1) #Library containing the activator (if any)
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "") #Library containing the activator (if any)
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_PRIVATE_LIBS" "") #List of private libs. 
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IMPORT_LIBS" "") #List of libs to import
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_EXPORT_LIBS" "") #list of libs to export
@@ -980,7 +979,8 @@ function(install_celix_bundle)
     if (JAR_COMMAND)
         install(CODE
                 "execute_process(
-                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} ${BUNDLE_GEN_DIR}/MANIFEST.MF -C ${BUNDLE_CONTENT_DIR} .
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json META-INF/MANIFEST.json
+                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} -C ${BUNDLE_CONTENT_DIR} .
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             )"
                 COMPONENT ${BUNDLE}
@@ -988,7 +988,7 @@ function(install_celix_bundle)
     elseif (ZIP_COMMAND)
         install(CODE
                 "execute_process(
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.MF META-INF/MANIFEST.MF
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json META-INF/MANIFEST.json
                 COMMAND ${ZIP_COMMAND} ${CELIX_ZIP_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} . -i *
                 WORKING_DIRECTORY ${BUNDLE_CONTENT_DIR}
             )"

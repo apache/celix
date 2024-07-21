@@ -121,7 +121,7 @@ const celix_properties_t* celix_bundleManifest_getAttributes(celix_bundle_manife
 /**
  * @brief Get the manifest version. Returned value is valid as long as the manifest is valid.
  *
- * @param[in] manifest The bundle manifest to get the manifest version from. Cannot be NULL.
+ * @param[in] manifest The bundle manifest to get the bundle name from. Cannot be NULL.
  * @return The bundle name. Will never be NULL.
  */
 const char* celix_bundleManifest_getBundleName(celix_bundle_manifest_t* manifest);
@@ -129,7 +129,7 @@ const char* celix_bundleManifest_getBundleName(celix_bundle_manifest_t* manifest
 /**
  * @brief Get the manifest version. Returned value is valid as long as the manifest is valid.
  *
- * @param[in] manifest The bundle manifest to get the manifest version from. Cannot be NULL.
+ * @param[in] manifest The bundle manifest to get the bundle symbolic name from. Cannot be NULL.
  * @return The bundle symbolic name. Will never be NULL.
  */
 const char* celix_bundleManifest_getBundleSymbolicName(celix_bundle_manifest_t* manifest);
@@ -137,7 +137,7 @@ const char* celix_bundleManifest_getBundleSymbolicName(celix_bundle_manifest_t* 
 /**
  * @brief Get the bundle version. Returned value is valid as long as the manifest is valid.
  *
- * @param[in] manifest The bundle manifest to get the manifest version from. Cannot be NULL.
+ * @param[in] manifest The bundle manifest to get the bundle version from. Cannot be NULL.
  * @return The bundle version. Will never be NULL.
  */
 const celix_version_t* celix_bundleManifest_getBundleVersion(celix_bundle_manifest_t* manifest);
@@ -153,7 +153,7 @@ const celix_version_t* celix_bundleManifest_getManifestVersion(celix_bundle_mani
 /**
  * @brief Get the bundle activator library. Returned value is valid as long as the manifest is valid.
  *
- * @param[in] manifest The bundle manifest to get the manifest version from. Cannot be NULL.
+ * @param[in] manifest The bundle manifest to get the bundle private library from. Cannot be NULL.
  * @return The bundle activator library. Will be NULL if the manifest does not contain the attribute.
  */
 const char* celix_bundleManifest_getBundleActivatorLibrary(celix_bundle_manifest_t* manifest);
@@ -161,7 +161,7 @@ const char* celix_bundleManifest_getBundleActivatorLibrary(celix_bundle_manifest
 /**
  * @brief Get the bundle private libraries. Returned value is valid as long as the manifest is valid.
  *
- * @param[in] manifest The bundle manifest to get the manifest version from. Cannot be NULL.
+ * @param[in] manifest The bundle manifest to get the bundle private libraries from. Cannot be NULL.
  * @return The bundle private libraries as a celix_array_list_t* with strings. Will be NULL if the manifest does not
  * contain the attribute.
  */
@@ -170,7 +170,7 @@ const celix_array_list_t* celix_bundleManifest_getBundlePrivateLibraries(celix_b
 /**
  * @brief Get the bundle description. Returned value is valid as long as the manifest is valid.
  *
- * @param[in] manifest The bundle manifest to get the manifest version from. Cannot be NULL.
+ * @param[in] manifest The bundle manifest to get the bundle description from. Cannot be NULL.
  * @return The bundle description. Will be NULL if the manifest does not contain the attribute.
  */
 const char* celix_bundleManifest_getBundleDescription(celix_bundle_manifest_t* manifest);
@@ -178,7 +178,7 @@ const char* celix_bundleManifest_getBundleDescription(celix_bundle_manifest_t* m
 /**
  * @brief Get the bundle group. Returned value is valid as long as the manifest is valid.
  *
- * @param[in] manifest The bundle manifest to get the manifest version from. Cannot be NULL.
+ * @param[in] manifest The bundle manifest to get the bundle group from. Cannot be NULL.
  * @return The bundle group. Will be NULL if the manifest does not contain the attribute.
  */
 const char* celix_bundleManifest_getBundleGroup(celix_bundle_manifest_t* manifest);

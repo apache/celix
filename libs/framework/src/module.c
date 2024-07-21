@@ -63,15 +63,18 @@ celix_module_t* module_create(celix_bundle_manifest_t* manifest, celix_bundle_t*
     bundle_getFramework(bundle, &fw);
 
     celix_autoptr(celix_module_t) module = calloc(1, sizeof(*module));
-    celix_autoptr(celix_array_list_t) libraryHandles = celix_arrayList_createStringArray();
+    celix_autoptr(celix_array_list_t) libraryHandles = celix_arrayList_createPointerArray();
     if (!module || !libraryHandles) {
         fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to create module, out of memory");
         return NULL;
     }
 
     celix_status_t status = celixThreadMutex_create(&module->handlesLock, NULL);
-    if (!status) {
-        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to create module, error creating mutex");
+    if (status != CELIX_SUCCESS) {
+        fw_log(fw->logger,
+               CELIX_LOG_LEVEL_ERROR,
+               "Failed to create module, error creating mutex: %s",
+               celix_strerror(errno));
         celix_framework_logTssErrors(fw->logger, CELIX_LOG_LEVEL_ERROR);
         return NULL;
     }
@@ -94,15 +97,18 @@ celix_module_t* module_createFrameworkModule(celix_framework_t* fw, bundle_pt bu
     }
 
     celix_autoptr(celix_module_t) module = calloc(1, sizeof(*module));
-    celix_autoptr(celix_array_list_t) libraryHandles = celix_arrayList_createStringArray();
+    celix_autoptr(celix_array_list_t) libraryHandles = celix_arrayList_createPointerArray();
     if (!module || !libraryHandles) {
         fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to create module, out of memory");
         return NULL;
     }
 
     status = celixThreadMutex_create(&module->handlesLock, NULL);
-    if (!status) {
-        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to create module, error creating mutex");
+    if (status != CELIX_SUCCESS) {
+        fw_log(fw->logger,
+               CELIX_LOG_LEVEL_ERROR,
+               "Failed to create module, error creating mutex: %s",
+               celix_strerror(errno));
         celix_framework_logTssErrors(fw->logger, CELIX_LOG_LEVEL_ERROR);
         return NULL;
     }
@@ -113,7 +119,7 @@ celix_module_t* module_createFrameworkModule(celix_framework_t* fw, bundle_pt bu
     module->manifest = celix_steal_ptr(manifest);
     module->libraryHandles = celix_steal_ptr(libraryHandles);
 
-    return module;
+    return celix_steal_ptr(module);
 }
 
 void module_destroy(celix_module_t* module) {
@@ -262,7 +268,7 @@ static celix_status_t celix_module_loadLibrariesInManifestEntry(celix_module_t* 
     celix_status_t status = CELIX_SUCCESS;
 
     for (int i = 0; i < celix_arrayList_size(libraries); i++) {
-        const char* library = celix_arrayList_get(libraries, i);
+        const char* library = celix_arrayList_getString(libraries, i);
         void* handle = NULL;
         status = celix_module_loadLibraryForManifestEntry(module, library, archive, &handle);
         if (status != CELIX_SUCCESS) {

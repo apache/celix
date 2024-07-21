@@ -55,7 +55,8 @@ celix_status_t celix_bundleRevision_create(celix_framework_t* fw, const char *ro
 
 celix_status_t bundleRevision_destroy(bundle_revision_pt revision) {
     if (revision != NULL) {
-        celix_bundleManifest_destroy(revision->manifest);
+        // TODO who is owner of the manifest?, for now treating this as a weak reference
+        // celix_bundleManifest_destroy(revision->manifest);
         free(revision->root);
         free(revision->location);
         free(revision);

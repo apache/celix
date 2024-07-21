@@ -39,6 +39,8 @@
 #define CELIX_BUNDLE_DESCRIPTION "CELIX_BUNDLE_DESCRIPTION"
 #define CELIX_BUNDLE_GROUP "CELIX_BUNDLE_GROUP"
 
+#define CELIX_BUNDLE_SYMBOLIC_NAME_ALLOWED_SPECIAL_CHARS "-_:."
+
 struct celix_bundle_manifest {
     celix_properties_t* attributes;
 
@@ -93,7 +95,7 @@ celix_status_t celix_bundleManifest_createFromFile(const char* filename, celix_b
 }
 
 celix_status_t celix_bundleManifest_createFrameworkManifest(celix_bundle_manifest_t** manifest) {
-    celix_properties_t* properties = celix_properties_create();
+    celix_autoptr(celix_properties_t) properties = celix_properties_create();
     if (!properties) {
         celix_err_push("Failed to create properties for framework manifest");
         return ENOMEM;
@@ -109,11 +111,10 @@ celix_status_t celix_bundleManifest_createFrameworkManifest(celix_bundle_manifes
 
     if (status != CELIX_SUCCESS) {
         celix_err_push("Failed to set properties for framework manifest");
-        celix_properties_destroy(properties);
         return status;
     }
 
-    return celix_bundleManifest_create(properties, manifest);
+    return celix_bundleManifest_create(celix_steal_ptr(properties), manifest);
 }
 
 void celix_bundleManifest_destroy(celix_bundle_manifest_t* manifest) {
@@ -160,10 +161,12 @@ static celix_status_t celix_bundleManifest_setMandatoryAttributes(celix_bundle_m
         celix_err_push(CELIX_BUNDLE_SYMBOLIC_NAME " is missing");
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-        //check if bundle symbolic name only contains the following characters: [a-zA-Z0-9_-:]
+        // check if bundle symbolic name only contains the following characters: [a-zA-Z0-9_-:]
         for (size_t i = 0; symbolicName[i] != '\0'; ++i) {
-            if (!isalnum(symbolicName[i]) && strchr("-_:", symbolicName[i]) == NULL) {
-                celix_err_pushf(CELIX_BUNDLE_SYMBOLIC_NAME " contains invalid character '%c'", symbolicName[i]);
+            if (!isalnum(symbolicName[i]) &&
+                strchr(CELIX_BUNDLE_SYMBOLIC_NAME_ALLOWED_SPECIAL_CHARS, symbolicName[i]) == NULL) {
+                celix_err_pushf(
+                    CELIX_BUNDLE_SYMBOLIC_NAME " '%s' contains invalid character '%c'", symbolicName, symbolicName[i]);
                 status = CELIX_ILLEGAL_ARGUMENT;
                 break;
             }
@@ -232,6 +235,7 @@ static celix_status_t celix_bundleManifest_setOptionalAttributes(celix_bundle_ma
     if (status == CELIX_SUCCESS) {
         manifest->activatorLibrary = celix_steal_ptr(activatorLib);
         manifest->bundleGroup = celix_steal_ptr(bundleGroup);
+        manifest->description = celix_steal_ptr(description);
         manifest->privateLibraries = celix_steal_ptr(privateLibraries);
     }
 
