@@ -26,6 +26,7 @@
 #include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
 #include "celix_version.h"
+#include "celix_framework_version.h"
 
 // Mandatory manifest attributes
 #define CELIX_BUNDLE_MANIFEST_VERSION "CELIX_BUNDLE_MANIFEST_VERSION"
@@ -40,6 +41,7 @@
 #define CELIX_BUNDLE_GROUP "CELIX_BUNDLE_GROUP"
 
 #define CELIX_BUNDLE_SYMBOLIC_NAME_ALLOWED_SPECIAL_CHARS "-_:."
+#define CELIX_FRAMEWORK_MANIFEST_VERSION "2.0.0"
 
 struct celix_bundle_manifest {
     celix_properties_t* attributes;
@@ -101,13 +103,14 @@ celix_status_t celix_bundleManifest_createFrameworkManifest(celix_bundle_manifes
         return ENOMEM;
     }
 
-    celix_status_t status = celix_properties_set(properties, CELIX_BUNDLE_MANIFEST_VERSION, "2.0.0");
-    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_SYMBOLIC_NAME, "celix.framework"));
-    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_NAME, "Celix Framework"));
-    //status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_VERSION, CELIX_FRAMEWORK_VERSION));
-    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_VERSION, "3.0.0")); //TODO
-    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_GROUP, "Celix"));
-    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_DESCRIPTION, "Celix Framework"));
+    celix_status_t status =
+        celix_properties_set(properties, CELIX_BUNDLE_MANIFEST_VERSION, CELIX_FRAMEWORK_MANIFEST_VERSION);
+    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_SYMBOLIC_NAME, "apache_celix_framework"));
+    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_NAME, "Apache Celix Framework"));
+    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_VERSION, CELIX_FRAMEWORK_VERSION));
+    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_GROUP, "Celix/Framework"));
+    status = CELIX_DO_IF(
+        status, celix_properties_set(properties, CELIX_BUNDLE_DESCRIPTION, "The Apache Celix Framework System Bundle"));
 
     if (status != CELIX_SUCCESS) {
         celix_err_push("Failed to set properties for framework manifest");

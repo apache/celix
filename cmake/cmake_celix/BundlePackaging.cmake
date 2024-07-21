@@ -753,13 +753,14 @@ celix_bundle_headers(<bundle_target>
 ]]
 function(celix_bundle_headers)
     #0 is bundle TARGET
-    #1..n is header name / header value
+    #1..n is header "key: value" pairs
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
 
     get_target_property(HEADERS ${BUNDLE} "BUNDLE_HEADERS")
 
     foreach (HEADER IN ITEMS ${ARGN})
+        _celix_convert_keyval_to_json(${HEADER} ":" HEADER)
         list(APPEND HEADERS "${HEADER}")
     endforeach ()
 

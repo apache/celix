@@ -70,6 +70,8 @@ if (FRAMEWORK)
     generate_export_header(framework
             BASE_NAME "CELIX_FRAMEWORK"
             EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/framework/celix_framework_export.h")
+    configure_file("${CMAKE_CURRENT_LIST_DIR}/src/celix_framework_version.h.in"
+            "${CMAKE_BINARY_DIR}/celix/gen/includes/framework/celix_framework_version.h")
     target_include_directories(framework PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/framework>)
     celix_deprecated_utils_headers(framework)
 

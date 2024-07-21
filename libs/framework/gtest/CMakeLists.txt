@@ -19,6 +19,8 @@ add_celix_bundle(simple_test_bundle1 NO_ACTIVATOR VERSION 1.0.0)
 celix_bundle_name(simple_test_bundle1 "Simple Test Bundle")
 celix_bundle_group(simple_test_bundle1 "test/group")
 celix_bundle_description(simple_test_bundle1 "Test Description")
+celix_bundle_headers(simple_test_bundle1 "Extra-Header1: value1" "Extra-Header2: value2")
+celix_bundle_headers(simple_test_bundle1 "Extra-Header3: value3")
 
 add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
@@ -46,7 +48,6 @@ add_dependencies(unresolvable_bundle sublib)
 set(CELIX_FRAMEWORK_TEST_SOURCES
     src/CelixFrameworkTestSuite.cc
     src/CelixFrameworkUtilsTestSuite.cc
-    src/MultipleFrameworkTestSuite.cc
     src/CelixBundleContextBundlesTestSuite.cc
     src/CelixBundleContextServicesTestSuite.cc
     src/DependencyManagerTestSuite.cc

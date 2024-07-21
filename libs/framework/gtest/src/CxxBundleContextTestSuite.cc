@@ -696,10 +696,10 @@ TEST_F(CxxBundleContextTestSuite, CheckStandardServiceProperties) {
 
 TEST_F(CxxBundleContextTestSuite, GetBundleInformation) {
 
-    EXPECT_EQ(ctx->getBundle().getSymbolicName(), std::string{"celix_framework"});
-    EXPECT_EQ(ctx->getBundle().getName(), std::string{"Celix Framework"});
+    EXPECT_EQ(ctx->getBundle().getSymbolicName(), std::string{"apache_celix_framework"});
+    EXPECT_EQ(ctx->getBundle().getName(), std::string{"Apache Celix Framework"});
     EXPECT_EQ(ctx->getBundle().getGroup(), std::string{"Celix/Framework"});
-    EXPECT_EQ(ctx->getBundle().getDescription(), std::string{"The Celix Framework System Bundle"});
+    EXPECT_EQ(ctx->getBundle().getDescription(), std::string{"The Apache Celix Framework System Bundle"});
     EXPECT_EQ(ctx->getBundle().getLocation(), std::string{""});
 
     std::atomic<bool> startCalled{false};
@@ -713,7 +713,7 @@ TEST_F(CxxBundleContextTestSuite, GetBundleInformation) {
             EXPECT_TRUE(!bnd.getEntry("META-INF/MANIFEST.MF").empty());
             EXPECT_EQ(bnd.getEntry("/META-INF/MANIFEST.MF"), bnd.getEntry("META-INF/MANIFEST.MF"));
             EXPECT_EQ(bnd.getEntry("does-not-exist"), std::string{});
-            EXPECT_EQ(bnd.getManifestValue("Bundle-SymbolicName"), std::string{"simple_test_bundle1"});
+            EXPECT_EQ(bnd.getManifestValue("Extra-Header1"), std::string{"value1"});
             EXPECT_EQ(bnd.getManifestValue("non-existing"), std::string{});
             startCalled = true;
         })

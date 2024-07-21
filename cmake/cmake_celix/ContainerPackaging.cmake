@@ -596,38 +596,6 @@ function(_celix_container_check_duplicate_bundles)
 endfunction()
 
 #[[
-Internal function that converts a property string to a JSON field entry.
-The result is stored in the OUTPUT_VAR_NAME variable.
-
-In the key the char `=` is not allowed and should be escaped as `\=` (in CMake this is `\\=`, because \ is already an
-escape char in CMake).
-In the value the char `=` is allowed.
-
-To handle \= string sequences the \= entries are replaced with a placeholder (__<CELIX_ESCAPED_EQUAL>__) and after the
-split the placeholder is replaced with =.
-
-```CMake
-_celix_convert_property_to_json("prop1=val1" OUTPUT_VAR_NAME) # OUTPUT_VAR_NAME will be set to "\"prop1\":\"val1\""
-_celix_convert_property_to_json("prop1=va=l1" OUTPUT_VAR_NAME) # OUTPUT_VAR_NAME will be set to "\"prop1\":\"va=l1\""
-_celix_convert_property_to_json("prop\\=1=val1" OUTPUT_VAR_NAME) # OUTPUT_VAR_NAME will be set to "\"prop=1\":\"val1\""
-```
-]]
-function(_celix_convert_property_to_json INPUT_STR OUTPUT_VAR_NAME)
-    set(PLACEHOLDER "__<CELIX_ESCAPED_EQUAL>__")
-    string(REPLACE "\\=" "${PLACEHOLDER}" TEMP_INPUT_STR "${INPUT_STR}")
-
-    string(REGEX MATCH "([^=]+)=(.*)" _ ${TEMP_INPUT_STR})
-    set(KEY ${CMAKE_MATCH_1})
-    set(VALUE ${CMAKE_MATCH_2})
-
-    #Replace replaced \= and \\ with = and \
-    string(REPLACE "${PLACEHOLDER}" "=" KEY "${KEY}")
-    string(REPLACE "${PLACEHOLDER}" "=" VALUE "${VALUE}")
-
-    set(${OUTPUT_VAR_NAME} "\"${KEY}\":\"${VALUE}\"" PARENT_SCOPE)
-endfunction()
-
-#[[
 Add the provided properties to the target Celix container config properties.
 These properties will be added to the config.properties in the container build dir.
 
@@ -641,14 +609,14 @@ celix_container_runtime_properties(<celix_container_target_name>
 ]]
 function(celix_container_runtime_properties)
     #0 is container TARGET
-    #1..n is bundles
+    #1..n is property "key=val" pairs
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
     get_target_property(PROPS ${CONTAINER_TARGET} "CONTAINER_RUNTIME_PROPERTIES")
 
-    foreach(PROP IN ITEMS ${ARGN})
-        _celix_convert_property_to_json(${PROP} PROP)
+    foreach (PROP IN ITEMS ${ARGN})
+        _celix_convert_keyval_to_json(${PROP} "=" PROP)
         list(APPEND PROPS ${PROP})
     endforeach()
 
@@ -669,14 +637,14 @@ celix_container_embedded_properties(<celix_container_target_name>
 ]]
 function(celix_container_embedded_properties)
     #0 is container TARGET
-    #1..n is bundles
+    #1..n is property "key=val" pairs
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
     get_target_property(PROPS ${CONTAINER_TARGET} "CONTAINER_EMBEDDED_PROPERTIES")
 
-    foreach(PROP IN ITEMS ${ARGN})
-        _celix_convert_property_to_json(${PROP} PROP)
+    foreach (PROP IN ITEMS ${ARGN})
+        _celix_convert_keyval_to_json(${PROP} "=" PROP)
         list(APPEND PROPS ${PROP})
     endforeach()
 
