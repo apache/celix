@@ -26,8 +26,11 @@
  * Framework.
  */
 
-#include "celix_types.h"
+#include <stdlib.h>
 
+#include "bundle_context.h"
+
+#include "celix_types.h"
 #include "celix_cleanup.h"
 #include "service_factory.h"
 #include "celix_service_factory.h"
@@ -35,13 +38,10 @@
 #include "bundle_listener.h"
 #include "framework_listener.h"
 #include "celix_service_listener.h"
-
 #include "dm_dependency_manager.h"
-#include <stdlib.h>
-
-#include "bundle_context.h"
 #include "celix_bundle_context.h"
 #include "celix_framework_export.h"
+#include "celix_log.h"
 
 #ifdef __cplusplus
 extern "C" {

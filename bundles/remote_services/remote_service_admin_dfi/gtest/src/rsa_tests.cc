@@ -156,26 +156,9 @@ extern "C" {
     }
 
     static void testBundles(void) {
-        celix_array_list_t* bundles = nullptr;
-
-        int rc = bundleContext_getBundles(context, &bundles);
-        ASSERT_EQ(0, rc);
+        celix_array_list_t* bundles = celix_bundleContext_listBundles(context);
+        ASSERT_NE(nullptr, bundles);
         ASSERT_EQ(3, celix_arrayList_size(bundles)); //framework, rsa_dfi & calc
-
-        /*
-        int size = arrayList_size(bundles);
-        int i;
-        for (i = 0; i < size; i += 1) {
-            celix_bundle_t *bundle = nullptr;
-            module_pt module = nullptr;
-            char *name = nullptr;
-
-            bundle = (celix_bundle_t *) arrayList_get(bundles, i);
-            bundle_getCurrentModule(bundle, &module);
-            module_getSymbolicName(module, &name);
-            printf("got bundle with symbolic name '%s'", name);
-        }*/
-
         celix_arrayList_destroy(bundles);
     }
 

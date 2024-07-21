@@ -57,7 +57,7 @@ public:
 
 
         fw = celix_frameworkFactory_createFramework(properties);
-        ctx = framework_getContext(fw);
+        ctx = celix_framework_getFrameworkContext(fw);
     }
     
     ~CelixBundleContextBundlesTestSuite() override {
@@ -883,7 +883,7 @@ public:
         celix_properties_setBool(properties, CELIX_FRAMEWORK_CACHE_USE_TMP_DIR, true);
         fw = celix_frameworkFactory_createFramework(properties);
         EXPECT_NE(fw, nullptr);
-        ctx = framework_getContext(fw);
+        ctx = celix_framework_getFrameworkContext(fw);
         EXPECT_NE(ctx, nullptr);
     }
 

@@ -24,6 +24,8 @@
 #include "registry_callback_private.h"
 #include "service_registration.h"
 #include "celix_ref.h"
+#include "celix_service_factory.h"
+#include "celix_threads.h"
 
 enum celix_service_type {
 	CELIX_PLAIN_SERVICE,

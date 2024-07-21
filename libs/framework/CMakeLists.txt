@@ -25,8 +25,8 @@ if (FRAMEWORK)
     set(FRAMEWORK_SRC
             src/bundle.c src/bundle_archive.c src/celix_bundle_cache.c
             src/bundle_context.c src/bundle_revision.c
-            src/framework.c src/manifest.c
-            src/manifest_parser.c src/module.c
+            src/framework.c
+            src/module.c
             src/service_reference.c src/service_registration.c
             src/service_registry.c src/service_tracker.c src/service_tracker_customizer.c
             src/celix_log.c src/celix_launcher.c
@@ -54,6 +54,7 @@ if (FRAMEWORK)
     target_include_directories(framework PRIVATE ${CMAKE_CURRENT_LIST_DIR}/include_deprecated)
     target_compile_options(framework PRIVATE -DUSE_FILE32API)
     target_compile_options(framework PRIVATE -Wno-deprecated-declarations) #note part of the api is deprecated, ignore this warning on own api
+    target_compile_options(framework PRIVATE -DCELIX_FRAMEWORK_VERSION="${CELIX_MAJOR}.${CELIX_MINOR}.${CELIX_MICRO}")
     if (NOT FRAMEWORK_CURLINIT)
         target_compile_definitions(framework PRIVATE CELIX_NO_CURLINIT)
     endif ()

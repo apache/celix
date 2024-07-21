@@ -154,7 +154,7 @@ TEST_F(ManifestTestSuite, GetBuiltinAttributes) {
         //And the manifest contains the mandatory attributes
         EXPECT_EQ(4, celix_properties_size(celix_bundleManifest_getAttributes(manifest)));
         EXPECT_STREQ("my_bundle", celix_bundleManifest_getBundleName(manifest));
-        EXPECT_STREQ("celix_my_bundle", celix_bundleManifest_getSymbolicName(manifest));
+        EXPECT_STREQ("celix_my_bundle", celix_bundleManifest_getBundleSymbolicName(manifest));
 
         const auto* mv = celix_bundleManifest_getManifestVersion(manifest);
         const auto* bv = celix_bundleManifest_getBundleVersion(manifest);
@@ -176,6 +176,7 @@ TEST_F(ManifestTestSuite, GetBuiltinAttributes) {
         celix_properties_set(properties, "CELIX_BUNDLE_ACTIVATOR_LIBRARY", "my_activator");
         celix_properties_set(properties, "CELIX_BUNDLE_PRIVATE_LIBRARIES", "lib1,lib2");
         celix_properties_set(properties, "CELIX_BUNDLE_GROUP", "my_group");
+        celix_properties_set(properties, "CELIX_BUNDLE_DESCRIPTION", "my_description");
 
         //When creating a manifest from the attributes
         celix_autoptr(celix_bundle_manifest_t) manifest2 = nullptr;
@@ -193,4 +194,5 @@ TEST_F(ManifestTestSuite, GetBuiltinAttributes) {
         EXPECT_STREQ("lib1", celix_arrayList_getString(privateLibraries, 0));
         EXPECT_STREQ("lib2", celix_arrayList_getString(privateLibraries, 1));
         EXPECT_STREQ("my_group", celix_bundleManifest_getBundleGroup(manifest2));
+        EXPECT_STREQ("my_description", celix_bundleManifest_getBundleDescription(manifest2));
 }

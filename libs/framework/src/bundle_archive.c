@@ -184,7 +184,8 @@ celix_bundleArchive_extractBundle(bundle_archive_t* archive, const char* bundleU
  * Initialize archive by creating the bundle cache directory, optionally extracting the bundle from the bundle file,
  * reading the bundle state properties, reading the bundle manifest and updating the bundle state properties.
  */
-static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archive, manifest_pt* manifestOut) {
+static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archive, celix_bundle_manifest_t** manifestOut) {
+    *manifestOut = NULL;
     if (celix_utils_fileExists(archive->archiveRoot)) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_TRACE, "Bundle archive root for bundle id %li already exists.",
                archive->id);
@@ -213,14 +214,14 @@ static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt
     }
 
     //read manifest from extracted bundle zip
-    *manifestOut = NULL;
+    celix_autoptr(celix_bundle_manifest_t) manifest = NULL;
     char pathBuffer[512];
     char* manifestPath = celix_utils_writeOrCreateString(pathBuffer, sizeof(pathBuffer), "%s/%s", archive->resourceCacheRoot, CELIX_BUNDLE_MANIFEST_REL_PATH);
     if (manifestPath == NULL) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Failed to create manifest path.");
         return CELIX_ENOMEM;
     }
-    status = manifest_createFromFile(manifestPath, manifestOut);
+    status = celix_bundleManifest_createFromFile(manifestPath, &manifest);
     celix_utils_freeStringIfNotEqual(pathBuffer, manifestPath);
     if (status != CELIX_SUCCESS) {
         celix_framework_logTssErrors(archive->fw->logger, CELIX_LOG_LEVEL_ERROR);
@@ -229,19 +230,18 @@ static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt
     }
 
     //populate bundle symbolic name and version from manifest
-    archive->bundleSymbolicName = celix_utils_strdup(manifest_getValue(*manifestOut, CELIX_FRAMEWORK_BUNDLE_SYMBOLICNAME));
+    archive->bundleSymbolicName = celix_utils_strdup(celix_bundleManifest_getBundleSymbolicName(manifest));
     if (archive->bundleSymbolicName == NULL) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Cannot read bundle symbolic name.");
-        manifest_destroy(*manifestOut);
         return CELIX_BUNDLE_EXCEPTION;
     }
-    archive->bundleVersion = celix_utils_strdup(manifest_getValue(*manifestOut, CELIX_FRAMEWORK_BUNDLE_VERSION));
+    archive->bundleVersion = celix_version_toString(celix_bundleManifest_getBundleVersion(manifest));
     if (archive->bundleVersion == NULL) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Cannot read bundle version.");
-        manifest_destroy(*manifestOut);
         return CELIX_BUNDLE_EXCEPTION;
     }
 
+    *manifestOut = celix_steal_ptr(manifest);
     return status;
 }
 
@@ -249,7 +249,7 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
     celix_status_t status = CELIX_SUCCESS;
     const char* error = NULL;
     bundle_archive_pt archive = calloc(1, sizeof(*archive));
-    bool isSystemBundle = id == CELIX_FRAMEWORK_BUNDLE_ID;
+    bool isFrameworkBundle = id == CELIX_FRAMEWORK_BUNDLE_ID;
 
     if (archive == NULL) {
         status = CELIX_ENOMEM;
@@ -259,7 +259,7 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
     archive->fw = fw;
     archive->id = id;
 
-    if (isSystemBundle) {
+    if (isFrameworkBundle) {
         archive->resourceCacheRoot = getcwd(NULL, 0);
         archive->storeRoot = getcwd(NULL, 0);
         if (archive->resourceCacheRoot == NULL || archive->storeRoot == NULL) {
@@ -294,9 +294,9 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
         goto init_failed;
     }
 
-    manifest_pt manifest = NULL;
-    if (isSystemBundle) {
-        status = manifest_create(&manifest);
+    celix_bundle_manifest_t* manifest = NULL;
+    if (isFrameworkBundle) {
+        status = celix_bundleManifest_createFrameworkManifest(&manifest);
     } else {
         status = celix_bundleArchive_createCacheDirectory(archive, &manifest);
     }
@@ -311,7 +311,7 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
         goto revision_failed;
     }
 
-    if (!isSystemBundle) {
+    if (!isFrameworkBundle) {
         status = celix_bundleArchive_storeBundleStateProperties(archive);
         if (status != CELIX_SUCCESS) {
             error = "Could not store properties.";
@@ -325,7 +325,7 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
 store_prop_failed:
 revision_failed:
 dir_failed:
-    if (!isSystemBundle) {
+    if (!isFrameworkBundle) {
         celix_utils_deleteDirectory(archive->archiveRoot, NULL);
     }
 init_failed:

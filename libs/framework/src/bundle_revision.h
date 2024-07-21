@@ -25,7 +25,7 @@
 #include "celix_types.h"
 
 #include "celix_errno.h"
-#include "manifest.h"
+#include "celix_bundle_manifest.h"
 #include "celix_log.h"
 #include "celix_array_list.h"
 #include "celix_framework_export.h"
@@ -54,7 +54,7 @@ extern "C" {
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
  */
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleRevision_getNumber(const bundle_revision_t* revision, long *revisionNr) __attribute__((deprecated));
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleRevision_getNumber(const bundle_revision_t* revision, long *revisionNr) __attribute__((deprecated));
 
 /**
  * Retrieves the location of the given revision.
@@ -66,7 +66,7 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleRevision_getNumber(const 
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
  */
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleRevision_getLocation(const bundle_revision_t* revision, const char **location);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleRevision_getLocation(const bundle_revision_t* revision, const char **location);
 
 /**
  * Retrieves the root of the given revision.
@@ -78,7 +78,7 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleRevision_getLocation(cons
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
  */
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleRevision_getRoot(const bundle_revision_t* revision, const char **root);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleRevision_getRoot(const bundle_revision_t* revision, const char **root);
 
 /**
  * Retrieves the manifest of the given revision.
@@ -90,7 +90,8 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleRevision_getRoot(const bu
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
  */
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleRevision_getManifest(const bundle_revision_t* revision, manifest_pt *manifest);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleRevision_getManifest(const bundle_revision_t* revision,
+                                                                            celix_bundle_manifest_t** manifest);
 
 /**
  * Originally retrieved the handles of the installed libraries for this revision.

@@ -81,18 +81,18 @@ extern "C" {
     static endpoint_listener_t *eplService = nullptr; // actually this is the topology manager
 
     static void setupFm() {
+        celix_status_t rc;
         celix_properties_t* config;
         ASSERT_EQ(CELIX_SUCCESS, celix_properties_load("config.properties", 0, &config));
 
         framework = celix_frameworkFactory_createFramework(config);
         ASSERT_NE(nullptr, framework);
 
-        celix_bundle_t *bundle = nullptr;
-        celix_status_t rc = framework_getFrameworkBundle(framework, &bundle);
-        EXPECT_EQ(CELIX_SUCCESS, rc);
+        celix_bundle_t *bundle = celix_framework_getFrameworkBundle(framework);
+        EXPECT_NE(nullptr, bundle);
 
-        rc = bundle_getContext(bundle, &context);
-        EXPECT_EQ(CELIX_SUCCESS, rc);
+        context = celix_framework_getFrameworkContext(framework);
+        EXPECT_NE(nullptr, context);
 
         rc = bundleContext_getServiceReference(context, (char *)CELIX_RSA_REMOTE_SERVICE_ADMIN, &rsaRef);
         EXPECT_EQ(CELIX_SUCCESS, rc);
@@ -172,18 +172,18 @@ extern "C" {
     }
 
     static void setupFmImport() {
+        celix_status_t rc;
         celix_properties_t* config;
         ASSERT_EQ(CELIX_SUCCESS, celix_properties_load("config_import.properties", 0, &config));
 
         framework = celix_frameworkFactory_createFramework(config);
         ASSERT_NE(nullptr, framework);
 
-        celix_bundle_t *bundle = nullptr;
-        celix_status_t rc = framework_getFrameworkBundle(framework, &bundle);
-        EXPECT_EQ(CELIX_SUCCESS, rc);
+        celix_bundle_t *bundle = celix_framework_getFrameworkBundle(framework);
+        ASSERT_NE(nullptr, bundle);
 
-        rc = bundle_getContext(bundle, &context);
-        EXPECT_EQ(CELIX_SUCCESS, rc);
+        context = celix_framework_getFrameworkContext(framework);
+        ASSERT_NE(nullptr, context);
 
         celix_array_list_t* bundles = celix_bundleContext_listBundles(context);
         EXPECT_EQ(celix_arrayList_size(bundles), 4); //rsa, calculator, topman, test bundle

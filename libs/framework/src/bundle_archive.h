@@ -46,7 +46,7 @@
 extern "C" {
 #endif
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id);
 
 /**
  * Return the current location of the bundle.
@@ -56,36 +56,36 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_getId(bundle_arch
 CELIX_FRAMEWORK_EXPORT celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char **location)
     __attribute__((deprecated("use celix_bundle_getLocation instead")));
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_getArchiveRoot(bundle_archive_pt archive, const char **archiveRoot);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_getArchiveRoot(bundle_archive_pt archive, const char **archiveRoot);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED celix_status_t
 bundleArchive_revise(bundle_archive_pt archive, const char *location, const char *inputFile);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_rollbackRevise(bundle_archive_pt archive, bool *rolledback);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_rollbackRevise(bundle_archive_pt archive, bool *rolledback);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED celix_status_t
 bundleArchive_getRevision(bundle_archive_pt archive, long revNr, bundle_revision_pt *revision);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t
+CELIX_FRAMEWORK_DEPRECATED celix_status_t
 bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundle_revision_pt *revision);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive, long *revisionNumber) __attribute__((deprecated));
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive, long *revisionNumber) __attribute__((deprecated));
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_getRefreshCount(bundle_archive_pt archive, long *refreshCount);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_getRefreshCount(bundle_archive_pt archive, long *refreshCount);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_setRefreshCount(bundle_archive_pt archive);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_setRefreshCount(bundle_archive_pt archive);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_close(bundle_archive_pt archive);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_close(bundle_archive_pt archive);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_closeAndDelete(bundle_archive_pt archive);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_closeAndDelete(bundle_archive_pt archive);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_setLastModified(bundle_archive_pt archive, time_t lastModifiedTime);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_setLastModified(bundle_archive_pt archive, time_t lastModifiedTime);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_getLastModified(bundle_archive_pt archive, time_t *lastModified);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_getLastModified(bundle_archive_pt archive, time_t *lastModified);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_setPersistentState(bundle_archive_pt archive, bundle_state_e state);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_setPersistentState(bundle_archive_pt archive, bundle_state_e state);
 
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_getPersistentState(bundle_archive_pt archive, bundle_state_e *state);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_getPersistentState(bundle_archive_pt archive, bundle_state_e *state);
 
 /**
  * @brief Return the last modified time of the bundle archive.
@@ -102,14 +102,14 @@ CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t bundleArchive_getPersistentStat
  *        Check errno for more specific error information.when root of the archive is not a directory.
  *      - CELIX_ENOMEM not enough memory for manifest file path.
  */
-CELIX_FRAMEWORK_DEPRECATED_EXPORT celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, struct timespec* lastModified);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t celix_bundleArchive_getLastModified(bundle_archive_pt archive, struct timespec* lastModified);
 
 /**
  * @brief Return the location of the bundle archive.b
  * @param[in] archive The bundle archive.
  * @return The location of the bundle archive. The caller is responsible for freeing the returned string.
  */
-CELIX_FRAMEWORK_DEPRECATED_EXPORT char* celix_bundleArchive_getLocation(bundle_archive_pt archive);
+CELIX_FRAMEWORK_DEPRECATED char* celix_bundleArchive_getLocation(bundle_archive_pt archive);
 
 
 #ifdef __cplusplus

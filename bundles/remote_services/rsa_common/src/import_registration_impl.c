@@ -33,6 +33,7 @@
 
 #include "import_registration_impl.h"
 #include "remote_service_admin_impl.h"
+#include "bundle.h"
 
 struct import_reference {
 	endpoint_description_t *endpoint;

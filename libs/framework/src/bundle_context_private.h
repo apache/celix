@@ -29,6 +29,7 @@
 #include "celix_long_hash_map.h"
 #include "listener_hook_service.h"
 #include "service_tracker.h"
+#include "celix_threads.h"
 
 #ifdef __cplusplus
 extern "C" {

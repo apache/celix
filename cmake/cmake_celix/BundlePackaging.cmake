@@ -450,7 +450,7 @@ function(celix_bundle_libs)
     list(GET ARGN 0 ADD_TO_MANIFEST)
     list(REMOVE_AT ARGN 0)
 
-    #check if arg 0 is corrent
+    #check if arg 0 is correct
     _check_bundle(${BUNDLE})
     get_target_property(BUNDLE_DIR ${BUNDLE} "BUNDLE_CONTENT_DIR")
     get_target_property(BUNDLE_GEN_DIR ${BUNDLE} "BUNDLE_GEN_DIR")
@@ -461,6 +461,10 @@ function(celix_bundle_libs)
     get_target_property(LIB_TARGETS ${BUNDLE} "BUNDLE_LIB_TARGETS")
 
     foreach (LIB IN ITEMS ${ARGN})
+        if (TYPE STREQUAL "EXPORT" OR TYPE STREQUAL "IMPORT")
+            message(WARNING "Adding bundle lib ${LIB} with type ${TYPE}. Export and Import libs in Celix is yet supported.")
+        endif ()
+
         string(MAKE_C_IDENTIFIER ${LIB} LIBID)
         if (IS_ABSOLUTE ${LIB} AND EXISTS ${LIB})
             get_filename_component(LIB_NAME ${LIB} NAME)

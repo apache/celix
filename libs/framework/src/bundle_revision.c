@@ -24,7 +24,7 @@
 #include "bundle_revision_private.h"
 #include "framework_private.h"
 
-celix_status_t celix_bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, manifest_pt manifest, bundle_revision_pt *bundle_revision) {
+celix_status_t celix_bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, celix_bundle_manifest_t* manifest, bundle_revision_pt *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_revision_pt revision = calloc(1, sizeof(*revision));
     if (revision != NULL) {
@@ -44,7 +44,7 @@ celix_status_t celix_bundleRevision_create(celix_framework_t* fw, const char *ro
         if (revision != NULL) {
             bundleRevision_destroy(revision);
         } else {
-            manifest_destroy(manifest);
+            celix_bundleManifest_destroy(manifest);
         }
         return status;
     }
@@ -55,7 +55,7 @@ celix_status_t celix_bundleRevision_create(celix_framework_t* fw, const char *ro
 
 celix_status_t bundleRevision_destroy(bundle_revision_pt revision) {
     if (revision != NULL) {
-        manifest_destroy(revision->manifest);
+        celix_bundleManifest_destroy(revision->manifest);
         free(revision->root);
         free(revision->location);
         free(revision);
@@ -63,7 +63,7 @@ celix_status_t bundleRevision_destroy(bundle_revision_pt revision) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleRevision_getManifest(const bundle_revision_t* revision, manifest_pt* manifest) {
+celix_status_t bundleRevision_getManifest(const bundle_revision_t* revision, celix_bundle_manifest_t** manifest) {
     *manifest = revision->manifest;
     return CELIX_SUCCESS;
 }

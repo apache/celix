@@ -83,6 +83,23 @@ celix_status_t celix_bundleManifest_create(celix_properties_t* attributes, celix
 celix_status_t celix_bundleManifest_createFromFile(const char* filename, celix_bundle_manifest_t** manifest);
 
 /**
+ * @brief Create a new framework manifest.
+ *
+ * The framework manifest is a special manifest that contains the following manifest attributes:
+ * - CELIX_BUNDLE_SYMBOLIC_NAME="celix.framework"
+ * - CELIX_BUNDLE_NAME="Celix Framework"
+ * - CELIX_BUNDLE_VERSION=CELIX_FRAMEWORK_VERSION
+ * - CELIX_BUNDLE_MANIFEST_VERSION="2.0.0"
+ * - CELIX_BUNDLE_GROUP="Celix"
+ * - CELIX_BUNDLE_DESCRIPTION="Celix Framework"
+ *
+ * @param manifest The created framework manifest.
+ * @return CELIX_SUCCESS if no errors occurred, ENOMEM if memory allocation failed. If an error occurs, an error message
+ * is logged on celix_err.
+ */
+celix_status_t celix_bundleManifest_createFrameworkManifest(celix_bundle_manifest_t** manifest);
+
+/**
  * @brief Destroy the provided manifest.
  */
 void celix_bundleManifest_destroy(celix_bundle_manifest_t* manifest);
@@ -115,7 +132,7 @@ const char* celix_bundleManifest_getBundleName(celix_bundle_manifest_t* manifest
  * @param[in] manifest The bundle manifest to get the manifest version from. Cannot be NULL.
  * @return The bundle symbolic name. Will never be NULL.
  */
-const char* celix_bundleManifest_getSymbolicName(celix_bundle_manifest_t* manifest);
+const char* celix_bundleManifest_getBundleSymbolicName(celix_bundle_manifest_t* manifest);
 
 /**
  * @brief Get the bundle version. Returned value is valid as long as the manifest is valid.
@@ -149,6 +166,14 @@ const char* celix_bundleManifest_getBundleActivatorLibrary(celix_bundle_manifest
  * contain the attribute.
  */
 const celix_array_list_t* celix_bundleManifest_getBundlePrivateLibraries(celix_bundle_manifest_t* manifest);
+
+/**
+ * @brief Get the bundle description. Returned value is valid as long as the manifest is valid.
+ *
+ * @param[in] manifest The bundle manifest to get the manifest version from. Cannot be NULL.
+ * @return The bundle description. Will be NULL if the manifest does not contain the attribute.
+ */
+const char* celix_bundleManifest_getBundleDescription(celix_bundle_manifest_t* manifest);
 
 /**
  * @brief Get the bundle group. Returned value is valid as long as the manifest is valid.

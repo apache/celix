@@ -23,7 +23,7 @@
 #include "celix_types.h"
 #include "celix_errno.h"
 #include "service_registration.h"
-#include "bundle.h"
+#include "celix_bundle.h"
 
 #ifdef __cplusplus
 extern "C" {

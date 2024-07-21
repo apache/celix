@@ -39,11 +39,11 @@ extern "C" {
  * A bundle can have multiple revisions. A bundle revision is immutable.
  */
 struct bundleRevision {
-    celix_framework_t *fw;
+    celix_framework_t* fw;
     long revisionNr;
-    char *root;
-    char *location;
-    manifest_pt manifest;
+    char* root;
+    char* location;
+    celix_bundle_manifest_t* manifest;
 };
 
 /**
@@ -60,7 +60,11 @@ struct bundleRevision {
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_revision</code> failed.
  */
-celix_status_t celix_bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, manifest_pt manifest, bundle_revision_pt *bundle_revision);
+celix_status_t celix_bundleRevision_create(celix_framework_t* fw,
+                                           const char* root,
+                                           const char* location,
+                                           celix_bundle_manifest_t* manifest,
+                                           bundle_revision_pt* bundle_revision);
 
 bundle_revision_t* bundleRevision_revise(const bundle_revision_t* revision, const char* updatedBundleUrl);
 

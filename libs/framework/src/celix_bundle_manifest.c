@@ -36,6 +36,7 @@
 // Optional manifest attributes
 #define CELIX_BUNDLE_ACTIVATOR_LIBRARY "CELIX_BUNDLE_ACTIVATOR_LIBRARY"
 #define CELIX_BUNDLE_PRIVATE_LIBRARIES "CELIX_BUNDLE_PRIVATE_LIBRARIES"
+#define CELIX_BUNDLE_DESCRIPTION "CELIX_BUNDLE_DESCRIPTION"
 #define CELIX_BUNDLE_GROUP "CELIX_BUNDLE_GROUP"
 
 struct celix_bundle_manifest {
@@ -49,6 +50,7 @@ struct celix_bundle_manifest {
 
     //Optional fields
     char* bundleGroup;
+    char* description;
     char* activatorLibrary;
     celix_array_list_t* privateLibraries;
 };
@@ -81,7 +83,6 @@ celix_status_t celix_bundleManifest_create(celix_properties_t* attributes, celix
     return CELIX_SUCCESS;
 }
 
-
 celix_status_t celix_bundleManifest_createFromFile(const char* filename, celix_bundle_manifest_t** manifestOut) {
     celix_properties_t* properties = NULL;
     celix_status_t status = celix_properties_load(filename, 0, &properties);
@@ -89,6 +90,30 @@ celix_status_t celix_bundleManifest_createFromFile(const char* filename, celix_b
         return status;
     }
     return celix_bundleManifest_create(properties, manifestOut);
+}
+
+celix_status_t celix_bundleManifest_createFrameworkManifest(celix_bundle_manifest_t** manifest) {
+    celix_properties_t* properties = celix_properties_create();
+    if (!properties) {
+        celix_err_push("Failed to create properties for framework manifest");
+        return ENOMEM;
+    }
+
+    celix_status_t status = celix_properties_set(properties, CELIX_BUNDLE_MANIFEST_VERSION, "2.0.0");
+    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_SYMBOLIC_NAME, "celix.framework"));
+    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_NAME, "Celix Framework"));
+    //status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_VERSION, CELIX_FRAMEWORK_VERSION));
+    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_VERSION, "3.0.0")); //TODO
+    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_GROUP, "Celix"));
+    status = CELIX_DO_IF(status, celix_properties_set(properties, CELIX_BUNDLE_DESCRIPTION, "Celix Framework"));
+
+    if (status != CELIX_SUCCESS) {
+        celix_err_push("Failed to set properties for framework manifest");
+        celix_properties_destroy(properties);
+        return status;
+    }
+
+    return celix_bundleManifest_create(properties, manifest);
 }
 
 void celix_bundleManifest_destroy(celix_bundle_manifest_t* manifest) {
@@ -102,6 +127,7 @@ void celix_bundleManifest_destroy(celix_bundle_manifest_t* manifest) {
 
         free(manifest->activatorLibrary);
         free(manifest->bundleGroup);
+        free(manifest->description);
         celix_arrayList_destroy(manifest->privateLibraries);
 
         free(manifest);
@@ -186,6 +212,13 @@ static celix_status_t celix_bundleManifest_setOptionalAttributes(celix_bundle_ma
         CELIX_ERR_RET_IF_NULL(bundleGroup);
     }
 
+    const char* desc = celix_properties_getAsString(manifest->attributes, CELIX_BUNDLE_DESCRIPTION, NULL);
+    celix_autofree char* description = NULL;
+    if (desc) {
+        description = celix_utils_strdup(desc);
+        CELIX_ERR_RET_IF_NULL(description);
+    }
+
     celix_autoptr(celix_array_list_t) privateLibraries = NULL;
     celix_status_t getStatus = celix_properties_getAsStringArrayList(
         manifest->attributes, CELIX_BUNDLE_PRIVATE_LIBRARIES, NULL, &privateLibraries);
@@ -215,7 +248,7 @@ const char* celix_bundleManifest_getBundleName(celix_bundle_manifest_t* manifest
     return manifest->bundleName;
 }
 
-const char* celix_bundleManifest_getSymbolicName(celix_bundle_manifest_t* manifest) {
+const char* celix_bundleManifest_getBundleSymbolicName(celix_bundle_manifest_t* manifest) {
     return manifest->symbolicName;
 }
 
@@ -233,6 +266,10 @@ const char* celix_bundleManifest_getBundleActivatorLibrary(celix_bundle_manifest
 
 const celix_array_list_t* celix_bundleManifest_getBundlePrivateLibraries(celix_bundle_manifest_t* manifest) {
     return manifest->privateLibraries;
+}
+
+const char* celix_bundleManifest_getBundleDescription(celix_bundle_manifest_t* manifest) {
+    return manifest->description;
 }
 
 const char* celix_bundleManifest_getBundleGroup(celix_bundle_manifest_t* manifest) {

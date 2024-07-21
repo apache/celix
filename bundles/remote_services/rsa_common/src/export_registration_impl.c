@@ -32,6 +32,7 @@
 
 #include "export_registration_impl.h"
 #include "remote_service_admin_impl.h"
+#include "bundle.h"
 
 
 struct export_reference {
