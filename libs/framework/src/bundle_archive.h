@@ -31,12 +31,12 @@
 
 #include <time.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
-#include "bundle_revision.h"
+#include "bundle_revision_private.h"
 #include "celix_bundle_state.h"
 #include "celix_errno.h"
 #include "celix_log.h"
-#include <stdlib.h>
 
 #include "bundle_context.h"
 #include "celix_bundle_context.h"
@@ -64,10 +64,10 @@ bundleArchive_revise(bundle_archive_pt archive, const char *location, const char
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_rollbackRevise(bundle_archive_pt archive, bool *rolledback);
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t
-bundleArchive_getRevision(bundle_archive_pt archive, long revNr, bundle_revision_pt *revision);
+bundleArchive_getRevision(bundle_archive_pt archive, long revNr, celix_bundle_revision_t** revision);
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t
-bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundle_revision_pt *revision);
+bundleArchive_getCurrentRevision(bundle_archive_pt archive, celix_bundle_revision_t** revision);
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive, long *revisionNumber) __attribute__((deprecated));
 

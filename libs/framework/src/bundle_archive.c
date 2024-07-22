@@ -53,7 +53,7 @@ struct bundleArchive {
     char* resourceCacheRoot;
     char* bundleSymbolicName; // read from the manifest
     char* bundleVersion;      // read from the manifest
-    bundle_revision_t* revision; // the current revision
+    celix_bundle_revision_t* revision; // the current revision
     char* location;
     bool cacheValid; // is the cache valid (e.g. not deleted)
     bool valid; // is the archive valid (e.g. not deleted)
@@ -345,7 +345,7 @@ void bundleArchive_destroy(bundle_archive_pt archive) {
         free(archive->storeRoot);
         free(archive->bundleSymbolicName);
         free(archive->bundleVersion);
-        bundleRevision_destroy(archive->revision);
+        celix_bundleRevision_destroy(archive->revision);
         free(archive);
     }
 }
@@ -388,13 +388,13 @@ celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive,
 }
 //LCOV_EXCL_STOP
 
-celix_status_t bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundle_revision_pt* revision) {
+celix_status_t bundleArchive_getCurrentRevision(bundle_archive_pt archive, celix_bundle_revision_t** revision) {
     *revision = archive->revision;
     return CELIX_SUCCESS;
 }
 
 //LCOV_EXCL_START
-celix_status_t bundleArchive_getRevision(bundle_archive_pt archive, long revNr CELIX_UNUSED, bundle_revision_pt *revision) {
+celix_status_t bundleArchive_getRevision(bundle_archive_pt archive, long revNr CELIX_UNUSED, celix_bundle_revision_t** revision) {
     return bundleArchive_getCurrentRevision(archive, revision);
 }
 

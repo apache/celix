@@ -166,27 +166,14 @@ celix_status_t bundle_setState(bundle_pt bundle, bundle_state_e state) {
 }
 
 celix_status_t bundle_createModule(bundle_pt bundle, celix_module_t** moduleOut) {
-	celix_status_t status = CELIX_SUCCESS;
-	bundle_archive_pt archive = NULL;
-	bundle_revision_pt revision = NULL;
-	celix_bundle_manifest_t* manifest = NULL;
-    long bundleId = 0;
-
-	status = CELIX_DO_IF(status, bundle_getArchive(bundle, &archive));
-	status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
-	status = CELIX_DO_IF(status, bundleRevision_getManifest(revision, &manifest));
-    status = bundleArchive_getId(bundle->archive, &bundleId);
-
-    if (status != CELIX_SUCCESS) {
-        fw_logCode(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create module, cannot get bundle archive, revision, manifest or bundle id.");
-        return status;
-    }
+    celix_status_t status = CELIX_SUCCESS;
+    long bundleId = celix_bundle_getId(bundle);
 
     celix_module_t* module = NULL;
     if (bundleId == CELIX_FRAMEWORK_BUNDLE_ID) {
         module = module_createFrameworkModule(bundle->framework, bundle);
     } else {
-        module = module_create(manifest, bundle);
+        module = module_create(bundle);
     }
     if (!module) {
         status = CELIX_BUNDLE_EXCEPTION;
@@ -194,8 +181,7 @@ celix_status_t bundle_createModule(bundle_pt bundle, celix_module_t** moduleOut)
         return status;
     }
 
-
-    const char * symName = NULL;
+    const char* symName = NULL;
     status = module_getSymbolicName(module, &symName);
     assert(status == CELIX_SUCCESS);
     /*
@@ -206,7 +192,11 @@ celix_status_t bundle_createModule(bundle_pt bundle, celix_module_t** moduleOut)
     bool alreadyInstalled = celix_framework_isBundleAlreadyInstalled(bundle->framework, symName);
     if (alreadyInstalled) {
         status = CELIX_BUNDLE_EXCEPTION;
-        fw_logCode(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create module, bundle with symbolic name '%s' already installed.", symName);
+        fw_logCode(bundle->framework->logger,
+                   CELIX_LOG_LEVEL_ERROR,
+                   status,
+                   "Cannot create module, bundle with symbolic name '%s' already installed.",
+                   symName);
     }
     if (status == CELIX_SUCCESS) {
         *moduleOut = module;
@@ -487,24 +477,23 @@ char* celix_bundle_getDataFile(const celix_bundle_t* bnd, const char *path) {
 }
 
 const char* celix_bundle_getManifestValue(const celix_bundle_t* bnd, const char* attribute) {
-	const char* header = NULL;
-	if (bnd != NULL) {
+    const char* header = NULL;
+    if (bnd != NULL) {
         bundle_archive_t* arch = NULL;
         bundle_getArchive(bnd, &arch);
         if (arch != NULL) {
-            bundle_revision_t* rev = NULL;
+            celix_bundle_revision_t* rev = NULL;
             bundleArchive_getCurrentRevision(arch, &rev);
             if (rev != NULL) {
-                celix_bundle_manifest_t* man = NULL;
-                bundleRevision_getManifest(rev, &man);
-                if (man != NULL ) {
+                celix_bundle_manifest_t* man = celix_bundleRevision_getManifest(rev);
+                if (man != NULL) {
                     const celix_properties_t* attr = celix_bundleManifest_getAttributes(man);
                     header = celix_properties_getAsString(attr, attribute, NULL);
                 }
             }
         }
-	}
-	return header;
+    }
+    return header;
 }
 
 const char* celix_bundle_getGroup(const celix_bundle_t *bnd) {

@@ -24,7 +24,7 @@ celix_bundle_headers(simple_test_bundle1 "Extra-Header3: value3")
 
 add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
-add_celix_bundle(bundle_with_exception SOURCES src/nop_activator.c VERSION 1.0.0)
+add_celix_bundle(bundle_with_exception SOURCES src/activator_with_exception.c VERSION 1.0.0)
 add_celix_bundle(bundle_with_bad_export NO_ACTIVATOR VERSION 1.0.0)
 celix_bundle_headers(bundle_with_bad_export "Export-Library: $<SEMICOLON>")
 add_celix_bundle(simple_cxx_bundle SOURCES src/HelloWorldCxxActivator.cc VERSION 1.0.0)
@@ -35,7 +35,7 @@ add_celix_bundle(cond_test_bundle SOURCES src/CondTestBundleActivator.cc VERSION
 add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
 add_celix_bundle(celix_err_test_bundle SOURCES src/activator_with_celix_err.c VERSION 1.0.0)
 
-add_celix_bundle(unresolvable_bundle SOURCES src/nop_activator.c VERSION 1.0.0)
+add_celix_bundle(unresolvable_bundle SOURCES src/activator_with_exception.c VERSION 1.0.0)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(POSTFIX ${CMAKE_DEBUG_POSTFIX})
 endif()

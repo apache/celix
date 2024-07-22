@@ -49,14 +49,18 @@ struct celix_module {
     celix_framework_t* fw;
     bool resolved;
     celix_bundle_t* bundle;
-    celix_bundle_manifest_t* manifest;
-    celix_thread_mutex_t handlesLock; // protects libraryHandles and bundleActivatorHandle
+    celix_thread_mutex_t handlesLock; // protects libraryHandles
     celix_array_list_t* libraryHandles;
-    void* bundleActivatorHandle;
 };
 
-celix_module_t* module_create(celix_bundle_manifest_t* manifest, celix_bundle_t* bundle) {
-    assert(manifest != NULL);
+static celix_bundle_manifest_t* celix_module_getManifestFromBundle(celix_bundle_t* bundle) {
+    bundle_archive_t* archive = celix_bundle_getArchive(bundle);
+    celix_bundle_revision_t* revision = NULL;
+    (void)bundleArchive_getCurrentRevision(archive, &revision);
+    return celix_bundleRevision_getManifest(revision);
+}
+
+celix_module_t* module_create(celix_bundle_t* bundle) {
     assert(bundle != NULL);
 
     celix_framework_t* fw;
@@ -82,20 +86,12 @@ celix_module_t* module_create(celix_bundle_manifest_t* manifest, celix_bundle_t*
     module->fw = fw;
     module->bundle = bundle;
     module->resolved = false;
-    module->manifest = manifest;
     module->libraryHandles = celix_steal_ptr(libraryHandles);
 
     return celix_steal_ptr(module);
 }
 
 celix_module_t* module_createFrameworkModule(celix_framework_t* fw, bundle_pt bundle) {
-    celix_autoptr(celix_bundle_manifest_t) manifest = NULL;
-    celix_status_t status = celix_bundleManifest_createFrameworkManifest(&manifest);
-    if (status != CELIX_SUCCESS) {
-        celix_framework_logTssErrors(fw->logger, CELIX_LOG_LEVEL_ERROR);
-        return NULL;
-    }
-
     celix_autoptr(celix_module_t) module = calloc(1, sizeof(*module));
     celix_autoptr(celix_array_list_t) libraryHandles = celix_arrayList_createPointerArray();
     if (!module || !libraryHandles) {
@@ -103,7 +99,7 @@ celix_module_t* module_createFrameworkModule(celix_framework_t* fw, bundle_pt bu
         return NULL;
     }
 
-    status = celixThreadMutex_create(&module->handlesLock, NULL);
+    celix_status_t status = celixThreadMutex_create(&module->handlesLock, NULL);
     if (status != CELIX_SUCCESS) {
         fw_log(fw->logger,
                CELIX_LOG_LEVEL_ERROR,
@@ -116,7 +112,6 @@ celix_module_t* module_createFrameworkModule(celix_framework_t* fw, bundle_pt bu
     module->fw = fw;
     module->bundle = bundle;
     module->resolved = false;
-    module->manifest = celix_steal_ptr(manifest);
     module->libraryHandles = celix_steal_ptr(libraryHandles);
 
     return celix_steal_ptr(module);
@@ -124,7 +119,6 @@ celix_module_t* module_createFrameworkModule(celix_framework_t* fw, bundle_pt bu
 
 void module_destroy(celix_module_t* module) {
     if (module) {
-        celix_bundleManifest_destroy(module->manifest);
         celix_arrayList_destroy(module->libraryHandles);
         celixThreadMutex_destroy(&module->handlesLock);
         free(module);
@@ -132,7 +126,8 @@ void module_destroy(celix_module_t* module) {
 }
 
 const celix_version_t* module_getVersion(celix_module_t* module) {
-    return celix_bundleManifest_getBundleVersion(module->manifest);
+    celix_bundle_manifest_t* man = celix_module_getManifestFromBundle(module->bundle);
+    return celix_bundleManifest_getBundleVersion(man);
 }
 
 celix_status_t module_getSymbolicName(celix_module_t* module, const char** symbolicName) {
@@ -140,7 +135,8 @@ celix_status_t module_getSymbolicName(celix_module_t* module, const char** symbo
     if (module == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-        *symbolicName = celix_bundleManifest_getBundleSymbolicName(module->manifest);
+        celix_bundle_manifest_t* man = celix_module_getManifestFromBundle(module->bundle);
+        *symbolicName = celix_bundleManifest_getBundleSymbolicName(man);
     }
     return status;
 }
@@ -150,7 +146,8 @@ celix_status_t module_getName(celix_module_t* module, const char **name) {
     if (module == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-        *name = celix_bundleManifest_getBundleName(module->manifest);
+        celix_bundle_manifest_t* man = celix_module_getManifestFromBundle(module->bundle);
+        *name = celix_bundleManifest_getBundleName(man);
     }
     return status;
 }
@@ -160,7 +157,8 @@ celix_status_t module_getGroup(celix_module_t* module, const char **group) {
     if (module == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-        *group = celix_bundleManifest_getBundleGroup(module->manifest);
+        celix_bundle_manifest_t* man = celix_module_getManifestFromBundle(module->bundle);
+        *group = celix_bundleManifest_getBundleGroup(man);
     }
     return status;
 }
@@ -170,7 +168,8 @@ celix_status_t module_getDescription(celix_module_t* module, const char **descri
     if (module == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-        *description = celix_bundleManifest_getBundleDescription(module->manifest);
+        celix_bundle_manifest_t* man = celix_module_getManifestFromBundle(module->bundle);
+        *description = celix_bundleManifest_getBundleDescription(man);
     }
     return status;
 }
@@ -197,7 +196,6 @@ celix_status_t celix_module_closeLibraries(celix_module_t* module) {
         celix_libloader_close(fwCtx, handle);
     }
     celix_arrayList_clear(module->libraryHandles);
-    module->bundleActivatorHandle = NULL;
     celixThreadMutex_unlock(&module->handlesLock);
     return status;
 }
@@ -284,29 +282,16 @@ static celix_status_t celix_module_loadLibrariesInManifestEntry(celix_module_t* 
 celix_status_t celix_module_loadLibraries(celix_module_t* module) {
     celix_status_t status = CELIX_SUCCESS;
     celix_library_handle_t* activatorHandle = NULL;
-    bundle_archive_pt archive = NULL;
-    bundle_revision_pt revision = NULL;
-    celix_bundle_manifest_t* manifest = NULL;
+    bundle_archive_t* archive = celix_bundle_getArchive(module->bundle);
 
-    status = CELIX_DO_IF(status, bundle_getArchive(module->bundle, &archive));
-    status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
-    status = CELIX_DO_IF(status, bundleRevision_getManifest(revision, &manifest));
-    if (status == CELIX_SUCCESS) {
-        const char* activator = celix_bundleManifest_getBundleActivatorLibrary(manifest);
-        const celix_array_list_t* privateLibraries = celix_bundleManifest_getBundlePrivateLibraries(manifest);
+    celix_bundle_manifest_t* man = celix_module_getManifestFromBundle(module->bundle);
+    const char* activator = celix_bundleManifest_getBundleActivatorLibrary(man);
+    const celix_array_list_t* privateLibraries = celix_bundleManifest_getBundlePrivateLibraries(man);
 
-        if (privateLibraries != NULL) {
-            status = CELIX_DO_IF(status,
-                                 celix_module_loadLibrariesInManifestEntry(
-                                     module, privateLibraries, activator, archive, &activatorHandle));
-        }
-
-        if (status == CELIX_SUCCESS) {
-            bundle_setHandle(module->bundle, activatorHandle); // note deprecated
-            celixThreadMutex_lock(&module->handlesLock);
-            module->bundleActivatorHandle = activatorHandle;
-            celixThreadMutex_unlock(&module->handlesLock);
-        }
+    if (privateLibraries != NULL) {
+        status = CELIX_DO_IF(
+            status,
+            celix_module_loadLibrariesInManifestEntry(module, privateLibraries, activator, archive, &activatorHandle));
     }
 
     if (status != CELIX_SUCCESS) {
@@ -318,5 +303,6 @@ celix_status_t celix_module_loadLibraries(celix_module_t* module) {
         (void)celix_module_closeLibraries(module);
     }
 
+    bundle_setHandle(module->bundle, activatorHandle);
     return status;
 }

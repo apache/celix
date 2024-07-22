@@ -1996,7 +1996,7 @@ static celix_status_t celix_framework_uninstallBundleEntryImpl(celix_framework_t
     celix_status_t status = CELIX_SUCCESS;
     celix_bundle_t *bnd = bndEntry->bnd;
     bundle_archive_t *archive = NULL;
-    bundle_revision_t *revision = NULL;
+    celix_bundle_revision_t*revision = NULL;
     celix_module_t* module = NULL;
     status = CELIX_DO_IF(status, bundle_getArchive(bnd, &archive));
     status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));

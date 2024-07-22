@@ -36,7 +36,7 @@ extern "C" {
  * @return A new module or NULL if the module could not be created. If NULL is returned, an error log is written to
  * celix err.
  */
-celix_module_t* module_create(celix_bundle_manifest_t* manifest, celix_bundle_t* bundle);
+celix_module_t* module_create(celix_bundle_t* bundle);
 
 celix_module_t* module_createFrameworkModule(celix_framework_t* fw, celix_bundle_t *bundle);
 
