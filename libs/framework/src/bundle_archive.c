@@ -329,14 +329,14 @@ dir_failed:
         celix_utils_deleteDirectory(archive->archiveRoot, NULL);
     }
 init_failed:
-    bundleArchive_destroy(archive);
+    celix_bundleArchive_destroy(archive);
 calloc_failed:
     celix_framework_logTssErrors(fw->logger, CELIX_LOG_LEVEL_ERROR);
     framework_logIfError(fw->logger, status, error, "Could not create archive.");
     return status;
 }
 
-void bundleArchive_destroy(bundle_archive_pt archive) {
+void celix_bundleArchive_destroy(bundle_archive_pt archive) {
     if (archive != NULL) {
         free(archive->location);
         free(archive->savedBundleStatePropertiesPath);

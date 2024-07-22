@@ -80,7 +80,7 @@ celix_status_t celix_bundle_createFromArchive(celix_framework_t *framework, bund
     }
 
     *bundleOut = bundle;
-	return status;
+    return status;
 }
 
 celix_status_t bundle_destroy(bundle_pt bundle) {

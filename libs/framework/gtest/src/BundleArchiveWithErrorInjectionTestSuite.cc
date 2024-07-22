@@ -210,7 +210,7 @@ TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     EXPECT_EQ(CELIX_SUCCESS, celix_utils_extractZipFile(SIMPLE_TEST_BUNDLE1_LOCATION, testExtractDir, nullptr));
     EXPECT_EQ(CELIX_SUCCESS,
               celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 2, testExtractDir, &archive));
-    bundleArchive_destroy(archive);
+    celix_bundleArchive_destroy(archive);
     archive = nullptr;
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     celix_utils_touch(SIMPLE_TEST_BUNDLE1_LOCATION);
@@ -223,7 +223,7 @@ TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveCreateErrorTest) {
 
     EXPECT_EQ(CELIX_SUCCESS,
               celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
-    bundleArchive_destroy(archive);
+    celix_bundleArchive_destroy(archive);
     archive = nullptr;
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     celix_utils_touch(SIMPLE_TEST_BUNDLE1_LOCATION);

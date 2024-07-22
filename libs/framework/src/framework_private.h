@@ -55,7 +55,7 @@ extern "C" {
 #define CELIX_FRAMEWORK_CACHE_USE_TMP_DIR_DEFAULT false
 #define CELIX_FRAMEWORK_CACHE_DIR_DEFAULT ".cache"
 
-typedef struct celix_framework_bundle_entry {
+typedef struct celix_bundle_entry {
     celix_bundle_t *bnd;
     celix_thread_rwlock_t fsmMutex; //protects bundle state transition
     long bndId;
@@ -63,7 +63,7 @@ typedef struct celix_framework_bundle_entry {
     celix_thread_mutex_t useMutex; //protects useCount
     celix_thread_cond_t useCond;
     size_t useCount;
-} celix_framework_bundle_entry_t;
+} celix_bundle_entry_t;
 
 enum celix_framework_event_type {
     CELIX_FRAMEWORK_EVENT_TYPE      = 0x01,
@@ -77,7 +77,7 @@ typedef enum celix_framework_event_type celix_framework_event_type_e;
 
 struct celix_framework_event {
     celix_framework_event_type_e type;
-    celix_framework_bundle_entry_t* bndEntry;
+    celix_bundle_entry_t* bndEntry;
 
     void *doneData;
     void (*doneCallback)(void*);
@@ -124,7 +124,7 @@ enum celix_bundle_lifecycle_command {
 
 typedef struct celix_framework_bundle_lifecycle_handler {
     celix_framework_t* framework;
-    celix_framework_bundle_entry_t* bndEntry;
+    celix_bundle_entry_t* bndEntry;
     long bndId;
     char* updatedBundleUrl; //only relevant and present for update command
     enum celix_bundle_lifecycle_command command;
@@ -347,17 +347,45 @@ void celix_framework_waitForAsyncUnregistration(celix_framework_t *fw, long svcI
 /**
  * Increase the use count of a bundle and ensure that a bundle cannot be uninstalled.
  */
-void celix_framework_bundleEntry_increaseUseCount(celix_framework_bundle_entry_t *entry);
+void celix_bundleEntry_increaseUseCount(celix_bundle_entry_t*entry);
 
 /**
  * Decrease the use count of a bundle.
  */
-void celix_framework_bundleEntry_decreaseUseCount(celix_framework_bundle_entry_t *entry);
+void celix_bundleEntry_decreaseUseCount(celix_bundle_entry_t*entry);
+
+/**
+ * @brief Use guard for bundle entry usage.
+ */
+typedef struct celix_bundle_entry_use_guard {
+    celix_bundle_entry_t* entry;
+} celix_bundle_entry_use_guard_t;
+
+/**
+ * @brief Initialize a bundle entry use guard.
+ */
+static CELIX_UNUSED inline celix_bundle_entry_use_guard_t celix_bundleEntryUseGuard_init(celix_bundle_entry_t* entry) {
+    celix_bundle_entry_use_guard_t guard;
+    guard.entry = entry;
+    return guard;
+}
+
+/**
+ * @brief De-initialize a bundle entry use guard.
+ */
+static CELIX_UNUSED inline void celix_bundleEntryUseGuard_deinit(celix_bundle_entry_use_guard_t* guard) {
+    if (guard->entry) {
+        celix_bundleEntry_decreaseUseCount(guard->entry);
+        guard->entry = NULL;
+    }
+}
+
+CELIX_DEFINE_AUTO_CLEANUP_CLEAR_FUNC(celix_bundle_entry_use_guard_t, celix_bundleEntryUseGuard_deinit)
 
 /**
  * Find the bundle entry for the bnd id and increase use count
  */
-celix_framework_bundle_entry_t* celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(celix_framework_t *fw, long bndId);
+celix_bundle_entry_t* celix_framework_bundleEntry_getBundleEntryAndIncreaseUseCount(celix_framework_t *fw, long bndId);
 
 /**
  * @brief Check if the bundle id is already in use.
@@ -381,7 +409,8 @@ bool celix_framework_isBundleAlreadyInstalled(celix_framework_t* fw, const char*
   * @param forceSpawnThread If the true, the start bundle will always be done on a spawn thread
   * @return CELIX_SUCCESS of the call went alright.
   */
-celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread);
+celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework_t* fw,
+                                                                 celix_bundle_entry_t* bndEntry, bool forceSpawnThread);
 
 /**
  * Stop a bundle and ensure that this is not done on the Celix event thread.
@@ -391,7 +420,8 @@ celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework
  * @param forceSpawnThread If the true, the start bundle will always be done on a spawn thread
  * @return CELIX_SUCCESS of the call went alright.
  */
-celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread);
+celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_t* fw,
+                                                                celix_bundle_entry_t* bndEntry, bool forceSpawnThread);
 
 /**
  * Uninstall (and if needed stop) a bundle and ensure that this is not done on the Celix event thread.
@@ -402,7 +432,8 @@ celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_
  * @param permanent If true, the bundle will be permanently uninstalled (e.g. the bundle archive will be removed).
  * @return CELIX_SUCCESS of the call went alright.
  */
-celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread, bool permanent);
+celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw,
+                                                                     celix_bundle_entry_t* bndEntry, bool forceSpawnThread, bool permanent);
 
 /**
  * Update (and if needed stop and start) a bundle and ensure that this is not done on the Celix event thread.
@@ -411,7 +442,8 @@ celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_frame
  * @param forceSpawnThread If the true, the start bundle will always be done on a spawn thread
  * @return CELIX_SUCCESS of the call went alright.
  */
-celix_status_t celix_framework_updateBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, const char* updatedBundleUrl, bool forceSpawnThread);
+celix_status_t celix_framework_updateBundleOnANonCelixEventThread(celix_framework_t* fw,
+                                                                  celix_bundle_entry_t* bndEntry, const char* updatedBundleUrl, bool forceSpawnThread);
 
 /**
  * Wait for all bundle lifecycle handlers finishing their jobs.
@@ -422,22 +454,22 @@ void celix_framework_waitForBundleLifecycleHandlers(celix_framework_t* fw);
 /**
  * Start a bundle. Cannot be called on the Celix event thread.
  */
-celix_status_t celix_framework_startBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+celix_status_t celix_framework_startBundleEntry(celix_framework_t* fw, celix_bundle_entry_t* bndEntry);
 
 /**
  * Stop a bundle. Cannot be called on the Celix event thread.
  */
-celix_status_t celix_framework_stopBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry);
+celix_status_t celix_framework_stopBundleEntry(celix_framework_t* fw, celix_bundle_entry_t* bndEntry);
 
 /**
  * Uninstall a bundle. Cannot be called on the Celix event thread.
  */
-celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool permanent);
+celix_status_t celix_framework_uninstallBundleEntry(celix_framework_t* fw, celix_bundle_entry_t* bndEntry, bool permanent);
 
 /**
  * Update a bundle. Cannot be called on the Celix event thread.
  */
-celix_status_t celix_framework_updateBundleEntry(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, const char* updatedBundleUrl);
+celix_status_t celix_framework_updateBundleEntry(celix_framework_t* fw, celix_bundle_entry_t* bndEntry, const char* updatedBundleUrl);
 
 
 /** @brief Return the next scheduled event id.

@@ -36,6 +36,7 @@
 #include <sys/param.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <string.h>
 #include <errno.h>
 
 
@@ -280,6 +281,7 @@ celix_status_t rsaShmClientManager_sendMsgTo(rsa_shm_client_manager_t *clientMan
     if (metadata != NULL) {
         status = celix_properties_saveToStream(metadata, fp, 0);
         if (status != CELIX_SUCCESS) {
+            fclose(fp);
             celix_logHelper_error(
                 clientManager->logHelper, "RsaShmClient: Error encoding metadata to memory stream. %d.", status);
             celix_logHelper_logTssErrors(clientManager->logHelper, CELIX_LOG_LEVEL_ERROR);

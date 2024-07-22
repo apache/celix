@@ -21,6 +21,7 @@
 
 #include "celix/FrameworkFactory.h"
 #include "celix_bundle_context.h"
+#include "celix_framework.h"
 #include "celix_scheduled_event.h"
 
 class ScheduledEventTestSuite : public ::testing::Test {
@@ -231,7 +232,21 @@ TEST_F(ScheduledEventTestSuite, InvalidOptionsAndArgumentsTest) {
     auto ctx = fw->getFrameworkBundleContext();
     celix_scheduled_event_options_t opts{}; // no callback
     long scheduledEventId = celix_bundleContext_scheduleEvent(ctx->getCBundleContext(), &opts);
+    // Then I expect an error
+    EXPECT_LT(scheduledEventId, 0);
 
+    // When I create a scheduled event with negative initial delay
+    opts.name = "Invalid scheduled event test";
+    opts.initialDelayInSeconds = -1;
+    opts.callback = [](void* /*data*/) { FAIL() << "Scheduled event called, but should not be called"; };
+    scheduledEventId = celix_bundleContext_scheduleEvent(ctx->getCBundleContext(), &opts);
+    // Then I expect an error
+    EXPECT_LT(scheduledEventId, 0);
+
+    // When I create a scheduled event with negative interval value
+    opts.initialDelayInSeconds = 0.1;
+    opts.intervalInSeconds = -1;
+    scheduledEventId = celix_bundleContext_scheduleEvent(ctx->getCBundleContext(), &opts);
     // Then I expect an error
     EXPECT_LT(scheduledEventId, 0);
 
@@ -747,3 +762,25 @@ TEST_F(ScheduledEventTestSuite, ScheduledEventTimeoutLogTest) {
     EXPECT_GE(logCount.load(), 2);
 }
 #endif
+
+TEST_F(ScheduledEventTestSuite, ScheduledEventForInvactiveFramework) {
+    // Given a framework that is stopped
+    celix_framework_stopBundle(fw->getCFramework(), CELIX_FRAMEWORK_BUNDLE_ID);
+    celix_framework_waitForStop(fw->getCFramework());
+    // When a scheduled event is added
+    std::atomic<int> count{0};
+    auto callback = [](void* data) {
+        auto* count = static_cast<std::atomic<int>*>(data);
+        count->fetch_add(1);
+    };
+
+    celix_scheduled_event_options_t opts{};
+    opts.initialDelayInSeconds = 0.01;
+    opts.callbackData = &count;
+    opts.callback = callback;
+    long eventId = celix_bundleContext_scheduleEvent(fw->getFrameworkBundleContext()->getCBundleContext(), &opts);
+    EXPECT_LT(eventId, 0);
+
+    // Then the event is not added
+    EXPECT_EQ(0, count.load());
+}

@@ -22,6 +22,8 @@ celix_bundle_description(simple_test_bundle1 "Test Description")
 celix_bundle_headers(simple_test_bundle1 "Extra-Header1: value1" "Extra-Header2: value2")
 celix_bundle_headers(simple_test_bundle1 "Extra-Header3: value3")
 
+add_celix_bundle(dup_symbolic_name_bundle NO_ACTIVATOR VERSION 1.0.0 SYMBOLIC_NAME simple_test_bundle1)
+
 add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(bundle_with_exception SOURCES src/activator_with_exception.c VERSION 1.0.0)
@@ -34,6 +36,7 @@ add_celix_bundle(cmp_test_bundle SOURCES src/CmpTestBundleActivator.cc VERSION 1
 add_celix_bundle(cond_test_bundle SOURCES src/CondTestBundleActivator.cc VERSION 1.0.0)
 add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
 add_celix_bundle(celix_err_test_bundle SOURCES src/activator_with_celix_err.c VERSION 1.0.0)
+add_celix_bundle(immediate_stop_bundle SOURCES src/activator_stop.c VERSION 1.0.0)
 
 add_celix_bundle(unresolvable_bundle SOURCES src/activator_with_exception.c VERSION 1.0.0)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -81,17 +84,19 @@ add_celix_bundle_dependencies(test_framework
         simple_test_bundle2 simple_test_bundle3 simple_test_bundle4
         simple_test_bundle5 bundle_with_exception bundle_with_bad_export
         unresolvable_bundle simple_cxx_bundle simple_cxx_dep_man_bundle cmp_test_bundle
-        celix_err_test_bundle)
+        celix_err_test_bundle dup_symbolic_name_bundle immediate_stop_bundle)
 target_include_directories(test_framework PRIVATE ../src)
 celix_deprecated_utils_headers(test_framework)
 
 celix_get_bundle_file(simple_test_bundle1 SIMPLE_TEST_BUNDLE1)
+celix_get_bundle_file(dup_symbolic_name_bundle DUP_SYMBOLIC_NAME_BUNDLE)
 celix_get_bundle_file(simple_test_bundle2 SIMPLE_TEST_BUNDLE2)
 celix_get_bundle_file(simple_test_bundle3 SIMPLE_TEST_BUNDLE3)
 celix_get_bundle_file(simple_test_bundle4 SIMPLE_TEST_BUNDLE4)
 celix_get_bundle_file(simple_test_bundle5 SIMPLE_TEST_BUNDLE5)
 celix_get_bundle_filename(simple_test_bundle4 SIMPLE_TEST_BUNDLE4_FILENAME)
 celix_get_bundle_filename(simple_test_bundle5 SIMPLE_TEST_BUNDLE5_FILENAME)
+celix_get_bundle_file(immediate_stop_bundle IMMEDIATE_STOP_BUNDLE)
 
 celix_get_bundle_filename(bundle_with_exception BUNDLE_WITH_EXCEPTION)
 celix_get_bundle_file(bundle_with_bad_export BUNDLE_WITH_BAD_EXPORT)
@@ -116,6 +121,7 @@ target_compile_definitions(test_framework PRIVATE
         SIMPLE_TEST_BUNDLE3_LOCATION="${SIMPLE_TEST_BUNDLE3}"
         SIMPLE_TEST_BUNDLE4_LOCATION="${SIMPLE_TEST_BUNDLE4_FILENAME}"
         SIMPLE_TEST_BUNDLE5_LOCATION="${SIMPLE_TEST_BUNDLE5_FILENAME}"
+        DUP_SYMBOLIC_NAME_BUNDLE_LOCATION="${DUP_SYMBOLIC_NAME_BUNDLE}"
         TEST_BUNDLE_WITH_EXCEPTION_LOCATION="${BUNDLE_WITH_EXCEPTION}"
         BUNDLE_WITH_BAD_EXPORT_LOCATION="${BUNDLE_WITH_BAD_EXPORT}"
         TEST_BUNDLE_UNRESOLVABLE_LOCATION="${UNRESOLVABLE_BUNDLE}"
@@ -125,7 +131,9 @@ target_compile_definitions(test_framework PRIVATE
         CMP_TEST_BUNDLE_LOC="${CMP_TEST_BUNDLE_LOC}"
         COND_TEST_BUNDLE_LOC="${COND_TEST_BUNDLE_LOC}"
         INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE="${CMAKE_CURRENT_BINARY_DIR}/install_and_start_bundles.properties"
+        IMMEDIATE_STOP_BUNDLE_LOCATION="${IMMEDIATE_STOP_BUNDLE}"
 )
+
 if (ENABLE_TESTING_ON_CI)
     target_compile_definitions(test_framework PRIVATE TESTING_ON_CI=1)
 endif ()

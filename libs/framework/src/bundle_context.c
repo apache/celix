@@ -578,7 +578,7 @@ celix_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_cont
     if (ctx->mng) {
         return ctx->mng;
     }
-    celixThreadRwlock_unlock(celix_steal_ptr(rlockGuard.lock));
+    celixRwlockRlockGuard_deinit(&rlockGuard);
 
     celix_auto(celix_rwlock_wlock_guard_t) wlockGuard = celixRwlockWlockGuard_init(&ctx->lock);
     if (ctx->mng == NULL) {

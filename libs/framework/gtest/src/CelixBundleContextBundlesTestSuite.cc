@@ -47,6 +47,7 @@ public:
     const char * const TEST_BND5_LOC = "" SIMPLE_TEST_BUNDLE5_LOCATION "";
     const char * const TEST_BND_WITH_EXCEPTION_LOC = "" TEST_BUNDLE_WITH_EXCEPTION_LOCATION "";
     const char * const TEST_BND_UNRESOLVABLE_LOC = "" TEST_BUNDLE_UNRESOLVABLE_LOCATION "";
+    const char * const DUP_SYMBOLIC_NAME_BUNDLE_LOC = "" DUP_SYMBOLIC_NAME_BUNDLE_LOCATION "";
 
     CelixBundleContextBundlesTestSuite() {
         properties = celix_properties_create();
@@ -77,6 +78,14 @@ TEST_F(CelixBundleContextBundlesTestSuite, StartStopTest) {
 TEST_F(CelixBundleContextBundlesTestSuite, InstallABundleTest) {
     long bndId = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
     ASSERT_TRUE(bndId >= 0);
+}
+
+TEST_F(CelixBundleContextBundlesTestSuite, InstallBundleWithDuplicatedSymbolicNameTest) {
+    long bndId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    ASSERT_TRUE(bndId1 >= 0);
+
+    long bndId2 = celix_bundleContext_installBundle(ctx, DUP_SYMBOLIC_NAME_BUNDLE_LOC, true);
+    ASSERT_TRUE(bndId2 < 0);
 }
 
 //TEST_F(CelixBundleContextBundlesTestSuite, InstallBundleWithBadExport) {

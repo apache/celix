@@ -217,7 +217,6 @@ function(add_celix_container)
         file(GENERATE
                 OUTPUT "${STAGE1_LAUNCHER_SRC}"
                 CONTENT "#include <celix_launcher.h>
-#include <celix_err.h>
 
 #define CELIX_MULTI_LINE_STRING(...) #__VA_ARGS__
 

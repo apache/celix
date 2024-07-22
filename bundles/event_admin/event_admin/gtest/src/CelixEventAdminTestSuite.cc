@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <semaphore.h>
 #include <cstdlib>
+#include <future>
 
 #include <gtest/gtest.h>
 #include "CelixEventAdminTestSuiteBaseClass.h"
@@ -605,36 +606,50 @@ TEST_F(CelixEventAdminTestSuite, PostEventWithInvalidArgumentsTest) {
     });
 }
 
-static bool g_blockingHandlerCalled = false;
 TEST_F(CelixEventAdminTestSuite, AsyncEventQueueFullTest) {
-    g_blockingHandlerCalled = true;
-    TestPublishEvent("org/celix/test", nullptr, [](celix_event_admin_t *ea) {
-        for (int i = 0; i < 512 + 1/*handling event*/; ++i) {
+    std::promise<void> promise1;
+    auto future1 = promise1.get_future();
+    std::promise<void> promise2;
+    auto future2 = promise2.get_future();
+    TestPublishEvent("org/celix/test", nullptr, [&promise2, &future1](celix_event_admin_t *ea) {
+        for (int i = 0; i < 512; ++i) {
             auto status = celix_eventAdmin_postEvent(ea, "org/celix/test", nullptr);
             EXPECT_EQ(CELIX_SUCCESS, status);
         }
-        usleep(30000);
+        future1.get();
         auto status = celix_eventAdmin_postEvent(ea, "org/celix/test", nullptr);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+        status = celix_eventAdmin_postEvent(ea, "org/celix/test", nullptr);
         EXPECT_EQ(CELIX_ILLEGAL_STATE, status);
-        g_blockingHandlerCalled = false;
-    }, [](void *handle, const char *topic, const celix_properties_t *props) {
+        promise2.set_value();
+    }, [&promise1, &future2](void *handle, const char *topic, const celix_properties_t *props) {
         (void)handle;
         (void)props;
         (void)topic;
-        while (g_blockingHandlerCalled) usleep(1000);
+        static bool firstCalled{true};
+        if (firstCalled) {
+            promise1.set_value();
+            future2.get();
+            firstCalled = false;
+        }
         return CELIX_SUCCESS;
     });
 }
 
 TEST_F(CelixEventAdminTestSuite, RemoveEventHandlerAfterEventAdminStopTest) {
-    g_blockingHandlerCalled = true;
+    std::promise<void> promise;
+    auto future = promise.get_future();
     celix_event_handler_service_t handler;
-    handler.handle = nullptr;
+    handler.handle = &future;
     handler.handleEvent = [](void *handle, const char *topic, const celix_properties_t *props) {
-        (void)handle;
+        auto feature = static_cast<std::future<void>*>(handle);
         (void)topic;
         (void)props;
-        while (g_blockingHandlerCalled) usleep(1000);
+        static bool firstCalled{true};
+        if (firstCalled) {
+            feature->get();
+            firstCalled = false;
+        }
         return CELIX_SUCCESS;
     };
     auto props = celix_properties_create();
@@ -669,7 +684,7 @@ TEST_F(CelixEventAdminTestSuite, RemoveEventHandlerAfterEventAdminStopTest) {
         EXPECT_EQ(CELIX_SUCCESS, status);
     }
 
-    g_blockingHandlerCalled = false;
+    promise.set_value();
     status = celix_eventAdmin_stop(ea);
     EXPECT_EQ(CELIX_SUCCESS, status);
 

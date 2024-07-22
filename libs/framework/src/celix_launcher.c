@@ -19,6 +19,7 @@
 
 #include "celix_launcher.h"
 #include "celix_launcher_private.h"
+#include "celix_compiler.h"
 
 #include <signal.h>
 #include <stdio.h>
@@ -36,13 +37,21 @@
 #include "celix_file_utils.h"
 #include "celix_framework_factory.h"
 #include "celix_framework_utils.h"
+#include "celix_threads.h"
 
 #define DEFAULT_CONFIG_FILE "config.properties"
 
 #define CELIX_LAUNCHER_OK_EXIT_CODE 0
 #define CELIX_LAUNCHER_ERROR_EXIT_CODE 1
 
-static framework_t* g_fw = NULL;
+typedef struct {
+    celix_thread_mutex_t lock; // protect the following
+    framework_t* framework;
+    long shutdownEventId;
+    bool launched;
+    bool shutdown; // accessed through atomic operations
+    int signal; // accessed through atomic operations
+} celix_launcher_t;
 
 typedef struct {
     bool showHelp;
@@ -50,6 +59,8 @@ typedef struct {
     bool createCache;
     const char* configFile;
 } celix_launcher_options_t;
+
+static celix_launcher_t g_launcher = { PTHREAD_MUTEX_INITIALIZER, NULL, -1L, false, false, -1 };
 
 /**
  * @brief SIGUSR1 SIGUSR2 no-op callback handler.
@@ -60,6 +71,17 @@ static void celix_launcher_noopSignalHandler(int signal);
  * @brief SIGINT SIGTERM callback to shutdown the framework.
  */
 static void celix_launcher_shutdownFrameworkSignalHandler(int signal);
+
+/**
+ * @brief Check and set if a framework can be launched.
+ * @return true if the framework can be launched.
+ */
+static bool celix_launcher_checkFrameworkLaunched();
+
+/**
+ * @brief Reset the launcher state.
+ */
+static void celix_launcher_resetLauncher();
 
 /**
  * @brief Create a Celix framework instance with the given embedded and runtime properties.
@@ -74,7 +96,7 @@ static celix_status_t celix_launcher_createFramework(celix_properties_t* embedde
                                           celix_framework_t** frameworkOut);
 
 /**
- * @brief Stop the global framework instance (if set).
+ * @brief Parse launcher options from the given command line arguments.
  */
 static celix_status_t celix_launcher_parseOptions(int argc, char* argv[], celix_launcher_options_t* opts);
 
@@ -107,22 +129,19 @@ static celix_status_t celix_launcher_loadRuntimeProperties(const char* configFil
 
 /**
  * @brief Set the global framework instance.
- *
- * If a global framework instance is already set, the new framework instance will be destroyed and a
- * error code will be returned.
  */
 static celix_status_t celix_launcher_setGlobalFramework(celix_framework_t* fw);
 
 int celix_launcher_launchAndWait(int argc, char* argv[], const char* embeddedConfig) {
     celix_autoptr(celix_properties_t) embeddedProps = NULL;
     if (embeddedConfig) {
-        celix_status_t status = celix_properties_loadFromString(embeddedConfig, 0, &embeddedProps);
-        if (status != CELIX_SUCCESS) {
-            celix_err_printErrors(stderr, "Error creating embedded properties: ", NULL);
-            return CELIX_LAUNCHER_ERROR_EXIT_CODE;
-        }
+        (void)celix_properties_loadFromString(embeddedConfig, 0, &embeddedProps);
     } else {
         embeddedProps = celix_properties_create();
+    }
+    if (embeddedProps == NULL) {
+        celix_err_printErrors(stderr, "Error creating embedded properties: ", NULL);
+        return CELIX_LAUNCHER_ERROR_EXIT_CODE;
     }
 
     celix_launcher_options_t options;
@@ -144,40 +163,36 @@ int celix_launcher_launchAndWait(int argc, char* argv[], const char* embeddedCon
     } else if (options.showProps) {
         celix_launcher_printProperties(embeddedProps, runtimeProps, options.configFile);
         return CELIX_LAUNCHER_OK_EXIT_CODE;
-    } else if (options.createCache) {
+    }
+
+    if (!celix_launcher_checkFrameworkLaunched()) {
+        return CELIX_LAUNCHER_ERROR_EXIT_CODE;
+    }
+
+    if (options.createCache) {
         status = celix_launcher_createBundleCache(celix_steal_ptr(embeddedProps), runtimeProps);
+        celix_launcher_resetLauncher();
         return status == CELIX_SUCCESS ? CELIX_LAUNCHER_OK_EXIT_CODE : CELIX_LAUNCHER_ERROR_EXIT_CODE;
     }
 
     celix_framework_t* framework = NULL;
     status = celix_launcher_createFramework(celix_steal_ptr(embeddedProps), runtimeProps, &framework);
-    if (status == CELIX_SUCCESS && framework) {
-        status = celix_launcher_setGlobalFramework(framework);
-        if (status != CELIX_SUCCESS) {
-            return CELIX_LAUNCHER_ERROR_EXIT_CODE;
-        }
-        celix_framework_waitForStop(framework);
-        celix_frameworkFactory_destroyFramework(framework);
+    if (status != CELIX_SUCCESS) {
+        celix_launcher_resetLauncher();
+        return CELIX_LAUNCHER_ERROR_EXIT_CODE;
+    }
+    status = celix_launcher_setGlobalFramework(framework);
+    if (status != CELIX_SUCCESS) {
+        celix_bundleContext_log(celix_framework_getFrameworkContext(framework), CELIX_LOG_LEVEL_WARNING,
+                                "Failed to schedule celix_shutdown_check");
+    }
+    celix_framework_waitForStop(framework);
+    celix_launcher_resetLauncher();
 #ifndef CELIX_NO_CURLINIT
-        // Cleanup Curl
-        curl_global_cleanup();
+    // Cleanup Curl
+    curl_global_cleanup();
 #endif
-    }
-    return status == CELIX_SUCCESS ? CELIX_LAUNCHER_OK_EXIT_CODE : CELIX_LAUNCHER_ERROR_EXIT_CODE;
-}
-
-static celix_status_t celix_launcher_setGlobalFramework(celix_framework_t* fw) {
-    //try to set the global framework instance, but fail if global instance is already set.
-    celix_framework_t* expected = NULL;
-    bool swapped = __atomic_compare_exchange_n(&g_fw, &expected, fw, false,  __ATOMIC_SEQ_CST, __ATOMIC_RELAXED);
-    if (!swapped) {
-        celix_bundle_context_t* ctx = celix_framework_getFrameworkContext(fw);
-        celix_bundleContext_log(
-            ctx, CELIX_LOG_LEVEL_ERROR, "Failed to set global framework instance, already set. Destroying framework");
-        celix_frameworkFactory_destroyFramework(fw);
-        return CELIX_ILLEGAL_STATE;
-    }
-    return CELIX_SUCCESS;
+    return CELIX_LAUNCHER_OK_EXIT_CODE;
 }
 
 static celix_status_t celix_launcher_parseOptions(int argc, char* argv[], celix_launcher_options_t* opts) {
@@ -235,7 +250,7 @@ static celix_status_t celix_launcher_createFramework(celix_properties_t* embedde
     sigaction(SIGUSR2, &sigact, NULL);
 
 #ifndef CELIX_NO_CURLINIT
-    // Before doing anything else, let's setup Curl
+    // Before doing anything else, lets setup Curl
     curl_global_init(CURL_GLOBAL_ALL);
 #endif
 
@@ -243,15 +258,17 @@ static celix_status_t celix_launcher_createFramework(celix_properties_t* embedde
     return *frameworkOut != NULL ? CELIX_SUCCESS : CELIX_FRAMEWORK_EXCEPTION;
 }
 
+// LCOV_EXCL_START
 /**
  * @brief SIGUSR1 SIGUSR2 no-op callback
  */
 static void celix_launcher_noopSignalHandler(int signal __attribute__((unused))) {
     // ignoring signal SIGUSR1, SIGUSR2. Can be used on threads
 }
+// LCOV_EXCL_STOP
 
 static void celix_launcher_printUsage(char* progName) {
-    printf("Usage:\n  %s [-h|-p] [path/to/runtime/config.properties]\n", basename(progName));
+    printf("Usage:\n  %s [-h|-p|-c] [path/to/runtime/config.properties]\n", basename(progName));
     printf("Options:\n");
     printf("\t-h | --help: Show this message.\n");
     printf("\t-p | --props: Show the embedded and runtime properties for this Celix container and exit.\n");
@@ -321,10 +338,9 @@ static celix_status_t celix_launcher_createBundleCache(celix_properties_t* embed
     if (status != CELIX_SUCCESS) {
         celix_bundle_context_t* ctx = celix_framework_getFrameworkContext(fw);
         celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR, "Failed to create bundle cache");
-        return status;
     }
     celix_frameworkFactory_destroyFramework(fw);
-    return CELIX_SUCCESS;
+    return status;
 }
 
 celix_status_t celix_launcher_combineProperties(celix_properties_t* embeddedProps,
@@ -363,23 +379,73 @@ static celix_status_t celix_launcher_loadRuntimeProperties(const char* configFil
 }
 
 static void celix_launcher_shutdownFrameworkSignalHandler(int signal) {
-    celix_launcher_stopInternal(&signal);
-}
-
-void celix_launcher_stopInternal(const int* signal) {
-    celix_framework_t* fw = __atomic_exchange_n(&g_fw, NULL, __ATOMIC_SEQ_CST);
-    if (fw) {
-        if (signal) {
-            celix_bundle_context_t* ctx = celix_framework_getFrameworkContext(fw);
-            celix_bundleContext_log(
-                ctx, CELIX_LOG_LEVEL_INFO, "Stopping Celix framework due to signal %s", strsignal(*signal));
-        }
-        celix_framework_stopBundle(fw, CELIX_FRAMEWORK_BUNDLE_ID);
-    } else {
-        fprintf(stderr, "No global framework instance to stop\n");
-    }
+    __atomic_store_n(&g_launcher.signal, signal, __ATOMIC_RELAXED);
+    __atomic_store_n(&g_launcher.shutdown, true, __ATOMIC_RELEASE);
 }
 
 void celix_launcher_triggerStop() {
-    celix_launcher_stopInternal(NULL);
+    celix_auto(celix_mutex_lock_guard_t) lck = celixMutexLockGuard_init(&g_launcher.lock);
+    if (g_launcher.framework == NULL || g_launcher.shutdownEventId == -1) {
+        fprintf(stderr, "No global framework instance to stop\n");
+        return;
+    }
+    __atomic_store_n(&g_launcher.shutdown, true, __ATOMIC_RELAXED);
+    celix_bundleContext_wakeupScheduledEvent(celix_framework_getFrameworkContext(g_launcher.framework),
+                                             g_launcher.shutdownEventId);
+}
+
+static void celix_launcher_shutdownCheck(void* data CELIX_UNUSED) {
+    celix_auto(celix_mutex_lock_guard_t) lck = celixMutexLockGuard_init(&g_launcher.lock);
+    if (__atomic_load_n(&g_launcher.shutdown, __ATOMIC_ACQUIRE)) {
+        int sig = __atomic_load_n(&g_launcher.signal, __ATOMIC_RELAXED);
+        if (sig != -1) {
+            celix_bundleContext_log(
+                celix_framework_getFrameworkContext(g_launcher.framework), CELIX_LOG_LEVEL_INFO,
+                "Stopping Celix framework due to signal %s", strsignal(sig));
+        }
+        celix_bundleContext_removeScheduledEventAsync(celix_framework_getFrameworkContext(g_launcher.framework),
+                                                      g_launcher.shutdownEventId);
+        celix_framework_stopBundleAsync(g_launcher.framework, CELIX_FRAMEWORK_BUNDLE_ID);
+        g_launcher.shutdownEventId = -1;
+    }
+}
+
+static celix_status_t celix_launcher_setGlobalFramework(celix_framework_t* fw) {
+    celix_auto(celix_mutex_lock_guard_t) lck = celixMutexLockGuard_init(&g_launcher.lock);
+    celix_bundle_context_t *ctx = celix_framework_getFrameworkContext(fw);
+    g_launcher.framework = fw;
+    celix_scheduled_event_options_t opts = CELIX_EMPTY_SCHEDULED_EVENT_OPTIONS;
+    opts.name = "celix_shutdown_check";
+    opts.callback = celix_launcher_shutdownCheck;
+    opts.callbackData = &g_launcher;
+    opts.initialDelayInSeconds = celix_bundleContext_getPropertyAsDouble(ctx, CELIX_LAUNCHER_SHUTDOWN_PERIOD_IN_SECONDS,
+                                                                         CELIX_LAUNCHER_SHUTDOWN_PERIOD_IN_SECONDS_DEFAULT);
+    opts.intervalInSeconds = celix_bundleContext_getPropertyAsDouble(ctx, CELIX_LAUNCHER_SHUTDOWN_PERIOD_IN_SECONDS,
+                                                                     CELIX_LAUNCHER_SHUTDOWN_PERIOD_IN_SECONDS_DEFAULT);
+    g_launcher.shutdownEventId = celix_bundleContext_scheduleEvent(ctx, &opts);
+    return g_launcher.shutdownEventId >= 0 ? CELIX_SUCCESS : CELIX_FRAMEWORK_EXCEPTION;
+}
+
+static bool celix_launcher_checkFrameworkLaunched() {
+    celix_auto(celix_mutex_lock_guard_t) lck = celixMutexLockGuard_init(&g_launcher.lock);
+    if (g_launcher.launched) {
+        fprintf(stderr, "Cannot launch framework, already launched\n");
+        return false;
+    }
+    g_launcher.launched = true;
+    return true;
+}
+
+static void celix_launcher_resetLauncher() {
+    celix_auto(celix_mutex_lock_guard_t) lck = celixMutexLockGuard_init(&g_launcher.lock);
+    __atomic_store_n(&g_launcher.shutdown, false, __ATOMIC_RELAXED);
+    __atomic_store_n(&g_launcher.signal, -1, __ATOMIC_RELAXED);
+    if (g_launcher.framework) {
+        long schedId = g_launcher.shutdownEventId;
+        g_launcher.shutdownEventId = -1L;
+        celix_bundleContext_removeScheduledEvent(celix_framework_getFrameworkContext(g_launcher.framework), schedId);
+        celix_frameworkFactory_destroyFramework(g_launcher.framework);
+        g_launcher.framework = NULL;
+    }
+    g_launcher.launched = false;
 }
