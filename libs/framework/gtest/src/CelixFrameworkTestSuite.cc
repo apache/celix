@@ -224,6 +224,15 @@ TEST_F(FrameworkFactoryTestSuite, FactoryCreateTest) {
     celix_frameworkFactory_destroyFramework(fw);
 }
 
+TEST_F(FrameworkFactoryTestSuite, ConfigureFrameworkUUIDTest) {
+    celix_properties_t* config = celix_properties_create();
+    celix_properties_set(config, CELIX_FRAMEWORK_UUID, "test-framework");
+    framework_t* fw = celix_frameworkFactory_createFramework(config);
+    ASSERT_TRUE(fw != nullptr);
+    EXPECT_STREQ("test-framework", celix_framework_getUUID(fw));
+    celix_frameworkFactory_destroyFramework(fw);
+}
+
 TEST_F(FrameworkFactoryTestSuite, FactoryCreateAndToManyStartAndStopsTest) {
     framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
     ASSERT_TRUE(fw != nullptr);
