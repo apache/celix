@@ -88,8 +88,6 @@ CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getArchive(const celix_bundle_t
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getCurrentModule(const celix_bundle_t *bundle, celix_module_t** module);
 
-CELIX_FRAMEWORK_DEPRECATED celix_array_list_t *bundle_getModules(const celix_bundle_t *bundle);
-
 CELIX_FRAMEWORK_DEPRECATED void *bundle_getHandle(celix_bundle_t *bundle);
 
 CELIX_FRAMEWORK_DEPRECATED void bundle_setHandle(celix_bundle_t *bundle, void *handle);
@@ -98,43 +96,13 @@ CELIX_FRAMEWORK_DEPRECATED celix_bundle_activator_t *bundle_getActivator(const c
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_setActivator(celix_bundle_t *bundle, celix_bundle_activator_t *activator);
 
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getEntry(const celix_bundle_t *bundle, const char *name, char **entry);
-
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_update(celix_bundle_t *bundle, const char *inputFile);
-
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_stop(celix_bundle_t *bundle);
-
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_setState(celix_bundle_t *bundle, bundle_state_e state);
-
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_setPersistentStateInactive(celix_bundle_t *bundle);
-
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_setPersistentStateUninstalled(celix_bundle_t *bundle);
-
-CELIX_FRAMEWORK_DEPRECATED void uninstallBundle(celix_bundle_t *bundle);
-
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_revise(celix_bundle_t *bundle, const char *location, const char *inputFile);
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_addModule(celix_bundle_t *bundle, celix_module_t* celix_module);
 
-// Service Reference Functions
-CELIX_FRAMEWORK_DEPRECATED celix_array_list_t *getUsingBundles(service_reference_pt reference);
-
-CELIX_FRAMEWORK_DEPRECATED int compareTo(service_reference_pt a, service_reference_pt b);
-
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getState(const celix_bundle_t *bundle, bundle_state_e *state);
 
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_closeAndDelete(const celix_bundle_t *bundle);
-
-CELIX_FRAMEWORK_EXPORT celix_status_t bundle_close(const celix_bundle_t *bundle)
-    __attribute__((deprecated("bundle_close is deprecated and does nothing")));
-
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_refresh(celix_bundle_t *bundle);
-
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getBundleId(const celix_bundle_t *bundle, long *id);
-
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getRegisteredServices(celix_bundle_t *bundle, celix_array_list_t **list);
-
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getServicesInUse(celix_bundle_t *bundle, celix_array_list_t **list);
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getFramework(const celix_bundle_t *bundle, celix_framework_t **framework);
 

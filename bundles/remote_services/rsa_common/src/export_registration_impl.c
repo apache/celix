@@ -32,7 +32,7 @@
 
 #include "export_registration_impl.h"
 #include "remote_service_admin_impl.h"
-#include "bundle.h"
+#include "celix_bundle.h"
 
 
 struct export_reference {
@@ -180,38 +180,33 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 	return status;
 }
 
-celix_status_t exportRegistration_open(export_registration_t *registration) {
-	celix_status_t status = CELIX_SUCCESS;
-	const char *bundleStore = NULL;
+celix_status_t exportRegistration_open(export_registration_t* registration) {
+    celix_status_t status = CELIX_SUCCESS;
+    const char* bundleStore = NULL;
 
-	bundleContext_getProperty(registration->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
+    bundleContext_getProperty(registration->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
 
-	if (bundleStore == NULL) {
-		bundleStore = DEFAULT_BUNDLE_STORE;
-	}
-	char name[256];
+    if (bundleStore == NULL) {
+        bundleStore = DEFAULT_BUNDLE_STORE;
+    }
+    char name[256];
 
-	snprintf(name, 256, "%s/%s_endpoint.zip", bundleStore, registration->endpointDescription->serviceName);
+    snprintf(name, 256, "%s/%s_endpoint.zip", bundleStore, registration->endpointDescription->serviceName);
 
-	status = bundleContext_installBundle(registration->context, name, &registration->bundle);
-	if (status == CELIX_SUCCESS) {
-		status = bundle_start(registration->bundle);
-		if (status == CELIX_SUCCESS) {
-		}
-	}
+    status = bundleContext_installBundle(registration->context, name, &registration->bundle);
+    if (status == CELIX_SUCCESS) {
+        status = celix_bundleContext_startBundle(registration->context, celix_bundle_getId(registration->bundle));
+    }
 
-	return status;
+    return status;
 }
 
-celix_status_t exportRegistration_close(export_registration_t *registration) {
-	celix_status_t status = CELIX_SUCCESS;
+celix_status_t exportRegistration_close(export_registration_t* registration) {
+    celix_status_t status = CELIX_SUCCESS;
 
-	exportRegistration_stopTracking(registration);
-
-	bundle_uninstall(registration->bundle);
-
-
-	return status;
+    exportRegistration_stopTracking(registration);
+    (void)celix_bundleContext_uninstallBundle(registration->context, celix_bundle_getId(registration->bundle));
+    return status;
 }
 
 celix_status_t exportRegistration_getException(export_registration_t *registration) {
