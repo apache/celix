@@ -36,6 +36,7 @@ class TestPackageConan(ConanFile):
     def generate(self):
         tc = CMakeToolchain(self)
         celix_options = self.dependencies["celix"].options
+        tc.cache_variables["ENABLE_ADDRESS_SANITIZER"] = celix_options.enable_address_sanitizer
         tc.cache_variables["TEST_FRAMEWORK"] = celix_options.build_framework
         tc.cache_variables["TEST_HTTP_ADMIN"] = celix_options.build_http_admin
         tc.cache_variables["TEST_LOG_SERVICE"] = celix_options.build_log_service

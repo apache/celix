@@ -1,38 +1,102 @@
-name: Celix development containers
+name: Celix Containers
 
 on:
   push:
   pull_request:
-  schedule:
-    - cron: '0 0 * * 0' # Weekly on Sunday at 00:00 UTC
 
 jobs:
-  container-build-ubuntu:
+  container-conan-build-ubuntu:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
+      - name: Cache Conan
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c #v3
+        with:
+          path: ~/.conan2-container
+          key: cache-conan-container-${{ runner.os }}-${{ github.job }}-${{ hashFiles('conanfile.py', '.devcontainer/*') }}
+          restore-keys: cache-conan-container-${{ runner.os }}-${{ github.job }}-
+      - name: Cache ccache
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c #v3
+        with:
+          path: ~/.ccache-container
+          key: cache-ccache-container-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: cache-ccache-container-${{ runner.os }}-${{ github.job }}-
       - name: Build container image
         run: |
-          cd $GITHUB_WORKSPACE/container/
-          ./build-ubuntu-container.sh
-      - name: Build Celix using container image
+          cd .devcontainer && \
+          docker build --tag apache/celix-conan-build:latest --target conan-build --file Containerfile .
+      - name: Build Celix dependencies
+        run: | #Using .conan2-container so that the steps can be reproduced locally without affecting the host conan 
+          mkdir -p ~/.conan2-container/profiles && \
+          cp .devcontainer/conan-container-default-profile ~/.conan2-container/profiles/default && \
+          cp .devcontainer/conan-container-debug-profile ~/.conan2-container/profiles/debug && \
+          docker run --rm -v ~/.conan2-container:/root/.conan2 -v $(pwd):/workspace \
+          apache/celix-conan-build:latest /bin/bash -c \
+          "cd /workspace && \
+          conan install . --build missing --profile debug \
+          --options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True \
+          --options celix/*:enable_testing=True --options celix/*:enable_ccache=True \
+          --conf:build tools.cmake.cmaketoolchain:generator=Ninja \
+          --output-folder build"
+      - name: Build Celix
         run: |
-          cd $GITHUB_WORKSPACE/container/
-          ./run-ubuntu-container.sh "mkdir -p build && cd build && ../container/support-scripts/build-all.sh && make -j"
-      - name: Run Celix tests using container image
+          mkdir -p ~/.ccache-container && \
+          docker run --rm -v ~/.conan2-container:/root/.conan2 -v ~/.ccache-container:/root/.ccache \
+          -v $(pwd):/workspace apache/celix-conan-build:latest /bin/bash -c \
+          "cd /workspace && \
+          conan build . --profile debug \
+          --options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True \
+          --options celix/*:enable_testing=True --options celix/*:enable_ccache=True \
+          --conf:build tools.cmake.cmaketoolchain:generator=Ninja \
+          --output-folder build"
+      - name: Test Celix
         run: |
-          cd $GITHUB_WORKSPACE/container/
-          ./run-ubuntu-container.sh "cd build && ctest --output-on-failure"
+          docker run --rm -v ~/.conan2-container:/root/.conan2 -v $(pwd):/workspace \
+          apache/celix-conan-build:latest /bin/bash -c \
+          "cd /workspace/build && \
+          source conanrun.sh && \
+          ctest --output-on-failure"          
 
-  container-build-gitpod:
+  container-apt-build-ubuntu:
     runs-on: ubuntu-22.04
     timeout-minutes: 120
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
       - name: Build container image
         run: |
-          cd $GITHUB_WORKSPACE/container/
-          docker build -t apache/celix-dev:gitpod-latest -f Containerfile.gitpod .
+          cd .devcontainer && \
+          docker build --tag apache/celix-apt-build:latest --target apt-build --file Containerfile .
+      - name: Cache ccache
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c #v3
+        with:
+          path: ~/.ccache-container
+          key: cache-ccache-container-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: cache-ccache-container-${{ runner.os }}-${{ github.job }}-
+      - name: Build Celix
+        run: |
+          docker run --rm -v ~/.ccache-container:/root/.ccache -v $(pwd):/workspace \
+          apache/celix-apt-build:latest /bin/bash -c \
+          "mkdir /workspace/build && cd /workspace/build && \
+          cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXPERIMENTAL=ON -DENABLE_TESTING=ON -DRSA_JSON_RPC=ON  \
+          -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON -DENABLE_CCACHE=ON .. && \
+          make -j"
+      - name: Test Celix
+        run: |
+          docker run --rm -v $(pwd):/workspace apache/celix-apt-build:latest /bin/bash -c \
+          "cd /workspace/build && \
+          ctest --output-on-failure"          
+
+  build-dev-container-images:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
+      - name: Build dev container images
+        run: |
+          cd .devcontainer && \
+          docker build --tag apache/celix-conan-dev:latest --target conan-dev --file Containerfile . && \
+          docker build --tag apache/celix-apt-dev:latest --target apt-dev --file Containerfile .
