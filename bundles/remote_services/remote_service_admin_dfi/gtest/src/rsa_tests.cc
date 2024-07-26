@@ -158,7 +158,7 @@ extern "C" {
     static void testBundles(void) {
         celix_array_list_t* bundles = celix_bundleContext_listBundles(context);
         ASSERT_NE(nullptr, bundles);
-        ASSERT_EQ(3, celix_arrayList_size(bundles)); //framework, rsa_dfi & calc
+        ASSERT_EQ(2, celix_arrayList_size(bundles)); //rsa_dfi & calc (note framework bundle is not included)
         celix_arrayList_destroy(bundles);
     }
 
