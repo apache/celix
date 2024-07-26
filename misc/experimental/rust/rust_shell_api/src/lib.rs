@@ -17,13 +17,12 @@
  * under the License.
  */
 
-#[allow(
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    dead_code
-)]
-mod bindings {
-    include!(concat!(env!("OUT_DIR"), "/celix_bindings.rs"));
+use celix::Error;
+pub const COMMAND_NAME: &str = "command.name";
+pub const COMMAND_USAGE: &str = "command.usage";
+pub const COMMAND_DESCRIPTION: &str = "command.description";
+
+#[doc = "A trait to implement a Celix Shell Command"]
+pub trait RustShellCommand {
+    fn execute_command(&self, command_line: &str) -> Result<(), Error>;
 }
-pub use bindings::*;
