@@ -217,6 +217,15 @@ struct fw_frameworkListener {
 
 typedef struct fw_frameworkListener * fw_framework_listener_pt;
 
+static void celix_framework_createAndStoreFrameworkUUID(celix_framework_t* fw) {
+    if (celix_properties_get(fw->configurationMap, CELIX_FRAMEWORK_UUID, NULL)  == NULL) {
+        char uuid[37];
+        uuid_t uid;
+        uuid_generate(uid);
+        uuid_unparse(uid, uuid);
+        celix_properties_set(fw->configurationMap, CELIX_FRAMEWORK_UUID, uuid);
+    }
+}
 
 celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     celix_framework_t* framework = calloc(1, sizeof(*framework));
@@ -244,12 +253,7 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     framework->dispatcher.dynamicEventQueue = celix_arrayList_create();
     framework->dispatcher.scheduledEvents = celix_longHashMap_create();
 
-    //create and store framework uuid
-    char uuid[37];
-    uuid_t uid;
-    uuid_generate(uid);
-    uuid_unparse(uid, uuid);
-    celix_properties_set(framework->configurationMap, CELIX_FRAMEWORK_UUID, uuid);
+    celix_framework_createAndStoreFrameworkUUID(framework);
 
     //setup framework logger
     const char* logStr = celix_framework_getConfigProperty(framework, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_DEFAULT_VALUE, NULL);
