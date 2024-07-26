@@ -734,62 +734,6 @@ bool celix_framework_isBundleAlreadyInstalled(celix_framework_t* fw, const char*
     return alreadyExists;
 }
 
-//celix_status_t fw_getDependentBundles(framework_pt framework, bundle_pt exporter, celix_array_list_t** list) {
-//    celix_status_t status = CELIX_SUCCESS;
-//
-//    if (*list != NULL || exporter == NULL || framework == NULL) {
-//        return CELIX_ILLEGAL_ARGUMENT;
-//    }
-//
-//    celix_array_list_t* modules;
-//    unsigned int modIdx = 0;
-//    *list = celix_arrayList_create();
-//
-//    modules = bundle_getModules(exporter);
-//    for (modIdx = 0; modIdx < celix_arrayList_size(modules); modIdx++) {
-//        celix_module_t* module = celix_arrayList_get(modules, modIdx);
-//        celix_array_list_t* dependents = module_getDependents(module);
-//        if (dependents != NULL) {
-//            unsigned int depIdx = 0;
-//            for (depIdx = 0; depIdx < celix_arrayList_size(dependents); depIdx++) {
-//                celix_module_t* dependent = celix_arrayList_get(dependents, depIdx);
-//                celix_arrayList_add(*list, module_getBundle(dependent));
-//            }
-//            celix_arrayList_destroy(dependents);
-//        }
-//    }
-//
-//    framework_logIfError(framework->logger, status, NULL, "Cannot get dependent bundles");
-//
-//    return status;
-//}
-
-//celix_status_t fw_populateDependentGraph(framework_pt framework, bundle_pt exporter, hash_map_pt* map) {
-//    celix_status_t status = CELIX_SUCCESS;
-//
-//    if (framework == NULL || exporter == NULL) {
-//        return CELIX_ILLEGAL_ARGUMENT;
-//    }
-//
-//    celix_array_list_t* dependents = NULL;
-//    if ((status = fw_getDependentBundles(framework, exporter, &dependents)) == CELIX_SUCCESS) {
-//        if (dependents != NULL) {
-//            unsigned int depIdx = 0;
-//            for (depIdx = 0; depIdx < celix_arrayList_size(dependents); depIdx++) {
-//                if (!hashMap_containsKey(*map, celix_arrayList_get(dependents, depIdx))) {
-//                    hashMap_put(*map, celix_arrayList_get(dependents, depIdx), celix_arrayList_get(dependents, depIdx));
-//                    fw_populateDependentGraph(framework, (bundle_pt)celix_arrayList_get(dependents, depIdx), map);
-//                }
-//            }
-//            celix_arrayList_destroy(dependents);
-//        }
-//    }
-//
-//    framework_logIfError(framework->logger, status, NULL, "Cannot populate dependent graph");
-//
-//    return status;
-//}
-
 celix_status_t fw_registerService(framework_pt framework, service_registration_pt *registration, long bndId, const char* serviceName, const void* svcObj, celix_properties_t *properties) {
     celix_status_t status = CELIX_SUCCESS;
     char *error = NULL;
@@ -1936,7 +1880,8 @@ static long celix_framework_installAndStartBundleInternal(celix_framework_t *fw,
     if (!forcedAsync) {
         celix_framework_waitForBundleEvents(fw, bundleId);
     }
-    framework_logIfError(fw->logger, status, NULL, "Failed to install bundle '%s'", bundleLoc);
+    const char* action = autoStart ? "install and start" : "install";
+    framework_logIfError(fw->logger, status, NULL, "Failed to %s bundle '%s'", action, bundleLoc);
 
     return bundleId;
 }
@@ -2231,7 +2176,7 @@ static void celix_framework_printCelixErrForBundleEntry(celix_framework_t* frame
 celix_status_t celix_framework_startBundleEntry(celix_framework_t* framework, celix_bundle_entry_t* bndEntry) {
     assert(!celix_framework_isCurrentThreadTheEventLoop(framework));
     celix_status_t status = CELIX_SUCCESS;
-    const char* error = "";
+    const char* error = NULL;
     const char* name = "";
     celix_module_t* module = NULL;
     celix_bundle_context_t* context = NULL;
