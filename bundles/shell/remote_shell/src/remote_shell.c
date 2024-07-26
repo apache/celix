@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 
 #include "celix_log_helper.h"
 #include "celix_utils.h"
