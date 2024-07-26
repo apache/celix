@@ -114,7 +114,7 @@ namespace celix {
     constexpr const char * const FRAMEWORK_CACHE_DIR = CELIX_FRAMEWORK_CACHE_DIR;
 
     /**
-     * @brief Celix framework environment property (named "org.osgi.framework.uuid") specifying the UUID for the
+     * @brief Celix framework environment property (named "CELIX_FRAMEWORK_UUID") specifying the UUID for the
      * framework UUID.
      *
      * The framework UUID is used to uniquely identify a single framework. If no framework uuid is provided
