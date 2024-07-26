@@ -149,11 +149,11 @@ static celix_status_t celix_bundleManifest_setMandatoryAttributes(celix_bundle_m
     celix_autoptr(celix_version_t) manifestVersion = NULL;
     celix_status_t getVersionStatus =
         celix_properties_getAsVersion(manifest->attributes, CELIX_BUNDLE_MANIFEST_VERSION, NULL, &manifestVersion);
-    CELIX_ERR_RET_IF_ENOMEM(getVersionStatus);
+    CELIX_RETURN_IF_ENOMEM(getVersionStatus);
 
     celix_autoptr(celix_version_t) bundleVersion = NULL;
     getVersionStatus = celix_properties_getAsVersion(manifest->attributes, CELIX_BUNDLE_VERSION, NULL, &bundleVersion);
-    CELIX_ERR_RET_IF_ENOMEM(getVersionStatus);
+    CELIX_RETURN_IF_ENOMEM(getVersionStatus);
 
     celix_status_t status = CELIX_SUCCESS;
     if (!bundleName) {
@@ -191,9 +191,9 @@ static celix_status_t celix_bundleManifest_setMandatoryAttributes(celix_bundle_m
 
     if (status == CELIX_SUCCESS) {
         manifest->symbolicName = celix_utils_strdup(symbolicName);
-        CELIX_ERR_RET_IF_NULL(manifest->symbolicName);
+        CELIX_RETURN_IF_NULL(manifest->symbolicName);
         manifest->bundleName = celix_utils_strdup(bundleName);
-        CELIX_ERR_RET_IF_NULL(manifest->bundleName);
+        CELIX_RETURN_IF_NULL(manifest->bundleName);
         manifest->manifestVersion = celix_steal_ptr(manifestVersion);
         manifest->bundleVersion = celix_steal_ptr(bundleVersion);
     }
@@ -208,27 +208,27 @@ static celix_status_t celix_bundleManifest_setOptionalAttributes(celix_bundle_ma
     celix_autofree char* activatorLib = NULL;
     if (lib) {
         activatorLib = celix_utils_strdup(lib);
-        CELIX_ERR_RET_IF_NULL(activatorLib);
+        CELIX_RETURN_IF_NULL(activatorLib);
     }
 
     const char* group = celix_properties_getAsString(manifest->attributes, CELIX_BUNDLE_GROUP, NULL);
     celix_autofree char* bundleGroup = NULL;
     if (group) {
         bundleGroup = celix_utils_strdup(group);
-        CELIX_ERR_RET_IF_NULL(bundleGroup);
+        CELIX_RETURN_IF_NULL(bundleGroup);
     }
 
     const char* desc = celix_properties_getAsString(manifest->attributes, CELIX_BUNDLE_DESCRIPTION, NULL);
     celix_autofree char* description = NULL;
     if (desc) {
         description = celix_utils_strdup(desc);
-        CELIX_ERR_RET_IF_NULL(description);
+        CELIX_RETURN_IF_NULL(description);
     }
 
     celix_autoptr(celix_array_list_t) privateLibraries = NULL;
     celix_status_t getStatus = celix_properties_getAsStringArrayList(
         manifest->attributes, CELIX_BUNDLE_PRIVATE_LIBRARIES, NULL, &privateLibraries);
-    CELIX_ERR_RET_IF_ENOMEM(getStatus);
+    CELIX_RETURN_IF_ENOMEM(getStatus);
     if (celix_properties_hasKey(manifest->attributes, CELIX_BUNDLE_PRIVATE_LIBRARIES) && !privateLibraries) {
         celix_err_pushf(CELIX_BUNDLE_PRIVATE_LIBRARIES " is not a string array. Got: '%s'",
                         celix_properties_get(manifest->attributes, CELIX_BUNDLE_PRIVATE_LIBRARIES, NULL));

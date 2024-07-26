@@ -24,6 +24,7 @@
 #include "celix_err.h"
 #include "celix_properties.h"
 #include "celix_stdlib_cleanup.h"
+#include "celix_framework_version.h"
 
 class ManifestTestSuite : public ::testing::Test {
   public:
@@ -58,6 +59,15 @@ TEST_F(ManifestTestSuite, CreateManifestTest) {
     //Then the creation is successful
     ASSERT_EQ(CELIX_SUCCESS, status);
     EXPECT_EQ(4, celix_properties_size(celix_bundleManifest_getAttributes(manifest)));
+}
+
+TEST_F(ManifestTestSuite, InvalidArgumentTest) {
+    celix_bundle_manifest_t* man = nullptr;
+    auto status = celix_bundleManifest_create(nullptr, &man);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    status = celix_bundleManifest_createFromFile("invalid-file", &man);
+    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION, status);
 }
 
 TEST_F(ManifestTestSuite, MissingOrInvalidMandatoryManifestAttributesTest) {
@@ -195,4 +205,26 @@ TEST_F(ManifestTestSuite, GetBuiltinAttributes) {
         EXPECT_STREQ("lib2", celix_arrayList_getString(privateLibraries, 1));
         EXPECT_STREQ("my_group", celix_bundleManifest_getBundleGroup(manifest2));
         EXPECT_STREQ("my_description", celix_bundleManifest_getBundleDescription(manifest2));
+}
+
+TEST_F(ManifestTestSuite, CreateFrameworkManifestTest) {
+    //When creating a framework manifest
+        celix_autoptr(celix_bundle_manifest_t) manifest = nullptr;
+        celix_status_t status = celix_bundleManifest_createFrameworkManifest(&manifest);
+
+        //When the creation is successful
+        ASSERT_EQ(CELIX_SUCCESS, status);
+
+        //And the manifest contains at least the mandatory attributes for a framework bundle
+        EXPECT_GE(celix_properties_size(celix_bundleManifest_getAttributes(manifest)), 4);
+        auto manifestVersion = celix_bundleManifest_getManifestVersion(manifest);
+        ASSERT_NE(nullptr, manifestVersion);
+        auto bundleVersion = celix_bundleManifest_getBundleVersion(manifest);
+        ASSERT_NE(nullptr, bundleVersion);
+        celix_autofree char* mv = celix_version_toString(manifestVersion);
+        celix_autofree char* bv = celix_version_toString(bundleVersion);
+        EXPECT_STREQ("2.0.0", mv);
+        EXPECT_STREQ(CELIX_FRAMEWORK_VERSION, bv);
+        EXPECT_STREQ("Apache Celix Framework", celix_bundleManifest_getBundleName(manifest));
+        EXPECT_STREQ("apache_celix_framework", celix_bundleManifest_getBundleSymbolicName(manifest));
 }

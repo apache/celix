@@ -46,5 +46,18 @@ TEST_F(ManifestErrorInjectionTestSuite, NoMemoryForManifestCreateTest) {
     celix_status_t status = celix_bundleManifest_create(attributes, &manifest);
     EXPECT_EQ(CELIX_ENOMEM, status);
     EXPECT_EQ(nullptr, manifest);
-    celix_err_printErrors(stdout, "Errors are expected[", "]\n");
+    celix_err_printErrors(stdout, "Errors are expected [", "]\n");
+}
+
+TEST_F(ManifestErrorInjectionTestSuite, NoMemoryForFrameworkManifestCreateTest) {
+    celix_bundle_manifest_t* manifest = nullptr;
+    celix_ei_expect_celix_properties_create((void*)celix_bundleManifest_createFrameworkManifest, 0, nullptr);
+    auto status = celix_bundleManifest_createFrameworkManifest(&manifest);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    celix_ei_expect_celix_properties_set((void*)celix_bundleManifest_createFrameworkManifest, 0, CELIX_ENOMEM, 3);
+    status = celix_bundleManifest_createFrameworkManifest(&manifest);
+    EXPECT_EQ(CELIX_ENOMEM, status);
+
+    celix_err_printErrors(stdout, "Errors are expected [", "]\n");
 }

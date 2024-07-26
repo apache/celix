@@ -95,9 +95,9 @@ CELIX_UTILS_EXPORT void celix_err_printErrors(FILE* stream, const char* prefix, 
 CELIX_UTILS_EXPORT int celix_err_dump(char* buf, size_t size, const char* prefix, const char* postfix);
 
 /*!
- * Helper macro that return with ENOMEM if the status is ENOMEM and logs an "<func>: Out of memory" error to celix_err.
+ * Helper macro that returns with ENOMEM if the status is ENOMEM and logs an "<func>: Out of memory" error to celix_err.
  */
-#define CELIX_ERR_RET_IF_ENOMEM(status)                                                                                \
+#define CELIX_RETURN_IF_ENOMEM(status)                                                                                 \
     do {                                                                                                               \
         if ((status) == ENOMEM) {                                                                                      \
             celix_err_pushf("%s: Out of memory", __func__);                                                            \
@@ -106,9 +106,9 @@ CELIX_UTILS_EXPORT int celix_err_dump(char* buf, size_t size, const char* prefix
     } while (0)
 
 /*!
- * Helper macro that return with ENOMEM if the arg is NULL and logs an "<func>: Out of memory" error to celix_err.
+ * Helper macro that returns with ENOMEM if the arg is NULL and logs an "<func>: Out of memory" error to celix_err.
  */
-#define CELIX_ERR_RET_IF_NULL(arg)                                                                                     \
+#define CELIX_RETURN_IF_NULL(arg)                                                                                      \
     do {                                                                                                               \
         if ((arg) == NULL) {                                                                                           \
             celix_err_pushf("%s: Out of memory", __func__);                                                            \
