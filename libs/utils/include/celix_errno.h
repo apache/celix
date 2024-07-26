@@ -57,18 +57,6 @@ extern "C" {
 #define CELIX_DO_IF(status, expr) ((status) == CELIX_SUCCESS) ? (expr) : (status)
 
 /*!
- * Helper macro which helps with error propagation. It evaluates the provided expression that returns a status and
- * returns the status if the status is not CELIX_SUCCESS (0). If the status is CELIX_SUCCESS (0) nothing is done.
- */
-#define CELIX_EPROP(expr)                                                                                              \
-    do {                                                                                                               \
-        celix_status_t __status = expr;                                                                                \
-        if (__status != CELIX_SUCCESS) {                                                                               \
-            return __status;                                                                                           \
-        }                                                                                                              \
-    } while (0)
-
-/*!
  * Helper macro which check the current status and executes a goto the provided label if the
  * status is not CELIX_SUCCESS (0)
  */
@@ -78,17 +66,6 @@ extern "C" {
             goto label;                                                                                                \
         }                                                                                                              \
     } while (0)
-
-/*!
- * \defgroup celix_errno Error Codes
- * \ingroup framework
- * \{
- */
-
-struct __attribute__((deprecated("use celix_status_t instead"))) celix_status {
-    int code;
-    char *error;
-};
 
 /*!
  * Status type returned by all functions in Celix
