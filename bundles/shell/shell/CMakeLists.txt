@@ -49,7 +49,6 @@ if (SHELL)
             src/bundle_command.c)
     target_include_directories(shell_commands PRIVATE src)
     target_link_libraries(shell_commands PRIVATE Celix::shell_api Celix::log_helper)
-    celix_deprecated_utils_headers(shell_commands)
 
     add_celix_bundle(shell
             SYMBOLIC_NAME "apache_celix_c_shell"

@@ -29,6 +29,7 @@
 
 #include "endpoint_listener.h"
 #include "remote_service_admin.h"
+#include "hash_map.h"
 
 #define CELIX_RSA_REMOTE_PROXY_FACTORY 	"remote_proxy_factory"
 #define CELIX_RSA_REMOTE_PROXY_TIMEOUT   "remote_proxy_timeout"

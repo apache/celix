@@ -17,13 +17,27 @@
  * under the License.
  */
 
-#include <gtest/gtest.h>
+#ifndef CELIX_ARRAY_LIST_TYPE_H_
+#define CELIX_ARRAY_LIST_TYPE_H_
 
-#include "celix_launcher.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+/**
+ * @file celix_array_list_type.h
+ * @brief Header file for celix_array_list_t type.
+ */
 
-class MultipleFrameworkTestSuite : public ::testing::Test {
-public:
-    MultipleFrameworkTestSuite() = default;
-    ~MultipleFrameworkTestSuite() noexcept override  = default;
-};
+/**
+ * @brief A celix array list, which can store a list of undefined elements.
+ */
+typedef struct celix_array_list celix_array_list_t;
+
+#ifdef __cplusplus
+}
+#endif
+
+#undef CELIX_OPTS_INIT
+
+#endif /* CELIX_ARRAY_LIST_TYPE_H_ */

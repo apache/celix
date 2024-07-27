@@ -28,8 +28,7 @@
 
 //including private headers, which should only be used for testing
 #include "bundle_archive_private.h"
-#include "bundle_private.h"
-
+#include "celix_bundle_private.h"
 
 class CxxBundleArchiveTestSuite : public ::testing::Test {
 public:

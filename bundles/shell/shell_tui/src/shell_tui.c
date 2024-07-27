@@ -23,14 +23,13 @@
 #include <termios.h>
 #include <unistd.h>
 #include <poll.h>
+#include <signal.h>
+#include <fcntl.h>
 
 #include "celix_array_list.h"
 #include "celix_shell.h"
 #include "celix_utils.h"
 #include "shell_tui.h"
-#include "utils.h"
-#include <signal.h>
-#include <fcntl.h>
 #include "history.h"
 
 #define LINE_SIZE 256

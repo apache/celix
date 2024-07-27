@@ -36,7 +36,7 @@
 #include "bundle_revision_private.h"
 #include "framework_private.h"
 #include "malloc_ei.h"
-#include "manifest.h"
+#include "celix_bundle_manifest.h"
 #include "stat_ei.h"
 #include "unistd_ei.h"
 
@@ -111,7 +111,7 @@ TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreatedFailedTest)
 
     teardownErrorInjectors();
     // Given a mocked malloc which returns NULL from a call from manifest_create
-    celix_ei_expect_malloc((void*)manifest_create, 0, nullptr);
+    celix_ei_expect_calloc((void*)celix_bundleManifest_create, 0, nullptr);
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();

@@ -28,8 +28,8 @@
 #define BUNDLE_PATCH_H_
 
 /* celix.framework.public */
+#include "bundle_private.h"
 #include "celix_errno.h"
-#include "bundle.h"
 #include "service_reference.h"
 
 celix_status_t bundle_getBundleLocation(bundle_pt bundle, const char **location);

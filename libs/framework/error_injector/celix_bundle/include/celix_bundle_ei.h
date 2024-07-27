@@ -23,10 +23,13 @@
 extern "C" {
 #endif
 #include "celix_error_injector.h"
+#include "celix_version_type.h"
 
 CELIX_EI_DECLARE(celix_bundle_getSymbolicName, const char*);
 
 CELIX_EI_DECLARE(celix_bundle_getManifestValue, const char*);
+
+CELIX_EI_DECLARE(celix_bundle_getVersion, const celix_version_t*);
 
 #ifdef __cplusplus
 }

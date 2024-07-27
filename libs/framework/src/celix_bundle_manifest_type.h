@@ -17,29 +17,25 @@
  * under the License.
  */
 
-#ifndef SERVICE_FACTORY_H_
-#define SERVICE_FACTORY_H_
-
-#include "celix_types.h"
-#include "celix_errno.h"
-#include "service_registration.h"
-#include "celix_bundle.h"
+#ifndef CELIX_MANIFEST_TYPE_H_
+#define CELIX_MANIFEST_TYPE_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct service_factory {
-    void *handle;
+/**
+ * @file celix_bundle_manifest_type.h
+ * @brief Header file for celix_bundle_manifest_t type.
+ */
 
-    celix_status_t (*getService)(void *handle, celix_bundle_t *bnd, service_registration_pt registration, void **service);
-
-    celix_status_t
-    (*ungetService)(void *handle, celix_bundle_t *bnd, service_registration_pt registration, void **service);
-};
+/**
+ * @brief The definition of the celix_bundleManifest_t* abstract data type.
+ */
+typedef struct celix_bundle_manifest celix_bundle_manifest_t;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SERVICE_FACTORY_H_ */
+#endif /* CELIX_MANIFEST_TYPE_H_ */

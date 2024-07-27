@@ -26,22 +26,21 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
-#include "celix_utils.h"
-#include "celix_constants.h"
 #include "bundle_context_private.h"
-#include "framework_private.h"
-#include "bundle.h"
+#include "celix_bundle_private.h"
+#include "celix_array_list.h"
 #include "celix_bundle.h"
-#include "celix_log.h"
-#include "service_tracker.h"
-#include "celix_dependency_manager.h"
-#include "dm_dependency_manager_impl.h"
-#include "celix_array_list.h"
-#include "module.h"
-#include "service_tracker_private.h"
-#include "service_reference_private.h"
-#include "celix_array_list.h"
+#include "celix_constants.h"
 #include "celix_convert_utils.h"
+#include "celix_dependency_manager.h"
+#include "celix_log.h"
+#include "celix_module.h"
+#include "celix_utils.h"
+#include "dm_dependency_manager_impl.h"
+#include "framework_private.h"
+#include "service_reference_private.h"
+#include "service_tracker.h"
+#include "service_tracker_private.h"
 
 #define TRACKER_WARN_THRESHOLD_SEC 5
 
@@ -729,7 +728,7 @@ bool celix_bundleContext_useBundle(
 }
 
 static void bundleContext_cleanupBundleTrackers(bundle_context_t* ctx) {
-    module_pt module;
+    celix_module_t* module;
     const char* symbolicName;
     bundle_getCurrentModule(ctx->bundle, &module);
     module_getSymbolicName(module, &symbolicName);
@@ -762,7 +761,7 @@ static void bundleContext_cleanupBundleTrackers(bundle_context_t* ctx) {
 }
 
 static void bundleContext_cleanupServiceTrackers(bundle_context_t* ctx) {
-    module_pt module;
+    celix_module_t* module;
     const char* symbolicName;
     bundle_getCurrentModule(ctx->bundle, &module);
     module_getSymbolicName(module, &symbolicName);
@@ -797,7 +796,7 @@ static void bundleContext_cleanupServiceTrackers(bundle_context_t* ctx) {
 }
 
 static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t* ctx) {
-    module_pt module;
+    celix_module_t* module;
     const char* symbolicName;
     bundle_getCurrentModule(ctx->bundle, &module);
     module_getSymbolicName(module, &symbolicName);
@@ -832,7 +831,7 @@ static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t* ctx) {
 }
 
 static void bundleContext_cleanupServiceRegistration(bundle_context_t* ctx) {
-    module_pt module;
+    celix_module_t* module;
     const char *symbolicName;
     bundle_getCurrentModule(ctx->bundle, &module);
     module_getSymbolicName(module, &symbolicName);

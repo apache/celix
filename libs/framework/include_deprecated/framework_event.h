@@ -52,7 +52,7 @@ typedef struct framework_event framework_event_t;
 #endif
 
 #include "service_reference.h"
-#include "bundle.h"
+#include "celix_bundle.h"
 
 #ifdef __cplusplus
 extern "C" {

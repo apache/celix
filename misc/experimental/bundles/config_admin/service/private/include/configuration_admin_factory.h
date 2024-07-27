@@ -30,12 +30,12 @@
 #include <stdbool.h>
 
 /* celix.framework */
-#include "bundle.h"
 #include "bundle_context.h"
+#include "bundle_private.h"
 #include "celix_errno.h"
-#include "service_reference.h"
-#include "service_factory.h"
 #include "properties.h"
+#include "service_factory.h"
+#include "service_reference.h"
 /* celix.config_admin.public*/
 #include "configuration_admin.h"
 

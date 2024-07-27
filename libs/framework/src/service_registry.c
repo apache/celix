@@ -23,14 +23,15 @@
 #include <assert.h>
 #include <celix_api.h>
 
-#include "service_registry_private.h"
-#include "service_registration_private.h"
-#include "listener_hook_service.h"
+#include "celix_bundle_private.h"
 #include "celix_constants.h"
 #include "celix_stdlib_cleanup.h"
 #include "celix_version_range.h"
-#include "service_reference_private.h"
 #include "framework_private.h"
+#include "listener_hook_service.h"
+#include "service_reference_private.h"
+#include "service_registration_private.h"
+#include "service_registry_private.h"
 
 static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, celix_properties_t* dictionary, long reservedId, enum celix_service_type svcType, service_registration_pt *registration);
 static celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, bundle_pt bundle, service_registration_pt registration);
@@ -570,7 +571,7 @@ static celix_status_t serviceRegistry_addHooks(service_registry_pt registry, con
 
     for (int i = 0; i < celix_arrayList_size(listeners); ++i) {
         celix_service_registry_service_listener_entry_t *listenerEntry = celix_arrayList_get(listeners, i);
-        bundle_getContext(listenerEntry->bundle, &info.context);
+        info.context = celix_bundle_getContext(listenerEntry->bundle);
         info.filter = celix_filter_getFilterString(listenerEntry->filter);
         entry->hook->added(entry->hook->handle, infos);
         celix_decreaseCountServiceListener(listenerEntry);
@@ -617,7 +618,7 @@ static celix_status_t serviceRegistry_removeHook(service_registry_pt registry, s
     if (removedEntry != NULL) {
         for (int i = 0; i < celix_arrayList_size(listeners); ++i) {
             celix_service_registry_service_listener_entry_t *listenerEntry = celix_arrayList_get(listeners, i);
-            bundle_getContext(listenerEntry->bundle, &info.context);
+            info.context = celix_bundle_getContext(listenerEntry->bundle);
             info.filter = celix_filter_getFilterString(listenerEntry->filter);
             removedEntry->hook->removed(removedEntry->hook->handle, infos);
             celix_decreaseCountServiceListener(listenerEntry);
@@ -633,8 +634,7 @@ static celix_status_t serviceRegistry_removeHook(service_registry_pt registry, s
 }
 
 static void serviceRegistry_callHooksForListenerFilter(service_registry_pt registry, celix_bundle_t *owner, const celix_filter_t *filter, bool removed) {
-    celix_bundle_context_t *ctx;
-    bundle_getContext(owner, &ctx);
+    celix_bundle_context_t *ctx = celix_bundle_getContext(owner);
 
     struct listener_hook_info info;
     info.context = ctx;

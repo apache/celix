@@ -35,6 +35,7 @@
 #include "utils.h"
 #include "celix_utils.h"
 #include "celix_ref.h"
+#include "hash_map.h"
 
 #include "import_registration_dfi.h"
 #include "export_registration_dfi.h"

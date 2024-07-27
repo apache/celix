@@ -23,7 +23,7 @@
 #include <gtest/gtest.h>
 
 class RsaJsonRpcIntegrationTestSuite : public ::testing::Test {
-public:
+  public:
     RsaJsonRpcIntegrationTestSuite() {
         auto* props = celix_properties_create();
         celix_properties_setBool(props, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, true);
@@ -44,7 +44,7 @@ public:
 };
 
 TEST_F(RsaJsonRpcIntegrationTestSuite, FindRsaJsonRpcService) {
-celix_bundleContext_waitForEvents(ctx.get());
-long found = celix_bundleContext_findService(ctx.get(), CELIX_RSA_RPC_FACTORY_NAME);
-EXPECT_GE(found, 0);
+    celix_bundleContext_waitForEvents(ctx.get());
+    long found = celix_bundleContext_findService(ctx.get(), CELIX_RSA_RPC_FACTORY_NAME);
+    EXPECT_GE(found, 0);
 }

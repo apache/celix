@@ -23,14 +23,15 @@
 #include <memory.h>
 #include <celix_utils.h>
 
-#include "bundle_context.h"
+#include "celix_bundle_context.h"
+#include "celix_array_list.h"
+#include "celix_bundle.h"
+#include "celix_bundle_private.h"
+#include "celix_compiler.h"
+#include "celix_dependency_manager.h"
+#include "celix_framework.h"
 #include "dm_component_impl.h"
 #include "dm_dependency_manager_impl.h"
-#include "celix_dependency_manager.h"
-#include "celix_bundle.h"
-#include "celix_compiler.h"
-#include "celix_framework.h"
-#include "celix_array_list.h"
 
 celix_dependency_manager_t* celix_private_dependencyManager_create(celix_bundle_context_t *context) {
 	celix_dependency_manager_t *manager = calloc(1, sizeof(*manager));
@@ -184,8 +185,7 @@ celix_status_t celix_dependencyManager_removeAllComponentsAsync(celix_dependency
 static void celix_dm_getInfoCallback(void *handle, const celix_bundle_t *bnd) {
     celix_dependency_manager_info_t **out = handle;
 
-    celix_bundle_context_t *context = NULL;
-    bundle_getContext((celix_bundle_t*)bnd, &context);
+    celix_bundle_context_t *context = celix_bundle_getContext(bnd);
     celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
 
     celix_dependency_manager_info_t *info = calloc(1, sizeof(*info));
@@ -218,8 +218,7 @@ celix_dependency_manager_info_t* celix_dependencyManager_createInfo(celix_depend
 static void celix_dm_getInfosCallback(void* handle, const celix_bundle_t* bnd) {
     celix_array_list_t* infos = handle;
 
-    celix_bundle_context_t* context = NULL;
-    bundle_getContext((celix_bundle_t*)bnd, &context);
+    celix_bundle_context_t* context = celix_bundle_getContext(bnd);
     celix_dependency_manager_t* mng = celix_bundleContext_getDependencyManager(context);
 
     celix_dependency_manager_info_t* info = calloc(1, sizeof(*info));
@@ -265,8 +264,7 @@ static void celix_dm_allComponentsActiveCallback(void *handle, const celix_bundl
         return;
     }
 
-	celix_bundle_context_t *context = NULL;
-	bundle_getContext((celix_bundle_t*)bnd, &context);
+	celix_bundle_context_t *context = celix_bundle_getContext(bnd);
 	celix_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
     bool allActive = celix_dependencyManager_areComponentsActive(mng);
     if (!allActive) {

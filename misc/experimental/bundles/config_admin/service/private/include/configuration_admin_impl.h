@@ -32,7 +32,7 @@
 #include "configuration_admin.h"
 
 /* celix.framework */
-#include "bundle.h"
+#include "bundle_private.h"
 /* celix.config_admin.public */
 #include "configuration.h"
 /* celix.config_admin.private */

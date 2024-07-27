@@ -24,7 +24,7 @@
 
 #include "celix_types.h"
 #include "service_registration.h"
-#include "bundle.h"
+#include "celix_bundle.h"
 #include "celix_framework_export.h"
 
 #ifdef __cplusplus

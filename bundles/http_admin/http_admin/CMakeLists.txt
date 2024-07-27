@@ -31,9 +31,6 @@ target_include_directories(http_admin PRIVATE src)
 
 target_link_libraries(http_admin PUBLIC Celix::http_admin_api)
 
-celix_deprecated_utils_headers(http_admin)
-
-
 install_celix_bundle(http_admin EXPORT celix COMPONENT http_admin)
 #Setup target aliases to match external usage
 add_library(Celix::http_admin ALIAS http_admin)

@@ -21,18 +21,25 @@
 
 extern "C" {
 
-const char *__real_celix_bundle_getSymbolicName(const celix_bundle_t *bnd);
+const char* __real_celix_bundle_getSymbolicName(const celix_bundle_t* bnd);
 CELIX_EI_DEFINE(celix_bundle_getSymbolicName, const char*)
-const char *__wrap_celix_bundle_getSymbolicName(const celix_bundle_t *bnd) {
+const char* __wrap_celix_bundle_getSymbolicName(const celix_bundle_t* bnd) {
     CELIX_EI_IMPL(celix_bundle_getSymbolicName);
     return __real_celix_bundle_getSymbolicName(bnd);
 }
 
-const char *__real_celix_bundle_getManifestValue(const celix_bundle_t *bnd, const char *attribute);
+const char* __real_celix_bundle_getManifestValue(const celix_bundle_t* bnd, const char* attribute);
 CELIX_EI_DEFINE(celix_bundle_getManifestValue, const char*)
-const char *__wrap_celix_bundle_getManifestValue(const celix_bundle_t *bnd, const char *attribute) {
+const char* __wrap_celix_bundle_getManifestValue(const celix_bundle_t* bnd, const char* attribute) {
     CELIX_EI_IMPL(celix_bundle_getManifestValue);
     return __real_celix_bundle_getManifestValue(bnd, attribute);
+}
+
+const celix_version_t* __real_celix_bundle_getVersion(const celix_bundle_t* bnd);
+CELIX_EI_DEFINE(celix_bundle_getVersion, const celix_version_t*)
+const celix_version_t* __wrap_celix_bundle_getVersion(const celix_bundle_t* bnd) {
+    CELIX_EI_IMPL(celix_bundle_getVersion);
+    return __real_celix_bundle_getVersion(bnd);
 }
 
 }

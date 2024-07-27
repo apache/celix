@@ -17,11 +17,11 @@
  * under the License.
  */
 
-#include <stdlib.h>
+#include "celix_bundle_private.h"
+#include "celix_log.h"
 #include "celix_utils.h"
 #include "framework_private.h"
-#include "celix_log.h"
-#include "bundle.h"
+#include <stdlib.h>
 
 static void celix_framework_cleanupBundleLifecycleHandler(celix_framework_t* fw, celix_framework_bundle_lifecycle_handler_t *handler) {
     celixThreadMutex_lock(&fw->bundleLifecycleHandling.mutex);

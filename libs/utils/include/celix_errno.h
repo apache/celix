@@ -68,17 +68,6 @@ extern "C" {
     } while (0)
 
 /*!
- * \defgroup celix_errno Error Codes
- * \ingroup framework
- * \{
- */
-
-struct __attribute__((deprecated("use celix_status_t instead"))) celix_status {
-    int code;
-    char *error;
-};
-
-/*!
  * Status type returned by all functions in Celix
  */
 typedef int celix_status_t;

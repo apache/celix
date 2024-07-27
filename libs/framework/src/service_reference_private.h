@@ -30,7 +30,7 @@
 #include "registry_callback_private.h"
 #include "service_reference.h"
 #include "celix_ref.h"
-
+#include "celix_threads.h"
 
 struct serviceReference {
     struct celix_ref refCount;

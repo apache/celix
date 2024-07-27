@@ -31,8 +31,8 @@
 /* celix.utils.public*/
 #include "array_list.h"
 /* celix.framework */
-#include "bundle.h"
 #include "bundle_context.h"
+#include "bundle_private.h"
 #include "filter.h"
 /* celix.config_admin.public */
 #include "configuration.h"

@@ -28,6 +28,7 @@
 #include "celix_api.h"
 #include "celix_stdlib_cleanup.h"
 #include "celix_threads.h"
+#include "bundle_context.h"
 #include <string.h>
 #include <assert.h>
 #include <stdbool.h>

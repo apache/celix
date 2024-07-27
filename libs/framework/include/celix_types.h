@@ -65,8 +65,6 @@ typedef struct celix_bundle bundle_t CELIX_DEPRECATED_ATTR;
 // will be deprecated in the future
 typedef struct bundleArchive *bundle_archive_pt;
 typedef struct bundleArchive bundle_archive_t;
-typedef struct bundleRevision *bundle_revision_pt;
-typedef struct bundleRevision bundle_revision_t;
 typedef struct service_factory *service_factory_pt;
 typedef struct serviceReference * service_reference_pt;
 typedef struct serviceRegistration service_registration_t;

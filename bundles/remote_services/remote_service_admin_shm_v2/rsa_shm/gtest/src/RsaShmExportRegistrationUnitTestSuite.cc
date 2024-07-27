@@ -26,6 +26,7 @@
 #include "celix_log_helper.h"
 #include "celix_bundle_context_ei.h"
 #include "malloc_ei.h"
+#include "bundle_context.h"
 #include "celix_threads_ei.h"
 #include "celix_framework.h"
 #include "celix_bundle_context.h"
