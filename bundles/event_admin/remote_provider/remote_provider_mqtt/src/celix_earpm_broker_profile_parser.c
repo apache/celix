@@ -287,9 +287,13 @@ static bool celix_earpmp_parseBrokerProfile(celix_earpm_broker_profile_parser_t*
 }
 
 static celix_status_t celix_earpmp_loadBrokerProfile(celix_earpm_broker_profile_parser_t* parser) {
+    int tries = 0;
     while (__atomic_load_n(&parser->running, __ATOMIC_ACQUIRE)) {
         celix_autoptr(FILE) file = fopen(parser->brokerProfilePath, "r");
         if (file == NULL && errno == ENOENT) {
+            if (tries++ > 600) {
+                return CELIX_ILLEGAL_STATE;
+            }
             sleep(1);
             continue;
         } else if (file == NULL) {

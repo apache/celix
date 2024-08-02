@@ -44,13 +44,13 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
     assert(act != NULL);
     assert(ctx != NULL);
     act->ctx = ctx;
-    celix_autoptr(celix_dm_component_t) earpmbCmp = celix_dmComponent_create(ctx, "CELIX_EARPMB_CMP");
+    celix_autoptr(celix_dm_component_t) earpmpCmp = celix_dmComponent_create(ctx, "CELIX_EARPMP_CMP");
     act->brokerProfileParser = celix_earpmp_create(ctx);
     if (act->brokerProfileParser == NULL) {
         return CELIX_BUNDLE_EXCEPTION;
     }
-    celix_dmComponent_setImplementation(earpmbCmp, act->brokerProfileParser);
-    CELIX_DM_COMPONENT_SET_IMPLEMENTATION_DESTROY_FUNCTION(earpmbCmp, celix_earpm_broker_profile_parser_t, celix_earpmp_destroy);
+    celix_dmComponent_setImplementation(earpmpCmp, act->brokerProfileParser);
+    CELIX_DM_COMPONENT_SET_IMPLEMENTATION_DESTROY_FUNCTION(earpmpCmp, celix_earpm_broker_profile_parser_t, celix_earpmp_destroy);
 
     celix_autoptr(celix_dm_component_t) earpmCmp = celix_dmComponent_create(ctx, "CELIX_EARPM_CMP");
     if (earpmCmp == NULL) {
@@ -135,16 +135,16 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
     if (mng == NULL) {
         return CELIX_ENOMEM;
     }
-    status = celix_dependencyManager_addAsync(mng, earpmbCmp);
+    status = celix_dependencyManager_addAsync(mng, earpmpCmp);
     if (status != CELIX_SUCCESS) {
         return status;
     }
     status = celix_dependencyManager_addAsync(mng, earpmCmp);
     if (status != CELIX_SUCCESS) {
-        celix_dependencyManager_removeAsync(mng, celix_steal_ptr(earpmbCmp), NULL, NULL);
+        celix_dependencyManager_removeAsync(mng, celix_steal_ptr(earpmpCmp), NULL, NULL);
         return status;
     }
-    celix_steal_ptr(earpmbCmp);
+    celix_steal_ptr(earpmpCmp);
     celix_steal_ptr(earpmCmp);
     return CELIX_SUCCESS;
 }

@@ -43,8 +43,8 @@ celix_status_t celix_earpm_removeEventHandlerService(void* handle , void* servic
 
 celix_status_t celix_earpm_setEventAdminSvc(void* handle, void* eventAdminSvc);
 
-celix_status_t celix_earpm_postEvent(void* handle , const char* topic, const celix_properties_t* properties);
-celix_status_t celix_earpm_sendEvent(void* handle , const char* topic, const celix_properties_t* properties);
+celix_status_t celix_earpm_postEvent(void* handle , const char* topic, const celix_properties_t* eventProps);
+celix_status_t celix_earpm_sendEvent(void* handle , const char* topic, const celix_properties_t* eventProps);
 
 size_t celix_earpm_currentRemoteFrameworkCnt(celix_event_admin_remote_provider_mqtt_t* earpm);
 
