@@ -29,14 +29,15 @@ extern "C" {
 #include "celix_properties.h"
 #include "celix_log_helper.h"
 #include "celix_event_admin_service.h"
+#include "endpoint_description.h"
 
 typedef struct celix_event_admin_remote_provider_mqtt celix_event_admin_remote_provider_mqtt_t;
 
 celix_event_admin_remote_provider_mqtt_t* celix_earpm_create(celix_bundle_context_t* ctx);
 void celix_earpm_destroy(celix_event_admin_remote_provider_mqtt_t* earpm);
 
-celix_status_t celix_earpm_addBrokerInfoService(void* handle , void* service CELIX_UNUSED, const celix_properties_t* properties);
-celix_status_t celix_earpm_removeBrokerInfoService(void* handle , void* service CELIX_UNUSED, const celix_properties_t* properties);
+celix_status_t celix_earpm_endpointAdded(void* handle, endpoint_description_t* endpoint, char* matchedFilter);
+celix_status_t celix_earpm_endpointRemoved(void* handle, endpoint_description_t* endpoint, char* matchedFilter);
 
 celix_status_t celix_earpm_addEventHandlerService(void* handle , void* service, const celix_properties_t* properties);
 celix_status_t celix_earpm_removeEventHandlerService(void* handle , void* service, const celix_properties_t* properties);

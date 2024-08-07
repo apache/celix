@@ -71,9 +71,6 @@ celix_status_t celix_earpmc_endpointAdded(void* handle, endpoint_description_t* 
 
 celix_status_t celix_earpmc_endpointRemoved(void* handle, endpoint_description_t* endpoint, char* matchedFilter);
 
-celix_status_t celix_earpmc_addBrokerInfoService(void* handle , void* service CELIX_UNUSED, const celix_properties_t* properties);
-celix_status_t celix_earpmc_removeBrokerInfoService(void* handle , void* service CELIX_UNUSED, const celix_properties_t* properties);
-
 celix_status_t celix_earpmc_subscribe(celix_earpm_client_t* client, const char* topic, celix_earpm_qos_e qos);
 celix_status_t celix_earpmc_unsubscribe(celix_earpm_client_t* client, const char* topic);
 

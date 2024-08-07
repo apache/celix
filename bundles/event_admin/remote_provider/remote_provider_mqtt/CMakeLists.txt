@@ -19,14 +19,15 @@ if (EVENT_ADMIN_REMOTE_PROVIDER_MQTT)
 
     find_package(mosquitto REQUIRED)
     find_package(jansson REQUIRED)
+    find_package(libuuid REQUIRED)
 
     set(EARPM_SRC
             src/celix_earpm_activator.c
             src/celix_earpm_impl.c
             src/celix_earpm_client.c
             src/celix_earpm_event_deliverer.c
-            src/celix_earpm_broker_profile_parser.c
-            )
+            src/celix_earpm_broker_discovery.c
+    )
 
     set(EARPM_DEPS
             Celix::event_admin_api
@@ -38,6 +39,7 @@ if (EVENT_ADMIN_REMOTE_PROVIDER_MQTT)
             Celix::utils
             mosquitto::libmosquitto
             jansson::jansson
+            libuuid::libuuid
             )
 
     add_celix_bundle(event_admin_remote_provider_mqtt

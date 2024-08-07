@@ -26,6 +26,14 @@ extern "C" {
 #include "celix_properties.h"
 #include "celix_errno.h"
 
+#define CELIX_EARPM_MQTT_BROKER_INFO_SERVICE_NAME "celix_mqtt_broker_info"
+
+//Properties of broker info service endpoint
+#define CELIX_EARPM_MQTT_BROKER_SERVICE_CONFIG_TYPE "celix.earpm.mqtt"
+#define CELIX_EARPM_MQTT_BROKER_SOCKET_DOMAIN "celix.earpm.mqtt.socket_domain"
+#define CELIX_EARPM_MQTT_BROKER_ADDRESS "celix.earpm.mqtt.address" //IP address or hostname or unix socket path
+#define CELIX_EARPM_MQTT_BROKER_PORT "celix.earpm.mqtt.port"
+
 typedef struct celix_earpm_broker_discovery celix_earpm_broker_discovery_t;
 
 celix_earpm_broker_discovery_t* celix_earpmDiscovery_create(celix_bundle_context_t* ctx);

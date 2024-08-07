@@ -19,7 +19,7 @@
 #include <functional>
 #include <cstdlib>
 
-#include "celix_earpm_broker_profile_parser.h"
+//#include "celix_earpm_broker_profile_parser.h"
 #include "CelixEarpmTestSuiteBaseClass.h"
 #include "celix_earpm_constants.h"
 #include "celix_mqtt_broker_info_service.h"

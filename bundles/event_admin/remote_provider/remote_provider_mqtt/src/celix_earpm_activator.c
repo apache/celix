@@ -20,37 +20,60 @@
 #include <errno.h>
 
 #include "celix_errno.h"
-#include "celix_log_helper.h"
 #include "celix_bundle_activator.h"
 #include "celix_dm_component.h"
 #include "celix_dm_service_dependency.h"
+#include "endpoint_listener.h"
+#include "remote_constants.h"
 #include "celix_event_constants.h"
 #include "celix_event_admin_service.h"
 #include "celix_event_handler_service.h"
 #include "celix_event_remote_provider_service.h"
-#include "celix_mqtt_broker_info_service.h"
 #include "celix_earpm_impl.h"
-#include "celix_earpm_broker_profile_parser.h"
+#include "celix_earpm_broker_discovery.h"
 
 typedef struct celix_event_admin_remote_provider_mqtt_activator {
     celix_bundle_context_t *ctx;
     celix_log_helper_t *logHelper;
-    celix_earpm_broker_profile_parser_t* brokerProfileParser;
+    celix_earpm_broker_discovery_t* brokerDiscovery;
     celix_event_admin_remote_provider_mqtt_t* providerMqtt;
     celix_event_remote_provider_service_t providerSvc;
+    endpoint_listener_t endpointListener;
 } celix_event_admin_remote_provider_mqtt_activator_t;
 
 static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_event_admin_remote_provider_mqtt_activator_t *act, celix_bundle_context_t *ctx) {
     assert(act != NULL);
     assert(ctx != NULL);
     act->ctx = ctx;
-    celix_autoptr(celix_dm_component_t) earpmpCmp = celix_dmComponent_create(ctx, "CELIX_EARPMP_CMP");
-    act->brokerProfileParser = celix_earpmp_create(ctx);
-    if (act->brokerProfileParser == NULL) {
+    celix_autoptr(celix_dm_component_t) earpmDiscoveryCmp = celix_dmComponent_create(ctx, "CELIX_EARPM_DISCOVERY_CMP");
+    act->brokerDiscovery = celix_earpmDiscovery_create(ctx);
+    if (act->brokerDiscovery == NULL) {
         return CELIX_BUNDLE_EXCEPTION;
     }
-    celix_dmComponent_setImplementation(earpmpCmp, act->brokerProfileParser);
-    CELIX_DM_COMPONENT_SET_IMPLEMENTATION_DESTROY_FUNCTION(earpmpCmp, celix_earpm_broker_profile_parser_t, celix_earpmp_destroy);
+    celix_dmComponent_setImplementation(earpmDiscoveryCmp, act->brokerDiscovery);
+    CELIX_DM_COMPONENT_SET_CALLBACKS(earpmDiscoveryCmp, celix_earpm_broker_discovery_t, NULL, celix_earpmDiscovery_start, celix_earpmDiscovery_stop, NULL);
+    CELIX_DM_COMPONENT_SET_IMPLEMENTATION_DESTROY_FUNCTION(earpmDiscoveryCmp, celix_earpm_broker_discovery_t, celix_earpmDiscovery_destroy);
+    {
+        celix_autoptr(celix_dm_service_dependency_t) endpointListenerDep = celix_dmServiceDependency_create();
+        if (endpointListenerDep == NULL) {
+            return CELIX_ENOMEM;
+        }
+        celix_status_t status = celix_dmServiceDependency_setService(endpointListenerDep, CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, NULL, NULL);
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
+        celix_dmServiceDependency_setStrategy(endpointListenerDep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
+        celix_dmServiceDependency_setRequired(endpointListenerDep, true);
+        celix_dm_service_dependency_callback_options_t opts = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
+        opts.addWithProps = celix_earpmDiscovery_addEndpointListener;
+        opts.removeWithProps = celix_earpmDiscovery_removeEndpointListener;
+        celix_dmServiceDependency_setCallbacksWithOptions(endpointListenerDep, &opts);
+        status = celix_dmComponent_addServiceDependency(earpmDiscoveryCmp, endpointListenerDep);
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
+        celix_steal_ptr(endpointListenerDep);
+    }
 
     celix_autoptr(celix_dm_component_t) earpmCmp = celix_dmComponent_create(ctx, "CELIX_EARPM_CMP");
     if (earpmCmp == NULL) {
@@ -82,34 +105,14 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
         }
         celix_steal_ptr(eventHandlerDep);
     }
-    {
-        celix_autoptr(celix_dm_service_dependency_t) brokerInfoDep = celix_dmServiceDependency_create();
-        if (brokerInfoDep == NULL) {
-            return CELIX_ENOMEM;
-        }
-        celix_status_t status = celix_dmServiceDependency_setService(brokerInfoDep, CELIX_MQTT_BROKER_INFO_SERVICE_NAME, CELIX_MQTT_BROKER_INFO_SERVICE_RANGE, NULL);
-        if (status != CELIX_SUCCESS) {
-            return status;
-        }
-        celix_dmServiceDependency_setStrategy(brokerInfoDep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
-        celix_dmServiceDependency_setRequired(brokerInfoDep, true);
-        celix_dm_service_dependency_callback_options_t opts = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
-        opts.addWithProps = celix_earpm_addBrokerInfoService;
-        opts.removeWithProps = celix_earpm_removeBrokerInfoService;
-        celix_dmServiceDependency_setCallbacksWithOptions(brokerInfoDep, &opts);
-        status = celix_dmComponent_addServiceDependency(earpmCmp, brokerInfoDep);
-        if (status != CELIX_SUCCESS) {
-            return status;
-        }
-        celix_steal_ptr(brokerInfoDep);
-    }
 
     {
         celix_autoptr(celix_dm_service_dependency_t) eventAdminDep = celix_dmServiceDependency_create();
         if (eventAdminDep == NULL) {
             return CELIX_ENOMEM;
         }
-        celix_status_t status = celix_dmServiceDependency_setService(eventAdminDep, CELIX_EVENT_ADMIN_SERVICE_NAME, CELIX_EVENT_ADMIN_SERVICE_USE_RANGE, NULL);
+        celix_status_t status = celix_dmServiceDependency_setService(eventAdminDep, CELIX_EVENT_ADMIN_SERVICE_NAME,
+                                                                     CELIX_EVENT_ADMIN_SERVICE_USE_RANGE, NULL);
         if (status != CELIX_SUCCESS) {
             return status;
         }
@@ -123,10 +126,32 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
         }
         celix_steal_ptr(eventAdminDep);
     }
+
     act->providerSvc.handle = act->providerMqtt;
     act->providerSvc.postEvent = celix_earpm_postEvent;
     act->providerSvc.sendEvent = celix_earpm_sendEvent;
-    celix_status_t status = celix_dmComponent_addInterface(earpmCmp, CELIX_EVENT_REMOTE_PROVIDER_SERVICE_NAME, CELIX_EVENT_REMOTE_PROVIDER_SERVICE_VERSION, &act->providerSvc, NULL);
+    celix_status_t status = celix_dmComponent_addInterface(earpmCmp, CELIX_EVENT_REMOTE_PROVIDER_SERVICE_NAME,
+                                                           CELIX_EVENT_REMOTE_PROVIDER_SERVICE_VERSION, &act->providerSvc, NULL);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+
+    act->endpointListener.handle = act->providerMqtt;
+    act->endpointListener.endpointAdded = celix_earpm_endpointAdded;
+    act->endpointListener.endpointRemoved = celix_earpm_endpointRemoved;
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    const char* scope = "(&("CELIX_FRAMEWORK_SERVICE_NAME"="CELIX_EARPM_MQTT_BROKER_INFO_SERVICE_NAME")("\
+            CELIX_RSA_SERVICE_IMPORTED_CONFIGS"="CELIX_EARPM_MQTT_BROKER_SERVICE_CONFIG_TYPE"))";
+    status = celix_properties_set(props, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, scope);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+    status = celix_properties_setBool(props, CELIX_RSA_DISCOVERY_INTERFACE_SPECIFIC_ENDPOINTS_SUPPORT, true);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+    status = celix_dmComponent_addInterface(earpmCmp, CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, NULL, &act->endpointListener,
+                                            celix_steal_ptr(props));
     if (status != CELIX_SUCCESS) {
         return status;
     }
@@ -135,16 +160,16 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
     if (mng == NULL) {
         return CELIX_ENOMEM;
     }
-    status = celix_dependencyManager_addAsync(mng, earpmpCmp);
+    status = celix_dependencyManager_addAsync(mng, earpmDiscoveryCmp);
     if (status != CELIX_SUCCESS) {
         return status;
     }
     status = celix_dependencyManager_addAsync(mng, earpmCmp);
     if (status != CELIX_SUCCESS) {
-        celix_dependencyManager_removeAsync(mng, celix_steal_ptr(earpmpCmp), NULL, NULL);
+        celix_dependencyManager_removeAsync(mng, celix_steal_ptr(earpmDiscoveryCmp), NULL, NULL);
         return status;
     }
-    celix_steal_ptr(earpmpCmp);
+    celix_steal_ptr(earpmDiscoveryCmp);
     celix_steal_ptr(earpmCmp);
     return CELIX_SUCCESS;
 }

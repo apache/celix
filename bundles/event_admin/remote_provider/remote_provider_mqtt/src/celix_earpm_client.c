@@ -41,16 +41,18 @@
 #include "celix_constants.h"
 #include "remote_constants.h"
 #include "celix_earpm_mosquitto_cleanup.h"
-#include "celix_mqtt_broker_info_service.h"
 #include "celix_earpm_constants.h"
+#include "celix_earpm_broker_discovery.h"
 
 #define CELIX_EARPMC_KEEP_ALIVE 60 //seconds
 #define CELIX_EARPMC_RECONNECT_DELAY_MAX 30 //seconds
 
 typedef struct celix_earpmc_broker_info {
     struct celix_ref ref;
-    char* host;
+    celix_array_list_t* addresses;
     int port;
+    char* bindInterface;
+    int family;
 }celix_earpmc_broker_info_t;
 
 typedef struct celix_earpmc_msg {
@@ -90,9 +92,9 @@ struct celix_earpm_client {
     mosquitto_property* disconnectProps;
     celix_thread_t mosqThread;
     celix_thread_mutex_t mutex;// protects belows
-    celix_long_hash_map_t* brokerInfoMap;//key = service id, value = celix_broker_info_t*
+    celix_string_hash_map_t* brokerInfoMap;//key = endpoint uuid, value = celix_broker_info_t*
     celix_thread_cond_t brokerInfoChangedOrExiting;
-    long usingBrokerInfoServiceId;
+    char* currentBrokerEndpointUUID;
     celix_thread_cond_t msgStatusChanged;
     celix_earpmc_msg_pool_t freeMsgPool;
     celix_earpmc_message_list_t waitingMessages;
@@ -184,7 +186,7 @@ celix_earpm_client_t* celix_earpmc_create(celix_earpmc_create_options_t* options
     client->ctx = options->ctx;
     client->logHelper = logHelper;
     client->parallelMsgCap = (size_t)parallelMsgCap;
-    client->usingBrokerInfoServiceId = -1;
+    client->currentBrokerEndpointUUID = NULL;
     client->connected = false;
     client->receiveMsgCallback = options->receiveMsgCallback;
     client->connectedCallback = options->connectedCallback;
@@ -244,11 +246,11 @@ celix_earpm_client_t* celix_earpmc_create(celix_earpmc_create_options_t* options
         return NULL;
     }
 
-    celix_autoptr(celix_long_hash_map_t) brokerInfoMap = NULL;
+    celix_autoptr(celix_string_hash_map_t) brokerInfoMap = NULL;
     {
-        celix_long_hash_map_create_options_t opts = CELIX_EMPTY_LONG_HASH_MAP_CREATE_OPTIONS;
+        celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
         opts.simpleRemovedCallback = (void*)celix_earpmc_brokerInfoRelease;
-        brokerInfoMap = client->brokerInfoMap = celix_longHashMap_createWithOptions(&opts);
+        brokerInfoMap = client->brokerInfoMap = celix_stringHashMap_createWithOptions(&opts);
         if (brokerInfoMap == NULL) {
             celix_logHelper_error(client->logHelper, "Failed to create broker info map.");
             return NULL;
@@ -327,7 +329,7 @@ void celix_earpmc_destroy(celix_earpm_client_t* client) {
     mosquitto_property_free_all(&client->disconnectProps);
     mosquitto_property_free_all(&client->connProps);
     celixThreadCondition_destroy(&client->brokerInfoChangedOrExiting);
-    celix_longHashMap_destroy(client->brokerInfoMap);
+    celix_stringHashMap_destroy(client->brokerInfoMap);
     celix_stringHashMap_destroy(client->subscriptions);
     celix_longHashMap_destroy(client->publishedMessages);
     celix_longHashMap_destroy(client->publishingMessages);
@@ -378,26 +380,67 @@ static celix_status_t celix_earpmc_configMosq(mosquitto *mosq, celix_log_helper_
     return CELIX_SUCCESS;
 }
 
-static celix_earpmc_broker_info_t* celix_earpmc_brokerInfoCreate(const char* host, int port) {
-    if (host == NULL || port < 0) {
-        return NULL;
+static bool celix_earpmc_matchIpFamily(const char* address, int family) {
+    if (family == AF_UNSPEC) {
+        return true;
     }
+    struct sockaddr_storage addr;
+    bool isIPv4 = (inet_ntop(AF_INET, address, (char*)&addr, sizeof(addr)) != NULL);
+    bool isIPv6 = isIPv4 ? false : (inet_ntop(AF_INET6, address, (char*)&addr, sizeof(addr)) != NULL);
+    if (!isIPv4 && !isIPv6) {
+        return true;//The address is host name, let the mqtt library to resolve it.
+    }
+    if (family == AF_INET && isIPv4) {
+        return true;
+    }
+    if (family == AF_INET6 && isIPv6) {
+        return true;
+    }
+    return false;
+}
+
+static celix_earpmc_broker_info_t* celix_earpmc_brokerInfoCreate(const char* addresses, int port, const char* bindInterface, int family) {
     celix_autofree celix_earpmc_broker_info_t* info = calloc(1, sizeof(*info));
     if (info == NULL) {
         return NULL;
     }
     celix_ref_init(&info->ref);
-    info->host = celix_utils_strdup(host);
-    if (info->host == NULL) {
-        return NULL;
-    }
     info->port = port;
+    info->family = family;
+    if (bindInterface != NULL) {
+        info->bindInterface = celix_utils_strdup(bindInterface);
+        if (info->bindInterface == NULL) {
+            return NULL;
+        }
+    } else {
+        celix_autofree char* addressesCopy = celix_utils_strdup(addresses);
+        if (addressesCopy == NULL) {
+            return NULL;
+        }
+        celix_autoptr(celix_array_list_t) addressList = info->addresses = celix_arrayList_createStringArray();
+        if (info->addresses == NULL) {
+            return NULL;
+        }
+        char* save = NULL;
+        char* token = strtok_r(addressesCopy, ",", &save);
+        while (token != NULL) {
+            if (celix_earpmc_matchIpFamily(token, family)) {
+                if (celix_arrayList_addString(info->addresses, token) != CELIX_SUCCESS) {
+                    return NULL;
+                }
+            }
+            token = strtok_r(NULL, ",", &save);
+        }
+        celix_steal_ptr(addressList);
+    }
+
     return celix_steal_ptr(info);
 }
 
 static bool celix_earpmc_brokerInfoDestroy(struct celix_ref* ref) {
     celix_earpmc_broker_info_t* info = (celix_earpmc_broker_info_t*)ref;
-    free(info->host);
+    celix_arrayList_destroy(info->addresses);
+    free(info->bindInterface);
     free(info);
     return true;
 }
@@ -414,27 +457,37 @@ static void celix_earpmc_brokerInfoRelease(celix_earpmc_broker_info_t* info) {
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_earpmc_broker_info_t, celix_earpmc_brokerInfoRelease)
 
-celix_status_t celix_earpmc_addBrokerInfoService(void* handle , void* service CELIX_UNUSED, const celix_properties_t* properties) {
+celix_status_t celix_earpmc_endpointAdded(void* handle, endpoint_description_t* endpoint, char* matchedFilter CELIX_UNUSED) {
     assert(handle != NULL);
-    assert(properties != NULL);
-    celix_status_t status = CELIX_SUCCESS;
+    assert(endpoint != NULL);
     celix_earpm_client_t* client = handle;
-    long serviceId = celix_properties_getAsLong(properties, CELIX_FRAMEWORK_SERVICE_ID, -1);
-    if (serviceId < 0 ) {
-        celix_logHelper_error(client->logHelper, "Not found mqtt broker info service id.");
-        return CELIX_SERVICE_EXCEPTION;
+    const char* bindInterface = NULL;
+    int port = (int)celix_properties_getAsLong(endpoint->properties, CELIX_EARPM_MQTT_BROKER_PORT, 0);
+    port = port != 0 ? port : (int)celix_properties_getAsLong(endpoint->properties, CELIX_RSA_PORT, 0);
+    if (port < 0) {
+        return CELIX_ILLEGAL_ARGUMENT;
     }
-
+    const char* addresses = celix_properties_get(endpoint->properties, CELIX_EARPM_MQTT_BROKER_ADDRESS, NULL);
+    if (addresses == NULL) {
+        addresses = celix_properties_get(endpoint->properties, CELIX_RSA_IP_ADDRESSES, NULL);
+        if (addresses == NULL) {
+            return CELIX_ILLEGAL_ARGUMENT;
+        }
+        bindInterface = celix_properties_get(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, NULL);
+        if (addresses[0] == '\0' && bindInterface == NULL) {
+            return CELIX_ILLEGAL_ARGUMENT;
+        }
+    }
+    int family = (int)celix_properties_getAsLong(endpoint->properties, CELIX_EARPM_MQTT_BROKER_SOCKET_DOMAIN, AF_UNSPEC);
     {
-        const char* host = celix_properties_get(properties, CELIX_MQTT_BROKER_ADDRESS, NULL);
-        int port = (int) celix_properties_getAsLong(properties, CELIX_MQTT_BROKER_PORT, 0);
-        celix_autoptr(celix_earpmc_broker_info_t) info = celix_earpmc_brokerInfoCreate(host, port);
+        celix_autoptr(celix_earpmc_broker_info_t) info = celix_earpmc_brokerInfoCreate(addresses, port, bindInterface, family);
         if (info == NULL) {
+            celix_logHelper_logTssErrors(client->logHelper, CELIX_LOG_LEVEL_ERROR);
             celix_logHelper_error(client->logHelper, "Failed to create broker info.");
-            return CELIX_SERVICE_EXCEPTION;
+            return ENOMEM;
         }
         celix_auto(celix_mutex_lock_guard_t) mutexGuard = celixMutexLockGuard_init(&client->mutex);
-        status = celix_longHashMap_put(client->brokerInfoMap, serviceId, info);
+        celix_status_t status = celix_stringHashMap_put(client->brokerInfoMap, endpoint->id, info);
         if (status != CELIX_SUCCESS) {
             celix_logHelper_logTssErrors(client->logHelper, CELIX_LOG_LEVEL_ERROR);
             celix_logHelper_error(client->logHelper, "Failed to add broker info to map. %d.", status);
@@ -443,28 +496,20 @@ celix_status_t celix_earpmc_addBrokerInfoService(void* handle , void* service CE
         celix_steal_ptr(info);
     }
 
-    status = celixThreadCondition_signal(&client->brokerInfoChangedOrExiting);
+    celix_status_t status = celixThreadCondition_signal(&client->brokerInfoChangedOrExiting);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_warning(client->logHelper, "Failed to signal adding broker info. %d.", status);
     }
-
-    return CELIX_SUCCESS;
+    return  CELIX_SUCCESS;
 }
 
-celix_status_t celix_earpmc_removeBrokerInfoService(void* handle , void* service CELIX_UNUSED, const celix_properties_t* properties) {
+celix_status_t celix_earpmc_endpointRemoved(void* handle, endpoint_description_t* endpoint, char* matchedFilter CELIX_UNUSED) {
     assert(handle != NULL);
-    assert(properties != NULL);
+    assert(endpoint != NULL);
     celix_earpm_client_t* client = handle;
-    long serviceId = celix_properties_getAsLong(properties, CELIX_FRAMEWORK_SERVICE_ID, -1);
-    if (serviceId < 0 ) {
-        celix_logHelper_error(client->logHelper, "Not found mqtt broker info service id.");
-        return CELIX_SERVICE_EXCEPTION;
-    }
-
     celix_auto(celix_mutex_lock_guard_t) mutexGuard = celixMutexLockGuard_init(&client->mutex);
-    celix_longHashMap_remove(client->brokerInfoMap, serviceId);
-    //No need to wake up the worker thread, it will check the broker info map when reconnecting.
-    return CELIX_SUCCESS;
+    celix_stringHashMap_remove(client->brokerInfoMap, endpoint->id);
+    return  CELIX_SUCCESS;
 }
 
 static bool celix_earpmc_validateTopic(const char* topic) {
@@ -920,25 +965,62 @@ static void celix_earpmc_publishCallback(struct mosquitto* mosq CELIX_UNUSED, vo
     return;
 }
 
-static int celix_earpmc_connectBroker(celix_earpm_client_t* client) {
-    int rc = MOSQ_ERR_CONN_LOST;
-    celixThreadMutex_lock(&client->mutex);
-    bool usingBrokerExisted = celix_longHashMap_hasKey(client->brokerInfoMap, client->usingBrokerInfoServiceId);
-    celixThreadMutex_unlock(&client->mutex);
-    if (usingBrokerExisted && mosquitto_reconnect(client->mosq) == MOSQ_ERR_SUCCESS) {
-        return MOSQ_ERR_SUCCESS;
+static int celix_earpmc_connectBrokerWithHost(celix_earpm_client_t* client, const char* host, int port) {
+    int rc = mosquitto_connect_bind_v5(client->mosq, host, port, CELIX_EARPMC_KEEP_ALIVE, NULL, client->connProps);
+    celix_logHelper_info(client->logHelper, "Connected to broker %s:%i. %d.", host, port, rc);
+    return rc == MOSQ_ERR_SUCCESS ? CELIX_SUCCESS : CELIX_ILLEGAL_STATE;
+}
+
+static int celix_earpmc_connectBrokerWithInterface(celix_earpm_client_t* client, const char* interfaceName, int port, int family) {
+    struct ifaddrs* ifaddr = NULL;
+    struct ifaddrs* ifa = NULL;
+    if (getifaddrs(&ifaddr) < 0) {
+        celix_logHelper_error(client->logHelper, "Failed to get interface address for %s. %d.", interfaceName, errno);
+        return errno;
     }
-    celix_long_hash_map_create_options_t opts = CELIX_EMPTY_LONG_HASH_MAP_CREATE_OPTIONS;
+    celix_status_t status = CELIX_ILLEGAL_STATE;
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL) {
+            continue;
+        }
+        if(celix_utils_stringEquals(ifa->ifa_name, interfaceName) && (ifa->ifa_addr->sa_family == family || family == AF_UNSPEC)) {
+            char host[INET6_ADDRSTRLEN] = {0};
+            inet_ntop(ifa->ifa_addr->sa_family, &((struct sockaddr_in*)ifa->ifa_addr)->sin_addr, host, INET6_ADDRSTRLEN);
+            if (ifa->ifa_addr->sa_family == AF_INET) {
+                inet_ntop(AF_INET, &((struct sockaddr_in*)ifa->ifa_addr)->sin_addr, host, INET6_ADDRSTRLEN);
+            } else if (ifa->ifa_addr->sa_family == AF_INET6) {
+                inet_ntop(AF_INET6, &((struct sockaddr_in6*)ifa->ifa_addr)->sin6_addr, host, INET6_ADDRSTRLEN);
+            }
+            status = celix_earpmc_connectBrokerWithHost(client, host, port);
+            if (status == CELIX_SUCCESS) {
+                return CELIX_SUCCESS;
+            }
+        }
+    }
+    return status;
+}
+
+static int celix_earpmc_connectBroker(celix_earpm_client_t* client) {
+    celixThreadMutex_lock(&client->mutex);
+    bool curBrokerEndpointExisted = false;
+    if (client->currentBrokerEndpointUUID != NULL) {
+        curBrokerEndpointExisted = celix_stringHashMap_hasKey(client->brokerInfoMap, client->currentBrokerEndpointUUID);
+    }
+    celixThreadMutex_unlock(&client->mutex);
+    if (curBrokerEndpointExisted && mosquitto_reconnect(client->mosq) == MOSQ_ERR_SUCCESS) {
+        return CELIX_SUCCESS;
+    }
+    celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
     opts.simpleRemovedCallback = (void*)celix_earpmc_brokerInfoRelease;
-    celix_autoptr(celix_long_hash_map_t) brokerInfoMap = celix_longHashMap_createWithOptions(&opts);
+    celix_autoptr(celix_string_hash_map_t) brokerInfoMap = celix_stringHashMap_createWithOptions(&opts);
     if (brokerInfoMap == NULL) {
         celix_logHelper_logTssErrors(client->logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(client->logHelper, "Failed to create broker info map.");
-        return MOSQ_ERR_NOMEM;
+        return ENOMEM;
     }
     celixThreadMutex_lock(&client->mutex);
-    CELIX_LONG_HASH_MAP_ITERATE(client->brokerInfoMap, iter) {
-        if (celix_longHashMap_put(brokerInfoMap, iter.key, iter.value.ptrValue) == CELIX_SUCCESS) {
+    CELIX_STRING_HASH_MAP_ITERATE(client->brokerInfoMap, iter) {
+        if (celix_stringHashMap_put(brokerInfoMap, iter.key, iter.value.ptrValue) == CELIX_SUCCESS) {
             celix_earpmc_brokerInfoRetain((celix_earpmc_broker_info_t*)iter.value.ptrValue);
         } else {
             celix_logHelper_logTssErrors(client->logHelper, CELIX_LOG_LEVEL_ERROR);
@@ -947,18 +1029,27 @@ static int celix_earpmc_connectBroker(celix_earpm_client_t* client) {
     }
     celixThreadMutex_unlock(&client->mutex);
 
-    CELIX_LONG_HASH_MAP_ITERATE(brokerInfoMap, iter) {
+    celix_status_t status = CELIX_ILLEGAL_STATE;
+    CELIX_STRING_HASH_MAP_ITERATE(brokerInfoMap, iter) {
         celix_earpmc_broker_info_t* info = iter.value.ptrValue;
-        rc = mosquitto_connect_bind_v5(client->mosq, info->host, info->port, CELIX_EARPMC_KEEP_ALIVE, NULL, client->connProps);
-        if (rc == MOSQ_ERR_SUCCESS) {
-            celix_logHelper_info(client->logHelper, "Connected to broker %s:%i", info->host, info->port);
-            client->usingBrokerInfoServiceId = iter.key;
-            return MOSQ_ERR_SUCCESS;
+        const char* address = "";
+        if (info->bindInterface != NULL) {
+            status = celix_earpmc_connectBrokerWithInterface(client, info->bindInterface, info->port, info->family);
         } else {
-            celix_logHelper_warning(client->logHelper, "Failed to connect to broker %s:%i.", info->host, info->port);
+            int size = celix_arrayList_size(info->addresses);
+            for (int i = 0; i < size; ++i) {
+                address = celix_arrayList_getString(info->addresses, i);
+                status = celix_earpmc_connectBrokerWithHost(client, address, info->port);
+            }
+        }
+        if (status == CELIX_SUCCESS) {
+            celix_logHelper_info(client->logHelper, "Connected to broker %s:%i", address, info->port);
+            free(client->currentBrokerEndpointUUID);
+            client->currentBrokerEndpointUUID = celix_utils_strdup(iter.key);
+            return CELIX_SUCCESS;
         }
     }
-    return rc;
+    return status;
 }
 
 static void* celix_earpmc_mosqThread(void* data) {
@@ -970,7 +1061,7 @@ static void* celix_earpmc_mosqThread(void* data) {
     bool running = client->running;
     while (running) {
         celixThreadMutex_lock(&client->mutex);
-        while (client->running && (celix_longHashMap_size(client->brokerInfoMap) == 0 || reconnectDelay > 0)) {
+        while (client->running && (celix_stringHashMap_size(client->brokerInfoMap) == 0 || reconnectDelay > 0)) {
             if (reconnectDelay == 0) {
                 celixThreadCondition_wait(&client->brokerInfoChangedOrExiting, &client->mutex);
             } else {
@@ -982,8 +1073,8 @@ static void* celix_earpmc_mosqThread(void* data) {
         celixThreadMutex_unlock(&client->mutex);
 
         if (running) {
-            int rc = celix_earpmc_connectBroker(client);
-            if (rc == MOSQ_ERR_SUCCESS) {
+            celix_status_t status = celix_earpmc_connectBroker(client);
+            if (status == CELIX_SUCCESS) {
                 reconnectCount = 0;
             } else {
                 reconnectCount++;
@@ -999,8 +1090,9 @@ static void* celix_earpmc_mosqThread(void* data) {
                     return NULL;
                 }
             }
-            while (rc == MOSQ_ERR_SUCCESS) {
-                rc = mosquitto_loop(client->mosq, CELIX_EARPMC_KEEP_ALIVE*1000, 1);
+            while (status == CELIX_SUCCESS) {
+                int rc = mosquitto_loop(client->mosq, CELIX_EARPMC_KEEP_ALIVE*1000, 1);
+                status = (rc == MOSQ_ERR_SUCCESS) ? CELIX_SUCCESS : CELIX_ILLEGAL_STATE;
             }
         }
     }
