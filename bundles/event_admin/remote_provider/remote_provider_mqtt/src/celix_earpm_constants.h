@@ -23,12 +23,12 @@
 extern "C" {
 #endif
 
-#define CELIX_EARPM_SESSION_EXPIRY_INTERVAL_DEFAULT (10*60) //seconds
+#define CELIX_EARPM_SESSION_EXPIRY_INTERVAL (10*60) //seconds
 
-#define CELIX_EARPM_SYNC_EVENT_TIMEOUT_DEFAULT (5*60) //seconds
-
-#define CELIX_EARPM_CONTINUOUS_ACK_TIMEOUT_COUNT_MAX 3
-
+/**
+ * Topic for the EventAdminMqtt
+ * @{
+ */
 #define CELIX_EARPM_TOPIC_PREFIX "celix/EventAdminMqtt/"
 #define CELIX_EARPM_TOPIC_PATTERN CELIX_EARPM_TOPIC_PREFIX"*"
 #define CELIX_EARPM_HANDLER_INFO_TOPIC_PREFIX CELIX_EARPM_TOPIC_PREFIX"HandlerInfo/"
@@ -36,11 +36,15 @@ extern "C" {
 #define CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC  CELIX_EARPM_HANDLER_INFO_TOPIC_PREFIX"update"
 #define CELIX_EARPM_HANDLER_INFO_ADD_TOPIC  CELIX_EARPM_HANDLER_INFO_TOPIC_PREFIX"add"
 #define CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC  CELIX_EARPM_HANDLER_INFO_TOPIC_PREFIX"remove"
-
 #define CELIX_EARPM_SYNC_EVENT_ACK_TOPIC_PREFIX CELIX_EARPM_TOPIC_PREFIX"SyncEvent/ack/" // topic = topic prefix + requester framework UUID
-
 #define CELIX_EARPM_SESSION_END_TOPIC CELIX_EARPM_TOPIC_PREFIX"session/end"
 
+/** @}*///end of Topic for the EventAdminMqtt
+
+/**
+ * Configuration properties for the EventAdminMqtt
+ * @{
+ */
 #define CELIX_EARPM_BROKER_PROFILE "CELIX_EARPM_BROKER_PROFILE"
 #define CELIX_EARPM_BROKER_PROFILE_DEFAULT "/etc/mosquitto.conf"
 
@@ -57,6 +61,11 @@ extern "C" {
 #define CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS "CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS"
 #define CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS_DEFAULT 5
 
+/** @}*///end of Configuration properties for the EventAdminMqtt
+
+/**
+ * @brief The QoS MQTT
+ */
 typedef enum celix_earpm_qos {
     CELIX_EARPM_QOS_UNKNOWN = -1,
     CELIX_EARPM_QOS_AT_MOST_ONCE = 0,

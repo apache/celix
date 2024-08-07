@@ -27,14 +27,14 @@
 #include "celix_utils.h"
 #include "celix_earpm_constants.h"
 
-#define CELIX_EARPMD_SYNC_EVENT_DELIVERY_THREADS_MAX 20
+#define CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS_MAX 20
 
-typedef struct celix_earpmd_event_entry {
+typedef struct celix_earpm_deliverer_event_entry {
     celix_properties_t* properties;
     char* topic;
-    celix_earpmd_deliver_done_callback done;
+    celix_earpm_deliver_done_callback done;
     void* doneHandle;
-}celix_earpmd_event_entry_t;
+}celix_earpm_deliverer_event_entry_t;
 
 
 struct celix_earpm_event_deliverer {
@@ -46,20 +46,20 @@ struct celix_earpm_event_deliverer {
     long syncEventDeliveryThreadsNr;
     long syncEventQueueSizeMax;
     celix_thread_mutex_t mutex;//protects belows
-    celix_thread_t syncEventDeliveryThreads[CELIX_EARPMD_SYNC_EVENT_DELIVERY_THREADS_MAX];
+    celix_thread_t syncEventDeliveryThreads[CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS_MAX];
     celix_thread_cond_t hasSyncEventsOrExiting;
     celix_array_list_t* syncEventQueue;//element = celix_earpmd_event_entry_t*
     bool syncEventDeliveryThreadRunning;
 };
 
-static void* celix_earpmd_syncEventDeliveryThread(void* data);
+static void* celix_earpmDeliverer_syncEventDeliveryThread(void* data);
 
-celix_earpm_event_deliverer_t* celix_earpmd_create(celix_bundle_context_t* ctx, celix_log_helper_t* logHelper) {
+celix_earpm_event_deliverer_t* celix_earpmDeliverer_create(celix_bundle_context_t* ctx, celix_log_helper_t* logHelper) {
     assert(ctx != NULL);
     assert(logHelper != NULL);
     long syncEventDeliveryThreadsNr = celix_bundleContext_getPropertyAsLong(ctx, CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS,
                                                                             CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS_DEFAULT);
-    if (syncEventDeliveryThreadsNr <= 0 || syncEventDeliveryThreadsNr > CELIX_EARPMD_SYNC_EVENT_DELIVERY_THREADS_MAX) {
+    if (syncEventDeliveryThreadsNr <= 0 || syncEventDeliveryThreadsNr > CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS_MAX) {
         return NULL;
     }
     long syncEventQueueCap = celix_bundleContext_getPropertyAsLong(ctx, CELIX_EARPM_MSG_QUEUE_CAPACITY, CELIX_EARPM_MSG_QUEUE_CAPACITY_DEFAULT);
@@ -103,7 +103,8 @@ celix_earpm_event_deliverer_t* celix_earpmd_create(celix_bundle_context_t* ctx, 
 
     earpmd->syncEventDeliveryThreadRunning = true;
     for (int i = 0; i < syncEventDeliveryThreadsNr; ++i) {
-        status = celixThread_create(&earpmd->syncEventDeliveryThreads[i], NULL, celix_earpmd_syncEventDeliveryThread, earpmd);
+        status = celixThread_create(&earpmd->syncEventDeliveryThreads[i], NULL,
+                                    celix_earpmDeliverer_syncEventDeliveryThread, earpmd);
         if (status != CELIX_SUCCESS) {
             celix_logHelper_error(logHelper, "Failed to create sync event delivery thread %d. %d.", i, status);
             for (int j = 0; j < i; ++j) {
@@ -128,7 +129,7 @@ celix_earpm_event_deliverer_t* celix_earpmd_create(celix_bundle_context_t* ctx, 
     return celix_steal_ptr(earpmd);
 }
 
-void celix_earpmd_destroy(celix_earpm_event_deliverer_t* earpmd) {
+void celix_earpmDeliverer_destroy(celix_earpm_event_deliverer_t* earpmd) {
     assert(earpmd != NULL);
     celixThreadMutex_lock(&earpmd->mutex);
     earpmd->syncEventDeliveryThreadRunning = false;
@@ -139,7 +140,7 @@ void celix_earpmd_destroy(celix_earpm_event_deliverer_t* earpmd) {
     }
     int size = celix_arrayList_size(earpmd->syncEventQueue);
     for (int i = 0; i < size; ++i) {
-        celix_earpmd_event_entry_t* entry = (celix_earpmd_event_entry_t*)celix_arrayList_get(earpmd->syncEventQueue, i);
+        celix_earpm_deliverer_event_entry_t* entry = (celix_earpm_deliverer_event_entry_t*)celix_arrayList_get(earpmd->syncEventQueue, i);
         if (entry->done != NULL) {
             entry->done(entry->doneHandle, entry->topic, CELIX_ILLEGAL_STATE);
         }
@@ -155,13 +156,13 @@ void celix_earpmd_destroy(celix_earpm_event_deliverer_t* earpmd) {
     return;
 }
 
-celix_status_t celix_earpmd_setEventAdminSvc(celix_earpm_event_deliverer_t* earpmd, celix_event_admin_service_t *eventAdminSvc) {
+celix_status_t celix_earpmDeliverer_setEventAdminSvc(celix_earpm_event_deliverer_t* earpmd, celix_event_admin_service_t *eventAdminSvc) {
     celix_auto(celix_rwlock_wlock_guard_t) wLockGuard = celixRwlockWlockGuard_init(&earpmd->eaLock);
     earpmd->eventAdminSvc = eventAdminSvc;
     return CELIX_SUCCESS;
 }
 
-celix_status_t celix_earpmd_postEvent(celix_earpm_event_deliverer_t* earpmd, const char* topic, celix_properties_t* properties) {
+celix_status_t celix_earpmDeliverer_postEvent(celix_earpm_event_deliverer_t* earpmd, const char* topic, celix_properties_t* properties) {
     assert(earpmd != NULL);
     assert(topic != NULL);
     celix_autoptr(celix_properties_t) _properties = properties;
@@ -178,11 +179,11 @@ celix_status_t celix_earpmd_postEvent(celix_earpm_event_deliverer_t* earpmd, con
     return status;
 }
 
-celix_status_t celix_earpmd_sendEvent(celix_earpm_event_deliverer_t* earpmd, const char* topic, celix_properties_t* properties, celix_earpmd_deliver_done_callback done, void* doneHandle) {
+celix_status_t celix_earpmDeliverer_sendEvent(celix_earpm_event_deliverer_t* earpmd, const char* topic, celix_properties_t* properties, celix_earpm_deliver_done_callback done, void* callbackData) {
     assert(earpmd != NULL);
     assert(topic != NULL);
     celix_autoptr(celix_properties_t) _properties = properties;
-    celix_autofree celix_earpmd_event_entry_t* entry = calloc(1, sizeof(*entry));
+    celix_autofree celix_earpm_deliverer_event_entry_t* entry = calloc(1, sizeof(*entry));
     if (entry == NULL) {
         celix_logHelper_error(earpmd->logHelper, "Failed to allocate memory for event entry for %s.", topic);
         return CELIX_ENOMEM;
@@ -194,7 +195,7 @@ celix_status_t celix_earpmd_sendEvent(celix_earpm_event_deliverer_t* earpmd, con
     }
     entry->properties = properties;
     entry->done = done;
-    entry->doneHandle = doneHandle;
+    entry->doneHandle = callbackData;
     {
         celix_auto(celix_mutex_lock_guard_t) mutexGuard = celixMutexLockGuard_init(&earpmd->mutex);
         if (celix_arrayList_size(earpmd->syncEventQueue) >= earpmd->syncEventQueueSizeMax) {
@@ -215,7 +216,7 @@ celix_status_t celix_earpmd_sendEvent(celix_earpm_event_deliverer_t* earpmd, con
     return CELIX_SUCCESS;
 }
 
-static celix_status_t celix_earpmd_deliverSyncEventToEventAdmin(celix_earpm_event_deliverer_t* earpmd, celix_earpmd_event_entry_t* eventEntry) {
+static celix_status_t celix_earpmDeliverer_sendEventToEventAdmin(celix_earpm_event_deliverer_t* earpmd, celix_earpm_deliverer_event_entry_t* eventEntry) {
     celix_auto(celix_rwlock_rlock_guard_t) rLockGuard = celixRwlockRlockGuard_init(&earpmd->eaLock);
     celix_event_admin_service_t* eventAdminSvc = earpmd->eventAdminSvc;
     if (eventAdminSvc == NULL) {
@@ -229,14 +230,14 @@ static celix_status_t celix_earpmd_deliverSyncEventToEventAdmin(celix_earpm_even
     return status;
 }
 
-static void* celix_earpmd_syncEventDeliveryThread(void* data) {
+static void* celix_earpmDeliverer_syncEventDeliveryThread(void* data) {
     assert(data != NULL);
     celix_earpm_event_deliverer_t* earpmd = data;
     celixThreadMutex_lock(&earpmd->mutex);
     bool running = earpmd->syncEventDeliveryThreadRunning;
     celixThreadMutex_unlock(&earpmd->mutex);
     while (running) {
-        celix_earpmd_event_entry_t* entry = NULL;
+        celix_earpm_deliverer_event_entry_t* entry = NULL;
         celixThreadMutex_lock(&earpmd->mutex);
         while (earpmd->syncEventDeliveryThreadRunning && celix_arrayList_size(earpmd->syncEventQueue) == 0) {
             celixThreadCondition_wait(&earpmd->hasSyncEventsOrExiting, &earpmd->mutex);
@@ -248,7 +249,7 @@ static void* celix_earpmd_syncEventDeliveryThread(void* data) {
         }
         celixThreadMutex_unlock(&earpmd->mutex);
         if (entry != NULL) {
-            celix_status_t status = celix_earpmd_deliverSyncEventToEventAdmin(earpmd, entry);
+            celix_status_t status = celix_earpmDeliverer_sendEventToEventAdmin(earpmd, entry);
             if (entry->done != NULL) {
                 entry->done(entry->doneHandle, entry->topic, status);
             }
