@@ -144,16 +144,16 @@ celix_status_t celix_earpmDiscovery_stop(celix_earpm_broker_discovery_t* discove
 
 static void celix_earpmDiscovery_notifyEndpointsToListener(celix_earpm_broker_discovery_t* discovery, celix_earpm_endpoint_listener_entry_t* listenerEntry, bool added) {
     const char* listenerScope = celix_properties_get(listenerEntry->properties, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, NULL);
-    celix_filter_t* filter = listenerScope == NULL ? NULL : celix_filter_create(listenerScope);
+    celix_autoptr(celix_filter_t) filter = listenerScope == NULL ? NULL : celix_filter_create(listenerScope);
     celix_status_t (*process)(void *handle, endpoint_description_t *endpoint, char *matchedFilter) = listenerEntry->listener->endpointAdded;
     if (!added) {
         process = listenerEntry->listener->endpointRemoved;
     }
     bool discoverySupportsDynamicIp = celix_properties_getAsBool(listenerEntry->properties, CELIX_RSA_DISCOVERY_INTERFACE_SPECIFIC_ENDPOINTS_SUPPORT, false);
-    int size = celix_arrayList_size(discovery->brokerEndpoints);
+    int size = discovery->brokerEndpoints == NULL ? 0 : celix_arrayList_size(discovery->brokerEndpoints);
     for (int i = 0; i < size; ++i) {
         endpoint_description_t *endpoint = celix_arrayList_get(discovery->brokerEndpoints, i);
-        bool needDynamicIp = celix_properties_get(endpoint->properties, CELIX_RSA_IP_ADDRESSES, NULL) == NULL;
+        bool needDynamicIp = celix_properties_get(endpoint->properties, CELIX_RSA_IP_ADDRESSES, NULL) != NULL;
         if ((!needDynamicIp || discoverySupportsDynamicIp) && celix_filter_match(filter, endpoint->properties)) {
             celix_status_t status = process(listenerEntry->listener->handle, endpoint, (char*) listenerScope);
             if (status != CELIX_SUCCESS) {
@@ -190,6 +190,7 @@ celix_status_t celix_earpmDiscovery_addEndpointListener(void* handle, void* serv
             return status;
         }
         celix_earpmDiscovery_notifyEndpointsToListener(discovery, svcEntry, true);
+        celix_steal_ptr(svcEntry);
     }
 
     return CELIX_SUCCESS;
@@ -357,13 +358,15 @@ static celix_array_list_t* celix_earpmDiscovery_createBrokerEndpoints(celix_earp
         CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, CELIX_EARPM_MQTT_BROKER_INFO_SERVICE_NAME));
         CELIX_DO_IF(status, status = celix_properties_setLong(props, CELIX_RSA_ENDPOINT_SERVICE_ID, INT32_MAX));
         CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, endpointUUID));
-        CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED, "true"));
+        CELIX_DO_IF(status, status = celix_properties_setBool(props, CELIX_RSA_SERVICE_IMPORTED, true));
         CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS,
                                                           CELIX_EARPM_MQTT_BROKER_SERVICE_CONFIG_TYPE));
         if (listener->host == NULL) {//use dynamic ip
             CELIX_DO_IF(status, status = celix_properties_setLong(props, CELIX_RSA_PORT, listener->port));
             CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_RSA_IP_ADDRESSES, ""));//service discovery will fill in dynamic ip
-            CELIX_DO_IF(status, status = celix_properties_setLong(props, CELIX_EARPM_MQTT_BROKER_SOCKET_DOMAIN, listener->family));
+            if (listener->family != AF_UNSPEC) {
+                CELIX_DO_IF(status, status = celix_properties_setLong(props, CELIX_EARPM_MQTT_BROKER_SOCKET_DOMAIN, listener->family));
+            }
             const char* bindInterface = listener->bindInterface != NULL ? listener->bindInterface : "all";
             CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, bindInterface));
         } else if (listener->port != 0) {//specific ip and hostname

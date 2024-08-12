@@ -34,6 +34,7 @@ if (EVENT_ADMIN_REMOTE_PROVIDER_MQTT)
             Celix::event_admin_spi
             Celix::event_admin_utils
             Celix::c_rsa_spi
+            Celix::rsa_common
             Celix::log_helper
             Celix::framework
             Celix::utils

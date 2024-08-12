@@ -40,7 +40,7 @@ add_executable(unit_test_event_admin_remote_provider_mqtt
         src/CelixEarpmImplTestSuite.cc
         src/CelixEarpmEventDelivererTestSuite.cc
         src/CelixEarpmClientTestSuite.cc
-        src/CelixEarpmBrokerProfileParserTestSuite.cc
+        src/CelixEarpmBrokerDiscoveryTestSuite.cc
         src/CelixEarpmActivatorTestSuite.cc
 )
 

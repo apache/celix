@@ -18,8 +18,11 @@
  */
 #include <future>
 #include <functional>
+#include <thread>
+#include <cstdlib>
 #include "celix_earpm_event_deliverer.h"
 #include "CelixEarpmTestSuiteBaseClass.h"
+#include "celix_earpm_constants.h"
 #include "celix_log_helper.h"
 
 class CelixEarpmEventDelivererTestSuite : public CelixEarpmTestSuiteBaseClass {
@@ -31,7 +34,7 @@ public:
 
     ~CelixEarpmEventDelivererTestSuite() override = default;
 
-    void TestEventDeliverer(std::function<void (celix_earpm_event_deliverer_t*)> testBody) {
+    void TestEventDeliverer(const std::function<void (celix_earpm_event_deliverer_t*)>& testBody) {
         auto* deliverer = celix_earpmDeliverer_create(ctx.get(), logHelper.get());
         ASSERT_NE(deliverer, nullptr);
         testBody(deliverer);
@@ -47,20 +50,38 @@ TEST_F(CelixEarpmEventDelivererTestSuite, CreateEventDelivererTest) {
     celix_earpmDeliverer_destroy(deliverer);
 }
 
+TEST_F(CelixEarpmEventDelivererTestSuite, CreateEventDelivererWithInvalidSyncEventThreadSizeTest) {
+    setenv(CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS, "100", 1);
+    auto deliverer = celix_earpmDeliverer_create(ctx.get(), logHelper.get());
+    EXPECT_EQ(deliverer, nullptr);
+
+    setenv(CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS, "0", 1);
+    deliverer = celix_earpmDeliverer_create(ctx.get(), logHelper.get());
+    EXPECT_EQ(deliverer, nullptr);
+
+    unsetenv(CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS);
+}
+
+TEST_F(CelixEarpmEventDelivererTestSuite, CreateEventDelivererWithInvalidMsgQueueSizeTest) {
+    setenv(CELIX_EARPM_MSG_QUEUE_CAPACITY, std::to_string(CELIX_EARPM_MSG_QUEUE_MAX_SIZE+1).c_str(), 1);
+    auto deliverer = celix_earpmDeliverer_create(ctx.get(), logHelper.get());
+    EXPECT_EQ(deliverer, nullptr);
+
+    setenv(CELIX_EARPM_MSG_QUEUE_CAPACITY, "0", 1);
+    deliverer = celix_earpmDeliverer_create(ctx.get(), logHelper.get());
+    EXPECT_EQ(deliverer, nullptr);
+
+    unsetenv(CELIX_EARPM_MSG_QUEUE_CAPACITY);
+}
+
 TEST_F(CelixEarpmEventDelivererTestSuite, SetEventAdminServiceTest) {
     TestEventDeliverer([](celix_earpm_event_deliverer_t *deliverer) {
         celix_event_admin_service_t eventAdminService = {
                 .handle = nullptr,
-                .postEvent = [](void *handle, const char *topic, const celix_properties_t *props) {
-                    (void) handle;
-                    (void) topic;
-                    (void) props;
+                .postEvent = [](void*, const char*, const celix_properties_t*) {
                     return CELIX_SUCCESS;
                 },
-                .sendEvent = [](void *handle, const char *topic, const celix_properties_t *props) {
-                    (void) handle;
-                    (void) topic;
-                    (void) props;
+                .sendEvent = [](void*, const char*, const celix_properties_t*) {
                     return CELIX_SUCCESS;
                 }
         };
@@ -73,16 +94,12 @@ TEST_F(CelixEarpmEventDelivererTestSuite, PostEventTest) {
     TestEventDeliverer([](celix_earpm_event_deliverer_t *deliverer) {
         celix_event_admin_service_t eventAdminService = {
                 .handle = nullptr,
-                .postEvent = [](void *handle, const char *topic, const celix_properties_t *props) {
-                    (void) handle;
+                .postEvent = [](void*, const char* topic, const celix_properties_t* props) {
                     EXPECT_STREQ(topic, "test/topic");
                     EXPECT_STREQ(celix_properties_get(props, "key", ""), "value");
                     return CELIX_SUCCESS;
                 },
-                .sendEvent = [](void *handle, const char *topic, const celix_properties_t *props) {
-                    (void) handle;
-                    (void) topic;
-                    (void) props;
+                .sendEvent = [](void*, const char*, const celix_properties_t*) {
                     return CELIX_SUCCESS;
                 }
         };
@@ -100,16 +117,10 @@ TEST_F(CelixEarpmEventDelivererTestSuite, EventAdminPostEventFailedTest) {
     TestEventDeliverer([](celix_earpm_event_deliverer_t *deliverer) {
         celix_event_admin_service_t eventAdminService = {
                 .handle = nullptr,
-                .postEvent = [](void *handle, const char *topic, const celix_properties_t *props) {
-                    (void) handle;
-                    (void) topic;
-                    (void) props;
+                .postEvent = [](void*, const char*, const celix_properties_t*) {
                     return CELIX_ILLEGAL_STATE;
                 },
-                .sendEvent = [](void *handle, const char *topic, const celix_properties_t *props) {
-                    (void) handle;
-                    (void) topic;
-                    (void) props;
+                .sendEvent = [](void*, const char*, const celix_properties_t*) {
                     return CELIX_SUCCESS;
                 }
         };
@@ -127,7 +138,8 @@ TEST_F(CelixEarpmEventDelivererTestSuite, PostEventWithoutEventAdminServiceTest)
     TestEventDeliverer([](celix_earpm_event_deliverer_t *deliverer) {
         celix_properties_t *props = celix_properties_create();
         celix_properties_set(props, "key", "value");
-        celix_earpmDeliverer_postEvent(deliverer, "test/topic", props);
+        auto status = celix_earpmDeliverer_postEvent(deliverer, "test/topic", props);
+        EXPECT_EQ(status, CELIX_ILLEGAL_STATE);
     });
 }
 
@@ -135,14 +147,10 @@ TEST_F(CelixEarpmEventDelivererTestSuite, SendEventTest) {
     TestEventDeliverer([](celix_earpm_event_deliverer_t *deliverer) {
         celix_event_admin_service_t eventAdminService = {
                 .handle = nullptr,
-                .postEvent = [](void *handle, const char *topic, const celix_properties_t *props) {
-                    (void) handle;
-                    (void) topic;
-                    (void) props;
+                .postEvent = [](void*, const char*, const celix_properties_t*) {
                     return CELIX_SUCCESS;
                 },
-                .sendEvent = [](void *handle, const char *topic, const celix_properties_t *props) {
-                    (void) handle;
+                .sendEvent = [](void*, const char* topic, const celix_properties_t* props) {
                     EXPECT_STREQ(topic, "test/topic");
                     EXPECT_STREQ(celix_properties_get(props, "key", ""), "value");
                     return CELIX_SUCCESS;
@@ -161,7 +169,7 @@ TEST_F(CelixEarpmEventDelivererTestSuite, SendEventTest) {
                                            EXPECT_STREQ(topic, "test/topic");
                                            promise->set_value(status);
                                        }, &promise);
-        auto rc = future.wait_for(std::chrono::milliseconds(30000));
+        auto rc = future.wait_for(std::chrono::seconds(30));
         ASSERT_EQ(rc, std::future_status::ready);
         status = future.get();
         EXPECT_EQ(status, CELIX_SUCCESS);
@@ -172,16 +180,10 @@ TEST_F(CelixEarpmEventDelivererTestSuite, EventAdminSendEventFailedTest) {
     TestEventDeliverer([](celix_earpm_event_deliverer_t *deliverer) {
         celix_event_admin_service_t eventAdminService = {
                 .handle = nullptr,
-                .postEvent = [](void *handle, const char *topic, const celix_properties_t *props) {
-                    (void) handle;
-                    (void) topic;
-                    (void) props;
+                .postEvent = [](void*, const char*, const celix_properties_t*) {
                     return CELIX_SUCCESS;
                 },
-                .sendEvent = [](void *handle, const char *topic, const celix_properties_t *props) {
-                    (void) handle;
-                    (void) topic;
-                    (void) props;
+                .sendEvent = [](void*, const char*, const celix_properties_t*) {
                     return CELIX_ILLEGAL_STATE;
                 }
         };
@@ -198,7 +200,7 @@ TEST_F(CelixEarpmEventDelivererTestSuite, EventAdminSendEventFailedTest) {
                                            (void) topic;
                                            promise->set_value(status);
                                        }, &promise);
-        auto rc = future.wait_for(std::chrono::milliseconds(30000));
+        auto rc = future.wait_for(std::chrono::seconds(30));
         ASSERT_EQ(rc, std::future_status::ready);
         status = future.get();
         EXPECT_EQ(status, CELIX_ILLEGAL_STATE);
@@ -217,9 +219,83 @@ TEST_F(CelixEarpmEventDelivererTestSuite, SendEventWithoutEventAdminServiceTest)
                                            (void) topic;
                                            promise->set_value(status);
                                        }, &promise);
-        auto rc = future.wait_for(std::chrono::milliseconds(30000));
+        auto rc = future.wait_for(std::chrono::seconds(30));
         ASSERT_EQ(rc, std::future_status::ready);
         auto status = future.get();
         EXPECT_EQ(status, CELIX_ILLEGAL_STATE);
     });
+}
+
+
+TEST_F(CelixEarpmEventDelivererTestSuite, HasUnprocessedSyncEventWhenDelieverDestroyTest) {
+    setenv(CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS, "1", 1);
+    auto* deliverer = celix_earpmDeliverer_create(ctx.get(), logHelper.get());
+    ASSERT_NE(deliverer, nullptr);
+
+    celix_event_admin_service_t eventAdminService = {
+            .handle = nullptr,
+            .postEvent = [](void*, const char*, const celix_properties_t*) {
+                return CELIX_SUCCESS;
+            },
+            .sendEvent = [](void*, const char*, const celix_properties_t*) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));//simulate slow send
+                return CELIX_SUCCESS;
+            }
+    };
+    auto status = celix_earpmDeliverer_setEventAdminSvc(deliverer, &eventAdminService);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    for (int i = 0; i < 10; ++i) {
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, "key", "value");
+        celix_earpmDeliverer_sendEvent(deliverer, "test/topic", props,
+                                       [](void*, const char*, celix_status_t){}, nullptr);
+    }
+
+    celix_earpmDeliverer_destroy(deliverer);
+    unsetenv(CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS);
+}
+
+TEST_F(CelixEarpmEventDelivererTestSuite, SyncEventQueueFullTest) {
+    setenv(CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS, "1", 1);
+    setenv(CELIX_EARPM_MSG_QUEUE_CAPACITY, "10", 1);
+    auto* deliverer = celix_earpmDeliverer_create(ctx.get(), logHelper.get());
+    ASSERT_NE(deliverer, nullptr);
+
+    std::promise<void> promise;
+    auto future = promise.get_future();
+    celix_event_admin_service_t eventAdminService = {
+            .handle = &future,
+            .postEvent = [](void*, const char*, const celix_properties_t*) {
+                return CELIX_SUCCESS;
+            },
+            .sendEvent = [](void* handle, const char*, const celix_properties_t*) {
+                auto future = static_cast<std::future<void>*>(handle);
+                try {
+                    future->get();
+                } catch (...) {
+                    //Ignore
+                }
+
+                return CELIX_SUCCESS;
+            }
+    };
+    auto status = celix_earpmDeliverer_setEventAdminSvc(deliverer, &eventAdminService);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    for (int i = 0; i <= 11; ++i) {
+        celix_properties_t *props = celix_properties_create();
+        celix_properties_set(props, "key", "value");
+        status = celix_earpmDeliverer_sendEvent(deliverer, "test/topic", props, nullptr, nullptr);
+        if(status != CELIX_SUCCESS) {
+            break;
+        }
+    }
+    EXPECT_EQ(status, ENOMEM);
+
+    promise.set_value();
+
+    celix_earpmDeliverer_destroy(deliverer);
+    unsetenv(CELIX_EARPM_MSG_QUEUE_CAPACITY);
+    unsetenv(CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS);
 }

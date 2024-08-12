@@ -133,6 +133,7 @@ static void celix_earpm_scheduleRemoteFwExpiryEvent(celix_event_admin_remote_pro
 
 
 celix_event_admin_remote_provider_mqtt_t* celix_earpm_create(celix_bundle_context_t* ctx) {
+    assert(ctx != NULL);
     celix_autofree celix_event_admin_remote_provider_mqtt_t* earpm = calloc(1, sizeof(*earpm));
     if (earpm == NULL) {
         return NULL;
@@ -150,7 +151,7 @@ celix_event_admin_remote_provider_mqtt_t* celix_earpm_create(celix_bundle_contex
         return NULL;
     }
     earpm->defaultQos = (celix_earpm_qos_e)celix_bundleContext_getPropertyAsLong(ctx, CELIX_EARPM_EVENT_QOS, CELIX_EARPM_EVENT_QOS_DEFAULT);
-    if (earpm->defaultQos <= CELIX_EARPM_QOS_UNKNOWN || earpm->defaultQos > CELIX_EARPM_QOS_MAX) {
+    if (earpm->defaultQos <= CELIX_EARPM_QOS_UNKNOWN || earpm->defaultQos >= CELIX_EARPM_QOS_MAX) {
         celix_logHelper_error(logHelper, "Invalid default QOS(%d) value.", (int)earpm->defaultQos);
         return NULL;
     }
@@ -215,7 +216,7 @@ celix_event_admin_remote_provider_mqtt_t* celix_earpm_create(celix_bundle_contex
         celix_logHelper_error(logHelper, "Failed to add framework uuid to session end message.");
         return NULL;
     }
-    opts.sessionEndProps = celix_steal_ptr(sessionEndProps);
+    opts.sessionEndProps = sessionEndProps;
     opts.callbackHandle = earpm;
     opts.receiveMsgCallback = celix_earpm_receiveMsgCallback;
     opts.connectedCallback = celix_earpm_connectedCallback;
@@ -269,16 +270,16 @@ void celix_earpm_destroy(celix_event_admin_remote_provider_mqtt_t* earpm) {
     return;
 }
 
-celix_status_t celix_earpm_endpointAdded(void* handle, endpoint_description_t* endpoint, char* matchedFilter) {
+celix_status_t celix_earpm_mqttBrokerEndpointAdded(void* handle, endpoint_description_t* endpoint, char* matchedFilter) {
     assert(handle != NULL);
     celix_event_admin_remote_provider_mqtt_t* earpm = (celix_event_admin_remote_provider_mqtt_t*)handle;
-    return celix_earpmClient_endpointAdded(earpm->mqttClient, endpoint, matchedFilter);
+    return celix_earpmClient_mqttBrokerEndpointAdded(earpm->mqttClient, endpoint, matchedFilter);
 }
 
-celix_status_t celix_earpm_endpointRemoved(void* handle, endpoint_description_t* endpoint, char* matchedFilter) {
+celix_status_t celix_earpm_mqttBrokerEndpointRemoved(void* handle, endpoint_description_t* endpoint, char* matchedFilter) {
     assert(handle != NULL);
     celix_event_admin_remote_provider_mqtt_t* earpm = (celix_event_admin_remote_provider_mqtt_t*)handle;
-    return celix_earpmClient_endpointRemoved(earpm->mqttClient, endpoint, matchedFilter);
+    return celix_earpmClient_mqttBrokerEndpointRemoved(earpm->mqttClient, endpoint, matchedFilter);
 }
 
 static celix_earpm_event_handler_t* celix_earpm_createEventHandler(celix_event_admin_remote_provider_mqtt_t* earpm, const celix_properties_t* eventHandlerProperties) {

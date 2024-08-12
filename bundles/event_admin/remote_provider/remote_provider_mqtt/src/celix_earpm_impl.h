@@ -36,8 +36,8 @@ typedef struct celix_event_admin_remote_provider_mqtt celix_event_admin_remote_p
 celix_event_admin_remote_provider_mqtt_t* celix_earpm_create(celix_bundle_context_t* ctx);
 void celix_earpm_destroy(celix_event_admin_remote_provider_mqtt_t* earpm);
 
-celix_status_t celix_earpm_endpointAdded(void* handle, endpoint_description_t* endpoint, char* matchedFilter);
-celix_status_t celix_earpm_endpointRemoved(void* handle, endpoint_description_t* endpoint, char* matchedFilter);
+celix_status_t celix_earpm_mqttBrokerEndpointAdded(void* handle, endpoint_description_t* endpoint, char* matchedFilter);
+celix_status_t celix_earpm_mqttBrokerEndpointRemoved(void* handle, endpoint_description_t* endpoint, char* matchedFilter);
 
 celix_status_t celix_earpm_addEventHandlerService(void* handle , void* service, const celix_properties_t* properties);
 celix_status_t celix_earpm_removeEventHandlerService(void* handle , void* service, const celix_properties_t* properties);

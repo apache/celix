@@ -60,10 +60,12 @@ celix_earpm_event_deliverer_t* celix_earpmDeliverer_create(celix_bundle_context_
     long syncEventDeliveryThreadsNr = celix_bundleContext_getPropertyAsLong(ctx, CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS,
                                                                             CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS_DEFAULT);
     if (syncEventDeliveryThreadsNr <= 0 || syncEventDeliveryThreadsNr > CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS_MAX) {
+        celix_logHelper_error(logHelper, "Invalid number of sync event delivery threads %ld, must be in range 1-%d.", syncEventDeliveryThreadsNr, CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS_MAX);
         return NULL;
     }
     long syncEventQueueCap = celix_bundleContext_getPropertyAsLong(ctx, CELIX_EARPM_MSG_QUEUE_CAPACITY, CELIX_EARPM_MSG_QUEUE_CAPACITY_DEFAULT);
     if (syncEventQueueCap <= 0 || syncEventQueueCap > CELIX_EARPM_MSG_QUEUE_MAX_SIZE) {
+        celix_logHelper_error(logHelper, "Invalid sync event queue capacity %ld, must be in range 1-%d.", syncEventQueueCap, CELIX_EARPM_MSG_QUEUE_MAX_SIZE);
         return NULL;
     }
     celix_autofree celix_earpm_event_deliverer_t* earpmd = calloc(1, sizeof(*earpmd));
@@ -186,12 +188,12 @@ celix_status_t celix_earpmDeliverer_sendEvent(celix_earpm_event_deliverer_t* ear
     celix_autofree celix_earpm_deliverer_event_entry_t* entry = calloc(1, sizeof(*entry));
     if (entry == NULL) {
         celix_logHelper_error(earpmd->logHelper, "Failed to allocate memory for event entry for %s.", topic);
-        return CELIX_ENOMEM;
+        return ENOMEM;
     }
-    entry->topic = celix_utils_strdup(topic);
+    celix_autofree char* _topic = entry->topic = celix_utils_strdup(topic);
     if (entry->topic == NULL) {
         celix_logHelper_error(earpmd->logHelper, "Failed to duplicate topic %s.", topic);
-        return CELIX_ENOMEM;
+        return ENOMEM;
     }
     entry->properties = properties;
     entry->done = done;
@@ -200,16 +202,17 @@ celix_status_t celix_earpmDeliverer_sendEvent(celix_earpm_event_deliverer_t* ear
         celix_auto(celix_mutex_lock_guard_t) mutexGuard = celixMutexLockGuard_init(&earpmd->mutex);
         if (celix_arrayList_size(earpmd->syncEventQueue) >= earpmd->syncEventQueueSizeMax) {
             celix_logHelper_error(earpmd->logHelper, "Sync event queue full, drop event %s.", topic);
-            return CELIX_ENOMEM;
+            return ENOMEM;
         }
         celix_status_t status = celix_arrayList_add(earpmd->syncEventQueue, entry);
         if (status != CELIX_SUCCESS) {
             celix_logHelper_logTssErrors(earpmd->logHelper, CELIX_LOG_LEVEL_ERROR);
             celix_logHelper_error(earpmd->logHelper, "Failed to add event to sync event queue for %s. %d.", topic, status);
-            return CELIX_ENOMEM;
+            return ENOMEM;
         }
     }
     celix_steal_ptr(_properties);
+    celix_steal_ptr(_topic);
     celix_steal_ptr(entry);
     celixThreadCondition_signal(&earpmd->hasSyncEventsOrExiting);
 

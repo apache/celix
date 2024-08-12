@@ -137,8 +137,8 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
     }
 
     act->endpointListener.handle = act->providerMqtt;
-    act->endpointListener.endpointAdded = celix_earpm_endpointAdded;
-    act->endpointListener.endpointRemoved = celix_earpm_endpointRemoved;
+    act->endpointListener.endpointAdded = celix_earpm_mqttBrokerEndpointAdded;
+    act->endpointListener.endpointRemoved = celix_earpm_mqttBrokerEndpointRemoved;
     celix_autoptr(celix_properties_t) props = celix_properties_create();
     const char* scope = "(&("CELIX_FRAMEWORK_SERVICE_NAME"="CELIX_EARPM_MQTT_BROKER_INFO_SERVICE_NAME")("\
             CELIX_RSA_SERVICE_IMPORTED_CONFIGS"="CELIX_EARPM_MQTT_BROKER_SERVICE_CONFIG_TYPE"))";

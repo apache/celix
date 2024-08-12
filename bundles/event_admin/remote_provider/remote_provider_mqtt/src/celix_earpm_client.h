@@ -43,7 +43,7 @@ typedef struct celix_earpm_client_create_options {
     celix_bundle_context_t* ctx;
     celix_log_helper_t* logHelper;
     const char* sessionEndTopic;
-    mosquitto_property* sessionEndProps;//ownership will be transferred to the callee
+    const mosquitto_property* sessionEndProps;
     void* callbackHandle;
     celix_earpm_client_receive_msg_fp receiveMsgCallback;
     celix_earpm_client_connected_fp connectedCallback;
@@ -67,9 +67,9 @@ void celix_earpmClient_destroy(celix_earpm_client_t* client);
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_earpm_client_t, celix_earpmClient_destroy);
 
-celix_status_t celix_earpmClient_endpointAdded(void* handle, endpoint_description_t* endpoint, char* matchedFilter);
+celix_status_t celix_earpmClient_mqttBrokerEndpointAdded(void* handle, const endpoint_description_t* endpoint, char* matchedFilter);
 
-celix_status_t celix_earpmClient_endpointRemoved(void* handle, endpoint_description_t* endpoint, char* matchedFilter);
+celix_status_t celix_earpmClient_mqttBrokerEndpointRemoved(void* handle, const endpoint_description_t* endpoint, char* matchedFilter);
 
 celix_status_t celix_earpmClient_subscribe(celix_earpm_client_t* client, const char* topic, celix_earpm_qos_e qos);
 celix_status_t celix_earpmClient_unsubscribe(celix_earpm_client_t* client, const char* topic);
