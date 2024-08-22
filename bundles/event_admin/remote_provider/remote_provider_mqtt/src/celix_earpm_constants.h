@@ -23,8 +23,6 @@
 extern "C" {
 #endif
 
-#define CELIX_EARPM_SESSION_EXPIRY_INTERVAL (10*60) //seconds
-
 /**
  * Topic for the EventAdminMqtt
  * @{
@@ -60,6 +58,15 @@ extern "C" {
 
 #define CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS "CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS"
 #define CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS_DEFAULT 5
+
+#define CELIX_EARPM_CTRL_MSG_REQUEST_TIMEOUT "CELIX_EARPM_CTRL_MSG_REQUEST_TIMEOUT"
+#define CELIX_EARPM_CTRL_MSG_REQUEST_TIMEOUT_DEFAULT 30 //seconds
+
+/**
+ * @brief If remote framework does not ack a sync event in specified time, and the exception count is larger than this value, the event remote provider will not wait for the ack anymore, until receiving a new message from the remote framework.
+ */
+#define CELIX_EARPM_SYNC_EVENT_CONTINUOUS_NO_ACK_THRESHOLD "CELIX_EARPM_SYNC_EVENT_CONTINUOUS_NO_ACK_THRESHOLD"
+#define CELIX_EARPM_SYNC_EVENT_CONTINUOUS_NO_ACK_THRESHOLD_DEFAULT 5
 
 /** @}*///end of Configuration properties for the EventAdminMqtt
 

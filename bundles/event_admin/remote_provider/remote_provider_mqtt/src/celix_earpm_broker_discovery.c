@@ -71,7 +71,7 @@ static void celix_earpmDiscovery_onProfileScheduledEvent(void* data);
 
 celix_earpm_broker_discovery_t* celix_earpmDiscovery_create(celix_bundle_context_t* ctx) {
     assert(ctx != NULL);
-    celix_autoptr(celix_log_helper_t) logHelper = celix_logHelper_create(ctx, "CELIX_EARPM_DISCOVERY");
+    celix_autoptr(celix_log_helper_t) logHelper = celix_logHelper_create(ctx, "celix_earpm_discovery");
     if (logHelper == NULL) {
         return NULL;
     }

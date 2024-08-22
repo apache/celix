@@ -23,7 +23,6 @@
 extern "C" {
 #endif
 #include <time.h>
-#include <mosquitto.h>
 
 #include "celix_errno.h"
 #include "celix_cleanup.h"
@@ -35,15 +34,16 @@ extern "C" {
 
 
 typedef struct celix_earpm_client celix_earpm_client_t;
+typedef struct celix_earpm_client_request_info celix_earpm_client_request_info_t;
 
-typedef void (*celix_earpm_client_receive_msg_fp)(void* handle, const char* topic, const char* payload, size_t payloadSize, const mosquitto_property *props);
+typedef void (*celix_earpm_client_receive_msg_fp)(void* handle, const celix_earpm_client_request_info_t* requestInfo);
 typedef void (*celix_earpm_client_connected_fp)(void* handle);
 
 typedef struct celix_earpm_client_create_options {
     celix_bundle_context_t* ctx;
     celix_log_helper_t* logHelper;
-    const char* sessionEndTopic;
-    const mosquitto_property* sessionEndProps;
+    const char* sessionEndMsgTopic;
+    const char* sessionEndMsgSenderUUID;
     void* callbackHandle;
     celix_earpm_client_receive_msg_fp receiveMsgCallback;
     celix_earpm_client_connected_fp connectedCallback;
@@ -61,6 +61,20 @@ typedef enum celix_earpm_client_message_priority {
     CELIX_EARPM_MSG_PRI_HIGH = 2,
 } celix_earpm_client_message_priority_e;
 
+struct celix_earpm_client_request_info {
+    const char* topic;
+    const char* payload;
+    size_t payloadSize;
+    celix_earpm_qos_e qos;
+    celix_earpm_client_message_priority_e pri;
+    double expiryInterval;//seconds
+    const char* responseTopic;
+    const void* correlationData;
+    size_t correlationDataSize;
+    const char* senderUUID;
+    const char* version;
+};
+
 celix_earpm_client_t* celix_earpmClient_create(celix_earpm_client_create_options_t* options);
 
 void celix_earpmClient_destroy(celix_earpm_client_t* client);
@@ -74,9 +88,9 @@ celix_status_t celix_earpmClient_mqttBrokerEndpointRemoved(void* handle, const e
 celix_status_t celix_earpmClient_subscribe(celix_earpm_client_t* client, const char* topic, celix_earpm_qos_e qos);
 celix_status_t celix_earpmClient_unsubscribe(celix_earpm_client_t* client, const char* topic);
 
-celix_status_t celix_earpmClient_publishAsync(celix_earpm_client_t* client, const char* topic, const char* payload, size_t payloadSize, celix_earpm_qos_e qos, const mosquitto_property* mqttProps, celix_earpm_client_message_priority_e pri);
+celix_status_t celix_earpmClient_publishAsync(celix_earpm_client_t* client, const celix_earpm_client_request_info_t* requestInfo);
 
-celix_status_t celix_earpmClient_publishSync(celix_earpm_client_t* client, const char* topic, const char* payload, size_t payloadSize, celix_earpm_qos_e qos, const mosquitto_property* mqttProps, const struct timespec* absTime);
+celix_status_t celix_earpmClient_publishSync(celix_earpm_client_t* client, const celix_earpm_client_request_info_t* requestInfo);
 
 
 

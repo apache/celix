@@ -24,12 +24,17 @@
 #include "celix_framework_factory.h"
 #include "celix_constants.h"
 #include "celix_log_constants.h"
+#include "celix_log_service.h"
+#include "celix_log_utils.h"
 #include <gtest/gtest.h>
+#include <mutex>
+#include <condition_variable>
+#include <vector>
 
 class CelixEarpmTestSuiteBaseClass : public ::testing::Test {
 public:
     CelixEarpmTestSuiteBaseClass() = delete;
-    explicit CelixEarpmTestSuiteBaseClass(const char* testCache) {
+    explicit CelixEarpmTestSuiteBaseClass(const char* testCache, const char* logServiceName = "celix_earpm") {
         auto props = celix_properties_create();
         celix_properties_set(props, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, "true");
         celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, testCache);
@@ -40,13 +45,49 @@ public:
         ctx = std::shared_ptr < celix_bundle_context_t >
               {celix_framework_getFrameworkContext(fw.get()), [](celix_bundle_context_t *) {/*nop*/}};
         fwUUID = celix_bundleContext_getProperty(ctx.get(), CELIX_FRAMEWORK_UUID, "");
+        logServiceName_ = logServiceName;
+        logService.handle = this;
+        logService.vlogDetails = [](void *handle, celix_log_level_e level, const char* file, const char* function,
+                int line, const char* format, va_list formatArgs) {
+            auto self = static_cast<CelixEarpmTestSuiteBaseClass *>(handle);
+            celix_logUtils_vLogToStdoutDetails(self->logServiceName_.c_str(), level, file, function, line, format, formatArgs);
+            std::lock_guard<std::mutex> lockGuard{self->logMessagesMutex};
+            self->logMessages.emplace_back(format);
+            self->logMessagesCond.notify_all();
+        };
+        celix_service_registration_options_t opts{};
+        opts.svc = &logService;
+        opts.serviceName = CELIX_LOG_SERVICE_NAME;
+        opts.serviceVersion = CELIX_LOG_SERVICE_VERSION;
+        opts.properties = celix_properties_create();
+        EXPECT_NE(nullptr, opts.properties);
+        celix_properties_set(opts.properties, CELIX_LOG_SERVICE_PROPERTY_NAME, logServiceName);
+        logServiceId = celix_bundleContext_registerServiceWithOptions(ctx.get(), &opts);
+        EXPECT_LE(0, logServiceId);
     }
 
-    virtual ~CelixEarpmTestSuiteBaseClass() = default;
+    ~CelixEarpmTestSuiteBaseClass() override {
+        celix_bundleContext_unregisterService(ctx.get(), logServiceId);
+    }
+
+    auto WaitForLogMessage(const std::string &msg, int timeoutInMs = 30000) {
+        std::unique_lock<std::mutex> lock{logMessagesMutex};
+        return logMessagesCond.wait_for(lock, std::chrono::milliseconds{timeoutInMs}, [&] {
+            return std::find_if(logMessages.rbegin(), logMessages.rend(), [msg](const std::string &m) {
+                return m.find(msg) != std::string::npos;
+            }) != logMessages.rend();
+        });
+    }
 
     std::shared_ptr<celix_framework_t> fw{};
     std::shared_ptr<celix_bundle_context_t> ctx{};
     std::string fwUUID{};
+    std::string logServiceName_{};
+    celix_log_service_t logService{};
+    long logServiceId{-1};
+    std::vector<std::string> logMessages{};
+    std::mutex logMessagesMutex{};
+    std::condition_variable logMessagesCond{};
 };
 
 #endif //CELIX_EARPM_TEST_SUITE_BASE_CLASS_H

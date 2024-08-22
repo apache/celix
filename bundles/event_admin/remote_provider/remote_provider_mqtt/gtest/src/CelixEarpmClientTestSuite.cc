@@ -24,8 +24,8 @@
 #include <future>
 #include <thread>
 #include <netinet/in.h>
-#include <mqtt_protocol.h>
 #include <mosquitto.h>
+#include <mqtt_protocol.h>
 #include <uuid/uuid.h>
 
 #include "celix_earpm_client.h"
@@ -36,7 +36,6 @@
 #include "remote_constants.h"
 #include "celix_log_helper.h"
 #include "celix_earpm_broker_discovery.h"
-#include "celix_threads.h"
 
 namespace {
 constexpr const char *MQTT_BROKER_ADDRESS = "127.0.0.1";
@@ -47,12 +46,10 @@ constexpr int MQTT_BROKER_PORT = 1883;
     memset(&opts, 0, sizeof(opts));                                                                                         \
     opts.ctx = ctx.get();                                                                                                   \
     opts.logHelper = logHelper.get();                                                                                       \
-    opts.sessionEndTopic = CELIX_EARPM_SESSION_END_TOPIC;                                                                   \
-    celix_autoptr(mosquitto_property) sessionEndProps = nullptr;                                                            \
-    mosquitto_property_add_string_pair(&sessionEndProps, MQTT_PROP_USER_PROPERTY, CELIX_FRAMEWORK_UUID, fwUUID.c_str());    \
-    opts.sessionEndProps = sessionEndProps;                                                                                 \
+    opts.sessionEndMsgTopic = CELIX_EARPM_SESSION_END_TOPIC;                                                                \
+    opts.sessionEndMsgSenderUUID = fwUUID.c_str();                                                                          \
     opts.callbackHandle = nullptr;                                                                                          \
-    opts.receiveMsgCallback = [](void*, const char*, const char*, size_t, const mosquitto_property*) {};                    \
+    opts.receiveMsgCallback = [](void*, const celix_earpm_client_request_info_t*) {};                                       \
     opts.connectedCallback = [](void*) {};
 
 
@@ -68,9 +65,11 @@ public:
         }
         testMosqClient = mosquitto_new(nullptr, true, nullptr);
         ASSERT_NE(testMosqClient, nullptr);
+        auto rc = mosquitto_int_option(testMosqClient, MOSQ_OPT_PROTOCOL_VERSION, MQTT_PROTOCOL_V5);
+        EXPECT_EQ(rc, MOSQ_ERR_SUCCESS);
         for (int i = 0; i < 6000; ++i) {
             if(mosquitto_connect_bind_v5(testMosqClient, MQTT_BROKER_ADDRESS, MQTT_BROKER_PORT, 60, nullptr, nullptr) == MOSQ_ERR_SUCCESS) {
-                int rc = mosquitto_loop_start(testMosqClient);
+                rc = mosquitto_loop_start(testMosqClient);
                 ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
                 return;
             }
@@ -156,21 +155,21 @@ public:
     }
 
     void TestClient(const std::function<void (celix_earpm_client_t*)>& testBody, const std::function<void (void)>& connectedCallback,
-                              const std::function<void (const char*, const char*, size_t, const mosquitto_property*)>& receiveMsgCallBack = [](const char*, const char*, size_t, const mosquitto_property*){}) {
+                              const std::function<void (const celix_earpm_client_request_info_t*)>& receiveMsgCallBack = [](const celix_earpm_client_request_info_t*){}) {
         celix_earpm_client_create_options_t opts;
         CELIX_EARPM_CLIENT_CREATE_OPTIONS_INIT(opts);
         struct callback_data {
             std::function<void (void)> connectedCallback;
-            std::function<void (const char*, const char*, size_t, const mosquitto_property*)> receiveMsgCallback;
+            std::function<void (const celix_earpm_client_request_info_t*)> receiveMsgCallback;
         } callbackData{connectedCallback, receiveMsgCallBack};
         opts.callbackHandle = &callbackData;
         opts.connectedCallback = [](void* handle) {
             auto callbackData = static_cast<struct callback_data*>(handle);
             callbackData->connectedCallback();
         };
-        opts.receiveMsgCallback = [](void* handle, const char* topic, const char* payload, size_t payloadSize, const mosquitto_property *props) {
+        opts.receiveMsgCallback = [](void* handle, const celix_earpm_client_request_info_t* requestInfo) {
             auto callbackData = static_cast<struct callback_data*>(handle);
-            callbackData->receiveMsgCallback(topic, payload, payloadSize, props);
+            callbackData->receiveMsgCallback(requestInfo);
         };
         auto* client = celix_earpmClient_create(&opts);
         ASSERT_NE(client, nullptr);
@@ -190,7 +189,7 @@ public:
     }
 
     void TestClientAfterConnectedBroker(const std::function<void (celix_earpm_client_t*)>& testBody,
-                                        const std::function<void (const char*, const char*, size_t, const mosquitto_property*)>& receiveMsgCallBack = [](const char*, const char*, size_t, const mosquitto_property*){}) {
+                                        const std::function<void (const celix_earpm_client_request_info_t*)>& receiveMsgCallBack = [](const celix_earpm_client_request_info_t*){}) {
         std::promise<void> clientConnectedPromise;
         auto clientConnectedFuture = clientConnectedPromise.get_future();
         TestClient([&clientConnectedFuture, testBody](celix_earpm_client_t* client) {
@@ -361,24 +360,42 @@ TEST_F(CelixEarpmClientTestSuite, MqttBrokerEndpointWithInvalidSocketDomainTest)
 
 TEST_F(CelixEarpmClientTestSuite, PublishAsyncQos0MsgWhenUnconnetToBrokerTest) {
     TestClient([](celix_earpm_client_t* client) {
-        auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_MOST_ONCE,
-                                                     nullptr, CELIX_EARPM_MSG_PRI_LOW);
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_AT_MOST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        auto status = celix_earpmClient_publishAsync(client, &requestInfo);
         EXPECT_EQ(status, ENOTCONN);
     });
 }
 
 TEST_F(CelixEarpmClientTestSuite, PublishAsyncQos1MsgWhenUnconnetToBrokerTest) {
     TestClient([](celix_earpm_client_t* client) {
-        auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_LEAST_ONCE,
-                                                     nullptr, CELIX_EARPM_MSG_PRI_LOW);
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_AT_LEAST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        auto status = celix_earpmClient_publishAsync(client, &requestInfo);
         EXPECT_EQ(status, CELIX_SUCCESS);
     });
 }
 
 TEST_F(CelixEarpmClientTestSuite, PublishAsyncQos2MsgWhenUnconnetToBrokerTest) {
     TestClient([](celix_earpm_client_t* client) {
-        auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_EXACTLY_ONCE,
-                                                     nullptr, CELIX_EARPM_MSG_PRI_LOW);
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_EXACTLY_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        auto status = celix_earpmClient_publishAsync(client, &requestInfo);
         EXPECT_EQ(status, CELIX_SUCCESS);
     });
 }
@@ -388,14 +405,20 @@ TEST_F(CelixEarpmClientTestSuite, PublishAsyncLowPriorityMsgWhenMsgQueueHungryTe
     setenv(CELIX_EARPM_MSG_QUEUE_CAPACITY, std::to_string(msgQueueCapacity).c_str(), 1);
     setenv(CELIX_EARPM_PARALLEL_MSG_CAPACITY, "1", 1);
     TestClient([](celix_earpm_client_t* client) {
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_AT_LEAST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_HIGH;
         for (int i = 0; i < msgQueueCapacity*70/100; ++i) {
-            auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_LEAST_ONCE,
-                                                         nullptr, CELIX_EARPM_MSG_PRI_HIGH);
+            auto status = celix_earpmClient_publishAsync(client, &requestInfo);
             EXPECT_EQ(status, CELIX_SUCCESS);
         }
 
-        auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_LEAST_ONCE,
-                                                nullptr, CELIX_EARPM_MSG_PRI_LOW);
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        auto status = celix_earpmClient_publishAsync(client, &requestInfo);
         EXPECT_EQ(status, ENOMEM);
     });
     unsetenv(CELIX_EARPM_PARALLEL_MSG_CAPACITY);
@@ -407,14 +430,19 @@ TEST_F(CelixEarpmClientTestSuite, PublishAsyncMiddlePriorityMsgWhenMsgQueueHungr
     setenv(CELIX_EARPM_MSG_QUEUE_CAPACITY, std::to_string(msgQueueCapacity).c_str(), 1);
     setenv(CELIX_EARPM_PARALLEL_MSG_CAPACITY, "1", 1);
     TestClient([](celix_earpm_client_t* client) {
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_AT_LEAST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_HIGH;
         for (int i = 0; i < msgQueueCapacity*85/100; ++i) {
-            auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_LEAST_ONCE,
-                                                         nullptr, CELIX_EARPM_MSG_PRI_HIGH);
+            auto status = celix_earpmClient_publishAsync(client, &requestInfo);
             EXPECT_EQ(status, CELIX_SUCCESS);
         }
-
-        auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_LEAST_ONCE,
-                                                nullptr, CELIX_EARPM_MSG_PRI_MIDDLE);
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_MIDDLE;
+        auto status = celix_earpmClient_publishAsync(client, &requestInfo);
         EXPECT_EQ(status, ENOMEM);
     });
     unsetenv(CELIX_EARPM_PARALLEL_MSG_CAPACITY);
@@ -426,14 +454,19 @@ TEST_F(CelixEarpmClientTestSuite, PublishAsyncHighPriorityMsgWhenMsgQueueHungryT
     setenv(CELIX_EARPM_MSG_QUEUE_CAPACITY, std::to_string(msgQueueCapacity).c_str(), 1);
     setenv(CELIX_EARPM_PARALLEL_MSG_CAPACITY, "1", 1);
     TestClient([](celix_earpm_client_t* client) {
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_AT_LEAST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_HIGH;
         for (int i = 0; i < msgQueueCapacity; ++i) {
-            auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_LEAST_ONCE,
-                                                         nullptr, CELIX_EARPM_MSG_PRI_HIGH);
+            auto status = celix_earpmClient_publishAsync(client, &requestInfo);
             EXPECT_EQ(status, CELIX_SUCCESS);
         }
 
-        auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_LEAST_ONCE,
-                                                     nullptr, CELIX_EARPM_MSG_PRI_HIGH);
+        auto status = celix_earpmClient_publishAsync(client, &requestInfo);
         EXPECT_EQ(status, ENOMEM);
     });
     unsetenv(CELIX_EARPM_PARALLEL_MSG_CAPACITY);
@@ -442,55 +475,147 @@ TEST_F(CelixEarpmClientTestSuite, PublishAsyncHighPriorityMsgWhenMsgQueueHungryT
 
 TEST_F(CelixEarpmClientTestSuite, PublishSyncQos0MsgWhenUnconnetToBrokerTest) {
     TestClient([](celix_earpm_client_t* client) {
-        struct timespec timeoutUntil = celixThreadCondition_getDelayedTime(30);
-        auto status = celix_earpmClient_publishSync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_MOST_ONCE,
-                                                    nullptr, &timeoutUntil);
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_AT_MOST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        requestInfo.expiryInterval = 30;
+        auto status = celix_earpmClient_publishSync(client, &requestInfo);
         EXPECT_EQ(status, ENOTCONN);
     });
 }
 
 TEST_F(CelixEarpmClientTestSuite, PublishSyncQos1MsgWhenUnconnetToBrokerTest) {
     TestClient([](celix_earpm_client_t* client) {
-        struct timespec timeoutUntil = celixThreadCondition_getDelayedTime(0.01);
-        auto status = celix_earpmClient_publishSync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_LEAST_ONCE,
-                                                    nullptr, &timeoutUntil);
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_AT_LEAST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        requestInfo.expiryInterval = 0.01;
+        auto status = celix_earpmClient_publishSync(client, &requestInfo);
         EXPECT_EQ(status, ETIMEDOUT);
     });
 }
 
 TEST_F(CelixEarpmClientTestSuite, PublishSyncQos2MsgWhenUnconnetToBrokerTest) {
     TestClient([](celix_earpm_client_t* client) {
-        struct timespec timeoutUntil = celixThreadCondition_getDelayedTime(0.01);
-        auto status = celix_earpmClient_publishSync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_EXACTLY_ONCE,
-                                                    nullptr, &timeoutUntil);
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_EXACTLY_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        requestInfo.expiryInterval = 0.01;
+        auto status = celix_earpmClient_publishSync(client, &requestInfo);
         EXPECT_EQ(status, ETIMEDOUT);
     });
 }
 
 TEST_F(CelixEarpmClientTestSuite, PublishSyncQOS0MsgTest) {
     TestClientAfterConnectedBroker([](celix_earpm_client_t* client) {
-        struct timespec timeout = celixThreadCondition_getDelayedTime(30);
-        auto status = celix_earpmClient_publishSync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_MOST_ONCE,
-                                                    nullptr, &timeout);
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_AT_MOST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        requestInfo.expiryInterval = 30;
+        requestInfo.responseTopic = "test/response/topic";
+        long correlationData = 0;
+        requestInfo.correlationData = &correlationData;
+        requestInfo.correlationDataSize = sizeof(correlationData);
+        requestInfo.senderUUID = "9d5b0a58-1e6f-4c4f-bd00-7298914b1a76";
+        requestInfo.version = "1.0.0";
+        auto status = celix_earpmClient_publishSync(client, &requestInfo);
         EXPECT_EQ(status, CELIX_SUCCESS);
     });
 }
 
 TEST_F(CelixEarpmClientTestSuite, PublishSyncQOS1MsgTest) {
     TestClientAfterConnectedBroker([](celix_earpm_client_t* client) {
-        struct timespec timeout = celixThreadCondition_getDelayedTime(30);
-        auto status = celix_earpmClient_publishSync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_LEAST_ONCE,
-                                                    nullptr, &timeout);
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_AT_LEAST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        requestInfo.expiryInterval = 30;
+        requestInfo.responseTopic = "test/response/topic";
+        long correlationData = 0;
+        requestInfo.correlationData = &correlationData;
+        requestInfo.correlationDataSize = sizeof(correlationData);
+        requestInfo.senderUUID = "9d5b0a58-1e6f-4c4f-bd00-7298914b1a76";
+        requestInfo.version = "1.0.0";
+        auto status = celix_earpmClient_publishSync(client, &requestInfo);
         EXPECT_EQ(status, CELIX_SUCCESS);
     });
 }
 
 TEST_F(CelixEarpmClientTestSuite, PublishSyncQOS2MsgTest) {
     TestClientAfterConnectedBroker([](celix_earpm_client_t* client) {
-        struct timespec timeout = celixThreadCondition_getDelayedTime(30);
-        auto status = celix_earpmClient_publishSync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_EXACTLY_ONCE,
-                                                    nullptr, &timeout);
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_EXACTLY_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        requestInfo.expiryInterval = 30;
+        requestInfo.responseTopic = "test/response/topic";
+        long correlationData = 0;
+        requestInfo.correlationData = &correlationData;
+        requestInfo.correlationDataSize = sizeof(correlationData);
+        requestInfo.senderUUID = "9d5b0a58-1e6f-4c4f-bd00-7298914b1a76";
+        requestInfo.version = "1.0.0";
+        auto status = celix_earpmClient_publishSync(client, &requestInfo);
         EXPECT_EQ(status, CELIX_SUCCESS);
+    });
+}
+
+TEST_F(CelixEarpmClientTestSuite, PublishSyncMsgWithInvalidTopicTest) {
+    TestClient([](celix_earpm_client_t* client) {
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = nullptr;
+        auto status = celix_earpmClient_publishSync(client, &requestInfo);
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+    });
+}
+
+TEST_F(CelixEarpmClientTestSuite, PublishSyncMsgWithInvalidQosTest) {
+    TestClient([](celix_earpm_client_t* client) {
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.qos = CELIX_EARPM_QOS_UNKNOWN;
+        auto status = celix_earpmClient_publishSync(client, &requestInfo);
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+        requestInfo.qos = CELIX_EARPM_QOS_MAX;
+        status = celix_earpmClient_publishSync(client, &requestInfo);
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+    });
+}
+
+TEST_F(CelixEarpmClientTestSuite, PublishSyncMsgWithInvalidPriorityTest) {
+    TestClient([](celix_earpm_client_t* client) {
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.pri = (celix_earpm_client_message_priority_e)(CELIX_EARPM_MSG_PRI_LOW - 1);
+        auto status = celix_earpmClient_publishSync(client, &requestInfo);
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+        requestInfo.pri = (celix_earpm_client_message_priority_e)(CELIX_EARPM_MSG_PRI_HIGH + 1);
+        status = celix_earpmClient_publishSync(client, &requestInfo);
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
     });
 }
 
@@ -509,28 +634,35 @@ TEST_F(CelixEarpmClientTestSuite, PublishSyncMsgWhenMsgQueueHungryTest) {
         auto result = clientConnectedFuture.wait_for(std::chrono::seconds(30));
         ASSERT_EQ(result, std::future_status::ready);
 
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_AT_LEAST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_HIGH;
         for (int i = 0; i < msgQueueCapacity*70/100; ++i) {
-            auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_LEAST_ONCE,
-                                                         nullptr, CELIX_EARPM_MSG_PRI_HIGH);
+            auto status = celix_earpmClient_publishAsync(client, &requestInfo);
             EXPECT_EQ(status, CELIX_SUCCESS);
         }
 
         //QOS0 msg
-        struct timespec timeoutUntil = celixThreadCondition_getDelayedTime(0.01);
-        auto status = celix_earpmClient_publishSync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_MOST_ONCE,
-                                                    nullptr, &timeoutUntil);
+        requestInfo.qos = CELIX_EARPM_QOS_AT_MOST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        requestInfo.expiryInterval = 0.01;
+        auto status = celix_earpmClient_publishSync(client, &requestInfo);
         EXPECT_EQ(status, ENOMEM);
 
         //QOS1 msg
-        timeoutUntil = celixThreadCondition_getDelayedTime(0.01);
-        status = celix_earpmClient_publishSync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_LEAST_ONCE,
-                                               nullptr, &timeoutUntil);
+        requestInfo.qos = CELIX_EARPM_QOS_AT_LEAST_ONCE;
+        requestInfo.expiryInterval = 0.01;
+        status = celix_earpmClient_publishSync(client,&requestInfo);
         EXPECT_EQ(status, ETIMEDOUT);
 
         //QOS2 msg
-        timeoutUntil = celixThreadCondition_getDelayedTime(0.01);
-        status = celix_earpmClient_publishSync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_EXACTLY_ONCE,
-                                               nullptr, &timeoutUntil);
+        requestInfo.qos = CELIX_EARPM_QOS_EXACTLY_ONCE;
+        requestInfo.expiryInterval = 0.01;
+        status = celix_earpmClient_publishSync(client, &requestInfo);
         EXPECT_EQ(status, ETIMEDOUT);
 
         mqttThreadContinuePromise.set_value();// notify mqtt thread continue
@@ -547,36 +679,102 @@ TEST_F(CelixEarpmClientTestSuite, PublishSyncMsgWhenMsgQueueHungryTest) {
 
 TEST_F(CelixEarpmClientTestSuite, PublishAsyncQos0MsgTest) {
     TestClientAfterConnectedBroker([](celix_earpm_client_t* client) {
-        auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_MOST_ONCE,
-                                                     nullptr, CELIX_EARPM_MSG_PRI_LOW);
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_AT_MOST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        requestInfo.senderUUID = "9d5b0a58-1e6f-4c4f-bd00-7298914b1a76";
+        requestInfo.version = "1.0.0";
+        auto status = celix_earpmClient_publishAsync(client, &requestInfo);
         EXPECT_EQ(status, CELIX_SUCCESS);
     });
 }
 
 TEST_F(CelixEarpmClientTestSuite, PublishAsyncQos1MsgTest) {
     TestClientAfterConnectedBroker([](celix_earpm_client_t* client) {
-        auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_LEAST_ONCE,
-                                                     nullptr, CELIX_EARPM_MSG_PRI_LOW);
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_AT_LEAST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        requestInfo.senderUUID = "9d5b0a58-1e6f-4c4f-bd00-7298914b1a76";
+        requestInfo.version = "1.0.0";
+        auto status = celix_earpmClient_publishAsync(client, &requestInfo);
         EXPECT_EQ(status, CELIX_SUCCESS);
     });
 }
 
 TEST_F(CelixEarpmClientTestSuite, PublishAsyncQos2MsgTest) {
     TestClientAfterConnectedBroker([](celix_earpm_client_t* client) {
-        auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_EXACTLY_ONCE,
-                                                     nullptr, CELIX_EARPM_MSG_PRI_LOW);
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_EXACTLY_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+        requestInfo.senderUUID = "9d5b0a58-1e6f-4c4f-bd00-7298914b1a76";
+        requestInfo.version = "1.0.0";
+        auto status = celix_earpmClient_publishAsync(client, &requestInfo);
         EXPECT_EQ(status, CELIX_SUCCESS);
+    });
+}
+
+TEST_F(CelixEarpmClientTestSuite, PublishAsyncMsgWithInvalidTopicTest) {
+    TestClient([](celix_earpm_client_t* client) {
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = nullptr;
+        auto status = celix_earpmClient_publishAsync(client, &requestInfo);
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+    });
+}
+
+TEST_F(CelixEarpmClientTestSuite, PublishAsyncMsgWithInvalidQosTest) {
+    TestClient([](celix_earpm_client_t* client) {
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.qos = CELIX_EARPM_QOS_UNKNOWN;
+        auto status = celix_earpmClient_publishAsync(client, &requestInfo);
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+        requestInfo.qos = CELIX_EARPM_QOS_MAX;
+        status = celix_earpmClient_publishAsync(client, &requestInfo);
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+    });
+}
+
+TEST_F(CelixEarpmClientTestSuite, PublishAsyncMsgWithInvalidPriorityTest) {
+    TestClient([](celix_earpm_client_t* client) {
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.pri = (celix_earpm_client_message_priority_e)(CELIX_EARPM_MSG_PRI_LOW - 1);
+        auto status = celix_earpmClient_publishAsync(client, &requestInfo);
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+        requestInfo.pri = (celix_earpm_client_message_priority_e)(CELIX_EARPM_MSG_PRI_HIGH + 1);
+        status = celix_earpmClient_publishAsync(client, &requestInfo);
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
     });
 }
 
 TEST_F(CelixEarpmClientTestSuite, PublishMsgBeforeConnectedTest) {
     TestClient([](celix_earpm_client_t* client) {
         std::future<void> future = std::async(std::launch::async, [client](){
-            celix_autoptr(mosquitto_property) props = nullptr;
-            mosquitto_property_add_string_pair(&props, MQTT_PROP_USER_PROPERTY, "key", "val");
-            struct timespec timeoutUntil = celixThreadCondition_getDelayedTime(30);
-            auto status = celix_earpmClient_publishSync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_LEAST_ONCE,
-                                                        props, &timeoutUntil);
+            celix_earpm_client_request_info_t requestInfo;
+            memset(&requestInfo, 0, sizeof(requestInfo));
+            requestInfo.topic = "test/topic";
+            requestInfo.payload = "test";
+            requestInfo.payloadSize = 4;
+            requestInfo.qos = CELIX_EARPM_QOS_AT_LEAST_ONCE;
+            requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
+            requestInfo.expiryInterval = 30;
+            auto status = celix_earpmClient_publishSync(client, &requestInfo);
             EXPECT_EQ(status, CELIX_SUCCESS);
         });
 
@@ -604,9 +802,15 @@ TEST_F(CelixEarpmClientTestSuite, PublishAsyncMsgAndThenClientDestroyTest) {
         auto result = clientConnectedFuture.wait_for(std::chrono::seconds(30));
         ASSERT_EQ(result, std::future_status::ready);
 
+        celix_earpm_client_request_info_t requestInfo;
+        memset(&requestInfo, 0, sizeof(requestInfo));
+        requestInfo.topic = "test/topic";
+        requestInfo.payload = "test";
+        requestInfo.payloadSize = 4;
+        requestInfo.qos = CELIX_EARPM_QOS_AT_MOST_ONCE;
+        requestInfo.pri = CELIX_EARPM_MSG_PRI_HIGH;
         for (int i = 0; i < CELIX_EARPM_MSG_QUEUE_CAPACITY_DEFAULT; ++i) {
-            auto status = celix_earpmClient_publishAsync(client, "test/topic", "test", 4, CELIX_EARPM_QOS_AT_MOST_ONCE,
-                                                         nullptr, CELIX_EARPM_MSG_PRI_HIGH);
+            auto status = celix_earpmClient_publishAsync(client, &requestInfo);
             EXPECT_EQ(status, CELIX_SUCCESS);
         }
         msgPublishedPromise.set_value();// notify the message published
@@ -640,9 +844,9 @@ TEST_F(CelixEarpmClientTestSuite, SubscribeMessageWithSpecialTopicTest) {
         EXPECT_EQ(result, std::future_status::ready);
         status = celix_earpmClient_unsubscribe(client, "test/topic1");
         EXPECT_EQ(status, CELIX_SUCCESS);
-    }, [&receivedPromise](const char* topic, const char* payload, size_t, const mosquitto_property*){
-        EXPECT_STREQ(topic, "test/topic1");
-        EXPECT_STREQ(payload, "test");
+    }, [&receivedPromise](const celix_earpm_client_request_info_t* requestInfo){
+        EXPECT_STREQ(requestInfo->topic, "test/topic1");
+        EXPECT_STREQ(requestInfo->payload, "test");
         try {
             receivedPromise.set_value();
         } catch (...) {
@@ -666,9 +870,9 @@ TEST_F(CelixEarpmClientTestSuite, SubscribeMessageWithPatternTopicTest) {
 
         status = celix_earpmClient_unsubscribe(client, "test1/*");
         EXPECT_EQ(status, CELIX_SUCCESS);
-    }, [&receivedPromise](const char* topic, const char* payload, size_t, const mosquitto_property*){
-        EXPECT_STREQ(topic, "test1/topic1");
-        EXPECT_STREQ(payload, "test");
+    }, [&receivedPromise](const celix_earpm_client_request_info_t* requestInfo){
+        EXPECT_STREQ(requestInfo->topic, "test1/topic1");
+        EXPECT_STREQ(requestInfo->payload, "test");
         try {
             receivedPromise.set_value();
         } catch (...) {
@@ -684,10 +888,10 @@ TEST_F(CelixEarpmClientTestSuite, SubscribeBeforeConnectedToBrokerTest) {
     CELIX_EARPM_CLIENT_CREATE_OPTIONS_INIT(opts);
     opts.callbackHandle = &receivedPromise;
     opts.connectedCallback = [](void*) { };
-    opts.receiveMsgCallback = [](void* handle, const char* topic, const char* payload, size_t, const mosquitto_property*) {
+    opts.receiveMsgCallback = [](void* handle, const celix_earpm_client_request_info_t* requestInfo) {
         auto receivedPromise = static_cast<std::promise<void>*>(handle);
-        EXPECT_STREQ(topic, "test/topic2");
-        EXPECT_STREQ(payload, "test");
+        EXPECT_STREQ(requestInfo->topic, "test/topic2");
+        EXPECT_STREQ(requestInfo->payload, "test");
         try {
             receivedPromise->set_value();
         } catch (...) {
@@ -726,7 +930,7 @@ TEST_F(CelixEarpmClientTestSuite, UnsubscribeBeforeConnectedToBrokerTest) {
     CELIX_EARPM_CLIENT_CREATE_OPTIONS_INIT(opts);
     opts.callbackHandle = &receivedPromise;
     opts.connectedCallback = [](void*) { };
-    opts.receiveMsgCallback = [](void* handle, const char*, const char*, size_t, const mosquitto_property*) {
+    opts.receiveMsgCallback = [](void* handle, const celix_earpm_client_request_info_t*) {
         auto receivedPromise = static_cast<std::promise<void>*>(handle);
         receivedPromise->set_value();
     };
@@ -795,6 +999,59 @@ TEST_F(CelixEarpmClientTestSuite, UnsubscribeWithInvalidTopicTest) {
 
         status = celix_earpmClient_unsubscribe(client, "#a");
         EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+    });
+}
+
+TEST_F(CelixEarpmClientTestSuite, ReceiveMessageTest) {
+    std::promise<void> receivedPromise;
+    auto receivedFuture = receivedPromise.get_future();
+
+    TestClientAfterConnectedBroker([&receivedFuture](celix_earpm_client_t* client) {
+        auto status = celix_earpmClient_subscribe(client, "test/message", CELIX_EARPM_QOS_AT_LEAST_ONCE);
+        EXPECT_EQ(status, CELIX_SUCCESS);
+
+        celix_autoptr(mosquitto_property) props = nullptr;
+        auto rc = mosquitto_property_add_int32(&props, MQTT_PROP_MESSAGE_EXPIRY_INTERVAL, 10);
+        EXPECT_EQ(rc, MOSQ_ERR_SUCCESS);
+        rc = mosquitto_property_add_string(&props, MQTT_PROP_RESPONSE_TOPIC, "test/response");
+        EXPECT_EQ(rc, MOSQ_ERR_SUCCESS);
+        rc = mosquitto_property_add_binary(&props, MQTT_PROP_CORRELATION_DATA, "1234", 4);
+        EXPECT_EQ(rc, MOSQ_ERR_SUCCESS);
+        rc = mosquitto_property_add_string_pair(&props, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", "9d5b0a58-1e6f-4c4f-bd00-7298914b1a76");
+        EXPECT_EQ(rc, MOSQ_ERR_SUCCESS);
+        rc = mosquitto_property_add_string_pair(&props, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_MSG_VERSION", "1.0.0");
+        EXPECT_EQ(rc, MOSQ_ERR_SUCCESS);
+        rc = mosquitto_publish_v5(testMosqClient, nullptr, "test/message", sizeof("test"), "test", CELIX_EARPM_QOS_AT_LEAST_ONCE,
+                                      true, props);
+        EXPECT_EQ(rc, MOSQ_ERR_SUCCESS);
+        auto result = receivedFuture.wait_for(std::chrono::seconds(30));
+        EXPECT_EQ(result, std::future_status::ready);
+        status = celix_earpmClient_unsubscribe(client, "test/message");
+        EXPECT_EQ(status, CELIX_SUCCESS);
+
+        //clear retained message
+        rc = mosquitto_publish_v5(testMosqClient, nullptr, "test/message", 0, nullptr, CELIX_EARPM_QOS_AT_LEAST_ONCE,
+                                  true, props);
+        EXPECT_EQ(rc, MOSQ_ERR_SUCCESS);
+    }, [&receivedPromise](const celix_earpm_client_request_info_t* requestInfo){
+        EXPECT_STREQ(requestInfo->topic, "test/message");
+        if (requestInfo->payload != nullptr) {
+            EXPECT_STREQ(requestInfo->payload, "test");
+            EXPECT_EQ(requestInfo->payloadSize, sizeof("test"));
+        }
+        EXPECT_EQ(requestInfo->qos, CELIX_EARPM_QOS_AT_LEAST_ONCE);
+        EXPECT_EQ(requestInfo->pri, CELIX_EARPM_MSG_PRI_LOW);
+        EXPECT_EQ(requestInfo->expiryInterval, 10);
+        EXPECT_STREQ(requestInfo->responseTopic, "test/response");
+        EXPECT_EQ(requestInfo->correlationDataSize, 4);
+        EXPECT_EQ(memcmp(requestInfo->correlationData, "1234", 4), 0);
+        EXPECT_STREQ(requestInfo->senderUUID, "9d5b0a58-1e6f-4c4f-bd00-7298914b1a76");
+        EXPECT_STREQ(requestInfo->version, "1.0.0");
+        try {
+            receivedPromise.set_value();
+        } catch (...) {
+            //ignore
+        }
     });
 }
 
