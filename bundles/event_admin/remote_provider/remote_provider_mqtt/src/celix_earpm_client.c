@@ -69,11 +69,10 @@ typedef struct celix_earpm_client_msg {
     size_t payloadSize;
     celix_earpm_qos_e qos;
     celix_earpm_client_message_priority_e pri;
-    bool sync;
     mosquitto_property* mqttProps;
-    long seqNr;
     int mqttMid;
     celix_status_t error;
+    bool processDone;
     struct celix_earpm_client_msg_pool* msgPool;
 }celix_earpm_client_msg_t;
 
@@ -96,7 +95,7 @@ struct celix_earpm_client {
     struct mosquitto* mosq;
     mosquitto_property* connProps;
     mosquitto_property* disconnectProps;
-    celix_thread_t mosqThread;
+    celix_thread_t workerThread;
     celix_thread_mutex_t mutex;// protects belows
     celix_string_hash_map_t* brokerInfoMap;//key = endpoint uuid, value = celix_broker_info_t*
     celix_thread_cond_t brokerInfoChangedOrExiting;
@@ -105,7 +104,6 @@ struct celix_earpm_client {
     celix_earpm_client_msg_pool_t freeMsgPool;
     celix_earpm_client_message_list_t waitingMessages;
     celix_long_hash_map_t* publishingMessages;//key = mid, value = celix_earpmc_message_t*
-    celix_long_hash_map_t* publishedMessages;//key = seqNr, value = celix_earpmc_message_t*
     celix_string_hash_map_t* subscriptions;//key = topic, value = qos
     bool connected;
     bool running;
@@ -118,7 +116,7 @@ static void celix_earpmClient_connectCallback(struct mosquitto* mosq, void* hand
 static void celix_earpmClient_disconnectCallback(struct mosquitto* mosq, void* handle, int rc, const mosquitto_property* props);
 static void celix_earpmClient_messageCallback(struct mosquitto* mosq, void* handle, const struct mosquitto_message* message, const mosquitto_property* props);
 static void celix_earpmClient_publishCallback(struct mosquitto* mosq, void* handle, int mid, int reasonCode, const mosquitto_property* props);
-static void* celix_earpmClient_mosqThread(void* data);
+static void* celix_earpmClient_worker(void* data);
 
 
 static celix_status_t celix_earpmClient_msgPoolInit(celix_earpm_client_msg_pool_t* pool, size_t cap) {
@@ -232,18 +230,6 @@ celix_earpm_client_t* celix_earpmClient_create(celix_earpm_client_create_options
         }
     }
 
-    celix_autoptr(celix_long_hash_map_t) publishedMessages = NULL;
-    {
-        celix_long_hash_map_create_options_t opts = CELIX_EMPTY_LONG_HASH_MAP_CREATE_OPTIONS;
-        opts.simpleRemovedCallback = (void *) celix_earpmClient_messageRelease;
-        publishedMessages = client->publishedMessages = celix_longHashMap_createWithOptions(&opts);
-        if (publishedMessages == NULL) {
-            celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
-            celix_logHelper_error(client->logHelper, "Failed to create published message map.");
-            return NULL;
-        }
-    }
-
     celix_autoptr(celix_string_hash_map_t) subscriptions = client->subscriptions = celix_stringHashMap_create();
     if (subscriptions == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
@@ -296,12 +282,12 @@ celix_earpm_client_t* celix_earpmClient_create(celix_earpm_client_create_options
         return NULL;
     }
     client->running = true;
-    status = celixThread_create(&client->mosqThread, NULL, celix_earpmClient_mosqThread, client);
+    status = celixThread_create(&client->workerThread, NULL, celix_earpmClient_worker, client);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(client->logHelper, "Failed to create mosq thread. %d.", status);
         return NULL;
     }
-    celixThread_setName(&client->mosqThread, "earpm_mosq_th");
+    celixThread_setName(&client->workerThread, "CelixEarpmC");
 
     celix_steal_ptr(mosq);
     celix_steal_ptr(disconnectProps);
@@ -309,7 +295,6 @@ celix_earpm_client_t* celix_earpmClient_create(celix_earpm_client_create_options
     celix_steal_ptr(brokerInfoChanged);
     celix_steal_ptr(brokerInfoMap);
     celix_steal_ptr(subscriptions);
-    celix_steal_ptr(publishedMessages);
     celix_steal_ptr(publishingMessages);
     celix_steal_ptr(freeMsgPool);
     celix_steal_ptr(msgStatusChanged);
@@ -328,14 +313,13 @@ void celix_earpmClient_destroy(celix_earpm_client_t* client) {
         celix_logHelper_error(client->logHelper, "Failed to disconnect mosquitto, will try to force destroy. %d.", rc);
     }
     celixThreadCondition_signal(&client->brokerInfoChangedOrExiting);
-    celixThread_join(client->mosqThread, NULL);
+    celixThread_join(client->workerThread, NULL);
     mosquitto_destroy(client->mosq);
     mosquitto_property_free_all(&client->disconnectProps);
     mosquitto_property_free_all(&client->connProps);
     celixThreadCondition_destroy(&client->brokerInfoChangedOrExiting);
     celix_stringHashMap_destroy(client->brokerInfoMap);
     celix_stringHashMap_destroy(client->subscriptions);
-    celix_longHashMap_destroy(client->publishedMessages);
     celix_longHashMap_destroy(client->publishingMessages);
     celix_earpm_client_msg_t* msg = TAILQ_FIRST(&client->waitingMessages);
     while (msg != NULL) {
@@ -410,7 +394,49 @@ static bool celix_earpmClient_matchIpFamily(const char* address, int family) {
     return false;
 }
 
-static celix_earpm_client_broker_info_t* celix_earpmClient_brokerInfoCreate(const char* addresses, int port, const char* bindInterface, int family) {
+static celix_status_t celix_earpmClient_getBrokerAddressesOrBindInterfaceFromEndpoint(const endpoint_description_t* endpoint,
+                                                  celix_array_list_t** addresses, char** bindInterface) {
+    celix_autoptr(celix_array_list_t) addressList = NULL;
+    celix_autofree char* interfaceName = NULL;
+    celix_status_t status = celix_properties_getAsStringArrayList(endpoint->properties, CELIX_EARPM_MQTT_BROKER_ADDRESS, NULL, &addressList);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+    if (addressList == NULL) {
+        const char* interface = celix_properties_get(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, NULL);
+        if (interface != NULL) {
+            interfaceName = celix_utils_strdup(interface);
+            if (interfaceName== NULL) {
+                return ENOMEM;
+            }
+        }
+        status = celix_properties_getAsStringArrayList(endpoint->properties, CELIX_RSA_IP_ADDRESSES, NULL, &addressList);
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
+    }
+    if (addressList != NULL) {
+        int family = (int)celix_properties_getAsLong(endpoint->properties, CELIX_EARPM_MQTT_BROKER_SOCKET_DOMAIN, AF_UNSPEC);
+        for (int i = celix_arrayList_size(addressList) - 1; i >= 0; --i) {
+            const char* address = celix_arrayList_getString(addressList, i);
+            if (address[0] == '\0' || !celix_earpmClient_matchIpFamily(address, family)) {
+                celix_arrayList_removeAt(addressList, i);
+            }
+        }
+        if (celix_arrayList_size(addressList) == 0) {
+            celix_arrayList_destroy(addressList);
+            addressList = NULL;
+        }
+    }
+    if (addressList == NULL && interfaceName == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    *addresses = celix_steal_ptr(addressList);
+    *bindInterface = celix_steal_ptr(interfaceName);
+    return CELIX_SUCCESS;
+}
+
+static celix_earpm_client_broker_info_t* celix_earpmClient_brokerInfoCreate(celix_array_list_t* addresses, int port, char* bindInterface, int family) {
     celix_autofree celix_earpm_client_broker_info_t* info = calloc(1, sizeof(*info));
     if (info == NULL) {
         errno = ENOMEM;
@@ -419,40 +445,8 @@ static celix_earpm_client_broker_info_t* celix_earpmClient_brokerInfoCreate(cons
     celix_ref_init(&info->ref);
     info->port = port;
     info->family = family;
-    if (bindInterface != NULL) {
-        info->bindInterface = celix_utils_strdup(bindInterface);
-        if (info->bindInterface == NULL) {
-            errno = ENOMEM;
-            return NULL;
-        }
-    } else {
-        celix_autofree char* addressesCopy = celix_utils_strdup(addresses);
-        if (addressesCopy == NULL) {
-            errno = ENOMEM;
-            return NULL;
-        }
-        celix_autoptr(celix_array_list_t) addressList = info->addresses = celix_arrayList_createStringArray();
-        if (info->addresses == NULL) {
-            errno = ENOMEM;
-            return NULL;
-        }
-        char* save = NULL;
-        char* token = strtok_r(addressesCopy, ",", &save);
-        while (token != NULL) {
-            if (celix_earpmClient_matchIpFamily(token, family)) {
-                if (celix_arrayList_addString(info->addresses, token) != CELIX_SUCCESS) {
-                    errno = ENOMEM;
-                    return NULL;
-                }
-            }
-            token = strtok_r(NULL, ",", &save);
-        }
-        if (celix_arrayList_size(addressList) == 0) {
-            errno = EINVAL;
-            return NULL;
-        }
-        celix_steal_ptr(addressList);
-    }
+    info->addresses = addresses;
+    info->bindInterface = bindInterface;
 
     return celix_steal_ptr(info);
 }
@@ -481,24 +475,22 @@ celix_status_t celix_earpmClient_mqttBrokerEndpointAdded(void* handle, const end
     assert(handle != NULL);
     assert(endpoint != NULL);
     celix_earpm_client_t* client = handle;
-    const char* bindInterface = NULL;
     int port = (int)celix_properties_getAsLong(endpoint->properties, CELIX_EARPM_MQTT_BROKER_PORT, 0);
     port = port != 0 ? port : (int)celix_properties_getAsLong(endpoint->properties, CELIX_RSA_PORT, 0);
     if (port < 0) {
+        celix_logHelper_error(client->logHelper, "Invalid mqtt broker port %d.", port);
         return CELIX_ILLEGAL_ARGUMENT;
     }
-    const char* addresses = celix_properties_get(endpoint->properties, CELIX_EARPM_MQTT_BROKER_ADDRESS, NULL);
-    if (addresses == NULL) {
-        addresses = celix_properties_get(endpoint->properties, CELIX_RSA_IP_ADDRESSES, NULL);
-        if (addresses == NULL) {
-            return CELIX_ILLEGAL_ARGUMENT;
-        }
-        bindInterface = celix_properties_get(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, NULL);
-        if (addresses[0] == '\0' && bindInterface == NULL) {
-            return CELIX_ILLEGAL_ARGUMENT;
-        }
+    celix_autoptr(celix_array_list_t) addresses = NULL;
+    celix_autofree char* bindInterface = NULL;
+    celix_status_t status = celix_earpmClient_getBrokerAddressesOrBindInterfaceFromEndpoint(endpoint, &addresses, &bindInterface);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_logTssErrors(client->logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(client->logHelper, "Failed to get broker addresses or bind interface from endpoint. %d.", status);
+        return status;
     }
     int family = (int)celix_properties_getAsLong(endpoint->properties, CELIX_EARPM_MQTT_BROKER_SOCKET_DOMAIN, AF_UNSPEC);
+
     {
         celix_autoptr(celix_earpm_client_broker_info_t) info = celix_earpmClient_brokerInfoCreate(addresses, port,
                                                                                                   bindInterface, family);
@@ -507,8 +499,10 @@ celix_status_t celix_earpmClient_mqttBrokerEndpointAdded(void* handle, const end
             celix_logHelper_error(client->logHelper, "Failed to create broker information.");
             return errno;
         }
+        celix_steal_ptr(addresses);
+        celix_steal_ptr(bindInterface);
         celix_auto(celix_mutex_lock_guard_t) mutexGuard = celixMutexLockGuard_init(&client->mutex);
-        celix_status_t status = celix_stringHashMap_put(client->brokerInfoMap, endpoint->id, info);
+        status = celix_stringHashMap_put(client->brokerInfoMap, endpoint->id, info);
         if (status != CELIX_SUCCESS) {
             celix_logHelper_logTssErrors(client->logHelper, CELIX_LOG_LEVEL_ERROR);
             celix_logHelper_error(client->logHelper, "Failed to add broker information to map. %d.", status);
@@ -517,7 +511,7 @@ celix_status_t celix_earpmClient_mqttBrokerEndpointAdded(void* handle, const end
         celix_steal_ptr(info);
     }
 
-    celix_status_t status = celixThreadCondition_signal(&client->brokerInfoChangedOrExiting);
+    status = celixThreadCondition_signal(&client->brokerInfoChangedOrExiting);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_warning(client->logHelper, "Failed to signal adding broker information. %d.", status);
     }
@@ -630,9 +624,39 @@ static inline bool celix_earpmClient_isPublishingQueueFull(celix_earpm_client_t*
     return celix_longHashMap_size(client->publishingMessages) >= client->parallelMsgCap;
 }
 
-static celix_earpm_client_msg_t* celix_earpmClient_messageCreate(celix_earpm_client_msg_pool_t* msgPool, const char* topic, celix_earpm_qos_e qos,
-                                                                 celix_earpm_client_message_priority_e pri, bool sync) {
-    static long nextSeqNr = 0;
+static celix_earpm_client_msg_t* celix_earpmClient_messageCreate(celix_earpm_client_msg_pool_t* msgPool,
+                                                                 const celix_earpm_client_request_info_t* requestInfo) {
+    celix_autoptr(mosquitto_property) mqttProps = NULL;
+    if (requestInfo->expiryInterval > 0) {
+        int rc = mosquitto_property_add_int32(&mqttProps, MQTT_PROP_MESSAGE_EXPIRY_INTERVAL, (uint32_t)requestInfo->expiryInterval);
+        if (rc != MOSQ_ERR_SUCCESS) {
+            return NULL;
+        }
+    }
+    if (requestInfo->responseTopic != NULL) {
+        int rc = mosquitto_property_add_string(&mqttProps, MQTT_PROP_RESPONSE_TOPIC, requestInfo->responseTopic);
+        if (rc != MOSQ_ERR_SUCCESS) {
+            return NULL;
+        }
+    }
+    if (requestInfo->correlationData != NULL && requestInfo->correlationDataSize > 0) {
+        int rc = mosquitto_property_add_binary(&mqttProps, MQTT_PROP_CORRELATION_DATA, requestInfo->correlationData, requestInfo->correlationDataSize);
+        if (rc != MOSQ_ERR_SUCCESS) {
+            return NULL;
+        }
+    }
+    if (requestInfo->senderUUID != NULL) {
+        int rc = mosquitto_property_add_string_pair(&mqttProps, MQTT_PROP_USER_PROPERTY, CELIX_EARPM_MQTT_USER_PROP_SENDER_UUID, requestInfo->senderUUID);
+        if (rc != MOSQ_ERR_SUCCESS) {
+            return NULL;
+        }
+    }
+    if (requestInfo->version != NULL) {
+        int rc = mosquitto_property_add_string_pair(&mqttProps, MQTT_PROP_USER_PROPERTY, CELIX_EARPM_MQTT_USER_PROP_MSG_VERSION, requestInfo->version);
+        if (rc != MOSQ_ERR_SUCCESS) {
+            return NULL;
+        }
+    }
     celix_earpm_client_msg_t* msg = celix_earpmClient_msgPoolAlloc(msgPool);
     if (msg == NULL) {
         return NULL;
@@ -640,21 +664,21 @@ static celix_earpm_client_msg_t* celix_earpmClient_messageCreate(celix_earpm_cli
     celix_ref_init(&msg->ref);
     msg->msgPool = msgPool;
     msg->payloadSize = 0;
-    msg->qos = qos;
-    msg->pri = pri;
-    msg->sync = sync;
-    msg->seqNr = __atomic_fetch_add(&nextSeqNr, 1, __ATOMIC_RELAXED);
+    msg->qos = requestInfo->qos;
+    msg->pri = requestInfo->pri;
+    msg->processDone = false;
     msg->error = CELIX_SUCCESS;
     msg->mqttMid = -1;
     msg->payload = NULL;
     msg->payloadSize = 0;
-    msg->mqttProps = NULL;
-    msg->topic = celix_utils_strdup(topic);
+    msg->mqttProps = mqttProps;
+    msg->topic = celix_utils_strdup(requestInfo->topic);
     if (msg->topic == NULL) {
         celix_earpmClient_msgPoolFree(msgPool, msg);
         return NULL;
     }
-    return celix_steal_ptr(msg);
+    celix_steal_ptr(mqttProps);
+    return msg;
 }
 
 static void celix_earpmClient_messageDestroy(celix_earpm_client_msg_t* msg) {
@@ -677,47 +701,6 @@ static void celix_earpmClient_messageRelease(celix_earpm_client_msg_t* msg) {
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_earpm_client_msg_t, celix_earpmClient_messageRelease)
 
-static mosquitto_property* celix_earpmClient_createMqttProperties(const celix_earpm_client_request_info_t* requestInfo) {
-    celix_autoptr(mosquitto_property) mqttProps = NULL;
-    errno = 0;
-    if (requestInfo->expiryInterval > 0) {
-        int rc = mosquitto_property_add_int32(&mqttProps, MQTT_PROP_MESSAGE_EXPIRY_INTERVAL, (uint32_t)requestInfo->expiryInterval);
-        if (rc != MOSQ_ERR_SUCCESS) {
-            errno = ENOMEM;
-            return NULL;
-        }
-    }
-    if (requestInfo->responseTopic != NULL) {
-        int rc = mosquitto_property_add_string(&mqttProps, MQTT_PROP_RESPONSE_TOPIC, requestInfo->responseTopic);
-        if (rc != MOSQ_ERR_SUCCESS) {
-            errno = ENOMEM;
-            return NULL;
-        }
-    }
-    if (requestInfo->correlationData != NULL && requestInfo->correlationDataSize > 0) {
-        int rc = mosquitto_property_add_binary(&mqttProps, MQTT_PROP_CORRELATION_DATA, requestInfo->correlationData, requestInfo->correlationDataSize);
-        if (rc != MOSQ_ERR_SUCCESS) {
-            errno = ENOMEM;
-            return NULL;
-        }
-    }
-    if (requestInfo->senderUUID != NULL) {
-        int rc = mosquitto_property_add_string_pair(&mqttProps, MQTT_PROP_USER_PROPERTY, CELIX_EARPM_MQTT_USER_PROP_SENDER_UUID, requestInfo->senderUUID);
-        if (rc != MOSQ_ERR_SUCCESS) {
-            errno = ENOMEM;
-            return NULL;
-        }
-    }
-    if (requestInfo->version != NULL) {
-        int rc = mosquitto_property_add_string_pair(&mqttProps, MQTT_PROP_USER_PROPERTY, CELIX_EARPM_MQTT_USER_PROP_MSG_VERSION, requestInfo->version);
-        if (rc != MOSQ_ERR_SUCCESS) {
-            errno = ENOMEM;
-            return NULL;
-        }
-    }
-    return celix_steal_ptr(mqttProps);
-}
-
 static bool celix_earpmClient_checkRequestInfo(const celix_earpm_client_request_info_t* requestInfo) {
     if (requestInfo->topic == NULL || requestInfo->qos <= CELIX_EARPM_QOS_UNKNOWN || requestInfo->qos > CELIX_EARPM_QOS_EXACTLY_ONCE
         || requestInfo->pri< CELIX_EARPM_MSG_PRI_LOW || requestInfo->pri > CELIX_EARPM_MSG_PRI_HIGH) {
@@ -726,7 +709,7 @@ static bool celix_earpmClient_checkRequestInfo(const celix_earpm_client_request_
     return true;
 }
 
-static celix_status_t celix_earpmClient_fillMessagePayload(celix_earpm_client_msg_t* msg, const char* payload, size_t payloadSize, const mosquitto_property* mqttProps) {
+static celix_status_t celix_earpmClient_fillMessagePayload(celix_earpm_client_msg_t* msg, const char* payload, size_t payloadSize) {
     celix_autofree char* _payload = NULL;
     if (payloadSize > 0 && payload != NULL) {
         _payload = malloc(payloadSize);
@@ -734,12 +717,6 @@ static celix_status_t celix_earpmClient_fillMessagePayload(celix_earpm_client_ms
             return ENOMEM;
         }
         memcpy(_payload, payload, payloadSize);
-    }
-    if (mqttProps != NULL) {
-        int rc = mosquitto_property_copy_all(&msg->mqttProps, mqttProps);
-        if (rc != MOSQ_ERR_SUCCESS) {
-            return ENOMEM;
-        }
     }
     if (_payload != NULL) {
         msg->payload = celix_steal_ptr(_payload);
@@ -749,9 +726,9 @@ static celix_status_t celix_earpmClient_fillMessagePayload(celix_earpm_client_ms
 }
 
 static celix_status_t celix_earpmClient_publishMessage(celix_earpm_client_t* client, celix_earpm_client_msg_t* msg,
-                                                       const char* payload, size_t payloadSize, const mosquitto_property* props) {
+                                                       const char* payload, size_t payloadSize) {
     int mid = 0;
-    int rc = mosquitto_publish_v5(client->mosq, &mid, msg->topic, (int)payloadSize, payload, msg->qos, false, props);
+    int rc = mosquitto_publish_v5(client->mosq, &mid, msg->topic, (int)payloadSize, payload, msg->qos, false, msg->mqttProps);
     if (rc != MOSQ_ERR_SUCCESS) {
         celix_logHelper_error(client->logHelper, "Failed to publish topic %s with qos %d, %d.", msg->topic, (int)msg->qos, rc);
         return CELIX_BUNDLE_EXCEPTION;
@@ -783,17 +760,17 @@ static void celix_earpmClient_enqueueMsgToWaitingQueue(celix_earpm_client_t* cli
     return;
 }
 
-static celix_status_t celix_earpmClient_publishDoNext(celix_earpm_client_t* client, celix_earpm_client_msg_t *msg, const char* payload, size_t payloadSize, const mosquitto_property* mqttProps) {
+static celix_status_t celix_earpmClient_publishDoNext(celix_earpm_client_t* client, celix_earpm_client_msg_t *msg, const char* payload, size_t payloadSize) {
     celix_status_t status = CELIX_SUCCESS;
     if (client->connected && !celix_earpmClient_isPublishingQueueFull(client)) {
         //Publish directly, do not fill payload to message, decrease memory usage.
-        status = celix_earpmClient_publishMessage(client, msg, payload, payloadSize, mqttProps);
+        status = celix_earpmClient_publishMessage(client, msg, payload, payloadSize);
         if (status != CELIX_SUCCESS) {
             celix_logHelper_error(client->logHelper, "Failed to publish message %s, %d.", msg->topic, status);
             return status;
         }
     } else {
-        status = celix_earpmClient_fillMessagePayload(msg, payload, payloadSize, mqttProps);
+        status = celix_earpmClient_fillMessagePayload(msg, payload, payloadSize);
         if (status != CELIX_SUCCESS) {
             celix_logHelper_error(client->logHelper, "Failed to fill payload for message %s. %d.", msg->topic, status);
             return status;
@@ -821,52 +798,40 @@ celix_status_t celix_earpmClient_publishAsync(celix_earpm_client_t* client, cons
         return ENOMEM;
     }
 
-    celix_autoptr(celix_earpm_client_msg_t) msg = celix_earpmClient_messageCreate(&client->freeMsgPool, requestInfo->topic,
-                                                                                  requestInfo->qos, requestInfo->pri, false);
+    celix_autoptr(celix_earpm_client_msg_t) msg = celix_earpmClient_messageCreate(&client->freeMsgPool, requestInfo);
     if (msg == NULL) {
         celix_logHelper_error(client->logHelper, "Failed to create message for %s.", requestInfo->topic);
         return ENOMEM;
     }
-    celix_autoptr(mosquitto_property) mqttProps = celix_earpmClient_createMqttProperties(requestInfo);
-    if (mqttProps == NULL && errno != 0) {
-        celix_logHelper_error(client->logHelper, "Failed to create mqtt properties for %s. %d.", requestInfo->topic, errno);
-        return errno;
-    }
 
-    return celix_earpmClient_publishDoNext(client, msg, requestInfo->payload, requestInfo->payloadSize, mqttProps);
+    return celix_earpmClient_publishDoNext(client, msg, requestInfo->payload, requestInfo->payloadSize);
 }
 
-static inline bool celix_earpmClient_isMsgPublished(celix_earpm_client_t* client, celix_earpm_client_msg_t* msg) {
-    return celix_longHashMap_hasKey(client->publishedMessages, msg->seqNr);
-}
-
-static void celix_earpmClient_deleteMsgFromQueue(celix_earpm_client_t* client, celix_earpm_client_msg_t* msg) {
-    bool removed = celix_longHashMap_remove(client->publishedMessages, msg->mqttMid);
+static void celix_earpmClient_retrieveMsg(celix_earpm_client_t* client, celix_earpm_client_msg_t* msg) {
+    bool removed = celix_longHashMap_remove(client->publishingMessages, msg->mqttMid);
     if (!removed) {
-        removed = celix_longHashMap_remove(client->publishingMessages, msg->mqttMid);
-    }
-    if (!removed) {
-        TAILQ_REMOVE(&client->waitingMessages, msg, entry);
-        celix_earpmClient_messageRelease(msg);
+        celix_earpm_client_msg_t *curMsg = NULL;
+        TAILQ_FOREACH(curMsg, &client->waitingMessages, entry) {
+            if (msg == curMsg) {
+                TAILQ_REMOVE(&client->waitingMessages, msg, entry);
+                celix_earpmClient_messageRelease(msg);
+                break;
+            }
+        }
     }
     celixThreadCondition_broadcast(&client->msgStatusChanged);
 }
 
-static celix_status_t celix_earpmClient_waitForMsgPublished(celix_earpm_client_t* client, celix_earpm_client_msg_t* msg, const struct timespec* absTime) {
-    while (!celix_earpmClient_isMsgPublished(client, msg)) {
+static celix_status_t celix_earpmClient_waitForMsgProcessDone(celix_earpm_client_t* client, celix_earpm_client_msg_t* msg, const struct timespec* absTime) {
+    while (!msg->processDone) {
         celix_status_t status = celixThreadCondition_waitUntil(&client->msgStatusChanged, &client->mutex, absTime);
         if (status != CELIX_SUCCESS) {
-            celix_earpmClient_deleteMsgFromQueue(client, msg);
             celix_logHelper_error(client->logHelper, "Failed to waiting for message(%s) published. %d.", msg->topic, status);
+            celix_earpmClient_retrieveMsg(client, msg);
             return status;
         }
     }
-    (void)celix_longHashMap_remove(client->publishedMessages, msg->seqNr);
-    if (msg->error != CELIX_SUCCESS) {
-        celix_logHelper_error(client->logHelper, "Failed to publish message %s, mqtt reason code %d.", msg->topic, msg->error);
-        return msg->error;
-    }
-    return CELIX_SUCCESS;
+    return msg->error;
 }
 
 celix_status_t celix_earpmClient_publishSync(celix_earpm_client_t* client, const celix_earpm_client_request_info_t* requestInfo) {
@@ -898,37 +863,23 @@ celix_status_t celix_earpmClient_publishSync(celix_earpm_client_t* client, const
             return status;
         }
     }
-    celix_autoptr(celix_earpm_client_msg_t) msg = celix_earpmClient_messageCreate(&client->freeMsgPool, requestInfo->topic,
-                                                                                  requestInfo->qos, requestInfo->pri, true);
+    celix_autoptr(celix_earpm_client_msg_t) msg = celix_earpmClient_messageCreate(&client->freeMsgPool, requestInfo);
     if (msg == NULL) {
         celix_logHelper_error(client->logHelper, "Failed to create message for %s.", requestInfo->topic);
         return ENOMEM;
     }
-    celix_autoptr(mosquitto_property) mqttProps = celix_earpmClient_createMqttProperties(requestInfo);
-    if (mqttProps == NULL && errno != 0) {
-        celix_logHelper_error(client->logHelper, "Failed to create mqtt properties for %s. %d.", requestInfo->topic, errno);
-        return errno;
-    }
-    status = celix_earpmClient_publishDoNext(client, msg, requestInfo->payload, requestInfo->payloadSize, mqttProps);
+    status = celix_earpmClient_publishDoNext(client, msg, requestInfo->payload, requestInfo->payloadSize);
     if (status != CELIX_SUCCESS) {
         return status;
     }
 
-    return celix_earpmClient_waitForMsgPublished(client, msg, &expiryTime);
+    return celix_earpmClient_waitForMsgProcessDone(client, msg, &expiryTime);
 }
 
-static void celix_earpmClient_enqueueMsgToPublishedQueue(celix_earpm_client_t* client, celix_earpm_client_msg_t* msg, celix_status_t error) {
-    if (msg->sync == false) {//Async message no need to release to published queue.
-        return;
-    }
+static void celix_earpmClient_markMsgProcessDone(celix_earpm_client_msg_t* msg,
+                                                 celix_status_t error) {
     msg->error = error;
-    celix_status_t status = celix_longHashMap_put(client->publishedMessages, msg->seqNr, msg);
-    if (status != CELIX_SUCCESS) {
-        celix_logHelper_logTssErrors(client->logHelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_error(client->logHelper, "Failed to add message(%ld) to published queue.", msg->seqNr);
-    } else {
-        celix_earpmClient_messageRetain(msg);
-    }
+    msg->processDone = true;
     return;
 }
 
@@ -936,11 +887,10 @@ static void celix_earpmClient_releaseWaitingMsgToPublishing(celix_earpm_client_t
     for (celix_earpm_client_msg_t *curMsg = TAILQ_FIRST(&client->waitingMessages), *nextMsg = NULL;
     (curMsg != NULL) && !celix_earpmClient_isPublishingQueueFull(client); curMsg = nextMsg) {
         nextMsg = TAILQ_NEXT(curMsg, entry);
-        celix_status_t status = celix_earpmClient_publishMessage(client, curMsg, curMsg->payload, curMsg->payloadSize,
-                                                                 curMsg->mqttProps);
+        celix_status_t status = celix_earpmClient_publishMessage(client, curMsg, curMsg->payload, curMsg->payloadSize);
         if (status != CELIX_SUCCESS) {
             celix_logHelper_error(client->logHelper, "Failed to publish waiting message %s, %d.", curMsg->topic, status);
-            celix_earpmClient_enqueueMsgToPublishedQueue(client, curMsg, status);
+            celix_earpmClient_markMsgProcessDone(curMsg, status);
         }
         TAILQ_REMOVE(&client->waitingMessages, curMsg, entry);
         celix_earpmClient_messageRelease(curMsg);
@@ -996,7 +946,7 @@ static void celix_earpmClient_dropQos0Messages(celix_earpm_client_t* client) {
         celix_earpm_client_msg_t* msg = (celix_earpm_client_msg_t*)iter.value.ptrValue;
         if (msg->qos <= CELIX_EARPM_QOS_AT_MOST_ONCE) {
             celix_logHelper_warning(client->logHelper, "Mqtt disconnected, drop publishing message with qos %d. %s.", (int)msg->qos, msg->topic);
-            celix_earpmClient_enqueueMsgToPublishedQueue(client, msg, CELIX_ILLEGAL_STATE);
+            celix_earpmClient_markMsgProcessDone(msg, CELIX_ILLEGAL_STATE);
             celix_longHashMapIterator_remove(&iter);
         } else {
             celix_longHashMapIterator_next(&iter);
@@ -1007,7 +957,7 @@ static void celix_earpmClient_dropQos0Messages(celix_earpm_client_t* client) {
         nextMsg = TAILQ_NEXT(curMsg, entry);
         if (curMsg->qos <= CELIX_EARPM_QOS_AT_MOST_ONCE) {
             celix_logHelper_warning(client->logHelper, "Mqtt disconnected, drop waiting message with qos %d. %s.", (int)curMsg->qos, curMsg->topic);
-            celix_earpmClient_enqueueMsgToPublishedQueue(client, curMsg, CELIX_ILLEGAL_STATE);
+            celix_earpmClient_markMsgProcessDone(curMsg, CELIX_ILLEGAL_STATE);
             TAILQ_REMOVE(&client->waitingMessages, curMsg, entry);
             celix_earpmClient_messageRelease(curMsg);
         }
@@ -1115,7 +1065,7 @@ static void celix_earpmClient_publishCallback(struct mosquitto* mosq CELIX_UNUSE
         celix_earpm_client_msg_t* msg = celix_longHashMap_get(client->publishingMessages, mid);
         if (msg != NULL) {
             celix_status_t status = (reasonCode == MQTT_RC_SUCCESS || reasonCode == MQTT_RC_NO_MATCHING_SUBSCRIBERS) ? CELIX_SUCCESS : CELIX_ILLEGAL_STATE;
-            celix_earpmClient_enqueueMsgToPublishedQueue(client, msg, status);
+            celix_earpmClient_markMsgProcessDone(msg, status);
             celix_longHashMap_remove(client->publishingMessages, mid);
         }
         celix_earpmClient_releaseWaitingMsgToPublishing(client);
@@ -1139,12 +1089,12 @@ static int celix_earpmClient_connectBrokerWithInterface(celix_earpm_client_t* cl
     }
     celix_status_t status = CELIX_ILLEGAL_STATE;
     for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-        if (ifa->ifa_addr == NULL) {
+        if (ifa->ifa_addr == NULL || (ifa->ifa_addr->sa_family != AF_INET && ifa->ifa_addr->sa_family != AF_INET6)) {
             continue;
         }
-        if(celix_utils_stringEquals(ifa->ifa_name, interfaceName) && (ifa->ifa_addr->sa_family == family || family == AF_UNSPEC)) {
+        if((celix_utils_stringEquals("all", interfaceName) || celix_utils_stringEquals(ifa->ifa_name, interfaceName))
+        && (ifa->ifa_addr->sa_family == family || family == AF_UNSPEC)) {
             char host[INET6_ADDRSTRLEN] = {0};
-            inet_ntop(ifa->ifa_addr->sa_family, &((struct sockaddr_in*)ifa->ifa_addr)->sin_addr, host, INET6_ADDRSTRLEN);
             if (ifa->ifa_addr->sa_family == AF_INET) {
                 inet_ntop(AF_INET, &((struct sockaddr_in*)ifa->ifa_addr)->sin_addr, host, INET6_ADDRSTRLEN);
             } else if (ifa->ifa_addr->sa_family == AF_INET6) {
@@ -1170,6 +1120,7 @@ static int celix_earpmClient_connectBroker(celix_earpm_client_t* client) {
     }
     celixThreadMutex_unlock(&client->mutex);
     if (curBrokerEndpointExisted && mosquitto_reconnect(client->mosq) == MOSQ_ERR_SUCCESS) {
+        celix_logHelper_info(client->logHelper, "Reconnected to broker successfully");
         return CELIX_SUCCESS;
     }
     celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
@@ -1205,7 +1156,7 @@ static int celix_earpmClient_connectBroker(celix_earpm_client_t* client) {
             }
         }
         if (status == CELIX_SUCCESS) {
-            celix_logHelper_info(client->logHelper, "Connected to broker %s:%i", address, info->port);
+            celix_logHelper_info(client->logHelper, "Connected to broker successfully");
             free(client->currentBrokerEndpointUUID);
             client->currentBrokerEndpointUUID = celix_utils_strdup(iter.key);
             return CELIX_SUCCESS;
@@ -1214,48 +1165,68 @@ static int celix_earpmClient_connectBroker(celix_earpm_client_t* client) {
     return status;
 }
 
-static void* celix_earpmClient_mosqThread(void* data) {
+static void celix_earpmClient_waitForActiveBroker(celix_earpm_client_t* client, unsigned int timeoutInSec) {
+    celix_auto(celix_mutex_lock_guard_t) mutexGuard = celixMutexLockGuard_init(&client->mutex);
+    while (client->running && (celix_stringHashMap_size(client->brokerInfoMap) == 0 || timeoutInSec > 0)) {
+        if (celix_stringHashMap_size(client->brokerInfoMap) == 0) {
+            celixThreadCondition_wait(&client->brokerInfoChangedOrExiting, &client->mutex);
+        } else {
+            celixThreadCondition_timedwaitRelative(&client->brokerInfoChangedOrExiting, &client->mutex, timeoutInSec, 0);
+        }
+        timeoutInSec = 0;
+    }
+}
+
+static celix_status_t celix_earpmClient_reconnectBroker(celix_earpm_client_t* client, unsigned int* connectFailedCount, unsigned int* nextReconnectInterval) {
+    celix_status_t status = celix_earpmClient_connectBroker(client);
+    if (status != CELIX_SUCCESS) {
+        *connectFailedCount += 1;
+        unsigned int reconnectInterval = *connectFailedCount * 1;
+        *nextReconnectInterval = (reconnectInterval < CELIX_EARPM_CLIENT_RECONNECT_DELAY_MAX) ? reconnectInterval : CELIX_EARPM_CLIENT_RECONNECT_DELAY_MAX;
+        celix_logHelper_info(client->logHelper, "Failed to connect to broker, retry after %u second.", *nextReconnectInterval);
+    } else {
+        *connectFailedCount = 0;
+        *nextReconnectInterval = 0;
+    }
+    return status;
+}
+
+static void celix_earpmClient_processMqttMessage(celix_earpm_client_t* client) {
+    celixThreadMutex_lock(&client->mutex);
+    bool loopRun = client->running;
+    celixThreadMutex_unlock(&client->mutex);
+    while (loopRun) {
+        loopRun = mosquitto_loop(client->mosq, CELIX_EARPM_CLIENT_KEEP_ALIVE * 1000, 1) == MOSQ_ERR_SUCCESS;
+        celixThreadMutex_lock(&client->mutex);
+        loopRun = loopRun && client->running;
+        celixThreadMutex_unlock(&client->mutex);
+    }
+    return;
+}
+
+static void* celix_earpmClient_worker(void* data) {
     assert(data != NULL);
+    unsigned int nextReconnectInterval = 0;
+    unsigned int connectFailedCount = 0;
     celix_earpm_client_t* client = (celix_earpm_client_t*)data;
 
-    unsigned int reconnectDelay = 0;
-    unsigned int reconnectCount = 0;
+    celixThreadMutex_lock(&client->mutex);
     bool running = client->running;
+    celixThreadMutex_unlock(&client->mutex);
+
     while (running) {
+        celix_earpmClient_waitForActiveBroker(client, nextReconnectInterval);
+
         celixThreadMutex_lock(&client->mutex);
-        while (client->running && (celix_stringHashMap_size(client->brokerInfoMap) == 0 || reconnectDelay > 0)) {
-            if (reconnectDelay == 0) {
-                celixThreadCondition_wait(&client->brokerInfoChangedOrExiting, &client->mutex);
-            } else {
-                celixThreadCondition_timedwaitRelative(&client->brokerInfoChangedOrExiting, &client->mutex, reconnectDelay, 0);
-                reconnectDelay = 0;
-            }
-        }
         running = client->running;
         celixThreadMutex_unlock(&client->mutex);
 
         if (running) {
-            celix_status_t status = celix_earpmClient_connectBroker(client);
-            if (status == CELIX_SUCCESS) {
-                reconnectCount = 0;
-            } else {
-                reconnectCount++;
-                reconnectDelay = reconnectCount * 1;
-                reconnectDelay = (reconnectDelay < CELIX_EARPM_CLIENT_RECONNECT_DELAY_MAX) ? reconnectDelay : CELIX_EARPM_CLIENT_RECONNECT_DELAY_MAX;
-                celix_logHelper_info(client->logHelper, "Failed to connect to broker, retry after %u second.", reconnectDelay);
+            celix_status_t status = celix_earpmClient_reconnectBroker(client, &connectFailedCount, &nextReconnectInterval);
+            if (status != CELIX_SUCCESS) {
+                continue;
             }
-            {
-                //If mosquitto_disconnect_v5 is called before celix_earpmc_connectBroker when celix_earpmc_destroy is occurred,
-                // it will induce current thread can't exit in time. So, check the running flag again here.
-                celix_auto(celix_mutex_lock_guard_t) mutexGuard = celixMutexLockGuard_init(&client->mutex);
-                if (client->running == false) {
-                    return NULL;
-                }
-            }
-            while (status == CELIX_SUCCESS) {
-                int rc = mosquitto_loop(client->mosq, CELIX_EARPM_CLIENT_KEEP_ALIVE * 1000, 1);
-                status = (rc == MOSQ_ERR_SUCCESS) ? CELIX_SUCCESS : CELIX_ILLEGAL_STATE;
-            }
+            celix_earpmClient_processMqttMessage(client);
         }
     }
     return NULL;

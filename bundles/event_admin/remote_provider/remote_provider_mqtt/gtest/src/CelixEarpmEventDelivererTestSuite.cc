@@ -20,10 +20,12 @@
 #include <functional>
 #include <thread>
 #include <cstdlib>
-#include "celix_earpm_event_deliverer.h"
-#include "CelixEarpmTestSuiteBaseClass.h"
-#include "celix_earpm_constants.h"
+
 #include "celix_log_helper.h"
+#include "celix_earpm_event_deliverer.h"
+#include "celix_earpm_constants.h"
+#include "CelixEarpmTestSuiteBaseClass.h"
+
 
 class CelixEarpmEventDelivererTestSuite : public CelixEarpmTestSuiteBaseClass {
 public:

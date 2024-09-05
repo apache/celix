@@ -15,13 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(celix_array_list)
-add_subdirectory(celix_long_hash_map)
-add_subdirectory(celix_string_hash_map)
-add_subdirectory(celix_properties)
-add_subdirectory(celix_threads)
-add_subdirectory(celix_utils)
-add_subdirectory(celix_version)
-add_subdirectory(zip)
-add_subdirectory(hash_map)
-add_subdirectory(celix_filter)
+add_library(filter_ei STATIC src/celix_filter_ei.cc)
+
+target_include_directories(filter_ei PUBLIC include)
+target_link_libraries(filter_ei PUBLIC Celix::error_injector Celix::utils)
+# It plays nicely with address sanitizer this way.
+target_link_options(filter_ei INTERFACE
+        LINKER:--wrap,celix_filter_create
+)
+add_library(Celix::filter_ei ALIAS filter_ei)

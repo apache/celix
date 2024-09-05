@@ -376,7 +376,10 @@ static void celix_earpm_subscribeEvent(celix_event_admin_remote_provider_mqtt_t*
     status = celix_arrayList_addLong(subscription->handlerServiceIdList, handlerServiceId);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_logTssErrors(earpm->logHelper, CELIX_LOG_LEVEL_ERROR);
-        celix_logHelper_error(earpm->logHelper, "Failed to attach handler service id to subscription info for %s. %d.", topic, status);
+        celix_logHelper_error(earpm->logHelper, "Failed to attach handler service(%ld) to subscription info for %s. %d.",handlerServiceId, topic, status);
+        if (celix_arrayList_size(subscription->handlerServiceIdList) == 0) {
+            celix_stringHashMap_remove(earpm->eventSubscriptions, topic);
+        }
         return;
     }
     if (subscription->curQos < qos) {
@@ -396,7 +399,15 @@ static void celix_earpm_unsubscribeEvent(celix_event_admin_remote_provider_mqtt_
         celix_logHelper_debug(earpm->logHelper, "No subscription found for %s.", topic);
         return;
     }
-    celix_arrayList_removeLong(subscription->handlerServiceIdList, handlerServiceId);
+    celix_array_list_entry_t entry;
+    memset(&entry, 0, sizeof(entry));
+    entry.longVal = handlerServiceId;
+    int index = celix_arrayList_indexOf(subscription->handlerServiceIdList, entry);
+    if (index < 0) {
+        celix_logHelper_debug(earpm->logHelper, "Not found handler(%ld) in %s subscription.", handlerServiceId, topic);
+        return;
+    }
+    celix_arrayList_removeAt(subscription->handlerServiceIdList, index);
     int size = celix_arrayList_size(subscription->handlerServiceIdList);
     if (size == 0) {
         celix_status_t status = celix_earpmClient_unsubscribe(earpm->mqttClient, topic);
@@ -455,9 +466,11 @@ static json_t* celix_earpm_genHandlerInformation(celix_event_admin_remote_provid
             return NULL;
         }
     }
-    json_auto_t* handlerInfo = json_pack("{s:O, s:i}", "topics", topics, "handlerId", handler->serviceId);
+    json_error_t jsonError;
+    memset(&jsonError, 0, sizeof(jsonError));
+    json_auto_t* handlerInfo = json_pack_ex(&jsonError, 0, "{sOsi}", "topics", topics, "handlerId", handler->serviceId);
     if (handlerInfo == NULL) {
-        celix_logHelper_error(earpm->logHelper, "Failed to pack handler information.");
+        celix_logHelper_error(earpm->logHelper, "Failed to pack handler information. %s", jsonError.text);
         return NULL;
     }
     if (handler->filter != NULL) {
@@ -474,7 +487,7 @@ static void celix_earpm_addHandlerInfoToRemote(celix_event_admin_remote_provider
     const char* topic = CELIX_EARPM_HANDLER_INFO_ADD_TOPIC;
     json_auto_t* root = json_object();
     if (root == NULL) {
-        celix_logHelper_error(earpm->logHelper, "Failed to create adding handler info request payload root.");
+        celix_logHelper_error(earpm->logHelper, "Failed to create adding handler info message payload.");
         return;
     }
     json_t* handlerInfo = celix_earpm_genHandlerInformation(earpm, handler);
@@ -483,7 +496,7 @@ static void celix_earpm_addHandlerInfoToRemote(celix_event_admin_remote_provider
         return;
     }
     if (json_object_set_new(root, "handler", handlerInfo) != 0) {
-        celix_logHelper_error(earpm->logHelper, "Failed to add handler information to handler information message.");
+        celix_logHelper_error(earpm->logHelper, "Failed to add handler information to adding handler information message.");
         return;
     }
 
@@ -515,7 +528,7 @@ static void celix_earpm_removeHandlerInfoFromRemote(celix_event_admin_remote_pro
     const char* topic = CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC;
     json_auto_t* root = json_object();
     if (root == NULL) {
-        celix_logHelper_error(earpm->logHelper, "Failed to create removing handler info request payload root.");
+        celix_logHelper_error(earpm->logHelper, "Failed to create removing handler info message payload.");
         return;
     }
     if (json_object_set_new(root, "handlerId", json_integer(handler->serviceId)) != 0) {
@@ -677,7 +690,7 @@ static celix_status_t celix_earpm_associateAckSeqNrWithRemoteHandler(celix_event
             celix_logHelper_logTssErrors(earpm->logHelper, CELIX_LOG_LEVEL_ERROR);
             celix_logHelper_error(earpm->logHelper, "Failed to create matched handler service id list.");
             celix_earpm_clearAckSeqNr(earpm, ackSeqNr);
-            return CELIX_ENOMEM;
+            return ENOMEM;
         }
         CELIX_LONG_HASH_MAP_ITERATE(fwInfo->handlerInfoMap, handlerIter) {
             celix_earpm_remote_handler_info_t* info = handlerIter.value.ptrValue;
@@ -880,14 +893,14 @@ static celix_earpm_remote_handler_info_t* celix_earpm_remoteHandlerInfoCreate(co
         }
         if (celix_arrayList_addString(topics, (void*)topic)) {
             celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_WARNING);
-            celix_logHelper_warning(logHelper, "Failed to add topic %s to handler information.", topic);
+            celix_logHelper_warning(logHelper, "Failed to add topic(%s) to handler information.", topic);
         }
     }
     if (filter !=  NULL) {
         info->filter = celix_filter_create(filter);//If return NULL, then only let event admin does event filter
         if (info->filter == NULL) {
             celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_WARNING);
-            celix_logHelper_warning(logHelper, "Failed to create filter for handler information.");
+            celix_logHelper_warning(logHelper, "Failed to create filter(%s) for handler information.", filter);
         }
     }
 
@@ -977,7 +990,7 @@ static celix_status_t celix_earpm_addRemoteHandlerInfo(celix_event_admin_remote_
     celix_autoptr(celix_earpm_remote_handler_info_t) handlerInfo = celix_earpm_remoteHandlerInfoCreate(topics, filter, earpm->logHelper);
     if (handlerInfo == NULL) {
         celix_logHelper_error(earpm->logHelper, "Failed to create remote handler information.");
-        return CELIX_ENOMEM;
+        return ENOMEM;
     }
     celix_status_t status = celix_longHashMap_put(fwInfo->handlerInfoMap, handlerServiceId, handlerInfo);
     if (status != CELIX_SUCCESS) {
@@ -1140,7 +1153,7 @@ static void celix_earpm_refreshAllHandlerInfoToRemote(celix_event_admin_remote_p
     const char* topic = CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC;
     json_auto_t* root = json_object();
     if (root == NULL) {
-        celix_logHelper_error(earpm->logHelper, "Failed to create refreshing handlers info request payload root.");
+        celix_logHelper_error(earpm->logHelper, "Failed to create updating handlers info message payload.");
         return;
     }
     json_t* handlers = json_array();
@@ -1149,7 +1162,7 @@ static void celix_earpm_refreshAllHandlerInfoToRemote(celix_event_admin_remote_p
         return;
     }
     if (json_object_set_new(root, "handlers", handlers) != 0) {
-        celix_logHelper_error(earpm->logHelper, "Failed to add handlers information to payload.");
+        celix_logHelper_error(earpm->logHelper, "Failed to add handlers information to updating handler info message.");
         return;
     }
 
@@ -1160,17 +1173,17 @@ static void celix_earpm_refreshAllHandlerInfoToRemote(celix_event_admin_remote_p
         celix_earpm_event_handler_t* handler = iter.value.ptrValue;
         json_t* handlerInfo = celix_earpm_genHandlerInformation(earpm, handler);
         if (handlerInfo == NULL) {
-            celix_logHelper_error(earpm->logHelper, "Failed to create information of handler %li.", handler->serviceId);
+            celix_logHelper_error(earpm->logHelper, "Failed to create handler information for handler %li.", handler->serviceId);
             continue;
         }
         if (json_array_append_new(handlers, handlerInfo) != 0) {
-            celix_logHelper_error(earpm->logHelper, "Failed to add information of handler %li .", handler->serviceId);
+            celix_logHelper_error(earpm->logHelper, "Failed to add information of handler %li.", handler->serviceId);
             continue;
         }
     }
     celix_autofree char* payload = json_dumps(root, JSON_COMPACT | JSON_ENCODE_ANY);
     if (payload == NULL) {
-        celix_logHelper_error(earpm->logHelper, "Failed to dump handler information message payload.");
+        celix_logHelper_error(earpm->logHelper, "Failed to dump updating handler information message payload.");
         return;
     }
     //If the mqtt connection is disconnected, we will resend the handler information
@@ -1274,15 +1287,11 @@ static void celix_earpm_sendEventDone(void* data, const char* topic, celix_statu
     struct celix_earpm_send_event_done_callback_data* callData = data;
     celix_event_admin_remote_provider_mqtt_t* earpm = callData->earpm;
     assert(earpm != NULL);
-    celix_status_t status = CELIX_SUCCESS;
     {
         celix_auto(celix_mutex_lock_guard_t) mutexGuard = celixMutexLockGuard_init(&earpm->mutex);
         if (!earpm->destroying) {//The mqtt client may be invalid when the earpm is destroying
-            status = celix_earpm_sendSyncEventAck(earpm, callData->responseTopic, callData->correlationData, callData->correlationDataSize);
+            (void)celix_earpm_sendSyncEventAck(earpm, callData->responseTopic, callData->correlationData, callData->correlationDataSize);
         }
-    }
-    if (status != CELIX_SUCCESS) {
-        celix_logHelper_error(callData->earpm->logHelper, "Failed to publish response for %s.", topic);
     }
     free(callData->correlationData);
     free(callData->responseTopic);
@@ -1302,12 +1311,12 @@ static celix_status_t celix_earpm_deliverSyncEvent(celix_event_admin_remote_prov
     celix_autofree struct celix_earpm_send_event_done_callback_data* sendDoneCbData = calloc(1, sizeof(*sendDoneCbData));
     if (sendDoneCbData == NULL) {
         celix_logHelper_error(earpm->logHelper, "Failed to allocate memory for send done callback data.");
-        return CELIX_ENOMEM;
+        return ENOMEM;
     }
     celix_autofree char* responseTopic = celix_utils_strdup(requestInfo->responseTopic);
     if (responseTopic == NULL) {
         celix_logHelper_error(earpm->logHelper, "Failed to get response topic from sync event %s.", requestInfo->topic);
-        return CELIX_ENOMEM;
+        return ENOMEM;
     }
     celix_autofree void* correlationData = NULL;
     size_t correlationDataSize = 0;
@@ -1315,7 +1324,7 @@ static celix_status_t celix_earpm_deliverSyncEvent(celix_event_admin_remote_prov
         correlationData = malloc(requestInfo->correlationDataSize);
         if (correlationData == NULL) {
             celix_logHelper_error(earpm->logHelper, "Failed to allocate memory for correlation data of sync event %s.", requestInfo->topic);
-            return CELIX_ENOMEM;
+            return ENOMEM;
         }
         memcpy(correlationData, requestInfo->correlationData, requestInfo->correlationDataSize);
         correlationDataSize = requestInfo->correlationDataSize;
@@ -1340,7 +1349,7 @@ static void celix_earpm_processSyncEventMessage(celix_event_admin_remote_provide
     celix_status_t status = celix_earpm_deliverSyncEvent(earpm, requestInfo);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(earpm->logHelper, "Failed to deliver sync event %s.", requestInfo->topic);
-        (void) celix_earpm_sendSyncEventAck(earpm, requestInfo->responseTopic, requestInfo->correlationData,
+        (void)celix_earpm_sendSyncEventAck(earpm, requestInfo->responseTopic, requestInfo->correlationData,
                                             requestInfo->correlationDataSize);
         return;
     }

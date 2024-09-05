@@ -16,31 +16,15 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include "celix_filter_ei.h"
 
-
-#ifndef CELIX_CELIX_THREADS_EI_H
-#define CELIX_CELIX_THREADS_EI_H
-#ifdef __cplusplus
 extern "C" {
-#endif
 
-#include "celix_errno.h"
-#include "celix_error_injector.h"
-
-CELIX_EI_DECLARE(celixThreadMutex_create, celix_status_t);
-CELIX_EI_DECLARE(celixThread_create, celix_status_t);
-CELIX_EI_DECLARE(celixThreadCondition_signal, celix_status_t);
-
-CELIX_EI_DECLARE(celixThreadCondition_init, celix_status_t);
-CELIX_EI_DECLARE(celixThreadRwlock_create, celix_status_t);
-
-CELIX_EI_DECLARE(celix_tss_create, celix_status_t);
-CELIX_EI_DECLARE(celix_tss_delete, celix_status_t);
-CELIX_EI_DECLARE(celix_tss_set, celix_status_t);
-CELIX_EI_DECLARE(celix_tss_get, void*);
-
-#ifdef __cplusplus
+celix_filter_t* __real_celix_filter_create(const char* filterStr);
+CELIX_EI_DEFINE(celix_filter_create, celix_filter_t*)
+celix_filter_t* __wrap_celix_filter_create(const char* filterStr) {
+    CELIX_EI_IMPL(celix_filter_create);
+    return __real_celix_filter_create(filterStr);
 }
-#endif
 
-#endif //CELIX_CELIX_THREADS_EI_H
+}

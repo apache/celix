@@ -17,30 +17,31 @@
  * under the License.
  */
 
-
-#ifndef CELIX_CELIX_THREADS_EI_H
-#define CELIX_CELIX_THREADS_EI_H
+#ifndef CELIX_MOSQUITTO_EI_H
+#define CELIX_MOSQUITTO_EI_H
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "celix_errno.h"
+#include <mosquitto.h>
 #include "celix_error_injector.h"
 
-CELIX_EI_DECLARE(celixThreadMutex_create, celix_status_t);
-CELIX_EI_DECLARE(celixThread_create, celix_status_t);
-CELIX_EI_DECLARE(celixThreadCondition_signal, celix_status_t);
-
-CELIX_EI_DECLARE(celixThreadCondition_init, celix_status_t);
-CELIX_EI_DECLARE(celixThreadRwlock_create, celix_status_t);
-
-CELIX_EI_DECLARE(celix_tss_create, celix_status_t);
-CELIX_EI_DECLARE(celix_tss_delete, celix_status_t);
-CELIX_EI_DECLARE(celix_tss_set, celix_status_t);
-CELIX_EI_DECLARE(celix_tss_get, void*);
+CELIX_EI_DECLARE(mosquitto_new, struct mosquitto*);
+CELIX_EI_DECLARE(mosquitto_property_add_int32, int);
+CELIX_EI_DECLARE(mosquitto_property_add_string_pair, int);
+CELIX_EI_DECLARE(mosquitto_property_add_string, int);
+CELIX_EI_DECLARE(mosquitto_property_add_binary, int);
+CELIX_EI_DECLARE(mosquitto_int_option, int);
+CELIX_EI_DECLARE(mosquitto_will_set_v5, int);
+CELIX_EI_DECLARE(mosquitto_subscribe_v5, int);
+CELIX_EI_DECLARE(mosquitto_unsubscribe, int);
+CELIX_EI_DECLARE(mosquitto_publish_v5, int);
+CELIX_EI_DECLARE(mosquitto_property_copy_all, int);
+CELIX_EI_DECLARE(mosquitto_property_read_string, const mosquitto_property*);
+CELIX_EI_DECLARE(mosquitto_property_read_binary, const mosquitto_property*);
+CELIX_EI_DECLARE(mosquitto_property_read_string_pair, const mosquitto_property*);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //CELIX_CELIX_THREADS_EI_H
+#endif //CELIX_MOSQUITTO_EI_H

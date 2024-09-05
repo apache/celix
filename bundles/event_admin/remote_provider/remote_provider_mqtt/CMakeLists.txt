@@ -32,7 +32,6 @@ if (EVENT_ADMIN_REMOTE_PROVIDER_MQTT)
     set(EARPM_DEPS
             Celix::event_admin_api
             Celix::event_admin_spi
-            Celix::event_admin_utils
             Celix::c_rsa_spi
             Celix::rsa_common
             Celix::log_helper

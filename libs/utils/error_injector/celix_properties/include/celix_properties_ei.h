@@ -31,6 +31,10 @@ CELIX_EI_DECLARE(celix_properties_copy, celix_properties_t*);
 CELIX_EI_DECLARE(celix_properties_set, celix_status_t);
 CELIX_EI_DECLARE(celix_properties_setLong, celix_status_t);
 CELIX_EI_DECLARE(celix_properties_setVersion, celix_status_t);
+CELIX_EI_DECLARE(celix_properties_setBool, celix_status_t);
+CELIX_EI_DECLARE(celix_properties_getAsStringArrayList, celix_status_t);
+CELIX_EI_DECLARE(celix_properties_saveToString, celix_status_t);
+CELIX_EI_DECLARE(celix_properties_loadFromString2, celix_status_t);
 
 #ifdef __cplusplus
 }

@@ -23,302 +23,24 @@
 #include <future>
 #include <chrono>
 #include <thread>
-#include <atomic>
-#include <mutex>
-#include <condition_variable>
-#include <mqtt_protocol.h>
 #include <mosquitto.h>
-#include <uuid/uuid.h>
 
-#include "celix_earpm_impl.h"
-#include "celix_earpm_constants.h"
-#include "celix_earpm_broker_discovery.h"
-#include "celix_earpm_mosquitto_cleanup.h"
+#include "celix_stdlib_cleanup.h"
 #include "celix_event_handler_service.h"
 #include "celix_event_admin_service.h"
 #include "celix_event_constants.h"
-#include "endpoint_description.h"
-#include "remote_constants.h"
-#include "CelixEarpmTestSuiteBaseClass.h"
-#include "celix_stdlib_cleanup.h"
+#include "celix_earpm_impl.h"
+#include "celix_earpm_constants.h"
+#include "celix_earpm_mosquitto_cleanup.h"
+#include "CelixEarpmImplTestSuiteBaseClass.h"
 
-namespace {
-constexpr const char* MQTT_BROKER_ADDRESS = "127.0.0.1";
-constexpr int MQTT_BROKER_PORT = 1883;
-constexpr const char* FAKE_FW_UUID = "5936e9f4-c4a8-4fa8-b070-65d03a6d4d03";
-}
 
-class MqttClient {
+class CelixEarpmImplTestSuite : public CelixEarpmImplTestSuiteBaseClass {
 public:
-    explicit MqttClient(std::vector<std::string> subTopics) : subTopics{std::move(subTopics)} {
-        mosq = std::shared_ptr<mosquitto>{mosquitto_new(nullptr, true, this), [](mosquitto* m) { mosquitto_destroy(m); }};
-        EXPECT_NE(mosq, nullptr);
-        auto rc = mosquitto_int_option(mosq.get(), MOSQ_OPT_PROTOCOL_VERSION, MQTT_PROTOCOL_V5);
-        EXPECT_EQ(rc, MOSQ_ERR_SUCCESS);
-        mosquitto_connect_callback_set(mosq.get(), [](mosquitto*, void* handle, int rc) {
-            auto client = static_cast<MqttClient*>(handle);
-            ASSERT_EQ(rc, MQTT_RC_SUCCESS);
-            for (const auto& topic : client->subTopics) {
-                auto ret = mosquitto_subscribe_v5(client->mosq.get(), nullptr, topic.c_str(), 0, MQTT_SUB_OPT_NO_LOCAL, nullptr);
-                ASSERT_EQ(ret, MOSQ_ERR_SUCCESS);
-            }
-        });
-        mosquitto_subscribe_v5_callback_set(mosq.get(), [](mosquitto*, void* handle, int, int, const int*, const mosquitto_property*) {
-            auto client = static_cast<MqttClient*>(handle);
-            std::lock_guard<std::mutex> lock(client->mutex);
-            client->subscribedCnt++;
-            client->subscribedCond.notify_all();
-        });
-        mosquitto_message_v5_callback_set(mosq.get(), [](mosquitto*, void* handle, const mosquitto_message* msg, const mosquitto_property* props) {
-            auto client = static_cast<MqttClient*>(handle);
-            {
-                std::lock_guard<std::mutex> lock(client->mutex);
-                client->receivedMsgTopics.emplace_back(msg->topic);
-                client->receivedMsgCond.notify_all();
-            }
-            celix_autofree char* responseTopic{nullptr};
-            celix_autofree void* correlationData{nullptr};
-            uint16_t correlationDataSize = 0;
-            mosquitto_property_read_string(props, MQTT_PROP_RESPONSE_TOPIC, &responseTopic, false);
-            mosquitto_property_read_binary(props, MQTT_PROP_CORRELATION_DATA, &correlationData, &correlationDataSize, false);
-            if (responseTopic != nullptr) {
-                celix_autoptr(mosquitto_property) responseProps{nullptr};
-                if (correlationData) {
-                    auto rc = mosquitto_property_add_binary(&responseProps, MQTT_PROP_CORRELATION_DATA, correlationData, correlationDataSize);
-                    ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-                }
-                auto rc = mosquitto_property_add_string_pair(&responseProps, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-                ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-                rc = mosquitto_publish_v5(client->mosq.get(), nullptr, responseTopic, 0, nullptr, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, responseProps);
-                ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-            }
-        });
-    }
-
-    ~MqttClient() = default;
-
-    void MqttClientStart() {
-        for (int i = 0; i < 512; ++i) {
-            if(mosquitto_connect_bind_v5(mosq.get(), MQTT_BROKER_ADDRESS, MQTT_BROKER_PORT, 60, nullptr, nullptr) == MOSQ_ERR_SUCCESS) {
-                auto rc = mosquitto_loop_start(mosq.get());
-                ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-                std::unique_lock<std::mutex> lock(mutex);
-                auto subscribed = subscribedCond.wait_for(lock, std::chrono::seconds{60}, [this] { return subscribedCnt >= subTopics.size(); });
-                ASSERT_TRUE(subscribed);
-                return;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds {100});
-        }
-        ADD_FAILURE() << "Failed to start mqtt client";
-    }
-
-    void MqttClientStop() {
-        mosquitto_disconnect(mosq.get());
-        mosquitto_loop_stop(mosq.get(), false);
-    }
-
-    bool WaitForReceivedMsg(const std::string& topic, std::chrono::milliseconds timeout = std::chrono::milliseconds{30*1000}) {
-        std::unique_lock<std::mutex> lock(mutex);
-        return receivedMsgCond.wait_for(lock, timeout, [&topic, this] {
-            return std::find(receivedMsgTopics.rbegin(), receivedMsgTopics.rend(), topic) != receivedMsgTopics.rend();
-        });
-    }
-
-    void Reset() {
-        std::lock_guard<std::mutex> lock(mutex);
-        receivedMsgTopics.clear();
-    }
-
-    std::shared_ptr<mosquitto> mosq{nullptr};
-    std::vector<std::string> subTopics{};
-    std::mutex mutex{};
-    std::condition_variable subscribedCond{};
-    size_t subscribedCnt{0};
-    std::condition_variable receivedMsgCond{};
-    std::vector<std::string> receivedMsgTopics{};
-
-};
-
-class CelixEarpmImplTestSuite : public CelixEarpmTestSuiteBaseClass {
-public:
-    static void SetUpTestSuite() {
-        mosquitto_lib_init();
-        pid = fork();
-        ASSERT_GE(pid, 0);
-        if (pid == 0) {
-            execlp("mosquitto", "mosquitto", "-p", std::to_string(MQTT_BROKER_PORT).c_str(), nullptr);
-            ADD_FAILURE() << "Failed to start mosquitto";
-        }
-        mqttClient = new MqttClient{std::vector<std::string>{"subscribedEvent", CELIX_EARPM_TOPIC_PREFIX"#"}};
-        mqttClient->MqttClientStart();
-    }
-
-    static void TearDownTestSuite() {
-        mqttClient->MqttClientStop();
-        delete mqttClient;
-        kill(pid, SIGKILL);
-        waitpid(pid, nullptr, 0);
-        mosquitto_lib_cleanup();
-    }
-
-    void SetUp() override {
-        mqttClient->Reset();
-    }
-
-    CelixEarpmImplTestSuite() : CelixEarpmTestSuiteBaseClass{".earpm_impl_test_cache"} { }
+    CelixEarpmImplTestSuite() : CelixEarpmImplTestSuiteBaseClass{} { }
 
     ~CelixEarpmImplTestSuite() override = default;
-
-    static endpoint_description_t* CreateMqttBrokerEndpoint(void) {
-        auto props = celix_properties_create();
-        EXPECT_NE(props, nullptr);
-        celix_properties_setLong(props, CELIX_RSA_ENDPOINT_SERVICE_ID, INT32_MAX);
-        celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, CELIX_EARPM_MQTT_BROKER_INFO_SERVICE_NAME);
-        celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "9d5b0a58-1e6f-4c4f-bd00-7298914b1a76");
-        uuid_t uid;
-        uuid_generate(uid);
-        char endpointUUID[37];
-        uuid_unparse_lower(uid, endpointUUID);
-        celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, endpointUUID);
-        celix_properties_setBool(props, CELIX_RSA_SERVICE_IMPORTED, true);
-        celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, CELIX_EARPM_MQTT_BROKER_SERVICE_CONFIG_TYPE);
-        celix_properties_set(props, CELIX_EARPM_MQTT_BROKER_ADDRESS, MQTT_BROKER_ADDRESS);
-        celix_properties_setLong(props, CELIX_EARPM_MQTT_BROKER_PORT, MQTT_BROKER_PORT);
-        endpoint_description_t* endpoint = nullptr;
-        auto status = endpointDescription_create(props, &endpoint);
-        EXPECT_EQ(status, CELIX_SUCCESS);
-        return endpoint;
-    }
-
-    void TestRemoteProvider(const std::function<void (celix_event_admin_remote_provider_mqtt_t*)>& testBody) {
-        auto earpm = celix_earpm_create(ctx.get());
-
-        celix_autoptr(endpoint_description_t) endpoint = CreateMqttBrokerEndpoint();
-        auto status = celix_earpm_mqttBrokerEndpointAdded(earpm, endpoint, nullptr);
-        EXPECT_EQ(status, CELIX_SUCCESS);
-
-        auto connected = WaitForRemoteProviderConnectToBroker();
-        ASSERT_TRUE(connected);
-
-        testBody(earpm);
-
-        status = celix_earpm_mqttBrokerEndpointRemoved(earpm, endpoint, nullptr);
-        EXPECT_EQ(status, CELIX_SUCCESS);
-
-        celix_earpm_destroy(earpm);
-    }
-
-//    void TestPublishEvent(celix_status_t (*fp)(void* , const char* , const celix_properties_t*)) {
-//        auto publisher = celix_earpm_create(publisherCtx.get());
-//        celix_mqtt_broker_info_service_t brokerInfo;
-//        std::unique_ptr<celix_properties_t, decltype(&celix_properties_destroy)> props{celix_properties_create(), celix_properties_destroy};
-//        celix_properties_setLong(props.get(), CELIX_FRAMEWORK_SERVICE_ID, 123);
-//        celix_properties_set(props.get(), CELIX_MQTT_BROKER_ADDRESS, MQTT_BROKER_ADDRESS);
-//        celix_properties_setLong(props.get(), CELIX_MQTT_BROKER_PORT, MQTT_BROKER_PORT);
-//        auto status = celix_earpm_addBrokerInfoService(publisher, &brokerInfo, props.get());
-//        EXPECT_EQ(status, CELIX_SUCCESS);
-//
-//        auto subscriber = celix_earpm_create(subscriberCtx.get());
-//        status = celix_earpm_addBrokerInfoService(subscriber, &brokerInfo, props.get());
-//        EXPECT_EQ(status, CELIX_SUCCESS);
-//        std::atomic<bool> receivedEvent{false};
-//        celix_event_admin_service_t eventAdminService;
-//        eventAdminService.handle = &receivedEvent;
-//        eventAdminService.postEvent = [](void* handle, const char* topic, const celix_properties_t*) {
-//            auto receivedEvent = static_cast<std::atomic<bool>*>(handle);
-//            *receivedEvent = true;
-//            EXPECT_STREQ(topic, "topic");
-//            return CELIX_SUCCESS;
-//        };
-//        eventAdminService.sendEvent = [](void* handle, const char* topic, const celix_properties_t*) {
-//            auto receivedEvent = static_cast<std::atomic<bool>*>(handle);
-//            *receivedEvent = true;
-//            EXPECT_STREQ(topic, "topic");
-//            return CELIX_SUCCESS;
-//        };
-//        status = celix_earpm_setEventAdminSvc(subscriber, &eventAdminService);
-//        EXPECT_EQ(status, CELIX_SUCCESS);
-//
-//        celix_event_handler_service_t eventHandlerService;
-//        eventHandlerService.handle = nullptr;
-//        eventHandlerService.handleEvent = [](void*, const char*, const celix_properties_t*) { return CELIX_SUCCESS; };
-//        std::unique_ptr<celix_properties_t, decltype(&celix_properties_destroy)> eventHandlerProps{celix_properties_create(), celix_properties_destroy};
-//        celix_properties_setLong(eventHandlerProps.get(), CELIX_FRAMEWORK_SERVICE_ID, 234);
-//        celix_properties_set(eventHandlerProps.get(), CELIX_EVENT_TOPIC, "topic");
-//        status = celix_earpm_addEventHandlerService(subscriber, &eventHandlerService, eventHandlerProps.get());
-//        EXPECT_EQ(status, CELIX_SUCCESS);
-//
-//        int maxTries = 1;
-//        do {
-//            std::this_thread::sleep_for(std::chrono::milliseconds{10*maxTries});
-//            status = fp(publisher, "topic", nullptr);
-//            EXPECT_EQ(status, CELIX_SUCCESS);
-//        } while (!receivedEvent && ++maxTries < 3000);
-//        EXPECT_TRUE(receivedEvent);
-//
-//        status = celix_earpm_removeEventHandlerService(subscriber, &eventHandlerService, eventHandlerProps.get());
-//        EXPECT_EQ(status, CELIX_SUCCESS);
-//        status = celix_earpm_removeBrokerInfoService(subscriber, &brokerInfo, props.get());
-//        EXPECT_EQ(status, CELIX_SUCCESS);
-//        celix_earpm_destroy(subscriber);
-//
-//        status = celix_earpm_removeBrokerInfoService(publisher, &brokerInfo, props.get());
-//        EXPECT_EQ(status, CELIX_SUCCESS);
-//        celix_earpm_destroy(publisher);
-//    }//TODO remove
-
-    static void AddRemoteHandlerInfoToRemoteProviderAndCheck(celix_event_admin_remote_provider_mqtt_t* earpm, const char* handlerInfo, const char* senderUUID = FAKE_FW_UUID) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", senderUUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
-                                  (int)strlen(handlerInfo), handlerInfo, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        auto ok = WaitFor([earpm] { return celix_earpm_currentRemoteFrameworkCount(earpm) != 0; });//Wait for receive the handler info message
-        ASSERT_TRUE(ok);
-    }
-
-    static void RemoveRemoteHandlerInfoFromRemoteProvider(celix_event_admin_remote_provider_mqtt_t*, long handlerServiceId, const char* senderUUID = FAKE_FW_UUID) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", senderUUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        char payload[128]{0};
-        snprintf(payload, sizeof(payload), R"({"handlerId":%ld})", handlerServiceId);
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC,
-                                  (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-    }
-
-    static void UpdateRemoteHandlerInfoToRemoteProvider(celix_event_admin_remote_provider_mqtt_t*, const char* handlers, const char* senderUUID = FAKE_FW_UUID) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", senderUUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        char payload[1024]{0};
-        snprintf(payload, sizeof(payload), R"({"handlers":%s})", handlers);
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
-                                  (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-    }
-
-    static bool WaitForRemoteProviderConnectToBroker(void) {
-        //When the remote provider is connected, it will send an update handler info message
-        return mqttClient->WaitForReceivedMsg(CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC);
-    }
-
-    static bool WaitFor(const std::function<bool (void)>& cond) {
-        int remainTries = 3000;
-        while (!cond() && remainTries > 0) {
-            std::this_thread::sleep_for(std::chrono::milliseconds{10});//Wait for condition
-            remainTries--;
-        }
-        return remainTries > 0;
-    }
-
-    static pid_t pid;
-    static MqttClient* mqttClient;
 };
-pid_t CelixEarpmImplTestSuite::pid{0};
-MqttClient* CelixEarpmImplTestSuite::mqttClient{nullptr};
 
 TEST_F(CelixEarpmImplTestSuite, CreateEarpmTest) {
     auto earpm = celix_earpm_create(ctx.get());
@@ -384,6 +106,35 @@ TEST_F(CelixEarpmImplTestSuite, AddEventHandlerServiceTest) {
     EXPECT_EQ(status, CELIX_SUCCESS);
 
     status = celix_earpm_removeEventHandlerService(earpm, &eventHandlerService, props);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    celix_earpm_destroy(earpm);
+}
+
+TEST_F(CelixEarpmImplTestSuite, AddEventHandlerServicesThatHaveSameEventTopicTest) {
+    auto earpm = celix_earpm_create(ctx.get());
+
+    celix_event_handler_service_t eventHandlerService;
+    eventHandlerService.handle = nullptr;
+    eventHandlerService.handleEvent = [](void*, const char*, const celix_properties_t*) { return CELIX_SUCCESS; };
+    celix_autoptr(celix_properties_t) props1 = celix_properties_create();
+    celix_properties_setLong(props1, CELIX_FRAMEWORK_SERVICE_ID, 123);
+    celix_properties_setLong(props1, CELIX_EVENT_REMOTE_QOS, CELIX_EARPM_QOS_AT_MOST_ONCE);
+    celix_properties_set(props1, CELIX_EVENT_TOPIC, "topic");
+    celix_properties_set(props1, CELIX_EVENT_FILTER, "(a=b)");
+    auto status = celix_earpm_addEventHandlerService(earpm, &eventHandlerService, props1);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    celix_autoptr(celix_properties_t) props2 = celix_properties_copy(props1);
+    celix_properties_setLong(props2, CELIX_FRAMEWORK_SERVICE_ID, 124);
+    celix_properties_setLong(props2, CELIX_EVENT_REMOTE_QOS, CELIX_EARPM_QOS_AT_LEAST_ONCE);
+    status = celix_earpm_addEventHandlerService(earpm, &eventHandlerService, props2);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    status = celix_earpm_removeEventHandlerService(earpm, &eventHandlerService, props2);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+
+    status = celix_earpm_removeEventHandlerService(earpm, &eventHandlerService, props1);
     EXPECT_EQ(status, CELIX_SUCCESS);
 
     celix_earpm_destroy(earpm);
@@ -530,6 +281,7 @@ TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageTest) {
 
 TEST_F(CelixEarpmImplTestSuite, ProcessQueryRemoteHandlerInfoMessageTest) {
     TestRemoteProvider([](celix_event_admin_remote_provider_mqtt_t*) {
+        mqttClient->Reset();//clear received messages cache
         celix_autoptr(mosquitto_property) properties = nullptr;
         auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
@@ -597,6 +349,20 @@ TEST_F(CelixEarpmImplTestSuite, ProcessControlMessageWithoutSenderUUIDTest) {
     });
 }
 
+TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithInvalidPayloadTest) {
+    TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
+        celix_autoptr(mosquitto_property) properties = nullptr;
+        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        const char* payload = R"(invalid)";
+        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
+                                  (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        auto ok = WaitForLogMessage("Failed to parse message");
+        ASSERT_TRUE(ok);
+    });
+}
+
 TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithoutHandlerInfoTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
         celix_autoptr(mosquitto_property) properties = nullptr;
@@ -648,7 +414,7 @@ TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithInvalidHan
         rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        auto ok = WaitForLogMessage("Handler id(%ld) is invalid");
+        auto ok = WaitForLogMessage("Handler id(-1) is invalid");
         ASSERT_TRUE(ok);
     });
 }
@@ -695,6 +461,20 @@ TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithInvalidTop
     });
 }
 
+TEST_F(CelixEarpmImplTestSuite, ProcessRemoveRemoteHandlerInfoMessageWithInvalidPayloadTest) {
+    TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
+        celix_autoptr(mosquitto_property) properties = nullptr;
+        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        const char* payload = R"(invalid)";
+        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC,
+                                  (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        auto ok = WaitForLogMessage("Failed to parse message");
+        ASSERT_TRUE(ok);
+    });
+}
+
 TEST_F(CelixEarpmImplTestSuite, ProcessRemoveRemoteHandlerInfoMessageWithoutHandlerIdTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
         celix_autoptr(mosquitto_property) properties = nullptr;
@@ -732,7 +512,7 @@ TEST_F(CelixEarpmImplTestSuite, ProcessRemoveRemoteHandlerInfoMessageWithInvalid
         rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        auto ok = WaitForLogMessage("Handler id(%ld) is invalid");
+        auto ok = WaitForLogMessage("Handler id(-1) is invalid");
         ASSERT_TRUE(ok);
     });
 }
@@ -756,6 +536,55 @@ TEST_F(CelixEarpmImplTestSuite, ProcessSyncEventAckMessageWithoutCorrelationData
                                   CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Correlation data size is invalid");
+        ASSERT_TRUE(ok);
+    });
+}
+
+TEST_F(CelixEarpmImplTestSuite, ProcessSyncEventAckMessageWithInvalidCorrelationDataTest) {
+    TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
+        celix_autoptr(mosquitto_property) properties = nullptr;
+        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        rc = mosquitto_property_add_binary(&properties, MQTT_PROP_CORRELATION_DATA, "invalid", strlen("invalid"));
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        char topic[128]{0};
+        snprintf(topic, sizeof(topic), "%s%s", CELIX_EARPM_SYNC_EVENT_ACK_TOPIC_PREFIX, fwUUID.c_str());
+        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, topic, 0, nullptr,
+                                  CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        auto ok = WaitForLogMessage("Correlation data size is invalid");
+        ASSERT_TRUE(ok);
+    });
+}
+
+TEST_F(CelixEarpmImplTestSuite, ProcessSyncEventAckMessageBeforeRemoteHandlerInfoMessageTest) {
+    TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
+        celix_autoptr(mosquitto_property) properties = nullptr;
+        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        long correlationData = 1;
+        rc = mosquitto_property_add_binary(&properties, MQTT_PROP_CORRELATION_DATA, &correlationData, sizeof(correlationData));
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        char topic[128]{0};
+        snprintf(topic, sizeof(topic), "%s%s", CELIX_EARPM_SYNC_EVENT_ACK_TOPIC_PREFIX, fwUUID.c_str());
+        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, topic, 0, nullptr,
+                                  CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        auto ok = WaitForLogMessage("No remote framework info");
+        ASSERT_TRUE(ok);
+    });
+}
+
+TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithInvalidPayloadTest) {
+    TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
+        celix_autoptr(mosquitto_property) properties = nullptr;
+        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        const char* payLoad = R"(invalid)";
+        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
+                                  (int)strlen(payLoad), payLoad, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        auto ok = WaitForLogMessage("Failed to parse message");
         ASSERT_TRUE(ok);
     });
 }
@@ -811,7 +640,7 @@ TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithInvalid
         rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        auto ok = WaitForLogMessage("Handler id(%ld) is invalid");
+        auto ok = WaitForLogMessage("Handler id(-1) is invalid");
         ASSERT_TRUE(ok);
     });
 }
@@ -917,7 +746,7 @@ TEST_F(CelixEarpmImplTestSuite, ProcessAsyncEventTest) {
 
 TEST_F(CelixEarpmImplTestSuite, ProcessSyncEventTest) {
     TestRemoteProvider([](celix_event_admin_remote_provider_mqtt_t* earpm) {
-        //subscribe to the async event
+        //subscribe to the sync event
         celix_event_handler_service_t eventHandlerService;
         eventHandlerService.handle = nullptr;
         eventHandlerService.handleEvent = [](void*, const char*, const celix_properties_t*) { return CELIX_SUCCESS;};
@@ -939,7 +768,7 @@ TEST_F(CelixEarpmImplTestSuite, ProcessSyncEventTest) {
         status = celix_earpm_setEventAdminSvc(earpm, &eventAdminService);
         EXPECT_EQ(status, CELIX_SUCCESS);
 
-        //publish the async event
+        //publish the sync event
         celix_autoptr(celix_properties_t) eventProps = celix_properties_create();
         ASSERT_NE(eventProps, nullptr);
         status = celix_properties_set(eventProps, "key", "value");
@@ -1039,7 +868,6 @@ TEST_F(CelixEarpmImplTestSuite, PostEventButEventPropertiesNotMatchTest) {
 
 TEST_F(CelixEarpmImplTestSuite, PostEventWithInvalidQosTest) {
     TestRemoteProvider([](celix_event_admin_remote_provider_mqtt_t* earpm) {
-        AddRemoteHandlerInfoToRemoteProviderAndCheck(earpm, R"({"handler":{"handlerId":123,"topics":["subscribedEvent"]}})");
         celix_autoptr(celix_properties_t) eventProps = celix_properties_create();
         ASSERT_NE(eventProps, nullptr);
         celix_properties_setLong(eventProps, CELIX_EVENT_REMOTE_QOS, CELIX_EARPM_QOS_UNKNOWN);
@@ -1048,6 +876,16 @@ TEST_F(CelixEarpmImplTestSuite, PostEventWithInvalidQosTest) {
 
         celix_properties_setLong(eventProps, CELIX_EVENT_REMOTE_QOS, CELIX_EARPM_QOS_MAX);
         status = celix_earpm_postEvent(earpm, "subscribedEvent", eventProps);
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+    });
+}
+
+TEST_F(CelixEarpmImplTestSuite, PostEventWithInvalidArgsTest) {
+    TestRemoteProvider([](celix_event_admin_remote_provider_mqtt_t* earpm) {
+        auto status = celix_earpm_postEvent(nullptr, "topic", nullptr);//handle is null
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+
+        status = celix_earpm_postEvent(earpm, nullptr, nullptr);//topic is null
         EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
     });
 }
@@ -1062,6 +900,16 @@ TEST_F(CelixEarpmImplTestSuite, SendEventTest) {
         EXPECT_EQ(status, CELIX_SUCCESS);
         auto ok = WaitForLogMessage("No remote handler subscribe", 10);
         EXPECT_FALSE(ok);
+    });
+}
+
+TEST_F(CelixEarpmImplTestSuite, SendEventWithInvalidArgsTest) {
+    TestRemoteProvider([](celix_event_admin_remote_provider_mqtt_t* earpm) {
+        auto status = celix_earpm_sendEvent(nullptr, "topic", nullptr);//handle is null
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+
+        status = celix_earpm_sendEvent(earpm, nullptr, nullptr);//topic is null
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
     });
 }
 

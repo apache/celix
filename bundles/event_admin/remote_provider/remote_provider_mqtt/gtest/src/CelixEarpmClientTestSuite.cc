@@ -25,206 +25,31 @@
 #include <thread>
 #include <netinet/in.h>
 #include <mosquitto.h>
-#include <mqtt_protocol.h>
-#include <uuid/uuid.h>
 
 #include "celix_earpm_client.h"
 #include "celix_earpm_constants.h"
-#include "celix_earpm_mosquitto_cleanup.h"
-#include "CelixEarpmTestSuiteBaseClass.h"
-#include "endpoint_description.h"
-#include "remote_constants.h"
-#include "celix_log_helper.h"
 #include "celix_earpm_broker_discovery.h"
-
-namespace {
-constexpr const char *MQTT_BROKER_ADDRESS = "127.0.0.1";
-constexpr int MQTT_BROKER_PORT = 1883;
-}
-
-#define CELIX_EARPM_CLIENT_CREATE_OPTIONS_INIT(opts)                                                                        \
-    memset(&opts, 0, sizeof(opts));                                                                                         \
-    opts.ctx = ctx.get();                                                                                                   \
-    opts.logHelper = logHelper.get();                                                                                       \
-    opts.sessionEndMsgTopic = CELIX_EARPM_SESSION_END_TOPIC;                                                                \
-    opts.sessionEndMsgSenderUUID = fwUUID.c_str();                                                                          \
-    opts.callbackHandle = nullptr;                                                                                          \
-    opts.receiveMsgCallback = [](void*, const celix_earpm_client_request_info_t*) {};                                       \
-    opts.connectedCallback = [](void*) {};
+#include "celix_earpm_mosquitto_cleanup.h"
+#include "CelixEarpmClientTestSuiteBaseClass.h"
 
 
-class CelixEarpmClientTestSuite : public CelixEarpmTestSuiteBaseClass {
+class CelixEarpmClientTestSuite : public CelixEarpmClientTestSuiteBaseClass {
 public:
-    static void SetUpTestSuite() {
-        mosquitto_lib_init();
-        pid = fork();
-        ASSERT_GE(pid, 0);
-        if (pid == 0) {
-            execlp("mosquitto", "mosquitto", "-p", std::to_string(MQTT_BROKER_PORT).c_str(), nullptr);
-            ADD_FAILURE() << "Failed to start mosquitto";
-        }
-        testMosqClient = mosquitto_new(nullptr, true, nullptr);
-        ASSERT_NE(testMosqClient, nullptr);
-        auto rc = mosquitto_int_option(testMosqClient, MOSQ_OPT_PROTOCOL_VERSION, MQTT_PROTOCOL_V5);
-        EXPECT_EQ(rc, MOSQ_ERR_SUCCESS);
-        for (int i = 0; i < 6000; ++i) {
-            if(mosquitto_connect_bind_v5(testMosqClient, MQTT_BROKER_ADDRESS, MQTT_BROKER_PORT, 60, nullptr, nullptr) == MOSQ_ERR_SUCCESS) {
-                rc = mosquitto_loop_start(testMosqClient);
-                ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-                return;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        }
-        ADD_FAILURE() << "Failed to init test environment";
-    }
-
-    static void TearDownTestSuite() {
-        mosquitto_disconnect(testMosqClient);
-        mosquitto_loop_stop(testMosqClient, false);
-        mosquitto_destroy(testMosqClient);
-        kill(pid, SIGKILL);
-        waitpid(pid, nullptr, 0);
-        mosquitto_lib_cleanup();
-    }
-
-    CelixEarpmClientTestSuite() : CelixEarpmTestSuiteBaseClass{".earpm_client_test_cache"} {
-        logHelper = std::shared_ptr <celix_log_helper_t>
-                {celix_logHelper_create(ctx.get(), "EarpmClient"), [](celix_log_helper_t *h) { celix_logHelper_destroy(h); }};
-    }
+    CelixEarpmClientTestSuite() : CelixEarpmClientTestSuiteBaseClass{} {}
 
     ~CelixEarpmClientTestSuite() override = default;
 
-    static endpoint_description_t* CreateMqttBrokerEndpoint(void) {
-        auto props = celix_properties_create();
-        EXPECT_NE(props, nullptr);
-        celix_properties_setLong(props, CELIX_RSA_ENDPOINT_SERVICE_ID, INT32_MAX);
-        celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, CELIX_EARPM_MQTT_BROKER_INFO_SERVICE_NAME);
-        celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, "9d5b0a58-1e6f-4c4f-bd00-7298914b1a76");
-        uuid_t uid;
-        uuid_generate(uid);
-        char endpointUUID[37];
-        uuid_unparse_lower(uid, endpointUUID);
-        celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, endpointUUID);
-        celix_properties_setBool(props, CELIX_RSA_SERVICE_IMPORTED, true);
-        celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, CELIX_EARPM_MQTT_BROKER_SERVICE_CONFIG_TYPE);
-        endpoint_description_t* endpoint = nullptr;
-        auto status = endpointDescription_create(props, &endpoint);
-        EXPECT_EQ(status, CELIX_SUCCESS);
-        return endpoint;
-    }
-
-    void TestAddMqttBrokerEndpoint(const std::function<void (endpoint_description_t*)>& modifyEndpoint) {
-        std::promise<void> clientConnectedPromise;
-        auto clientConnectedFuture = clientConnectedPromise.get_future();
-
-        celix_earpm_client_create_options_t opts;
-        CELIX_EARPM_CLIENT_CREATE_OPTIONS_INIT(opts);
-        opts.callbackHandle = &clientConnectedPromise;
-        opts.connectedCallback = [](void* handle){
-            auto* promise = static_cast<std::promise<void>*>(handle);
-            try {
-                promise->set_value();
-            } catch (...) {
-                //ignore
-            }
-        };
-        auto* client = celix_earpmClient_create(&opts);
-        ASSERT_NE(client, nullptr);
-
-        celix_autoptr(endpoint_description_t) endpoint = CreateMqttBrokerEndpoint();
-
-        modifyEndpoint(endpoint);
-
-        auto status = celix_earpmClient_mqttBrokerEndpointAdded(client, endpoint, nullptr);
-        ASSERT_EQ(status, CELIX_SUCCESS);
-        auto result = clientConnectedFuture.wait_for(std::chrono::seconds(30));
-        ASSERT_EQ(result, std::future_status::ready);
-        status = celix_earpmClient_mqttBrokerEndpointRemoved(client, endpoint, nullptr);
-        EXPECT_EQ(status, CELIX_SUCCESS);
-
-        celix_earpmClient_destroy(client);
-    }
-
-    void TestClient(const std::function<void (celix_earpm_client_t*)>& testBody) {
-        celix_earpm_client_create_options_t opts;
-        CELIX_EARPM_CLIENT_CREATE_OPTIONS_INIT(opts);
-        auto* client = celix_earpmClient_create(&opts);
-        ASSERT_NE(client, nullptr);
-        testBody(client);
-        celix_earpmClient_destroy(client);
-    }
-
-    void TestClient(const std::function<void (celix_earpm_client_t*)>& testBody, const std::function<void (void)>& connectedCallback,
-                              const std::function<void (const celix_earpm_client_request_info_t*)>& receiveMsgCallBack = [](const celix_earpm_client_request_info_t*){}) {
-        celix_earpm_client_create_options_t opts;
-        CELIX_EARPM_CLIENT_CREATE_OPTIONS_INIT(opts);
-        struct callback_data {
-            std::function<void (void)> connectedCallback;
-            std::function<void (const celix_earpm_client_request_info_t*)> receiveMsgCallback;
-        } callbackData{connectedCallback, receiveMsgCallBack};
-        opts.callbackHandle = &callbackData;
-        opts.connectedCallback = [](void* handle) {
-            auto callbackData = static_cast<struct callback_data*>(handle);
-            callbackData->connectedCallback();
-        };
-        opts.receiveMsgCallback = [](void* handle, const celix_earpm_client_request_info_t* requestInfo) {
-            auto callbackData = static_cast<struct callback_data*>(handle);
-            callbackData->receiveMsgCallback(requestInfo);
-        };
-        auto* client = celix_earpmClient_create(&opts);
-        ASSERT_NE(client, nullptr);
-
-        celix_autoptr(endpoint_description_t) endpoint = CreateMqttBrokerEndpoint();
-        celix_properties_set(endpoint->properties, CELIX_EARPM_MQTT_BROKER_ADDRESS, MQTT_BROKER_ADDRESS);
-        celix_properties_setLong(endpoint->properties, CELIX_EARPM_MQTT_BROKER_PORT, MQTT_BROKER_PORT);
-        auto status = celix_earpmClient_mqttBrokerEndpointAdded(client, endpoint, nullptr);
-        ASSERT_EQ(status, CELIX_SUCCESS);
-
-        testBody(client);
-
-        status = celix_earpmClient_mqttBrokerEndpointRemoved(client, endpoint, nullptr);
-        EXPECT_EQ(status, CELIX_SUCCESS);
-
-        celix_earpmClient_destroy(client);
-    }
-
-    void TestClientAfterConnectedBroker(const std::function<void (celix_earpm_client_t*)>& testBody,
-                                        const std::function<void (const celix_earpm_client_request_info_t*)>& receiveMsgCallBack = [](const celix_earpm_client_request_info_t*){}) {
-        std::promise<void> clientConnectedPromise;
-        auto clientConnectedFuture = clientConnectedPromise.get_future();
-        TestClient([&clientConnectedFuture, testBody](celix_earpm_client_t* client) {
-            auto result = clientConnectedFuture.wait_for(std::chrono::seconds(30));
-            ASSERT_EQ(result, std::future_status::ready);
-            testBody(client);
-        }, [&clientConnectedPromise](void){
-            try {
-                clientConnectedPromise.set_value();
-            } catch (...) {
-                //ignore
-            }
-        }, receiveMsgCallBack);
-    }
-
-    static pid_t pid;
-    static mosquitto* testMosqClient;
-
-    std::shared_ptr<celix_log_helper_t> logHelper{};
 };
 
-pid_t CelixEarpmClientTestSuite::pid{0};
-mosquitto* CelixEarpmClientTestSuite::testMosqClient{nullptr};
-
 TEST_F(CelixEarpmClientTestSuite, CreateClientTest) {
-    celix_earpm_client_create_options_t opts;
-    CELIX_EARPM_CLIENT_CREATE_OPTIONS_INIT(opts);
+    celix_earpm_client_create_options_t opts{defaultOpts};
     auto* client = celix_earpmClient_create(&opts);
     ASSERT_NE(client, nullptr);
     celix_earpmClient_destroy(client);
 }
 
 TEST_F(CelixEarpmClientTestSuite, CreateClientWithInvalidMsgQueueSizeTest) {
-    celix_earpm_client_create_options_t opts;
-    CELIX_EARPM_CLIENT_CREATE_OPTIONS_INIT(opts);
+    celix_earpm_client_create_options_t opts{defaultOpts};
 
     setenv(CELIX_EARPM_MSG_QUEUE_CAPACITY, std::to_string(CELIX_EARPM_MSG_QUEUE_MAX_SIZE+1).c_str(), 1);
     auto client = celix_earpmClient_create(&opts);
@@ -238,8 +63,7 @@ TEST_F(CelixEarpmClientTestSuite, CreateClientWithInvalidMsgQueueSizeTest) {
 }
 
 TEST_F(CelixEarpmClientTestSuite, CreateClientWithInvalidParallelMsgSizeTest) {
-    celix_earpm_client_create_options_t opts;
-    CELIX_EARPM_CLIENT_CREATE_OPTIONS_INIT(opts);
+    celix_earpm_client_create_options_t opts{defaultOpts};
 
     const int msgQueueCapacity = 256;
     setenv(CELIX_EARPM_MSG_QUEUE_CAPACITY, std::to_string(msgQueueCapacity).c_str(), 1);
@@ -308,6 +132,24 @@ TEST_F(CelixEarpmClientTestSuite, AddMqttBrokerSpecifiedInterfaceEndpointTest) {
     });
 }
 
+TEST_F(CelixEarpmClientTestSuite, AddMqttBrokerSpecifiedInterfaceAndIpv4DomainEndpointTest) {
+    TestAddMqttBrokerEndpoint([](endpoint_description_t* endpoint){
+        celix_properties_set(endpoint->properties, CELIX_RSA_IP_ADDRESSES, "");
+        celix_properties_set(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, "lo");
+        celix_properties_setLong(endpoint->properties, CELIX_EARPM_MQTT_BROKER_SOCKET_DOMAIN, AF_INET);
+        celix_properties_setLong(endpoint->properties, CELIX_RSA_PORT, MQTT_BROKER_PORT);
+    });
+}
+
+TEST_F(CelixEarpmClientTestSuite, AddMqttBrokerSpecifiedInterfaceAndIpv6DomainEndpointTest) {
+    TestAddMqttBrokerEndpoint([](endpoint_description_t* endpoint){
+        celix_properties_set(endpoint->properties, CELIX_RSA_IP_ADDRESSES, "");
+        celix_properties_set(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, "lo");
+        celix_properties_setLong(endpoint->properties, CELIX_EARPM_MQTT_BROKER_SOCKET_DOMAIN, AF_INET6);
+        celix_properties_setLong(endpoint->properties, CELIX_RSA_PORT, MQTT_BROKER_PORT);
+    });
+}
+
 TEST_F(CelixEarpmClientTestSuite, MqttBrokerEndpointWithInvalidPortTest) {
     TestClient([](celix_earpm_client_t* client) {
         celix_autoptr(endpoint_description_t) endpoint = CreateMqttBrokerEndpoint();
@@ -354,7 +196,7 @@ TEST_F(CelixEarpmClientTestSuite, MqttBrokerEndpointWithInvalidSocketDomainTest)
         celix_properties_set(endpoint->properties, CELIX_EARPM_MQTT_BROKER_ADDRESS, "127.0.0.1");
         celix_properties_setLong(endpoint->properties, CELIX_EARPM_MQTT_BROKER_SOCKET_DOMAIN, AF_INET6);
         auto status = celix_earpmClient_mqttBrokerEndpointAdded(client, endpoint, nullptr);
-        EXPECT_EQ(status, EINVAL);
+        EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
     });
 }
 
@@ -884,8 +726,7 @@ TEST_F(CelixEarpmClientTestSuite, SubscribeMessageWithPatternTopicTest) {
 TEST_F(CelixEarpmClientTestSuite, SubscribeBeforeConnectedToBrokerTest) {
     std::promise<void> receivedPromise;
     auto receivedFuture = receivedPromise.get_future();
-    celix_earpm_client_create_options_t opts;
-    CELIX_EARPM_CLIENT_CREATE_OPTIONS_INIT(opts);
+    celix_earpm_client_create_options_t opts{defaultOpts};
     opts.callbackHandle = &receivedPromise;
     opts.connectedCallback = [](void*) { };
     opts.receiveMsgCallback = [](void* handle, const celix_earpm_client_request_info_t* requestInfo) {
@@ -926,8 +767,7 @@ TEST_F(CelixEarpmClientTestSuite, SubscribeBeforeConnectedToBrokerTest) {
 TEST_F(CelixEarpmClientTestSuite, UnsubscribeBeforeConnectedToBrokerTest) {
     std::promise<void> receivedPromise;
     auto receivedFuture = receivedPromise.get_future();
-    celix_earpm_client_create_options_t opts;
-    CELIX_EARPM_CLIENT_CREATE_OPTIONS_INIT(opts);
+    celix_earpm_client_create_options_t opts{defaultOpts};
     opts.callbackHandle = &receivedPromise;
     opts.connectedCallback = [](void*) { };
     opts.receiveMsgCallback = [](void* handle, const celix_earpm_client_request_info_t*) {

@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <netinet/in.h>
 #include <uuid/uuid.h>
@@ -32,6 +33,7 @@
 #include "celix_long_hash_map.h"
 #include "celix_threads.h"
 #include "celix_log_helper.h"
+#include "celix_framework.h"
 #include "celix_constants.h"
 #include "endpoint_listener.h"
 #include "endpoint_description.h"
@@ -53,6 +55,7 @@ typedef struct celix_earpm_endpoint_listener_entry {
     endpoint_listener_t* listener;
     const celix_properties_t*  properties;
     long serviceId;
+    celix_filter_t* filter;
 }celix_earpm_endpoint_listener_entry_t;
 
 struct celix_earpm_broker_discovery {
@@ -67,6 +70,7 @@ struct celix_earpm_broker_discovery {
     celix_array_list_t* brokerEndpoints;//element:endpoint_description_t*
 };
 
+static void celix_earpmDiscovery_destroyEndpointListenerEntry(celix_earpm_endpoint_listener_entry_t* elEntry);
 static void celix_earpmDiscovery_onProfileScheduledEvent(void* data);
 
 celix_earpm_broker_discovery_t* celix_earpmDiscovery_create(celix_bundle_context_t* ctx) {
@@ -98,7 +102,7 @@ celix_earpm_broker_discovery_t* celix_earpmDiscovery_create(celix_bundle_context
     }
     celix_autoptr(celix_thread_mutex_t) mutex = &discovery->mutex;
     celix_long_hash_map_create_options_t opts = CELIX_EMPTY_LONG_HASH_MAP_CREATE_OPTIONS;
-    opts.simpleRemovedCallback = free;
+    opts.simpleRemovedCallback = (void*)celix_earpmDiscovery_destroyEndpointListenerEntry;
     discovery->endpointListeners = celix_longHashMap_createWithOptions(&opts);
     if (discovery->endpointListeners == NULL) {
         celix_logHelper_error(logHelper, "Failed to create endpoint listeners map for celix earpm broker discovery");
@@ -138,30 +142,39 @@ celix_status_t celix_earpmDiscovery_start(celix_earpm_broker_discovery_t* discov
 
 celix_status_t celix_earpmDiscovery_stop(celix_earpm_broker_discovery_t* discovery) {
     assert(discovery != NULL);
-    (void)celix_bundleContext_removeScheduledEvent(discovery->ctx, __atomic_load_n(&discovery->profileScheduledEventId, __ATOMIC_RELAXED));
+    if (celix_framework_isCurrentThreadTheEventLoop(celix_bundleContext_getFramework(discovery->ctx))) {
+        (void)celix_bundleContext_removeScheduledEventAsync(discovery->ctx, __atomic_load_n(&discovery->profileScheduledEventId, __ATOMIC_RELAXED));
+    } else {
+        (void)celix_bundleContext_removeScheduledEvent(discovery->ctx, __atomic_load_n(&discovery->profileScheduledEventId, __ATOMIC_RELAXED));
+    }
+
     return CELIX_SUCCESS;
 }
 
 static void celix_earpmDiscovery_notifyEndpointsToListener(celix_earpm_broker_discovery_t* discovery, celix_earpm_endpoint_listener_entry_t* listenerEntry, bool added) {
-    const char* listenerScope = celix_properties_get(listenerEntry->properties, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, NULL);
-    celix_autoptr(celix_filter_t) filter = listenerScope == NULL ? NULL : celix_filter_create(listenerScope);
     celix_status_t (*process)(void *handle, endpoint_description_t *endpoint, char *matchedFilter) = listenerEntry->listener->endpointAdded;
     if (!added) {
         process = listenerEntry->listener->endpointRemoved;
     }
     bool discoverySupportsDynamicIp = celix_properties_getAsBool(listenerEntry->properties, CELIX_RSA_DISCOVERY_INTERFACE_SPECIFIC_ENDPOINTS_SUPPORT, false);
+    const char* listenerScope = celix_properties_get(listenerEntry->properties, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, NULL);
     int size = discovery->brokerEndpoints == NULL ? 0 : celix_arrayList_size(discovery->brokerEndpoints);
     for (int i = 0; i < size; ++i) {
         endpoint_description_t *endpoint = celix_arrayList_get(discovery->brokerEndpoints, i);
         bool needDynamicIp = celix_properties_get(endpoint->properties, CELIX_RSA_IP_ADDRESSES, NULL) != NULL;
-        if ((!needDynamicIp || discoverySupportsDynamicIp) && celix_filter_match(filter, endpoint->properties)) {
-            celix_status_t status = process(listenerEntry->listener->handle, endpoint, (char*) listenerScope);
+        if ((!needDynamicIp || discoverySupportsDynamicIp) && celix_filter_match(listenerEntry->filter, endpoint->properties)) {
+            celix_status_t status = process(listenerEntry->listener->handle, endpoint, (char*)listenerScope);
             if (status != CELIX_SUCCESS) {
                 celix_logHelper_error(discovery->logHelper, "Failed to %s endpoint to listener(%ld).", added ? "add" : "remove", listenerEntry->serviceId);
             }
         }
     }
     return;
+}
+
+static void celix_earpmDiscovery_destroyEndpointListenerEntry(celix_earpm_endpoint_listener_entry_t* elEntry) {
+    celix_filter_destroy(elEntry->filter);
+    free(elEntry);
 }
 
 celix_status_t celix_earpmDiscovery_addEndpointListener(void* handle, void* service, const celix_properties_t* properties) {
@@ -172,14 +185,24 @@ celix_status_t celix_earpmDiscovery_addEndpointListener(void* handle, void* serv
         celix_logHelper_error(discovery->logHelper, "Failed to get service id from properties");
         return CELIX_ILLEGAL_ARGUMENT;
     }
+    const char* listenerScope = celix_properties_get(properties, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, NULL);
+    celix_autoptr(celix_filter_t) filter = NULL;
+    if (listenerScope != NULL) {
+        filter = celix_filter_create(listenerScope);
+        if (filter == NULL) {
+            celix_logHelper_error(discovery->logHelper, "Failed to create filter for listener scope %s", listenerScope);
+            return ENOMEM;
+        }
+    }
     celix_autofree celix_earpm_endpoint_listener_entry_t* svcEntry = calloc(1, sizeof(*svcEntry));
     if (svcEntry == NULL) {
         celix_logHelper_error(discovery->logHelper, "Failed to allocate memory for endpoint listener entry");
-        return CELIX_ENOMEM;
+        return ENOMEM;
     }
     svcEntry->serviceId = serviceId;
     svcEntry->listener = service;
     svcEntry->properties = properties;
+    svcEntry->filter = filter;
 
     {
         celix_auto(celix_mutex_lock_guard_t) mutexLockGuard = celixMutexLockGuard_init(&discovery->mutex);
@@ -190,6 +213,7 @@ celix_status_t celix_earpmDiscovery_addEndpointListener(void* handle, void* serv
             return status;
         }
         celix_earpmDiscovery_notifyEndpointsToListener(discovery, svcEntry, true);
+        celix_steal_ptr(filter);
         celix_steal_ptr(svcEntry);
     }
 

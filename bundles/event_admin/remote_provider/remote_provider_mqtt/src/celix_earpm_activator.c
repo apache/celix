@@ -46,6 +46,9 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
     assert(ctx != NULL);
     act->ctx = ctx;
     celix_autoptr(celix_dm_component_t) earpmDiscoveryCmp = celix_dmComponent_create(ctx, "CELIX_EARPM_DISCOVERY_CMP");
+    if (earpmDiscoveryCmp == NULL) {
+        return ENOMEM;
+    }
     act->brokerDiscovery = celix_earpmDiscovery_create(ctx);
     if (act->brokerDiscovery == NULL) {
         return CELIX_BUNDLE_EXCEPTION;
@@ -53,10 +56,11 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
     celix_dmComponent_setImplementation(earpmDiscoveryCmp, act->brokerDiscovery);
     CELIX_DM_COMPONENT_SET_CALLBACKS(earpmDiscoveryCmp, celix_earpm_broker_discovery_t, NULL, celix_earpmDiscovery_start, celix_earpmDiscovery_stop, NULL);
     CELIX_DM_COMPONENT_SET_IMPLEMENTATION_DESTROY_FUNCTION(earpmDiscoveryCmp, celix_earpm_broker_discovery_t, celix_earpmDiscovery_destroy);
+
     {
         celix_autoptr(celix_dm_service_dependency_t) endpointListenerDep = celix_dmServiceDependency_create();
         if (endpointListenerDep == NULL) {
-            return CELIX_ENOMEM;
+            return ENOMEM;
         }
         celix_status_t status = celix_dmServiceDependency_setService(endpointListenerDep, CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, NULL, NULL);
         if (status != CELIX_SUCCESS) {
@@ -77,7 +81,7 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
 
     celix_autoptr(celix_dm_component_t) earpmCmp = celix_dmComponent_create(ctx, "CELIX_EARPM_CMP");
     if (earpmCmp == NULL) {
-        return CELIX_ENOMEM;
+        return ENOMEM;
     }
     act->providerMqtt = celix_earpm_create(ctx);
     if (act->providerMqtt == NULL) {
@@ -85,10 +89,11 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
     }
     celix_dmComponent_setImplementation(earpmCmp, act->providerMqtt);
     CELIX_DM_COMPONENT_SET_IMPLEMENTATION_DESTROY_FUNCTION(earpmCmp, celix_event_admin_remote_provider_mqtt_t, celix_earpm_destroy);
+
     {
         celix_autoptr(celix_dm_service_dependency_t) eventHandlerDep = celix_dmServiceDependency_create();
         if (eventHandlerDep == NULL) {
-            return CELIX_ENOMEM;
+            return ENOMEM;
         }
         celix_status_t status = celix_dmServiceDependency_setService(eventHandlerDep, CELIX_EVENT_HANDLER_SERVICE_NAME, CELIX_EVENT_HANDLER_SERVICE_USE_RANGE, "("CELIX_EVENT_TOPIC"=*)");//Event Handlers which have not specified the EVENT_TOPIC service property must not receive events.
         if (status != CELIX_SUCCESS) {
@@ -109,7 +114,7 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
     {
         celix_autoptr(celix_dm_service_dependency_t) eventAdminDep = celix_dmServiceDependency_create();
         if (eventAdminDep == NULL) {
-            return CELIX_ENOMEM;
+            return ENOMEM;
         }
         celix_status_t status = celix_dmServiceDependency_setService(eventAdminDep, CELIX_EVENT_ADMIN_SERVICE_NAME,
                                                                      CELIX_EVENT_ADMIN_SERVICE_USE_RANGE, NULL);
@@ -140,6 +145,9 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
     act->endpointListener.endpointAdded = celix_earpm_mqttBrokerEndpointAdded;
     act->endpointListener.endpointRemoved = celix_earpm_mqttBrokerEndpointRemoved;
     celix_autoptr(celix_properties_t) props = celix_properties_create();
+    if (props == NULL) {
+        return ENOMEM;
+    }
     const char* scope = "(&("CELIX_FRAMEWORK_SERVICE_NAME"="CELIX_EARPM_MQTT_BROKER_INFO_SERVICE_NAME")("\
             CELIX_RSA_SERVICE_IMPORTED_CONFIGS"="CELIX_EARPM_MQTT_BROKER_SERVICE_CONFIG_TYPE"))";
     status = celix_properties_set(props, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, scope);
@@ -158,7 +166,7 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
 
     celix_dependency_manager_t* mng = celix_bundleContext_getDependencyManager(ctx);
     if (mng == NULL) {
-        return CELIX_ENOMEM;
+        return ENOMEM;
     }
     status = celix_dependencyManager_addAsync(mng, earpmDiscoveryCmp);
     if (status != CELIX_SUCCESS) {

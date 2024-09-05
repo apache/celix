@@ -16,3 +16,35 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include "celix_bundle_activator.h"
+#include "endpoint_listener.h"
+#include "celix_event_remote_provider_service.h"
+#include "CelixEarpmTestSuiteBaseClass.h"
+
+
+class CelixEarpmActTestSuite : public CelixEarpmTestSuiteBaseClass {
+public:
+    CelixEarpmActTestSuite() : CelixEarpmTestSuiteBaseClass{".earpm_act_test_cache"}{ }
+
+    ~CelixEarpmActTestSuite() override = default;
+};
+
+TEST_F(CelixEarpmActTestSuite, ActivatorStartTest) {
+    void *act{};
+    auto status = celix_bundleActivator_create(ctx.get(), &act);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    status = celix_bundleActivator_start(act, ctx.get());
+    ASSERT_EQ(CELIX_SUCCESS, status);
+
+    celix_bundleContext_waitForEvents(ctx.get());
+    long svcId = celix_bundleContext_findService(ctx.get(), CELIX_EVENT_REMOTE_PROVIDER_SERVICE_NAME);
+    EXPECT_TRUE(svcId >= 0);
+
+    svcId = celix_bundleContext_findService(ctx.get(), CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME);
+    EXPECT_TRUE(svcId >= 0);
+
+    status = celix_bundleActivator_stop(act, ctx.get());
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    status = celix_bundleActivator_destroy(act, ctx.get());
+    ASSERT_EQ(CELIX_SUCCESS, status);
+}

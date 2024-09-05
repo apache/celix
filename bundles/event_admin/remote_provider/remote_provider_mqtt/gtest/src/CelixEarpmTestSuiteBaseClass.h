@@ -20,16 +20,19 @@
 #ifndef CELIX_EARPM_TEST_SUITE_BASE_CLASS_H
 #define CELIX_EARPM_TEST_SUITE_BASE_CLASS_H
 
+#include <mutex>
+#include <condition_variable>
+#include <vector>
+#include <cstdio>
+#include <gtest/gtest.h>
+
 #include "celix_bundle_context.h"
 #include "celix_framework_factory.h"
 #include "celix_constants.h"
 #include "celix_log_constants.h"
 #include "celix_log_service.h"
 #include "celix_log_utils.h"
-#include <gtest/gtest.h>
-#include <mutex>
-#include <condition_variable>
-#include <vector>
+
 
 class CelixEarpmTestSuiteBaseClass : public ::testing::Test {
 public:
@@ -50,9 +53,13 @@ public:
         logService.vlogDetails = [](void *handle, celix_log_level_e level, const char* file, const char* function,
                 int line, const char* format, va_list formatArgs) {
             auto self = static_cast<CelixEarpmTestSuiteBaseClass *>(handle);
+            char log[1024]{0};
+            va_list formatArgsCopy;
+            va_copy(formatArgsCopy, formatArgs);
+            vsnprintf(log, sizeof(log), format, formatArgsCopy);
             celix_logUtils_vLogToStdoutDetails(self->logServiceName_.c_str(), level, file, function, line, format, formatArgs);
             std::lock_guard<std::mutex> lockGuard{self->logMessagesMutex};
-            self->logMessages.emplace_back(format);
+            self->logMessages.emplace_back(log);
             self->logMessagesCond.notify_all();
         };
         celix_service_registration_options_t opts{};

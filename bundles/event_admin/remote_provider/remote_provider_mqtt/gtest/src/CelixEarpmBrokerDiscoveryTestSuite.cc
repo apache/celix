@@ -22,11 +22,11 @@
 #include <thread>
 #include <netinet/in.h>
 
-#include "celix_earpm_broker_discovery.h"
-#include "CelixEarpmTestSuiteBaseClass.h"
-#include "celix_earpm_constants.h"
 #include "endpoint_listener.h"
 #include "remote_constants.h"
+#include "celix_earpm_broker_discovery.h"
+#include "celix_earpm_constants.h"
+#include "CelixEarpmTestSuiteBaseClass.h"
 
 class CelixEarpmBrokerDiscoveryTestSuite : public CelixEarpmTestSuiteBaseClass {
 public:
@@ -91,8 +91,8 @@ public:
             }
         };
         auto eplId = RegisterBrokerEndpointListenerService(&checkBrokerInfoWrapper, [](void* handle, endpoint_description_t* endpoint, char*) {
-            auto cb = static_cast<std::function<void(endpoint_description_t*)>*>(handle);
-            (*cb)(endpoint);
+            auto checkBrokerInfoFunc = static_cast<std::function<void(endpoint_description_t*)>*>(handle);
+            (*checkBrokerInfoFunc)(endpoint);
             return CELIX_SUCCESS;
         });
         ASSERT_GE(eplId, 0);
@@ -180,6 +180,14 @@ TEST_F(CelixEarpmBrokerDiscoveryTestSuite, ParseBindHostBrokerProfileTest) {
     });
 }
 
+TEST_F(CelixEarpmBrokerDiscoveryTestSuite, ParseStartWithSpaceBrokerProfileTest) {
+    ParseBrokerProfileTest(MOSQUITTO_CONF_PATH"mosquitto_start_with_space.conf", [](endpoint_description_t* endpoint) {
+        EXPECT_EQ(1883, celix_properties_getAsLong(endpoint->properties, CELIX_EARPM_MQTT_BROKER_PORT, 0));
+        EXPECT_STREQ("127.0.0.1", celix_properties_get(endpoint->properties, CELIX_EARPM_MQTT_BROKER_ADDRESS, nullptr));
+        EXPECT_STREQ("all", celix_properties_get(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, nullptr));
+    });
+}
+
 TEST_F(CelixEarpmBrokerDiscoveryTestSuite, ParseBindHostAndInterfaceBrokerProfileTest) {
     ParseBrokerProfileTest(MOSQUITTO_CONF_PATH"mosquitto_bind_host_and_if.conf", [](endpoint_description_t* endpoint) {
         EXPECT_EQ(1883, celix_properties_getAsLong(endpoint->properties, CELIX_EARPM_MQTT_BROKER_PORT, 0));
@@ -235,6 +243,13 @@ TEST_F(CelixEarpmBrokerDiscoveryTestSuite, ParseBindInterfaceLostedBrokerProfile
     });
 }
 
+TEST_F(CelixEarpmBrokerDiscoveryTestSuite, ParseBindUnixSocketBrokerProfileTest) {
+    ParseBrokerProfileTest(MOSQUITTO_CONF_PATH"mosquitto_bind_unix_socket.conf", [](endpoint_description_t* endpoint) {
+        EXPECT_EQ(nullptr, celix_properties_get(endpoint->properties, CELIX_EARPM_MQTT_BROKER_PORT, nullptr));
+        EXPECT_STREQ("/var/mosquitto.sock", celix_properties_get(endpoint->properties, CELIX_EARPM_MQTT_BROKER_ADDRESS, nullptr));
+    });
+}
+
 TEST_F(CelixEarpmBrokerDiscoveryTestSuite, BrokerProfileNotExistedTest) {
     ParseInvalidBrokerProfileTest(MOSQUITTO_CONF_PATH"not_existed.conf");
 }
@@ -282,7 +297,7 @@ TEST_F(CelixEarpmBrokerDiscoveryTestSuite, DiscoveryStartAfterEndpointListenerAd
     unsetenv(CELIX_EARPM_BROKER_PROFILE);
 }
 
-TEST_F(CelixEarpmBrokerDiscoveryTestSuite, EndpointListenerServicePropertiesInvalid) {
+TEST_F(CelixEarpmBrokerDiscoveryTestSuite, EndpointListenerServicePropertiesInvalidTest) {
     auto discovery = celix_earpmDiscovery_create(ctx.get());
     ASSERT_NE(discovery, nullptr);
 
@@ -298,6 +313,24 @@ TEST_F(CelixEarpmBrokerDiscoveryTestSuite, EndpointListenerServicePropertiesInva
 
     status = celix_earpmDiscovery_removeEndpointListener(discovery, &listener, properties);
     EXPECT_EQ(status, CELIX_ILLEGAL_ARGUMENT);
+
+    celix_earpmDiscovery_destroy(discovery);
+}
+
+TEST_F(CelixEarpmBrokerDiscoveryTestSuite, RemoveNotExistedEndpointListenerServiceTest) {
+    auto discovery = celix_earpmDiscovery_create(ctx.get());
+    ASSERT_NE(discovery, nullptr);
+
+    celix_autoptr(celix_properties_t) properties = celix_properties_create();
+    ASSERT_NE(properties, nullptr);
+    celix_properties_setLong(properties, CELIX_FRAMEWORK_SERVICE_ID, 123);
+    endpoint_listener_t listener{};
+    listener.handle = nullptr;
+    listener.endpointAdded = [](void*, endpoint_description_t*, char*) { return CELIX_SUCCESS; };
+    listener.endpointRemoved = [](void*, endpoint_description_t*, char*) { return CELIX_SUCCESS; };
+
+    auto status = celix_earpmDiscovery_removeEndpointListener(discovery, &listener, properties);
+    EXPECT_EQ(status, CELIX_SUCCESS);
 
     celix_earpmDiscovery_destroy(discovery);
 }
