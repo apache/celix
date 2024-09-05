@@ -82,6 +82,7 @@ class CelixConan(ConanFile):
         "build_utils": False,
         "build_event_admin": False,
         "build_event_admin_examples": False,
+        "build_event_admin_remote_provider_mqtt": False,
         "celix_cxx14": True,
         "celix_cxx17": True,
         "celix_install_deprecated_api": False,
@@ -164,6 +165,14 @@ class CelixConan(ConanFile):
                 if opt.startswith('build_'):
                     options[opt] = True
 
+        if options["build_event_admin_examples"]:
+            options["build_event_admin"] = True
+            options["build_log_service"] = True
+            options["build_shell_tui"] = True
+            options["build_launcher"] = True
+            options["build_event_admin_remote_provider_mqtt"] = True
+            options["build_rsa_discovery_zeroconf"] = True
+
         if self.settings.os != "Linux":
             options["build_rsa_remote_service_admin_shm_v2"] = False
             options["build_rsa_discovery_zeroconf"] = False
@@ -208,12 +217,6 @@ class CelixConan(ConanFile):
             options["build_log_helper"] = True
             options["build_celix_dfi"] = True
             options["celix_install_deprecated_api"] = True
-
-        if options["build_event_admin_examples"]:
-            options["build_event_admin"] = True
-            options["build_log_service"] = True
-            options["build_shell_tui"] = True
-            options["build_launcher"] = True
 
         if options["build_event_admin"]:
             options["build_framework"] = True
@@ -309,8 +312,13 @@ class CelixConan(ConanFile):
             self.options['openssl'].shared = True
         if self.options.build_celix_dfi:
             self.options['libffi'].shared = True
-        if self.options.build_utils or self.options.build_celix_dfi or self.options.build_celix_etcdlib:
+        if self.options.build_utils or self.options.build_celix_dfi or self.options.build_celix_etcdlib or self.options.build_event_admin_remote_provider_mqtt:
             self.options['jansson'].shared = True
+        if self.options.build_event_admin_remote_provider_mqtt:
+            self.options['mosquitto'].shared = True
+            if self.options.enable_testing:
+                self.options['mosquitto'].broker = True
+                self.options['mosquitto'].clients = True
 
     def requirements(self):
         if self.options.build_utils:
@@ -332,7 +340,7 @@ class CelixConan(ConanFile):
             self.requires("civetweb/1.16")
         if self.options.build_celix_dfi:
             self.requires("libffi/[>=3.2.1 <4.0.0]")
-        if self.options.build_utils or self.options.build_celix_dfi or self.options.build_celix_etcdlib:
+        if self.options.build_utils or self.options.build_celix_dfi or self.options.build_celix_etcdlib or self.options.build_event_admin_remote_provider_mqtt:
             self.requires("jansson/[>=2.12 <3.0.0]")
         if self.options.build_rsa_discovery_zeroconf:
             # TODO: To be replaced with mdnsresponder/1790.80.10, resolve some problems of mdnsresponder
@@ -340,6 +348,8 @@ class CelixConan(ConanFile):
             self.requires("mdnsresponder/1310.140.1")
         # 'libzip/1.10.1' requires 'zlib/1.2.13' while 'libcurl/7.64.1' requires 'zlib/1.2.12'
         self.requires("zlib/1.2.13", override=True)
+        if self.options.build_event_admin_remote_provider_mqtt:
+            self.requires("mosquitto/[>=2.0.3 <3.0.0]")
         self.validate()
 
     def generate(self):
@@ -352,6 +362,8 @@ class CelixConan(ConanFile):
                 tc.cache_variables["BUILD_ERROR_INJECTOR_MDNSRESPONDER"] = "ON"
             if "jansson" in lst:
                 tc.cache_variables["BUILD_ERROR_INJECTOR_JANSSON"] = "ON"
+            if "mosquitto" in lst:
+                tc.cache_variables["BUILD_ERROR_INJECTOR_MOSQUITTO"] = "ON"
         tc.cache_variables["CELIX_ERR_BUFFER_SIZE"] = str(self.options.celix_err_buffer_size)
         # tc.cache_variables["CMAKE_PROJECT_Celix_INCLUDE"] = os.path.join(self.build_folder, "conan_paths.cmake")
         # the following is workaround for https://github.com/conan-io/conan/issues/7192

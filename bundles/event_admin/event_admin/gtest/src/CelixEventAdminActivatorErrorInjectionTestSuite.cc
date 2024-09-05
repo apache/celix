@@ -103,6 +103,30 @@ TEST_F(CelixEventAdminActTestSuite, FailedToAddEventHandlerDependencyToEventAdmi
     });
 }
 
+TEST_F(CelixEventAdminActTestSuite, FailedToCreateRemoteProviderDependencyForEventAdminTest) {
+    TestEventAdminActivator([](void *act, celix_bundle_context_t *ctx) {
+        celix_ei_expect_celix_dmServiceDependency_create((void*)&celix_bundleActivator_start, 1, nullptr, 2);
+        auto status = celix_bundleActivator_start(act, ctx);
+        ASSERT_EQ(CELIX_ENOMEM, status);
+    });
+}
+
+TEST_F(CelixEventAdminActTestSuite, FailedToSetServiceToRemoteProviderDependencyTest) {
+    TestEventAdminActivator([](void *act, celix_bundle_context_t *ctx) {
+        celix_ei_expect_celix_dmServiceDependency_setService((void*)&celix_bundleActivator_start, 1, CELIX_ENOMEM, 2);
+        auto status = celix_bundleActivator_start(act, ctx);
+        ASSERT_EQ(CELIX_ENOMEM, status);
+    });
+}
+
+TEST_F(CelixEventAdminActTestSuite, FailedToAddRemoteProviderDependencyToEventAdminComponentTest) {
+    TestEventAdminActivator([](void *act, celix_bundle_context_t *ctx) {
+        celix_ei_expect_celix_dmComponent_addServiceDependency((void*)&celix_bundleActivator_start, 1, CELIX_ENOMEM, 2);
+        auto status = celix_bundleActivator_start(act, ctx);
+        ASSERT_EQ(CELIX_ENOMEM, status);
+    });
+}
+
 TEST_F(CelixEventAdminActTestSuite, FailedToAddEventAdminServiceToComponentTest) {
     TestEventAdminActivator([](void *act, celix_bundle_context_t *ctx) {
         celix_ei_expect_celix_dmComponent_addInterface((void*)&celix_bundleActivator_start, 1, CELIX_ENOMEM);
@@ -129,7 +153,7 @@ TEST_F(CelixEventAdminActTestSuite, FailedToCreateEventAdapterTest) {
 
 TEST_F(CelixEventAdminActTestSuite, FailedToCreateEventAdminDependencyForEventAdapterTest) {
     TestEventAdminActivator([](void *act, celix_bundle_context_t *ctx) {
-        celix_ei_expect_celix_dmServiceDependency_create((void*)&celix_bundleActivator_start, 1, nullptr, 2);
+        celix_ei_expect_celix_dmServiceDependency_create((void*)&celix_bundleActivator_start, 1, nullptr, 3);
         auto status = celix_bundleActivator_start(act, ctx);
         ASSERT_EQ(CELIX_ENOMEM, status);
     });
@@ -137,7 +161,7 @@ TEST_F(CelixEventAdminActTestSuite, FailedToCreateEventAdminDependencyForEventAd
 
 TEST_F(CelixEventAdminActTestSuite, FailedToSetServiceToEventAdminDependencyTest) {
     TestEventAdminActivator([](void *act, celix_bundle_context_t *ctx) {
-        celix_ei_expect_celix_dmServiceDependency_setService((void*)&celix_bundleActivator_start, 1, CELIX_ENOMEM, 2);
+        celix_ei_expect_celix_dmServiceDependency_setService((void*)&celix_bundleActivator_start, 1, CELIX_ENOMEM, 3);
         auto status = celix_bundleActivator_start(act, ctx);
         ASSERT_EQ(CELIX_ENOMEM, status);
     });
@@ -145,7 +169,7 @@ TEST_F(CelixEventAdminActTestSuite, FailedToSetServiceToEventAdminDependencyTest
 
 TEST_F(CelixEventAdminActTestSuite, FailedToAddEventAdminDependencyToEventAdapterComponentTest) {
     TestEventAdminActivator([](void *act, celix_bundle_context_t *ctx) {
-        celix_ei_expect_celix_dmComponent_addServiceDependency((void*)&celix_bundleActivator_start, 1, CELIX_ENOMEM, 2);
+        celix_ei_expect_celix_dmComponent_addServiceDependency((void*)&celix_bundleActivator_start, 1, CELIX_ENOMEM, 3);
         auto status = celix_bundleActivator_start(act, ctx);
         ASSERT_EQ(CELIX_ENOMEM, status);
     });

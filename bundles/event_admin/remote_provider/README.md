@@ -134,7 +134,7 @@ typedef struct celix_event_remote_subscriber_service {
 celix_mqtt_broker_info_service定义如下：
 ~~~
 
-#define CELIX_MQTT_BROKER_INFO_SERVICE_NAME "celix_mqtt_broker_info_service"
+#define CELIX_EARPM_MQTT_BROKER_INFO_SERVICE_NAME "celix_mqtt_broker_info_service"
 
 #define CELIX_MQTT_BROKER_ADDRESS "celix.mqtt.broker.addresses"
 #define CELIX_MQTT_BROKER_PORT "celix.mqtt.broker.port"
@@ -228,7 +228,7 @@ For the implementation based on MQTT, I will add the remote interface `celix_mqt
 The definition of `celix_mqtt_broker_info_service` is as follows:
 
 ~~~
-#define CELIX_MQTT_BROKER_INFO_SERVICE_NAME "celix_mqtt_broker_info_service"
+#define CELIX_EARPM_MQTT_BROKER_INFO_SERVICE_NAME "celix_mqtt_broker_info_service"
 
 //The address of the MQTT broker
 #define CELIX_MQTT_BROKER_ADDRESS "celix.mqtt.broker.addresses"
@@ -333,7 +333,7 @@ typedef struct celix_event_remote_subscriber_service {
 celix_mqtt_broker_info_service定义如下：
 ~~~
 
-#define CELIX_MQTT_BROKER_INFO_SERVICE_NAME "celix_mqtt_broker_info_service"
+#define CELIX_EARPM_MQTT_BROKER_INFO_SERVICE_NAME "celix_mqtt_broker_info_service"
 
 #define CELIX_MQTT_BROKER_ADDRESS "celix.mqtt.broker.addresses"
 #define CELIX_MQTT_BROKER_PORT "celix.mqtt.broker.port"

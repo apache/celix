@@ -37,6 +37,9 @@ int celix_eventAdmin_stop(celix_event_admin_t* ea);
 int celix_eventAdmin_addEventHandlerWithProperties(void* handle, void* svc, const celix_properties_t* props);
 int celix_eventAdmin_removeEventHandlerWithProperties(void* handle, void* svc, const celix_properties_t* props);
 
+int celix_eventAdmin_addRemoteProviderService(void* handle, void* svc, const celix_properties_t* props);
+int celix_eventAdmin_removeRemoteProviderService(void* handle, void* svc, const celix_properties_t* props);
+
 celix_status_t celix_eventAdmin_sendEvent(void* handle, const char* topic, const celix_properties_t* props);
 celix_status_t celix_eventAdmin_postEvent(void* handle, const char* topic, const celix_properties_t* props);
 

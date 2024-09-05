@@ -24,6 +24,7 @@ set(EVENT_ADMIN_SRC
 
 set(EVENT_ADMIN_DEPS
         Celix::event_admin_api
+        Celix::event_admin_spi
         Celix::log_helper
         Celix::framework
         Celix::utils

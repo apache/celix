@@ -106,6 +106,17 @@ extern "C" {
  */
 #define CELIX_EVENT_TIMESTAMP "timestamp"
 
+
+#define CELIX_EVENT_REMOTE_ENABLE "celix.event.remote.enable"
+
+#define CELIX_EVENT_REMOTE_QOS "celix.event.remote.qos"
+
+#define CELIX_EVENT_REMOTE_EXPIRY_INTERVAL "celix.event.remote.expiryInterval"
+
+#define CELIX_EVENT_REMOTE_SEQ_ID "celix.event.remote.seqId"
+
+#define CELIX_EVENT_REMOTE_FRAMEWORK_UUID "celix.event.remote.framework.uuid"
+
 //end event constants
 
 #ifdef __cplusplus

@@ -18,6 +18,7 @@
  */
 #include <stdio.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include "celix_event_admin_service.h"
 #include "celix_event_constants.h"
@@ -51,6 +52,22 @@ static void *celix_eventPublisherExampleActivator_sendEventThread(void *handle) 
                 celix_properties_set(props, CELIX_EVENT_TOPIC, "example/asyncEvent");
                 celix_properties_set(props, "example", "data");
                 svc->postEvent(svc->handle, "example/asyncEvent", props);
+            }
+            {
+                printf("Sending remote enable sync event\n");
+                celix_autoptr(celix_properties_t) props = celix_properties_create();
+                celix_properties_set(props, CELIX_EVENT_TOPIC, "example/remoteSyncEvent");
+                celix_properties_setBool(props, CELIX_EVENT_REMOTE_ENABLE, true);
+                celix_properties_set(props, "example", "data");
+                svc->sendEvent(svc->handle, "example/remoteSyncEvent", props);
+            }
+            {
+                printf("Sending remote enable async event\n");
+                celix_autoptr(celix_properties_t) props = celix_properties_create();
+                celix_properties_set(props, CELIX_EVENT_TOPIC, "example/remoteAsyncEvent");
+                celix_properties_setBool(props, CELIX_EVENT_REMOTE_ENABLE, true);
+                celix_properties_set(props, "example", "data");
+                svc->postEvent(svc->handle, "example/remoteAsyncEvent", props);
             }
         }
         celixThreadRwlock_unlock(&act->svcLock);
