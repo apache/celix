@@ -183,6 +183,7 @@ public:
         celix_ei_expect_celix_properties_copy(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_celix_stringHashMap_put(nullptr, 0, 0);
+        celix_ei_expect_celix_longHashMap_put(nullptr, 0, 0);
 
         sem_destroy(&msgSyncSem);
         celix_bundleContext_unregisterService(ctx.get(), lsId);
@@ -514,6 +515,36 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToCreateServiceMapForBrowserEntr
     });
 }
 
+TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToCreateRelatedListenerMapForBrowserEntry) {
+    TestRsaServiceAddAndRemove([](){
+        celix_ei_expect_celix_longHashMap_create(CELIX_EI_UNKNOWN_CALLER, 0, nullptr);
+        ExpectMsgOutPut("Watcher: Failed to create related listeners map.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(1);
+        EXPECT_FALSE(timeOut);
+    });
+}
+
+TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutRelatedListenerToMapForBrowserEntry) {
+    TestRsaServiceAddAndRemove([](){
+        celix_ei_expect_celix_longHashMap_put(CELIX_EI_UNKNOWN_CALLER, 0, ENOMEM);
+        ExpectMsgOutPut("Watcher: Failed to attach listener to service browser.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(1);
+        EXPECT_FALSE(timeOut);
+    });
+}
+
+TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutRelatedListenerToExistedMapForBrowserEntry) {
+    TestRsaServiceAddAndRemove([](){
+        celix_ei_expect_celix_longHashMap_put(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM, 2);
+        ExpectMsgOutPut("Watcher: Failed to attach listener to existed service browser.");
+    }, [](){
+        auto timeOut  = CheckMsgWithTimeOutInS(1);
+        EXPECT_FALSE(timeOut);
+    },nullptr, nullptr, "celix.test1.http,celix.test2.http");
+}
+
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToPutBrowserEntryToCache) {
     TestRsaServiceAddAndRemove([](){
         celix_ei_expect_celix_stringHashMap_put(CELIX_EI_UNKNOWN_CALLER, 0, CELIX_ENOMEM);
@@ -530,6 +561,22 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddRsaServiceWithNoNameSpaceConfigType
 
 TEST_F(DiscoveryZeroconfWatcherTestSuite, AddRsaServiceWithMultiConfigTypes) {
     TestRsaServiceAddAndRemove([](){}, [](){}, nullptr, nullptr, "celix.test1.http,celix.test1.http-json,celix.test2.http,celix.test2.http-json");
+}
+
+TEST_F(DiscoveryZeroconfWatcherTestSuite, RsaServiceWithoutServiceIdTest) {
+    discovery_zeroconf_watcher_t *watcher;
+    celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, CELIX_RSA_REMOTE_SERVICE_ADMIN);
+    status = discoveryZeroConfWatcher_addRSA(watcher, (void*)"dummy_service", props);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    status = discoveryZeroConfWatcher_removeRSA(watcher, (void*)"dummy_service", props);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    discoveryZeroconfWatcher_destroy(watcher);
 }
 
 static void OnDNSServiceRegisterCallback(DNSServiceRef sdRef, DNSServiceFlags flags, DNSServiceErrorType errorCode, const char *instanceName, const char *serviceType, const char *domain, void *data) {
@@ -1033,6 +1080,54 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, AddAndRemoveEndpointListener) {
     discoveryZeroconfWatcher_destroy(watcher);
 }
 
+TEST_F(DiscoveryZeroconfWatcherTestSuite, EndpointListenerSpesificServiceConfigTypeTest) {
+    discovery_zeroconf_watcher_t *watcher;
+    celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    auto props = celix_properties_create();
+    status = celix_properties_set(props, CELIX_RSA_ENDPOINT_LISTENER_SCOPE, "(" CELIX_RSA_SERVICE_IMPORTED_CONFIGS "=" DZC_TEST_CONFIG_TYPE ")");
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    long listenerId = celix_bundleContext_registerService(ctx.get(), &epListener, CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, props);
+    EXPECT_LE(0, listenerId);
+
+    char txtBuf[1300] = {0};
+    TXTRecordRef txtRecord;
+    TXTRecordCreate(&txtRecord, sizeof(txtBuf), txtBuf);
+    TXTRecordSetValue(&txtRecord, DZC_TXT_RECORD_VERSION_KEY, sizeof(DZC_CURRENT_TXT_RECORD_VERSION)-1, DZC_CURRENT_TXT_RECORD_VERSION);
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, strlen(DZC_TEST_ENDPOINT_FW_UUID), DZC_TEST_ENDPOINT_FW_UUID);
+    TXTRecordSetValue(&txtRecord, CELIX_FRAMEWORK_SERVICE_NAME, strlen("dzc_test_service"), "dzc_test_service");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_ID, strlen("60f49d89-d105-430c-b12b-93fbb54b1d19"), "60f49d89-d105-430c-b12b-93fbb54b1d19");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_ENDPOINT_SERVICE_ID, strlen("100"), "100");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_SERVICE_IMPORTED, strlen("true"), "true");
+    TXTRecordSetValue(&txtRecord, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, sizeof(DZC_TEST_CONFIG_TYPE)-1, DZC_TEST_CONFIG_TYPE);
+    char propSizeStr[16]= {0};
+    sprintf(propSizeStr, "%d", TXTRecordGetCount(TXTRecordGetLength(&txtRecord), TXTRecordGetBytesPtr(&txtRecord)) + 1);
+    TXTRecordSetValue(&txtRecord, DZC_SERVICE_PROPERTIES_SIZE_KEY, strlen(propSizeStr), propSizeStr);
+
+    DNSServiceRef dsRef{};
+    DNSServiceErrorType dnsErr = DNSServiceRegister(&dsRef, 0, kDNSServiceInterfaceIndexLocalOnly, "dzc_test_service",
+                                                    DZC_TEST_SERVICE_TYPE, "local", nullptr, htons(DZC_PORT_DEFAULT), TXTRecordGetLength(&txtRecord),
+                                                    TXTRecordGetBytesPtr(&txtRecord), OnDNSServiceRegisterCallback,nullptr);
+    EXPECT_EQ(dnsErr, kDNSServiceErr_NoError);
+    DNSServiceProcessResult(dsRef);
+
+    ExpectMsgOutPut("Endpoint added: %s.");
+    auto eplTrkId = TrackEndpointListenerService(watcher);
+    auto timeOut  = CheckMsgWithTimeOutInS(30);
+    EXPECT_FALSE(timeOut);
+
+    ExpectMsgOutPut("Endpoint removed: %s.");
+    celix_bundleContext_stopTracker(ctx.get(), eplTrkId);
+    timeOut  = CheckMsgWithTimeOutInS(30);
+    EXPECT_FALSE(timeOut);
+
+    celix_bundleContext_unregisterService(ctx.get(), listenerId);
+
+    DNSServiceRefDeallocate(dsRef);
+    discoveryZeroconfWatcher_destroy(watcher);
+}
+
 TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToAllocMemoryForEPL) {
     discovery_zeroconf_watcher_t *watcher;
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
@@ -1045,6 +1140,22 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, FailedToAllocMemoryForEPL) {
     EXPECT_FALSE(timeOut);
 
     celix_bundleContext_stopTracker(ctx.get(), eplTrkId);
+
+    discoveryZeroconfWatcher_destroy(watcher);
+}
+
+TEST_F(DiscoveryZeroconfWatcherTestSuite, EndpointListenerServiceWithoutServiceIdTest) {
+    discovery_zeroconf_watcher_t *watcher;
+    celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME);
+    status = discoveryZeroconfWatcher_addEPL(watcher, (void*)"dummy_service", props);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
+    status = discoveryZeroconfWatcher_removeEPL(watcher, (void*)"dummy_service", props);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
 
     discoveryZeroconfWatcher_destroy(watcher);
 }
