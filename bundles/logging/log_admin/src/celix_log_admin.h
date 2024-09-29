@@ -69,6 +69,18 @@ celix_log_admin_t* celix_logAdmin_create(celix_bundle_context_t* ctx);
  */
 void celix_logAdmin_destroy(celix_log_admin_t* admin);
 
+//Note exposed for testing purposes
+void celix_logAdmin_addLogSvcForName(celix_log_admin_t* admin, const char* name);
+
+//Note exposed for testing purposes
+void celix_logAdmin_addSink(void* handle, void* svc, const celix_properties_t* props);
+
+//Note exposed for testing purposes
+size_t celix_logAdmin_nrOfLogServices(void* handle, const char* select);
+
+//Note exposed for testing purposes
+size_t celix_logAdmin_nrOfSinks(void *handle, const char* select);
+
 #ifdef __cplusplus
 };
 #endif

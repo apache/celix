@@ -23,7 +23,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "celix_log_level.h"
-#include "celix_array_list.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,13 +35,42 @@ extern "C" {
 typedef struct celix_log_control {
     void *handle;
 
+    /**
+    * @brief Get the number of provided log services.
+    */
     size_t (*nrOfLogServices)(void *handle, const char* select);
 
+    /**
+    * @brief Get the number of tracked log sinks.
+    */
     size_t (*nrOfSinks)(void *handle, const char* select);
 
-    size_t (*setActiveLogLevels)(void *handle, const char* select, celix_log_level_e activeLogLevel);
+    /**
+     * @brief Set the active log level for the selected loggers.
+     *
+     * Selection is done by using strcasestr on the logger name, so the select string can be a part of the logger name.
+     * For example, if the select string is "foo" all loggers with "foo" in the name will be selected, like "foo.bar"
+     * and "bar.foo".
+     *
+     * @param[in] handle The service handle.
+     * @param[in] select The select string that specifies the case-insensitive string part of target loggers.
+     * @param[in] activeLogLevel The active log level to set.
+     * @return The number of loggers selected.
+     */
+    size_t (*setActiveLogLevels)(void* handle, const char* select, celix_log_level_e activeLogLevel);
 
-    size_t (*setSinkEnabled)(void *handle, const char* select, bool enabled);
+    /**
+     * @brief Set the active log level for the selected loggers.
+     *
+     * Selection is done by using strcasestr on the sink name, so the select string can be a part of the sink name.
+     * For example, if the select string is "foo" all sinks with "foo" in the name will be selected, like "foo.bar"
+     * and "bar.foo".
+     *
+     * @param[in] handle The service handle.
+     * @param[in] select The select string that specifies the case-insensitive string part of target sinks.
+     * @param[in] activeLogLevel The active log level to set.
+     */
+    size_t (*setSinkEnabled)(void* handle, const char* select, bool enabled);
 
     /**
      * @brief Get a list of names for the log service provided by the log service.
@@ -60,8 +88,22 @@ typedef struct celix_log_control {
      */
     celix_array_list_t* (*currentSinks)(void *handle);
 
+    /**
+     * @brief Get the active log level for the selected logger.
+     * @param[in] handle The service handle.
+     * @param[in] loggerName The name of the target logger.
+     * @param[out[ outActiveLogLevel The active log level of the target logger. Cannot be NULL.
+     * @return True if the target logger is found, false otherwise.
+     */
     bool (*logServiceInfo)(void *handle, const char* loggerName, celix_log_level_e* outActiveLogLevel);
 
+    /**
+    * @brief Get the enabled state of the selected sink.
+    * @param[in] handle The service handle.
+    * @param[in] sinkName The name of the target sink.
+    * @param[out] outEnabled The enabled state of the target sink. Cannot be NULL.
+    * @return True if the target sink is found, false otherwise.
+    */
     bool (*sinkInfo)(void *handle, const char* sinkName, bool *outEnabled);
 
     /**

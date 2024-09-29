@@ -33,16 +33,18 @@ log messages will be printed on stdout/stderr.
 
 
 ## Logging Properties
-Properties shared among the logging bundles
+Config Properties used in the Celix Log Admina and framework (fallback to stdout/stderr, when no log admin is present).
 
-    CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL The default active log level for created log services. Default is "info".
+    CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL The default active log level for created log services. Default is "info". The value should be one of the log levels: "trace", "debug", "info", "error", "fatal".
 
 ## Log Admin Properties
-Properties specific for the Celix Log Admin (`Celix::log_admin` bundle)
+Config Properties specific for the Celix Log Admin (`Celix::log_admin` bundle)
 
     CELIX_LOG_ADMIN_FALLBACK_TO_STDOUT If set to true, the log admin will log to stdout/stderr if no celix log writers are available. Default is true
     CELIX_LOG_ADMIN_ALWAYS_USE_STDOUT If set to true, the log admin will always log to stdout/stderr after forwaring log statements to the available celix log writers. Default is false.
     CELIX_LOG_ADMIN_LOG_SINKS_DEFAULT_ENABLED Whether discovered log sink are default enabled. Default is true.
+    CELIX_LOG_ADMIN_LOG_SINK_<log_sink_name>_ENABLED If present, the log sink with the name <log_sink_name> is enabled/disabled. The <log_sink_name> is the name of the log sink in all caps. For example, the log sink with the name "celix_syslog" can be enabled/disabled with the property CELIX_LOG_ADMIN_LOG_SINK_CELIX_SYSLOG_ENABLED.
+    CELIX_LOG_ADMIN_LOGGER_<logger_name>_ACTIVE_LOG_LEVEL If present, the active log level for the log service with the name <logger_name>. The <logger_name> is the name of the logger in all caps. For example, the active log level for the log service with the name "celix_framework" can be set with the property CELIX_LOGGING_CELIX_FRAMEWORK_ACTIVE_LOG_LEVEL.
     
 ## CMake option
     BUILD_LOG_SERVICE=ON

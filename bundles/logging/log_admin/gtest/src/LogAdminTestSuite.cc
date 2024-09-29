@@ -19,9 +19,10 @@
 
 #include <gtest/gtest.h>
 
-#include <thread>
 #include <atomic>
+#include <memory>
 
+#include "celix/FrameworkFactory.h"
 #include "celix_log_sink.h"
 #include "celix_log_control.h"
 #include "celix_bundle_context.h"
@@ -30,11 +31,12 @@
 #include "celix_shell_command.h"
 #include "celix_constants.h"
 
-class LogBundleTestSuite : public ::testing::Test {
+
+class LogAdminTestSuite : public ::testing::Test {
 public:
-    LogBundleTestSuite() {
+    LogAdminTestSuite() {
         auto* properties = celix_properties_create();
-        celix_properties_set(properties, CELIX_FRAMEWORK_CACHE_DIR, ".cacheLogBundleTestSuite");
+        celix_properties_set(properties, CELIX_FRAMEWORK_CACHE_DIR, ".cacheLogAdminTestSuite");
 
 
         auto* fwPtr = celix_frameworkFactory_createFramework(properties);
@@ -50,14 +52,14 @@ public:
         opts.filter.versionRange = CELIX_LOG_CONTROL_USE_RANGE;
         opts.callbackHandle = (void*)this;
         opts.set = [](void *handle, void *svc) {
-            auto* self = (LogBundleTestSuite*)handle;
+            auto* self = (LogAdminTestSuite*)handle;
             self->control = std::shared_ptr<celix_log_control_t>{(celix_log_control_t*)svc, [](celix_log_control_t *){/*nop*/}};
         };
         trkId = celix_bundleContext_trackServicesWithOptions(ctx.get(), &opts);
         EXPECT_TRUE(trkId >= 0);
     }
 
-    ~LogBundleTestSuite() override {
+    ~LogAdminTestSuite() override {
         celix_bundleContext_stopTracker(ctx.get(), trkId);
     }
 
@@ -70,7 +72,7 @@ public:
 
 
 
-TEST_F(LogBundleTestSuite, StartStop) {
+TEST_F(LogAdminTestSuite, StartStop) {
     auto *list = celix_bundleContext_listBundles(ctx.get());
     EXPECT_EQ(1, celix_arrayList_size(list));
     celix_arrayList_destroy(list);
@@ -79,7 +81,7 @@ TEST_F(LogBundleTestSuite, StartStop) {
     EXPECT_TRUE(svcId >= 0);
 }
 
-TEST_F(LogBundleTestSuite, NrOfLogServices) {
+TEST_F(LogAdminTestSuite, NrOfLogServices) {
     ASSERT_TRUE(control);
     EXPECT_EQ(1, control->nrOfLogServices(control->handle, nullptr)); //default the framework log services is available
 
@@ -118,7 +120,7 @@ TEST_F(LogBundleTestSuite, NrOfLogServices) {
     celix_bundleContext_stopTracker(ctx.get(), trkId4);
 }
 
-TEST_F(LogBundleTestSuite, NrOfLogSinks) {
+TEST_F(LogAdminTestSuite, NrOfLogSinks) {
     ASSERT_TRUE(control);
     EXPECT_EQ(0, control->nrOfSinks(control->handle, nullptr));
 
@@ -152,7 +154,7 @@ TEST_F(LogBundleTestSuite, NrOfLogSinks) {
     celix_bundleContext_unregisterService(ctx.get(), svcId3);
 }
 
-TEST_F(LogBundleTestSuite, SinkLogControl) {
+TEST_F(LogAdminTestSuite, SinkLogControl) {
     celix_log_sink_t logSink;
     logSink.handle = nullptr;
     logSink.sinkLog = [](void */*handle*/, celix_log_level_e /*level*/, long /*logServiceId*/, const char* /*logServiceName*/, const char* /*file*/, const char* /*function*/, int /*line*/, const char */*format*/, va_list /*formatArgs*/) {
@@ -219,7 +221,7 @@ TEST_F(LogBundleTestSuite, SinkLogControl) {
     celix_bundleContext_unregisterService(ctx.get(), svcId3);
 }
 
-TEST_F(LogBundleTestSuite, LogServiceControl) {
+TEST_F(LogAdminTestSuite, LogServiceControl) {
     //request "default" log service
     long trkId1 = celix_bundleContext_trackServices(ctx.get(), CELIX_LOG_SERVICE_NAME);
     celix_framework_waitForEmptyEventQueue(fw.get());
@@ -295,7 +297,7 @@ static void logSinkFunction(void *handle, celix_log_level_e level, long logServi
     fprintf(stdout, "\n");
 }
 
-TEST_F(LogBundleTestSuite, LogServiceAndSink) {
+TEST_F(LogAdminTestSuite, LogServiceAndSink) {
     celix_log_sink_t logSink;
     logSink.handle = nullptr;
     logSink.sinkLog = [](void */*handle*/, celix_log_level_e /*level*/, long /*logServiceId*/, const char* /*logServiceName*/, const char* /*file*/, const char* /*function*/, int /*line*/, const char */*format*/, va_list /*formatArgs*/) {
@@ -431,7 +433,7 @@ TEST_F(LogBundleTestSuite, LogServiceAndSink) {
     celix_bundleContext_stopTracker(ctx.get(), trkId);
 }
 
-TEST_F(LogBundleTestSuite, LogAdminCmd) {
+TEST_F(LogAdminTestSuite, LogAdminCmd) {
     celix_log_sink_t logSink;
     logSink.handle = nullptr;
     logSink.sinkLog = [](void */*handle*/, celix_log_level_e /*level*/, long /*logServiceId*/, const char* /*logServiceName*/, const char* /*file*/, const char* /*function*/, int /*line*/, const char */*format*/, va_list /*formatArgs*/) {
@@ -590,4 +592,98 @@ TEST_F(LogBundleTestSuite, LogAdminCmd) {
     };
     called = celix_bundleContext_useServiceWithOptions(ctx.get(), &opts);
     EXPECT_TRUE(called);
+}
+
+TEST_F(LogAdminTestSuite, LogServiceWithConfigPropertyTest) {
+    // Given a fw with a config property that set the active log level of a log service to fatal
+    auto fw = celix::createFramework({
+        {CELIX_FRAMEWORK_CACHE_DIR, ".cacheLogAdminTestSuiteWithConfig"},
+        {"CELIX_LOG_ADMIN_LOGGER_FOO_ACTIVE_LOG_LEVEL", "fatal"},
+        {"CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "debug"}});
+    EXPECT_NE(fw.get(), nullptr);
+
+    // And a log admin
+    auto bndId = fw->getFrameworkBundleContext()->installBundle(LOG_ADMIN_BUNDLE, true);
+    EXPECT_GE(bndId, 0);
+
+    // When the log service bar is requested
+    auto trk1 = fw->getFrameworkBundleContext()
+                    ->trackServices<celix_log_service_t>(CELIX_LOG_SERVICE_NAME)
+                    .setFilter("(name=bar)")
+                    .build();
+
+    // Then the active log level of the log service bar is debug (default);
+    auto count = fw->getFrameworkBundleContext()
+                     ->useService<celix_log_control_t>(CELIX_LOG_CONTROL_NAME)
+                     .addUseCallback([](auto& svc) {
+                         celix_log_level_e level;
+                         svc.logServiceInfo(svc.handle, "bar", &level);
+                         EXPECT_EQ(CELIX_LOG_LEVEL_DEBUG, level);
+                     })
+                     .build();
+    EXPECT_EQ(1, count);
+
+    // When the log service foo is requested
+    auto trk2 = fw->getFrameworkBundleContext()
+                    ->trackServices<celix_log_service_t>(CELIX_LOG_SERVICE_NAME)
+                    .setFilter("(name=foo)")
+                    .build();
+
+    // Then the active log level of the log service foo is fatal (set by config property);
+    count = fw->getFrameworkBundleContext()
+                ->useService<celix_log_control_t>(CELIX_LOG_CONTROL_NAME)
+                .addUseCallback([](auto& svc) {
+                    celix_log_level_e level;
+                    svc.logServiceInfo(svc.handle, "foo", &level);
+                    EXPECT_EQ(CELIX_LOG_LEVEL_FATAL, level);
+                })
+                .build();
+    EXPECT_EQ(1, count);
+}
+
+TEST_F(LogAdminTestSuite, LogSinkWithConfigPropertyTest) {
+    // Given a fw with a config property that set the active log level of a log service to fatal
+    auto fw = celix::createFramework({
+        {CELIX_FRAMEWORK_CACHE_DIR, ".cacheLogAdminTestSuiteWithConfig"},
+        {"CELIX_LOG_ADMIN_LOG_SINKS_DEFAULT_ENABLED", "false"},
+        {"CELIX_LOG_ADMIN_LOG_SINK_FOO_ENABLED", "true"}});
+    EXPECT_NE(fw.get(), nullptr);
+
+    // And a log admin
+    auto bndId = fw->getFrameworkBundleContext()->installBundle(LOG_ADMIN_BUNDLE, true);
+    EXPECT_GE(bndId, 0);
+
+    // When a log sink bar is registered
+    auto reg1 = fw->getFrameworkBundleContext()->registerService<celix_log_sink_t>(std::make_shared<celix_log_sink_t>(), CELIX_LOG_SINK_NAME)
+                    .setVersion(CELIX_LOG_SINK_VERSION)
+                    .addProperty("name", "bar")
+                    .build();
+
+    // Then the log sink bar will be disabled (default for all sinks)
+    auto count = fw->getFrameworkBundleContext()
+                     ->useService<celix_log_control_t>(CELIX_LOG_CONTROL_NAME)
+                     .addUseCallback([](auto& svc) {
+                         bool enabled;
+                         svc.sinkInfo(svc.handle, "bar", &enabled);
+                         EXPECT_FALSE(enabled);
+                     })
+                     .build();
+    EXPECT_EQ(1, count);
+
+    // When a log sink foo is registered
+    auto reg2 = fw->getFrameworkBundleContext()->registerService<celix_log_sink_t>(std::make_shared<celix_log_sink_t>(), CELIX_LOG_SINK_NAME)
+                    .setVersion(CELIX_LOG_SINK_VERSION)
+                    .addProperty("name", "foo")
+                    .build();
+
+    // Then the log sink fpp will be enabled (CELIX_LOG_ADMIN_LOG_SINK_FOO_ENABLED=true)
+    count = fw->getFrameworkBundleContext()
+                     ->useService<celix_log_control_t>(CELIX_LOG_CONTROL_NAME)
+                     .addUseCallback([](auto& svc) {
+                         bool enabled;
+                         svc.sinkInfo(svc.handle, "foo", &enabled);
+                         EXPECT_TRUE(enabled);
+                     })
+                     .build();
+    EXPECT_EQ(1, count);
 }
