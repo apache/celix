@@ -54,7 +54,6 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
         return CELIX_BUNDLE_EXCEPTION;
     }
     celix_dmComponent_setImplementation(earpmDiscoveryCmp, act->brokerDiscovery);
-    CELIX_DM_COMPONENT_SET_CALLBACKS(earpmDiscoveryCmp, celix_earpm_broker_discovery_t, NULL, celix_earpmDiscovery_start, celix_earpmDiscovery_stop, NULL);
     CELIX_DM_COMPONENT_SET_IMPLEMENTATION_DESTROY_FUNCTION(earpmDiscoveryCmp, celix_earpm_broker_discovery_t, celix_earpmDiscovery_destroy);
 
     {
@@ -67,7 +66,6 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
             return status;
         }
         celix_dmServiceDependency_setStrategy(endpointListenerDep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
-        celix_dmServiceDependency_setRequired(endpointListenerDep, true);
         celix_dm_service_dependency_callback_options_t opts = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
         opts.addWithProps = celix_earpmDiscovery_addEndpointListener;
         opts.removeWithProps = celix_earpmDiscovery_removeEndpointListener;

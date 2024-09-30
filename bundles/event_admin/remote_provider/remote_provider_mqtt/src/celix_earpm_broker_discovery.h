@@ -40,10 +40,6 @@ celix_earpm_broker_discovery_t* celix_earpmDiscovery_create(celix_bundle_context
 
 void celix_earpmDiscovery_destroy(celix_earpm_broker_discovery_t* discovery);
 
-celix_status_t celix_earpmDiscovery_start(celix_earpm_broker_discovery_t* discovery);
-
-celix_status_t celix_earpmDiscovery_stop(celix_earpm_broker_discovery_t* discovery);
-
 celix_status_t celix_earpmDiscovery_addEndpointListener(void* handle, void* service, const celix_properties_t* properties);
 
 celix_status_t celix_earpmDiscovery_removeEndpointListener(void* handle, void* service, const celix_properties_t* properties);

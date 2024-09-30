@@ -28,7 +28,6 @@ extern "C" {
  * @{
  */
 #define CELIX_EARPM_TOPIC_PREFIX "celix/EventAdminMqtt/"
-#define CELIX_EARPM_TOPIC_PATTERN CELIX_EARPM_TOPIC_PREFIX"*"
 #define CELIX_EARPM_HANDLER_INFO_TOPIC_PREFIX CELIX_EARPM_TOPIC_PREFIX"HandlerInfo/"
 #define CELIX_EARPM_HANDLER_INFO_QUERY_TOPIC CELIX_EARPM_HANDLER_INFO_TOPIC_PREFIX"query"
 #define CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC  CELIX_EARPM_HANDLER_INFO_TOPIC_PREFIX"update"
@@ -43,30 +42,48 @@ extern "C" {
  * Configuration properties for the EventAdminMqtt
  * @{
  */
+
+/**
+ * @brief The profile of the MQTT broker, which is used to configure the MQTT broker. Default value is /etc/mosquitto.conf.
+ */
 #define CELIX_EARPM_BROKER_PROFILE "CELIX_EARPM_BROKER_PROFILE"
 #define CELIX_EARPM_BROKER_PROFILE_DEFAULT "/etc/mosquitto.conf"
 
-#define CELIX_EARPM_EVENT_QOS "CELIX_EARPM_EVENT_QOS"
-#define CELIX_EARPM_EVENT_QOS_DEFAULT CELIX_EARPM_QOS_AT_MOST_ONCE
+/**
+ * @brief The default QoS for events. If the event does not specify a QoS with the CELIX_EVENT_REMOTE_QOS property, this QoS is used. Default value is CELIX_EARPM_QOS_AT_MOST_ONCE.
+ * @relatedalso CELIX_EVENT_REMOTE_QOS
+ */
+#define CELIX_EARPM_EVENT_DEFAULT_QOS "CELIX_EARPM_EVENT_DEFAULT_QOS"
+#define CELIX_EARPM_EVENT_DEFAULT_QOS_DEFAULT CELIX_EARPM_QOS_AT_MOST_ONCE
 
+/**
+ * @brief The capacity of the message queue. Default value is 256, and the maximum value is 1024*1024.
+ * The message queue is used to cache the messages when processing the messages.
+ */
 #define CELIX_EARPM_MSG_QUEUE_CAPACITY "CELIX_EARPM_MSG_QUEUE_CAPACITY"
 #define CELIX_EARPM_MSG_QUEUE_CAPACITY_DEFAULT 256
-#define CELIX_EARPM_MSG_QUEUE_MAX_SIZE (1024*1024)
+#define CELIX_EARPM_MSG_QUEUE_MAX_SIZE 2048
 
+/**
+ * @brief The capacity of processing messages in parallel. Default value is 20. The maximum value is CELIX_EARPM_MSG_QUEUE_CAPACITY.
+ * It is used to limit the number of messages that are processed in parallel.
+ */
 #define CELIX_EARPM_PARALLEL_MSG_CAPACITY "CELIX_EARPM_PARALLEL_MSG_CAPACITY"
 #define CELIX_EARPM_PARALLEL_MSG_CAPACITY_DEFAULT 20
 
+/**
+ * @brief The thread pool size for delivering the sync events. Default value is 5. The maximum value is 20.
+ * It is used to deliver the remote sync events to the local event handlers.
+ */
 #define CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS "CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS"
 #define CELIX_EARPM_SYNC_EVENT_DELIVERY_THREADS_DEFAULT 5
 
-#define CELIX_EARPM_CTRL_MSG_REQUEST_TIMEOUT "CELIX_EARPM_CTRL_MSG_REQUEST_TIMEOUT"
-#define CELIX_EARPM_CTRL_MSG_REQUEST_TIMEOUT_DEFAULT 30 //seconds
-
 /**
- * @brief If remote framework does not ack a sync event in specified time, and the exception count is larger than this value, the event remote provider will not wait for the ack anymore, until receiving a new message from the remote framework.
+ * @brief If remote celix framework instance does not acknowledge a sync event in specified time, and the exception count is larger than this value,
+ * the event remote provider will not wait for the acknowledgment anymore, until receiving a new message from the remote celix framework instance. Default value is 10.
  */
 #define CELIX_EARPM_SYNC_EVENT_CONTINUOUS_NO_ACK_THRESHOLD "CELIX_EARPM_SYNC_EVENT_CONTINUOUS_NO_ACK_THRESHOLD"
-#define CELIX_EARPM_SYNC_EVENT_CONTINUOUS_NO_ACK_THRESHOLD_DEFAULT 5
+#define CELIX_EARPM_SYNC_EVENT_CONTINUOUS_NO_ACK_THRESHOLD_DEFAULT 10
 
 /** @}*///end of Configuration properties for the EventAdminMqtt
 

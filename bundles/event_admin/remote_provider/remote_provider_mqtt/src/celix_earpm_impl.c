@@ -69,7 +69,6 @@ typedef struct celix_earpm_remote_handler_info {
 }celix_earpm_remote_handler_info_t;
 
 typedef struct celix_earpm_remote_framework_info {
-    struct timespec expiryTime;
     celix_long_hash_map_t* handlerInfoMap;//key = serviceId, value = celix_earpm_remote_handler_info_t*
     celix_long_hash_map_t* eventAckSeqNrMap;//key = seqNr, value = celix_array_list_t* of serviceIds
     int continuousNoAckCount;
@@ -91,13 +90,11 @@ struct celix_event_admin_remote_provider_mqtt {
     celix_log_helper_t* logHelper;
     const char* fwUUID;
     celix_earpm_qos_e defaultQos;
-    int ctrlMsgRequestTimeout;
     int continuousNoAckThreshold;
     char* syncEventAckTopic;
     celix_earpm_event_deliverer_t* deliverer;
     celix_earpm_client_t* mqttClient;
     long lastAckSeqNr;
-    long remoteFwExpiryEventId;
     celix_thread_mutex_t mutex;//protects belows
     celix_thread_cond_t ackCond;
     celix_long_hash_map_t* eventHandlers;//key = serviceId, value = celix_earpm_event_handler_t*
@@ -105,17 +102,6 @@ struct celix_event_admin_remote_provider_mqtt {
     celix_string_hash_map_t* remoteFrameworks;// key = frameworkUUID of remote frameworks, value = celix_remote_framework_info_t*
     bool destroying;
 };
-
-/**
- * @todo
- * 1. 本地客户端断开重连了如何处理，复用原来的远程订阅者信息还是重新获取，如果复用，可能对端也不在了，如果不复用，重新获取阶段消息如何处理---重连后重新刷新远程订阅者信息并设置过期时间，重连前复用已有信息
- * 2. 同步消息处理，如果对端不在了，如何处理---等待WILL消息，同时使用断路机制
- * 3. 对端重连期间会漏远程消息，该情况是否需要处理----可以考虑使用retain标记，对端重连后可以收到消息,需要验证后再实施(这种情况应该考虑使用QOS1或QOS2订阅/发布消息)--不需要处理，同步发送接口报错以及QOS机制
- * 4. 客户端是否需要设置will消息----不需要，异常断开一般会自动重连，如果一段时间内没重连，使用2中的机制处理，如果使用will,处理流程上和2有点重复-----需要,使用2中的机制需要有事件产生，如果没有事件产生，状态会更新不及时
- * 5. 添加调试日志
- * 6. 添加段路机制
- * 7. 修改文件名
- */
 
 static void celix_earpm_eventHandlerDestroy(celix_earpm_event_handler_t* handler);
 static void celix_earpm_subscriptionDestroy(celix_earpm_event_subscription_t* subscription);
@@ -127,7 +113,6 @@ static void celix_earpm_addHandlerInfoToRemote(celix_event_admin_remote_provider
 static void celix_earpm_removeHandlerInfoFromRemote(celix_event_admin_remote_provider_mqtt_t* earpm, const celix_earpm_event_handler_t* handler);
 static celix_status_t celix_earpm_publishEvent(celix_event_admin_remote_provider_mqtt_t* earpm, const char *topic,
                                                const celix_properties_t *eventProps, bool async);
-static void celix_earpm_scheduleRemoteFwExpiryEvent(celix_event_admin_remote_provider_mqtt_t* earpm, int delayInSeconds);
 
 
 celix_event_admin_remote_provider_mqtt_t* celix_earpm_create(celix_bundle_context_t* ctx) {
@@ -138,7 +123,6 @@ celix_event_admin_remote_provider_mqtt_t* celix_earpm_create(celix_bundle_contex
     }
     earpm->ctx = ctx;
     earpm->lastAckSeqNr = 0;
-    earpm->remoteFwExpiryEventId = -1;
     earpm->destroying = false;
     celix_autoptr(celix_log_helper_t) logHelper = earpm->logHelper = celix_logHelper_create(ctx, "celix_earpm");
     if (logHelper == NULL) {
@@ -149,16 +133,12 @@ celix_event_admin_remote_provider_mqtt_t* celix_earpm_create(celix_bundle_contex
         celix_logHelper_error(logHelper, "Failed to get framework UUID.");
         return NULL;
     }
-    earpm->defaultQos = (celix_earpm_qos_e)celix_bundleContext_getPropertyAsLong(ctx, CELIX_EARPM_EVENT_QOS, CELIX_EARPM_EVENT_QOS_DEFAULT);
+    earpm->defaultQos = (celix_earpm_qos_e)celix_bundleContext_getPropertyAsLong(ctx, CELIX_EARPM_EVENT_DEFAULT_QOS, CELIX_EARPM_EVENT_DEFAULT_QOS_DEFAULT);
     if (earpm->defaultQos <= CELIX_EARPM_QOS_UNKNOWN || earpm->defaultQos >= CELIX_EARPM_QOS_MAX) {
         celix_logHelper_error(logHelper, "Invalid default QOS(%d) value.", (int)earpm->defaultQos);
         return NULL;
     }
-    earpm->ctrlMsgRequestTimeout = (int)celix_bundleContext_getPropertyAsLong(ctx, CELIX_EARPM_CTRL_MSG_REQUEST_TIMEOUT, CELIX_EARPM_CTRL_MSG_REQUEST_TIMEOUT_DEFAULT);
-    if (earpm->ctrlMsgRequestTimeout <= 0 || earpm->ctrlMsgRequestTimeout > 360/*1h*/) {
-        celix_logHelper_error(logHelper, "Invalid control message request timeout(%d) value.", earpm->ctrlMsgRequestTimeout);
-        return NULL;
-    }
+
     earpm->continuousNoAckThreshold = (int)celix_bundleContext_getPropertyAsLong(ctx, CELIX_EARPM_SYNC_EVENT_CONTINUOUS_NO_ACK_THRESHOLD, CELIX_EARPM_SYNC_EVENT_CONTINUOUS_NO_ACK_THRESHOLD_DEFAULT);
     if (earpm->continuousNoAckThreshold <= 0) {
         celix_logHelper_error(logHelper, "Invalid continuous no ack threshold(%d) value.", earpm->continuousNoAckThreshold);
@@ -234,9 +214,11 @@ celix_event_admin_remote_provider_mqtt_t* celix_earpm_create(celix_bundle_contex
         celix_logHelper_error(logHelper, "Failed to create mqtt client.");
         return NULL;
     }
-    status = celix_earpmClient_subscribe(earpm->mqttClient, CELIX_EARPM_TOPIC_PATTERN, CELIX_EARPM_QOS_AT_LEAST_ONCE);
+    status = celix_earpmClient_subscribe(earpm->mqttClient, CELIX_EARPM_HANDLER_INFO_TOPIC_PREFIX"*", CELIX_EARPM_QOS_AT_LEAST_ONCE);
+    status = CELIX_DO_IF(status, celix_earpmClient_subscribe(earpm->mqttClient, CELIX_EARPM_SESSION_END_TOPIC, CELIX_EARPM_QOS_AT_LEAST_ONCE));
+    status = CELIX_DO_IF(status, celix_earpmClient_subscribe(earpm->mqttClient, syncEventAckTopic, CELIX_EARPM_QOS_AT_LEAST_ONCE));
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error(earpm->logHelper, "Failed to subscribe %s. %d.", CELIX_EARPM_TOPIC_PATTERN, status);
+        celix_logHelper_error(earpm->logHelper, "Failed to subscribe control message. %d.", status);
         return NULL;
     }
 
@@ -260,11 +242,6 @@ void celix_earpm_destroy(celix_event_admin_remote_provider_mqtt_t* earpm) {
     celixThreadMutex_unlock(&earpm->mutex);
     celix_earpmClient_destroy(earpm->mqttClient);
     celix_earpmDeliverer_destroy(earpm->deliverer);
-    if (celix_framework_isCurrentThreadTheEventLoop(celix_bundleContext_getFramework(earpm->ctx))) {
-        celix_bundleContext_removeScheduledEventAsync(earpm->ctx, earpm->remoteFwExpiryEventId);
-    } else {
-        celix_bundleContext_removeScheduledEvent(earpm->ctx, earpm->remoteFwExpiryEventId);
-    }
     celix_stringHashMap_destroy(earpm->remoteFrameworks);
     celix_stringHashMap_destroy(earpm->eventSubscriptions);
     celix_longHashMap_destroy(earpm->eventHandlers);
@@ -926,8 +903,6 @@ static celix_earpm_remote_framework_info_t* celix_earpm_createAndAddRemoteFramew
         return NULL;
     }
     fwInfo->continuousNoAckCount = 0;
-    fwInfo->expiryTime.tv_sec = INT32_MAX;
-    fwInfo->expiryTime.tv_nsec = 0;
     celix_autoptr(celix_long_hash_map_t) eventAckSeqNrMap = NULL;
     {
         celix_long_hash_map_create_options_t opts = CELIX_EMPTY_LONG_HASH_MAP_CREATE_OPTIONS;
@@ -1241,8 +1216,6 @@ static void celix_earpm_markRemoteFrameworkActive(celix_event_admin_remote_provi
     celix_auto(celix_mutex_lock_guard_t) mutexGuard = celixMutexLockGuard_init(&earpm->mutex);
     celix_earpm_remote_framework_info_t* fwInfo = celix_stringHashMap_get(earpm->remoteFrameworks, fwUUID);
     if (fwInfo != NULL) {
-        fwInfo->expiryTime.tv_sec = INT32_MAX;
-        fwInfo->expiryTime.tv_nsec = 0;
         fwInfo->continuousNoAckCount = 0;
     }
     return;
@@ -1260,10 +1233,8 @@ static void celix_earpm_processControlMessage(celix_event_admin_remote_provider_
         celix_earpm_processHandlerInfoMessage(earpm, requestInfo);
     } else if (celix_utils_stringEquals(topic, CELIX_EARPM_SESSION_END_TOPIC)) {
         celix_earpm_processSessionEndMessage(earpm, requestInfo);
-    } else {
-        celix_logHelper_warning(earpm->logHelper, "Unknown control message received on topic %s.", topic);
-        return;
     }
+
     celix_earpm_markRemoteFrameworkActive(earpm, requestInfo->senderUUID);
     return;
 }
@@ -1392,56 +1363,6 @@ static void celix_earpm_receiveMsgCallback(void* handle, const celix_earpm_clien
     return;
 }
 
-static void celix_earpm_onRemoteFrameworkExpiryEvent(void* data) {
-    assert(data != NULL);
-    celix_event_admin_remote_provider_mqtt_t* earpm = (celix_event_admin_remote_provider_mqtt_t*)data;
-    bool hasExpired = false;
-    {
-        celix_auto(celix_mutex_lock_guard_t) mutexGuard = celixMutexLockGuard_init(&earpm->mutex);
-        int nextScheduleInterval = -1;
-        celix_string_hash_map_iterator_t iter = celix_stringHashMap_begin(earpm->remoteFrameworks);
-        while (!celix_stringHashMapIterator_isEnd(&iter)) {
-            celix_earpm_remote_framework_info_t* fwInfo = (celix_earpm_remote_framework_info_t*)iter.value.ptrValue;
-            double elapsedSecs = celix_elapsedtime(CLOCK_MONOTONIC, fwInfo->expiryTime);
-            if (elapsedSecs >= 0) {
-                celix_logHelper_warning(earpm->logHelper, "Remote framework %s expired.", iter.key);
-                celix_stringHashMapIterator_remove(&iter);
-                hasExpired = true;
-            } else {
-                if (fwInfo->expiryTime.tv_sec != INT32_MAX) {
-                    int t = (int)(-elapsedSecs) + 1;
-                    nextScheduleInterval = (nextScheduleInterval > 0 && nextScheduleInterval < t) ? nextScheduleInterval : t;
-                }
-                celix_stringHashMapIterator_next(&iter);
-            }
-        }
-        earpm->remoteFwExpiryEventId = -1;
-        if (nextScheduleInterval > 0) {
-            celix_earpm_scheduleRemoteFwExpiryEvent(earpm, nextScheduleInterval);
-        }
-    }
-    if (hasExpired) {
-        celixThreadCondition_broadcast(&earpm->ackCond);
-    }
-
-    return;
-}
-
-static void celix_earpm_scheduleRemoteFwExpiryEvent(celix_event_admin_remote_provider_mqtt_t* earpm, int delayInSeconds) {
-    if (earpm->remoteFwExpiryEventId < 0) {
-        celix_scheduled_event_options_t opts = CELIX_EMPTY_SCHEDULED_EVENT_OPTIONS;
-        opts.name = "CELIX_EARPM_REMOTE_FW_EXPIRY_EVENT";
-        opts.initialDelayInSeconds = delayInSeconds;
-        opts.callbackData = earpm;
-        opts.callback = celix_earpm_onRemoteFrameworkExpiryEvent;
-        earpm->remoteFwExpiryEventId = celix_bundleContext_scheduleEvent(earpm->ctx, &opts);
-        if (earpm->remoteFwExpiryEventId < 0) {
-            celix_logHelper_error(earpm->logHelper, "Failed to schedule remote framework expiry event.");
-        }
-    }
-    return;
-}
-
 static void celix_earpm_queryRemoteHandlerInfo(celix_event_admin_remote_provider_mqtt_t* earpm) {
     const char* topic = CELIX_EARPM_HANDLER_INFO_QUERY_TOPIC;
     //If the mqtt connection is disconnected, we will query the handler information again
@@ -1456,35 +1377,11 @@ static void celix_earpm_queryRemoteHandlerInfo(celix_event_admin_remote_provider
     requestInfo.version = CELIX_EARPM_MSG_VERSION;
     celix_status_t status = celix_earpmClient_publishAsync(earpm->mqttClient, &requestInfo);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error(earpm->logHelper, "Failed to publish %s.", topic);
-        return;
-    }
-    celix_auto(celix_mutex_lock_guard_t) mutexGuard = celixMutexLockGuard_init(&earpm->mutex);
-    struct timespec currentTime = celix_gettime(CLOCK_MONOTONIC);
-    int scheduleInterval = -1;
-    CELIX_STRING_HASH_MAP_ITERATE(earpm->remoteFrameworks, iter) {
-        celix_earpm_remote_framework_info_t* info = iter.value.ptrValue;
-        if (info->expiryTime.tv_sec == INT32_MAX) {
-            info->expiryTime = currentTime;
-            info->expiryTime.tv_sec += earpm->ctrlMsgRequestTimeout;
-            scheduleInterval = earpm->ctrlMsgRequestTimeout;
-        }
-    }
-    if (scheduleInterval >= 0) {
-        celix_earpm_scheduleRemoteFwExpiryEvent(earpm, scheduleInterval);
+        celix_logHelper_error(earpm->logHelper, "Failed to publish %s, %d.", topic, status);
     }
     return;
 }
 
-/**
- * @todo
- * 1.订阅远程主题消息
- * 2.订阅回应报文
- * 3.刷新订阅关系
- * 4.发布获取远程订阅者的消息
- * 5.发布缓存的异步消息----还没有获取到远程订阅信息如何处理
- * 6.唤醒同步等待
- * */
 static void celix_earpm_connectedCallback(void* handle) {
     assert(handle != NULL);
     celix_event_admin_remote_provider_mqtt_t* earpm = (celix_event_admin_remote_provider_mqtt_t*)handle;

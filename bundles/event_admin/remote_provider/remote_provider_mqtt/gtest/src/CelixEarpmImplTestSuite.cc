@@ -49,26 +49,14 @@ TEST_F(CelixEarpmImplTestSuite, CreateEarpmTest) {
 }
 
 TEST_F(CelixEarpmImplTestSuite, CreateEarpmWithInvalidDefaultEventQosTest) {
-    setenv(CELIX_EARPM_EVENT_QOS, std::to_string(CELIX_EARPM_QOS_MAX).c_str(), 1);
+    setenv(CELIX_EARPM_EVENT_DEFAULT_QOS, std::to_string(CELIX_EARPM_QOS_MAX).c_str(), 1);
     auto earpm = celix_earpm_create(ctx.get());
     ASSERT_EQ(earpm, nullptr);
 
-    setenv(CELIX_EARPM_EVENT_QOS, std::to_string(CELIX_EARPM_QOS_UNKNOWN).c_str(), 1);
+    setenv(CELIX_EARPM_EVENT_DEFAULT_QOS, std::to_string(CELIX_EARPM_QOS_UNKNOWN).c_str(), 1);
     earpm = celix_earpm_create(ctx.get());
     ASSERT_EQ(earpm, nullptr);
-    unsetenv(CELIX_EARPM_EVENT_QOS);
-}
-
-TEST_F(CelixEarpmImplTestSuite, CreateEarpmWithInvalidControlMessageTimeoutTest) {
-    setenv(CELIX_EARPM_CTRL_MSG_REQUEST_TIMEOUT, "0", 1);
-    auto earpm = celix_earpm_create(ctx.get());
-    ASSERT_EQ(earpm, nullptr);
-
-    setenv(CELIX_EARPM_CTRL_MSG_REQUEST_TIMEOUT, "361", 1);
-    earpm = celix_earpm_create(ctx.get());
-    ASSERT_EQ(earpm, nullptr);
-
-    unsetenv(CELIX_EARPM_CTRL_MSG_REQUEST_TIMEOUT);
+    unsetenv(CELIX_EARPM_EVENT_DEFAULT_QOS);
 }
 
 TEST_F(CelixEarpmImplTestSuite, CreateEarpmWithInvalidNoAckThresholdTest) {
@@ -323,19 +311,6 @@ TEST_F(CelixEarpmImplTestSuite, ProcessSessionEndMessageTest) {
             maxTries++;
         }
         ASSERT_LT(maxTries, 30);
-    });
-}
-
-TEST_F(CelixEarpmImplTestSuite, ProcessUnknownControlMessageTest) {
-    TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_TOPIC_PREFIX"unknown",
-                                  0, nullptr, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        auto ok = WaitForLogMessage("Unknown control message");
-        ASSERT_TRUE(ok);
     });
 }
 
@@ -1025,59 +1000,4 @@ TEST_F(CelixEarpmImplTestSuite, SendEventAndThenRemoteHandlerRemovedByUpdateMess
     });
 }
 
-
-class CelixEarpmImplTestSuite2 : public CelixEarpmImplTestSuite {
-public:
-    static void SetUpTestSuite() {
-        mosquitto_lib_init();
-    }
-
-    static void TearDownTestSuite() {
-        mosquitto_lib_cleanup();
-    }
-
-    void SetUp() override {
-        pid = fork();
-        ASSERT_GE(pid, 0);
-        if (pid == 0) {
-            execlp("mosquitto", "mosquitto", "-p", std::to_string(MQTT_BROKER_PORT).c_str(), nullptr);
-            ADD_FAILURE() << "Failed to start mosquitto";
-        }
-        mqttClient = new MqttClient{std::vector<std::string>{"subscribedEvent", CELIX_EARPM_TOPIC_PREFIX"#"}};
-        mqttClient->MqttClientStart();
-    }
-
-    void TearDown() override {
-        mqttClient->MqttClientStop();
-        delete mqttClient;
-        mqttClient = nullptr;
-        if (pid > 0) {
-            kill(pid, SIGKILL);
-            waitpid(pid, nullptr, 0);
-        }
-    }
-    static void RestartBroker() {
-        if (pid > 0) {
-            kill(pid, SIGKILL);
-            waitpid(pid, nullptr, 0);
-        }
-        pid = fork();
-        ASSERT_GE(pid, 0);
-        if (pid == 0) {
-            execlp("mosquitto", "mosquitto", "-p", std::to_string(MQTT_BROKER_PORT).c_str(), nullptr);
-            ADD_FAILURE() << "Failed to restart mosquitto";
-        }
-    }
-};
-
-TEST_F(CelixEarpmImplTestSuite2, BrokerRestartAndRemoteFrameworkExpiredTest) {
-    setenv(CELIX_EARPM_CTRL_MSG_REQUEST_TIMEOUT, "1", 1);
-    TestRemoteProvider([](celix_event_admin_remote_provider_mqtt_t* earpm) {
-        AddRemoteHandlerInfoToRemoteProviderAndCheck(earpm, R"({"handler":{"handlerId":123,"topics":["subscribedEvent"]}})");
-        RestartBroker();
-        auto ok = WaitFor([earpm] { return celix_earpm_currentRemoteFrameworkCount(earpm) == 0; });
-        ASSERT_TRUE(ok);
-    });
-    unsetenv(CELIX_EARPM_CTRL_MSG_REQUEST_TIMEOUT);
-}
 

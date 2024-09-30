@@ -18,6 +18,7 @@
  */
 #include <functional>
 #include <cstdlib>
+#include <unistd.h>
 #include <future>
 #include <thread>
 #include <netinet/in.h>
@@ -73,8 +74,6 @@ public:
         setenv(CELIX_EARPM_BROKER_PROFILE, profile, 1);
         auto discovery = celix_earpmDiscovery_create(ctx.get());
         ASSERT_NE(discovery, nullptr);
-        auto status = celix_earpmDiscovery_start(discovery);
-        EXPECT_EQ(status, CELIX_SUCCESS);
 
         std::promise<void> endpointPromise;
         auto endpointFuture = endpointPromise.get_future();
@@ -106,8 +105,6 @@ public:
         celix_bundleContext_stopTracker(ctx.get(), eplTrackerId);
         celix_bundleContext_unregisterService(ctx.get(), eplId);
 
-        status = celix_earpmDiscovery_stop(discovery);
-        EXPECT_EQ(status, CELIX_SUCCESS);
         celix_earpmDiscovery_destroy(discovery);
         unsetenv(CELIX_EARPM_BROKER_PROFILE);
     }
@@ -116,9 +113,6 @@ public:
         setenv(CELIX_EARPM_BROKER_PROFILE, profile, 1);
         auto discovery = celix_earpmDiscovery_create(ctx.get());
         ASSERT_NE(discovery, nullptr);
-        auto status = celix_earpmDiscovery_start(discovery);
-        EXPECT_EQ(status, CELIX_SUCCESS);
-
 
         auto eplId = RegisterBrokerEndpointListenerService(nullptr, [](void*, endpoint_description_t*, char*) {
             ADD_FAILURE() << "Unexpected endpoint added";
@@ -133,8 +127,6 @@ public:
         celix_bundleContext_stopTracker(ctx.get(), eplTrackerId);
         celix_bundleContext_unregisterService(ctx.get(), eplId);
 
-        status = celix_earpmDiscovery_stop(discovery);
-        EXPECT_EQ(status, CELIX_SUCCESS);
         celix_earpmDiscovery_destroy(discovery);
         unsetenv(CELIX_EARPM_BROKER_PROFILE);
     }
@@ -143,16 +135,6 @@ public:
 TEST_F(CelixEarpmBrokerDiscoveryTestSuite, CreateBrokerDiscoveryTest) {
     auto discovery = celix_earpmDiscovery_create(ctx.get());
     ASSERT_NE(discovery, nullptr);
-    celix_earpmDiscovery_destroy(discovery);
-}
-
-TEST_F(CelixEarpmBrokerDiscoveryTestSuite, StartBrokerDiscoveryTest) {
-    auto discovery = celix_earpmDiscovery_create(ctx.get());
-    ASSERT_NE(discovery, nullptr);
-    auto status = celix_earpmDiscovery_start(discovery);
-    EXPECT_EQ(status, CELIX_SUCCESS);
-    status = celix_earpmDiscovery_stop(discovery);
-    EXPECT_EQ(status, CELIX_SUCCESS);
     celix_earpmDiscovery_destroy(discovery);
 }
 
@@ -258,8 +240,9 @@ TEST_F(CelixEarpmBrokerDiscoveryTestSuite, ParseInvalidBrokerProfileTest) {
     ParseInvalidBrokerProfileTest(MOSQUITTO_CONF_PATH"mosquitto_invalid_listener.conf");
 }
 
-TEST_F(CelixEarpmBrokerDiscoveryTestSuite, DiscoveryStartAfterEndpointListenerAddedTest) {
-    setenv(CELIX_EARPM_BROKER_PROFILE, MOSQUITTO_CONF_PATH"mosquitto_bind_all_if.conf", 1);
+TEST_F(CelixEarpmBrokerDiscoveryTestSuite, LoadBrokerProfileAfterEndpointListenerAddedTest) {
+    const char* confLinkPath = "./mosquitto.conf.link";
+    setenv(CELIX_EARPM_BROKER_PROFILE, confLinkPath, 1);
     auto discovery = celix_earpmDiscovery_create(ctx.get());
     ASSERT_NE(discovery, nullptr);
 
@@ -281,14 +264,12 @@ TEST_F(CelixEarpmBrokerDiscoveryTestSuite, DiscoveryStartAfterEndpointListenerAd
     auto eplTrackerId = TrackEndpointListenerForDiscovery(discovery);
     ASSERT_GE(eplTrackerId, 0);
 
-    auto status = celix_earpmDiscovery_start(discovery);
-    EXPECT_EQ(status, CELIX_SUCCESS);
+    symlink(MOSQUITTO_CONF_PATH"mosquitto_bind_all_if.conf", confLinkPath);
 
     auto rc = endpointFuture.wait_for(std::chrono::seconds{30});
     EXPECT_EQ(rc, std::future_status::ready);
 
-    status = celix_earpmDiscovery_stop(discovery);
-    EXPECT_EQ(status, CELIX_SUCCESS);
+    unlink(confLinkPath);
 
     celix_bundleContext_stopTracker(ctx.get(), eplTrackerId);
     celix_bundleContext_unregisterService(ctx.get(), eplId);

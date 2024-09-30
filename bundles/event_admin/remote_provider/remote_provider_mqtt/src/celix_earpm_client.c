@@ -851,7 +851,7 @@ celix_status_t celix_earpmClient_publishSync(celix_earpm_client_t* client, const
     double expiryInterval = (requestInfo->expiryInterval > 0 && requestInfo->expiryInterval < (INT32_MAX/2)) ? requestInfo->expiryInterval : (INT32_MAX/2);
     struct timespec expiryTime = celixThreadCondition_getDelayedTime(expiryInterval);
 
-    while (!celix_earpmClient_hasFreeMsgFor(client, CELIX_EARPM_MSG_PRI_LOW)) {
+    while (!celix_earpmClient_hasFreeMsgFor(client, requestInfo->pri)) {
         if (requestInfo->qos <= CELIX_EARPM_QOS_AT_MOST_ONCE) {
             celix_logHelper_warning(client->logHelper, "Too many messages wait for publish, dropping sync message with qos %d. %s.", (int)requestInfo->qos, requestInfo->topic);
             return ENOMEM;
@@ -1191,7 +1191,7 @@ static celix_status_t celix_earpmClient_reconnectBroker(celix_earpm_client_t* cl
     return status;
 }
 
-static void celix_earpmClient_processMqttMessage(celix_earpm_client_t* client) {
+static void celix_earpmClient_runMosqLoopUntilFailed(celix_earpm_client_t* client) {
     celixThreadMutex_lock(&client->mutex);
     bool loopRun = client->running;
     celixThreadMutex_unlock(&client->mutex);
@@ -1226,7 +1226,7 @@ static void* celix_earpmClient_worker(void* data) {
             if (status != CELIX_SUCCESS) {
                 continue;
             }
-            celix_earpmClient_processMqttMessage(client);
+            celix_earpmClient_runMosqLoopUntilFailed(client);
         }
     }
     return NULL;

@@ -81,12 +81,12 @@ celix_earpm_broker_discovery_t* celix_earpmDiscovery_create(celix_bundle_context
     }
     celix_autofree celix_earpm_broker_discovery_t* discovery = calloc(1, sizeof(*discovery));
     if (discovery == NULL) {
-        celix_logHelper_error(logHelper, "Failed to allocate memory for celix earpm broker discovery");
+        celix_logHelper_error(logHelper, "Failed to allocate memory for celix earpm broker discovery.");
         return NULL;
     }
     discovery->fwUUID = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
     if (discovery->fwUUID == NULL) {
-        celix_logHelper_error(logHelper, "Failed to get framework uuid from context");
+        celix_logHelper_error(logHelper, "Failed to get framework uuid from context.");
         return NULL;
     }
     discovery->ctx = ctx;
@@ -97,18 +97,30 @@ celix_earpm_broker_discovery_t* celix_earpmDiscovery_create(celix_bundle_context
     discovery->brokerEndpoints = NULL;
     celix_status_t status = celixThreadMutex_create(&discovery->mutex, NULL);
     if (status != CELIX_SUCCESS) {
-        celix_logHelper_error(logHelper, "Failed to create mutex for celix earpm broker discovery");
+        celix_logHelper_error(logHelper, "Failed to create mutex for celix earpm broker discovery.");
         return NULL;
     }
     celix_autoptr(celix_thread_mutex_t) mutex = &discovery->mutex;
     celix_long_hash_map_create_options_t opts = CELIX_EMPTY_LONG_HASH_MAP_CREATE_OPTIONS;
     opts.simpleRemovedCallback = (void*)celix_earpmDiscovery_destroyEndpointListenerEntry;
-    discovery->endpointListeners = celix_longHashMap_createWithOptions(&opts);
+    celix_autoptr(celix_long_hash_map_t) endpointListeners = discovery->endpointListeners = celix_longHashMap_createWithOptions(&opts);
     if (discovery->endpointListeners == NULL) {
-        celix_logHelper_error(logHelper, "Failed to create endpoint listeners map for celix earpm broker discovery");
+        celix_logHelper_error(logHelper, "Failed to create endpoint listeners map for celix earpm broker discovery.");
         return NULL;
     }
 
+    celix_scheduled_event_options_t eventOpts = CELIX_EMPTY_SCHEDULED_EVENT_OPTIONS;
+    eventOpts.name = "MqttProfileCheckEvent";
+    eventOpts.intervalInSeconds = CELIX_EARPM_LOAD_PROFILE_INTERVAL;
+    eventOpts.callbackData = discovery;
+    eventOpts.callback =celix_earpmDiscovery_onProfileScheduledEvent;
+    discovery->profileScheduledEventId = celix_bundleContext_scheduleEvent(discovery->ctx, &eventOpts);
+    if (discovery->profileScheduledEventId < 0) {
+        celix_logHelper_error(logHelper, "Failed to schedule profile check event.");
+        return NULL;
+    }
+
+    celix_steal_ptr(endpointListeners);
     celix_steal_ptr(mutex);
     celix_steal_ptr(logHelper);
 
@@ -117,38 +129,16 @@ celix_earpm_broker_discovery_t* celix_earpmDiscovery_create(celix_bundle_context
 
 void celix_earpmDiscovery_destroy(celix_earpm_broker_discovery_t* discovery) {
     assert(discovery != NULL);
-    celix_longHashMap_destroy(discovery->endpointListeners);
-    celix_arrayList_destroy(discovery->brokerEndpoints);
-    celixThreadMutex_destroy(&discovery->mutex);
-    celix_logHelper_destroy(discovery->logHelper);
-    free(discovery);
-}
-
-celix_status_t celix_earpmDiscovery_start(celix_earpm_broker_discovery_t* discovery) {
-    assert(discovery != NULL);
-    celix_auto(celix_mutex_lock_guard_t) mutexLockGuard = celixMutexLockGuard_init(&discovery->mutex);
-
-    if (discovery->brokerEndpoints == NULL && discovery->profileScheduledEventId < 0) {
-        celix_scheduled_event_options_t opts = CELIX_EMPTY_SCHEDULED_EVENT_OPTIONS;
-        opts.name = "MqttProfileCheckEvent";
-        opts.intervalInSeconds = CELIX_EARPM_LOAD_PROFILE_INTERVAL;
-        opts.callbackData = discovery;
-        opts.callback =celix_earpmDiscovery_onProfileScheduledEvent;
-        discovery->profileScheduledEventId = celix_bundleContext_scheduleEvent(discovery->ctx, &opts);
-    }
-
-    return CELIX_SUCCESS;
-}
-
-celix_status_t celix_earpmDiscovery_stop(celix_earpm_broker_discovery_t* discovery) {
-    assert(discovery != NULL);
     if (celix_framework_isCurrentThreadTheEventLoop(celix_bundleContext_getFramework(discovery->ctx))) {
         (void)celix_bundleContext_removeScheduledEventAsync(discovery->ctx, __atomic_load_n(&discovery->profileScheduledEventId, __ATOMIC_RELAXED));
     } else {
         (void)celix_bundleContext_removeScheduledEvent(discovery->ctx, __atomic_load_n(&discovery->profileScheduledEventId, __ATOMIC_RELAXED));
     }
-
-    return CELIX_SUCCESS;
+    celix_longHashMap_destroy(discovery->endpointListeners);
+    celix_arrayList_destroy(discovery->brokerEndpoints);
+    celixThreadMutex_destroy(&discovery->mutex);
+    celix_logHelper_destroy(discovery->logHelper);
+    free(discovery);
 }
 
 static void celix_earpmDiscovery_notifyEndpointsToListener(celix_earpm_broker_discovery_t* discovery, celix_earpm_endpoint_listener_entry_t* listenerEntry, bool added) {
@@ -165,7 +155,7 @@ static void celix_earpmDiscovery_notifyEndpointsToListener(celix_earpm_broker_di
         if ((!needDynamicIp || discoverySupportsDynamicIp) && celix_filter_match(listenerEntry->filter, endpoint->properties)) {
             celix_status_t status = process(listenerEntry->listener->handle, endpoint, (char*)listenerScope);
             if (status != CELIX_SUCCESS) {
-                celix_logHelper_error(discovery->logHelper, "Failed to %s endpoint to listener(%ld).", added ? "add" : "remove", listenerEntry->serviceId);
+                celix_logHelper_error(discovery->logHelper, "Failed to %s endpoint to listener(%ld), %d.", added ? "add" : "remove", listenerEntry->serviceId, status);
             }
         }
     }
@@ -379,27 +369,27 @@ static celix_array_list_t* celix_earpmDiscovery_createBrokerEndpoints(celix_earp
         char endpointUUID[37];
         uuid_unparse_lower(uid, endpointUUID);
         celix_status_t status = celix_properties_set(props, CELIX_RSA_ENDPOINT_FRAMEWORK_UUID, discovery->fwUUID);
-        CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, CELIX_EARPM_MQTT_BROKER_INFO_SERVICE_NAME));
-        CELIX_DO_IF(status, status = celix_properties_setLong(props, CELIX_RSA_ENDPOINT_SERVICE_ID, INT32_MAX));
-        CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, endpointUUID));
-        CELIX_DO_IF(status, status = celix_properties_setBool(props, CELIX_RSA_SERVICE_IMPORTED, true));
-        CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS,
+        status = CELIX_DO_IF(status, celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_NAME, CELIX_EARPM_MQTT_BROKER_INFO_SERVICE_NAME));
+        status = CELIX_DO_IF(status, celix_properties_setLong(props, CELIX_RSA_ENDPOINT_SERVICE_ID, INT32_MAX));
+        status = CELIX_DO_IF(status, celix_properties_set(props, CELIX_RSA_ENDPOINT_ID, endpointUUID));
+        status = CELIX_DO_IF(status, celix_properties_setBool(props, CELIX_RSA_SERVICE_IMPORTED, true));
+        status = CELIX_DO_IF(status, celix_properties_set(props, CELIX_RSA_SERVICE_IMPORTED_CONFIGS,
                                                           CELIX_EARPM_MQTT_BROKER_SERVICE_CONFIG_TYPE));
         if (listener->host == NULL) {//use dynamic ip
-            CELIX_DO_IF(status, status = celix_properties_setLong(props, CELIX_RSA_PORT, listener->port));
-            CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_RSA_IP_ADDRESSES, ""));//service discovery will fill in dynamic ip
+            status = CELIX_DO_IF(status, celix_properties_setLong(props, CELIX_RSA_PORT, listener->port));
+            status = CELIX_DO_IF(status, celix_properties_set(props, CELIX_RSA_IP_ADDRESSES, ""));//service discovery will fill in dynamic ip
             if (listener->family != AF_UNSPEC) {
-                CELIX_DO_IF(status, status = celix_properties_setLong(props, CELIX_EARPM_MQTT_BROKER_SOCKET_DOMAIN, listener->family));
+                status = CELIX_DO_IF(status, celix_properties_setLong(props, CELIX_EARPM_MQTT_BROKER_SOCKET_DOMAIN, listener->family));
             }
             const char* bindInterface = listener->bindInterface != NULL ? listener->bindInterface : "all";
-            CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, bindInterface));
+            status = CELIX_DO_IF(status, celix_properties_set(props, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, bindInterface));
         } else if (listener->port != 0) {//specific ip and hostname
-            CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_EARPM_MQTT_BROKER_ADDRESS, listener->host));
-            CELIX_DO_IF(status, status = celix_properties_setLong(props, CELIX_EARPM_MQTT_BROKER_PORT, listener->port));
+            status = CELIX_DO_IF(status, celix_properties_set(props, CELIX_EARPM_MQTT_BROKER_ADDRESS, listener->host));
+            status = CELIX_DO_IF(status, celix_properties_setLong(props, CELIX_EARPM_MQTT_BROKER_PORT, listener->port));
             const char* bindInterface = listener->bindInterface != NULL ? listener->bindInterface : "all";
-            CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, bindInterface));
+            status = CELIX_DO_IF(status, celix_properties_set(props, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, bindInterface));
         } else {// unix socket
-            CELIX_DO_IF(status, status = celix_properties_set(props, CELIX_EARPM_MQTT_BROKER_ADDRESS, listener->host));
+            status = CELIX_DO_IF(status, celix_properties_set(props, CELIX_EARPM_MQTT_BROKER_ADDRESS, listener->host));
         }
         if (status != CELIX_SUCCESS) {
             celix_logHelper_logTssErrors(discovery->logHelper, CELIX_LOG_LEVEL_ERROR);
