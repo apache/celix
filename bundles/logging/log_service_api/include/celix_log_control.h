@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "celix_log_level.h"
+#include "celix_array_list_type.h"
 
 #ifdef __cplusplus
 extern "C" {

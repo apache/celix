@@ -642,7 +642,7 @@ TEST_F(LogAdminTestSuite, LogServiceWithConfigPropertyTest) {
 }
 
 TEST_F(LogAdminTestSuite, LogSinkWithConfigPropertyTest) {
-    // Given a fw with a config property that set the active log level of a log service to fatal
+    // Given a fw with a config property that enables the log sink foo and disables all other sinks
     auto fw = celix::createFramework({
         {CELIX_FRAMEWORK_CACHE_DIR, ".cacheLogAdminTestSuiteWithConfig"},
         {"CELIX_LOG_ADMIN_LOG_SINKS_DEFAULT_ENABLED", "false"},
