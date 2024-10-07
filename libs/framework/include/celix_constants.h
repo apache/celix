@@ -164,7 +164,7 @@ extern "C" {
 #define CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE "CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE"
 
 /**
- * @brief Celix framework environment property (named "org.osgi.framework.uuid") specifying the UUID for the
+ * @brief Celix framework environment property (named "CELIX_FRAMEWORK_UUID") specifying the UUID for the
  * framework UUID.
  *
  * The framework UUID is used to uniquely identify a single framework. If no framework uuid is provided
@@ -172,7 +172,7 @@ extern "C" {
  *
  * @note The Celix framework expects framework UUIDs to be unique per process.
  */
-#define CELIX_FRAMEWORK_UUID "org.osgi.framework.uuid"
+#define CELIX_FRAMEWORK_UUID "CELIX_FRAMEWORK_UUID"
 
 /**
  * @brief Celix framework environment property (named "CELIX_BUNDLES_PATH") which specified a `:` separated

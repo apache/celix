@@ -110,6 +110,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -yq --no-install-recommends \
           build-essential \
+          ninja-build \
           curl \
           uuid-dev \
           libzip-dev \
@@ -145,11 +146,12 @@ jobs:
           -DENABLE_TESTING_ON_CI=ON
           -DCMAKE_BUILD_TYPE=${{ matrix.type }}
           -DENABLE_CCACHE=ON
+          -G Ninja
       run: |
         mkdir build install
         cd build
         cmake ${BUILD_OPTIONS} -DCMAKE_INSTALL_PREFIX=../install ..
-        make -j $(nproc) && make install
+        ninja && ninja install
     - name: Test
       run: |
         cd $GITHUB_WORKSPACE/build

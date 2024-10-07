@@ -36,6 +36,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 #include <errno.h>
 
 #define MAX_RSA_SHM_SERVER_HANDLE_MSG_THREADS_NUM 5
