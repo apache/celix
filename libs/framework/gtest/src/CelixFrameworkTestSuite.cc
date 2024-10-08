@@ -30,28 +30,18 @@
 #include "celix_constants.h"
 #include "celix_utils.h"
 
-
 class CelixFrameworkTestSuite : public ::testing::Test {
-public:
+  public:
     CelixFrameworkTestSuite() {
-        int rc;
-        celix_framework_t *fw = nullptr;
-        celix_bundle_context_t *context = nullptr;
+        celix_properties_t* config;
+        auto status = celix_properties_load("config.properties", 0, &config);
+        EXPECT_EQ(CELIX_SUCCESS, status);
 
-        rc = celixLauncher_launch("config.properties", &fw);
-        EXPECT_EQ(CELIX_SUCCESS, rc);
+        auto fw = celix_frameworkFactory_createFramework(config);
+        EXPECT_TRUE(fw != nullptr);
 
-        celix_bundle_t* bundle = celix_framework_getFrameworkBundle(fw);
-        EXPECT_TRUE(bundle != nullptr);
-
-        context = celix_framework_getFrameworkContext(fw);
-        EXPECT_TRUE(context != nullptr);
-
-        framework = std::shared_ptr<celix_framework_t>{fw, [](celix_framework_t* cFw) {
-            celixLauncher_stop(cFw);
-            celixLauncher_waitForShutdown(cFw);
-            celixLauncher_destroy(cFw);
-        }};
+        framework = std::shared_ptr<celix_framework_t>{
+            fw, [](celix_framework_t* cFw) { celix_frameworkFactory_destroyFramework(cFw); }};
     }
 
     std::shared_ptr<celix_framework_t> framework{};
@@ -104,7 +94,7 @@ TEST_F(CelixFrameworkTestSuite, AsyncInstallStartStopUpdateAndUninstallBundleTes
     EXPECT_TRUE(celix_framework_isBundleInstalled(framework.get(), bndId));
     EXPECT_FALSE(celix_framework_isBundleActive(framework.get(), bndId));
 
-    celix_framework_updateBundleAsync(framework.get(), bndId, NULL);
+    celix_framework_updateBundleAsync(framework.get(), bndId, nullptr);
     celix_framework_waitForBundleLifecycleHandlers(framework.get());
     EXPECT_FALSE(celix_framework_isBundleActive(framework.get(), bndId));
 
@@ -112,7 +102,7 @@ TEST_F(CelixFrameworkTestSuite, AsyncInstallStartStopUpdateAndUninstallBundleTes
     celix_framework_waitForBundleLifecycleHandlers(framework.get());
     EXPECT_TRUE(celix_framework_isBundleActive(framework.get(), bndId));
 
-    celix_framework_updateBundleAsync(framework.get(), bndId, NULL);
+    celix_framework_updateBundleAsync(framework.get(), bndId, nullptr);
     celix_framework_waitForBundleLifecycleHandlers(framework.get());
     EXPECT_TRUE(celix_framework_isBundleActive(framework.get(), bndId));
 
@@ -120,7 +110,7 @@ TEST_F(CelixFrameworkTestSuite, AsyncInstallStartStopUpdateAndUninstallBundleTes
     celix_framework_waitForBundleLifecycleHandlers(framework.get());
     EXPECT_FALSE(celix_framework_isBundleActive(framework.get(), bndId));
 
-    celix_framework_updateBundleAsync(framework.get(), bndId, NULL);
+    celix_framework_updateBundleAsync(framework.get(), bndId, nullptr);
     celix_framework_waitForBundleLifecycleHandlers(framework.get());
     EXPECT_FALSE(celix_framework_isBundleActive(framework.get(), bndId));
 
@@ -234,6 +224,15 @@ TEST_F(FrameworkFactoryTestSuite, FactoryCreateTest) {
     celix_frameworkFactory_destroyFramework(fw);
 }
 
+TEST_F(FrameworkFactoryTestSuite, ConfigureFrameworkUUIDTest) {
+    celix_properties_t* config = celix_properties_create();
+    celix_properties_set(config, CELIX_FRAMEWORK_UUID, "test-framework");
+    framework_t* fw = celix_frameworkFactory_createFramework(config);
+    ASSERT_TRUE(fw != nullptr);
+    EXPECT_STREQ("test-framework", celix_framework_getUUID(fw));
+    celix_frameworkFactory_destroyFramework(fw);
+}
+
 TEST_F(FrameworkFactoryTestSuite, FactoryCreateAndToManyStartAndStopsTest) {
     framework_t* fw = celix_frameworkFactory_createFramework(nullptr);
     ASSERT_TRUE(fw != nullptr);
@@ -324,7 +323,8 @@ TEST_F(FrameworkFactoryTestSuite, LaunchFrameworkWithConfigTest) {
      * the specified bundles will be installed and - if needed - started.
      */
 
-    auto* config = celix_properties_load(INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE);
+    celix_properties_t* config = nullptr;
+    ASSERT_EQ(CELIX_SUCCESS, celix_properties_load(INSTALL_AND_START_BUNDLES_CONFIG_PROPERTIES_FILE, 0, &config));
     ASSERT_TRUE(config != nullptr);
 
     framework_t* fw = celix_frameworkFactory_createFramework(config);

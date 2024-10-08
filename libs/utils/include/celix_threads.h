@@ -22,6 +22,7 @@
 
 #include <pthread.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "celix_cleanup.h"
 #include "celix_errno.h"
@@ -141,6 +142,7 @@ static CELIX_UNUSED inline celix_mutex_lock_guard_t celixMutexLockGuard_init(cel
 static CELIX_UNUSED inline void celixMutexLockGuard_deinit(celix_mutex_lock_guard_t* guard) {
     if (guard->mutex) {
         celixThreadMutex_unlock(guard->mutex);
+        guard->mutex = NULL;
     }
 }
 
@@ -215,6 +217,7 @@ static CELIX_UNUSED inline celix_rwlock_wlock_guard_t celixRwlockWlockGuard_init
 static CELIX_UNUSED inline void celixRwlockWlockGuard_deinit(celix_rwlock_wlock_guard_t* guard) {
     if (guard->lock) {
         celixThreadRwlock_unlock(guard->lock);
+        guard->lock = NULL;
     }
 }
 
@@ -262,6 +265,7 @@ static CELIX_UNUSED inline celix_rwlock_rlock_guard_t celixRwlockRlockGuard_init
 static CELIX_UNUSED inline void celixRwlockRlockGuard_deinit(celix_rwlock_rlock_guard_t* guard) {
     if (guard->lock) {
         celixThreadRwlock_unlock(guard->lock);
+        guard->lock = NULL;
     }
 }
 

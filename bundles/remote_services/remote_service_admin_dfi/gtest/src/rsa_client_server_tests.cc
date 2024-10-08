@@ -44,16 +44,16 @@ typedef struct rsa_dfi_exception_test_service {
     int (*func1)(void *handle);
 }rsa_dfi_exception_test_service_t;
 
-    static celix_framework_t *serverFramework = NULL;
-    static celix_bundle_context_t *serverContext = NULL;
+    static celix_framework_t *serverFramework = nullptr;
+    static celix_bundle_context_t *serverContext = nullptr;
 
-    static celix_framework_t *clientFramework = NULL;
-    static celix_bundle_context_t *clientContext = NULL;
+    static celix_framework_t *clientFramework = nullptr;
+    static celix_bundle_context_t *clientContext = nullptr;
 
-    static rsa_dfi_exception_test_service_t *exceptionTestService = NULL;
+    static rsa_dfi_exception_test_service_t *exceptionTestService = nullptr;
     static long exceptionTestSvcId = -1L;
-    static remote_interceptor_t *serverSvcInterceptor=NULL;
-    static remote_interceptor_t *clientSvcInterceptor=NULL;
+    static remote_interceptor_t *serverSvcInterceptor=nullptr;
+    static remote_interceptor_t *clientSvcInterceptor=nullptr;
     static long serverSvcInterceptorSvcId = -1L;
     static long clientSvcInterceptorSvcId = -1L;
     static bool clientInterceptorPreProxyCallRetval=true;
@@ -61,21 +61,23 @@ typedef struct rsa_dfi_exception_test_service {
 
     static void setupFm(bool useCurlShare) {
         //server
-        celix_properties_t *serverProps = celix_properties_load("server.properties");
-        ASSERT_TRUE(serverProps != NULL);
+        celix_properties_t *serverProps = nullptr;
+        ASSERT_EQ(CELIX_SUCCESS, celix_properties_load("server.properties", 0, &serverProps));
+        ASSERT_TRUE(serverProps != nullptr);
         serverFramework = celix_frameworkFactory_createFramework(serverProps);
-        ASSERT_TRUE(serverFramework != NULL);
+        ASSERT_TRUE(serverFramework != nullptr);
         serverContext = celix_framework_getFrameworkContext(serverFramework);
-        ASSERT_TRUE(serverContext != NULL);
+        ASSERT_TRUE(serverContext != nullptr);
 
         //client
-        celix_properties_t *clientProperties = celix_properties_load("client.properties");
+        celix_properties_t *clientProperties = nullptr;
+        ASSERT_EQ(CELIX_SUCCESS, celix_properties_load("client.properties", 0, &clientProperties));
         celix_properties_setBool(clientProperties, "RSA_DFI_USE_CURL_SHARE_HANDLE", useCurlShare);
-        ASSERT_TRUE(clientProperties != NULL);
+        ASSERT_TRUE(clientProperties != nullptr);
         clientFramework = celix_frameworkFactory_createFramework(clientProperties);
-        ASSERT_TRUE(clientFramework != NULL);
+        ASSERT_TRUE(clientFramework != nullptr);
         clientContext = celix_framework_getFrameworkContext(clientFramework);
-        ASSERT_TRUE(clientContext != NULL);
+        ASSERT_TRUE(clientContext != nullptr);
     }
 
     static void teardownFm(void) {
@@ -92,7 +94,7 @@ typedef struct rsa_dfi_exception_test_service {
         celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_INTERFACES, RSA_DIF_EXCEPTION_TEST_SERVICE);
         celix_properties_set(properties, CELIX_RSA_SERVICE_EXPORTED_CONFIGS, "org.amdatu.remote.admin.http");
         exceptionTestService = (rsa_dfi_exception_test_service_t *)calloc(1,sizeof(*exceptionTestService));
-        exceptionTestService->handle = NULL;
+        exceptionTestService->handle = nullptr;
         exceptionTestService->func1 = rsaDfi_excepTestFunc1;
         exceptionTestSvcId = celix_bundleContext_registerService(serverContext, exceptionTestService, RSA_DIF_EXCEPTION_TEST_SERVICE, properties);
     }
@@ -137,7 +139,7 @@ typedef struct rsa_dfi_exception_test_service {
     static void registerInterceptorService(void) {
         svcInterceptorPreExportCallRetval = true;
         serverSvcInterceptor = (remote_interceptor_t *)calloc(1,sizeof(*serverSvcInterceptor));
-        serverSvcInterceptor->handle = NULL;
+        serverSvcInterceptor->handle = nullptr;
         serverSvcInterceptor->preProxyCall = serverServiceInterceptor_preProxyCall;
         serverSvcInterceptor->postProxyCall = serverServiceInterceptor_postProxyCall;
         serverSvcInterceptor->preExportCall = serverServiceInterceptor_preExportCall;
@@ -153,7 +155,7 @@ typedef struct rsa_dfi_exception_test_service {
 
         clientInterceptorPreProxyCallRetval = true;
         clientSvcInterceptor = (remote_interceptor_t *)calloc(1,sizeof(*clientSvcInterceptor));
-        clientSvcInterceptor->handle = NULL;
+        clientSvcInterceptor->handle = nullptr;
         clientSvcInterceptor->preProxyCall = clientServiceInterceptor_preProxyCall;
         clientSvcInterceptor->postProxyCall = clientServiceInterceptor_postProxyCall;
         clientSvcInterceptor->preExportCall = clientServiceInterceptor_preExportCall;
@@ -472,8 +474,8 @@ public:
 
         char calcIdStr[32] = {0};
         snprintf(calcIdStr, 32, "%li", calcId);
-        celix_array_list_t *svcRegistrations = NULL;
-        auto status = serverRsaSvc->exportService(serverRsaSvc->admin, calcIdStr, NULL, &svcRegistrations);
+        celix_array_list_t *svcRegistrations = nullptr;
+        auto status = serverRsaSvc->exportService(serverRsaSvc->admin, calcIdStr, nullptr, &svcRegistrations);
         ASSERT_EQ(CELIX_SUCCESS, status);
         ASSERT_EQ(1, celix_arrayList_size(svcRegistrations));
         export_registration_t *exportedReg = static_cast<export_registration_t*>(celix_arrayList_get(svcRegistrations, 0));

@@ -114,7 +114,7 @@ namespace celix {
     constexpr const char * const FRAMEWORK_CACHE_DIR = CELIX_FRAMEWORK_CACHE_DIR;
 
     /**
-     * @brief Celix framework environment property (named "org.osgi.framework.uuid") specifying the UUID for the
+     * @brief Celix framework environment property (named "CELIX_FRAMEWORK_UUID") specifying the UUID for the
      * framework UUID.
      *
      * The framework UUID is used to uniquely identify a single framework. If no framework uuid is provided
@@ -139,7 +139,7 @@ namespace celix {
     constexpr const char * const FRAMEWORK_STATIC_EVENT_QUEUE_SIZE = CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE;
 
     /**
-     * @brief Celix framework environment property (named "CELIX_AUTO_START_0") which specified a (ordered) space
+     * @brief Celix framework environment property (named "CELIX_AUTO_START_0") which specified a (ordered) comma
      * separated set of bundles to load and auto start when the Celix framework is started.
      *
      * The Celix framework will first start bundles in for AUTO_START_0 and lastly start bundles in AUTO_START_6.
@@ -181,7 +181,7 @@ namespace celix {
     constexpr const char * const AUTO_START_6 = CELIX_AUTO_START_6;
 
     /**
-     * @brief Celix framework environment property (named "CELIX_AUTO_INSTALL") which specified a (ordered) space
+     * @brief Celix framework environment property (named "CELIX_AUTO_INSTALL") which specified a (ordered) comma
      * separated set of bundles to install when the Celix framework is started.
      *
      * The Celix framework will first install and start bundles defined in the properties CELIX_AUTO_START_0 till

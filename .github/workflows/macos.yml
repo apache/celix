@@ -16,7 +16,7 @@ env:
 jobs:
 
   macos-build-conan:
-    runs-on: macOS-11
+    runs-on: macOS-12
     timeout-minutes: 120
     steps:
       - name: Checkout source code

@@ -54,13 +54,18 @@ TEST_F(CelixBundleCacheTestSuite, ArchiveCreateDestroyTest) {
     auto location = celix_bundleArchive_getLocation(archive);
     EXPECT_STREQ(SIMPLE_TEST_BUNDLE1_LOCATION, location);
     free(location);
-    EXPECT_EQ(1, celix_bundleCache_findBundleIdForLocation(fw.cache, SIMPLE_TEST_BUNDLE1_LOCATION));
+    long bndId;
+    auto status = celix_bundleCache_findBundleIdForLocation(fw.cache, SIMPLE_TEST_BUNDLE1_LOCATION, &bndId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_EQ(1, bndId);
     EXPECT_TRUE(celix_bundleCache_isBundleIdAlreadyUsed(fw.cache, 1));
     std::string loc = celix_bundleArchive_getPersistentStoreRoot(archive);
     EXPECT_TRUE(celix_utils_directoryExists(loc.c_str()));
     celix_bundleArchive_invalidate(archive);
     celix_bundleCache_destroyArchive(fw.cache, archive);
-    EXPECT_EQ(-1, celix_bundleCache_findBundleIdForLocation(fw.cache, SIMPLE_TEST_BUNDLE1_LOCATION));
+    status = celix_bundleCache_findBundleIdForLocation(fw.cache, SIMPLE_TEST_BUNDLE1_LOCATION, &bndId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_EQ(-1, bndId);
     EXPECT_FALSE(celix_bundleCache_isBundleIdAlreadyUsed(fw.cache, 1));
     EXPECT_FALSE(celix_utils_directoryExists(loc.c_str()));
 }
@@ -72,7 +77,10 @@ TEST_F(CelixBundleCacheTestSuite, NonPermanentDestroyTest) {
     std::string loc = celix_bundleArchive_getPersistentStoreRoot(archive);
     EXPECT_TRUE(celix_utils_directoryExists(loc.c_str()));
     celix_bundleCache_destroyArchive(fw.cache, archive);
-    EXPECT_EQ(1, celix_bundleCache_findBundleIdForLocation(fw.cache, SIMPLE_TEST_BUNDLE1_LOCATION));
+    long bndId;
+    auto status = celix_bundleCache_findBundleIdForLocation(fw.cache, SIMPLE_TEST_BUNDLE1_LOCATION, &bndId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_EQ(1, bndId);
     EXPECT_TRUE(celix_bundleCache_isBundleIdAlreadyUsed(fw.cache, 1));
     EXPECT_TRUE(celix_utils_directoryExists(loc.c_str()));
 }
@@ -94,8 +102,13 @@ TEST_F(CelixBundleCacheTestSuite, CreateBundleArchivesCacheTest) {
     celix_properties_set(fw.configurationMap, CELIX_AUTO_START_1, SIMPLE_TEST_BUNDLE1_LOCATION);
     celix_properties_set(fw.configurationMap, CELIX_AUTO_INSTALL, SIMPLE_TEST_BUNDLE2_LOCATION);
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_createBundleArchivesCache(&fw, true));
-    EXPECT_EQ(1, celix_bundleCache_findBundleIdForLocation(fw.cache, SIMPLE_TEST_BUNDLE1_LOCATION));
+    long bndId;
+    auto status = celix_bundleCache_findBundleIdForLocation(fw.cache, SIMPLE_TEST_BUNDLE1_LOCATION, &bndId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_EQ(1, bndId);
     EXPECT_TRUE(celix_bundleCache_isBundleIdAlreadyUsed(fw.cache, 1));
-    EXPECT_EQ(2, celix_bundleCache_findBundleIdForLocation(fw.cache, SIMPLE_TEST_BUNDLE2_LOCATION));
+    status = celix_bundleCache_findBundleIdForLocation(fw.cache, SIMPLE_TEST_BUNDLE2_LOCATION, &bndId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_EQ(2, bndId);
     EXPECT_TRUE(celix_bundleCache_isBundleIdAlreadyUsed(fw.cache, 2));
 }

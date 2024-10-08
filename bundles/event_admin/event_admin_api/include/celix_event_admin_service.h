@@ -28,7 +28,7 @@ extern "C" {
 /**
  * @brief The Event Admin service name
  */
-#define CELIX_EVENT_ADMIN_SERVICE_NAME "celix.service.event.EventAdmin"
+#define CELIX_EVENT_ADMIN_SERVICE_NAME "celix_event_admin_service"
 
 /**
  * @brief The Event Admin service version

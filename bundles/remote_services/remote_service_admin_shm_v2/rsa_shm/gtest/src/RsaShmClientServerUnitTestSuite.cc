@@ -35,6 +35,7 @@
 #include "socket_ei.h"
 #include "stdio_ei.h"
 #include "pthread_ei.h"
+#include "celix_properties_ei.h"
 #include "thpool_ei.h"
 #include "celix_errno.h"
 #include <errno.h>
@@ -80,6 +81,7 @@ public:
         celix_ei_expect_pthread_cond_timedwait(nullptr, 1, 0);
         celix_ei_expect_thpool_init(nullptr, 0, nullptr);
         celix_ei_expect_thpool_add_work(nullptr, 0, 0);
+        celix_ei_expect_celix_properties_saveToStream(nullptr, 0, CELIX_SUCCESS);
     }
 
 
@@ -131,6 +133,44 @@ TEST_F(RsaShmClientServerUnitTestSuite, SendMsg) {
     EXPECT_STREQ("reply", (char*)response.iov_base);
     free(response.iov_base);
     celix_properties_destroy(metadata);
+
+    rsaShmClientManager_destroyOrDetachClient(clientManager, "shm_test_server", serverId);
+
+    rsaShmClientManager_destroy(clientManager);
+
+    rsaShmServer_destroy(server);
+}
+
+TEST_F(RsaShmClientServerUnitTestSuite, SendMsgErrorEncodePropertiesTest) {
+    //Given a rsa shm server
+    rsa_shm_server_t *server = nullptr;
+    auto status = rsaShmServer_create(ctx.get(), "shm_test_server", logHelper.get(), ReceiveMsgCallback, nullptr, &server);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_NE(nullptr, server);
+
+    //And a rsa shm client
+    rsa_shm_client_manager_t *clientManager = nullptr;
+    status = rsaShmClientManager_create(ctx.get(), logHelper.get(), &clientManager);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    EXPECT_NE(nullptr, clientManager);
+
+    // And the client is attached to the server
+    long serverId = 100;//dummy id
+    status = rsaShmClientManager_createOrAttachClient(clientManager, "shm_test_server", serverId);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+
+    //When an error is prepared for saveToStream
+    celix_ei_expect_celix_properties_saveToStream((void*)rsaShmClientManager_sendMsgTo, 0, ENOMEM);
+
+    //And a message is sent
+    celix_autoptr(celix_properties_t) metadata = celix_properties_create();
+    celix_properties_set(metadata, "CustomKey", "test");
+    struct iovec request = {.iov_base = (void*)"request", .iov_len = strlen("request")};
+    struct iovec response = {.iov_base = nullptr, .iov_len = 0};
+    status = rsaShmClientManager_sendMsgTo(clientManager, "shm_test_server", serverId, metadata, &request, &response);
+
+    //Then the injected error is returned
+    EXPECT_EQ(ENOMEM, status);
 
     rsaShmClientManager_destroyOrDetachClient(clientManager, "shm_test_server", serverId);
 

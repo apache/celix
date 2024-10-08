@@ -235,7 +235,7 @@ TEST_F(ConvertUtilsTestSuite, ConvertToVersionTest) {
     convertStatus = celix_utils_convertStringToVersion("A", nullptr, &result);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertStatus);
     EXPECT_EQ(nullptr, result);
-    EXPECT_STREQ("Invalid version component(0)", celix_err_popLastError());
+    EXPECT_NE(nullptr, strstr(celix_err_popLastError(), "Invalid version part 0."));
 
     //test for a string with a number
     convertStatus = celix_utils_convertStringToVersion("1.2.3.A", nullptr, &result);
@@ -271,13 +271,13 @@ TEST_F(ConvertUtilsTestSuite, ConvertToVersionTest) {
     EXPECT_NE(nullptr, result);
     checkVersion(result, 1, 2, 3, "B"); //default version
     celix_version_destroy(result);
-    EXPECT_STREQ("Invalid version component(0)", celix_err_popLastError());
+    EXPECT_NE(nullptr, strstr(celix_err_popLastError(), "Invalid version part 0."));
 
     //test for a convert with a version value with trailing chars
     convertStatus = celix_utils_convertStringToVersion("2.1.1 and something else", nullptr, &result);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertStatus);
     EXPECT_EQ(nullptr, result);
-    EXPECT_STREQ("Invalid trailing string:< and something else>", celix_err_popLastError());
+    EXPECT_NE(nullptr, strstr(celix_err_popLastError(), "Invalid trailing string"));
 
     //test for a convert with a version value with trailing whitespaces
     convertStatus = celix_utils_convertStringToVersion("1.2.3 \t\n", nullptr, &result);

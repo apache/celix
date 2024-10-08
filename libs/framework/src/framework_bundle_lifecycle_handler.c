@@ -41,22 +41,22 @@ static void* celix_framework_BundleLifecycleHandlingThread(void *data) {
     switch (handler->command) {
         case CELIX_BUNDLE_LIFECYCLE_START:
             celix_framework_startBundleEntry(handler->framework, handler->bndEntry);
-            celix_framework_bundleEntry_decreaseUseCount(handler->bndEntry);
+            celix_bundleEntry_decreaseUseCount(handler->bndEntry);
             break;
         case CELIX_BUNDLE_LIFECYCLE_STOP:
             celix_framework_stopBundleEntry(handler->framework, handler->bndEntry);
-            celix_framework_bundleEntry_decreaseUseCount(handler->bndEntry);
+            celix_bundleEntry_decreaseUseCount(handler->bndEntry);
             break;
         case CELIX_BUNDLE_LIFECYCLE_UNINSTALL:
-            celix_framework_bundleEntry_decreaseUseCount(handler->bndEntry);
+            celix_bundleEntry_decreaseUseCount(handler->bndEntry);
             celix_framework_uninstallBundleEntry(handler->framework, handler->bndEntry, true);
             break;
         case CELIX_BUNDLE_LIFECYCLE_UNLOAD:
-            celix_framework_bundleEntry_decreaseUseCount(handler->bndEntry);
+            celix_bundleEntry_decreaseUseCount(handler->bndEntry);
             celix_framework_uninstallBundleEntry(handler->framework, handler->bndEntry, false);
             break;
         default: //update
-            celix_framework_bundleEntry_decreaseUseCount(handler->bndEntry);
+            celix_bundleEntry_decreaseUseCount(handler->bndEntry);
             celix_framework_updateBundleEntry(handler->framework, handler->bndEntry, handler->updatedBundleUrl);
             break;
     }
@@ -87,8 +87,9 @@ void celix_framework_waitForBundleLifecycleHandlers(celix_framework_t* fw) {
     celixThreadMutex_unlock(&fw->bundleLifecycleHandling.mutex);
 }
 
-static void celix_framework_createAndStartBundleLifecycleHandler(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, enum celix_bundle_lifecycle_command bndCommand, const char* updatedBundleUrl) {
-    celix_framework_bundleEntry_increaseUseCount(bndEntry);
+static void celix_framework_createAndStartBundleLifecycleHandler(celix_framework_t* fw,
+                                                                 celix_bundle_entry_t* bndEntry, enum celix_bundle_lifecycle_command bndCommand, const char* updatedBundleUrl) {
+    celix_bundleEntry_increaseUseCount(bndEntry);
     celixThreadMutex_lock(&fw->bundleLifecycleHandling.mutex);
     celix_framework_bundle_lifecycle_handler_t* handler = calloc(1, sizeof(*handler));
     handler->command = bndCommand;
@@ -106,7 +107,8 @@ static void celix_framework_createAndStartBundleLifecycleHandler(celix_framework
     celixThreadMutex_unlock(&fw->bundleLifecycleHandling.mutex);
 }
 
-celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread) {
+celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework_t* fw,
+                                                                 celix_bundle_entry_t* bndEntry, bool forceSpawnThread) {
     if (forceSpawnThread) {
         fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "start bundle from a separate thread");
         celix_framework_createAndStartBundleLifecycleHandler(fw, bndEntry, CELIX_BUNDLE_LIFECYCLE_START, NULL);
@@ -121,7 +123,8 @@ celix_status_t celix_framework_startBundleOnANonCelixEventThread(celix_framework
     }
 }
 
-celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread) {
+celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_t* fw,
+                                                                celix_bundle_entry_t* bndEntry, bool forceSpawnThread) {
     if (forceSpawnThread) {
         fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "stop bundle from a separate thread");
         celix_framework_createAndStartBundleLifecycleHandler(fw, bndEntry, CELIX_BUNDLE_LIFECYCLE_STOP, NULL);
@@ -136,7 +139,8 @@ celix_status_t celix_framework_stopBundleOnANonCelixEventThread(celix_framework_
     }
 }
 
-celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, bool forceSpawnThread, bool permanent) {
+celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_framework_t* fw,
+                                                                     celix_bundle_entry_t* bndEntry, bool forceSpawnThread, bool permanent) {
     if (forceSpawnThread) {
         fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "uninstall bundle from a separate thread");
         celix_framework_createAndStartBundleLifecycleHandler(fw, bndEntry, permanent ? CELIX_BUNDLE_LIFECYCLE_UNINSTALL : CELIX_BUNDLE_LIFECYCLE_UNLOAD, NULL);
@@ -151,7 +155,8 @@ celix_status_t celix_framework_uninstallBundleOnANonCelixEventThread(celix_frame
     }
 }
 
-celix_status_t celix_framework_updateBundleOnANonCelixEventThread(celix_framework_t* fw, celix_framework_bundle_entry_t* bndEntry, const char* updatedBundleUrl, bool forceSpawnThread) {
+celix_status_t celix_framework_updateBundleOnANonCelixEventThread(celix_framework_t* fw,
+                                                                  celix_bundle_entry_t* bndEntry, const char* updatedBundleUrl, bool forceSpawnThread) {
     if (forceSpawnThread) {
         fw_log(fw->logger, CELIX_LOG_LEVEL_TRACE, "update bundle from a separate thread");
         celix_framework_createAndStartBundleLifecycleHandler(fw, bndEntry, CELIX_BUNDLE_LIFECYCLE_UPDATE, updatedBundleUrl);

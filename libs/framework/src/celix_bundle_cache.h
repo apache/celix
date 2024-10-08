@@ -112,11 +112,13 @@ celix_status_t celix_bundleCache_deleteCacheDir(celix_bundle_cache_t* cache);
  * @brief Find if the there is already a bundle cache for the provided bundle zip location and if this is true
  * return the bundle id for the bundle cache entry.
  *
- * @param cache The cache.
- * @param location The location of the bundle zip to find the id for.
- * @return The bundle id or -1 if not found.
+ * @param[in]  cache The cache.
+ * @param[in] location The location of the bundle zip to find the id for.
+ * @param[out] outBndId The bundle id for the bundle cache entry.
+ * @return CELIX_SUCCESS if the bundle id is found and CELIX_FILE_IO_EXCEPTION if the cache cannot be opened or read.
  */
-long celix_bundleCache_findBundleIdForLocation(celix_bundle_cache_t* cache, const char* location);
+celix_status_t
+celix_bundleCache_findBundleIdForLocation(celix_bundle_cache_t* cache, const char* location, long* outBndId);
 
 /**
  * @brief Find if the there is already a bundle cache for the provided bundle id.

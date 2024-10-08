@@ -127,6 +127,18 @@ CELIX_UTILS_EXPORT celix_version_t* celix_version_createVersionFromString(const 
 CELIX_UTILS_EXPORT celix_status_t celix_version_parse(const char *versionStr, celix_version_t** version);
 
 /**
+ * @brief Try to parse a version string into a version object.
+ * Identical to celix_version_parse, but does not log an error if the version string is invalid (does log if memory
+ * could not be allocated).
+ *
+ * @param[in] versionStr The version string to parse.
+ * @param[out] version The parsed version object.
+ * @return CELIX_SUCCESS if the version string was parsed successfully, CELIX_ILLEGAL_ARGUMENT if the version string
+ *         was invalid, or CELIX_ENOMEM if memory could not be allocated.
+ */
+CELIX_UTILS_EXPORT celix_status_t celix_version_tryParse(const char* versionStr, celix_version_t** version);
+
+/**
  * @brief Create empty version "0.0.0".
  */
 CELIX_UTILS_EXPORT celix_version_t* celix_version_createEmptyVersion();

@@ -31,13 +31,13 @@ endif ()
 find_program(JAR_COMMAND jar NO_CMAKE_FIND_ROOT_PATH)
 
 if (JAR_COMMAND AND NOT CELIX_USE_ZIP_INSTEAD_OF_JAR)
-    message(STATUS "Using jar to create bundles")
+    message(DEBUG "Using jar to create bundles")
 else ()
     find_program(ZIP_COMMAND zip NO_CMAKE_FIND_ROOT_PATH)
     if (ZIP_COMMAND)
-        message(STATUS "Using zip to create bundles")
+        message(DEBUG "Using zip to create bundles")
     else ()
-        message(FATAL_ERROR "A jar or zip command is needed to jar/zip bundles")
+        message(FATAL_ERROR "A jar or zip command is needed to created bundles")
     endif ()
 endif ()
 
@@ -48,7 +48,7 @@ if (NOT TARGET celix-bundles)
 endif ()
 #####
 
-macro(extract_version_parts VERSION MAJOR MINOR PATCH)
+macro(_extract_version_parts VERSION MAJOR MINOR PATCH)
     set(MAJOR "0")
     set(MINOR "0")
     set(PATCH "0")
@@ -67,20 +67,20 @@ macro(extract_version_parts VERSION MAJOR MINOR PATCH)
     endif ()
 endmacro()
 
-function(set_library_version TARGET VERSION)
+function(celix_set_library_version TARGET VERSION)
     if (VERSION AND TARGET)
-        extract_version_parts("${VERSION}" MAJOR MINOR PATCH)
+        _extract_version_parts("${VERSION}" MAJOR MINOR PATCH)
 
         #NOTE setting aligning ABI version with major part of the interface version.
         #This is simpeler than using the <current>:<revision>:<age> approach of libtool
         set_property(TARGET ${TARGET} PROPERTY VERSION "${VERSION}")
         set_property(TARGET ${TARGET} PROPERTY SOVERSION ${MAJOR})
     else ()
-        message(WARNING "set_library_version: Cannot set version info TARGET and/or VERSION not provided")
+        message(WARNING "celix_set_library_version: Cannot set version info TARGET and/or VERSION not provided")
     endif ()
 endfunction()
 
-function(check_lib LIB)
+function(_check_lib LIB)
     if (TARGET ${LIB})
         #ok
     elseif (IS_ABSOLUTE ${LIB} AND EXISTS ${LIB})
@@ -90,7 +90,7 @@ function(check_lib LIB)
     endif ()
 endfunction()
 
-function(check_bundle BUNDLE)
+function(_check_bundle BUNDLE)
     if (TARGET ${BUNDLE})
         get_target_property(BUNDLE_FILE ${BUNDLE} "BUNDLE_FILE")
         if (NOT BUNDLE_FILE)
@@ -191,7 +191,7 @@ function(add_celix_bundle)
         message(FATAL_ERROR "add_bundle function requires a value for SOURCES or ACTIVATOR not both")
     endif ()
     if (BUNDLE_ACTIVATOR)
-        check_lib(${BUNDLE_ACTIVATOR})
+        _check_lib(${BUNDLE_ACTIVATOR})
     endif ()
     if (NOT DEFINED BUNDLE_GROUP)
         set(BUNDLE_GROUP "")
@@ -246,7 +246,7 @@ function(add_celix_bundle)
     if (BUNDLE_SOURCES)
         #create lib from sources
         add_library(${BUNDLE_TARGET_NAME} SHARED ${BUNDLE_SOURCES})
-        set_library_version(${BUNDLE_TARGET_NAME} ${BUNDLE_VERSION})
+        celix_set_library_version(${BUNDLE_TARGET_NAME} ${BUNDLE_VERSION})
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES
                 "BUNDLE_TARGET_IS_LIB" TRUE
                 "BUNDLE_TARGET" "${BUNDLE_TARGET_NAME}_bundle"
@@ -451,7 +451,7 @@ function(celix_bundle_libs)
     list(REMOVE_AT ARGN 0)
 
     #check if arg 0 is corrent
-    check_bundle(${BUNDLE})
+    _check_bundle(${BUNDLE})
     get_target_property(BUNDLE_DIR ${BUNDLE} "BUNDLE_CONTENT_DIR")
     get_target_property(BUNDLE_GEN_DIR ${BUNDLE} "BUNDLE_GEN_DIR")
 
@@ -536,7 +536,7 @@ function(celix_bundle_import_libs)
     list(REMOVE_AT ARGN 0)
 
     #check if arg 0 is correct
-    check_bundle(${BUNDLE})
+    _check_bundle(${BUNDLE})
 
     get_target_property(LIBS ${BUNDLE} "BUNDLE_IMPORT_LIBS")
 

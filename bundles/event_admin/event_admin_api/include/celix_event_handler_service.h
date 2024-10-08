@@ -29,7 +29,7 @@ extern "C" {
 /**
  * @brief Name of the event handler service
  */
-#define CELIX_EVENT_HANDLER_SERVICE_NAME "celix.service.event.EventHandler"
+#define CELIX_EVENT_HANDLER_SERVICE_NAME "celix_event_handler_service"
 
 /**
  * @brief Version of the event handler service

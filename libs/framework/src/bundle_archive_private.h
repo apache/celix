@@ -49,7 +49,7 @@ extern "C" {
  */
 celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *archiveRoot, long id, const char *location, bundle_archive_pt *bundle_archive);
 
-void bundleArchive_destroy(bundle_archive_pt archive);
+void celix_bundleArchive_destroy(bundle_archive_pt archive);
 
 /**
  * @brief Returns the bundle id of the bundle archive.

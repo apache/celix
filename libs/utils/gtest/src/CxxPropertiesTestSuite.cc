@@ -325,25 +325,3 @@ TEST_F(CxxPropertiesTestSuite, ArrayListTest) {
     EXPECT_EQ(versions.size(), 1);
     EXPECT_EQ(versions[0], checkVersion);
 }
-
-TEST_F(CxxPropertiesTestSuite, StoreAndLoadTest) {
-    std::string path{"cxx_store_and_load_test.properties"};
-
-    celix::Properties props{};
-    props.set("key1", "1");
-    props.set("key2", "2");
-
-    EXPECT_NO_THROW(props.store(path));
-
-    celix::Properties loadedProps{};
-    EXPECT_NO_THROW(loadedProps = celix::Properties::load(path));
-    EXPECT_TRUE(loadedProps == props);
-
-    try {
-        loadedProps = celix::Properties::load("non-existence");
-        (void)loadedProps;
-        FAIL() << "Expected exception not thrown";
-    } catch (const celix::IOException& e) {
-        EXPECT_TRUE(strstr(e.what(), "Cannot load celix::Properties"));
-    }
-}

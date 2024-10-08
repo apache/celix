@@ -12,28 +12,25 @@
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
+ *  KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
 
-#ifndef CELIX_CELIX_STDIO_CLEANUP_H
-#define CELIX_CELIX_STDIO_CLEANUP_H
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "celix_bundle_activator.h"
+#include "celix_framework.h"
 
-#include <stdio.h>
-#include <dirent.h>
+typedef struct bundle_activator {
+    //empty
+} bundle_activator_t;
 
-#include "celix_cleanup.h"
-
-CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(FILE, fclose)
-
-CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(DIR, closedir)
-
-#ifdef __cplusplus
+static celix_status_t act_start(bundle_activator_t *act CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
+    celix_framework_stopBundleAsync(celix_bundleContext_getFramework(ctx), CELIX_FRAMEWORK_BUNDLE_ID); // to make container quit immediately
+    return CELIX_SUCCESS;
 }
-#endif
-#endif // CELIX_CELIX_STDIO_CLEANUP_H
+
+static celix_status_t act_stop(bundle_activator_t *act CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
+    return CELIX_SUCCESS;
+}
+
+CELIX_GEN_BUNDLE_ACTIVATOR(bundle_activator_t, act_start, act_stop);

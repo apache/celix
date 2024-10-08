@@ -54,69 +54,6 @@ TEST_F(PropertiesTestSuite, CreateTest) {
     celix_properties_destroy(properties);
 }
 
-TEST_F(PropertiesTestSuite, LoadTest) {
-    char propertiesFile[] = "resources-test/properties.txt";
-    auto* properties = celix_properties_load(propertiesFile);
-    EXPECT_EQ(4, celix_properties_size(properties));
-
-    const char keyA[] = "a";
-    const char *valueA = celix_properties_get(properties, keyA, nullptr);
-    EXPECT_STREQ("b", valueA);
-
-    const char keyNiceA[] = "nice_a";
-    const char *valueNiceA = celix_properties_get(properties, keyNiceA, nullptr);
-    EXPECT_STREQ("nice_b", valueNiceA);
-
-    const char keyB[] = "b";
-    const char *valueB = celix_properties_get(properties, keyB, nullptr);
-    EXPECT_STREQ("c \t d", valueB);
-
-    celix_properties_destroy(properties);
-}
-
-TEST_F(PropertiesTestSuite, LoadFromStringTest) {
-    const char* string = "key1=value1\nkey2=value2";
-    auto* props = celix_properties_loadFromString(string);
-    EXPECT_EQ(2, celix_properties_size(props));
-    EXPECT_STREQ("value1", celix_properties_get(props, "key1", ""));
-    EXPECT_STREQ("value2", celix_properties_get(props, "key2", ""));
-    celix_properties_destroy(props);
-}
-
-
-TEST_F(PropertiesTestSuite, StoreTest) {
-    const char* propertiesFile = "resources-test/properties_out.txt";
-    celix_autoptr(celix_properties_t) properties = celix_properties_create();
-    celix_properties_set(properties, "keyA", "valueA");
-    celix_properties_set(properties, "keyB", "valueB");
-    celix_properties_store(properties, propertiesFile, nullptr);
-
-    celix_autoptr(celix_properties_t) properties2 = celix_properties_load(propertiesFile);
-    EXPECT_EQ(celix_properties_size(properties), celix_properties_size(properties2));
-    EXPECT_STREQ(celix_properties_get(properties, "keyA", ""), celix_properties_get(properties2, "keyA", ""));
-    EXPECT_STREQ(celix_properties_get(properties, "keyB", ""), celix_properties_get(properties2, "keyB", ""));
-}
-
-TEST_F(PropertiesTestSuite, StoreWithHeaderTest) {
-    const char* propertiesFile = "resources-test/properties_with_header_out.txt";
-    celix_autoptr(celix_properties_t) properties = celix_properties_create();
-    celix_properties_set(properties, "keyA", "valueA");
-    celix_properties_set(properties, "keyB", "valueB");
-    celix_properties_store(properties, propertiesFile, "header");
-
-    celix_autoptr(celix_properties_t) properties2 = celix_properties_load(propertiesFile);
-    EXPECT_EQ(celix_properties_size(properties), celix_properties_size(properties2));
-    EXPECT_STREQ(celix_properties_get(properties, "keyA", ""), celix_properties_get(properties2, "keyA", ""));
-    EXPECT_STREQ(celix_properties_get(properties, "keyB", ""), celix_properties_get(properties2, "keyB", ""));
-
-    //check if provided header text is present in file
-    FILE *f = fopen(propertiesFile, "r");
-    char line[1024];
-    fgets(line, sizeof(line), f);
-    EXPECT_STREQ("#header\n", line);
-    fclose(f);
-}
-
 TEST_F(PropertiesTestSuite, GetAsLongTest) {
     celix_properties_t *props = celix_properties_create();
     celix_properties_set(props, "t1", "42");
@@ -660,11 +597,6 @@ TEST_F(PropertiesTestSuite, SetEntryWithLargeStringValueTest) {
 
 TEST_F(PropertiesTestSuite, PropertiesAutoCleanupTest) {
     celix_autoptr(celix_properties_t) props = celix_properties_create();
-}
-
-TEST_F(PropertiesTestSuite, NullArgumentsTest) {
-    auto props = celix_properties_loadWithStream(nullptr);
-    EXPECT_EQ(nullptr, props);
 }
 
 TEST_F(PropertiesTestSuite, PropertiesEqualsTest) {
