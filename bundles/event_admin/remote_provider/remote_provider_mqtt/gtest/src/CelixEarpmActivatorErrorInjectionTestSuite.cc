@@ -225,3 +225,4 @@ TEST_F(CelixEarpmActErrorInjectionTestSuite, FailedToAddEarpmComponentTest) {
         ASSERT_EQ(ENOMEM, status);
     });
 }
+
