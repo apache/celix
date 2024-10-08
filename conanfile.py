@@ -186,6 +186,10 @@ class CelixConan(ConanFile):
             options["build_log_service"] = True
             options["build_syslog_writer"] = True
 
+        if options["build_event_admin_remote_provider_mqtt"]:
+            options["build_event_admin"] = True
+            options["build_remote_service_admin"] = True
+
         if options["build_cxx_rsa_integration"]:
             options["build_cxx_remote_service_admin"] = True
             options["build_pushstreams"] = True
@@ -318,13 +322,13 @@ class CelixConan(ConanFile):
             self.options['mosquitto'].shared = True
             if self.options.enable_testing:
                 self.options['mosquitto'].broker = True
-                self.options['mosquitto'].clients = True
 
     def requirements(self):
         if self.options.build_utils:
             self.requires("libzip/[>=1.7.3 <2.0.0]")
         if self.options.build_framework:
-            self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
+            #self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
+            self.requires("libuuid/[>=1.0.0 <2.0.0]")
         if ((self.options.build_framework and self.options.framework_curlinit)
                 or self.options.build_celix_etcdlib
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi

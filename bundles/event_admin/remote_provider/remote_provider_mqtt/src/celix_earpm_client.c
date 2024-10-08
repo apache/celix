@@ -618,6 +618,7 @@ static inline bool celix_earpmClient_hasFreeMsgFor(celix_earpm_client_t* client,
             return client->freeMsgPool.usedSize < client->freeMsgPool.cap;
     }
     assert(0);//LCOV_EXCL_LINE, should never be reached
+    return false;//LCOV_EXCL_LINE, should never be reached
 }
 
 static inline bool celix_earpmClient_isPublishingQueueFull(celix_earpm_client_t* client) {

@@ -300,6 +300,18 @@ if (TEST_EVENT_ADMIN)
     )
     add_executable(use_event_admin_api test_event_admin_api.c)
     target_link_libraries(use_event_admin_api PRIVATE Celix::event_admin_api)
+
+    add_executable(use_event_admin_spi test_event_admin_spi.c)
+    target_link_libraries(use_event_admin_spi PRIVATE Celix::event_admin_spi)
+endif ()
+
+option(TEST_EVENT_ADMIN_REMOTE_PROVIDER_MQTT "Test event admin remote provider based on MQTT" OFF)
+if (TEST_EVENT_ADMIN_REMOTE_PROVIDER_MQTT)
+    add_celix_container(use_event_admin_remote_provider_mqtt
+            BUNDLES
+            Celix::event_admin_remote_provider_mqtt
+            hello
+    )
 endif ()
 
 option(TEST_COMPONENTS_READY_CHECK "Test the components.ready condition checking bundle" OFF)

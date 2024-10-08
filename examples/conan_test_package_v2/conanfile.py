@@ -144,6 +144,10 @@ class TestPackageConan(ConanFile):
                     self.run("./use_event_admin",
                              cwd=os.path.join("deploy", "use_event_admin"), env="conanrun")
                     self.run("./conan_test_package/use_event_admin_api", env="conanrun")
+                    self.run("./conan_test_package/use_event_admin_spi", env="conanrun")
+                if celix_options.build_event_admin_remote_provider_mqtt:
+                    self.run("./use_event_admin_remote_provider_mqtt",
+                             cwd=os.path.join("deploy", "use_event_admin_remote_provider_mqtt"), env="conanrun")
                 if celix_options.build_components_ready_check:
                     self.run("./use_components_ready_check",
                              cwd=os.path.join("deploy", "use_components_ready_check"), env="conanrun")
