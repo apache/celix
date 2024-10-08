@@ -327,8 +327,7 @@ class CelixConan(ConanFile):
         if self.options.build_utils:
             self.requires("libzip/[>=1.7.3 <2.0.0]")
         if self.options.build_framework:
-            #self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
-            self.requires("libuuid/[>=1.0.0 <2.0.0]")
+            self.requires("util-linux-libuuid/[>=2.39 <3.0.0]")
         if ((self.options.build_framework and self.options.framework_curlinit)
                 or self.options.build_celix_etcdlib
                 or self.options.build_rsa_discovery_common or self.options.build_rsa_remote_service_admin_dfi
