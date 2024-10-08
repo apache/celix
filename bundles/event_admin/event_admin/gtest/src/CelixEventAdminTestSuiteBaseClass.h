@@ -146,7 +146,7 @@ public:
         auto status = celix_eventAdmin_start(ea);
         EXPECT_EQ(CELIX_SUCCESS, status);
         struct celix_handle_event_callback_data {
-                std::function<celix_status_t (void*, const char*, const celix_properties_t*)>& onHandleEvent;
+                const std::function<celix_status_t (void*, const char*, const celix_properties_t*)>& onHandleEvent;
                 void* handle;
         } data{onHandleEvent, ea};
         celix_event_handler_service_t handler;

@@ -79,7 +79,7 @@ public:
         celix_ei_expect_celix_arrayList_createStringArray(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_addString(nullptr, 0, 0);
         celix_ei_expect_celix_filter_create(nullptr, 0, nullptr);
-        celix_ei_expect_celix_properties_loadFromString2(nullptr, 0, 0);
+        celix_ei_expect_celix_properties_loadFromString(nullptr, 0, 0);
     }
 
     void TestAddEventHandlerServiceErrorInjection(const std::function<void()>& errorInjection, const std::function<void(celix_status_t status)>& checkResult) {
@@ -1003,7 +1003,7 @@ TEST_F(CelixEarpmImplErrorInjectionTestSuite, FailedToPublishHandlerInfoUpdateMe
 TEST_F(CelixEarpmImplErrorInjectionTestSuite, FailedToUnserializeSyncEvent) {
     TestProcessSyncEventErrorInjection(
         []() {
-            celix_ei_expect_celix_properties_loadFromString2(CELIX_EI_UNKNOWN_CALLER, 0, ENOMEM);
+            celix_ei_expect_celix_properties_loadFromString(CELIX_EI_UNKNOWN_CALLER, 0, ENOMEM);
         },
         [this]() {
             auto ok = WaitForLogMessage("Failed to load event properties for syncEvent.");
@@ -1072,7 +1072,7 @@ TEST_F(CelixEarpmImplErrorInjectionTestSuite, FailedToUnserializeAsyncEvent) {
         auto status = celix_earpm_addEventHandlerService(earpm, &eventHandlerService, props);
         EXPECT_EQ(status, CELIX_SUCCESS);
 
-        celix_ei_expect_celix_properties_loadFromString2(CELIX_EI_UNKNOWN_CALLER, 0, ENOMEM);
+        celix_ei_expect_celix_properties_loadFromString(CELIX_EI_UNKNOWN_CALLER, 0, ENOMEM);
 
         //publish the async event
         celix_autoptr(celix_properties_t) eventProps = celix_properties_create();

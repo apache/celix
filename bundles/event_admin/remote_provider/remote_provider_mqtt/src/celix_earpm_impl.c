@@ -1273,7 +1273,7 @@ static void celix_earpm_sendEventDone(void* data, const char* topic, celix_statu
 static celix_status_t celix_earpm_deliverSyncEvent(celix_event_admin_remote_provider_mqtt_t* earpm, const celix_earpm_client_request_info_t* requestInfo) {
     celix_autoptr(celix_properties_t) eventProps = NULL;
     if (requestInfo->payload != NULL && requestInfo->payloadSize > 0) {
-        celix_status_t status = celix_properties_loadFromString2(requestInfo->payload, 0, &eventProps);
+        celix_status_t status = celix_properties_loadFromString(requestInfo->payload, 0, &eventProps);
         if (status != CELIX_SUCCESS) {
             celix_logHelper_error(earpm->logHelper, "Failed to load event properties for %s.", requestInfo->topic);
             return status;
@@ -1330,7 +1330,7 @@ static void celix_earpm_processSyncEventMessage(celix_event_admin_remote_provide
 static void celix_earpm_processAsyncEventMessage(celix_event_admin_remote_provider_mqtt_t* earpm, const celix_earpm_client_request_info_t* requestInfo) {
     celix_autoptr(celix_properties_t) eventProps = NULL;
     if (requestInfo->payload != NULL && requestInfo->payloadSize > 0) {
-        celix_status_t status = celix_properties_loadFromString2(requestInfo->payload, 0, &eventProps);
+        celix_status_t status = celix_properties_loadFromString(requestInfo->payload, 0, &eventProps);
         if (status != CELIX_SUCCESS) {
             celix_logHelper_error(earpm->logHelper, "Failed to load event properties for %s.", requestInfo->topic);
             return;

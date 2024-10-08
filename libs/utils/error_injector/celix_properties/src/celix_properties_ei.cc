@@ -118,11 +118,11 @@ celix_status_t __wrap_celix_properties_saveToString(const celix_properties_t* pr
     return __real_celix_properties_saveToString(properties, encodeFlags, out);
 }
 
-celix_status_t __real_celix_properties_loadFromString2(const char* data, int decodeFlags, celix_properties_t** out);
-CELIX_EI_DEFINE(celix_properties_loadFromString2, celix_status_t)
-celix_status_t __wrap_celix_properties_loadFromString2(const char* data, int decodeFlags, celix_properties_t** out) {
-    CELIX_EI_IMPL(celix_properties_loadFromString2);
-    return __real_celix_properties_loadFromString2(data, decodeFlags, out);
+celix_status_t __real_celix_properties_loadFromString(const char* data, int decodeFlags, celix_properties_t** out);
+CELIX_EI_DEFINE(celix_properties_loadFromString, celix_status_t)
+celix_status_t __wrap_celix_properties_loadFromString(const char* data, int decodeFlags, celix_properties_t** out) {
+    CELIX_EI_IMPL(celix_properties_loadFromString);
+    return __real_celix_properties_loadFromString(data, decodeFlags, out);
 }
 
 }
