@@ -64,6 +64,7 @@ class TestPackageConan(ConanFile):
         tc.cache_variables["TEST_CELIX_DFI"] = celix_options.build_celix_dfi
         tc.cache_variables["TEST_UTILS"] = celix_options.build_utils
         tc.cache_variables["TEST_EVENT_ADMIN"] = celix_options.build_event_admin
+        tc.cache_variables["TEST_EVENT_ADMIN_REMOTE_PROVIDER_MQTT"] = celix_options.build_event_admin_remote_provider_mqtt
         tc.cache_variables["TEST_COMPONENTS_READY_CHECK"] = celix_options.build_components_ready_check
         # the following is workaround https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":
