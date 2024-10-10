@@ -1189,7 +1189,7 @@ static celix_status_t celix_earpmClient_reconnectBroker(celix_earpm_client_t* cl
         *connectFailedCount += 1;
         unsigned int reconnectInterval = *connectFailedCount * 1;
         *nextReconnectInterval = (reconnectInterval < CELIX_EARPM_CLIENT_RECONNECT_DELAY_MAX) ? reconnectInterval : CELIX_EARPM_CLIENT_RECONNECT_DELAY_MAX;
-        celix_logHelper_info(client->logHelper, "Failed to connect to broker, retry after %u second.", *nextReconnectInterval);
+        celix_logHelper_info(client->logHelper, "Failed to connect to broker, retry after %u second, err:%d.", *nextReconnectInterval, status);
     } else {
         *connectFailedCount = 0;
         *nextReconnectInterval = 0;

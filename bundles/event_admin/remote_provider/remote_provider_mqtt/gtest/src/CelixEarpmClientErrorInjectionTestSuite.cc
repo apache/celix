@@ -222,7 +222,7 @@ TEST_F(CelixEarpmClientErrorInjectionTestSuite, FailedToGetBrokerDynamicAddressT
 TEST_F(CelixEarpmClientErrorInjectionTestSuite, FailedToDupBrokerInterfaceNameTest) {
     TestClient([](celix_earpm_client_t* client) {
         celix_autoptr(endpoint_description_t) endpoint = CreateMqttBrokerEndpoint();
-        celix_properties_set(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, "lo");
+        celix_properties_set(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, LOOP_BACK_INTERFACE);
         celix_properties_setLong(endpoint->properties, CELIX_RSA_PORT, 1883);
         celix_properties_set(endpoint->properties, CELIX_RSA_IP_ADDRESSES, "");
 

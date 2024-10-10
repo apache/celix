@@ -129,7 +129,7 @@ TEST_F(CelixEarpmClientTestSuite, AddMqttBrokerSpecifiedHostNameAndSockDomainEnd
 TEST_F(CelixEarpmClientTestSuite, AddMqttBrokerSpecifiedInterfaceEndpointTest) {
     TestAddMqttBrokerEndpoint([](endpoint_description_t* endpoint){
         celix_properties_set(endpoint->properties, CELIX_RSA_IP_ADDRESSES, "");
-        celix_properties_set(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, "lo");
+        celix_properties_set(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, LOOP_BACK_INTERFACE);
         celix_properties_setLong(endpoint->properties, CELIX_RSA_PORT, MQTT_BROKER_PORT);
     });
 }
@@ -137,7 +137,7 @@ TEST_F(CelixEarpmClientTestSuite, AddMqttBrokerSpecifiedInterfaceEndpointTest) {
 TEST_F(CelixEarpmClientTestSuite, AddMqttBrokerSpecifiedInterfaceAndIpv4DomainEndpointTest) {
     TestAddMqttBrokerEndpoint([](endpoint_description_t* endpoint){
         celix_properties_set(endpoint->properties, CELIX_RSA_IP_ADDRESSES, "");
-        celix_properties_set(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, "lo");
+        celix_properties_set(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, LOOP_BACK_INTERFACE);
         celix_properties_setLong(endpoint->properties, CELIX_EARPM_MQTT_BROKER_SOCKET_DOMAIN, AF_INET);
         celix_properties_setLong(endpoint->properties, CELIX_RSA_PORT, MQTT_BROKER_PORT);
     });
@@ -146,7 +146,7 @@ TEST_F(CelixEarpmClientTestSuite, AddMqttBrokerSpecifiedInterfaceAndIpv4DomainEn
 TEST_F(CelixEarpmClientTestSuite, AddMqttBrokerSpecifiedInterfaceAndIpv6DomainEndpointTest) {
     TestAddMqttBrokerEndpoint([](endpoint_description_t* endpoint){
         celix_properties_set(endpoint->properties, CELIX_RSA_IP_ADDRESSES, "");
-        celix_properties_set(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, "lo");
+        celix_properties_set(endpoint->properties, CELIX_RSA_EXPORTED_ENDPOINT_EXPOSURE_INTERFACE, LOOP_BACK_INTERFACE);
         celix_properties_setLong(endpoint->properties, CELIX_EARPM_MQTT_BROKER_SOCKET_DOMAIN, AF_INET6);
         celix_properties_setLong(endpoint->properties, CELIX_RSA_PORT, MQTT_BROKER_PORT);
     });

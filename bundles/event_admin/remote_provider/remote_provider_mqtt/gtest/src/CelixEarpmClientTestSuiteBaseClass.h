@@ -47,8 +47,13 @@ extern "C" {
 
 
 namespace {
-    constexpr const char *MQTT_BROKER_ADDRESS = "127.0.0.1";
+    constexpr const char* MQTT_BROKER_ADDRESS = "127.0.0.1";
     constexpr int MQTT_BROKER_PORT = 1883;
+#ifdef __APPLE__
+    constexpr const char* LOOP_BACK_INTERFACE = "lo0";
+#else
+    constexpr const char* LOOP_BACK_INTERFACE = "lo";
+#endif
 }
 
 class CelixEarpmClientTestSuiteBaseClass : public CelixEarpmTestSuiteBaseClass {
