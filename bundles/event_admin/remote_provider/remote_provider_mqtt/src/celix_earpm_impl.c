@@ -1426,6 +1426,50 @@ static void celix_earpm_connectedCallback(void* handle) {
     return;
 }
 
+static void celix_earpm_infoCmd(celix_event_admin_remote_provider_mqtt_t* earpm, FILE* outStream) {
+    fprintf(outStream, "Event Admin Remote Provider Based On MQTT Info:\n");
+    {
+        fprintf(outStream, "\nLocal Subscriptions:\n");
+        celix_auto(celix_mutex_lock_guard_t) mutexGuard = celixMutexLockGuard_init(&earpm->mutex);
+        CELIX_STRING_HASH_MAP_ITERATE(earpm->eventSubscriptions, iter) {
+            celix_earpm_event_subscription_t* subscription = iter.value.ptrValue;
+            fprintf(outStream, "\t%s -> QOS:%d, SubCnt:%d\n", iter.key, subscription->curQos, celix_arrayList_size(subscription->handlerServiceIdList));
+        }
+        fprintf(outStream, "\nRemote Framework Info:\n");
+        CELIX_STRING_HASH_MAP_ITERATE(earpm->remoteFrameworks, iter) {
+            celix_earpm_remote_framework_info_t* fwInfo = iter.value.ptrValue;
+            fprintf(outStream, "\t%s -> HandlerCnt:%zu, NoAckCnt:%d, PendingAckCnt:%zu\n", iter.key,
+                    celix_longHashMap_size(fwInfo->handlerInfoMap), fwInfo->continuousNoAckCount, celix_longHashMap_size(fwInfo->eventAckSeqNrMap));
+        }
+    }
+
+    celix_earpmClient_info(earpm->mqttClient, outStream);
+}
+
+bool celix_earpm_executeCommand(void* handle, const char* commandLine, FILE* outStream, FILE* errorStream) {
+    assert(handle != NULL);
+    assert(commandLine != NULL);
+    assert(outStream != NULL);
+    assert(errorStream != NULL);
+    celix_event_admin_remote_provider_mqtt_t* earpm = (celix_event_admin_remote_provider_mqtt_t*)handle;
+    celix_autofree char* cmd = celix_utils_strdup(commandLine);
+    if (cmd == NULL) {
+        fprintf(errorStream, "Failed to process command line %s.\n", commandLine);
+        return false;
+    }
+    const char* subCmd = NULL;
+    char* savePtr = NULL;
+    strtok_r(cmd, " ", &savePtr);
+    subCmd = strtok_r(NULL, " ", &savePtr);
+    if (subCmd == NULL) {
+        celix_earpm_infoCmd(earpm, outStream);
+    } else {
+        fprintf(errorStream, "Unexpected sub command %s\n", subCmd);
+        return false;
+    }
+    return true;
+}
+
 size_t celix_earpm_currentRemoteFrameworkCount(celix_event_admin_remote_provider_mqtt_t* earpm) {
     celix_auto(celix_mutex_lock_guard_t) mutexGuard = celixMutexLockGuard_init(&earpm->mutex);
     size_t cnt = celix_stringHashMap_size(earpm->remoteFrameworks);

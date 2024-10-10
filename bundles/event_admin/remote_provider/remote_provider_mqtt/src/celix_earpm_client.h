@@ -23,6 +23,7 @@
 extern "C" {
 #endif
 #include <time.h>
+#include <stdio.h>
 
 #include "celix_errno.h"
 #include "celix_cleanup.h"
@@ -93,7 +94,7 @@ celix_status_t celix_earpmClient_publishAsync(celix_earpm_client_t* client, cons
 
 celix_status_t celix_earpmClient_publishSync(celix_earpm_client_t* client, const celix_earpm_client_request_info_t* requestInfo);
 
-
+void celix_earpmClient_info(celix_earpm_client_t* client, FILE* outStream);
 
 
 #ifdef __cplusplus

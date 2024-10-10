@@ -202,6 +202,30 @@ TEST_F(CelixEarpmActErrorInjectionTestSuite, FailedToAddEndpointListenerServiceT
     });
 }
 
+TEST_F(CelixEarpmActErrorInjectionTestSuite, FailedToCreateCommandServiceProperiesTest) {
+    TestEarpmActivator([](void *act, celix_bundle_context_t *ctx) {
+        celix_ei_expect_celix_properties_create((void*)&celix_bundleActivator_start, 1, nullptr, 2);
+        auto status = celix_bundleActivator_start(act, ctx);
+        ASSERT_EQ(ENOMEM, status);
+    });
+}
+
+TEST_F(CelixEarpmActErrorInjectionTestSuite, FailedToSetCommandNameTest) {
+    TestEarpmActivator([](void *act, celix_bundle_context_t *ctx) {
+        celix_ei_expect_celix_properties_set((void*)&celix_bundleActivator_start, 1, ENOMEM, 2);
+        auto status = celix_bundleActivator_start(act, ctx);
+        ASSERT_EQ(ENOMEM, status);
+    });
+}
+
+TEST_F(CelixEarpmActErrorInjectionTestSuite, FailedToAddCommandServiceTest) {
+    TestEarpmActivator([](void *act, celix_bundle_context_t *ctx) {
+        celix_ei_expect_celix_dmComponent_addInterface((void*)&celix_bundleActivator_start, 1, ENOMEM, 3);
+        auto status = celix_bundleActivator_start(act, ctx);
+        ASSERT_EQ(ENOMEM, status);
+    });
+}
+
 TEST_F(CelixEarpmActErrorInjectionTestSuite, FailedToGetDependencyManagerTest) {
     TestEarpmActivator([](void *act, celix_bundle_context_t *ctx) {
         celix_ei_expect_celix_bundleContext_getDependencyManager((void*)&celix_bundleActivator_start, 1, nullptr);

@@ -1001,4 +1001,31 @@ TEST_F(CelixEarpmImplTestSuite, SendEventAndThenRemoteHandlerRemovedByUpdateMess
     });
 }
 
+TEST_F(CelixEarpmImplTestSuite, ExecuteCommandTest) {
+    TestRemoteProvider([](celix_event_admin_remote_provider_mqtt_t* earpm) {
+        AddRemoteHandlerInfoToRemoteProviderAndCheck(earpm, R"({"handler":{"handlerId":123,"topics":["subscribedEvent"]}})");
 
+        celix_event_handler_service_t eventHandlerService;
+        eventHandlerService.handle = nullptr;
+        eventHandlerService.handleEvent = [](void*, const char*, const celix_properties_t*) { return CELIX_SUCCESS; };
+        celix_autoptr(celix_properties_t) props = celix_properties_create();
+        celix_properties_setLong(props, CELIX_FRAMEWORK_SERVICE_ID, 234);
+        celix_properties_set(props, CELIX_EVENT_TOPIC, "topic");
+        celix_properties_set(props, CELIX_EVENT_FILTER, "(a=b)");
+        auto status = celix_earpm_addEventHandlerService(earpm, &eventHandlerService, props);
+        EXPECT_EQ(status, CELIX_SUCCESS);
+
+        auto res = celix_earpm_executeCommand(earpm, "celix::earpm", stdout, stderr);
+        EXPECT_TRUE(res);
+    });
+}
+
+TEST_F(CelixEarpmImplTestSuite, ExecuteCommandFailedTest) {
+    auto earpm = celix_earpm_create(ctx.get());
+    ASSERT_NE(earpm, nullptr);
+
+    auto res = celix_earpm_executeCommand(earpm, "celix::earpm unexpectedSubCmd", stdout, stderr);
+    EXPECT_FALSE(res);
+
+    celix_earpm_destroy(earpm);
+}

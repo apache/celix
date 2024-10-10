@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
+
 #include "celix_errno.h"
 #include "celix_compiler.h"
 #include "celix_bundle_context.h"
@@ -46,6 +48,8 @@ celix_status_t celix_earpm_setEventAdminSvc(void* handle, void* eventAdminSvc);
 
 celix_status_t celix_earpm_postEvent(void* handle , const char* topic, const celix_properties_t* eventProps);
 celix_status_t celix_earpm_sendEvent(void* handle , const char* topic, const celix_properties_t* eventProps);
+
+bool celix_earpm_executeCommand(void *handle, const char *commandLine, FILE *outStream, FILE *errorStream);
 
 size_t celix_earpm_currentRemoteFrameworkCount(celix_event_admin_remote_provider_mqtt_t* earpm);
 

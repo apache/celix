@@ -20,6 +20,7 @@
 #include <errno.h>
 
 #include "celix_errno.h"
+#include "celix_shell_command.h"
 #include "celix_bundle_activator.h"
 #include "celix_dm_component.h"
 #include "celix_dm_service_dependency.h"
@@ -39,6 +40,7 @@ typedef struct celix_event_admin_remote_provider_mqtt_activator {
     celix_event_admin_remote_provider_mqtt_t* providerMqtt;
     celix_event_remote_provider_service_t providerSvc;
     endpoint_listener_t endpointListener;
+    celix_shell_command_t cmdSvc;
 } celix_event_admin_remote_provider_mqtt_activator_t;
 
 static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_event_admin_remote_provider_mqtt_activator_t *act, celix_bundle_context_t *ctx) {
@@ -158,6 +160,24 @@ static celix_status_t celix_eventAdminRemoteProviderMqttActivator_start(celix_ev
     }
     status = celix_dmComponent_addInterface(earpmCmp, CELIX_RSA_ENDPOINT_LISTENER_SERVICE_NAME, NULL, &act->endpointListener,
                                             celix_steal_ptr(props));
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+
+    act->cmdSvc.handle = act->providerMqtt;
+    act->cmdSvc.executeCommand = celix_earpm_executeCommand;
+    celix_autoptr(celix_properties_t) cmdProps = celix_properties_create();
+    if (cmdProps == NULL) {
+        return ENOMEM;
+    }
+    status = celix_properties_set(cmdProps, CELIX_SHELL_COMMAND_NAME, "celix::earpm");
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
+    (void)celix_properties_set(cmdProps, CELIX_SHELL_COMMAND_USAGE, "celix::earpm");
+    (void)celix_properties_set(cmdProps, CELIX_SHELL_COMMAND_DESCRIPTION, "Show the status of the Event Admin Remote Provider Mqtt.");
+    status = celix_dmComponent_addInterface(earpmCmp, CELIX_SHELL_COMMAND_SERVICE_NAME, CELIX_SHELL_COMMAND_SERVICE_VERSION,
+                                            &act->cmdSvc, celix_steal_ptr(cmdProps));
     if (status != CELIX_SUCCESS) {
         return status;
     }

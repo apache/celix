@@ -189,6 +189,7 @@ class CelixConan(ConanFile):
         if options["build_event_admin_remote_provider_mqtt"]:
             options["build_event_admin"] = True
             options["build_remote_service_admin"] = True
+            options["build_shell_api"] = True
 
         if options["build_cxx_rsa_integration"]:
             options["build_cxx_remote_service_admin"] = True

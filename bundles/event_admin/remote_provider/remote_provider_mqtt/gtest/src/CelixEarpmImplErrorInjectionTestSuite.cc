@@ -252,6 +252,17 @@ TEST_F(CelixEarpmImplErrorInjectionTestSuite, FailedToSubscribeCtrlMessageOfEven
     ASSERT_EQ(nullptr, earpm);
 }
 
+TEST_F(CelixEarpmImplErrorInjectionTestSuite, FailedToDupDebugCommandTest) {
+    auto earpm = celix_earpm_create(ctx.get());
+    ASSERT_NE(earpm, nullptr);
+
+    celix_ei_expect_celix_utils_strdup((void*)&celix_earpm_executeCommand, 0, nullptr);
+    auto res = celix_earpm_executeCommand(earpm, "celix::earpm", stdout, stderr);
+    EXPECT_FALSE(res);
+
+    celix_earpm_destroy(earpm);
+}
+
 TEST_F(CelixEarpmImplErrorInjectionTestSuite, FailedToDupEventHandlerFilterInfoTest) {
     TestAddEventHandlerServiceErrorInjection(
         []() {

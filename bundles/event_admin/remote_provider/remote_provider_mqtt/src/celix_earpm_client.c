@@ -336,6 +336,16 @@ void celix_earpmClient_destroy(celix_earpm_client_t* client) {
     return;
 }
 
+void celix_earpmClient_info(celix_earpm_client_t* client, FILE* outStream) {
+    celixThreadMutex_lock(&client->mutex);
+    size_t queueSize = client->freeMsgPool.cap;
+    size_t usedSize = client->freeMsgPool.usedSize;
+    celixThreadMutex_unlock(&client->mutex);
+
+    fprintf(outStream, "\nMessage Queue Info:\n");
+    fprintf(outStream, "\tTotal:%zu, Used:%zu\n", queueSize, usedSize);
+}
+
 static celix_status_t celix_earpmClient_configMosq(mosquitto *mosq, celix_log_helper_t* logHelper, const char* sessionEndMsgTopic, const char* sessionEndMsgSenderUUID, const char* sessionEndMsgVersion) {
     assert(mosq != NULL);
     int rc = mosquitto_int_option(mosq, MOSQ_OPT_PROTOCOL_VERSION, MQTT_PROTOCOL_V5);
