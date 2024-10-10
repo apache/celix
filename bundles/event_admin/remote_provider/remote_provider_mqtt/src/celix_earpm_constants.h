@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 /**
- * Topic for the EventAdminMqtt
+ * Control message topics for the EventAdminMqtt
  * @{
  */
 #define CELIX_EARPM_TOPIC_PREFIX "celix/EventAdminMqtt/"
@@ -36,7 +36,7 @@ extern "C" {
 #define CELIX_EARPM_SYNC_EVENT_ACK_TOPIC_PREFIX CELIX_EARPM_TOPIC_PREFIX"SyncEvent/ack/" // topic = topic prefix + requester framework UUID
 #define CELIX_EARPM_SESSION_END_TOPIC CELIX_EARPM_TOPIC_PREFIX"session/end"
 
-/** @}*///end of Topic for the EventAdminMqtt
+/** @}*///end of Control message topics for the EventAdminMqtt
 
 /**
  * Configuration properties for the EventAdminMqtt
@@ -88,7 +88,7 @@ extern "C" {
 /** @}*///end of Configuration properties for the EventAdminMqtt
 
 /**
- * @brief The QoS MQTT
+ * @brief The QoS for the MQTT messages.
  */
 typedef enum celix_earpm_qos {
     CELIX_EARPM_QOS_UNKNOWN = -1,

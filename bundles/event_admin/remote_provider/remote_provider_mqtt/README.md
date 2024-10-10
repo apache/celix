@@ -123,5 +123,5 @@ When the MQTT connection is disconnected, `event_admin_remote_provider_mqtt` wil
 
 See the cmake target `remote_event_admin_mqtt_publisher` and `remote_event_admin_mqtt_subscriber` in the `event_admin/examples` directory.
 
-Note: Before running the example, make sure the `mosquitto broker` and the `mdnsd` are running. You can get `mosquitto` from [here](https://github.com/eclipse/mosquitto) and `mdnsd` from [here](https://github.com/apple-oss-distributions/mDNSResponder).
+Note: Before running the example, make sure the `mosquitto broker` and the `mdnsd` are running. You can get `mosquitto` from [here](https://github.com/eclipse/mosquitto) and `mdnsd` from [here](https://github.com/apple-oss-distributions/mDNSResponder). And you should use command `mosquitto -c <profile>` to start the `mosquitto broker`. The profile of the `mosquitto broker` can be got from [here](../../examples/res/mosquitto.conf).
 

@@ -17,9 +17,11 @@
  * under the License.
  */
 #include <future>
-#include <mosquitto.h>
+#include <csignal>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <gtest/gtest.h>
+#include <mosquitto.h>
 
 #include "celix_framework_utils.h"
 #include "celix_constants.h"

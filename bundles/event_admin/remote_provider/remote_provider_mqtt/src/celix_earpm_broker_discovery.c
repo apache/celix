@@ -40,7 +40,7 @@
 #include "remote_constants.h"
 #include "celix_earpm_constants.h"
 
-#define CELIX_EARPM_LOAD_PROFILE_INTERVAL 2 //s
+#define CELIX_EARPM_LOAD_PROFILE_INTERVAL 2 //seconds
 #define CELIX_EARPM_LOAD_PROFILE_TRIES_MAX (600/CELIX_EARPM_LOAD_PROFILE_INTERVAL) //10 minutes
 
 
@@ -429,13 +429,13 @@ static bool celix_earpmDiscovery_loadBrokerProfile(celix_earpm_broker_discovery_
         return false;
     }
 
-    celix_array_list_t* brokerEndpoints = celix_earpmDiscovery_createBrokerEndpoints(discovery, brokerListeners);
+    celix_autoptr(celix_array_list_t) brokerEndpoints = celix_earpmDiscovery_createBrokerEndpoints(discovery, brokerListeners);
     if (brokerEndpoints == NULL) {
         celix_logHelper_error(discovery->logHelper, "Failed to create broker endpoints.");
         return false;
     }
     celix_auto(celix_mutex_lock_guard_t) mutexLockGuard = celixMutexLockGuard_init(&discovery->mutex);
-    discovery->brokerEndpoints = brokerEndpoints;
+    discovery->brokerEndpoints = celix_steal_ptr(brokerEndpoints);
 
     return true;
 }

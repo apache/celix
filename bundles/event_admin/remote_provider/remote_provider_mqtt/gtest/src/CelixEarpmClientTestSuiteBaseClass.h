@@ -22,6 +22,8 @@
 
 #include <cstring>
 #include <string>
+#include <csignal>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <cstdlib>
 #include <functional>
@@ -91,6 +93,7 @@ public:
         defaultOpts.logHelper = logHelper.get();
         defaultOpts.sessionEndMsgTopic = CELIX_EARPM_SESSION_END_TOPIC;
         defaultOpts.sessionEndMsgSenderUUID = fwUUID.c_str();
+        defaultOpts.sessionEndMsgVersion = "1.0.0";
         defaultOpts.callbackHandle = nullptr;
         defaultOpts.receiveMsgCallback = [](void*, const celix_earpm_client_request_info_t*) {};
         defaultOpts.connectedCallback = [](void*) {};

@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <jansson.h>
 
 #include "celix_cleanup.h"
@@ -34,7 +35,6 @@
 #include "celix_threads.h"
 #include "celix_constants.h"
 #include "celix_filter.h"
-#include "celix_framework.h"
 #include "celix_event_constants.h"
 #include "celix_event_remote_provider_service.h"
 #include "celix_earpm_event_deliverer.h"
@@ -48,7 +48,9 @@
  */
 #define CELIX_EARPM_SYNC_EVENT_TIMEOUT_DEFAULT (5*60) //seconds
 
-
+/**
+ * @brief The version of the remote provider messages(It contains event messages and control messages).
+ */
 #define CELIX_EARPM_MSG_VERSION "1.0.0"
 
 typedef struct celix_earpm_event_handler {
@@ -99,7 +101,7 @@ struct celix_event_admin_remote_provider_mqtt {
     celix_thread_cond_t ackCond;
     celix_long_hash_map_t* eventHandlers;//key = serviceId, value = celix_earpm_event_handler_t*
     celix_string_hash_map_t* eventSubscriptions;//key = topic, value = celix_earpm_event_subscription_t*
-    celix_string_hash_map_t* remoteFrameworks;// key = frameworkUUID of remote frameworks, value = celix_remote_framework_info_t*
+    celix_string_hash_map_t* remoteFrameworks;// key = frameworkUUID of remote frameworks, value = celix_earpm_remote_framework_info_t*
     bool destroying;
 };
 
@@ -206,6 +208,7 @@ celix_event_admin_remote_provider_mqtt_t* celix_earpm_create(celix_bundle_contex
     opts.logHelper = logHelper;
     opts.sessionEndMsgTopic = CELIX_EARPM_SESSION_END_TOPIC;
     opts.sessionEndMsgSenderUUID = earpm->fwUUID;
+    opts.sessionEndMsgVersion = CELIX_EARPM_MSG_VERSION;
     opts.callbackHandle = earpm;
     opts.receiveMsgCallback = celix_earpm_receiveMsgCallback;
     opts.connectedCallback = celix_earpm_connectedCallback;
@@ -749,6 +752,7 @@ static celix_status_t celix_earpm_publishEventSync(celix_event_admin_remote_prov
     requestInfo.qos = qos;
     requestInfo.pri = CELIX_EARPM_MSG_PRI_LOW;
     requestInfo.expiryInterval = expiryInterval;
+    requestInfo.version = CELIX_EARPM_MSG_VERSION;
     requestInfo.responseTopic = earpm->syncEventAckTopic;
     struct celix_earpm_sync_event_correlation_data correlationData;
     memset(&correlationData, 0, sizeof(correlationData));
@@ -1349,11 +1353,41 @@ static void celix_earpm_processEventMessage(celix_event_admin_remote_provider_mq
     return;
 }
 
+static bool celix_earpm_isMsgCompatible(const celix_earpm_client_request_info_t* requestInfo) {
+    char actualVersion[16]= {0};
+    if (requestInfo->version == NULL) {
+        return false;
+    }
+    int ret = snprintf(actualVersion, sizeof(actualVersion), "%s", requestInfo->version);
+    if (ret < 0 || ret >= (int)sizeof(actualVersion)) {
+        return false;
+    }
+    char* endPtr = NULL;
+    long actualMajor = strtol(actualVersion, &endPtr, 10);
+    if (endPtr == NULL || endPtr[0] != '.') {
+        return false;
+    }
+    long actualMinor = strtol(endPtr + 1, NULL, 10);
+    long expectedMajor = strtol(CELIX_EARPM_MSG_VERSION, &endPtr, 10);
+    assert(endPtr[0] == '.');
+    long expectedMinor = strtol(endPtr + 1, NULL, 10);
+
+    if (actualMajor == expectedMajor && actualMinor <= expectedMinor) {
+        return true;
+    }
+    return false;
+}
+
 static void celix_earpm_receiveMsgCallback(void* handle, const celix_earpm_client_request_info_t* requestInfo) {
     assert(handle != NULL);
     assert(requestInfo != NULL);
     assert(requestInfo->topic != NULL);
     celix_event_admin_remote_provider_mqtt_t* earpm = (celix_event_admin_remote_provider_mqtt_t*)handle;
+
+    if (!celix_earpm_isMsgCompatible(requestInfo)) {
+        celix_logHelper_warning(earpm->logHelper, "%s message version(%s) is incompatible.",requestInfo->topic, requestInfo->version == NULL ? "null" : requestInfo->version);
+        return;
+    }
 
     if (strncmp(requestInfo->topic,CELIX_EARPM_TOPIC_PREFIX, sizeof(CELIX_EARPM_TOPIC_PREFIX)-1) == 0) {
         celix_earpm_processControlMessage(earpm, requestInfo);

@@ -18,6 +18,8 @@
  */
 #include <cstring>
 #include <string>
+#include <csignal>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <cstdlib>
 #include <functional>

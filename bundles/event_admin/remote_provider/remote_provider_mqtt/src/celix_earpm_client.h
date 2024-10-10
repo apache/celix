@@ -44,6 +44,7 @@ typedef struct celix_earpm_client_create_options {
     celix_log_helper_t* logHelper;
     const char* sessionEndMsgTopic;
     const char* sessionEndMsgSenderUUID;
+    const char* sessionEndMsgVersion;
     void* callbackHandle;
     celix_earpm_client_receive_msg_fp receiveMsgCallback;
     celix_earpm_client_connected_fp connectedCallback;

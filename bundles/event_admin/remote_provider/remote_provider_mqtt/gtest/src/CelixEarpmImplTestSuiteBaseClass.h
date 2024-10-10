@@ -22,6 +22,8 @@
 
 #include <cstring>
 #include <string>
+#include <csignal>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <functional>
 #include <future>
@@ -95,6 +97,8 @@ public:
                     ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
                 }
                 auto rc = mosquitto_property_add_string_pair(&responseProps, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
+                ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+                rc = mosquitto_property_add_string_pair(&responseProps, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_MSG_VERSION", "1.0.0");
                 ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
                 rc = mosquitto_publish_v5(client->mosq.get(), nullptr, responseTopic, 0, nullptr, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, responseProps);
                 ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
@@ -215,11 +219,18 @@ public:
         celix_earpm_destroy(earpm);
     }
 
-    static void AddRemoteHandlerInfoToRemoteProviderAndCheck(celix_event_admin_remote_provider_mqtt_t* earpm, const char* handlerInfo, const char* senderUUID = FAKE_FW_UUID) {
+    static mosquitto_property* CreateMqttProperties(const char* senderUUID = FAKE_FW_UUID, const char* msgVersion = "1.0.0") {
         celix_autoptr(mosquitto_property) properties = nullptr;
         auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", senderUUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
+        EXPECT_EQ(rc, MOSQ_ERR_SUCCESS);
+        rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_MSG_VERSION", msgVersion);
+        EXPECT_EQ(rc, MOSQ_ERR_SUCCESS);
+        return celix_steal_ptr(properties);
+    }
+
+    static void AddRemoteHandlerInfoToRemoteProviderAndCheck(celix_event_admin_remote_provider_mqtt_t* earpm, const char* handlerInfo, const char* senderUUID = FAKE_FW_UUID) {
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties(senderUUID);
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
                                   (int)strlen(handlerInfo), handlerInfo, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitFor([earpm] { return celix_earpm_currentRemoteFrameworkCount(earpm) != 0; });//Wait for receive the handler info message
@@ -227,23 +238,19 @@ public:
     }
 
     static void RemoveRemoteHandlerInfoFromRemoteProvider(celix_event_admin_remote_provider_mqtt_t*, long handlerServiceId, const char* senderUUID = FAKE_FW_UUID) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", senderUUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties(senderUUID);
         char payload[128]{0};
         snprintf(payload, sizeof(payload), R"({"handlerId":%ld})", handlerServiceId);
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
     }
 
     static void UpdateRemoteHandlerInfoToRemoteProvider(celix_event_admin_remote_provider_mqtt_t*, const char* handlers, const char* senderUUID = FAKE_FW_UUID) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", senderUUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties(senderUUID);
         char payload[1024]{0};
         snprintf(payload, sizeof(payload), R"({"handlers":%s})", handlers);
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
     }

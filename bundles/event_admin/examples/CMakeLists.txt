@@ -36,7 +36,6 @@ if (EVENT_ADMIN_EXAMPLES)
 
     if (TARGET Celix::rsa_discovery_zeroconf)#Celix::rsa_discovery_zeroconf only available in linux
         add_celix_container(remote_event_admin_mqtt_publisher
-                LAUNCHER Celix::launcher
                 NAME "publisher"
                 GROUP "event_admin/mqtt"
                 BUNDLES
@@ -47,13 +46,11 @@ if (EVENT_ADMIN_EXAMPLES)
                 event_publisher_example
                 Celix::rsa_discovery_zeroconf
                 Celix::event_admin_remote_provider_mqtt
-                USE_CONFIG
                 PROPERTIES
                 CELIX_EARPM_BROKER_PROFILE=${CMAKE_CURRENT_SOURCE_DIR}/res/mosquitto.conf
         )
 
         add_celix_container(remote_event_admin_mqtt_subscriber
-                LAUNCHER Celix::launcher
                 NAME "subscriber"
                 GROUP "event_admin/mqtt"
                 BUNDLES
@@ -64,7 +61,6 @@ if (EVENT_ADMIN_EXAMPLES)
                 event_handler_example
                 Celix::rsa_discovery_zeroconf
                 Celix::event_admin_remote_provider_mqtt
-                USE_CONFIG
         )
     endif ()
 

@@ -173,6 +173,13 @@ TEST_F(CelixEarpmClientErrorInjectionTestSuite, FailedToAddSenderUUIDToWillMessa
     ASSERT_EQ(nullptr, client);
 }
 
+TEST_F(CelixEarpmClientErrorInjectionTestSuite, FailedToAddMsgVersionToWillMessagePropertyTest) {
+    celix_ei_expect_mosquitto_property_add_string_pair((void*)&celix_earpmClient_create, 1, MOSQ_ERR_NOMEM, 2);
+    celix_earpm_client_create_options_t opts{defaultOpts};
+    celix_earpm_client_t *client = celix_earpmClient_create(&opts);
+    ASSERT_EQ(nullptr, client);
+}
+
 TEST_F(CelixEarpmClientErrorInjectionTestSuite, FailedToSetWillMessageTest) {
     celix_ei_expect_mosquitto_will_set_v5((void*)&celix_earpmClient_create, 1, MOSQ_ERR_NOMEM);
     celix_earpm_client_create_options_t opts{defaultOpts};

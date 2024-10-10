@@ -247,11 +247,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessRemoveRemoteHandlerInfoMessageTest) {
 
 TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageTest) {
     TestRemoteProvider([](celix_event_admin_remote_provider_mqtt_t* earpm) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payLoad = R"({"handlers":[{"handlerId":123,"topics":["topic"]}]})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
                                   (int)strlen(payLoad), payLoad, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitFor([earpm] { return celix_earpm_currentRemoteFrameworkCount(earpm) != 0; });
@@ -270,10 +268,8 @@ TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageTest) {
 TEST_F(CelixEarpmImplTestSuite, ProcessQueryRemoteHandlerInfoMessageTest) {
     TestRemoteProvider([](celix_event_admin_remote_provider_mqtt_t*) {
         mqttClient->Reset();//clear received messages cache
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_QUERY_TOPIC,
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_QUERY_TOPIC,
                                   0, nullptr, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         //The remote provider will send the handler description message when received the query message
@@ -284,10 +280,8 @@ TEST_F(CelixEarpmImplTestSuite, ProcessQueryRemoteHandlerInfoMessageTest) {
 
 TEST_F(CelixEarpmImplTestSuite, ProcessUnknownRemoteHandlerInfoControlMessageTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_TOPIC_PREFIX"unknown",
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_TOPIC_PREFIX"unknown",
                                   0, nullptr, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Unknown action");
@@ -298,10 +292,8 @@ TEST_F(CelixEarpmImplTestSuite, ProcessUnknownRemoteHandlerInfoControlMessageTes
 TEST_F(CelixEarpmImplTestSuite, ProcessSessionEndMessageTest) {
     TestRemoteProvider([](celix_event_admin_remote_provider_mqtt_t* earpm) {
         AddRemoteHandlerInfoToRemoteProviderAndCheck(earpm, R"({"handler":{"handlerId":123,"topics":["topic"]}})", FAKE_FW_UUID);
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_SESSION_END_TOPIC,
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_SESSION_END_TOPIC,
                                   0, nullptr, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
 
@@ -314,10 +306,62 @@ TEST_F(CelixEarpmImplTestSuite, ProcessSessionEndMessageTest) {
     });
 }
 
-TEST_F(CelixEarpmImplTestSuite, ProcessControlMessageWithoutSenderUUIDTest) {
+TEST_F(CelixEarpmImplTestSuite, ProcessMessageWithoutVersion) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
         auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_QUERY_TOPIC,
                                   0, nullptr, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, nullptr);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        auto ok = WaitForLogMessage(CELIX_EARPM_HANDLER_INFO_QUERY_TOPIC" message version(null) is incompatible.");
+        ASSERT_TRUE(ok);
+    });
+}
+
+TEST_F(CelixEarpmImplTestSuite, ProcessMessageVersionFormatError) {
+    TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
+        celix_autoptr(mosquitto_property) properties = nullptr;
+        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_MSG_VERSION", "1");
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_QUERY_TOPIC,
+                                       0, nullptr, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        auto ok = WaitForLogMessage(CELIX_EARPM_HANDLER_INFO_QUERY_TOPIC" message version(1) is incompatible.");
+        ASSERT_TRUE(ok);
+    });
+}
+
+TEST_F(CelixEarpmImplTestSuite, ProcessMessageVersionStringTooLong) {
+    TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
+        celix_autoptr(mosquitto_property) properties = nullptr;
+        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_MSG_VERSION", "100000.200000000.300000");
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_QUERY_TOPIC,
+                                  0, nullptr, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        auto ok = WaitForLogMessage(CELIX_EARPM_HANDLER_INFO_QUERY_TOPIC" message version(100000.200000000.300000) is incompatible.");
+        ASSERT_TRUE(ok);
+    });
+}
+
+TEST_F(CelixEarpmImplTestSuite, ProcessMessageVersionIncompatible) {
+    TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
+        celix_autoptr(mosquitto_property) properties = nullptr;
+        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_MSG_VERSION", "10.0.0");
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_QUERY_TOPIC,
+                                  0, nullptr, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        auto ok = WaitForLogMessage(CELIX_EARPM_HANDLER_INFO_QUERY_TOPIC" message version(10.0.0) is incompatible.");
+        ASSERT_TRUE(ok);
+    });
+}
+
+TEST_F(CelixEarpmImplTestSuite, ProcessControlMessageWithoutSenderUUIDTest) {
+    TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
+        celix_autoptr(mosquitto_property) properties = nullptr;
+        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_MSG_VERSION", "1.0.0");
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_QUERY_TOPIC,
+                                  0, nullptr, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("No sender UUID for control message");
         ASSERT_TRUE(ok);
@@ -326,11 +370,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessControlMessageWithoutSenderUUIDTest) {
 
 TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithInvalidPayloadTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"(invalid)";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Failed to parse message");
@@ -340,11 +382,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithInvalidPay
 
 TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithoutHandlerInfoTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("No handler information");
@@ -354,11 +394,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithoutHandler
 
 TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithoutHandlerIdTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handler":{"topics":["topic"]}})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Handler id is lost or not integer");
@@ -368,11 +406,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithoutHandler
 
 TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithInvalidHandlerIdTypeTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handler":{"handlerId":"invalid","topics":["topic"]}})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Handler id is lost or not integer");
@@ -382,11 +418,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithInvalidHan
 
 TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithInvalidHandlerIdTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handler":{"handlerId":-1,"topics":["topic"]}})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Handler id(-1) is invalid");
@@ -396,11 +430,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithInvalidHan
 
 TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithoutTopicsTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handler":{"handlerId":123}})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Topics is lost or not array.");
@@ -410,11 +442,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithoutTopicsT
 
 TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithInvalidTopicsTypeTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handler":{"handlerId":123,"topics":123}})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Topics is lost or not array.");
@@ -424,11 +454,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithInvalidTop
 
 TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithInvalidTopicTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handler":{"handlerId":123,"topics":[123]}})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_ADD_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Topic is not string.");
@@ -438,11 +466,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessAddRemoteHandlerInfoMessageWithInvalidTop
 
 TEST_F(CelixEarpmImplTestSuite, ProcessRemoveRemoteHandlerInfoMessageWithInvalidPayloadTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"(invalid)";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Failed to parse message");
@@ -452,11 +478,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessRemoveRemoteHandlerInfoMessageWithInvalid
 
 TEST_F(CelixEarpmImplTestSuite, ProcessRemoveRemoteHandlerInfoMessageWithoutHandlerIdTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Handler id is lost or not integer");
@@ -466,11 +490,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessRemoveRemoteHandlerInfoMessageWithoutHand
 
 TEST_F(CelixEarpmImplTestSuite, ProcessRemoveRemoteHandlerInfoMessageWithInvalidHandlerIdTypeTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handlerId":"invalid"})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Handler id is lost or not integer");
@@ -480,11 +502,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessRemoveRemoteHandlerInfoMessageWithInvalid
 
 TEST_F(CelixEarpmImplTestSuite, ProcessRemoveRemoteHandlerInfoMessageWithInvalidHandlerIdTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handlerId":-1})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_REMOVE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Handler id(-1) is invalid");
@@ -502,12 +522,10 @@ TEST_F(CelixEarpmImplTestSuite, ProcessRemoveRemoteHandlerInfoMessageWhenHandler
 
 TEST_F(CelixEarpmImplTestSuite, ProcessSyncEventAckMessageWithoutCorrelationDataTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         char topic[128]{0};
         snprintf(topic, sizeof(topic), "%s%s", CELIX_EARPM_SYNC_EVENT_ACK_TOPIC_PREFIX, fwUUID.c_str());
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, topic, 0, nullptr,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, topic, 0, nullptr,
                                   CELIX_EARPM_QOS_AT_LEAST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Correlation data size is invalid");
@@ -517,10 +535,8 @@ TEST_F(CelixEarpmImplTestSuite, ProcessSyncEventAckMessageWithoutCorrelationData
 
 TEST_F(CelixEarpmImplTestSuite, ProcessSyncEventAckMessageWithInvalidCorrelationDataTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
-        rc = mosquitto_property_add_binary(&properties, MQTT_PROP_CORRELATION_DATA, "invalid", strlen("invalid"));
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
+        auto rc = mosquitto_property_add_binary(&properties, MQTT_PROP_CORRELATION_DATA, "invalid", strlen("invalid"));
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         char topic[128]{0};
         snprintf(topic, sizeof(topic), "%s%s", CELIX_EARPM_SYNC_EVENT_ACK_TOPIC_PREFIX, fwUUID.c_str());
@@ -534,11 +550,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessSyncEventAckMessageWithInvalidCorrelation
 
 TEST_F(CelixEarpmImplTestSuite, ProcessSyncEventAckMessageBeforeRemoteHandlerInfoMessageTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         long correlationData = 1;
-        rc = mosquitto_property_add_binary(&properties, MQTT_PROP_CORRELATION_DATA, &correlationData, sizeof(correlationData));
+        auto rc = mosquitto_property_add_binary(&properties, MQTT_PROP_CORRELATION_DATA, &correlationData, sizeof(correlationData));
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         char topic[128]{0};
         snprintf(topic, sizeof(topic), "%s%s", CELIX_EARPM_SYNC_EVENT_ACK_TOPIC_PREFIX, fwUUID.c_str());
@@ -552,11 +566,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessSyncEventAckMessageBeforeRemoteHandlerInf
 
 TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithInvalidPayloadTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payLoad = R"(invalid)";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
                                   (int)strlen(payLoad), payLoad, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Failed to parse message");
@@ -566,11 +578,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithInvalid
 
 TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithoutHandlerInfoTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payLoad = R"({})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
                                   (int)strlen(payLoad), payLoad, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("No handler information");
@@ -580,11 +590,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithoutHand
 
 TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithoutHandlerIdTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handlers":[{"topics":["topic"]}]})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Handler id is lost or not integer");
@@ -594,11 +602,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithoutHand
 
 TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithInvalidHandlerIdTypeTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handlers":[{"handlerId":"invalid","topics":["topic"]}]})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Handler id is lost or not integer");
@@ -608,11 +614,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithInvalid
 
 TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithInvalidHandlerIdTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handlers":[{"handlerId":-1,"topics":["topic"]}]})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Handler id(-1) is invalid");
@@ -622,11 +626,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithInvalid
 
 TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithoutTopicsTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handlers":[{"handlerId":123}]})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Topics is lost or not array.");
@@ -636,11 +638,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithoutTopi
 
 TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithInvalidTopicsTypeTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handlers":[{"handlerId":123,"topics":123}]})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Topics is lost or not array.");
@@ -650,11 +650,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithInvalid
 
 TEST_F(CelixEarpmImplTestSuite, ProcessUpdateRemoteHandlerInfoMessageWithInvalidTopicTest) {
     TestRemoteProvider([this](celix_event_admin_remote_provider_mqtt_t*) {
-        celix_autoptr(mosquitto_property) properties = nullptr;
-        auto rc = mosquitto_property_add_string_pair(&properties, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_SENDER_UUID", FAKE_FW_UUID);
-        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        celix_autoptr(mosquitto_property) properties = CreateMqttProperties();
         const char* payload = R"({"handlers":[{"handlerId":123,"topics":[123]}]})";
-        rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
+        auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, CELIX_EARPM_HANDLER_INFO_UPDATE_TOPIC,
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_MOST_ONCE, false, properties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         auto ok = WaitForLogMessage("Topic is not string.");
@@ -698,8 +696,9 @@ TEST_F(CelixEarpmImplTestSuite, ProcessAsyncEventTest) {
         celix_autofree char* payload = nullptr;
         status = celix_properties_saveToString(eventProps, 0, &payload);
         ASSERT_EQ(status, CELIX_SUCCESS);
+        celix_autoptr(mosquitto_property) mqttProperties = CreateMqttProperties();
         auto rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, "asyncEvent",
-                                       (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_LEAST_ONCE, true, nullptr);
+                                       (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_LEAST_ONCE, true, mqttProperties);
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
 
         //wait for the async event
@@ -758,6 +757,8 @@ TEST_F(CelixEarpmImplTestSuite, ProcessSyncEventTest) {
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         long correlationData {0};
         rc = mosquitto_property_add_binary(&mqttProps, MQTT_PROP_CORRELATION_DATA, &correlationData, sizeof(correlationData));
+        ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
+        rc = mosquitto_property_add_string_pair(&mqttProps, MQTT_PROP_USER_PROPERTY, "CELIX_EARPM_MSG_VERSION", "1.0.0");
         ASSERT_EQ(rc, MOSQ_ERR_SUCCESS);
         rc = mosquitto_publish_v5(mqttClient->mosq.get(), nullptr, "syncEvent",
                                   (int)strlen(payload), payload, CELIX_EARPM_QOS_AT_LEAST_ONCE, true, mqttProps);

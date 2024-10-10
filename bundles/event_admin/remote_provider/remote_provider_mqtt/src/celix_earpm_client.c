@@ -109,7 +109,7 @@ struct celix_earpm_client {
     bool running;
 };
 
-static celix_status_t celix_earpmClient_configMosq(mosquitto* mosq, celix_log_helper_t* logHelper, const char* sessionEndMsgTopic, const char* sessionEndMsgSenderUUID);
+static celix_status_t celix_earpmClient_configMosq(mosquitto* mosq, celix_log_helper_t* logHelper, const char* sessionEndMsgTopic, const char* sessionEndMsgSenderUUID, const char* sessionEndMsgVersion);
  static void celix_earpmClient_messageRelease(celix_earpm_client_msg_t* msg);
 static void celix_earpmClient_brokerInfoRelease(celix_earpm_client_broker_info_t* info);
 static void celix_earpmClient_connectCallback(struct mosquitto* mosq, void* handle, int rc, int flag, const mosquitto_property* props);
@@ -162,6 +162,7 @@ celix_earpm_client_t* celix_earpmClient_create(celix_earpm_client_create_options
     assert(options->logHelper != NULL);
     assert(options->sessionEndMsgTopic != NULL);
     assert(options->sessionEndMsgSenderUUID != NULL);
+    assert(options->sessionEndMsgVersion != NULL);
     assert(options->receiveMsgCallback != NULL);
     assert(options->connectedCallback != NULL);
 
@@ -276,7 +277,7 @@ celix_earpm_client_t* celix_earpmClient_create(celix_earpm_client_create_options
         celix_logHelper_error(client->logHelper, "Failed to create mosquitto instance.");
         return NULL;
     }
-    status = celix_earpmClient_configMosq(client->mosq, client->logHelper, options->sessionEndMsgTopic, options->sessionEndMsgSenderUUID);
+    status = celix_earpmClient_configMosq(client->mosq, client->logHelper, options->sessionEndMsgTopic, options->sessionEndMsgSenderUUID, options->sessionEndMsgVersion);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(client->logHelper, "Failed to configure mosquitto instance.");
         return NULL;
@@ -335,7 +336,7 @@ void celix_earpmClient_destroy(celix_earpm_client_t* client) {
     return;
 }
 
-static celix_status_t celix_earpmClient_configMosq(mosquitto *mosq, celix_log_helper_t* logHelper, const char* sessionEndMsgTopic, const char* sessionEndMsgSenderUUID) {
+static celix_status_t celix_earpmClient_configMosq(mosquitto *mosq, celix_log_helper_t* logHelper, const char* sessionEndMsgTopic, const char* sessionEndMsgSenderUUID, const char* sessionEndMsgVersion) {
     assert(mosq != NULL);
     int rc = mosquitto_int_option(mosq, MOSQ_OPT_PROTOCOL_VERSION, MQTT_PROTOCOL_V5);
     if (rc != MOSQ_ERR_SUCCESS) {
@@ -358,6 +359,10 @@ static celix_status_t celix_earpmClient_configMosq(mosquitto *mosq, celix_log_he
     if (mosquitto_property_add_string_pair(&sessionEndMsgProps, MQTT_PROP_USER_PROPERTY,
                                  CELIX_EARPM_MQTT_USER_PROP_SENDER_UUID, sessionEndMsgSenderUUID) != MOSQ_ERR_SUCCESS) {
         celix_logHelper_error(logHelper, "Failed to add sender UUID property for will message.");
+        return ENOMEM;
+    }
+    if (mosquitto_property_add_string_pair(&sessionEndMsgProps, MQTT_PROP_USER_PROPERTY, CELIX_EARPM_MQTT_USER_PROP_MSG_VERSION, sessionEndMsgVersion) != MOSQ_ERR_SUCCESS) {
+        celix_logHelper_error(logHelper, "Failed to add message version property for will message.");
         return ENOMEM;
     }
     rc = mosquitto_will_set_v5(mosq, sessionEndMsgTopic, 0, NULL, CELIX_EARPM_QOS_AT_LEAST_ONCE, false, sessionEndMsgProps);
