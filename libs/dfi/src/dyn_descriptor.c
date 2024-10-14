@@ -127,13 +127,13 @@ int celix_dynDescriptor_parse(celix_descriptor_t* descriptor, FILE* stream,
                               int (*parseSection)(celix_descriptor_t* descriptor, const char* secName, FILE *stream)) {
     int status = OK;
 
-    char peek = (char)fgetc(stream);
+    int peek = fgetc(stream);
     while (peek == ':') {
         ungetc(peek, stream);
         if ((status = celix_dynDescriptor_parseSection(descriptor, stream, parseSection)) != OK) {
             return status;
         }
-        peek = (char)fgetc(stream);
+        peek = fgetc(stream);
     }
 
     if (peek != EOF) {
