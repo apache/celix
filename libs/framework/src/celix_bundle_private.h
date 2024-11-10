@@ -29,10 +29,6 @@ extern "C" {
 
 struct celix_bundle {
     bundle_context_pt context;
-    char *symbolicName;
-    char *name;
-    char *group;
-    char *description;
     struct celix_bundle_activator *activator;
     bundle_state_e state;
     void *handle;
@@ -72,7 +68,7 @@ bundle_archive_t *celix_bundle_getArchive(const celix_bundle_t *bundle);
 celix_status_t bundle_destroy(celix_bundle_t *bundle);
 
 /**
- * @brief Get the bundle symbolic name.
+ * @brief Get the bundle context.
  */
 celix_bundle_context_t* celix_bundle_getContext(const celix_bundle_t *bundle);
 

@@ -28,8 +28,6 @@
 
 #include <stdlib.h>
 
-#include "bundle_context.h"
-
 #include "celix_types.h"
 #include "celix_cleanup.h"
 #include "service_factory.h"

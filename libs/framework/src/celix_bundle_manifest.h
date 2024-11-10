@@ -65,7 +65,7 @@ extern "C" {
  *
  * @param[in] properties The properties to use for the manifest. Takes ownership of the properties.
  * @param[out] manifest The created manifest.
- * @return CELIX_SUCCESS if no errors occurred, ENOMEM if memory allocation failed and CELIX_ILLEGAL_ARGUMENT if the
+ * @return CELIX_SUCCESS if no errors occurred, ENOMEM if memory allocation failed and CELIX_INVALID_SYNTAX if the
  * provided attributes is incorrect. In case of an error, the provided attributes are destroyed.
  */
 celix_status_t celix_bundleManifest_create(celix_properties_t* attributes, celix_bundle_manifest_t** manifest);
@@ -78,7 +78,7 @@ celix_status_t celix_bundleManifest_create(celix_properties_t* attributes, celix
  * @param[in] filename The file to read the manifest from.
  * @param[out] manifest The created manifest.
  * @return CELIX_SUCCESS if no errors occurred, ENOMEM if memory allocation failed, CELIX_FILE_IO_EXCEPTION if the file
- * could not be read and CELIX_ILLEGAL_ARGUMENT if the manifest file is invalid.
+ * could not be read and CELIX_INVALID_SYNTAX if the manifest file is invalid.
  */
 celix_status_t celix_bundleManifest_createFromFile(const char* filename, celix_bundle_manifest_t** manifest);
 
@@ -116,7 +116,7 @@ CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_bundle_manifest_t, celix_bundleManifest_
  * @param[in] manifest The bundle manifest to get the manifest version from. Cannot be NULL.
  * @return The manifest attributes. Will never be NULL.
  */
-const celix_properties_t* celix_bundleManifest_getAttributes(celix_bundle_manifest_t* manifest);
+const celix_properties_t* celix_bundleManifest_getAttributes(const celix_bundle_manifest_t* manifest);
 
 /**
  * @brief Get the manifest version. Returned value is valid as long as the manifest is valid.
@@ -124,7 +124,7 @@ const celix_properties_t* celix_bundleManifest_getAttributes(celix_bundle_manife
  * @param[in] manifest The bundle manifest to get the bundle name from. Cannot be NULL.
  * @return The bundle name. Will never be NULL.
  */
-const char* celix_bundleManifest_getBundleName(celix_bundle_manifest_t* manifest);
+const char* celix_bundleManifest_getBundleName(const celix_bundle_manifest_t* manifest);
 
 /**
  * @brief Get the manifest version. Returned value is valid as long as the manifest is valid.
@@ -132,7 +132,7 @@ const char* celix_bundleManifest_getBundleName(celix_bundle_manifest_t* manifest
  * @param[in] manifest The bundle manifest to get the bundle symbolic name from. Cannot be NULL.
  * @return The bundle symbolic name. Will never be NULL.
  */
-const char* celix_bundleManifest_getBundleSymbolicName(celix_bundle_manifest_t* manifest);
+const char* celix_bundleManifest_getBundleSymbolicName(const celix_bundle_manifest_t* manifest);
 
 /**
  * @brief Get the bundle version. Returned value is valid as long as the manifest is valid.
@@ -140,7 +140,7 @@ const char* celix_bundleManifest_getBundleSymbolicName(celix_bundle_manifest_t* 
  * @param[in] manifest The bundle manifest to get the bundle version from. Cannot be NULL.
  * @return The bundle version. Will never be NULL.
  */
-const celix_version_t* celix_bundleManifest_getBundleVersion(celix_bundle_manifest_t* manifest);
+const celix_version_t* celix_bundleManifest_getBundleVersion(const celix_bundle_manifest_t* manifest);
 
 /**
  * @brief Get the bundle version. Returned value is valid as long as the manifest is valid.
@@ -148,7 +148,7 @@ const celix_version_t* celix_bundleManifest_getBundleVersion(celix_bundle_manife
  * @param[in] manifest The bundle manifest to get the manifest version from. Cannot be NULL.
  * @return The manifest version. Will never be NULL.
  */
-const celix_version_t* celix_bundleManifest_getManifestVersion(celix_bundle_manifest_t* manifest);
+const celix_version_t* celix_bundleManifest_getManifestVersion(const celix_bundle_manifest_t* manifest);
 
 /**
  * @brief Get the bundle activator library. Returned value is valid as long as the manifest is valid.
@@ -156,7 +156,7 @@ const celix_version_t* celix_bundleManifest_getManifestVersion(celix_bundle_mani
  * @param[in] manifest The bundle manifest to get the bundle private library from. Cannot be NULL.
  * @return The bundle activator library. Will be NULL if the manifest does not contain the attribute.
  */
-const char* celix_bundleManifest_getBundleActivatorLibrary(celix_bundle_manifest_t* manifest);
+const char* celix_bundleManifest_getBundleActivatorLibrary(const celix_bundle_manifest_t* manifest);
 
 /**
  * @brief Get the bundle private libraries. Returned value is valid as long as the manifest is valid.
@@ -165,7 +165,7 @@ const char* celix_bundleManifest_getBundleActivatorLibrary(celix_bundle_manifest
  * @return The bundle private libraries as a celix_array_list_t* with strings. Will be NULL if the manifest does not
  * contain the attribute.
  */
-const celix_array_list_t* celix_bundleManifest_getBundlePrivateLibraries(celix_bundle_manifest_t* manifest);
+const celix_array_list_t* celix_bundleManifest_getBundlePrivateLibraries(const celix_bundle_manifest_t* manifest);
 
 /**
  * @brief Get the bundle description. Returned value is valid as long as the manifest is valid.
@@ -173,7 +173,7 @@ const celix_array_list_t* celix_bundleManifest_getBundlePrivateLibraries(celix_b
  * @param[in] manifest The bundle manifest to get the bundle description from. Cannot be NULL.
  * @return The bundle description. Will be NULL if the manifest does not contain the attribute.
  */
-const char* celix_bundleManifest_getBundleDescription(celix_bundle_manifest_t* manifest);
+const char* celix_bundleManifest_getBundleDescription(const celix_bundle_manifest_t* manifest);
 
 /**
  * @brief Get the bundle group. Returned value is valid as long as the manifest is valid.
@@ -181,7 +181,7 @@ const char* celix_bundleManifest_getBundleDescription(celix_bundle_manifest_t* m
  * @param[in] manifest The bundle manifest to get the bundle group from. Cannot be NULL.
  * @return The bundle group. Will be NULL if the manifest does not contain the attribute.
  */
-const char* celix_bundleManifest_getBundleGroup(celix_bundle_manifest_t* manifest);
+const char* celix_bundleManifest_getBundleGroup(const celix_bundle_manifest_t* manifest);
 
 
 #ifdef __cplusplus

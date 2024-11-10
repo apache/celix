@@ -38,8 +38,6 @@ extern "C" {
  */
 celix_module_t* module_create(celix_bundle_t* bundle);
 
-celix_module_t* module_createFrameworkModule(celix_framework_t* fw, celix_bundle_t *bundle);
-
 void module_destroy(celix_module_t* module);
 
 /**
@@ -47,23 +45,15 @@ void module_destroy(celix_module_t* module);
  */
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_module_t, module_destroy)
 
-unsigned int module_hash(void *module);
-
-int module_equals(void *module, void *compare);
-
 const celix_version_t* module_getVersion(celix_module_t* module);
 
 celix_status_t module_getSymbolicName(celix_module_t* module, const char **symbolicName);
-
-char *module_getId(celix_module_t* module);
 
 bool module_isResolved(celix_module_t* module);
 
 void module_setResolved(celix_module_t* module);
 
 celix_bundle_t *module_getBundle(celix_module_t* module);
-
-celix_array_list_t *module_getDependents(celix_module_t* module);
 
 celix_status_t module_getGroup(celix_module_t* module, const char **group);
 

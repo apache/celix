@@ -17,16 +17,13 @@
  * under the License.
  */
 
+#include "bundle_revision_private.h"
+
+#include "celix_bundle_manifest.h"
 #include "celix_bundle_private.h"
-
-#include <stdlib.h>
-#include <string.h>
-#include <service_tracker.h>
-#include <celix_constants.h>
-#include <assert.h>
-#include <unistd.h>
-
 #include "celix_module.h"
+#include "celix_properties.h"
+#include "celix_properties_type.h"
 #include "framework_private.h"
 #include "utils.h"
 #include "celix_file_utils.h"
@@ -34,6 +31,10 @@
 #include "bundle_context_private.h"
 #include "service_tracker_private.h"
 
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <unistd.h>
 
 static char* celix_bundle_getBundleOrPersistentStoreEntry(const celix_bundle_t* bnd, bool bundleEntry, const char* name);
 celix_status_t bundle_createModule(bundle_pt bundle, celix_module_t** module);
@@ -56,10 +57,6 @@ celix_status_t celix_bundle_createFromArchive(celix_framework_t *framework, bund
     bundle->handle = NULL;
     bundle->activator = NULL;
     bundle->context = NULL;
-    bundle->symbolicName = NULL;
-    bundle->name = NULL;
-    bundle->group = NULL;
-    bundle->description = NULL;
 
     if (bundle->modules == NULL) {
         status = CELIX_ENOMEM;
@@ -90,10 +87,6 @@ celix_status_t bundle_destroy(bundle_pt bundle) {
     }
     celix_arrayList_destroy(bundle->modules);
 
-    free(bundle->symbolicName);
-    free(bundle->name);
-    free(bundle->group);
-    free(bundle->description);
     free(bundle);
 
     return CELIX_SUCCESS;
@@ -158,14 +151,8 @@ celix_status_t bundle_setState(bundle_pt bundle, bundle_state_e state) {
 
 celix_status_t bundle_createModule(bundle_pt bundle, celix_module_t** moduleOut) {
     celix_status_t status = CELIX_SUCCESS;
-    long bundleId = celix_bundle_getId(bundle);
 
-    celix_module_t* module = NULL;
-    if (bundleId == CELIX_FRAMEWORK_BUNDLE_ID) {
-        module = module_createFrameworkModule(bundle->framework, bundle);
-    } else {
-        module = module_create(bundle);
-    }
+    celix_module_t* module = module_create(bundle);
     if (!module) {
         status = CELIX_BUNDLE_EXCEPTION;
         fw_logCode(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, status, "Cannot create module.");
@@ -199,14 +186,7 @@ celix_status_t bundle_createModule(bundle_pt bundle, celix_module_t** moduleOut)
 }
 
 celix_status_t bundle_addModule(bundle_pt bundle, celix_module_t* module) {
-	celix_arrayList_add(bundle->modules, module);
-
-    //free previous module info
-    free(bundle->symbolicName);
-    free(bundle->name);
-    free(bundle->group);
-    free(bundle->description);
-
+    celix_arrayList_add(bundle->modules, module);
 
     //set new module info
     const char *sn = NULL;
@@ -217,12 +197,8 @@ celix_status_t bundle_addModule(bundle_pt bundle, celix_module_t* module) {
     module_getGroup(module, &g);
     module_getName(module, &n);
     module_getDescription(module, &d);
-    bundle->symbolicName = celix_utils_strdup(sn);
-    bundle->name = celix_utils_strdup(n);
-    bundle->group = celix_utils_strdup(g);
-    bundle->description = celix_utils_strdup(d);
 
-	return CELIX_SUCCESS;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_isSystemBundle(const_bundle_pt bundle, bool *systemBundle) {
@@ -361,40 +337,37 @@ char* celix_bundle_getDataFile(const celix_bundle_t* bnd, const char *path) {
     return entry;
 }
 
+static celix_bundle_manifest_t* celix_bundle_getManifest(const celix_bundle_t* bnd) {
+    celix_bundle_manifest_t* man = celix_bundleArchive_getManifest(bnd->archive);
+    assert(man); //bundles always have a manifest
+    return man;
+}
+
 const char* celix_bundle_getManifestValue(const celix_bundle_t* bnd, const char* attribute) {
-    const char* header = NULL;
-    if (bnd != NULL) {
-        bundle_archive_t* arch = NULL;
-        bundle_getArchive(bnd, &arch);
-        if (arch != NULL) {
-            celix_bundle_revision_t* rev = NULL;
-            bundleArchive_getCurrentRevision(arch, &rev);
-            if (rev != NULL) {
-                celix_bundle_manifest_t* man = celix_bundleRevision_getManifest(rev);
-                if (man != NULL) {
-                    const celix_properties_t* attr = celix_bundleManifest_getAttributes(man);
-                    header = celix_properties_getAsString(attr, attribute, NULL);
-                }
-            }
-        }
-    }
-    return header;
+    celix_bundle_manifest_t* man = celix_bundle_getManifest(bnd);
+    assert(man); //bundle always has a manifest
+    const celix_properties_t* attr = celix_bundleManifest_getAttributes(man);
+    return celix_properties_getAsString(attr, attribute, NULL);
 }
 
 const char* celix_bundle_getGroup(const celix_bundle_t *bnd) {
-	return bnd->group;
+    celix_bundle_manifest_t* man = celix_bundle_getManifest(bnd);
+    return celix_bundleManifest_getBundleGroup(man);
 }
 
 const char* celix_bundle_getSymbolicName(const celix_bundle_t *bnd) {
-	return bnd->symbolicName;
+    celix_bundle_manifest_t* man = celix_bundle_getManifest(bnd);
+    return celix_bundleManifest_getBundleSymbolicName(man);
 }
 
 const char* celix_bundle_getName(const celix_bundle_t* bnd) {
-    return bnd->name;
+    celix_bundle_manifest_t* man = celix_bundle_getManifest(bnd);
+    return celix_bundleManifest_getBundleName(man);
 }
 
 const char* celix_bundle_getDescription(const celix_bundle_t* bnd) {
-    return bnd->description;
+    celix_bundle_manifest_t* man = celix_bundle_getManifest(bnd);
+    return celix_bundleManifest_getBundleDescription(man);
 }
 
 char* celix_bundle_getLocation(const celix_bundle_t *bnd) {

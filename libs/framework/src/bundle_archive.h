@@ -53,8 +53,7 @@ CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_getId(bundle_archive_pt 
  * @warning Not safe, because location can change during bundle revise.
  * @return
  */
-CELIX_FRAMEWORK_EXPORT celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char **location)
-    __attribute__((deprecated("use celix_bundle_getLocation instead")));
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char **location);
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_getArchiveRoot(bundle_archive_pt archive, const char **archiveRoot);
 
@@ -69,15 +68,13 @@ bundleArchive_getRevision(bundle_archive_pt archive, long revNr, celix_bundle_re
 CELIX_FRAMEWORK_DEPRECATED celix_status_t
 bundleArchive_getCurrentRevision(bundle_archive_pt archive, celix_bundle_revision_t** revision);
 
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive, long *revisionNumber) __attribute__((deprecated));
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive, long *revisionNumber);
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_getRefreshCount(bundle_archive_pt archive, long *refreshCount);
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_setRefreshCount(bundle_archive_pt archive);
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_close(bundle_archive_pt archive);
-
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_closeAndDelete(bundle_archive_pt archive);
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundleArchive_setLastModified(bundle_archive_pt archive, time_t lastModifiedTime);
 

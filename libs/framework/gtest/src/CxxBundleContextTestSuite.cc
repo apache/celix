@@ -710,8 +710,8 @@ TEST_F(CxxBundleContextTestSuite, GetBundleInformation) {
             EXPECT_EQ(bnd.getGroup(), std::string{"test/group"});
             EXPECT_EQ(bnd.getDescription(), std::string{"Test Description"});
             EXPECT_TRUE(strstr(bnd.getLocation().c_str(), ".zip") != nullptr);
-            EXPECT_TRUE(!bnd.getEntry("META-INF/MANIFEST.MF").empty());
-            EXPECT_EQ(bnd.getEntry("/META-INF/MANIFEST.MF"), bnd.getEntry("META-INF/MANIFEST.MF"));
+            EXPECT_TRUE(!bnd.getEntry("META-INF/MANIFEST.json").empty());
+            EXPECT_EQ(bnd.getEntry("/META-INF/MANIFEST.json"), bnd.getEntry("META-INF/MANIFEST.json"));
             EXPECT_EQ(bnd.getEntry("does-not-exist"), std::string{});
             EXPECT_EQ(bnd.getManifestValue("Extra-Header1"), std::string{"value1"});
             EXPECT_EQ(bnd.getManifestValue("non-existing"), std::string{});

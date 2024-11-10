@@ -25,6 +25,7 @@
 #include "celix_properties.h"
 #include "celix_stdlib_cleanup.h"
 #include "celix_framework_version.h"
+#include "celix_version.h"
 
 class ManifestTestSuite : public ::testing::Test {
   public:
@@ -35,8 +36,10 @@ class ManifestTestSuite : public ::testing::Test {
                                                 const char* bundleName,
                                                 const char* symbolicName) {
         celix_properties_t* properties = celix_properties_create();
-        celix_properties_set(properties, "CELIX_BUNDLE_MANIFEST_VERSION", manifestVersion);
-        celix_properties_set(properties, "CELIX_BUNDLE_VERSION", bundleVersion);
+        auto mVer = celix_version_createVersionFromString(manifestVersion);
+        auto bVer = celix_version_createVersionFromString(bundleVersion);
+        celix_properties_assignVersion(properties, "CELIX_BUNDLE_MANIFEST_VERSION", mVer);
+        celix_properties_assignVersion(properties, "CELIX_BUNDLE_VERSION", bVer);
         celix_properties_set(properties, "CELIX_BUNDLE_NAME", bundleName);
         celix_properties_set(properties, "CELIX_BUNDLE_SYMBOLIC_NAME", symbolicName);
         return properties;
@@ -46,9 +49,10 @@ class ManifestTestSuite : public ::testing::Test {
 TEST_F(ManifestTestSuite, CreateManifestTest) {
     //Given a properties set with all the mandatory manifest attributes
     celix_properties_t *properties = celix_properties_create();
-    celix_version_t* v = celix_version_create(2, 0, 0, nullptr);
+    auto* v = celix_version_create(2, 0, 0, nullptr);
     celix_properties_assignVersion(properties, "CELIX_BUNDLE_MANIFEST_VERSION", v);
-    celix_properties_set(properties, "CELIX_BUNDLE_VERSION", "1.0.0");
+    auto* bv = celix_version_create(1, 0, 0, nullptr);
+    celix_properties_assignVersion(properties, "CELIX_BUNDLE_VERSION", bv);
     celix_properties_set(properties, "CELIX_BUNDLE_NAME", "my_bundle");
     celix_properties_set(properties, "CELIX_BUNDLE_SYMBOLIC_NAME", "celix_my_bundle");
 
@@ -79,7 +83,7 @@ TEST_F(ManifestTestSuite, MissingOrInvalidMandatoryManifestAttributesTest) {
     celix_status_t status = celix_bundleManifest_create(properties, &manifest);
 
     //Then the creation fails
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    EXPECT_EQ(CELIX_INVALID_SYNTAX, status);
 
     //And 4 celix err log entries are logged (4 missing attributes)
     EXPECT_EQ(celix_err_getErrorCount(), 4);
@@ -97,7 +101,7 @@ TEST_F(ManifestTestSuite, MissingOrInvalidMandatoryManifestAttributesTest) {
     status = celix_bundleManifest_create(properties, &manifest2);
 
     //Then the creation fails
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    EXPECT_EQ(CELIX_INVALID_SYNTAX, status);
 
     //And 4 celix err log entries are logged (4x invalid versions)
     EXPECT_EQ(celix_err_getErrorCount(), 2);
@@ -111,7 +115,7 @@ TEST_F(ManifestTestSuite, MissingOrInvalidMandatoryManifestAttributesTest) {
     status = celix_bundleManifest_create(properties, &manifest3);
 
     //Then the creation fails
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    EXPECT_EQ(CELIX_INVALID_SYNTAX, status);
 
     //And 1 celix err log entries is logged
     EXPECT_EQ(celix_err_getErrorCount(), 1);
@@ -126,7 +130,7 @@ TEST_F(ManifestTestSuite, MissingOrInvalidMandatoryManifestAttributesTest) {
     status = celix_bundleManifest_create(properties, &manifest4);
 
     //Then the creation fails
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    EXPECT_EQ(CELIX_INVALID_SYNTAX, status);
 
     //And 1 celix err log entries is logged
     EXPECT_EQ(celix_err_getErrorCount(), 1);
@@ -142,7 +146,7 @@ TEST_F(ManifestTestSuite, InvalidBundleSymbolicNameTest) {
         celix_status_t status = celix_bundleManifest_create(properties, &manifest);
 
         //Then the creation fails
-        EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+        EXPECT_EQ(CELIX_INVALID_SYNTAX, status);
 
         //And 1 celix err log entries is logged
         EXPECT_EQ(celix_err_getErrorCount(), 1);
@@ -184,7 +188,10 @@ TEST_F(ManifestTestSuite, GetBuiltinAttributes) {
         //Given a properties set with all the mandatory and optional attributes
         properties = createAttributes("2.0.0", "1.0.0", "my_bundle", "celix_my_bundle");
         celix_properties_set(properties, "CELIX_BUNDLE_ACTIVATOR_LIBRARY", "my_activator");
-        celix_properties_set(properties, "CELIX_BUNDLE_PRIVATE_LIBRARIES", "lib1,lib2");
+        auto* libs = celix_arrayList_createStringArray();
+        celix_arrayList_addString(libs, "lib1");
+        celix_arrayList_addString(libs, "lib2");
+        celix_properties_assignArrayList(properties, "CELIX_BUNDLE_PRIVATE_LIBRARIES", libs);
         celix_properties_set(properties, "CELIX_BUNDLE_GROUP", "my_group");
         celix_properties_set(properties, "CELIX_BUNDLE_DESCRIPTION", "my_description");
 

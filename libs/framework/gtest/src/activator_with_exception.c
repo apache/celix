@@ -19,6 +19,7 @@
 
 #include "celix_bundle_activator.h"
 #include "celix_compiler.h"
+#include <stdio.h>
 
 struct bundle_act {
 

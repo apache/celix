@@ -176,7 +176,7 @@ function(add_celix_bundle)
 
     set(OPTIONS NO_ACTIVATOR DO_NOT_CONFIGURE_SYMBOL_VISIBILITY)
     set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION FILENAME GROUP)
-    set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES EXPORT_LIBRARIES IMPORT_LIBRARIES HEADERS)
+    set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES HEADERS)
     cmake_parse_arguments(BUNDLE "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##check arguments
@@ -341,8 +341,6 @@ function(add_celix_bundle)
     #headers
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "") #Library containing the activator (if any)
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_PRIVATE_LIBS" "") #List of private libs. 
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IMPORT_LIBS" "") #List of libs to import
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_EXPORT_LIBS" "") #list of libs to export
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_LIB_TARGETS" "") #list of all lib targets built within the project.
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_HEADERS" "") #Additional headers will be added (new line seperated) to the manifest
     ################################
@@ -379,20 +377,7 @@ function(add_celix_bundle)
 
 
     celix_bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_PRIVATE_LIBRARIES})
-    celix_bundle_export_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_EXPORT_LIBRARIES})
-    celix_bundle_import_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_IMPORT_LIBRARIES})
     celix_bundle_headers(${BUNDLE_TARGET_NAME} ${BUNDLE_HEADERS})
-endfunction()
-
-#[[
-Adds a export lib to the Celix bundle.
-
-NOTE: Currently export lib support is Celix is not complete and still experimental.
-]]
-function(celix_bundle_export_libs)
-    list(GET ARGN 0 BUNDLE)
-    list(REMOVE_AT ARGN 0)
-    celix_bundle_libs(${BUNDLE} "EXPORT" TRUE ${ARGN})
 endfunction()
 
 #[[
@@ -525,37 +510,6 @@ function(celix_bundle_libs)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_${TYPE}_LIBS" "${LIBS}")
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_DEPEND_TARGETS" "${DEPS}")
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_LIB_TARGETS" "${LIB_TARGETS}")
-endfunction()
-
-#[[
-Adds a import lib to the Celix bundle.
-
-NOTE: Currently importing lib support is Celix is not complete and still experimental.
-]]
-function(celix_bundle_import_libs)
-    #0 is bundle TARGET
-    #2..n is import libs
-    list(GET ARGN 0 BUNDLE)
-    list(REMOVE_AT ARGN 0)
-
-    #check if arg 0 is correct
-    _check_bundle(${BUNDLE})
-
-    get_target_property(LIBS ${BUNDLE} "BUNDLE_IMPORT_LIBS")
-
-    foreach (LIB IN ITEMS ${ARGN})
-        message(WARNING "Bundle with import libs in Celix is not complete and still experimental.")
-        if (IS_ABSOLUTE ${LIB} AND EXISTS ${LIB})
-            list(APPEND LIBS ${LIB_NAME})
-        else ()
-            list(APPEND LIBS "$<TARGET_SONAME_FILE_NAME:${LIB}>")
-        endif ()
-
-        target_link_libraries(${BUNDLE} PRIVATE ${LIB})
-    endforeach ()
-
-
-    set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_IMPORT_LIBS" "${LIBS}")
 endfunction()
 
 #[[

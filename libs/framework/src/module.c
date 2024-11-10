@@ -91,32 +91,6 @@ celix_module_t* module_create(celix_bundle_t* bundle) {
     return celix_steal_ptr(module);
 }
 
-celix_module_t* module_createFrameworkModule(celix_framework_t* fw, bundle_pt bundle) {
-    celix_autoptr(celix_module_t) module = calloc(1, sizeof(*module));
-    celix_autoptr(celix_array_list_t) libraryHandles = celix_arrayList_createPointerArray();
-    if (!module || !libraryHandles) {
-        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to create module, out of memory");
-        return NULL;
-    }
-
-    celix_status_t status = celixThreadMutex_create(&module->handlesLock, NULL);
-    if (status != CELIX_SUCCESS) {
-        fw_log(fw->logger,
-               CELIX_LOG_LEVEL_ERROR,
-               "Failed to create module, error creating mutex: %s",
-               celix_strerror(errno));
-        celix_framework_logTssErrors(fw->logger, CELIX_LOG_LEVEL_ERROR);
-        return NULL;
-    }
-
-    module->fw = fw;
-    module->bundle = bundle;
-    module->resolved = false;
-    module->libraryHandles = celix_steal_ptr(libraryHandles);
-
-    return celix_steal_ptr(module);
-}
-
 void module_destroy(celix_module_t* module) {
     if (module) {
         celix_arrayList_destroy(module->libraryHandles);
@@ -288,7 +262,7 @@ celix_status_t celix_module_loadLibraries(celix_module_t* module) {
     const char* activator = celix_bundleManifest_getBundleActivatorLibrary(man);
     const celix_array_list_t* privateLibraries = celix_bundleManifest_getBundlePrivateLibraries(man);
 
-    if (privateLibraries != NULL) {
+    if (privateLibraries != NULL && celix_arrayList_size(privateLibraries) > 0) {
         status = CELIX_DO_IF(
             status,
             celix_module_loadLibrariesInManifestEntry(module, privateLibraries, activator, archive, &activatorHandle));
