@@ -75,9 +75,10 @@ static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_arch
     }
 
     celix_bundle_manifest_t* man = celix_bundleArchive_getManifest(archive);
-    celix_autofree char* bndVersion = celix_version_toString(celix_bundleManifest_getBundleVersion(man));
+    const char* bndVersion = celix_properties_getAsString(celix_bundleManifest_getAttributes(man),
+                                                          CELIX_BUNDLE_VERSION, "");
 
-    if (!bundleStateProperties || !bndVersion) {
+    if (!bundleStateProperties) {
         return CELIX_ENOMEM;
     }
 
