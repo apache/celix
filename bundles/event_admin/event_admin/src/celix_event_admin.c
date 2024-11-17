@@ -33,6 +33,7 @@
 #include "celix_threads.h"
 #include "celix_utils.h"
 #include "celix_stdlib_cleanup.h"
+#include "celix_event_remote_provider_service.h"
 
 #define CELIX_EVENT_ADMIN_MAX_HANDLER_THREADS 20
 #define CELIX_EVENT_ADMIN_HANDLER_THREADS_DEFAULT 5
@@ -41,6 +42,8 @@
 #define CELIX_EVENT_ADMIN_MAX_PARALLEL_EVENTS_OF_HANDLER(handlerThNr) ((handlerThNr)/3 + 1) //max parallel async event for a single handler
 #define CELIX_EVENT_ADMIN_MAX_HANDLE_EVENT_TIME 60 //seconds
 #define CELIX_EVENT_ADMIN_MAX_EVENT_QUEUE_SIZE 512 //events
+
+#define CELIX_EVENT_ADMIN_MAX_EVENT_SEQ_ID_CACHE_SIZE 1024
 
 typedef struct celix_event_handler {
     celix_event_handler_service_t* service;
@@ -61,15 +64,24 @@ typedef struct celix_event_entry {
     celix_long_hash_map_t* eventHandlers;//key: event handler service id, value: null
 }celix_event_entry_t;
 
+typedef struct celix_event_seq_id_cache {
+    struct timespec lastModified;
+    long seqIdBuffer[CELIX_EVENT_ADMIN_MAX_EVENT_SEQ_ID_CACHE_SIZE];
+}celix_event_seq_id_cache_t;
+
 struct celix_event_admin {
     celix_bundle_context_t* ctx;
     celix_log_helper_t* logHelper;
     unsigned int handlerThreadNr;
-    celix_thread_rwlock_t lock;//projects: channels,eventHandlers
+    const char* fwUUID;
+    celix_thread_rwlock_t lock;//projects: channels,eventHandlers,eventSeqIdCache,remoteProviderServices
     celix_event_channel_t channelMatchingAllEvents;
     celix_string_hash_map_t* channelsMatchingTopic; //key: topic, value: celix_event_channel_t *
     celix_string_hash_map_t* channelsMatchingPrefixTopic;//key:prefix topic, value: celix_event_channel_t *
     celix_long_hash_map_t* eventHandlers;//key: event handler service id, value: celix_event_handler_t*
+    celix_string_hash_map_t* eventSeqIdCache;//key: remote framework uuid, value: celix_event_seq_id_cache_t*
+    long nextSeqId;
+    celix_long_hash_map_t* remoteProviderServices;//key: service id, value: celix_event_remote_provider_service_t*
     celix_thread_mutex_t eventsMutex;// protect belows
     celix_thread_cond_t eventsTriggerCond;
     celix_array_list_t* asyncEventQueue;//array_list<celix_event_entry_t*>
@@ -87,9 +99,15 @@ celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
     }
     ea->ctx = ctx;
     ea->threadsRunning = false;
+    ea->nextSeqId = 1;
 
     celix_autoptr(celix_log_helper_t) logHelper = ea->logHelper = celix_logHelper_create(ctx, "CelixEventAdmin");
     if (logHelper == NULL) {
+        return NULL;
+    }
+    ea->fwUUID = celix_bundleContext_getProperty(ctx, CELIX_FRAMEWORK_UUID, NULL);
+    if (ea->fwUUID == NULL) {
+        celix_logHelper_error(logHelper, "Failed to get framework uuid.");
         return NULL;
     }
     ea->handlerThreadNr = (unsigned int)celix_bundleContext_getPropertyAsLong(ctx, "CELIX_EVENT_ADMIN_HANDLER_THREADS", CELIX_EVENT_ADMIN_HANDLER_THREADS_DEFAULT);
@@ -127,6 +145,23 @@ celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
         celix_logHelper_error(logHelper, "Failed to create event handler map.");
         return NULL;
     }
+    celix_autoptr(celix_string_hash_map_t) eventSeqIdCache = NULL;
+    {
+        celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
+        opts.simpleRemovedCallback = free;
+        eventSeqIdCache = ea->eventSeqIdCache = celix_stringHashMap_createWithOptions(&opts);
+        if (eventSeqIdCache == NULL) {
+            celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
+            celix_logHelper_error(logHelper, "Failed to create event seq id cache.");
+            return NULL;
+        }
+    }
+    celix_autoptr(celix_long_hash_map_t) remoteProviderServices = ea->remoteProviderServices = celix_longHashMap_create();
+    if (remoteProviderServices == NULL) {
+        celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(logHelper, "Failed to create remote provider services map.");
+        return NULL;
+    }
 
     status = celixThreadMutex_create(&ea->eventsMutex, NULL);
     if (status != CELIX_SUCCESS) {
@@ -154,6 +189,8 @@ celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
     celix_steal_ptr(asyncEventQueue);
     celix_steal_ptr(cond);
     celix_steal_ptr(mutex);
+    celix_steal_ptr(remoteProviderServices);
+    celix_steal_ptr(eventSeqIdCache);
     celix_steal_ptr(eventHandlers);
     celix_steal_ptr(channelsMatchingPrefixTopic);
     celix_steal_ptr(channelsMatchingTopic);
@@ -204,6 +241,8 @@ void celix_eventAdmin_destroy(celix_event_admin_t* ea) {
     celix_arrayList_destroy(ea->asyncEventQueue);
     celixThreadCondition_destroy(&ea->eventsTriggerCond);
     celixThreadMutex_destroy(&ea->eventsMutex);
+    celix_longHashMap_destroy(ea->remoteProviderServices);
+    celix_stringHashMap_destroy(ea->eventSeqIdCache);
     assert(celix_longHashMap_size(ea->eventHandlers) == 0);
     celix_longHashMap_destroy(ea->eventHandlers);
     assert(celix_stringHashMap_size(ea->channelsMatchingPrefixTopic) == 0);
@@ -415,6 +454,131 @@ int celix_eventAdmin_removeEventHandlerWithProperties(void* handle, void* svc, c
     return CELIX_SUCCESS;
 }
 
+int celix_eventAdmin_addRemoteProviderService(void* handle, void* svc, const celix_properties_t* props) {
+    assert(handle != NULL);
+    assert(svc != NULL);
+    celix_event_admin_t* ea = handle;
+    long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
+    if (serviceId < 0) {
+        celix_logHelper_error(ea->logHelper, "Remote provider service id is invalid.");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    celix_auto(celix_rwlock_wlock_guard_t) wLockGuard = celixRwlockWlockGuard_init(&ea->lock);
+    celix_longHashMap_put(ea->remoteProviderServices, serviceId, svc);
+    return CELIX_SUCCESS;
+}
+
+int celix_eventAdmin_removeRemoteProviderService(void* handle, void* svc, const celix_properties_t* props) {
+    assert(handle != NULL);
+    assert(svc != NULL);
+    celix_event_admin_t* ea = handle;
+    long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1L);
+    if (serviceId < 0) {
+        celix_logHelper_error(ea->logHelper, "Remote provider service id is invalid.");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    celix_auto(celix_rwlock_wlock_guard_t) wLockGuard = celixRwlockWlockGuard_init(&ea->lock);
+    celix_longHashMap_remove(ea->remoteProviderServices, serviceId);
+    return CELIX_SUCCESS;
+}
+
+static void celix_eventAdmin_retrieveLongTimeUnusedEventSeqIdCache(celix_event_admin_t* ea) {
+    if (celix_stringHashMap_size(ea->eventSeqIdCache) > 16) {
+        celix_string_hash_map_iterator_t iter = celix_stringHashMap_begin(ea->eventSeqIdCache);
+        while (!celix_stringHashMapIterator_isEnd(&iter)) {
+            celix_event_seq_id_cache_t* cache = iter.value.ptrValue;
+            if (celix_elapsedtime(CLOCK_MONOTONIC, cache->lastModified) > 60*60/*1h*/) {
+                celix_stringHashMapIterator_remove(&iter);
+            } else {
+                celix_stringHashMapIterator_next(&iter);
+            }
+        }
+    }
+    return;
+}
+
+static bool celix_eventAdmin_isDuplicateEvent(celix_event_admin_t* ea, const char* topic CELIX_UNUSED, const celix_properties_t* properties) {
+    const char* remoteFwUUID = celix_properties_get(properties, CELIX_EVENT_REMOTE_FRAMEWORK_UUID, NULL);
+    if (remoteFwUUID == NULL) {
+        return false;
+    }
+    long seqId = celix_properties_getAsLong(properties, CELIX_EVENT_REMOTE_SEQ_ID, -1L);
+    if (seqId <= 0) {
+        return false;
+    }
+    long seqIdMod = seqId % CELIX_EVENT_ADMIN_MAX_EVENT_SEQ_ID_CACHE_SIZE;
+    celix_auto(celix_rwlock_wlock_guard_t) wLockGuard = celixRwlockWlockGuard_init(&ea->lock);
+    celix_event_seq_id_cache_t* seqIdCache = celix_stringHashMap_get(ea->eventSeqIdCache, remoteFwUUID);
+    if (seqIdCache == NULL) {
+        celix_autofree celix_event_seq_id_cache_t* cache = calloc(1, sizeof(*cache));
+        if (cache == NULL) {
+            celix_logHelper_error(ea->logHelper, "Failed to create event seq id cache for %s.", remoteFwUUID);
+            return false;
+        }
+        celix_status_t status = celix_stringHashMap_put(ea->eventSeqIdCache, remoteFwUUID, cache);
+        if (status != CELIX_SUCCESS) {
+            celix_logHelper_error(ea->logHelper, "Failed to add event seq id cache for %s.", remoteFwUUID);
+            return false;
+        }
+        seqIdCache = celix_steal_ptr(cache);
+    }
+    seqIdCache->lastModified = celix_gettime(CLOCK_MONOTONIC);
+    if (seqIdCache->seqIdBuffer[seqIdMod] == seqId) {
+        return true;
+    }
+    seqIdCache->seqIdBuffer[seqIdMod] = seqId;
+
+    celix_eventAdmin_retrieveLongTimeUnusedEventSeqIdCache(ea);
+
+    return false;
+}
+
+static long celix_eventAdmin_getEventSeqId(celix_event_admin_t* ea) {
+    celix_auto(celix_rwlock_wlock_guard_t) wLockGuard = celixRwlockWlockGuard_init(&ea->lock);
+    long seqId = ea->nextSeqId++;
+    if (seqId <= 0) {
+        seqId = 1;
+        ea->nextSeqId = seqId + 1;
+    }
+    return seqId;
+}
+
+static int celix_eventAdmin_deliverEventToRemote(celix_event_admin_t* ea, const char* topic, const celix_properties_t* props, bool async) {
+    celix_autoptr(celix_properties_t) remoteProps = celix_properties_copy(props);
+    if (remoteProps == NULL) {
+        celix_logHelper_error(ea->logHelper, "Failed to copy remote properties for event %s.", topic);
+        return ENOMEM;
+    }
+    celix_properties_unset(remoteProps, CELIX_EVENT_REMOTE_ENABLE);
+    celix_status_t status = celix_properties_set(remoteProps, CELIX_EVENT_REMOTE_FRAMEWORK_UUID, ea->fwUUID);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(ea->logHelper, "Failed to set remote framework uuid for event %s.", topic);
+        return status;
+    }
+    long seqId = celix_eventAdmin_getEventSeqId(ea);
+    status = celix_properties_setLong(remoteProps, CELIX_EVENT_REMOTE_SEQ_ID, seqId);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(ea->logHelper, "Failed to set remote seq id for event %s.", topic);
+        return status;
+    }
+    celix_auto(celix_rwlock_rlock_guard_t) rLockGuard = celixRwlockRlockGuard_init(&ea->lock);
+    CELIX_LONG_HASH_MAP_ITERATE(ea->remoteProviderServices, iter) {
+        celix_event_remote_provider_service_t* remoteProvider = iter.value.ptrValue;
+        if (async) {
+            celix_logHelper_trace(ea->logHelper, "Post event %s to remote provider.", topic);
+            status = remoteProvider->postEvent(remoteProvider->handle, topic, remoteProps);
+        } else {
+            celix_logHelper_trace(ea->logHelper, "Send event %s to remote provider.", topic);
+            status = remoteProvider->sendEvent(remoteProvider->handle, topic, remoteProps);
+        }
+        if (status != CELIX_SUCCESS) {
+            celix_logHelper_error(ea->logHelper, "Failed to deliver event %s to remote provider(%ld).", topic, iter.key);
+        }
+    }
+
+    return CELIX_SUCCESS;
+}
+
 static void celix_eventAdmin_collectEventHandlers(celix_event_admin_t* ea, const char* eventTopic, const celix_properties_t* eventProperties,
                                                   celix_event_channel_t* channel, celix_long_hash_map_t* eventHandlers) {
     if (channel == NULL) {
@@ -449,6 +613,10 @@ static void celix_eventAdmin_collectEventHandlers(celix_event_admin_t* ea, const
 static int celix_eventAdmin_deliverEvent(celix_event_admin_t* ea, const char* eventTopic, const celix_properties_t* eventProperties,
                                           int (*deliverAction)(celix_event_admin_t* ea, const char* topic, const celix_properties_t* properties,
                                                   celix_long_hash_map_t* eventHandlers, bool* stealEventHandlers)) {
+    if (celix_eventAdmin_isDuplicateEvent(ea, eventTopic, eventProperties)) {
+        celix_logHelper_debug(ea->logHelper, "Duplicate event %s", eventTopic);
+        return CELIX_SUCCESS;
+    }
     celix_autoptr(celix_long_hash_map_t) eventHandlers = celix_longHashMap_create();//avoid duplicated event handler
     if (eventHandlers == NULL) {
         celix_logHelper_logTssErrors(ea->logHelper, CELIX_LOG_LEVEL_ERROR);
@@ -533,7 +701,16 @@ celix_status_t celix_eventAdmin_sendEvent(void* handle, const char* topic, const
         return CELIX_ILLEGAL_ARGUMENT;
     }
     celix_event_admin_t* ea = (celix_event_admin_t*)handle;
-    return celix_eventAdmin_deliverEvent(ea, topic, props, celix_eventAdmin_deliverEventSyncDo);
+    celix_status_t status = celix_eventAdmin_deliverEvent(ea, topic, props, celix_eventAdmin_deliverEventSyncDo);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(ea->logHelper, "Failed to send event %s.", topic);
+        return status;
+    }
+    bool remoteEnable = celix_properties_getAsBool(props, CELIX_EVENT_REMOTE_ENABLE, false);
+    if (remoteEnable) {
+        return celix_eventAdmin_deliverEventToRemote(ea, topic, props, false);
+    }
+    return CELIX_SUCCESS;
 }
 
 static int celix_eventAdmin_deliverEventAsyncDo(celix_event_admin_t* ea, const char* topic, const celix_properties_t* props,
@@ -573,7 +750,16 @@ celix_status_t celix_eventAdmin_postEvent(void* handle, const char* topic, const
         return CELIX_ILLEGAL_ARGUMENT;
     }
     celix_event_admin_t* ea = (celix_event_admin_t*)handle;
-    return celix_eventAdmin_deliverEvent(ea, topic, props, celix_eventAdmin_deliverEventAsyncDo);
+    celix_status_t status = celix_eventAdmin_deliverEvent(ea, topic, props, celix_eventAdmin_deliverEventAsyncDo);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(ea->logHelper, "Failed to send event %s.", topic);
+        return status;
+    }
+    bool remoteEnable = celix_properties_getAsBool(props, CELIX_EVENT_REMOTE_ENABLE, false);
+    if (remoteEnable) {
+        return celix_eventAdmin_deliverEventToRemote(ea, topic, props, true);
+    }
+    return CELIX_SUCCESS;
 }
 
 static bool celix_eventAdmin_getPendingEvent(celix_event_admin_t* ea, celix_event_t** event, long* eventHandlerSvcId) {

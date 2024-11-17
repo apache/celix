@@ -26,6 +26,7 @@
 #include "celix_event_admin_service.h"
 #include "celix_event_handler_service.h"
 #include "celix_event_constants.h"
+#include "celix_event_remote_provider_service.h"
 
 typedef struct celix_event_admin_activator {
     celix_event_admin_t *eventAdmin;
@@ -69,6 +70,27 @@ celix_status_t celix_eventAdminActivator_start(celix_event_admin_activator_t *ac
             return status;
         }
         celix_steal_ptr(eventHandlerDep);
+    }
+
+    {
+        celix_autoptr(celix_dm_service_dependency_t) remoteProviderDep = celix_dmServiceDependency_create();
+        if (remoteProviderDep == NULL) {
+            return CELIX_ENOMEM;
+        }
+        status = celix_dmServiceDependency_setService(remoteProviderDep, CELIX_EVENT_REMOTE_PROVIDER_SERVICE_NAME, CELIX_EVENT_REMOTE_PROVIDER_SERVICE_USE_RANGE, NULL);
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
+        celix_dmServiceDependency_setStrategy(remoteProviderDep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
+        celix_dm_service_dependency_callback_options_t opts = CELIX_EMPTY_DM_SERVICE_DEPENDENCY_CALLBACK_OPTIONS;
+        opts.addWithProps = celix_eventAdmin_addRemoteProviderService;
+        opts.removeWithProps = celix_eventAdmin_removeRemoteProviderService;
+        celix_dmServiceDependency_setCallbacksWithOptions(remoteProviderDep, &opts);
+        status = celix_dmComponent_addServiceDependency(adminCmp, remoteProviderDep);
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
+        celix_steal_ptr(remoteProviderDep);
     }
 
     act->eventAdminService.handle = act->eventAdmin;

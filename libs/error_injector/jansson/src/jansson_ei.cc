@@ -113,4 +113,15 @@ int __wrap_json_dumpf(const json_t* json, FILE* output, size_t flags) {
     return __real_json_dumpf(json, output, flags);
 }
 
+json_t* __real_json_pack_ex(json_error_t* error, size_t flags, const char* fmt, ...);
+CELIX_EI_DEFINE(json_pack_ex, json_t*)
+json_t* __wrap_json_pack_ex(json_error_t* error, size_t flags, const char* fmt, ...) {
+    CELIX_EI_IMPL(json_pack_ex);
+    va_list args;
+    va_start(args, fmt);
+    json_t *obj = json_vpack_ex(error, flags, fmt, args);
+    va_end(args);
+    return obj;
+}
+
 }

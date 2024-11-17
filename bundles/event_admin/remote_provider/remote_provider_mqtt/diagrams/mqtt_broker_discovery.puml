@@ -1,0 +1,49 @@
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+@startuml
+'https://plantuml.com/sequence-diagram
+
+!pragma teoz true
+box Host1 #EEEBDC
+box FrameworkA
+    participant "Remote Provider MQTT" as RemoteProviderMQTT1
+    participant "Service Discovery" as ServiceDiscovery1
+end box
+    participant "MQTT Broker Profile" as MqttBrokerProfile
+    participant "MQTT Broker" as MqttBroker
+
+    == Initialization ==
+    MqttBroker -> MqttBrokerProfile : Load MQTT broker profile
+    RemoteProviderMQTT1 -> MqttBrokerProfile : Try load MQTT broker profile
+    == MQTT broker server discovery ==
+    alt Profile loaded
+        RemoteProviderMQTT1 -> ServiceDiscovery1 : Announce MQTT broker server\n endpoint description
+        RemoteProviderMQTT1 -> MqttBroker : Connect to MQTT broker
+    end alt
+end box
+
+box Host2 #EEEBDC
+
+    box FrameworkB
+        participant "Service Discovery" as ServiceDiscovery2
+        participant "Remote Provider MQTT" as RemoteProviderMQTT2
+        ServiceDiscovery1 -> ServiceDiscovery2 :Announce MQTT broker server endpoint description to remote
+        ServiceDiscovery2 -> RemoteProviderMQTT2 : Add MQTT broker server\n endpoint description
+        RemoteProviderMQTT2 -> MqttBroker : Connect to MQTT broker
+    end box
+
+end box
+@enduml

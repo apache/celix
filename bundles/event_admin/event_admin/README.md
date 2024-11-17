@@ -63,6 +63,17 @@ at most one event-delivery thread at a time, so that events can be delivered in 
 "event.delivery" property to "async.unordered", the event handler can hold multiple event-delivery threads at the same 
 time, so that events can be delivered in parallel.
 
+#### Remote Event Delivery
+
+If the event property "celix.event.remote.enable" is set to true, the event will be delivered to the local event handlers
+and remote event handlers. For delivering events to local event handlers, it can refer to the section of synchronous delivery
+and asynchronous delivery. For delivering events to remote event handlers, event admin will forward the event to the 
+[remote provider](../remote_provider/README.md). The remote provider will serialize the event and send it to the remote framework.
+The remote framework will deserialize the event and deliver it to the remote event handler. The diagram of remote event delivery
+is as follows:
+
+![remote_delivery_seq.png](diagrams/remote_event_delivery_seq.png)
+
 
 #### Event Adapter
 
