@@ -24,5 +24,6 @@ target_link_libraries(bundle_ei PRIVATE Celix::framework)
 target_link_options(bundle_ei INTERFACE
         LINKER:--wrap,celix_bundle_getSymbolicName
         LINKER:--wrap,celix_bundle_getManifestValue
+        LINKER:--wrap,celix_bundle_getVersion
         )
 add_library(Celix::bundle_ei ALIAS bundle_ei)

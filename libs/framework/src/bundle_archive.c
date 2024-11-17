@@ -26,16 +26,19 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "celix_bundle_manifest.h"
+#include "celix_bundle_manifest_type.h"
 #include "celix_constants.h"
 #include "celix_compiler.h"
 #include "celix_file_utils.h"
 #include "celix_framework_utils_private.h"
 #include "celix_utils_api.h"
 #include "celix_log.h"
-
 #include "bundle_archive_private.h"
 #include "bundle_revision_private.h"
+#include "celix_version.h"
 #include "framework_private.h"
+#include "celix_stdlib_cleanup.h"
 
 /**
  * The bundle archive which is used to store the bundle data and can be reused when a framework is restarted.
@@ -51,9 +54,7 @@ struct bundleArchive {
     char* savedBundleStatePropertiesPath;
     char* storeRoot;
     char* resourceCacheRoot;
-    char* bundleSymbolicName; // read from the manifest
-    char* bundleVersion;      // read from the manifest
-    bundle_revision_t* revision; // the current revision
+    celix_bundle_revision_t* revision; // the current revision
     char* location;
     bool cacheValid; // is the cache valid (e.g. not deleted)
     bool valid; // is the archive valid (e.g. not deleted)
@@ -72,6 +73,11 @@ static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_arch
     if (!bundleStateProperties) {
         bundleStateProperties = celix_properties_create();
     }
+
+    celix_bundle_manifest_t* man = celix_bundleArchive_getManifest(archive);
+    const char* bndVersion = celix_properties_getAsString(celix_bundleManifest_getAttributes(man),
+                                                          CELIX_BUNDLE_VERSION, "");
+
     if (!bundleStateProperties) {
         return CELIX_ENOMEM;
     }
@@ -88,21 +94,25 @@ static celix_status_t celix_bundleArchive_storeBundleStateProperties(bundle_arch
         needUpdate = true;
     }
     if (strcmp(celix_properties_get(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME, ""),
-               archive->bundleSymbolicName) != 0) {
+               celix_bundleManifest_getBundleSymbolicName(man)) != 0) {
         celix_properties_set(
-            bundleStateProperties, CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME, archive->bundleSymbolicName);
+            bundleStateProperties,
+            CELIX_BUNDLE_ARCHIVE_SYMBOLIC_NAME_PROPERTY_NAME,
+            celix_bundleManifest_getBundleSymbolicName(man));
         needUpdate = true;
     }
     if (strcmp(celix_properties_get(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME, ""),
-               archive->bundleVersion) != 0) {
-        celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME, archive->bundleVersion);
+               bndVersion) != 0) {
+        celix_properties_set(bundleStateProperties, CELIX_BUNDLE_ARCHIVE_VERSION_PROPERTY_NAME, bndVersion);
         needUpdate = true;
     }
 
     // save bundle cache state properties
     if (needUpdate) {
         celix_status_t status = celix_properties_save(
-            bundleStateProperties, archive->savedBundleStatePropertiesPath, CELIX_PROPERTIES_ENCODE_PRETTY);
+            bundleStateProperties,
+            archive->savedBundleStatePropertiesPath,
+            CELIX_PROPERTIES_ENCODE_PRETTY);
         if (status != CELIX_SUCCESS) {
             return status;
         }
@@ -184,7 +194,8 @@ celix_bundleArchive_extractBundle(bundle_archive_t* archive, const char* bundleU
  * Initialize archive by creating the bundle cache directory, optionally extracting the bundle from the bundle file,
  * reading the bundle state properties, reading the bundle manifest and updating the bundle state properties.
  */
-static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archive, manifest_pt* manifestOut) {
+static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt archive, celix_bundle_manifest_t** manifestOut) {
+    *manifestOut = NULL;
     if (celix_utils_fileExists(archive->archiveRoot)) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_TRACE, "Bundle archive root for bundle id %li already exists.",
                archive->id);
@@ -213,14 +224,14 @@ static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt
     }
 
     //read manifest from extracted bundle zip
-    *manifestOut = NULL;
+    celix_autoptr(celix_bundle_manifest_t) manifest = NULL;
     char pathBuffer[512];
     char* manifestPath = celix_utils_writeOrCreateString(pathBuffer, sizeof(pathBuffer), "%s/%s", archive->resourceCacheRoot, CELIX_BUNDLE_MANIFEST_REL_PATH);
     if (manifestPath == NULL) {
         fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Failed to create manifest path.");
         return CELIX_ENOMEM;
     }
-    status = manifest_createFromFile(manifestPath, manifestOut);
+    status = celix_bundleManifest_createFromFile(manifestPath, &manifest);
     celix_utils_freeStringIfNotEqual(pathBuffer, manifestPath);
     if (status != CELIX_SUCCESS) {
         celix_framework_logTssErrors(archive->fw->logger, CELIX_LOG_LEVEL_ERROR);
@@ -228,20 +239,7 @@ static celix_status_t celix_bundleArchive_createCacheDirectory(bundle_archive_pt
         return status;
     }
 
-    //populate bundle symbolic name and version from manifest
-    archive->bundleSymbolicName = celix_utils_strdup(manifest_getValue(*manifestOut, CELIX_FRAMEWORK_BUNDLE_SYMBOLICNAME));
-    if (archive->bundleSymbolicName == NULL) {
-        fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Cannot read bundle symbolic name.");
-        manifest_destroy(*manifestOut);
-        return CELIX_BUNDLE_EXCEPTION;
-    }
-    archive->bundleVersion = celix_utils_strdup(manifest_getValue(*manifestOut, CELIX_FRAMEWORK_BUNDLE_VERSION));
-    if (archive->bundleVersion == NULL) {
-        fw_log(archive->fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to initialize archive. Cannot read bundle version.");
-        manifest_destroy(*manifestOut);
-        return CELIX_BUNDLE_EXCEPTION;
-    }
-
+    *manifestOut = celix_steal_ptr(manifest);
     return status;
 }
 
@@ -249,7 +247,7 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
     celix_status_t status = CELIX_SUCCESS;
     const char* error = NULL;
     bundle_archive_pt archive = calloc(1, sizeof(*archive));
-    bool isSystemBundle = id == CELIX_FRAMEWORK_BUNDLE_ID;
+    bool isFrameworkBundle = id == CELIX_FRAMEWORK_BUNDLE_ID;
 
     if (archive == NULL) {
         status = CELIX_ENOMEM;
@@ -259,7 +257,7 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
     archive->fw = fw;
     archive->id = id;
 
-    if (isSystemBundle) {
+    if (isFrameworkBundle) {
         archive->resourceCacheRoot = getcwd(NULL, 0);
         archive->storeRoot = getcwd(NULL, 0);
         if (archive->resourceCacheRoot == NULL || archive->storeRoot == NULL) {
@@ -294,9 +292,9 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
         goto init_failed;
     }
 
-    manifest_pt manifest = NULL;
-    if (isSystemBundle) {
-        status = manifest_create(&manifest);
+    celix_bundle_manifest_t* manifest = NULL;
+    if (isFrameworkBundle) {
+        status = celix_bundleManifest_createFrameworkManifest(&manifest);
     } else {
         status = celix_bundleArchive_createCacheDirectory(archive, &manifest);
     }
@@ -311,7 +309,7 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
         goto revision_failed;
     }
 
-    if (!isSystemBundle) {
+    if (!isFrameworkBundle) {
         status = celix_bundleArchive_storeBundleStateProperties(archive);
         if (status != CELIX_SUCCESS) {
             error = "Could not store properties.";
@@ -325,7 +323,7 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
 store_prop_failed:
 revision_failed:
 dir_failed:
-    if (!isSystemBundle) {
+    if (!isFrameworkBundle) {
         celix_utils_deleteDirectory(archive->archiveRoot, NULL);
     }
 init_failed:
@@ -343,9 +341,7 @@ void celix_bundleArchive_destroy(bundle_archive_pt archive) {
         free(archive->archiveRoot);
         free(archive->resourceCacheRoot);
         free(archive->storeRoot);
-        free(archive->bundleSymbolicName);
-        free(archive->bundleVersion);
-        bundleRevision_destroy(archive->revision);
+        celix_bundleRevision_destroy(archive->revision);
         free(archive);
     }
 }
@@ -359,8 +355,14 @@ long celix_bundleArchive_getId(bundle_archive_pt archive) {
     return archive->id;
 }
 
-const char* celix_bundleArchive_getSymbolicName(bundle_archive_pt archive) {
-    return archive->bundleSymbolicName;
+celix_bundle_manifest_t* celix_bundleArchive_getManifest(bundle_archive_pt archive) {
+    celix_bundle_manifest_t* man = celix_bundleRevision_getManifest(archive->revision);
+    assert(man); //bundle archives always have a manifest
+    return man;
+}
+
+const char* celix_bundleArchive_getSymbolicName(bundle_archive_t* archive) {
+    return  celix_bundleManifest_getBundleSymbolicName(celix_bundleArchive_getManifest(archive));
 }
 
 celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char **location) {
@@ -388,13 +390,13 @@ celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive,
 }
 //LCOV_EXCL_STOP
 
-celix_status_t bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundle_revision_pt* revision) {
+celix_status_t bundleArchive_getCurrentRevision(bundle_archive_pt archive, celix_bundle_revision_t** revision) {
     *revision = archive->revision;
     return CELIX_SUCCESS;
 }
 
 //LCOV_EXCL_START
-celix_status_t bundleArchive_getRevision(bundle_archive_pt archive, long revNr CELIX_UNUSED, bundle_revision_pt *revision) {
+celix_status_t bundleArchive_getRevision(bundle_archive_pt archive, long revNr CELIX_UNUSED, celix_bundle_revision_t** revision) {
     return bundleArchive_getCurrentRevision(archive, revision);
 }
 
@@ -459,14 +461,6 @@ celix_status_t bundleArchive_rollbackRevise(bundle_archive_pt archive, bool* rol
 celix_status_t bundleArchive_close(bundle_archive_pt archive) {
     // close revision
     // not yet needed/possible
-    return CELIX_SUCCESS;
-}
-
-celix_status_t bundleArchive_closeAndDelete(bundle_archive_pt archive) {
-    fw_log(archive->fw->logger,
-           CELIX_LOG_LEVEL_DEBUG,
-           "Usage of bundleArchive_closeAndDelete is deprecated and no longer needed. Called for bundle %s",
-           archive->bundleSymbolicName);
     return CELIX_SUCCESS;
 }
 //LCOV_EXCL_STOP

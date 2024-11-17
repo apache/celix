@@ -18,13 +18,14 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "celix_build_assert.h"
 #include "celix_constants.h"
 #include "celix_err.h"
 #include "service_registration_private.h"
+#include "celix_log.h"
+#include "service_factory.h"
 
 static bool serviceRegistration_destroy(struct celix_ref *);
 static celix_status_t serviceRegistration_initializeProperties(service_registration_t*registration,

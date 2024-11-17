@@ -494,6 +494,13 @@ TEST_F(PropertiesTestSuite, GetVersionTest) {
     celix_version_destroy(ver3);
     celix_version_destroy(ver4);
 
+    celix_properties_setBool(properties, "bool", true);
+    celix_version_t* ver5;
+    status = celix_properties_getAsVersion(properties, "bool", nullptr, &ver5);
+    EXPECT_EQ(ver5, nullptr);
+    EXPECT_EQ(status, CELIX_SUCCESS);
+    celix_version_destroy(ver5);
+
     celix_version_destroy(emptyVersion);
     celix_properties_destroy(properties);
 }

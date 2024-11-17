@@ -121,21 +121,10 @@ extern "C" {
  */
 #define CELIX_FRAMEWORK_SERVICE_VERSION "service.version"
 
-#define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR "Bundle-Activator"
-
 #define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE "celix_bundleActivator_create"
 #define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_START "celix_bundleActivator_start"
 #define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_STOP "celix_bundleActivator_stop"
 #define CELIX_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY "celix_bundleActivator_destroy"
-
-#define CELIX_FRAMEWORK_BUNDLE_SYMBOLICNAME "Bundle-SymbolicName"
-#define CELIX_FRAMEWORK_BUNDLE_NAME "Bundle-Name"
-#define CELIX_FRAMEWORK_BUNDLE_GROUP "Bundle-Group"
-#define CELIX_FRAMEWORK_BUNDLE_DESCRIPTION "Bundle-Description"
-#define CELIX_FRAMEWORK_BUNDLE_VERSION "Bundle-Version"
-#define CELIX_FRAMEWORK_PRIVATE_LIBRARY "Private-Library"
-#define CELIX_FRAMEWORK_EXPORT_LIBRARY "Export-Library"
-#define CELIX_FRAMEWORK_IMPORT_LIBRARY "Import-Library"
 
 /**
  * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CACHE_DIR") specifying the cache

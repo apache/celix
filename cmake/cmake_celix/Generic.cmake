@@ -162,3 +162,41 @@ function(celix_target_hide_symbols)
                 VISIBILITY_INLINES_HIDDEN ON)
     endif ()
 endfunction()
+
+#[[
+Internal function that converts a property string to a JSON field entry.
+The result is stored in the OUTPUT_VAR_NAME variable.
+
+In the key the char `=` is not allowed and should be escaped as `\=` (in CMake this is `\\=`, because \ is already an
+escape char in CMake).
+In the value the char `=` is allowed.
+
+To handle \= string sequences the \= entries are replaced with a placeholder (__<CELIX_ESCAPED_EQUAL>__) and after the
+split the placeholder is replaced with =.
+
+```CMake
+_celix_convert_keyval_to_json("prop1=val1" "=" OUTPUT_VAR_NAME) # OUTPUT_VAR_NAME will be set to "\"prop1\":\"val1\""
+_celix_convert_keyval_to_json("prop1=va=l1" "=" OUTPUT_VAR_NAME) # OUTPUT_VAR_NAME will be set to "\"prop1\":\"va=l1\""
+_celix_convert_keyval_to_json("prop\\=1=val1" "=" OUTPUT_VAR_NAME) # OUTPUT_VAR_NAME will be set to "\"prop=1\":\"val1\""
+
+_celix_convert_keyval_to_json(" prop1 = val1 " "=" OUTPUT_VAR_NAME) # OUTPUT_VAR_NAME will be set to "\"prop1\"":\"val1\""
+```
+]]
+function(_celix_convert_keyval_to_json INPUT_STR SEPERATOR_CHAR OUTPUT_VAR_NAME)
+    set(PLACEHOLDER "__<CELIX_ESCAPED_EQUAL>__")
+    string(REPLACE "\\${SEPERATOR_CHAR}" "${PLACEHOLDER}" TEMP_INPUT_STR "${INPUT_STR}")
+
+    string(REGEX MATCH "([^${SEPERATOR_CHAR}]+)${SEPERATOR_CHAR}(.*)" _ ${TEMP_INPUT_STR})
+    set(KEY ${CMAKE_MATCH_1})
+    set(VALUE ${CMAKE_MATCH_2})
+
+    #Replace replaced \= and \\ with = and \
+    string(REPLACE "${PLACEHOLDER}" "${SEPERATOR_CHAR}" KEY "${KEY}")
+    string(REPLACE "${PLACEHOLDER}" "${SEPERATOR_CHAR}" VALUE "${VALUE}")
+
+    #Strip leading and trailing spaces
+    string(STRIP "${KEY}" KEY)
+    string(STRIP "${VALUE}" VALUE)
+
+    set(${OUTPUT_VAR_NAME} "\"${KEY}\":\"${VALUE}\"" PARENT_SCOPE)
+endfunction()

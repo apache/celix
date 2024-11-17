@@ -32,6 +32,8 @@
 #include "remote_interceptors_handler.h"
 #include "remote_service_admin_dfi.h"
 #include "remote_service_admin_dfi_constants.h"
+#include "hash_map.h"
+#include "celix_threads.h"
 
 struct import_registration {
     celix_bundle_context_t *context;

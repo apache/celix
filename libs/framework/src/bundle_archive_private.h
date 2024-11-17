@@ -39,7 +39,7 @@ extern "C" {
 #define CELIX_BUNDLE_ARCHIVE_RESOURCE_CACHE_NAME "resources"
 #define CELIX_BUNDLE_ARCHIVE_STORE_DIRECTORY_NAME "storage"
 
-#define CELIX_BUNDLE_MANIFEST_REL_PATH "META-INF/MANIFEST.MF"
+#define CELIX_BUNDLE_MANIFEST_REL_PATH "META-INF/MANIFEST.json"
 
 /**
  * @brief Create bundle archive.
@@ -59,11 +59,14 @@ void celix_bundleArchive_destroy(bundle_archive_pt archive);
 long celix_bundleArchive_getId(bundle_archive_pt archive);
 
 /**
- * @brief Returns the bundle symbolic name of the bundle archive.
- * @param archive The bundle archive.
- * @return The bundle symbolic name.
+ * @brief Return the manifest for the bundle archive. All bundle archives have a manifest.
  */
-const char* celix_bundleArchive_getSymbolicName(bundle_archive_pt archive);
+celix_bundle_manifest_t* celix_bundleArchive_getManifest(bundle_archive_t* archive);
+
+/**
+ * @brief Return the bundle symbolic name (from the manifest)
+ */
+const char* celix_bundleArchive_getSymbolicName(bundle_archive_t* archive);
 
 /**
  * Returns the root of the bundle persistent store.

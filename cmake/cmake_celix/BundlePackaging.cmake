@@ -20,13 +20,12 @@ set(CELIX_NO_POSTFIX_BUILD_TYPES RelWithDebInfo Release CACHE STRING "The build 
 option(CELIX_USE_COMPRESSION_FOR_BUNDLE_ZIPS "Enables bundle compression" TRUE)
 
 if (CELIX_USE_COMPRESSION_FOR_BUNDLE_ZIPS)
-    set(CELIX_JAR_COMMAND_ARGUMENTS -cfm)
+    set(CELIX_JAR_COMMAND_ARGUMENTS -cf)
     set(CELIX_ZIP_COMMAND_ARGUMENTS -rq)
 else ()
-    set(CELIX_JAR_COMMAND_ARGUMENTS -cfm0)
+    set(CELIX_JAR_COMMAND_ARGUMENTS -cf0)
     set(CELIX_ZIP_COMMAND_ARGUMENTS -rq0)
 endif ()
-
 
 find_program(JAR_COMMAND jar NO_CMAKE_FIND_ROOT_PATH)
 
@@ -177,7 +176,7 @@ function(add_celix_bundle)
 
     set(OPTIONS NO_ACTIVATOR DO_NOT_CONFIGURE_SYMBOL_VISIBILITY)
     set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION FILENAME GROUP)
-    set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES EXPORT_LIBRARIES IMPORT_LIBRARIES HEADERS)
+    set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES HEADERS)
     cmake_parse_arguments(BUNDLE "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##check arguments
@@ -269,7 +268,7 @@ function(add_celix_bundle)
 
     ##### MANIFEST configuration and generation ##################
     #Step1 configure the file so that the target name is present in in the template
-    configure_file(${CELIX_CMAKE_DIRECTORY}/templates/Manifest.in ${BUNDLE_GEN_DIR}/MANIFEST.step1)
+    configure_file(${CELIX_CMAKE_DIRECTORY}/templates/MANIFEST.json.in ${BUNDLE_GEN_DIR}/MANIFEST.step1)
 
     #Step2 replace headers with target property values. Note this is done build time
     file(GENERATE
@@ -277,9 +276,9 @@ function(add_celix_bundle)
             INPUT "${BUNDLE_GEN_DIR}/MANIFEST.step1"
     )
 
-    #Step3 The replaced values in step 2 can contain generator expresssion, generated again to resolve those. Note this is done build time
+    #Step3 The replaced values in step 2 can contain generator expression, generated again to resolve those. Note this is done build time
     file(GENERATE
-            OUTPUT "${BUNDLE_GEN_DIR}/MANIFEST.MF"
+            OUTPUT "${BUNDLE_GEN_DIR}/MANIFEST.json"
             INPUT "${BUNDLE_GEN_DIR}/MANIFEST.step2"
     )
     #########################################################
@@ -288,19 +287,19 @@ function(add_celix_bundle)
     if (JAR_COMMAND)
         add_custom_command(OUTPUT ${BUNDLE_FILE}
                 COMMAND ${CMAKE_COMMAND} -E make_directory ${BUNDLE_CONTENT_DIR}
-                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE} ${BUNDLE_GEN_DIR}/MANIFEST.MF -C ${BUNDLE_CONTENT_DIR} .
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json ${BUNDLE_CONTENT_DIR}/META-INF/MANIFEST.json
+                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE} -C ${BUNDLE_CONTENT_DIR} .
                 COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
-                DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.MF
+                DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.json
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         )
     elseif (ZIP_COMMAND)
-        file(MAKE_DIRECTORY ${BUNDLE_CONTENT_DIR})
-
+        file(MAKE_DIRECTORY ${BUNDLE_CONTENT_DIR}) #Note needed because working_directory is bundle content dir
         add_custom_command(OUTPUT ${BUNDLE_FILE}
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.MF META-INF/MANIFEST.MF
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json ${BUNDLE_CONTENT_DIR}/META-INF/MANIFEST.json
                 COMMAND ${ZIP_COMMAND} ${CELIX_ZIP_COMMAND_ARGUMENTS} ${BUNDLE_FILE} *
                 COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
-                DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.MF
+                DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.json
                 WORKING_DIRECTORY ${BUNDLE_CONTENT_DIR}
         )
     else ()
@@ -340,10 +339,8 @@ function(add_celix_bundle)
     celix_bundle_description(${BUNDLE_TARGET_NAME} "${BUNDLE_DESCRIPTION}") #The bundle description.
 
     #headers
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" 1) #Library containing the activator (if any)
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "") #Library containing the activator (if any)
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_PRIVATE_LIBS" "") #List of private libs. 
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IMPORT_LIBS" "") #List of libs to import
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_EXPORT_LIBS" "") #list of libs to export
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_LIB_TARGETS" "") #list of all lib targets built within the project.
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_HEADERS" "") #Additional headers will be added (new line seperated) to the manifest
     ################################
@@ -380,20 +377,7 @@ function(add_celix_bundle)
 
 
     celix_bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_PRIVATE_LIBRARIES})
-    celix_bundle_export_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_EXPORT_LIBRARIES})
-    celix_bundle_import_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_IMPORT_LIBRARIES})
     celix_bundle_headers(${BUNDLE_TARGET_NAME} ${BUNDLE_HEADERS})
-endfunction()
-
-#[[
-Adds a export lib to the Celix bundle.
-
-NOTE: Currently export lib support is Celix is not complete and still experimental.
-]]
-function(celix_bundle_export_libs)
-    list(GET ARGN 0 BUNDLE)
-    list(REMOVE_AT ARGN 0)
-    celix_bundle_libs(${BUNDLE} "EXPORT" TRUE ${ARGN})
 endfunction()
 
 #[[
@@ -450,7 +434,7 @@ function(celix_bundle_libs)
     list(GET ARGN 0 ADD_TO_MANIFEST)
     list(REMOVE_AT ARGN 0)
 
-    #check if arg 0 is corrent
+    #check if arg 0 is correct
     _check_bundle(${BUNDLE})
     get_target_property(BUNDLE_DIR ${BUNDLE} "BUNDLE_CONTENT_DIR")
     get_target_property(BUNDLE_GEN_DIR ${BUNDLE} "BUNDLE_GEN_DIR")
@@ -461,6 +445,10 @@ function(celix_bundle_libs)
     get_target_property(LIB_TARGETS ${BUNDLE} "BUNDLE_LIB_TARGETS")
 
     foreach (LIB IN ITEMS ${ARGN})
+        if (TYPE STREQUAL "EXPORT" OR TYPE STREQUAL "IMPORT")
+            message(WARNING "Adding bundle lib ${LIB} with type ${TYPE}. Export and Import libs in Celix is yet supported.")
+        endif ()
+
         string(MAKE_C_IDENTIFIER ${LIB} LIBID)
         if (IS_ABSOLUTE ${LIB} AND EXISTS ${LIB})
             get_filename_component(LIB_NAME ${LIB} NAME)
@@ -522,37 +510,6 @@ function(celix_bundle_libs)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_${TYPE}_LIBS" "${LIBS}")
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_DEPEND_TARGETS" "${DEPS}")
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_LIB_TARGETS" "${LIB_TARGETS}")
-endfunction()
-
-#[[
-Adds a import lib to the Celix bundle.
-
-NOTE: Currently importing lib support is Celix is not complete and still experimental.
-]]
-function(celix_bundle_import_libs)
-    #0 is bundle TARGET
-    #2..n is import libs
-    list(GET ARGN 0 BUNDLE)
-    list(REMOVE_AT ARGN 0)
-
-    #check if arg 0 is correct
-    _check_bundle(${BUNDLE})
-
-    get_target_property(LIBS ${BUNDLE} "BUNDLE_IMPORT_LIBS")
-
-    foreach (LIB IN ITEMS ${ARGN})
-        message(WARNING "Bundle with import libs in Celix is not complete and still experimental.")
-        if (IS_ABSOLUTE ${LIB} AND EXISTS ${LIB})
-            list(APPEND LIBS ${LIB_NAME})
-        else ()
-            list(APPEND LIBS "$<TARGET_SONAME_FILE_NAME:${LIB}>")
-        endif ()
-
-        target_link_libraries(${BUNDLE} PRIVATE ${LIB})
-    endforeach ()
-
-
-    set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_IMPORT_LIBS" "${LIBS}")
 endfunction()
 
 #[[
@@ -750,13 +707,14 @@ celix_bundle_headers(<bundle_target>
 ]]
 function(celix_bundle_headers)
     #0 is bundle TARGET
-    #1..n is header name / header value
+    #1..n is header "key: value" pairs
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
 
     get_target_property(HEADERS ${BUNDLE} "BUNDLE_HEADERS")
 
     foreach (HEADER IN ITEMS ${ARGN})
+        _celix_convert_keyval_to_json(${HEADER} ":" HEADER)
         list(APPEND HEADERS "${HEADER}")
     endforeach ()
 
@@ -976,7 +934,8 @@ function(install_celix_bundle)
     if (JAR_COMMAND)
         install(CODE
                 "execute_process(
-                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} ${BUNDLE_GEN_DIR}/MANIFEST.MF -C ${BUNDLE_CONTENT_DIR} .
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json META-INF/MANIFEST.json
+                COMMAND ${JAR_COMMAND} ${CELIX_JAR_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} -C ${BUNDLE_CONTENT_DIR} .
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             )"
                 COMPONENT ${BUNDLE}
@@ -984,7 +943,7 @@ function(install_celix_bundle)
     elseif (ZIP_COMMAND)
         install(CODE
                 "execute_process(
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.MF META-INF/MANIFEST.MF
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.json META-INF/MANIFEST.json
                 COMMAND ${ZIP_COMMAND} ${CELIX_ZIP_COMMAND_ARGUMENTS} ${BUNDLE_FILE_INSTALL} . -i *
                 WORKING_DIRECTORY ${BUNDLE_CONTENT_DIR}
             )"

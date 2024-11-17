@@ -18,6 +18,6 @@
 All files in this directory are licensed to the Apache Software Foundation (as included above).
 Normally source/txt files should include this header but for templates this sometimes is not possible.
 The following templates do not include the header:
-* Manifest.in
+* MANIFEST.json.in
 
 This note is added to explicitly mention that the same licensing applies to these files as to any other having the header.  

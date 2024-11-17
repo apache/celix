@@ -25,8 +25,8 @@ if (FRAMEWORK)
     set(FRAMEWORK_SRC
             src/bundle.c src/bundle_archive.c src/celix_bundle_cache.c
             src/bundle_context.c src/bundle_revision.c
-            src/framework.c src/manifest.c
-            src/manifest_parser.c src/module.c
+            src/framework.c
+            src/module.c
             src/service_reference.c src/service_registration.c
             src/service_registry.c src/service_tracker.c src/service_tracker_customizer.c
             src/celix_log.c src/celix_launcher.c
@@ -38,6 +38,7 @@ if (FRAMEWORK)
             src/celix_framework_utils.c
             src/celix_scheduled_event.c
             src/celix_framework_bundle.c
+            src/celix_bundle_manifest.c
             )
     add_library(framework SHARED ${FRAMEWORK_SRC})
 
@@ -53,6 +54,7 @@ if (FRAMEWORK)
     target_include_directories(framework PRIVATE ${CMAKE_CURRENT_LIST_DIR}/include_deprecated)
     target_compile_options(framework PRIVATE -DUSE_FILE32API)
     target_compile_options(framework PRIVATE -Wno-deprecated-declarations) #note part of the api is deprecated, ignore this warning on own api
+    target_compile_options(framework PRIVATE -DCELIX_FRAMEWORK_VERSION="${CELIX_MAJOR}.${CELIX_MINOR}.${CELIX_MICRO}")
     if (NOT FRAMEWORK_CURLINIT)
         target_compile_definitions(framework PRIVATE CELIX_NO_CURLINIT)
     endif ()
@@ -68,6 +70,8 @@ if (FRAMEWORK)
     generate_export_header(framework
             BASE_NAME "CELIX_FRAMEWORK"
             EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/celix/gen/includes/framework/celix_framework_export.h")
+    configure_file("${CMAKE_CURRENT_LIST_DIR}/src/celix_framework_version.h.in"
+            "${CMAKE_BINARY_DIR}/celix/gen/includes/framework/celix_framework_version.h")
     target_include_directories(framework PUBLIC $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/celix/gen/includes/framework>)
     celix_deprecated_utils_headers(framework)
 

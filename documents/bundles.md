@@ -24,10 +24,10 @@ An Apache Celix Bundle contains a collection of shared libraries, configuration 
 an activation entry combined in a zip file. Bundles can be dynamically installed and started in an Apache Celix framework.
 
 ## The anatomy of a Celix Bundle
-Technically an Apache Celix Bundle is a zip file with the following content:
+Technically, an Apache Celix Bundle is a zip file with the following content:
 
-- META-INF/MANIFEST.MF: The required bundle manifest, containing information about the bundle (name, activator library etc)
-- Bundle shared libraries (so/dylib files): Optionally a bundle has 1 or more shared libraries.
+- META-INF/MANIFEST.json: The required bundle manifest, containing information about the bundle (name, activator library etc)
+- Bundle shared libraries (so/dylib files): Optionally, a bundle has 1 or more shared libraries.
   The bundle manifest configures which libraries will be loaded (private libs) and which - if any - library is used
   when activating the bundle.
 - Bundle resource files: A bundle can also contain additional resource files. 
@@ -36,8 +36,7 @@ Technically an Apache Celix Bundle is a zip file with the following content:
   Note that bundles can access other bundles resources files.
 
 If a `jar` command is available the Celix CMake commands will use that (instead of the `zip` command) to create bundle
-zip files so that the MANIFEST.MF is always the first entry in the zip file.
-
+zip files.
 
 ```bash
 #unpacking celix_shell_wui.zip bundle file from a cmake build `cmake-build-debug`.
@@ -52,7 +51,7 @@ unpacked_bundle_dir/resources/index.html
 unpacked_bundle_dir/resources/ansi_up.js
 unpacked_bundle_dir/resources/script.js
 unpacked_bundle_dir/META-INF
-unpacked_bundle_dir/META-INF/MANIFEST.MF
+unpacked_bundle_dir/META-INF/MANIFEST.json
 unpacked_bundle_dir/libcivetweb_shared.so #or dylib for OSX
 unpacked_bundle_dir/libshell_wui.1.so #or dylib for OSX    
 ```

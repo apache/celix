@@ -19,12 +19,14 @@ add_celix_bundle(simple_test_bundle1 NO_ACTIVATOR VERSION 1.0.0)
 celix_bundle_name(simple_test_bundle1 "Simple Test Bundle")
 celix_bundle_group(simple_test_bundle1 "test/group")
 celix_bundle_description(simple_test_bundle1 "Test Description")
+celix_bundle_headers(simple_test_bundle1 "Extra-Header1: value1" "Extra-Header2: value2")
+celix_bundle_headers(simple_test_bundle1 "Extra-Header3: value3")
 
 add_celix_bundle(dup_symbolic_name_bundle NO_ACTIVATOR VERSION 1.0.0 SYMBOLIC_NAME simple_test_bundle1)
 
 add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
 add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
-add_celix_bundle(bundle_with_exception SOURCES src/nop_activator.c VERSION 1.0.0)
+add_celix_bundle(bundle_with_exception SOURCES src/activator_with_exception.c VERSION 1.0.0)
 add_celix_bundle(bundle_with_bad_export NO_ACTIVATOR VERSION 1.0.0)
 celix_bundle_headers(bundle_with_bad_export "Export-Library: $<SEMICOLON>")
 add_celix_bundle(simple_cxx_bundle SOURCES src/HelloWorldCxxActivator.cc VERSION 1.0.0)
@@ -36,7 +38,7 @@ add_subdirectory(subdir) #simple_test_bundle4, simple_test_bundle5 and sublib
 add_celix_bundle(celix_err_test_bundle SOURCES src/activator_with_celix_err.c VERSION 1.0.0)
 add_celix_bundle(immediate_stop_bundle SOURCES src/activator_stop.c VERSION 1.0.0)
 
-add_celix_bundle(unresolvable_bundle SOURCES src/nop_activator.c VERSION 1.0.0)
+add_celix_bundle(unresolvable_bundle SOURCES src/activator_with_exception.c VERSION 1.0.0)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(POSTFIX ${CMAKE_DEBUG_POSTFIX})
 endif()
@@ -49,7 +51,6 @@ add_dependencies(unresolvable_bundle sublib)
 set(CELIX_FRAMEWORK_TEST_SOURCES
     src/CelixFrameworkTestSuite.cc
     src/CelixFrameworkUtilsTestSuite.cc
-    src/MultipleFrameworkTestSuite.cc
     src/CelixBundleContextBundlesTestSuite.cc
     src/CelixBundleContextServicesTestSuite.cc
     src/DependencyManagerTestSuite.cc

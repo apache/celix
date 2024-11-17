@@ -38,7 +38,7 @@
 #include "bundle_context.h"
 #include "celix_compiler.h"
 #include "celix_constants.h"
-#include "bundle.h"
+#include "celix_bundle.h"
 #include "remote_service_admin.h"
 #include "remote_constants.h"
 #include "filter.h"

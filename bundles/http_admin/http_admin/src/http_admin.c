@@ -29,8 +29,8 @@
 
 #include "civetweb.h"
 
-#include "celix_utils_api.h"
 #include "celix_compiler.h"
+#include "celix_threads.h"
 
 
 struct http_admin_manager {
