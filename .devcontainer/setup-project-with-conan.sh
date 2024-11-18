@@ -17,13 +17,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-BUILD_TYPE=${1:-Debug}
+mkdir build
 
-cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-      -DCMAKE_INSTALL_PREFIX=../celix-install \
-      -DBUILD_EXPERIMENTAL=ON \
-      -DENABLE_TESTING=ON \
-      -DRSA_JSON_RPC=ON \
-      -DRSA_SHM=ON \
-      -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON \
-      ..
+conan install . --build missing --profile debug \
+          --options celix/*:build_all=True --options celix/*:enable_address_sanitizer=True \
+          --options celix/*:enable_testing=True --options celix/*:enable_ccache=True \
+          --conf:build tools.cmake.cmaketoolchain:generator=Ninja \
+          --output-folder build

@@ -16,19 +16,21 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-#
-# Build a Celix dev container with all needed dependencies pre-installed.
 
-SCRIPT_LOCATION=$(realpath "$(dirname "${BASH_SOURCE[0]}")")
-CELIX_REPO_ROOT=$(realpath "${SCRIPT_LOCATION}/..")
+BUILD_TYPE=${1:-Debug}
+LC_BUILD_TYPE=$(echo ${BUILD_TYPE} | tr '[:upper:]' '[:lower:]')
 
-# Check which container engine is available.
-# Check for podman first, because the 'podman-docker' package might be installed providing a dummy 'docker' command.
-if command -v podman > /dev/null 2>&1; then
-    CONTAINER_ENGINE="podman"
-else
-    CONTAINER_ENGINE="docker"
-fi
+mkdir -p cmake-build-${LC_BUILD_TYPE}
 
-cd "${SCRIPT_LOCATION}"
-${CONTAINER_ENGINE} build -t apache/celix-dev:ubuntu-latest -f Containerfile.ubuntu .
+cmake -S . \
+      -G Ninja \
+      -B cmake-build-${LC_BUILD_TYPE} \
+      -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+      -DCMAKE_INSTALL_PREFIX=/tmp/celix-install \
+      -DENABLE_TESTING=ON \
+      -DENABLE_ADDRESS_SANITIZER=ON \
+      -DRSA_JSON_RPC=ON \
+      -DRSA_SHM=ON \
+      -DRSA_REMOTE_SERVICE_ADMIN_SHM_V2=ON
+
+cmake --build cmake-build-${LC_BUILD_TYPE} --parallel
