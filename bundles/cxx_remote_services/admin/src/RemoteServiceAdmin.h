@@ -28,6 +28,11 @@
 #include <version>
 #endif
 
+#  if defined(__cpp_lib_memory_resource) \
+    && ((defined(__MAC_OS_X_VERSION_MIN_REQUIRED)  && __MAC_OS_X_VERSION_MIN_REQUIRED  < 140000) \
+     || (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED < 170000))
+#   undef __cpp_lib_memory_resource // Only supported on macOS 14 and iOS 17
+#  endif
 #if __cpp_lib_memory_resource
 #include <memory_resource>
 #endif
