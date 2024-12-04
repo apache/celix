@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
       - name: Install build dependencies
         run: |
           sudo pip install -U conan
@@ -41,7 +41,7 @@ jobs:
           sed -i 's/compiler.cppstd=gnu14/compiler.cppstd=gnu17/g' `conan profile path default`
       - name: Conan Cache
         id: cache-conan
-        uses: actions/cache@v3
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c #v3
         env:
           cache-name: cache-conan2-modules
         with:
@@ -53,7 +53,7 @@ jobs:
         run: |
           echo timestamp=`date +"%Y-%m-%d-%H;%M;%S"` >> $GITHUB_OUTPUT
       - name: ccache Cache
-        uses: actions/cache@v3
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c #v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-ccache-${{ matrix.compiler[0] }}-${{ matrix.type }}-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
@@ -80,7 +80,7 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3.3.0
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
       - name: Install build dependencies
         run: |
           brew install python ninja
@@ -90,7 +90,7 @@ jobs:
           conan profile detect -f
       - name: Conan Cache
         id: cache-conan
-        uses: actions/cache@v3
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c #v3
         env:
           cache-name: cache-conan2-modules
         with:
@@ -102,7 +102,7 @@ jobs:
         run: |
           echo timestamp=`date +"%Y-%m-%d-%H;%M;%S"` >> $GITHUB_OUTPUT
       - name: ccache Cache
-        uses: actions/cache@v3
+        uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c #v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-ccache-Release-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
@@ -110,7 +110,7 @@ jobs:
             ${{ runner.os }}-ccache-Release-
       - name: Create Celix
         run: |
-          conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix/*:build_all=True  -o celix/*:enable_ccache=True -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -tf examples/conan_test_package_v2 -o celix/*:celix_cxx17=True -o celix/*:celix_install_deprecated_api=True
+          conan create . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix/*:build_all=True  -o celix/*:enable_ccache=True -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -tf examples/conan_test_package_v2 -o celix/*:celix_cxx17=True -o celix/*:celix_install_deprecated_api=True -o celix/*:enable_address_sanitizer=True
       - name: Dependency Deduction Test
         run: |
           conan inspect .  | awk 'BEGIN { FS="[\t:]+"; output=0 } /build/ && !/build_all/ && !/build_rsa_remote_service_admin_shm_v2/ && !/build_rsa_discovery_zeroconf/ { if(output) print $1} /^options/ {output=1} /^options_definitions/ {output=0}' | while read option; do conan build . -c tools.cmake.cmaketoolchain:generator=Ninja -b missing -o celix/*:${option}=True  -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -of  ${option}_dir -o celix/*:celix_cxx17=True -o celix/*:enable_ccache=True -o celix/*:celix_install_deprecated_api=True || exit 1; done
