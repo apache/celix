@@ -76,7 +76,7 @@ jobs:
           conan remove -c celix/* 
 
   mac-build:
-    runs-on: macOS-latest
+    runs-on: macOS-13
     timeout-minutes: 120
     steps:
       - name: Checkout source code
