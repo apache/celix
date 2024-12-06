@@ -30,5 +30,9 @@ target_link_options(properties_ei INTERFACE
         LINKER:--wrap,celix_properties_save
         LINKER:--wrap,celix_properties_saveToStream
         LINKER:--wrap,celix_properties_load
+        LINKER:--wrap,celix_properties_setBool
+        LINKER:--wrap,celix_properties_getAsStringArrayList
+        LINKER:--wrap,celix_properties_saveToString
+        LINKER:--wrap,celix_properties_loadFromString
         )
 add_library(Celix::properties_ei ALIAS properties_ei)

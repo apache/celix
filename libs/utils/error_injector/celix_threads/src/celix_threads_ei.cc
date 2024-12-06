@@ -42,6 +42,13 @@ __wrap_celixThread_create(celix_thread_t *__new_thread, celix_thread_attr_t *__a
     return __real_celixThread_create(__new_thread, __attr, __func, __data);
 }
 
+celix_status_t __real_celixThreadCondition_signal(celix_thread_cond_t* cond);
+CELIX_EI_DEFINE(celixThreadCondition_signal, celix_status_t)
+celix_status_t __wrap_celixThreadCondition_signal(celix_thread_cond_t* cond) {
+    CELIX_EI_IMPL(celixThreadCondition_signal);
+    return __real_celixThreadCondition_signal(cond);
+}
+
 celix_status_t __real_celixThreadCondition_init(celix_thread_cond_t *__condition, celix_thread_condattr_t *__attr);
 CELIX_EI_DEFINE(celixThreadCondition_init, celix_status_t)
 celix_status_t __wrap_celixThreadCondition_init(celix_thread_cond_t *__condition, celix_thread_condattr_t *__attr) {

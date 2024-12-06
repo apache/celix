@@ -1,0 +1,60 @@
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+@startuml
+'https://plantuml.com/sequence-diagram
+
+box FrameworkA
+participant "Event Admin" as EventAdmin1
+participant "Remote Provider MQTT" as RemoteProviderMQTT1
+end box
+
+participant "MQTT Broker" as MqttBroker
+
+box FrameworkB
+participant "Remote Provider MQTT" as RemoteProviderMQTT2
+participant "Event Admin" as EventAdmin2
+end box
+
+==Initialization==
+
+RemoteProviderMQTT1 -> MqttBroker: Subscribe control messages
+RemoteProviderMQTT1 -> MqttBroker: Use "celix/EventAdminMqtt/HandlerInfo/query"\n message to request all remote handler information
+
+==Publish event==
+
+-\EventAdmin1:postEvent
+alt It is remote-enable event and has a remote handler
+    EventAdmin1->RemoteProviderMQTT1:postEvent
+    RemoteProviderMQTT1->MqttBroker:Publish event
+    MqttBroker->RemoteProviderMQTT2:Forward event
+    RemoteProviderMQTT2->EventAdmin2:postEvent
+    EventAdmin2 -> EventAdmin2:Forward event to local handlers
+end alt
+
+-\EventAdmin1:sendEvent
+alt It is remote-enable event and has a remote handler
+    EventAdmin1->RemoteProviderMQTT1:sendEvent
+    RemoteProviderMQTT1->MqttBroker:Publish event
+    MqttBroker->RemoteProviderMQTT2:Forward event to subscriber
+    RemoteProviderMQTT2->EventAdmin2:sendEvent\n(It is called in thread pool)
+    EventAdmin2 -> EventAdmin2:Forward event to local handlers
+    EventAdmin2 --> RemoteProviderMQTT2:Return form sendEvent
+    RemoteProviderMQTT2 --> MqttBroker: Publish the response message\n of the synchronous event
+    MqttBroker --> RemoteProviderMQTT1: Forward messages to subscriber
+    RemoteProviderMQTT1 --> EventAdmin1: Return from sendEvent
+end alt
+
+@enduml

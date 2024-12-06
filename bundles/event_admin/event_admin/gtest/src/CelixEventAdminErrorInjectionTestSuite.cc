@@ -16,6 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+#include <cerrno>
+
 #include "CelixEventAdminTestSuiteBaseClass.h"
 #include "celix_event_admin.h"
 #include "celix_event.h"
@@ -27,6 +29,8 @@
 #include "celix_long_hash_map_ei.h"
 #include "celix_threads_ei.h"
 #include "celix_utils_ei.h"
+#include "celix_properties_ei.h"
+#include "celix_bundle_context_ei.h"
 #include "malloc_ei.h"
 #include <gtest/gtest.h>
 
@@ -51,6 +55,11 @@ public:
         celix_ei_expect_celix_arrayList_addLong(nullptr, 0, 0);
         celix_ei_expect_celix_elapsedtime(nullptr, 0, 0);
         celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
+        celix_ei_expect_celix_properties_copy(nullptr, 0, nullptr);
+        celix_ei_expect_celix_properties_set(nullptr, 0, 0);
+        celix_ei_expect_celix_properties_setLong(nullptr, 0, 0);
+        celix_ei_expect_celix_bundleContext_getProperty(nullptr, 0, nullptr);
+        celix_ei_expect_celix_stringHashMap_createWithOptions(nullptr, 0, nullptr);
     }
 };
 
@@ -89,6 +98,12 @@ TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToCreateLogHelperForEventAd
     EXPECT_EQ(nullptr, ea);
 }
 
+TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToGetFrameworkUUIDForEventAdminTest) {
+    celix_ei_expect_celix_bundleContext_getProperty((void*)&celix_eventAdmin_create, 0, nullptr);
+    auto ea = celix_eventAdmin_create(ctx.get());
+    EXPECT_EQ(nullptr, ea);
+}
+
 TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToCreateLockForEventAdminTest) {
     celix_ei_expect_celixThreadRwlock_create((void*)&celix_eventAdmin_create, 0, CELIX_ENOMEM);
     auto ea = celix_eventAdmin_create(ctx.get());
@@ -115,6 +130,18 @@ TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToCreateChannelsMatchingPre
 
 TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToCreateEventHandlersMapForEventAdminTest) {
     celix_ei_expect_celix_longHashMap_create((void*)&celix_eventAdmin_create, 0, nullptr);
+    auto ea = celix_eventAdmin_create(ctx.get());
+    EXPECT_EQ(nullptr, ea);
+}
+
+TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToCreateEventSeqIdCacheForEventAdminTest) {
+    celix_ei_expect_celix_stringHashMap_createWithOptions((void*)&celix_eventAdmin_create, 0, nullptr);
+    auto ea = celix_eventAdmin_create(ctx.get());
+    EXPECT_EQ(nullptr, ea);
+}
+
+TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToCreateRemoteProviderMapForEventAdminTest) {
+    celix_ei_expect_celix_longHashMap_create((void*)&celix_eventAdmin_create, 0, nullptr, 2);
     auto ea = celix_eventAdmin_create(ctx.get());
     EXPECT_EQ(nullptr, ea);
 }
@@ -339,4 +366,128 @@ TEST_F(CelixEventAdminErrorInjectionTestSuite, PostEventToBlacklistHandlerTest) 
         EXPECT_STRNE("org/celix/test1", topic);
         return CELIX_SUCCESS;
     });
+}
+
+TEST_F(CelixEventAdminErrorInjectionTestSuite, RetrieveEventSeqIdCacheTest) {
+    int receivedEventCount = 0;
+    TestPublishEvent("org/celix/test", nullptr, [](celix_event_admin_t *ea) {
+        for (int i = 0; i < 32; i++) {
+            celix_autoptr(celix_properties_t) eventProps = celix_properties_create();
+            std::string uuid = "9748f803-5766-49f1-a2e9-" + std::to_string(i);
+            celix_properties_set(eventProps, CELIX_EVENT_REMOTE_FRAMEWORK_UUID, uuid.c_str());
+            celix_properties_setLong(eventProps, CELIX_EVENT_REMOTE_SEQ_ID, 1);
+            auto status = celix_eventAdmin_sendEvent(ea, "org/celix/test", eventProps);
+            EXPECT_EQ(CELIX_SUCCESS, status);
+        }
+        celix_ei_expect_celix_elapsedtime(CELIX_EI_UNKNOWN_CALLER, 0, 60*60+1);
+        celix_autoptr(celix_properties_t) eventProps = celix_properties_create();
+        celix_properties_set(eventProps, CELIX_EVENT_REMOTE_FRAMEWORK_UUID, "9748f803-5766-49f1-a2e9-9bbb522e874b");
+        celix_properties_setLong(eventProps, CELIX_EVENT_REMOTE_SEQ_ID, 1);
+        auto status = celix_eventAdmin_sendEvent(ea, "org/celix/test", eventProps);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+    }, [&receivedEventCount](void*, const char*, const celix_properties_t*) {
+        receivedEventCount ++;
+        return CELIX_SUCCESS;
+    });
+    EXPECT_EQ(33, receivedEventCount);
+}
+
+TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToCopyRemoteEnableEventPropertiesTest) {
+    celix_event_remote_provider_service_t remoteProviderService;
+    remoteProviderService.handle = nullptr;
+    remoteProviderService.sendEvent = [](void*, const char*, const celix_properties_t*) {
+        ADD_FAILURE() << "Should not be called";
+        return CELIX_SUCCESS;
+    };
+    remoteProviderService.postEvent = [](void*, const char*, const celix_properties_t*) {
+        ADD_FAILURE() << "Should not be called";
+        return CELIX_SUCCESS;
+    };
+    TestPublishEventToRemote([](celix_event_admin_t *ea) {
+        celix_ei_expect_celix_properties_copy((void*)&celix_eventAdmin_sendEvent, 1, nullptr);
+        celix_autoptr(celix_properties_t) eventProps = celix_properties_create();
+        celix_properties_setBool(eventProps, CELIX_EVENT_REMOTE_ENABLE, true);
+        auto status = celix_eventAdmin_sendEvent(ea, "org/celix/test", eventProps);
+        EXPECT_EQ(ENOMEM, status);
+    }, &remoteProviderService);
+}
+
+TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToSetRemoteFrameworkUUIDToRemoteEnableEventTest) {
+    celix_event_remote_provider_service_t remoteProviderService;
+    remoteProviderService.handle = nullptr;
+    remoteProviderService.sendEvent = [](void*, const char*, const celix_properties_t*) {
+        ADD_FAILURE() << "Should not be called";
+        return CELIX_SUCCESS;
+    };
+    remoteProviderService.postEvent = [](void*, const char*, const celix_properties_t*) {
+        ADD_FAILURE() << "Should not be called";
+        return CELIX_SUCCESS;
+    };
+    TestPublishEventToRemote([](celix_event_admin_t *ea) {
+        celix_ei_expect_celix_properties_set((void*)&celix_eventAdmin_sendEvent, 1, ENOMEM);
+        celix_autoptr(celix_properties_t) eventProps = celix_properties_create();
+        celix_properties_setBool(eventProps, CELIX_EVENT_REMOTE_ENABLE, true);
+        auto status = celix_eventAdmin_sendEvent(ea, "org/celix/test", eventProps);
+        EXPECT_EQ(ENOMEM, status);
+    }, &remoteProviderService);
+}
+
+TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToSetSeqIdToRemoteEnableEventTest) {
+    celix_event_remote_provider_service_t remoteProviderService;
+    remoteProviderService.handle = nullptr;
+    remoteProviderService.sendEvent = [](void*, const char*, const celix_properties_t*) {
+        ADD_FAILURE() << "Should not be called";
+        return CELIX_SUCCESS;
+    };
+    remoteProviderService.postEvent = [](void*, const char*, const celix_properties_t*) {
+        ADD_FAILURE() << "Should not be called";
+        return CELIX_SUCCESS;
+    };
+    TestPublishEventToRemote([](celix_event_admin_t *ea) {
+        celix_ei_expect_celix_properties_setLong((void*)&celix_eventAdmin_sendEvent, 1, ENOMEM);
+        celix_autoptr(celix_properties_t) eventProps = celix_properties_create();
+        celix_properties_setBool(eventProps, CELIX_EVENT_REMOTE_ENABLE, true);
+        auto status = celix_eventAdmin_sendEvent(ea, "org/celix/test", eventProps);
+        EXPECT_EQ(ENOMEM, status);
+    }, &remoteProviderService);
+}
+
+TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedAllocMemoryForSeqIdCacheWhenSendRemoteEventTest) {
+    int receivedEventCount = 0;
+    TestPublishEvent("org/celix/test", nullptr, [](celix_event_admin_t *ea) {
+        celix_ei_expect_calloc((void*)&celix_eventAdmin_sendEvent, 2, nullptr);
+        celix_autoptr(celix_properties_t) eventProps = celix_properties_create();
+        celix_properties_set(eventProps, CELIX_EVENT_REMOTE_FRAMEWORK_UUID, "9748f803-5766-49f1-a2e9-9bbb522e874a");
+        celix_properties_setLong(eventProps, CELIX_EVENT_REMOTE_SEQ_ID, 1);
+        auto status = celix_eventAdmin_sendEvent(ea, "org/celix/test", eventProps);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+
+        celix_properties_setLong(eventProps, CELIX_EVENT_REMOTE_SEQ_ID, 1);
+        status = celix_eventAdmin_sendEvent(ea, "org/celix/test", eventProps);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+    }, [&receivedEventCount](void*, const char*, const celix_properties_t*) {
+        receivedEventCount ++;
+        return CELIX_SUCCESS;
+    });
+    EXPECT_EQ(2, receivedEventCount);
+}
+
+TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedAddSeqIdCacheWhenSendRemoteEventTest) {
+    int receivedEventCount = 0;
+    TestPublishEvent("org/celix/test", nullptr, [](celix_event_admin_t *ea) {
+        celix_ei_expect_celix_stringHashMap_put((void*)&celix_eventAdmin_sendEvent, 2, ENOMEM);
+        celix_autoptr(celix_properties_t) eventProps = celix_properties_create();
+        celix_properties_set(eventProps, CELIX_EVENT_REMOTE_FRAMEWORK_UUID, "9748f803-5766-49f1-a2e9-9bbb522e874a");
+        celix_properties_setLong(eventProps, CELIX_EVENT_REMOTE_SEQ_ID, 1);
+        auto status = celix_eventAdmin_sendEvent(ea, "org/celix/test", eventProps);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+
+        celix_properties_setLong(eventProps, CELIX_EVENT_REMOTE_SEQ_ID, 1);
+        status = celix_eventAdmin_sendEvent(ea, "org/celix/test", eventProps);
+        EXPECT_EQ(CELIX_SUCCESS, status);
+    }, [&receivedEventCount](void*, const char*, const celix_properties_t*) {
+        receivedEventCount ++;
+        return CELIX_SUCCESS;
+    });
+    EXPECT_EQ(2, receivedEventCount);
 }

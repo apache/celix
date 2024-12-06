@@ -57,6 +57,13 @@ void *__wrap_celix_arrayList_createLongArray() {
     return __real_celix_arrayList_createLongArray();
 }
 
+celix_array_list_t* __real_celix_arrayList_createPointerArray();
+CELIX_EI_DEFINE(celix_arrayList_createPointerArray, celix_array_list_t*)
+celix_array_list_t* __wrap_celix_arrayList_createPointerArray() {
+    CELIX_EI_IMPL(celix_arrayList_createPointerArray);
+    return __real_celix_arrayList_createPointerArray();
+}
+
 celix_status_t __real_celix_arrayList_add(celix_array_list_t* list, void* value);
 CELIX_EI_DEFINE(celix_arrayList_add, celix_status_t)
 celix_status_t __wrap_celix_arrayList_add(celix_array_list_t* list, void* value) {

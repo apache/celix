@@ -106,6 +106,52 @@ extern "C" {
  */
 #define CELIX_EVENT_TIMESTAMP "timestamp"
 
+/**
+ * @brief It is a property of event to indicate the event is a remote event. The type of the value for this event property is Boolean.
+ *
+ * If the value is true, the event will be delivered to remote
+ * event handlers and local event handlers, otherwise, the event will be only delivered to local event handlers.
+ */
+#define CELIX_EVENT_REMOTE_ENABLE "celix.event.remote.enable"
+
+/**
+ * @brief The QoS of the remote event. The type of the value for this event property is integer. It indicates the quality of service of the remote event. If the value is not set, the remote provider should use a proper default value.
+ *
+ * The value must be one of the following:
+ * - 0: At most once delivery
+ * - 1: At least once delivery
+ * - 2: Exactly once delivery
+ *
+ * The value of QOS will not impact whether `sendEvent` method of event admin will return successfully or not.
+ * But it will impact the remote provider's behavior. For example, if the remote provider has not established a connection,
+ * it maybe immediately return ENOTCONN if the QOS value is 0.(The event admin will not forward the error to the caller of `sendEvent` method.)
+ * If the QOS value is greater than 0, it will wait until the connection is established before sending.
+ */
+#define CELIX_EVENT_REMOTE_QOS "celix.event.remote.qos"
+
+/**
+ * @brief The expiry interval of the remote event in seconds. The type of the value for this event property is integer.
+ * If the value is not set, the remote provider should use a proper default value.
+ */
+#define CELIX_EVENT_REMOTE_EXPIRY_INTERVAL "celix.event.remote.expiryInterval"
+
+/**
+ * @brief The framework UUID of remote event producer. The type of the value for this event property is String.
+ *
+ * It is set by the event admin, and only readable for user. Local event does not contain this property.
+ *
+ */
+#define CELIX_EVENT_REMOTE_FRAMEWORK_UUID "celix.event.remote.framework.uuid"
+
+/**
+ * @brief The sequence id of the remote event. The type of the value for this event property is Long.
+ *
+ * It is set by the event admin, and only readable for user. Local event does not contain this property.
+ *
+ * It is used to filter out duplicate events in the event admin.
+ */
+#define CELIX_EVENT_REMOTE_SEQ_ID "celix.event.remote.seqId"
+
 //end event constants
 
 #ifdef __cplusplus
