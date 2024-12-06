@@ -58,23 +58,23 @@ typedef struct celix_earpm_event_handler {
     char* filter;
     celix_earpm_qos_e qos;
     long serviceId;
-}celix_earpm_event_handler_t;
+} celix_earpm_event_handler_t;
 
 typedef struct celix_earpm_event_subscription {
     celix_array_list_t* handlerServiceIdList;
     celix_earpm_qos_e curQos;
-}celix_earpm_event_subscription_t;
+} celix_earpm_event_subscription_t;
 
 typedef struct celix_earpm_remote_handler_info {
     celix_array_list_t* topics;
     celix_filter_t* filter;
-}celix_earpm_remote_handler_info_t;
+} celix_earpm_remote_handler_info_t;
 
 typedef struct celix_earpm_remote_framework_info {
     celix_long_hash_map_t* handlerInfoMap;//key = serviceId, value = celix_earpm_remote_handler_info_t*
     celix_long_hash_map_t* eventAckSeqNrMap;//key = seqNr, value = celix_array_list_t* of serviceIds
     int continuousNoAckCount;
-}celix_earpm_remote_framework_info_t;
+} celix_earpm_remote_framework_info_t;
 
 struct celix_earpm_sync_event_correlation_data {
     long ackSeqNr;

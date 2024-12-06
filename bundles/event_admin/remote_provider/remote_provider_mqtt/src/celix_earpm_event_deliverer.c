@@ -34,7 +34,7 @@ typedef struct celix_earpm_deliverer_event_entry {
     char* topic;
     celix_earpm_deliver_done_callback done;
     void* doneHandle;
-}celix_earpm_deliverer_event_entry_t;
+} celix_earpm_deliverer_event_entry_t;
 
 
 struct celix_earpm_event_deliverer {

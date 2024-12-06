@@ -59,7 +59,7 @@ typedef struct celix_earpm_client_broker_info {
     int port;
     char* bindInterface;
     int family;
-}celix_earpm_client_broker_info_t;
+} celix_earpm_client_broker_info_t;
 
 typedef struct celix_earpm_client_msg {
     struct celix_ref ref;
@@ -74,7 +74,7 @@ typedef struct celix_earpm_client_msg {
     celix_status_t error;
     bool processDone;
     struct celix_earpm_client_msg_pool* msgPool;
-}celix_earpm_client_msg_t;
+} celix_earpm_client_msg_t;
 
 typedef TAILQ_HEAD(celix_earpm_client_message_list, celix_earpm_client_msg) celix_earpm_client_message_list_t;
 
@@ -83,7 +83,7 @@ typedef struct celix_earpm_client_msg_pool {
     size_t usedSize;
     celix_earpm_client_message_list_t freeMsgList;
     celix_earpm_client_msg_t* msgBlocks;
-}celix_earpm_client_msg_pool_t;
+} celix_earpm_client_msg_pool_t;
 
 struct celix_earpm_client {
     celix_bundle_context_t* ctx;

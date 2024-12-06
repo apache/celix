@@ -49,7 +49,7 @@ typedef struct celix_earpm_client_create_options {
     void* callbackHandle;
     celix_earpm_client_receive_msg_fp receiveMsgCallback;
     celix_earpm_client_connected_fp connectedCallback;
-}celix_earpm_client_create_options_t;
+} celix_earpm_client_create_options_t;
 
 typedef enum celix_earpm_client_message_priority {
     //The priority message will be sent after all middle-priority messages,

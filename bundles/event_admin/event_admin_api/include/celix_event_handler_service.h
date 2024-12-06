@@ -58,7 +58,7 @@ typedef struct celix_event_handler_service {
      * @see CELIX_EVENT_TOPIC, CELIX_EVENT_FILTER, CELIX_EVENT_DELIVERY
      */
     celix_status_t (*handleEvent)(void* handle, const char* topic, const celix_properties_t* properties);
-}celix_event_handler_service_t;
+} celix_event_handler_service_t;
 
 #ifdef __cplusplus
 }

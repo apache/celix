@@ -44,6 +44,6 @@ frame "Framework of subscriber" {
     Subscriber -down- EventHandlerService
 }
 
-RemoteProvider1 <.down.> RemoteProvider2:IPC
+RemoteProvider1 <.down.> RemoteProvider2:IPC or Network
 
 @enduml

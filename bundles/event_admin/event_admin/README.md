@@ -38,9 +38,10 @@ event admin pubsub model, and events are delivered asynchronously.
 
 ### Properties/Configuration
 
-| **Properties**                         | **Type** | **Description**                                               | **Default value** |
-|----------------------------------------|----------|---------------------------------------------------------------|-----|
-| **CELIX_EVENT_ADMIN_HANDLER_THREADS**  | long     | The number of event handler threads. Its maximum value is 20. | 5   |
+| **Properties**                                           | **Type** | **Description**                                               | **Default value** |
+|----------------------------------------------------------|----------|---------------------------------------------------------------|-------------------|
+| **CELIX_EVENT_ADMIN_HANDLER_THREADS**                    | long     | The number of event handler threads. Its maximum value is 20. | 5                 |
+| **CELIX_EVENT_ADMIN_EVENT_SEQID_CACHE_CLEANUP_INTERVAL** | long     | The event sequence id cache will be cleaned up when it has not been used for this interval. The unit is seconds. The event sequence id cache is used to prevent duplicate events. | (60*60)s          |
 
 ### Software Design
 

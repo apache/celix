@@ -31,7 +31,7 @@ EventAdmin1->EventAdmin1:Delivery event to local event handlers
 alt "celix.event.remote.enable" is true
     EventAdmin1->EventAdmin1:Unset the "celix.event.remote.enable" property
     EventAdmin1->RemoteProvider1:postEvent/sendEvent
-    RemoteProvider1->RemoteProvider2:IPC
+    RemoteProvider1->RemoteProvider2:IPC or Network
     RemoteProvider2->EventAdmin2:postEvent/sendEvent
     EventAdmin2 -> EventAdmin2:Delivery event to event handlers in FrameworkB
 end alt

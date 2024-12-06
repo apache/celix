@@ -121,6 +121,11 @@ extern "C" {
  * - 0: At most once delivery
  * - 1: At least once delivery
  * - 2: Exactly once delivery
+ *
+ * The value of QOS will not impact whether `sendEvent` method of event admin will return successfully or not.
+ * But it will impact the remote provider's behavior. For example, if the remote provider has not established a connection,
+ * it maybe immediately return ENOTCONN if the QOS value is 0.(The event admin will not forward the error to the caller of `sendEvent` method.)
+ * If the QOS value is greater than 0, it will wait until the connection is established before sending.
  */
 #define CELIX_EVENT_REMOTE_QOS "celix.event.remote.qos"
 

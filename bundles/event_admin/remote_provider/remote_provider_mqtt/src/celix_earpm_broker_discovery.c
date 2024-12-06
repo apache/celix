@@ -49,14 +49,14 @@ typedef struct celix_earpm_broker_listener {
     uint16_t port;
     char* bindInterface;
     int family;
-}celix_earpm_broker_listener_t;
+} celix_earpm_broker_listener_t;
 
 typedef struct celix_earpm_endpoint_listener_entry {
     endpoint_listener_t* listener;
     const celix_properties_t*  properties;
     long serviceId;
     celix_filter_t* filter;
-}celix_earpm_endpoint_listener_entry_t;
+} celix_earpm_endpoint_listener_entry_t;
 
 struct celix_earpm_broker_discovery {
     celix_bundle_context_t* ctx;
