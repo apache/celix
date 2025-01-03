@@ -47,3 +47,8 @@ celix_subproject(ERROR_INJECTOR_JANSSON "Option to enable building the jansson e
 if (ERROR_INJECTOR_JANSSON)
     add_subdirectory(jansson)
 endif ()
+
+celix_subproject(ERROR_INJECTOR_MOSQUITTO "Option to enable building the mosquitto error injector" OFF)
+if (ERROR_INJECTOR_MOSQUITTO)
+    add_subdirectory(mosquitto)
+endif ()

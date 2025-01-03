@@ -34,6 +34,8 @@ CELIX_EI_DECLARE(celix_arrayList_createStringArray, celix_array_list_t*);
 
 CELIX_EI_DECLARE(celix_arrayList_createLongArray, celix_array_list_t*);
 
+CELIX_EI_DECLARE(celix_arrayList_createPointerArray, celix_array_list_t*);
+
 CELIX_EI_DECLARE(celix_arrayList_copy, celix_array_list_t*);
 
 CELIX_EI_DECLARE(celix_arrayList_add, celix_status_t);

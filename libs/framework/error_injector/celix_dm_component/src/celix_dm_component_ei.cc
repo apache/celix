@@ -52,8 +52,9 @@ celix_status_t __wrap_celix_dmServiceDependency_setService(celix_dm_service_depe
 celix_status_t __real_celix_dmComponent_addInterface(celix_dm_component_t* component, const char* serviceName, const char* serviceVersion, const void* service, celix_properties_t* properties);
 CELIX_EI_DEFINE(celix_dmComponent_addInterface, celix_status_t)
 celix_status_t __wrap_celix_dmComponent_addInterface(celix_dm_component_t* component, const char* serviceName, const char* serviceVersion, const void* service, celix_properties_t* properties) {
+    celix_autoptr(celix_properties_t) autoProps = properties;
     CELIX_EI_IMPL(celix_dmComponent_addInterface);
-    return __real_celix_dmComponent_addInterface(component, serviceName, serviceVersion, service, properties);
+    return __real_celix_dmComponent_addInterface(component, serviceName, serviceVersion, service, celix_steal_ptr(autoProps));
 }
 
 celix_status_t __real_celix_dependencyManager_addAsync(celix_dependency_manager_t *manager, celix_dm_component_t *component);
