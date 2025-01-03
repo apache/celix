@@ -22,6 +22,7 @@
 #include "rsa_shm_constants.h"
 #include "rsa_shm_export_registration.h"
 #include "rsa_shm_import_registration.h"
+#include "bundle_context.h"
 #include "rsa_rpc_factory.h"
 #include "rsa_request_sender_service.h"
 #include "endpoint_description.h"

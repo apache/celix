@@ -50,7 +50,7 @@ public:
         celix_properties_setLong(properties, CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE,  256); //ensure that the floodEventLoopTest overflows the static event queue size
 
         fw = celix_frameworkFactory_createFramework(properties);
-        ctx = framework_getContext(fw);
+        ctx = celix_framework_getFrameworkContext(fw);
 
         celix_err_resetErrors();
     }

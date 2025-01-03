@@ -20,8 +20,8 @@
 #ifndef BUNDLE_PRIVATE_H_
 #define BUNDLE_PRIVATE_H_
 
-#include "bundle.h"
 #include "celix_bundle.h"
+#include "celix_module.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,10 +29,6 @@ extern "C" {
 
 struct celix_bundle {
     bundle_context_pt context;
-    char *symbolicName;
-    char *name;
-    char *group;
-    char *description;
     struct celix_bundle_activator *activator;
     bundle_state_e state;
     void *handle;
@@ -41,6 +37,10 @@ struct celix_bundle {
 
     celix_framework_t *framework;
 };
+
+typedef struct celix_bundle_activator celix_bundle_activator_t;
+
+
 
 /**
  * Creates a bundle from the given archive.
@@ -66,6 +66,43 @@ bundle_archive_t *celix_bundle_getArchive(const celix_bundle_t *bundle);
  * @return CELIX_SUCCESS if the bundle is destroyed successfully.
  */
 celix_status_t bundle_destroy(celix_bundle_t *bundle);
+
+/**
+ * @brief Get the bundle context.
+ */
+celix_bundle_context_t* celix_bundle_getContext(const celix_bundle_t *bundle);
+
+/**
+ * @brief Set the bundle context.
+ */
+void celix_bundle_setContext(celix_bundle_t *bundle, celix_bundle_context_t *context);
+
+
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_isSystemBundle(const celix_bundle_t *bundle, bool *systemBundle);
+
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getArchive(const celix_bundle_t *bundle, bundle_archive_pt *archive);
+
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getCurrentModule(const celix_bundle_t *bundle, celix_module_t** module);
+
+CELIX_FRAMEWORK_DEPRECATED void *bundle_getHandle(celix_bundle_t *bundle);
+
+CELIX_FRAMEWORK_DEPRECATED void bundle_setHandle(celix_bundle_t *bundle, void *handle);
+
+CELIX_FRAMEWORK_DEPRECATED celix_bundle_activator_t *bundle_getActivator(const celix_bundle_t *bundle);
+
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_setActivator(celix_bundle_t *bundle, celix_bundle_activator_t *activator);
+
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_setState(celix_bundle_t *bundle, bundle_state_e state);
+
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_addModule(celix_bundle_t *bundle, celix_module_t* celix_module);
+
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getState(const celix_bundle_t *bundle, bundle_state_e *state);
+
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getBundleId(const celix_bundle_t *bundle, long *id);
+
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getFramework(const celix_bundle_t *bundle, celix_framework_t **framework);
+
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getBundleLocation(const celix_bundle_t *bundle, const char **location);
 
 #ifdef __cplusplus
 }

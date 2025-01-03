@@ -157,6 +157,11 @@ static celix_status_t celix_utils_convertStringToArrayList(const char* val,
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
+    if (celix_utils_isStringNullOrEmpty(val)) {
+        *listOut = celix_steal_ptr(list);
+        return CELIX_SUCCESS; // empty string -> empty list
+    }
+
     char* buf = NULL;
     size_t bufSize = 0;
     FILE* entryStream = NULL;

@@ -17,21 +17,22 @@
  * under the License.
  */
 
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "celix_utils.h"
-#include "utils.h"
-#include "module.h"
-#include "manifest_parser.h"
-#include "celix_libloader.h"
-#include "celix_framework.h"
-#include "celix_constants.h"
-#include "framework_private.h"
 #include "bundle_archive_private.h"
-
+#include "celix_bundle_manifest.h"
+#include "celix_constants.h"
+#include "celix_framework.h"
+#include "celix_libloader.h"
+#include "celix_module.h"
+#include "celix_utils.h"
+#include "framework_private.h"
+#include "utils.h"
+#include "celix_bundle_private.h"
 
 #ifdef __linux__
 #define CELIX_LIBRARY_PREFIX "lib"
@@ -44,181 +45,119 @@
 #define CELIX_LIBRARY_EXTENSION = ".dll";
 #endif
 
-struct module {
+struct celix_module {
     celix_framework_t* fw;
-
-    celix_version_t* version;
-    char* symbolicName;
-    char* group;
-    char* name;
-    char* description;
     bool resolved;
-
-    char* id;
-
     celix_bundle_t* bundle;
-
-    celix_thread_mutex_t handlesLock; // protects libraryHandles and bundleActivatorHandle
+    celix_thread_mutex_t handlesLock; // protects libraryHandles
     celix_array_list_t* libraryHandles;
-    void* bundleActivatorHandle;
 };
 
-module_pt module_create(manifest_pt headerMap, const char * moduleId, bundle_pt bundle) {
-    module_pt module = NULL;
-    manifest_parser_pt mp;
-    celix_framework_t* fw = NULL;
+static celix_bundle_manifest_t* celix_module_getManifestFromBundle(celix_bundle_t* bundle) {
+    bundle_archive_t* archive = celix_bundle_getArchive(bundle);
+    celix_bundle_revision_t* revision = NULL;
+    (void)bundleArchive_getCurrentRevision(archive, &revision);
+    return celix_bundleRevision_getManifest(revision);
+}
+
+celix_module_t* module_create(celix_bundle_t* bundle) {
+    assert(bundle != NULL);
+
+    celix_framework_t* fw;
     bundle_getFramework(bundle, &fw);
 
-    if (headerMap != NULL && fw != NULL) {
-        module = (module_pt) calloc(1, sizeof(*module));
-        module->fw = fw;
-        module->id = strdup(moduleId);
-        module->bundle = bundle;
-        module->resolved = false;
-        celixThreadMutex_create(&module->handlesLock, NULL);
-        module->libraryHandles = celix_arrayList_create();
-
-
-        if (manifestParser_create(module, headerMap, &mp) == CELIX_SUCCESS) {
-            module->symbolicName = NULL;
-            manifestParser_getAndDuplicateSymbolicName(mp, &module->symbolicName);
-
-            module->group = NULL;
-            manifestParser_getAndDuplicateGroup(mp, &module->group);
-
-            module->name = NULL;
-            manifestParser_getAndDuplicateName(mp, &module->name);
-
-            module->description = NULL;
-            manifestParser_getAndDuplicateDescription(mp, &module->description);
-
-            module->version = NULL;
-            manifestParser_getBundleVersion(mp, &module->version);
-
-            manifestParser_destroy(mp);
-        }
+    celix_autoptr(celix_module_t) module = calloc(1, sizeof(*module));
+    celix_autoptr(celix_array_list_t) libraryHandles = celix_arrayList_createPointerArray();
+    if (!module || !libraryHandles) {
+        fw_log(fw->logger, CELIX_LOG_LEVEL_ERROR, "Failed to create module, out of memory");
+        return NULL;
     }
 
-    return module;
+    celix_status_t status = celixThreadMutex_create(&module->handlesLock, NULL);
+    if (status != CELIX_SUCCESS) {
+        fw_log(fw->logger,
+               CELIX_LOG_LEVEL_ERROR,
+               "Failed to create module, error creating mutex: %s",
+               celix_strerror(errno));
+        celix_framework_logTssErrors(fw->logger, CELIX_LOG_LEVEL_ERROR);
+        return NULL;
+    }
+
+    module->fw = fw;
+    module->bundle = bundle;
+    module->resolved = false;
+    module->libraryHandles = celix_steal_ptr(libraryHandles);
+
+    return celix_steal_ptr(module);
 }
 
-module_pt module_createFrameworkModule(celix_framework_t* fw, bundle_pt bundle) {
-    module_pt module;
-
-    module = (module_pt)calloc(1, sizeof(*module));
-    char modId[2];
-    snprintf(modId, 2, "%li", CELIX_FRAMEWORK_BUNDLE_ID);
+void module_destroy(celix_module_t* module) {
     if (module) {
-        module->fw = fw;
-        module->id = celix_utils_strdup(modId);
-        module->symbolicName = celix_utils_strdup("celix_framework");
-        module->group = celix_utils_strdup("Celix/Framework");
-        module->name = celix_utils_strdup("Celix Framework");
-        module->description = celix_utils_strdup("The Celix Framework System Bundle");
-        module->version = celix_version_create(1, 0, 0, "");
-        module->resolved = false;
-        module->bundle = bundle;
-        celixThreadMutex_create(&module->handlesLock, NULL);
-        module->libraryHandles = celix_arrayList_create();
-    }
-    return module;
-}
-
-void module_destroy(module_pt module) {
-        celix_version_destroy(module->version);
-        free(module->id);
-        free(module->symbolicName);
-        free(module->name);
-        free(module->group);
-        free(module->description);
         celix_arrayList_destroy(module->libraryHandles);
         celixThreadMutex_destroy(&module->handlesLock);
         free(module);
+    }
 }
 
-celix_version_t* module_getVersion(module_pt module) { return module->version; }
-
-celix_status_t module_getSymbolicName(module_pt module, const char **symbolicName) {
-	celix_status_t status = CELIX_SUCCESS;
-	if (module == NULL) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	} else {
-		*symbolicName = module->symbolicName;
-	}
-	return status;
+const celix_version_t* module_getVersion(celix_module_t* module) {
+    celix_bundle_manifest_t* man = celix_module_getManifestFromBundle(module->bundle);
+    return celix_bundleManifest_getBundleVersion(man);
 }
 
-celix_status_t module_getName(module_pt module, const char **symbolicName) {
+celix_status_t module_getSymbolicName(celix_module_t* module, const char** symbolicName) {
     celix_status_t status = CELIX_SUCCESS;
     if (module == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-        *symbolicName = module->name;
+        celix_bundle_manifest_t* man = celix_module_getManifestFromBundle(module->bundle);
+        *symbolicName = celix_bundleManifest_getBundleSymbolicName(man);
     }
     return status;
 }
 
-celix_status_t module_getGroup(module_pt module, const char **symbolicName) {
+celix_status_t module_getName(celix_module_t* module, const char **name) {
     celix_status_t status = CELIX_SUCCESS;
     if (module == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-        *symbolicName = module->group;
+        celix_bundle_manifest_t* man = celix_module_getManifestFromBundle(module->bundle);
+        *name = celix_bundleManifest_getBundleName(man);
     }
     return status;
 }
 
-celix_status_t module_getDescription(module_pt module, const char **description) {
+celix_status_t module_getGroup(celix_module_t* module, const char **group) {
     celix_status_t status = CELIX_SUCCESS;
     if (module == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-        *description = module->description;
+        celix_bundle_manifest_t* man = celix_module_getManifestFromBundle(module->bundle);
+        *group = celix_bundleManifest_getBundleGroup(man);
     }
     return status;
 }
 
-char * module_getId(module_pt module) {
-	return module->id;
+celix_status_t module_getDescription(celix_module_t* module, const char **description) {
+    celix_status_t status = CELIX_SUCCESS;
+    if (module == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    } else {
+        celix_bundle_manifest_t* man = celix_module_getManifestFromBundle(module->bundle);
+        *description = celix_bundleManifest_getBundleDescription(man);
+    }
+    return status;
 }
 
-bool module_isResolved(module_pt module) {
+bool module_isResolved(celix_module_t* module) {
 	return module->resolved;
 }
 
-void module_setResolved(module_pt module) {
+void module_setResolved(celix_module_t* module) {
 	module->resolved = true;
 }
 
-bundle_pt module_getBundle(module_pt module) {
+bundle_pt module_getBundle(celix_module_t* module) {
 	return module->bundle;
-}
-
-celix_array_list_t* module_getDependentImporters(module_pt module) {
-    return NULL;
-}
-
-void module_addDependentImporter(module_pt module, module_pt importer) {
-}
-
-void module_removeDependentImporter(module_pt module, module_pt importer) {
-}
-
-//----------------------------------------------------
-//TODO add implementation (functions not implemented but already exported)
-celix_array_list_t* module_getDependentRequirers(module_pt module) {
-    return NULL;
-}
-
-void module_addDependentRequirer(module_pt module, module_pt requirer) {
-}
-
-void module_removeDependentRequirer(module_pt module, module_pt requirer) {
-}
-//----------------------------------------------------
-
-celix_array_list_t* module_getDependents(module_pt module) {
-    return NULL;
 }
 
 celix_status_t celix_module_closeLibraries(celix_module_t* module) {
@@ -231,7 +170,6 @@ celix_status_t celix_module_closeLibraries(celix_module_t* module) {
         celix_libloader_close(fwCtx, handle);
     }
     celix_arrayList_clear(module->libraryHandles);
-    module->bundleActivatorHandle = NULL;
     celixThreadMutex_unlock(&module->handlesLock);
     return status;
 }
@@ -253,11 +191,13 @@ static celix_status_t celix_module_loadLibrary(celix_module_t* module, const cha
     return status;
 }
 
-
-static celix_status_t celix_module_loadLibraryForManifestEntry(celix_module_t* module, const char *library, bundle_archive_pt archive, void **handle) {
+static celix_status_t celix_module_loadLibraryForManifestEntry(celix_module_t* module,
+                                                               const char* library,
+                                                               bundle_archive_pt archive,
+                                                               void** handle) {
     celix_status_t status = CELIX_SUCCESS;
 
-    const char *error = NULL;
+    const char* error = NULL;
     char libraryPath[512];
     const char* revRoot = celix_bundleArchive_getCurrentRevisionRoot(archive);
 
@@ -270,7 +210,13 @@ static celix_status_t celix_module_loadLibraryForManifestEntry(celix_module_t* m
     if (strstr(library, CELIX_LIBRARY_EXTENSION)) {
         path = celix_utils_writeOrCreateString(libraryPath, sizeof(libraryPath), "%s/%s", revRoot, library);
     } else {
-        path = celix_utils_writeOrCreateString(libraryPath, sizeof(libraryPath), "%s/%s%s%s", revRoot, CELIX_LIBRARY_PREFIX, library, CELIX_LIBRARY_EXTENSION);
+        path = celix_utils_writeOrCreateString(libraryPath,
+                                               sizeof(libraryPath),
+                                               "%s/%s%s%s",
+                                               revRoot,
+                                               CELIX_LIBRARY_PREFIX,
+                                               library,
+                                               CELIX_LIBRARY_EXTENSION);
     }
 
     if (!path) {
@@ -284,87 +230,53 @@ static celix_status_t celix_module_loadLibraryForManifestEntry(celix_module_t* m
     return status;
 }
 
-static celix_status_t celix_module_loadLibrariesInManifestEntry(celix_module_t* module, const char *librariesIn, const char *activator, bundle_archive_pt archive, void **activatorHandle) {
+static celix_status_t celix_module_loadLibrariesInManifestEntry(celix_module_t* module,
+                                                                const celix_array_list_t* libraries,
+                                                                const char* activator,
+                                                                bundle_archive_pt archive,
+                                                                void** activatorHandle) {
+    assert(libraries != NULL);
+    assert(celix_arrayList_getElementType(libraries) == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING);
     celix_status_t status = CELIX_SUCCESS;
-    char* libraries = strndup(librariesIn, 1024*10);
 
-    char* saveptr1;
-    for (char* str1 = libraries; status == CELIX_SUCCESS; str1 = NULL) {
-        char* token = strtok_r(str1, ",", &saveptr1);
-        char* saveptr2;
-        if (token == NULL) {
+    for (int i = 0; i < celix_arrayList_size(libraries); i++) {
+        const char* library = celix_arrayList_getString(libraries, i);
+        void* handle = NULL;
+        status = celix_module_loadLibraryForManifestEntry(module, library, archive, &handle);
+        if (status != CELIX_SUCCESS) {
             break;
         }
-        char *pathToken = strtok_r(token, ";", &saveptr2);
-        if (pathToken == NULL) {
-            continue;
-        }
-
-        void *handle = NULL;
-        char lib[128];
-        lib[127] = '\0';
-        strncpy(lib, pathToken, 127);
-        char *trimmedLib = celix_utils_trimInPlace(lib);
-        status = celix_module_loadLibraryForManifestEntry(module, trimmedLib, archive, &handle);
-
-        if ( (status == CELIX_SUCCESS) && (activator != NULL) && (strcmp(trimmedLib, activator) == 0) ) {
+        if (activator != NULL && strcmp(library, activator) == 0) {
             *activatorHandle = handle;
         }
     }
-    free(libraries);
     return status;
 }
 
 celix_status_t celix_module_loadLibraries(celix_module_t* module) {
     celix_status_t status = CELIX_SUCCESS;
     celix_library_handle_t* activatorHandle = NULL;
-    bundle_archive_pt archive = NULL;
-    bundle_revision_pt revision = NULL;
-    manifest_pt manifest = NULL;
+    bundle_archive_t* archive = celix_bundle_getArchive(module->bundle);
 
-    status = CELIX_DO_IF(status, bundle_getArchive(module->bundle, &archive));
-    status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
-    status = CELIX_DO_IF(status, bundleRevision_getManifest(revision, &manifest));
-    if (status == CELIX_SUCCESS) {
-        const char *privateLibraries = NULL;
-        const char *exportLibraries = NULL;
-        const char *activator = NULL;
+    celix_bundle_manifest_t* man = celix_module_getManifestFromBundle(module->bundle);
+    const char* activator = celix_bundleManifest_getBundleActivatorLibrary(man);
+    const celix_array_list_t* privateLibraries = celix_bundleManifest_getBundlePrivateLibraries(man);
 
-        privateLibraries = manifest_getValue(manifest, CELIX_FRAMEWORK_PRIVATE_LIBRARY);
-        exportLibraries = manifest_getValue(manifest, CELIX_FRAMEWORK_EXPORT_LIBRARY);
-        //@note not import yet
-        activator = manifest_getValue(manifest, CELIX_FRAMEWORK_BUNDLE_ACTIVATOR);
-
-        if (exportLibraries != NULL) {
-            status = CELIX_DO_IF(status, celix_module_loadLibrariesInManifestEntry(module, exportLibraries, activator, archive, &activatorHandle));
-        }
-
-        if (privateLibraries != NULL) {
-            status = CELIX_DO_IF(status,
-                                 celix_module_loadLibrariesInManifestEntry(module, privateLibraries, activator, archive, &activatorHandle));
-        }
-
-        if (status == CELIX_SUCCESS) {
-            bundle_setHandle(module->bundle, activatorHandle); //note deprecated
-            celixThreadMutex_lock(&module->handlesLock);
-            module->bundleActivatorHandle = activatorHandle;
-            celixThreadMutex_unlock(&module->handlesLock);
-        }
+    if (privateLibraries != NULL && celix_arrayList_size(privateLibraries) > 0) {
+        status = CELIX_DO_IF(
+            status,
+            celix_module_loadLibrariesInManifestEntry(module, privateLibraries, activator, archive, &activatorHandle));
     }
 
-
     if (status != CELIX_SUCCESS) {
-        fw_logCode(module->fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Could not load libraries for bundle %s",
+        fw_logCode(module->fw->logger,
+                   CELIX_LOG_LEVEL_ERROR,
+                   status,
+                   "Could not load libraries for bundle %s",
                    celix_bundle_getSymbolicName(module->bundle));
         (void)celix_module_closeLibraries(module);
     }
 
+    bundle_setHandle(module->bundle, activatorHandle);
     return status;
-}
-
-void* celix_module_getBundleActivatorHandler(celix_module_t* module) {
-    celixThreadMutex_lock(&module->handlesLock);
-    void* handle = module->bundleActivatorHandle;
-    celixThreadMutex_unlock(&module->handlesLock);
-    return handle;
 }

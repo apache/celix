@@ -52,16 +52,11 @@ struct rsa_json_rpc {
 
 static unsigned int rsaJsonRpc_generateSerialProtoId(celix_bundle_t *bnd) {
     const char *bundleSymName = celix_bundle_getSymbolicName(bnd);
-    const char *bundleVer = celix_bundle_getManifestValue(bnd, CELIX_FRAMEWORK_BUNDLE_VERSION);
+    const celix_version_t* bundleVer = celix_bundle_getVersion(bnd);
     if (bundleSymName == NULL || bundleVer == NULL) {
         return 0;
     }
-    celix_version_t *version = celix_version_createVersionFromString(bundleVer);
-    if (version == NULL) {
-        return 0;
-    }
-    int major = celix_version_getMajor(version);
-    celix_version_destroy(version);
+    int major = celix_version_getMajor(bundleVer);
     return celix_utils_stringHash(bundleSymName) + major;
 }
 

@@ -349,6 +349,12 @@ TEST_F(ConvertUtilsTestSuite, ConvertToLongArrayTest) {
     EXPECT_EQ(2L, celix_arrayList_getLong(result, 1));
     celix_arrayList_destroy(result);
 
+    convertState = celix_utils_convertStringToLongArrayList("", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertState);
+    EXPECT_TRUE(result != nullptr);
+    EXPECT_EQ(0, celix_arrayList_size(result));
+    celix_arrayList_destroy(result);
+
     convertState = celix_utils_convertStringToLongArrayList(nullptr, defaultList, &result);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
     EXPECT_TRUE(result != nullptr); //copy of default list
@@ -479,6 +485,13 @@ TEST_F(ConvertUtilsTestSuite, ConvertToStringArrayList) {
     EXPECT_STREQ("", celix_arrayList_getString(result, 3));
     celix_arrayList_destroy(result);
 
+    //empty string -> empty list
+    convertState = celix_utils_convertStringToStringArrayList("", nullptr, &result);
+    EXPECT_EQ(CELIX_SUCCESS, convertState);
+    EXPECT_TRUE(result != nullptr);
+    EXPECT_EQ(0, celix_arrayList_size(result));
+    celix_arrayList_destroy(result);
+
     //invalid escape sequence
     convertState = celix_utils_convertStringToStringArrayList(R"(a,b\c,d)", nullptr, &result);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
@@ -491,6 +504,7 @@ TEST_F(ConvertUtilsTestSuite, ConvertToStringArrayList) {
     // celix_utils_convertStringToLongArrayList and because celix_utils_convertStringToLongArrayList is already
     // tested, we only test a few cases here.
 }
+
 
 TEST_F(ConvertUtilsTestSuite, StringArrayToStringTest) {
     celix_autoptr(celix_array_list_t) list = celix_arrayList_createStringArray();

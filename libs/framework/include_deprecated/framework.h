@@ -21,7 +21,7 @@
 #define FRAMEWORK_H_
 
 #include "celix_errno.h"
-#include "bundle.h"
+#include "celix_bundle.h"
 #include "celix_properties.h"
 #include "bundle_context.h"
 #include "celix_framework_export.h"

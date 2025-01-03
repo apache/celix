@@ -17,20 +17,25 @@
  * under the License.
  */
 
-#include "celix_bundle_activator.h"
-#include "celix_compiler.h"
+#ifndef CELIX_MANIFEST_TYPE_H_
+#define CELIX_MANIFEST_TYPE_H_
 
-struct bundle_act {
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-};
+/**
+ * @file celix_bundle_manifest_type.h
+ * @brief Header file for celix_bundle_manifest_t type.
+ */
 
-static celix_status_t act_start(struct bundle_act *act CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
-    printf("Return a bundle 'exception'\n");
-    return CELIX_BUNDLE_EXCEPTION;
+/**
+ * @brief The definition of the celix_bundleManifest_t* abstract data type.
+ */
+typedef struct celix_bundle_manifest celix_bundle_manifest_t;
+
+#ifdef __cplusplus
 }
+#endif
 
-static celix_status_t act_stop(struct bundle_act *act CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
-    return CELIX_SUCCESS;
-}
-
-CELIX_GEN_BUNDLE_ACTIVATOR(struct bundle_act, act_start, act_stop);
+#endif /* CELIX_MANIFEST_TYPE_H_ */

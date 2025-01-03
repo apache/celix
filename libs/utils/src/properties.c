@@ -616,9 +616,8 @@ celix_status_t celix_properties_getAsVersion(const celix_properties_t* propertie
         }
         *version = copy;
         return CELIX_SUCCESS;
-    }
-    if (entry != NULL && entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_STRING) {
-        celix_status_t parseStatus = celix_version_parse(entry->value, version);
+    } else if (entry != NULL) {
+        celix_status_t parseStatus = celix_version_tryParse(entry->value, version);
         if (parseStatus != CELIX_ILLEGAL_ARGUMENT) {
             return parseStatus;
         }

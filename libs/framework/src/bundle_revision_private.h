@@ -27,8 +27,9 @@
 #ifndef BUNDLE_REVISION_PRIVATE_H_
 #define BUNDLE_REVISION_PRIVATE_H_
 
-#include "bundle_revision.h"
 #include "celix_threads.h"
+#include "celix_framework.h"
+#include "celix_bundle_manifest.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,13 +39,7 @@ extern "C" {
  * The bundle revision structure represents a revision of a bundle.
  * A bundle can have multiple revisions. A bundle revision is immutable.
  */
-struct bundleRevision {
-    celix_framework_t *fw;
-    long revisionNr;
-    char *root;
-    char *location;
-    manifest_pt manifest;
-};
+typedef struct celix_bundle_revision celix_bundle_revision_t;
 
 /**
  * Creates a new revision for the given inputFile or location.
@@ -60,11 +55,19 @@ struct bundleRevision {
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_revision</code> failed.
  */
-celix_status_t celix_bundleRevision_create(celix_framework_t* fw, const char *root, const char *location, manifest_pt manifest, bundle_revision_pt *bundle_revision);
+celix_status_t celix_bundleRevision_create(celix_framework_t* fw,
+                                           const char* root,
+                                           const char* location,
+                                           celix_bundle_manifest_t* manifest,
+                                           celix_bundle_revision_t** bundle_revision);
 
-bundle_revision_t* bundleRevision_revise(const bundle_revision_t* revision, const char* updatedBundleUrl);
+celix_status_t celix_bundleRevision_destroy(celix_bundle_revision_t* revision);
 
-celix_status_t bundleRevision_destroy(bundle_revision_pt revision);
+
+/**
+ * @brief Get the bundle manifest of the given revision.
+ */
+celix_bundle_manifest_t* celix_bundleRevision_getManifest(celix_bundle_revision_t* revision);
 
 #ifdef __cplusplus
 }

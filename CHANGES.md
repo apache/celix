@@ -69,14 +69,17 @@ limitations under the License.
 - It is no longer possible to use the `celix_bundleContext_useService*` functions or `celix::BundleContxt::useService*` 
   methods on the Celix event thread. The calls will now immediately return and log an error if called on the
   Celix event thread.
-- Apache Celix filter now use the underlying properties value types for matching. This means that it is more important
-  to add service properties with the correct type.
+- Apache Celix filter now uses the underlying `properties` value types for matching.
+  This means that it is more important to add service properties with the correct type.
 - Celix C++ Exception are now defined in the `celix/exceptions.h` header file. The `celix/Exception.h`
   and `celix/IOException.h` are removed.
 - The seperator for `CELIX_AUTO_START_0` .. `CELIX_AUTO_START_6` and `CELIX_AUTO_INSTALL` is now a comma instead of a
   space.
-- The launcher now only has 2 public functions: `celix_launcher_launchAndWait` and `celix_launcher_triggerStop`. The
+- The launcher now only has two public functions: `celix_launcher_launchAndWait` and `celix_launcher_triggerStop`. The
   other functions are removed.
+- The manifest format has been changed to JSON, and the manifest attribute names have been changed.
+  The old manifest format is no longer supported.
+  The old manifest attribute names are also no longer defined in `celix_constants.h`.
 
 ## New Features
 

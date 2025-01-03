@@ -28,6 +28,7 @@
 #include "export_registration_dfi.h"
 #include "dfi_utils.h"
 #include "remote_interceptors_handler.h"
+#include "celix_threads.h"
 
 #include <string.h>
 

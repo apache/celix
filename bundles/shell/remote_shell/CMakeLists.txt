@@ -37,7 +37,7 @@ if (REMOTE_SHELL)
 	include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 
 	target_link_libraries(remote_shell PRIVATE Celix::shell_api)
-	celix_deprecated_utils_headers(remote_shell)
+	#celix_deprecated_utils_headers(remote_shell)
 	celix_deprecated_framework_headers(remote_shell)
 
 	install_celix_bundle(remote_shell EXPORT celix COMPONENT remote_shell)

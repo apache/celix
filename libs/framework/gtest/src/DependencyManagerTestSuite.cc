@@ -261,7 +261,7 @@ TEST_F(DependencyManagerTestSuite, CxxDmGetInfo) {
 
     auto info = mng.getInfo();
     EXPECT_EQ(info.bndId, 0);
-    EXPECT_EQ(info.bndSymbolicName, "celix_framework");
+    EXPECT_EQ(info.bndSymbolicName, "apache_celix_framework");
     EXPECT_EQ(info.components.size(), 0); //not build yet
 
     mng.build();
