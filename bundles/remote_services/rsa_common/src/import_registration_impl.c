@@ -33,6 +33,8 @@
 
 #include "import_registration_impl.h"
 #include "remote_service_admin_impl.h"
+#include "celix_bundle.h"
+#include "celix_bundle_context.h"
 
 struct import_reference {
 	endpoint_description_t *endpoint;
@@ -110,52 +112,49 @@ celix_status_t importRegistrationFactory_destroy(import_registration_factory_t *
 	return status;
 }
 
+celix_status_t importRegistrationFactory_open(import_registration_factory_t* registration_factory) {
+    celix_status_t status;
 
-celix_status_t importRegistrationFactory_open(import_registration_factory_t *registration_factory)
-{
-	celix_status_t status;
+    const char* bundleStore = NULL;
+    bundleContext_getProperty(registration_factory->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
 
-	const char *bundleStore = NULL;
-	bundleContext_getProperty(registration_factory->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
+    if (bundleStore == NULL) {
+        bundleStore = DEFAULT_BUNDLE_STORE;
+    }
 
-	if (bundleStore == NULL) {
-		bundleStore = DEFAULT_BUNDLE_STORE;
-	}
+    char name[256];
+    snprintf(name, 256, "%s/%s_proxy.zip", bundleStore, registration_factory->serviceName);
 
-	char name[256];
-	snprintf(name, 256, "%s/%s_proxy.zip", bundleStore, registration_factory->serviceName);
+    status = bundleContext_installBundle(registration_factory->context, name, &registration_factory->bundle);
 
-	status = bundleContext_installBundle(registration_factory->context, name, &registration_factory->bundle);
+    if (status == CELIX_SUCCESS) {
+        status = celix_bundleContext_startBundle(registration_factory->context,
+                                                 celix_bundle_getId(registration_factory->bundle));
+        if (status == CELIX_SUCCESS) {
+            celix_logHelper_log(
+                registration_factory->loghelper, CELIX_LOG_LEVEL_INFO, "%s successfully started.", name);
+        }
+    } else {
+        celix_logHelper_log(registration_factory->loghelper, CELIX_LOG_LEVEL_ERROR, "%s could not be installed.", name);
+    }
 
-	if (status == CELIX_SUCCESS) {
-		status = bundle_start(registration_factory->bundle);
-		if (status == CELIX_SUCCESS) {
-			celix_logHelper_log(registration_factory->loghelper, CELIX_LOG_LEVEL_INFO, "%s successfully started.", name);
-		}
-	}
-	else {
-		celix_logHelper_log(registration_factory->loghelper, CELIX_LOG_LEVEL_ERROR, "%s could not be installed.", name);
-	}
-
-	return status;
+    return status;
 }
 
-celix_status_t importRegistrationFactory_close(import_registration_factory_t *registration_factory)
-{
-	celix_status_t status = CELIX_SUCCESS;
+celix_status_t importRegistrationFactory_close(import_registration_factory_t* registration_factory) {
+    celix_status_t status = CELIX_SUCCESS;
 
+    if (registration_factory->proxyFactoryTracker != NULL) {
+        serviceTracker_close(registration_factory->proxyFactoryTracker);
+    }
 
-	if (registration_factory->proxyFactoryTracker != NULL) {
-		serviceTracker_close(registration_factory->proxyFactoryTracker);
-	}
+    if (registration_factory->bundle != NULL) {
+        (void)celix_bundleContext_uninstallBundle(registration_factory->context,
+                                                  celix_bundle_getId(registration_factory->bundle));
+    }
 
-	if (registration_factory->bundle != NULL) {
-		bundle_uninstall(registration_factory->bundle);
-	}
-
-	return status;
+    return status;
 }
-
 
 celix_status_t importRegistration_createProxyFactoryTracker(import_registration_factory_t *registration_factory, service_tracker_t **tracker) {
 	celix_status_t status;

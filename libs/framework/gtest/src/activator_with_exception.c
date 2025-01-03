@@ -17,29 +17,21 @@
  * under the License.
  */
 
-#ifndef SERVICE_FACTORY_H_
-#define SERVICE_FACTORY_H_
+#include "celix_bundle_activator.h"
+#include "celix_compiler.h"
+#include <stdio.h>
 
-#include "celix_types.h"
-#include "celix_errno.h"
-#include "service_registration.h"
-#include "celix_bundle.h"
+struct bundle_act {
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-struct service_factory {
-    void *handle;
-
-    celix_status_t (*getService)(void *handle, celix_bundle_t *bnd, service_registration_pt registration, void **service);
-
-    celix_status_t
-    (*ungetService)(void *handle, celix_bundle_t *bnd, service_registration_pt registration, void **service);
 };
 
-#ifdef __cplusplus
+static celix_status_t act_start(struct bundle_act *act CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
+    printf("Return a bundle 'exception'\n");
+    return CELIX_BUNDLE_EXCEPTION;
 }
-#endif
 
-#endif /* SERVICE_FACTORY_H_ */
+static celix_status_t act_stop(struct bundle_act *act CELIX_UNUSED, celix_bundle_context_t *ctx CELIX_UNUSED) {
+    return CELIX_SUCCESS;
+}
+
+CELIX_GEN_BUNDLE_ACTIVATOR(struct bundle_act, act_start, act_stop);

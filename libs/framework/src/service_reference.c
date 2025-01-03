@@ -16,27 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * service_reference.c
- *
- *  \date       Jul 20, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "celix_compiler.h"
-#include "celix_constants.h"
 #include <stdint.h>
 #include <utils.h>
 #include <assert.h>
 
 #include "service_reference.h"
-
+#include "celix_compiler.h"
+#include "celix_constants.h"
+#include "celix_build_assert.h"
+#include "celix_log.h"
 #include "service_reference_private.h"
 #include "service_registration_private.h"
-#include "celix_build_assert.h"
 
 static bool serviceReference_doRelease(struct celix_ref *);
 static void serviceReference_destroy(service_reference_pt);

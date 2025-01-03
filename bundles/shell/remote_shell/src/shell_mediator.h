@@ -33,7 +33,8 @@
 #include <celix_errno.h>
 
 #include "celix_log_helper.h"
-#include <celix_shell.h>
+#include "celix_shell.h"
+#include "celix_threads.h"
 
 struct shell_mediator {
     celix_log_helper_t *loghelper;

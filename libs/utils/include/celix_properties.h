@@ -450,7 +450,8 @@ CELIX_UTILS_EXPORT const celix_version_t* celix_properties_getVersion(const celi
  * @brief Get a value of a property as a copied Celix version.
  *
  * If the property value is a Celix version, a copy of the found version will be returned.
- * If the property value is a string, this function will attempt to convert it to a new Celix version.
+ * If the property value is present, but not a Celix version, this function will attempt to convert the property value
+ * to a new Celix version.
  * If the property is not set or is not a valid Celix version string, a copy of the provided defaultValue is returned.
  *
  * @note The caller is responsible for deallocating the memory of the returned version.

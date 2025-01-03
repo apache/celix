@@ -28,7 +28,7 @@
 #include "service_registration.h"
 #include "celix_service_factory.h"
 #include "celix_framework_export.h"
-
+#include "celix_service_listener.h"
 
 #ifdef __cplusplus
 extern "C" {

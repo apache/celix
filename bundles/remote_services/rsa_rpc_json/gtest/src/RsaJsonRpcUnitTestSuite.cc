@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 #include "rsa_json_rpc_impl.h"
 #include "rsa_json_rpc_constants.h"
 #include "rsa_request_sender_tracker.h"
@@ -43,6 +44,7 @@
 #include "dfi_ei.h"
 #include "celix_properties_ei.h"
 #include "celix_long_hash_map_ei.h"
+#include "celix_framework_version.h"
 #include <gtest/gtest.h>
 #include <cstdlib>
 extern "C" {
@@ -54,7 +56,6 @@ public:
     RsaJsonRpcUnitTestSuite() {
         auto* props = celix_properties_create();
         celix_properties_set(props, CELIX_FRAMEWORK_CACHE_DIR, ".rsa_json_rpc_impl_cache");
-        celix_properties_set(props, CELIX_FRAMEWORK_BUNDLE_VERSION, "1.0.0");
         celix_properties_set(props, RSA_JSON_RPC_LOG_CALLS_KEY, "true");
         celix_properties_set(props, "CELIX_FRAMEWORK_EXTENDER_PATH", RESOURCES_DIR);
         auto* fwPtr = celix_frameworkFactory_createFramework(props);
@@ -67,7 +68,6 @@ public:
 
     ~RsaJsonRpcUnitTestSuite() override {
         celix_ei_expect_celix_bundle_getSymbolicName(nullptr, 0, nullptr);
-        celix_ei_expect_celix_bundle_getManifestValue(nullptr, 0, nullptr);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_celixThreadMutex_create(nullptr, 0, 0);
         celix_ei_expect_celix_bundleContext_registerServiceFactoryAsync(nullptr, 0, 0);
@@ -106,7 +106,6 @@ public:
 
 TEST_F(RsaJsonRpcUnitTestSuite, CreateRsaJsonRpc) {
     rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
     EXPECT_EQ(CELIX_SUCCESS, status);
     EXPECT_NE(nullptr, jsonRpc);
@@ -116,7 +115,6 @@ TEST_F(RsaJsonRpcUnitTestSuite, CreateRsaJsonRpc) {
 
 TEST_F(RsaJsonRpcUnitTestSuite, CreateRsaJsonRpcWithInvalidParams) {
     rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
 
     auto status  = rsaJsonRpc_create(nullptr, logHelper.get(), &jsonRpc);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
@@ -130,8 +128,6 @@ TEST_F(RsaJsonRpcUnitTestSuite, CreateRsaJsonRpcWithInvalidParams) {
 
 TEST_F(RsaJsonRpcUnitTestSuite, CreateRsaJsonRpcWithENOMEM) {
     rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
-
     celix_ei_expect_calloc((void*)&rsaJsonRpc_create, 0, nullptr);
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
     EXPECT_EQ(CELIX_ENOMEM, status);
@@ -140,18 +136,15 @@ TEST_F(RsaJsonRpcUnitTestSuite, CreateRsaJsonRpcWithENOMEM) {
 TEST_F(RsaJsonRpcUnitTestSuite, CreateRsaJsonRpcWithInvalidVersion) {
     rsa_json_rpc_t *jsonRpc = nullptr;
 
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, nullptr);
+    celix_ei_expect_celix_bundle_getVersion((void*)&rsaJsonRpc_create, 1, nullptr);
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
-    EXPECT_EQ(CELIX_BUNDLE_EXCEPTION, status);
-
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "abc");
-    status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
     EXPECT_EQ(CELIX_BUNDLE_EXCEPTION, status);
 }
 
 TEST_F(RsaJsonRpcUnitTestSuite, CreateRsaJsonRpcWithInvalidBundleSymbolicName) {
     rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
+    celix_autoptr(celix_version_t) version = celix_version_createVersionFromString("1.0.0");
+    celix_ei_expect_celix_bundle_getVersion((void*)&rsaJsonRpc_create, 1, version);
 
     celix_ei_expect_celix_bundle_getSymbolicName((void*)&rsaJsonRpc_create, 1, nullptr);
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
@@ -160,7 +153,8 @@ TEST_F(RsaJsonRpcUnitTestSuite, CreateRsaJsonRpcWithInvalidBundleSymbolicName) {
 
 TEST_F(RsaJsonRpcUnitTestSuite, FailedToCreateThreadMutex) {
     rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
+    celix_autoptr(celix_version_t) version = celix_version_createVersionFromString("1.0.0");
+    celix_ei_expect_celix_bundle_getVersion((void*)&rsaJsonRpc_create, 1, version);
 
     celix_ei_expect_celixThreadMutex_create((void*)&rsaJsonRpc_create, 0, CELIX_ENOMEM);
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
@@ -169,8 +163,6 @@ TEST_F(RsaJsonRpcUnitTestSuite, FailedToCreateThreadMutex) {
 
 TEST_F(RsaJsonRpcUnitTestSuite, FailedToCreateRemoteInterceptorsHandler) {
     rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
-
     celix_ei_expect_calloc((void*)&remoteInterceptorsHandler_create, 0, nullptr);
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
     EXPECT_EQ(CELIX_ENOMEM, status);
@@ -178,8 +170,6 @@ TEST_F(RsaJsonRpcUnitTestSuite, FailedToCreateRemoteInterceptorsHandler) {
 
 TEST_F(RsaJsonRpcUnitTestSuite, FailedToCreateRsaRequestSenderTracker) {
     rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
-
     celix_ei_expect_calloc((void*)&rsaRequestSenderTracker_create, 0, nullptr);
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
     EXPECT_EQ(CELIX_ENOMEM, status);
@@ -187,7 +177,6 @@ TEST_F(RsaJsonRpcUnitTestSuite, FailedToCreateRsaRequestSenderTracker) {
 
 TEST_F(RsaJsonRpcUnitTestSuite, CreateRpcProxy) {
     rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
@@ -207,7 +196,6 @@ TEST_F(RsaJsonRpcUnitTestSuite, CreateRpcProxy) {
 
 TEST_F(RsaJsonRpcUnitTestSuite, CreateRpcProxyWithInvalidParams) {
     rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
@@ -230,7 +218,6 @@ TEST_F(RsaJsonRpcUnitTestSuite, CreateRpcProxyWithInvalidParams) {
 
 TEST_F(RsaJsonRpcUnitTestSuite, RpcProxyFailedToCreateProxyFactory) {
     rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
@@ -255,7 +242,6 @@ TEST_F(RsaJsonRpcUnitTestSuite, DestroyRpcProxyWithInvalidParams) {
 
 TEST_F(RsaJsonRpcUnitTestSuite, CreateEndpoint) {
     rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
@@ -274,7 +260,6 @@ TEST_F(RsaJsonRpcUnitTestSuite, CreateEndpoint) {
 
 TEST_F(RsaJsonRpcUnitTestSuite, CreateRpcEndpointWithInvalidParams) {
     rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
@@ -296,7 +281,6 @@ TEST_F(RsaJsonRpcUnitTestSuite, CreateRpcEndpointWithInvalidParams) {
 
 TEST_F(RsaJsonRpcUnitTestSuite, RpcEndpointFailedToCreateEndpoint) {
     rsa_json_rpc_t *jsonRpc = nullptr;
-    celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
     auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpc);
     EXPECT_EQ(CELIX_SUCCESS, status);
 
@@ -324,11 +308,9 @@ class RsaJsonRpcProxyUnitTestSuite : public RsaJsonRpcUnitTestSuite {
 public:
     RsaJsonRpcProxyUnitTestSuite() {
         rsa_json_rpc_t *jsonRpcPtr = nullptr;
-        celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
         auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpcPtr);
         EXPECT_EQ(CELIX_SUCCESS, status);
         EXPECT_NE(nullptr, jsonRpcPtr);
-        celix_ei_expect_celix_bundle_getManifestValue(nullptr, 0, nullptr);//reset for next test
         jsonRpc = std::shared_ptr<rsa_json_rpc_t>{jsonRpcPtr, [](auto* r){rsaJsonRpc_destroy(r);}};
 
         reqSenderSvc.handle = nullptr;
@@ -648,11 +630,9 @@ class RsaJsonRpcEndPointUnitTestSuite : public RsaJsonRpcUnitTestSuite {
 public:
     RsaJsonRpcEndPointUnitTestSuite() {
         rsa_json_rpc_t *jsonRpcPtr = nullptr;
-        celix_ei_expect_celix_bundle_getManifestValue((void*)&rsaJsonRpc_create, 1, "1.0.0");
         auto status  = rsaJsonRpc_create(ctx.get(), logHelper.get(), &jsonRpcPtr);
         EXPECT_EQ(CELIX_SUCCESS, status);
         EXPECT_NE(nullptr, jsonRpcPtr);
-        celix_ei_expect_celix_bundle_getManifestValue(nullptr, 0, nullptr);//reset for next test
         jsonRpc = std::shared_ptr<rsa_json_rpc_t>{jsonRpcPtr, [](auto* r){rsaJsonRpc_destroy(r);}};
 
         static rsa_rpc_json_test_service_t testSvc{};
@@ -676,7 +656,7 @@ public:
 
     unsigned int GenerateSerialProtoId() {//The same as rsaJsonRpc_generateSerialProtoId
         const char *bundleSymName = celix_bundle_getSymbolicName(celix_bundleContext_getBundle(ctx.get()));
-        return celix_utils_stringHash(bundleSymName) + 1;
+        return celix_utils_stringHash(bundleSymName) + CELIX_FRAMEWORK_VERSION_MAJOR;
     }
 
     std::shared_ptr<rsa_json_rpc_t> jsonRpc{};

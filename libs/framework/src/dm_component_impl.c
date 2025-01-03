@@ -29,6 +29,7 @@
 #include "celix_filter.h"
 #include "dm_component_impl.h"
 #include "celix_framework.h"
+#include "hash_map.h"
 
 static const char * const CELIX_DM_PRINT_OK_COLOR = "\033[92m";
 static const char * const CELIX_DM_PRINT_WARNING_COLOR = "\033[93m";

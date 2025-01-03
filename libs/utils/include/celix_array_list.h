@@ -19,6 +19,7 @@
 
 #include <stdbool.h>
 
+#include "celix_array_list_type.h"
 #include "celix_utils_export.h"
 #include "celix_cleanup.h"
 #include "celix_errno.h"
@@ -40,6 +41,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @file celix_array_list.h
+ * @brief Header file for celix_array_list_t functions and celix_array_list_t specific types.
+ */
 
 /**
  * @enum celix_array_list_element_type_t
@@ -76,11 +82,6 @@ typedef union celix_array_list_entry {
     const celix_version_t* versionVal; /**< A celix_version_t* value when the element type is
                                    CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION or CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
 } celix_array_list_entry_t;
-
-/**
- * @brief A celix array list, which can store a list of undefined elements.
- */
-typedef struct celix_array_list celix_array_list_t;
 
 /**
  * @brief Equals function for array list entries, can be provided when creating a array list.

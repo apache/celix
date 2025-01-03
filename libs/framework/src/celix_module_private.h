@@ -20,7 +20,7 @@
 #ifndef CELIX_CELIX_MODULE_PRIVATE_H
 #define CELIX_CELIX_MODULE_PRIVATE_H
 
-#include "module.h"
+#include "celix_module.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,8 +30,6 @@ extern "C" {
 celix_status_t celix_module_loadLibraries(celix_module_t *module);
 
 celix_status_t celix_module_closeLibraries(celix_module_t *module);
-
-void *celix_module_getBundleActivatorHandler(celix_module_t *module);
 
 #ifdef __cplusplus
 }

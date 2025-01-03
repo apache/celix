@@ -28,7 +28,7 @@
 
 #include "celix_compiler.h"
 #include "celix_stdlib_cleanup.h"
-#include "celix_utils_api.h"
+#include "celix_threads.h"
 
 struct websocket_admin_manager {
     bundle_context_pt context;
