@@ -118,7 +118,7 @@ ${CONTAINER_ENGINE} run -it --rm --privileged -d \
                         --userns=keep-id \
                         --net=host \
                         ${ADDITIONAL_ARGS} \
-                        --volume "${CELIX_REPO_ROOT}":${CELIX_CONTAINER_ROOT} \
+                        --volume "${CELIX_REPO_ROOT}":${CELIX_CONTAINER_ROOT}:Z \
                         --workdir "${CELIX_CONTAINER_ROOT}" \
                         --security-opt label=disable \
                         apache/celix-conan-dev:latest bash -c "${CONTAINER_COMMAND}"

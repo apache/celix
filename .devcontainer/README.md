@@ -55,6 +55,9 @@ In CLion, open the Remote Development window by navigating to "File -> Remote De
 configuration. When a new configuration is added, you can start a new project using `/home/celixdev/workspace` as the
 project root and selecting CLion as the IDE.
 
+Also ensure the CMake profile from the - conan generated - `CMakeUserPresets.json` is used: Enable the profile in the 
+Settings -> "Build, Execution, Deployment" -> CMake menu.
+
 ## Running tests
 Tests can be run using ctest.
 When building with conan, the conanrun.sh script will setup the environment for the
