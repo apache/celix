@@ -41,6 +41,7 @@ extern "C" {
 
 typedef struct celix_framework celix_framework_t;
 typedef struct celix_bundle celix_bundle_t;
+typedef struct celix_bundle_archive celix_bundle_archive_t;
 typedef struct celix_dependency_manager celix_dependency_manager_t;
 typedef struct celix_dm_component_struct celix_dm_component_t;
 typedef struct celix_dm_service_dependency celix_dm_service_dependency_t;
@@ -63,8 +64,6 @@ typedef const struct celix_bundle * const_bundle_pt CELIX_DEPRECATED_ATTR;
 typedef struct celix_bundle bundle_t CELIX_DEPRECATED_ATTR;
 
 // will be deprecated in the future
-typedef struct bundleArchive *bundle_archive_pt;
-typedef struct bundleArchive bundle_archive_t;
 typedef struct service_factory *service_factory_pt;
 typedef struct serviceReference * service_reference_pt;
 typedef struct serviceRegistration service_registration_t;

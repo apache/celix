@@ -29,7 +29,7 @@
 #include "celix_array_list.h"
 #include "celix_errno.h"
 #include "service_factory.h"
-#include "bundle_archive.h"
+#include "celix_bundle_archive.h"
 #include "celix_service_listener.h"
 #include "bundle_listener.h"
 #include "framework_listener.h"

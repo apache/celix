@@ -33,7 +33,6 @@
 #include "celix_utils.h"
 #include "celix_bundle_context.h"
 #include "framework_private.h"
-#include "bundle_archive_private.h"
 #include "celix_string_hash_map.h"
 #include "celix_stdio_cleanup.h"
 
@@ -173,9 +172,9 @@ celix_status_t celix_bundleCache_deleteCacheDir(celix_bundle_cache_t* cache) {
 }
 
 celix_status_t
-celix_bundleCache_createArchive(celix_bundle_cache_t* cache, long id, const char* location, bundle_archive_t** archiveOut) {
+celix_bundleCache_createArchive(celix_bundle_cache_t* cache, long id, const char* location, celix_bundle_archive_t** archiveOut) {
     celix_status_t status = CELIX_SUCCESS;
-    bundle_archive_t* archive = NULL;
+    celix_bundle_archive_t* archive = NULL;
 
     char archiveRootBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
     char* archiveRoot = celix_utils_writeOrCreateString(archiveRootBuffer, sizeof(archiveRootBuffer),
@@ -199,15 +198,14 @@ celix_bundleCache_createArchive(celix_bundle_cache_t* cache, long id, const char
     return status;
 }
 
-celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, bundle_archive_pt* archive) {
+celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, celix_bundle_archive_t** archive) {
     return celix_bundleCache_createArchive(fw->cache, CELIX_FRAMEWORK_BUNDLE_ID, NULL, archive);
 }
 
-void celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, bundle_archive_pt archive) {
+void celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, celix_bundle_archive_t* archive) {
     celixThreadMutex_lock(&cache->mutex);
     if (!celix_bundleArchive_isCacheValid(archive)) {
-        const char* loc = NULL;
-        (void) bundleArchive_getLocation(archive, &loc);
+        const char* loc = celix_bundleArchive_getLocation(archive);
         (void) celix_stringHashMap_remove(cache->locationToBundleIdLookupMap, loc);
     }
     (void)celix_bundleArchive_removeInvalidDirs(archive);
@@ -298,7 +296,7 @@ celix_bundleCache_createBundleArchivesForSpaceSeparatedList(celix_framework_t* f
     if (zipFileList) {
         char* location = strtok_r(zipFileList, delims, &savePtr);
         while (location != NULL) {
-            bundle_archive_t* archive = NULL;
+            celix_bundle_archive_t* archive = NULL;
             status = celix_bundleCache_createArchive(fw->cache, (*bndId)++, location, &archive);
             if (status != CELIX_SUCCESS) {
                 fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status,

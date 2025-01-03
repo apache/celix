@@ -32,8 +32,7 @@
 #include "celix_properties_ei.h"
 
 #include "asprintf_ei.h"
-#include "bundle_archive_private.h"
-#include "bundle_revision_private.h"
+#include "celix_bundle_archive.h"
 #include "framework_private.h"
 #include "malloc_ei.h"
 #include "celix_bundle_manifest.h"
@@ -106,7 +105,7 @@ TEST_F(CelixBundleCacheErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     celix_bundle_cache_t* cache = nullptr;
     createCache(&cache);
 
-    bundle_archive_t* archive = nullptr;
+    celix_bundle_archive_t* archive = nullptr;
     celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_bundleCache_createArchive, 0, nullptr);
     EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_createArchive(cache, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_EQ(nullptr, archive);
@@ -131,7 +130,7 @@ TEST_F(CelixBundleCacheErrorInjectionTestSuite, SystemArchiveCreateErrorTest) {
     celix_bundle_cache_t* cache = nullptr;
     createCache(&cache);
 
-    bundle_archive_t* archive = nullptr;
+    celix_bundle_archive_t* archive = nullptr;
     celix_ei_expect_calloc((void*)celix_bundleArchive_create, 0, nullptr);
     EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_createSystemArchive(&fw, &archive));
     EXPECT_EQ(nullptr, archive);
@@ -145,10 +144,6 @@ TEST_F(CelixBundleCacheErrorInjectionTestSuite, SystemArchiveCreateErrorTest) {
     EXPECT_EQ(nullptr, archive);
 
     celix_ei_expect_celix_properties_create((void*)celix_bundleManifest_createFrameworkManifest, 0, nullptr);
-    EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_createSystemArchive(&fw, &archive));
-    EXPECT_EQ(nullptr, archive);
-
-    celix_ei_expect_calloc((void*)celix_bundleRevision_create, 0, nullptr);
     EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_createSystemArchive(&fw, &archive));
     EXPECT_EQ(nullptr, archive);
 

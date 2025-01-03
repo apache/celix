@@ -26,7 +26,7 @@
 #include "celix_framework.h"
 #include "celix_long_hash_map.h"
 
-#include "bundle_archive.h"
+#include "celix_bundle_archive.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,7 +74,7 @@ celix_status_t celix_bundleCache_destroy(celix_bundle_cache_t* cache);
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_archive</code> failed.
  */
 celix_status_t
-celix_bundleCache_createArchive(celix_bundle_cache_t* cache, long id, const char* location, bundle_archive_pt* archive);
+celix_bundleCache_createArchive(celix_bundle_cache_t* cache, long id, const char* location, celix_bundle_archive_t** archive);
 
 /**
  * @@brief Creates a new system archive for framework bundle.
@@ -87,7 +87,7 @@ celix_bundleCache_createArchive(celix_bundle_cache_t* cache, long id, const char
  *         - CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
  *         - CELIX_BUNDLE_EXCEPTION If the bundle cannot be created.
  */
-celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, bundle_archive_pt* archive);
+celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, celix_bundle_archive_t** archive);
 
 /**
  * @brief Destroy the archive from the cache.
@@ -95,7 +95,7 @@ celix_status_t celix_bundleCache_createSystemArchive(celix_framework_t* fw, bund
  * @param [in] cache The bundle cache to destroy archive from.
  * @param [in] archive The archive to destroy.
  */
-void celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, bundle_archive_pt archive);
+void celix_bundleCache_destroyArchive(celix_bundle_cache_t* cache, celix_bundle_archive_t* archive);
 
 /**
  * @brief Deletes the entire bundle cache.
