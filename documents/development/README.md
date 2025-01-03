@@ -25,7 +25,7 @@ This document outlines the recommended coding conventions for Apache Celix devel
 formatting, comments, control structures, functions and error handling.
 
 Note that not all existing code adheres to these conventions.
-New code should adhere to these conventions and when possible, existing code should be updated to adhere to these
+New code should adhere to these conventions, and when possible, existing code should be updated to adhere to these
 conventions.
 
 ## Naming Conventions
@@ -447,7 +447,6 @@ set(MY_LIB_PRIVATE_LIBS ...)
 add_library(my_lib SHARED ${MY_LIB_SOURCES})
 target_link_libraries(my_lib PUBLIC ${MY_LIB_PUBLIC_LIBS} PRIVATE ${MY_LIB_PRIVATE_LIBS})
 celix_target_hide_symbols(my_lib)
-...
 
 if (ENABLE_TESTING)
     add_library(my_lib_cut STATIC ${MY_LIB_SOURCES})
