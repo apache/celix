@@ -173,6 +173,7 @@ if (EI_TESTS)
             Celix::hmap_ei
             Celix::stdio_ei
             Celix::string_ei
+            Celix::dirent_ei
             GTest::gtest GTest::gtest_main
     )
 

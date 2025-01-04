@@ -55,13 +55,13 @@ struct celix_bundle_cache {
     bool locationToBundleIdLookupMapLoaded; //true if the locationToBundleIdLookupMap is loaded from disk
 };
 
-static const char* bundleCache_progamName() {
+static const char* celix_bundleCache_programName() {
 #if defined(__APPLE__) || defined(__FreeBSD__)
     return getprogname();
 #elif defined(_GNU_SOURCE)
     return program_invocation_short_name;
 #else
-    return "";
+    return NULL;
 #endif
 }
 
@@ -109,10 +109,8 @@ celix_status_t celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cach
     if (useTmpDir) {
         //Using /tmp dir for cache, so that multiple frameworks can be launched
         //instead of cacheDir = ".cache";
-        const char* pg = bundleCache_progamName();
-        if (pg == NULL) {
-            pg = "";
-        }
+        const char* pg = celix_bundleCache_programName();
+        pg = !pg ? "no-program-name" : pg;
         asprintf(&cache->cacheDir, "/tmp/celix-cache-%s-%s", pg, celix_framework_getUUID(fw));
     } else {
         const char* cacheDir = celix_bundleCache_cacheDirPath(fw);
@@ -220,7 +218,7 @@ static celix_status_t celix_bundleCache_updateIdForLocationLookupMap(celix_bundl
     celix_autoptr(DIR) dir = opendir(cache->cacheDir);
     if (dir == NULL) {
         fw_logCode(cache->fw->logger, CELIX_LOG_LEVEL_ERROR, CELIX_BUNDLE_EXCEPTION,
-                   "Cannot open bundle cache directory %s", cache->cacheDir);
+                   "Cannot open bundle cache directory %s: %s", cache->cacheDir, strerror(errno));
         return CELIX_FILE_IO_EXCEPTION;
     }
     char archiveRootBuffer[CELIX_DEFAULT_STRING_CREATE_BUFFER_SIZE];
