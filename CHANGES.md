@@ -80,6 +80,7 @@ limitations under the License.
 - The manifest format has been changed to JSON, and the manifest attribute names have been changed.
   The old manifest format is no longer supported.
   The old manifest attribute names are also no longer defined in `celix_constants.h`.
+- The funnction `celix_arrayList_create` has been removed, use the element type specific create functions instead. 
 
 ## New Features
 

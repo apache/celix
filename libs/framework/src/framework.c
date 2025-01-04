@@ -497,7 +497,7 @@ celix_status_t framework_start(celix_framework_t* framework) {
 static celix_status_t framework_autoStartConfiguredBundles(celix_framework_t* fw, bool *startedAllBundles) {
     celix_status_t status = CELIX_SUCCESS;
     const char* const celixKeys[] = {CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3, CELIX_AUTO_START_4, CELIX_AUTO_START_5, CELIX_AUTO_START_6, NULL};
-    celix_autoptr(celix_array_list_t) installedBundles = celix_arrayList_createPointerArray();
+    celix_autoptr(celix_array_list_t) installedBundles = celix_arrayList_createLongArray();
     if (!installedBundles) {
         celix_framework_logTssErrors(fw->logger, CELIX_LOG_LEVEL_ERROR);
         return ENOMEM;

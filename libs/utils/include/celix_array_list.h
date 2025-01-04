@@ -170,7 +170,7 @@ celix_array_list_t* celix_arrayList_createVersionArray();
  */
 typedef struct celix_array_list_create_options {
     /**
-     * The element type of the array list. Default is CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED.
+     * The element type of the array list. Default is CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER.
      */
     celix_array_list_element_type_t elementType CELIX_OPTS_INIT;
 

@@ -380,35 +380,10 @@ TEST_F(ArrayListTestSuite, SimpleRemovedCallbacksForArrayListTest) {
     celix_arrayList_destroy(list); //will call free for every entry
 }
 
-TEST_F(ArrayListTestSuite, AddStringToArrayListOfUndefinedTypeTest) {
-    celix_array_list_create_options_t opts{};
-    opts.simpleRemovedCallback = free;
-    auto* list = celix_arrayList_createWithOptions(&opts);
-    celix_arrayList_addString(list, celix_utils_strdup("value"));
-    celix_arrayList_addString(list, celix_utils_strdup("value"));
-    celix_arrayList_addString(list, celix_utils_strdup("value"));
-    celix_arrayList_addString(list, celix_utils_strdup("value"));
-    EXPECT_EQ(celix_arrayList_size(list), 4);
-    celix_arrayList_destroy(list); //will call free for every entry
-}
-
-TEST_F(ArrayListTestSuite, AddVersionToArrayListOfUndefinedTypeTest) {
-    celix_array_list_create_options_t opts{};
-    opts.simpleRemovedCallback = [](void* data) {
-        celix_version_destroy((celix_version_t*)data);
-    };
-    auto* list = celix_arrayList_createWithOptions(&opts);
-    celix_arrayList_addVersion(list, celix_version_create(1, 3, 0, nullptr));
-    celix_arrayList_addVersion(list, celix_version_create(1, 3, 0, nullptr));
-    celix_arrayList_addVersion(list, celix_version_create(1, 3, 0, nullptr));
-    celix_arrayList_addVersion(list, celix_version_create(1, 3, 0, nullptr));
-    EXPECT_EQ(celix_arrayList_size(list), 4);
-    celix_arrayList_destroy(list); //will call free for every entry
-}
-
 TEST_F(ArrayListTestSuite, RemovedCallbacksForArrayListTest) {
     int count = 0 ;
     celix_array_list_create_options_t opts{};
+    opts.elementType = CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG;
     opts.removedCallbackData = &count;
     opts.removedCallback = [](void *data, celix_array_list_entry_t entry) {
         int* c = (int*)data;
@@ -450,27 +425,6 @@ TEST_F(ArrayListTestSuite, SortForArrayListTest) {
     EXPECT_EQ(celix_arrayList_getLong(list, 1), 2);
     EXPECT_EQ(celix_arrayList_getLong(list, 2), 3);
     EXPECT_EQ(celix_arrayList_getLong(list, 3), 4);
-
-    celix_arrayList_destroy(list);
-}
-
-TEST_F(ArrayListTestSuite, ReturnStatusAddFunctionsTest) {
-    auto* list = celix_arrayList_createLongArray();
-    ASSERT_TRUE(list != nullptr);
-    EXPECT_EQ(0, celix_arrayList_size(list));
-
-    //no error, return status is CELIX_SUCCESS
-    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addLong(list, 2L));
-    EXPECT_EQ(1, celix_arrayList_size(list));
-
-    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addDouble(list, 4.0));
-    EXPECT_EQ(2, celix_arrayList_size(list));
-
-    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_addBool(list, true));
-    EXPECT_EQ(3, celix_arrayList_size(list));
-
-    EXPECT_EQ(CELIX_SUCCESS, celix_arrayList_add(list, (void*)0x42));
-    EXPECT_EQ(4, celix_arrayList_size(list));
 
     celix_arrayList_destroy(list);
 }
