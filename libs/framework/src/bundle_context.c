@@ -68,7 +68,7 @@ celix_status_t bundleContext_create(framework_pt framework, celix_framework_logg
 
             celixThreadRwlock_create(&context->lock, NULL);
 
-            context->svcRegistrations = celix_arrayList_create();
+            context->svcRegistrations = celix_arrayList_createLongArray();
             context->bundleTrackers = celix_longHashMap_create();
             context->serviceTrackers = celix_longHashMap_create();
             context->metaTrackers =  celix_longHashMap_create();
@@ -745,7 +745,7 @@ static void bundleContext_cleanupBundleTrackers(bundle_context_t* ctx) {
             trkId,
             symbolicName);
         if (!danglingTrkIds) {
-            danglingTrkIds = celix_arrayList_create();
+            danglingTrkIds = celix_arrayList_createLongArray();
         }
         celix_arrayList_addLong(danglingTrkIds, trkId);
     }
@@ -780,7 +780,7 @@ static void bundleContext_cleanupServiceTrackers(bundle_context_t* ctx) {
                symbolicName,
                entry->tracker ? entry->tracker->filter : "unknown");
         if (danglingTrkIds == NULL) {
-            danglingTrkIds = celix_arrayList_create();
+            danglingTrkIds = celix_arrayList_createLongArray();
         }
         celix_arrayList_addLong(danglingTrkIds, trkId);
     }
@@ -815,7 +815,7 @@ static void bundleContext_cleanupServiceTrackerTrackers(bundle_context_t* ctx) {
                symbolicName,
                entry->serviceName ? entry->serviceName : "all");
         if (danglingTrkIds == NULL) {
-            danglingTrkIds = celix_arrayList_create();
+            danglingTrkIds = celix_arrayList_createLongArray();
         }
         celix_arrayList_addLong(danglingTrkIds, trkId);
     }
@@ -845,7 +845,7 @@ static void bundleContext_cleanupServiceRegistration(bundle_context_t* ctx) {
                "Dangling service registration with svcId %li, for bundle %s. "
                "Add missing 'celix_bundleContext_unregisterService' calls.", svcId, symbolicName);
         if (danglingSvcIds == NULL) {
-            danglingSvcIds = celix_arrayList_create();
+            danglingSvcIds = celix_arrayList_createLongArray();
         }
         celix_arrayList_addLong(danglingSvcIds, svcId);
     }

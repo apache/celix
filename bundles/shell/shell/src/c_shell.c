@@ -113,7 +113,7 @@ celix_status_t shell_removeCommand(shell_t *shell, celix_shell_command_t *svc, c
 
 celix_status_t shell_getCommands(shell_t *shell, celix_array_list_t **outCommands) {
 	celix_status_t status = CELIX_SUCCESS;
-	celix_array_list_t *result = celix_arrayList_create();
+	celix_array_list_t *result = celix_arrayList_createPointerArray();
 
     celixThreadRwlock_readLock(&shell->lock);
     hash_map_iterator_t iter = hashMapIterator_construct(shell->commandServices);

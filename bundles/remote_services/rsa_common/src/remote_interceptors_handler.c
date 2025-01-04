@@ -56,7 +56,7 @@ celix_status_t remoteInterceptorsHandler_create(celix_bundle_context_t *ctx, rem
     } else {
         (*handler)->ctx = ctx;
 
-        (*handler)->interceptors = celix_arrayList_create();
+        (*handler)->interceptors = celix_arrayList_createPointerArray();
 
         status = celixThreadMutex_create(&(*handler)->lock, NULL);
 

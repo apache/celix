@@ -44,7 +44,7 @@ celix_status_t celix_bundleActivator_create(celix_bundle_context_t *context, voi
         discMockService_create(act, &act->serv);
         act->endpointListener = NULL;
         act->endpointListenerService = NULL;
-        act->endpointList = celix_arrayList_create();
+        act->endpointList = celix_arrayList_createPointerArray();
     } else {
         status = CELIX_ENOMEM;
     }

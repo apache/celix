@@ -121,7 +121,7 @@ celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, const 
     celixThreadMutex_create(&tracker->state.mutex, NULL);
     celixThreadCondition_init(&tracker->state.condTracked, NULL);
     celixThreadCondition_init(&tracker->state.condUntracking, NULL);
-    tracker->state.trackedServices = celix_arrayList_create();
+    tracker->state.trackedServices = celix_arrayList_createPointerArray();
     tracker->state.untrackedServiceCount = 0;
 
     tracker->state.currentHighestServiceId = -1;
@@ -269,7 +269,7 @@ service_reference_pt serviceTracker_getServiceReference(service_tracker_t* track
 
 celix_array_list_t* serviceTracker_getServiceReferences(service_tracker_t* tracker) {
     //TODO deprecated warning -> not locked
-    celix_array_list_t* references = celix_arrayList_create();
+    celix_array_list_t* references = celix_arrayList_createPointerArray();
 
     celixThreadMutex_lock(&tracker->state.mutex);
     for (int i = 0; i < celix_arrayList_size(tracker->state.trackedServices); i++) {
@@ -297,7 +297,7 @@ void *serviceTracker_getService(service_tracker_t* tracker) {
 
 celix_array_list_t* serviceTracker_getServices(service_tracker_t* tracker) {
     //TODO deprecated warning -> not locked, also make locked variant
-    celix_array_list_t* references = celix_arrayList_create();
+    celix_array_list_t* references = celix_arrayList_createPointerArray();
 
     celixThreadMutex_lock(&tracker->state.mutex);
     for (int i = 0; i < celix_arrayList_size(tracker->state.trackedServices); i++) {
@@ -684,7 +684,7 @@ celix_service_tracker_t* celix_serviceTracker_createClosedWithOptions(celix_bund
     celixThreadMutex_create(&tracker->state.mutex, NULL);
     celixThreadCondition_init(&tracker->state.condTracked, NULL);
     celixThreadCondition_init(&tracker->state.condUntracking, NULL);
-    tracker->state.trackedServices = celix_arrayList_create();
+    tracker->state.trackedServices = celix_arrayList_createPointerArray();
     tracker->state.untrackedServiceCount = 0;
     tracker->state.currentHighestServiceId = -1;
 

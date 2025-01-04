@@ -476,7 +476,7 @@ static int autoComplete(shell_tui_t* shellTui, celix_shell_t* shellSvc, char *in
     celix_array_list_t* possibleCmdList = NULL;
 	shellSvc->getCommands(shellSvc->handle, &commandList);
 	int nrCmds = celix_arrayList_size(commandList);
-    possibleCmdList = celix_arrayList_create();
+    possibleCmdList = celix_arrayList_createPointerArray();
 
 	for (int i = 0; i < nrCmds; i++) {
 		char *cmd = celix_arrayList_get(commandList, i);

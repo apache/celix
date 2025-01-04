@@ -265,7 +265,7 @@ static celix_array_list_t*  topologyManager_getNetworkInterfacesForPort(topology
             celix_logHelper_error(tm->loghelper, "TOPOLOGY_MANAGER: Error getting interface names from config properties.");
             return NULL;
         }
-        celix_autoptr(celix_array_list_t) _ifNames = celix_arrayList_create();
+        celix_autoptr(celix_array_list_t) _ifNames = celix_arrayList_createPointerArray();
         if (_ifNames == NULL) {
             celix_logHelper_error(tm->loghelper, "TOPOLOGY_MANAGER: Error creating array list for interface names.");
             return NULL;
@@ -476,7 +476,7 @@ static void topologyManager_addDynamicIpEndpointsForExportedService(topology_man
         return;
     }
 
-    celix_array_list_t* endpointList = celix_arrayList_create();
+    celix_array_list_t* endpointList = celix_arrayList_createPointerArray();
     if (endpointList == NULL) {
         celix_logHelper_error(tm->loghelper, "TOPOLOGY_MANAGER: Error creating array list for dynamic ip endpoints.");
         return;

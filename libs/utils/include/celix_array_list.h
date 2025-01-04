@@ -17,16 +17,14 @@
  * under the License.
  */
 
-#include <stdbool.h>
+#ifndef CELIX_ARRAY_LIST_H_
+#define CELIX_ARRAY_LIST_H_
 
 #include "celix_array_list_type.h"
 #include "celix_utils_export.h"
 #include "celix_cleanup.h"
 #include "celix_errno.h"
 #include "celix_version_type.h"
-
-#ifndef CELIX_ARRAY_LIST_H_
-#define CELIX_ARRAY_LIST_H_
 
 /**
  * Init macro so that the opts are correctly initialized for C++ compilers
@@ -52,13 +50,12 @@ extern "C" {
  * @brief An enumeration of the types of elements that can be stored in a Celix array list.
  */
 typedef enum celix_array_list_element_type {
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED = 0, /**< Represents an undefined element type. */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER = 1,   /**< Represents a pointer element type. */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING = 2, /**< Represents a string element type where the array list is the owner */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG = 3,   /**< Represents a long integer element type. */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE = 4, /**< Represents a double element type. */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL = 5,  /**< Represents a boolean element type. */
-    CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION = 6, /**< Represents a celix_version_t* element type. */
+    CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER = 0, /**< Represents a pointer element type. */
+    CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING = 1, /**< Represents a string element type where the array list is the owner */
+    CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG = 2,   /**< Represents a long integer element type. */
+    CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE = 3, /**< Represents a double element type. */
+    CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL = 4,   /**< Represents a boolean element type. */
+    CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION = 5, /**< Represents a celix_version_t* element type. */
 } celix_array_list_element_type_t;
 
 /**
@@ -68,19 +65,16 @@ typedef enum celix_array_list_element_type {
  * This union can hold different types of values, including pointers, strings, integers, long integers,
  * unsigned integers, unsigned long integers, doubles, floats, booleans, and size_t values.
  */
-typedef union celix_array_list_entry {
-    void* voidPtrVal;      /**< A pointer value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_PTR or
-                              CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
-    const char* stringVal; /**< A string value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING,
-                              CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF or CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
-    long int longVal;      /**< A long integer value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG or
-                              CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
-    double doubleVal;       /**< A double value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE or
-                               CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
-    bool boolVal;           /**< A boolean value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL or
-                               CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
-    const celix_version_t* versionVal; /**< A celix_version_t* value when the element type is
-                                   CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION or CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED. */
+typedef union celix_array_list_entry
+{
+ void* voidPtrVal; /**< A pointer value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_PTR. */
+ const char* stringVal;
+ /**< A string value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING or CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING_REF. */
+ long int longVal; /**< A long integer value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG. */
+ double doubleVal; /**< A double value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE. */
+ bool boolVal; /**< A boolean value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL. */
+ const celix_version_t* versionVal;
+ /**< A celix_version_t* value when the element type is CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION. */
 } celix_array_list_entry_t;
 
 /**
@@ -98,18 +92,6 @@ typedef int (*celix_array_list_compare_entries_fp)(celix_array_list_entry_t a, c
  * @return CELIX_SUCCESS if the entry is copied, CELIX_ENOMEM if the entry could not be copied.
  */
 typedef celix_status_t (*celix_array_list_copy_entry_fp)(celix_array_list_entry_t src, celix_array_list_entry_t* dst);
-
-/**
- * @brief Creates a new empty array list with an undefined element type.
- * @deprecated Use celix_arrayList_createWithOptions or celix_arrayList_create<Type>Array instead.
- *
- * The remove, equals and compare callback will be NULL.
- *
- * @return A new empty array list or NULL if the array list could not be created. If NULL is returned an error message
- * is logged to celix_err.
- */
-CELIX_UTILS_DEPRECATED_EXPORT
-celix_array_list_t* celix_arrayList_create();
 
 /**
  * @brief Creates a new empty array list with a pointer element type where the array list is not the owner of the
@@ -252,7 +234,7 @@ typedef struct celix_array_list_create_options {
  */
 #define CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS                                                                          \
     {                                                                                                                  \
-        .elementType = CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED, .simpleRemovedCallback = NULL,                         \
+        .elementType = CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER, .simpleRemovedCallback = NULL,                         \
         .removedCallbackData = NULL, .removedCallback = NULL, .equalsCallback = NULL,                                  \
         .compareCallback = NULL, .copyCallback = NULL,                                                                 \
     }

@@ -566,7 +566,7 @@ static void removeShellCommandService(void* data,void* svc, const celix_properti
 
 static celix_status_t track_command_services_example_start(track_command_services_example_data_t *data, celix_bundle_context_t *ctx) {
     celixThreadMutex_create(&data->mutex, NULL);
-    data->commandServices = celix_arrayList_create();
+    data->commandServices = celix_arrayList_createPointerArray();
 
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
     opts.filter.serviceName = CELIX_SHELL_COMMAND_SERVICE_NAME;

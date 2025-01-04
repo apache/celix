@@ -124,7 +124,7 @@ public:
             status = endpointDescription_create(endpointProps, &exportReg->exportReference.endpoint);
             EXPECT_EQ(CELIX_SUCCESS, status);
             exportReg->exportReference.reference = reference;
-            *registrations = celix_arrayList_create();
+            *registrations = celix_arrayList_createPointerArray();
             celix_arrayList_add(*registrations, exportReg);
 
             bundleContext_ungetServiceReference(admin->ctx, reference);

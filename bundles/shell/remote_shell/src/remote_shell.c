@@ -65,7 +65,7 @@ celix_status_t remoteShell_create(shell_mediator_pt mediator, int maximumConnect
         status = celixThreadMutex_create(&(*instance)->mutex, NULL);
 
         if (status == CELIX_SUCCESS) {
-            (*instance)->connections = celix_arrayList_create();
+            (*instance)->connections = celix_arrayList_createPointerArray();
             if (!(*instance)->connections) {
                 free(*instance);
                 (*instance) = NULL;

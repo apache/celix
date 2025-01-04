@@ -30,7 +30,7 @@ public:
 };
 
 TEST_F(ArrayListTestSuite, CreateDestroyArrayListTest) {
-    auto* list = celix_arrayList_create();
+    auto* list = celix_arrayList_createPointerArray();
     EXPECT_TRUE(list != nullptr);
     EXPECT_EQ(0, celix_arrayList_size(list));
     celix_arrayList_destroy(list);
@@ -431,7 +431,7 @@ TEST_F(ArrayListTestSuite, RemovedCallbacksForArrayListTest) {
 }
 
 TEST_F(ArrayListTestSuite, SortForArrayListTest) {
-    auto* list = celix_arrayList_create();
+    auto* list = celix_arrayList_createLongArray();
     celix_arrayList_addLong(list, 3);
     celix_arrayList_addLong(list, 2);
     celix_arrayList_addLong(list, 1);
@@ -455,7 +455,7 @@ TEST_F(ArrayListTestSuite, SortForArrayListTest) {
 }
 
 TEST_F(ArrayListTestSuite, ReturnStatusAddFunctionsTest) {
-    auto* list = celix_arrayList_create();
+    auto* list = celix_arrayList_createLongArray();
     ASSERT_TRUE(list != nullptr);
     EXPECT_EQ(0, celix_arrayList_size(list));
 
@@ -476,7 +476,7 @@ TEST_F(ArrayListTestSuite, ReturnStatusAddFunctionsTest) {
 }
 
 TEST_F(ArrayListTestSuite, AutoCleanupTest) {
-    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_createPointerArray();
     EXPECT_NE(nullptr, list);
 }
 
@@ -497,7 +497,6 @@ TEST_F(ArrayListTestSuite, ReallocTest) {
 }
 
 TEST_F(ArrayListTestSuite, ElementTypeToStringTest) {
-    EXPECT_STREQ("Undefined", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED));
     EXPECT_STREQ("Pointer", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER));
     EXPECT_STREQ("String", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING));
     EXPECT_STREQ("Long", celix_arrayList_elementTypeToString(CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG));

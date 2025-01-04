@@ -52,7 +52,7 @@ celix_status_t celix_bundle_createFromArchive(celix_framework_t *framework, bund
 
     bundle->framework = framework;
     bundle->archive = archive;
-    bundle->modules = celix_arrayList_create();
+    bundle->modules = celix_arrayList_createPointerArray();
     bundle->state = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
     bundle->handle = NULL;
     bundle->activator = NULL;
@@ -394,7 +394,7 @@ bool celix_bundle_isSystemBundle(const celix_bundle_t *bnd) {
 
 celix_array_list_t* celix_bundle_listRegisteredServices(const celix_bundle_t *bnd) {
     long bndId = celix_bundle_getId(bnd);
-    celix_array_list_t* result = celix_arrayList_create();
+    celix_array_list_t* result = celix_arrayList_createPointerArray();
     celix_array_list_t *svcIds = celix_serviceRegistry_listServiceIdsForOwner(bnd->framework->registry, bndId);
     for (int i = 0; i < celix_arrayList_size(svcIds); ++i) {
         long svcId = celix_arrayList_getLong(svcIds, i);

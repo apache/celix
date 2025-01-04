@@ -20,6 +20,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "celix_array_list_type.h"
+#include "celix_array_list.h"
 #include "celix_bundle.h"
 #include "celix_bundle_context.h"
 #include "celix_constants.h"
@@ -178,8 +180,8 @@ bool queryCommand_execute(void *_ptr, const char *command_line_str, FILE *sout, 
     opts.queryProvided = true;
     opts.queryRequested = true;
 
-    opts.nameQueries = celix_arrayList_create();
-    opts.filterQueries = celix_arrayList_create();
+    opts.nameQueries = celix_arrayList_createPointerArray();
+    opts.filterQueries = celix_arrayList_createPointerArray();
     opts.useColors = celix_bundleContext_getPropertyAsBool(ctx, CELIX_SHELL_USE_ANSI_COLORS, CELIX_SHELL_USE_ANSI_COLORS_DEFAULT_VALUE);
 
     bool validCommand = true;

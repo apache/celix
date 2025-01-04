@@ -33,7 +33,7 @@ bool bundleCommand_execute(void *handle, const char *constCommandLine, FILE *out
     celix_autofree char* command = celix_utils_strdup(constCommandLine);
     strtok_r(command, CELIX_SHELL_COMMAND_SEPARATOR, &savePtr); //ignore command name
     sub = strtok_r(NULL, CELIX_SHELL_COMMAND_SEPARATOR, &savePtr);
-    celix_autoptr(celix_array_list_t) bundleIds = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) bundleIds = celix_arrayList_createLongArray();
 
     if (sub == NULL) {
         fprintf(errStream, "Incorrect number of arguments.\n");

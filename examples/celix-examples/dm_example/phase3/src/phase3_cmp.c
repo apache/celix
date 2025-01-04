@@ -49,7 +49,7 @@ phase3_cmp_t *phase3_create() {
     if (cmp != NULL) {
         cmp->currentValue = 0.0;
         cmp->running = false;
-        cmp->phase2Services = celix_arrayList_create();
+        cmp->phase2Services = celix_arrayList_createPointerArray();
     }
     return cmp;
 }

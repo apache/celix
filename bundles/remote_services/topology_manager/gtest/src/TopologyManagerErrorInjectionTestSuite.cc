@@ -116,7 +116,7 @@ public:
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_longHashMap_put(nullptr, 0, 0);
         celix_ei_expect_celix_longHashMap_create(nullptr, 0, nullptr);
-        celix_ei_expect_celix_arrayList_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_createPointerArray(nullptr, 0, nullptr);
         celix_ei_expect_celix_properties_copy(nullptr, 0, nullptr);
         celix_ei_expect_celix_properties_set(nullptr, 0, 0);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
@@ -193,7 +193,7 @@ TEST_F(TopologyManagerErrorInjectionTestSuite, PutingDynamicIpEndpointToRsaMapEr
 
 TEST_F(TopologyManagerErrorInjectionTestSuite, CreateDynamicIpEndpointListErrorTest) {
     TestExportServiceFailure([]() {
-        celix_ei_expect_celix_arrayList_create((void*)&topologyManager_rsaAdded, 1, nullptr);
+        celix_ei_expect_celix_arrayList_createPointerArray((void*)&topologyManager_rsaAdded, 1, nullptr);
     });
 }
 
@@ -205,7 +205,7 @@ TEST_F(TopologyManagerErrorInjectionTestSuite, PutingDynamicIpEndpointListToMapE
 
 TEST_F(TopologyManagerErrorInjectionTestSuite, CreatingRsaIfNameListErrorTest) {
     TestExportServiceFailure([]() {
-        celix_ei_expect_celix_arrayList_create((void*)&topologyManager_rsaAdded, 3, nullptr);
+        celix_ei_expect_celix_arrayList_createPointerArray((void*)&topologyManager_rsaAdded, 3, nullptr);
     });
 }
 

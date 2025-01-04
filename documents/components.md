@@ -503,7 +503,7 @@ typedef struct component_with_service_dependency {
 static component_with_service_dependency_t* componentWithServiceDependency_create() {
     component_with_service_dependency_t* cmp = calloc(1, sizeof(*cmp));
     celixThreadMutex_create(&cmp->mutex, NULL); // <-----------------------------------------------------------------<1>
-    cmp->cmdShells = celix_arrayList_create();
+    cmp->cmdShells = celix_arrayList_createPointerArray();
     return cmp;
 }
 

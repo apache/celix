@@ -110,14 +110,14 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
         xmlChar *valueBuffer = xmlMalloc(256);
         valueBuffer[0] = '\0';
 
-        celix_array_list_t* propertyValues = celix_arrayList_create();
+        celix_array_list_t* propertyValues = celix_arrayList_createPointerArray();
 
         celix_array_list_t* endpointDescriptions = NULL;
         if (*endpoints) {
             // use the given arraylist...
             endpointDescriptions = *endpoints;
         } else {
-            endpointDescriptions = celix_arrayList_create();
+            endpointDescriptions = celix_arrayList_createPointerArray();
             // return the read endpoints...
             *endpoints = endpointDescriptions;
         }

@@ -41,7 +41,7 @@ public:
         celix_ei_expect_celixThreadRwlock_create(nullptr, 0, 0);
         celix_ei_expect_celixThreadMutex_create(nullptr, 0, 0);
         celix_ei_expect_celixThreadCondition_init(nullptr, 0, 0);
-        celix_ei_expect_celix_arrayList_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_createLongArray(nullptr, 0, nullptr);
         celix_ei_expect_celix_stringHashMap_create(nullptr, 0, nullptr);
         celix_ei_expect_celix_longHashMap_create(nullptr, 0, nullptr);
         celix_ei_expect_celixThread_create(nullptr, 0, 0);
@@ -96,7 +96,7 @@ TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToCreateLockForEventAdminTe
 }
 
 TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToCreateChannelMatchingAllEventsForEventAdminTest) {
-    celix_ei_expect_celix_arrayList_create((void*)&celix_eventAdmin_create, 0, nullptr);
+    celix_ei_expect_celix_arrayList_createLongArray((void*)&celix_eventAdmin_create, 0, nullptr);
     auto ea = celix_eventAdmin_create(ctx.get());
     EXPECT_EQ(nullptr, ea);
 }
@@ -203,7 +203,7 @@ TEST_F(CelixEventAdminErrorInjectionTestSuite, FailedToSubscribeTopicTest) {
     celix_ei_expect_calloc((void*)&celix_eventAdmin_addEventHandlerWithProperties, 2, nullptr);
     TestSubscribeEvent("org/celix/test");
 
-    celix_ei_expect_celix_arrayList_create((void*)&celix_eventAdmin_addEventHandlerWithProperties, 2, nullptr);
+    celix_ei_expect_celix_arrayList_createLongArray((void*)&celix_eventAdmin_addEventHandlerWithProperties, 2, nullptr);
     TestSubscribeEvent("org/celix/test");
 
     celix_ei_expect_celix_arrayList_addLong((void*)&celix_eventAdmin_addEventHandlerWithProperties, 2, CELIX_ENOMEM);

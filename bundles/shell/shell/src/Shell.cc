@@ -64,7 +64,7 @@ namespace celix {
          * @return A celix array list with char*.
          */
         celix_status_t getCommands(celix_array_list_t **commands) {
-            auto* result = celix_arrayList_create();
+            auto* result = celix_arrayList_createPointerArray();
             std::lock_guard<std::mutex> lck{mutex};
             for (const auto& pair : entries) {
                 celix_arrayList_add(result, celix_utils_strdup(pair.first.c_str()));

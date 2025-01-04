@@ -33,7 +33,7 @@ static void parseCommandLine(const char*line, celix_array_list_t **requestedBund
     // skip first argument since this is the command
     strtok(str," ");
     char* tok = strtok(NULL," ");
-    *requestedBundleIds = celix_arrayList_create();
+    *requestedBundleIds = celix_arrayList_createLongArray();
     while (tok) {
         if (strncmp("wtf", tok, strlen("wtf")) == 0) {
             *wtf = true;

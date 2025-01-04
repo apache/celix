@@ -656,8 +656,7 @@ celix_properties_assignVersion(celix_properties_t* properties, const char* key, 
 
 celix_status_t
 celix_properties_setArrayList(celix_properties_t* properties, const char* key, const celix_array_list_t* values) {
-    if (!key || !values || celix_arrayList_getElementType(values) == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED ||
-        celix_arrayList_getElementType(values) == CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER) {
+    if (!key || !values || celix_arrayList_getElementType(values) == CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
     celix_array_list_t* copy = celix_arrayList_copy(values);
@@ -672,8 +671,7 @@ celix_properties_setArrayList(celix_properties_t* properties, const char* key, c
 
 celix_status_t
 celix_properties_assignArrayList(celix_properties_t* properties, const char* key, celix_array_list_t* values) {
-    if (!key || !values || celix_arrayList_getElementType(values) == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED ||
-            celix_arrayList_getElementType(values) == CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER) {
+    if (!key || !values || celix_arrayList_getElementType(values) == CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER) {
         celix_arrayList_destroy(values);
         return CELIX_ILLEGAL_ARGUMENT;
     }

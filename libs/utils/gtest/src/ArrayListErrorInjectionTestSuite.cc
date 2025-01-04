@@ -41,14 +41,14 @@ TEST_F(ArrayListErrorInjectionTestSuite, CreateTest) {
     //Given an error is injected for calloc (used for the array struct)
     celix_ei_expect_calloc((void *)celix_arrayList_createWithOptions, 0, nullptr);
     //Then creating an array list should fail
-    EXPECT_EQ(nullptr, celix_arrayList_create());
+    EXPECT_EQ(nullptr, celix_arrayList_createPointerArray());
     //And an error is logged to the celix_err
     EXPECT_EQ(1, celix_err_getErrorCount());
 
     //Given an error is injected for malloc (used for the element data)
     celix_ei_expect_calloc((void *)celix_arrayList_createWithOptions, 0, nullptr, 2);
     //Then creating an array list should fail
-    EXPECT_EQ(nullptr, celix_arrayList_create());
+    EXPECT_EQ(nullptr, celix_arrayList_createPointerArray());
     //And an error is logged to the celix_err
     EXPECT_EQ(2, celix_err_getErrorCount());
 }

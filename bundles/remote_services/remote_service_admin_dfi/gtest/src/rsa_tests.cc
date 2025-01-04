@@ -58,8 +58,8 @@ extern "C" {
 
     static void testServicesCallback(void *handle CELIX_UNUSED, void *svc) {
         auto* rsa = static_cast<remote_service_admin_service_t*>(svc);
-        celix_array_list_t *exported = celix_arrayList_create();
-        celix_array_list_t *imported = celix_arrayList_create();
+        celix_array_list_t *exported = celix_arrayList_createPointerArray();
+        celix_array_list_t *imported = celix_arrayList_createPointerArray();
 
         int rc = rsa->getExportedServices(rsa->admin, &exported);
         ASSERT_EQ(CELIX_SUCCESS, rc);

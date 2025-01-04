@@ -307,7 +307,7 @@ static char* format_path(const char* path) {
 }
 
 static celix_status_t endpointDiscoveryServer_getEndpoints(endpoint_discovery_server_t *server, const char* the_endpoint_id, celix_array_list_t** endpoints) {
-    *endpoints = celix_arrayList_create();
+    *endpoints = celix_arrayList_createPointerArray();
     if (!(*endpoints)) {
         return CELIX_ENOMEM;
     }

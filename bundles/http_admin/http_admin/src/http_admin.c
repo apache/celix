@@ -72,7 +72,7 @@ http_admin_manager_t *httpAdmin_create(celix_bundle_context_t *context, char *ro
     admin->infoSvcId = -1L;
 
     status = celixThreadRwlock_create(&admin->admin_lock, NULL);
-    admin->aliasList = celix_arrayList_create();
+    admin->aliasList = celix_arrayList_createPointerArray();
 
     if (status == CELIX_SUCCESS) {
         //Use only begin_request callback

@@ -37,7 +37,7 @@ celix_dependency_manager_t* celix_private_dependencyManager_create(celix_bundle_
 	celix_dependency_manager_t *manager = calloc(1, sizeof(*manager));
 	if (manager != NULL) {
 		manager->ctx = context;
-		manager->components = celix_arrayList_create();
+		manager->components = celix_arrayList_createPointerArray();
 		pthread_mutex_init(&manager->mutex, NULL);
 	}
 	return manager;
@@ -366,7 +366,7 @@ celix_status_t dependencyManager_getInfo(celix_dependency_manager_t *manager, dm
 	celixThreadMutex_lock(&manager->mutex);
 
 	if (info != NULL) {
-		info->components = celix_arrayList_create();
+		info->components = celix_arrayList_createPointerArray();
 		size = celix_arrayList_size(manager->components);
 		for (i = 0; i < size; i += 1) {
 			celix_dm_component_t *cmp = celix_arrayList_get(manager->components, i);

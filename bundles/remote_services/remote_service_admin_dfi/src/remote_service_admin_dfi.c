@@ -201,7 +201,7 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
     } else {
         (*admin)->context = context;
         (*admin)->exportedServices = hashMap_create(NULL, NULL, NULL, NULL);
-        (*admin)->importedServices = celix_arrayList_create();
+        (*admin)->importedServices = celix_arrayList_createPointerArray();
 
          celixThreadRwlock_create(&(*admin)->exportedServicesLock, NULL);
          celixThreadMutex_create(&(*admin)->importedServicesLock, NULL);
@@ -370,7 +370,7 @@ static void remoteServiceAdmin_setupStopExportsThread(remote_service_admin_t* ad
     if (CELIX_RSA_USE_STOP_EXPORT_THREAD) {
         //setup exports stop thread
         celixThreadMutex_create(&admin->stopExportsMutex, NULL);
-        admin->stopExports = celix_arrayList_create();
+        admin->stopExports = celix_arrayList_createPointerArray();
         celixThreadCondition_init(&admin->stopExportsCond, NULL);
         admin->stopExportsActive = true;
         celixThread_create(&admin->stopExportsThread, NULL, remoteServiceAdmin_stopExportsThread, admin);
@@ -606,7 +606,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
 
     celix_array_list_t *registrations = NULL;
     if (export) {
-        registrations = celix_arrayList_create();
+        registrations = celix_arrayList_createPointerArray();
         celix_array_list_t* references = NULL;
         service_reference_pt reference = NULL;
         char filter[256];
@@ -677,7 +677,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t *admin, c
 
     if (status == CELIX_SUCCESS) {
         //We return a empty list of registrations if Remote Service Admin does not recognize any of the configuration types.
-    	celix_array_list_t *newRegistrations = celix_arrayList_create();
+    	celix_array_list_t *newRegistrations = celix_arrayList_createPointerArray();
         if (registrations != NULL) {
             int regSize = celix_arrayList_size(registrations);
             for (int i = 0; i < regSize; ++i) {

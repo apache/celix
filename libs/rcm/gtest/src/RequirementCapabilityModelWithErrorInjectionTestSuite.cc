@@ -39,7 +39,7 @@ public:
         celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_createWithOptions(nullptr, 0, nullptr);
-        celix_ei_expect_celix_arrayList_create(nullptr, 0, nullptr);
+        celix_ei_expect_celix_arrayList_createPointerArray(nullptr, 0, nullptr);
         celix_ei_expect_celix_arrayList_add(nullptr, 0, CELIX_SUCCESS);
         celix_ei_expect_celix_utils_strdup(nullptr, 0, nullptr);
         celix_ei_expect_vasprintf(nullptr, 0, 0);
@@ -96,7 +96,7 @@ TEST_F(RequirementCapabilityModelWithErrorInjectionTestSuite, TestResourceErrorH
 
     //inject error on first celix_arrayList_create call from celix_resource_addCapability
     celix_capability_t* cap = celix_capability_create(res, "test");
-    celix_ei_expect_celix_arrayList_create((void*)celix_resource_addCapability, 0, nullptr);
+    celix_ei_expect_celix_arrayList_createPointerArray((void*)celix_resource_addCapability, 0, nullptr);
     EXPECT_EQ(CELIX_ENOMEM, celix_resource_addCapability(res, cap));
     EXPECT_EQ(3, celix_err_getErrorCount());
 
@@ -114,7 +114,7 @@ TEST_F(RequirementCapabilityModelWithErrorInjectionTestSuite, TestResourceErrorH
 
     //inject error on first celix_arrayList_create call from celix_resource_addRequirement
     celix_requirement_t* req = celix_requirement_create(res, "test", nullptr);
-    celix_ei_expect_celix_arrayList_create((void*)celix_resource_addRequirement, 0, nullptr);
+    celix_ei_expect_celix_arrayList_createPointerArray((void*)celix_resource_addRequirement, 0, nullptr);
     EXPECT_EQ(CELIX_ENOMEM, celix_resource_addRequirement(res, req));
     EXPECT_EQ(6, celix_err_getErrorCount());
 

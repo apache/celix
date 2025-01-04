@@ -26,9 +26,9 @@ extern "C" {
 #include "celix_array_list.h"
 #include "celix_error_injector.h"
 
-CELIX_EI_DECLARE(celix_arrayList_create, celix_array_list_t*);
-
 CELIX_EI_DECLARE(celix_arrayList_createWithOptions, celix_array_list_t*);
+
+ CELIX_EI_DECLARE(celix_arrayList_createPointerArray, celix_array_list_t*);
 
 CELIX_EI_DECLARE(celix_arrayList_createStringArray, celix_array_list_t*);
 

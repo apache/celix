@@ -674,7 +674,7 @@ TEST_F(PropertiesTestSuite, InvalidArgumentsTest) {
 
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_assignString(props, nullptr, strdup("value")));
 
-    celix_autoptr(celix_array_list_t) list1 = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) list1 = celix_arrayList_createPointerArray();
     celix_autoptr(celix_array_list_t) list2 = celix_arrayList_createStringArray();
     celix_autoptr(celix_array_list_t) list3 = celix_arrayList_createPointerArray();
 

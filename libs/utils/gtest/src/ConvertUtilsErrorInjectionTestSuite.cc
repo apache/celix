@@ -84,7 +84,7 @@ TEST_F(ConvertUtilsWithErrorInjectionTestSuite, ConvertToLongArrayTest) {
     //Then the result is null and the status is ENOMEM
     EXPECT_EQ(status, CELIX_ENOMEM);
 
-    celix_autoptr(celix_array_list_t) defaultList = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) defaultList = celix_arrayList_createLongArray();
 
     //Given an error injection for celix_arrayList_copy
     celix_ei_expect_celix_arrayList_copy((void*)celix_utils_convertStringToLongArrayList, 1, nullptr);

@@ -86,7 +86,7 @@ celix_status_t importRegistrationFactory_create(celix_log_helper_t *helper, char
 		(*registration_factory)->context = context;
 		(*registration_factory)->bundle = NULL;
 		(*registration_factory)->loghelper = helper;
-                (*registration_factory)->registrations = celix_arrayList_create();
+                (*registration_factory)->registrations = celix_arrayList_createPointerArray();
 	}
 
 	return status;

@@ -110,7 +110,7 @@ celix_status_t celix_resource_addCapability(celix_resource_t* res, celix_capabil
     const char* ns = celix_capability_getNamespace(cap);
     celix_array_list_t* caps = celix_stringHashMap_get(res->capabilitiesByNamespace, ns);
     if (caps == NULL) {
-        caps = celix_arrayList_create();
+        caps = celix_arrayList_createPointerArray();
         if (caps == NULL) {
             goto err_handling;
         }
@@ -140,7 +140,7 @@ celix_status_t celix_resource_addRequirement(celix_resource_t* res, celix_requir
     const char* ns = celix_requirement_getNamespace(req);
     celix_array_list_t* reqs = celix_stringHashMap_get(res->requirementsByNamespace, ns);
     if (reqs == NULL) {
-        reqs = celix_arrayList_create();
+        reqs = celix_arrayList_createPointerArray();
         if (reqs == NULL) {
             goto err_handling;
         }

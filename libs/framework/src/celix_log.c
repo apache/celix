@@ -61,7 +61,7 @@ celix_framework_logger_t* celix_frameworkLogger_create(celix_log_level_e activeL
 
     pthread_mutex_lock(&globalMutex);
     if (globalLoggers == NULL) {
-        globalLoggers = celix_arrayList_create();
+        globalLoggers = celix_arrayList_createPointerArray();
     }
     celix_arrayList_add(globalLoggers, logger);
     pthread_mutex_unlock(&globalMutex);

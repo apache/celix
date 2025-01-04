@@ -244,13 +244,13 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     framework->dispatcher.active = true;
     framework->currentBundleId = CELIX_FRAMEWORK_BUNDLE_ID;
     framework->installRequestMap = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
-    framework->installedBundles.entries = celix_arrayList_create();
+    framework->installedBundles.entries = celix_arrayList_createPointerArray();
     framework->configurationMap = config; //note form now on celix_framework_getConfigProperty* can be used
-    framework->bundleListeners = celix_arrayList_create();
-    framework->frameworkListeners = celix_arrayList_create();
+    framework->bundleListeners = celix_arrayList_createPointerArray();
+    framework->frameworkListeners = celix_arrayList_createPointerArray();
     framework->dispatcher.eventQueueCap = (int)celix_framework_getConfigPropertyAsLong(framework, CELIX_FRAMEWORK_STATIC_EVENT_QUEUE_SIZE, CELIX_FRAMEWORK_DEFAULT_STATIC_EVENT_QUEUE_SIZE, NULL);
     framework->dispatcher.eventQueue = malloc(sizeof(celix_framework_event_t) * framework->dispatcher.eventQueueCap);
-    framework->dispatcher.dynamicEventQueue = celix_arrayList_create();
+    framework->dispatcher.dynamicEventQueue = celix_arrayList_createPointerArray();
     framework->dispatcher.scheduledEvents = celix_longHashMap_create();
 
     celix_framework_createAndStoreFrameworkUUID(framework);
@@ -284,7 +284,7 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     //setup framework bundle lifecycle handling
     celixThreadCondition_init(&framework->bundleLifecycleHandling.cond, NULL);
     celixThreadMutex_create(&framework->bundleLifecycleHandling.mutex, NULL);
-    framework->bundleLifecycleHandling.bundleLifecycleHandlers = celix_arrayList_create();
+    framework->bundleLifecycleHandling.bundleLifecycleHandlers = celix_arrayList_createPointerArray();
 
     *out = framework;
     return status;
@@ -497,7 +497,7 @@ celix_status_t framework_start(celix_framework_t* framework) {
 static celix_status_t framework_autoStartConfiguredBundles(celix_framework_t* fw, bool *startedAllBundles) {
     celix_status_t status = CELIX_SUCCESS;
     const char* const celixKeys[] = {CELIX_AUTO_START_0, CELIX_AUTO_START_1, CELIX_AUTO_START_2, CELIX_AUTO_START_3, CELIX_AUTO_START_4, CELIX_AUTO_START_5, CELIX_AUTO_START_6, NULL};
-    celix_autoptr(celix_array_list_t) installedBundles = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) installedBundles = celix_arrayList_createPointerArray();
     if (!installedBundles) {
         celix_framework_logTssErrors(fw->logger, CELIX_LOG_LEVEL_ERROR);
         return ENOMEM;
@@ -842,7 +842,7 @@ celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bu
     celixThreadMutex_create(&bundleListener->useMutex, NULL);
     celixThreadCondition_init(&bundleListener->useCond, NULL);
     bundleListener->useCount = 1;
-    celix_array_list_t* installedBundles = celix_arrayList_create();
+    celix_array_list_t* installedBundles = celix_arrayList_createPointerArray();
 
     celixThreadMutex_lock(&framework->installedBundles.mutex);
     int size = celix_arrayList_size(framework->installedBundles.entries);
@@ -1005,7 +1005,7 @@ static celix_status_t framework_markBundleResolved(framework_pt framework, celix
 celix_array_list_t* framework_getBundles(framework_pt framework) {
     //FIXME Note that this does not increase the use count of the bundle, which can lead to race conditions.
     //promote to use the celix_bundleContext_useBundle(s) functions and deprecated this one
-    celix_array_list_t* bundles = celix_arrayList_create();
+    celix_array_list_t* bundles = celix_arrayList_createPointerArray();
 
     celixThreadMutex_lock(&framework->installedBundles.mutex);
     int size = celix_arrayList_size(framework->installedBundles.entries);
@@ -1062,7 +1062,7 @@ static void* framework_shutdown(void *framework) {
 
     celix_framework_waitForBundleLifecycleHandlers(fw);
 
-    celix_array_list_t *stopEntries = celix_arrayList_create();
+    celix_array_list_t *stopEntries = celix_arrayList_createPointerArray();
     celix_bundle_entry_t*fwEntry = NULL;
     celixThreadMutex_lock(&fw->installedBundles.mutex);
     int size = celix_arrayList_size(fw->installedBundles.entries);
@@ -1202,7 +1202,7 @@ static void celix_framework_addToEventQueue(celix_framework_t *fw, const celix_f
 
 static void fw_handleEventRequest(celix_framework_t *framework, celix_framework_event_t* event) {
     if (event->type == CELIX_BUNDLE_EVENT_TYPE) {
-        celix_array_list_t *localListeners = celix_arrayList_create();
+        celix_array_list_t *localListeners = celix_arrayList_createPointerArray();
         celixThreadMutex_lock(&framework->bundleListenerLock);
         for (int i = 0; i < celix_arrayList_size(framework->bundleListeners); ++i) {
             fw_bundle_listener_pt listener = celix_arrayList_get(framework->bundleListeners, i);
@@ -1528,7 +1528,7 @@ celix_status_t fw_invokeFrameworkListener(framework_pt framework, framework_list
 
 static size_t celix_framework_useBundlesInternal(framework_t *fw, bool includeFrameworkBundle, bool onlyActive, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
     size_t count = 0;
-    celix_array_list_t *bundleIds = celix_arrayList_create();
+    celix_array_list_t *bundleIds = celix_arrayList_createLongArray();
 
     celixThreadMutex_lock(&fw->installedBundles.mutex);
     int size = celix_arrayList_size(fw->installedBundles.entries);
@@ -2389,7 +2389,7 @@ void celix_framework_updateBundleAsync(celix_framework_t *fw, long bndId, const 
 }
 
 static celix_array_list_t* celix_framework_listBundlesInternal(celix_framework_t* framework, bool activeOnly) {
-    celix_array_list_t* result = celix_arrayList_create();
+    celix_array_list_t* result = celix_arrayList_createLongArray();
     celix_auto(celix_mutex_lock_guard_t) lock = celixMutexLockGuard_init(&framework->installedBundles.mutex);
     for (int i = 0; i < celix_arrayList_size(framework->installedBundles.entries); ++i) {
         celix_bundle_entry_t* entry = celix_arrayList_get(framework->installedBundles.entries, i);

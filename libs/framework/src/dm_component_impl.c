@@ -144,9 +144,9 @@ celix_dm_component_t* celix_dmComponent_createWithUUID(bundle_context_t *context
 
     component->state = CELIX_DM_CMP_STATE_INACTIVE;
 
-    component->providedInterfaces = celix_arrayList_create();
-    component->dependencies = celix_arrayList_create();
-    component->removedDependencies = celix_arrayList_create();
+    component->providedInterfaces = celix_arrayList_createPointerArray();
+    component->dependencies = celix_arrayList_createPointerArray();
+    component->removedDependencies = celix_arrayList_createPointerArray();
     celixThreadMutex_create(&component->mutex, NULL);
     component->isEnabled = false;
     component->inTransition = false;
@@ -533,7 +533,7 @@ celix_status_t component_getInterfaces(celix_dm_component_t *component, celix_ar
 }
 
 celix_status_t celix_dmComponent_getInterfaces(celix_dm_component_t *component, celix_array_list_t **out) {
-    celix_array_list_t* names = celix_arrayList_create();
+    celix_array_list_t* names = celix_arrayList_createPointerArray();
 
     celixThreadMutex_lock(&component->mutex);
     int size = celix_arrayList_size(component->providedInterfaces);
@@ -961,7 +961,7 @@ static celix_status_t celix_dmComponent_unregisterServices(celix_dm_component_t 
 	        continue;
 	    }
 	    if (ids == NULL) {
-            ids = celix_arrayList_create();
+            ids = celix_arrayList_createLongArray();
 	    }
 	    celix_arrayList_addLong(ids, interface->svcId);
 	    interface->svcId = -1L;
@@ -1037,7 +1037,7 @@ celix_status_t component_getComponentInfo(celix_dm_component_t *component, celix
 
 celix_status_t celix_dmComponent_getComponentInfo(celix_dm_component_t *component, celix_dm_component_info_t** out) {
     celix_dm_component_info_t* info = calloc(1, sizeof(*info));
-    info->dependency_list = celix_arrayList_create();
+    info->dependency_list = celix_arrayList_createPointerArray();
     celix_dmComponent_getInterfaces(component, &info->interfaces);
 
     celixThreadMutex_lock(&component->mutex);

@@ -209,7 +209,7 @@ bool celix_framework_utils_isBundleUrlValid(celix_framework_t *fw, const char *b
 
 size_t celix_framework_utils_installBundleSet(celix_framework_t* fw, const char* bundleSet, bool autoStart) {
     size_t installed = 0;
-    celix_array_list_t* bundleIds = celix_arrayList_create();
+    celix_array_list_t* bundleIds = celix_arrayList_createLongArray();
     char delims[] = ",";
     char *savePtr = NULL;
     char *bundles = celix_utils_strdup(bundleSet);

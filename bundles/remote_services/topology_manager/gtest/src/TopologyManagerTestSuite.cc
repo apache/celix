@@ -274,7 +274,7 @@ TEST_F(TopologyManagerTestSuite, ExportEmptyRegistrationListTest) {
           (void)admin;
           (void)properties;
           (void)serviceId;
-          *registrations = celix_arrayList_create();
+          *registrations = celix_arrayList_createPointerArray();
           return CELIX_SUCCESS;
       },
       [](void *handle, endpoint_description_t *endpoint, char *matchedFilter) -> celix_status_t {
@@ -337,7 +337,7 @@ TEST_F(TopologyManagerTestSuite, DynamicIpEndpointRsaPortNotSpecifiedTest) {
           status = endpointDescription_create(endpointProps, &exportReg->exportReference.endpoint);
           EXPECT_EQ(CELIX_SUCCESS, status);
           exportReg->exportReference.reference = reference;
-          *registrations = celix_arrayList_create();
+          *registrations = celix_arrayList_createPointerArray();
           celix_arrayList_add(*registrations, exportReg);
 
           bundleContext_ungetServiceReference(admin->ctx, reference);

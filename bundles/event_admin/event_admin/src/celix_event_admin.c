@@ -103,7 +103,7 @@ celix_event_admin_t* celix_eventAdmin_create(celix_bundle_context_t* ctx) {
         return NULL;
     }
     celix_autoptr(celix_thread_rwlock_t) lock = &ea->lock;
-    celix_autoptr(celix_array_list_t) channelMatchingAllEvents = ea->channelMatchingAllEvents.eventHandlerSvcIdList = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) channelMatchingAllEvents = ea->channelMatchingAllEvents.eventHandlerSvcIdList = celix_arrayList_createLongArray();
     if (channelMatchingAllEvents == NULL) {
         celix_logHelper_logTssErrors(logHelper, CELIX_LOG_LEVEL_ERROR);
         celix_logHelper_error(logHelper, "Failed to create event channel matching all events.");
@@ -233,7 +233,7 @@ static void celix_eventAdmin_addEventHandlerToChannels(celix_event_admin_t* ea, 
             celix_logHelper_error(ea->logHelper, "Failed to create event channel for topic %s", topic);
             return;
         }
-        celix_autoptr(celix_array_list_t) eventHandlerSvcIdList = channel->eventHandlerSvcIdList = celix_arrayList_create();
+        celix_autoptr(celix_array_list_t) eventHandlerSvcIdList = channel->eventHandlerSvcIdList = celix_arrayList_createLongArray();
         if (eventHandlerSvcIdList == NULL) {
             celix_logHelper_logTssErrors(ea->logHelper, CELIX_LOG_LEVEL_ERROR);
             celix_logHelper_error(ea->logHelper, "Failed to create event handlers list for topic %s", topic);

@@ -17,12 +17,13 @@
  * under the License.
  */
 
-#include <assert.h>
+#include "celix_array_list_type.h"
+#include "celix_array_list.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "celix_array_list.h"
 #include "celix_err.h"
 #include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
@@ -48,10 +49,6 @@ struct celix_array_list {
     void* removedCallbackData;
     void (*removedCallback)(void* data, celix_array_list_entry_t entry);
 };
-
-static bool celix_arrayList_undefinedEquals(celix_array_list_entry_t a, celix_array_list_entry_t b) {
-    return memcmp(&a.voidPtrVal, &b.voidPtrVal, sizeof(a)) == 0;
-}
 
 static int celix_arrayList_comparePtrEntries(celix_array_list_entry_t a, celix_array_list_entry_t b) {
     return a.voidPtrVal > b.voidPtrVal ? 1 : (a.voidPtrVal < b.voidPtrVal ? -1 : 0);
@@ -101,7 +98,7 @@ static bool celix_arrayList_versionEquals(celix_array_list_entry_t a, celix_arra
     return celix_arrayList_compareVersionEntries(a, b) == 0;
 }
 
-inline static bool celix_arrayList_equalsForElement(celix_array_list_t *list, celix_array_list_entry_t a, celix_array_list_entry_t b) {
+static bool celix_arrayList_equalsForElement(const celix_array_list_t* list, celix_array_list_entry_t a, celix_array_list_entry_t b) {
     // by class invariant, equalsCallback is never NULL
     return list->equalsCallback(a, b);
 }
@@ -129,7 +126,7 @@ static void celix_arrayList_destroyVersion(void* v) {
     celix_version_destroy(version);
 }
 
-static void celix_arrayList_callRemovedCallback(celix_array_list_t *list, int index) {
+static void celix_arrayList_callRemovedCallback(celix_array_list_t* list, int index) {
     celix_array_list_entry_t entry = list->elementData[index];
     if (list->simpleRemovedCallback != NULL) {
         list->simpleRemovedCallback(entry.voidPtrVal);
@@ -184,10 +181,6 @@ static void celix_arrayList_setTypeSpecificCallbacks(celix_array_list_t* list) {
         list->compareCallback = celix_arrayList_compareVersionEntries;
         list->copyCallback = celix_arrayList_copyVersionEntry;
         break;
-    default:
-        assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
-        list->equalsCallback = celix_arrayList_undefinedEquals;
-        break;
     }
 }
 
@@ -232,10 +225,6 @@ static celix_array_list_t* celix_arrayList_createTypedArray(celix_array_list_ele
     celix_array_list_create_options_t opts = CELIX_EMPTY_ARRAY_LIST_CREATE_OPTIONS;
     opts.elementType = type;
     return celix_arrayList_createWithOptions(&opts);
-}
-
-celix_array_list_t* celix_arrayList_create() {
-    return celix_arrayList_createTypedArray(CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
 }
 
 celix_array_list_t* celix_arrayList_createPointerArray() {
@@ -292,32 +281,27 @@ celix_array_list_entry_t celix_arrayList_getEntry(const celix_array_list_t *list
 }
 
 void* celix_arrayList_get(const celix_array_list_t* list, int index) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER);
     return arrayList_getEntry(list, index).voidPtrVal;
 }
 
 const char* celix_arrayList_getString(const celix_array_list_t* list, int index) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING);
     return arrayList_getEntry(list, index).stringVal;
 }
 
 long int celix_arrayList_getLong(const celix_array_list_t* list, int index) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG);
     return arrayList_getEntry(list, index).longVal;
 }
 
 double celix_arrayList_getDouble(const celix_array_list_t* list, int index) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE);
     return arrayList_getEntry(list, index).doubleVal;
 }
 
 bool celix_arrayList_getBool(const celix_array_list_t* list, int index) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL);
     return arrayList_getEntry(list, index).boolVal;
 }
 
@@ -342,27 +326,19 @@ static celix_status_t celix_arrayList_addEntry(celix_array_list_t* list, celix_a
 
 celix_status_t celix_arrayList_add(celix_array_list_t* list, void* element) {
     assert(element);
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER);
+    celix_array_list_entry_t entry = {0};
     entry.voidPtrVal = element;
     return celix_arrayList_addEntry(list, entry);
 }
 
 celix_status_t celix_arrayList_addString(celix_array_list_t* list, const char* val) {
     assert(val);
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
-    if (list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING) {
-        entry.stringVal = celix_utils_strdup(val);
-        if (entry.stringVal == NULL) {
-            return ENOMEM;
-        }
-    } else {
-        entry.stringVal = val;
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING);
+    celix_array_list_entry_t entry = {0};
+    entry.stringVal = celix_utils_strdup(val);
+    if (entry.stringVal == NULL) {
+        return ENOMEM;
     }
     return celix_arrayList_addEntry(list, entry);
 }
@@ -370,52 +346,39 @@ celix_status_t celix_arrayList_addString(celix_array_list_t* list, const char* v
 celix_status_t celix_arrayList_assignString(celix_array_list_t* list, char* value) {
     assert(value);
     assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
+    celix_array_list_entry_t entry = {0};
     entry.stringVal = value;
     return celix_arrayList_addEntry(list, entry);
 }
 
 celix_status_t celix_arrayList_addLong(celix_array_list_t* list, long val) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG);
+    celix_array_list_entry_t entry = {0};
     entry.longVal = val;
     return celix_arrayList_addEntry(list, entry);
 }
 
 celix_status_t celix_arrayList_addDouble(celix_array_list_t* list, double val) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE);
+    celix_array_list_entry_t entry = {0};
     entry.doubleVal = val;
     return celix_arrayList_addEntry(list, entry);
 }
 
 celix_status_t celix_arrayList_addBool(celix_array_list_t* list, bool val) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL);
+    celix_array_list_entry_t entry = {0};
     entry.boolVal = val;
     return celix_arrayList_addEntry(list, entry);
 }
 
 celix_status_t celix_arrayList_addVersion(celix_array_list_t* list, const celix_version_t* value) {
     assert(value);
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
-    if (list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION) {
-        entry.versionVal = celix_version_copy(value);
-        if (entry.versionVal == NULL) {
-            return ENOMEM;
-        }
-    } else {
-        entry.versionVal = value;
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION);
+    celix_array_list_entry_t entry = {0};
+    entry.versionVal = celix_version_copy(value);
+    if (entry.versionVal == NULL) {
+        return ENOMEM;
     }
     return celix_arrayList_addEntry(list, entry);
 }
@@ -423,17 +386,15 @@ celix_status_t celix_arrayList_addVersion(celix_array_list_t* list, const celix_
 celix_status_t celix_arrayList_assignVersion(celix_array_list_t* list, celix_version_t* value) {
     assert(value);
     assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
+    celix_array_list_entry_t entry = {0};
     entry.versionVal = value;
     return celix_arrayList_addEntry(list, entry);
 }
 
 int celix_arrayList_indexOf(celix_array_list_t *list, celix_array_list_entry_t entry) {
-    size_t size = celix_arrayList_size(list);
-    int i;
+    const size_t size = celix_arrayList_size(list);
     int index = -1;
-    for (i = 0 ; i < size ; ++i) {
+    for (int i = 0 ; i < size ; ++i) {
         bool eq = celix_arrayList_equalsForElement(list, entry, list->elementData[i]);
         if (eq) {
             index = i;
@@ -457,55 +418,43 @@ void celix_arrayList_removeEntry(celix_array_list_t *list, celix_array_list_entr
 }
 
 void celix_arrayList_remove(celix_array_list_t* list, void* ptr) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER);
+    celix_array_list_entry_t entry = {0};
     entry.voidPtrVal = ptr;
     celix_arrayList_removeEntry(list, entry);
 }
 
 void celix_arrayList_removeString(celix_array_list_t* list, const char* val) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING);
+    celix_array_list_entry_t entry = {0};
     entry.stringVal = val;
     celix_arrayList_removeEntry(list, entry);
 }
 
 void celix_arrayList_removeLong(celix_array_list_t* list, long val) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_LONG);
+    celix_array_list_entry_t entry = {0};
     entry.longVal = val;
     celix_arrayList_removeEntry(list, entry);
 }
 
 void celix_arrayList_removeDouble(celix_array_list_t* list, double val) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_DOUBLE);
+    celix_array_list_entry_t entry = {0};
     entry.doubleVal = val;
     celix_arrayList_removeEntry(list, entry);
 }
 
 void celix_arrayList_removeBool(celix_array_list_t* list, bool val) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_BOOL);
+    celix_array_list_entry_t entry = {0};
     entry.boolVal = val;
     celix_arrayList_removeEntry(list, entry);
 }
 
 void celix_arrayList_removeVersion(celix_array_list_t* list, const celix_version_t* val) {
-    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION ||
-           list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED);
-    celix_array_list_entry_t entry;
-    memset(&entry, 0, sizeof(entry));
+    assert(list->elementType == CELIX_ARRAY_LIST_ELEMENT_TYPE_VERSION);
+    celix_array_list_entry_t entry = {0};
     entry.versionVal = val;
     celix_arrayList_removeEntry(list, entry);
 }
@@ -612,8 +561,6 @@ void celix_arrayList_sortEntries(celix_array_list_t *list, celix_array_list_comp
 
 const char* celix_arrayList_elementTypeToString(celix_array_list_element_type_t type) {
     switch (type) {
-    case CELIX_ARRAY_LIST_ELEMENT_TYPE_UNDEFINED:
-        return STRING_VALUE_UNDEFINED_EL_TYPE;
     case CELIX_ARRAY_LIST_ELEMENT_TYPE_POINTER:
         return STRING_VALUE_POINTER_EL_TYPE;
     case CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING:

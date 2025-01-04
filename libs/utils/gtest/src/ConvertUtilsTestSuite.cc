@@ -326,7 +326,7 @@ TEST_F(ConvertUtilsTestSuite, ConvertToLongArrayTest) {
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
     EXPECT_TRUE(result == nullptr);
 
-    celix_autoptr(celix_array_list_t) defaultList = celix_arrayList_create();
+    celix_autoptr(celix_array_list_t) defaultList = celix_arrayList_createLongArray();
     celix_arrayList_addLong(defaultList, 42L);
     convertState = celix_utils_convertStringToLongArrayList("1,2,3,invalid", defaultList, &result);
     EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, convertState);
@@ -570,8 +570,6 @@ TEST_F(ConvertUtilsTestSuite, VersionArrayToStringTest) {
 
 TEST_F(ConvertUtilsTestSuite, InvalidArgumentsForArrayToStringTest) {
     EXPECT_EQ(nullptr, celix_utils_arrayListToString(nullptr));
-    celix_autoptr(celix_array_list_t) list1 = celix_arrayList_create(); //unsupported undefined type
-    EXPECT_EQ(nullptr, celix_utils_arrayListToString(list1));
     celix_autoptr(celix_array_list_t) list2 = celix_arrayList_createPointerArray(); //unsupported pointer type
     EXPECT_EQ(nullptr, celix_utils_arrayListToString(list2));
 }
