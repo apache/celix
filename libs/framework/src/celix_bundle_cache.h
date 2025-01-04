@@ -20,13 +20,8 @@
 #ifndef CELIX_BUNDLE_CACHE_H_
 #define CELIX_BUNDLE_CACHE_H_
 
-#include <stdbool.h>
-
-#include "celix_array_list.h"
-#include "celix_framework.h"
-#include "celix_long_hash_map.h"
-
-#include "celix_bundle_archive.h"
+#include "celix_types.h"
+#include "celix_errno.h"
 
 #ifdef __cplusplus
 extern "C" {

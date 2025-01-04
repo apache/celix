@@ -16,24 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * celix_bundle_archive.h
- *
- *  \date       Aug 8, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef BUNDLE_ARCHIVE_H_
 #define BUNDLE_ARCHIVE_H_
 
-#include "celix_types.h"
-#include <stdbool.h>
-#include <stdlib.h>
+#include <time.h>
 
-#include "celix_bundle_state.h"
+#include "celix_types.h"
 #include "celix_errno.h"
-#include "celix_framework_export.h"
 #include "celix_bundle_manifest_type.h"
 #include "celix_cleanup.h"
 
@@ -53,7 +43,7 @@
 extern "C" {
 #endif
 
- /**
+/**
  * @brief Create bundle archive.
  * Create a bundle archive for the given root, id, location and revision nr.
  * Also create the bundle cache dir and if will reuse a existing bundle resource cache dir if the provided
@@ -63,10 +53,10 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
 
 void celix_bundleArchive_destroy(celix_bundle_archive_t* archive);
 
- /**
- * Define the cleanup function for a bundle_archive_t, so that it can be used with celix_autoptr.
- */
- CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_bundle_archive_t, celix_bundleArchive_destroy);
+/**
+* Define the cleanup function for a bundle_archive_t, so that it can be used with celix_autoptr.
+*/
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_bundle_archive_t, celix_bundleArchive_destroy);
 
 /**
  * @brief Returns the bundle id of the bundle archive.

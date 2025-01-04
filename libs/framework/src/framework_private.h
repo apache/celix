@@ -39,7 +39,7 @@
 #include "celix_log.h"
 #include "celix_threads.h"
 #include "service_registry.h"
-#include <stdbool.h>
+#include "celix_long_hash_map.h"
 
 #ifdef __cplusplus
 extern "C" {
