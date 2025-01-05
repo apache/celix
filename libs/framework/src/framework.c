@@ -2663,6 +2663,24 @@ long celix_framework_nextScheduledEventId(framework_t *fw) {
     return __atomic_fetch_add(&fw->dispatcher.nextScheduledEventId, 1, __ATOMIC_RELAXED);
 }
 
+static const char* celix_framework_genericEventName(celix_framework_t* fw, long eventId) {
+    // precondition fw->dispatcher.mutex locked
+    for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
+        int index = (fw->dispatcher.eventQueueFirstEntry + i) % fw->dispatcher.eventQueueCap;
+        celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
+        if (e->type == CELIX_GENERIC_EVENT && e->genericEventId == eventId) {
+            return e->genericEventName;
+        }
+    }
+    for (int i = 0; i < celix_arrayList_size(fw->dispatcher.dynamicEventQueue); ++i) {
+        celix_framework_event_t* e = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, i);
+        if (e->type == CELIX_GENERIC_EVENT && e->genericEventId == eventId) {
+            return e->genericEventName;
+        }
+    }
+    return NULL;
+}
+
 /**
  * @brief Checks if a generic event with the provided eventId is in progress.
  */
@@ -2688,11 +2706,16 @@ void celix_framework_waitForGenericEvent(celix_framework_t* fw, long eventId) {
     assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
     struct timespec logAbsTime = celixThreadCondition_getDelayedTime(5);
     celixThreadMutex_lock(&fw->dispatcher.mutex);
+    const char* eventName = celix_framework_genericEventName(fw, eventId);
     while (celix_framework_isGenericEventInProgress(fw, eventId)) {
         celix_status_t waitStatus =
             celixThreadCondition_waitUntil(&fw->dispatcher.cond, &fw->dispatcher.mutex, &logAbsTime);
         if (waitStatus == ETIMEDOUT) {
-            fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "Generic event with id %li not finished.", eventId);
+            if (eventName) {
+                fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "Generic event with name '%s' and id %li not finished.", eventName, eventId);
+            } else {
+                fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "Generic event with id %li not finished.", eventId);
+            }
             logAbsTime = celixThreadCondition_getDelayedTime(5);
         }
     }
