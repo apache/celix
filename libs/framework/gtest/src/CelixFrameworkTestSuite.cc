@@ -18,6 +18,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include <atomic>
 #include <chrono>
 #include <thread>
@@ -86,6 +87,34 @@ TEST_F(CelixFrameworkTestSuite, TimedWaitEventQueueTest) {
     //And a wait for empty event queue for max 1s will return success
     status = celix_framework_waitForEmptyEventQueueFor(framework.get(), 1);
     EXPECT_EQ(CELIX_SUCCESS, status);
+}
+
+TEST_F(CelixFrameworkTestSuite, GenericEventTimeoutPropertyTest) {
+    // Start capturing stdout
+    ::testing::internal::CaptureStderr();
+
+    //When there is a emtpy event queue
+    celix_framework_waitForEmptyEventQueue(framework.get());
+    
+    // And the generic event timeout is set to 10ms
+    setenv(CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS, "0.010", 1);
+
+    //And a generic event is fired, that block the queue for 20ms
+    auto callback = [](void* /*data*/) {
+        std::this_thread::sleep_for(std::chrono::milliseconds{20});
+    };
+    long eventId = celix_framework_fireGenericEvent(framework.get(), -1L, -1L, "test", nullptr, callback, nullptr, nullptr);
+
+    //Then waiting for the event queue will have logged errors
+    celix_framework_waitForGenericEvent(framework.get(), eventId);
+
+    // And the log will contain a printed warning
+    auto log = ::testing::internal::GetCapturedStderr();
+    auto expected = "Generic event 'test' (id=" + std::to_string(eventId) + ")";
+    EXPECT_THAT(log, ::testing::HasSubstr(expected));
+
+    // Finally unset the timeout
+    unsetenv(CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS);
 }
 
 TEST_F(CelixFrameworkTestSuite, AsyncInstallStartStopUpdateAndUninstallBundleTest) {
