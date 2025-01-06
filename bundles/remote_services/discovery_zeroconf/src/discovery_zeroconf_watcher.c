@@ -101,7 +101,7 @@ typedef struct service_browser_entry {
     DNSServiceRef browseRef;
     celix_log_helper_t *logHelper;
     celix_string_hash_map_t *watchedServices;//key:instanceName+'/'+interfaceIndex, val:interfaceIndex
-    int refCnt;
+    celix_long_hash_map_t* relatedListeners;//key:service id, val:null
     int resolvedCnt;
     bool markDeleted;
 }service_browser_entry_t;
@@ -222,6 +222,7 @@ void discoveryZeroconfWatcher_destroy(discovery_zeroconf_watcher_t *watcher) {
     CELIX_STRING_HASH_MAP_ITERATE(watcher->serviceBrowsers, iter) {
         service_browser_entry_t *browserEntry = (service_browser_entry_t *)iter.value.ptrValue;
         celix_stringHashMap_destroy(browserEntry->watchedServices);
+        celix_longHashMap_destroy(browserEntry->relatedListeners);
         free(browserEntry);
     }
     celix_stringHashMap_destroy(watcher->serviceBrowsers);
@@ -229,6 +230,83 @@ void discoveryZeroconfWatcher_destroy(discovery_zeroconf_watcher_t *watcher) {
     close(watcher->eventFd);
     free(watcher);
     return;
+}
+
+static bool discoveryZeroConfWatcher_addServiceBrowser(discovery_zeroconf_watcher_t *watcher, const char *serviceConfigType,
+                                                       long listenerId) {
+    const char *svcSubType = strrchr(serviceConfigType, '.');//We use the last word of the configuration type as mDNS service subtype
+    if (svcSubType != NULL) {
+        svcSubType += 1;//skip '.'
+    } else {
+        svcSubType = serviceConfigType;
+    }
+    size_t subTypeLen = strlen(svcSubType);
+    if (subTypeLen > 63) {//the subtype identifier is allowed to be up to 63 bytes,https://www.rfc-editor.org/rfc/rfc6763.txt#section-7.2
+        celix_logHelper_error(watcher->logHelper, "Watcher: Invalid service type for %s.", serviceConfigType);
+        return false;
+    }
+    celix_auto(celix_mutex_lock_guard_t) lockGuard = celixMutexLockGuard_init(&watcher->mutex);
+    celix_autofree service_browser_entry_t *browserEntry = (service_browser_entry_t *)celix_stringHashMap_get(watcher->serviceBrowsers, svcSubType);
+    if (browserEntry != NULL) {
+        if (celix_longHashMap_put(browserEntry->relatedListeners, listenerId, NULL) != CELIX_SUCCESS) {
+            celix_logHelper_logTssErrors(watcher->logHelper, CELIX_LOG_LEVEL_ERROR);
+            celix_logHelper_error(watcher->logHelper, "Watcher: Failed to attach listener to existed service browser.");
+        }
+        celix_steal_ptr(browserEntry);
+        return false;
+    }
+    browserEntry = (service_browser_entry_t *)calloc(1, sizeof(*browserEntry));
+    if (browserEntry == NULL) {
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to alloc service browser entry.");
+        return false;
+    }
+    celix_autoptr(celix_long_hash_map_t) relatedListeners = browserEntry->relatedListeners = celix_longHashMap_create();
+    if (relatedListeners == NULL) {
+        celix_logHelper_logTssErrors(watcher->logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create related listeners map.");
+        return false;
+    }
+    if (celix_longHashMap_put(browserEntry->relatedListeners, listenerId, NULL) != CELIX_SUCCESS) {
+        celix_logHelper_logTssErrors(watcher->logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to attach listener to service browser.");
+        return false;
+    }
+    celix_autoptr(celix_string_hash_map_t) watchedServices = browserEntry->watchedServices = celix_stringHashMap_create();
+    if (watchedServices == NULL) {
+        celix_logHelper_logTssErrors(watcher->logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create watched services map.");
+        return false;
+    }
+    browserEntry->resolvedCnt = 0;
+    browserEntry->browseRef = NULL;
+    browserEntry->logHelper = watcher->logHelper;
+    browserEntry->markDeleted = false;
+    if (celix_stringHashMap_put(watcher->serviceBrowsers, svcSubType, browserEntry) != CELIX_SUCCESS) {
+        celix_logHelper_logTssErrors(watcher->logHelper, CELIX_LOG_LEVEL_ERROR);
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to put service browser entry.");
+        return false;
+    }
+    celix_steal_ptr(watchedServices);
+    celix_steal_ptr(relatedListeners);
+    celix_steal_ptr(browserEntry);
+    return true;
+}
+
+static bool discoveryZeroConfWatcher_removeServiceBrowser(discovery_zeroconf_watcher_t* watcher, const char* serviceConfigType,
+                                                          long listenerId) {
+    const char *svcSubType = strrchr(serviceConfigType, '.');
+    if (svcSubType != NULL) {
+        svcSubType += 1;//skip '.'
+    } else {
+        svcSubType = serviceConfigType;
+    }
+    celix_auto(celix_mutex_lock_guard_t) lockGuard = celixMutexLockGuard_init(&watcher->mutex);
+    service_browser_entry_t *browserEntry = (service_browser_entry_t *)celix_stringHashMap_get(watcher->serviceBrowsers, svcSubType);
+    if ((browserEntry != NULL)) {
+        celix_longHashMap_remove(browserEntry->relatedListeners, listenerId);
+        return celix_longHashMap_size(browserEntry->relatedListeners) == 0;
+    }
+    return false;
 }
 
 int discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix_properties_t *props) {
@@ -239,6 +317,7 @@ int discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix_propert
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
     long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (serviceId == -1) {
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to get endpoint listener service id.");
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
@@ -265,6 +344,12 @@ int discoveryZeroconfWatcher_addEPL(void *handle, void *svc, const celix_propert
     celix_longHashMap_put(watcher->epls, serviceId, eplEntry);
     celixThreadMutex_unlock(&watcher->mutex);
 
+    const char* listenedConfigType = celix_filter_findAttribute(filter, CELIX_RSA_SERVICE_IMPORTED_CONFIGS);
+    if (listenedConfigType != NULL && discoveryZeroConfWatcher_addServiceBrowser(watcher, listenedConfigType, serviceId) == true) {
+        eventfd_t val = 1;
+        eventfd_write(watcher->eventFd, val);
+    }
+
     return CELIX_SUCCESS;
 }
 
@@ -276,9 +361,11 @@ int discoveryZeroconfWatcher_removeEPL(void *handle, void *svc, const celix_prop
     endpoint_listener_t *epl = (endpoint_listener_t *)svc;
     long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
     if (serviceId == -1) {
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to get endpoint listener service id.");
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
+    celix_autoptr(celix_filter_t) filter = NULL;
     celixThreadMutex_lock(&watcher->mutex);
     watched_epl_entry_t *eplEntry = (watched_epl_entry_t *)celix_longHashMap_get(watcher->epls, serviceId);
     if (eplEntry != NULL) {
@@ -290,10 +377,16 @@ int discoveryZeroconfWatcher_removeEPL(void *handle, void *svc, const celix_prop
             }
         }
         celix_longHashMap_remove(watcher->epls, serviceId);
-        celix_filter_destroy(eplEntry->filter);
+        filter = celix_steal_ptr(eplEntry->filter);
         free(eplEntry);
     }
     celixThreadMutex_unlock(&watcher->mutex);
+
+    const char* listenedConfigType = celix_filter_findAttribute(filter, CELIX_RSA_SERVICE_IMPORTED_CONFIGS);
+    if (listenedConfigType != NULL && discoveryZeroConfWatcher_removeServiceBrowser(watcher, listenedConfigType, serviceId) == true) {
+        eventfd_t val = 1;
+        eventfd_write(watcher->eventFd, val);
+    }
 
     return CELIX_SUCCESS;
 }
@@ -303,6 +396,11 @@ int discoveryZeroConfWatcher_addRSA(void *handle, void *svc, const celix_propert
     assert(svc != NULL);
     assert(props != NULL);
     discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)handle;
+    long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
+    if (serviceId == -1) {
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to get remote service admin service id.");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
     const char *configsSupported = celix_properties_get(props, CELIX_RSA_REMOTE_CONFIGS_SUPPORTED, NULL);
     celix_autofree char *configsSupportedCopy = celix_utils_strdup(configsSupported);
     if (configsSupportedCopy == NULL) {
@@ -313,50 +411,9 @@ int discoveryZeroConfWatcher_addRSA(void *handle, void *svc, const celix_propert
     char *token = strtok(configsSupportedCopy, ",");
     while (token != NULL) {
         token = celix_utils_trimInPlace(token);
-        const char *svcSubType = strrchr(token, '.');//We use the last word of config type as mDNS service subtype
-        if (svcSubType != NULL) {
-            svcSubType += 1;//skip '.'
-        } else {
-            svcSubType = token;
-        }
-        do {
-            size_t subTypeLen = strlen(svcSubType);
-            if (subTypeLen > 63) {//the subtype identifier is allowed to be up to 63 bytes,https://www.rfc-editor.org/rfc/rfc6763.txt#section-7.2
-                celix_logHelper_error(watcher->logHelper, "Watcher: Invalid service type for %s.", token);
-                break;
-            }
-            celix_auto(celix_mutex_lock_guard_t) lockGuard = celixMutexLockGuard_init(&watcher->mutex);
-            celix_autofree service_browser_entry_t *browserEntry = (service_browser_entry_t *)celix_stringHashMap_get(watcher->serviceBrowsers, svcSubType);
-            if (browserEntry != NULL) {
-                browserEntry->refCnt++;
-                celix_steal_ptr(browserEntry);
-                break;
-            }
-            browserEntry = (service_browser_entry_t *)calloc(1, sizeof(*browserEntry));
-            if (browserEntry == NULL) {
-                celix_logHelper_error(watcher->logHelper, "Watcher: Failed to alloc service browser entry.");
-                break;
-            }
-            celix_autoptr(celix_string_hash_map_t) watchedServices = browserEntry->watchedServices = celix_stringHashMap_create();
-            if (watchedServices == NULL) {
-                celix_logHelper_logTssErrors(watcher->logHelper, CELIX_LOG_LEVEL_ERROR);
-                celix_logHelper_error(watcher->logHelper, "Watcher: Failed to create watched services map.");
-                break;
-            }
-            browserEntry->refCnt = 1;
-            browserEntry->resolvedCnt = 0;
-            browserEntry->browseRef = NULL;
-            browserEntry->logHelper = watcher->logHelper;
-            browserEntry->markDeleted = false;
-            if (celix_stringHashMap_put(watcher->serviceBrowsers, svcSubType, browserEntry) != CELIX_SUCCESS) {
-                celix_logHelper_logTssErrors(watcher->logHelper, CELIX_LOG_LEVEL_ERROR);
-                celix_logHelper_error(watcher->logHelper, "Watcher: Failed to put service browser entry.");
-                break;
-            }
-            celix_steal_ptr(watchedServices);
-            celix_steal_ptr(browserEntry);
+        if (discoveryZeroConfWatcher_addServiceBrowser(watcher, token, serviceId)) {
             refreshBrowsers = true;
-        } while (0);
+        }
         token = strtok(NULL, ",");
     }
 
@@ -373,6 +430,11 @@ int discoveryZeroConfWatcher_removeRSA(void *handle, void *svc, const celix_prop
     assert(svc != NULL);
     assert(props != NULL);
     discovery_zeroconf_watcher_t *watcher = (discovery_zeroconf_watcher_t *)handle;
+    long serviceId = celix_properties_getAsLong(props, CELIX_FRAMEWORK_SERVICE_ID, -1);
+    if (serviceId == -1) {
+        celix_logHelper_error(watcher->logHelper, "Watcher: Failed to get remote service admin service id.");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
     const char *configsSupported = celix_properties_get(props, CELIX_RSA_REMOTE_CONFIGS_SUPPORTED, NULL);
     celix_autofree char *configsSupportedCopy = celix_utils_strdup(configsSupported);
     if (configsSupportedCopy == NULL) {
@@ -383,18 +445,9 @@ int discoveryZeroConfWatcher_removeRSA(void *handle, void *svc, const celix_prop
     char *token = strtok(configsSupportedCopy, ",");
     while (token != NULL) {
         token = celix_utils_trimInPlace(token);
-        const char *svcSubType = strrchr(token, '.');
-        if (svcSubType != NULL) {
-            svcSubType += 1;//skip '.'
-        } else {
-            svcSubType = token;
-        }
-        celixThreadMutex_lock(&watcher->mutex);
-        service_browser_entry_t *browserEntry = (service_browser_entry_t *)celix_stringHashMap_get(watcher->serviceBrowsers, svcSubType);
-        if ((browserEntry != NULL) && (--browserEntry->refCnt == 0)) {
+        if (discoveryZeroConfWatcher_removeServiceBrowser(watcher, token, serviceId)) {
             refreshBrowsers = true;
         }
-        celixThreadMutex_unlock(&watcher->mutex);
         token = strtok(NULL, ",");
     }
 
@@ -506,14 +559,15 @@ static void discoveryZeroconfWatcher_pickUpdatedServiceBrowsers(discovery_zeroco
     celix_string_hash_map_iterator_t iter = celix_stringHashMap_begin(watcher->serviceBrowsers);
     while (!celix_stringHashMapIterator_isEnd(&iter)) {
         service_browser_entry_t *browserEntry = (service_browser_entry_t *)iter.value.ptrValue;
-        if (watcher->sharedRef != NULL && browserEntry->browseRef == NULL && browserEntry->refCnt > 0 && browserEntry->resolvedCnt < DZC_MAX_RESOLVED_CNT) {
+        bool browserToBeDeleted = celix_longHashMap_size(browserEntry->relatedListeners) == 0;
+        if (watcher->sharedRef != NULL && browserEntry->browseRef == NULL && !browserToBeDeleted && browserEntry->resolvedCnt < DZC_MAX_RESOLVED_CNT) {
             status = celix_stringHashMap_put(updatedServiceBrowsers, iter.key, browserEntry);
             if (status != CELIX_SUCCESS) {
                 nextWorkIntervalTime = MIN(nextWorkIntervalTime, DZC_MAX_RETRY_INTERVAL);//retry browse after 5 seconds
                 celix_logHelper_logTssErrors(watcher->logHelper, CELIX_LOG_LEVEL_ERROR);
                 celix_logHelper_error(watcher->logHelper, "Watcher: Failed to put browse entry, %d.", status);
             }
-        } else if (browserEntry->refCnt <= 0) {
+        } else if (browserToBeDeleted) {
             status = celix_stringHashMap_put(updatedServiceBrowsers, iter.key, browserEntry);
             if (status == CELIX_SUCCESS) {
                 celix_stringHashMapIterator_remove(&iter);
@@ -540,6 +594,7 @@ static void discoveryZeroconfWatcher_pickUpdatedServiceBrowsers(discovery_zeroco
                 DNSServiceRefDeallocate(browserEntry->browseRef);
             }
             celix_stringHashMap_destroy(browserEntry->watchedServices);
+            celix_longHashMap_destroy(browserEntry->relatedListeners);
             free(browserEntry);
         } else {
             celix_stringHashMapIterator_next(&iter2);

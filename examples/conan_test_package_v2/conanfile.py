@@ -64,6 +64,7 @@ class TestPackageConan(ConanFile):
         tc.cache_variables["TEST_CELIX_DFI"] = celix_options.build_celix_dfi
         tc.cache_variables["TEST_UTILS"] = celix_options.build_utils
         tc.cache_variables["TEST_EVENT_ADMIN"] = celix_options.build_event_admin
+        tc.cache_variables["TEST_EVENT_ADMIN_REMOTE_PROVIDER_MQTT"] = celix_options.build_event_admin_remote_provider_mqtt
         tc.cache_variables["TEST_COMPONENTS_READY_CHECK"] = celix_options.build_components_ready_check
         # the following is workaround https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":
@@ -144,6 +145,10 @@ class TestPackageConan(ConanFile):
                     self.run("./use_event_admin",
                              cwd=os.path.join("deploy", "use_event_admin"), env="conanrun")
                     self.run("./conan_test_package/use_event_admin_api", env="conanrun")
+                    self.run("./conan_test_package/use_event_admin_spi", env="conanrun")
+                if celix_options.build_event_admin_remote_provider_mqtt:
+                    self.run("./use_event_admin_remote_provider_mqtt",
+                             cwd=os.path.join("deploy", "use_event_admin_remote_provider_mqtt"), env="conanrun")
                 if celix_options.build_components_ready_check:
                     self.run("./use_components_ready_check",
                              cwd=os.path.join("deploy", "use_components_ready_check"), env="conanrun")

@@ -97,4 +97,32 @@ __wrap_celix_properties_load(const char* filename,
     return __real_celix_properties_load(filename, decodeFlags, out);
 }
 
+celix_status_t __real_celix_properties_setBool(celix_properties_t* properties, const char* key, bool value);
+CELIX_EI_DEFINE(celix_properties_setBool, celix_status_t)
+celix_status_t __wrap_celix_properties_setBool(celix_properties_t* properties, const char* key, bool value) {
+    CELIX_EI_IMPL(celix_properties_setBool);
+    return __real_celix_properties_setBool(properties, key, value);
+}
+
+celix_status_t __real_celix_properties_getAsStringArrayList(const celix_properties_t* properties, const char* key, const celix_array_list_t* defaultValue, celix_array_list_t** list);
+CELIX_EI_DEFINE(celix_properties_getAsStringArrayList, celix_status_t)
+celix_status_t __wrap_celix_properties_getAsStringArrayList(const celix_properties_t* properties, const char* key, const celix_array_list_t* defaultValue, celix_array_list_t** list) {
+    CELIX_EI_IMPL(celix_properties_getAsStringArrayList);
+    return __real_celix_properties_getAsStringArrayList(properties, key, defaultValue, list);
+}
+
+celix_status_t __real_celix_properties_saveToString(const celix_properties_t* properties, int encodeFlags, char** out);
+CELIX_EI_DEFINE(celix_properties_saveToString, celix_status_t)
+celix_status_t __wrap_celix_properties_saveToString(const celix_properties_t* properties, int encodeFlags, char** out) {
+    CELIX_EI_IMPL(celix_properties_saveToString);
+    return __real_celix_properties_saveToString(properties, encodeFlags, out);
+}
+
+celix_status_t __real_celix_properties_loadFromString(const char* data, int decodeFlags, celix_properties_t** out);
+CELIX_EI_DEFINE(celix_properties_loadFromString, celix_status_t)
+celix_status_t __wrap_celix_properties_loadFromString(const char* data, int decodeFlags, celix_properties_t** out) {
+    CELIX_EI_IMPL(celix_properties_loadFromString);
+    return __real_celix_properties_loadFromString(data, decodeFlags, out);
+}
+
 }

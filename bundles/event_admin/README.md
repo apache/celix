@@ -40,3 +40,4 @@ If we want to build the event admin examples, the cmake option `BUILD_EVENT_ADMI
 ## Event Admin Bundles
 
 * [EventAdmin](event_admin/README.md) - The event admin implementation.
+* [RemoteProviders](remote_provider/README.md) - The remote providers implementation for the event admin. It is used to deliver events to remote frameworks. It is not a part of the OSGi Event Admin specification.

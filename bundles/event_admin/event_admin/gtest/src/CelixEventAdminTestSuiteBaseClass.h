@@ -21,10 +21,11 @@
 #define CELIX_CELIX_EVENT_ADMIN_TEST_SUITE_BASE_CLASS_H
 
 #include <functional>
-
+#include <future>
 #include "celix_event_admin.h"
 #include "celix_event_handler_service.h"
 #include "celix_event_constants.h"
+#include "celix_event_remote_provider_service.h"
 #include "celix_bundle_context.h"
 #include "celix_framework_factory.h"
 #include "celix_constants.h"
@@ -138,14 +139,14 @@ public:
         celix_eventAdmin_destroy(ea);
     }
 
-    void TestPublishEvent(const char *handlerTopics, const char *eventFilter, std::function<void(celix_event_admin_t*)> testBody,
-                          std::function<celix_status_t (void*, const char*, const celix_properties_t*)> onHandleEvent, bool asyncUnordered = false) {
+    void TestPublishEvent(const char *handlerTopics, const char *eventFilter, const std::function<void (celix_event_admin_t*)>& testBody,
+                          const std::function<celix_status_t(void*, const char*, const celix_properties_t*)>& onHandleEvent, bool asyncUnordered = false) {
         auto ea = celix_eventAdmin_create(ctx.get());
         EXPECT_TRUE(ea != nullptr);
         auto status = celix_eventAdmin_start(ea);
         EXPECT_EQ(CELIX_SUCCESS, status);
         struct celix_handle_event_callback_data {
-                std::function<celix_status_t (void*, const char*, const celix_properties_t*)> onHandleEvent;
+                const std::function<celix_status_t (void*, const char*, const celix_properties_t*)>& onHandleEvent;
                 void* handle;
         } data{onHandleEvent, ea};
         celix_event_handler_service_t handler;
@@ -190,6 +191,16 @@ public:
         status = celix_eventAdmin_stop(ea);
         EXPECT_EQ(CELIX_SUCCESS, status);
         celix_eventAdmin_destroy(ea);
+    }
+
+    void TestPublishEventToRemote(const std::function<void(celix_event_admin_t*)>& testBody, celix_event_remote_provider_service_t* remoteProviderService) {
+        TestPublishEvent("*", nullptr, [&testBody, remoteProviderService](celix_event_admin_t* ea) {
+            celix_autoptr(celix_properties_t) props = celix_properties_create();
+            celix_properties_setLong(props, CELIX_FRAMEWORK_SERVICE_ID, 123);
+            auto status = celix_eventAdmin_addRemoteProviderService(ea, remoteProviderService, props);
+            EXPECT_EQ(CELIX_SUCCESS, status);
+            testBody(ea);
+        }, [](void*, const char*, const celix_properties_t*) { return CELIX_SUCCESS;});
     }
 
     std::shared_ptr<celix_framework_t> fw{};
