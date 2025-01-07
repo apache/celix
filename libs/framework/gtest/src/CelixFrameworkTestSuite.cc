@@ -18,7 +18,6 @@
  */
 
 #include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include <atomic>
 #include <chrono>
 #include <thread>
@@ -111,7 +110,7 @@ TEST_F(CelixFrameworkTestSuite, GenericEventTimeoutPropertyTest) {
     // And the log will contain a printed warning
     auto log = ::testing::internal::GetCapturedStderr();
     auto expected = "Generic event 'test' (id=" + std::to_string(eventId) + ")";
-    EXPECT_THAT(log, ::testing::HasSubstr(expected));
+    EXPECT_TRUE(log.find(expected) != std::string::npos);
 
     // Finally unset the timeout
     unsetenv(CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS);
