@@ -189,7 +189,7 @@ struct celix_framework {
         } stats;
         celix_long_hash_map_t *scheduledEvents; //key = scheduled event id, entry = celix_framework_scheduled_event_t*. Used for scheduled events
 
-        double genericEventTimeout; // Timeout for printing an warning on unfinished generic events
+        double genericEventTimeoutInSeconds; // Timeout for printing an warning on unfinished generic events
     } dispatcher;
 
     celix_framework_logger_t* logger;

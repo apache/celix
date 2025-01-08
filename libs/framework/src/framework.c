@@ -252,7 +252,7 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     framework->dispatcher.eventQueue = malloc(sizeof(celix_framework_event_t) * framework->dispatcher.eventQueueCap);
     framework->dispatcher.dynamicEventQueue = celix_arrayList_create();
     framework->dispatcher.scheduledEvents = celix_longHashMap_create();
-    framework->dispatcher.genericEventTimeout = celix_framework_getConfigPropertyAsDouble(framework,
+    framework->dispatcher.genericEventTimeoutInSeconds = celix_framework_getConfigPropertyAsDouble(framework,
                                                   CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS,
                                                   CELIX_DEFAULT_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS,
                                                   NULL);
@@ -2687,7 +2687,7 @@ static celix_framework_event_t* celix_framework_getGenericEvent(celix_framework_
 
 void celix_framework_waitForGenericEvent(celix_framework_t* fw, long eventId) {
     assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
-    struct timespec logAbsTime = celixThreadCondition_getDelayedTime(fw->dispatcher.genericEventTimeout);
+    struct timespec logAbsTime = celixThreadCondition_getDelayedTime(fw->dispatcher.genericEventTimeoutInSeconds);
     celixThreadMutex_lock(&fw->dispatcher.mutex);
     celix_framework_event_t* event = celix_framework_getGenericEvent(fw, eventId);
     while (event) {
@@ -2701,7 +2701,7 @@ void celix_framework_waitForGenericEvent(celix_framework_t* fw, long eventId) {
                    eventId,
                    event->bndEntry ? celix_bundle_getSymbolicName(event->bndEntry->bnd) : "unnamed",
                    event->bndEntry ? event->bndEntry->bndId : -1l);
-            logAbsTime = celixThreadCondition_getDelayedTime(fw->dispatcher.genericEventTimeout);
+            logAbsTime = celixThreadCondition_getDelayedTime(fw->dispatcher.genericEventTimeoutInSeconds);
         }
         event = celix_framework_getGenericEvent(fw, eventId);
     }
