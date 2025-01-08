@@ -89,31 +89,37 @@ TEST_F(CelixFrameworkTestSuite, TimedWaitEventQueueTest) {
 }
 
 TEST_F(CelixFrameworkTestSuite, GenericEventTimeoutPropertyTest) {
+    celix_properties_t* config;
+    auto status = celix_properties_load("config.properties", 0, &config);
+    EXPECT_EQ(CELIX_SUCCESS, status);
+    celix_properties_set(config, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL" , "warning");
+    celix_properties_set(config, CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS, "0.010");
+
+    framework_t* fw = celix_frameworkFactory_createFramework(config);
+    ASSERT_TRUE(fw != nullptr);
+
     // Start capturing stdout
     ::testing::internal::CaptureStderr();
 
     //When there is a emtpy event queue
-    celix_framework_waitForEmptyEventQueue(framework.get());
+    celix_framework_waitForEmptyEventQueue(fw);
     
-    // And the generic event timeout is set to 10ms
-    setenv(CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS, "0.010", 1);
-
     //And a generic event is fired, that block the queue for 20ms
     auto callback = [](void* /*data*/) {
         std::this_thread::sleep_for(std::chrono::milliseconds{20});
     };
-    long eventId = celix_framework_fireGenericEvent(framework.get(), -1L, -1L, "test", nullptr, callback, nullptr, nullptr);
+    long eventId = celix_framework_fireGenericEvent(fw, -1L, -1L, "test", nullptr, callback, nullptr, nullptr);
 
     //Then waiting for the event queue will have logged errors
-    celix_framework_waitForGenericEvent(framework.get(), eventId);
+    celix_framework_waitForGenericEvent(fw, eventId);
 
     // And the log will contain a printed warning
     auto log = ::testing::internal::GetCapturedStderr();
     auto expected = "Generic event 'test' (id=" + std::to_string(eventId) + ")";
-    EXPECT_TRUE(log.find(expected) != std::string::npos);
+    EXPECT_TRUE(log.find(expected) != std::string::npos) << "Got " << log; 
 
-    // Finally unset the timeout
-    unsetenv(CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS);
+    // Cleanup framework
+    celix_frameworkFactory_destroyFramework(fw);
 }
 
 TEST_F(CelixFrameworkTestSuite, AsyncInstallStartStopUpdateAndUninstallBundleTest) {
