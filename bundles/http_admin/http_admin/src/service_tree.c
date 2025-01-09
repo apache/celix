@@ -91,15 +91,23 @@ bool addServiceNode(service_tree_t *svc_tree, const char *uri, void *svc) {
         //Else root already exists
     } else if(svc_tree->root_node == NULL) { //No service yet added
         uri_cpy = strdup(uri);
+        if (uri_cpy == NULL) { // Check for memory allocation failure
+            return false;
+        }
         req_uri = strtok_r(uri_cpy, "/", &save_ptr);
         svc_tree->root_node = createServiceNode(NULL, NULL, NULL, NULL, req_uri, (tokenCount == 1 ? svc : NULL));
         svc_tree->tree_node_count = 1;
         uri_exists = false;
     } else if(strcmp(svc_tree->root_node->svc_data->sub_uri, "root") == 0){
-        asprintf(&uri_cpy, "%s%s", "root", uri);
+        if (asprintf(&uri_cpy, "%s%s", "root", uri)<0) {
+            return false;
+        }
         req_uri = strtok_r(uri_cpy, "/", &save_ptr);
     } else {
         uri_cpy = strdup(uri);
+        if (uri_cpy == NULL) { // Check for memory allocation failure
+            return false;
+        }
         req_uri = strtok_r(uri_cpy, "/", &save_ptr);
     }
 
@@ -293,9 +301,15 @@ service_tree_node_t *findServiceNodeInTree(service_tree_t *svc_tree, const char 
     if (tree_not_empty) {
         if(strcmp(current->svc_data->sub_uri, "root") == 0)
         {
-            asprintf(&uri_cpy, "%s%s", "root", uri);
+            if (asprintf(&uri_cpy, "%s%s", "root", uri)<0)
+            {
+                return NULL;
+            }
         } else {
             uri_cpy = strdup(uri);
+            if (uri_cpy == NULL) {  // Check for strdup failure
+                return NULL;
+            }
         }
 
         char *uri_token = strtok_r(uri_cpy, "/", &save_ptr);

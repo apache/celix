@@ -48,8 +48,15 @@ static void celix_logHelper_setLogSvc(void *handle, void *svc) {
 
 celix_log_helper_t* celix_logHelper_create(celix_bundle_context_t* ctx, const char* logServiceName) {
     celix_log_helper_t* logHelper = calloc(1, sizeof(*logHelper));
+    if (logHelper == NULL) {
+        return NULL;
+    }
     logHelper->ctx = ctx;
     logHelper->logServiceName = celix_utils_strdup(logServiceName);
+    if (logHelper->logServiceName == NULL) {
+        free(logHelper);
+        return NULL;
+    }
     celixThreadMutex_create(&logHelper->mutex, NULL);
 
     const char *actLogLevelStr = celix_bundleContext_getProperty(ctx, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_CONFIG_NAME, CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL_DEFAULT_VALUE);
@@ -58,7 +65,11 @@ celix_log_helper_t* celix_logHelper_create(celix_bundle_context_t* ctx, const ch
 
     char *filter = NULL;
     if (logServiceName != NULL) {
-        asprintf(&filter, "(%s=%s)", CELIX_LOG_SERVICE_PROPERTY_NAME, logServiceName);
+        if (asprintf(&filter, "(%s=%s)", CELIX_LOG_SERVICE_PROPERTY_NAME, logServiceName) < 0) {
+            free(logHelper->logServiceName);
+            free(logHelper);
+            return NULL;
+        }
     }
 
     celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
