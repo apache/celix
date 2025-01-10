@@ -38,6 +38,8 @@ CELIX_EI_DECLARE(json_vsprintf,json_t*);
 CELIX_EI_DECLARE(json_sprintf, json_t*);
 CELIX_EI_DECLARE(json_dumpf, int);
 CELIX_EI_DECLARE(json_pack_ex, json_t*);
+CELIX_EI_DECLARE(json_null, json_t*);
+CELIX_EI_DECLARE(json_loads, json_t*);
 
 #ifdef __cplusplus
 }

@@ -65,6 +65,8 @@ extern "C" {
  * t char* string
  * N native int
  * E enum (int) + meta infos #EnumName=#EnumValue (e.g. #e1=v1;#e2=v2;E)
+ * a celix_array_list_t*
+ * p celix_properties_t*
  *
  * < Array //TODO
  * <(size)[Type] //TODO 
@@ -107,6 +109,7 @@ extern "C" {
 #define DYN_TYPE_TYPED_POINTER 4
 #define DYN_TYPE_TEXT 5
 #define DYN_TYPE_REF 6
+#define DYN_TYPE_BUILTIN_OBJECT 7
 
 typedef struct _dyn_type dyn_type;
 
@@ -193,6 +196,15 @@ CELIX_DFI_EXPORT int dynType_alloc(const dyn_type* type, void** instance);
  * @param instance    The memory location of the type instance.
  */
 CELIX_DFI_EXPORT void dynType_free(const dyn_type* type, void* instance);
+
+/**
+ * Cleans up the memory for a type instance described by a dyn type.
+ * It will destroy the object pointed to by *instance, but not free the memory of the instance itself.
+ *
+ * @param type        The dyn type for which structure to allocate.
+ * @param instance    The memory location of the type instance.
+ */
+CELIX_DFI_EXPORT void dynType_cleanup(const dyn_type* type, void* instance);
 
 /**
  * Prints the dyn type information to the provided output stream.

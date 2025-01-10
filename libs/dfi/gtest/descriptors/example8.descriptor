@@ -1,0 +1,10 @@
+:header
+type=interface
+name=example8
+version=1.0.0
+:annotations
+:types
+:methods
+getProps=getProps(#am=handle;P#am=out;*p)N
+setProps=setProps(#am=handle;Pp)N
+setConstProps=setConstProps(#am=handle;P#const=true;p)N

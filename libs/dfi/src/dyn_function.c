@@ -87,8 +87,9 @@ int dynFunction_parse(FILE* descriptor, struct types_head* refTypes, dyn_functio
             }
             const dyn_type* sub = dynType_typedPointer_getTypedType(real);
             int subType = dynType_type(sub);
-            if (subType != DYN_TYPE_TEXT && subType != DYN_TYPE_TYPED_POINTER) {
-                celix_err_pushf("Error 'out' is only allowed for pointer to text or typed pointer not to '%c'",
+            if (subType != DYN_TYPE_TEXT && subType != DYN_TYPE_TYPED_POINTER
+                && subType != DYN_TYPE_BUILTIN_OBJECT) {
+                celix_err_pushf("Error 'out' is only allowed for pointer to text or built-in object or typed pointer not to '%c'",
                                 dynType_descriptorType(sub));
                 return PARSE_ERROR;
             }
