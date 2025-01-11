@@ -305,6 +305,7 @@ celix_status_t celix_bundleArchive_create(celix_framework_t* fw, const char *arc
         status = celix_bundleArchive_storeBundleStateProperties(archive);
         if (status != CELIX_SUCCESS) {
             fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Failed to store bundle state properties.");
+            celix_utils_deleteDirectory(archive->archiveRoot, NULL);
             return status;
         }
     }
