@@ -17,7 +17,7 @@
   under the License.
  */
 
-#include "bundle_archive_private.h"
+#include "celix_bundle_archive.h"
 #include "celix_bundle_cache.h"
 #include "celix_constants.h"
 #include "celix_file_utils.h"
@@ -48,12 +48,11 @@ public:
 };
 
 TEST_F(CelixBundleCacheTestSuite, ArchiveCreateDestroyTest) {
-    bundle_archive_t* archive = nullptr;
+    celix_bundle_archive_t* archive = nullptr;
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_createArchive(fw.cache, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_NE(nullptr, archive);
     auto location = celix_bundleArchive_getLocation(archive);
     EXPECT_STREQ(SIMPLE_TEST_BUNDLE1_LOCATION, location);
-    free(location);
     long bndId;
     auto status = celix_bundleCache_findBundleIdForLocation(fw.cache, SIMPLE_TEST_BUNDLE1_LOCATION, &bndId);
     EXPECT_EQ(CELIX_SUCCESS, status);
@@ -71,7 +70,7 @@ TEST_F(CelixBundleCacheTestSuite, ArchiveCreateDestroyTest) {
 }
 
 TEST_F(CelixBundleCacheTestSuite, NonPermanentDestroyTest) {
-    bundle_archive_t* archive = nullptr;
+    celix_bundle_archive_t* archive = nullptr;
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_createArchive(fw.cache, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_NE(nullptr, archive);
     std::string loc = celix_bundleArchive_getPersistentStoreRoot(archive);
@@ -86,13 +85,11 @@ TEST_F(CelixBundleCacheTestSuite, NonPermanentDestroyTest) {
 }
 
 TEST_F(CelixBundleCacheTestSuite, SystemArchiveCreateDestroyTest) {
-    bundle_archive_t* archive = nullptr;
-    const char* archiveRoot = nullptr;
+    celix_bundle_archive_t* archive = nullptr;
     EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_createSystemArchive(&fw, &archive));
     EXPECT_NE(nullptr, archive);
     EXPECT_EQ(0, celix_bundleArchive_getId(archive));
-    EXPECT_EQ(CELIX_SUCCESS, bundleArchive_getArchiveRoot(archive, &archiveRoot));
-    EXPECT_EQ(nullptr, archiveRoot);
+    EXPECT_EQ(nullptr, celix_bundleArchive_getArchiveRoot(archive));
     EXPECT_EQ(nullptr, celix_bundleArchive_getLocation(archive));
     celix_bundleArchive_invalidate(archive);
     celix_bundleCache_destroyArchive(fw.cache, archive);

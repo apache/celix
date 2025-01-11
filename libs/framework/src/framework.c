@@ -39,7 +39,6 @@
 #include "celix_module_private.h"
 #include "celix_framework_bundle.h"
 
-#include "bundle_archive_private.h"
 #include "bundle_context_private.h"
 #include "celix_bundle_private.h"
 #include "celix_err.h"
@@ -49,6 +48,7 @@
 #include "service_reference_private.h"
 #include "service_registration_private.h"
 #include "utils.h"
+#include "celix_bundle_archive.h"
 
 struct celix_bundle_activator {
     void * userData;
@@ -264,7 +264,7 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     framework->logger = celix_frameworkLogger_create(celix_logUtils_logLevelFromString(logStr, CELIX_LOG_LEVEL_INFO));
 
     celix_status_t status = celix_bundleCache_create(framework, &framework->cache);
-    bundle_archive_t* systemArchive = NULL;
+    celix_bundle_archive_t* systemArchive = NULL;
     status = CELIX_DO_IF(status, celix_bundleCache_createSystemArchive(framework, &systemArchive));
     status = CELIX_DO_IF(status, celix_bundle_createFromArchive(framework, systemArchive, &framework->bundle));
     status = CELIX_DO_IF(status, bundle_getBundleId(framework->bundle, &framework->bundleId));
@@ -330,7 +330,7 @@ celix_status_t framework_destroy(framework_pt framework) {
             bundleContext_destroy(context);
         }
 
-        bundle_archive_t *archive = NULL;
+        celix_bundle_archive_t *archive = NULL;
         bundle_getArchive(bnd, &archive);
         celix_module_t* module = NULL;
         bundle_getCurrentModule(bnd, &module);
@@ -692,7 +692,7 @@ celix_framework_installBundleInternalImpl(celix_framework_t* framework, const ch
         id = *bndId;
     }
 
-    bundle_archive_t* archive = NULL;
+    celix_bundle_archive_t* archive = NULL;
     celix_bundle_t* bundle = NULL;
     celix_status_t status = celix_bundleCache_createArchive(framework->cache, id, bndLoc, &archive);
     if (status != CELIX_SUCCESS) {
@@ -1029,8 +1029,7 @@ long framework_getBundle(framework_pt framework, const char* location) {
     int size = celix_arrayList_size(framework->installedBundles.entries);
     for (int i = 0; i < size; ++i) {
         celix_bundle_entry_t*entry = celix_arrayList_get(framework->installedBundles.entries, i);
-        const char *loc = NULL;
-        bundle_getBundleLocation(entry->bnd, &loc);
+        const char *loc = celix_bundleArchive_getLocation(celix_bundle_getArchive(entry->bnd));
         if (loc != NULL && location != NULL && strncmp(loc, location, strlen(loc)) == 0) {
             id = entry->bndId;
             break;
@@ -1948,11 +1947,9 @@ static celix_status_t celix_framework_uninstallBundleEntryImpl(celix_framework_t
 
     celix_status_t status = CELIX_SUCCESS;
     celix_bundle_t *bnd = bndEntry->bnd;
-    bundle_archive_t *archive = NULL;
-    celix_bundle_revision_t*revision = NULL;
+    celix_bundle_archive_t *archive = NULL;
     celix_module_t* module = NULL;
     status = CELIX_DO_IF(status, bundle_getArchive(bnd, &archive));
-    status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
     status = CELIX_DO_IF(status, bundle_getCurrentModule(bnd, &module));
 
     if (module) {

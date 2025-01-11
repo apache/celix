@@ -32,7 +32,7 @@ struct celix_bundle {
     struct celix_bundle_activator *activator;
     bundle_state_e state;
     void *handle;
-    bundle_archive_pt archive;
+    celix_bundle_archive_t* archive;
     celix_array_list_t* modules;
 
     celix_framework_t *framework;
@@ -50,7 +50,7 @@ typedef struct celix_bundle_activator celix_bundle_activator_t;
  * @return CELIX_SUCCESS if the bundle is created successfully.
  */
 celix_status_t
-celix_bundle_createFromArchive(celix_framework_t *framework, bundle_archive_pt archive, celix_bundle_t **bundleOut);
+celix_bundle_createFromArchive(celix_framework_t *framework, celix_bundle_archive_t* archive, celix_bundle_t **bundleOut);
 
 /**
  * @brief Get the bundle archive.
@@ -58,7 +58,7 @@ celix_bundle_createFromArchive(celix_framework_t *framework, bundle_archive_pt a
  * @param[in] bundle The bundle.
  * @return The bundle archive.
  */
-bundle_archive_t *celix_bundle_getArchive(const celix_bundle_t *bundle);
+celix_bundle_archive_t *celix_bundle_getArchive(const celix_bundle_t *bundle);
 
 /**
  * Destroys the bundle.
@@ -80,7 +80,7 @@ void celix_bundle_setContext(celix_bundle_t *bundle, celix_bundle_context_t *con
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_isSystemBundle(const celix_bundle_t *bundle, bool *systemBundle);
 
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getArchive(const celix_bundle_t *bundle, bundle_archive_pt *archive);
+CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getArchive(const celix_bundle_t *bundle, celix_bundle_archive_t** archive);
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getCurrentModule(const celix_bundle_t *bundle, celix_module_t** module);
 
@@ -101,8 +101,6 @@ CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getState(const celix_bundle_t *
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getBundleId(const celix_bundle_t *bundle, long *id);
 
 CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getFramework(const celix_bundle_t *bundle, celix_framework_t **framework);
-
-CELIX_FRAMEWORK_DEPRECATED celix_status_t bundle_getBundleLocation(const celix_bundle_t *bundle, const char **location);
 
 #ifdef __cplusplus
 }

@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bundle_archive_private.h"
 #include "celix_bundle_manifest.h"
 #include "celix_constants.h"
 #include "celix_framework.h"
@@ -54,10 +53,8 @@ struct celix_module {
 };
 
 static celix_bundle_manifest_t* celix_module_getManifestFromBundle(celix_bundle_t* bundle) {
-    bundle_archive_t* archive = celix_bundle_getArchive(bundle);
-    celix_bundle_revision_t* revision = NULL;
-    (void)bundleArchive_getCurrentRevision(archive, &revision);
-    return celix_bundleRevision_getManifest(revision);
+    celix_bundle_archive_t* archive = celix_bundle_getArchive(bundle);
+    return celix_bundleArchive_getManifest(archive);
 }
 
 celix_module_t* module_create(celix_bundle_t* bundle) {
@@ -193,7 +190,7 @@ static celix_status_t celix_module_loadLibrary(celix_module_t* module, const cha
 
 static celix_status_t celix_module_loadLibraryForManifestEntry(celix_module_t* module,
                                                                const char* library,
-                                                               bundle_archive_pt archive,
+                                                               celix_bundle_archive_t* archive,
                                                                void** handle) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -233,7 +230,7 @@ static celix_status_t celix_module_loadLibraryForManifestEntry(celix_module_t* m
 static celix_status_t celix_module_loadLibrariesInManifestEntry(celix_module_t* module,
                                                                 const celix_array_list_t* libraries,
                                                                 const char* activator,
-                                                                bundle_archive_pt archive,
+                                                                celix_bundle_archive_t* archive,
                                                                 void** activatorHandle) {
     assert(libraries != NULL);
     assert(celix_arrayList_getElementType(libraries) == CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING);
@@ -256,7 +253,7 @@ static celix_status_t celix_module_loadLibrariesInManifestEntry(celix_module_t* 
 celix_status_t celix_module_loadLibraries(celix_module_t* module) {
     celix_status_t status = CELIX_SUCCESS;
     celix_library_handle_t* activatorHandle = NULL;
-    bundle_archive_t* archive = celix_bundle_getArchive(module->bundle);
+    celix_bundle_archive_t* archive = celix_bundle_getArchive(module->bundle);
 
     celix_bundle_manifest_t* man = celix_module_getManifestFromBundle(module->bundle);
     const char* activator = celix_bundleManifest_getBundleActivatorLibrary(man);

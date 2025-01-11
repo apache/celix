@@ -29,7 +29,7 @@
 #include "celix_array_list.h"
 #include "celix_errno.h"
 #include "service_factory.h"
-#include "bundle_archive.h"
+#include "celix_bundle_archive.h"
 #include "celix_service_listener.h"
 #include "bundle_listener.h"
 #include "framework_listener.h"
@@ -39,7 +39,7 @@
 #include "celix_log.h"
 #include "celix_threads.h"
 #include "service_registry.h"
-#include <stdbool.h>
+#include "celix_long_hash_map.h"
 
 #ifdef __cplusplus
 extern "C" {
