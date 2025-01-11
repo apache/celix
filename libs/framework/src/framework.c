@@ -2693,7 +2693,8 @@ void celix_framework_waitForGenericEvent(celix_framework_t* fw, long eventId) {
     while (event) {
         celix_status_t waitStatus =
             celixThreadCondition_waitUntil(&fw->dispatcher.cond, &fw->dispatcher.mutex, &logAbsTime);
-        if (waitStatus == ETIMEDOUT) {
+        event = celix_framework_getGenericEvent(fw, eventId);
+        if (waitStatus == ETIMEDOUT && event != NULL) {
             fw_log(fw->logger,
                    CELIX_LOG_LEVEL_WARNING,
                    "Generic event '%s' (id=%li) for bundle '%s' (id=%li) not finished",
@@ -2703,7 +2704,6 @@ void celix_framework_waitForGenericEvent(celix_framework_t* fw, long eventId) {
                    event->bndEntry ? event->bndEntry->bndId : -1l);
             logAbsTime = celixThreadCondition_getDelayedTime(fw->dispatcher.genericEventTimeoutInSeconds);
         }
-        event = celix_framework_getGenericEvent(fw, eventId);
     }
     celixThreadMutex_unlock(&fw->dispatcher.mutex);
 }
