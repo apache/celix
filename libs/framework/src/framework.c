@@ -252,6 +252,10 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     framework->dispatcher.eventQueue = malloc(sizeof(celix_framework_event_t) * framework->dispatcher.eventQueueCap);
     framework->dispatcher.dynamicEventQueue = celix_arrayList_create();
     framework->dispatcher.scheduledEvents = celix_longHashMap_create();
+    framework->dispatcher.genericEventTimeoutInSeconds = celix_framework_getConfigPropertyAsDouble(framework,
+                                                  CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS,
+                                                  CELIX_DEFAULT_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS,
+                                                  NULL);
 
     celix_framework_createAndStoreFrameworkUUID(framework);
 
@@ -2663,37 +2667,42 @@ long celix_framework_nextScheduledEventId(framework_t *fw) {
     return __atomic_fetch_add(&fw->dispatcher.nextScheduledEventId, 1, __ATOMIC_RELAXED);
 }
 
-/**
- * @brief Checks if a generic event with the provided eventId is in progress.
- */
-static bool celix_framework_isGenericEventInProgress(celix_framework_t* fw, long eventId) {
-    // precondition fw->dispatcher.mutex locked)
+static celix_framework_event_t* celix_framework_getGenericEvent(celix_framework_t* fw, long eventId) {
+    // precondition fw->dispatcher.mutex locked
     for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
         int index = (fw->dispatcher.eventQueueFirstEntry + i) % fw->dispatcher.eventQueueCap;
         celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
         if (e->type == CELIX_GENERIC_EVENT && e->genericEventId == eventId) {
-            return true;;
+            return e;
         }
     }
     for (int i = 0; i < celix_arrayList_size(fw->dispatcher.dynamicEventQueue); ++i) {
         celix_framework_event_t* e = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, i);
         if (e->type == CELIX_GENERIC_EVENT && e->genericEventId == eventId) {
-            return true;
+            return e;
         }
     }
-    return false;
+    return NULL;
 }
 
 void celix_framework_waitForGenericEvent(celix_framework_t* fw, long eventId) {
     assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
-    struct timespec logAbsTime = celixThreadCondition_getDelayedTime(5);
+    struct timespec logAbsTime = celixThreadCondition_getDelayedTime(fw->dispatcher.genericEventTimeoutInSeconds);
     celixThreadMutex_lock(&fw->dispatcher.mutex);
-    while (celix_framework_isGenericEventInProgress(fw, eventId)) {
+    celix_framework_event_t* event = celix_framework_getGenericEvent(fw, eventId);
+    while (event) {
         celix_status_t waitStatus =
             celixThreadCondition_waitUntil(&fw->dispatcher.cond, &fw->dispatcher.mutex, &logAbsTime);
-        if (waitStatus == ETIMEDOUT) {
-            fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "Generic event with id %li not finished.", eventId);
-            logAbsTime = celixThreadCondition_getDelayedTime(5);
+        event = celix_framework_getGenericEvent(fw, eventId);
+        if (waitStatus == ETIMEDOUT && event != NULL) {
+            fw_log(fw->logger,
+                   CELIX_LOG_LEVEL_WARNING,
+                   "Generic event '%s' (id=%li) for bundle '%s' (id=%li) not finished",
+                   event->genericEventName ? event->genericEventName : "unnamed",
+                   eventId,
+                   event->bndEntry ? celix_bundle_getSymbolicName(event->bndEntry->bnd) : "unnamed",
+                   event->bndEntry ? event->bndEntry->bndId : -1l);
+            logAbsTime = celixThreadCondition_getDelayedTime(fw->dispatcher.genericEventTimeoutInSeconds);
         }
     }
     celixThreadMutex_unlock(&fw->dispatcher.mutex);

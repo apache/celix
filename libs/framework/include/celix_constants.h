@@ -281,6 +281,21 @@ extern "C" {
  */
 #define CELIX_DEFAULT_ALLOWED_PROCESSING_TIME_FOR_SCHEDULED_EVENT_IN_SECONDS 2.0
 
+/*!
+ * @brief Celix framework environment property (named "CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS")
+ * to configure the allowed processing time for a generic event callback or a remove callback before a warning
+ * log message is printed that the processing time is too long.
+ * Should be a double value in seconds.
+ */
+#define CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS                                                   \
+    "CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS"
+
+/**
+ * @brief The default , in seconds, allowed processing time for a processing a generic event or a remove callback
+ * before a warning log message is printed.
+ */
+#define CELIX_DEFAULT_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS 5.0
+
 /**
  * @brief Celix framework environment property (named "CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED") to configure 
  * whether framework condition services are enabled or not.

@@ -223,4 +223,12 @@ namespace celix {
      * Should be a boolean value.
      */
     constexpr const char* const FRAMEWORK_CONDITION_SERVICES_ENABLED = CELIX_FRAMEWORK_CONDITION_SERVICES_ENABLED;
+
+    /**
+     * @brief Celix framework property (named "CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS") to configure the timeout time 
+     * for generic events in seconds.
+     * Default is 5.0
+     * Should be a double value.
+     */
+    constexpr const char* const ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS = CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS;
 }
