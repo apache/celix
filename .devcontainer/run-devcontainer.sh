@@ -25,7 +25,7 @@ CELIX_REPO_ROOT=$(realpath "${SCRIPT_LOCATION}/..")
 CELIX_CONTAINER_ROOT="/home/celixdev/workspace"
 
 CONTAINER_SSH_PORT=2233
-CONTAINER_COMMAND_DEFAULT="sudo /usr/sbin/sshd -D -e -p ${CONTAINER_SSH_PORT}"
+CONTAINER_COMMAND_DEFAULT="sudo chown -R celixdev:celixdev ${CELIX_CONTAINER_ROOT} && sudo /usr/sbin/sshd -D -e -p ${CONTAINER_SSH_PORT}"
 CONTAINER_COMMAND=${1:-${CONTAINER_COMMAND_DEFAULT}}
 CONTAINER_NAME="celixdev"
 
