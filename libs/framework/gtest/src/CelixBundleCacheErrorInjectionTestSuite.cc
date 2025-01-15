@@ -32,12 +32,12 @@
 #include "celix_properties_ei.h"
 
 #include "asprintf_ei.h"
-#include "bundle_archive_private.h"
-#include "bundle_revision_private.h"
+#include "celix_bundle_archive.h"
 #include "framework_private.h"
 #include "malloc_ei.h"
 #include "celix_bundle_manifest.h"
 #include "unistd_ei.h"
+#include "dirent_ei.h"
 
 class CelixBundleCacheErrorInjectionTestSuite : public ::testing::Test {
   public:
@@ -56,15 +56,18 @@ class CelixBundleCacheErrorInjectionTestSuite : public ::testing::Test {
         celix_ei_expect_celix_stringHashMap_create(nullptr, 0, nullptr);
         celix_ei_expect_malloc(nullptr, 0, nullptr);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
+        celix_ei_expect_opendir(nullptr, 0, nullptr);
         celix_ei_expect_celix_properties_load(nullptr, 0, CELIX_SUCCESS);
         celix_frameworkLogger_destroy(fw.logger);
         celix_properties_destroy(fw.configurationMap);
     }
+
     void createCache(celix_bundle_cache_t** cache) {
         celix_properties_setBool(fw.configurationMap, CELIX_FRAMEWORK_CACHE_USE_TMP_DIR, true);
         EXPECT_EQ(CELIX_SUCCESS, celix_bundleCache_create(&fw, &fw.cache));
         *cache = fw.cache;
     }
+
     struct celix_framework fw {};
 };
 
@@ -104,13 +107,19 @@ TEST_F(CelixBundleCacheErrorInjectionTestSuite, CacheDeleteErrorTest) {
 
 TEST_F(CelixBundleCacheErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     celix_bundle_cache_t* cache = nullptr;
+    long bndId;
     createCache(&cache);
 
-    bundle_archive_t* archive = nullptr;
+    //note needs to be the first ei test, to ensure that the lookup bundle id map is not yet loaded.
+    celix_ei_expect_opendir((void*)celix_bundleCache_findBundleIdForLocation, 1, nullptr);
+    EXPECT_EQ(celix_bundleCache_findBundleIdForLocation(cache, SIMPLE_TEST_BUNDLE1_LOCATION, &bndId),
+              CELIX_FILE_IO_EXCEPTION);
+
+    celix_bundle_archive_t* archive = nullptr;
     celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_bundleCache_createArchive, 0, nullptr);
     EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_createArchive(cache, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_EQ(nullptr, archive);
-    long bndId;
+
     auto status = celix_bundleCache_findBundleIdForLocation(cache, SIMPLE_TEST_BUNDLE1_LOCATION, &bndId);
     EXPECT_EQ(CELIX_SUCCESS, status);
     EXPECT_EQ(-1, bndId);
@@ -131,7 +140,7 @@ TEST_F(CelixBundleCacheErrorInjectionTestSuite, SystemArchiveCreateErrorTest) {
     celix_bundle_cache_t* cache = nullptr;
     createCache(&cache);
 
-    bundle_archive_t* archive = nullptr;
+    celix_bundle_archive_t* archive = nullptr;
     celix_ei_expect_calloc((void*)celix_bundleArchive_create, 0, nullptr);
     EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_createSystemArchive(&fw, &archive));
     EXPECT_EQ(nullptr, archive);
@@ -145,10 +154,6 @@ TEST_F(CelixBundleCacheErrorInjectionTestSuite, SystemArchiveCreateErrorTest) {
     EXPECT_EQ(nullptr, archive);
 
     celix_ei_expect_celix_properties_create((void*)celix_bundleManifest_createFrameworkManifest, 0, nullptr);
-    EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_createSystemArchive(&fw, &archive));
-    EXPECT_EQ(nullptr, archive);
-
-    celix_ei_expect_calloc((void*)celix_bundleRevision_create, 0, nullptr);
     EXPECT_EQ(CELIX_ENOMEM, celix_bundleCache_createSystemArchive(&fw, &archive));
     EXPECT_EQ(nullptr, archive);
 

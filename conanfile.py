@@ -351,6 +351,7 @@ class CelixConan(ConanFile):
             # https://github.com/conan-io/conan-center-index/pull/16254
             self.requires("mdnsresponder/1310.140.1")
         # 'libzip/1.10.1' requires 'zlib/1.2.13' while 'libcurl/7.64.1' requires 'zlib/1.2.12'
+        self.requires("openssl/[>=3.2.0]", override=True)
         self.requires("zlib/1.2.13", override=True)
         if self.options.build_event_admin_remote_provider_mqtt:
             self.requires("mosquitto/[>=2.0.3 <3.0.0]")

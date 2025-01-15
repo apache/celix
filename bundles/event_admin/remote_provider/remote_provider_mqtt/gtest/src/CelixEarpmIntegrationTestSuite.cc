@@ -84,7 +84,7 @@ public:
         std::future<void> receivedEventFuture = receivedEventPromise.get_future();
         auto props = celix_properties_create();
         celix_properties_set(props, CELIX_EVENT_TOPIC, "testEvent");
-        static celix_event_handler_service_t handler = {
+        celix_event_handler_service_t handler = {
                 .handle = &receivedEventPromise,
                 .handleEvent = [](void* handle, const char* topic, const celix_properties_t* properties) {
                     EXPECT_STREQ("testEvent", topic);
@@ -115,6 +115,7 @@ public:
         useOpts.filter.serviceName = CELIX_EVENT_ADMIN_SERVICE_NAME;
         useOpts.filter.versionRange = CELIX_EVENT_ADMIN_SERVICE_USE_RANGE;
         useOpts.callbackHandle = &handle;
+        useOpts.waitTimeoutInSeconds = 30;
         useOpts.use = [](void* handle, void* svc) {
             celix_event_admin_service_t *eventAdmin = static_cast<celix_event_admin_service_t *>(svc);
             celix_autoptr(celix_properties_t) props = celix_properties_create();
@@ -136,7 +137,7 @@ public:
             EXPECT_TRUE(tryCount >= 0);
         };
         auto found= celix_bundleContext_useServiceWithOptions(publisherCtx.get(), &useOpts);
-        ASSERT_TRUE(found);
+        EXPECT_TRUE(found);
 
         celix_bundleContext_unregisterService(subscriberCtx.get(), handlerServiceId);
     }

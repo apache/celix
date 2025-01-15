@@ -29,7 +29,7 @@
 #include "celix_array_list.h"
 #include "celix_errno.h"
 #include "service_factory.h"
-#include "bundle_archive.h"
+#include "celix_bundle_archive.h"
 #include "celix_service_listener.h"
 #include "bundle_listener.h"
 #include "framework_listener.h"
@@ -39,7 +39,7 @@
 #include "celix_log.h"
 #include "celix_threads.h"
 #include "service_registry.h"
-#include <stdbool.h>
+#include "celix_long_hash_map.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -188,6 +188,8 @@ struct celix_framework {
             int nbEvent; // number of pending generic events
         } stats;
         celix_long_hash_map_t *scheduledEvents; //key = scheduled event id, entry = celix_framework_scheduled_event_t*. Used for scheduled events
+
+        double genericEventTimeoutInSeconds; // Timeout for printing an warning on unfinished generic events
     } dispatcher;
 
     celix_framework_logger_t* logger;
