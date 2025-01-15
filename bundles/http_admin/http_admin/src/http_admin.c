@@ -418,6 +418,10 @@ static void createAliasesSymlink(const char *aliases, const char *admin_root, co
             }
 
             asprintf(&alias_path, "%s/%s%s", cwd, admin_root, sub_token);
+            if (alias_path == NULL) {  // Check if asprintf failed.
+                continue;
+            }
+
             if(aliasList_containsAlias(alias_list, alias_path)) {
                 free(alias_path);
                 continue; //Alias already existing, Continue to next entry
@@ -431,6 +435,10 @@ static void createAliasesSymlink(const char *aliases, const char *admin_root, co
             }
 
             asprintf(&bnd_resource_path, "%s/%s/%s", cwd, bundle_root, sub_token);
+            if (bnd_resource_path == NULL) {  // Check if asprintf failed.
+                free(alias_path);
+                continue;
+            }
 
             if(symlink(bnd_resource_path, alias_path) == 0) {
                 http_alias_t *alias = calloc(1, sizeof(*alias));

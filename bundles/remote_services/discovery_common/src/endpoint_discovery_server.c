@@ -89,11 +89,13 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
     (*server)->loghelper = &discovery->loghelper;
     (*server)->entries = hashMap_create(&utils_stringHash, NULL, &utils_stringEquals, NULL);
     if (!(*server)->entries) {
+        free(*server);
         return CELIX_ENOMEM;
     }
 
     status = celixThreadMutex_create(&(*server)->serverLock, NULL);
     if (status != CELIX_SUCCESS) {
+        free(*server);
         return CELIX_BUNDLE_EXCEPTION;
     }
 
@@ -128,6 +130,11 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
         free(detectedIp);
     }
 
+    if (!(*server)->ip) {  // Check if strdup failed
+        free(*server);
+        return CELIX_ENOMEM;
+    }
+
     bundleContext_getProperty(context, DISCOVERY_SERVER_PORT, &port);
     if (port == NULL) {
         port = defaultServerPort;
@@ -148,6 +155,11 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
     }
 
     (*server)->path = format_path(path);
+    if (!(*server)->path) {
+        free((*server)->ip);
+        free(*server);
+        return CELIX_ENOMEM;
+    }
 
     const struct mg_callbacks callbacks = {
             .begin_request = endpointDiscoveryServer_callback,
@@ -163,6 +175,13 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
             asprintf(&listeningPorts,"0.0.0.0:%s", port);
         } else {
             asprintf(&listeningPorts,"%s:%s", (*server)->ip, port);
+        }
+
+        if (!listeningPorts) {  // Check if asprintf failed
+            free((*server)->path);
+            free((*server)->ip);
+            free(*server);
+            return CELIX_ENOMEM;
         }
 
         const char *options[] = {
@@ -199,6 +218,12 @@ celix_status_t endpointDiscoveryServer_create(discovery_t *discovery,
     } while(((*server)->ctx == NULL) && (port_counter < max_ep_num));
 
     (*server)->port = strdup(port);
+    if (!(*server)->port) {
+        free((*server)->path);
+        free((*server)->ip);
+        free(*server);
+        return CELIX_ENOMEM;
+    }
 
     return status;
 }

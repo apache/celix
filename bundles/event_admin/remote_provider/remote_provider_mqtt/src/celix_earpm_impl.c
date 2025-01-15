@@ -148,6 +148,7 @@ celix_event_admin_remote_provider_mqtt_t* celix_earpm_create(celix_bundle_contex
     }
 
     if (asprintf(&earpm->syncEventAckTopic, CELIX_EARPM_SYNC_EVENT_ACK_TOPIC_PREFIX"%s", earpm->fwUUID) < 0) {
+        earpm->syncEventAckTopic = NULL;
         celix_logHelper_error(logHelper, "Failed to create sync event response topic.");
         return NULL;
     }

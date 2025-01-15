@@ -97,7 +97,12 @@ static int http_admin_start(http_admin_activator_t *act, celix_bundle_context_t 
 
     for(long port = prop_port_min; act->httpManager == NULL && port <= prop_port_max; port++) {
         char *port_str;
-        asprintf(&port_str, "%li", port);
+        rc= asprintf(&port_str, "%li", port);
+        if(rc < 0 || port_str == NULL) {
+            celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR, "Cannot allocate memory for port string.");
+            free(httpRoot);
+            return CELIX_ENOMEM;
+        }
         svr_opts[3] = port_str;
         act->httpManager = httpAdmin_create(ctx, httpRoot, svr_opts);
         free(port_str);
@@ -136,6 +141,7 @@ static int http_admin_start(http_admin_activator_t *act, celix_bundle_context_t 
         }
     }
 
+    free(httpRoot);
     return CELIX_SUCCESS;
 }
 
