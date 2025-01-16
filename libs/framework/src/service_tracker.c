@@ -90,21 +90,27 @@ static inline void tracked_waitAndDestroy(celix_tracked_entry_t *tracked) {
 }
 
 celix_status_t serviceTracker_create(bundle_context_pt context, const char * service, service_tracker_customizer_pt customizer, service_tracker_pt *tracker) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
 
-	if (service == NULL || *tracker != NULL) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	} else {
+    if (service == NULL || *tracker != NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    } else {
         char *filter = NULL;
-        asprintf(&filter, "(%s=%s)", CELIX_FRAMEWORK_SERVICE_NAME, service);
-        serviceTracker_createWithFilter(context, filter, customizer, tracker);
-        free(filter);
-	}
+        // Check for failure in asprintf
+        if (asprintf(&filter, "(%s=%s)", CELIX_FRAMEWORK_SERVICE_NAME, service) < 0) {
+            status = CELIX_ENOMEM;  // Memory allocation failure
+        } else {
+            status = serviceTracker_createWithFilter(context, filter, customizer, tracker);
+            free(filter);
+        }
+    }
 
-	framework_logIfError(context->framework->logger, status, NULL, "Cannot create service tracker");
+    // Log the error if status is not success
+    framework_logIfError(context->framework->logger, status, NULL, "Cannot create service tracker");
 
-	return status;
+    return status;
 }
+
 
 celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, const char * filter, service_tracker_customizer_pt customizer, service_tracker_pt *out) {
 	service_tracker_t* tracker = calloc(1, sizeof(*tracker));

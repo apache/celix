@@ -304,22 +304,32 @@ static char* celix_bundle_getBundleOrPersistentStoreEntry(const celix_bundle_t* 
         root = celix_bundleArchive_getPersistentStoreRoot(archive);
     }
 
-    char *entry = NULL;
-    if (name == NULL || strnlen(name, 1) == 0) { //NULL or ""
-        entry = celix_utils_strdup(root);
-    } else if ((strnlen(name, 1) > 0) && (name[0] == '/')) {
-        asprintf(&entry, "%s%s", root, name);
-    } else {
-        asprintf(&entry, "%s/%s", root, name);
+    if (root == NULL) {
+        fw_logCode(bnd->framework->logger, CELIX_BUNDLE_EXCEPTION, CELIX_ILLEGAL_STATE, "Failed to get valid root directory");
+        return NULL;
     }
 
-    if (celix_utils_fileExists(entry)) {
+    char *entry = NULL;
+    if (name == NULL || strnlen(name, 1) == 0) { // NULL or ""
+        entry = celix_utils_strdup(root);
+    } else if ((strnlen(name, 1) > 0) && (name[0] == '/')) {
+        if (asprintf(&entry, "%s%s", root, name) < 0) {
+            return NULL; // Memory allocation failure
+        }
+    } else {
+        if (asprintf(&entry, "%s/%s", root, name) < 0) {
+            return NULL; // Memory allocation failure
+        }
+    }
+
+    if (entry && celix_utils_fileExists(entry)) {
         return entry;
     } else {
         free(entry);
         return NULL;
     }
 }
+
 
 char* celix_bundle_getEntry(const celix_bundle_t* bnd, const char *path) {
 	char *entry = NULL;

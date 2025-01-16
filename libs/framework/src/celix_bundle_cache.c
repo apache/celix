@@ -104,32 +104,38 @@ celix_status_t celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cach
     if (NULL == cache->locationToBundleIdLookupMap) {
         return CELIX_ENOMEM;
     }
-    celixThreadMutex_create(&cache->mutex, NULL);
-    celix_autoptr(celix_thread_mutex_t) mutex = &cache->mutex;
+    status = celixThreadMutex_create(&cache->mutex, NULL);
+    if (status != CELIX_SUCCESS) {
+        return status;  // Mutex creation failed, return the error code
+    }
 
     if (useTmpDir) {
-        //Using /tmp dir for cache, so that multiple frameworks can be launched
-        //instead of cacheDir = ".cache";
         const char* pg = bundleCache_progamName();
         if (pg == NULL) {
             pg = "";
         }
-        asprintf(&cache->cacheDir, "/tmp/celix-cache-%s-%s", pg, celix_framework_getUUID(fw));
+        if (asprintf(&cache->cacheDir, "/tmp/celix-cache-%s-%s", pg, celix_framework_getUUID(fw)) < 0) {
+            return CELIX_ENOMEM;  // asprintf failure
+        }
     } else {
         const char* cacheDir = celix_bundleCache_cacheDirPath(fw);
         cache->cacheDir = celix_utils_strdup(cacheDir);
     }
+
     if (NULL == cache->cacheDir) {
         return CELIX_ENOMEM;
     }
+
     celix_autofree char* cacheDir = cache->cacheDir;
 
     if (cache->deleteOnCreate) {
         status = celix_bundleCache_deleteCacheDir(cache);
         if (status != CELIX_SUCCESS) {
+            fw_logCode(fw->logger, CELIX_LOG_LEVEL_ERROR, status, "Error deleting cache directory: %s", cache->cacheDir);
             return status;
         }
     }
+
     const char* errorStr;
     status = celix_utils_createDirectory(cache->cacheDir, false, &errorStr);
     if (status != CELIX_SUCCESS) {
@@ -137,13 +143,14 @@ celix_status_t celix_bundleCache_create(celix_framework_t* fw, celix_bundle_cach
                    cache->cacheDir, errorStr);
         return status;
     }
+
     cache->locationToBundleIdLookupMapLoaded = false;
-    celix_steal_ptr(cacheDir);
-    celix_steal_ptr(mutex);
-    celix_steal_ptr(locationToBundleIdLookupMap);
-    *out = celix_steal_ptr(cache);
+
+    *out = cache;  // Cache is returned, no need to steal pointers here.
+
     return CELIX_SUCCESS;
 }
+
 
 celix_status_t celix_bundleCache_destroy(celix_bundle_cache_t* cache) {
     celix_status_t status = CELIX_SUCCESS;

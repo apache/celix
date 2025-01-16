@@ -119,6 +119,7 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
     char convertedValueBuffer[21] = {0};
     memcpy(entry, prototype, sizeof(*entry));
     entry->value = NULL;
+
     if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_VERSION) {
         bool written =
             celix_version_fillString(entry->typed.versionValue, convertedValueBuffer, sizeof(convertedValueBuffer));
@@ -137,7 +138,9 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
             entry->value = celix_properties_createString(properties, convertedValueBuffer);
         } else {
             char* val = NULL;
-            asprintf(&val, "%f", entry->typed.doubleValue);
+            if (asprintf(&val, "%f", entry->typed.doubleValue) < 0) {
+                return CELIX_ENOMEM; // Handle asprintf failure
+            }
             entry->value = val;
         }
     } else if (entry->valueType == CELIX_PROPERTIES_VALUE_TYPE_BOOL) {
@@ -152,6 +155,7 @@ static celix_status_t celix_properties_fillEntry(celix_properties_t* properties,
     if (entry->value == NULL) {
         return CELIX_ENOMEM;
     }
+
     return CELIX_SUCCESS;
 }
 

@@ -79,6 +79,10 @@ celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context
     celix_properties_t *props = NULL;
     if (status == CELIX_SUCCESS) {
         props = celix_properties_create();
+        if (!props) {
+            free(scope);
+            return CELIX_ENOMEM;
+        }
         celix_properties_set(props, "DISCOVERY", "true");
         celix_properties_set(props, (char *) CELIX_RSA_ENDPOINT_LISTENER_SCOPE, scope);
     }
@@ -86,7 +90,9 @@ celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context
     if (status == CELIX_SUCCESS) {
         endpoint_listener_t *endpointListener = calloc(1, sizeof(struct endpoint_listener));
 
-        if (endpointListener) {
+        if (!endpointListener) {
+            status = CELIX_ENOMEM;
+        } else {
             endpointListener->handle = act;
             endpointListener->endpointAdded = discovery_endpointAdded;
             endpointListener->endpointRemoved = discovery_endpointRemoved;
@@ -105,8 +111,9 @@ celix_status_t celix_bundleActivator_start(void * userData, celix_bundle_context
     // We can release the scope, as celix_properties_set makes a copy of the key & value...
     free(scope);
 
-    //if properties are not used in service registration, destroy it.
-    celix_properties_destroy(props);
+    if (props) {
+        celix_properties_destroy(props);
+    }
 
     return status;
 }

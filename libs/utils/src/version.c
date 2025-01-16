@@ -211,7 +211,7 @@ int celix_version_compareTo(const celix_version_t* version, const celix_version_
 char* celix_version_toString(const celix_version_t* version) {
     char* string = NULL;
     int rc;
-    if (strlen(version->qualifier) > 0) {
+    if (version->qualifier != NULL && strlen(version->qualifier) > 0) {
         rc = asprintf(&string,"%d.%d.%d.%s", version->major, version->minor, version->micro, version->qualifier);
     } else {
         rc = asprintf(&string, "%d.%d.%d", version->major, version->minor, version->micro);

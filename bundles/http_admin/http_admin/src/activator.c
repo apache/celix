@@ -49,7 +49,7 @@ static int http_admin_start(http_admin_activator_t *act, celix_bundle_context_t 
         return CELIX_BUNDLE_EXCEPTION;
     }
 
-    char* httpRoot = NULL;
+    celix_autofree char* httpRoot = NULL;
     int rc = asprintf(&httpRoot, "%s/root", storeRoot);
     if (rc < 0) {
         celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR, "Cannot create http root directory for the http admin bundle.");
@@ -61,7 +61,6 @@ static int http_admin_start(http_admin_activator_t *act, celix_bundle_context_t 
     celix_status_t status = celix_utils_createDirectory(httpRoot, false, NULL);
     if (status != CELIX_SUCCESS) {
         celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_ERROR, "Cannot create http root directory for the http admin bundle.");
-        free(httpRoot);
         return status;
     }
     celix_bundleContext_log(ctx, CELIX_LOG_LEVEL_DEBUG, "Using http root directory %s", httpRoot);
@@ -141,7 +140,6 @@ static int http_admin_start(http_admin_activator_t *act, celix_bundle_context_t 
         }
     }
 
-    free(httpRoot);
     return CELIX_SUCCESS;
 }
 

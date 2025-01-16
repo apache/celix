@@ -146,30 +146,56 @@ char* celix_versionRange_createLDAPFilter(const celix_version_range_t* range, co
     char *output = NULL;
 
     int ret = -1;
-    if(range->high == NULL) {
-        ret = asprintf(&output, "(&(%s%s%i.%i.%i%s%s))",
-                       serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
-                       range->low->minor, range->low->micro,
-                       range->low->qualifier ? "." : "",
-                       range->low->qualifier ? range->low->qualifier : "");
-    } else {
-        ret = asprintf(&output, "(&(%s%s%i.%i.%i%s%s)(%s%s%i.%i.%i%s%s))",
-                       serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", range->low->major,
-                       range->low->minor, range->low->micro,
-                       range->low->qualifier ? "." : "",
-                          range->low->qualifier ? range->low->qualifier : "",
-                       serviceVersionAttributeName, range->isHighInclusive ? "<=" : "<", range->high->major,
-                       range->high->minor, range->high->micro,
-                       range->high->qualifier ? "." : "",
-                       range->high->qualifier ? range->high->qualifier : "");
+
+    char* formatVersion(const celix_version_t* version) {
+        char* versionStr = NULL;
+        if (version != NULL) {
+            ret = asprintf(&versionStr, "%i.%i.%i%s%s", version->major, version->minor, version->micro,
+                           version->qualifier ? "." : "", version->qualifier ? version->qualifier : "");
+            if (ret < 0) {
+                return NULL; // Return NULL if asprintf fails
+            }
+        }
+        return versionStr;
     }
 
+    // If there is no high version, just use low version for the filter
+    if (range->high == NULL) {
+        char* lowVersion = formatVersion(range->low);
+        if (lowVersion == NULL) {
+            return NULL; // Return NULL if version formatting fails
+        }
+
+        ret = asprintf(&output, "(&(%s%s%s))",
+                       serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">", lowVersion);
+        free(lowVersion); // Free the low version string after use
+    } else {
+        char* lowVersion = formatVersion(range->low);
+        char* highVersion = formatVersion(range->high);
+        if (lowVersion == NULL || highVersion == NULL) {
+            free(lowVersion); // Clean up allocated memory if formatting failed
+            free(highVersion);
+            return NULL;
+        }
+
+        ret = asprintf(&output, "(&(%s%s%s)(%s%s%s))",
+                       serviceVersionAttributeName, range->isLowInclusive ? ">=" : ">",
+                       lowVersion,
+                       serviceVersionAttributeName, range->isHighInclusive ? "<=" : "<",
+                       highVersion);
+
+        free(lowVersion); // Free the version strings after use
+        free(highVersion);
+    }
+
+    // Return NULL if asprintf failed
     if (ret < 0) {
         return NULL;
     }
 
     return output;
 }
+
 
 bool celix_versionRange_createLDAPFilterInPlace(const celix_version_range_t* range, const char *serviceVersionAttributeName, char* buffer, size_t bufferLength) {
     if(buffer == NULL || bufferLength == 0 || range->low == NULL) {

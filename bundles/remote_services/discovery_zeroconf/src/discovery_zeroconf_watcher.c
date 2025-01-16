@@ -920,17 +920,11 @@ static int discoveryZeroConfWatcher_getHostIpAddresses(discovery_zeroconf_watche
     if (hostEntry != NULL) {
         CELIX_STRING_HASH_MAP_ITERATE(hostEntry->ipAddresses, iter) {
             const char *ip = iter.key;
-            char *tmp= NULL;
-            if (ipAddressesStr == NULL) {
-                tmp = celix_utils_strdup(ip);
-            } else {
-                asprintf(&tmp, "%s,%s", ipAddressesStr, ip);
-            }
+            celix_autofree char *tmp = (ipAddressesStr == NULL) ? celix_utils_strdup(ip) : celix_utils_concat(ipAddressesStr, ",", ip);
             if (tmp == NULL) {
                 return CELIX_ENOMEM;
             }
-            free(ipAddressesStr);
-            ipAddressesStr = tmp;
+            ipAddressesStr = celix_steal_ptr(tmp);
         }
     }
     if (ipAddressesStr == NULL) {

@@ -816,32 +816,49 @@ char* celix_serviceRegistry_createFilterFor(celix_service_registry_t* registry, 
     celix_autofree char* versionRange = NULL;
     if (versionRangeStr != NULL) {
         celix_autoptr(celix_version_range_t) range = celix_versionRange_parse(versionRangeStr);
-        if(range == NULL) {
+        if (range == NULL) {
             celix_framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
-                          "Error incorrect version range.");
+                          "Error: incorrect version range.");
             return NULL;
         }
         versionRange = celix_versionRange_createLDAPFilter(range, CELIX_FRAMEWORK_SERVICE_VERSION);
         if (versionRange == NULL) {
             celix_framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
-                          "Error creating LDAP filter.");
+                          "Error: creating LDAP filter.");
             return NULL;
         }
     }
 
-    //setting filter
+    // Setting filter
     if (additionalFilterIn != NULL && versionRange != NULL) {
-        asprintf(&filter, "(&(%s=%s)%s%s)", CELIX_FRAMEWORK_SERVICE_NAME, serviceName, versionRange, additionalFilterIn);
+        if (asprintf(&filter, "(&(%s=%s)%s%s)", CELIX_FRAMEWORK_SERVICE_NAME, serviceName, versionRange, additionalFilterIn) < 0) {
+            celix_framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                          "Error: asprintf failed while constructing filter with serviceName '%s'.", serviceName);
+            return NULL;
+        }
     } else if (versionRange != NULL) {
-        asprintf(&filter, "(&(%s=%s)%s)", CELIX_FRAMEWORK_SERVICE_NAME, serviceName, versionRange);
+        if (asprintf(&filter, "(&(%s=%s)%s)", CELIX_FRAMEWORK_SERVICE_NAME, serviceName, versionRange) < 0) {
+            celix_framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                          "Error: asprintf failed while constructing filter with serviceName '%s'.", serviceName);
+            return NULL;
+        }
     } else if (additionalFilterIn != NULL) {
-        asprintf(&filter, "(&(%s=%s)%s)", CELIX_FRAMEWORK_SERVICE_NAME, serviceName, additionalFilterIn);
+        if (asprintf(&filter, "(&(%s=%s)%s)", CELIX_FRAMEWORK_SERVICE_NAME, serviceName, additionalFilterIn) < 0) {
+            celix_framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                          "Error: asprintf failed while constructing filter with serviceName '%s'.", serviceName);
+            return NULL;
+        }
     } else {
-        asprintf(&filter, "(&(%s=%s))", CELIX_FRAMEWORK_SERVICE_NAME, serviceName);
+        if (asprintf(&filter, "(&(%s=%s))", CELIX_FRAMEWORK_SERVICE_NAME, serviceName) < 0) {
+            celix_framework_log(registry->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                          "Error: asprintf failed while constructing filter with serviceName '%s'.", serviceName);
+            return NULL;
+        }
     }
 
     return filter;
 }
+
 
 static int celix_serviceRegistry_compareRegistrations(celix_array_list_entry_t a, celix_array_list_entry_t b) {
     const service_registration_t* regA = a.voidPtrVal;

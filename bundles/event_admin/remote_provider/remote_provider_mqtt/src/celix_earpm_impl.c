@@ -147,11 +147,12 @@ celix_event_admin_remote_provider_mqtt_t* celix_earpm_create(celix_bundle_contex
         return NULL;
     }
 
-    if (asprintf(&earpm->syncEventAckTopic, CELIX_EARPM_SYNC_EVENT_ACK_TOPIC_PREFIX"%s", earpm->fwUUID) < 0) {
-        earpm->syncEventAckTopic = NULL;
+    earpm->syncEventAckTopic = NULL;
+    if (asprintf(&earpm->syncEventAckTopic, CELIX_EARPM_SYNC_EVENT_ACK_TOPIC_PREFIX "%s", earpm->fwUUID) < 0) {
         celix_logHelper_error(logHelper, "Failed to create sync event response topic.");
         return NULL;
     }
+
     celix_autofree char* syncEventAckTopic = earpm->syncEventAckTopic;
     celix_status_t status = celixThreadMutex_create(&earpm->mutex, NULL);
     if (status != CELIX_SUCCESS) {

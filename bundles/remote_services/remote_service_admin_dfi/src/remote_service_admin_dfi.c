@@ -195,7 +195,6 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
     celix_status_t status = CELIX_SUCCESS;
 
     *admin = calloc(1, sizeof(**admin));
-
     if (!*admin) {
         status = CELIX_ENOMEM;
     } else {
@@ -203,10 +202,10 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         (*admin)->exportedServices = hashMap_create(NULL, NULL, NULL, NULL);
         (*admin)->importedServices = celix_arrayList_create();
 
-         celixThreadRwlock_create(&(*admin)->exportedServicesLock, NULL);
-         celixThreadMutex_create(&(*admin)->importedServicesLock, NULL);
+        celixThreadRwlock_create(&(*admin)->exportedServicesLock, NULL);
+        celixThreadMutex_create(&(*admin)->importedServicesLock, NULL);
 
-        (*admin)->importedEndpointUrls = celix_stringHashMap_create();//Ignore ENOMEM for now and deal with it on other PRs in the future
+        (*admin)->importedEndpointUrls = celix_stringHashMap_create(); // Ignore ENOMEM for now
 
         (*admin)->loghelper = celix_logHelper_create(context, "celix_rsa_admin");
 
@@ -214,7 +213,6 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         const char *ip = celix_bundleContext_getProperty(context, RSA_IP_KEY, RSA_IP_DEFAULT);
         const char *interface = celix_bundleContext_getProperty(context, RSA_INTERFACE_KEY, NULL);
         (*admin)->curlShareEnabled = celix_bundleContext_getPropertyAsBool(context, RSA_DFI_USE_CURL_SHARE_HANDLE, RSA_DFI_USE_CURL_SHARE_HANDLE_DEFAULT);
-
         (*admin)->dynamicIpSupport = celix_bundleContext_getPropertyAsBool(context, CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT, CELIX_RSA_DFI_DYNAMIC_IP_SUPPORT_DEFAULT);
 
         char *detectedIp = NULL;
@@ -231,6 +229,9 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         if (ip != NULL) {
             celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_DEBUG, "RSA: Using %s for service annunciation", ip);
             (*admin)->ip = strdup(ip);
+        } else {
+            celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_WARNING, "RSA: No IP address found, using default: %s", RSA_IP_DEFAULT);
+            (*admin)->ip = strdup(RSA_IP_DEFAULT);
         }
 
         if (detectedIp != NULL) {
@@ -238,32 +239,37 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
         }
 
         (*admin)->curlShare = curl_share_init();
-        curl_share_setopt((*admin)->curlShare, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
-        curl_share_setopt((*admin)->curlShare, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
-        curl_share_setopt((*admin)->curlShare, CURLSHOPT_SHARE, CURL_LOCK_DATA_DNS);
-        curl_share_setopt((*admin)->curlShare, CURLSHOPT_USERDATA, *admin);
-
-        curl_share_setopt((*admin)->curlShare, CURLSHOPT_LOCKFUNC, remoteServiceAdmin_curlshare_lock);
-        curl_share_setopt((*admin)->curlShare, CURLSHOPT_UNLOCKFUNC, remoteServiceAdmin_curlshare_unlock);
-
-        if(status == CELIX_SUCCESS && pthread_mutex_init(&(*admin)->curlMutexConnect, NULL) != 0) {
-            fprintf(stderr, "Could not initialize mutex connect\n");
-            status = EPERM;
+        if ((*admin)->curlShare == NULL) {
+            celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_ERROR, "Failed to initialize cURL share handle.");
+            status = CELIX_BUNDLE_EXCEPTION;
+        } else {
+            curl_share_setopt((*admin)->curlShare, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
+            curl_share_setopt((*admin)->curlShare, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
+            curl_share_setopt((*admin)->curlShare, CURLSHOPT_SHARE, CURL_LOCK_DATA_DNS);
+            curl_share_setopt((*admin)->curlShare, CURLSHOPT_USERDATA, *admin);
+            curl_share_setopt((*admin)->curlShare, CURLSHOPT_LOCKFUNC, remoteServiceAdmin_curlshare_lock);
+            curl_share_setopt((*admin)->curlShare, CURLSHOPT_UNLOCKFUNC, remoteServiceAdmin_curlshare_unlock);
         }
 
-        if(status == CELIX_SUCCESS && pthread_mutex_init(&(*admin)->curlMutexCookie, NULL) != 0) {
-            fprintf(stderr, "Could not initialize mutex cookie\n");
-            status = EPERM;
+        if (status == CELIX_SUCCESS && pthread_mutex_init(&(*admin)->curlMutexConnect, NULL) != 0) {
+            celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_ERROR, "Could not initialize mutex connect");
+            status = CELIX_BUNDLE_EXCEPTION;
         }
 
-        if(status == CELIX_SUCCESS && pthread_mutex_init(&(*admin)->curlMutexDns, NULL) != 0) {
-            fprintf(stderr, "Could not initialize mutex dns\n");
-            status = EPERM;
+        if (status == CELIX_SUCCESS && pthread_mutex_init(&(*admin)->curlMutexCookie, NULL) != 0) {
+            celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_ERROR, "Could not initialize mutex cookie");
+            status = CELIX_BUNDLE_EXCEPTION;
         }
 
-        remoteServiceAdmin_setupStopExportsThread(*admin);
+        if (status == CELIX_SUCCESS && pthread_mutex_init(&(*admin)->curlMutexDns, NULL) != 0) {
+            celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_ERROR, "Could not initialize mutex dns");
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
 
-        // Prepare callbacks structure. We have only one callback, the rest are NULL.
+        if (status == CELIX_SUCCESS) {
+            remoteServiceAdmin_setupStopExportsThread(*admin);
+        }
+
         struct mg_callbacks callbacks;
         memset(&callbacks, 0, sizeof(callbacks));
         callbacks.begin_request = remoteServiceAdmin_callback;
@@ -273,30 +279,42 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
 
         unsigned int port_counter = 0;
         bool bindToAllInterfaces = celix_bundleContext_getPropertyAsBool(context, CELIX_RSA_BIND_ON_ALL_INTERFACES, CELIX_RSA_BIND_ON_ALL_INTERFACES_DEFAULT);
+
         do {
             char *listeningPorts = NULL;
-            if (bindToAllInterfaces || (*admin)->dynamicIpSupport) {
-                asprintf(&listeningPorts,"0.0.0.0:%s", newPort);
+            if ((*admin)->dynamicIpSupport || bindToAllInterfaces) {
+                asprintf(&listeningPorts, "0.0.0.0:%s", newPort);
             } else {
-                asprintf(&listeningPorts,"%s:%s", (*admin)->ip, newPort);
+                asprintf(&listeningPorts, "%s:%s", (*admin)->ip, newPort);
             }
 
-            const char *options[] = { "listening_ports", listeningPorts, "num_threads", "5", NULL};
+            celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_INFO,
+                "Binding webserver using IP: %s, Port: %s, Dynamic IP Support: %s, Bind To All Interfaces: %s",
+                (*admin)->ip ? (*admin)->ip : "0.0.0.0", newPort,
+                (*admin)->dynamicIpSupport ? "Enabled" : "Disabled",
+                bindToAllInterfaces ? "Enabled" : "Disabled");
+
+            const char *options[] = { "listening_ports", listeningPorts, "num_threads", "5", NULL };
 
             (*admin)->ctx = mg_start(&callbacks, (*admin), options);
 
             if ((*admin)->ctx != NULL) {
                 celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_INFO, "RSA: Start webserver: %s", listeningPorts);
                 (*admin)->port = strdup(newPort);
-
             } else {
                 celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_ERROR, "Error while starting rsa server on port %s - retrying on port %li...", newPort, port + port_counter);
-                snprintf(newPort, 10,  "%li", port + port_counter++);
+                snprintf(newPort, 10, "%li", port + port_counter++);
             }
 
             free(listeningPorts);
 
         } while (((*admin)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
+
+        if ((*admin)->ctx == NULL && port_counter >= MAX_NUMBER_OF_RESTARTS) {
+            celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_ERROR,
+                "Failed to start RSA server after %d retries. Last attempted port: %s", MAX_NUMBER_OF_RESTARTS, newPort);
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
     }
 
     bool logCalls = celix_bundleContext_getPropertyAsBool(context, RSA_LOG_CALLS_KEY, RSA_LOG_CALLS_DEFAULT);
@@ -306,9 +324,23 @@ celix_status_t remoteServiceAdmin_create(celix_bundle_context_t *context, remote
             (*admin)->logFile = stdout;
         } else {
             (*admin)->logFile = fopen(f, "w");
-            if ( (*admin)->logFile == NULL) {
+            if ((*admin)->logFile == NULL) {
                 celix_logHelper_log((*admin)->loghelper, CELIX_LOG_LEVEL_WARNING, "Error opening file '%s' for logging calls. %s", f, strerror(errno));
             }
+        }
+    }
+
+    if (status != CELIX_SUCCESS) {
+        // Cleanup on failure
+        if (*admin) {
+            celix_arrayList_destroy((*admin)->importedServices);
+            celix_stringHashMap_destroy((*admin)->importedEndpointUrls);
+            celix_logHelper_destroy((*admin)->loghelper);
+            if ((*admin)->curlShare) {
+                curl_share_cleanup((*admin)->curlShare);
+            }
+            free(*admin);
+            *admin = NULL;
         }
     }
 
