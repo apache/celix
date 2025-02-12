@@ -41,7 +41,7 @@ if (CELIX_DFI)
 	target_link_libraries(dfi PUBLIC jansson::jansson Celix::utils)##The public header file(dyn_interface.h) Celix::utils(celix_version.h)
 	set_target_properties(dfi PROPERTIES
 			C_VISIBILITY_PRESET hidden
-			VERSION "1.3.1"
+			VERSION "1.4.0"
 			"SOVERSION" 1
 			OUTPUT_NAME "celix_dfi")
 

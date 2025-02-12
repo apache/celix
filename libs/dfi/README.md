@@ -71,10 +71,11 @@ The data types supported by the interface description include:
 
   *Type schema*:
   
-  |**Identifier**|B  |D     |F    |I      |J      |S      |V   |Z             |b    | i      | j      | s      |P     | t                |N  | 
-  |---------|---|------|-----|-------|-------|-------|----|--------------|-----|--------|--------|--------|------|------------------|---|
-  |**Types**|char|double|float|int32_t|int64_t|int16_t|void|boolean(uint8)|uchar|uint32_t|uint64_t|uint16_t|void *| char *(C string) |int|
+  |**Identifier**|B  |D     |F    |I      |J      |S      |V   |Z             |b    | i      | j      | s      |P     | t                |N  | p                   | a                   |
+  |---------|---|------|-----|-------|-------|-------|----|--------------|-----|--------|--------|--------|------|------------------|---|---------------------|---------------------|
+  |**Types**|char|double|float|int32_t|int64_t|int16_t|void|boolean(uint8)|uchar|uint32_t|uint64_t|uint16_t|void *| char *(C string) |int| celix_properties_t* | celix_array_list_t* |
 
+> **NOTES**: If you intend to use `celix_array_list_t*` as a parameter of a remote interface, you need to call `celix_arrayList_getElementType` method to get the element type before using `celix_arrayList_getString/Long/Double/...` methods, and then validate the element type. The `celix_arrayList_getString/Long/Double/...` methods should only be called when the element type matches to avoid assertion failure caused by type mismatch.
 
 - **Complex Types(Struct)**
 
@@ -236,12 +237,12 @@ The data types supported by the interface description include:
   ~~~
   In order to represent the properties of function parameters (eg: in, out...), function parameters support the following metadata annotations:
 
-  |Meta-info| Description|
-  |---------|------------|
-  |am=handle| void pointer for the handle.|
-  |am=pre   | output pointer with memory pre-allocated, it should be pointer to [trivially copyable type](#notion-definitions).|
-  |am=out   | output pointer, the caller should use `free` to release the memory, and it should be pointer to text(t) or double pointer to [serializable types](#notion-definitions).|
-  |const=true| text argument(t) can use it, Normally a text argument will be handled as char*, meaning that the callee is expected to take of ownership.If a const=true annotation is used the text argument will be handled as a const char*, meaning that the caller keeps ownership of the string.|
+  |Meta-info| Description                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+  |---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+  |am=handle| void pointer for the handle.                                                                                                                                                                                                                                                                                                                                                                                                                |
+  |am=pre   | output pointer with memory pre-allocated, it should be pointer to [trivially copyable type](#notion-definitions).                                                                                                                                                                                                                                                                                                                           |
+  |am=out   | output pointer, the caller should use `free` to release the memory, and it should be pointer to text(t) or double pointer to [serializable types](#notion-definitions).                                                                                                                                                                                                                                                                     |
+  |const=true| text argument(t) and `celix_properties_t*`(p) and `celix_array_list_t*`(a) can use it. Normally, a text, properties, or array list argument will be handled respectively as `char*`, `celix_properties_t*`, or `celix_array_list_t*`, implying that the callee is expected to take ownership. However, if the `const=true` annotation is used, these arguments will be handled as `const char*`, `const celix_properties_t*`, or `const celix_array_list_t*`, indicating that the caller retains ownership of the string/object. |
 
   If there is no metadata annotation, the default is standard argument(input parameter). And it can be any serializable type.
 

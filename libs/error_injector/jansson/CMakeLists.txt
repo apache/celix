@@ -39,5 +39,7 @@ target_link_options(jansson_ei INTERFACE
         LINKER:--wrap,json_sprintf
         LINKER:--wrap,json_dumpf
         LINKER:--wrap,json_pack_ex
+        LINKER:--wrap,json_null
+        LINKER:--wrap,json_loads
         )
 add_library(Celix::jansson_ei ALIAS jansson_ei)
