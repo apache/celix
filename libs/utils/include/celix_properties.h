@@ -1199,8 +1199,7 @@ CELIX_UTILS_EXPORT celix_status_t celix_properties_loadFromStream(FILE* stream,
  *
  * For a overview of the possible decode flags, see the CELIX_PROPERTIES_DECODE_* flags documentation.
  *
- * If an error occurs, the error status is returned and a message is logg
- * ed to celix_err.
+ * If an error occurs, the error status is returned and a message is logged to celix_err.
  *
  * @param[in] filename The file to load the properties from.
  * @param[in] decodeFlags The flags to use when decoding the input string.
