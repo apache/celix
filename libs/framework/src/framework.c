@@ -39,7 +39,6 @@
 #include "celix_module_private.h"
 #include "celix_framework_bundle.h"
 
-#include "bundle_archive_private.h"
 #include "bundle_context_private.h"
 #include "celix_bundle_private.h"
 #include "celix_err.h"
@@ -49,6 +48,7 @@
 #include "service_reference_private.h"
 #include "service_registration_private.h"
 #include "utils.h"
+#include "celix_bundle_archive.h"
 
 struct celix_bundle_activator {
     void * userData;
@@ -252,6 +252,10 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     framework->dispatcher.eventQueue = malloc(sizeof(celix_framework_event_t) * framework->dispatcher.eventQueueCap);
     framework->dispatcher.dynamicEventQueue = celix_arrayList_create();
     framework->dispatcher.scheduledEvents = celix_longHashMap_create();
+    framework->dispatcher.genericEventTimeoutInSeconds = celix_framework_getConfigPropertyAsDouble(framework,
+                                                  CELIX_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS,
+                                                  CELIX_DEFAULT_ALLOWED_PROCESSING_TIME_FOR_GENERIC_EVENT_IN_SECONDS,
+                                                  NULL);
 
     celix_framework_createAndStoreFrameworkUUID(framework);
 
@@ -260,7 +264,7 @@ celix_status_t framework_create(framework_pt *out, celix_properties_t* config) {
     framework->logger = celix_frameworkLogger_create(celix_logUtils_logLevelFromString(logStr, CELIX_LOG_LEVEL_INFO));
 
     celix_status_t status = celix_bundleCache_create(framework, &framework->cache);
-    bundle_archive_t* systemArchive = NULL;
+    celix_bundle_archive_t* systemArchive = NULL;
     status = CELIX_DO_IF(status, celix_bundleCache_createSystemArchive(framework, &systemArchive));
     status = CELIX_DO_IF(status, celix_bundle_createFromArchive(framework, systemArchive, &framework->bundle));
     status = CELIX_DO_IF(status, bundle_getBundleId(framework->bundle, &framework->bundleId));
@@ -326,7 +330,7 @@ celix_status_t framework_destroy(framework_pt framework) {
             bundleContext_destroy(context);
         }
 
-        bundle_archive_t *archive = NULL;
+        celix_bundle_archive_t *archive = NULL;
         bundle_getArchive(bnd, &archive);
         celix_module_t* module = NULL;
         bundle_getCurrentModule(bnd, &module);
@@ -688,7 +692,7 @@ celix_framework_installBundleInternalImpl(celix_framework_t* framework, const ch
         id = *bndId;
     }
 
-    bundle_archive_t* archive = NULL;
+    celix_bundle_archive_t* archive = NULL;
     celix_bundle_t* bundle = NULL;
     celix_status_t status = celix_bundleCache_createArchive(framework->cache, id, bndLoc, &archive);
     if (status != CELIX_SUCCESS) {
@@ -1025,8 +1029,7 @@ long framework_getBundle(framework_pt framework, const char* location) {
     int size = celix_arrayList_size(framework->installedBundles.entries);
     for (int i = 0; i < size; ++i) {
         celix_bundle_entry_t*entry = celix_arrayList_get(framework->installedBundles.entries, i);
-        const char *loc = NULL;
-        bundle_getBundleLocation(entry->bnd, &loc);
+        const char *loc = celix_bundleArchive_getLocation(celix_bundle_getArchive(entry->bnd));
         if (loc != NULL && location != NULL && strncmp(loc, location, strlen(loc)) == 0) {
             id = entry->bndId;
             break;
@@ -1944,11 +1947,9 @@ static celix_status_t celix_framework_uninstallBundleEntryImpl(celix_framework_t
 
     celix_status_t status = CELIX_SUCCESS;
     celix_bundle_t *bnd = bndEntry->bnd;
-    bundle_archive_t *archive = NULL;
-    celix_bundle_revision_t*revision = NULL;
+    celix_bundle_archive_t *archive = NULL;
     celix_module_t* module = NULL;
     status = CELIX_DO_IF(status, bundle_getArchive(bnd, &archive));
-    status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
     status = CELIX_DO_IF(status, bundle_getCurrentModule(bnd, &module));
 
     if (module) {
@@ -2663,37 +2664,42 @@ long celix_framework_nextScheduledEventId(framework_t *fw) {
     return __atomic_fetch_add(&fw->dispatcher.nextScheduledEventId, 1, __ATOMIC_RELAXED);
 }
 
-/**
- * @brief Checks if a generic event with the provided eventId is in progress.
- */
-static bool celix_framework_isGenericEventInProgress(celix_framework_t* fw, long eventId) {
-    // precondition fw->dispatcher.mutex locked)
+static celix_framework_event_t* celix_framework_getGenericEvent(celix_framework_t* fw, long eventId) {
+    // precondition fw->dispatcher.mutex locked
     for (int i = 0; i < fw->dispatcher.eventQueueSize; ++i) {
         int index = (fw->dispatcher.eventQueueFirstEntry + i) % fw->dispatcher.eventQueueCap;
         celix_framework_event_t* e = &fw->dispatcher.eventQueue[index];
         if (e->type == CELIX_GENERIC_EVENT && e->genericEventId == eventId) {
-            return true;;
+            return e;
         }
     }
     for (int i = 0; i < celix_arrayList_size(fw->dispatcher.dynamicEventQueue); ++i) {
         celix_framework_event_t* e = celix_arrayList_get(fw->dispatcher.dynamicEventQueue, i);
         if (e->type == CELIX_GENERIC_EVENT && e->genericEventId == eventId) {
-            return true;
+            return e;
         }
     }
-    return false;
+    return NULL;
 }
 
 void celix_framework_waitForGenericEvent(celix_framework_t* fw, long eventId) {
     assert(!celix_framework_isCurrentThreadTheEventLoop(fw));
-    struct timespec logAbsTime = celixThreadCondition_getDelayedTime(5);
+    struct timespec logAbsTime = celixThreadCondition_getDelayedTime(fw->dispatcher.genericEventTimeoutInSeconds);
     celixThreadMutex_lock(&fw->dispatcher.mutex);
-    while (celix_framework_isGenericEventInProgress(fw, eventId)) {
+    celix_framework_event_t* event = celix_framework_getGenericEvent(fw, eventId);
+    while (event) {
         celix_status_t waitStatus =
             celixThreadCondition_waitUntil(&fw->dispatcher.cond, &fw->dispatcher.mutex, &logAbsTime);
-        if (waitStatus == ETIMEDOUT) {
-            fw_log(fw->logger, CELIX_LOG_LEVEL_WARNING, "Generic event with id %li not finished.", eventId);
-            logAbsTime = celixThreadCondition_getDelayedTime(5);
+        event = celix_framework_getGenericEvent(fw, eventId);
+        if (waitStatus == ETIMEDOUT && event != NULL) {
+            fw_log(fw->logger,
+                   CELIX_LOG_LEVEL_WARNING,
+                   "Generic event '%s' (id=%li) for bundle '%s' (id=%li) not finished",
+                   event->genericEventName ? event->genericEventName : "unnamed",
+                   eventId,
+                   event->bndEntry ? celix_bundle_getSymbolicName(event->bndEntry->bnd) : "unnamed",
+                   event->bndEntry ? event->bndEntry->bndId : -1l);
+            logAbsTime = celixThreadCondition_getDelayedTime(fw->dispatcher.genericEventTimeoutInSeconds);
         }
     }
     celixThreadMutex_unlock(&fw->dispatcher.mutex);

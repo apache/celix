@@ -28,7 +28,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "bundle_archive.h"
+#include "celix_bundle_archive.h"
 #include "celix_bundle_context.h"
 #include "celix_constants.h"
 #include "celix_file_utils.h"

@@ -76,6 +76,6 @@ if (EI_TESTS)
     target_compile_definitions(unit_test_discovery_zeroconf PRIVATE -DMDNSD="${DNSSD_INCLUDE_DIR}/../bin/mdnsd")
 
 
-    add_test(NAME run_unit_test_discovery_zeroconf COMMAND sudo $<TARGET_FILE:unit_test_discovery_zeroconf>)
+    add_test(NAME run_unit_test_discovery_zeroconf COMMAND unit_test_discovery_zeroconf)
     setup_target_for_coverage(unit_test_discovery_zeroconf SCAN_DIR ..)
 endif ()

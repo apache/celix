@@ -23,8 +23,8 @@ if (FRAMEWORK)
         find_package(CURL REQUIRED)
     endif ()
     set(FRAMEWORK_SRC
-            src/bundle.c src/bundle_archive.c src/celix_bundle_cache.c
-            src/bundle_context.c src/bundle_revision.c
+            src/bundle.c src/celix_bundle_archive.c src/celix_bundle_cache.c
+            src/bundle_context.c
             src/framework.c
             src/module.c
             src/service_reference.c src/service_registration.c

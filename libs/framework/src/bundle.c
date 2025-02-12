@@ -17,8 +17,6 @@
  * under the License.
  */
 
-#include "bundle_revision_private.h"
-
 #include "celix_bundle_manifest.h"
 #include "celix_bundle_private.h"
 #include "celix_module.h"
@@ -27,20 +25,20 @@
 #include "framework_private.h"
 #include "utils.h"
 #include "celix_file_utils.h"
-#include "bundle_archive_private.h"
 #include "bundle_context_private.h"
 #include "service_tracker_private.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <celix_constants.h>
 #include <unistd.h>
 
 static char* celix_bundle_getBundleOrPersistentStoreEntry(const celix_bundle_t* bnd, bool bundleEntry, const char* name);
 celix_status_t bundle_createModule(bundle_pt bundle, celix_module_t** module);
 celix_status_t bundle_closeRevisions(const_bundle_pt bundle);
 
-celix_status_t celix_bundle_createFromArchive(celix_framework_t *framework, bundle_archive_pt archive, celix_bundle_t **bundleOut) {
+celix_status_t celix_bundle_createFromArchive(celix_framework_t *framework, celix_bundle_archive_t* archive, celix_bundle_t **bundleOut) {
     celix_status_t status = CELIX_SUCCESS;
     celix_bundle_t* bundle = calloc(1, sizeof(*bundle));
 
@@ -92,7 +90,7 @@ celix_status_t bundle_destroy(bundle_pt bundle) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_getArchive(const_bundle_pt bundle, bundle_archive_pt *archive) {
+celix_status_t bundle_getArchive(const_bundle_pt bundle, celix_bundle_archive_t** archive) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (bundle != NULL && *archive == NULL) {
 		*archive = bundle->archive;
@@ -201,22 +199,16 @@ celix_status_t bundle_addModule(bundle_pt bundle, celix_module_t* module) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_isSystemBundle(const_bundle_pt bundle, bool *systemBundle) {
-	celix_status_t status;
-	long bundleId;
-	bundle_archive_pt archive = NULL;
-
-	status = bundle_getArchive(bundle, &archive);
-	if (status == CELIX_SUCCESS) {
-		status = bundleArchive_getId(archive, &bundleId);
-		if (status == CELIX_SUCCESS) {
-			*systemBundle = (bundleId == 0);
-		}
-	}
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to check if bundle is the systembundle");
-
-	return status;
+celix_status_t bundle_isSystemBundle(const_bundle_pt bundle, bool* systemBundle) {
+    celix_bundle_archive_t* archive = celix_bundle_getArchive(bundle);
+    if (archive) {
+        long bundleId = celix_bundleArchive_getId(archive);
+        *systemBundle = (bundleId == CELIX_FRAMEWORK_BUNDLE_ID);
+    } else {
+        fw_log(bundle->framework->logger, CELIX_LOG_LEVEL_ERROR, "Failed to check if bundle is the systembundle");
+        return CELIX_BUNDLE_EXCEPTION;
+    }
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_getBundleId(const bundle_t *bundle, long *bndId) {
@@ -239,31 +231,6 @@ celix_status_t bundle_getFramework(const_bundle_pt bundle, framework_pt *framewo
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_getBundleLocation(const_bundle_pt bundle, const char **location){
-
-	celix_status_t status;
-
-	bundle_archive_pt archive = NULL;
-
-	status = bundle_getArchive(bundle, &archive);
-	if (status != CELIX_SUCCESS){
-		printf("[ ERROR ]: Bundle - getBundleLocation (BundleArchive) \n");
-		return status;
-	}
-
-	status =  bundleArchive_getLocation(archive, location);
-	if (status != CELIX_SUCCESS){
-		printf("[ ERROR ]:  Bundle - getBundleLocation (BundleArchiveLocation) \n");
-		return status;
-	}
-
-	return CELIX_SUCCESS;
-}
-
-
-
-
-
 
 /**********************************************************************************************************************
  **********************************************************************************************************************
@@ -272,17 +239,17 @@ celix_status_t bundle_getBundleLocation(const_bundle_pt bundle, const char **loc
  **********************************************************************************************************************/
 
 long celix_bundle_getId(const bundle_t* bnd) {
-	long bndId = -1;
-	bundle_archive_pt archive = NULL;
-	bundle_getArchive((bundle_t*)bnd, &archive);
-	if (archive != NULL) {
-		bundleArchive_getId(archive, &bndId);
-	}
-
-	if (bndId < 0) {
-		framework_logIfError(celix_frameworkLogger_globalLogger(), CELIX_BUNDLE_EXCEPTION, NULL, "Failed to get bundle id");
-	}
-	return bndId;
+    long bndId = -1;
+    celix_bundle_archive_t* archive = celix_bundle_getArchive(bnd);
+    if (archive) {
+        bndId = celix_bundleArchive_getId(archive);
+    } else {
+        framework_logIfError(celix_frameworkLogger_globalLogger(),
+                             CELIX_BUNDLE_EXCEPTION,
+                             NULL,
+                             "Failed to get bundle id");
+    }
+    return bndId;
 }
 
 celix_bundle_state_e celix_bundle_getState(const celix_bundle_t *bnd) {
@@ -290,7 +257,7 @@ celix_bundle_state_e celix_bundle_getState(const celix_bundle_t *bnd) {
 }
 
 static char* celix_bundle_getBundleOrPersistentStoreEntry(const celix_bundle_t* bnd, bool bundleEntry, const char* name) {
-    bundle_archive_pt archive = NULL;
+    celix_bundle_archive_t* archive = NULL;
     celix_status_t status = bundle_getArchive(bnd, &archive);
     if (status != CELIX_SUCCESS) {
         fw_logCode(bnd->framework->logger, CELIX_BUNDLE_EXCEPTION, status, "Failed to get bundle archive");
@@ -373,7 +340,11 @@ const char* celix_bundle_getDescription(const celix_bundle_t* bnd) {
 char* celix_bundle_getLocation(const celix_bundle_t *bnd) {
     char* result = NULL;
     if (bnd->archive != NULL) {
-        result = celix_bundleArchive_getLocation(bnd->archive);
+        const char* loc = celix_bundleArchive_getLocation(bnd->archive);
+        result = celix_utils_strdup(loc);
+        if (!result) {
+            fw_log(bnd->framework->logger, CELIX_BUNDLE_EXCEPTION, "Failed to allocate memory for bundle location");
+        }
     }
     return result;
 }
@@ -454,8 +425,8 @@ celix_array_list_t* celix_bundle_listServiceTrackers(const celix_bundle_t *bnd) 
     return result;
 }
 
-bundle_archive_t* celix_bundle_getArchive(const celix_bundle_t *bundle) {
-    bundle_archive_t* archive = NULL;
-    bundle_getArchive(bundle, &archive);
+celix_bundle_archive_t* celix_bundle_getArchive(const celix_bundle_t *bundle) {
+    celix_bundle_archive_t* archive = NULL;
+    (void)bundle_getArchive(bundle, &archive);
     return archive;
 }

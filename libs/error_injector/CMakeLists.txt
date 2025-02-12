@@ -37,6 +37,7 @@ add_subdirectory(sys_shm)
 add_subdirectory(socket)
 add_subdirectory(pthread)
 add_subdirectory(unistd)
+add_subdirectory(dirent)
 
 celix_subproject(ERROR_INJECTOR_MDNSRESPONDER "Option to enable building the mdnsresponder error injector" OFF)
 if (ERROR_INJECTOR_MDNSRESPONDER)

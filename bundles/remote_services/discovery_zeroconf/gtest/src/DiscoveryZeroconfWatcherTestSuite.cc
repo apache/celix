@@ -127,11 +127,11 @@ static int GetTestNetInterfaceIndex() {
 class DiscoveryZeroconfWatcherTestSuite : public ::testing::Test {
 public:
     static void SetUpTestCase() {
-        (void)system(MDNSD);
+        (void)system("sudo " MDNSD);
     }
 
     static void TearDownTestCase() {
-        (void)system("kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
+        (void)system("sudo kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
     }
 
     DiscoveryZeroconfWatcherTestSuite() {
@@ -342,7 +342,7 @@ public:
 class DiscoveryZeroconfWatcherWatchServiceTestSuite : public DiscoveryZeroconfWatcherTestSuite {
 public:
     static void SetUpTestCase() {
-        (void)system(MDNSD);
+        (void)system("sudo " MDNSD);
         sleep(3);//wait for mdnsd start
         testServiceRef = RegisterTestService(GetTestNetInterfaceIndex());
         EXPECT_TRUE(testServiceRef != nullptr);
@@ -350,7 +350,7 @@ public:
 
     static void TearDownTestCase() {
         DNSServiceRefDeallocate(testServiceRef);
-        (void)system("kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
+        (void)system("sudo kill -s 9 `ps -aux | grep mdnsd | awk '{print $2}'`");
     }
 
     DiscoveryZeroconfWatcherWatchServiceTestSuite() {
@@ -747,12 +747,10 @@ TEST_F(DiscoveryZeroconfWatcherTestSuite, BrowseServicesFailed1) {
 
     celix_status_t status = discoveryZeroconfWatcher_create(ctx.get(), logHelper.get(), &watcher);
     EXPECT_EQ(CELIX_SUCCESS, status);
-    auto rsaTrkId = TrackRsaService(watcher);
 
     auto timeOut  = CheckMsgWithTimeOutInS(30);
     EXPECT_FALSE(timeOut);
 
-    celix_bundleContext_stopTracker(ctx.get(), rsaTrkId);
     discoveryZeroconfWatcher_destroy(watcher);
 }
 

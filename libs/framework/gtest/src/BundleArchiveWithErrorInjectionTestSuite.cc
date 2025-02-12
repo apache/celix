@@ -32,8 +32,7 @@
 #include "celix/FrameworkFactory.h"
 
 #include "asprintf_ei.h"
-#include "bundle_archive_private.h"
-#include "bundle_revision_private.h"
+#include "celix_bundle_archive.h"
 #include "framework_private.h"
 #include "malloc_ei.h"
 #include "celix_bundle_manifest.h"
@@ -113,19 +112,6 @@ TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreatedFailedTest)
     // Given a mocked malloc which returns NULL from a call from manifest_create
     celix_ei_expect_calloc((void*)celix_bundleManifest_create, 0, nullptr);
     installBundleAndExpectFailure();
-
-    teardownErrorInjectors();
-    // Given a mocked calloc which returns NULL from a call from bundleRevision_create
-    celix_ei_expect_calloc((void*)celix_bundleRevision_create, 0, nullptr);
-    installBundleAndExpectFailure();
-
-    teardownErrorInjectors();
-    // Given a mocked celix_utils_strdup which returns NULL from a call from bundleRevision_create
-    celix_ei_expect_celix_utils_strdup((void*)celix_bundleRevision_create, 0, nullptr);
-    installBundleAndExpectFailure();
-
-    celix_ei_expect_celix_utils_strdup((void*)celix_bundleRevision_create, 0, nullptr, 2);
-    installBundleAndExpectFailure();
 }
 
 TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreateCacheDirectoryFailedTest) {
@@ -142,13 +128,13 @@ TEST_F(BundleArchiveWithErrorInjectionTestSuite, BundleArchiveCreateCacheDirecto
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
-    // Given a mocked celix_utils_strdup which returns NULL from a (indirect) call from bundleArchive_create
-    celix_ei_expect_celix_utils_strdup((void*)celix_bundleArchive_create, 1, nullptr);
+    // Given a mocked celix_utils_strdup which returns NULL from a call from bundleArchive_create
+    celix_ei_expect_celix_utils_strdup((void*)celix_bundleArchive_create, 0, nullptr);
     installBundleAndExpectFailure();
 
     teardownErrorInjectors();
-    // Given a mocked celix_utils_strdup which returns NULL from a second (indirect) call from bundleArchive_create
-    celix_ei_expect_celix_utils_strdup((void*)celix_bundleArchive_create, 1, nullptr, 2);
+    // Given a mocked celix_utils_strdup which returns NULL from a second call from bundleArchive_create
+    celix_ei_expect_celix_utils_strdup((void*)celix_bundleArchive_create, 0, nullptr, 2);
     installBundleAndExpectFailure();
 }
 
@@ -189,7 +175,7 @@ class CelixBundleArchiveErrorInjectionTestSuite : public ::testing::Test {
 TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     celix_bundle_cache_t* cache = nullptr;
     createCache(&cache);
-    bundle_archive_t* archive = nullptr;
+    celix_bundle_archive_t* archive = nullptr;
 
     // archive directory creation failures not covered by other tests
     celix_ei_expect_celix_utils_getLastModified((void*)celix_bundleArchive_create, 2, CELIX_FILE_IO_EXCEPTION);
@@ -235,22 +221,6 @@ TEST_F(CelixBundleArchiveErrorInjectionTestSuite, ArchiveCreateErrorTest) {
     teardownErrorInjectors();
 
     celix_ei_expect_celix_utils_writeOrCreateString((void*)celix_bundleArchive_create, 1, nullptr);
-    EXPECT_EQ(CELIX_ENOMEM,
-              celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
-    EXPECT_EQ(nullptr, archive);
-    EXPECT_FALSE(celix_utils_directoryExists(TEST_ARCHIVE_ROOT));
-    teardownErrorInjectors();
-
-    // revision creation failure
-    celix_ei_expect_calloc((void*)celix_bundleRevision_create, 0, nullptr);
-    EXPECT_EQ(CELIX_ENOMEM,
-              celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
-    EXPECT_EQ(nullptr, archive);
-    EXPECT_FALSE(celix_utils_directoryExists(TEST_ARCHIVE_ROOT));
-    teardownErrorInjectors();
-
-    // bundle state persistence failure
-    celix_ei_expect_celix_properties_create((void*)celix_bundleArchive_create, 1, nullptr);
     EXPECT_EQ(CELIX_ENOMEM,
               celix_bundleArchive_create(&fw, TEST_ARCHIVE_ROOT, 1, SIMPLE_TEST_BUNDLE1_LOCATION, &archive));
     EXPECT_EQ(nullptr, archive);

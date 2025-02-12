@@ -24,10 +24,9 @@
 #include "celix_file_utils.h"
 #include "celix_framework_utils.h"
 #include "framework.h"
-#include "bundle_archive.h"
 
 //including private headers, which should only be used for testing
-#include "bundle_archive_private.h"
+#include "celix_bundle_archive.h"
 #include "celix_bundle_private.h"
 
 class CxxBundleArchiveTestSuite : public ::testing::Test {
