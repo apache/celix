@@ -166,7 +166,7 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeArrayErrorTest) {
     celix_properties_assignArrayList(props, "key", arr);
 
     // When an error injected is prepared for json_array() from celix_properties_saveToString
-    celix_ei_expect_json_array((void*)celix_properties_saveToString, 4, nullptr);
+    celix_ei_expect_json_array((void*)celix_properties_saveToString, 5, nullptr);
 
     // And I call celix_properties_saveToString
     char* out;
@@ -175,27 +175,8 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, EncodeArrayErrorTest) {
     // Then I expect an error
     EXPECT_EQ(ENOMEM, status);
 
-
-    //When an error injected is prepared for json_array_append_new() from loadFromString2
-    celix_ei_expect_json_array_append_new((void*)celix_properties_saveToString, 4, -1);
-
-    //And I call celix_properties_saveToString
-    status = celix_properties_saveToString(props, 0, &out);
-
-    //Then I expect an error
-    EXPECT_EQ(ENOMEM, status);
-
-    //When an error injected is prepared for json_string() from loadFromString2
-    celix_ei_expect_json_string((void*)celix_properties_saveToString, 5, nullptr);
-
-    //And I call celix_properties_saveToString
-    status = celix_properties_saveToString(props, 0, &out);
-
-    //Then I expect an error
-    EXPECT_EQ(ENOMEM, status);
-
-    // And I expect 3 error message in celix_err
-    EXPECT_EQ(4, celix_err_getErrorCount());
+    // And I expect 2 error message in celix_err
+    EXPECT_EQ(2, celix_err_getErrorCount());
     celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 
@@ -300,8 +281,8 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, DecodeArrayErrorTest) {
     //Given a dummy json string
     const char* json = R"({"key":["value1", "value2"]})";
 
-    // When an error injected is prepared for celix_arrayList_createWithOptions() from celix_properties_loadFromString2
-    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_properties_loadFromString, 4, nullptr);
+    // When an error injected is prepared for celix_arrayList_createWithOptions() from celix_properties_loadFromString
+    celix_ei_expect_celix_arrayList_createWithOptions((void*)celix_properties_loadFromString, 5, nullptr);
 
     //When I call celix_properties_loadFromString
     celix_properties_t* props;
@@ -310,18 +291,8 @@ TEST_F(PropertiesEncodingErrorInjectionTestSuite, DecodeArrayErrorTest) {
     //Then I expect an error
     EXPECT_EQ(ENOMEM, status);
 
-    // When an error injected is prepared for celix_arrayList_addString() from celix_properties_loadFromString2
-    celix_ei_expect_celix_arrayList_addString((void*)celix_properties_loadFromString, 4, ENOMEM);
-
-    //When I call celix_properties_loadFromString
-    status = celix_properties_loadFromString(json, 0, &props);
-
-    //Then I expect an error
-    EXPECT_EQ(ENOMEM, status);
-
-    // And I expect 0 error message in celix_err. Note because errors are injected for celix_array_list_t, celix_err is
-    // not used
-    EXPECT_EQ(0, celix_err_getErrorCount());
+    // And I expect 1 error message in celix_err.
+    EXPECT_EQ(1, celix_err_getErrorCount());
     celix_err_printErrors(stderr, "Test Error: ", "\n");
 }
 

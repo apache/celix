@@ -43,12 +43,6 @@ celix_properties_entry_t* celix_properties_allocEntry(celix_properties_t* proper
  */
 char* celix_properties_createString(celix_properties_t* properties, const char* str);
 
-/**
- * @brief Convert jansson error to celix status.
- */
-celix_status_t celix_properties_jsonErrorToStatus(enum json_error_code error);
-
-
 #ifdef __cplusplus
 }
 #endif

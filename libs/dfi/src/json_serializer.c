@@ -20,7 +20,11 @@
 #include "json_serializer.h"
 #include "dyn_type.h"
 #include "dyn_type_common.h"
+#include "celix_properties.h"
+#include "celix_array_list.h"
+#include "celix_array_list_encoding.h"
 #include "celix_err.h"
+#include "celix_stdlib_cleanup.h"
 
 #include <jansson.h>
 #include <assert.h>
@@ -32,11 +36,15 @@ static int jsonSerializer_parseObject(const dyn_type* type, json_t* object, void
 static int jsonSerializer_parseSequence(const dyn_type* seq, json_t* array, void* seqLoc);
 static int jsonSerializer_parseAny(const dyn_type* type, void* input, json_t* val);
 static int jsonSerializer_parseEnum(const dyn_type* type, const char* enum_name, int32_t* out);
+static int jsonSerializer_parseProperties(const dyn_type* type, json_t* object, void *inst);
+static int jsonSerializer_parseArrayList(const dyn_type* type, json_t* array, void *inst);
 
 static int jsonSerializer_writeAny(const dyn_type* type, const void* input, json_t** val);
 static int jsonSerializer_writeComplex(const dyn_type* type, const void* input, json_t** val);
 static int jsonSerializer_writeSequence(const dyn_type* type, const void* input, json_t** out);
 static int jsonSerializer_writeEnum(const dyn_type* type, int32_t enum_value, json_t** out);
+static int jsonSerializer_writeProperties(const dyn_type* type, const void* input, json_t** out);
+static int jsonSerializer_writeArrayList(const dyn_type* type, const void* input, json_t** out);
 
 
 static int OK = 0;
@@ -174,6 +182,26 @@ static int jsonSerializer_parseAny(const dyn_type* type, void* loc, json_t* val)
                 celix_err_pushf("Expected json string type got %i", json_typeof(val));
             }
             break;
+        case 'p':
+            if (json_is_null(val)) {
+                // NULL celix_properties_t* is allowed
+            } else if (json_is_object(val)) {
+                status = jsonSerializer_parseProperties(type, val, loc);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json object for celix_properties_t* type but got %i", json_typeof(val));
+            }
+            break;
+        case 'a':
+            if (json_is_null(val)) {
+                // NULL celix_array_list_t* is allowed
+            } else if (json_is_array(val)) {
+                status = jsonSerializer_parseArrayList(type, val, loc);
+            } else {
+                status = ERROR;
+                celix_err_pushf("Expected json array for celix_array_list_t* type but got %i", json_typeof(val));
+            }
+            break;
         case '[' :
             if (json_is_array(val)) {
                 status = jsonSerializer_parseSequence(type, val, loc);
@@ -238,6 +266,34 @@ static int jsonSerializer_parseSequence(const dyn_type* seq, json_t* array, void
     }
 
     return status;
+}
+
+static int jsonSerializer_parseProperties(const dyn_type* type, json_t* object, void *inst) {
+    celix_autofree char* objStr = json_dumps(object, JSON_COMPACT | JSON_ENCODE_ANY);
+    if (objStr == NULL) {
+        celix_err_push("Error converting properties json object to string");
+        return ERROR;
+    }
+    int status = celix_properties_loadFromString(objStr, CELIX_PROPERTIES_DECODE_STRICT, (celix_properties_t**)inst);
+    if (status != CELIX_SUCCESS) {
+        celix_err_push("Error converting json object to properties");
+        return ERROR;
+    }
+    return OK;
+}
+
+static int jsonSerializer_parseArrayList(const dyn_type* type, json_t* array, void *inst) {
+    celix_autofree char* arrayStr = json_dumps(array, JSON_COMPACT | JSON_ENCODE_ANY);
+    if (arrayStr == NULL) {
+        celix_err_push("Error converting array list json object to string");
+        return ERROR;
+    }
+    int status = celix_arrayList_loadFromString(arrayStr, CELIX_ARRAY_LIST_DECODE_STRICT, (celix_array_list_t**)inst);
+    if (status != CELIX_SUCCESS) {
+        celix_err_push("Error converting json object to array list");
+        return ERROR;
+    }
+    return OK;
 }
 
 int jsonSerializer_serialize(const dyn_type* type, const void* input, char** output) {
@@ -319,6 +375,12 @@ static int jsonSerializer_writeAny(const dyn_type* type, const void* input, json
         }
         case 'E':
             status = jsonSerializer_writeEnum(type, *(const int32_t*)input, &val);
+            break;
+        case 'p' :
+            status = jsonSerializer_writeProperties(type, input, &val);
+            break;
+        case 'a' :
+            status = jsonSerializer_writeArrayList(type, input, &val);
             break;
         case '*' :
             subType = dynType_typedPointer_getTypedType(type);
@@ -435,3 +497,62 @@ static int jsonSerializer_writeEnum(const dyn_type* type, int32_t enum_value, js
     celix_err_pushf("Could not find Enum value %s in enum type", enum_value_str);
     return ERROR;
 }
+
+static int jsonSerializer_writeProperties(const dyn_type* type, const void* input, json_t** out) {
+    celix_properties_t* props = *(celix_properties_t**)input;
+    if (props == NULL) {
+        *out = json_null();
+        if (*out == NULL) {
+            celix_err_push("Failed to create json object for null properties.");
+            return ERROR;
+        }
+        return OK;
+    }
+    celix_autofree char* str = NULL;
+    celix_status_t status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_STRICT, &str);
+    if (status != CELIX_SUCCESS) {
+        celix_err_push("Failed to convert properties to string.");
+        return ERROR;
+    }
+    json_error_t jsonError = {0};
+     *out = json_loads(str, 0, &jsonError);
+    if (*out == NULL) {
+        celix_err_pushf("Failed to convert properties string to json. Error: %s:%i:%i: %s.",
+                        jsonError.source,
+                        jsonError.line,
+                        jsonError.column,
+                        jsonError.text);
+        return ERROR;
+    }
+    return OK;
+}
+
+static int jsonSerializer_writeArrayList(const dyn_type* type, const void* input, json_t** out) {
+    celix_array_list_t* list = *(celix_array_list_t**)input;
+    if (list == NULL) {
+        *out = json_null();
+        if (*out == NULL) {
+            celix_err_push("Failed to create json object for null array list.");
+            return ERROR;
+        }
+        return OK;
+    }
+    celix_autofree char* str = NULL;
+    celix_status_t status = celix_arrayList_saveToString(list, CELIX_ARRAY_LIST_ENCODE_STRICT, &str);
+    if (status != CELIX_SUCCESS) {
+        celix_err_push("Failed to convert array list to string.");
+        return ERROR;
+    }
+    json_error_t jsonError = {0};
+    *out = json_loads(str, 0, &jsonError);
+    if (*out == NULL) {
+        celix_err_pushf("Failed to convert array list string to json. Error: %s:%i:%i: %s.",
+                        jsonError.source,
+                        jsonError.line,
+                        jsonError.column,
+                        jsonError.text);
+        return ERROR;
+    }
+    return OK;
+}
+

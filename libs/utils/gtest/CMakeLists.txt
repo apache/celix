@@ -30,6 +30,8 @@ add_executable(test_utils
         src/ConvertUtilsTestSuite.cc
         src/PropertiesTestSuite.cc
         src/PropertiesEncodingTestSuite.cc
+        src/CelixJsonUtilsTestSuite.cc
+        src/CelixArrayListEncodingTestSuite.cc
         src/VersionTestSuite.cc
         src/ErrTestSuite.cc
         src/ThreadsTestSuite.cc
@@ -141,6 +143,8 @@ if (EI_TESTS)
             src/HashMapErrorInjectionTestSuite.cc
             src/FilterErrorInjectionTestSuite.cc
             src/PropertiesEncodingErrorInjectionTestSuite.cc
+            src/CelixArrayListEncodingErrorInjectionTestSuite.cc
+            src/CelixJsonUtilsErrorInjectionTestSuite.cc
     )
     target_link_libraries(test_utils_with_ei PRIVATE
             Celix::zip_ei

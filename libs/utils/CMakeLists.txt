@@ -41,6 +41,8 @@ if (UTILS)
             src/celix_errno.c
             src/celix_err.c
             src/celix_cleanup.c
+            src/celix_array_list_encoding.c
+            src/celix_json_utils.c
             ${MEMSTREAM_SOURCES}
             )
     set(UTILS_PRIVATE_DEPS libzip::zip jansson::jansson)

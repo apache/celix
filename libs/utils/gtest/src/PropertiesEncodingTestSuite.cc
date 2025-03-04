@@ -135,13 +135,13 @@ TEST_F(PropertiesSerializationTestSuite, SavePropertiesWithArrayListsContainingN
         status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_ERROR_ON_NAN_INF, &output2);
         EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
         //And an error msg is added to celix_err
-        EXPECT_EQ(2, celix_err_getErrorCount());
+        EXPECT_EQ(3, celix_err_getErrorCount());
 
         celix_err_resetErrors();
         char* output3;
         status = celix_properties_saveToString(props, CELIX_PROPERTIES_ENCODE_ERROR_ON_EMPTY_ARRAYS, &output3);
         EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
-        EXPECT_EQ(1, celix_err_getErrorCount());
+        EXPECT_EQ(2, celix_err_getErrorCount());
     }
 }
 
@@ -1109,30 +1109,6 @@ TEST_F(PropertiesSerializationTestSuite, SaveAndLoadCxxProperties) {
 
     //Then the reloaded properties are equal to the original properties
     EXPECT_TRUE(props == props2);
-}
-
-TEST_F(PropertiesSerializationTestSuite, JsonErrorToCelixStatusTest) {
-    EXPECT_EQ(CELIX_ILLEGAL_STATE, celix_properties_jsonErrorToStatus(json_error_unknown));
-
-    EXPECT_EQ(ENOMEM, celix_properties_jsonErrorToStatus(json_error_out_of_memory));
-    EXPECT_EQ(ENOMEM, celix_properties_jsonErrorToStatus(json_error_stack_overflow));
-
-    EXPECT_EQ(CELIX_FILE_IO_EXCEPTION, celix_properties_jsonErrorToStatus(json_error_cannot_open_file));
-
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_invalid_argument));
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_invalid_argument));
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_premature_end_of_input));
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_end_of_input_expected));
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_invalid_syntax));
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_invalid_format));
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_wrong_type));
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_null_character));
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_null_value));
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_null_byte_in_key));
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_duplicate_key));
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_numeric_overflow));
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_item_not_found));
-    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, celix_properties_jsonErrorToStatus(json_error_index_out_of_range));
 }
 
 TEST_F(PropertiesSerializationTestSuite, KeyCollision) {
