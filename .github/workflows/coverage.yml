@@ -52,7 +52,7 @@ jobs:
             -o celix/*:enable_testing_on_ci=True
             -o celix/*:enable_ccache=True
         run: |
-          conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -c tools.cmake.cmaketoolchain:variables.CMAKE_POLICY_VERSION_MINIMUM=3.5 -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -of build ${CONAN_BUILD_OPTIONS} -b missing
+          conan build .  -c tools.cmake.cmaketoolchain:generator=Ninja -pr:b default -pr:h default -s:b build_type=Release -s:h build_type=Release -of build ${CONAN_BUILD_OPTIONS} -b missing
       - name: Test with coverage
         run: |
           cd build
