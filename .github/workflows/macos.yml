@@ -28,6 +28,8 @@ jobs:
       - name: Setup Conan Profile
         run: |
           conan profile detect -f
+          echo "[tool_requires]" >> `conan profile path default`
+          echo "cmake/3.26.4" >> `conan profile path default`
       - name: Conan Cache
         id: cache-conan
         uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf #v4.2.2
@@ -95,6 +97,7 @@ jobs:
             -DENABLE_TESTING_ON_CI=ON
             -DCMAKE_BUILD_TYPE=Release
             -DENABLE_CCACHE=ON
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
             -G Ninja
         run: |
           mkdir build install
