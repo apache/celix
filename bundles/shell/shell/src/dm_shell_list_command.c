@@ -31,8 +31,9 @@ static void parseCommandLine(const char*line, celix_array_list_t **requestedBund
     *wtf = false;
     char *str = strdup(line);
     // skip first argument since this is the command
-    strtok(str," ");
-    char* tok = strtok(NULL," ");
+    char* save = NULL;
+    strtok_r(str," ", &save);
+    char* tok = strtok_r(NULL," ", &save);
     *requestedBundleIds = celix_arrayList_create();
     while (tok) {
         if (strncmp("wtf", tok, strlen("wtf")) == 0) {
@@ -45,7 +46,7 @@ static void parseCommandLine(const char*line, celix_array_list_t **requestedBund
         } else {
             fprintf (err, "DM: Skipping unknown argument: %s", tok );
         }
-        tok = strtok(NULL," ");
+        tok = strtok_r(NULL," ", &save);
     }
     free (str);
 }
