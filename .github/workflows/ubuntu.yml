@@ -146,6 +146,7 @@ jobs:
           -DENABLE_TESTING_ON_CI=ON
           -DCMAKE_BUILD_TYPE=${{ matrix.type }}
           -DENABLE_CCACHE=ON
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5
           -G Ninja
       run: |
         mkdir build install
