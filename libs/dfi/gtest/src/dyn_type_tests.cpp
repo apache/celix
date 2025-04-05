@@ -87,6 +87,8 @@ public:
 #define EX18 "Ttext=t;ltext;"
 #define EX19 "Tsample={DD vala valb};Tref=lsample;;lref;"
 #define EX20 "TINTEGER=I;Tsample={DlINTEGER; vala valb};Tref=lsample;;lref;"
+#define EX21 "Tprops=p;lprops;"
+#define EX22 "Tarraylist=a;larraylist;"
 
 #define CREATE_EXAMPLES_TEST(DESC) \
     TEST_F(DynTypeTests, ParseTestExample ## DESC) { \
@@ -116,6 +118,8 @@ CREATE_EXAMPLES_TEST(EX17)
 CREATE_EXAMPLES_TEST(EX18)
 CREATE_EXAMPLES_TEST(EX19)
 CREATE_EXAMPLES_TEST(EX20)
+CREATE_EXAMPLES_TEST(EX21)
+CREATE_EXAMPLES_TEST(EX22)
 
 TEST_F(DynTypeTests, ParseRandomGarbageTest) {
     /*
@@ -635,6 +639,18 @@ TEST_F(DynTypeTests, TrivialityTesT) {
 
     // a complex consisting of non-pointer scalar and non-trivial complex is non-trivial
     rc = dynType_parseWithStr("{II{IP b c}}", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    EXPECT_FALSE(dynType_isTrivial(type));
+    dynType_destroy(type);
+
+    // celix_properties_t* is non-trivial
+    rc = dynType_parseWithStr("p", NULL, NULL, &type);
+    ASSERT_EQ(0, rc);
+    EXPECT_FALSE(dynType_isTrivial(type));
+    dynType_destroy(type);
+
+    // celix_array_list_t* is non-trivial
+    rc = dynType_parseWithStr("a", NULL, NULL, &type);
     ASSERT_EQ(0, rc);
     EXPECT_FALSE(dynType_isTrivial(type));
     dynType_destroy(type);

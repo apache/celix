@@ -19,6 +19,8 @@
 
 #include "json_serializer.h"
 #include "dyn_type.h"
+#include "celix_properties.h"
+#include "celix_array_list.h"
 #include "celix_err.h"
 #include "jansson_ei.h"
 #include "malloc_ei.h"
@@ -38,6 +40,8 @@ public:
         celix_ei_expect_json_object(nullptr, 0, nullptr);
         celix_ei_expect_json_dumps(nullptr, 0, nullptr);
         celix_ei_expect_json_array_size(nullptr, 0, 0);
+        celix_ei_expect_json_null(nullptr, 0, nullptr);
+        celix_ei_expect_json_loads(nullptr, 0, nullptr);
         celix_ei_expect_strdup(nullptr, 0, nullptr);
         celix_ei_expect_calloc(nullptr, 0, nullptr);
         celix_err_resetErrors();
@@ -168,5 +172,92 @@ TEST_F(JsonSerializerErrorInjectionTestSuite, SerilizationError) {
     rc = jsonSerializer_serialize(type, &intVal, &result);
     EXPECT_NE(0, rc);
     EXPECT_EQ(nullptr, result);
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerErrorInjectionTestSuite, DeserilizationPropertiesErrorTest) {
+    dyn_type *type;
+    void *inst;
+    auto rc = dynType_parseWithStr("p", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    celix_ei_expect_json_dumps((void*)&jsonSerializer_deserializeJson, 3, nullptr);
+    json_auto_t* root = json_loads(R"({"key1":"value1", "key2":true, "key3":123})", JSON_DECODE_ANY, NULL);
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_NE(0, rc);
+
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerErrorInjectionTestSuite, DeserilizationArrayListErrorTest) {
+    dyn_type *type;
+    void *inst;
+    auto rc = dynType_parseWithStr("a", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    celix_ei_expect_json_dumps((void*)&jsonSerializer_deserializeJson, 3, nullptr);
+    json_auto_t* root = json_loads(R"(["val1", "val2", "val3"])", JSON_DECODE_ANY, NULL);
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_NE(0, rc);
+
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerErrorInjectionTestSuite, SerializationNullPropertiesErrorTest) {
+    dyn_type *type;
+    auto rc = dynType_parseWithStr("p", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+
+    json_auto_t* result = nullptr;
+    celix_properties_t* props = nullptr;
+    void *inst = &props;
+    celix_ei_expect_json_null((void*)jsonSerializer_serializeJson, 2, nullptr);
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_NE(0, rc);
+
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerErrorInjectionTestSuite, SerializationPropertiesErrorTest) {
+    dyn_type *type;
+    auto rc = dynType_parseWithStr("p", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+
+    json_auto_t* result = nullptr;
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    void *inst = &props;
+    celix_ei_expect_json_loads((void*)jsonSerializer_serializeJson, 2, nullptr);
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_NE(0, rc);
+
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerErrorInjectionTestSuite, SerializationNullArrayListErrorTest) {
+    dyn_type *type;
+    auto rc = dynType_parseWithStr("a", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+
+    json_auto_t* result = nullptr;
+    celix_array_list_t* arrList = nullptr;
+    void *inst = &arrList;
+    celix_ei_expect_json_null((void*)jsonSerializer_serializeJson, 2, nullptr);
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_NE(0, rc);
+
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerErrorInjectionTestSuite, SerializationArrayListErrorTest) {
+    dyn_type *type;
+    auto rc = dynType_parseWithStr("a", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+
+    json_auto_t* result = nullptr;
+    celix_autoptr(celix_array_list_t) arrList = celix_arrayList_createStringArray();
+    celix_arrayList_addString(arrList, "val1");
+    void *inst = &arrList;
+    celix_ei_expect_json_loads((void*)jsonSerializer_serializeJson, 2, nullptr);
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_NE(0, rc);
+
     dynType_destroy(type);
 }

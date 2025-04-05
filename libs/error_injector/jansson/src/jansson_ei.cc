@@ -124,4 +124,18 @@ json_t* __wrap_json_pack_ex(json_error_t* error, size_t flags, const char* fmt, 
     return obj;
 }
 
+json_t* __real_json_null(void);
+CELIX_EI_DEFINE(json_null, json_t*)
+json_t* __wrap_json_null(void) {
+    CELIX_EI_IMPL(json_null);
+    return __real_json_null();
+}
+
+json_t* __real_json_loads(const char* input, size_t flags, json_error_t* error);
+CELIX_EI_DEFINE(json_loads, json_t*)
+json_t* __wrap_json_loads(const char* input, size_t flags, json_error_t* error) {
+    CELIX_EI_IMPL(json_loads);
+    return __real_json_loads(input, flags, error);
+}
+
 }

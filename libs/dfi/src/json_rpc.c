@@ -47,6 +47,11 @@ typedef struct celix_rpc_args {
     void* args[CELIX_JSON_RPC_MAX_ARGS];
 }celix_rpc_args_t;
 
+static bool celix_argType_isStringOrBuiltInObject(const dyn_type* type) {
+    int t = dynType_type(type);
+    return t == DYN_TYPE_TEXT || t == DYN_TYPE_BUILTIN_OBJECT;
+}
+
 static void celix_rpcArgs_cleanup(celix_rpc_args_t* args) {
     const struct dyn_function_arguments_head* dynArgs = args->dynArgs;
     if (dynArgs == NULL) {
@@ -57,7 +62,7 @@ static void celix_rpcArgs_cleanup(celix_rpc_args_t* args) {
         const dyn_type* argType = dynType_realType(entry->type);
         enum dyn_function_argument_meta meta = entry->argumentMeta;
         if (meta == DYN_FUNCTION_ARGUMENT_META__STD) {
-            if (dynType_descriptorType(argType) == 't') {
+            if (celix_argType_isStringOrBuiltInObject(argType)) {
                 const char* isConst = dynType_getMetaInfo(entry->type, "const");
                 if (isConst != NULL && strncmp("true", isConst, 5) == 0) {
                     dynType_free(argType, args->args[entry->index]);
@@ -74,8 +79,8 @@ static void celix_rpcArgs_cleanup(celix_rpc_args_t* args) {
             dynType_free(subType, *(void**)(args->args[entry->index]));
         } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
             const dyn_type* typedType = dynType_typedPointer_getTypedType(argType);
-            if (dynType_descriptorType(typedType) == 't') {
-                free(**(void***)args->args[entry->index]);
+            if (celix_argType_isStringOrBuiltInObject(typedType)) {
+                dynType_cleanup(typedType, *(void**)(args->args[entry->index]));//args->args[entry->index] is void***, its value is &ptrToPtr(the local variable in jsonRpc_call)
             } else {
                 const dyn_type* typedTypedType = dynType_typedPointer_getTypedType(typedType);
                 dynType_free(typedTypedType, **(void***)args->args[entry->index]);
@@ -221,15 +226,14 @@ int jsonRpc_prepareInvokeRequest(const dyn_function_type* func, const char* id, 
                 celix_err_pushf("Failed to serialize args for function '%s'\n", id);
                 return ERROR;
             }
-
-            if (dynType_descriptorType(type) == 't') {
+            if (celix_argType_isStringOrBuiltInObject(type)) {
                 // we need to get meta info from the original type, which could be a reference, rather than the real type
                 const char* metaArgument = dynType_getMetaInfo(entry->type, "const");
                 if (metaArgument != NULL && strcmp("true", metaArgument) == 0) {
-                    //const char * as input -> nop
+                    //const char* or const celix_properties_t* or const celix_array_list_t* as input -> nop
                 } else {
-                    char** str = args[entry->index];
-                    free(*str); //char * as input -> got ownership -> free it.
+                    //char* or celix_properties_t* or celix_array_list_t* as input -> got ownership -> free it.
+                    dynType_cleanup(type, args[entry->index]);//args[entry->index] is char** or celix_properties_t** or celix_array_list_t**
                 }
             }
             if (json_array_append_new(arguments, val) != 0) {
@@ -296,14 +300,13 @@ int jsonRpc_handleReply(const dyn_function_type* func, const char* reply, void* 
         }
     } else {
         const dyn_type* subType = dynType_typedPointer_getTypedType(argType);
-
-        if (dynType_descriptorType(subType) == 't') {
-            char*** out = (char ***) lastArg;
-            char** ptrToString = NULL;
-            status = jsonSerializer_deserializeJson(subType, result, (void**)&ptrToString);
-            if (ptrToString != NULL) {
-                **out = (void*)*ptrToString;
-                free(ptrToString);
+        if (celix_argType_isStringOrBuiltInObject(subType)) {
+            void*** out = (void***) lastArg;
+            void** ptrToPtr = NULL;//pointer to char*, celix_properties_t*, celix_array_list_t*
+            status = jsonSerializer_deserializeJson(subType, result, (void**)&ptrToPtr);
+            if (ptrToPtr != NULL) {
+                **out = *ptrToPtr;
+                free(ptrToPtr);
             }
         } else {
             const dyn_type* subSubType = dynType_typedPointer_getTypedType(subType);
