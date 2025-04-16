@@ -21,6 +21,8 @@
 #include "dyn_example_functions.h"
 #include "dyn_common.h"
 #include "dyn_function.h"
+#include "celix_properties.h"
+#include "celix_array_list.h"
 #include "celix_err.h"
 
 #include <ffi.h>
@@ -308,7 +310,7 @@ TEST_F(DynFunctionTests, WrongArgumentMetaTest) {
 
     int rc4 = dynFunction_parseWithStr("example(#am=handle;P#am=out;*D)N", nullptr, &dynFunc);
     EXPECT_NE(0, rc4);
-    EXPECT_STREQ("Error 'out' is only allowed for pointer to text or typed pointer not to 'D'", celix_err_popLastError());
+    EXPECT_STREQ("Error 'out' is only allowed for pointer to text or built-in object or typed pointer not to 'D'", celix_err_popLastError());
 
     // #am=pre argument is not allowed for non pointer types
     int rc5 = dynFunction_parseWithStr("example(#am=pre;I)N", nullptr, &dynFunc);
@@ -319,4 +321,88 @@ TEST_F(DynFunctionTests, WrongArgumentMetaTest) {
     int rc6 = dynFunction_parseWithStr("example(#am=pre;**D)N", nullptr, &dynFunc);
     EXPECT_NE(0, rc6);
     EXPECT_STREQ("Error 'pre' is only allowed for pointer to trivial types not non-trivial '*'", celix_err_popLastError());
+
+    int rc7 = dynFunction_parseWithStr("example(#am=handle;P#am=out;p)N", nullptr, &dynFunc);
+    EXPECT_NE(0, rc7);
+    EXPECT_STREQ("Error 'out' is only allowed for typed pointer not 'p'", celix_err_popLastError());
+
+    int rc8 = dynFunction_parseWithStr("example(#am=handle;P#am=out;a)N", nullptr, &dynFunc);
+    EXPECT_NE(0, rc8);
+    EXPECT_STREQ("Error 'out' is only allowed for typed pointer not 'a'", celix_err_popLastError());
+
+    int rc9 = dynFunction_parseWithStr("example(#am=handle;P#am=pre;p)N", nullptr, &dynFunc);
+    EXPECT_NE(0, rc9);
+    EXPECT_STREQ("Error 'pre' is only allowed for typed pointer not 'p'", celix_err_popLastError());
+
+    int rc10 = dynFunction_parseWithStr("example(#am=handle;P#am=pre;a)N", nullptr, &dynFunc);
+    EXPECT_NE(0, rc10);
+    EXPECT_STREQ("Error 'pre' is only allowed for typed pointer not 'a'", celix_err_popLastError());
+
+    int rc11 = dynFunction_parseWithStr("example(#am=handle;P#am=pre;*p)N", nullptr, &dynFunc);
+    EXPECT_NE(0, rc11);
+    EXPECT_STREQ("Error 'pre' is only allowed for pointer to trivial types not non-trivial 'p'", celix_err_popLastError());
+
+    int rc12 = dynFunction_parseWithStr("example(#am=handle;P#am=pre;*a)N", nullptr, &dynFunc);
+    EXPECT_NE(0, rc12);
+    EXPECT_STREQ("Error 'pre' is only allowed for pointer to trivial types not non-trivial 'a'", celix_err_popLastError());
+}
+
+TEST_F(DynFunctionTests, DynFuncWithPropertiesArgTest) {
+    dyn_function_type *dynFunc = nullptr;
+
+    void (*fp)(const celix_properties_t *constProps, celix_properties_t *props, celix_properties_t **out) =
+            [](const celix_properties_t *constProps, celix_properties_t *props, celix_properties_t **out) {
+                EXPECT_TRUE(celix_properties_get(constProps, "key1", nullptr) != nullptr);
+                *out = celix_properties_copy(props);
+                celix_properties_destroy(props);
+                return;
+            };
+    int rc = dynFunction_parseWithStr("example(#const=true;pp#am=out;*p)V", nullptr, &dynFunc);
+    ASSERT_EQ(0, rc);
+    EXPECT_EQ(3, dynFunction_nrOfArguments(dynFunc));
+
+    celix_autoptr(celix_properties_t) constProps = celix_properties_create();//owner is caller
+    celix_properties_set(constProps, "key1", "value1");
+    celix_properties_t* props = celix_properties_create();//owner is callee
+    celix_properties_set(props, "key2", "value2");
+    void *args[3];
+    args[0] = &constProps;
+    args[1] = &props;
+    celix_autoptr(celix_properties_t) result = nullptr;
+    celix_properties_t** ptrToResult = &result;
+    args[2] = &ptrToResult;
+    rc = dynFunction_call(dynFunc, (void (*)(void))fp, nullptr, args);
+    EXPECT_EQ(0, rc);
+    dynFunction_destroy(dynFunc);
+    EXPECT_TRUE(celix_properties_get(result, "key2", nullptr) != nullptr);
+}
+
+TEST_F(DynFunctionTests, DynFuncWithArrayListArgTest) {
+    dyn_function_type *dynFunc = nullptr;
+
+    void (*fp) (const celix_array_list_t* constProps, celix_array_list_t* props, celix_array_list_t** out) =
+            [](const celix_array_list_t* constProps, celix_array_list_t* props, celix_array_list_t** out) {
+                EXPECT_EQ(1, celix_arrayList_getLong(constProps, 0));
+                *out = celix_arrayList_copy(props);
+                celix_arrayList_destroy(props);
+                return;
+            };
+    int rc = dynFunction_parseWithStr("example(#const=true;aa#am=out;*a)V", nullptr, &dynFunc);
+    ASSERT_EQ(0, rc);
+    EXPECT_EQ(3, dynFunction_nrOfArguments(dynFunc));
+
+    celix_autoptr(celix_array_list_t) constList = celix_arrayList_createLongArray();//owner is caller
+    celix_arrayList_addLong(constList, 1);
+    celix_array_list_t* list = celix_arrayList_createLongArray();//owner is callee
+    celix_arrayList_addLong(list, 2);
+    void *args[3];
+    args[0] = &constList;
+    args[1] = &list;
+    celix_autoptr(celix_array_list_t) result = nullptr;
+    celix_array_list_t** ptrToResult = &result;
+    args[2] = &ptrToResult;
+    rc = dynFunction_call(dynFunc, (void (*)(void))fp, nullptr, args);
+    EXPECT_EQ(0, rc);
+    dynFunction_destroy(dynFunc);
+    EXPECT_EQ(2, celix_arrayList_getLong(result, 0));
 }

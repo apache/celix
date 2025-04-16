@@ -20,6 +20,8 @@
 #include "dyn_type.h"
 #include "dyn_type_common.h"
 #include "dyn_common.h"
+#include "celix_properties.h"
+#include "celix_array_list.h"
 #include "celix_err.h"
 #include "celix_stdio_cleanup.h"
 #include "celix_stdlib_cleanup.h"
@@ -51,6 +53,8 @@ static int dynType_parseRefByValue(FILE* stream, dyn_type* type);
 static int dynType_parseSequence(FILE* stream, dyn_type* type);
 static int dynType_parseSimple(int c, dyn_type* type);
 static int dynType_parseTypedPointer(FILE* stream, dyn_type* type);
+static int dynType_parseProperties(FILE* stream, dyn_type* type);
+static int dynType_parseArrayList(FILE* stream, dyn_type* type);
 static unsigned short dynType_getOffset(const dyn_type* type, int index);
 
 static void dynType_printAny(const char* name, const dyn_type* type, int depth, FILE* stream);
@@ -60,6 +64,7 @@ static void dynType_printSimple(const char* name, const dyn_type* type, int dept
 static void dynType_printEnum(const char* name, const dyn_type* type, int depth, FILE* stream);
 static void dynType_printTypedPointer(const char* name, const dyn_type* type, int depth, FILE* stream);
 static void dynType_printText(const char* name, const dyn_type* type, int depth, FILE* stream);
+static void dynType_printBuiltInObject(const char* name, const dyn_type* type, int depth, FILE* stream);
 static void dynType_printDepth(int depth, FILE* stream);
 
 static void dynType_printTypes(const dyn_type* type, FILE* stream);
@@ -71,6 +76,7 @@ static int dynType_parseEnum(FILE* stream, dyn_type* type);
 static void dynType_freeComplexType(const dyn_type* type, void* loc);
 static void dynType_deepFree(const dyn_type* type, void* loc, bool alsoDeleteSelf);
 static void dynType_freeSequenceType(const dyn_type* type, void* seqLoc);
+static void dynType_freeBuiltInObject(const dyn_type* type, void* loc);
 
 static int dynType_parseMetaInfo(FILE* stream, dyn_type* type);
 
@@ -180,6 +186,12 @@ static int dynType_parseAny(FILE* stream, dyn_type* type) {
             } else {
                 celix_err_push("Failed to parse meta properties");
             }
+            break;
+        case 'p':
+            status = dynType_parseProperties(stream, type);
+            break;
+        case 'a':
+            status = dynType_parseArrayList(stream, type);
             break;
         default :
             status = dynType_parseSimple(c, type);
@@ -416,6 +428,22 @@ static int dynType_parseTypedPointer(FILE* stream, dyn_type* type) {
     return status;
 }
 
+static int dynType_parseProperties(FILE* stream, dyn_type* type) {
+    type->type = DYN_TYPE_BUILTIN_OBJECT;
+    type->descriptor = 'p';
+    type->trivial = false;
+    type->ffiType = &ffi_type_pointer;
+    return OK;
+}
+
+static int dynType_parseArrayList(FILE* stream, dyn_type* type) {
+    type->type = DYN_TYPE_BUILTIN_OBJECT;
+    type->descriptor = 'a';
+    type->trivial = false;
+    type->ffiType = &ffi_type_pointer;
+    return OK;
+}
+
 void dynType_destroy(dyn_type* type) {
     if (type != NULL) {          
         dynType_clear(type);
@@ -619,6 +647,10 @@ void dynType_free(const dyn_type* type, void* loc) {
     dynType_deepFree(type, loc, true);
 }
 
+void dynType_cleanup(const dyn_type* type, void* loc) {
+    dynType_deepFree(type, loc, false);
+}
+
 static void dynType_deepFree(const dyn_type* type, void* loc, bool alsoDeleteSelf) {
     if (loc != NULL) {
         const dyn_type* subType = NULL;
@@ -640,6 +672,8 @@ static void dynType_deepFree(const dyn_type* type, void* loc, bool alsoDeleteSel
                 text = *(char**)loc;
                 free(text);
                 break;
+            case DYN_TYPE_BUILTIN_OBJECT:
+                dynType_freeBuiltInObject(type, loc);
             case DYN_TYPE_SIMPLE:
                 //nop
                 break;
@@ -673,6 +707,23 @@ static void dynType_freeComplexType(const dyn_type* type, void* loc) {
     int index = 0;
     TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
         dynType_deepFree(entry->type, dynType_complex_valLocAt(type, index++, loc), false);
+    }
+}
+
+static void dynType_freeBuiltInObject(const dyn_type* type, void* loc) {
+    char descriptor = dynType_descriptorType(type);
+    switch (descriptor) {
+        case 'p':
+            celix_properties_destroy(*(celix_properties_t**)loc);
+            break;
+        case 'a':
+            celix_arrayList_destroy(*(celix_array_list_t**)loc);
+            break;
+//LCOV_EXCL_START
+        default:
+            assert(0 && "Unexpected switch case. Cannot free built-in object type");
+            break;
+//LCOV_EXCL_STOP
     }
 }
 
@@ -894,6 +945,9 @@ static void dynType_printAny(const char* name, const dyn_type* type, int depth, 
         case DYN_TYPE_TEXT:
             dynType_printText(name, toPrint, depth, stream);
             break;
+        case DYN_TYPE_BUILTIN_OBJECT:
+            dynType_printBuiltInObject(name, toPrint, depth, stream);
+            break;
 //LCOV_EXCL_START
         default :
             assert(0 && "Unexpected switch case. cannot print dyn type");
@@ -980,6 +1034,12 @@ static void dynType_printTypedPointer(const char* name, const dyn_type* type, in
 static void dynType_printText(const char* name, const dyn_type* type, int depth, FILE* stream) {
     dynType_printDepth(depth, stream);
     fprintf(stream, "%s: text type, size is %zu, alignment is %i, descriptor is '%c'.\n",
+            name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+}
+
+static void dynType_printBuiltInObject(const char* name, const dyn_type* type, int depth, FILE* stream) {
+    dynType_printDepth(depth, stream);
+    fprintf(stream, "%s: built-in object type, size is %zu, alignment is %i, descriptor is '%c'.\n",
             name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
 }
 

@@ -32,6 +32,8 @@ extern "C" {
 #include "dyn_common.h"
 #include "dyn_type.h"
 #include "json_serializer.h"
+#include "celix_properties.h"
+#include "celix_array_list.h"
 #include "celix_err.h"
 
 #include <jansson.h>
@@ -984,5 +986,163 @@ TEST_F(JsonSerializerTests, SerializationDeserilizationStringTest) {
     ASSERT_EQ(0, rc);
     EXPECT_TRUE(json_equal(root, result));
     dynType_free(type, inst);
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerTests, SerializationDeserilizationNullPropertiesTest) {
+    dyn_type *type;
+    void *inst;
+    auto rc = dynType_parseWithStr("p", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_null();
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_EQ(0, rc);
+    EXPECT_EQ(nullptr, *(celix_properties_t**)inst);
+
+    json_auto_t* result = nullptr;
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(json_equal(root, result));
+    dynType_free(type, inst);
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerTests, SerializationDeserilizationPropertiesTest) {
+    dyn_type *type;
+    void *inst;
+    auto rc = dynType_parseWithStr("p", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_loads(R"({"key1":"value1", "key2":true, "key3":123})", JSON_DECODE_ANY, NULL);
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_EQ(0, rc);
+    auto props = *(celix_properties_t**)inst;
+    auto value1 = celix_properties_getAsString(props, "key1", nullptr);
+    ASSERT_STREQ("value1", value1);
+    auto value2 = celix_properties_getAsBool(props, "key2", false);
+    ASSERT_TRUE(value2);
+    auto value3 = celix_properties_getAsLong(props, "key3", 0L);
+    ASSERT_EQ(123, value3);
+
+    json_auto_t* result = nullptr;
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(json_equal(root, result));
+    dynType_free(type, inst);
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerTests, SerializationPropertiesErrorOnEmptyArraysTest) {
+    dyn_type *type;
+    auto rc = dynType_parseWithStr("p", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+
+    json_auto_t* result = nullptr;
+    celix_autoptr(celix_properties_t) props = celix_properties_create();
+    auto emptyList = celix_arrayList_createStringArray();
+    auto status = celix_properties_assignArrayList(props, "key", emptyList);
+    ASSERT_EQ(CELIX_SUCCESS, status);
+    void *inst = &props;
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_NE(0, rc);
+
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerTests, DeserilizationInvalidPropertiesTest) {
+    dyn_type *type;
+    void *inst;
+    auto rc = dynType_parseWithStr("p", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_loads(R"("invalid_properties")", JSON_DECODE_ANY, NULL);
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_NE(0, rc);
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerTests, DeserilizationPropertiesWithInvalidElementTest) {
+    dyn_type *type;
+    void *inst;
+    auto rc = dynType_parseWithStr("p", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_loads(R"({"key1":[]})", JSON_DECODE_ANY, NULL);
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_NE(0, rc);
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerTests, SerializationDeserilizationNullArrayListTest) {
+    dyn_type *type;
+    void *inst;
+    auto rc = dynType_parseWithStr("a", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_null();
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_EQ(0, rc);
+    EXPECT_EQ(nullptr, *(celix_array_list_t**)inst);
+
+    json_auto_t* result = nullptr;
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(json_equal(root, result));
+    dynType_free(type, inst);
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerTests, SerializationDeserilizationArrayListTest) {
+    dyn_type *type;
+    void *inst;
+    auto rc = dynType_parseWithStr("a", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_loads(R"(["val1", "val2", "val3"])", JSON_DECODE_ANY, NULL);
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_EQ(0, rc);
+    auto arrList = *(celix_array_list_t**)inst;
+    ASSERT_EQ(3, celix_arrayList_size(arrList));
+    ASSERT_EQ(CELIX_ARRAY_LIST_ELEMENT_TYPE_STRING, celix_arrayList_getElementType(arrList));
+    ASSERT_STREQ("val1", celix_arrayList_getString(arrList, 0));
+    ASSERT_STREQ("val2", celix_arrayList_getString(arrList, 1));
+    ASSERT_STREQ("val3", celix_arrayList_getString(arrList, 2));
+
+    json_auto_t* result = nullptr;
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_EQ(0, rc);
+    EXPECT_TRUE(json_equal(root, result));
+    dynType_free(type, inst);
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerTests, SerializationArrayListErrorOnEmptyArraysTest) {
+    dyn_type *type;
+    auto rc = dynType_parseWithStr("a", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+
+    json_auto_t* result = nullptr;
+    celix_autoptr(celix_array_list_t) emptyList = celix_arrayList_createStringArray();
+    void *inst = &emptyList;
+    rc = jsonSerializer_serializeJson(type, inst, &result);
+    ASSERT_NE(0, rc);
+
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerTests, DeserilizationInvalidArrayListTest) {
+    dyn_type *type;
+    void *inst;
+    auto rc = dynType_parseWithStr("a", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_loads(R"("invalid_array_list")", JSON_DECODE_ANY, NULL);
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_NE(0, rc);
+    dynType_destroy(type);
+}
+
+TEST_F(JsonSerializerTests, DeserilizationArrayListWithInvalidElementTest) {
+    dyn_type *type;
+    void *inst;
+    auto rc = dynType_parseWithStr("a", nullptr, nullptr, &type);
+    ASSERT_EQ(0, rc);
+    json_auto_t* root = json_loads(R"(["hello", 123])", JSON_DECODE_ANY, NULL);
+    rc = jsonSerializer_deserializeJson(type, root, &inst);
+    ASSERT_NE(0, rc);
     dynType_destroy(type);
 }

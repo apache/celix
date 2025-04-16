@@ -1,0 +1,10 @@
+:header
+type=interface
+name=example8
+version=1.0.0
+:annotations
+:types
+:methods
+getArrayList=getArrayList(#am=handle;P#am=out;*a)N
+setArrayList=setArrayList(#am=handle;Pa)N
+setConstArrayList=setConstArrayList(#am=handle;P#const=true;a)N
