@@ -29,9 +29,9 @@ celix_library_handle_t* celix_libloader_open(celix_bundle_context_t *ctx, const 
 #endif
     celix_library_handle_t* handle = NULL;
     bool noDelete = celix_bundleContext_getPropertyAsBool(ctx, CELIX_LOAD_BUNDLES_WITH_NODELETE, defaultNoDelete);
-    int flags = RTLD_NOW|RTLD_LOCAL;
+    int flags = RTLD_LAZY|RTLD_LOCAL;
     if (noDelete) {
-        flags = RTLD_NOW|RTLD_LOCAL|RTLD_NODELETE;
+        flags = RTLD_LAZY|RTLD_LOCAL|RTLD_NODELETE;
     }
 
     handle = dlopen(libPath, flags);

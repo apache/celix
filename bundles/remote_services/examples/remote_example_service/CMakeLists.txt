@@ -23,7 +23,7 @@ add_celix_bundle(remote_example_service
     VERSION 0.0.1
 )
 target_include_directories(remote_example_service PRIVATE src)
-target_link_libraries(remote_example_service PRIVATE Celix::c_rsa_spi remote_example_api)
+target_link_libraries(remote_example_service PRIVATE Celix::c_rsa_spi remote_example_api m)
 
 get_target_property(DESCR remote_example_api INTERFACE_DESCRIPTOR)
 celix_bundle_files(remote_example_service ${DESCR} DESTINATION .)
