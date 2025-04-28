@@ -29,7 +29,7 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo pip install -U conan==1.62.0
-          sudo apt-get install -yq --no-install-recommends ninja-build libclang-rt-14-dev
+          sudo apt-get install -yq --no-install-recommends ninja-build
       - name: Setup Conan Profile
         env:
           CC: ${{ matrix.compiler[0] }}
