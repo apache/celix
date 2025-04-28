@@ -41,6 +41,7 @@ public:
         auto properties = celix_properties_create();
         celix_properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
         celix_properties_set(properties, CELIX_FRAMEWORK_CACHE_DIR, ".cacheShellTestSuite");
+        celix_properties_setBool(properties, CELIX_FRAMEWORK_CLEAN_CACHE_DIR_ON_CREATE, true);
         celix_properties_set(properties, "CELIX_LOGGING_DEFAULT_ACTIVE_LOG_LEVEL", "trace");
 
         //to ensure "query 0" is still a test case for am empty result.
@@ -206,10 +207,30 @@ TEST_F(ShellTestSuite, queryTest) {
             char *buf = nullptr;
             size_t len;
             FILE *sout = open_memstream(&buf, &len);
+            command->executeCommand(command->handle, "query 1", sout, sout);
+            fclose(sout);
+            char* found = strstr(buf, "Provided services found 1"); //note could be 11, 12, etc
+            EXPECT_TRUE(found != nullptr);
+            free(buf);
+        }
+        {
+            char *buf = nullptr;
+            size_t len;
+            FILE *sout = open_memstream(&buf, &len);
             auto cmd = std::string{"query "} + std::to_string(d->resourceBundleId);
             command->executeCommand(command->handle, cmd.c_str(), sout, sout); //note query test resource bundle -> no results
             fclose(sout);
-            char* found = strstr(buf, "No results"); //note could be 11, 12, etc
+            char* found = strstr(buf, "No results");
+            EXPECT_TRUE(found != nullptr);
+            free(buf);
+        }
+        {
+            char *buf = nullptr;
+            size_t len;
+            FILE *sout = open_memstream(&buf, &len);
+            command->executeCommand(command->handle, "query celix_shell_command", sout, sout); //note query test resource bundle -> no results
+            fclose(sout);
+            char* found = strstr(buf, "Provided services found 1"); //note could be 11, 12, etc
             EXPECT_TRUE(found != nullptr);
             free(buf);
         }

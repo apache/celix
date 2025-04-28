@@ -17,6 +17,7 @@
  *under the License.
  */
 
+#include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -201,7 +202,7 @@ bool queryCommand_execute(void *_ptr, const char *command_line_str, FILE *sout, 
             //check if its a number (bundle id)
             errno = 0;
             long bndId = strtol(sub_str, NULL, 10);
-            if (bndId >= CELIX_FRAMEWORK_BUNDLE_ID && errno == 0 /*not EINVAL*/) {
+            if (bndId >= CELIX_FRAMEWORK_BUNDLE_ID && isdigit(sub_str[0]) && errno == 0 /*not EINVAL*/) {
                 opts.bndId = bndId;
             } else {
                 //not option and not a bundle id -> query
