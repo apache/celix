@@ -251,6 +251,11 @@ function(add_celix_bundle)
                 "BUNDLE_TARGET" "${BUNDLE_TARGET_NAME}_bundle"
         )
         target_link_libraries(${BUNDLE_TARGET_NAME} PRIVATE Celix::framework)
+        if(APPLE)
+            target_link_options(${BUNDLE_TARGET_NAME} PRIVATE "-Wl,-undefined,error")
+        else ()
+            target_link_options(${BUNDLE_TARGET_NAME} PRIVATE "-Wl,-z,defs")
+        endif()
     else ()
         add_custom_target(${BUNDLE_TARGET_NAME})
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES
