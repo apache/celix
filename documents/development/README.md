@@ -333,10 +333,8 @@ add_library(celix::MyBundle ALIAS MyBundle)
 - Use `while` statements for loops that may not execute.
 - Use `do`/`while` statements for loops that must execute at least once.
 - Use `for` statements for loops with a known number of iterations.
-- The use of `goto` is not allowed, except for error handling in C (for C++ use RAII).
-- For C, try to prevent deeply nested control structures and prefer early returns or error handling `goto` statements.
-  - To prevent deeply nested control structures, the `CELIX_DO_IF`, `CELIX_GOTO_IF_NULL` and `CELIX_GOTO_IF_ERR` 
-    macros can also be used.
+- Avoid using `goto` for error handling. Prefer early returns and automatic cleanup using celix auto pointers.
+- To prevent deeply nested control structures, the `CELIX_DO_IF` macro can also be used.
 
 ## Functions and Methods
 
@@ -350,7 +348,7 @@ add_library(celix::MyBundle ALIAS MyBundle)
 - For C++ functions with a lot of different parameters, consider using a builder pattern.
   - A builder pattern can be updated backwards compatible.
   - A builder pattern ensure that a lot of parameters can be configured, but also direct set on construction.
- 
+
 ## Error Handling and Logging
 
 - For C++, throw an exception when an error occurs and use RAII to ensure that resources are freed.
@@ -362,9 +360,10 @@ add_library(celix::MyBundle ALIAS MyBundle)
 - Use consistent error handling techniques, such as returning error codes or using designated error handling functions.
 - Log errors, warnings, and other important events using the Apache Celix log helper functions or - for libraries - 
   the `celix_err` functionality. 
-- Always check for errors and log them. 
+- Always check for errors and log them.
 - Error handling should free resources in the reverse order of their allocation/creation.
 - Ensure error handling is correct, using test suite with error injection.
+ - Prefer early returns together with celix auto pointers to ensure cleanup without using `goto`.
 
 For log levels use the following guidelines:
 - trace: Use this level for very detailed that you would only want to have while diagnosing problems. 
@@ -381,37 +380,50 @@ For log levels use the following guidelines:
 - fatal: Use this level to report severe errors that prevent the program from continuing to run. 
   After logging a fatal error, the program will typically terminate.
 
-Example of error handling and logging:
+Example of error handling and logging using auto pointers:
 ```c
+typedef struct celix_foo {
+    celix_thread_mutex_t mutex;
+    bool mutexInitialized;
+    celix_array_list_t* list;
+    celix_long_hash_map_t* map;
+} celix_foo_t;
+
+CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_foo_t, celix_foo_destroy)
+
 celix_foo_t* celix_foo_create(celix_log_helper_t* logHelper) {
-    celix_foo_t* foo = calloc(1, sizeof(*foo));
+    celix_autoptr(celix_foo_t) foo = calloc(1, sizeof(*foo));
     if (!foo) {
-        goto create_enomem_err;
+        celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR,
+                "Error creating foo, out of memory");
+        return NULL;
     }
-    
-    CELIX_GOTO_IF_ERR(create_mutex_err, celixThreadMutex_create(&foo->mutex, NULL));
-    
+
+    if (celixThreadMutex_create(&foo->mutex, NULL) == CELIX_SUCCESS) {
+        foo->mutexInitialized = true;
+    } else {
+        celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR,
+                "Error creating mutex");
+        return NULL; //foo cleaned up automatically
+    }
+
     foo->list = celix_arrayList_create();
     foo->map = celix_longHashMap_create();
-    if (!foo->list ||  !foo->map) {
-        goto create_enomem_err;
+    if (!foo->list || !foo->map) {
+        celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR,
+                "Error creating foo, out of memory");
+        return NULL; //foo cleaned up automatically
     }
-    
-  return foo;
-create_mutex_err:
-  celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Error creating mutex");
-  free(foo); //mutex not created, do not use celix_foo_destroy to prevent mutex destroy
-  return NULL;
-create_enomem_err:
-  celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR, "Error creating foo, out of memory");
-  celix_foo_destroy(foo); //note celix_foo_destroy can handle NULL
-  return NULL;
+
+    return celix_steal_ptr(foo);
 }
 
 void celix_foo_destroy(celix_foo_t* foo) {
     if (foo != NULL) {
         //note reverse order of creation
-        celixThreadMutex_destroy(&foo->mutex);
+        if (foo->mutexInitialized) {
+            celixThreadMutex_destroy(&foo->mutex);
+        }
         celix_arrayList_destroy(foo->list);
         celix_longHashMap_destroy(foo->map);
         free(foo);
