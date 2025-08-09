@@ -70,7 +70,7 @@ jobs:
           source deactivate_conanrun.sh
 
   macos-build-brew:
-    runs-on: macOS-latest
+    runs-on: macOS-14
     timeout-minutes: 120
     steps:
       - name: Checkout source code
