@@ -47,6 +47,8 @@ class CelixConan(ConanFile):
         "enable_address_sanitizer": False,
         "enable_undefined_sanitizer": False,
         "enable_thread_sanitizer": False,
+        "enable_fuzzing": False,
+        "enable_benchmarking": False,
         "install_find_modules": False,
         "build_all": False,
         "build_http_admin": False,
@@ -145,6 +147,10 @@ class CelixConan(ConanFile):
         del self.info.options.enable_testing_on_ci
         del self.info.options.enable_ccache
         del self.info.options.enable_deprecated_warnings
+        del self.info.options.enable_testing
+        del self.info.options.enable_benchmarking
+        del self.info.options.enable_fuzzing
+        del self.info.options.enable_code_coverage
 
     def build_requirements(self):
         if self.options.enable_testing:
@@ -308,6 +314,8 @@ class CelixConan(ConanFile):
             self.options['openssl'].shared = True
         if self.options.enable_testing:
             self.options['gtest'].shared = True
+        if self.options.enable_benchmarking:
+            self.options['benchmark'].shared = True
         if (self.options.build_rsa_discovery_common
                 or (self.options.build_rsa_remote_service_admin_dfi and self.options.enable_testing)):
             self.options['libxml2'].shared = True
@@ -355,6 +363,8 @@ class CelixConan(ConanFile):
         self.requires("zlib/1.2.13", override=True)
         if self.options.build_event_admin_remote_provider_mqtt:
             self.requires("mosquitto/[>=2.0.3 <3.0.0]")
+        if self.options.enable_benchmarking:
+            self.requires("benchmark/[>=1.6.2]")
         self.validate()
 
     def generate(self):
