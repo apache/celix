@@ -98,3 +98,4 @@ bundles contains binaries depending on the stdlibc++ library.
 * [Apache Celix CMake Commands](cmake_commands)
 * [Apache Celix Sub Projects](subprojects.md)
 * [Apache Celix Coding Conventions Guide](development/README.md)
+* [Apache Celix Scope Bound Resource Management](SBRM.md)
