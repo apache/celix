@@ -404,7 +404,7 @@ celix_foo_t* celix_foo_create(celix_log_helper_t* logHelper) {
     } else {
         celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR,
                 "Error creating mutex");
-        return NULL; //foo cleaned up automatically
+        return NULL; //foo cleaned up automatically (celix_autoptr(celix_foo_t) will call celix_foo_destroy)
     }
 
     foo->list = celix_arrayList_create();
@@ -412,14 +412,14 @@ celix_foo_t* celix_foo_create(celix_log_helper_t* logHelper) {
     if (!foo->list || !foo->map) {
         celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR,
                 "Error creating foo, out of memory");
-        return NULL; //foo cleaned up automatically
+        return NULL; //foo cleaned up automatically (celix_autoptr(celix_foo_t) will call celix_foo_destroy)
     }
 
     return celix_steal_ptr(foo);
 }
 
 void celix_foo_destroy(celix_foo_t* foo) {
-    if (foo != NULL) {
+    if (foo) {
         //note reverse order of creation
         if (foo->mutexInitialized) {
             celixThreadMutex_destroy(&foo->mutex);

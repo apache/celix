@@ -1,5 +1,5 @@
 ---
-title: Apache Celix Auto Pointers
+title: Scope-Based Resource Management
 ---
 
 <!--
@@ -19,7 +19,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Apache Celix Scope-Based Resource Management (SBRM)
+# Scope-Based Resource Management (SBRM)
 
 Apache Celix provides *auto pointers* and *auto values* as a lightweight form of scope-based resource management in C. 
 These features are inspired by the RAII (Resource Acquisition Is Initialization) paradigm from C++, 
