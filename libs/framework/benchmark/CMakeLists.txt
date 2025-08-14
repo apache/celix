@@ -15,14 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set(FRAMEWORK_BENCHMARK_DEFAULT "OFF")
-find_package(benchmark QUIET)
-if (benchmark_FOUND)
-    set(FRAMEWORK_BENCHMARK_DEFAULT "ON")
-endif ()
-
-celix_subproject(FRAMEWORK_BENCHMARK "Option to enable Celix framework benchmark" ${FRAMEWORK_BENCHMARK_DEFAULT})
-if (FRAMEWORK_BENCHMARK AND CELIX_CXX17)
+if (ENABLE_BENCHMARKING AND CELIX_CXX17)
     set(CMAKE_CXX_STANDARD 17)
     find_package(benchmark REQUIRED)
 
