@@ -237,3 +237,10 @@ cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../libs/pushstreams
 make -j
 sudo make install
 ```
+
+# Further Reading
+
+- [Building with CLion](dev_celix_with_clion.md)
+- [Building and Running Tests](testing.md)
+- [Fuzz Testing](fuzz_testing.md)
+- [Building and Running Benchmarks](benchmarks.md)
