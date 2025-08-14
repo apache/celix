@@ -1,0 +1,59 @@
+name: Celix Fuzzing
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '0 3 * * *'
+
+jobs:
+  fuzz-utils:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
+      - name: Set up Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c #v4.9.1
+        with:
+          python-version: '3.x'
+      - name: Set Compiler Environment Variables
+        run: |
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+      - name: Install Conan
+        run: pip install conan
+      - name: Cache Conan
+        uses: actions/cache@v3
+        with:
+          path: ~/.conan2/p
+          key: ${{ runner.os }}-conan-${{ hashFiles('conanfile.py', 'libs/utils/**') }}
+          restore-keys: |
+            ${{ runner.os }}-conan-
+      - name: Setup Conan Profile
+        run: |
+          conan profile detect 
+      - name: Conan install
+        run: conan install . --output-folder=build --build=missing -o "celix/*:build_utils=True" -o "celix/*:enable_fuzzing=True"
+      - name: Conan build
+        run: conan build . --output-folder=build -o "celix/*:build_utils=True" -o "celix/*:enable_fuzzing=True"
+      - name: Set fuzzer run time
+        id: set-runtime
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            echo "FUZZ_TIME=600" >> ${GITHUB_ENV}
+          else
+            echo "FUZZ_TIME=30" >> ${GITHUB_ENV}
+          fi
+      - name: Run properties fuzzer
+        run: |
+          source build/conanrun.sh
+          ./build/libs/utils/fuzzing/celix_properties_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/properties_corpus
+      - name: Run version fuzzer
+        run: |
+          source build/conanrun.sh
+          ./build/libs/utils/fuzzing/celix_version_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/version_corpus
+      - name: Run filter fuzzer
+        run: |
+          source build/conanrun.sh
+          ./build/libs/utils/fuzzing/celix_filter_fuzzer -max_total_time=$FUZZ_TIME ./build/libs/utils/fuzzing/filter_corpus
