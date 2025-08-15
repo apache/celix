@@ -71,7 +71,6 @@ endif ()
 
 if(APPLE)
     set(CMAKE_MACOSX_RPATH 1)
-    set(CMAKE_CXX_FLAGS "-Wno-missing-template-arg-list-after-template-kw ${CMAKE_CXX_FLAGS}")
 endif()
 
 if(NOT APPLE)
