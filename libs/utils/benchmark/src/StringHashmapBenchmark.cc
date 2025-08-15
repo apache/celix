@@ -100,7 +100,7 @@ public:
         return valDistribution(generator);
     }
 
-    const int MAX_LEN = 100;
+    static constexpr int MAX_LEN = 100;
     std::default_random_engine generator{};
     std::uniform_int_distribution<int> lenDistribution{1,MAX_LEN};
     std::uniform_int_distribution<int> charDistribution{'a','z'};
