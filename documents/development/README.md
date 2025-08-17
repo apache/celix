@@ -384,7 +384,6 @@ Example of error handling and logging using auto pointers:
 ```c
 typedef struct celix_foo {
     celix_thread_mutex_t mutex;
-    bool mutexInitialized;
     celix_array_list_t* list;
     celix_long_hash_map_t* map;
 } celix_foo_t;
@@ -392,38 +391,34 @@ typedef struct celix_foo {
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(celix_foo_t, celix_foo_destroy)
 
 celix_foo_t* celix_foo_create(celix_log_helper_t* logHelper) {
-    celix_autoptr(celix_foo_t) foo = calloc(1, sizeof(*foo));
+    celix_autofree celix_foo_t* foo = calloc(1, sizeof(*foo));
     if (!foo) {
         celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR,
                 "Error creating foo, out of memory");
         return NULL;
     }
 
-    if (celixThreadMutex_create(&foo->mutex, NULL) == CELIX_SUCCESS) {
-        foo->mutexInitialized = true;
-    } else {
+    if (celixThreadMutex_create(&foo->mutex, NULL) != CELIX_SUCCESS) {
         celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR,
                 "Error creating mutex");
-        return NULL; //foo cleaned up automatically (celix_autoptr(celix_foo_t) will call celix_foo_destroy)
+        return NULL; //foo cleaned up automatically (celix_autofree will call free)
     }
 
-    foo->list = celix_arrayList_create();
-    foo->map = celix_longHashMap_create();
-    if (!foo->list || !foo->map) {
+    celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
+    celix_autoptr(celix_long_hash_map_t) map = celix_longHashMap_create();
+    if (!list || !map) {
         celix_logHelper_log(logHelper, CELIX_LOG_LEVEL_ERROR,
                 "Error creating foo, out of memory");
-        return NULL; //foo cleaned up automatically (celix_autoptr(celix_foo_t) will call celix_foo_destroy)
+        return NULL; //foo, list and/or map are cleaned up automatically
     }
 
+    foo->list = celix_steal_ptr(list);
+    foo->map = celix_steal_ptr(map);
     return celix_steal_ptr(foo);
 }
 
 void celix_foo_destroy(celix_foo_t* foo) {
     if (foo) {
-        //note reverse order of creation
-        if (foo->mutexInitialized) {
-            celixThreadMutex_destroy(&foo->mutex);
-        }
         celix_arrayList_destroy(foo->list);
         celix_longHashMap_destroy(foo->map);
         free(foo);
