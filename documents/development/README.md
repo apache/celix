@@ -403,7 +403,8 @@ celix_foo_t* celix_foo_create(celix_log_helper_t* logHelper) {
                 "Error creating mutex");
         return NULL; //foo cleaned up automatically (celix_autofree will call free)
     }
-
+    
+    celix_autoptr(celix_thread_mutex_t) mutex = &foo->mutex;
     celix_autoptr(celix_array_list_t) list = celix_arrayList_create();
     celix_autoptr(celix_long_hash_map_t) map = celix_longHashMap_create();
     if (!list || !map) {
@@ -412,6 +413,7 @@ celix_foo_t* celix_foo_create(celix_log_helper_t* logHelper) {
         return NULL; //foo, list and/or map are cleaned up automatically
     }
 
+    celix_steal_ptr(mutex);
     foo->list = celix_steal_ptr(list);
     foo->map = celix_steal_ptr(map);
     return celix_steal_ptr(foo);
