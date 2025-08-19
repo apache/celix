@@ -126,5 +126,24 @@ if (UTILS)
         add_subdirectory(gtest)
     endif ()
 
+
+    if (ENABLE_FUZZING)
+        add_library(utils_cuf STATIC ${UTILS_SRC})
+        target_compile_definitions(utils_cuf PRIVATE CELIX_UTILS_STATIC_DEFINE)
+        target_include_directories(utils_cuf PUBLIC
+                        ${CMAKE_CURRENT_LIST_DIR}/include
+                        ${CMAKE_CURRENT_LIST_DIR}/include_internal
+                        ${CMAKE_BINARY_DIR}/celix/gen/includes/utils
+                        ${CMAKE_BINARY_DIR}/celix/gen/src/utils
+                        include_deprecated
+                        )
+        target_link_libraries(utils_cuf PUBLIC ${UTILS_PUBLIC_DEPS} ${UTILS_PRIVATE_DEPS})
+        target_compile_options(utils_cuf PRIVATE -fsanitize=fuzzer-no-link,address) 
+        target_link_options(utils_cuf PRIVATE -fsanitize=fuzzer-no-link,address)
+        target_link_options(utils_cuf PRIVATE -Wl,--gc-sections)
+
+        add_subdirectory(fuzzing)
+    endif ()
+
     add_subdirectory(benchmark)
 endif ()

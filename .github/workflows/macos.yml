@@ -54,6 +54,7 @@ jobs:
         env:
           CONAN_BUILD_OPTIONS: |
             -o celix/*:enable_testing=True
+            -o celix/*:enable_benchmarking=True
             -o celix/*:enable_address_sanitizer=True
             -o celix/*:build_all=True
             -o celix/*:enable_cmake_warning_tests=True
@@ -77,7 +78,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
       - name: Install dependencies
         run: |
-          brew install lcov jansson rapidjson libzip ccache ninja openssl@1.1
+          brew install lcov jansson rapidjson libzip ccache ninja openssl@1.1 google-benchmark
       - name: Prepare ccache timestamp
         id: ccache_cache_timestamp
         run: |
@@ -93,6 +94,7 @@ jobs:
         env:
           BUILD_OPTIONS: |
             -DENABLE_TESTING=ON
+            -DENABLE_BENCHMARKING=ON
             -DENABLE_ADDRESS_SANITIZER=ON
             -DENABLE_TESTING_ON_CI=ON
             -DCMAKE_BUILD_TYPE=Release
