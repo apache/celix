@@ -385,7 +385,8 @@ Component<T>& Component<T>::removeCallbacks() {
 template<class T>
 Component<T>& Component<T>::addContext(std::shared_ptr<void> context) {
     std::lock_guard<std::mutex> lock{mutex};
-    componentContexts.template emplace_back(std::move(context));
+    //Removed superfluous 'template' keyword which triggered '-Wmissing-template-arg-list-after-template-kw'
+    componentContexts.emplace_back(std::move(context));
     return *this;
 }
 

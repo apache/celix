@@ -15,23 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(civetweb CONFIG QUIET)
-if (NOT civetweb_FOUND)
-    include(FetchContent)
-    FetchContent_Declare(
-            civetweb
-            GIT_REPOSITORY https://github.com/civetweb/civetweb.git
-#            GIT_REPOSITORY https://gitee.com/mirrors/civetweb.git
-            GIT_TAG        d7ba35bbb649209c66e582d5a0244ba988a15159 # V1.16
-    )
+add_library(curl_ei STATIC src/curl_ei.cc)
 
-    set(CIVETWEB_ENABLE_WEBSOCKETS TRUE CACHE BOOL "" FORCE)
-    set(CIVETWEB_BUILD_TESTING FALSE CACHE BOOL "" FORCE)
-    set(BUILD_SHARED_LIBS TRUE CACHE BOOL "" FORCE)
-    set(CMAKE_C_FLAGS "-Wno-error")
+find_package(CURL REQUIRED)
 
-    FetchContent_MakeAvailable(civetweb)
-    if (NOT TARGET civetweb::civetweb)
-        add_library(civetweb::civetweb ALIAS civetweb-c-library)
-    endif ()
-endif()
+target_include_directories(curl_ei PUBLIC ${CMAKE_CURRENT_LIST_DIR}/include)
+target_link_libraries(curl_ei PUBLIC Celix::error_injector CURL::libcurl)
+
+target_link_options(curl_ei INTERFACE
+        LINKER:--wrap,curl_global_init
+)
+
+add_library(Celix::curl_ei ALIAS curl_ei)

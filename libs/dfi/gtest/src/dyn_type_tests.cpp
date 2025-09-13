@@ -37,7 +37,7 @@ extern "C" {
         int i;
         int j;
         int nrOfBurst = 10;
-        int burst = 50;
+        constexpr int burst = 50;
         void *pointers[burst];
         for (j = 0; j < nrOfBurst; j += 1) {
             for (i = 0; i < burst ; i +=1 ) {

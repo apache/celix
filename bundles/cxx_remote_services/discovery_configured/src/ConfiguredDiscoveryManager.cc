@@ -19,29 +19,26 @@
 
 #include <ConfiguredDiscoveryManager.h>
 
-#include <optional>
-#include <fstream>
 #include <filesystem>
+#include <fstream>
+#include <optional>
 #include <rapidjson/writer.h>
 
-#define L_TRACE(...) \
-        logHelper.trace(__VA_ARGS__);
-#define L_DEBUG(...) \
-        logHelper.debug(__VA_ARGS__);
-#define L_INFO(...) \
-        logHelper.info(__VA_ARGS__);
-#define L_WARN(...) \
-        logHelper.warning(__VA_ARGS__);
-#define L_ERROR(...) \
-        logHelper.error(__VA_ARGS__);
+#define L_TRACE(...) logHelper.trace(__VA_ARGS__);
+#define L_DEBUG(...) logHelper.debug(__VA_ARGS__);
+#define L_INFO(...) logHelper.info(__VA_ARGS__);
+#define L_WARN(...) logHelper.warning(__VA_ARGS__);
+#define L_ERROR(...) logHelper.error(__VA_ARGS__);
 
-static constexpr const char* ENDPOINT_ARRAY = "endpoints";
+#define ENDPOINT_ARRAY "endpoints"
 
+namespace /*anon*/
+{
+    
 static std::optional<std::string> readFile(const std::string& path) {
-
     std::string contents;
     std::ifstream file(path);
-    if(!file) {
+    if (!file) {
         throw celix::rsa::RemoteServicesException{"Cannot open file"};
     }
     file.seekg(0, std::ios::end);
@@ -52,17 +49,18 @@ static std::optional<std::string> readFile(const std::string& path) {
     return contents;
 }
 
-static rapidjson::Document parseJSONFile(std::string& contents)  {
-
+static rapidjson::Document parseJSONFile(std::string& contents) {
     rapidjson::Document resultDocument{};
     resultDocument.ParseInsitu(contents.data());
     return resultDocument;
 }
 
-celix::rsa::ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<celix::BundleContext> _ctx) :
-        ctx{std::move(_ctx)},
-        configuredDiscoveryFiles{ctx->getConfigProperty(celix::rsa::CONFIGURED_DISCOVERY_DISCOVERY_FILES, "")},
-        logHelper{ctx, celix::typeName<ConfiguredDiscoveryManager>()}{
+} // namespace
+
+celix::rsa::ConfiguredDiscoveryManager::ConfiguredDiscoveryManager(std::shared_ptr<celix::BundleContext> _ctx)
+    : ctx{std::move(_ctx)},
+      configuredDiscoveryFiles{ctx->getConfigProperty(celix::rsa::CONFIGURED_DISCOVERY_DISCOVERY_FILES, "")},
+      logHelper{ctx, celix::typeName<ConfiguredDiscoveryManager>()} {
     readConfiguredDiscoveryFiles();
 }
 
@@ -78,12 +76,13 @@ void celix::rsa::ConfiguredDiscoveryManager::readConfiguredDiscoveryFiles() {
     }
 }
 
-celix::Properties celix::rsa::ConfiguredDiscoveryManager::convertToEndpointProperties(const rapidjson::Value &endpointJSON) {
+celix::Properties
+celix::rsa::ConfiguredDiscoveryManager::convertToEndpointProperties(const rapidjson::Value& endpointJSON) {
     celix::Properties result{};
     result.set(celix::rsa::ENDPOINT_FRAMEWORK_UUID, ctx->getFramework()->getUUID());
     for (auto it = endpointJSON.MemberBegin(); it != endpointJSON.MemberEnd(); ++it) {
         if (it->value.IsString()) {
-            if (celix_utils_stringEquals(it->name.GetString(), "endpoint.objectClass")) { //TODO improve
+            if (celix_utils_stringEquals(it->name.GetString(), "endpoint.objectClass")) { // TODO improve
                 result.set(celix::SERVICE_NAME, it->value.GetString());
             } else {
                 result.set(it->name.GetString(), it->value.GetString());
@@ -97,11 +96,12 @@ celix::Properties celix::rsa::ConfiguredDiscoveryManager::convertToEndpointPrope
                     strArray.append(entry.GetString());
                     strArray.append(",");
                 } else {
-                    L_WARN("Cannot parse endpoint member %s. Cannot parse array where the elements are not strings", it->name.GetString());
+                    L_WARN("Cannot parse endpoint member %s. Cannot parse array where the elements are not strings",
+                           it->name.GetString());
                     continue;
                 }
             }
-            result.set(it->name.GetString(), strArray.substr(0, strArray.size() -1 /*remote last ","*/));
+            result.set(it->name.GetString(), strArray.substr(0, strArray.size() - 1 /*remote last ","*/));
         } else {
             L_WARN("Cannot parse endpoint member %s. Type is %i", it->name.GetString(), (int)it->value.GetType());
         }
@@ -117,20 +117,23 @@ void celix::rsa::ConfiguredDiscoveryManager::addConfiguredDiscoveryFile(const st
             auto parsedJson = parseJSONFile(contents.value());
             if (parsedJson.IsObject()) {
                 if (parsedJson.HasMember(ENDPOINT_ARRAY) && parsedJson[ENDPOINT_ARRAY].IsArray()) {
-
-                    for (auto &jsonEndpoint : parsedJson[ENDPOINT_ARRAY].GetArray()) {
+                    for (auto& jsonEndpoint : parsedJson[ENDPOINT_ARRAY].GetArray()) {
                         try {
                             auto endpointProperties = convertToEndpointProperties(jsonEndpoint);
-                            auto endpointDescription = std::make_shared<EndpointDescription>(
-                                    std::move(endpointProperties));
-                            L_TRACE("Created endpoint description from %s: %s", path.c_str(), endpointDescription->toString().c_str())
+                            auto endpointDescription =
+                                std::make_shared<EndpointDescription>(std::move(endpointProperties));
+                            L_TRACE("Created endpoint description from %s: %s",
+                                    path.c_str(),
+                                    endpointDescription->toString().c_str())
 
-                            auto reg = ctx->registerService<celix::rsa::EndpointDescription>(
-                                            std::move(endpointDescription))
+                            auto reg =
+                                ctx->registerService<celix::rsa::EndpointDescription>(std::move(endpointDescription))
                                     .build();
                             newEndpoints.emplace_back(std::move(reg));
                         } catch (celix::rsa::RemoteServicesException& e) {
-                            L_ERROR("Error creating EndpointDescription from endpoints entry in JSON from path %s: %s", path.c_str(), e.what());
+                            L_ERROR("Error creating EndpointDescription from endpoints entry in JSON from path %s: %s",
+                                    path.c_str(),
+                                    e.what());
                         }
                     }
                 }
@@ -158,4 +161,3 @@ std::vector<std::string> celix::rsa::ConfiguredDiscoveryManager::getConfiguredDi
     }
     return result;
 }
-
