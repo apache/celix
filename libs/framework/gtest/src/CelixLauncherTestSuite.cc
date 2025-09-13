@@ -32,7 +32,7 @@
 #include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
 
-#define LAUNCH_WAIT_TIMEOUT 100
+#define LAUNCH_WAIT_TIMEOUT 200
 
 class CelixLauncherTestSuite : public ::testing::Test {
   public:

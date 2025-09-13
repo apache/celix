@@ -26,9 +26,13 @@ mark_as_advanced(CLEAR ENABLE_THREAD_SANITIZER)
 
 if (ENABLE_ADDRESS_SANITIZER)
     if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+        set(CMAKE_C_FLAGS "-DCELIX_ASAN_ENABLED ${CMAKE_C_FLAGS}")
         set(CMAKE_C_FLAGS "-shared-libasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-shared-libasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
-        if (NOT APPLE)
+        if (APPLE)
+            set(CMAKE_EXE_LINKER_FLAGS "-fsanitize=address ${CMAKE_EXE_LINKER_FLAGS}")
+            set(CMAKE_SHARED_LINKER_FLAGS "-fsanitize=address ${CMAKE_SHARED_LINKER_FLAGS}")
+        else ()
             # Fix a linux clang deficiency where the ASan runtime library is not found automatically
             # Find the ASan runtime library path and set RPATH
             execute_process(
@@ -51,15 +55,11 @@ if (ENABLE_ADDRESS_SANITIZER)
             endif()
         endif ()
     elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+        set(CMAKE_C_FLAGS "-DCELIX_ASAN_ENABLED ${CMAKE_C_FLAGS}")
         set(CMAKE_C_FLAGS "-lasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_C_FLAGS}")
         set(CMAKE_CXX_FLAGS "-lasan -fsanitize=address -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
     else ()
         message(WARNING "Address sanitizer is not supported for ${CMAKE_C_COMPILER_ID}")
-    endif ()
-
-    if (ENABLE_TESTING)
-        set(CMAKE_C_FLAGS "-DCPPUTEST_MEM_LEAK_DETECTION_DISABLED ${CMAKE_C_FLAGS}")
-        set(CMAKE_CXX_FLAGS "-DCPPUTEST_MEM_LEAK_DETECTION_DISABLED ${CMAKE_CXX_FLAGS}")
     endif ()
 endif()
 
