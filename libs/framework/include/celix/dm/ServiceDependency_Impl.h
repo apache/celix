@@ -541,7 +541,6 @@ void ServiceDependency<T,I>::setupCallbacks() {
                     std::weak_ptr<const celix::Properties> removedProps = it->second.second;
                     dep->removeFpUsingSharedPtr(it->second.first, it->second.second);
                     dep->addedServices.erase(it);
-                    //Removed superfluous 'template' keyword (no explicit template args supplied)
                     dep->waitForExpired(removedSvc, svcId, "service pointer");
                     dep->waitForExpired(removedProps, svcId, "service properties");
                 }
