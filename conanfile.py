@@ -160,6 +160,8 @@ class CelixConan(ConanFile):
             self.test_requires("gtest/1.10.0")
         if self.options.enable_ccache:
             self.build_requires("ccache/4.7.4")
+        if self.options.enable_benchmarking:
+            self.test_requires("benchmark/[>=1.6.2]")
 
     def configure(self):
         # copy options to options, fill in defaults if not set
@@ -366,8 +368,6 @@ class CelixConan(ConanFile):
         self.requires("zlib/1.2.13", override=True)
         if self.options.build_event_admin_remote_provider_mqtt:
             self.requires("mosquitto/[>=2.0.3 <3.0.0]")
-        if self.options.enable_benchmarking:
-            self.requires("benchmark/[>=1.6.2]")
         self.validate()
 
     def generate(self):
