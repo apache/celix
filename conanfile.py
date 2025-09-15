@@ -132,7 +132,7 @@ class CelixConan(ConanFile):
         if self.options.build_rsa_discovery_zeroconf and self.settings.os != "Linux":
             raise ConanInvalidConfiguration("Celix build_rsa_discovery_zeroconf is only supported for Linux")
 
-        if self.options.enable_fuzzing and self.settings.compiler != "clang":
+        if self.options.enable_fuzzing and self.settings.compiler != "clang" and self.settings.compiler != "apple-clang":
             raise ConanInvalidConfiguration("Celix enable_fuzzing=True requires the 'clang' compiler")
 
         self.validate_config_option_is_positive_number("celix_err_buffer_size")
