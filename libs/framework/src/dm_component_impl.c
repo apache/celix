@@ -521,6 +521,9 @@ celix_status_t celix_dmComponent_removeInterface(celix_dm_component_t *component
 
     if (removedInterface != NULL) {
         celix_bundleContext_unregisterService(component->context, removedInterface->svcId);
+        if (removedInterface->properties != NULL) {
+            celix_properties_destroy(removedInterface->properties);
+        }
         free(removedInterface->serviceName);
         free(removedInterface);
     }
