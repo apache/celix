@@ -168,6 +168,8 @@ endif ()
 option(ENABLE_CMAKE_WARNING_TESTS "Enable cmake warning tests to test warning prints" OFF)
 option(ENABLE_TESTING_ON_CI "Whether to enable testing on CI. This influence allowed timing errors during unit tests" OFF)
 option(ENABLE_DEPRECATED_WARNINGS "Enable compiler warnings for usage of deprecated functionality" OFF)
+option(ENABLE_FUZZING "Enable fuzz testing, using LibFuzzer" OFF) #Note support for LibFuzzer is built-in for Clang
+option(ENABLE_BENCHMARKING "Enable benchmarking, using Google Benchmark" OFF)
 
 if (NOT ENABLE_DEPRECATED_WARNINGS)
     set(CMAKE_C_FLAGS "-Wno-deprecated-declarations ${CMAKE_C_FLAGS}")

@@ -1,0 +1,1 @@
+(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3=attr3)))
