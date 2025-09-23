@@ -43,7 +43,7 @@ protected:
           EXPECT_EQ(CELIX_SUCCESS, status);
           EXPECT_TRUE(shmPool != nullptr);
           shmId = shmPool_getShmId(shmPool);
-          EXPECT_TRUE(shmId > 0);
+          EXPECT_LE(0, shmId);
       }
     }
 
@@ -61,7 +61,7 @@ int ShmCacheTestSuite::shmId = -1;
 static void shmPeerClosedCallback(void *handle, shm_cache_t *shmCache, int shmId) {
     (void)handle;
     EXPECT_TRUE(shmCache != nullptr);
-    EXPECT_TRUE(shmId > 0);
+    EXPECT_LE(0, shmId);
 }
 
 TEST_F(ShmCacheTestSuite, CreateDestroyShmCache) {
