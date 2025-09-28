@@ -2071,3 +2071,86 @@ TEST_F(CelixBundleContextServicesTestSuite, RegisterServiceWithInvalidRankingAnd
 
     celix_bundleContext_unregisterService(ctx, svcId);
 }
+
+TEST_F(CelixBundleContextServicesTestSuite, UnregisterServiceFactoryWhenUsingItsServiceInstanceTest) {
+    struct calc {
+        int (*calc)(int);
+    };
+    auto name = "CALC";
+
+    struct fac_ctx {
+        void *svc;
+    } facCtx{nullptr};
+    celix_service_factory_t fac;
+    memset(&fac, 0, sizeof(fac));
+    fac.handle = (void*)&facCtx;
+    fac.getService = [](void *handle, const celix_bundle_t *, const celix_properties_t *) -> void* {
+        auto facCtx = (struct fac_ctx*)handle;
+        auto svc = (struct calc*)malloc(sizeof(struct calc));
+        svc->calc = [](int arg) { return arg * 10; };
+        facCtx->svc = svc;
+        return svc;
+    };
+    fac.ungetService = [](void *handle, const celix_bundle_t *, const celix_properties_t *) {
+        auto facCtx = (struct fac_ctx*)handle;
+        free(facCtx->svc);
+    };
+    long facId = celix_bundleContext_registerServiceFactory(ctx, &fac, name, nullptr);
+    ASSERT_TRUE(facId >= 0);
+
+    struct use_ctx {
+        celix_bundle_context_t* ctx;
+        long facId;
+    } useCtx{ctx, facId};
+    bool called = celix_bundleContext_useService(ctx, name, &useCtx, [](void *handle, void* svc) {
+        auto useCtx = (struct use_ctx*)(handle);
+        celix_bundleContext_unregisterServiceAsync(useCtx->ctx, useCtx->facId, nullptr, nullptr);
+        usleep(10000);
+        auto *calc = (struct calc*)svc;
+        auto r = calc->calc(1);
+        EXPECT_EQ(10, r);
+    });
+    ASSERT_TRUE(called);
+}
+
+TEST_F(CelixBundleContextServicesTestSuite, UnregisterServiceFactoryBeforeTrackerStop) {
+    struct calc {
+        int (*calc)(int);
+    };
+    auto name = "CALC";
+
+    struct fac_ctx {
+        void *svc;
+    } facCtx{nullptr};
+    celix_service_factory_t fac;
+    memset(&fac, 0, sizeof(fac));
+    fac.handle = (void*)&facCtx;
+    fac.getService = [](void *handle, const celix_bundle_t *, const celix_properties_t *) -> void* {
+        auto facCtx = (struct fac_ctx*)handle;
+        auto svc = (struct calc*)malloc(sizeof(struct calc));
+        svc->calc = [](int arg) { return arg * 10; };
+        facCtx->svc = svc;
+        return svc;
+    };
+    fac.ungetService = [](void *handle, const celix_bundle_t *, const celix_properties_t *) {
+        auto facCtx = (struct fac_ctx*)handle;
+        free(facCtx->svc);
+    };
+    long facId = celix_bundleContext_registerServiceFactory(ctx, &fac, name, nullptr);
+    ASSERT_TRUE(facId >= 0);
+
+    celix_service_tracking_options_t opts{};
+    opts.filter.serviceName = name;
+    opts.set = [](void*, void* svc) {
+        static struct calc* lastCalc = nullptr;
+        if (lastCalc != nullptr) {
+            auto r = lastCalc->calc(1);
+            EXPECT_EQ(10, r);
+        }
+        lastCalc = (struct calc*)svc;
+    };
+    long trkId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+
+    celix_bundleContext_unregisterService(ctx, facId);
+    celix_bundleContext_stopTracker(ctx, trkId);
+}

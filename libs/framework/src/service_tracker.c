@@ -76,19 +76,6 @@ static inline void tracked_release(celix_tracked_entry_t *tracked) {
     celixThreadMutex_unlock(&tracked->mutex);
 }
 
-static inline void tracked_waitAndDestroy(celix_tracked_entry_t *tracked) {
-    celixThreadMutex_lock(&tracked->mutex);
-    while (tracked->useCount != 0) {
-        celixThreadCondition_wait(&tracked->useCond, &tracked->mutex);
-    }
-    celixThreadMutex_unlock(&tracked->mutex);
-
-    //destroy
-    celixThreadMutex_destroy(&tracked->mutex);
-    celixThreadCondition_destroy(&tracked->useCond);
-    free(tracked);
-}
-
 celix_status_t serviceTracker_create(bundle_context_pt context, const char * service, service_tracker_customizer_pt customizer, service_tracker_pt *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -555,6 +542,12 @@ static celix_status_t serviceTracker_untrack(service_tracker_t* tracker, service
 
 static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_tracked_entry_t *tracked, int trackedSize, bool set) {
     assert(tracker != NULL);
+    celixThreadMutex_lock(&tracked->mutex);
+    while (tracked->useCount > 1) {
+        celixThreadCondition_wait(&tracked->useCond, &tracked->mutex);
+    }
+    celixThreadMutex_unlock(&tracked->mutex);
+
     serviceTracker_invokeRemovingService(tracker, tracked);
 
     if(set) {
@@ -566,16 +559,22 @@ static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_trac
         }
     }
 
-    bundleContext_ungetServiceReference(tracker->context, tracked->reference);
-    tracked_release(tracked);
+    bool ungetSuccess = true;
+    bundleContext_ungetService(tracker->context, tracked->reference, &ungetSuccess);
+    if (!ungetSuccess) {
+        celix_framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error ungetting service");
+    }
 
-    //Wait till the useCount is 0, because the untrack should only return if the service is not used anymore.
-    tracked_waitAndDestroy(tracked);
+    bundleContext_ungetServiceReference(tracker->context, tracked->reference);
+
+    assert(tracked->useCount == 1);
+    celixThreadMutex_destroy(&tracked->mutex);
+    celixThreadCondition_destroy(&tracked->useCond);
+    free(tracked);
 }
 
 static celix_status_t serviceTracker_invokeRemovingService(service_tracker_t *tracker, celix_tracked_entry_t *tracked) {
     celix_status_t status = CELIX_SUCCESS;
-    bool ungetSuccess = true;
 
     void *customizerHandle = NULL;
     removed_callback_pt function = NULL;
@@ -596,15 +595,6 @@ static celix_status_t serviceTracker_invokeRemovingService(service_tracker_t *tr
     }
     if (tracker->removeWithOwner != NULL) {
         tracker->removeWithOwner(handle, tracked->service, tracked->properties, tracked->serviceOwner);
-    }
-
-    if (status == CELIX_SUCCESS) {
-        status = bundleContext_ungetService(tracker->context, tracked->reference, &ungetSuccess);
-    }
-
-    if (!ungetSuccess) {
-        celix_framework_log(tracker->context->framework->logger, CELIX_LOG_LEVEL_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error ungetting service");
-        status = CELIX_BUNDLE_EXCEPTION;
     }
 
     return status;
