@@ -25,6 +25,7 @@ extern "C" {
 #endif
 #include "export_registration.h"
 #include "endpoint_description.h"
+#include "celix_rsa_rpc_factory.h"
 #include "celix_cleanup.h"
 #include "celix_log_helper.h"
 #include "celix_types.h"
@@ -33,9 +34,11 @@ extern "C" {
 #include <sys/uio.h>
 
 
-celix_status_t exportRegistration_create(celix_bundle_context_t *context,
-        celix_log_helper_t *logHelper, service_reference_pt reference,
-        endpoint_description_t *endpointDesc, export_registration_t **exportOut);
+celix_status_t exportRegistration_create(celix_bundle_context_t* context,
+                                         celix_log_helper_t* logHelper, service_reference_pt reference,
+                                         endpoint_description_t* endpointDesc, const celix_rsa_rpc_factory_t* rpcFac, export_registration_t** exportOut);
+
+void exportRegistration_stop(export_registration_t *registration);
 
 void exportRegistration_addRef(export_registration_t *registration);
 

@@ -25,6 +25,7 @@ target_link_options(bundle_ctx_ei INTERFACE
         LINKER:--wrap,celix_bundleContext_getProperty
         LINKER:--wrap,celix_bundleContext_registerServiceWithOptionsAsync
         LINKER:--wrap,celix_bundleContext_trackServicesWithOptionsAsync
+        LINKER:--wrap,celix_bundleContext_trackServicesWithOptions
         LINKER:--wrap,celix_bundleContext_getBundleId
         LINKER:--wrap,bundleContext_getServiceReferences
         LINKER:--wrap,bundleContext_retainServiceReference

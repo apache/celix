@@ -24,6 +24,7 @@
 extern "C" {
 #endif
 #include "endpoint_description.h"
+#include "celix_rsa_rpc_factory.h"
 #include "celix_cleanup.h"
 #include "celix_log_helper.h"
 #include "celix_types.h"
@@ -37,15 +38,17 @@ void rsaJsonRpc_destroy(rsa_json_rpc_t *jsonRpc);
 
 CELIX_DEFINE_AUTOPTR_CLEANUP_FUNC(rsa_json_rpc_t, rsaJsonRpc_destroy)
 
-celix_status_t rsaJsonRpc_createProxy(void *handle, const endpoint_description_t *endpointDesc,
-        long requestSenderSvcId, long *proxySvcId);
+celix_status_t rsaJsonRpc_createProxy(void* handle, const endpoint_description_t* endpointDesc,
+                                      celix_rsa_send_request_fp sendRequest, void* sendRequestHandle, long* proxyId);
 
-void rsaJsonRpc_destroyProxy(void *handle, long proxySvcId);
+void rsaJsonRpc_destroyProxy(void *handle, long proxyId);
 
 celix_status_t rsaJsonRpc_createEndpoint(void *handle, const endpoint_description_t *endpointDesc,
-        long *requestHandlerSvcId);
+        long *endpointId);
 
-void rsaJsonRpc_destroyEndpoint(void *handle, long requestHandlerSvcId);
+void rsaJsonRpc_destroyEndpoint(void *handle, long endpointId);
+
+celix_status_t celix_rsaJsonRpc_handleRequest(void *handle, long endpointId, celix_properties_t *metadata, const struct iovec *request, struct iovec *response);
 
 #ifdef __cplusplus
 }

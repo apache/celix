@@ -35,4 +35,11 @@ int __wrap_jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id,
     return __real_jsonRpc_prepareInvokeRequest(func, id, args, out);
 }
 
+int __real_jsonRpc_call(const dyn_interface_type* intf, void* service, const char* request, char** out);
+CELIX_EI_DEFINE(jsonRpc_call, int)
+int __wrap_jsonRpc_call(const dyn_interface_type* intf, void* service, const char* request, char** out) {
+    CELIX_EI_IMPL(jsonRpc_call);
+    return __real_jsonRpc_call(intf, service, request, out);
+}
+
 }

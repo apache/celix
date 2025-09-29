@@ -25,17 +25,9 @@ component RSA_RPC as "Remote service Admin RPC"
 () RSProxy as "remote_service_t"
 note bottom: remote service proxy
 () rsa_rpc_factory_t
-() rsa_request_handler_service_t
-() rsa_request_sender_service_t
 
 RSA -left-( rsa_rpc_factory_t
 RSA_RPC -right- rsa_rpc_factory_t
-
-RSA -up-( rsa_request_handler_service_t
-RSA_RPC -up- rsa_request_handler_service_t
-
-RSA -down- rsa_request_sender_service_t
-RSA_RPC -down-( rsa_request_sender_service_t
 
 RSA_RPC -down- RSProxy
 RSA -right- remote_service_admin_service_t

@@ -177,7 +177,7 @@ TEST_F(ShmCacheTestSuite, GetMemoryPtrFailedDueToInvalidArgument) {
     ssize_t memOffset = shmPool_getMemoryOffset(shmPool, mem);
     EXPECT_LT(0, memOffset);
 
-    void *addr = shmCache_getMemoryPtr(shmCache, 1, memOffset);
+    void *addr = shmCache_getMemoryPtr(shmCache, shmId+1, memOffset);//non-existing shmId
     EXPECT_TRUE(addr == nullptr);
     addr = shmCache_getMemoryPtr(shmCache, -1, memOffset);
     EXPECT_TRUE(addr == nullptr);

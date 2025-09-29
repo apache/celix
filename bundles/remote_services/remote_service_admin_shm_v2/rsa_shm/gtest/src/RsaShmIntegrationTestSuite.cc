@@ -31,9 +31,9 @@ public:
         fw = std::shared_ptr<celix_framework_t>{fwPtr, [](auto* f) {celix_frameworkFactory_destroyFramework(f);}};
         ctx = std::shared_ptr<celix_bundle_context_t>{ctxPtr, [](auto*){/*nop*/}};
 
-        const char* bundleFile = RSA_SHM_BUNDLE;
-        long bundleId{-1};
-        bundleId = celix_bundleContext_installBundle(ctx.get(), bundleFile, true);
+        auto bundleId = celix_bundleContext_installBundle(ctx.get(), RSA_SHM_BUNDLE, true);
+        EXPECT_TRUE(bundleId >= 0);
+        bundleId = celix_bundleContext_installBundle(ctx.get(), RSA_JSON_RPC_BUNDLE, true);
         EXPECT_TRUE(bundleId >= 0);
     }
 

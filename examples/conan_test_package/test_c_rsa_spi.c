@@ -27,9 +27,7 @@
 #include <remote_interceptors_handler.h>
 #include <remote_proxy.h>
 #include <remote_service_admin.h>
-#include <rsa_request_handler_service.h>
-#include <rsa_request_sender_service.h>
-#include <rsa_rpc_factory.h>
+#include <celix_rsa_rpc_factory.h>
 
 int main(int argc, char **argv) {
     return 0;

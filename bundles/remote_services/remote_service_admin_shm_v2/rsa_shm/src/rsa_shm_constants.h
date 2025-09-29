@@ -98,6 +98,15 @@ extern "C" {
 #define RSA_SHM_RPC_TYPE_DEFAULT "celix.remote.admin.rpc_type.json"
 
 /**
+ * @brief The key of the bundle property that indicates the supported rpc types of remote service admin based on shared memory.
+ *
+ * If the property is not set, then the default value is "celix.remote.admin.rpc_type.json".
+ *
+ * The value is a comma-separated string, e.g. "CELIX_RSA_SHM_RPC_TYPES=celix.remote.admin.rpc_type.json,celix.remote.admin.rpc_type.avpr"
+ */
+#define CELIX_RSA_SHM_RPC_TYPES "CELIX_RSA_SHM_RPC_TYPES"
+
+/**
  * @brief The maximum len of shm server name.
  * @note The corresponding client name will be "{serverName}_cl.%ld",
  * and we will use it to create an abstract socket. Therefore, we should set the maximum len of the server name to (sizeof(((struct sockaddr_un*)0)->sun_path)-1-4-19).

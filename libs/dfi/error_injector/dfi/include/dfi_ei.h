@@ -28,6 +28,8 @@ CELIX_EI_DECLARE(dynFunction_createClosure, int);
 
 CELIX_EI_DECLARE(jsonRpc_prepareInvokeRequest, int);
 
+CELIX_EI_DECLARE(jsonRpc_call, int);
+
 #ifdef __cplusplus
 }
 #endif

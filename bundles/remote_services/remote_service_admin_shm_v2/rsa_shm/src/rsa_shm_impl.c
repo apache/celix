@@ -23,12 +23,12 @@
 #include "rsa_shm_export_registration.h"
 #include "rsa_shm_import_registration.h"
 #include "bundle_context.h"
-#include "rsa_rpc_factory.h"
-#include "rsa_request_sender_service.h"
+#include "celix_rsa_rpc_factory.h"
 #include "endpoint_description.h"
 #include "remote_constants.h"
 #include "celix_api.h"
 #include "celix_long_hash_map.h"
+#include "celix_string_hash_map.h"
 #include "celix_array_list.h"
 #include "celix_stdlib_cleanup.h"
 #include "celix_utils.h"
@@ -36,13 +36,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <unistd.h>
 #include <uuid/uuid.h>
 #include <assert.h>
 
 struct rsa_shm {
     celix_bundle_context_t *context;
     celix_log_helper_t *logHelper;
+    celix_string_hash_map_t *rpcFactories; //key is rpc type, value is rsa_rpc_factory_t*
     celix_thread_mutex_t exportedServicesLock;//It protects exportedServices
     celix_long_hash_map_t *exportedServices;// Key is service id, value is the list of exported registration.
     celix_thread_mutex_t importedServicesLock;// It protects importedServices
@@ -50,22 +50,22 @@ struct rsa_shm {
     rsa_shm_client_manager_t *shmClientManager;
     rsa_shm_server_t *shmServer;
     char *shmServerName;
-    rsa_request_sender_service_t reqSenderService;
-    long reqSenderSvcId;
 };
 
 
 static celix_status_t rsaShm_receiveMsgCB(void *handle, rsa_shm_server_t *shmServer,
         celix_properties_t *metadata, const struct iovec *request, struct iovec *response);
 
-static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
-        celix_properties_t *exportedProperties, char *interface, endpoint_description_t **description);
+static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t* admin,
+        celix_properties_t* exportedProperties, char* interface, const char* rpcType, endpoint_description_t** description);
 
-celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t *logHelper,
-        rsa_shm_t **admin) {
+celix_status_t rsaShm_create(celix_bundle_context_t *context, rsa_shm_t **admin) {
     celix_status_t status = CELIX_SUCCESS;
-    if (context == NULL ||  admin == NULL || logHelper == NULL) {
-        return CELIX_ILLEGAL_ARGUMENT;
+    assert(context != NULL);
+    assert(admin != NULL);
+    celix_autoptr(celix_log_helper_t) logHelper = celix_logHelper_create(context, "celix_rsa_shm");
+    if (logHelper == NULL) {
+        return CELIX_BUNDLE_EXCEPTION;
     }
 
     celix_autofree rsa_shm_t* ad = calloc(1, sizeof(*ad));
@@ -75,7 +75,13 @@ celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t
 
     ad->context = context;
     ad->logHelper = logHelper;
-    ad->reqSenderSvcId = -1;
+
+    celix_autoptr(celix_string_hash_map_t) rpcFactories = ad->rpcFactories = celix_stringHashMap_create();
+    if (rpcFactories == NULL) {
+        celix_logHelper_error(logHelper, "Error creating rpc factories map.");
+        return CELIX_ENOMEM;
+    }
+
     status = celixThreadMutex_create(&ad->exportedServicesLock, NULL);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(logHelper, "Error creating mutex for exported service. %d", status);
@@ -101,20 +107,6 @@ celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t
     }
     celix_autoptr(rsa_shm_client_manager_t) shmClientManager = ad->shmClientManager;
 
-    ad->reqSenderService.handle = ad;
-    ad->reqSenderService.sendRequest = (void*)rsaShm_send;
-    celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
-    opts.serviceName = CELIX_RSA_REQUEST_SENDER_SERVICE_NAME;
-    opts.serviceVersion = CELIX_RSA_REQUEST_SENDER_SERVICE_VERSION;
-    opts.svc = &ad->reqSenderService;
-    ad->reqSenderSvcId = celix_bundleContext_registerServiceWithOptionsAsync(context, &opts);
-    if (ad->reqSenderSvcId < 0) {
-        celix_logHelper_error(logHelper,"Error registering request sender service.");
-        return CELIX_BUNDLE_EXCEPTION;
-    }
-    celix_auto(celix_service_registration_guard_t) reg =
-        celix_serviceRegistrationGuard_init(context, ad->reqSenderSvcId);
-
     const char *fwUuid = celix_bundleContext_getProperty(context, CELIX_FRAMEWORK_UUID, NULL);
     if (fwUuid == NULL) {
         celix_logHelper_error(logHelper,"Error Getting cfw uuid for shm rsa admin.");
@@ -137,12 +129,13 @@ celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t
         celix_logHelper_error(logHelper,"Error creating shm server. %d", status);
     } else {
         celix_steal_ptr(shmServerName);
-        reg.svcId = -1;
         celix_steal_ptr(shmClientManager);
         celix_steal_ptr(importedServices);
         celix_steal_ptr(importedServicesLock);
         celix_steal_ptr(exportedServices);
         celix_steal_ptr(exportedServicesLock);
+        celix_steal_ptr(rpcFactories);
+        celix_steal_ptr(logHelper);
         *admin = celix_steal_ptr(ad);
     }
     return status;
@@ -151,8 +144,6 @@ celix_status_t rsaShm_create(celix_bundle_context_t *context, celix_log_helper_t
 void rsaShm_destroy(rsa_shm_t *admin) {
     rsaShmServer_destroy(admin->shmServer);
     free(admin->shmServerName);
-
-    celix_bundleContext_unregisterService(admin->context, admin->reqSenderSvcId);
 
     rsaShmClientManager_destroy(admin->shmClientManager);
 
@@ -163,10 +154,39 @@ void rsaShm_destroy(rsa_shm_t *admin) {
     assert(celix_longHashMap_size(admin->exportedServices) == 0);
     celix_longHashMap_destroy(admin->exportedServices);
     celixThreadMutex_destroy(&admin->exportedServicesLock);
+    celix_stringHashMap_destroy(admin->rpcFactories);
+    celix_logHelper_destroy(admin->logHelper);
     free(admin);
 
     return;
 }
+
+celix_status_t celix_rsaShm_addRpcFactorySvc(void* handle, void* svc, const celix_properties_t* props) {
+    rsa_shm_t* admin = (rsa_shm_t*)handle;
+    assert(admin != NULL);
+    assert(svc != NULL);
+    assert(props != NULL);
+    const char* rpcType = celix_properties_get(props, CELIX_RSA_RPC_TYPE_KEY, NULL);
+    assert(rpcType != NULL);// It must be not NULL, because it is checked in the filter when adding the dependency.
+    celix_status_t status = celix_stringHashMap_put(admin->rpcFactories, rpcType, svc);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(admin->logHelper, "Error adding rpc factory for type %s. %d", rpcType, status);
+        return status;
+    }
+    return CELIX_SUCCESS;
+}
+
+celix_status_t celix_rsaShm_removeRpcFactorySvc(void* handle, void* svc, const celix_properties_t* props) {
+    rsa_shm_t* admin = (rsa_shm_t*)handle;
+    assert(admin != NULL);
+    assert(svc != NULL);
+    assert(props != NULL);
+    const char* rpcType = celix_properties_get(props, CELIX_RSA_RPC_TYPE_KEY, NULL);
+    assert(rpcType != NULL);// It must be not NULL, because it is checked in the filter when adding the dependency.
+    celix_stringHashMap_remove(admin->rpcFactories, rpcType);
+    return CELIX_SUCCESS;
+}
+
 
 static export_registration_t* rsaShm_getExportService(rsa_shm_t *admin, long serviceId) {
     celix_auto(celix_mutex_lock_guard_t) lock = celixMutexLockGuard_init(&admin->exportedServicesLock);
@@ -208,7 +228,7 @@ static celix_status_t rsaShm_receiveMsgCB(void *handle, rsa_shm_server_t *shmSer
     return status;
 }
 
-celix_status_t rsaShm_send(rsa_shm_t *admin, endpoint_description_t *endpoint,
+celix_status_t rsaShm_send(rsa_shm_t *admin, const endpoint_description_t *endpoint,
         celix_properties_t *metadata, const struct iovec *request, struct iovec *response) {
     celix_status_t status = CELIX_SUCCESS;
     if (admin == NULL || endpoint == NULL || request == NULL || response == NULL) {
@@ -281,6 +301,25 @@ static bool rsaShm_isConfigTypeMatched(celix_properties_t *properties) {
     return matched;
 }
 
+static bool celix_rsaShm_getRpcType(rsa_shm_t* admin, const celix_properties_t* exportedProperties, const char** rpcType,
+                                    const celix_rsa_rpc_factory_t** factory) {
+    *rpcType = celix_properties_get(exportedProperties, RSA_SHM_RPC_TYPE_KEY, NULL);
+    if (*rpcType != NULL) {
+        *factory = celix_stringHashMap_get(admin->rpcFactories, *rpcType);
+        if (*factory == NULL) {
+            celix_logHelper_info(admin->logHelper, "No rpc factory found for type %s.", *rpcType);
+            return false;
+        }
+    } else {
+        celix_string_hash_map_iterator_t iter = celix_stringHashMap_begin(admin->rpcFactories);
+        assert(iter.key != NULL);// It must be not NULL, because we have at least one rpc factory (the default one).
+        assert(iter.value.ptrValue != NULL);
+        *rpcType = iter.key;
+        *factory = iter.value.ptrValue;
+    }
+    return true;
+}
+
 celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
         celix_properties_t *properties, celix_array_list_t **registrationsOut) {
     celix_status_t status = CELIX_SUCCESS;
@@ -330,8 +369,10 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
         rsaShm_overlayProperties(properties,exportedProperties);
     }
 
+    const char* rpcType = NULL;
+    const celix_rsa_rpc_factory_t* rpcFac = NULL;
     celix_autoptr(celix_array_list_t) registrations = NULL;
-    if (rsaShm_isConfigTypeMatched(exportedProperties)) {
+    if (rsaShm_isConfigTypeMatched(exportedProperties) && celix_rsaShm_getRpcType(admin, exportedProperties, &rpcType, &rpcFac)) {
         const char *exportsProp = celix_properties_get(exportedProperties, (char *) CELIX_RSA_SERVICE_EXPORTED_INTERFACES, NULL);
         const char *providedProp = celix_properties_get(exportedProperties, (char *) CELIX_FRAMEWORK_SERVICE_NAME, NULL);
         if (exportsProp == NULL  || providedProp == NULL) {
@@ -389,13 +430,13 @@ celix_status_t rsaShm_exportService(rsa_shm_t *admin, char *serviceId,
             export_registration_t *registration = NULL;
             int ret = CELIX_SUCCESS;
             ret = rsaShm_createEndpointDescription(admin,
-                    exportedProperties, interface, &endpointDescription);
+                    exportedProperties, interface, rpcType, &endpointDescription);
             if (ret != CELIX_SUCCESS) {
                 continue;
             }
 
             ret = exportRegistration_create(admin->context, admin->logHelper,
-                    reference, endpointDescription, &registration);
+                                            reference, endpointDescription, rpcFac, &registration);
             if (ret == CELIX_SUCCESS) {
                 celix_arrayList_add(registrations, registration);
             }
@@ -442,6 +483,7 @@ celix_status_t rsaShm_removeExportedService(rsa_shm_t *admin, export_registratio
             }
         }
 
+        exportRegistration_stop(registration);
         exportRegistration_release(registration);
         celixThreadMutex_unlock(&admin->exportedServicesLock);
     } else {
@@ -455,13 +497,14 @@ celix_status_t rsaShm_removeExportedService(rsa_shm_t *admin, export_registratio
     return status;
 }
 
-static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
-        celix_properties_t *exportedProperties, char *interface, endpoint_description_t **description) {
+static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t* admin,
+        celix_properties_t* exportedProperties, char* interface, const char* rpcType, endpoint_description_t** description) {
     celix_status_t status = CELIX_SUCCESS;
     assert(admin != NULL);
     assert(exportedProperties != NULL);
     assert(interface != NULL);
     assert(description != NULL);
+    assert(rpcType != NULL);
 
     celix_autoptr(celix_properties_t) endpointProperties = celix_properties_copy(exportedProperties);
     celix_properties_unset(endpointProperties,CELIX_FRAMEWORK_SERVICE_NAME);
@@ -487,10 +530,7 @@ static celix_status_t rsaShm_createEndpointDescription(rsa_shm_t *admin,
     celix_properties_set(endpointProperties, (char*) CELIX_RSA_ENDPOINT_ID, endpoint_uuid);
     celix_properties_set(endpointProperties, (char*) CELIX_RSA_SERVICE_IMPORTED, "true");
     celix_properties_set(endpointProperties, CELIX_RSA_SERVICE_IMPORTED_CONFIGS, RSA_SHM_CONFIGURATION_TYPE);
-    //If the rpc type of RSA_SHM_CONFIGURATION_TYPE is not set, then set a default value.
-    if (celix_properties_get(endpointProperties, RSA_SHM_RPC_TYPE_KEY, NULL) == NULL) {
-        celix_properties_set(endpointProperties, RSA_SHM_RPC_TYPE_KEY, RSA_SHM_RPC_TYPE_DEFAULT);
-    }
+    celix_properties_set(endpointProperties, RSA_SHM_RPC_TYPE_KEY, rpcType);
     celix_properties_set(endpointProperties, (char *) RSA_SHM_SERVER_NAME_KEY, admin->shmServerName);
     status = endpointDescription_create(endpointProperties, description);
     if (status != CELIX_SUCCESS) {
@@ -545,7 +585,13 @@ celix_status_t rsaShm_importService(rsa_shm_t *admin, endpoint_description_t *en
     } else {
         celix_logHelper_warning(admin->logHelper, "Mandatory %s element missing from endpoint description", CELIX_RSA_SERVICE_IMPORTED_CONFIGS);
     }
-    if (!importService) {
+    const char* rpcType = celix_properties_get(endpointDesc->properties, RSA_SHM_RPC_TYPE_KEY, NULL);
+    if (rpcType == NULL) {
+        celix_logHelper_warning(admin->logHelper, "Mandatory %s element missing from endpoint description. It is needed to get rpc factory.", RSA_SHM_RPC_TYPE_KEY);
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+    const celix_rsa_rpc_factory_t* rpcFac = celix_stringHashMap_get(admin->rpcFactories, rpcType);
+    if (!importService || rpcFac == NULL) {
         return CELIX_SUCCESS;
     }
 
@@ -566,7 +612,7 @@ celix_status_t rsaShm_importService(rsa_shm_t *admin, endpoint_description_t *en
     }
 
     status = importRegistration_create(admin->context, admin->logHelper,
-                                       endpointDesc, admin->reqSenderSvcId, &import);
+                                       endpointDesc, (void*)rsaShm_send, admin, rpcFac, &import);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(admin->logHelper, "Error Creating import registration for service %s. %d", endpointDesc->serviceName, status);
         rsaShmClientManager_destroyOrDetachClient(admin->shmClientManager, shmServerName,

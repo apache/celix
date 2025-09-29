@@ -18,33 +18,24 @@
  */
 
 #include "rsa_shm_import_registration.h"
-#include "rsa_shm_constants.h"
-#include "rsa_rpc_factory.h"
-#include "remote_constants.h"
+#include "celix_rsa_rpc_factory.h"
 #include "celix_log_helper.h"
-#include "celix_api.h"
 #include "celix_stdlib_cleanup.h"
 #include <string.h>
-#include <assert.h>
 
 struct import_registration {
     celix_bundle_context_t *context;
     celix_log_helper_t *logHelper;
     endpoint_description_t *endpointDesc;
-    long reqSenderSvcId;
-    long rpcSvcTrkId;
-    rsa_rpc_factory_t *rpcFac;
-    long proxySvcId;
+    const celix_rsa_rpc_factory_t *rpcFac;
+    long proxyId;
 };
 
-static void importRegistration_addRpcFac(void *handle, void *svc);
-static void importRegistration_removeRpcFac(void *handle, void *svc);
-
-celix_status_t importRegistration_create(celix_bundle_context_t *context,
-        celix_log_helper_t *logHelper, endpoint_description_t *endpointDesc,
-        long reqSenderSvcId, import_registration_t **importOut) {
+celix_status_t importRegistration_create(celix_bundle_context_t* context, celix_log_helper_t* logHelper,
+            endpoint_description_t* endpointDesc, celix_rsa_send_request_fp sendRequest, void* sendRequestHandle,
+            const celix_rsa_rpc_factory_t* rpcFac, import_registration_t** importOut) {
     if (context == NULL || logHelper == NULL || endpointDescription_isInvalid(endpointDesc)
-            || reqSenderSvcId < 0 || importOut == NULL) {
+            || sendRequest == NULL || rpcFac == NULL || importOut == NULL) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
     celix_autofree import_registration_t *import = (import_registration_t *)calloc(1, sizeof(*import));
@@ -60,33 +51,11 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
     }
     celix_autoptr(endpoint_description_t) epDesc = import->endpointDesc;
 
-    import->reqSenderSvcId = reqSenderSvcId;
-    import->rpcFac = NULL;
-    import->proxySvcId = -1;
-
-    const char *rsaShmRpcType = celix_properties_get(endpointDesc->properties, RSA_SHM_RPC_TYPE_KEY, NULL);
-    if (rsaShmRpcType == NULL) {
-        celix_logHelper_error(logHelper,"RSA import reg: %s property is not exist.", RSA_SHM_RPC_TYPE_KEY);
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
-
-    char filter[128] = {0};
-    int bytes = snprintf(filter, sizeof(filter), "(%s=%s)", CELIX_RSA_RPC_TYPE_KEY, rsaShmRpcType);
-    if (bytes >= sizeof(filter)) {
-        celix_logHelper_error(logHelper, "RSA import reg: The value(%s) of %s is too long.", rsaShmRpcType, CELIX_RSA_RPC_TYPE_KEY);
-        return CELIX_ILLEGAL_ARGUMENT;
-    }
-    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-    opts.filter.filter = filter;
-    opts.filter.serviceName = CELIX_RSA_RPC_FACTORY_NAME;
-    opts.filter.versionRange = CELIX_RSA_RPC_FACTORY_USE_RANGE;
-    opts.callbackHandle = import;
-    opts.add = importRegistration_addRpcFac;
-    opts.remove = importRegistration_removeRpcFac;
-    import->rpcSvcTrkId = celix_bundleContext_trackServicesWithOptionsAsync(context, &opts);
-    if (import->rpcSvcTrkId < 0) {
-        celix_logHelper_error(logHelper, "RSA import reg: Error Tracking service for %s.", CELIX_RSA_RPC_FACTORY_NAME);
-        return CELIX_SERVICE_EXCEPTION;
+    import->rpcFac = rpcFac;
+    celix_status_t status = rpcFac->createProxy(rpcFac->handle, endpointDesc, sendRequest, sendRequestHandle, &import->proxyId);
+    if (status != CELIX_SUCCESS) {
+        celix_logHelper_error(logHelper,"RSA import reg: Error creating %s proxy. %d.", endpointDesc->serviceName, status);
+        return status;
     }
 
     celix_steal_ptr(epDesc);
@@ -95,63 +64,11 @@ celix_status_t importRegistration_create(celix_bundle_context_t *context,
     return CELIX_SUCCESS;
 }
 
-static void importRegistration_stopRpcSvcTrkDone(void *data) {
-    assert(data != NULL);
-    import_registration_t *import = (import_registration_t *)data;
-    endpointDescription_destroy(import->endpointDesc);
-    free(import);
-}
-
 void importRegistration_destroy(import_registration_t *import) {
     if (import != NULL) {
-        celix_bundleContext_stopTrackerAsync(import->context, import->rpcSvcTrkId,
-                import, importRegistration_stopRpcSvcTrkDone);
-    }
-    return;
-}
-
-
-static void importRegistration_addRpcFac(void *handle, void *svc) {
-    assert(handle != NULL);
-    celix_status_t status = CELIX_SUCCESS;
-    import_registration_t *import = (import_registration_t *)handle;
-
-    if (import->rpcFac != NULL) {
-        celix_logHelper_info(import->logHelper,"RSA import reg: A proxy supports only one rpc service.");
-        return;
-    }
-    celix_logHelper_info(import->logHelper,"RSA export reg: RSA rpc service add.");
-    rsa_rpc_factory_t *rpcFac = (rsa_rpc_factory_t *)svc;
-    long proxySvcId = -1;
-    status = rpcFac->createProxy(rpcFac->handle, import->endpointDesc,
-            import->reqSenderSvcId, &proxySvcId);
-    if (status != CELIX_SUCCESS) {
-        celix_logHelper_error(import->logHelper,"RSA import reg: Error Installing %s proxy. %d.",
-                import->endpointDesc->serviceName, status);
-        return;
-    }
-    import->proxySvcId = proxySvcId;
-    import->rpcFac = (rsa_rpc_factory_t *)svc;
-
-    return;
-}
-
-static void importRegistration_removeRpcFac(void *handle, void *svc) {
-    assert(handle != NULL);
-    import_registration_t *import = (import_registration_t *)handle;
-
-    if (import->rpcFac != svc) {
-        celix_logHelper_info(import->logHelper,"RSA import reg: A endponit supports only one rpc service.");
-        return;
-    }
-
-    celix_logHelper_info(import->logHelper,"RSA import reg: RSA rpc service remove.");
-
-    rsa_rpc_factory_t *rpcFac = (rsa_rpc_factory_t *)svc;
-    if (rpcFac != NULL && import->proxySvcId >= 0) {
-        rpcFac->destroyProxy(rpcFac->handle, import->proxySvcId);
-        import->rpcFac = NULL;
-        import->proxySvcId = -1;
+        import->rpcFac->destroyProxy(import->rpcFac->handle, import->proxyId);
+        endpointDescription_destroy(import->endpointDesc);
+        free(import);
     }
     return;
 }
