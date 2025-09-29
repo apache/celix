@@ -179,4 +179,19 @@ if (EI_TESTS)
 
     add_test(NAME test_framework_with_ei COMMAND test_framework_with_ei)
     setup_target_for_coverage(test_framework_with_ei SCAN_DIR ..)
+
+    if (FRAMEWORK_CURLINIT)
+        #Note separate target, so that call to curl_global_init() can be intercepted (depends on global atomic counter)
+        add_executable(test_framework_with_curl_ei
+            src/CelixLauncherCurlErrorInjectionTestSuite.cc
+        )
+        target_link_libraries(test_framework_with_curl_ei PRIVATE 
+            framework_cut 
+            Celix::curl_ei
+            GTest::gtest GTest::gtest_main
+        )
+
+        add_test(NAME test_framework_with_curl_ei COMMAND test_framework_with_curl_ei)
+        setup_target_for_coverage(test_framework_with_curl_ei SCAN_DIR ..)
+    endif ()
 endif ()

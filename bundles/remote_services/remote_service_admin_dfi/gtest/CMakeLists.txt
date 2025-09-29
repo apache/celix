@@ -38,7 +38,6 @@ target_link_libraries(rsa_dfi_tst_bundle PRIVATE calculator_api remote_example_a
 target_include_directories(rsa_dfi_tst_bundle PRIVATE src)
 
 add_executable(test_rsa_dfi
-    src/main.cc
     src/rsa_tests.cc
     src/rsa_client_server_tests.cc
 )
@@ -48,13 +47,12 @@ celix_deprecated_framework_headers(test_rsa_dfi)
 
 target_link_libraries(test_rsa_dfi PRIVATE
         civetweb::civetweb
-        CURL::libcurl
         Celix::framework
         Celix::rsa_common
         calculator_api
         GTest::gtest
+        GTest::gtest_main
         libffi::libffi
-        ${LIBXML2_LIBRARIES} # work around memory leak reported by ASAN
 )
 
 get_property(rsa_bundle_file TARGET rsa_dfi PROPERTY BUNDLE_FILE)

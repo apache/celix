@@ -61,8 +61,6 @@ class TestPackageConan(ConanFile):
         # the following is workaround https://github.com/conan-io/conan/issues/7192
         if self.settings.os == "Linux":
             cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,--unresolved-symbols=ignore-in-shared-libs"
-        elif self.settings.os == "Macos":
-            cmake.definitions["CMAKE_EXE_LINKER_FLAGS"] = "-Wl,-undefined -Wl,dynamic_lookup"
         cmake.configure()
         cmake.build()
 

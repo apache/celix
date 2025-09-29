@@ -659,13 +659,13 @@ inline celix::Promise<void> celix::Promise<void>::timeout(std::chrono::duration<
 template<typename T>
 template<typename Rep, typename Period>
 inline celix::Promise<T>& celix::Promise<T>::setTimeout(std::chrono::duration<Rep, Period> duration) {
-    state->template setTimeout(duration);
+    state->setTimeout(duration);
     return *this;
 }
 
 template<typename Rep, typename Period>
 inline celix::Promise<void>& celix::Promise<void>::setTimeout(std::chrono::duration<Rep, Period> duration) {
-    state->template setTimeout(duration);
+    state->setTimeout(duration);
     return *this;
 }
 

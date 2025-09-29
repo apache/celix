@@ -53,3 +53,8 @@ celix_subproject(ERROR_INJECTOR_MOSQUITTO "Option to enable building the mosquit
 if (ERROR_INJECTOR_MOSQUITTO)
     add_subdirectory(mosquitto)
 endif ()
+
+celix_subproject(ERROR_INJECTOR_CURL "Option to enable building the curl error injector" ON)
+if (ERROR_INJECTOR_CURL)
+    add_subdirectory(curl)
+endif ()

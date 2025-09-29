@@ -47,7 +47,7 @@
 #define KEY_DEL1		'3'
 #define KEY_DEL2		'~'
 
-const char * const SHELL_NOT_AVAILABLE_MSG = "[Shell TUI] Shell service not available.";
+#define SHELL_NOT_AVAILABLE_MSG "[Shell TUI] Shell service not available."
 
 struct shell_tui {
     celix_bundle_context_t* ctx;
