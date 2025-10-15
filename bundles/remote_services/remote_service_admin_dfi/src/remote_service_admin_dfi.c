@@ -1104,8 +1104,8 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, metadataHeader);
         }
 
-        curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
+        curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)timeout);
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
         curl_easy_setopt(curl, CURLOPT_READFUNCTION, remoteServiceAdmin_readCallback);
         curl_easy_setopt(curl, CURLOPT_READDATA, &post);

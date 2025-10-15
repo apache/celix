@@ -382,6 +382,7 @@ class CelixConan(ConanFile):
         tc.cache_variables["CELIX_MAJOR"] = str(v.major.value)
         tc.cache_variables["CELIX_MINOR"] = str(v.minor.value)
         tc.cache_variables["CELIX_MICRO"] = str(v.patch.value)
+        tc.cache_variables["CMAKE_EXPORT_COMPILE_COMMANDS"] = "ON"
         tc.generate()
 
     def _configure_cmake(self):
