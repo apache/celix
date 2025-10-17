@@ -42,6 +42,19 @@ extern "C" {
 
 #define CELIX_UNIQUE_ID(prefix) CELIX_PASTE(CELIX_PASTE(__UNIQUE_ID_, prefix), __COUNTER__)
 
+/**
+ * A wrapper around `__has_attribute()`, which tests for support for `__attribute__(())`s.
+ *
+ * See also:
+ * clang: https://clang.llvm.org/docs/LanguageExtensions.html#has-attribute
+ *   gcc: https://gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fattribute.html
+ */
+#if defined(__has_attribute)
+#define CELIX_HAS_ATTRIBUTE(x) __has_attribute(x)
+#else
+#define CELIX_HAS_ATTRIBUTE(x) 0
+#endif
+
 #ifdef __cplusplus
 }
 #endif
