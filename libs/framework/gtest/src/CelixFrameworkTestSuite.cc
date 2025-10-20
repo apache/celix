@@ -74,15 +74,20 @@ TEST_F(CelixFrameworkTestSuite, TimedWaitEventQueueTest) {
     //When there is a emtpy event queue
     celix_framework_waitForEmptyEventQueue(framework.get());
 
-    //And a generic event is fired, that block the queue for 20ms
-    auto callback = [](void* /*data*/) {
-        std::this_thread::sleep_for(std::chrono::milliseconds{200});
+    std::promise<int> p;
+    std::future<int> f = p.get_future();
+    //And a generic event is fired, that block the queue until timeout
+    auto callback = [](void* data) {
+        auto* f = static_cast<std::future<std::string>*>(data);
+        f->wait();
     };
-    celix_framework_fireGenericEvent(framework.get(), -1L, -1L, "test", nullptr, callback, nullptr, nullptr);
+    celix_framework_fireGenericEvent(framework.get(), -1L, -1L, "test", &f, callback, nullptr, nullptr);
 
     //Then a wait for empty event queue for max 5ms will return a timeout
     celix_status_t status = celix_framework_waitForEmptyEventQueueFor(framework.get(), 0.005);
     EXPECT_EQ(ETIMEDOUT, status) << "Expected timeout, but got " << celix_strerror(status);
+
+    p.set_value(1);
 
     //And a wait for empty event queue for max 1s will return success
     status = celix_framework_waitForEmptyEventQueueFor(framework.get(), 1);
@@ -99,7 +104,6 @@ TEST_F(CelixFrameworkTestSuite, GenericEventTimeoutPropertyTest) {
     framework_t* fw = celix_frameworkFactory_createFramework(config);
     ASSERT_TRUE(fw != nullptr);
 
-    // Start capturing stdout
     std::promise<std::string> p;
     std::future<std::string> f = p.get_future();
     celix_frameworkLogger_setLogCallback(fw->logger, &p,
@@ -111,7 +115,11 @@ TEST_F(CelixFrameworkTestSuite, GenericEventTimeoutPropertyTest) {
             auto log = std::string(buffer);
             auto expected = "Generic event 'test' (id=" + std::to_string(100) + ")";
             if (log.find(expected) != std::string::npos) {
-                p->set_value(log);
+                try {
+                    p->set_value(log);
+                } catch (std::future_error& e) {
+                    EXPECT_EQ(std::future_errc::promise_already_satisfied, e.code());
+                }
             }
     });
 
