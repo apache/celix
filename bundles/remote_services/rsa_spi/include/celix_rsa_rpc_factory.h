@@ -45,7 +45,23 @@ typedef celix_status_t (*celix_rsa_send_request_fp)(void *handle, const endpoint
 
 /**
  * @brief The service use to create remote service endpoint and remote service proxy
- * @note It can be implemented by RPC bundles.
+ * @note he service provider is RPC bundle(e.g., Celix::rsa_json_rpc), and the service consumer is RSA bundle(e.g., Celix::rsa_shm).
+ *
+ * In current design, remote service registrations are life cycle bound to the the Topology Manager that created them.(It can also reference the OSGi specification.(https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.remoteserviceadmin.html#i1736585)) And the endpoint/proxy creation and destruction are life cycle bound to the remote service registrations. Therefore, the createEndpoint/destroyEndpoint functions are called when remote service is exported/unexported, and the createProxy/destroyProxy functions are called when remote service is imported/unimported. The sequence of functions invoked is as follows:
+ *
+ * When local service is registered, or remote_service_admin_service_t is registered, or celix_rsa_rpc_factory_t is registered:
+ * Topology Manager bundle -exportService-> Remote Service Admin bundle -createEndpoint-> RSA RPC bundle
+ *
+ * When local service is unregistered, or remote_service_admin_service_t is unregistered, or celix_rsa_rpc_factory_t is unregistered:
+ * Topology Manager bundle -exportRegistration_close-> Remote Service Admin bundle -destroyEndpoint-> RSA RPC bundle
+ *
+ * When remote service endpoint description is discovered, or remote_service_admin_service_t is registered, or celix_rsa_rpc_factory_t is registered:
+ * Topology Manager bundle -importService-> Remote Service Admin bundle -createProxy-> RSA RPC bundle
+ *
+ * When remote service is to be removed, or remote_service_admin_service_t is unregistered, or celix_rsa_rpc_factory_t is unregistered:
+ * Topology Manager bundle -importRegistration_close-> Remote Service Admin bundle -destroyProxy-> RSA RPC bundle
+ *
+ * @warning The createProxy/destroyProxy functions and createEndpoint/destroyEndpoint functions must be called in pairs, and the celix_rsa_rpc_factory_t provider must not proactively destroy proxies/endpoints.
  */
 typedef struct celix_rsa_rpc_factory {
     void *handle;/// The Service handle
@@ -54,10 +70,11 @@ typedef struct celix_rsa_rpc_factory {
       *
       * @param[in] handle Service handle
       * @param[in] endpointDesc The endpoint description of remote service
-      * @param[in] sendRequest The function that can be used to send request to remote service endpoint
+      * @param[in] sendRequest The function that can be used to send request to remote service endpoint. To celix_rsa_rpc_factory_t provider, it should not use the sendRequest function after destroyProxy is called, to celix_rsa_rpc_factory_t consumer, it should ensure that the sendRequest function can be used until destroyProxy is called.
       * @param[in] sendRequestHandle The handle that will be passed to sendReqFn function when it is called.
       * @param[out] proxyId The identifier of remote service proxy
       * @return @see celix_errno.h
+      *
       */
     celix_status_t (*createProxy)(void *handle, const endpoint_description_t *endpointDesc, celix_rsa_send_request_fp sendRequest, void *sendRequestHandle, long *proxyId);
     /**
@@ -85,11 +102,11 @@ typedef struct celix_rsa_rpc_factory {
     void (*destroyEndpoint)(void *handle, long endpointId);
     /**
      * @brief Handle the request that from remote service proxy.
-     * @param handle Service handle
-     * @param endpointId The identifier of the endpoint that is created by createEndpoint function.
-     * @param metadata The metadata, can be NULL.
-     * @param request The request from remote service proxy
-     * @param response  The response from remote service endpoint. The caller should use free function to free response memory
+     * @param[in] handle Service handle
+     * @param[in] endpointId The identifier of the endpoint that is created by createEndpoint function.
+     * @param[in] metadata The metadata, can be NULL.
+     * @param[in] request The request from remote service proxy
+     * @param[out] response  The response from remote service endpoint. The caller should use free function to free response memory
      * @return @see celix_errno.h
      */
     celix_status_t (*handleRequest)(void *handle, long endpointId, celix_properties_t *metadata, const struct iovec *request, struct iovec *response);

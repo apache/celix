@@ -559,6 +559,7 @@ static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_trac
         }
     }
 
+    /*The service instance obtained from a factory will be destroyed, thus we must notify service instance users before bundleContext_ungetService.*/
     bool ungetSuccess = true;
     bundleContext_ungetService(tracker->context, tracked->reference, &ungetSuccess);
     if (!ungetSuccess) {
