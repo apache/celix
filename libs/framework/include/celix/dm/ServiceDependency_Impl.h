@@ -521,7 +521,7 @@ void ServiceDependency<T,I>::setupCallbacks() {
                 auto svc = std::shared_ptr<I>{static_cast<I*>(rawSvc), [](I*){/*nop*/}};
                 auto svcId = props->getAsLong(celix::SERVICE_ID, -1);
                 dep->addFpUsingSharedPtr(svc, props);
-                dep->addedServices.template emplace(svcId, std::make_pair(std::move(svc), std::move(props)));
+                dep->addedServices.emplace(svcId, std::make_pair(std::move(svc), std::move(props)));
             }
             return rc;
         };
@@ -541,8 +541,8 @@ void ServiceDependency<T,I>::setupCallbacks() {
                     std::weak_ptr<const celix::Properties> removedProps = it->second.second;
                     dep->removeFpUsingSharedPtr(it->second.first, it->second.second);
                     dep->addedServices.erase(it);
-                    dep->template waitForExpired(removedSvc, svcId, "service pointer");
-                    dep->template waitForExpired(removedProps, svcId, "service properties");
+                    dep->waitForExpired(removedSvc, svcId, "service pointer");
+                    dep->waitForExpired(removedProps, svcId, "service properties");
                 }
             }
             return rc;

@@ -383,7 +383,7 @@ namespace celix {
          */
         template<typename F>
         size_t useServices(const F& f) {
-            return this->template useServicesInternal(
+            return this->useServicesInternal(
                 [&f](I& svc, const celix::Properties&, const celix::Bundle&) { f(svc); });
         }
 
@@ -398,7 +398,7 @@ namespace celix {
          */
         template<typename F>
         size_t useServicesWithProperties(const F& f) {
-            return this->template useServicesInternal(
+            return this->useServicesInternal(
                 [&f](I& svc, const celix::Properties& props, const celix::Bundle&) { f(svc, props); });
         }
 
@@ -414,7 +414,7 @@ namespace celix {
          */
         template<typename F>
         size_t useServicesWithOwner(const F& f) {
-            return this->template useServicesInternal(
+            return this->useServicesInternal(
                 [&f](I& svc, const celix::Properties& props, const celix::Bundle& bnd) { f(svc, props, bnd); });
         }
 
@@ -429,7 +429,7 @@ namespace celix {
          */
         template<typename F>
         bool useService(const F& f) {
-            return this->template useServiceInternal(
+            return this->useServiceInternal(
                 [&f](I& svc, const celix::Properties&, const celix::Bundle&) { f(svc); });
         }
 
@@ -444,7 +444,7 @@ namespace celix {
          */
         template<typename F>
         bool useServiceWithProperties(const F& f) {
-            return this->template useServiceInternal(
+            return this->useServiceInternal(
                 [&f](I& svc, const celix::Properties& props, const celix::Bundle&) { f(svc, props); });
         }
 
@@ -460,7 +460,7 @@ namespace celix {
          */
         template<typename F>
         bool useServiceWithOwner(const F& f) {
-            return this->template useServiceInternal(
+            return this->useServiceInternal(
                 [&f](I& svc, const celix::Properties& props, const celix::Bundle& bnd) { f(svc, props, bnd); });
         }
     protected:

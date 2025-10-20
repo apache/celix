@@ -16,15 +16,17 @@ env:
 jobs:
 
   macos-build-conan:
-    runs-on: macOS-13
+    runs-on: macOS-15
     timeout-minutes: 120
     steps:
       - name: Checkout source code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c #v3.3.0
-      - name: Install conan
-        run: |
-          brew install python ninja
-          pip3 install -U conan
+      - name: Set up Python
+        uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c #v4.9.1
+        with:
+          python-version: '3.x'        
+      - name: Install Conan
+        run: pip install conan
       - name: Setup Conan Profile
         run: |
           conan profile detect -f
@@ -70,7 +72,7 @@ jobs:
           source deactivate_conanrun.sh
 
   macos-build-brew:
-    runs-on: macOS-14
+    runs-on: macOS-15
     timeout-minutes: 120
     steps:
       - name: Checkout source code
