@@ -45,7 +45,7 @@ typedef celix_status_t (*celix_rsa_send_request_fp)(void *handle, const endpoint
 
 /**
  * @brief The service use to create remote service endpoint and remote service proxy
- * @note he service provider is RPC bundle(e.g., Celix::rsa_json_rpc), and the service consumer is RSA bundle(e.g., Celix::rsa_shm).
+ * @note The service provider is RPC bundle(e.g., Celix::rsa_json_rpc), and the service consumer is RSA bundle(e.g., Celix::rsa_shm).
  *
  * In current design, remote service registrations are life cycle bound to the the Topology Manager that created them.(It can also reference the OSGi specification.(https://docs.osgi.org/specification/osgi.cmpn/7.0.0/service.remoteserviceadmin.html#i1736585)) And the endpoint/proxy creation and destruction are life cycle bound to the remote service registrations. Therefore, the createEndpoint/destroyEndpoint functions are called when remote service is exported/unexported, and the createProxy/destroyProxy functions are called when remote service is imported/unimported. The sequence of functions invoked is as follows:
  *
