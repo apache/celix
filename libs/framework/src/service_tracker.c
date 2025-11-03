@@ -542,12 +542,6 @@ static celix_status_t serviceTracker_untrack(service_tracker_t* tracker, service
 
 static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_tracked_entry_t *tracked, int trackedSize, bool set) {
     assert(tracker != NULL);
-    celixThreadMutex_lock(&tracked->mutex);
-    while (tracked->useCount > 1) {
-        celixThreadCondition_wait(&tracked->useCond, &tracked->mutex);
-    }
-    celixThreadMutex_unlock(&tracked->mutex);
-
     serviceTracker_invokeRemovingService(tracker, tracked);
 
     if(set) {
@@ -558,6 +552,12 @@ static void serviceTracker_untrackTracked(service_tracker_t *tracker, celix_trac
                                                           serviceTracker_checkAndInvokeSetService);
         }
     }
+
+    celixThreadMutex_lock(&tracked->mutex);
+    while (tracked->useCount > 1) {
+        celixThreadCondition_wait(&tracked->useCond, &tracked->mutex);
+    }
+    celixThreadMutex_unlock(&tracked->mutex);
 
     /*The service instance obtained from a factory will be destroyed, thus we must notify service instance users before bundleContext_ungetService.*/
     bool ungetSuccess = true;
