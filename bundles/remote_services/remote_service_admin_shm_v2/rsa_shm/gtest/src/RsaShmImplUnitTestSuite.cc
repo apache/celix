@@ -255,6 +255,12 @@ TEST_F(RsaShmUnitTestSuite, AddRpcFactoryService) {
     status = celix_rsaShm_addRpcFactorySvc(admin, &rpcFactory, props);
     EXPECT_EQ(ENOMEM, status);
 
+    celix_properties_unset(props, CELIX_RSA_RPC_TYPE_KEY);
+    status = celix_rsaShm_addRpcFactorySvc(admin, &rpcFactory, props);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+    status = celix_rsaShm_removeRpcFactorySvc(admin, &rpcFactory, props);
+    EXPECT_EQ(CELIX_ILLEGAL_ARGUMENT, status);
+
     rsaShm_destroy(admin);
 }
 

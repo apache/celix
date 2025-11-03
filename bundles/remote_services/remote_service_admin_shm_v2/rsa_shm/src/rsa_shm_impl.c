@@ -167,7 +167,10 @@ celix_status_t celix_rsaShm_addRpcFactorySvc(void* handle, void* svc, const celi
     assert(svc != NULL);
     assert(props != NULL);
     const char* rpcType = celix_properties_get(props, CELIX_RSA_RPC_TYPE_KEY, NULL);
-    assert(rpcType != NULL);// It must be not NULL, because it is checked in the filter when adding the dependency.
+    if (rpcType == NULL) {
+        celix_logHelper_error(admin->logHelper, "RPC type is NULL when adding rpc factory service.");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
     celix_status_t status = celix_stringHashMap_put(admin->rpcFactories, rpcType, svc);
     if (status != CELIX_SUCCESS) {
         celix_logHelper_error(admin->logHelper, "Error adding rpc factory for type %s. %d", rpcType, status);
@@ -182,7 +185,10 @@ celix_status_t celix_rsaShm_removeRpcFactorySvc(void* handle, void* svc, const c
     assert(svc != NULL);
     assert(props != NULL);
     const char* rpcType = celix_properties_get(props, CELIX_RSA_RPC_TYPE_KEY, NULL);
-    assert(rpcType != NULL);// It must be not NULL, because it is checked in the filter when adding the dependency.
+    if (rpcType == NULL) {
+        celix_logHelper_error(admin->logHelper, "RPC type is NULL when removing rpc factory service.");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
     celix_stringHashMap_remove(admin->rpcFactories, rpcType);
     return CELIX_SUCCESS;
 }
