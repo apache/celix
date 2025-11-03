@@ -297,7 +297,7 @@ static void celix_properties_removeEntryCallback(void* handle,
     celix_properties_destroyEntry(properties, entry);
 }
 
-celix_properties_t* celix_properties_create() {
+celix_properties_t* celix_properties_create(void) {
     celix_properties_t* props = malloc(sizeof(*props));
     if (props != NULL) {
         celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;

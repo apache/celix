@@ -36,18 +36,18 @@ extern "C" {
  */
 
 /**
- * @brief Flag to indicate that the encoding should be pretty printed. e.g. encoded with additional whitespaces, newlines and indentation.
+ * @brief Flag to indicate that the encoding should be pretty printed, e.g., encoded with additional whitespaces, newlines and indentation.
  *
- * If this flag is not set, the encoding will be compact. e.g. without additional whitespaces, newlines and indentation.
+ * If this flag is not set, the encoding will be compact, e.g., without additional whitespaces, newlines and indentation.
  */
 #define CELIX_ARRAY_LIST_ENCODE_PRETTY 0x01
 
 /**
  * @brief Flag to indicate that the encoding should fail if an empty array is encountered.
  *
- * If this flag is not set, an empty array will be encoded as an empty json array representation("[]").
+ * If this flag is not set, an empty array will be encoded as an empty JSON array representation("[]").
  *
- * Although empty arrays are valid in json, they cannot decoded to a valid celix_array_list_t.
+ * Although empty arrays are valid in JSON, they cannot be decoded to a valid celix_array_list_t.
  */
 #define CELIX_ARRAY_LIST_ENCODE_ERROR_ON_EMPTY_ARRAYS 0x10
 
@@ -56,12 +56,12 @@ extern "C" {
  *
  * If this flag is not set, the encoding will not fail and the NaN and Inf value will be ignored.
  *
- * NaN and Inf values are not valid in json, as such celix_array_list_t with these values cannot be encoded to json.
+ * NaN and Inf values are not valid in JSON, as such celix_array_list_t with these values cannot be encoded to JSON.
  */
 #define CELIX_ARRAY_LIST_ENCODE_ERROR_ON_NAN_INF 0x20
 
 /**
- * @brief Flag to indicate that the encoding should be strict. e.g. fail on empty arrays and NaN/Inf values.
+ * @brief Flag to indicate that the encoding should be strict, e.g., fail on empty arrays and NaN/Inf values.
  */
 #define CELIX_ARRAY_LIST_ENCODE_STRICT \
     (CELIX_ARRAY_LIST_ENCODE_ERROR_ON_EMPTY_ARRAYS | CELIX_ARRAY_LIST_ENCODE_ERROR_ON_NAN_INF)
@@ -70,7 +70,7 @@ extern "C" {
 
 
 /**
- * @brief Encode the given celix_array_list_t as a JSON representation，and write it to the given stream.
+ * @brief Encode the given celix_array_list_t as a JSON representation and write it to the given stream.
  *
  * The caller is the owner of the stream and is responsible for closing it.
  *
@@ -96,7 +96,7 @@ CELIX_UTILS_EXPORT
 celix_status_t celix_arrayList_saveToStream(const celix_array_list_t* list, int encodeFlags, FILE* stream);
 
 /**
- * @brief Encode the given celix_array_list_t as a JSON representation, and write it to the given file.
+ * @brief Encode the given celix_array_list_t as a JSON representation and write it to the given file.
  *
  * For more information about the encoding, see celix_arrayList_saveToStream.
  *
@@ -138,19 +138,19 @@ celix_status_t celix_arrayList_saveToString(const celix_array_list_t* list, int 
 /**
  * @brief Flag to indicate that the decoding should fail if an empty array is encountered.
  *
- * If this flag is not set, the decoding will not fail and the empty json array representation("[]") will be ignored, then a NULL celix_array_list_t* will be returned.
+ * If this flag is not set, the decoding will not fail, and the empty JSON array representation("[]") will be ignored, then a NULL celix_array_list_t* will be returned.
  */
 #define CELIX_ARRAY_LIST_DECODE_ERROR_ON_EMPTY_ARRAYS 0x01
 
 /**
  * @brief Flag to indicate that the decoding should fail if an unsupported array type is encountered.
  *
- * If this flag is not set, the decoding will not fail and the unsupported array type will be ignored, then a NULL celix_array_list_t* will be returned.
+ * If this flag is not set, the decoding will not fail, and the unsupported array type will be ignored, then a NULL celix_array_list_t* will be returned.
  */
 #define CELIX_ARRAY_LIST_DECODE_ERROR_ON_UNSUPPORTED_ARRAYS 0x02
 
 /**
- * @brief Flag to indicate that the decoding should be strict. e.g. fail on empty arrays and unsupported array types.
+ * @brief Flag to indicate that the decoding should be strict, e.g., fail on empty arrays and unsupported array types.
  *
  */
 #define CELIX_ARRAY_LIST_DECODE_STRICT \

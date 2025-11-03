@@ -55,6 +55,82 @@ extern "C" {
 #define CELIX_HAS_ATTRIBUTE(x) 0
 #endif
 
+/**
+ * CELIX_OWNERSHIP_TAKES(type, idx)
+ *
+ * Expands to the compiler attribute `__attribute__((ownership_takes(type, idx)))`
+ * when the compiler supports the `ownership_takes` attribute. This attribute
+ * marks a function as a deallocating function.
+ *
+ * See also:
+ * clang: https://clang.llvm.org/docs/AttributeReference.html#ownership-holds-ownership-returns-ownership-takes-clang-static-analyzer
+ *
+ * Parameters:
+ *  - `type`: the type of the allocation: malloc, new, etc. to allow for catching mismatched deallocation bugs.
+ *  - `idx`:  1-based index of the parameter that is being deallocated.
+ *
+ * Example:
+ * ```C
+ *  void CELIX_OWNERSHIP_TAKES(owner, 1) free_string(char* ptr);
+ * ```
+ */
+
+#if CELIX_HAS_ATTRIBUTE(ownership_takes)
+#define CELIX_OWNERSHIP_TAKES(type, idx) __attribute__((ownership_takes(type, idx)))
+#else
+#define CELIX_OWNERSHIP_TAKES(type, idx)
+#endif
+
+/**
+ * CELIX_OWNERSHIP_RETURNS(type)
+ *
+ * Expands to the compiler attribute `__attribute__((ownership_returns(type, idx)))`
+ * when the compiler supports the `ownership_returns` attribute. This attribute
+ * marks a function as an allocating function.
+ *
+ * See also:
+ * clang: https://clang.llvm.org/docs/AttributeReference.html#ownership-holds-ownership-returns-ownership-takes-clang-static-analyzer
+ *
+ * Parameters:
+ *  - `type`: the type of the allocation: malloc, new, etc. to allow for catching mismatched deallocation bugs.
+ *
+ * Example:
+ * ```C
+ *  char CELIX_OWNERSHIP_RETURNS(owner)* allocate_string(void);
+ * ```
+ */
+#if CELIX_HAS_ATTRIBUTE(ownership_returns)
+#define CELIX_OWNERSHIP_RETURNS(type) __attribute__((ownership_returns(type)))
+#else
+#define CELIX_OWNERSHIP_RETURNS(type)
+#endif
+
+/**
+ * CELIX_OWNERSHIP_HOLDS(type, idx)
+ *
+ * Expands to the compiler attribute `__attribute__((ownership_holds(type, idx)))`
+ * when the compiler supports the `ownership_holds` attribute. This attribute
+ * marks that a function takes over the ownership of a piece of memory and will free it
+ * at some unspecified point in the future.
+ *
+ * See also:
+ * clang: https://clang.llvm.org/docs/AttributeReference.html#ownership-holds-ownership-returns-ownership-takes-clang-static-analyzer
+ *
+ * Parameters:
+ *  - `type`: the type of the allocation: malloc, new, etc. to allow for catching mismatched deallocation bugs.
+ *  - `idx`:  1-based index of the parameter whose ownership will be taken over.
+ *
+ * Example:
+ * ```C
+ *  void CELIX_OWNERSHIP_HOLDS(owner, 1) hold_string(char* ptr);
+ * ```
+ */
+#if CELIX_HAS_ATTRIBUTE(ownership_holds)
+#define CELIX_OWNERSHIP_HOLDS(type, idx) __attribute__((ownership_holds(type, idx)))
+#else
+#define CELIX_OWNERSHIP_HOLDS(type, idx)
+#endif
+
 #ifdef __cplusplus
 }
 #endif

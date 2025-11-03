@@ -467,7 +467,7 @@ celix_string_hash_map_t* celix_stringHashMap_createWithOptions(const celix_strin
     return celix_steal_ptr(map);
 }
 
-celix_string_hash_map_t* celix_stringHashMap_create() {
+celix_string_hash_map_t* celix_stringHashMap_create(void) {
     celix_string_hash_map_create_options_t opts = CELIX_EMPTY_STRING_HASH_MAP_CREATE_OPTIONS;
     return celix_stringHashMap_createWithOptions(&opts);
 }
@@ -496,7 +496,7 @@ celix_long_hash_map_t* celix_longHashMap_createWithOptions(const celix_long_hash
     return celix_steal_ptr(map);
 }
 
-celix_long_hash_map_t* celix_longHashMap_create() {
+celix_long_hash_map_t* celix_longHashMap_create(void) {
     celix_long_hash_map_create_options_t opts = CELIX_EMPTY_LONG_HASH_MAP_CREATE_OPTIONS;
     return celix_longHashMap_createWithOptions(&opts);
 }
